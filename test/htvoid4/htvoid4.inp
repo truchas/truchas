@@ -22,6 +22,7 @@ end and the fluid exits the right end with a fixed unit velocity.
 /
 
 &PHYSICS
+  materials = 'wall', 'fluid', 'VOID'
   flow = .true.
   heat_transport = .true.
 /
@@ -49,7 +50,7 @@ end and the fluid exits the right end with a fixed unit velocity.
   inviscid = .true.
   courant_number = 0.4
   vol_track_subcycles = 2
-  material_priority = 2, 3, -1
+  material_priority = 'fluid', 'VOID', 'SOLID'
 /
 
 &FLOW_PRESSURE_SOLVER
@@ -64,7 +65,7 @@ FLUID CHANNEL
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 2
+  material_name = 'fluid'
   velocity = 1.0, 0.0, 0.0
   temperature_function = 'init-temp'
 /
@@ -73,7 +74,7 @@ UPPER WALL
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'wall'
   temperature_function = 'init-temp'
 /
 
@@ -81,7 +82,7 @@ LOWER WALL
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 3
-  material_number = 1
+  material_name = 'wall'
   temperature_function = 'init-temp'
 /
 
@@ -98,7 +99,7 @@ VOID IN LOWER WALL CAVITY; UPPER CAVITY IS NOT MESHED
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 4
-  material_number = 3
+  material_name = 'VOID'
   temperature = 0.0
 /
 
@@ -108,7 +109,7 @@ INFLOW OF VOID AT LEFT END OF CHANNEL
   face_set_ids = 5
   type = 'velocity'
   velocity = 1.0, 0.0, 0.0
-  inflow_material = 3
+  inflow_material = 'VOID'
 /
 
 OUTFLOW OF FLUID AT RIGHT END OF CHANNEL
@@ -172,48 +173,16 @@ RADIATION IN THE LOWER CAVITY.
 /
 
 &MATERIAL
-  Material_Name   = 'wall'
-  Material_Number = 1
-  priority        = 3  ! only significant to legacy_flow
-  immobile        = .true.
-  Density         = 2.0
-/
-
-&PHASE
   name = 'wall'
-  property_name(1) = 'density',       property_constant(1) = 2.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-/
-
-&MATERIAL_SYSTEM
-  name = 'wall'
-  phases = 'wall'
+  density = 2.0
+  specific_heat = 1.0
+  conductivity = 0.1
 /
 
 &MATERIAL
-  Material_Name   = 'fluid'
-  Material_Number = 2
-  priority        = 1  ! only significant to legacy_flow
-  Density         = 1.0
-/
-
-&PHASE
   name = 'fluid'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-/
-
-&MATERIAL_SYSTEM
-  name = 'fluid'
-  phases = 'fluid'
-/
-
-&MATERIAL
-  Material_Name = 'void'
-  Material_Number = 3
-  Material_Feature = 'background'
-  priority = 2  ! only significant to legacy_flow
-  Density = 0.0
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 0.1
 /

@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds11.inp")
-    golden = tenv.output("ds11_pgolden/ds11.h5")
+    golden = tenv.output("ds11_golden/ds11.h5")
 
     test_region = output.region(1, 2)
     gold_region = golden.region(1, 2)
@@ -28,7 +28,7 @@ def run_test(tenv):
 
         test = output.field(sid, "VOF")[:,2] # comp 2 is fluid
         gold = golden.field(sid, "VOF")[:,2]
-        nfail += truchas.compare_max(test, gold, 1e-7, "vof", time)
+        nfail += truchas.compare_max(test, gold, 1e-6, "vof", time)
 
     truchas.report_summary(nfail)
     return nfail

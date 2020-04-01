@@ -67,7 +67,7 @@ CONTAINS
     use fluid_type_module,      only: NORMS, DIV_NORMS, Div_c, Div_f
     use legacy_mesh_api,        only: ncells, ndim, nfc, Cell, EE_GATHER
     use projection_data_module, only: Boundary_Flag, DVol_by_Dt_over_Vol
-    use property_module,        only: FLUID_PROPERTIES
+    use flow_property_module,        only: FLUID_PROPERTIES
     use restart_variables,      only: restart, have_fluid_flow_data
     use surface_tension_module, only: face_set_ids, csf_boundary, csf_z
     use legacy_mesh_api,        only: mesh_face_set

@@ -10,7 +10,7 @@ Module SOLID_MECHANICS_MODULE
   !-----------------------------------------------------------------------------
   ! Purpose:
   !
-  !   Calculate the thermomechanical response of all relevant solid materials 
+  !   Calculate the thermomechanical response of all relevant solid materials
   !   present in a given problem
   !
   ! Public Interfaces:
@@ -30,8 +30,8 @@ Module SOLID_MECHANICS_MODULE
   !                  PRECON_DISPLACEMENT_GRADIENTS
   !                     TET_GRADIENT_FACTORS()
   !               ELAS_VP_RESIDUAL ()
-  !               VP_MATVEC 
-  !             
+  !               VP_MATVEC
+  !
   ! Authors:  Dave Korzekwa (dak@lanl.gov), Mark Schraad (schraad@lanl.gov)
   !-----------------------------------------------------------------------------
   use kinds, only: r8
@@ -41,6 +41,7 @@ Module SOLID_MECHANICS_MODULE
   use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
   use truchas_timers
+  use material_model_driver, only: matl_model
   Implicit None
   Private
 
@@ -194,12 +195,12 @@ Contains
     !---------------------------------------------------------------------------
     ! Purpose:
     !
-    !  Calculate initial displacements, stresses and strains and strain rates 
+    !  Calculate initial displacements, stresses and strains and strain rates
     ! resulting from the initial or restart temperature field and BCs
     !
     !---------------------------------------------------------------------------
 
-    use parameter_module,     only: nmat, mat_slot
+    use parameter_module,     only: mat_slot
     use legacy_mesh_api,      only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1
     use legacy_mesh_api,      only: EN_GATHER, EN_SUM_SCATTER
     use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
@@ -208,7 +209,6 @@ Contains
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
-    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
     use solid_mechanics_input,  only: solid_mechanics
@@ -235,9 +235,9 @@ Contains
 
     ! Initialize the solid mechanics mesh pointer (NOT YET)
     !call SM_MESH_INIT
-    
+
     ! Allocate and calculate control volume structures
-    
+
     if (.not. cv_init) then
        call start_timer("Initialization")
        call start_timer("Solid Mech Init")
@@ -246,7 +246,7 @@ Contains
        call CELL_CV_FACE()
        call BOUNDARY_CV_FACE()
        cv_init = .true.
-       
+
        call stop_timer("Solid Mech Init")
        call stop_timer("Initialization")
     end if
@@ -254,19 +254,19 @@ Contains
     ! Determine if plastic flow is to be included
     call viscoplasticity_init (plasticity)
 
-    call define_tm_density_property (status, errmsg)
+    call define_tm_density_property(status, errmsg)
     if (status /= 0) call TLS_fatal ('SOLID_MECH_INIT: ' // trim(errmsg))
-    
+
     gap_cell_mask = (mesh(:)%Cell_Shape >= GAP_ELEMENT_1)
-    
+
     ! Calculate the volume-averaged, cell-centered solid material properties
     Call MATERIAL_PROPERTIES ()
-    
+
     ! Scale factor calculated for each node based on the surface area of the control volume and
     ! the second Lame' constant
 
     allocate (cscale(ndim*nnodes))
-    
+
     ! Get second elastic constant at the nodes
     allocate(Lame2_Node(nnodes), stat=status)
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: Lame2_Node')
@@ -274,7 +274,7 @@ Contains
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: Nvol')
     allocate(L2tmp(ncells), stat=status)
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: L2tmp')
-    
+
     ! Get nodal values for Lame'2
     call EN_SUM_SCATTER (Nvol, Cell%Volume)
     L2tmp = Lame2*Cell%Volume
@@ -285,7 +285,7 @@ Contains
     do i = 1, nfc
        htemp(i) = MAXVAL(Cell%Halfwidth(i))
     end do
-    
+
     ! SCale factor for each node
     do idim = 1, ndim
        cscale(idim:(ndim*(nnodes-1)+idim):ndim) = Lame2_node * 0.001 * PGSLib_Global_MAXVAL(htemp)
@@ -302,14 +302,13 @@ Contains
     ! Initialize mask to find all cells that contain any solid (immobile) material
     Solid_Mask = .false.
     do icell = 1, ncells
-       do imat = 1,nmat
-          if (isImmobile(imat)) then
-             do islot = 1, mat_slot
-                if (Matl(islot)%Cell(icell)%Id == imat) then
-                   Solid_Mask(icell) = .true.
-                end if
-             end do
-          end if
+       do imat = 1, matl_model%nphase_real
+          if (matl_model%is_fluid(imat)) cycle ! ignore
+          do islot = 1, mat_slot
+             if (Matl(islot)%Cell(icell)%Id == imat) then
+                Solid_Mask(icell) = .true.
+             end if
+          end do
        end do
     end do
 
@@ -322,7 +321,7 @@ Contains
        call TLS_info ('')
        call TLS_info (' Calculating initial thermo-elastic state.', advance=.false.)
 
-       call compute_cell_property ('TM reference density', zone%temp, tm_dens_old)
+       call compute_cell_property('tm-ref-density', zone%temp, tm_dens_old)
        where (gap_cell_mask) tm_dens_old = 1.0
 
        ! Get initial displacements
@@ -361,7 +360,7 @@ Contains
           Elastic_Strain = SMech_IP(ip)%Total_Strain(:,:) - Thermal_Strain - PC_Strain
           call MATERIAL_STRESSES(Elastic_Strain, SMech_IP(ip)%Elastic_Stress(:,:))
        end do IP_STRESS_LOOP
-       
+
        ! Initial effective stress.
        do ip = 1,nipc
           Eff_Stress_IP_old(:,ip) = sqrt(((SMech_IP(ip)%Elastic_Stress(1,:) - SMech_IP(ip)%Elastic_Stress(2,:))**2 + &
@@ -380,7 +379,7 @@ Contains
        ! Calculate the cell-centered solid material total strain field
        Call MATERIAL_STRAINS (Solution, SMech_Cell%Total_Strain,Rotation=Rotation_Magnitude)
 
-       ! Calculate the cell-centered solid material elastic strain field, noting 
+       ! Calculate the cell-centered solid material elastic strain field, noting
        ! that the total strains are decomposed into elastic and thermal strains
        Elastic_Strain(:,:) = SMech_Cell%Total_Strain(:,:) - Thermal_Strain(:,:) - PC_Strain(:,:)
 
@@ -398,9 +397,9 @@ Contains
        call viscoplastic_strain_rate (Eff_Stress_Cell_old, zone%temp, SMech_Cell%Plastic_Strain_Rate)
 
        call TLS_info (' Done.')
-       
+
        call stop_timer("Solid Mechanics")
- 
+
 !       thermo_elastic_iterations   = NKuser(NK_DISPLACEMENT)%linear_tot
 !       viscoplastic_iterations = NKuser(NK_DISPLACEMENT)%Newton_tot
        call TLS_info ('')
@@ -411,7 +410,7 @@ Contains
 
     else
 
-       call compute_cell_property ('TM density', zone%temp, tm_dens)
+       call compute_cell_property('TM density', zone%temp, tm_dens)
        where (gap_cell_mask) tm_dens = 1.0
     end if INITIAL_STATE
 
@@ -436,13 +435,12 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    use parameter_module,     only: nmat, mat_slot
+    use parameter_module,     only: mat_slot
     use legacy_mesh_api,      only: nnodes, ncells
     Use node_operator_module, Only: nipc
     use viscoplasticity,      only: MATERIAL_STRESSES, MATERIAL_STRAINS, &
                                     VISCOPLASTIC_STRAIN_RATE, PLASTIC_STRAIN_INCREMENT,&
                                     DEVIATORIC_STRESS
-    use property_data_module, only: isImmobile
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
     use solid_mechanics_input, only: solid_mechanics
@@ -457,20 +455,19 @@ Contains
 
     ! If not calculating solid mechanics, then skip the rest
     If (.not. solid_mechanics) Return
-    
+
     call start_timer("Solid Mechanics")
 
     ! Update solid material mask
     Solid_Mask = .false.
     do icell = 1, ncells
-       do imat = 1,nmat
-          if (isImmobile(imat)) then
-             MAT_SLOT_LOOP: do islot = 1, mat_slot
-                if (Matl(islot)%Cell(icell)%Id == imat) then
-                   Solid_Mask(icell) = .true.
-                end if
-             end do MAT_SLOT_LOOP
-          end if
+       do imat = 1, matl_model%nphase_real
+          if (matl_model%is_fluid(imat)) cycle
+          MAT_SLOT_LOOP: do islot = 1, mat_slot
+             if (Matl(islot)%Cell(icell)%Id == imat) then
+                Solid_Mask(icell) = .true.
+             end if
+          end do MAT_SLOT_LOOP
        end do
     end do
 
@@ -499,12 +496,12 @@ Contains
     ! Update tm_dens_old
     tm_dens_old(:) = tm_dens(:)
     tm_dens(:) = 0.0
-    
+
     do ip = 1,nipc
        call viscoplastic_strain_rate (Eff_Stress_IP_old(:,ip), zone%temp, SMech_IP_Old(ip)%Plastic_Strain_Rate)
     end do
 
-    ! Deviatoric stress components for all integration points - used to set the direction of the 
+    ! Deviatoric stress components for all integration points - used to set the direction of the
     ! strain increment for the time step
 
     do ip = 1,nipc
@@ -590,9 +587,9 @@ Contains
     !
     !---------------------------------------------------------------------------
     use zone_module, only: zone
-    
-    call compute_cell_property ('Lame1', zone%temp, Lame1)
-    call compute_cell_property ('Lame2', zone%temp, Lame2)
+
+    call compute_cell_property('tm-lame1', zone%temp, Lame1)
+    call compute_cell_property('tm-lame2', zone%temp, Lame2)
 
   End Subroutine MATERIAL_PROPERTIES
 
@@ -603,7 +600,7 @@ Contains
     !---------------------------------------------------------------------------
     ! Purpose:
     !
-    !    Solve the thermomechanical equations of static equilibrium for the 
+    !    Solve the thermomechanical equations of static equilibrium for the
     !    vertex-centered solid material displacement field
     !
     !---------------------------------------------------------------------------
@@ -614,8 +611,8 @@ Contains
     use UbikSolve_module
     use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
                                   NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
-    use solid_mechanics_input, only: NK_DISPLACEMENT                            
-    use solid_mechanics_mesh, only: ndim                            
+    use solid_mechanics_input, only: NK_DISPLACEMENT
+    use solid_mechanics_mesh, only: ndim
     use string_utilities, only: i_to_c
 
     real(r8), Dimension(ndim*nnodes) :: Solution
@@ -687,7 +684,7 @@ Contains
   Subroutine RHS_THERMO_MECH ()
     !---------------------------------------------------------------------------
     !  Purpose:
-    !   Compute the thermal stress terms (and volume change from phase change 
+    !   Compute the thermal stress terms (and volume change from phase change
     !   terms) for the right hand side of the linear system or the constant part
     !   of the nonlinear residual.
     !---------------------------------------------------------------------------
@@ -720,14 +717,14 @@ Contains
     Thermal_Stress     = 0.0_r8
     Dstrain            = 0.0_r8
 
-    call compute_cell_property ('TM density', zone%temp, tm_dens)
+    call compute_cell_property('TM density', zone%temp, tm_dens)
     where (gap_cell_mask) tm_dens = 1.0
-    
+
     ! NNC, May 2012.  What's wanted here is (rho_old/rho)**(1/3) - 1.
     ! The Dstrain computed below is asymptotically correct for rho_old/rho
     ! nearly 1.  Does it give better accuracy (less cancellation error)
     ! than the straightforward calculation?
-    
+
     ! Isotropic dilatation from both thermal expansion and phase change
     ! log strain - we may want this for finite strain accuracy...
     Dstrain(:) = log(tm_dens_old(:)/tm_dens(:))/3.0
@@ -763,10 +760,10 @@ Contains
        end do NIPC_LOOP
 
        ! For traction BCs substitute the specified boundary traction for all other
-       ! contributions for the CV face on the boundary.  This can go on the RHS 
+       ! contributions for the CV face on the boundary.  This can go on the RHS
        ! since it does not depend on the displacements.
        !
-       ! Do tractions first and sum-scatter along with the internal CV faces to get 
+       ! Do tractions first and sum-scatter along with the internal CV faces to get
        ! contributions of all faces - take care of displacement BCs later.
        !
        ! This must be done every time step
@@ -834,14 +831,14 @@ Contains
     ! Add body forces - uses Body_Force in the physics namelist
     if (solid_mechanics_body_force) then
     ! Get nodal averaged cell density for body force
-    ! Use straight volume averaging to avoid gap element problems 
+    ! Use straight volume averaging to avoid gap element problems
        allocate(Rho_Node(nnodes), stat=status)
        if (status /= 0) call TLS_panic ( 'RHS_THERMO_MECH: allocation error: Rho_Node')
        allocate(Nvol(nnodes), stat=status)
        if (status /= 0) call TLS_panic ( 'RHS_THERMO_MECH: allocation error: Nvol')
        allocate(Rho_tmp(ncells), stat=status)
        if (status /= 0) call TLS_panic ( 'RHS_THERMO_MECH: allocation error: Rho_tmp')
-       
+
        call EN_SUM_SCATTER (Nvol, Cell%Volume)
        Rho_tmp = Zone(:)%Rho*Cell%Volume
        call EN_SUM_SCATTER (Rho_Node, Rho_tmp)
@@ -856,7 +853,7 @@ Contains
        deallocate(Rho_Node, Nvol, Rho_tmp)
     end if
 
-    RHS = RHS/cscale    
+    RHS = RHS/cscale
 
     ! Save the current RHS vector which contains only source terms and traction BCs
     ! Src will be needed by the contact BC routines.  Change the sign for consistency
@@ -872,13 +869,13 @@ Contains
   SUBROUTINE MECH_PRECONDITION()
     !=============================================================================
     !
-    ! Construct preconditioning matrix, P, for thermo-elastic preconditioning 
+    ! Construct preconditioning matrix, P, for thermo-elastic preconditioning
     ! operator.  The matrix M, of second derivatives of displacements (strain
-    ! gradients), which depends on mesh geometry only, is calculated and 
+    ! gradients), which depends on mesh geometry only, is calculated and
     ! stored.  This is the displacement derivatives part of the preconditioning
-    ! operator, consisting of u_i,jj and u_j,ij in the linear elastic constitutive 
+    ! operator, consisting of u_i,jj and u_j,ij in the linear elastic constitutive
     ! equation:
-    !   
+    !
     ! Lame1 * u_i,jj + (Lame1 + Lame2) * u_j,ij = RHS
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
@@ -910,7 +907,7 @@ Contains
 
     if (.not. mech_precond_init) then
        ! This if block is really part of initialization and is only done once
-       
+
        call stop_timer ("Solid Mechanics")
        call start_timer("Initialization")
        call start_timer("Solid Mech Init")
@@ -947,7 +944,7 @@ Contains
                    if(jnode > 0) then
                       A_C_Vec(ndim*lnode+jdim) = ndim*(jnode-1)+jdim
                    else
-                      ! This connectivity should match that in NN_Gather_BoundaryData in 
+                      ! This connectivity should match that in NN_Gather_BoundaryData in
                       ! the preconditioner routines
                       A_C_Vec(ndim*lnode+jdim) = -(ndim*(-jnode-1)+jdim)
                    end if
@@ -957,7 +954,7 @@ Contains
        end do
 
        ! Fill the first 3 elements of the connectivity array
-       do inode = 1,nnodes    
+       do inode = 1,nnodes
           ! If the DOF is an x displacement component, element 2 is y, 3 is z
           A_C_Vec => FLATTEN(A_Conn(ndim*(inode-1)+1))
           A_C_Vec(1) = ndim * (inode - 1) + 1
@@ -980,12 +977,12 @@ Contains
        call stop_timer ("Solid Mech Init")
        call stop_timer ("Initialization")
        call start_timer("Solid Mechanics")
-       
+
        !NNC: call TIMER_START(TIMER_CYCLE)
     end if
 
     call start_timer ("Precondition")
-    
+
     ! Initialize
     A_Vec => FLATTEN(A_Elas)
     A_Vec = 0.0
@@ -997,7 +994,7 @@ Contains
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: Lame2_Node')
     allocate(Nvol(nnodes), stat=status)
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: Nvol')
-    ! 
+    !
     allocate(L1tmp(ncells), stat=status)
     if (status /= 0) call TLS_panic ( 'MECH_PRECONDITION: allocation error: L1tmp')
     allocate(L2tmp(ncells), stat=status)
@@ -1019,9 +1016,9 @@ Contains
     Lame1_Node = Lame1_Node/Nvol
     Lame2_Node = Lame2_Node/Nvol
 
-    ! Fill preconditioning matrix by multiplying displacement gradient factors in M by 
+    ! Fill preconditioning matrix by multiplying displacement gradient factors in M by
     ! elastic constants Lame1 and Lame2
-    do inode = 1,nnodes    
+    do inode = 1,nnodes
        nmax = SIZES(Vertex_Ngbr_All(inode))
        do idim = 1, ndim
           A_Vec => FLATTEN(A_Elas(ndim*(inode-1)+idim))
@@ -1066,9 +1063,9 @@ Contains
 
     TM_P => A_Elas
     TM_P_Map => A_Conn
-   
+
     call stop_timer("Precondition")
-    
+
   END SUBROUTINE MECH_PRECONDITION
 
   !-----------------------------------------------------------------------------
@@ -1076,7 +1073,7 @@ Contains
   SUBROUTINE PRECON_DISPLACEMENT_GRADIENTS()
     !=============================================================================
     !
-    !  Construct strain gradient matrix, M, for thermo-elastic preconditioning 
+    !  Construct strain gradient matrix, M, for thermo-elastic preconditioning
     !  operator
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
@@ -1093,7 +1090,7 @@ Contains
     integer, parameter :: nnt = ndim + 1
 
     ! Local variables
-    real(r8), dimension(ndim) :: Tcen, Fsign 
+    real(r8), dimension(ndim) :: Tcen, Fsign
     integer, dimension(ndim) :: Cvf
     integer, dimension(nnt) :: n
     integer, dimension(nnt-1) :: Tnode
@@ -1105,7 +1102,7 @@ Contains
     real(r8), Dimension(nnt,ndim) :: Tc
     ! Used for reordering M
     real(r8) :: M_Temp
-    ! Local node-node connectivity data 
+    ! Local node-node connectivity data
     integer, dimension(nnodes) :: NN_Sizes
     integer, pointer, dimension(:) :: Node_Ngbr
     ! Collated mesh connectivity data, vertex mapping only (nvc,ncells_tot)
@@ -1171,7 +1168,7 @@ Contains
     end do
     ! Collate the node neighbors
 
-    ! Get collated sizes 
+    ! Get collated sizes
     NN_Sizes = SIZES(Vertex_Ngbr_All_Orig)
     if (p_info%IOP) then
        allocate(NN_Sizes_Tot(nnodes_tot), stat = status)
@@ -1191,7 +1188,7 @@ Contains
        allocate(Node_Ngbr_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: Node_Ngbr_Tot')
-    call PGSLib_COLLATE (Node_Ngbr_Tot, Node_Ngbr) 
+    call PGSLib_COLLATE (Node_Ngbr_Tot, Node_Ngbr)
     if (p_info%IOP) then
        allocate(Vertex_Ngbr_Tot(nnodes_tot), stat = status)
     else
@@ -1248,12 +1245,12 @@ Contains
           A(:,:) = 0.0
           TNode(:) = 0
           inode = Mesh_Tot_Vertex(ivrtx,icell)
-          ! Get vertex numbers, control volume faces and vector polarity 
-          ! for this tet.  Accounting for degenerate cells makes this 
+          ! Get vertex numbers, control volume faces and vector polarity
+          ! for this tet.  Accounting for degenerate cells makes this
           ! kind of messy.  The control volume faces and normals do not
           ! change, but the node numbers do.
           select case (ivrtx)
-          case(1)  
+          case(1)
              n(2) = 2; n(3) = 4; n(4) = 5
              if (Cell_Shape_Tot(icell) == CELL_TET) n(2) = 3
              Cvf(1) = 1; Cvf(2) = 4; Cvf(3) = 8
@@ -1471,7 +1468,7 @@ Contains
     !  such that:
     !
     !           4
-    !         =====  
+    !         =====
     !         \\
     !  u_i,j = \\  A_jl u_il      where u_il are displacements at the nodes l
     !          //
@@ -1479,7 +1476,7 @@ Contains
     !         =====
     !          l=1
     !
-    !  adapted from The Finite Element Method, O.C. Zienkiewicz, Third Edition 
+    !  adapted from The Finite Element Method, O.C. Zienkiewicz, Third Edition
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
@@ -1495,7 +1492,7 @@ Contains
     integer :: idim, inode
 
     ! This mess is the determinant of
-    !   
+    !
     !   | 1 x1 y1 z1 |
     !   | 1 x2 y2 z2 |
     !   | 1 x3 y3 z3 |
@@ -1575,10 +1572,10 @@ Contains
     !---------------------------------------------------------------------------
     ! Purpose:
     !
-    !   Calculate Ax + B(x) - RHS = 0, where A represents a discrete operator for 
-    !   the thermomechanical equations of static equilibrium, B(x) represents the 
-    !   viscoplastic strain correction to the elastic stress, and RHS represents 
-    !   source terms that are due to thermal strains and volume changes from phase 
+    !   Calculate Ax + B(x) - RHS = 0, where A represents a discrete operator for
+    !   the thermomechanical equations of static equilibrium, B(x) represents the
+    !   viscoplastic strain correction to the elastic stress, and RHS represents
+    !   source terms that are due to thermal strains and volume changes from phase
     !   change, etc.  This is in the form of a vector of forces calculated from
     !   a surface integral over the control volumes.
     !
@@ -1613,7 +1610,7 @@ Contains
 
     ! If using reduced integration, then calculate only one stress per cell.  Otherwise
     ! calculate the elastic stress at the centroid of each controlvolume face within the cell.
-    if (stress_reduced_integration) then 
+    if (stress_reduced_integration) then
        ! This option is currently deprecated and not functional
        call TLS_fatal ('ELAS_VP_RESIDUAL: stress_reduced_integration is not currently a valid option')
     else
@@ -1665,7 +1662,7 @@ Contains
           !        SMech_IP(ip)%Plastic_Strain_Rate(:)  Plastic strain rate
           !        SMech_IP(ip)%Elastic_Stress(:,:)     Elastic stress
           !        Ipstress(:,:,ip)                     LHS stress (elastic stress + thermal ans PC stresses)
-          
+
           Call PLASTIC_STRAIN_INCREMENT(Ip_Pl_Inc,                               &
                                         SMech_IP(ip)%Plastic_Strain_Rate(:),     &
                                         SMech_IP(ip)%Elastic_Stress(:,:),        &
@@ -1731,7 +1728,7 @@ Contains
     Y = Y/cscale
 
     ! Add displacement constraints (contact and interface constraints) here.
-    
+
     call DISPLACEMENT_CONSTRAINTS(X,Y)
 
     Residual = Y - RHS
@@ -1781,12 +1778,12 @@ Contains
     call ELAS_VP_RESIDUAL (P_Past, Perturbed_X, Perturbed_Residual)
 
     ! Perform approximate "matvec"  (note sign!)
-    Y = (Perturbed_Residual - P_Residual) / pert  
+    Y = (Perturbed_Residual - P_Residual) / pert
 
     status = 0
 
   END SUBROUTINE VP_MATVEC
-  
+
  !!
  !! DEFINE_TM_DENSITY_PROPERTY
  !!
@@ -1794,79 +1791,43 @@ Contains
  !! material phase using the specified reference density and temperature
  !! values and the linear CTE function.
  !!
-  
-  subroutine define_tm_density_property (stat, errmsg)
-  
-    use parameter_module, only: nmat
-    use material_interop, only: void_material_index, material_to_phase
-    use property_data_module, only: isImmobile
-    use phase_property_table
+
+  subroutine define_tm_density_property(stat, errmsg)
+
     use scalar_func_class
-    use scalar_func_tools, only: is_const
     use tm_density, only: alloc_tm_density_func
-    
+
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errm
-    
-    integer :: m, ref_dens_id, ref_temp_id, cte_id, dens_id, phase_id
+
+    integer :: m, p
     real(r8) :: dens0, temp0, state(0)
-    class(scalar_func), allocatable :: temp0_fun, dens0_fun, cte_fun, rho_fun
-    
-    ASSERT(ppt_has_property('TM reference density'))
-    ref_dens_id = ppt_property_id('TM reference density')
-    
-    ASSERT(ppt_has_property('TM reference temperature'))
-    ref_temp_id = ppt_property_id('TM reference temperature')
-    
-    ASSERT(ppt_has_property('TM linear CTE'))
-    cte_id = ppt_property_id('TM linear CTE')
-    
-    call ppt_add_property ('TM density', dens_id)
-    
-    do m = 1, nmat
-      if (m == void_material_index .or. .not.isImmobile(m)) cycle
-      phase_id = material_to_phase(m)
-      ASSERT(phase_id > 0)
-      
-      !! Get the value of the (constant) reference density.
-      call ppt_get_phase_property (phase_id, ref_dens_id, dens0_fun)
-      ASSERT(allocated(dens0_fun))
-      ASSERT(is_const(dens0_fun))
-      dens0 = dens0_fun%eval(state)
-      
-      !! Get the value of the (constant) reference temperature.
-      call ppt_get_phase_property (phase_id, ref_temp_id, temp0_fun)
-      ASSERT(allocated(temp0_fun))
-      ASSERT(is_const(temp0_fun))
-      temp0 = temp0_fun%eval(state)
-      
-      !! Get the CTE function.
-      call ppt_get_phase_property (phase_id, cte_id, cte_fun)
+    class(scalar_func), allocatable :: cte_fun, rho_fun
+
+    do p = 1, matl_model%nphase_real
+      if (matl_model%is_fluid(p)) cycle
+      dens0 = matl_model%const_phase_prop(p, 'tm-ref-density')
+      temp0 = matl_model%const_phase_prop(p, 'tm-ref-temp')
+      call matl_model%alloc_phase_prop(p, 'tm-linear-cte', cte_fun)
       ASSERT(allocated(cte_fun))
-      
+
       !! Create the temperature-dependent density function.
-      call alloc_tm_density_func (rho_fun, dens0, temp0, cte_fun, stat, errm)
+      call alloc_tm_density_func(rho_fun, dens0, temp0, cte_fun, stat, errm)
       if (stat /= 0) then
-        errmsg = 'problem with the "TM linear CTE" property: ' // trim(errm)
+        errmsg = 'problem with the "tm-linear-cte" property: ' // trim(errm)
         return
       end if
-      
+
       !! Assign the density function as the TM density property.
-      if (ppt_has_phase_property(phase_id, dens_id)) then
-        stat = -1
-        errmsg = 'found conflicting "TM density" property for phase "' // &
-                 trim(ppt_phase_name(phase_id)) // '"'
-        return
-      end if
-      call ppt_assign_phase_property (phase_id, dens_id, rho_fun)
-    end do
-    
+      call matl_model%add_phase_prop(p, 'TM density', rho_fun)
+      end do
+
     stat = 0
     errmsg = ''
 
   end subroutine define_tm_density_property
-  
+
  !!
  !! COMPUTE_CELL_PROPERTY
  !!
@@ -1878,39 +1839,30 @@ Contains
  !! fraction data from MATL.  The void material (one with a MATERIAL namelist
  !! density of zero) contributes nothing to the property value; e.g., zero is
  !! returned for an entirely void cell.
- !! 
-  
-  subroutine compute_cell_property (prop, temp, value)
-  
-    use parameter_module, only: nmat
+ !!
+
+  subroutine compute_cell_property(prop, temp, value)
+
     use legacy_mesh_api,  only: ncells
-    use property_data_module, only: isImmobile
-    use phase_property_table
-    use material_interop, only: void_material_index, material_to_phase
     use matl_module, only: gather_vof
     use scalar_func_class
     use scalar_func_tools, only: is_const
-    
+
     character(*), intent(in) :: prop
     real(r8), intent(in) :: temp(:)
     real(r8), intent(out) :: value(:)
-    
-    integer :: m, j, phase_id, prop_id
+
+    integer :: m, j
     real(r8) ::vofm (ncells), state(1), mval
     class(scalar_func), allocatable :: prop_fun
-    
+
     ASSERT(size(temp) == ncells)
     ASSERT(size(value) == ncells)
-    
-    ASSERT(ppt_has_property(prop))
-    prop_id = ppt_property_id(prop)
-    
+
     value = 0.0_r8
-    do m = 1, nmat
-      if (m == void_material_index .or. .not.isImmobile(m)) cycle
-      phase_id = material_to_phase(m)
-      ASSERT(phase_id > 0)
-      call ppt_get_phase_property (phase_id, prop_id, prop_fun)
+    do m = 1, matl_model%nphase_real
+      if (matl_model%is_fluid(m)) cycle
+      call matl_model%alloc_phase_prop(m, prop, prop_fun)
       ASSERT(allocated(prop_fun))
       call gather_vof (m, vofm)
       if (is_const(prop_fun)) then

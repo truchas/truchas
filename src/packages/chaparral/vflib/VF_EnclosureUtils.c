@@ -39,33 +39,30 @@ void
 VF_InitializeEnclosures(int nenclosures)
 {
   int i, nbytes;
-  
-  if (nenclosures>num_enclosures) {
-    VF_DeleteEnclosures();
-    num_enclosures = 0;
-  }
-  if (num_enclosures==0) {
-    num_enclosures    = nenclosures;
-    nbytes            = sizeof(VFenclosure) * nenclosures;
-    VF_DATA_Enclosure = (VFenclosure *)VF_Newv(nbytes);
-    for (i=0; i<num_enclosures; i++) {
-      VF_DATA_Enclosure[i].id                  = NULL;
-      VF_DATA_Enclosure[i].initialized         = FALSE;
-      VF_DATA_Enclosure[i].npatches_g          = 0;
-      VF_DATA_Enclosure[i].npatches_l          = 0;
-      VF_DATA_Enclosure[i].smoothed            = 0;
-      VF_DATA_Enclosure[i].sym_method          = VF_SYMMETRIC_NONE;
-      VF_DATA_Enclosure[i].row                 = NULL;
+
+  /* Original function was a no-op if nenenclosures <= num_enclosures;
+   * function now always initializes the VF_DATA_Enclosure structure. */
+  VF_DeleteEnclosures();
+  num_enclosures    = nenclosures;
+  nbytes            = sizeof(VFenclosure) * nenclosures;
+  VF_DATA_Enclosure = (VFenclosure *)VF_Newv(nbytes);
+  for (i=0; i<num_enclosures; i++) {
+    VF_DATA_Enclosure[i].id                  = NULL;
+    VF_DATA_Enclosure[i].initialized         = FALSE;
+    VF_DATA_Enclosure[i].npatches_g          = 0;
+    VF_DATA_Enclosure[i].npatches_l          = 0;
+    VF_DATA_Enclosure[i].smoothed            = 0;
+    VF_DATA_Enclosure[i].sym_method          = VF_SYMMETRIC_NONE;
+    VF_DATA_Enclosure[i].row                 = NULL;
 #ifdef AZTEC
-      VF_DATA_Enclosure[i].data_org            = NULL;
-      VF_DATA_Enclosure[i].update_index        = NULL;
-      VF_DATA_Enclosure[i].external            = NULL;
-      VF_DATA_Enclosure[i].external_index      = NULL;
+    VF_DATA_Enclosure[i].data_org            = NULL;
+    VF_DATA_Enclosure[i].update_index        = NULL;
+    VF_DATA_Enclosure[i].external            = NULL;
+    VF_DATA_Enclosure[i].external_index      = NULL;
 #endif
-      VF_DATA_Enclosure[i].topology            = NULL;
-      VF_DATA_Enclosure[i].comm_plan.npartners = 0;
-      VF_DATA_Enclosure[i].comm_plan.partners  = NULL;
-    }
+    VF_DATA_Enclosure[i].topology            = NULL;
+    VF_DATA_Enclosure[i].comm_plan.npartners = 0;
+    VF_DATA_Enclosure[i].comm_plan.partners  = NULL;
   }
 }
 
@@ -96,6 +93,7 @@ VF_DeleteEnclosures(void)
 #endif
   }
   VF_Free(VF_DATA_Enclosure);
+  num_enclosures = 0;
 }
 
 int

@@ -65,9 +65,7 @@ CONTAINS
                                       mac_projection_precond_iter,   &
                                       projection_precond_iterations, &
                                       projection_iterations
-    use property_module,        only: Get_User_Material_ID
-    use property_data_module,   only: Material_Name, isImmobile
-    use property_module,        only: ENTHALPY_DENSITY_MATERIAL, DENSITY_MATERIAL
+    use material_model_driver,  only: matl_model
     use time_step_module,       only: cycle_number, t
     use viscous_data_module,    only: viscous_iterations
     use zone_module,            only: Zone
@@ -76,6 +74,7 @@ CONTAINS
                                       STRESS_STRAIN_INVARIANTS
     use solid_mechanics_input,  only: solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
+    use scalar_func_class
 
     ! Local Variables
     character(LEN = 128) :: string, string2
@@ -88,6 +87,7 @@ CONTAINS
     real(r8), dimension(nmat) :: Material_Enthalpy, Material_KE, Material_Volume, Material_Mass
     real(r8) :: Material_Momentum(ndim,nmat)
     real(r8) :: Total_Enthalpy, total_KE, total_mass, Total_Momentum(ndim), total_volume
+    class(scalar_func), allocatable :: f
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -166,7 +166,7 @@ CONTAINS
     KE = 0.5_r8*KE
 
     ! Loop over each material
-    MATERIAL_SUMS: do m = 1,nmat
+    MATERIAL_SUMS: do m = 1, matl_model%nphase_real  ! nmat or nmat-1 if have_void
 
        ! Gather vof for this material
        call GATHER_VOF (m, Tmp)
@@ -177,7 +177,7 @@ CONTAINS
        if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
        ! Sum material mass.
-       Matl_Mass = Matl_Vol*DENSITY_MATERIAL(m)
+       Matl_Mass = Matl_Vol*matl_model%const_phase_prop(m, 'density')
        Material_Mass(m) = PGSLIB_GLOBAL_SUM(Matl_Mass)
        if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
 
@@ -188,18 +188,19 @@ CONTAINS
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
           Material_Momentum(n,m) = PGSLIB_GLOBAL_SUM(Matl_Mass*Zone%Vc(n))
-          if (ABS(Material_Momentum(n,m)) <= alittle .or. isImmobile(m)) Material_Momentum(n,m) = 0.0_r8
+          if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
 
        ! Compute material kinetic energy.
        Material_KE(m) = PGSLIB_GLOBAL_SUM(Matl_Mass*KE)
-       if (ABS(Material_KE(m)) <= alittle .or. isImmobile(m)) Material_KE(m) = 0.0_r8
+       if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
        total_KE = total_KE + Material_KE(m)
 
        ! Get the material enthalpy.
+       call matl_model%alloc_phase_prop(m, 'enthalpy', f)
        ENTHALPY_LOOP: do n=1,ncells
-         Tmp(n) = Matl_Vol(n) * ENTHALPY_DENSITY_MATERIAL(m,Zone(n)%Temp)
+         Tmp(n) = Matl_Vol(n) * f%eval([Zone(n)%Temp])
        end do ENTHALPY_LOOP
 
        ! Accumulate the material enthalpy.
@@ -211,10 +212,10 @@ CONTAINS
        total_enthalpy = total_enthalpy + Material_Enthalpy(m)
 
        ! Write out the summaries for this material.
-       write (string, 25) Get_User_Material_ID(m), TRIM(material_name(m)), Material_Volume(m),      &
+       write (string, 25) TRIM(matl_model%phase_name(m)), Material_Volume(m),      &
                                  Material_Mass(m), (Material_Momentum(n,m),n=1,ndim), &
                                  Material_KE(m), Material_Enthalpy(m)
-25     format (2x,i2,2x,a8,1x,1pe11.4,1x,1pe11.4,1x,'(',1pe11.4,',',1pe11.4,',', &
+25     format (6x,a8,1x,1pe11.4,1x,1pe11.4,1x,'(',1pe11.4,',',1pe11.4,',', &
                1pe11.4,')',1pe11.4,1x,1pe11.4)
        call TLS_info (string)
 

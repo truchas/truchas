@@ -16,9 +16,7 @@ set(INPUT_FILES
          input/bc_input_module.F90
          input/body_input_module.F90
          input/input_driver.F90
-         input/interfaces_input_module.F90
          input/lin_solver_input.F90
-         input/material_input_module.F90
          input/nonlin_solver_input.F90
          input/numerics_input_module.F90
          input/outputs_input_module.F90
@@ -26,7 +24,6 @@ set(INPUT_FILES
          input/region_data.F90
          input/region_input_module.F90
          input/solid_mechanics_namelist.F90
-         input/legacy_flow_namelist.F90
 )
 
 set(INPUT_FPP_FLAGS 

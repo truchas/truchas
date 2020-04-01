@@ -80,7 +80,7 @@ module integer_set_type
   end type set_item
 
   type, public :: integer_set_iterator
-    class(set_item), pointer, private :: item => null()
+    type(set_item), pointer, private :: item => null()
   contains
     procedure :: next => iter_next
     procedure :: at_end => iter_at_end

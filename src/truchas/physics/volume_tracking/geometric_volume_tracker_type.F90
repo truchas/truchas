@@ -49,13 +49,16 @@ contains
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 
     use parameter_list_type
-    use property_module, only: get_truchas_material_id
+    use material_model_driver, only: matl_model
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
 
     class(geometric_volume_tracker), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat, liq_matid(:)
     type(parameter_list), intent(inout) :: params
+    character(:), allocatable :: priority(:)
     integer :: i, j, k
 
     this%mesh => mesh
@@ -70,10 +73,11 @@ contains
 
     ! convert user material ids to array index
     if (params%is_vector('material_priority')) then
-      call params%get('material_priority', this%priority)
-      do i = 1,size(this%priority)
-        if (this%priority(i) < 1) cycle ! solid (-1) is handled later
-        this%priority(i) = findloc(liq_matid, get_truchas_material_id(this%priority(i)))
+      call params%get('material_priority', priority)
+      allocate(this%priority(size(priority)))
+      do i = 1,size(priority)
+        if (priority(i) == 'SOLID') cycle ! solid is handled later
+         this%priority(i) = findloc(liq_matid, matl_model%phase_index(priority(i)), dim=1)
 
         ! make sure we found a liquid material
         ! TODO: need better error handling here
@@ -84,7 +88,7 @@ contains
       ! use a material number of -1 to indicate solid.
       ! Internally, if solid is present it is the last material
       if (this%nmat > this%nfluid) then
-        where (this%priority == -1) this%priority = this%nmat
+        where (priority == 'SOLID') this%priority = this%nmat
       end if
     else
       this%priority = [(i, i=1,this%nmat)]
@@ -109,7 +113,7 @@ contains
         this%bc_index(j) = i
         k = this%mesh%fcell(1,i)
         this%local_face(j) = this%mesh%xcface(k) - 1 + &
-            findloc(this%mesh%cface(this%mesh%xcface(k):this%mesh%xcface(k+1)-1), i)
+            findloc(this%mesh%cface(this%mesh%xcface(k):this%mesh%xcface(k+1)-1), i, dim=1)
         j = j + 1
       end if
     end do
@@ -208,7 +212,9 @@ contains
   subroutine normals(this, vof)
 
     use flow_operators, only: gradient_cc
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
     intrinsic :: norm2
 
     class(geometric_volume_tracker), intent(inout) :: this
@@ -231,8 +237,8 @@ contains
       this%normal(:,:,i) = -this%normal(:,:,i)
       ! enforce consistency for two materials
       if (c == 2) then
-        j = findloc(hasvof,.true.)
-        k = findloc(hasvof,.true.,back=.true.)
+        j = findloc(hasvof,.true.,dim=1)
+        k = findloc(hasvof,.true.,dim=1,back=.true.)
         this%normal(:,k,i) = -this%normal(:,j,i)
       endif
 
@@ -315,7 +321,9 @@ contains
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
       flux_volume, locator_error_message)
 
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
     use locate_plane_os_function
     use plane_type
     use cell_geom_type
@@ -358,7 +366,7 @@ contains
     end do
 
     ! Compute the advection volume for the last material.
-    nlast = priority(findloc(vof(priority) >= cutoff, .true., back=.true.))
+    nlast = priority(findloc(vof(priority) >= cutoff, .true., dim=1, back=.true.))
     ASSERT(nlast <= size(flux_volume, dim=1))
     do f = 1,cell%nfc
       ! Recalculate the total flux volume for this face.

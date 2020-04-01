@@ -45,6 +45,9 @@ MODULE FLUID_DATA_MODULE
   ! Value of pressure in the void.
   real(r8), public, save :: void_pressure
 
+  ! Void collapse parameter
+  real(r8), public, save :: sound_speed
+
   ! Boussinesq approximation
   logical, public, save :: boussinesq_approximation
 

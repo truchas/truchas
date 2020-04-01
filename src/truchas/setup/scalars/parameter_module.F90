@@ -25,9 +25,6 @@ MODULE PARAMETER_MODULE
   ! Number of physical dimensions
   integer, parameter :: ndim = 3
 
-  ! Number of rotation axes
-  integer, parameter :: nrot = 2*ndim - 3
-
   ! Maximum number of outputs
   integer, parameter :: mops = 21
 
@@ -53,10 +50,7 @@ MODULE PARAMETER_MODULE
 
   ! Interface (body) initialization parameters
   integer, parameter :: mtype = 10
-  integer, parameter :: msurf = 16
   integer, parameter :: mbody = 50
-  integer, parameter :: mtab  = 50
-  integer, parameter :: mcoef =  3
   integer, parameter :: mphi  =  5
 
   integer, parameter :: mregion =  50

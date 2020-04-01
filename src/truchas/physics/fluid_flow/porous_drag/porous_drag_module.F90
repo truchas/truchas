@@ -47,11 +47,11 @@ CONTAINS
     !
     !======================================================================= 
     use fluid_data_module,    only: fluidVof, Drag_Coefficient
-    use matl_module,          only: GATHER_VOF
+!    use matl_module,          only: GATHER_VOF
     use parameter_module,     only: nmat
     use legacy_mesh_api,      only: ncells, ndim
-    use porous_drag_data,     only: porous_implicitness
-    use property_data_module, only: Permeability_Constant, isImmobile
+    use porous_drag_data,     only: porous_implicitness, C => Permeability_Constant
+    use flow_property_module,      only: isImmobile
     use zone_module,          only: Zone
 
     ! Argument List
@@ -59,11 +59,10 @@ CONTAINS
     real(r8), dimension(ndim,ncells), intent(INOUT) :: Mom_Delta
 
     ! Local Variables
-    integer :: status
     integer :: m, n
     real(r8) :: tweight
-    real(r8), dimension(:),   allocatable :: Solid_Vof
-    real(r8), dimension(:,:), allocatable :: C
+!    real(r8), dimension(:),   allocatable :: Solid_Vof
+!    real(r8), dimension(:,:), allocatable :: C
 
     ! Cutoff value for the drag coefficient
     real(r8) :: drag_cutoff = 1.0e+6
@@ -73,41 +72,47 @@ CONTAINS
     ! Start Timer
     call start_timer("Porous Drag")
 
-    ALLOCATE (Solid_Vof(ncells), STAT = status)
-    if (status /= 0) call TLS_panic ('POROUS_DRAG: Solid_Vof(ncells) allocation failed')
-    ALLOCATE (C(ndim,ncells), STAT = status)
-    if (status /= 0) call TLS_panic ('POROUS_DRAG: C(ndim,ncells) allocation failed')
-
-    C = 0.0_r8
+!    ALLOCATE (Solid_Vof(ncells), STAT = status)
+!    if (status /= 0) call TLS_panic ('POROUS_DRAG: Solid_Vof(ncells) allocation failed')
+!    ALLOCATE (C(ndim,ncells), STAT = status)
+!    if (status /= 0) call TLS_panic ('POROUS_DRAG: C(ndim,ncells) allocation failed')
+!
+!    C = 0.0_r8
 
     tweight = 1.0_r8 - porous_implicitness
 
-    ! This is a hack (for the moment), but because the code allows
-    ! Permeability_Constant's to be a function of material, I'll average
-    ! over different materials in each cell to get an average C(ndim,ncells)
-    do m = 1,nmat
-       if (.not.isImmobile(m)) CYCLE
-       call GATHER_VOF (m, Solid_Vof)
-       do n = 1,ndim
-          C(n,:) = C(n,:) + Solid_Vof(:) * Permeability_Constant(n,m)
-       end do
-    end do
-    do n = 1,ndim
-       where (fluidVof < 1.0_r8) C(n,:) = C(n,:)/(1.0_r8-fluidVof(:))
-    end do
+! NNC, Oct 2019. Permeability constant now a porous drag model parameter and
+! is no longer a per-material property, which never made any sense. This makes
+! the following material averaging moot under the assumption of a single solid
+! material in mixed solid-fluid cells with the solid_vof = 1 - fluid_vof, which
+! would be the case for actual applications.
+!
+!    ! This is a hack (for the moment), but because the code allows
+!    ! Permeability_Constant's to be a function of material, I'll average
+!    ! over different materials in each cell to get an average C(ndim,ncells)
+!    do m = 1,nmat
+!       if (.not.isImmobile(m)) CYCLE
+!       call GATHER_VOF (m, Solid_Vof)
+!       do n = 1,ndim
+!          C(n,:) = C(n,:) + Solid_Vof(:) * Permeability_Constant(n,m)
+!       end do
+!    end do
+!    do n = 1,ndim
+!       where (fluidVof < 1.0_r8) C(n,:) = C(n,:)/(1.0_r8-fluidVof(:))
+!    end do
 
     ! Calculate A, according to Voller & Prakash
     ! Increment Velocity Delta for porous drag effects.
     do n = 1,ndim
        where (fluidVof > 0.0_r8) 
           Drag_Coefficient(n,:) = &
-               MIN(C(n,:) * (1.0_r8 - fluidVof(:))**2 / fluidVof(:)**3, drag_cutoff)
+               MIN(C(n) * (1.0_r8 - fluidVof(:))**2 / fluidVof(:)**3, drag_cutoff)
           Mom_Delta(n,:) =  Mom_Delta(n,:) &
                - tweight* dt*fluidVof(:)*Drag_Coefficient(n,:)*Zone%Vc_old(n)
        endwhere
     end do
 
-    DEALLOCATE (Solid_Vof, C)
+!    DEALLOCATE (Solid_Vof, C)
 
     ! Stop Timer
     call stop_timer("Porous Drag")

@@ -167,7 +167,7 @@ void     Daxpy2(VFenclosure *e, double a, double *x, double *y);
 void     Daxpy(int n, double a, double *x, double *y);
 void     Dcopy(int n, double *x, double *y);
 
-void     VF_GetMatrix(int, int*, int*, float*, float*, float*);
+void     VF_GetMatrix(int, int*, int*, float*, int, float*, int, float*);
 void     VF_GetRowCounts(int, int, int*);
 void     VF_GetRowCounts_Aux(int, int*);
 

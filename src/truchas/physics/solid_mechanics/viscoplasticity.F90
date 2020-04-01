@@ -28,6 +28,7 @@ Module VISCOPLASTICITY
   use time_step_module, only: dt
   use VP_model_class
   use solid_mechanics_mesh, only: ncomps
+  use material_model_driver, only: matl_model
   use truchas_logging_services
   implicit none
   private
@@ -74,22 +75,16 @@ Contains
 
   subroutine viscoplasticity_init (plastic)
 
-    use parameter_module, only: nmat
-    use material_interop, only: void_material_index, material_to_phase
-    use phase_property_table
     use viscoplastic_model_namelist
 
     logical, intent(out) :: plastic
 
-    integer :: m, phase_id
+    integer :: m!, phase_id
 
-    allocate(vp(nmat))
+    allocate(vp(matl_model%nphase))
     plastic = .false.
-    do m = 1, nmat
-      if (m == void_material_index) cycle
-      phase_id = material_to_phase(m)
-      ASSERT(phase_id > 0)
-      vp(m)%model => get_VP_model(ppt_phase_name(phase_id))
+    do m = 1, matl_model%nphase_real
+      vp(m)%model => get_VP_model(matl_model%phase_name(m))
       plastic = plastic .or. associated(vp(m)%model)
     end do
 
@@ -430,10 +425,7 @@ Contains
 
   subroutine viscoplastic_strain_rate_all (stress, temp, strain_rate)
 
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
-    use property_data_module, only: isImmobile
-    use material_interop, only: void_material_index
     use matl_module, only: gather_vof
     use time_step_module, only: dt
 
@@ -449,8 +441,8 @@ Contains
     ASSERT(size(strain_rate) == ncells)
 
     strain_rate = 0.0_r8
-    do m = 1, nmat
-      if (m == void_material_index .or. .not.isImmobile(m)) cycle
+    do m = 1, matl_model%nphase_real
+      if (matl_model%is_fluid(m)) cycle
       if (.not.associated(vp(m)%model)) cycle
       call gather_vof (m, vofm)
       do j = 1, ncells

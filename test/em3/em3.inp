@@ -22,6 +22,7 @@ the ball are not conforming.
 /
 
 &PHYSICS
+  materials = 'conductor'
   heat_transport = .true.
   electromagnetics = .true.
 /
@@ -64,7 +65,7 @@ The conducting ball.
 &BODY
   Surface_Name = 'from mesh file'
   Mesh_Material_Number = 1
-  Material_Number = 1
+  Material_Name = 'conductor'
   Temperature = 300.0
 /
 
@@ -86,21 +87,9 @@ Surface of the ball
 /
 
 &MATERIAL
-  Material_Number = 1
-  Material_Name = 'conductor'
-  Material_Feature = 'background'
-  Density = 200.0
-/
-
-&PHASE
   name = 'conductor'
-  property_name(1) = 'density',       property_constant(1) = 200.0
-  property_name(2) = 'specific heat', property_constant(2) = 150.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-  property_name(4) = 'electrical conductivity', property_constant(4) = 1.0e5
-/
-
-&MATERIAL_SYSTEM
-  name = 'conductor'
-  phases = 'conductor'
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity = 1.0e5
 /

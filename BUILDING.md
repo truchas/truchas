@@ -10,11 +10,10 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
     - Intel Fortran and C/C++:
         - version 17.0.7 (anything 17.0.1 or later should be okay)
         - version 18.0.5 (anything 18.0.2 or later should be okay)
-        - version 19 is **not supported** (known compiler problems)
+        - version 19.1.0. Version 19.0.x **will not** work due to compiler bugs.
     - NAG Fortran (with GNU C/C++):
-        - version 6.0, builds 1067 or 1071
-        - version 6.1, build 6149 or later (preferred version)
-        - version 6.2, build 6218 or later (preferred version)
+        - version 6.1 (build 6149 or later preferred)
+        - version 6.2 (build 6252 or later preferred)
         - most any version of GNU C/C++ should be okay
     - GFortran is *not* currently supported due to incomplete and/or flawed
       support for some Fortran 2003 features. There are GFortran configuration
@@ -36,9 +35,9 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v9" bundle of TPLs;
-do a `git checkout v9` after cloning the TPL repository. See its README file
-for further instructions.
+on GitLab. This version of Truchas is tested against the "v10" bundle of TPLs;
+do a `git checkout v10` after cloning the TPL repository. *v10 is required if
+using the Intel 19.1 compiler*. See its README file for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
 straightforward. You create a build directory, run cmake from that directory,

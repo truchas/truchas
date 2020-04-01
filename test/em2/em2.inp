@@ -17,6 +17,7 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 /
 
 &PHYSICS
+  materials = 'conductor'
   heat_transport = .true.
   electromagnetics = .true.
 /
@@ -57,7 +58,7 @@ Core of the conducting cylinder
 &BODY
   Surface_Name = 'from mesh file'
   Mesh_Material_Number = 11
-  Material_Number = 1
+  Material_Name = 'conductor'
   Temperature = 301.0
 /
 
@@ -65,7 +66,7 @@ Outer layer of the conducting cylinder
 &BODY
   Surface_Name = 'from mesh file'
   Mesh_Material_Number = 12
-  Material_Number = 1
+  Material_Name = 'conductor'
   Temperature = 301.0
 /
 
@@ -77,19 +78,12 @@ Outer layer of the conducting cylinder
 /
 
 &MATERIAL
-  Material_Number = 1
-  Material_Name = 'conductor'
-  Material_Feature = 'background'
-  Density = 200.0
-/
-
-&PHASE
   name = 'conductor'
-  property_name(1) = 'density',       property_constant(1) = 200.0
-  property_name(2) = 'specific heat', property_constant(2) = 150.0
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1
-  property_name(4) = 'electrical conductivity', property_function(4) = 'sigma'
-  property_name(5) = 'magnetic susceptibility', property_function(5) = 'mag-susc'
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity_func = 'sigma'
+  magnetic_susceptibility_func = 'mag-susc'
 /
 
 &FUNCTION
@@ -106,9 +100,4 @@ Outer layer of the conducting cylinder
   poly_coefficients   = 1.0, -4.0e-2, 6.0e-4, -4.0e-6, 1.0e-8
   poly_exponents(1,:) =   0,       1,      2,       3,      4
   poly_refvars = 300.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'conductor'
-  phases = 'conductor'
 /

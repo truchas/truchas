@@ -18,6 +18,7 @@ core.
 /
 
 &PHYSICS
+  materials = 'solid', 'VOID'
   heat_transport = .true.
 /
 
@@ -41,6 +42,7 @@ core.
   max_nlk_itr        = 5
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  void_temperature   = 1.0
 /
 
 !! RADIATION WITHIN THE CASTING CAVITY
@@ -92,7 +94,7 @@ core.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'solid'
   temperature = 1.0
 /
 
@@ -101,27 +103,15 @@ core.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 1
+  material_name = 'solid'
   temperature = 1.0
 /
 
 &MATERIAL
-  material_number  = 1
-  material_name    = 'solid'
-  material_feature = 'background'
-  density          = 4.0
-/
-
-&PHASE
   name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.5
-/
-
-&MATERIAL_SYSTEM
-  name   = 'solid'
-  phases = 'solid'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.5
 /
 
 !! THE VOID-FILLED CASTING CAVITY
@@ -129,13 +119,6 @@ core.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 3
-  material_number = 2
+  material_name = 'VOID'
   temperature = 1.0
-/
-
-&MATERIAL
-  material_number = 2
-  material_name   = 'void'
-  density         = 0.0
-  void_temperature = 1.0
 /

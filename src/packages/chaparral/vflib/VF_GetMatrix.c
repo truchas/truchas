@@ -6,17 +6,23 @@
  *
  *  VF_GetMatrix -- Extracts the view factor matrix in CSR format
  *
- *    encl       enclosure number
- *    vf_cnt     number of nonzero view factors in each row
- *    vf_index   column indices of the nonzero view factors
- *    vf_data    nonzero view factors stored by row
- *    vf_diag    if not NULL the diagonal elements of the matrix are returned
- *               in this array, including zero values, and excluded from the
- *               vf_index/vf_data arrays.
- *    vf_virt    if not NULL the view factors in the virtual patch column are
- *               are returned in this array, including implicit zero values,
- *               and excluded from the vf_index/vf_data arrays.  In addition,
- *               no data is returned for the virtual patch row.
+ *    encl            enclosure number
+ *    vf_cnt          number of nonzero view factors in each row
+ *    vf_index        column indices of the nonzero view factors
+ *    vf_data         nonzero view factors stored by row
+ *    write_vf_diag   if non-zero, the diagonal elements of the matrix are
+ *                    written to the vf_diag array.  Otherwise, no data is written.
+ *    vf_diag         if write_vf_diag is non-zero, the diagonal elements of the
+ *                    matrix are returned in this array, including zero values, and
+ *                    excluded from the vf_index/vf_data arrays.
+ *    write_vf_virt   if non-zero, the view factors in the virtual patch column are
+ *                    written to the vf_virt array.  Othersie, no data is written.
+ *                    vf_diag array. Otherwise, no data will be written.
+ *    vf_virt         if write_vf_virt is non-zero, the view factors in the virtual
+ *                    patch column are are returned in this array, including
+ *                    implicit zero values, and excluded from the vf_index/vf_data
+ *                    arrays.  In addition, no data is returned for the virtual
+ *                    patch row.
  *
  *  The row for each patch is returned on the process the patch was passed to
  *  VF_DefineEnclosure, and in the same order as the global_ids array.  The
@@ -27,7 +33,7 @@
  *
  *  The virtual surface patch must be assigned the largest global id.  In
  *  addition it seems to be conventional for it to be the last patch on the
- *  last process.  If this is the case, and a non-NULL pointer for vf_virt
+ *  last process.  If this is the case, and a non-zero value for write_vf_virt
  *  is passed, the final entry of vf_cnt, vf_diag, and vf_virt (the one
  *  corresponding to the virtual surface) is never referenced and thus those
  *  arrays can be allocated a length 1 less than normal.  So the matrix
@@ -65,7 +71,7 @@
 
 void
 VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
-             float vf_diag[], float vf_virt[])
+             int write_vf_diag, float vf_diag[], int write_vf_virt, float vf_virt[])
 {
   int i, j, k, n, proc, size, mode, cnt, offset, virt, self, err;
   int *orig_proc, *dest_proc, *index, *row_index, *cnt_g, *index_map, host_npatches, npatches_l;
@@ -79,14 +85,14 @@ VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
   if (VFLIB_Size > 1) {
 
     mode = 0;
-    if (vf_diag!=NULL) {
+    if (write_vf_diag) {
       mode = mode|VF_MATRIX_EXCL_DIAG;
       diag_g = VF_Newf(e->npatches_g);
     } else {
       diag_g = NULL;
       self = -1;
     }
-    if (e->partial&&(vf_virt!=NULL)) {
+    if (e->partial && write_vf_virt) {
       mode = mode|VF_MATRIX_EXCL_VIRT;
       virt_g = VF_Newf(e->npatches_g);
       virt = e->npatches_g - 1; /* the global index of the virtual patch */
@@ -241,7 +247,7 @@ VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
     VF_Free(dest_proc);
 
     /* ASSEMBLE THE MATRIX DIAGONAL IF REQUESTED */
-    if (vf_diag!=NULL) {
+    if (write_vf_diag) {
       VF_ExchangeFloat(diag_g);
       for (j=0; j<host_npatches; j++) {
         vf_diag[j] = diag_g[e->host2vflib_map[j]];
@@ -250,7 +256,7 @@ VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
     }
 
     /* ASSEMBLE THE VIRTUAL MATRIX COLUMN IF REQUESTED */
-    if (vf_virt!=NULL) {
+    if (write_vf_virt) {
       if (e->partial) {
         VF_ExchangeFloat(virt_g);
         for (j=0; j<host_npatches; j++) {
@@ -284,8 +290,8 @@ VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
   } else {
 #endif
     host_npatches = e->host_npatches;
-    if (vf_diag==NULL) self = -1;
-    if (e->partial&&(vf_virt!=NULL)) {
+    if (!write_vf_diag) self = -1;
+    if (e->partial && write_vf_virt) {
       virt = e->npatches_g - 1; /* the global index of the virtual patch */
       /* adjust the number of patches to exclude the virtual patch if possible */
       if (e->host2vflib_map[host_npatches-1]==virt) host_npatches--;
@@ -311,8 +317,8 @@ VF_GetMatrix(int encl, int vf_cnt[], int vf_index[], float vf_data[],
     for (j=0, size=0; j<host_npatches; j++) {
       n = e->host2vflib_map[j];
       row = &(e->row[n]);  /* assume rows are indexed by global index */
-      if (vf_virt!=NULL) vf_virt[j] = 0.0;
-      if (vf_diag!=NULL) {
+      if (write_vf_virt) vf_virt[j] = 0.0;
+      if (write_vf_diag) {
         self = n;
         vf_diag[j] = 0.0;
       }

@@ -133,7 +133,9 @@ module unstr_mesh_type
   use parallel_communication
   use bitfield_type
   use cell_topology
+#ifdef NO_2008_FINDLOC
   use f08_intrinsics
+#endif
   implicit none
   private
 
@@ -239,7 +241,7 @@ contains
           case (4)
             associate (face_list => TET4_FACES(TET4_XFACE(k):TET4_XFACE(k+1)-1))
               do j = 1, size(cell_nodes)
-                if (findloc(face_list, j) == 0) then
+                if (findloc(face_list, j, dim=1) == 0) then
                   this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
                       abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
                       this%normal(:,faces(k))/this%area(faces(k)))))
@@ -249,7 +251,7 @@ contains
           case (5)
             associate (face_list => PYR5_FACES(PYR5_XFACE(k):PYR5_XFACE(k+1)-1))
               do j = 1, size(cell_nodes)
-                if (findloc(face_list, j) == 0) then
+                if (findloc(face_list, j, dim=1) == 0) then
                   this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
                       abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
                       this%normal(:,faces(k))/this%area(faces(k)))))
@@ -259,7 +261,7 @@ contains
           case (6)
             associate (face_list => WED6_FACES(WED6_XFACE(k):WED6_XFACE(k+1)-1))
               do j = 1, size(cell_nodes)
-                if (findloc(face_list, j) == 0) then
+                if (findloc(face_list, j, dim=1) == 0) then
                   this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
                       abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
                       this%normal(:,faces(k))/this%area(faces(k)))))
@@ -269,7 +271,7 @@ contains
           case (8)
             associate (face_list => HEX8_FACES(HEX8_XFACE(k):HEX8_XFACE(k+1)-1))
               do j = 1, size(cell_nodes)
-                if (findloc(face_list, j) == 0) then
+                if (findloc(face_list, j, dim=1) == 0) then
                   this%face_normal_dist(faces(k)) = min(this%face_normal_dist(faces(k)), &
                       abs(dot_product(this%x(:,cell_nodes(j))-this%face_centroid(:,faces(k)), &
                       this%normal(:,faces(k))/this%area(faces(k)))))

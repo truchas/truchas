@@ -20,24 +20,25 @@ contains
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
-    use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
+    use input_utilities, only: seek_to_namelist, NULL_R, NULL_I, NULL_C
     use string_utilities, only: i_to_c
-    use parameter_module, only: nmat
+    use material_model_driver, only: matl_model
     use truchas_logging_services
 
     integer, intent(in) :: lun
 
-    integer :: ios, n
+    integer :: ios, n, j
     logical :: found
     character(80) :: iom
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: vol_track_subcycles, material_priority(16), fischer_dim
+    integer  :: vol_track_subcycles, fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection, void_collapse
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
     real(r8) :: void_collapse_relaxation
+    character(32) :: material_priority(16)
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
@@ -59,11 +60,11 @@ contains
     if (.not.found) call TLS_fatal('FLOW namelist not found')
 
     !! Default values
-    track_interfaces = (nmat > 1)
+    track_interfaces = (matl_model%nphase > 1)
     nested_dissection = .true.
     vol_track_subcycles = NULL_I
     vol_frac_cutoff = NULL_R
-    material_priority = NULL_I
+    material_priority = NULL_C
 
     inviscid = .false.
     viscous_implicitness = NULL_R
@@ -107,8 +108,13 @@ contains
     call plist%set('track_interfaces', track_interfaces)
     call plist%set('nested_dissection', nested_dissection)
 
-    n = count(material_priority /= NULL_I)
+    n = count(material_priority /= NULL_C)
     if (n > 0) then
+      do j = 1, n
+        if (material_priority(j) == 'SOLID') cycle
+        if (matl_model%phase_index(material_priority(j)) == 0) &
+            call TLS_fatal('unknown material for MATERIAL_PRIORITY: ' // trim(material_priority(j)))
+      end do
       call plist%set('material_priority', material_priority(:n))
     end if
 

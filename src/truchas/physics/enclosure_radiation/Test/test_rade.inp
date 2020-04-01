@@ -1,0 +1,87 @@
+&PHYSICAL_CONSTANTS
+  absolute_zero = 0.0
+  stefan_boltzmann = 1.0
+/
+
+&MESH
+  mesh_file = 'mesh.g'
+  coordinate_scale_factor = 2.0
+/
+
+&FUNCTION
+  name = 'exterior eps'
+  type = 'polynomial'
+  poly_coefficients = 0.8
+  poly_exponents = 0
+/
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Face-based enclosures !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+&ENCLOSURE_RADIATION
+  name = 'exterior_face'
+  enclosure_file = 'test_rade_exterior_face.nc'
+  ambient_constant = 6.5
+  coord_scale_factor = 2.0
+  error_tolerance = 1.0e-9
+/
+
+&ENCLOSURE_SURFACE
+  name = 'exterior surface (face)'
+  enclosure_name = 'exterior_face'
+  face_block_ids = 3
+  emissivity_function = 'exterior eps'
+/
+
+
+&ENCLOSURE_RADIATION
+  name = 'interior_face'
+  enclosure_file = 'test_rade_interior_face.nc'
+  ambient_constant = 1.0
+  coord_scale_factor = 2.0
+  error_tolerance = 1.0e-9
+/
+
+&ENCLOSURE_SURFACE
+  name = 'interior surface (face)'
+  enclosure_name = 'interior_face'
+  face_block_ids = 2
+  emissivity_constant = 0.8
+/
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Patch-based enclosures !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+&ENCLOSURE_RADIATION
+  name = 'exterior_patch'
+  enclosure_file = 'test_rade_exterior_patch.nc'
+  ambient_constant = 6.5
+  coord_scale_factor = 2.0
+  error_tolerance = 1.0e-9
+/
+
+&ENCLOSURE_SURFACE
+  name = 'exterior surface (patch)'
+  enclosure_name = 'exterior_patch'
+  face_block_ids = 3
+  emissivity_function = 'exterior eps'
+/
+
+
+&ENCLOSURE_RADIATION
+  name = 'interior_patch'
+  enclosure_file = 'test_rade_interior_patch.nc'
+  ambient_constant = 1.0
+  coord_scale_factor = 2.0
+  error_tolerance = 1.0e-9
+/
+
+&ENCLOSURE_SURFACE
+  name = 'interior surface (patch)'
+  enclosure_name = 'interior_patch'
+  face_block_ids = 2
+  emissivity_constant = 0.8
+/

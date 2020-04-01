@@ -93,8 +93,7 @@ contains
 
     use parameter_module, only: mat_slot
     use legacy_mesh_api, only: ncells
-    use property_data_module, only: isImmobile
-    use property_module, only: density_material
+    use flow_property_module, only: density_material, isImmobile
     use matl_module, only: Matl
 
     real(r8), intent(out) :: rho(:)

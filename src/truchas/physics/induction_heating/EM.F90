@@ -34,7 +34,7 @@ contains
 
     use restart_variables, only: restart
     use restart_driver, only: restart_joule_heat
-    use property_module, only:  EM_permittivity, EM_permeability, EM_conductivity
+    use EM_properties
 
     real(kind=rk), intent(in) :: t
 
@@ -108,57 +108,21 @@ contains
     call TLS_info (' Electromagnetics initialized.')
 
   end subroutine initialize_EM
-  
+
   !! This auxillary routine ensures that the EM material properties are
   !! defined for every material phase.  Where necessary it assigns constant
   !! default values in keeping with legacy behavior: 0 for conductivity and
   !! the susceptibilities.  This should be called before attempting to
   !! evaluate the properties on the mesh.
-  
-  subroutine init_material_properties
-  
-    call add_property ('electrical conductivity', 0.0_rk)
-    call add_property ('electric susceptibility', 0.0_rk)
-    call add_property ('magnetic susceptibility', 0.0_rk)
-    
-  contains
-  
-    !! Ensure that every material phase has the specified property
-    !! defined, adding it if necessary with the given default value.
-    
-    subroutine add_property (prop, default)
-    
-      use phase_property_table
-      use parameter_module, only: nmat
-      use material_interop, only: void_material_index, material_to_phase
-      use scalar_func_factories
-      
-      character(*),  intent(in) :: prop
-      real(kind=rk), intent(in) :: default
-      
-      integer :: prop_id, phase_id, m
-      class(scalar_func), allocatable :: f_default
-      character(128) :: message
 
-      if (ppt_has_property(prop)) then
-        prop_id = ppt_property_id(prop)
-      else
-        call ppt_add_property (prop, prop_id)
-      end if
-      
-      do m = 1, nmat
-        if (m == void_material_index) cycle
-        phase_id = material_to_phase(m)
-        ASSERT(phase_id > 0)
-        if (ppt_has_phase_property (phase_id, prop_id)) cycle
-        call alloc_const_scalar_func (f_default, default)
-        call ppt_assign_phase_property (phase_id, prop_id, f_default)
-        write(message,'(2x,3a,es10.3,3a)') 'Using default value "', trim(prop), '" =', &
-            default, ' for phase "', trim(ppt_phase_name(phase_id)), '"'
-        call TLS_info (message)
-      end do
-      
-    end subroutine add_property
+  subroutine init_material_properties
+
+    use material_model_driver, only: matl_model
+    use material_utilities
+
+    call define_property_default(matl_model, 'electrical-conductivity', 0.0_rk)
+    call define_property_default(matl_model, 'electric-susceptibility', 0.0_rk)
+    call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_rk)
 
   end subroutine init_material_properties
 
@@ -173,7 +137,7 @@ contains
 
   subroutine induction_heating (t1, t2)
 
-    use property_module, only:  EM_permittivity, EM_permeability, EM_conductivity
+    use EM_properties
 
     real(kind=rk), intent(in) :: t1, t2
 
@@ -216,7 +180,7 @@ contains
  !!
  !!  DRIVER FOR THE JOULE HEAT SIMULATION -- SERIAL CODE
  !!
-  
+
   subroutine compute_joule_heat ()
 
     use simpl_mesh_type
@@ -235,9 +199,9 @@ contains
     logical :: converged
     character(len=256) :: string
     real(kind=rk) :: eps_min, eps_max, mu_min, mu_max, sigma_min, sigma_max
-    
+
     !call TLS_info (' Beginning Joule Heat Simulation...')
-    
+
     !! Get the mesh from the EM data proxy and create the discretization.
     mesh => EM_mesh()
 
@@ -247,18 +211,18 @@ contains
     eps   => permittivity()
     mu    => permeability()
     sigma => conductivity()
-    
+
     if (global_any(eps <= 0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Epsilon is not positive')
     if (global_any(mu  <= 0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Mu is not positive')
     if (global_any(sigma <0.0_rk)) call TLS_fatal ('COMPUTE_JOULE_HEAT: Sigma is not nonnegative')
-    
+
     eps_min = global_minval(eps)
     eps_max = global_maxval(eps)
     mu_min = global_minval(mu)
     mu_max = global_maxval(mu)
     sigma_min = global_minval(sigma, mask=(sigma > 0.0_rk))
     sigma_max = global_maxval(sigma)
-    
+
     if (is_IOP) then
       write(string,fmt='(3x,2(a,es11.4))') 'Min epsilon=', eps_min,   ', Max epsilon=', eps_max
       call TLS_info (trim(string))
@@ -267,13 +231,13 @@ contains
       write(string,fmt='(3x,2(a,es11.4))') 'Min sigma=  ', sigma_min, ', Max sigma=  ', sigma_max
       call TLS_info (trim(string))
     end if
-    
+
     eps0 = get_epsilon_0()
     mu0 = get_mu_0()
     sigma0 = sigma_max
-    
+
     if (sigma0 <= 0.0_rk) call TLS_fatal ('COMPUTE_JOULE_HEAT: Sigma is uniformly zero!')
-    
+
     !coil => get_coil()
     freq = source_frequency()
     curr = 1.0_rk ! multiple coils, so no scaling of the current for now.
@@ -281,14 +245,14 @@ contains
 
     etasq = eps0 * freq / sigma0
     delta = 1.0_rk / sqrt(mu0 * sigma0 * freq)
-    
+
     if (is_IOP) then
       write(string,fmt='(3x,a,es11.4)') 'DELTA=', delta
       call TLS_info (trim(string))
       write(string,fmt='(3x,a,es11.4)') 'ETASQ=', etasq
       call TLS_info (trim(string))
     end if
-    
+
     if (get_num_etasq() > etasq) then
       etasq = get_num_etasq()
       if (is_IOP) then
@@ -296,16 +260,16 @@ contains
         call TLS_info (trim(string))
       end if
     end if
-        
+
     !! Scale factors: physical var = scale factor * computational var.
     bscf = mu0 * curr
     escf = curr / sigma0
     qscf = curr**2 / sigma0
-    
+
     steps_per_cycle = get_steps_per_cycle()
     cg_red = get_cg_stopping_tolerance()
     cg_max_itr = get_maximum_cg_iterations()
-    
+
     !! Create and initialize the time-discretized system.
     dt = 1.0_rk / real(steps_per_cycle,kind=rk)
     call initialize_system (sys, mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge)
@@ -321,7 +285,7 @@ contains
     call set_initial_values (sys, t, efield, bfield)
 
     q = qscf * joule_heat(sys, efield)
-    
+
     if (graphics()) then
       call export_mesh (mesh, eps, mu, sigma)
 !NNC!      if (get_num_probe_points() > 0) then
@@ -333,7 +297,7 @@ contains
     end if
 
     converged = .false.
-    
+
     STEADY_STATE: do n = 1, get_maximum_source_cycles()
 
       if (converged) exit
@@ -344,22 +308,22 @@ contains
       end if
 
       q_avg = 0.0_rk
-      
+
       SOURCE_CYCLE: do j = 1, steps_per_cycle
-      
+
         q_avg = q_avg + 0.5_rk * q
-        
+
         call step (sys, t, efield, bfield, status, set_bv, bndry_src)
         if (global_any(status /= 0)) exit STEADY_STATE
-        
+
         q = qscf * joule_heat(sys, efield)
         if (graphics()) then
           call export_fields (mesh, t, escf*efield, bscf*bfield, q)
 !NNC!          call update_probes (t, escf*efield, bscf*bfield, q*mesh%volume)
         end if
-        
+
         q_avg = q_avg + 0.5_rk * q
-        
+
       end do SOURCE_CYCLE
 
       !! Time-averaged Joule power density over the last source cycle.
@@ -371,7 +335,7 @@ contains
       call TLS_info (trim(string))
 
       if (graphics()) call finalize_field_output (q_avg)
-      
+
       !! Check for 'convergence' to the steady-state periodic solution.
       if (n > 1) then
         error = global_maxval(abs(q_avg-q_avg_last)) / global_maxval(abs(q_avg))
@@ -393,7 +357,7 @@ contains
     if (graphics()) then
 !NNC!      call write_probes (em_output)
     end if
-    
+
     !! Store the the computed Joule heat in the EM data proxy for later retrieval.
     call set_joule_power_density (q_avg)
 
@@ -408,7 +372,7 @@ contains
     ! The BDATA structure needs to be deallocated too!
 
     call TLS_info ('  Joule heat computation completed.')
-    
+
   end subroutine compute_joule_heat
 
 end module EM

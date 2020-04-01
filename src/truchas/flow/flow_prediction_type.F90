@@ -382,7 +382,9 @@ contains
 
   subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
 
+#ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
+#endif
 
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
@@ -428,7 +430,7 @@ contains
 
         ! get the local face id on this cell
         j = this%mesh%xcface(i) - 1 + &
-            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f)
+            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f, dim=1)
 
         ! outflow handled in above loop
         if (.not.any(flux_volumes(:,j) < 0)) cycle
@@ -451,7 +453,7 @@ contains
 
         ! get the local face id on this cell
         j = this%mesh%xcface(i) - 1 + &
-            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f)
+            findloc(this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), f, dim=1)
 
         ! outflow handled in above loop
         if (.not.any(flux_volumes(:,j) < 0)) cycle

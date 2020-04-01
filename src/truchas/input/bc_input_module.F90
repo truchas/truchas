@@ -40,7 +40,7 @@ CONTAINS
     !   Check for obvious errors in the BC namelist input variables.
     !
     !=======================================================================
-    use input_utilities, only: NULL_I
+    use input_utilities, only: NULL_I, NULL_C
     use fluid_data_module, only: fluid_flow
     use bc_data_module,   only: BC_Type, BC_Variable,                       &
                                 Inflow_Material, Inflow_Index,              &
@@ -48,14 +48,14 @@ CONTAINS
                                 nbc_surfaces, Type_Forms, Variable_Forms,   &
                                 Conic_Tolerance,          &
                                 Bounding_Box, Conic_Relation, Surface_Name, &
-                                Surface_Materials, BC_Surface_Forms,        &
+                                BC_Surface_Forms,                           &
                                 Surfaces_In_This_BC, Srfmatl_Index,         &
                                 Node_Disp_Coords, Mesh_Surface
     use parameter_module, only: bc_forms, maxmat, nvar, mbc_surfaces, mbcsrf
     use legacy_mesh_api, only: ndim
     use utilities_module, only: STRING_COMPARE
     use solid_mechanics_input, only: solid_mechanics
-    use property_module,      only: Get_Truchas_Material_ID
+    use material_model_driver, only: matl_model
     
     ! Argument List
     logical, intent(INOUT) :: fatal
@@ -92,24 +92,10 @@ CONTAINS
                 call STRING_COMPARE (Surface_Name(n,p),BC_Surface_Forms(v),strings_match)
                 if (strings_match) then
 
-                   ! First reset the material ID for all cases except 'from mesh file'
-                   if (v /= 15 .and. v /= 16) then
-                      Surface_Materials(1, n, p) = Get_Truchas_Material_ID(Surface_Materials(1, n, p))
-                      Surface_Materials(2, n, p) = Get_Truchas_Material_ID(Surface_Materials(2, n, p))
-                   end if
-
                    ! Now reset the surface name
                    select case(v)
                    case (1:2)
                       Surface_Name(n,p)  = 'conic'
-                   case (3:8)
-                      Surface_Name(n,p)  = 'material boundary'
-                      l = l + 1
-                      Srfmatl_Index(n,p) =  l
-                   case (9:14)
-                      Surface_Name(n,p)  = 'external material boundary'
-                      l = l + 1
-                      Srfmatl_Index(n,p) =  l
                    case (15:16)
                       Surface_Name(n,p)  = 'from mesh file'
                       l = l + 1
@@ -159,22 +145,6 @@ CONTAINS
           v = Srfmatl_Index(n,p)
           if (v > 0) then
              select case(Surface_Name(n,p))
-             case('material boundary')
-                if (Surface_Materials(1,v,p) <= 0 .or. Surface_Materials(2,v,p) <= 0) then
-                   write (errmsg,3) p,TRIM(bc_name(p))
-3                  format('Interface material numbers for BC namelist #',i2,' named ',a,' must be positive!')
-                   call TLS_error (errmsg)
-                   fatal = .true.
-                   cycle CHECK_BC_SURFACES
-                end if
-             case('external material boundary')
-                if (Surface_Materials(1,v,p) <= 0) then
-                   write (errmsg,4) p,TRIM(bc_name(p))
-4                  format('Boundary material number for BC namelist #',i2,' named ',a,' must be positive!')
-                   call TLS_error (errmsg)
-                   fatal = .true.
-                   cycle CHECK_BC_SURFACES
-                end if
              case('from mesh file')
                 if (Mesh_Surface(v,p) <= 0) then
                    write (errmsg,6) p,TRIM(bc_name(p))
@@ -352,14 +322,13 @@ CONTAINS
     if(fluid_flow) then
        do p = 1,nbc_surfaces
           if (Inflow_Index(p) > 0) then
-             if (Inflow_Material(Inflow_Index(p)) /= NULL_I .and. &
-                  (Inflow_Material(Inflow_Index(p)) < 1 .or.        &
-                  Inflow_Material(Inflow_Index(p)) > maxmat)) then
-                write (errmsg, FMT=35) Inflow_Material(Inflow_Index(p)), p, maxmat
-35              format('Inflow material number ',i2,     &
-                     ' for BC surface ',i2,' is not valid; must be >= 1 and <= ',i2)
-                call TLS_error (errmsg)
-                fatal = .true.
+             if (Inflow_Material(Inflow_Index(p)) /= NULL_C) then
+                if (matl_model%phase_index(Inflow_Material(Inflow_Index(p))) == 0) then
+                   write (errmsg, FMT=35) trim(Inflow_Material(Inflow_Index(p))), p
+35                 format('unknown inflow material "',a,'" for BC surface ',i2)
+                   call TLS_error (errmsg)
+                   fatal = .true.
+                end if
              end if
           end if
        end do
@@ -387,7 +356,7 @@ CONTAINS
                                 BC_Surface_Forms,                            &
                                 Surfaces_In_This_BC, Srfmatl_Index,          &
                                 Node_Disp_Coords
-    use input_utilities,  only: NULL_I, NULL_R
+    use input_utilities,  only: NULL_I, NULL_R, NULL_C
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -399,7 +368,7 @@ CONTAINS
     BC_Variable = 'none'
 
     ! Default Velocity Variables
-    Inflow_Material      = NULL_I
+    Inflow_Material      = NULL_C
     Inflow_Temperature   = NULL_R
 
     ! Default BC surface constants.
@@ -435,18 +404,6 @@ CONTAINS
 
     BC_Surface_Forms(1)  = 'conic'
     BC_Surface_Forms(2)  = 'conic function'
-    BC_Surface_Forms(3)  = 'boundary'
-    BC_Surface_Forms(4)  = 'material boundary'
-    BC_Surface_Forms(5)  = 'material interface'
-    BC_Surface_Forms(6)  = 'material surface'
-    BC_Surface_Forms(7)  = 'surface'
-    BC_Surface_Forms(8)  = 'interface'
-    BC_Surface_Forms(9)  = 'external'
-    BC_Surface_Forms(10) = 'external boundary'
-    BC_Surface_Forms(11) = 'external material boundary'
-    BC_Surface_Forms(12) = 'outer'
-    BC_Surface_Forms(13) = 'outer boundary'
-    BC_Surface_Forms(14) = 'outer material boundary'
     BC_Surface_Forms(15) = 'from mesh file'
     BC_Surface_Forms(16) = 'in mesh file'
     BC_Surface_Forms(17) = 'node set'
@@ -511,10 +468,9 @@ CONTAINS
                                       Conic_X, Conic_Y, Conic_Z,                   &
                                       Conic_Constant, Conic_Tolerance,             &
                                       Bounding_Box, nbc_surfaces, Surface_Name,    &
-                                      Conic_Relation, Surface_Materials,           &
-                                      Node_Disp_Coords, Mesh_Surface
+                                      Conic_Relation, Node_Disp_Coords, Mesh_Surface
     use input_utilities,        only: NULL_R
-    use input_utilities,        only: seek_to_namelist, NULL_I
+    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_C
     use parallel_info_module,   only: P_Info
     use parameter_module,       only: string_dim, mbc_surfaces
 
@@ -532,7 +488,7 @@ CONTAINS
                    Conic_XX, Conic_YY, Conic_ZZ, Conic_XY,                       &
                   Conic_XZ, Conic_YZ, Conic_X, Conic_Y, Conic_Z, Conic_Constant, &
                   Conic_Tolerance, Bounding_Box, Surface_Name,                   &
-                  Surface_Materials, Node_Disp_Coords, Mesh_Surface
+                  Node_Disp_Coords, Mesh_Surface
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -559,10 +515,9 @@ CONTAINS
        BC_Value(:,0)            = 0
        BC_Table                 = NULL_R
        BC_Variable(0)           = 'none'
-       Inflow_Material(0)       = NULL_I
+       Inflow_Material(0)       = NULL_C
        Inflow_Temperature(0)    = NULL_R
        Surface_Name(:,0)        = 'none'
-       Surface_Materials(:,:,0) = 0
        !Conic_Relation(:,0)      = 'none'
        Conic_XX(:,0)            = 0
        Conic_YY(:,0)            = 0
@@ -634,8 +589,6 @@ CONTAINS
           Inflow_Temperature(nbc_surfaces)   = Inflow_Temperature(0)
           Surface_Name(:,nbc_surfaces)       = Surface_Name(:,0)
 
-          Surface_Materials(:,:,nbc_surfaces)= Surface_Materials(:,:,0)
-
           Conic_Relation(:,nbc_surfaces)     = '=' !Conic_Relation(:,0)
           Conic_XX(:,nbc_surfaces)           = Conic_XX(:,0)
           Conic_YY(:,nbc_surfaces)           = Conic_YY(:,0)
@@ -684,7 +637,7 @@ CONTAINS
                                     Conic_X, Conic_Y, Conic_Z,                &
                                     Conic_Constant, Conic_Tolerance,          &
                                     Bounding_Box, nbc_surfaces, Surface_Name, &
-                                    Surface_Materials, Conic_Relation,        &
+                                    Conic_Relation,                           &
                                     Surfaces_In_This_BC, Node_Disp_Coords,    &
                                     Mesh_Surface
     use parallel_info_module, only: P_Info
@@ -716,7 +669,6 @@ CONTAINS
        call PGSLib_BCAST (Conic_Constant)
        call PGSLib_BCAST (Conic_Tolerance)
        call PGSLib_BCAST (Conic_Relation)
-       call PGSLib_BCAST (Surface_Materials)
        call PGSLib_BCAST (Surface_Name)
        call PGSLib_BCAST (Bounding_Box)
        call PGSLib_BCAST (nbc_surfaces)

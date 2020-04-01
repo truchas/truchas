@@ -153,7 +153,7 @@ contains
   function eval(this, x) result(fx)
     class(tabular_scalar_func), intent(in) :: this
     real(r8), intent(in) :: x(:)  ! only x(this%dim) is used
-    real(r8) :: fx, xdim, t
+    real(r8) :: fx, xdim, t, s
     integer :: n, j, j1, j2
     n = size(this%x)
     xdim = x(this%dim)
@@ -193,8 +193,9 @@ contains
       if (allocated(this%t)) then
         !! Hermite cubit interpolation over the interval.
         t = (this%x(j2)-xdim)/(this%x(j2)-this%x(j1))
-        fx = this%y(j1)*(3-2*t)*t**2 + this%y(j2)*(1+2*t)*(1-t)**2 &
-              + (this%x(j2)-this%x(j1))*t*(1-t)*(this%t(j1)*t-this%t(j2)*(1-t))
+        s = 1 - t
+        fx = this%y(j1)*(t*t)*(3-2*t) + this%y(j2)*(s*s)*(3-2*s) &
+              + (this%x(j2)-this%x(j1))*t*s*(this%t(j1)*t-this%t(j2)*s)
       else
         !! Linear interpolation over the interval.
         fx = ((this%x(j2)-xdim)*this%y(j1) + (xdim-this%x(j1))*this%y(j2))/(this%x(j2)-this%x(j1))

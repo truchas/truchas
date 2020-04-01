@@ -23,10 +23,11 @@ module f08_intrinsics
 contains
 
   ! Implements a subset of the features present in the new intrinsic findloc
-  pure function findloc_logical (array, value, back) result(i)
+  pure function findloc_logical (array, value, back, dim) result(i)
 
     logical, intent(in) :: array(:), value
     logical, intent(in), optional :: back
+    integer, intent(in), optional :: dim  ! ignored, assumed to be 1 => scalar result
     integer :: i
 
     logical :: backh
@@ -47,10 +48,11 @@ contains
 
   end function findloc_logical
 
-  pure function findloc_integer (array, value, back) result(i)
+  pure function findloc_integer (array, value, back, dim) result(i)
 
     integer, intent(in) :: array(:), value
     logical, intent(in), optional :: back
+    integer, intent(in), optional :: dim  ! ignored, assumed to be 1 => scalar result
     integer :: i
 
     logical :: backh

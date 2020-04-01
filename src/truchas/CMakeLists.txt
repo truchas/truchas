@@ -131,6 +131,7 @@ install(TARGETS truchas truchas_exe
 add_subdirectory(solver/Test)
 add_subdirectory(physics/heat_species_transport/Test)
 add_subdirectory(physics/additive_manufacturing/Test)
+add_subdirectory(physics/enclosure_radiation/Test)
 add_subdirectory(discrete_operators/Test)
 add_subdirectory(utilities/Test)
 add_subdirectory(toolpath/Test)

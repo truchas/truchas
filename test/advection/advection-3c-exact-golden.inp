@@ -15,6 +15,7 @@ Volume fractions should be advected exactly.
 /
  
 &PHYSICS
+  materials = 'water', 'oil'
   prescribed_flow = .true.
 /
 
@@ -36,50 +37,25 @@ Volume fractions should be advected exactly.
   surface_name = 'plane'
   axis = 'x'
   translation_pt = 1.5, 0.0, 0.0
-  material_number = 2
+  material_name = 'oil'
   temperature = 0.0
 /
 
-&INTERFACES
-  vof_method = 'divide'
-  vof_tolerance = 1.0e-4
-/
 
 &BODY
   surface_name = 'background'
-  material_number = 1
+  material_name = 'water'
   temperature = 0.0
 /
 
 &MATERIAL
-  material_name = 'water'
-  material_number = 1
-  density = 1.0 ! not void
-  material_feature = 'background'
- /
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1.0
 /
 
 &MATERIAL
-  material_name = 'oil'
-  material_number = 2
-  density = 1.0 ! not void
- /
-
-&PHASE
   name = 'oil'
-  property_name(1) = 'density', property_constant(1) = 2.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'oil'
-  phases = 'oil'
+  is_fluid = T
+  density = 2.0
 /

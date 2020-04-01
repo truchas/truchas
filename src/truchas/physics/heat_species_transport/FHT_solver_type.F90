@@ -31,7 +31,6 @@ module FHT_solver_type
   use FHT_precon_type
   use TofH_type
   use matl_mesh_func_type
-  use property_mesh_function
   use solution_history
   use nka_type
   use unstr_mesh_type
@@ -252,7 +251,7 @@ contains
     call FHT_model_get_cell_temp_view (this%model, this%u, Tcell)
     do j = 1, this%mesh%ncell_onP
       if (this%void_cell(j)) then
-        Tcell(j) = 0.0_r8 ! dummy value
+        Tcell(j) = this%model%void_temp ! dummy value
       else if (this%last_void_cell(j)) then ! newly non-void cell
         !! Use the temperature corresponding to the advected heat density.
         call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
@@ -284,7 +283,7 @@ contains
     call gather_boundary (this%mesh%cell_ip, Tcell)
     do j = 1, this%mesh%nface_onP
       if (this%void_face(j)) then
-        Tface(j) = 0.0_r8 ! dummy value
+        Tface(j) = this%model%void_temp ! dummy value
       else if (this%last_void_face(j)) then ! newly non-void face
         !! Use the average of neighboring non-void predicted cell temperatures.
         if (fnbr(2,j) == 0) then  ! boundary of non-void region
@@ -320,7 +319,7 @@ contains
     call FHT_model_get_cell_temp_view (this%model, this%u, Tcell)
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
-        Tcell(j) = 0.0_r8
+        Tcell(j) = this%model%void_temp
       else if (this%void_cell(j)) then  ! essentially void cell
         call this%T_of_H%compute (j, this%H(j), Tmin(j), Tmax(j), Tcell(j))
       end if
@@ -335,14 +334,14 @@ contains
       if (this%tot_void_cell(j)) then
         this%H(j) = 0.0_r8
       else
-        call pmf_eval (this%model%H_of_T, j, Tcell(j:j), this%H(j))
+        call this%model%H_of_T%compute_value(j, Tcell(j:j), this%H(j))
       end if
     end do
     
     !! Set the advanced temperature for void faces.
     call FHT_model_get_face_temp_view (this%model, this%u, Tface)
     do j = 1, this%mesh%nface_onP
-      if (this%void_face(j)) Tface(j) = 0.0_r8
+      if (this%void_face(j)) Tface(j) = this%model%void_temp
     end do
     
     this%t = t
@@ -583,7 +582,7 @@ contains
     call FHT_model_get_cell_temp_view (this%model, this%u, Tcell)
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
-        Tcell(j) = 0.0_r8
+        Tcell(j) = this%model%void_temp
       else if (this%void_cell(j)) then ! essentially void cell
         Tcell(j) = temp(j)
       end if
@@ -592,7 +591,7 @@ contains
     !! Zero the temperature on all void faces. 
     call FHT_model_get_face_temp_view (this%model, this%u, Tface)
     do j = 1, this%mesh%nface_onP
-      if (this%void_face(j)) Tface(j) = 0.0_r8
+      if (this%void_face(j)) Tface(j) = this%model%void_temp
     end do
     
     !! Zero the temperature time derivative on all void cells. 
@@ -613,7 +612,7 @@ contains
       if (this%tot_void_cell(j)) then
         this%H(j) = 0.0_r8
       else
-        call pmf_eval (this%model%H_of_T, j, Tcell(j:j), this%H(j))
+        call this%model%H_of_T%compute_value(j, Tcell(j:j), this%H(j))
       end if
     end do
     
@@ -699,7 +698,7 @@ contains
     !! Compute the initial residual and norm.
     this%num_compute_f = this%num_compute_f + 1
     do j = 1, size(Tcell)
-      call pmf_eval (this%model%H_of_T, j, Tcell(j:j), H)
+      call this%model%H_of_T%compute_value(j, Tcell(j:j), H)
       Hdot(j) = (H - Hlast(j)) / dt
     end do
     call FHT_model_compute_f (this%model, t, u, Hdot, f)
@@ -720,7 +719,7 @@ contains
       !! Compute the residual and norm.
       this%num_compute_f = this%num_compute_f + 1
       do j = 1, size(Tcell)
-        call pmf_eval (this%model%H_of_T, j, Tcell(j:j), H)
+        call this%model%H_of_T%compute_value(j, Tcell(j:j), H)
         Hdot(j) = (H - Hlast(j)) / dt
       end do
       call FHT_model_compute_f (this%model, t, u, Hdot, f)

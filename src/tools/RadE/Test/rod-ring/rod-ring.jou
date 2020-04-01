@@ -1,0 +1,42 @@
+## /opt/cubit/15.5-416350/bin/clarox
+## Cubit Version 15.5
+## Cubit Build 416350
+## Revised 2019-11-18 16:00:21 -0700 (Mon, 18 Nov 2019)
+## Running 02/17/2020 11:13:13 AM
+## Command Options:
+
+create cylinder height 6 radius 1
+create cylinder height 1 radius 2
+create cylinder height 2 radius 1.5
+subtract volume 3 from volume 2
+webcut volume 1 2 with plane xplane rotate 90 about z
+webcut volume 1 2 with plane xplane
+delete volume 7 5 6 4
+
+volume all size 0.25
+mesh volume all
+
+block 1 add volume 1
+block 1 name "rod"
+
+block 2 add volume 2
+block 2 name "ring"
+
+sideset 1 add surface 22 36 33 43
+sideset 1 name "symmetry"
+
+sideset 2 add surface 37 35
+sideset 2 name "rod_ends"
+
+sideset 3 add surface 34
+sideset 3 name "rod-encl"
+
+sideset 4 add surface 47 44 46
+sideset 4 name "ring-encl"
+
+sideset 5 add surface 45
+sideset 5 name "ring_side"
+
+set exodus netcdf4 off
+set large exodus file on
+export mesh "rod-ring.gen" overwrite

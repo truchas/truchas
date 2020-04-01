@@ -17,6 +17,7 @@ remain identical as they should.
 /
 
 &PHYSICS
+  materials = 'A+C', 'B+C'
   heat_transport = .true.
   species_transport = .true.
   number_of_species = 1
@@ -93,14 +94,14 @@ Insulated sides
   translation_pt = 0.0, 0.0, -.5
   radius = 0.18
   height = 1.0
-  material_number = 1
+  material_name = 'A+C'
   temperature = 0.0
   phi = 0.0
 /
 
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'B+C'
   temperature = 0.0
   phi = 0.0
 /
@@ -110,38 +111,19 @@ INTERFACES
 /
 
 &MATERIAL
-  Material_Number = 1
-  Material_Name = 'A+C'
-  Density = 4.0
-/
-
-&PHASE
   name = 'A+C'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.05
-  property_name(4) = 'diffusivity1',  property_constant(4) = 0.05
-/
-
-&MATERIAL_SYSTEM
-  name = 'A+C'
-  phases = 'A+C'
-  number_of_components = 2
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.05
+  diffusivity(1) = 0.05
 /
 
 &MATERIAL
-  Material_Number = 2
-  Material_Name = 'B+C'
-  Material_Feature = 'background'
-  Density = 4.0
-/
-
-&PHASE
   name = 'B+C'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_function(3) = 'B-cond'
-  property_name(4) = 'diffusivity1',  property_function(4) = 'diff-C-in-B'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity_func = 'B-cond'
+  diffusivity_func(1) = 'diff-C-in-B'
 /
 
 &FUNCTION
@@ -159,10 +141,4 @@ INTERFACES
   poly_exponents(1,:) = 0
   poly_exponents(2,:) = 1
   poly_refvars = 0.0, -0.1
-/
-
-&MATERIAL_SYSTEM
-  name = 'B+C'
-  phases = 'B+C'
-  number_of_components = 2
 /

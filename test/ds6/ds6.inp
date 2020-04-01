@@ -32,6 +32,7 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
 /
 
 &PHYSICS
+  materials = 'A+XY'
   heat_transport = .true.
   species_transport = .true.
   number_of_species = 2
@@ -117,27 +118,20 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'A+XY'
   temperature = 2.0
   phi = 1.0, 1.0
 /
 
 &MATERIAL
-  Material_Number  = 1
-  Material_Name    = 'A+XY'
-  Material_Feature = 'background'
-  Density          = 2.0
-/
-
-&PHASE
   name = 'A+XY'
-  property_name(1) = 'density',       property_constant(1) = 2.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.5
-  property_name(3) = 'conductivity',  property_function(3) = 'K'
-  property_name(4) = 'diffusivity1',  property_function(4) = 'D'
-  property_name(5) = 'soret1',        property_function(5) = 'S1'
-  property_name(6) = 'diffusivity2',  property_function(6) = 'D'
-  property_name(7) = 'soret2',        property_function(7) = 'S2'
+  density = 2.0
+  specific_heat = 0.5
+  conductivity_func = 'K'
+  diffusivity_func(1) = 'D'
+  soret_coef_func(1) = 'S1'
+  diffusivity_func(2) = 'D'
+  soret_coef_func(2) = 'S2'
 /
 
 &FUNCTION
@@ -174,10 +168,4 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
   poly_exponents(1,:) =  -1,  -1
   poly_exponents(2,:) =   1,   0
   poly_exponents(3,:) =   0,   1
-/
-
-&MATERIAL_SYSTEM
-  name = 'A+XY'
-  phases = 'A+XY'
-  number_of_components = 3
 /

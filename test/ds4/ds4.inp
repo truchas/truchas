@@ -25,6 +25,7 @@ for HT/PC.
 /
 
 &PHYSICS
+  materials = 'mold', 'metal', 'VOID'
   heat_transport = .true.
 /
 
@@ -35,7 +36,7 @@ for HT/PC.
   rel_enthalpy_tol   = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
-  nlk_tol = 0.02
+  nlk_tol = 0.01
 /
   nlk_vec_tol        = 1.0e-3
 
@@ -73,13 +74,13 @@ for HT/PC.
   translation_pt = 0.0, 0.0, -.5
   radius = 0.18
   height = 1.0
-  material_number = 2
+  material_name = 'solid'
   temperature = 495.0
 /
 
 &BODY
   surface_name = 'background'
-  material_number = 1
+  material_name = 'mold'
   temperature = 495.0
 /
 
@@ -88,17 +89,12 @@ INTERFACES
 /
 
 &MATERIAL
-  Material_Number         = 1
-  Material_Name           = 'mold'
-  Material_Feature        = 'background'
-  Density                 = 1.25
-/
-
-&PHASE
   name = 'mold'
-  property_name(1) = 'density',       property_constant(1) = 1.25 ! g/cm^3
-  property_name(2) = 'specific heat', property_constant(2) = 0.8  ! J/g-K
-  property_name(3) = 'conductivity',  property_function(3) = 'mold-cond'  ! W/cm-K
+  ref_temp = 495.0
+  ref_enthalpy = 1.0
+  density = 1.25 ! g/cm^3
+  specific_heat = 0.8  ! J/g-K
+  conductivity_func = 'mold-cond'  ! W/cm-K
 /
 
 &FUNCTION
@@ -109,55 +105,20 @@ INTERFACES
   poly_refvars = 495.0
 /
 
-&MATERIAL_SYSTEM
-  name = 'mold'
-  phases = 'mold'
-  reference_temp = 495.0
-  reference_enthalpy = 1.0
-/
-
 &MATERIAL
-  Material_Number         = 2
-  Material_Name           = 'solid'
-  Density                 = 4.0
-/
-
-&PHASE
-  name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 4.0  ! g/cm^3
-  property_name(2) = 'specific heat', property_constant(2) = 0.25 ! J/g-K
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1  ! W/cm-K
-/
-
-&MATERIAL
-  Material_Number         = 3
-  Material_Name           = 'liquid'
-  Density                 = 4.0
-/
-
-&PHASE
-  name = 'liquid'
-  property_name(1) = 'density',       property_constant(1) = 4.0  ! g/cm^3
-  property_name(2) = 'specific heat', property_constant(2) = 0.25 ! J/g-K
-  property_name(3) = 'conductivity',  property_constant(3) = 0.1  ! W/cm-K
-/
-
-&MATERIAL_SYSTEM
   name = 'metal'
+  density = 4.0  ! g/cm^3
+  specific_heat = 0.25 ! J/g-K
+  conductivity = 0.1  ! W/cm-K
   phases = 'solid', 'liquid'
-  transition_temps_low  = 499.0
-  transition_temps_high = 500
-  latent_heat           = 10.0 ! J/g
-  reference_temp        = 495.0
-  reference_enthalpy    = 1.0
+  ref_temp        = 495.0
+  ref_enthalpy    = 1.0
 /
 
-!! Define a void material purely for testing purposes.
-!! No void exists in the problem but this alters the code flow
-!! slightly.  Results should be identical with/without this.
-
-&MATERIAL
-  Material_Number  = 4
-  Material_Name    = 'void'
-  Density          = 0.0
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'liquid'
+  solidus_temp = 499.0
+  liquidus_temp = 501.0
+  latent_heat = 10.0 ! J
 /

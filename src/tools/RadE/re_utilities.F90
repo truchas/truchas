@@ -23,7 +23,7 @@ contains
     character(len=*), intent(in) :: errmsg
     if (scl_rank()==1) write(*,'(2a)') 'FATAL: ', errmsg
     call scl_finalize ()
-    stop
+    stop 1
   end subroutine re_halt
 
 end module re_utilities

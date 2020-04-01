@@ -16,6 +16,7 @@ not so much with the transient approach to steady state.
 /
 
 &PHYSICS
+  materials = 'stuff'
   heat_transport = .true.
 /
 
@@ -60,25 +61,14 @@ not so much with the transient approach to steady state.
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'stuff'
   temperature = 1.0
 /
 
 &MATERIAL
-  material_number = 1
-  material_name = 'stuff'
-  density = 1.0 ! == not void
-  material_feature = 'background'
+  name = 'stuff'
+  density = 4.0
+  specific_heat = 0.5
+  conductivity = 1.0
 /
 
-&PHASE
-  name = 'stuff'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.5
-  property_name(3) = 'conductivity',  property_constant(3) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'stuff'
-  phases = 'stuff'
-/

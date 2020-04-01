@@ -42,9 +42,7 @@ contains
 
   function create_HTSD_model (disc, mmf, tbc_fac, sbc_fac, stat, errmsg) result (model)
 
-    use diffusion_solver_data, only: heat_eqn, num_species
-    use property_data_module, only: void_temperature
-    use material_interop, only: void_material_index
+    use diffusion_solver_data, only: heat_eqn, num_species, void_temperature
 
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
@@ -73,7 +71,7 @@ contains
     allocate(model)
     call HTSD_model_init (model, disc, htmodel, sdmodel)
 
-    if (heat_eqn .and. void_material_index > 0) model%void_temp = void_temperature(void_material_index)
+    if (heat_eqn) model%void_temp = void_temperature
 
   end function create_HTSD_model
 
@@ -110,12 +108,11 @@ contains
 
     subroutine define_system_parameters (mesh, mmf, model, stat, errmsg)
 
-      use phase_property_table
-      use material_utilities
       use matl_mesh_func_type
-      use property_mesh_function
       use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
+      use material_model_driver, only: matl_model
+      use material_utilities
 
       type(unstr_mesh), intent(in), target :: mesh
       type(matl_mesh_func), intent(in), target :: mmf
@@ -123,15 +120,19 @@ contains
       integer, intent(out) :: stat
       character(len=*), intent(out) :: errmsg
 
-      integer, allocatable :: matid(:)
+      !integer, allocatable :: matid(:)
+      character(:), allocatable :: errmsg2
 
       !! Retrieve a list of all the material IDs that may be encountered.
-      call mmf%get_all_matl(matid, drop_void=.true.)
+      !call mmf%get_all_matl(matid, drop_void=.true.)
 
       !! Enthalpy density.
-      call required_property_check (matid, 'enthalpy density', stat, errmsg)
-      if (stat /= 0) return
-      call pmf_create (model%H_of_T, mmf, ppt_property_id('enthalpy density'), stat, errmsg)
+      call required_property_check(matl_model, 'enthalpy', stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
+      call model%H_of_T%init(mmf, 'enthalpy', stat, errmsg)
       if (global_any(stat /= 0)) then
         stat = -1
         errmsg = 'unexpected error defining H_of_T: ' // trim(errmsg)
@@ -139,9 +140,12 @@ contains
       end if
 
       !! Thermal conductivity.
-      call required_property_check (matid, 'conductivity', stat, errmsg)
-      if (stat /= 0) return
-      call pmf_create (model%conductivity, mmf, ppt_property_id('conductivity'), stat, errmsg)
+      call required_property_check(matl_model, 'conductivity', stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
+      call model%conductivity%init(mmf, 'conductivity', stat, errmsg)
       !call pmf_set_harmonic_average (model%conductivity)
       if (global_any(stat /= 0)) then
         stat = -1
@@ -383,13 +387,12 @@ contains
   function create_SD_model (mesh, mmf, bc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: num_species, heat_eqn
-    use phase_property_table
-    use property_mesh_function
-    use material_utilities
     use ds_source_input, only: define_external_source
     use bitfield_type, only: btest
     use index_partitioning
     use parallel_communication, only: global_any
+    use material_model_driver, only: matl_model
+    use material_utilities
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
@@ -402,18 +405,21 @@ contains
     integer :: n, j
     logical :: mask(mesh%nface)
     character(len=31) :: property, variable
-    integer, allocatable :: setids(:), matids(:)
+    integer, allocatable :: setids(:)!, matids(:)
 
     allocate(model(num_species))
 
     !! Define the equation parameter components of MODEL.
-    call mmf%get_all_matl(matids, drop_void=.true.)
+   ! call mmf%get_all_matl(matids, drop_void=.true.)
     do n = 1, num_species
       write(variable,'(a,i0)') 'concentration', n
       write(property,'(a,i0)') 'diffusivity', n
-      call required_property_check (matids, property, stat, errmsg)
-      if (stat /= 0) return
-      call pmf_create (model(n)%diffusivity, mmf, ppt_property_id(property), stat, errmsg)
+      call required_property_check(matl_model, property, stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
+      call model(n)%diffusivity%init(mmf, property, stat, errmsg)
       if (global_any(stat /= 0)) then
         stat = -1
         errmsg = 'unexpected error defining diffusivity: ' // trim(errmsg)
@@ -422,12 +428,15 @@ contains
       call define_external_source (mesh, variable, model(n)%source)
       !! Define the optional Soret effect coefficients.
       if (heat_eqn) then
-        write(property,'(a,i0)') 'soret', n
-        call optional_property_check (matids, property, stat, errmsg)
-        if (stat < 0) return
+        write(property,'(a,i0)') 'soret-coef', n
+        call optional_property_check(matl_model, property, stat, errmsg2)
+        if (stat < 0) then
+          errmsg = errmsg2
+          return
+        end if
         if (stat == 0) then ! this property was defined
           allocate(model(n)%soret)
-          call pmf_create (model(n)%soret, mmf, ppt_property_id(property), stat, errmsg)
+          call model(n)%soret%init(mmf, property, stat, errmsg)
           if (stat /= 0) return
         end if
       end if

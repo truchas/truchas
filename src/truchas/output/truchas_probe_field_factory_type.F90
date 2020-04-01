@@ -93,6 +93,17 @@ contains
         call move_alloc(pf, field)
       end block
 
+    case ('enthalpy')
+
+      block
+        type(probe_field_vector), allocatable :: pf
+        allocate(pf)
+        pf%label  = ', enthalpy'
+        pf%kind   = 'cell'
+        pf%vector => zone%enthalpy
+        call move_alloc(pf, field)
+      end block
+
     case ('pressure')
 
       if (flow_enabled()) then

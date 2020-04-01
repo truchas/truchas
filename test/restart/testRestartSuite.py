@@ -6,8 +6,8 @@ def test_read_restart(tenv):
     """Test creating and reading a restart file"""
     # run truchas & write restart
     stdout, output = tenv.truchas(4, "ds11.inp", output_dir="read_test")
-    restart_filename = tenv._working_dir + "/read_test_restart/restart.75"
-    tenv.write_restart(output.filename, 75, restart_filename)
+    restart_filename = tenv._working_dir + "/read_test_restart/restart.79"
+    tenv.write_restart(output.filename, 79, restart_filename)
 
     # run from restart
     stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \
@@ -31,8 +31,8 @@ def test_fields(tenv):
         f1 = out1.field(series_id1, field_name)
         f2 = out2.field(series_id2, field_name)
         err = abs(f1 - f2).max()
-        if err > 1e-3:
-            print(field_name, " err: ", err)
+        print(field_name, " err: ", err)
+        if err > 3e-3:
             nfail = 1
 
     status = "PASS" if nfail == 0 else "FAIL"
@@ -44,8 +44,8 @@ def test_repartition(tenv):
     """Test restarting on a different number of processors"""
     # run with 2 processors & write restart
     stdout, output = tenv.truchas(2, "ds11.inp", output_dir="repartition_np2")
-    restart_filename = tenv._working_dir + "/repartition_np2/restart.75"
-    tenv.write_restart(output.filename, 75, restart_filename)
+    restart_filename = tenv._working_dir + "/repartition_np2/restart.79"
+    tenv.write_restart(output.filename, 79, restart_filename)
 
     # run from restart with 4 processors
     stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \

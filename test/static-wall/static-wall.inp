@@ -53,20 +53,14 @@ magnitude was 0.023, and after it was less than 3e-12.
 /
  
 &PHYSICS
+  materials = 'fluid', 'wall'
   body_force_density = 6.0, 0.0, -8.0
   legacy_flow = .true.
 /
  
-&INTERFACES
-  vof_method = 'points'
-  int_particles = 20
-  vof_particles = 20
-  !vof_method = 'divide'
-  !vof_tolerance = 1.0e-6
-/
  
 &BODY
-  material_number = 1
+  material_name   = 'fluid'
   surface_name    = 'cylinder'
   axis            = 'y'
   radius          = 0.925
@@ -77,44 +71,19 @@ magnitude was 0.023, and after it was less than 3e-12.
 /
  
 &BODY
-  material_number = 2
+  material_name   = 'wall'
   surface_name    = 'background'
   velocity        = 3*0.0
   temperature     = 1.0
 /
- 
+
 &MATERIAL
-  material_name   = 'fluid'
-  material_number = 1
-  priority        = 1
-  density         = 1.0
-/
-
-&PHASE
   name = 'fluid'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'fluid'
-  phases = 'fluid'
+  is_fluid = T
+  density = 1.0
 /
 
 &MATERIAL
-  material_name    = 'wall'
-  material_number  = 2
-  immobile         = .true.
-  material_feature = 'background'
-  priority         = 2
-  density          = 1.0
-/
-
-&PHASE
   name = 'wall'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'wall'
-  phases = 'wall'
+  density = 1.0
 /

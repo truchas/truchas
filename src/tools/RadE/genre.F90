@@ -11,45 +11,83 @@ program genre
   use re_encl_type
   use re_exodus_encl
   use re_chaparral_vf
+  use re_patch_type
+  use re_toolpath
   use genre_command_line
+  use parameter_list_type
   use scl
   implicit none
 
-  integer :: ios
+  integer :: lun, ios, n, num_encl, stat
   logical :: is_IOP, found
-  type(encl) :: e
-  type(encl_spec) :: spec
-  type(chap_param) :: cpar
+  type(encl_list) :: e
+  type(re_patch) :: ep
+  type(parameter_list) :: encl_params, chap_params, patch_params
   type(dist_vf) :: vf
-  character(len=512) :: infile, outfile
+  character(:), allocatable :: infile, outfile, ext, basename, errmsg
+  character(255) :: iom
 
-  call scl_init ()
+  call scl_init
   is_IOP = (scl_rank()==1)
 
-  if (is_IOP) then
-    call parse_command_line (infile, outfile)
-    open(unit=10,file=trim(infile),status='old',action='read',iostat=ios)
-  end if
-  call scl_bcast (ios)
-  if (ios /= 0) call re_halt ('Unable to open input file: ' // trim(infile))
+  if (is_IOP) call parse_command_line(infile, outfile)
+  call scl_bcast_alloc(infile)
+  call scl_bcast_alloc(outfile)
 
-  call read_enclosure_namelist (10, spec)
-  call generate_encl (spec, e)
-  call destroy (spec)
+  !! When generating a single radiation enclosure OUTFILE will be used as is.
+  !! For multiple enclosures, unique output file names are generated using
+  !! OUTFILE by inserting distinguishing labels before the file extension.
+  ext = file_extension(outfile)
+  n = index(outfile,ext,back=.true.) - 1 ! strip file extension
+  basename = outfile(:n) // '.'
 
-  call read_chaparral_namelist (10, cpar, found)
-  if (found) then
-    call calculate_vf (e, cpar, vf)
-    if (is_IOP) call write_encl (e, trim(outfile))
-    call write_dist_vf (vf, trim(outfile))
-    call re_info ('Enclosure and VF data written to ' // trim(outfile))
-    call destroy (vf)
-  else
-    call write_encl (e, trim(outfile))
-    call re_info ('No CHAPARRAL namelist found')
-    call re_info ('Enclosure data only written to ' // trim(outfile))
-  end if
+  if (is_IOP) open(newunit=lun,file=infile,status='old',action='read',iostat=ios,iomsg=iom)
+  call scl_bcast(ios)
+  if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))
 
-  call scl_finalize()
+  !! Construct enclosure
+  call read_toolpath_namelists(lun)
+  call read_enclosure_namelist(lun, encl_params)
+  call init_encl_list(e, encl_params, stat, errmsg)
+  if (stat /= 0) call re_halt('error creating the enclosure: ' // errmsg)
+
+  !! Generate patches
+  call read_patches_namelist(lun, patch_params, found)
+  call ep%generate_patches(e, patch_params)
+
+  call read_chaparral_namelist(lun, chap_params, found)
+
+  !! Compute view factors
+  num_encl = e%num_encl()
+  do n = 1, num_encl
+    if (num_encl > 1) outfile = basename // e%this_label() // ext
+    call e%write(outfile)
+    call ep%write(outfile)
+    if (found) then
+      call calculate_vf(e, chap_params, ep, vf)
+      call write_dist_vf(vf, outfile)
+    end if
+    call re_info('wrote ' // outfile)
+    call e%next_encl
+  end do
+
+  call scl_finalize
+
+contains
+
+  !! Return the file extension, or empty string if none
+  function file_extension(filename) result(ext)
+    character(*), intent(in) :: filename
+    character(:), allocatable :: ext
+    integer :: n
+    n = scan(filename, '/', back=.true.)
+    ext = filename(n+1:)
+    n = scan(ext, '.', back=.true.)
+    if (n > 1) then
+      ext = ext(n:)
+    else
+      ext = ''
+    end if
+  end function
 
 end program genre

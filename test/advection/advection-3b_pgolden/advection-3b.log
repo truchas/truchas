@@ -6,64 +6,26 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2018-11-07 11:15:07
+   build date/time:     2019-12-17 13:38:39
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          petaca1.lanl.gov
-   run architecture:    Linux petaca1.lanl.gov 4.13.16-1
-   run host:            petaca1.lanl.gov1 SMP Mon Nov 27
-   run date/time:       07 Nov 18 13:09:48
+   build host:          petaca2.lanl.gov
+   run architecture:    Linux petaca2.lanl.gov 4.13.16-1
+   run host:            petaca2.lanl.gov1 SMP Mon Nov 27
+   run date/time:       06 Jan 20 13:53:54
    processors:          1
 
 ================================================================================
 
 COPYRIGHT
 
-   Copyright (c) 2007-2015. Los Alamos National Security, LLC.
-   All rights reserved.
+   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.
 
-   This software was produced under U.S. Government contract DE-AC52-06NA25396
-   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-   National Security, LLC for the U.S. Department of Energy. The U.S. Government
-   has rights to use, reproduce, and distribute this software.  NEITHER THE
-   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-   is modified to produce derivative works, such modified software should be
-   clearly marked, so as not to confuse it with the version available from LANL.
+   This program was produced under U.S. Government contract 89233218CNA000001
+   for Los Alamos National Laboratory (LANL), which is operated by Triad
+   National Security, LLC for the U.S. Department of Energy/National Nuclear
+   Security Administration.
 
-   Additionally, redistribution and use in source and binary forms, with or
-   without modification, are permitted provided that the following conditions
-   are met:
-
-   1. Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-   2. Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-
-   3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
-      Laboratory, LANL, the U.S. Government, nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
-   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS
-   NATIONAL SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-   NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-================================================================================
-
-DISCLAIMER
-
-   This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-15-097.
+   Truchas is open source software distributed under the 3-Clause BSD License.
 
 ================================================================================
 
@@ -93,9 +55,7 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
-Reading SIMULATION_CONTROL namelist ...
-
-Reading MESH Namelist ...
+Reading MESH namelist ...
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -135,6 +95,8 @@ Reading INTERFACES namelist ...
             2       1    background
          BODY Namelist number  2 will be used for background material ( 1)
 
+Reading BODY namelists ...
+
 Reading NUMERICS namelist ...
 
 Reading FLOW namelist ...
@@ -146,10 +108,8 @@ Reading ADVECTION_VELOCITY namelist ...
  Reading BC Namelists ...
 BC namelists not found; using defaults.
 
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
+Reading PROBE namelists ...
+  no PROBE namelists found
 
 Input file advection-3b.inp closed.
 
@@ -184,10 +144,10 @@ Initializing mesh "MAIN" ...
 Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
-ERROR: material 1 volume fraction > 1 in cells: 30 37 41 42 46 [91 more items omitted]
-       maximum volume fraction less 1:  3.64153E-14
-ERROR: material 2 volume fraction > 1 in cells: 1 5 6 7 8 [375 more items omitted]
-       maximum volume fraction less 1:  1.19460E-13
+ERROR: material 1 volume fraction > 1 in cells: 42 124 138 216 236 [7 more items omitted]
+       maximum volume fraction less 1:  2.22045E-16
+ERROR: material 2 volume fraction > 1 in cells: 143 144 181 253 275 [20 more items omitted]
+       maximum volume fraction less 1:  2.22045E-16
   Computed volume fractions are invalid; attempting to normalize.
   Normalization was successful.
   Initial volume fractions computed.
@@ -207,6 +167,7 @@ ERROR: material 2 volume fraction > 1 in cells: 1 5 6 7 8 [375 more items omitte
  Finished BC initialization.
 
 Configuring volume tracking ...
+Initializing solution probes ...
 
 ================================================================================
 
@@ -543,27 +504,27 @@ EXECUTION
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         67: t =   2.77132E+00, dt(courant) =   4.74133E-02
+         67: t =   2.77132E+00, dt(time) =   4.74133E-02
 
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         68: t =   2.81874E+00, dt(courant) =   4.65591E-02
+         68: t =   2.81874E+00, dt(time) =   4.65591E-02
 
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         69: t =   2.86530E+00, dt(courant) =   4.57203E-02
+         69: t =   2.86530E+00, dt(time) =   4.57203E-02
 
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         70: t =   2.91102E+00, dt(courant) =   4.48966E-02
+         70: t =   2.91102E+00, dt(time) =   4.48966E-02
 
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
 
-         71: t =   2.95591E+00, dt(courant) =   4.40877E-02
+         71: t =   2.95591E+00, dt(time) =   4.40877E-02
 
             Min Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
             Max Velocity: ( 1.0000E+00,  0.0000E+00,  0.0000E+00)
@@ -577,22 +538,22 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  1.067E+01 --- Total
-    1.489E-02 --- Input
-    3.223E+00 --- Initialization
-      2.960E-04 --- Vof Initialization
-      2.330E-03 --- Flow
-        4.330E-04 --- update properties
-    7.398E+00 --- Main Cycle
-      5.528E-01 --- Output
-      6.400E-03 --- Time Step
-      6.747E+00 --- Volumetracking
-        6.749E-01 --- normals
-        5.671E+00 --- reconstruct/advect
-      7.886E-02 --- Flow
-        3.008E-02 --- update properties
+  9.034E+00 --- Total
+    1.281E-02 --- Input
+    1.846E+00 --- Initialization
+      1.140E+00 --- VOF Initialize
+      4.260E-04 --- Vof Initialization
+      2.132E-03 --- Flow
+        4.910E-04 --- update properties
+    7.093E+00 --- Main Cycle
+      4.357E-03 --- Time Step
+      6.303E+00 --- Volumetracking
+        6.271E-01 --- normals
+        5.295E+00 --- reconstruct/advect
+      7.458E-02 --- Flow
+        3.337E-02 --- update properties
 
-                  Process virtual memory used: 4.33E+02 mB
-                                   words/cell: 46642
+                  Process virtual memory used: 4.35E+02 mB
+                                   words/cell: 46855
 
-truchas terminated normally on 07 Nov 18 at 13:10:02
+truchas terminated normally on 06 Jan 20 at 13:54:05

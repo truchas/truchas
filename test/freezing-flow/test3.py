@@ -12,7 +12,7 @@ def run_test(tenv):
     vof = output.field(2, "VOF")[:,0]
     nfail += truchas.compare_max(output.field(2, "Z_TEMP"), golden.field(2, "Z_TEMP"),
                                  1e-7, "temp", time)
-    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-10, "temp", time)
+    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-10, "pressure", time)
     nfail += compare_velocity(output.field(2, "Z_VC"), vof, 1e-10, time)
     nfail += truchas.compare_max(vof, golden.field(2, "VOF")[:,0], 5e-9, "vof", time)
 
@@ -21,7 +21,7 @@ def run_test(tenv):
     vof = output.field(3, "VOF")[:,0]
     nfail += truchas.compare_max(output.field(3, "Z_TEMP"), golden.field(3, "Z_TEMP"),
                                  1e-5, "temp", time)
-    nfail += truchas.compare_max(output.field(3, "Z_P"), 0, 1e-10, "temp", time)
+    nfail += truchas.compare_max(output.field(3, "Z_P"), 0, 1e-10, "pressure", time)
     nfail += compare_velocity(output.field(3, "Z_VC"), vof, 1e-10, time)
     nfail += truchas.compare_max(vof, golden.field(3, "VOF")[:,0], 5e-6, "vof", time)
 

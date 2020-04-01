@@ -87,6 +87,7 @@ cells along the direction of flow should then be 750 and 250.
 /
 
 &PHYSICS
+  materials = 'water'
 
     body_force_density = 0.0, 0.0, 0.0
     legacy_flow            = .true.
@@ -141,7 +142,7 @@ cells along the direction of flow should then be 750 and 250.
 
 &BODY
 
-    Material_number  = 1
+    Material_name    = 'water'
     Surface_Name     = 'background'
     Velocity         = 0.0, 0.0, 0.0
     Temperature      = 0.0
@@ -149,26 +150,11 @@ cells along the direction of flow should then be 750 and 250.
 /
 
 &MATERIAL
-
-    Material_Name           = 'water'
-    Material_Number         = 1
-    Material_Feature        = 'background'
-    priority                = 1
-
-    Density                 = 1.0
-
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'viscosity',     property_constant(3) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  viscosity = 1.0
 /
 
 &PARALLEL_PARAMETERS

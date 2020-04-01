@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "sloshing-flow.inp")
-    golden = tenv.output("sloshing-flow_pgolden/sloshing-flow.h5")
+    golden = tenv.output("sloshing-flow_golden/sloshing-flow.h5")
 
     sid = 2
     time = output.time(sid)
@@ -20,12 +20,12 @@ def run_test(tenv):
     # temperature
     test = output.field(sid, "Z_TEMP")
     gold = golden.field(sid, "Z_TEMP")
-    nfail += truchas.compare_max(test, gold, 1e-6, "temp", time)
+    nfail += truchas.compare_max_rel(test, gold, 1e-10, "temp", time)
 
     # fluid volume fraction
     test = output.field(sid, "VOF")[:,0]
     gold = golden.field(sid, "VOF")[:,0]
-    nfail += truchas.compare_max(test, gold, 1e-6, "vof", time)
+    nfail += truchas.compare_max(test, gold, 1e-8, "vof", time)
 
     truchas.report_summary(nfail)
     return nfail

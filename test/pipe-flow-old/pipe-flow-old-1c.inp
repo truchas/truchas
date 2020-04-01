@@ -22,6 +22,7 @@ U(y) = (1 - y^2)/2, and maximum axial velocity along axis is 1/2.
 /
 
 &PHYSICS
+  materials = 'water'
   legacy_flow = .true.
 /
 
@@ -87,26 +88,15 @@ Pipe walls
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'water'
   velocity = 3*0.0
   temperature = 0.0
 /
 
 &MATERIAL
-  material_name    = 'water'
-  material_number  = 1
-  density          = 1.0  ! not void
-  material_feature = 'background'
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density',       property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'viscosity',     property_constant(3) = 3.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  viscosity = 3.0
 /

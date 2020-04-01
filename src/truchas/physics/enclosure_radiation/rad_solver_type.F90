@@ -11,6 +11,7 @@ module rad_solver_type
   use kinds, only: r8
   use rad_system_type
   use rad_encl_type
+  use vf_matrix_class
   use rad_encl_func_type
   use scalar_func_class
   use parallel_communication
@@ -20,16 +21,17 @@ module rad_solver_type
 
   type, public :: rad_solver
     integer :: nface
-    type(rad_encl), pointer :: encl => null()  ! radiation enclosure surface
-    class(scalar_func), allocatable :: tamb     ! ambient temperature function
-    type(rad_encl_func), pointer :: eps  => null()  ! emissivity enclosure function
+    type(rad_encl), allocatable :: encl      ! radiation enclosure surface
+    class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
+    class(scalar_func), allocatable :: tamb  ! ambient temperature function
+    type(rad_encl_func), allocatable :: eps  ! emissivity enclosure function
     type(rad_system) :: sys
     !! Chebyshev solver parameters
     real(r8) :: c, d = -1.0_r8  ! iteration parameters
     real(r8) :: tol
     integer  :: maxitr
   contains
-    procedure :: init
+    procedure :: init  => init_rad_solver
     procedure :: set_ambient
     procedure :: set_emissivity
     procedure :: set_absolute_zero
@@ -44,154 +46,57 @@ module rad_solver_type
     procedure :: precon_jacobi
     procedure :: precon_matvec1
     procedure :: solve_radiosity
-    final :: rad_solver_delete
   end type rad_solver
 
 contains
 
-  !! Final subroutine for RAD_SOLVER type objects
-  subroutine rad_solver_delete (this)
-    type(rad_solver), intent(inout) :: this
-    if (associated(this%encl)) deallocate(this%encl)
-    if (associated(this%eps)) deallocate(this%eps)
-  end subroutine rad_solver_delete
-
-  subroutine init (this, path, csf, color)
+  !! Initialize RAD_SOLVER type objects
+  subroutine init_rad_solver (this, path, csf)
 
     use rad_encl_file_type
-    use index_partitioning
+    use vf_matrix_face_type
+    use vf_matrix_patch_type
 
-    class(rad_solver), intent(out) :: this
+    class(rad_solver), target, intent(out) :: this
     character(*), intent(in) :: path
     real(r8), intent(in) :: csf
-    integer, intent(in) :: color(:)
 
     type(rad_encl_file) :: file
-    integer :: j, offset, bsize(nPE)
-    logical :: renumbered
+    integer, allocatable :: color(:)
+    logical :: patches
 
     if (is_IOP) call file%open_ro(path)
 
+    !! Choose correct VF matrix class
+    if (is_IOP) patches = file%has_patches()
+    call broadcast(patches)
+    if (patches) then
+      allocate(vf_matrix_patch :: this%vf_mat)
+    else
+      allocate(vf_matrix_face :: this%vf_mat)
+    end if
+
+    !! Partition VF matrix rows.
+    call this%vf_mat%init(file)
+
+    !! Get enclosure face partition from VF matrix row distribution.
+    call this%vf_mat%partition_ER_faces(color)
+
     !! Load the distributed enclosure surface.
     allocate(this%encl)
-    call this%encl%init (file, color)
-
-    if (csf /= 1.0_r8) this%encl%coord = csf * this%encl%coord
-
+    call this%encl%init (file, color, csf)
     this%nface = this%encl%nface_onP
 
-    !! The current implementation of LOAD_VIEW_FACTORS doesn't allow for
-    !! renumbering the enclosure faces, so check that no renumbering has
-    !! occurred.  This should be the case if COLOR is a blocked coloring.
-    renumbered = .false.
-    offset = this%encl%face_ip%first_index() - 1
-    do j = 1, this%encl%nface_onP
-      if (this%encl%face_map(j) /= j+offset) renumbered = .true.
-    end do
-    INSIST(.not.global_any(renumbered))
-
     !! Load the distributed view factor matrix.
-    call collate (bsize, this%nface)
-    call broadcast (bsize)
-    call load_view_factors (this%sys, file, bsize)
+    call this%vf_mat%load_view_factors (file, this%encl)
+    ASSERT(this%nface == this%vf_mat%nface)
+
+    !! Initialize radiosity system
+    call this%sys%init (this%vf_mat)
 
     if (is_IOP) call file%close
 
-  end subroutine init
-
-  subroutine load_view_factors (this, file, bsize)
-
-    use,intrinsic :: iso_fortran_env, only: i8 => int64
-    use rad_encl_file_type
-
-    type(rad_system), intent(out) :: this
-    type(rad_encl_file), intent(in) :: file
-    integer, intent(in) :: bsize(:)
-
-    integer(i8) :: nnonz, start
-    integer :: j, n, nface, nface_tot
-    integer :: vf_bsize(nPE), lengths(nPE), idum0(0)
-    real :: rdum0(0)
-    integer, pointer :: ibuf(:) => null()
-    real,    pointer :: rbuf(:) => null()
-
-    if (is_IOP) call file%get_vf_dims(nface_tot, nnonz)
-    call broadcast (nface_tot)
-    nface = bsize(this_PE)
-
-    this%nface = nface
-    this%offset = sum(bsize(:this_PE-1))
-    this%nface_tot = nface_tot
-
-    ASSERT( nface_tot == sum(bsize) )
-
-    !! Read and distribute the ambient view factors.
-    call allocate_collated_array (rbuf, this%nface_tot)
-    if (is_IOP) call file%get_ambient(rbuf)
-    allocate(this%amb_vf(this%nface))
-    call distribute (this%amb_vf, rbuf)
-    deallocate(rbuf)
-
-    !! Read and distribute the VF matrix nonzero row counts.
-    call allocate_collated_array (ibuf, this%nface_tot)
-    if (is_IOP) call file%get_vf_rowcount(ibuf)
-    allocate(this%ia(this%nface+1))
-    call distribute (this%ia(2:), ibuf)
-    deallocate(ibuf)
-
-    !! Convert the row counts into the local IA indexing array.
-    this%ia(1) = 1
-    do j = 2, size(this%ia)
-      this%ia(j) = this%ia(j) + this%ia(j-1)
-    end do
-
-    !! Determine the sizes of the distributed VF matrix.
-    n = this%ia(this%nface+1) - this%ia(1)
-    allocate(this%vf(n), this%ja(n))
-    call collate (vf_bsize, n)
-    !call broadcast (vf_bsize)
-
-    !! Read the VF matrix in process-sized blocks, sending them to the owning
-    !! processes as we go.  PGSLib only provides the distribute collective to
-    !! do this, and so we distribute with 0-sized destination arrays for all
-    !! processes but the receiving one.  We also use the optional LENGTHS
-    !! argument to distribute (only referenced on the IO process) that gives
-    !! the number of items to distribute to each process, resulting in the
-    !! actual sizes of the array arguments being ignored except to check that
-    !! they are sufficently large.  This allows us to simplify the calls.
-    !! The code is structured for future use of MPI_Isend/Irecv, abandoning
-    !! the usual 'single code path' pattern.
-
-    if (is_IOP) then
-      call file%get_vf_rows(this%vf, this%ja, start=1_i8)
-      if (nPE > 1) then
-        n = maxval(vf_bsize(2:))
-        allocate(ibuf(n), rbuf(n))
-        lengths = 0
-        start = 1 + vf_bsize(1)
-        do n = 2, nPE
-          call file%get_vf_rows(rbuf(:vf_bsize(n)), ibuf(:vf_bsize(n)), start)
-          lengths(n) = vf_bsize(n)
-          call distribute(rdum0, rbuf, lengths)
-          call distribute(idum0, ibuf, lengths)
-          lengths(n) = 0
-          start = start + vf_bsize(n)
-        end do
-        deallocate(ibuf, rbuf)
-      end if
-    else  ! everybody else just participates in the distribute calls.
-      do n = 2, nPE
-        if (n == this_PE) then
-          call distribute(this%vf, rdum0, lengths)
-          call distribute(this%ja, idum0, lengths)
-        else
-          call distribute(rdum0, rdum0, lengths)
-          call distribute(idum0, idum0, lengths)
-        end if
-      end do
-    end if
-
-  end subroutine load_view_factors
+  end subroutine init_rad_solver
 
   subroutine set_ambient (this, tamb)
     class(rad_solver), intent(inout) :: this
@@ -201,8 +106,8 @@ contains
 
   subroutine set_emissivity (this, eps)
     class(rad_solver), intent(inout) :: this
-    type(rad_encl_func), pointer :: eps
-    this%eps => eps
+    type(rad_encl_func), allocatable, intent(inout) :: eps
+    call move_alloc(eps, this%eps)
   end subroutine set_emissivity
 
   subroutine set_absolute_zero (this, t0)
@@ -326,8 +231,10 @@ contains
     class(rad_solver), intent(inout) :: this
     real(r8), intent(in) :: time
 
-    integer  :: n, maxitr
-    real(r8) :: lmin, tol, err
+    integer, parameter ::  maxitr = 10000
+    real(r8), parameter :: tol = 1.0d-4
+    integer  :: n
+    real(r8) :: lmin, err
     real(r8) :: z(this%nface)
     integer, allocatable :: prn_seed(:)
     character(len=255) :: msg
@@ -347,11 +254,10 @@ contains
     call random_number (z)  ! contains a component of the min eigenvector
 
     !! Chebyshev iteration parameters C and D (see Notes 1, 2).
-    tol = 1.0d-4; maxitr = 10000 !TODO! MAKE THESE PARAMETERS
     call this%sys%lambda_min (this%eps%values, tol, maxitr, z, lmin, n, err)
-    write(msg,'(6x,a,i0,a,f8.6,a,es9.3)') 'eigenvalue calculation: lmin(', n, ')=', lmin,  ', error=', err
+    write(msg,'(6x,a,i0,a,f8.6,a,es10.3)') 'eigenvalue calculation: lmin(', n, ')=', lmin,  ', error=', err
     call TLS_info (trim(msg))
-    
+
     !! It is not expected that the preceding eigenvalue calculation should ever
     !! not converge.  But if it doesn't we'll plunge ahead, using the most
     !! pessimistic value, and write a warning message to that effect.

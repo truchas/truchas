@@ -55,18 +55,18 @@ module mesh_interop
   use kinds, only: r8
   use base_mesh_class
   use matl_mesh_func_type
+  use material_model_driver, only: matl_model
   use truchas_logging_services, only: TLS_info
   implicit none
   private
-  
+
   public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf
   public :: void_is_present
 
 contains
 
   logical function void_is_present ()
-    use material_interop, only: void_material_index
-    void_is_present = (void_material_index > 0)
+    void_is_present = matl_model%have_void
   end function void_is_present
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -86,9 +86,9 @@ contains
  !! the material systems that have been defined.  One consequence of this
  !! choice is exploited by UPDATE_MMF_FROM_MATL and UPDATE_MATL_FROM_MMF:
  !!
- !!   The list of region cells returned by MMF_REG_CELL will be the identity 
- !!   mapping; i.e., the first region cell is cell 1, the seccond is cell 2, 
- !!   and so forth.                                                          
+ !!   The list of region cells returned by MMF_REG_CELL will be the identity
+ !!   mapping; i.e., the first region cell is cell 1, the seccond is cell 2,
+ !!   and so forth.
  !!
  !! These two lists (MMF%REG_CELL, MMF%REG_MATL) are normally needed to
  !! associate the elements of the rank-2 array returned by MMF_REG_VOL_FRAC
@@ -107,26 +107,24 @@ contains
 
   subroutine mmf_init (mesh, mmf, stat, errmsg)
 
-    use material_table
-    use material_interop, only: void_material_index
-
     class(base_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(out) :: mmf
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: j
+    integer :: j, n
     integer, allocatable :: all_materials(:)
     integer, pointer :: all_cell_sets(:)
 
     !! Single region consisting of the entire mesh allowing all materials.
-    if (void_material_index > 0) then
-      allocate(all_materials(0:mt_num_material()))
+    n = matl_model%nmatl_real
+    if (matl_model%have_void) then
+      allocate(all_materials(0:n))
       all_materials(0) = 0  ! Special ID for void -- no corresponding material
     else
-      allocate(all_materials(1:mt_num_material()))
+      allocate(all_materials(1:n))
     end if
-    call mt_get_material_ids (all_materials(1:))
+    all_materials(1:n) = [(j, j=1,n)]
     all_cell_sets => mesh%cell_set_id
     call mmf%init(mesh)
     call mmf%define_region(all_cell_sets, all_materials, stat, errmsg)
@@ -170,18 +168,18 @@ contains
 
   subroutine update_mmf_from_matl (mmf)
 
+!    use material_class
     use matl_module, only: gather_vof
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
     use index_partitioning, only: gather_boundary
-    use material_interop, only: material_to_system
+    !use material_interop, only: material_to_system
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
 #endif
 
     type(matl_mesh_func), intent(inout) :: mmf
 
-    integer :: i, m
+    integer :: i, m, p1, p2
     integer, pointer :: material_id(:)
     real(r8), allocatable :: vf(:), vofm(:)
     real(r8), pointer :: vfrac(:,:)
@@ -189,6 +187,8 @@ contains
 #ifdef EXTRA_VOF_DIAGNOSTICS
     character(len=90) :: string
 #endif
+    integer :: material_to_system(matl_model%nphase)
+!    class(material), pointer :: matl
 
     ASSERT(mmf%num_reg() == 1)
 
@@ -200,11 +200,22 @@ contains
     !! We assume an identity mapping from region cells to mesh cells.
     ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
+! All materials plus void exist in MMF
+! non-void MMF material IDs are same as in MATL_MODEL
+! MMF material ID 0 is void and corresponds to phase NMAT
+! if void is present it is the first material in MMF
+
     material_id => mmf%reg_matl(1) ! array of material system IDs
+
+    material_to_system(matl_model%nphase) = 0  ! in case last is void
+    do m = 1, matl_model%nmatl_real
+      call matl_model%get_matl_phase_index_range(m, p1, p2)
+      material_to_system(p1:p2) = m
+    end do
 
     allocate(vofm(ncells), vf(mesh%ncell))
     vfrac = 0.0_r8
-    do m = 1, nmat  ! loop over Truchas material numbers
+    do m = 1, matl_model%nphase
       call gather_vof (m, vofm)
       vf(:mesh%ncell_onP) = vofm(:mesh%ncell_onP)
       call gather_boundary (mesh%cell_ip, vf)
@@ -250,12 +261,8 @@ contains
 
   subroutine update_matl_from_mmf (mmf, state)
 
-    use material_system
-    use material_table
     use matl_utilities, only: update_matl, matl_get_cell_vof
-    use parameter_module, only: nmat
     use legacy_mesh_api, only: ncells
-    use material_interop, only: phase_to_material, void_material_index
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
 #endif
@@ -263,11 +270,10 @@ contains
     type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: state(:,:)
 
-    integer :: i, j, k, m
-    integer,  pointer :: material_id(:), phase_id(:)
+    integer :: i, j, m, p1, p2
+    integer,  pointer :: material_id(:)
     real(r8), pointer :: vfrac(:,:)
-    real(r8), allocatable :: pfrac(:,:), vofm(:), vof(:,:)
-    type(mat_system), pointer :: ms
+    real(r8), allocatable :: vofm(:), vof(:,:)
     class(base_mesh),  pointer :: mesh
 #ifdef EXTRA_VOF_DIAGNOSTICS
     character(len=90) :: string
@@ -286,30 +292,29 @@ contains
     !! We assume an identity mapping from region cells to mesh cells.
     ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
-    allocate(vof(0:nmat,ncells), vofm(ncells))
+    allocate(vof(0:matl_model%nphase,ncells), vofm(ncells))
     vof = 0.0_r8
-    
+
     !! Copy void volume fraction, if any, into VOF
     if (material_id(1) == 0) then
-      ASSERT(void_material_index > 0)
+      ASSERT(matl_model%have_void)
       if (associated(vfrac)) then
         vofm(:mesh%ncell_onP) = vfrac(:mesh%ncell_onP,1)
-        vof(void_material_index,:) = vofm
+        vof(matl_model%void_index,:) = vofm
       else  ! single-material region, just void!
-        vof(void_material_index,:) = 1.0_r8
+        vof(matl_model%void_index,:) = 1.0_r8
       end if
     end if
 
+    ! phase index == vof material index for non-void
     do i = 1, size(material_id) ! loop over MMF materials
       if (material_id(i) == 0) cycle  ! void -- no corresponding material
-      ms => mt_get_material(material_id(i))
-      ASSERT(associated(ms))
-      call ms_get_phase_id (ms, phase_id)
-      select case (size(phase_id))
+      call matl_model%get_matl_phase_index_range(material_id(i), p1, p2)
+      select case (p2-p1+1)
       case (1)! Single-phase material system
 
         !! Copy its volume fraction into the Truchas material VoF array.
-        m = phase_to_material(phase_id(1))
+        m = p1
         if (associated(vfrac)) then
           vofm(:mesh%ncell_onP) = vfrac(:mesh%ncell_onP,i)
           vof(m,:) = vofm
@@ -320,40 +325,29 @@ contains
       case default  ! Multi-phase material system
 
         !! Compute the state-dependent phase volume fractions for the material.
-        allocate(pfrac(mesh%ncell_onP,size(phase_id)))
         if (associated(vfrac)) then
           do j = 1, mesh%ncell_onP
             if (vfrac(j,i) > 0.0_r8) then
-              call ms_phase_mixture (ms, state(j,:), pfrac(j,:))
-              pfrac(j,:) = vfrac(j,i)*pfrac(j,:)
+              call matl_model%get_matl_phase_frac(material_id(i), state(j,1), vof(p1:p2,j))
+              vof(p1:p2,j) = vfrac(j,i)*vof(p1:p2,j)
             else
-              pfrac(j,:) = 0.0_r8
+              vof(p1:p2,j) = 0.0_r8
             end if
           end do
         else  ! single-material region; volume fraction is 1
           do j = 1, mesh%ncell_onP
-            call ms_phase_mixture (ms, state(j,:), pfrac(j,:))
+            call matl_model%get_matl_phase_frac(material_id(i), state(j,1), vof(p1:p2,j))
           end do
         end if
 
-        !! Copy into the Truchas material VoF array.
-        do k = 1, size(phase_id)
-          m = phase_to_material(phase_id(k))
-          vofm(:mesh%ncell_onP) = pfrac(:,k)
-          vof(m,:) = vofm
-        end do
-        deallocate(pfrac)
-
       end select
-      deallocate(phase_id)
     end do
-    deallocate(vofm)
-    
+
     !! Copy the volume fraction data for gap elements from MATL into VOF.
     do j = mesh%ncell_onP+1, ncells
       call matl_get_cell_vof (j, vof(1:,j))
     end do
-    
+
 #ifdef EXTRA_VOF_DIAGNOSTICS
     INSIST(all(vof(1:,:) >= 0.0_r8 .and. vof(1:,:) <= 1.0_r8))
     write(string,'(3(a,f18.16))') 'UPDATE_MATL_FROM_MMF: vof sum interval: [', &
@@ -363,8 +357,7 @@ contains
 
     !! Update the MATL structure using the uncompressed VoF data.
     call update_matl (vof)
-    deallocate(vof)
 
   end subroutine update_matl_from_mmf
-  
+
 end module mesh_interop

@@ -1,0 +1,78 @@
+SINGLE-PHASE ENTHALPY TEST 1
+----------------------------
+The sole purpose of this test is to verify for a single-phase material that
+different equivalent methods of  specifying the internal derived enthalpy
+density are indeed equivalent. This input file specifies the specific heat.
+
+&OUTPUTS
+  output_t = 0.0, 0.5
+  output_dt = 0.5
+/
+
+&PROBE
+  data_file = 'probe1.dat'
+  coord = 0.5, 0.0, 0.0
+  data = 'enthalpy'
+  digits = 10
+/
+
+&MATERIAL
+  name = 'stuff'
+  density = 4.0
+  specific_heat = 0.5
+  ref_temp = 2
+  ref_enthalpy = 1
+  conductivity = 1.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 12.0
+/
+
+&MESH
+ x_axis%coarse_grid = 0.0, 1.0
+ x_axis%intervals = 21
+ y_axis%coarse_grid = -0.05, 0.05
+ y_axis%intervals = 1
+ z_axis%coarse_grid = -0.05, 0.05
+ z_axis%intervals = 1
+/
+
+&PHYSICS
+  materials = 'stuff'
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.02
+  nlk_preconditioner = 'hypre_amg'
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 1.0d-5
+  dt_min  = 1.0d-7
+  dt_grow = 10.0
+  dt_max  = 100.0
+/
+
+&THERMAL_BC
+  name = 'right dirichlet'
+  type = 'temperature'
+  face_set_ids = 2
+  temp = 5.0
+/
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 3, 4, 5, 6
+  flux = 0.0
+/

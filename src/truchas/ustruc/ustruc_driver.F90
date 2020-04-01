@@ -56,6 +56,7 @@ module ustruc_driver
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
+  use material_model_driver, only: matl_model
   implicit none
   private
 
@@ -81,7 +82,7 @@ contains
   subroutine ustruc_driver_final
     if (allocated(this)) deallocate(this)
   end subroutine ustruc_driver_final
-  
+
   logical function ustruc_enabled ()
     ustruc_enabled = allocated(this)
   end function ustruc_enabled
@@ -97,7 +98,6 @@ contains
     use truchas_env, only: input_dir
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_I, NULL_R, NULL_C
-    use material_table, only: MT_MAX_NAME_LEN, mt_has_material
 
     integer, intent(in) :: lun
 
@@ -107,8 +107,7 @@ contains
     real(r8) :: theta1, theta1p, theta2, theta2p, theta_gv
     logical :: found
     integer, allocatable :: setids(:)
-    character(MT_MAX_NAME_LEN) :: material
-    character(32)  :: gv_model
+    character(32) :: material
     character(128) :: iom, gv_model_file
 
     namelist /microstructure/ material, cell_set_ids, symmetry_face_sets, &
@@ -174,7 +173,9 @@ contains
     !! Check the MATERIAL value.
     if (material == NULL_C) then
       call TLS_fatal ('no value assigned to MATERIAL')
-    else if (mt_has_material(material)) then
+    else if (material == 'VOID') then
+      call TLS_fatal ('VOID is an invalid value for MATERIAL')
+    else if (matl_model%has_matl(material)) then
       call params%set ('material', trim(material))
     else
       call TLS_fatal ('unknown MATERIAL: "' // trim(material) // '"')
@@ -235,15 +236,15 @@ contains
     else
       call TLS_fatal ('require VEL-LO-SOLID-FRAC <= VEL-HI-SOLID-FRAC')
     end if
-    
+
     if (gv_model_file /= NULL_C) then ! file mode
-    
+
       !! Check GV_MODEL_FILE.
       if (gv_model_file(1:1) /= '/') gv_model_file = trim(input_dir) // trim(gv_model_file)
       inquire(file=trim(gv_model_file), exist=found)  ! NB: all processes will read
       if (.not.found) call TLS_fatal (' GV_MODEL_FILE not found: "' // trim(gv_model_file) // '"')
       call params%set ('gv-model-file', trim(gv_model_file))
-      
+
     else  ! basic GV fall back mode
 
       !! Check THETA1 and THETA2.
@@ -290,7 +291,7 @@ contains
       else
         call params%set ('theta-gv', theta_gv)
       end if
-    
+
     end if
 
     !! Enable microstructure modeling by allocating the data object THIS.
@@ -305,19 +306,12 @@ contains
 
     use mesh_manager, only: unstr_mesh_ptr
     use diffusion_solver_data, only: mesh_name
-    use material_table, only: mt_material_id, mt_get_material
-    use material_system, only: mat_system, ms_get_phase_id
-    use material_interop, only: phase_to_material
-    use property_data_module, only: isImmobile
 
     real(r8), intent(in) :: t
 
-    integer :: n
+    integer :: m, n, p, p1, p2
     logical :: valid_mat
-    character(:), allocatable :: material
-    type(mat_system), pointer :: ms
-    integer, pointer :: phase_id(:)
-    integer, allocatable :: matid(:)
+    character(:), allocatable :: name
 
     if (.not.allocated(this)) return ! microstructure modeling not enabled
 
@@ -330,25 +324,22 @@ contains
     this%mesh => unstr_mesh_ptr(mesh_name)
     INSIST(associated(this%mesh))
 
-    !! Form the list of old material ids that are the phases of this material;
-    !! they are linearly ordered from low to high temperature phases.
-    call params%get ('material', material)
-    ms => mt_get_material(mt_material_id(material))
-    call ms_get_phase_id (ms, phase_id) ! new phase ids
-    matid = phase_to_material(phase_id) ! translate to old material index
-    deallocate(phase_id)
-
-    !! Split the material id list between solid and liquid phases.
-    do n = 1, size(matid) ! find the lowest temperature liquid phase
-      if (.not.isImmobile(matid(n))) exit
+    !! Split the phase id list between solid and liquid phases.
+    !! They should be ordered from low to high temperature phases.
+    call params%get ('material', name)
+    m = matl_model%matl_index(name)
+    INSIST(m > 0)
+    call matl_model%get_matl_phase_index_range(m, p1, p2)
+    do n = p1, p2 ! find the lowest temperature liquid phase
+      if (matl_model%is_fluid(n)) exit
     end do
-    valid_mat = (n > 1) .and. (n <= size(matid))
-    if (valid_mat) valid_mat = all(isImmobile(matid(:n-1))) .and. all(.not.isImmobile(matid(n:)))
+    valid_mat = (n > p1) .and. (n <= p2)
+    if (valid_mat) valid_mat = all(matl_model%is_fluid(n:p2))
     if (valid_mat) then
-      this%sol_matid = matid(:n-1)
-      this%liq_matid = matid(n:)
+      this%sol_matid = [(p, p=p1,n-1)]
+      this%liq_matid = [(p, p=n,p2)]
     else
-      call TLS_fatal ('no compatible liquid-solid transformation found for MATERIAL: "' // trim(material) // '"')
+      call TLS_fatal ('no compatible liquid-solid transformation found for MATERIAL: "' // name // '"')
     end if
 
     call this%model%init (this%mesh, params)
@@ -387,7 +378,6 @@ contains
     use legacy_mesh_api, only: ncells
     use truchas_danu_output_tools
     use truchas_h5_outfile, only: th5_seq_group
-    use,intrinsic :: iso_c_binding, only: c_ptr
 
     class(th5_seq_group), intent(in) :: seq
 
@@ -420,14 +410,14 @@ contains
 
     !! GV0 analysis module: count of steps in mushy zone
     call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='count')
-    
+
     !! GV1 analysis module
     call write_scalar_field (data_name='ustruc',  hdf_name='uStruc-gv1-ustruc',  viz_name='gv1-ustruc')
     call write_scalar_field (data_name='lambda1', hdf_name='uStruc-gv1-lambda1', viz_name='gv1-lambda1')
     call write_scalar_field (data_name='lambda2', hdf_name='uStruc-gv1-lambda2', viz_name='gv1-lambda2')
 
     call stop_timer ('Microstructure')
-    
+
     !! Additional checkpoint data gets written at the same time.
     call ustruc_write_checkpoint (seq)
 
@@ -452,18 +442,17 @@ contains
     end subroutine
 
   end subroutine ustruc_output
-  
+
   !! Output the integrated internal state of the analysis components to the HDF
   !! file needed for restarts.  This is additional internal state that is not set
   !! by USTRUC_SET_INITIAL_STATE, and it corresponds to data recorded during the
   !! course of integration.
-  
+
   subroutine ustruc_write_checkpoint (seq)
-  
-    use,intrinsic :: iso_c_binding, only: c_ptr
+
     use,intrinsic :: iso_fortran_env, only: int8
     use truchas_h5_outfile, only: th5_seq_group
-    use parallel_communication, only: nPE, is_IOP, collate, broadcast, global_sum
+    use parallel_communication, only: global_sum
     use string_utilities, only: i_to_c
 
     class(th5_seq_group), intent(in) :: seq
@@ -472,10 +461,10 @@ contains
     integer, allocatable :: cid(:), lmap(:)
     integer(int8), allocatable :: lar(:,:)
     character(:), allocatable :: name
-    
+
     if (.not.allocated(this)) return
     call start_timer ('Microstructure')
-    
+
     !! Write the external cell indices that correspond to the state data.
     call this%model%get_map (lmap)
     lmap = this%mesh%xcell(lmap)
@@ -499,7 +488,7 @@ contains
     call stop_timer ('Microstructure')
 
   end subroutine ustruc_write_checkpoint
-  
+
   !! Reads the microstructure checkpoint data from the restart file, and pushes
   !! it to the microstructure analysis components (deserialize).  Note that this
   !! is internal integrated state that is *additional* to the state that is set
@@ -507,21 +496,21 @@ contains
   !! must be after the call to USTRUC_DRIVER_INIT.
 
   subroutine ustruc_read_checkpoint (lun)
-  
+
     use,intrinsic :: iso_fortran_env, only: int8
     use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, collate, distribute
     use sort_utilities, only: heap_sort
     use permutations, only: reorder, invert_perm
     use restart_utilities, only: read_var
-    
+
     integer, intent(in) :: lun
 
     integer :: j, n, ios, ncell, ncomp, ncell_tot, cid, nbyte
     integer, allocatable :: lmap(:), gmap(:), map(:), perm(:), perm1(:)
     integer(int8), allocatable :: garray(:,:), larray(:,:)
-    
+
     call TLS_info ('  Reading microstructure state data from the restart file.')
-    
+
     !! Get the cell list and translate to external cell numbers.  This needs to
     !! exactly match the cell list read from the restart file, modulo the order.
     call this%model%get_map (lmap)
@@ -532,11 +521,11 @@ contains
     n = global_sum(size(lmap))
     allocate(gmap(merge(n,0,is_IOP)))
     call collate (gmap, lmap)
-    
+
     !! Read the number of microstructure cells and verify the value.
     call read_var (lun, ncell_tot, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCELL record')
     if (ncell_tot /= n) call TLS_fatal ('USTRUC_READ_CHECKPOINT: incorrect number of cells')
-    
+
     !! Read the cell list; these are external cell numbers.
     allocate(map(merge(ncell_tot,0,is_IOP)))
     if (is_IOP) read(lun,iostat=ios) map
@@ -563,10 +552,10 @@ contains
       end do
       deallocate(perm1)
     end if
-    
+
     !! Read the number of component sections to follow.
     call read_var (lun, ncomp, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCOMP record')
-    
+
     !! For each component ...
     do n = 1, ncomp
       !! Read the component ID and the number of data bytes (per cell)

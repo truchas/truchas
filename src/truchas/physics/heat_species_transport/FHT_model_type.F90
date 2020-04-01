@@ -12,7 +12,7 @@ module FHT_model_type
   use mfd_disc_type
   use unstr_mesh_type
   use data_layout_type
-  use property_mesh_function
+  use prop_mesh_func_type
   use source_mesh_function
   use bndry_func1_class
   use bndry_func2_class
@@ -30,11 +30,14 @@ module FHT_model_type
     integer :: cell_temp_segid, face_temp_segid
     integer, pointer :: rad_segid(:) => null()
     logical, pointer :: void_cell(:) => null(), void_face(:) => null()
+    real(r8) :: void_temp = 0.0_r8
     !real(r8), pointer :: vfrac(:) => null()
     !! The remaining components must be defined BEFORE calling the init function.
     !! Heat equation parameters
-    type(prop_mf), pointer :: conductivity => null()   ! thermal conductivity
-    type(prop_mf), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
+    !type(prop_mf), pointer :: conductivity => null()   ! thermal conductivity
+    !type(prop_mf), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
+    type(prop_mesh_func), pointer :: conductivity => null()   ! thermal conductivity
+    type(prop_mesh_func), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
     type(source_mf), pointer :: q => null()    ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
@@ -104,11 +107,11 @@ contains
     this%void_cell => null()
     this%void_face => null()
     if (associated(this%conductivity)) then
-      call destroy (this%conductivity)
+      !call destroy (this%conductivity)
       deallocate(this%conductivity)
     end if
     if (associated(this%H_of_T)) then
-      call destroy (this%H_of_T)
+      !call destroy (this%H_of_T)
       deallocate(this%H_of_T)
     end if
     if (associated(this%q)) then
@@ -160,7 +163,7 @@ contains
     end if
 
     !! Compute the generic heat equation residual.
-    call pmf_eval (this%conductivity, state, value)
+    call this%conductivity%compute_value(state, value)
     where (this%void_cell) value = 0.0_r8
     call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
 
@@ -243,9 +246,9 @@ contains
       end do
     end if
 
-    !! Overwrite function value on void cells and faces with dummy equation T=0.
-    where (this%void_cell) Fcell = Tcell
-    where (this%void_face) Fface = Tface
+    !! Overwrite function value on void cells and faces with dummy equation T=T_void.
+    where (this%void_cell) Fcell = Tcell - this%void_temp
+    where (this%void_face) Fface = Tface - this%void_temp
 
   !!!! RESIDUALS OF THE ENCLOSURE RADIATION SYSTEMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -339,7 +342,7 @@ contains
     !! Set cell temperatures.
     call FHT_model_set_cell_temp (this, temp, u)
     call FHT_model_get_cell_temp_view (this, u, var)
-    where (this%void_cell(:size(var))) var = 0.0_r8
+    where (this%void_cell(:size(var))) var = this%void_temp
 
     !! Here we ought to be solving for the remaining algebraically-coupled
     !! components of U, namely the face temperatures and radiosities. Instead
@@ -385,10 +388,11 @@ contains
     fdinc = sqrt(epsilon(1.0d0))  !TODO: FIXME
     do j = 1, this%mesh%ncell_onP
       if (this%void_cell(j)) then
-        Tcell(j) = 0.0_r8
+        Tcell(j) = this%void_temp
       else
-        call pmf_eval (this%H_of_T, j, Tcell(j:j), H0)
-        call pmf_eval (this%H_of_T, j, Tcell(j:j)+fdinc, H1)
+        !TODO: Hey there has been a compute_deriv -- why was it not used?
+        call this%H_of_T%compute_value(j, Tcell(j:j), H0)
+        call this%H_of_T%compute_value(j, Tcell(j:j)+fdinc, H1)
         Tcell(j) = Hdot(j) / ((H1 - H0) / fdinc)
       end if
     end do

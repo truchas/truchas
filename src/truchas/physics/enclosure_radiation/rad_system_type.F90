@@ -10,18 +10,18 @@ module rad_system_type
 
   use kinds
   use parallel_communication
+  use vf_matrix_class
   implicit none
   private
 
   type, public :: rad_system
-    real(r8) :: sigma ! Stefan-Boltzmann constant
-    real(r8) :: t0    ! absolute-zero temperature
+    real(r8) :: sigma     ! Stefan-Boltzmann constant
+    real(r8) :: t0        ! absolute-zero temperature
     integer :: nface      ! number of faces (number of rows) on this process
-    integer :: offset     ! difference between global index and local row index
     integer :: nface_tot  ! total number of faces (number of columns)
-    integer, allocatable :: ia(:), ja(:)
-    real, allocatable :: vf(:), amb_vf(:)
+    class(vf_matrix), pointer :: vf_mat => null()  ! distributed VF Matrix -- reference only
   contains
+    procedure :: init => init_rad_system
     procedure :: flux
     procedure :: residual
     procedure :: matvec1
@@ -36,6 +36,20 @@ module rad_system_type
 
 contains
 
+
+  subroutine init_rad_system (this, vf_mat)
+
+    class(rad_system), intent(out) :: this
+    class(vf_matrix), target, intent(in) :: vf_mat
+
+    this%vf_mat => vf_mat
+
+    this%nface = vf_mat%nface
+    this%nface_tot = vf_mat%nface_tot
+
+  end subroutine init_rad_system
+
+
   !!
   !! Heat flux computational kernel.
   !!
@@ -49,38 +63,18 @@ contains
     real(r8),  intent(in)  :: eps(:)
     real(r8),  intent(out) :: f(:)  ! local heat flux vector
 
-    integer :: i, j
-    real(r8) :: s, global_q(this%nface_tot)
-
     ASSERT(size(q) == this%nface)
     ASSERT(size(t) == this%nface)
     ASSERT(size(eps) == this%nface)
     ASSERT(size(f) == this%nface)
 
-    call collate (global_q, q)
-    call broadcast (global_q)
+    call this%vf_mat%phi_x(f, q)
+    f = eps*this%sigma*((t-this%t0)**4) - eps*f
 
-    do j = 1, this%nface
-      s = 0.0_r8
-      do i = this%ia(j), this%ia(j+1)-1
-        s = s + this%vf(i) * global_q(this%ja(i))
-      end do
-      f(j) = eps(j)*this%sigma*(t(j)-this%t0)**4 - eps(j)*s
-    end do
-
-    if (allocated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%amb_vf
-
-!    do j = 1, this%nface
-!      s = q(j)
-!      do i = this%ia(j), this%ia(j+1)-1
-!        s = s - this%vf(i) * global_q(this%ja(i))
-!      end do
-!      f(j) = s
-!    end do
-!
-!    if (allocated(this%amb_vf)) f = f - (this%sigma*(tamb-this%t0)**4) * this%amb_vf
+    if (this%vf_mat%has_ambient) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%vf_mat%amb_vf
 
   end subroutine flux
+
 
   !!
   !!  Radiosity system residual -- core computational kernel
@@ -95,26 +89,15 @@ contains
     real(r8), intent(in)  :: eps(:)
     real(r8), intent(out) :: r(:)
 
-    integer :: i, j
-    real(r8) :: s, global_q(this%nface_tot)
-
     ASSERT(size(q) == this%nface)
     ASSERT(size(t) == this%nface)
     ASSERT(size(eps) == this%nface)
     ASSERT(size(r) == this%nface)
 
-    call collate (global_q, q)
-    call broadcast (global_q)
+    call this%vf_mat%phi_x(r, q)
+    r = eps*this%sigma*((t-this%t0)**4) - q + (1.0_r8-eps)*r
 
-    do j = 1, size(r)
-      s = 0.0_r8
-      do i = this%ia(j), this%ia(j+1)-1
-        s = s + this%vf(i) * global_q(this%ja(i))
-      end do
-      r(j) = eps(j)*this%sigma*(t(j)-this%t0)**4 - q(j) + (1.0_r8-eps(j))*s
-    end do
-
-    if (allocated(this%amb_vf)) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
+    if (this%vf_mat%has_ambient) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf_mat%amb_vf
 
   end subroutine residual
 
@@ -124,22 +107,13 @@ contains
     real(r8), intent(in) :: eps(:)
     real(r8), intent(inout) :: z(:)
 
-    integer :: i, j
-    real(r8) :: s, global_z(this%nface_tot)
+    real(r8) :: temp(this%nface)
 
     ASSERT(size(eps) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call collate (global_z, z)
-    call broadcast (global_z)
-
-    do j = 1, this%nface
-      s = 0.0_r8
-      do i = this%ia(j), this%ia(j+1)-1
-        s = s + this%vf(i) * global_z(this%ja(i))
-      end do
-      z(j) = eps(j)*s
-    end do
+    call this%vf_mat%phi_x(temp, z)
+    z = eps*temp
 
   end subroutine matvec1
 
@@ -174,7 +148,7 @@ contains
     ASSERT(size(b) == this%nface)
 
     b = eps * this%sigma * (t-this%t0)**4
-    if (allocated(this%amb_vf)) b = b + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%amb_vf
+    if (this%vf_mat%has_ambient) b = b + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf_mat%amb_vf
 
   end subroutine rhs
 
@@ -229,11 +203,8 @@ contains
     integer,  intent(out)   :: numitr
     real(r8), intent(out)   :: error
 
-    integer :: i, j
-    real(r8) :: rhs_norm, res_norm, s, psi, omega
+    real(r8) :: rhs_norm, res_norm, psi, omega
     real(r8), dimension(this%nface) :: rhs, r, p
-    real(r8) :: global_q(this%nface_tot)
-
     ASSERT(size(q) == this%nface)
     ASSERT(size(t) == this%nface)
     ASSERT(size(eps) == this%nface)
@@ -242,8 +213,11 @@ contains
     ASSERT(d > 0.0_r8)
     ASSERT(d - abs(c) > 0.0_r8)
 
-    rhs = eps*this%sigma*(t-this%t0)**4 + &
-          this%sigma*(tamb-this%t0)**4*(1.0_r8-eps)*this%amb_vf
+    rhs = eps*this%sigma*(t-this%t0)**4
+
+    if (this%vf_mat%has_ambient) then
+      rhs = rhs + this%sigma*(tamb-this%t0)**4*(1.0_r8-eps)*this%vf_mat%amb_vf
+    end if
 
     rhs_norm = global_l2norm(rhs)
 
@@ -259,15 +233,8 @@ contains
     do
 
       !! Compute the residual of the current iterate.
-      call collate (global_q, q)
-      call broadcast (global_q)
-      do j = 1, size(r)
-        s = 0.0_r8
-        do i = this%ia(j), this%ia(j+1)-1
-          s = s + this%vf(i)*global_q(this%ja(i))
-        end do
-        r(j) = rhs(j) - q(j) + (1.0_r8-eps(j))*s
-      end do
+      call this%vf_mat%phi_x(r, q)
+      r = rhs - q + (1.0_r8-eps)*r
 
       if (numitr > 0) then
 
@@ -313,10 +280,9 @@ contains
     integer,  intent(in) :: numitr  ! number of iterations
     real(r8), intent(inout) :: q(:)  ! RHS on entry, approx solution on return
 
-    integer :: i, j, n
-    real(r8) :: s, psi, omega
+    integer :: n
+    real(r8) :: psi, omega
     real(r8), dimension(this%nface) :: r, p, rhs
-    real(r8) :: global_q(this%nface_tot)
 
     ASSERT(size(q) == this%nface)
     ASSERT(size(eps) == this%nface)
@@ -331,15 +297,8 @@ contains
     do n = 2, numitr
 
       !! Compute the residual of the current iterate.
-      call collate (global_q, q)
-      call broadcast (global_q)
-      do j = 1, size(r)
-        s = 0.0_r8
-        do i = this%ia(j), this%ia(j+1)-1
-          s = s + this%vf(i)*global_q(this%ja(i))
-        end do
-        r(j) = rhs(j) - q(j) + (1.0_r8-eps(j))*s
-      end do
+      call this%vf_mat%phi_x(r, q)
+      r = rhs - q + (1.0_r8-eps)*r
 
       if (n == 2) then ! starting values for the update parameters
         psi = 0.5_r8*(c/d)**2
@@ -364,8 +323,8 @@ contains
     integer,  intent(in) :: numitr  ! number of iterations
     real(r8), intent(inout) :: z(:)  ! RHS on entry, approx solution on return
 
-    integer :: i, j, n
-    real(r8) :: s, rhs(this%nface), global_z(this%nface_tot)
+    integer :: n
+    real(r8) :: rhs(this%nface), temp(this%nface)
 
     ASSERT(size(z) == this%nface)
     ASSERT(size(eps) == this%nface)
@@ -376,15 +335,8 @@ contains
     rhs = z
 
     do n = 2, numitr
-      call collate (global_z, z)
-      call broadcast (global_z)
-      do j = 1, this%nface
-        s = 0.0_r8
-        do i = this%ia(j), this%ia(j+1)-1
-          s = s + this%vf(i)*global_z(this%ja(i))
-        end do
-        z(j) = rhs(j) + (1.0_r8-eps(j))*s
-      end do
+      call this%vf_mat%phi_x(temp, z)
+      z = rhs + (1.0_r8-eps)*temp
     end do
 
   end subroutine jacobi_precon
@@ -439,8 +391,8 @@ contains
     integer,  intent(out)   :: numitr
     real(r8), intent(out)   :: error
 
-    integer :: i, j, n
-    real(r8) :: s, theta, shift, global_q(this%nface_tot), p(this%nface)
+    integer :: n
+    real(r8) :: s, theta, shift, p(this%nface)
 
     ASSERT(size(eps) == this%nface)
     ASSERT(size(eps) == size(q))
@@ -448,7 +400,7 @@ contains
     ASSERT(maxitr > 0)
 
     p = q
-    
+
     shift = 0.1_r8  ! anything > 0 will do (but effect the convergence rate)
 
     do n = 0, maxitr
@@ -456,18 +408,10 @@ contains
       s = global_l2norm(p)
       INSIST( s > 0.0_r8 )
       q = p / s
-      call collate (global_q, q)
-      call broadcast (global_q)
 
       !! Matrix-vector product.
-      do j = 1, this%nface
-        !s = 0.0_r8
-        s = shift * q(j)
-        do i = this%ia(j), this%ia(j+1)-1
-          s = s + (1.0_r8-eps(j))*this%vf(i)*global_q(this%ja(i))
-        end do
-        p(j) = s
-      end do
+      call this%vf_mat%phi_x(p, q)
+      p = shift*q + (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.
       theta = global_dot_product(q, p)
@@ -493,8 +437,8 @@ contains
     integer,  intent(out)   :: numitr
     real(r8), intent(out)   :: error
 
-    integer :: i, j, n
-    real(r8) :: s, theta, global_q(this%nface_tot), p(this%nface)
+    integer :: n
+    real(r8) :: s, theta, p(this%nface)
 
     ASSERT(size(eps) == this%nface)
     ASSERT(size(eps) == size(q))
@@ -508,17 +452,10 @@ contains
       s = global_l2norm(p)
       INSIST( s > 0.0_r8 )
       q = p / s
-      call collate (global_q, q)
-      call broadcast (global_q)
 
       !! Matrix-vector product.
-      do j = 1, this%nface
-        s = q(j)
-        do i = this%ia(j), this%ia(j+1)-1
-          s = s - (1.0_r8-eps(j))*this%vf(i)*global_q(this%ja(i))
-        end do
-        p(j) = s
-      end do
+      call this%vf_mat%phi_x(p, q)
+      p = q - (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.
       theta = global_dot_product(q, p)

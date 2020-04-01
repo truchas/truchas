@@ -23,7 +23,7 @@ def run_test(tenv):
     # Test final velocity against exact
     velocity = output.field(3, "Z_VC")
     velocity[:,0] -= 4
-    nfail += truchas.compare_max(velocity, 0, 2e-13, "velocity", output.time(3))
+    nfail += truchas.compare_max(velocity, 0, 1e-12, "velocity", output.time(3))
 
     # Test pressure against exact
     nfail += truchas.compare_max(output.field(1, "Z_P"), 0, 1e-10, "pressure", output.time(1))

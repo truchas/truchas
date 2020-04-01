@@ -9,6 +9,7 @@
 /
 
 &PHYSICS
+  materials = 'water', 'copper', 'VOID'
   flow = .true.
   body_force_density = 4.9, -8.5, 0.0
   heat_transport = .true.
@@ -26,6 +27,7 @@
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  void_temperature   = 300.0
 /
 
 &DS_SOURCE
@@ -46,7 +48,7 @@
 &FLOW
   inviscid = .false.
   viscous_implicitness = 1.0
-  viscous_number = 100.0
+  viscous_number = 0
   vol_track_subcycles = 1
   courant_number = 0.2
 /
@@ -64,7 +66,7 @@
   abs_tol = 1.0e-12
   max_ds_iter = 50
   max_amg_iter = 50
-  krylov_method = 'gmres'
+  krylov_method = 'cg'
   gmres_krylov_dim = 5
 /
 
@@ -72,7 +74,7 @@ Fluid-filled region in the lower part of the domain
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 1
+  material_name = 'water'
   velocity        = 3*0.0
   temperature     = 300.0
 /
@@ -81,7 +83,7 @@ Void region in the upper part of the domain
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 2
-  material_number = 2
+  material_name = 'VOID'
   temperature     = 300.0
 /
 
@@ -89,7 +91,7 @@ Surrounding mold region
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 3
-  material_number = 3
+  material_name = 'copper'
   temperature     = 300.0
 /
 
@@ -110,54 +112,21 @@ Surrounding mold region
 &FLOW_BC
   name = 'walls'
   face_set_ids = 12
-  condition = 'no slip'
+  type = 'no-slip'
 /
 
 &MATERIAL
-  Material_Name   = 'water'
-  Material_Number = 1
-  priority        = 1
-  Density         = 1.0e3
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density',       property_constant(1) = 1.0e3
-  property_name(2) = 'specific heat', property_constant(2) = 4.1e3
-  property_name(3) = 'conductivity',  property_constant(3) = 61.0 !0.61
-  property_name(4) = 'viscosity',     property_constant(4) = 8.3e-4
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
+  is_fluid = T
+  density = 1.0e3
+  specific_heat = 4.1e3
+  conductivity = 61.0 !0.61
+  viscosity = 8.3e-4
 /
 
 &MATERIAL
-  Material_Name = 'void'
-  Material_Number = 2
-  Material_Feature = 'background'
-  priority = 2
-  Density = 0.0
-  void_temperature = 300.0
-/
-
-&MATERIAL
-  Material_Name   = 'copper'
-  Material_Number = 3
-  priority        = 3
-  Immobile        = .true.
-  Density         = 8.9e3
-/
-
-&PHASE
   name = 'copper'
-  property_name(1) = 'density',       property_constant(1) = 8.9e3
-  property_name(2) = 'specific heat', property_constant(2) = 390.0
-  property_name(3) = 'conductivity',  property_constant(3) = 390.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'copper'
-  phases = 'copper'
+  density = 8.9e3
+  specific_heat = 390.0
+  conductivity = 390.0
 /

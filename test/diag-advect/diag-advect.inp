@@ -8,6 +8,7 @@
 /
  
 &PHYSICS
+  materials = 'oil', 'water'
   legacy_flow = .true.
 /
 
@@ -36,44 +37,24 @@
   translation_pt = 0.3, 0.35, -0.5
   radius = 0.15
   height = 1.0
-  material_number = 1
+  material_name = 'oil'
   temperature = 0.0
 /
 
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'water'
   temperature = 0.0
 /
+
 &MATERIAL
-  material_number  = 1
-  material_name = 'oil'
+  name = 'oil'
+  is_fluid = T
   density = 1.0
- /
-
-&PHASE
-  name = 'oil'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'oil'
-  phases = 'oil'
 /
 
 &MATERIAL
-  material_number = 2
-  material_name = 'water'
-  material_feature = 'background'
+  name = 'water'
+  is_fluid = T
   density = 1.0
- /
-
-&PHASE
-  name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
 /

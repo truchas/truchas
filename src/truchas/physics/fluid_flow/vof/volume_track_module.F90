@@ -26,11 +26,15 @@ MODULE VOLUME_TRACK_MODULE
   !            Matthew Williams (mww@lanl.gov)
   !=======================================================================
   use kinds, only: r8
+  use parameter_module, only: maxmat
   use truchas_logging_services
   implicit none
   private
  
   public :: VOLUME_TRACK
+
+  ! Interface-tracking advection priority control parameters
+  integer, dimension(maxmat), public :: Matpri
 
 CONTAINS
  
@@ -58,7 +62,6 @@ CONTAINS
     use legacy_mesh_api,           only: ncells, ndim, nfc, nvc, Cell, Vertex, EN_GATHER
     use parameter_module,          only: nicells, nmat
     use pgslib_module,             only: PGSLib_Global_MAXVAL
-    use property_data_module,      only: Matpri
     use truncate_volume_module,    only: Trunc_Vol, TRUNCATE_VOLUME, FACE_PARAM
     use vof_data_module,           only: adv_dt, interface_area
     use truchas_timers
@@ -356,7 +359,6 @@ CONTAINS
     use mollify,              only: MOLLIFY_CONV_SAVEMEM
     use parameter_module,     only: nmat
     use legacy_mesh_api,      only: ncells, ndim
-    use property_data_module, only: Matpri
     use vof_data_module,      only: interface_geometry
  
     ! Arguments

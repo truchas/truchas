@@ -18,6 +18,7 @@ the fluid/void interfaces moving at speed 1 to the right.
 /
 
 &PHYSICS
+  materials = 'water', 'VOID'
   legacy_flow = .true.
 /
 
@@ -58,7 +59,7 @@ INFLOW
   !bc_variable  = 'velocity'
   !bc_type      = 'dirichlet'
   !bc_value     = 1.0, 0.0, 0.0
-  !inflow_material = 1
+  !inflow_material = 'water'
   bc_variable  = 'pressure'
   bc_type      = 'dirichlet'
   bc_value     = 0.0
@@ -78,7 +79,7 @@ Fluid plug
   surface_name = 'box'
   length = 1.0, 1.0, 1.0
   translation_pt = 1.5, 0.0, 0.0
-  material_number = 1
+  material_name = 'water'
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
@@ -87,35 +88,14 @@ Surrounding void
 &BODY
   surface_name = 'background'
   mesh_material_number = 2
-  material_number = 2
+  material_name = 'VOID'
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
 
-&INTERFACES
- vof_method = 'divide'
- vof_tolerance = 1.0e-3
-/
- 
-&MATERIAL
-  material_name = 'water'
-  material_number = 1
-  density = 1.0 ! not void
-/
-
-&PHASE
-  name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
-/
 
 &MATERIAL
-  material_name = 'void'
-  material_number = 2
-  density = 0.0
-  material_feature = 'background'
+  name = 'water'
+  is_fluid = T
+  density = 1.0
 /

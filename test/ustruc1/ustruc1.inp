@@ -22,6 +22,7 @@ solidifying, solid, and undefined cell states from the microstructure model.
 /
 
 &PHYSICS
+  materials = 'Graphite 2020', 'alloy'
   heat_transport = .true.
 /
 
@@ -44,7 +45,7 @@ solidifying, solid, and undefined cell states from the microstructure model.
   rel_enthalpy_tol   = 1.0e-3
   nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 1
+  pc_amg_cycles      = 2
   verbose_stepping   = .true.
 /
 
@@ -59,7 +60,7 @@ Metal volume at a constant temperature
 &BODY
   surface_name		= 'from mesh file'
   mesh_material_number 	= 1
-  material_number	= 1
+  material_name         = 'alloy'
   temperature		= 520.0
 /
 
@@ -67,7 +68,7 @@ Graphite mold with a thermal gradient
 &BODY
   surface_name		= 'from mesh file'
   mesh_material_number	= 2
-  material_number	= 3
+  material_name         = 'Graphite 2020'
   temperature_function  = 'temp-grad'
 /
 
@@ -112,29 +113,15 @@ Graphite mold with a thermal gradient
 ### GRAPHITE (MOLD) ############################################################
 3-Graphite grade 2020
 
-&MATERIAL_SYSTEM
-  name = 'Graphite 2020'
-  phases = 'Graphite 2020'
-/
-
 &MATERIAL
-  material_name = 'Graphite 2020'
-  material_number = 3
-  priority = 3
-  immobile = .true.
-  material_feature = 'background'
-  density = 1750.0
-/
-
-&PHASE
   name = 'Graphite 2020'
-  property_name(1) = 'density',                  property_constant(1) = 1750.0
-  property_name(2) = 'specific heat',            property_function(2) = 'graphite_Cp'
-  property_name(3) = 'conductivity',             property_function(3) = 'graphite_k'
-  property_name(4) = 'electrical conductivity',  property_constant(4) = 8.4e4
-  property_name(5) = 'TM Referenece Density',    property_constant(5) = 1750.0
-  property_name(6) = 'TM Reference Temperature', property_constant(6) = 873.0
-  property_name(7) = 'TM linear CTE',            property_constant(7) = 7.0e-6
+  density = 1750.0
+  specific_heat_func = 'graphite_Cp'
+  conductivity_func = 'graphite_k'
+  electrical_conductivity = 8.4e4
+  tm_ref_density = 1750.0
+  tm_ref_temp = 873.0
+  tm_linear_cte = 7.0e-6
 /
 
 &FUNCTION
@@ -158,36 +145,41 @@ Graphite mold with a thermal gradient
 Sn60Bi40 wt pct
 Sn73Bi27 at pct
 
-&MATERIAL_SYSTEM
+&MATERIAL
   name   = 'alloy'
+  density = 8290
   phases = 'solid', 'alloy'
-  transition_temps_low  = 417.0 !412.0
-  transition_temps_high = 443.0 !448.0
-  latent_heat           = 57000.0
-  smoothing_radius	= 5.0
 /
 
 #  Assumed ideal solution type mixing for Latent heat,
 #  may be 48000 based on some literature
 
-###############################################################################
-
-&MATERIAL
-  material_name = 'alloy'
-  material_number = 1
-  priority = 1
-  density = 8290.00
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'alloy'
+  solidus_temp  = 412.0
+  liquidus_temp = 448.0
+  latent_heat   = 57000.0
 /
+
+################################################################################
+
+&PHASE
+  name = 'solid'
+  specific_heat = 188.4
+  conductivity = 30.0
+/
+# Solid thermal conductivity is a handbook type value from the internet
+
+###############################################################################
 
 &PHASE
   name = 'alloy'
-  property_name(1) = 'density',			property_constant(1) = 8290.00
-  property_name(2) = 'specific heat',		property_function(2) = 'alloy_cp'
-  property_name(3) = 'conductivity',		property_function(3) = 'alloy_k'
-  property_name(4) = 'viscosity',    		property_function(4) = 'alloy_n'
+  is_fluid = T
+  specific_heat_func = 'alloy_cp'
+  conductivity_func = 'alloy_k'
+  viscosity_func = 'alloy_n'
 /
-  property_name(5) = 'density deviation',	property_function(5) = 'alloy_p'
-
 
 !! This is unknown right now and assumed to be 20% higher than the solid
 &FUNCTION
@@ -214,30 +206,3 @@ Sn73Bi27 at pct
   poly_coefficients   = 1.562e-2,	-5.24e-5,	6.458e-8,	-2.688e-11
   poly_exponents(1,:) = 0,		1,		2,		3
 /
-
-!!  This density function is only good for ~450-750K
-    Fit from Plevachuk 2010
-FUNCTION
-  name = 'alloy_p'
-  type = 'polynomial'
-  poly_coefficients   = 1	-7.853e-1
-  poly_exponents(1,:) = 0,	1
-
-
-################################################################################
-
-&MATERIAL
-  material_name = 'solid'
-  material_number = 2
-  priority = 2
-  immobile = .true.
-  density = 8290
-/
-
-&PHASE
-  name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 8290
-  property_name(2) = 'specific heat', property_constant(2) = 188.4
-  property_name(3) = 'conductivity',  property_constant(3) = 30.0
-/
-# Solid thermal conductivity is a handbook type value from the internet

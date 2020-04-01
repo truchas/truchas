@@ -20,21 +20,22 @@ contains
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_R, NULL_I
     use string_utilities, only: i_to_c, lower_case
+    use material_model_driver, only: matl_model
     use truchas_logging_services
 
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: params
 
-    integer :: n, ios, data_size
+    integer :: n, ios, data_size, matid
     logical :: found
     character(128) :: iom
     character(:), allocatable :: label
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer :: face_set_ids(32), inflow_material
+    integer :: face_set_ids(32)
     real(r8) :: pressure, velocity(3), dsigma, inflow_temperature
-    character(31) :: name, type, pressure_func, velocity_func
+    character(31) :: name, type, pressure_func, velocity_func, inflow_material
     namelist /flow_bc/ name, face_set_ids, type, pressure, pressure_func, velocity, &
         velocity_func, dsigma, inflow_material, inflow_temperature
 
@@ -62,7 +63,7 @@ contains
       dsigma = NULL_R
       pressure_func = NULL_C
       velocity_func = NULL_C
-      inflow_material = NULL_I
+      inflow_material = NULL_C
       inflow_temperature = NULL_R
 
       if (is_IOP) read(lun,nml=flow_bc,iostat=ios,iomsg=iom)
@@ -139,7 +140,15 @@ contains
       !! Additional inflow data
       select case (lower_case(type))
       case ('velocity', 'pressure')
-        if (inflow_material /= NULL_I) call plist%set('inflow-material', inflow_material)
+        if (inflow_material /= NULL_C) then
+          matid = matl_model%phase_index(inflow_material)
+          if (matid == 0) then
+            call TLS_fatal('unknown material for INFLOW_MATERIAL: ' // trim(inflow_material))
+          else if (.not.matl_model%is_fluid(matid)) then
+            call TLS_fatal('INFLOW_MATERIAL not a liquid: ' // trim(inflow_material))
+          end if
+          call plist%set('inflow-material', trim(inflow_material))
+        end if
         if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)
       end select
 

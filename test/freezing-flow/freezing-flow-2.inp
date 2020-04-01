@@ -17,6 +17,7 @@ solid/void with no fluid present (other than void).
 /
 
 &PHYSICS
+  materials = 'water', 'VOID'
   heat_transport = .true.
   flow = .true.
 /
@@ -85,7 +86,7 @@ Void to the right
   surface_name = 'plane'
   axis = 'x'
   translation_pt = 1.0, 0.0, 0.0
-  material_number = 3
+  material_name = 'VOID'
   temperature = 7.0
   velocity = 3*0.0
 /
@@ -93,54 +94,29 @@ Void to the right
 Liquid to the left
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'liquid'
   temperature = 7.0
   velocity = 3*0.0
 /
 
-&INTERFACES
-  vof_method = 'divide'
-/
 
 &MATERIAL
-  material_number = 1
-  material_name = 'solid'
-  immobile = .true.
-  density = 1.0 ! not void
-/
-
-&PHASE
-  name = 'solid'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 5.0
-/
-
-&MATERIAL
-  material_number = 2
-  material_name = 'liquid'
-  density = 1.0 ! not void
-  material_feature = 'background'
+  name = 'water'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 5.0
+  phases = 'solid', 'liquid'
 /
 
 &PHASE
   name = 'liquid'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 5.0
+  is_fluid = T
 /
 
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'solid', 'liquid'
-  transition_temps_low = 5.0
-  transition_temps_high = 6.0
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'liquid'
+  solidus_temp = 4.5
+  liquidus_temp = 6.5
   latent_heat = 2.0
-  smoothing_radius = 0.5
-/
-
-&MATERIAL
-  material_number = 3
-  material_name = 'void'
-  density = 0.0
 /

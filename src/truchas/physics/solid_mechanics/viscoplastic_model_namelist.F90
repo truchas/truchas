@@ -71,14 +71,14 @@ contains
     use string_utilities, only: i_to_c, raise_case
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_C
     use parallel_communication, only: is_IOP, broadcast
-    use phase_property_table
     use truchas_logging_services
     use MTS_VP_model_type
     use power_law_VP_model_type
+    use material_model_driver, only: matl_model
 
     integer, intent(in) :: lun
     
-    character(PPT_MAX_NAME_LEN) :: phase, model
+    character(32) :: phase, model
     real(r8) :: pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r
     real(r8) :: mts_k, mts_mu_0, mts_sig_a, mts_d, mts_temp_0, mts_b, &
                 mts_edot_0i, mts_g_0i, mts_q_i, mts_p_i, mts_sig_i
@@ -154,7 +154,7 @@ contains
       
       !! Check the phase name.
       if (phase == NULL_C) call TLS_fatal ('PHASE must be assigned a phase name')
-      if (.not.ppt_has_phase(phase)) call TLS_fatal ('unknown PHASE: "' // trim(phase) // '"')
+      if (.not.matl_model%has_phase(phase)) call TLS_fatal ('unknown PHASE: "' // trim(phase) // '"')
       if (phase_exists(phase)) &
           call TLS_fatal ('already read a VISCOPLASTIC_MODEL namelist for this PHASE: "' &
                           // trim(phase) // '"')

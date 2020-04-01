@@ -6,12 +6,12 @@ PROGRAM INFORMATION
    code:                Truchas
    version:             3.1.0-alpha
    build architecture:  x86_64
-   build date/time:     2019-04-16 15:55:40
+   build date/time:     2019-12-17 13:38:39
    build flags:         -u -C -C=dangling -gline -nan
-   build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 4.13.16-1
-   run host:            noether.lanl.gov1 SMP Mon Nov 27
-   run date/time:       19 Apr 19 16:00:16
+   build host:          petaca2.lanl.gov
+   run architecture:    Linux petaca2.lanl.gov 4.13.16-1
+   run host:            petaca2.lanl.gov1 SMP Mon Nov 27
+   run date/time:       06 Jan 20 14:26:04
    processors:          1
 
 ================================================================================
@@ -55,9 +55,7 @@ Reading PHYSICS namelist ...
 
  Reading OUTPUTS Namelist ...
 
-Reading SIMULATION_CONTROL namelist ...
-
-Reading MESH Namelist ...
+Reading MESH namelist ...
 
  Reading MATERIAL Namelist # 1 ...
 
@@ -98,6 +96,8 @@ Reading INTERFACES namelist ...
             2       2    background
          BODY Namelist number  2 will be used for background material ( 2)
 
+Reading BODY namelists ...
+
 Reading NUMERICS namelist ...
 
 Reading LEGACY_FLOW namelist ...
@@ -109,10 +109,8 @@ Reading ADVECTION_VELOCITY namelist ...
  Reading BC Namelists ...
 BC namelists not found; using defaults.
 
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
+Reading PROBE namelists ...
+  no PROBE namelists found
 
 Input file diag-advect.inp closed.
 
@@ -144,18 +142,6 @@ Initializing mesh "MAIN" ...
 Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
-
-    Volume fractions will be computed in       1024 total cells with   5**3 particles/cell
-
-    Tallying        5**3 =    125 interface particles
-
-    Tallied   1 x   5**2 =     25 interface particles
-    Tallied   2 x   5**2 =     50 interface particles
-    Tallied   3 x   5**2 =     75 interface particles
-    Tallied   4 x   5**2 =    100 interface particles
-    Tallied   5 x   5**2 =    125 interface particles
-
-    Body # 2 was clipped in     91 cells because of previously defined bodies
   Initial volume fractions computed.
   Using default value "specific heat" = 0.000E+00 for phase "oil"
   Using default value "specific heat" = 0.000E+00 for phase "water"
@@ -173,6 +159,7 @@ Computing initial volume fractions ...
  Finished BC initialization.
   Using default value "density deviation" = 0.000E+00 for phase "oil"
   Using default value "density deviation" = 0.000E+00 for phase "water"
+Initializing solution probes ...
 
 ================================================================================
 
@@ -191,7 +178,7 @@ Warning: excessive volume adjustment: cell=8, adjustment fraction=  4.000E-01
 Warning: excessive volume adjustment: cell=9, adjustment fraction=  4.000E-01
 Warning: excessive volume adjustment: cell=10, adjustment fraction=  4.000E-01
 Warning: excessive volume adjustment: cell=11, adjustment fraction=  4.000E-01
-Warning: excessive volume adjustment: cell=138, matid=1, adjustment fraction= -1.084E-16
+Warning: excessive volume adjustment: cell=138, matid=2, adjustment fraction= -8.048E-16
 Warning: excessive volume adjustment: cell=1, adjustment fraction=  1.000E+00
 Warning: excessive volume adjustment: cell=2, adjustment fraction=  2.174E-01
 Warning: excessive volume adjustment: cell=3, adjustment fraction=  2.174E-01
@@ -203,7 +190,6 @@ Warning: excessive volume adjustment: cell=8, adjustment fraction=  2.174E-01
 Warning: excessive volume adjustment: cell=9, adjustment fraction=  2.174E-01
 Warning: excessive volume adjustment: cell=10, adjustment fraction=  2.174E-01
 Warning: excessive volume adjustment: cell=11, adjustment fraction=  2.174E-01
-Warning: excessive volume adjustment: cell=336, matid=2, adjustment fraction= -1.807E-17
 Warning: excessive volume adjustment: cell=1, adjustment fraction=  1.000E+00
 Warning: excessive volume adjustment: cell=2, adjustment fraction=  1.453E-01
 Warning: excessive volume adjustment: cell=3, adjustment fraction=  1.453E-01
@@ -215,9 +201,8 @@ Warning: excessive volume adjustment: cell=8, adjustment fraction=  1.453E-01
 Warning: excessive volume adjustment: cell=9, adjustment fraction=  1.453E-01
 Warning: excessive volume adjustment: cell=10, adjustment fraction=  1.453E-01
 Warning: excessive volume adjustment: cell=11, adjustment fraction=  1.453E-01
-Warning: excessive volume adjustment: cell=231, matid=1, adjustment fraction= -1.276E-16
-Warning: excessive volume adjustment: cell=399, matid=1, adjustment fraction= -2.922E-16
-Warning: excessive volume adjustment: cell=399, matid=2, adjustment fraction= -1.735E-16
+Warning: excessive volume adjustment: cell=231, matid=1, adjustment fraction= -1.719E-16
+Warning: excessive volume adjustment: cell=399, matid=2, adjustment fraction= -2.162E-16
 Warning: excessive volume adjustment: cell=1, adjustment fraction=  1.000E+00
 Warning: excessive volume adjustment: cell=2, adjustment fraction=  1.083E-01
 Warning: excessive volume adjustment: cell=3, adjustment fraction=  1.083E-01
@@ -229,7 +214,7 @@ Warning: excessive volume adjustment: cell=8, adjustment fraction=  1.083E-01
 Warning: excessive volume adjustment: cell=9, adjustment fraction=  1.083E-01
 Warning: excessive volume adjustment: cell=10, adjustment fraction=  1.083E-01
 Warning: excessive volume adjustment: cell=11, adjustment fraction=  1.083E-01
-Warning: excessive volume adjustment: cell=430, matid=2, adjustment fraction= -8.031E-18
+Warning: excessive volume adjustment: cell=430, matid=2, adjustment fraction= -4.265E-17
             0 Preliminary projection iterations (linear)
             0 Projection iterations (linear)
 
@@ -237,39 +222,41 @@ Warning: excessive volume adjustment: cell=430, matid=2, adjustment fraction= -8
             Max Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
 
           2: t =   2.50000E-02, dt(growth) =   2.62500E-02
-Warning: excessive volume adjustment: cell=139, matid=1, adjustment fraction= -1.055E-16
-Warning: excessive volume adjustment: cell=200, matid=1, adjustment fraction=  2.904E-17
-Warning: excessive volume adjustment: cell=304, matid=1, adjustment fraction=  2.344E-10
-Warning: excessive volume adjustment: cell=304, matid=2, adjustment fraction= -4.837E-08
-Warning: excessive volume adjustment: cell=368, matid=1, adjustment fraction=  2.060E-16
-Warning: excessive volume adjustment: cell=368, matid=2, adjustment fraction=  8.842E-17
-Warning: excessive volume adjustment: cell=263, matid=1, adjustment fraction= -6.708E-17
+Warning: excessive volume adjustment: cell=169, matid=2, adjustment fraction= -8.118E-16
+Warning: excessive volume adjustment: cell=304, matid=1, adjustment fraction= -1.387E-07
+Warning: excessive volume adjustment: cell=200, matid=1, adjustment fraction=  8.431E-17
+Warning: excessive volume adjustment: cell=200, matid=2, adjustment fraction=  4.219E-16
+Warning: excessive volume adjustment: cell=263, matid=1, adjustment fraction= -2.283E-16
+Warning: excessive volume adjustment: cell=263, matid=2, adjustment fraction=  1.467E-16
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
             Max Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
 
           3: t =   5.12500E-02, dt(growth) =   2.75625E-02
-Warning: excessive volume adjustment: cell=295, matid=1, adjustment fraction=  6.452E-17
-Warning: excessive volume adjustment: cell=295, matid=2, adjustment fraction= -8.274E-16
-Warning: excessive volume adjustment: cell=426, matid=1, adjustment fraction=  1.681E-08
-Warning: excessive volume adjustment: cell=426, matid=2, adjustment fraction= -2.203E-05
-Warning: excessive volume adjustment: cell=431, matid=2, adjustment fraction= -1.002E-16
-Warning: excessive volume adjustment: cell=170, matid=1, adjustment fraction= -2.217E-16
-Warning: excessive volume adjustment: cell=400, matid=2, adjustment fraction=  7.393E-17
-Warning: excessive volume adjustment: cell=201, matid=1, adjustment fraction= -1.404E-16
-Warning: excessive volume adjustment: cell=232, matid=1, adjustment fraction=  3.550E-17
+Warning: excessive volume adjustment: cell=140, matid=1, adjustment fraction= -8.703E-17
+Warning: excessive volume adjustment: cell=295, matid=1, adjustment fraction= -4.859E-17
+Warning: excessive volume adjustment: cell=368, matid=1, adjustment fraction=  3.597E-16
+Warning: excessive volume adjustment: cell=426, matid=1, adjustment fraction=  6.927E-09
+Warning: excessive volume adjustment: cell=460, matid=1, adjustment fraction=  4.181E-16
+Warning: excessive volume adjustment: cell=170, matid=1, adjustment fraction= -7.124E-17
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
             Max Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
 
           4: t =   7.88125E-02, dt(time) =   2.63897E-02
-Warning: excessive volume adjustment: cell=34, matid=2, adjustment fraction=  3.756E-16
-Warning: excessive volume adjustment: cell=35, matid=2, adjustment fraction=  3.756E-16
-Warning: excessive volume adjustment: cell=36, matid=2, adjustment fraction=  3.756E-16
-Warning: excessive volume adjustment: cell=37, matid=2, adjustment fraction=  3.756E-16
-Warning: excessive volume adjustment: cell=38, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=141, matid=1, adjustment fraction= -3.681E-05
+Warning: excessive volume adjustment: cell=141, matid=2, adjustment fraction=  2.925E-08
+Warning: excessive volume adjustment: cell=142, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=143, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=144, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=145, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=146, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=147, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=148, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=149, matid=2, adjustment fraction=  3.756E-16
+Warning: excessive volume adjustment: cell=150, matid=2, adjustment fraction=  3.756E-16
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
@@ -360,6 +347,17 @@ Warning: excessive volume adjustment: cell=38, matid=2, adjustment fraction=  3.
             Max Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
 
          19: t =   4.53994E-01, dt(growth) =   2.90381E-02
+Warning: excessive volume adjustment: cell=468, matid=2, adjustment fraction= -4.751E-05
+Warning: excessive volume adjustment: cell=500, matid=1, adjustment fraction= -6.843E-16
+Warning: excessive volume adjustment: cell=500, matid=2, adjustment fraction= -7.238E-17
+Warning: excessive volume adjustment: cell=624, matid=1, adjustment fraction= -7.172E-16
+Warning: excessive volume adjustment: cell=624, matid=2, adjustment fraction= -2.222E-16
+Warning: excessive volume adjustment: cell=339, matid=1, adjustment fraction= -3.429E-10
+Warning: excessive volume adjustment: cell=339, matid=2, adjustment fraction=  2.438E-12
+Warning: excessive volume adjustment: cell=459, matid=1, adjustment fraction= -3.652E-17
+Warning: excessive volume adjustment: cell=335, matid=1, adjustment fraction=  7.474E-17
+Warning: excessive volume adjustment: cell=335, matid=2, adjustment fraction= -2.896E-16
+Warning: excessive volume adjustment: cell=365, matid=1, adjustment fraction= -1.415E-16
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
@@ -396,13 +394,14 @@ Warning: excessive volume adjustment: cell=38, matid=2, adjustment fraction=  3.
             Max Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
 
          25: t =   6.00000E-01, dt(growth) =   2.10748E-02
-Warning: excessive volume adjustment: cell=370, matid=1, adjustment fraction= -4.295E-05
-Warning: excessive volume adjustment: cell=370, matid=2, adjustment fraction=  2.419E-08
-Warning: excessive volume adjustment: cell=461, matid=1, adjustment fraction= -5.520E-17
-Warning: excessive volume adjustment: cell=660, matid=1, adjustment fraction= -9.416E-16
-Warning: excessive volume adjustment: cell=660, matid=2, adjustment fraction= -6.133E-17
-Warning: excessive volume adjustment: cell=430, matid=1, adjustment fraction= -5.287E-17
-Warning: excessive volume adjustment: cell=400, matid=1, adjustment fraction=  2.709E-16
+Warning: excessive volume adjustment: cell=370, matid=1, adjustment fraction= -4.753E-05
+Warning: excessive volume adjustment: cell=370, matid=2, adjustment fraction=  3.051E-08
+Warning: excessive volume adjustment: cell=461, matid=1, adjustment fraction=  6.802E-17
+Warning: excessive volume adjustment: cell=556, matid=1, adjustment fraction=  7.652E-17
+Warning: excessive volume adjustment: cell=629, matid=2, adjustment fraction= -1.615E-16
+Warning: excessive volume adjustment: cell=660, matid=2, adjustment fraction= -6.383E-17
+Warning: excessive volume adjustment: cell=430, matid=1, adjustment fraction=  1.756E-16
+Warning: excessive volume adjustment: cell=400, matid=1, adjustment fraction=  4.183E-17
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
@@ -412,7 +411,6 @@ Warning: excessive volume adjustment: cell=400, matid=1, adjustment fraction=  2
 Warning: excessive volume adjustment: cell=34, matid=2, adjustment fraction=  4.480E-16
 Warning: excessive volume adjustment: cell=35, matid=2, adjustment fraction=  4.480E-16
 Warning: excessive volume adjustment: cell=36, matid=2, adjustment fraction=  4.480E-16
-Warning: excessive volume adjustment: cell=37, matid=2, adjustment fraction=  4.480E-16
             0 Projection iterations (linear)
 
             Min Velocity: ( 4.0000E-01,  3.0000E-01,  0.0000E+00)
@@ -523,18 +521,19 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  3.784E+00 --- Total
-    5.238E-03 --- Input
-    4.890E-01 --- Initialization
-    3.287E+00 --- Main Cycle
-      3.226E-02 --- Time Step
-      3.161E+00 --- Mass Advection
-        3.050E+00 --- Volume Tracking
-          2.873E+00 --- Reconstruct/Advect
-            1.010E+00 --- Locate Plane
-        7.576E-02 --- Momentum Advection
+  7.875E+00 --- Total
+    1.925E-02 --- Input
+    1.418E+00 --- Initialization
+      6.513E-01 --- VOF Initialize
+    6.264E+00 --- Main Cycle
+      3.803E-02 --- Time Step
+      3.529E+00 --- Mass Advection
+        3.412E+00 --- Volume Tracking
+          3.209E+00 --- Reconstruct/Advect
+            1.065E+00 --- Locate Plane
+        7.987E-02 --- Momentum Advection
 
-                  Process virtual memory used: 4.33E+02 mB
-                                   words/cell: 55416
+                  Process virtual memory used: 4.28E+02 mB
+                                   words/cell: 54755
 
-truchas terminated normally on 19 Apr 19 at 16:00:20
+truchas terminated normally on 06 Jan 20 at 14:26:18

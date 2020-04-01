@@ -162,8 +162,7 @@ CONTAINS
                                       Cell_isnt_Void, Ngbr_isnt_Void
     use legacy_mesh_api,        only: ncells, nfc, EE_GATHER
     use parameter_module,       only: nmat
-    use property_module,        only: DENSITY_MATERIAL
-    use property_data_module,   only: isImmobile
+    use flow_property_module,        only: DENSITY_MATERIAL, isImmobile
     use zone_module,            only: Zone
 
     ! Arguments
@@ -298,7 +297,7 @@ CONTAINS
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
-    use property_module,      only: DENSITY_MATERIAL
+    use flow_property_module,      only: DENSITY_MATERIAL
     use time_step_module,     only: t
 
     ! Argument List
@@ -440,7 +439,7 @@ CONTAINS
     use pgslib_module,        only: PGSLib_Global_ANY
     use time_step_module,     only: cycle_number
     use zone_module,          only: Zone
-    use property_module,      only: DENSITY_MATERIAL
+    use flow_property_module,      only: DENSITY_MATERIAL
     use hoadvection,          only: ADVECT_SCALAR
     use time_step_module,     only: t
 
@@ -666,7 +665,7 @@ CONTAINS
     use bc_module, only: IN_FLOW, BC_Temp
     use fluid_data_module, only: Fluxing_Velocity
     use advection_data, only: Volume_Flux
-    use material_interop, only: ds_enthalpy_density, void_material_index
+    use flow_property_module, only: void_material_index, enthalpy_material
     
     real(r8), intent(in) :: Tcell(:)
     real(r8), intent(out) :: Hdelta(:)
@@ -728,7 +727,7 @@ CONTAINS
         sum = 0.0_r8  ! net outflux of heat
         do k = 1, nfc
           do m = 1, nmat
-            if (m == void_material_index) cycle
+            if (m == void_material_index()) cycle
             if (Volume_Flux(m,k,j) == 0.0_r8) cycle
             if (Volume_Flux(m,k,j) < 0.0_r8) then ! influx
               state(1) = Tnbr(k,j)
@@ -737,7 +736,7 @@ CONTAINS
             else  ! outflux
               state(1) = Tcell(j)
             end if
-            sum = sum + Volume_Flux(m,k,j)*ds_enthalpy_density(m,state)
+            sum = sum + Volume_Flux(m,k,j)*enthalpy_material(m,state(1))
           end do
         end do
         Hdelta(j) = -sum
@@ -747,14 +746,14 @@ CONTAINS
         sum = 0.0_r8  ! net outflux of heat
         do k = 1, nfc
           do m = 1, nmat
-            if (m == void_material_index) cycle
+            if (m == void_material_index()) cycle
             if (Volume_Flux(m,k,j) == 0.0_r8) cycle
             if (Volume_Flux(m,k,j) < 0.0_r8) then ! influx
               state(1) = Tnbr(k,j)
             else  ! outflux
               state(1) = Tcell(j)
             end if
-            sum = sum + Volume_Flux(m,k,j)*ds_enthalpy_density(m,state)
+            sum = sum + Volume_Flux(m,k,j)*enthalpy_material(m,state(1))
           end do
         end do
         Hdelta(j) = -sum

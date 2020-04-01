@@ -19,6 +19,7 @@ This test uses the FHT solver for heat transport
 /
 
 &PHYSICS
+  materials = 'water', 'VOID'
   flow = .true.
   heat_transport = .true.
 /
@@ -49,7 +50,7 @@ This test uses the FHT solver for heat transport
   face_set_ids = 1
   type = 'velocity'
   velocity = 0.25, 0.0, 0.0
-  inflow_material = 1
+  inflow_material = 'water'
   inflow_temperature = 2.0
 /
 
@@ -73,32 +74,15 @@ Entirely void initially
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
-  material_number = 2
+  material_name = 'VOID'
   velocity = 1.0, 0.0, 0.0
   temperature = 0.0
 /
 
 &MATERIAL
-  material_name = 'water'
-  material_number = 1
-  density = 1.0 ! not void
-/
-
-&PHASE
   name = 'water'
-  property_name(1) = 'density', property_constant(1) = 1.0
-  property_name(2) = 'specific heat', property_constant(2) = 1.0
-  property_name(3) = 'conductivity', property_constant(3) = 1.0
-/
-
-&MATERIAL_SYSTEM
-  name = 'water'
-  phases = 'water'
-/
-
-&MATERIAL
-  material_name = 'void'
-  material_number = 2
-  density = 0.0
-  material_feature = 'background'
+  is_fluid = T
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
 /

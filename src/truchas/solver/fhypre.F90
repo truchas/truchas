@@ -68,7 +68,9 @@ module fhypre
   use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
   use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
   use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
+#ifndef INTEL_SRN04330341
   use,intrinsic :: iso_c_binding, only: hypre_associated => c_associated
+#endif
   implicit none
   private
   
@@ -164,6 +166,15 @@ module fhypre
   public :: fHYPRE_ClearAllErrors
 
 contains
+
+#ifdef INTEL_SRN04330341
+  ! this only covers the present use case of c_associated in the hypre context
+  logical function hypre_associated(c_ptr1)
+    use,intrinsic :: iso_c_binding, only: c_associated
+    type(c_ptr), intent(in) :: c_ptr1
+    hypre_associated = c_associated(c_ptr1)
+  end function
+#endif
 
   !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

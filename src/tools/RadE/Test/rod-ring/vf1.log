@@ -1,0 +1,270 @@
+Reading ENCLOSURE namelist ...
+Reading mesh from rod-ring.gen
+Generating enclosure surface
+No patches will be generated
+Reading CHAPARRAL namelist ...
+  using default SMOOTHING_WEIGHT= 2.00E+00
+
+
+  ******************************************************************
+   V I E W F A C T O R    C A L C U L A T I O N
+  ******************************************************************
+
+   Calculating viewfactors for enclosure <EXTERIOR>
+     enclosure geometry:    3D
+     enclosure type:        partial (area=0.2), blocking
+     # of patches:          233
+     # of facets:           928
+     # of nodes:            312
+     spatial tolerance:     1e-08
+     BSP target max depth:  10
+     BSP target min length: 25
+     BSP Tree num leafs:    56
+     BSP Tree max depth:    6
+     BSP Tree min length:   12
+     BSP Tree max length:   20
+     output level:          2
+
+   Data segment memory size = 73.29Mb
+
+   Calling VF_Hemicube()...
+     resolution       = 200
+     max subdivisions = 60
+     min seperation   = 10
+
+   Minimum Partial Enclosure Area = 0.101758
+
+     Minimum effective surface radius    = 0.0130503
+     Minimum seperation distance         = 0.0504941
+     Maximum desired surface subdivision = 6, 6
+     Actual maximum surface subdivision  = 60
+
+   Data segment memory size = 74.19Mb
+
+   Elapsed time = 0.90
+
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S M O O T H I N G
+  ******************************************************************
+
+   Smoothing of viewfactor matrix for enclosure <EXTERIOR>
+     PCG Solver, wt = 2.0
+     Max iterations = 100
+     Tolerance      = 1e-08
+
+     Enforcing reciprocity by averaging...
+       Nonzero lower triangular entries = 8679 changed to 8760
+       Nonzero upper triangular entries = 8760 changed to 8760
+       Elapsed time                     = 0.00
+     Number of passes     = 1
+     Number of iterations = 4
+     Elapsed time         = 0.01
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S U M M A R Y
+  ******************************************************************
+
+   Viewfactor matrix summary for enclosure <EXTERIOR>
+
+   Target rowsum                  = 233
+   Raw rowsum total               = 232.999998
+   Raw rowsum error min           = -4.7173e-07
+   Raw rowsum error max           =  3.5363e-07
+   Raw rowsum error mean          = -7.5841e-09 +/- 7.7740e-08
+   Smoothed rowsum total          = 233.000003
+   Smoothed rowsum error min      = -1.7038e-07
+   Smoothed rowsum error max      =  1.7426e-07
+   Smoothed rowsum error mean     =  1.1990e-08 +/- 9.5441e-13
+
+   Viewfactor matrix is 32.35% dense
+
+   Total elapsed time = 0.91 (sec)
+     (Initialization) = 0.01
+     (Calculation)    = 0.90
+     (Smoothing)      = 0.01
+
+   Data segment memory size  = 74.19Mb
+
+
+wrote vf1.001.re
+
+
+  ******************************************************************
+   V I E W F A C T O R    C A L C U L A T I O N
+  ******************************************************************
+
+   Calculating viewfactors for enclosure <EXTERIOR>
+     enclosure geometry:    3D
+     enclosure type:        partial (area=0.2), blocking
+     # of patches:          233
+     # of facets:           928
+     # of nodes:            312
+     spatial tolerance:     1e-08
+     BSP target max depth:  10
+     BSP target min length: 25
+     BSP Tree num leafs:    60
+     BSP Tree max depth:    6
+     BSP Tree min length:   12
+     BSP Tree max length:   24
+     output level:          2
+
+   Data segment memory size = 74.20Mb
+
+   Calling VF_Hemicube()...
+     resolution       = 200
+     max subdivisions = 60
+     min seperation   = 10
+
+   Minimum Partial Enclosure Area = 0.101176
+
+     Minimum effective surface radius    = 0.0130503
+     Minimum seperation distance         = 0.0504941
+     Maximum desired surface subdivision = 6, 6
+     Actual maximum surface subdivision  = 60
+
+   Data segment memory size = 82.07Mb
+
+   Elapsed time = 0.99
+
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S M O O T H I N G
+  ******************************************************************
+
+   Smoothing of viewfactor matrix for enclosure <EXTERIOR>
+     PCG Solver, wt = 2.0
+     Max iterations = 100
+     Tolerance      = 1e-08
+
+     Enforcing reciprocity by averaging...
+       Nonzero lower triangular entries = 8674 changed to 8761
+       Nonzero upper triangular entries = 8761 changed to 8761
+       Elapsed time                     = 0.00
+     Number of passes     = 1
+     Number of iterations = 4
+     Elapsed time         = 0.01
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S U M M A R Y
+  ******************************************************************
+
+   Viewfactor matrix summary for enclosure <EXTERIOR>
+
+   Target rowsum                  = 233
+   Raw rowsum total               = 233.000001
+   Raw rowsum error min           = -3.3375e-07
+   Raw rowsum error max           =  3.9838e-07
+   Raw rowsum error mean          =  3.5877e-09 +/- 7.9236e-08
+   Smoothed rowsum total          = 233.000004
+   Smoothed rowsum error min      = -1.5573e-07
+   Smoothed rowsum error max      =  1.5688e-07
+   Smoothed rowsum error mean     =  1.6101e-08 +/- 1.0282e-12
+
+   Viewfactor matrix is 32.36% dense
+
+   Total elapsed time = 1.00 (sec)
+     (Initialization) = 0.00
+     (Calculation)    = 0.99
+     (Smoothing)      = 0.01
+
+   Data segment memory size  = 82.07Mb
+
+
+wrote vf1.002.re
+
+
+  ******************************************************************
+   V I E W F A C T O R    C A L C U L A T I O N
+  ******************************************************************
+
+   Calculating viewfactors for enclosure <EXTERIOR>
+     enclosure geometry:    3D
+     enclosure type:        partial (area=0.2), blocking
+     # of patches:          233
+     # of facets:           928
+     # of nodes:            312
+     spatial tolerance:     1e-08
+     BSP target max depth:  10
+     BSP target min length: 25
+     BSP Tree num leafs:    60
+     BSP Tree max depth:    6
+     BSP Tree min length:   11
+     BSP Tree max length:   24
+     output level:          2
+
+   Data segment memory size = 75.91Mb
+
+   Calling VF_Hemicube()...
+     resolution       = 200
+     max subdivisions = 60
+     min seperation   = 10
+
+   Minimum Partial Enclosure Area = 0.101759
+
+     Minimum effective surface radius    = 0.0130503
+     Minimum seperation distance         = 0.0504941
+     Maximum desired surface subdivision = 6, 6
+     Actual maximum surface subdivision  = 60
+
+   Data segment memory size = 76.23Mb
+
+   Elapsed time = 1.05
+
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S M O O T H I N G
+  ******************************************************************
+
+   Smoothing of viewfactor matrix for enclosure <EXTERIOR>
+     PCG Solver, wt = 2.0
+     Max iterations = 100
+     Tolerance      = 1e-08
+
+     Enforcing reciprocity by averaging...
+       Nonzero lower triangular entries = 8678 changed to 8762
+       Nonzero upper triangular entries = 8762 changed to 8762
+       Elapsed time                     = 0.00
+     Number of passes     = 1
+     Number of iterations = 4
+     Elapsed time         = 0.01
+
+
+
+  ******************************************************************
+   V I E W F A C T O R    M A T R I X    S U M M A R Y
+  ******************************************************************
+
+   Viewfactor matrix summary for enclosure <EXTERIOR>
+
+   Target rowsum                  = 233
+   Raw rowsum total               = 233.000001
+   Raw rowsum error min           = -3.3796e-07
+   Raw rowsum error max           =  4.4844e-07
+   Raw rowsum error mean          =  2.4821e-09 +/- 8.1118e-08
+   Smoothed rowsum total          = 233.000004
+   Smoothed rowsum error min      = -1.6176e-07
+   Smoothed rowsum error max      =  2.1844e-07
+   Smoothed rowsum error mean     =  1.5796e-08 +/- 1.0551e-12
+
+   Viewfactor matrix is 32.36% dense
+
+   Total elapsed time = 1.07 (sec)
+     (Initialization) = 0.00
+     (Calculation)    = 1.05
+     (Smoothing)      = 0.01
+
+   Data segment memory size  = 76.23Mb
+
+
+wrote vf1.003.re

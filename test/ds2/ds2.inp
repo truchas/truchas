@@ -26,6 +26,7 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
 /
 
 &PHYSICS
+  materials = 'A', 'B', 'VOID'
   heat_transport = .true.
 /
 
@@ -73,13 +74,13 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
   translation_pt = 0.0, 0.0, -.5
   radius = 0.18
   height = 1.0
-  material_number = 1
+  material_name = 'A'
   temperature = 0.0
 /
 
 &BODY
   surface_name = 'background'
-  material_number = 2
+  material_name = 'B'
   temperature = 0.0
 /
 
@@ -88,35 +89,17 @@ INTERFACES
 /
 
 &MATERIAL
-  Material_Number        = 1,
-  Material_Name          = 'A'
-  Density                = 4.0
-/
-
-&PHASE
   name = 'A'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_constant(3) = 0.05
-/
-
-&MATERIAL_SYSTEM
-  name = 'A'
-  phases = 'A'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.05
 /
 
 &MATERIAL
-  Material_Number        = 2
-  Material_Name          = 'B'
-  Material_Feature       = 'background'
-  Density                = 4.0
-/
-
-&PHASE
   name = 'B'
-  property_name(1) = 'density',       property_constant(1) = 4.0
-  property_name(2) = 'specific heat', property_constant(2) = 0.25
-  property_name(3) = 'conductivity',  property_function(3) = 'B-cond'
+  density = 4.0
+  specific_heat = 0.25
+  conductivity_func = 'B-cond'
 /
 
 &FUNCTION
@@ -125,21 +108,4 @@ INTERFACES
   poly_coefficients   = 1.0
   poly_exponents(1,:) = 1
   poly_refvars = -0.1
-/
-
-&MATERIAL_SYSTEM
-  name = 'B'
-  phases = 'B'
-/
-  reference_temp     = 2.0
-  reference_enthalpy = 1.0
-
-!! Define a void material purely for testing purposes.
-!! No void exists in the problem but this alters the code flow
-!! slightly.  Results should be identical with/without this.
-
-&MATERIAL
-  Material_Number  = 3
-  Material_Name    = 'void'
-  Density          = 0.0
 /
