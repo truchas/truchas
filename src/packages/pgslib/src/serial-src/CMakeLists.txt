@@ -1,28 +1,18 @@
 project(PGSLibSerial Fortran)
 
-include(FortranPreprocessFiles)
-
 include_directories(${PGSLib_MODULE_DIR})
 
 # --- Define source files for the library
-set(PGSLibSerial_F_FILES
-                     gath-scatt/gs-f.F
-		     indexing/index-f.F
-		     io/input-f.F
-		     reductions/redux-f.F
-		     scans/scan-f.F
-		     utility/utility-f.F)
-
-fortran_preprocess_files(PGSLibSerial_SOURCE_FILES
-                         FILES ${PGSLibSerial_F_FILES}
-			 FPP_EXECUTABLE ${PGSLib_PREPROCESSOR}
-			 FPP_FLAGS -I${PGSLibSerial_SOURCE_DIR}/scans
-			 GREP_FILTERS !!CPP!!
-			 PROCESS_TARGET ProcessPGSLibSerialFiles)
+set(PGSLibSerial_SOURCE_FILES
+                     gath-scatt/gs-f.f90
+		     indexing/index-f.f90
+		     io/input-f.f90
+		     reductions/redux-f.f90
+		     scans/scan-f.f90
+		     utility/utility-f.f90)
 
 # --- Define the library target
 add_library(pgslib_serial ${PGSLibSerial_SOURCE_FILES})
-add_dependencies(pgslib_serial ProcessPGSLibSerialFiles)
 
 # Change name if Debug build
 set_target_properties(pgslib_serial PROPERTIES
@@ -34,5 +24,3 @@ install(TARGETS pgslib_serial
         EXPORT  pgslib_serial
         LIBRARY DESTINATION ${PGSLib_LIBRARY_INSTALL_DIR}
 	ARCHIVE DESTINATION ${PGSLib_LIBRARY_INSTALL_DIR})
-
-

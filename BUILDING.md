@@ -4,7 +4,7 @@ Building Truchas
 
 #### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
-and testing is done on 64-bit Linux and Cray CLE platforms.
+and testing is done on 64-bit Linux, Cray CLE and Mac platforms (experimental).
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
@@ -15,11 +15,14 @@ and testing is done on 64-bit Linux and Cray CLE platforms.
         - version 6.1 (build 6149 or later preferred)
         - version 6.2 (build 6252 or later preferred)
         - most any version of GNU C/C++ should be okay
+	- NAG Fortran (with Apple Clang C/C++)
+	    - NAG version 6.2
+		- Likely any version of Apple Clang should be fine
     - GFortran is *not* currently supported due to incomplete and/or flawed
       support for some Fortran 2003 features. There are GFortran configuration
       files for internal testing purposes, which you can try if you are feeling
       adventurous.
-* Cmake version 3.5 or later; but not 3.6.0 and 3.6.1.
+* Cmake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
 * Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
@@ -61,6 +64,46 @@ than it must be different than the current directory). Here is an example:
 * By default Truchas will be installed into the `install` subdirectory of the
   top-level source directory. Use the `-D CMAKE_INSTALL_PREFIX=<truchas_dir>`
   cmake argument to specify a different directory.
+
+#### Compiling on a Mac
+The test suite is currently failing so mac support is still considered
+experimental.  So far, this has only been tested using the NAG Fortran
+compiler and the Apple Clang compilers.  This is a 3 step process
+
+1. OpenMPI
+2. TPL
+3. Truchas
+
+##### Notes for OpenMPI
+There is an issue with failing to trigger the NAG preprocessor on the
+case insensitive Mac filesystem.  This should be fixed for OpenMPI
+versions > 4.0.3.  If compiling for version <= 4.0.3, the following
+configuration step should suffice (from the top level source
+directory):
+
+	$ mkdir build
+	$ cd build
+	$ ../configure FC=nagfor FCFLAGS=-fpp --prefix=<my_openmpi_install_dir>
+
+The `-fpp` option can be removed for later OpenMPI releases
+
+##### Notes for TPL
+Configuring cmake using the `config/linux-nag.cmake` is sufficent.  No other special
+flags have been needed
+
+##### Notes for Truchas
+`PGSLib` is a subpackage of Truchas that depends heavily on the linux
+shared library linking model.  The linux linking behavior can be
+emulated with the `CMAKE_SHARED_LINKER_FLAGS` that are set in
+`mac-nag-chk.cmake`.  With this in mind, the following allowed for
+building truchas on a mac
+
+	$ mkdir build
+    $ cd build
+    $ cmake -C ../config/mac-nag-chk.cmake \
+	        -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
+    $ make
+    $ make install
 
 #### Testing
 From the build directory run the command

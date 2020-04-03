@@ -2,28 +2,7 @@
 
 !!CPP!! $Id: on-node-scan-seg-bit-1d.fpp,v 1.1.1.1 2000/10/11 22:44:30 ferrell Exp $
 
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file."
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _FIRST_
-#error "_FIRST_ must be defined before including this file"
-#endif
-
-#ifndef _LAST_
-#error "_LAST_ must be defined before including this file"
-#endif
-
-#ifndef _INDEX_INCREMENT_
-#error "_INDEX_INCREMENT_ must be defined before including this file"
-#endif
-
   subroutine _ROUTINE_NAME_(Dest_ARRAY, Dest_Bit, Src_ARRAY, Src_Bit)
-    use PGSLib_Type_Module
     ! On Node segmented scan operation
     implicit none
 
@@ -54,7 +33,7 @@
        Src_Seg   = Src_Bit  (i)
        Dest_Data = Dest_Array( i - _INDEX_INCREMENT_ )
        Dest_Seg  = Dest_Bit  ( i - _INDEX_INCREMENT_ )
-       
+
        Dest_Array(i) = Src_Data + MERGE(Dest_Data, _OP_ID_ , .NOT. Src_Seg)
        Dest_Bit  (i) = Src_Seg .OR. Dest_Seg
 
@@ -62,7 +41,7 @@
 
     RETURN
   END subroutine _ROUTINE_NAME_
-    
+
 #undef _ROUTINE_NAME_
 #undef _SCAN_DATA_TYPE_
 #undef _OP_ID_

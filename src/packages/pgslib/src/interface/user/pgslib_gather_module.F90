@@ -1,13 +1,16 @@
 MODULE PGSLib_Gather_MODULE
   !====================================================================
   ! PUPROSE
-  !   Provide a user level interface to pgslib_gather.  This 
+  !   Provide a user level interface to pgslib_gather.  This
   !   module provides only the most common interfaces.  Others must
   !   be constructed as needed by the user.
   !====================================================================
 
   ! $Id: pgslib_gather_module.F,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
-
+  use pgslib_type_module
+  use pgslib_globals_module
+  use pgslib_gs_module
+  use pgslib_timing_module
   use pgslib_utility_module
   implicit none
 
@@ -37,7 +40,7 @@ CONTAINS
   !
   !======================================================================
 #define _INCLUDE_FILE_ "gather.fpp"
-#define _OP_ 
+#define _OP_
 #define _OP_NAME_       Gather
 #define _GEN_OP_ID_(data_type,op_null) op_null
 #define _DST_DIMENSION_ _FAT_DIM_
@@ -50,7 +53,7 @@ CONTAINS
   !          Gather_1_1_Log
   !======================================================================
 #define _ROUTINE_NAME_  Gather_1_1_Log
-#define _OP_(a,b)       
+#define _OP_(a,b)
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _OP_ID_         .TRUE.
 #define _DST_DIMENSION_ dimension(:)
@@ -68,7 +71,7 @@ CONTAINS
   !          Gather_1_2_Log
   !======================================================================
 #define _ROUTINE_NAME_  Gather_1_2_Log
-#define _OP_(a,b)       
+#define _OP_(a,b)
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _OP_ID_         .TRUE.
 #define _DST_DIMENSION_ dimension(:,:)

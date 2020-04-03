@@ -146,7 +146,7 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------- #
-# Preprocessor definitions 
+# Preprocessor definitions
 # ---------------------------------------------------------------------------- #
 
 # Preprocessor - allow this to be a list to define global flags easily

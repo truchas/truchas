@@ -2,14 +2,6 @@
 
 !!CPPP!! $Id: dist_scalar.fpp,v 1.1.1.1 2000/10/11 22:44:27 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-    USE PGSLib_Type_MODULE
-    USE PGSLib_Utility_MODULE,     ONLY : pgslib_check_error,      &
-         &                                PGSLib_Inquire_IO_P,     &
-         &                                PGSLib_Inquire_nPE
     implicit none
     _DATA_TYPE_ , intent(OUT):: scalar_out
     _DATA_TYPE_ , intent(IN), dimension(:):: scalarv_in

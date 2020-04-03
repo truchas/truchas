@@ -11,6 +11,10 @@ MODULE PGSLib_SCAN_SEG_MODULE
   use pgslib_type_module
   use pgslib_globals_module
   use pgslib_utility_module, only : PGSLib_Fatal_ERROR, PGSLib_Scope_Check
+  use pgslib_scan_no_seg_module
+  use pgslib_scan_seg_bit_module
+  use pgslib_reductions_module
+  use pgslib_shift_module
 
   implicit none
   PRIVATE
@@ -21,13 +25,13 @@ MODULE PGSLib_SCAN_SEG_MODULE
      MODULE PROCEDURE SUM_PREFIX_SEG_SINGLE_1D
      MODULE PROCEDURE SUM_PREFIX_SEG_DOUBLE_1D
   END INTERFACE
-     
+
   INTERFACE PGSLib_SUM_SUFFIX
      MODULE PROCEDURE SUM_SUFFIX_SEG_INT_1D
      MODULE PROCEDURE SUM_SUFFIX_SEG_SINGLE_1D
      MODULE PROCEDURE SUM_SUFFIX_SEG_DOUBLE_1D
   END INTERFACE
-     
+
 CONTAINS
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -94,6 +98,6 @@ CONTAINS
 #define _SEG_BIT_SCAN_          PGSLib_SEG_SUM_SUFFIX
 
 #include "scan-segment-1d.fpp"
-  
+
 
 END MODULE PGSLib_SCAN_SEG_MODULE

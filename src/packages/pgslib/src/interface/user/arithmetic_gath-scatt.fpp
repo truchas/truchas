@@ -3,22 +3,6 @@
 
 !!CPP!! $Id: arithmetic_gath-scatt.fpp,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-#ifndef _OP_
-#error "_OP_ must be defined before including this file"
-#endif
-
-#ifndef _OP_NAME_
-#error "_OP_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _INCLUDE_FILE_
-#error "_INCLUDE_FILE_ must be defined before including this file"
-#endif
-
-#ifndef _GEN_OP_ID_
-#error "_GEN_OP_ID_ must be defined before including this file"
-#endif
-
 !!CPP!! The contortions in this macro are to get op and specific
 !!CPP!! to expand before catenation.
 #define IDENTITY(a) a

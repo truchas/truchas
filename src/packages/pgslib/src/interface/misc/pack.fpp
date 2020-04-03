@@ -3,33 +3,6 @@
 
 ! $Id: pack.fpp,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file."
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _SCATTER_OP_
-#error "_SCATTER_OP_ must be defined before including this file"
-#endif
-
-#ifndef _RESULT_
-#error "_RESULT_ must be defined before including this file"
-#endif
-
-    USE PGSLib_Type_Module,      ONLY : PGSLib_Int_Type,   &
-                                        PGSLib_Real_Type,  &
-                                        PGSLib_Double_Type,&
-                                        PGSLib_Log_Type,   &
-                                        PGSLib_GS_Trace
-    USE PGSLib_GS_MODULE,        ONLY : PGSLib_Setup_Trace, PGSLib_Deallocate_Trace
-    USE PGSLIB_User_GS_MODULE,   ONLY : _SCATTER_OP_
-    USE PGSLib_Reductions_MODULE,ONLY : PGSLib_Global_SUM, PGSLib_Global_COUNT
-    USE PGSLib_Scan_No_Seg_MODULE,ONLY : PGSLib_Sum_Prefix
-    USE PGSLib_Utility_MODULE,   ONLY : pgslib_error
-
     implicit none
 
     _DATA_TYPE_,  &
