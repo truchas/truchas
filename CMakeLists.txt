@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 # Location of project defined include and FindXXX.cmake files
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
