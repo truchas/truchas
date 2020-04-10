@@ -129,6 +129,7 @@ class TruchasEnvironment:
         # run truchas
         print(command)
         process = subprocess.run(command, shell=True, universal_newlines=True,
+                                 encoding='utf-8',
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # WARN: Some cases, like false input file, cause Truchas to exit with
