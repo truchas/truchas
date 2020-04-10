@@ -4,7 +4,8 @@ Building Truchas
 
 #### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
-and testing is done on 64-bit Linux, Cray CLE and Mac platforms (experimental).
+and testing is done on 64-bit Linux and Cray CLE platforms with both Intel and
+NAG compilers and on MacOS with NAG Fortran (experimental).
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
@@ -15,7 +16,7 @@ and testing is done on 64-bit Linux, Cray CLE and Mac platforms (experimental).
         - version 6.1 (build 6149 or later preferred)
         - version 6.2 (build 6252 or later preferred)
         - most any version of GNU C/C++ should be okay
-	- NAG Fortran (with Apple Clang C/C++)
+    - NAG Fortran on MacOS (with Apple Clang C/C++)
 	    - NAG version 6.2
 		- Likely any version of Apple Clang should be fine
     - GFortran is *not* currently supported due to incomplete and/or flawed
