@@ -49,7 +49,6 @@ contains
   subroutine init(this, mesh, nrealfluid, nfluid, nmat)
 
     use parameter_list_type
-    use property_module, only: get_truchas_material_id
     use f08_intrinsics, only: findloc
 
     class(geometric_volume_tracker), intent(out) :: this
