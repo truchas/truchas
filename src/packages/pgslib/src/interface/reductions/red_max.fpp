@@ -3,26 +3,7 @@
 
 ! $Id: red_max.fpp,v 1.1.1.1 2000/10/11 22:44:29 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _ARRAY_
-#error "_ARRAY_ must be defined before including this file"
-#endif
-
-#ifndef _ARG_
-#error "_ARG_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_
-#error "_ROUTINE_ must be defined before including this file"
-#endif
-
 function _ROUTINE_(A, MASK, SCOPE)
-  USE PGSLib_Type_MODULE
-  use pgslib_globals_module
-  use pgslib_stats,         only: GLOBAL_MAX_STATISTICS, Enter_Routine, Exit_Routine
   IMPLICIT NONE
   _DATA_TYPE_ :: _ROUTINE_
   _DATA_TYPE_,               intent(IN   ) _ARRAY_           :: A
@@ -39,7 +20,7 @@ function _ROUTINE_(A, MASK, SCOPE)
 
   ! Local or Global operation
 #include "red_global_test.fpp"
-  
+
 
   ! On-PE reduction
   IF (PRESENT(MASK)) THEN

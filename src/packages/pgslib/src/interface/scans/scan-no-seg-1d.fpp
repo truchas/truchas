@@ -1,35 +1,7 @@
 !!CPP!! $Id: scan-no-seg-1d.fpp,v 1.2 2001/03/22 00:26:13 ferrell Exp $
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _ON_NODE_SCAN_
-#error "_ON_NODE_SCAN_ must be defined before including this file"
-#endif
-
-#ifndef _OFF_NODE_SCAN_
-#error "_OFF_NODE_SCAN_ must be defined before including this file"
-#endif
-
-#ifndef _LAST_
-#error "_LAST_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_ (INPUT_ARRAY, DIM, MASK, SCOPE)
-    use pgslib_type_module,    only : PGSLib_Scope, &
-                                      PGSLib_Int_Type, &
-                                      PGSLib_Log_Type, &
-                                      PGSLib_Real_Type
-    implicit none 
+    implicit none
 
     ! Subroutine arguments
     _SCAN_DATA_TYPE_ , intent(IN   ),          &
@@ -47,7 +19,7 @@
     _SCAN_DATA_TYPE_ ,dimension(SIZE(INPUT_ARRAY,1)) :: _ROUTINE_NAME_
 
     ! Local variables
-    
+
     integer                                 :: Local_N, Src_Seg, Dest_Seg
     _SCAN_DATA_TYPE_                        :: Src_Data, Dest_Data
     _SCAN_DATA_TYPE_               ,  &
@@ -67,7 +39,7 @@
           call PGSLib_Fatal_ERROR('In SUM_PREFIX if DIM is present it must == 1')
        end if
     end if
-    
+
 ! In principle should be able to just point at INPUT_Array if we do not have a MASK.
 ! Unfortunately, Lahey does not like that when Input_Array is make up on the fly
 ! with something like (/ (i, i = 1, n) /).
@@ -78,11 +50,11 @@
     else
        Src_Array = INPUT_ARRAY
     end if
-    
+
     ! First we need the on-node scan (either PREFIX or SUFFIX, depending on specific routine)
     ! This returns Dest_Array = SCAN(Dest_ARRAY, Src_ARRAY)
     call _ON_NODE_SCAN_(Dest_ARRAY, Src_ARRAY)
-    
+
     Global: If (PGSLib_Scope_Check(SCOPE) == PGSLib_Global) then
        ! Next we do the accross-node sum_prefix
        ! We do not have to worry about segments, since this is the
@@ -108,7 +80,7 @@
        _ROUTINE_NAME_ = Dest_Array + Dest_Data
 
     END If Global
- 
+
     ! We are done
     DEALLOCATE(Src_Array)
 

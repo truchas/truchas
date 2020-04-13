@@ -6,28 +6,7 @@
 
 !!CPP!!  $Id: scan-fixup-seg-bit-1d.fpp,v 1.1.1.1 2000/10/11 22:44:30 ferrell Exp $
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file."
-#endif
-
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file."
-#endif
-
-#ifndef _FIRST_
-#error "_FIRST_ must be defined before including this file"
-#endif
-
-#ifndef _LAST_
-#error "_LAST_ must be defined before including this file"
-#endif
-
-#ifndef _INDEX_INCREMENT_
-#error "_INDEX_INCREMENT_ must be defined before including this file"
-#endif
-
   subroutine _ROUTINE_NAME_(Dest_Array, Src_Array, Src_Bit, Donor_Data)
-    use PGSLib_Type_Module
     ! Combine donor from lower processors into dest array
     implicit none
 
@@ -36,14 +15,14 @@
     _SCAN_DATA_TYPE_, intent(IN   ),         &
          &   dimension(            :)     :: SRC_ARRAY
     logical (PGSLib_Log_Type), intent(IN   ),&
-         &   dimension(SIZE(SRC_ARRAY,1)) :: Src_Bit 
+         &   dimension(SIZE(SRC_ARRAY,1)) :: Src_Bit
     _SCAN_DATA_TYPE_, intent(IN   )          &
          &                                :: Donor_Data
     _SCAN_DATA_TYPE_, intent(  OUT),         &
          &   dimension(SIZE(SRC_ARRAY,1)) :: Dest_ARRAY
 
     ! Local variables
-    
+
     integer (PGSLib_Int_Type) :: Local_N, i
 
     Local_N      = SIZE(SRC_ARRAY, 1)
@@ -73,4 +52,3 @@
 #undef _FIRST_
 #undef _LAST_
 #undef _INDEX_INCREMENT_
-

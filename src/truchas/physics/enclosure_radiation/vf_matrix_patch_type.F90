@@ -132,8 +132,8 @@ contains
     call broadcast (bsize)
     patch_offset = sum(bsize(1:this_PE-1))
     this%f2p_map = this%f2p_map - patch_offset
-    ASSERT ( all(1 <= this%f2p_map) )
-    ASSERT ( all(this%f2p_map <= this%npatch) )
+    ASSERT( all(1 <= this%f2p_map) )
+    ASSERT( all(this%f2p_map <= this%npatch) )
 
     !! Compute face weights
     this%w = this%get_face_weights(encl)

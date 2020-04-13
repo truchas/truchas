@@ -1,13 +1,16 @@
 MODULE PGSLib_Scatter_SUM_MODULE
   !====================================================================
   ! PUPROSE
-  !   Provide a user level interface to pgslib_OP?_scatter.  This 
+  !   Provide a user level interface to pgslib_OP?_scatter.  This
   !   module provides only the most common interfaces.  Others must
   !   be constructed as needed by the user.
   !====================================================================
 
   ! $Id: pgslib_scatter_sum_module.F,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
-
+  use pgslib_type_module
+  use pgslib_globals_module
+  use pgslib_gs_module
+  use pgslib_timing_module
   use pgslib_utility_module
   implicit none
 

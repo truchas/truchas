@@ -5,42 +5,6 @@
 
     ! $Id: test_scan.fpp,v 1.1.1.1 2000/10/11 22:44:26 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _DATA_TYPE_STRING_
-#error "_DATA_TYPE_STRING_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _RAND_OP_
-#error "_RAND_OP_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _START_
-#error "_START_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _STOP_
-#error "_STOP_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _STEP_
-#error "_STEP_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _PGSLib_SCAN_ROUTINE_
-#error "_PGSLib_SCAN_ROUTINE_ must be defined before including test_scan.fpp"
-#endif
-
-#ifndef _SCAN_TEST_STRING_
-#error "_SCAN_TEST_STRING_ must be defined before including test_scan.fpp"
-#endif
-
 #define _MESSAGE_STRING_(PF,D,OS,S) PF//D//OS//S//" test"
 
 
@@ -120,7 +84,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! No Segment, No Mask
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     Dest = _PGSLib_SCAN_ROUTINE_(Src)
 
     ! Test the result
@@ -140,7 +104,7 @@
           else
              dest_error_tot(I) = ABS(Dest_Expected_Tot(I) - Dest_Tot(I))
           end if
-             
+
        end DO
        error_flag = ANY(dest_error_tot > TOLERANCE)
     else
@@ -175,9 +139,9 @@
              END IF
           END DO
           close(20)
-#endif    
+#endif
        END IF
-             
+
     end if
 
     warning_error = warning_error .or. error_flag
@@ -186,7 +150,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Segment, No Mask
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     ! Setup Segment.  Pick segments of mean length 20
     Seg = PGSLib_PARITY_PREFIX(MOD(INT(MaxSize*Src),MaxSize/20) == 0)
     call pgslib_collate(Seg_tot, Seg)
@@ -226,7 +190,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! No Segment, Mask
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     ! Setup Mask.  Pick 20:1 true/false ratio
 
     TMASK = MOD(INT(MaxSize*Src),MaxSize/20) == 0
@@ -284,7 +248,7 @@
              END IF
           END DO
           close(20)
-#endif    
+#endif
        END IF
     end if
     warning_error = warning_error .or. error_flag
@@ -294,7 +258,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Segment and Mask
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     ! Setup Mask.  Pick 20:1 true/false ratio
 
     TMASK = MOD(INT(MaxSize*Src),MaxSize/20) == 0
@@ -318,7 +282,7 @@
           Dest_Expected_Tot(I) = MERGE(Src_Tot(I),_OP_ID_,TMask_Tot(I))
        end if
     END DO
-    
+
     IF(PGSLib_Inquire_IO_P()) then
        error_flag = ANY(ABS(Dest_Expected_Tot - Dest_Tot) .GT. TOLERANCE)
     else
@@ -357,14 +321,14 @@
          &          Dest_Error_Tot,&
          &          Seg_Tot,&
          &          TMask_Tot)
-    
+
 
     return
 
 #undef _RAND_OP_
 #undef _DATA_TYPE_STRING_
-#undef _OP_ID_    
-#undef _DATA_TYPE_    
+#undef _OP_ID_
+#undef _DATA_TYPE_
 #undef _START_
 #undef _STOP_
 #undef _STEP_

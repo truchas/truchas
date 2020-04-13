@@ -7,8 +7,9 @@ class TruchasConfig:
 
     bin_dir = "@Truchas_BIN_INSTALL_DIR@"
     lib_dir = "@Truchas_LIBRARY_INSTALL_DIR@"
+    lib_suffix = "@CMAKE_SHARED_LIBRARY_SUFFIX@"
 
     truchas_executable = os.path.join(bin_dir, "@Truchas_EXECUTABLE@")
     write_restart_executable = os.path.join(bin_dir, "write-restart.py")
-    libfwrite = os.path.join(lib_dir, "libfwrite.so")
-    libgridmap = os.path.join(lib_dir, "libgridmap.so")
+    libfwrite = os.path.join(lib_dir, "libfwrite" + lib_suffix)
+    libgridmap = os.path.join(lib_dir, "libgridmap" + lib_suffix)

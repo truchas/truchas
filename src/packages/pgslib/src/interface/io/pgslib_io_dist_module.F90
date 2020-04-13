@@ -1,5 +1,11 @@
 MODULE PGSLib_IO_Dist_MODULE
   use pgslib_c_binding
+  use PGSLib_Type_MODULE
+  use pgslib_io_collate_module
+  USE pgslib_globals_module
+  use PGSLib_Utility_MODULE,     only : pgslib_check_error,      &
+      PGSLib_Inquire_IO_P,     &
+      PGSLib_Inquire_nPE
   use,intrinsic :: iso_fortran_env, only: int8
   IMPLICIT NONE
   SAVE
@@ -10,7 +16,7 @@ MODULE PGSLib_IO_Dist_MODULE
   !  PGSLib_Dist
   !
   !
-  ! For each of these generic routines, scalar and vector versions, 
+  ! For each of these generic routines, scalar and vector versions,
   !          as well as four or five data types are supported.
   ! The data types are
   !
@@ -19,7 +25,7 @@ MODULE PGSLib_IO_Dist_MODULE
   !          PGSLib_DOUBLE_TYPE (typically the default double precision)
   !          PGSLib_Log_Type    (typeically the default logical type)
   !          CHARACTER          (for some of the routines)
-  ! The types are set in the module PGSLib_Types_MODULE, except for CHARACTER, which is the 
+  ! The types are set in the module PGSLib_Types_MODULE, except for CHARACTER, which is the
   !          default character type.
   !
 

@@ -3,40 +3,7 @@
 
 ! $Id: permute.fpp,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file."
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _SCATTER_OP_
-#error "_SCATTER_OP_ must be defined before including this file"
-#endif
-
-#ifndef _COMP_OP_
-#error "_COMP_OP_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-
-  Subroutine _ROUTINE_NAME_(Dest, Source, Index, Mask, TRACE) 
-    USE PGSLib_Type_Module,      ONLY : PGSLib_Int_Type,   &
-                                        PGSLib_Real_Type,  &
-                                        PGSLib_Double_Type,  &
-                                        PGSLib_Log_Type,   &
-                                        PGSLib_GS_Trace
-    
-    USE PGSLib_GS_MODULE,        ONLY : PGSLib_Setup_Trace,      &
-         &                              PGSLib_Deallocate_Trace
-    USE PGSLIB_User_GS_MODULE,   ONLY : PGSLib_Scatter_SUM, PGSLib_Scatter_OR
-    USE PGSLib_Reductions_MODULE,ONLY : PGSLib_Global_SUM, PGSLib_Global_COUNT
-    USE PGSLib_Utility_MODULE,   ONLY : pgslib_error
-
+  Subroutine _ROUTINE_NAME_(Dest, Source, Index, Mask, TRACE)
 
     implicit none
     _DATA_TYPE_,     &
@@ -69,15 +36,15 @@
     ! Dest_Temp is used so that Source and Dest may overlap.
     _DATA_TYPE_,   &
          &   dimension(SIZE(Dest,1))  :: Dest_Temp
-    
-    ! Source_Surity is used to set Dest_Mask which 
+
+    ! Source_Surity is used to set Dest_Mask which
     ! is used test whether a dest got modified or not.
     integer (PGSLib_Int_Type),     &
          &   dimension(SIZE(Index,1)) :: Source_Surity
 
     integer (PGSLib_Int_Type),     &
          &   dimension(SIZE(Dest,1))  :: Dest_Mask
-    
+
     ! If a TRACE was passed in, use it, otherwise use a local trace
     if (PRESENT(Trace)) then
        New_Trace = .NOT. ASSOCIATED(Trace)
@@ -89,7 +56,7 @@
        ! The total sizes of Source and Dest must be the same, even
        ! though the local sizes may not be the same.  (That is, they
        ! may have different distributions.)
-       
+
        if (PRESENT(Mask)) then
           if (PGSLib_Global_SUM(SIZE(Dest,1)) < PGSLib_Global_COUNT(Mask)) then
              call pgslib_error("Total size Dest not large enough in PGSLib_Permute")

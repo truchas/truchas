@@ -40,9 +40,7 @@ endif()
 # ---------------------------------------------------------------------------- #
 # Global defines
 # ---------------------------------------------------------------------------- #
-if(APPLE)
-  add_definitions(-Dmacosx)
-elseif(WIN32)
+if(WIN32)
   add_definitions(-DWIN32)
 elseif(UNIX)
   add_definitions(-Dlinux)
