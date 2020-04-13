@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -ex
+
+export INTELDIR=/opt/intel/
+export PATH=$INTELDIR/bin/:$PATH
+export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+export FC=ifort
+export CC=icc
+export CXX=icpc
+
+# Add openmpi executables into path
+export PATH=$HOME/ext/bin/:$PATH
+export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+
+mkdir build
+cd build
+cmake -C ../config/intel-opt.cmake -DTRUCHAS_TPL_DIR=$HOME/ext ..
+make -j8
+ctest --output-on-failure
