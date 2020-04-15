@@ -11,5 +11,5 @@ truchas intel:
     - bash ci/build.sh
   artifacts:
     paths:
-      - build/bin/t-*
+      - build/inst/bin/t-*
     when: always
