@@ -15,6 +15,11 @@ export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
 
 mkdir build
 cd build
-cmake -C ../config/intel-opt.cmake -DTRUCHAS_TPL_DIR=$HOME/ext ..
+cmake \
+    -C ../config/intel-opt.cmake \
+    -DTRUCHAS_TPL_DIR=$HOME/ext \
+    -DCMAKE_INSTALL_PREFIX=inst \
+    ..
 make -j8
+make install
 ctest --output-on-failure
