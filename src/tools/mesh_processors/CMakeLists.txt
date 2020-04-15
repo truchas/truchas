@@ -1,8 +1,5 @@
 project(TruchasToolsMesh Fortran)
 
-# --- CMake modules
-include(FortranPreprocessFiles)
-
 # --- Include paths
 
 # Want program modules in their respective build directories.
@@ -13,11 +10,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
-
-# --- Preprocessing flags
-set(fpp_flags_list
-    ${Truchas_FPP_FLAGS} -I${TruchasToolsMesh_SOURCE_DIR})
-build_whitespace_string(fpp_flags ${fpp_flags_list})
 
 # --- Add subdirectories
 

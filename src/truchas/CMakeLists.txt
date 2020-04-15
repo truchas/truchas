@@ -3,8 +3,6 @@ project(TruchasExe C Fortran)
 # The Truchas IO module
 add_subdirectory(truchasio)
 
-# --- CMake modules
-include(FortranPreprocessFiles)
 
 # --- Include paths
 
@@ -14,10 +12,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 
+set(Truchas_utilities_dir ${CMAKE_CURRENT_SOURCE_DIR}/utilities)
+set(Truchas_solver_dir ${CMAKE_CURRENT_SOURCE_DIR}/solver)
 
 # --- Define the source files
 set(Truchas_LIBRARY_SOURCE_FILES)
-set(Truchas_PROCESS_TARGETS)
 
 include(bcs/TruchasFiles.cmake)
 include(communication/TruchasFiles.cmake)
@@ -43,10 +42,6 @@ include(solver/TruchasFiles.cmake)
 include(utilities/TruchasFiles.cmake)
 include(toolpath/TruchasFiles.cmake)
 
-# --- Custom target to process Fortran files
-add_custom_target(ProcessTruchasFiles
-                  DEPENDS ${Truchas_PROCESS_TARGETS}
-    COMMENT "Processing all Truchas Fortran files")
 
 # --- Library
 
@@ -55,8 +50,7 @@ add_library(truchas ${Truchas_LIBRARY_SOURCE_FILES})
 
 # - Define the dependencies for this library
 
-# Procees targets
-set(Truchas_DEPENDS ${Truchas_PROCESS_TARGETS})
+set(Truchas_DEPENDS)
 
 # PGSLib
 list(APPEND Truchas_DEPENDS pgslib_fe)
@@ -95,11 +89,7 @@ set(Truchas_LINK_LIBS ${Truchas_LINK_LIBS} PARENT_SCOPE)
 # --- Main executable
 
 # Process the files
-fortran_preprocess_files(MAIN_SOURCE_FILES
-                         FILES drivers/main.F90
-                         FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-                         FPP_FLAGS ${Truchas_FPP_FLAGS}
-                         PROCESS_TARGET ProcessTruchasMainFiles)
+set(MAIN_SOURCE_FILES drivers/main.F90)
 
 set(fc_flags -I${PGSLib_MODULE_DIR})
 list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
@@ -112,7 +102,6 @@ set_source_files_properties(${MAIN_SOURCE_FILES} PROPERTIES
 
 # Add the executable with required dependencies and libraries
 add_executable(truchas_exe ${MAIN_SOURCE_FILES})
-add_dependencies(truchas_exe ProcessTruchasMainFiles)
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
 
 # Keep binary name consistent with old naming convention

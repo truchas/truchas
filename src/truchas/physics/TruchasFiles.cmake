@@ -1,17 +1,8 @@
 # Truchas files in directory
 #   physics
 
-# List of files to  process
-set(PHYSICS_FILES)
-
-# List of files to add to the Truchas library
-set(PHYSICS_SOURCE_FILES)
-
-# Process target name
-set(PHYSICS_TARGET_NAME ProcessTruchasPhysicsFiles)
-
 # - enclosure_radiation
-list(APPEND PHYSICS_FILES
+set(PHYSICS_SOURCE_FILES
            physics/enclosure_radiation/netcdf_c_binding.F90
            physics/enclosure_radiation/netcdf_file_type.F90
            physics/enclosure_radiation/rad_encl_type.F90
@@ -28,8 +19,9 @@ list(APPEND PHYSICS_FILES
            physics/enclosure_radiation/vf_matrix_face_type.F90
            physics/enclosure_radiation/vf_matrix_patch_type.F90)
 
+
 # - fluid_flow
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/legacy_flow_namelist.F90
            physics/fluid_flow/flow_property_module.F90
            physics/fluid_flow/flow_phase_change.F90
@@ -40,7 +32,7 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/fluid_utilities_module.F90)
 
 # - fluid_flow/advection
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/advection/advect_volume_module.F90
            physics/fluid_flow/advection/advection_data.F90
            physics/fluid_flow/advection/advection_module.F90
@@ -51,22 +43,22 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/advection/riemann_module.F90)
 
 # - fluid_flow/body_force
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/body_force/body_data_module.F90
            physics/fluid_flow/body_force/body_force_module.F90)
 
 # - fluid_flow/porous_drag
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/porous_drag/porous_drag_data.F90
            physics/fluid_flow/porous_drag/porous_drag_module.F90)
 
 # - fluid_flow/predictor
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/predictor/predictor_module.F90
            physics/fluid_flow/predictor/y_eq_Ax_vel.F90)
 
 # - fluid_flow/projection
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/projection/coordinates_module.F90
            physics/fluid_flow/projection/fischer_module.F90
            physics/fluid_flow/projection/projection_data_module.F90
@@ -74,18 +66,18 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/projection/y_eq_Ax_prs.F90)
 
 # - fluid_flow/surface_tension
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/surface_tension/kernel_interpolation_module.F90
            physics/fluid_flow/surface_tension/surface_tension_module.F90)
 
 # - fluid_flow/viscous
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/viscous/turbulence_module.F90
            physics/fluid_flow/viscous/viscous_data_module.F90
            physics/fluid_flow/viscous/viscous_module.F90)
 
 # - fluid_flow/vof
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/fluid_flow/vof/flux_volume_module.F90
            physics/fluid_flow/vof/interface_module.F90
            physics/fluid_flow/vof/interface_triangle_module.F90
@@ -96,7 +88,7 @@ list(APPEND PHYSICS_FILES
            physics/fluid_flow/vof/volume_track_module.F90)
 
 # - volume_tracking
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
           physics/volume_tracking/advection_velocity_namelist.F90
 	  physics/volume_tracking/brent_root_class.F90
 	  physics/volume_tracking/locate_plane_nd_module.F90
@@ -115,7 +107,7 @@ list(APPEND PHYSICS_FILES
 	  physics/volume_tracking/truncation_volume_type.F90)
 
 # - heat_species_transport
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/thermal_bc_namelist.F90
            physics/heat_species_transport/thermal_bc_factory_class.F90
            physics/heat_species_transport/thermal_bc_factory1_type.F90
@@ -155,7 +147,7 @@ list(APPEND PHYSICS_FILES
            physics/heat_species_transport/evaporation_namelist.F90)
 
 # - induction_heating
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/induction_heating/altmesh_namelist.F90
            physics/induction_heating/CGSolver.F90
            physics/induction_heating/EM.F90
@@ -176,7 +168,7 @@ list(APPEND PHYSICS_FILES
            physics/induction_heating/sparse_matrix.F90)
 
 # - solid_mechanics
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/solid_mechanics/mech_bc_data_module.F90
            physics/solid_mechanics/node_op_setup_module.F90
            physics/solid_mechanics/node_operator_module.F90
@@ -194,7 +186,7 @@ list(APPEND PHYSICS_FILES
            physics/solid_mechanics/tm_density.F90)
 
 # - additive manufacturing
-list(APPEND PHYSICS_FILES
+list(APPEND PHYSICS_SOURCE_FILES
            physics/additive_manufacturing/ded_head_driver.F90
            physics/additive_manufacturing/ded_head_namelist.F90
            physics/additive_manufacturing/ded_head_type.F90
@@ -203,29 +195,21 @@ list(APPEND PHYSICS_FILES
            physics/additive_manufacturing/beam_laser_irrad_type.F90
            physics/additive_manufacturing/gauss_laser_irrad_type.F90)
 
-# Preprocess flags
-set(PHYSICS_FPP_FLAGS
-        -I${TruchasExe_SOURCE_DIR}/utilities
-        -I${TruchasExe_SOURCE_DIR}/solver
-	${Truchas_FPP_FLAGS})
-
-# Process files
-fortran_preprocess_files(PHYSICS_SOURCE_FILES
-                         FILES ${PHYSICS_FILES}
-			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-			 FPP_FLAGS ${PHYSICS_FPP_FLAGS}
-			 PROCESS_TARGET ProcessTruchasPhysicsFiles)
 
 # Set compile flags
 include(BuildWhitespaceString)
-set(fc_flags -I${PGSLib_MODULE_DIR})
-list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
+set(fc_flags
+  -I${PGSLib_MODULE_DIR}
+  -I${UbikSolve_MODULE_DIR}
+  -I${Truchas_utilities_dir}
+  -I${Truchas_solver_dir})
+
 build_whitespace_string(PHYSICS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
 
 set_source_files_properties(${TruchasExe_BINARY_DIR}/ER_file.f90 PROPERTIES
-                            COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS}")
+  COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
 
 # Add special Intel flag for certain sources (A DAMN UGLY HACK)
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
@@ -236,4 +220,3 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 endif()
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})
-list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasPhysicsFiles)

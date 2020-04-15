@@ -6,18 +6,6 @@
 
 ! This is included for the var_vector STUFF VECTOR routines
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _VAR_DATA_TYPE_
-#error "_VAR_DATA_TYPE_ must be defined before including this file"
-#endif
-
   subroutine _ROUTINE_NAME_(V_V_SCALAR, SOURCE)
     !====================================================================
     ! Purpose(s):
@@ -26,7 +14,7 @@
     !   If V_V_SCALAR is not allocated, then it is an error to call this routine.
     !   It is required that SIZE(SOURCE) == SIZES(V_V_SCALAR)
     !====================================================================
-    
+
     ! Arguments
     type (_VAR_DATA_TYPE_), &
          INTENT(INOUT)     :: V_V_SCALAR
@@ -49,5 +37,3 @@
 #undef _ROUTINE_NAME_
 #undef _DATA_TYPE_
 #undef _VAR_DATA_TYPE_
-
-  

@@ -26,7 +26,7 @@ set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${Truchas_MODULE_DIR})
 
 # ---------------------------------------------------------------------------- #
-# Build Options 
+# Build Options
 # ---------------------------------------------------------------------------- #
 
 # Validate a user-supplied value for CMAKE_BUILD_TYPE.
@@ -147,84 +147,68 @@ endif()
 
 # ---------------------------------------------------------------------------- #
 # Preprocessor definitions
-# ---------------------------------------------------------------------------- #
-
-# Preprocessor - allow this to be a list to define global flags easily
-if(NOT Truchas_PREPROCESSOR)
-  set(Truchas_PREPROCESSOR cpp -traditional-cpp)
-endif()
-
-# Turn off assertions in Truchas Fortran code
-if(CMAKE_BUILD_TYPE)
-  if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    list(APPEND Truchas_PREPROCESSOR -DNDEBUG)
-  endif()
-endif()
+# ----------------------------------------------------------------------------
 
 # Add the compiler type to the global defines and the preprocessor
-string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
-add_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
-list(APPEND Truchas_PREPROCESSOR 
-            ${Truchas_Compiler_Define}
-            ${Truchas_Compiler_Define}_WORKAROUND)
+string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
+add_compile_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
 
 # Specific compiler bug workarounds and defines. These are used by
 # the custom Fortran preprocessing step (that need to be eliminated).
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "18.0")
-    list(APPEND Truchas_PREPROCESSOR -DNO_2008_FINDLOC)
+    add_compile_definitions(NO_2008_FINDLOC)
   endif()
-  list(APPEND Truchas_PREPROCESSOR -DNO_2008_LHS_POLY_REALLOC)
-  list(APPEND Truchas_PREPROCESSOR -DINTEL_DPD200237439)
-  list(APPEND Truchas_PREPROCESSOR -DINTEL_BUG20180222)
-  list(APPEND Truchas_PREPROCESSOR -DINTEL_BUG20191228)
-  list(APPEND Truchas_PREPROCESSOR -DINTEL_BUG20191229)
+  add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
+  add_compile_definitions(INTEL_DPD200237439)
+  add_compile_definitions(INTEL_BUG20180222)
+  add_compile_definitions(INTEL_BUG20191228)
+  add_compile_definitions(INTEL_BUG20191229)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "18.0.0")
     # This applies to 18.0.0 because of the version tweak number
-    list(APPEND Truchas_PREPROCESSOR -DINTEL18_WORKAROUND)
+    add_compile_definitions(INTEL18_WORKAROUND)
   endif()
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "19.0.0")
-    list(APPEND Truchas_PREPROCESSOR -DINTEL_SRN04330341)
+    add_compile_definitions(INTEL_SRN04330341)
   endif()
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "7.0")
-    list(APPEND Truchas_PREPROCESSOR -DNO_2008_FINDLOC)
+    add_compile_definitions(NO_2008_FINDLOC)
   endif()
 endif()
 
 if(ENABLE_DYNAMIC_LOADING)
-  list(APPEND Truchas_PREPROCESSOR -DENABLE_DYNAMIC_LOADING)
+  add_compile_definitions(ENABLE_DYNAMIC_LOADING)
 endif()
 
 # Specific compiler bug workarounds and defines.
 # These are used when compiling code that has not been preprocessed.
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  add_definitions(-DNO_2008_LHS_POLY_REALLOC)
-  add_definitions(-DINTEL_DPD200237439)
+  add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
+  add_compile_definitions(INTEL_DPD200237439)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move
 string(TIMESTAMP Truchas_BUILD_DATE "%Y-%m-%d %H:%M:%S")
 site_name(Truchas_HOSTNAME)
-list(APPEND Truchas_PREPROCESSOR -DVERSION='${Truchas_VERSION}')
-list(APPEND Truchas_PREPROCESSOR -DBUILD_DATE='${Truchas_BUILD_DATE}')
-list(APPEND Truchas_PREPROCESSOR -DHOST_NAME='${Truchas_HOSTNAME}')
-list(APPEND Truchas_PREPROCESSOR -DARCHITECTURE='${CMAKE_SYSTEM_PROCESSOR}')
-if(CMAKE_BUILD_TYPE)
-  list(APPEND Truchas_PREPROCESSOR "-DCOMPILER_FLAGS='${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}}'")
-else()
-  list(APPEND Truchas_PREPROCESSOR -DCOMPILER_FLAGS='${CMAKE_Fortran_FLAGS}')
-endif()
+# Flags for extra defines in drivers/drivers.F90
+set(Truchas_INFO_FLAGS
+  "VERSION='${Truchas_VERSION}'"
+  "BUILD_DATE='${Truchas_BUILD_DATE}'"
+  "HOST_NAME='${Truchas_HOSTNAME}'"
+  "ARCHITECTURE='${CMAKE_SYSTEM_PROCESSOR}'")
 
-# Add any user defined preprocessor flags
-if (Truchas_FPP_FLAGS)
-  list(APPEND Truchas_PREPROCESSOR ${Truchas_FPP_FLAGS})
+if(CMAKE_BUILD_TYPE)
+  list(APPEND Truchas_INFO_FLAGS
+    "COMPILER_FLAGS='${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${CMAKE_BUILD_TYPE_UC}}'")
+else()
+  list(APPEND Truchas_INFO_FLAGS "COMPILER_FLAGS='${CMAKE_Fortran_FLAGS}'")
 endif()
 
 # ---------------------------------------------------------------------------- #
-# Installation Definitions 
+# Installation Definitions
 # ---------------------------------------------------------------------------- #
 
 # Need the paths defined before adding src to the build
@@ -267,7 +251,7 @@ if (NOT Truchas_CONFIG_INSTALL_DIR)
 endif()
 
 # ---------------------------------------------------------------------------- #
-# RPATH handling  (http://www.cmake.org/Wiki/CMake_RPATH_handling) 
+# RPATH handling  (http://www.cmake.org/Wiki/CMake_RPATH_handling)
 # ---------------------------------------------------------------------------- #
 
 # use, i.e. don't skip the full RPATH for the build tree
@@ -275,17 +259,17 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
 # when building, don't use the install RPATH already
 # (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # Library install directories
 set(Truchas_LIBRARY_INSTALL_DIRS
      ${Truchas_LIBRARY_INSTALL_DIR}
      ${TRUCHAS_TPL_DIR}/lib)
 
-# Add RPATH to binaries,libraries, *so, etc.   
+# Add RPATH to binaries,libraries, *so, etc.
 if (ENABLE_INSTALL_RPATH)
 
-  # Only want non-system paths 
+  # Only want non-system paths
   foreach(dir ${Truchas_LIBRARY_INSTALL_DIRS})
     list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${dir}" isSystemDir)
     if("${isSystemDir}" STREQUAL "-1")
@@ -297,10 +281,10 @@ if (ENABLE_INSTALL_RPATH)
   # which point to directories outside the build tree to the install RPATH
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
-endif()  
- 
+endif()
+
 # ---------------------------------------------------------------------------- #
-# Source Directories 
+# Source Directories
 # ---------------------------------------------------------------------------- #
 
 add_subdirectory(src)
@@ -313,7 +297,7 @@ if(BUILD_HTML)
 endif()
 
 # ---------------------------------------------------------------------------- #
-# Export Definitions 
+# Export Definitions
 # ---------------------------------------------------------------------------- #
 
 # Create the target file
@@ -325,11 +309,11 @@ endif()
 #configure_file(${Truchas_SOURCE_DIR}/truchas-config.in
 #               ${Truchas_CONFIG_FILE}
 #	       @ONLY)
-#install(FILES ${Truchas_CONFIG_FILE} ${Truchas_TARGETS_FILE} 
+#install(FILES ${Truchas_CONFIG_FILE} ${Truchas_TARGETS_FILE}
 #        DESTINATION ${Truchas_CONFIG_INSTALL_DIR})
 
 # ---------------------------------------------------------------------------- #
-# Package Definitions 
+# Package Definitions
 # ---------------------------------------------------------------------------- #
 
 # Package name
@@ -347,13 +331,13 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Truchas: Cool code package")
 set(CPACK_PACKAGE_VENDOR "Los Alamos National Laboratory")
 set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE.md)
 
-# Name of the source file distribution 
+# Name of the source file distribution
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}"
     CACHE INTERNAL "Distribution base file name")
 
 # Gzip tar files are defined as my generator, many other options are available
-set(CPACK_SOURCE_GENERATOR TGZ)  
-  
+set(CPACK_SOURCE_GENERATOR TGZ)
+
 # Files to ignore regular expressions are allowed
 set(CPACK_SOURCE_IGNORE_FILES
      "/\\\\.hg/"
