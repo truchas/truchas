@@ -115,6 +115,7 @@ contains
     this%iupper = A%graph%row_ip%last_index()
 
     call fHYPRE_ClearAllErrors
+    call fhypre_EnableGPU
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
@@ -212,15 +213,15 @@ contains
     rows = [ (i, i = this%ilower, this%iupper) ]
 
     !! Initialize the Hypre RHS vector.
-    call fHYPRE_IJVectorInitialize (this%bh, ierr)
-    call fHYPRE_IJVectorSetValues  (this%bh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorInitialize_v2 (this%bh, HYPRE_MEMORY_DEVICE, ierr)
+    call fHYPRE_IJVectorSetValues_v2 (this%bh, this%nrows, rows, x, ierr)
     call fHYPRE_IJVectorAssemble   (this%bh, ierr)
     INSIST(ierr == 0)
 
     !! Initialize the Hypre initial guess vector.
     x(:this%nrows) = 0.0_r8
-    call fHYPRE_IJVectorInitialize (this%xh, ierr)
-    call fHYPRE_IJVectorSetValues  (this%xh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorInitialize_v2 (this%xh, HYPRE_MEMORY_DEVICE, ierr)
+    call fHYPRE_IJVectorSetValues_v2 (this%xh, this%nrows, rows, x, ierr)
     call fHYPRE_IJVectorAssemble   (this%xh, ierr)
     INSIST(ierr == 0)
 
@@ -229,7 +230,7 @@ contains
     INSIST(ierr == 0)
 
     !! Retrieve the solution vector from HYPRE
-    call fHYPRE_IJVectorGetValues (this%xh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorGetValues_v2 (this%xh, this%nrows, rows, x, ierr)
     INSIST(ierr == 0)
 
     call stop_timer ('boomer-solve')
@@ -282,7 +283,7 @@ contains
     end if
 
     !! After initialization the HYPRE matrix elements can be set.
-    call fHYPRE_IJMatrixInitialize (matrix, ierr)
+    call fHYPRE_IJMatrixInitialize_v2 (matrix, HYPRE_MEMORY_DEVICE, ierr)
     INSIST(ierr == 0)
 
     !! Copy the matrix elements into the HYPRE matrix.  This defines both the
@@ -293,7 +294,7 @@ contains
     rows = (/ (j, j = ilower, iupper) /)
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
     cols = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
+    call fHYPRE_IJMatrixSetValues_v2 (matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)
 

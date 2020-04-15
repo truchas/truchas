@@ -61,6 +61,8 @@
 !!  is bad.
 !!
 
+#include "f90_assert.fpp"
+
 module fhypre
 
   use kinds, only: r8
@@ -74,6 +76,22 @@ module fhypre
   implicit none
   private
   
+  !! GPU-related procedures
+  public :: fHYPRE_CAlloc
+  public :: fHYPRE_Free
+  public :: fHYPRE_Memcpy
+  public :: fhypre_EnableGPU
+  public :: fHYPRE_IJMatrixInitialize_v2
+  public :: fHYPRE_IJVectorInitialize_v2
+  public :: fHYPRE_IJMatrixSetValues_v2
+  public :: fHYPRE_IJVectorSetValues_v2
+  public :: fHYPRE_IJVectorGetValues_v2
+  public :: fHYPRE_IJMatrixSetDiagOffdSizes_v2
+  ! public :: HYPRE_MEMORY_UNSET, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST, HYPRE_MEMORY_SHARED, &
+  !     HYPRE_MEMORY_HOST_PINNED
+  public :: HYPRE_MEMORY_UNDEFINED, HYPRE_MEMORY_HOST, HYPRE_MEMORY_DEVICE
+  public :: HYPRE_EXEC_UNSET, HYPRE_EXEC_DEVICE, HYPRE_EXEC_HOST
+
   !! Error codes
   public :: HYPRE_ERROR_GENERIC, HYPRE_ERROR_MEMORY, HYPRE_ERROR_ARG, HYPRE_ERROR_CONV
 
@@ -684,6 +702,198 @@ contains
   subroutine fHYPRE_ClearAllErrors ()
     integer :: ierr
     ierr = HYPRE_ClearAllErrors ()  ! ignore return code
+  end subroutine
+
+
+  !!!! GPU HELPER PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_MAlloc(ptr, size, location)
+    use,intrinsic :: iso_c_binding, only: c_ptr
+    use,intrinsic :: iso_fortran_env, only: int64
+    type(c_ptr), intent(out) :: ptr
+    integer(int64), intent(in) :: size
+    integer, intent(in) :: location
+    ptr = HYPRE_MAlloc(size, location)
+  end subroutine fHYPRE_MAlloc
+
+  subroutine fHYPRE_CAlloc(ptr, count, size, location)
+    use,intrinsic :: iso_c_binding, only: c_ptr
+    use,intrinsic :: iso_fortran_env, only: int64
+    type(c_ptr), intent(out) :: ptr
+    integer, intent(in) :: count, size, location
+    ptr = HYPRE_CAlloc(int(count,int64), int(size,int64), location)
+  end subroutine fHYPRE_CAlloc
+
+
+  subroutine fHYPRE_Free(ptr, location)
+    use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
+    use,intrinsic :: iso_fortran_env, only: int64
+    type(c_ptr), intent(inout) :: ptr
+    integer, intent(in) :: location
+    call HYPRE_Free(ptr, location)
+    ptr = c_null_ptr
+  end subroutine fHYPRE_Free
+
+
+  subroutine fHYPRE_Memcpy(dst, src, size, loc_dst, loc_src)
+    use,intrinsic :: iso_c_binding, only: c_ptr
+    use,intrinsic :: iso_fortran_env, only: int64
+    type(c_ptr) :: dst, src
+    integer(int64), intent(in) :: size
+    integer, intent(in) :: loc_dst, loc_src
+    call HYPRE_Memcpy(dst, src, size, loc_dst, loc_src)
+  end subroutine fHYPRE_Memcpy
+
+  subroutine fHYPRE_EnableGPU()
+    call HYPRE_Ext_EnableGPU
+  end subroutine fHYPRE_EnableGPU
+
+  subroutine fHYPRE_IJMatrixInitialize_v2 (matrix, memory_location, ierr)
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in) :: memory_location
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJMatrixInitialize_v2(matrix, memory_location)
+  end subroutine fHYPRE_IJMatrixInitialize_v2
+
+  subroutine fHYPRE_IJVectorInitialize_v2 (vector, memory_location, ierr)
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: memory_location
+    integer, intent(out) :: ierr
+    ierr = HYPRE_IJVectorInitialize_v2(vector, memory_location)
+  end subroutine fHYPRE_IJVectorInitialize_v2
+
+
+  subroutine fHYPRE_IJVectorSetValues_v2 (vector, nvalues, indices, values, ierr)
+
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_fortran_env, only: int64
+    use fcuda
+
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: nvalues, indices(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(inout) :: ierr
+
+    integer(int64) :: nbytesv, nbytesi
+    type(fcuda_dev_ptr) :: vdev, idev
+
+    nbytesv = nvalues * storage_size(values) / 8
+    nbytesi = nvalues * storage_size(indices) / 8
+    call fHYPRE_MAlloc(vdev, nbytesv, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_MAlloc(idev, nbytesi, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Memcpy(vdev, c_loc(values), nbytesv, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+    call fHYPRE_Memcpy(idev, c_loc(indices), nbytesi, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+    !call fHYPRE_CAlloc(idev, nvalues, storage_size(indices) / 8, HYPRE_MEMORY_DEVICE)
+    !call fcudaMemcpy(vdev, values, nbytesv, cudaMemcpyHostToDevice, ierr)
+    !INSIST(ierr == 0)
+    ! call fcudaMemcpy(idev, indices, nbytesi, cudaMemcpyHostToDevice, ierr)
+    ! INSIST(ierr == 0)
+    
+    !ierr = HYPRE_IJVectorSetValues(vector, nvalues, indices, vdev)
+    ierr = HYPRE_IJVectorSetValues(vector, nvalues, idev, vdev)
+    INSIST(ierr == 0)
+
+    call fHYPRE_Free(vdev, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(idev, HYPRE_MEMORY_DEVICE)
+
+  end subroutine fHYPRE_IJVectorSetValues_v2
+
+
+  subroutine fHYPRE_IJVectorGetValues_v2 (vector, nvalues, indices, values, ierr)
+
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_fortran_env, only: int64
+    use fcuda
+
+    type(c_ptr), intent(in) :: vector
+    integer, intent(in) :: nvalues, indices(:)
+    real(r8), intent(out) :: values(:)
+    integer, intent(out) :: ierr
+
+    integer(int64) :: nbytesv
+    type(fcuda_dev_ptr) :: vdev
+
+    vdev = c_null_ptr
+    nbytesv = nvalues * storage_size(values) / 8
+    call fHYPRE_MAlloc(vdev, nbytesv, HYPRE_MEMORY_DEVICE)
+    ierr = HYPRE_IJVectorGetValues(vector, nvalues, indices, vdev)
+    INSIST(ierr == 0)
+    call fHYPRE_Memcpy(c_loc(values), vdev, nbytesv, HYPRE_MEMORY_HOST, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(vdev, HYPRE_MEMORY_DEVICE)
+
+  end subroutine fHYPRE_IJVectorGetValues_v2
+
+
+  subroutine fHYPRE_IJMatrixSetValues_v2 (matrix, nrows, ncols, rows, cols, values, ierr)
+
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_fortran_env, only: int64
+    use fcuda
+
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in)  :: nrows, ncols(:), rows(:), cols(:)
+    real(r8), intent(in) :: values(:)
+    integer, intent(out) :: ierr
+
+    integer(int64) :: nbytesv, nbytesr, nbytesc
+    type(fcuda_dev_ptr) :: valuesd, rowsd, colsd, ncolsd
+
+    INSIST(size(ncols) == size(rows))
+
+    nbytesv = size(values) * storage_size(values) / 8
+    nbytesr = size(rows) * storage_size(rows) / 8
+    nbytesc = size(cols) * storage_size(rows) / 8
+    call fHYPRE_MAlloc(valuesd, nbytesv, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_MAlloc(ncolsd,  nbytesr, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_MAlloc(rowsd,   nbytesr, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_MAlloc(colsd,   nbytesc, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Memcpy(valuesd, c_loc(values), nbytesv, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+    call fHYPRE_Memcpy(ncolsd,   c_loc(ncols), nbytesr, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+    call fHYPRE_Memcpy(rowsd,     c_loc(rows), nbytesr, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+    call fHYPRE_Memcpy(colsd,     c_loc(cols), nbytesc, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
+
+    ierr = HYPRE_IJMatrixSetValues(matrix, nrows, ncolsd, rowsd, colsd, valuesd)
+    INSIST(ierr == 0)
+
+    call fHYPRE_Free(valuesd, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(ncolsd, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(rowsd, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(colsd, HYPRE_MEMORY_DEVICE)
+
+  end subroutine fHYPRE_IJMatrixSetValues_v2
+
+
+  subroutine fHYPRE_IJMatrixSetDiagOffdSizes_v2 (matrix, diag_sizes, offd_sizes, ierr)
+
+    use, intrinsic :: iso_c_binding, only: c_null_ptr
+    use, intrinsic :: iso_fortran_env, only: int64
+    use fcuda
+
+    type(c_ptr), intent(in) :: matrix
+    integer, intent(in) :: diag_sizes(:), offd_sizes(:)
+    integer, intent(out) :: ierr
+
+    integer :: esize
+    integer(int64) :: nbytesd, nbyteso
+    type(fcuda_dev_ptr) :: ddev, odev
+
+    ddev = c_null_ptr
+    odev = c_null_ptr
+    esize = storage_size(diag_sizes) / 8
+    nbytesd = size(diag_sizes) * esize
+    nbyteso = size(offd_sizes) * esize
+    call fHYPRE_CAlloc(ddev, size(diag_sizes), esize, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_CAlloc(odev, size(offd_sizes), esize, HYPRE_MEMORY_DEVICE)
+    call fcudaMemcpy(ddev, diag_sizes, nbytesd, cudaMemcpyHostToDevice, ierr)
+    INSIST(ierr == 0)
+    call fcudaMemcpy(odev, offd_sizes, nbyteso, cudaMemcpyHostToDevice, ierr)
+    INSIST(ierr == 0)
+
+    ierr = HYPRE_IJMatrixSetDiagOffdSizes(matrix, ddev, odev)
+
+    call fHYPRE_Free(ddev, HYPRE_MEMORY_DEVICE)
+    call fHYPRE_Free(odev, HYPRE_MEMORY_DEVICE)
+    
   end subroutine
 
 end module fhypre

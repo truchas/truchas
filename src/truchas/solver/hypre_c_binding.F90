@@ -37,7 +37,7 @@
 
 module hypre_c_binding
 
-  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_size_t
   implicit none
   private
   
@@ -137,6 +137,47 @@ module hypre_c_binding
  !! IJVECTOR INTERFACES
  !!
 
+  interface HYPRE_IJVectorSetValues
+    function HYPRE_IJVectorSetValues_r8(vector, nvalues, indices, values) &
+        result(ierr) bind(c, name="HYPRE_IJVectorSetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: vector
+      integer, value :: nvalues
+      integer(c_int), intent(in) :: indices(*)
+      real(c_double), intent(in) :: values(*)
+      integer(c_int) :: ierr
+    end function HYPRE_IJVectorSetValues_r8
+    function HYPRE_IJVectorSetValues_cptr(vector, nvalues, indices, values) &
+        result(ierr) bind(c, name="HYPRE_IJVectorSetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: vector
+      integer, value :: nvalues
+      type(c_ptr), value :: indices, values
+      integer(c_int) :: ierr
+    end function HYPRE_IJVectorSetValues_cptr
+  end interface HYPRE_IJVectorSetValues
+
+  interface HYPRE_IJVectorGetValues
+    function HYPRE_IJVectorGetValues_r8(vector, nvalues, indices, values) &
+        result(ierr) bind(c, name="HYPRE_IJVectorGetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: vector
+      integer(c_int), value :: nvalues
+      integer(c_int), intent(in) :: indices(*)
+      real(c_double), intent(out) :: values(*)
+      integer(c_int) :: ierr
+    end function HYPRE_IJVectorGetValues_r8
+    function HYPRE_IJVectorGetValues_cptr(vector, nvalues, indices, values) &
+        result(ierr) bind(c, name="HYPRE_IJVectorGetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: vector
+      integer(c_int), value :: nvalues
+      integer(c_int), intent(in) :: indices(*)
+      type(c_ptr), value :: values
+      integer(c_int) :: ierr
+    end function HYPRE_IJVectorGetValues_cptr
+  end interface HYPRE_IJVectorGetValues    
+
   interface
     ! See HYPRE_Ext_IJVectorCreate below; wraps HYPRE_IJVectorCreate.
     function HYPRE_IJVectorDestroy(vector) &
@@ -158,15 +199,6 @@ module hypre_c_binding
       type(c_ptr), value :: vector
       integer(c_int) :: ierr
     end function
-    function HYPRE_IJVectorSetValues(vector, nvalues, indices, values) &
-        result(ierr) bind(c, name="HYPRE_IJVectorSetValues")
-      import c_ptr, c_int, c_double
-      type(c_ptr), value :: vector
-      integer, value :: nvalues
-      integer(c_int), intent(in) :: indices(*)
-      real(c_double), intent(in) :: values(*)
-      integer(c_int) :: ierr
-    end function
     function HYPRE_IJVectorAddToValues(vector, nvalues, indices, values) &
         result(ierr) bind(c, name="HYPRE_IJVectorAddToValues")
       import c_ptr, c_int, c_double
@@ -174,15 +206,6 @@ module hypre_c_binding
       integer, value :: nvalues
       integer(c_int), intent(in) :: indices(*)
       real(c_double), intent(in) :: values(*)
-      integer(c_int) :: ierr
-    end function
-    function HYPRE_IJVectorGetValues(vector, nvalues, indices, values) &
-        result(ierr) bind(c, name="HYPRE_IJVectorGetValues")
-      import c_ptr, c_int, c_double
-      type(c_ptr), value :: vector
-      integer(c_int), value :: nvalues
-      integer(c_int), intent(in) :: indices(*)
-      real(c_double), intent(out) :: values(*)
       integer(c_int) :: ierr
     end function
     function HYPRE_IJVectorAssemble(vector) &
@@ -197,6 +220,44 @@ module hypre_c_binding
  !! IJMATRIX INTERFACES
  !!
 
+  interface HYPRE_IJMatrixSetValues
+    function HYPRE_IJMatrixSetValues_r8(matrix, nrows, ncols, rows, cols, values) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixSetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: matrix
+      integer(c_int), value :: nrows
+      integer(c_int), intent(in) :: ncols(*), rows(*), cols(*)
+      real(c_double) :: values(*)
+      integer(c_int) :: ierr
+    end function HYPRE_IJMatrixSetValues_R8
+    function HYPRE_IJMatrixSetValues_cptr(matrix, nrows, ncols, rows, cols, values) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixSetValues")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: matrix
+      integer(c_int), value :: nrows
+      !integer(c_int), intent(in) :: ncols(*), rows(*), cols(*)
+      type(c_ptr), value :: ncols, rows, cols, values
+      integer(c_int) :: ierr
+    end function HYPRE_IJMatrixSetValues_cptr
+  end interface
+
+  interface HYPRE_IJMatrixSetDiagOffdSizes
+    function HYPRE_IJMatrixSetDiagOffdSizes_r8(matrix, diag_sizes, offd_sizes) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixSetDiagOffdSizes")
+      import c_ptr, c_int
+      type(c_ptr), value :: matrix
+      integer(c_int), intent(in) :: diag_sizes(*), offd_sizes(*)
+      integer(c_int) :: ierr
+    end function HYPRE_IJMatrixSetDiagOffdSizes_R8
+    function HYPRE_IJMatrixSetDiagOffdSizes_cptr(matrix, diag_sizes, offd_sizes) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixSetDiagOffdSizes")
+      import c_ptr, c_int
+      type(c_ptr), value :: matrix
+      type(c_ptr), value :: diag_sizes, offd_sizes
+      integer(c_int) :: ierr
+    end function HYPRE_IJMatrixSetDiagOffdSizes_Cptr
+  end interface HYPRE_IJMatrixSetDiagOffdSizes
+
   interface
     ! See HYPRE_Ext_IJMatrixCreate below; wraps HYPRE_IJMatrixCreate.
     function HYPRE_IJMatrixDestroy(matrix) &
@@ -210,13 +271,6 @@ module hypre_c_binding
       import c_ptr, c_int
       type(c_ptr), value :: matrix
       integer(c_int), intent(in) :: sizes(*)
-      integer(c_int) :: ierr
-    end function
-    function HYPRE_IJMatrixSetDiagOffdSizes(matrix, diag_sizes, offd_sizes) &
-        result(ierr) bind(c, name="HYPRE_IJMatrixSetDiagOffdSizes")
-      import c_ptr, c_int
-      type(c_ptr), value :: matrix
-      integer(c_int), intent(in) :: diag_sizes(*), offd_sizes(*)
       integer(c_int) :: ierr
     end function
     function HYPRE_IJMatrixSetMaxOffProcElmts(matrix, max_offp_values) &
@@ -236,15 +290,6 @@ module hypre_c_binding
         result(ierr) bind(c, name="HYPRE_IJMatrixAssemble")
       import c_ptr, c_int
       type(c_ptr), value :: matrix
-      integer(c_int) :: ierr
-    end function
-    function HYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, values) &
-        result(ierr) bind(c, name="HYPRE_IJMatrixSetValues")
-      import c_ptr, c_int, c_double
-      type(c_ptr), value :: matrix
-      integer(c_int), value :: nrows
-      integer(c_int), intent(in) :: ncols(*), rows(*), cols(*)
-      real(c_double) :: values(*)
       integer(c_int) :: ierr
     end function
     function HYPRE_IJMatrixAddToValues(matrix, nrows, ncols, rows, cols, values) &
@@ -688,6 +733,84 @@ module hypre_c_binding
         result(ierr) bind(c, name="HYPRE_Ext_HybridSolve")
       import c_ptr, c_int
       type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+  !! GPU-related entities
+  ! integer(c_int), parameter, public :: HYPRE_MEMORY_UNSET       = -1
+  ! integer(c_int), parameter, public :: HYPRE_MEMORY_DEVICE      = 0
+  ! integer(c_int), parameter, public :: HYPRE_MEMORY_HOST        = 1
+  ! integer(c_int), parameter, public :: HYPRE_MEMORY_SHARED      = 2
+  ! integer(c_int), parameter, public :: HYPRE_MEMORY_HOST_PINNED = 3
+
+  ! integer(c_int), parameter, public :: HYPRE_EXEC_UNSET = -1
+  ! integer(c_int), parameter, public :: HYPRE_EXEC_DEVICE = 0
+  ! integer(c_int), parameter, public :: HYPRE_EXEC_HOST = 1
+
+  integer(c_int), parameter, public :: HYPRE_MEMORY_UNDEFINED   = -1
+  integer(c_int), parameter, public :: HYPRE_MEMORY_HOST        = 0
+  !integer(c_int), parameter, public :: HYPRE_MEMORY_HOST_PINNED = 1
+  integer(c_int), parameter, public :: HYPRE_MEMORY_DEVICE      = 1
+  !integer(c_int), parameter, public :: HYPRE_MEMORY_UNIFIED     = 3
+
+  integer(c_int), parameter, public :: HYPRE_EXEC_UNSET = -1
+  integer(c_int), parameter, public :: HYPRE_EXEC_HOST = 0
+  integer(c_int), parameter, public :: HYPRE_EXEC_DEVICE = 1
+
+  public :: HYPRE_MAlloc
+  public :: HYPRE_CAlloc
+  public :: HYPRE_Free
+  public :: HYPRE_Memcpy
+  public :: HYPRE_Ext_EnableGPU
+  public :: HYPRE_IJMatrixInitialize_v2
+  public :: HYPRE_IJVectorInitialize_v2
+
+  interface
+    function HYPRE_MAlloc(size, location) &
+        result(ptr) bind(c,name="hypre_MAlloc")
+      import c_ptr, c_size_t, c_int
+      integer(c_size_t), intent(in), value :: size
+      integer(c_int), intent(in), value :: location
+      type(c_ptr) :: ptr
+    end function HYPRE_MAlloc
+    function HYPRE_CAlloc(count, size, location) &
+        result(ptr) bind(c,name="hypre_CAlloc")
+      import c_ptr, c_size_t, c_int
+      integer(c_size_t), intent(in), value :: count, size
+      integer(c_int), intent(in), value :: location
+      type(c_ptr) :: ptr
+    end function HYPRE_CAlloc
+    subroutine HYPRE_Free(ptr, location) &
+        bind(c,name="hypre_Free")
+      import c_ptr, c_int
+      type(c_ptr), value :: ptr
+      integer(c_int), intent(in), value :: location
+    end subroutine HYPRE_Free
+    subroutine HYPRE_Memcpy(dst, src, size, loc_dst, loc_src) &
+        bind(c,name="hypre_Memcpy")
+      import c_ptr, c_int, c_size_t
+      type(c_ptr), value :: dst, src
+      integer(c_size_t), intent(in), value :: size
+      integer(c_int), intent(in), value :: loc_dst, loc_src
+    end subroutine HYPRE_Memcpy
+    subroutine HYPRE_Ext_EnableGPU() &
+        bind(c,name="HYPRE_Ext_EnableGPU")
+      ! No arguments
+    end subroutine HYPRE_Ext_EnableGPU
+
+    function HYPRE_IJMatrixInitialize_v2(matrix, memory_location) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixInitialize_v2")
+      import c_ptr, c_int
+      type(c_ptr), value :: matrix
+      integer(c_int), value :: memory_location
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_IJVectorInitialize_v2(vector, memory_location) &
+        result(ierr) bind(c, name="HYPRE_IJVectorInitialize_v2")
+      import c_ptr, c_int
+      type(c_ptr), value :: vector
+      integer(c_int), value :: memory_location
       integer(c_int) :: ierr
     end function
   end interface

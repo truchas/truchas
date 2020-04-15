@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 
 include(NoInSourceBuild)
 
-project(Truchas VERSION 3.1.0 LANGUAGES C Fortran)
+project(Truchas VERSION 3.1.0 LANGUAGES C Fortran CUDA)
 
 # Append a pre-release tag to the version if needed
 set(Truchas_PRERELEASE alpha)
@@ -66,6 +66,13 @@ option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True
 # MPI
 find_package(MPI REQUIRED)
 
+# CUDA
+find_package(CUDA REQUIRED)
+find_package(FCUDA REQUIRED)
+set(CMAKE_CUDA_FLAGS "-std=c++14 -ccbin=mpicxx ${CMAKE_CUDA_FLAGS}")
+add_definitions(-DHYPRE_USING_CUDA)
+add_definitions(-DHYPRE_USING_UNIFIED_MEMORY)
+
 # Python and packages
 include(FindPythonPackage)
 find_package(PythonInterp 3.5 REQUIRED)
@@ -77,7 +84,9 @@ find_package(LAPACK)
 find_package(BLAS)
 
 # Rest are external dependencies that can be provided by the Truchas TPL build
-
+if(NOT DEFINED TRUCHAS_TPL_DIR)
+  set(TRUCHAS_TPL_DIR $ENV{TRUCHAS_TPL_DIR})
+endif()
 set(CMAKE_PREFIX_PATH ${TRUCHAS_TPL_DIR})
 
 # HYPRE library
