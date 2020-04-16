@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# /* allocate_collated_array -- include file for parallel_communication.F90 */
+!! allocate_collated_array -- include file for parallel_communication.F90
 
 #ifdef _TYPE_
 #undef _TYPE_
@@ -38,16 +38,12 @@
 #define _PROC2_ allocate_CA_L2
 #endif
 
-#ifndef _TYPE_
-#error "one of LOGICAL_DATA, INTEGER_DATA, SINGLE_DATA, DOUBLE_DATA must be defined"
-#endif
-
   subroutine _PROC1_ (array, size1, stat)
-  
+
     _TYPE_, pointer    :: array(:)
     integer, intent(in) :: size1
     integer, intent(out), optional :: stat
-    
+
     if (is_IOP) then
       if (present(stat)) then
         allocate(array(size1), stat=stat)
@@ -57,17 +53,17 @@
     else
       allocate(array(0))
     end if
-    
+
     if (present(stat)) call broadcast (stat)
-    
+
   end subroutine _PROC1_
-  
+
   subroutine _PROC2_ (array, size1, size2, stat)
-  
+
     _TYPE_, pointer    :: array(:,:)
     integer, intent(in) :: size1, size2
     integer, intent(out), optional :: stat
-    
+
     if (is_IOP) then
       if (present(stat)) then
         allocate(array(size1,size2), stat=stat)
@@ -77,11 +73,11 @@
     else
       allocate(array(size1,0))
     end if
-    
+
     if (present(stat)) call broadcast (stat)
-    
+
   end subroutine _PROC2_
-  
+
 #undef _TYPE_
 #undef _PROC1_
 #undef _PROC2_

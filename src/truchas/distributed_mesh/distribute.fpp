@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# /* distribute -- include file for parallel_communication.F90 */
+!! distribute -- include file for parallel_communication.F90
 
 #ifdef _TYPE_
 #undef _TYPE_
@@ -40,18 +40,14 @@
 #define _PROC2_ distribute_L2
 #endif
 
-#ifndef _TYPE_
-#error "one of LOGICAL_DATA, INTEGER_DATA, SINGLE_DATA, DOUBLE_DATA must be defined"
-#endif
-
   subroutine _PROC2_ (vout, vin, bsize)
-  
+
     _TYPE_,  intent(out) :: vout(:,:)
     _TYPE_,  intent(in)  :: vin(:,:)
     integer, intent(in), optional :: bsize(:)
-    
+
     integer :: k
-    
+
     ASSERT( size(vout,1) == size(vin,1) )
     if (present(bsize)) then
       ASSERT( size(bsize) == nPE )
@@ -65,7 +61,7 @@
     do k = 1, size(vout,1)
       call distribute (vout(k,:), vin(k,:), bsize)
     end do
-    
+
   end subroutine _PROC2_
 
 #undef _TYPE_
