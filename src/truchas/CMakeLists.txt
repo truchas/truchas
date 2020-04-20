@@ -3,6 +3,10 @@ project(TruchasExe C Fortran)
 # The Truchas IO module
 add_subdirectory(truchasio)
 
+# hack for bad clang optimization on apple
+if(APPLE)
+  add_compile_definitions(TRUCHAS_ALLOW_UNSAFE_VECTORIZATION)
+endif()
 
 # --- Include paths
 
