@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds8-old.inp")
-    golden = tenv.output("ds8-old_pgolden/ds8-old.h5")
+    golden = tenv.output("ds8-old_golden/ds8-old.h5")
 
     for sid in (2, 4):
         time = output.time(sid)

@@ -24,9 +24,9 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 5.0e-3
+  rel_temp_tol       = 5.0e-4
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 5.0e-3
+  rel_enthalpy_tol   = 5.0e-4
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
   nlk_tol = 0.001
