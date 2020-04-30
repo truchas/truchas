@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds1.inp")
-    golden = tenv.output("ds1_pgolden/ds1.h5")
+    golden = tenv.output("ds1_golden/ds1.h5")
 
     # test final cycle number
     cycle = output.cycle(2)
@@ -17,7 +17,7 @@ def run_test(tenv):
     # test final concentration
     cnctr = output.field(2, "phi1")
     exact = golden.field(2, "phi1")
-    nfail += truchas.compare_max_rel(cnctr, exact, 1e-10, "conc", output.time(2))
+    nfail += truchas.compare_max_rel(cnctr, exact, 2e-7, "conc", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail

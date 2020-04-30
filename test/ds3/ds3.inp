@@ -24,13 +24,13 @@ remain identical as they should.
 /
 
 &DIFFUSION_SOLVER
-  abs_temp_tol       = 1.0e-5
-  rel_temp_tol       = 1.0e-3
-  abs_conc_tol       = 1.0e-5
-  rel_conc_tol       = 1.0e-3
-  abs_enthalpy_tol   = 1.0e-5
-  rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 2.0e-3
+  abs_temp_tol       = 1.0e-6
+  rel_temp_tol       = 1.0e-4
+  abs_conc_tol       = 1.0e-6
+  rel_conc_tol       = 1.0e-4
+  abs_enthalpy_tol   = 1.0e-6
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 1.0e-4
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
   verbose_stepping   = .true.
