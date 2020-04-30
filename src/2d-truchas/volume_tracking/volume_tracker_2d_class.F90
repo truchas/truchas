@@ -19,11 +19,12 @@ module volume_tracker_2d_class
   end type volume_tracker_2d
 
   abstract interface
-    subroutine vt_init(this, mesh, nrealfluid, nfluid, nmat)
+    subroutine vt_init(this, mesh, nrealfluid, nfluid, nmat, axisym)
       import :: volume_tracker_2d, unstr_2d_mesh
       class(volume_tracker_2d), intent(out) :: this
       type(unstr_2d_mesh), intent(in), target :: mesh
       integer, intent(in) :: nrealfluid, nfluid, nmat
+      logical, intent(in) :: axisym
     end subroutine vt_init
 
     subroutine vt_flux_volumes(this, vel, vof_n, vof, flux_vol, int_normal, fluids, &
