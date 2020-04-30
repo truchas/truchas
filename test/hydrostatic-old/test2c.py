@@ -20,7 +20,7 @@ def run_test(tenv):
         nfail += truchas.compare_max(pressure, pex, 4e-9, "pressure", output.time(sid))
 
     # velocity zero everywhere
-    nfail += truchas.compare_max(output.field(2, "Z_VC"), 0, 1e-13, "velocity", output.time(2))
+    nfail += truchas.compare_max(output.field(2, "Z_VC"), 0, 2e-13, "velocity", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail
