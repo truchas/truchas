@@ -22,4 +22,9 @@ cmake \
     ..
 make -j8
 make install
+
+cd inst/bin/
+../../../ci/make_dist.py
+cd ../..
+
 ctest --output-on-failure

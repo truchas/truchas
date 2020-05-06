@@ -7,9 +7,10 @@ truchas intel:
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-d6fdf1f
   script:
     - sudo apt-get update
-    - sudo apt-get install -yq --no-install-recommends python3-numpy python3-scipy python3-h5py openssh-client
+    - sudo apt-get install -yq --no-install-recommends python3-numpy python3-scipy python3-h5py openssh-client patchelf bzip2 tar
     - bash ci/build.sh
   artifacts:
     paths:
       - build/inst/bin/t-*
+      - build/inst/bin/truchas.tar.bz2
     when: always
