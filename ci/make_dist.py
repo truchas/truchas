@@ -11,6 +11,12 @@ os.system("mkdir -p %s/lib" % dist)
 os.system("cp %s %s/bin" % (tbin, dist))
 os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, tbin))
 
+# Copy openmpi dependencies:
+
+os.system("cp -r /home/swuser/ext/lib/* %s/lib/" % dist)
+
+# Copy other dependencies
+
 os.system("""\
 ldd %s \
     | grep "=>" \
