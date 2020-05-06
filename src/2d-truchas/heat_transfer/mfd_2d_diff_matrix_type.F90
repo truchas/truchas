@@ -26,9 +26,8 @@ module mfd_2d_diff_matrix_type
   type, public :: mfd_2d_diff_matrix
     type(mfd_2d_disc),   pointer :: disc => null()  ! reference only -- do not own
     type(unstr_2d_mesh), pointer :: mesh => null()  ! reference only -- do not own
-    !TODO: include a11, a22
-    ! real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
-    ! real(r8), allocatable :: a12(:,:)   ! the cell-face submatrix
+    real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
+    real(r8), allocatable :: a12_val(:) ! the cell-face submatrix
     type(pcsr_matrix)     :: a22        ! the face-face submatrix
     integer, allocatable  :: dir_faces(:)
   contains
@@ -37,6 +36,10 @@ module mfd_2d_diff_matrix_type
     generic   :: init => init_disc, init_mold
     procedure :: compute
     procedure :: set_dir_faces
+    procedure :: incr_cell_diag
+    procedure :: compute_face_schur_matrix
+    procedure :: forward_elimination
+    procedure :: backward_substitution
   end type mfd_2d_diff_matrix
 
 contains
@@ -53,9 +56,8 @@ contains
     this%disc => disc
     this%mesh => disc%mesh
 
-    !TODO: include a11, a12
-    ! allocate(this%a11(this%mesh%ncell))
-    ! allocate(this%a12_val(size(this%mesh%cface)))
+    allocate(this%a11(this%mesh%ncell))
+    allocate(this%a12_val(size(this%mesh%cface)))
 
     !! Create a CSR matrix graph for the A22 submatrix.
     allocate(g)
@@ -86,9 +88,8 @@ contains
 
     this%disc => mold%disc
     this%mesh => mold%mesh
-    !TODO: include a11, a22
-    ! allocate(this%a11(size(mold%a11)))
-    ! allocate(this%a12_val(size(mold%a12_val)))
+    allocate(this%a11(size(mold%a11)))
+    allocate(this%a12_val(size(mold%a12_val)))
     g => mold%a22%graph_ptr()
     call this%a22%init (g, take_graph=.false.)
 
@@ -99,32 +100,33 @@ contains
   !! coefficients.  Any existing dirichlet faces are dropped
   subroutine compute (this, coef)
 
+    use upper_packed_matrix, only: upm_col_sum
+
     class(mfd_2d_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: coef(:)
 
     integer :: j, l, ir, ic
-    real(r8), allocatable :: minv(:)
+    real(r8), allocatable :: w(:), minv(:)
 
     ASSERT(size(coef) == this%mesh%ncell)
 
     call this%a22%set_all (0.0_r8)
 
     do j = 1, this%mesh%ncell
-      !TODO: include a11, a22
-      ! associate(a12 => this%a12_val(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
-      !   if (coef(j) == 0.0_r8) then
-      !     this%a11(j) = 0.0_r8
-      !     a12 = 0.0_r8
-      !     cycle
-      !   end if
-      !   minv = coef(j) * this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1)
-      !   !! Fill the A11 and A12 submatrices
-      !   allocate(w(size(a12)))
-      !   call upm_col_sum (minv, w)
-      !   this%a11(j) = sum(w)
-      !   a12 = -w
-      !   deallocate(w)
-      ! end associate
+      associate(a12 => this%a12_val(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
+        if (coef(j) == 0.0_r8) then
+          this%a11(j) = 0.0_r8
+          a12 = 0.0_r8
+          cycle
+        end if
+        minv = coef(j) * this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1)
+        !! Fill the A11 and A12 submatrices
+        allocate(w(size(a12)))
+        call upm_col_sum (minv, w)
+        this%a11(j) = sum(w)
+        a12 = -w
+        deallocate(w)
+      end associate
       !! Assemble the A22 CSR submatrix.
       minv = coef(j) * this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1)
       associate(index => this%mesh%cface(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
@@ -146,23 +148,17 @@ contains
   end subroutine compute
 
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DM_SET_DIR_FACES
- !!
- !! This fix-up subroutine sets selected faces to be Dirichlet faces.  The
- !! implication is that the unknowns associated with those faces are not
- !! actually unknowns and should not be included in the diffusion matrix.
- !! This is handled by projecting out the corresponding face rows and columns
- !! and setting unit diagonal values for those faces (effectively replacing
- !! equations for those unknows with dummy equations that are decoupled from
- !! all other unknowns).  The face-face submatrix is directly modified.  The
- !! modified cell-face submatrix is kept in factored form as the product of
- !! the original cell-face submatrix and the projection matrix described by
- !! the list of Dirichlet faces.  The array pointer DIR_FACES is a list of
- !! local indices of the Dirichlet faces.  The diffusion matrix maintains
- !! an internal reference to this array, and so it should not be modified.
- !!
+ !! Set the specified faces to be Dirichlet faces.  These are added to the
+ !! existing set of Dirichlet faces, if any.  Unknowns associated with these
+ !! faces are not actually unknowns and should no be included in the diffusion
+ !! matrix.  This is handled by projecting out the corresponding face rows and
+ !! columns and setting unit diagonal values for those faces, effectively
+ !! replacing equations for those unknowns with dummy equations that are
+ !! decoupled from all other unknowns.  The face-face submatrix is directly
+ !! modified.  The modified cell-face submatrix is kept in factored form as
+ !! the product of the original cell-face submatrix and the projection matrix
+ !! described by the list of Dirichlet faces; this is more efficient than
+ !! directly modifying the cell-face submatrix.
 
   subroutine set_dir_faces (this, dir_faces)
 
@@ -197,5 +193,112 @@ contains
     end do
 
   end subroutine set_dir_faces
+
+
+  !! Increment the (entire) diagonal cell-cell diffusion submatrix with
+  !! the specified values.  The intended use is the incorporation of time
+  !! derivative terms into the base diffusion matrix.
+
+  subroutine incr_cell_diag(this, values)
+    class(mfd_2d_diff_matrix), intent(inout) :: this
+    real(r8), intent(in) :: values(:)
+    ASSERT(size(values) == size(this%a11))
+    this%a11 = this%a11 + values
+  end subroutine incr_cell_diag
+
+
+  !! Compute the face Schur complement matrix SFF.  SFF is intent inout.  It
+  !! must be defined on input (structure only), and its values are overwritten
+  !! with the values of the Schur complement.  Its structure must match the
+  !! structure of the face-face diffusion submatrix (same PCSR_GRAPH component).
+
+  subroutine compute_face_schur_matrix(this, Sff)
+
+    class(mfd_2d_diff_matrix), intent(in) :: this
+    type(pcsr_matrix), intent(inout) :: Sff
+
+    integer :: j, n, ir, ic
+    real(r8) :: tmp
+
+    ASSERT(associated(this%a22%graph, Sff%graph))
+
+    Sff%values = this%a22%values
+    do j = 1, this%mesh%ncell
+      associate (indices => this%mesh%cface(this%mesh%cstart(j):this%mesh%cstart(j+1)-1), &
+                   a12 => this%a12_val(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
+        do ir = 1, size(indices)
+          do ic = 1, size(indices)
+            tmp = -a12(ir)*a12(ic)/this%a11(j)
+            call Sff%add_to (indices(ir), indices(ic), tmp)
+          end do
+        end do
+      end associate
+    end do
+
+    !! Apply the Dirichlet projections.
+    if (allocated(this%dir_faces)) then
+      do j = 1, size(this%dir_faces)
+        n = this%dir_faces(j)
+        call Sff%project_out (n)
+        call Sff%set (n, n, 1.0_r8)
+      end do
+    end if
+
+  end subroutine compute_face_schur_matrix
+
+
+  subroutine forward_elimination(this, b1, b2)
+
+    class(mfd_2d_diff_matrix), intent(in) :: this
+    real(r8), intent(in) :: b1(:)
+    real(r8), intent(inout) :: b2(:)
+
+    integer :: j
+    real(r8) :: s
+    real(r8), allocatable :: b2_dir(:)
+
+    ASSERT(size(b1) == this%mesh%ncell)
+    ASSERT(size(b2) == this%mesh%nface)
+
+    if (allocated(this%dir_faces)) b2_dir = b2(this%dir_faces)
+
+    do j = 1, this%mesh%ncell
+      associate (a12 => this%a12_val(this%mesh%cstart(j):this%mesh%cstart(j+1)-1), &
+                 cface => this%mesh%cface(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
+        s = b1(j) / this%a11(j)
+        b2(cface) = b2(cface) - a12 * s
+      end associate
+    end do
+
+    if (allocated(this%dir_faces)) b2(this%dir_faces) = b2_dir
+
+  end subroutine forward_elimination
+
+
+  subroutine backward_substitution(this, b1, u2)
+
+    class(mfd_2d_diff_matrix), intent(in) :: this
+    real(r8), intent(inout) :: b1(:), u2(:)
+
+    integer :: j
+    real(r8) :: s
+    real(r8), allocatable :: u2_dir(:)
+
+    if (allocated(this%dir_faces)) then
+      u2_dir = u2(this%dir_faces)
+      u2(this%dir_faces) = 0.0_r8
+    end if
+
+    do j = 1, this%mesh%ncell
+      associate (a12 => this%a12_val(this%mesh%cstart(j):this%mesh%cstart(j+1)-1), &
+                 cface => this%mesh%cface(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
+        s = b1(j) - sum(a12 * u2(cface))
+        b1(j) = s / this%a11(j)
+      end associate
+    end do
+
+    if (allocated(this%dir_faces)) u2(this%dir_faces) = u2_dir
+
+  end subroutine backward_substitution
 
 end module mfd_2d_diff_matrix_type
