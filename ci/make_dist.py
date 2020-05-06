@@ -45,4 +45,12 @@ for l in open("ldd_output").readlines():
         lib2 = "%s/lib/%s" % (dist, filename2)
         os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib2)
 
-os.system("tar cjf truchas.tar.bz2 truchas")
+# Remove libraries that we need to use from the system
+os.system("rm %s/lib/libc.so.*" % dist)
+os.system("rm %s/lib/libm.so.*" % dist)
+os.system("rm %s/lib/libpthread.so.*" % dist)
+os.system("rm %s/lib/libdl.so.*" % dist)
+os.system("rm %s/lib/librt.so.*" % dist)
+# We will distribute this one for now:
+#os.system("rm %s/lib/libgcc_s.so.*" % dist)
+os.system("tar cjf %s.tar.bz2 %s" % (dist, dist))
