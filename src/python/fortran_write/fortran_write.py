@@ -12,7 +12,8 @@ import scipy as sp
 import truchas
 
 # load library
-libfwrite = ctypes.cdll.LoadLibrary(truchas.TruchasConfig.libfwrite)
+libfwrite = ctypes.CDLL(truchas.TruchasConfig.libfwrite,
+                        mode=ctypes.RTLD_LOCAL)
 
 # fortran interfaces
 libfwrite.fopen.argtypes = [ctypes.c_char_p]

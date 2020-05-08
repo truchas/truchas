@@ -92,9 +92,10 @@ if(NOT HYPRE_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Hypre installation")
 endif()
 
+
 # HDF5 library
 set(HDF5_PREFER_PARALLEL True)
-find_package(HDF5 "1.8.8" COMPONENTS C HL)
+find_package(HDF5 "1.10.6" COMPONENTS C HL)
 if(HDF5_FOUND)
   if(NOT HDF5_IS_PARALLEL)
     set(HDF5_FOUND False)
@@ -103,7 +104,13 @@ if(HDF5_FOUND)
 endif()
 if(HDF5_FOUND)
   add_library(hdf5 INTERFACE)
-  target_link_libraries(hdf5 INTERFACE ${HDF5_LIBRARIES})
+  if(HDF5_C_LIBRARY)
+    # hdf5 build from cmake
+    target_link_libraries(hdf5 INTERFACE ${HDF5_C_HL_LIBRARY} ${HDF5_C_LIBRARY})
+  else()
+    # hdf5 build from autotools
+    target_link_libraries(hdf5 INTERFACE ${HDF5_LIBRARIES})
+  endif()
   target_include_directories(hdf5 INTERFACE ${HDF5_INCLUDE_DIRS})
   target_compile_definitions(hdf5 INTERFACE ${HDF5_DEFINITIONS})
 else()
