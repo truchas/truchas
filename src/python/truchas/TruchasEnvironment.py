@@ -33,8 +33,7 @@ class TruchasEnvironment:
         self._working_dir = working_dir
 
         # make the working directory if it doesn't exist
-        if not os.path.isdir(self._working_dir):
-            os.makedirs(os.path.abspath(self._working_dir))
+        os.makedirs(os.path.abspath(self._working_dir), exist_ok=True)
 
         assert os.path.isfile(self._truchas_executable)
         assert os.path.isdir(self._input_dir)
