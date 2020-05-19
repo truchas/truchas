@@ -83,6 +83,7 @@ module hypre_c_binding
   public :: HYPRE_BoomerAMGSetDebugFlag
   public :: HYPRE_BoomerAMGSetLogging
   public :: HYPRE_BoomerAMGSetOldDefault
+  public :: HYPRE_BoomerAMGSetKeepTranspose
 
   !! Functions from the PCG interface
   public :: HYPRE_PCGDestroy
@@ -424,6 +425,13 @@ module hypre_c_binding
         result(ierr) bind(c, name="HYPRE_BoomerAMGSetOldDefault")
       import c_ptr, c_int
       type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_BoomerAMGSetKeepTranspose(solver, keep_transpose) &
+        result(ierr) bind(c, name="HYPRE_BoomerAMGSetKeepTranspose")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: keep_transpose
       integer(c_int) :: ierr
     end function
   end interface

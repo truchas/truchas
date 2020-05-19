@@ -72,10 +72,11 @@ module pcsr_precon_boomer_type
     integer  :: debug_level       ! OFF=0, ON=1
     integer  :: logging_level     ! OFF=0, ON=1, >1=residual available from hypre
     !! BoomerAMG parameters -- these are currently hardwired
-    integer  :: coarsen_type = 6  ! Falgout coarsening
-    integer  :: relax_type = 3    ! hybrid Gauss-Seidel smoothing
+    integer  :: coarsen_type = 10 ! HMIS coarsening
+    integer  :: relax_type = 18   ! l-scaled Jacobi smoothing
     integer  :: num_sweeps = 1    ! number of smoother sweeps
     integer  :: max_levels = 25   ! max number of multigrid levels
+    integer :: keep_transpose = 1 ! use matvecs and avoid transpose matvecs
     real(r8) :: tol = 0.0d0       ! no tolerance -- using as a preconditioner
     real(r8) :: strong_threshold = 0.5_r8 ! should be 0.5 for 3D problems and 0.25 for 2D
   contains
@@ -187,6 +188,7 @@ contains
     call fHYPRE_BoomerAMGSetMaxIter     (this%solver, this%max_iter, ierr)
     call fHYPRE_BoomerAMGSetTol         (this%solver, this%tol, ierr)
     call fHYPRE_BoomerAMGSetStrongThreshold  (this%solver, this%strong_threshold, ierr)
+    call fHYPRE_BoomerAMGSetKeepTranspose (this%solver, this%keep_transpose, ierr)
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.  Note that B and X are ignored here.
@@ -213,25 +215,33 @@ contains
     rows = [ (i, i = this%ilower, this%iupper) ]
 
     !! Initialize the Hypre RHS vector.
+    call start_timer('transfer')
     call fHYPRE_IJVectorInitialize_v2 (this%bh, HYPRE_MEMORY_DEVICE, ierr)
     call fHYPRE_IJVectorSetValues_v2 (this%bh, this%nrows, rows, x, ierr)
     call fHYPRE_IJVectorAssemble   (this%bh, ierr)
     INSIST(ierr == 0)
+    call stop_timer('transfer')
 
     !! Initialize the Hypre initial guess vector.
     x(:this%nrows) = 0.0_r8
+    call start_timer('transfer')
     call fHYPRE_IJVectorInitialize_v2 (this%xh, HYPRE_MEMORY_DEVICE, ierr)
     call fHYPRE_IJVectorSetValues_v2 (this%xh, this%nrows, rows, x, ierr)
     call fHYPRE_IJVectorAssemble   (this%xh, ierr)
     INSIST(ierr == 0)
+    call stop_timer('transfer')
 
     !! Call the BoomerAMG solver.
+    call start_timer('solve')
     call fHYPRE_BoomerAMGSolve (this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
+    call stop_timer('solve')
 
     !! Retrieve the solution vector from HYPRE
+    call start_timer('transfer')
     call fHYPRE_IJVectorGetValues_v2 (this%xh, this%nrows, rows, x, ierr)
     INSIST(ierr == 0)
+    call stop_timer('transfer')
 
     call stop_timer ('boomer-solve')
 
@@ -275,16 +285,20 @@ contains
         ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > nrows)
         ncols_onP(j)  = src%graph%xadj(j+1) - src%graph%xadj(j) - ncols_offP(j)
       end do
+      call start_timer('transfer')
       call fHYPRE_IJMatrixSetDiagOffdSizes (matrix, ncols_onP, ncols_offP, ierr)
       deallocate(ncols_onP, ncols_offP)
       !! Let HYPRE know that we won't be setting any off-process matrix values.
       call fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, 0, ierr)
       INSIST(ierr == 0)
+      call stop_timer('transfer')
     end if
 
     !! After initialization the HYPRE matrix elements can be set.
+    call start_timer('transfer')
     call fHYPRE_IJMatrixInitialize_v2 (matrix, HYPRE_MEMORY_DEVICE, ierr)
     INSIST(ierr == 0)
+    call stop_timer('transfer')
 
     !! Copy the matrix elements into the HYPRE matrix.  This defines both the
     !! nonzero structure of the matrix and the values of those elements. HYPRE
@@ -294,6 +308,7 @@ contains
     rows = (/ (j, j = ilower, iupper) /)
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
     cols = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
+    call start_timer('transfer')
     call fHYPRE_IJMatrixSetValues_v2 (matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)
@@ -301,6 +316,7 @@ contains
     !! After assembly the HYPRE matrix is ready to use.
     call fHYPRE_IJMatrixAssemble (matrix, ierr)
     INSIST(ierr == 0)
+    call stop_timer('transfer')
 
   end subroutine copy_to_ijmatrix
 

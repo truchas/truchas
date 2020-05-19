@@ -139,6 +139,7 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetDebugFlag
   public :: fHYPRE_BoomerAMGSetLogging
   public :: fHYPRE_BoomerAMGSetOldDefault
+  public :: fHYPRE_BoomerAMGSetKeepTranspose
 
   !! PCG interface procedures
   public :: fHYPRE_PCGCreate
@@ -449,6 +450,13 @@ contains
     ierr = HYPRE_BoomerAMGSetOldDefault(solver)
   end subroutine fHYPRE_BoomerAMGSetOldDefault
 
+  subroutine fHYPRE_BoomerAMGSetKeepTranspose(solver, keep_transpose, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: keep_transpose
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetKeepTranspose(solver, keep_transpose)
+  end subroutine fHYPRE_BoomerAMGSetKeepTranspose
+
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine fHYPRE_PCGCreate (solver, ierr)
@@ -745,7 +753,31 @@ contains
   end subroutine fHYPRE_Memcpy
 
   subroutine fHYPRE_EnableGPU()
+
+    ! use,intrinsic :: iso_fortran_env, only: int64
+    ! use fcuda
+
+    ! integer :: ierr
+    ! integer(int64) :: memory, total_memory
+    ! type(cudaDeviceProp) :: prop
+
     call HYPRE_Ext_EnableGPU
+
+    ! call fcudaMemGetInfo(memory, total_memory, ierr); INSIST(ierr == 0)
+    ! print '(a,f9.2,a)', 'GPU free memory: ', real(memory) / 1024**2, ' MB'
+    ! ! call fcudaDeviceGetLimit(memory, cudaLimitMallocHeapSize, ierr); INSIST(ierr == 0)
+    ! ! print '(a,f7.2,a)', 'GPU heap limit: ', real(memory) / 1024**2, ' MB'
+    ! ! call fcudaDeviceSetLimit(cudaLimitMallocHeapSize, int(500*1024**2, int64), ierr); INSIST(ierr == 0)
+    ! ! call fcudaDeviceGetLimit(memory, cudaLimitMallocHeapSize, ierr); INSIST(ierr == 0)
+    ! ! print '(a,f7.2,a)', 'GPU heap limit: ', real(memory) / 1024**2, ' MB'
+
+    ! call fcudaDeviceSetCacheConfig(cudaFuncCachePreferShared, ierr); INSIST(ierr == 0)
+    ! call fcudaGetDeviceProperties(prop, 0, ierr); INSIST(ierr == 0)
+    ! print *, 'shared memory (bytes): ', prop%sharedMemPerBlock
+    
+    ! call fcudaMemGetInfo(memory, total_memory, ierr); INSIST(ierr == 0)
+    ! print '(a,2i15)', 'GPU free memory: ', memory, total_memory
+    
   end subroutine fHYPRE_EnableGPU
 
   subroutine fHYPRE_IJMatrixInitialize_v2 (matrix, memory_location, ierr)
