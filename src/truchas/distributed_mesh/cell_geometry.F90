@@ -34,7 +34,7 @@ module cell_geometry
   public :: eval_hex_volumes  ! special version that returns corner volumes also
 
   !! Cell centers
-  public :: cell_center
+  public :: cell_center, cell_centroid
 
   !! Face normals
   public :: tri_face_normal, quad_face_normal
@@ -97,7 +97,7 @@ contains
 
   pure function pyramid_volume (x) result (vol)
     real(r8), intent(in) :: x(:,:)
-    real(r8) :: vol, cvol1, cvol2, cvol3, cvol4
+    real(r8) :: vol
     vol = 0.5_r8 * (tet_volume(x(:,[1,2,4,5])) &
                   + tet_volume(x(:,[2,3,1,5])) &
                   + tet_volume(x(:,[3,4,2,5])) &
@@ -409,6 +409,93 @@ contains
       smom = smom + tet_volume(x) * sum(x,dim=2)/4
     end subroutine aux
   end function cell_center
+
+  !! Returns the center of mass of the given 3D cell.  X(:,k) are the
+  !! coordinates of the kth vertiex of the cell.  The cell type is inferred
+  !! from the number of vertices.  The function handles tet, pyramid, wedge,
+  !! and hex cell types; a 0 result is returned for anything else. The center
+  !! of mass of a tetrahedron is simply the algebraic mean of its vertices.
+  !! The other cell types are treated as degenerate hexahedra and we use the
+  !! original Truchas algorithm (described below) which is supposedly exact
+  !! for hexahedra with warped faces.
+
+  pure function cell_centroid (x) result (c)
+    real(r8), intent(in) :: x(:,:)
+    real(r8) :: c(3)
+    select case (size(x,dim=2))
+    case (4)  ! tet
+      c = sum(x,dim=2)/4
+    case (5)  ! pyramid
+      call hex_centroid(x(:,[1,2,3,4,5,5,5,5]), pyramid_volume(x), c)
+    case (6)  ! wedge
+      call hex_centroid(x(:,[1,2,3,1,4,5,6,4]), wedge_volume(x), c)
+   case (8)  ! hex
+      call hex_centroid(x, hex_volume(x), c)
+    case default
+      c = 0.0_r8
+    end select
+  end function cell_centroid
+
+  !! This is derived from the original cell_geometry_module::cell_centroid
+  !! procedure.  It has been stripped down to operate on a single cell, whose
+  !! vertex coordinates are passed, instead of the entire mesh, and code for
+  !! handling 2D cells removed.  The algorithm, whose source is unknown, is
+  !! itself unaltered and is supposedly exact for hexahedra with warped faces
+  !! -- hexahedra that are the image of a reference cube under the canonical
+  !! trilinear map. It was applied to both degenerate and non-degenerate hexes.
+  !! NB: Recent investigation with mathematica (May 2020) have cast serious
+  !! doubt on the exactness claim.
+
+  pure subroutine hex_centroid(xv, vol, xc)
+
+    real(r8), intent(in)  :: xv(:,:)  ! cell vertex coordinates
+    real(r8), intent(in)  :: vol      ! cell volume
+    real(r8), intent(out) :: xc(:)    ! cell centroid coordinates
+
+    integer :: i, ip1, ip2
+    real(r8) :: L(3), M(3), N(3), LxD3(3), MxD2(3), NxD1(3)
+    real(r8) :: tmp(3), D1(3), D2(3), D3(3), Dv(3), D1xDv(3), D2xDv(3), D3xDv(3)
+
+    L  = 0.25_r8*(xv(:,1) + xv(:,2) + xv(:,6) + xv(:,5) - xv(:,3) - xv(:,4) - xv(:,8) - xv(:,7))
+    M  = 0.25_r8*(xv(:,2) + xv(:,3) + xv(:,7) + xv(:,6) - xv(:,4) - xv(:,1) - xv(:,5) - xv(:,8))
+    N  = 0.25_r8*(xv(:,8) + xv(:,5) + xv(:,6) + xv(:,7) - xv(:,3) - xv(:,2) - xv(:,1) - xv(:,4))
+    D1 = (xv(:,2) + xv(:,6) + xv(:,4) + xv(:,8) - xv(:,1) - xv(:,5) - xv(:,3) - xv(:,7))
+    D2 = (xv(:,3) + xv(:,4) + xv(:,5) + xv(:,6) - xv(:,1) - xv(:,2) - xv(:,7) - xv(:,8))
+    D3 = (xv(:,1) + xv(:,4) + xv(:,6) + xv(:,7) - xv(:,2) - xv(:,3) - xv(:,5) - xv(:,8))
+    Dv = (xv(:,1) + xv(:,3) + xv(:,6) + xv(:,8) - xv(:,2) - xv(:,4) - xv(:,5) - xv(:,7))
+
+    do i = 1, 3
+      ip1 = modulo(i,3) + 1
+      ip2 = modulo(ip1,3) + 1
+
+      LxD3(i) = L(ip1)*D3(ip2) - L(ip2)*D3(ip1)
+      MxD2(i) = M(ip1)*D2(ip2) - M(ip2)*D2(ip1)
+      NxD1(i) = N(ip1)*D1(ip2) - N(ip2)*D1(ip1)
+
+      D1xDv(i) = D1(ip1)*Dv(ip2) - D1(ip2)*Dv(ip1)
+      D2xDv(i) = D2(ip1)*Dv(ip2) - D2(ip2)*Dv(ip1)
+      D3xDv(i) = D3(ip1)*Dv(ip2) - D3(ip2)*Dv(ip1)
+    end do
+
+    tmp = 0.0_r8
+    do i = 1, 3
+      tmp(1) = tmp(1) + L(i)*(MxD2(i) - NxD1(i)) + (N(i)*D2xDv(i) - M(i)*D1xDv(i))/12
+      tmp(2) = tmp(2) + M(i)*(NxD1(i) - LxD3(i)) + (L(i)*D1xDv(i) - N(i)*D3xDv(i))/12
+      tmp(3) = tmp(3) + N(i)*(LxD3(i) - MxD2(i)) + (M(i)*D3xDv(i) - L(i)*D2xDv(i))/12
+    end do
+    tmp = 0.5_r8 + tmp/(24*vol)
+
+    do i = 1, 3
+      xc(i) = xv(i,4) + tmp(1)*(xv(i,1) - xv(i,4)) &
+                      + tmp(2)*(xv(i,3) - xv(i,4)) &
+                      + tmp(1)*tmp(2)*(xv(i,2) + xv(i,4) - xv(i,1) - xv(i,3)) &
+                      + tmp(3)*(xv(i,8) - xv(i,4) &
+                      + tmp(1)*(xv(i,4) + xv(i,5) - xv(i,1) - xv(i,8)) &
+                      + tmp(2)*(xv(i,4) + xv(i,7) - xv(i,3) - xv(i,8)) &
+                      + tmp(1)*tmp(2)*Dv(i))
+    end do
+
+  end subroutine hex_centroid
 
 !!!! ALGEBRAIC PRIMITIVES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

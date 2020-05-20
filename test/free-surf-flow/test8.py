@@ -16,7 +16,7 @@ def run_test(tenv):
 
         test = output.field(sid, "Z_P")
         gold = golden.field(sid, "Z_P")
-        nfail += truchas.compare_max(test, gold, 1e-11, "pressure", time)
+        nfail += truchas.compare_max(test, gold, 2e-11, "pressure", time)
 
         # ensure pressure is 0 in void
         void_error = max(abs(p) for p,vf in zip(test,vof) if vf == 0)

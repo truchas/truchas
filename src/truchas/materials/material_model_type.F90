@@ -62,6 +62,7 @@ module material_model_type
     procedure, private :: alloc_avg_matl_prop_list
     procedure, private :: alloc_avg_matl_prop_all
     procedure :: alloc_avg_phase_prop => alloc_avg_phase_prop_list
+    procedure :: alloc_equil_temp
   end type
 
   character(4), parameter :: VOID = 'VOID'
@@ -352,7 +353,10 @@ contains
     do n = 1, size(mids)
       associate (matl => this%mlist(mids(n))%matl)
         call matl%alloc_matl_prop(name, func%matl(n)%prop, errmsg)
-        if (.not.allocated(func%matl(n)%prop)) return
+        if (.not.allocated(func%matl(n)%prop)) then
+          deallocate(func)
+          return
+        end if
       end associate
     end do
   end subroutine alloc_avg_matl_prop_list
@@ -373,14 +377,17 @@ contains
     call alloc_avg_matl_prop_list(this, name, all_mids, func, errmsg)
   end subroutine alloc_avg_matl_prop_all
 
-  !! Allocate an AVG_MATL_PROP type object FUNC for property NAME. PIDS is a
+  !! Allocate an AVG_PHASE_PROP type object FUNC for property NAME. PIDS is a
   !! list of phase indexes to include in the object. All must be in the range
   !! [1, NUM_REAL_PHASE]. Later evaluation of FUNC requires an array of phase
   !! weights corresponding to PIDS. If an error occurs, FUNC is returned
   !! unallocated and an explanatory message is returned in ERRMSG.
+  !! UPDATE: This will now handle the VOID phase index; the effect is as if
+  !! that index had not been included in PIDS.
 
   subroutine alloc_avg_phase_prop_list(this, name, pids, func, errmsg)
     use avg_phase_prop_type
+    use scalar_func_factories, only: alloc_const_scalar_func
     class(material_model), intent(in) :: this
     character(*), intent(in) :: name
     integer, intent(in) :: pids(:)
@@ -390,14 +397,41 @@ contains
     allocate(func)
     allocate(func%phase(size(pids)))
     do n = 1, size(pids)
-      associate (phi => this%plist(pids(n))%phi)
-        call phi%get_prop(name, func%phase(n)%func)
-        if (.not.allocated(func%phase(n)%func)) then
-          errmsg = name // ' undefined for phase ' // phi%name
-          return
-        end if
-      end associate
+      if (pids(n) == this%void_index) then
+        call alloc_const_scalar_func(func%phase(n)%func, 0.0_r8)
+      else
+        associate (phi => this%plist(pids(n))%phi)
+          call phi%get_prop(name, func%phase(n)%func)
+          if (.not.allocated(func%phase(n)%func)) then
+            errmsg = name // ' undefined for phase ' // phi%name
+            deallocate(func)
+            return
+          end if
+        end associate
+      end if
     end do
   end subroutine alloc_avg_phase_prop_list
+
+  !! Allocate an EQUIL_TEMP type object FUNC. PIDS is a list of phase indexes
+  !! to include in the object. All must be in the range [1, NUM_REAL_PHASE].
+  !! Later evaluation of FUNC requires an array of phase weights corresponding
+  !! to PIDS. If an error occurs, FUNC is returned unallocated and an
+  !! explanatory message is returned in ERRMSG.
+
+  subroutine alloc_equil_temp(this, pids, func, errmsg)
+    use equil_temp_type
+    class(material_model), intent(in) :: this
+    integer, intent(in) :: pids(:)
+    type(equil_temp), allocatable, intent(out), target :: func
+    character(:), allocatable, intent(out) :: errmsg
+    allocate(func)
+    call this%alloc_avg_phase_prop('enthalpy', pids, func%H_of_T, errmsg)
+    if (.not.allocated(func%H_of_T)) then
+      deallocate(func)
+      return
+    end if
+    call func%T_of_H%init(eps=0.0_r8)
+    func%T_of_H%H_of_T => func%H_of_T
+  end subroutine alloc_equil_temp
 
 end module material_model_type

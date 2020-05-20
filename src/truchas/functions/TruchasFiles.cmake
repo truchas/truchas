@@ -23,6 +23,7 @@ set(FUNC_SOURCE_FILES
         functions/tabular_vector_func_type.F90
         functions/fptr_vector_func_type.F90
         functions/vector_func_factories.F90
+        functions/inverse_func_class.F90
         )
 
 if(ENABLE_DYNAMIC_LOADING)

@@ -87,6 +87,7 @@ CONTAINS
     use body_namelist,          only: bodies_params
     use compute_body_volumes_proc
     use material_model_driver,  only: init_material_model
+    use unstr_mesh_type
 
     real(r8), intent(in) :: t, dt
 
@@ -94,7 +95,7 @@ CONTAINS
     integer :: m, stat
     real(r8) :: density
     logical :: found
-
+    type(unstr_mesh), pointer :: mesh
     real(r8), allocatable :: phi(:,:), vel_fn(:), hits_vol(:,:)
     real(r8), pointer :: temperature_fc(:) => null()
     character(200) :: errmsg
@@ -102,6 +103,8 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     !call init_material_model
+
+    mesh => unstr_mesh_ptr('MAIN')
 
     call property_init
 
@@ -123,7 +126,7 @@ CONTAINS
     ! That's hopelessly confusing and will be corrected later.
     call TLS_info ('')
     call TLS_info ('Computing initial volume fractions ... ')
-    call compute_body_volumes (unstr_mesh_ptr('MAIN'), 3, bodies_params, hits_vol, stat, errmsg2)
+    call compute_body_volumes (mesh, 3, bodies_params, hits_vol, stat, errmsg2)
     if (stat /= 0) call TLS_fatal(errmsg2)
 
     ! Either read Zone and Matl from a restart file or initialize them
@@ -146,7 +149,7 @@ CONTAINS
     end if
 
     ! Initialize Zone%Rho and Zone%Temp
-    call ZONE_INIT (Hits_Vol)
+    call ZONE_INIT (mesh, Hits_Vol)
 
     ! [sriram] End of original restart if condition
 
@@ -866,55 +869,30 @@ CONTAINS
 
   END SUBROUTINE MATL_INIT
 
-  subroutine ZONE_INIT (Hits_Vol)
+  subroutine ZONE_INIT (mesh, Hits_Vol)
     !=======================================================================
     ! Purpose(s):
     !
     !   Initialize all cell-average quantities in the Zone structure
     !
     !=======================================================================
-    use cutoffs_module,       only: alittle
     use interfaces_module,    only: Body_Temp, Matnum, nbody
-    use matl_module,          only: Matl, GATHER_VOF
-    use matl_utilities,       only: update_matl
-    use legacy_mesh_api,      only: ncells, Cell
-
-    use parameter_module,     only: mat_slot, nmat
+    use matl_utilities,       only: matl_get_cell_vof
     use zone_module,          only: Zone
     use restart_variables,    only: restart
     use physics_module, only: heat_transport
-    use scalar_func_class
+    use avg_phase_prop_type
+    use unstr_mesh_type
 
-    ! Arguments
-    real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
+    type(unstr_mesh), intent(inout) :: mesh
+    real(r8), intent(in) :: hits_vol(:,:)
 
-    ! Local Variables
-    integer :: i, ib, iz, m, s
-    real(r8), pointer, dimension(:)   :: enth_sum, scratch
-    real(r8), pointer, dimension(:,:) :: bzRho
-    real(r8), pointer, dimension(:)   :: mass_sum, vof
-    real(r8) :: enth_matl, rho, temp
-    real(r8), allocatable :: Volume_Fraction(:,:)
-    class(scalar_func), allocatable :: func
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+    integer  :: i, j, pid(matl_model%nphase)
+    real(r8) :: vfrac(matl_model%nphase)
+    type(avg_phase_prop), allocatable :: func
+    character(:), allocatable :: errmsg
 
-    ALLOCATE (Volume_Fraction(0:nmat,ncells), STAT=s)
-    call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating Volume_Fraction')
-
-    ! scratch(1:ncells) is used for various values of that dimension.
-    ! Pointers with meaningful names are associated with it prior to use.
-    ALLOCATE (scratch(ncells), STAT=s)
-    call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating scratch')
-
-    ! Gather volume fractions of materials using enth_sum as a temporary
-    ! Volume Fraction is need later inside of the T_of_H call
-    Volume_Fraction = 0.0_r8
-    vof => scratch
-    do i = 1,nmat
-       call GATHER_VOF (i, vof)
-       Volume_Fraction(i,:) = vof
-    end do
-    NULLIFY(vof)
+    INSIST(size(hits_vol,dim=1) == nbody)
 
     RESTARTCHECK: if (restart) then
 
@@ -924,134 +902,87 @@ CONTAINS
       else
         Zone%Enthalpy = 0.0
         Zone%Enthalpy_old = 0.0
-      end if
+     end if
 
     else
 
-      !! NNC, 4 May 2012.  Here we need to compute cell values for temperature,
-      !! density, and enthalpy.  The latter two are average quantities based on
-      !! the volume fraction of material phases present in a cell -- averaged
-      !! material properties.  At this stage the material phase volume fractions
-      !! are available.  The difficulty is in assigning temperatures, which are
-      !! needed to compute enthalpies (and potentially densitites), as these are
-      !! specified by BODY namelist, along with material phases, whose region
-      !! does not necessarily conform to the mesh.  The original code assigned
-      !! a preliminary temperature (body contributing the most mass to the cell)
-      !! which was used to compute average cell enthalpies.  Using these values
-      !! as primary, new consistent temperatures and volume fractions were
-      !! solved for, and the updated volume fractions pushed back into MATL.
-      !! We could conceivably continue doing this last step, but I anticipate
-      !! moving initial field values out of BODY namelists and setting them on
-      !! the basis of mesh blocks only, making it unnecessary.  Thus I've opted
-      !! to drop the last step, and stick with the 'preliminary' temperatures
-      !! and computed enthalpies.
+      !! ZONE%TEMP
+      call compute_equil_cell_temp(mesh, matnum(1:nbody), body_temp(1:nbody), hits_vol, zone%temp)
+      zone%temp_old = zone%temp
 
-      ! NOTE: Some reasonable value must be assigned to Zone%Temp in this
-      !       body-loop to ensure that the return values from  T_of_H() are valid.
-      !
-      !       T_of_H accesses TI_Initial_Guess() which is just Zone%Temp.
-      !       If heat_conduction is off (false), T_of_H() simply returns
-      !       TI_Initial_Guess(), which is Zone%Temp as calculated herein.
-      !
-      !       To meet this need, the zonal temperatures are assigned from
-      !       the body that contributes the largest mass to the zone, either
-      !       the constant value or from the body temperature gradient, if defined.
-
-      allocate (enth_sum(ncells), STAT=s)
-      call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating enth_sum')
-
-      ! Compute a cell-average density
-      Zone%Rho = 0.0_r8
-      do s = 1,mat_slot
-        do i = 1, ncells
-          m = Matl(s)%Cell(i)%Id
-          if (m == 0) cycle
-          if (m == matl_model%void_index) cycle
-          rho = matl_model%const_phase_prop(m, 'density')
-          Zone(i)%Rho = Zone(i)%Rho + Matl(s)%Cell(i)%Vof * rho
-        end do
+      !! ZONE%RHO
+      pid = [(i, i = 1, matl_model%nphase)]
+      call matl_model%alloc_avg_phase_prop('density', pid, func, errmsg)
+      if (.not.allocated(func)) call TLS_fatal(errmsg)
+      do j = 1, mesh%ncell_onP
+        call matl_get_cell_vof(j, vfrac)
+        call func%compute_value(vfrac, [zone(j)%temp], zone(j)%rho)
       end do
-      Zone%Rho_Old = Zone%Rho
+      zone(mesh%ncell_onP+1:)%rho = 0 ! gap elements
+      zone%rho_old = zone%rho
 
-      ! Initialize target arrays to zero
-      mass_sum    => scratch
-      mass_sum(:)  = 0.0_r8
-      enth_sum(:)  = 0.0_r8
-      Zone(:)%Temp = 0.0_r8
-
-      ! Accumulate the partial density values for each body in each zone
-      ALLOCATE (bzRho(nbody,ncells), STAT=s)
-      call TLS_fatal_if_any (s /= 0, 'ZONE_INIT: error allocating bzRho')
-      bzRho(:,:) = 0.0_r8
-      !FORALL (ib = 1:nbody, iz = 1:ncells, Hits_Vol(ib,iz) .gt. alittle)
-      !  bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
-      !END FORALL
-!      do iz = 1, ncells
-!        do ib = 1, nbody
-!          if (Hits_Vol(ib,iz) > alittle) then
-!            bzRho(ib,iz) = DENSITY_MATERIAL(MatNum(ib))*Hits_Vol(ib,iz)
-!          end if
-!        end do
-!      end do
-      do ib = 1, nbody
-        m = MatNum(ib)
-        if (m == matl_model%void_index) cycle
-        rho = matl_model%const_phase_prop(m, 'density')
-        do iz = 1, ncells
-          if (Hits_Vol(ib,iz) > alittle) bzRho(ib,iz) = rho*Hits_Vol(ib,iz)
-        end do
+      !! ZONE%ENTHALPY
+      call matl_model%alloc_avg_phase_prop('enthalpy', pid, func, errmsg)
+      if (.not.allocated(func)) call TLS_fatal(errmsg)
+      do j = 1, mesh%ncell_onP
+        call matl_get_cell_vof(j, vfrac)
+        call func%compute_value(vfrac, [zone(j)%temp], zone(j)%enthalpy)
       end do
-
-      TOTAL_ENTHALPY_LOOP: do ib = 1,nbody
-        ! The enthalpy/mass of the cell is calculated as the sum of the
-        ! full enthalpy of each material divided by the mass of the cell
-
-        m   = MatNum(ib)
-        if (m == matl_model%void_index) cycle
-
-        ! Accumulate total mass by zone
-        rho = matl_model%const_phase_prop(m, 'density')
-        where (Hits_Vol(ib,:) > alittle)
-          mass_sum(:) = mass_sum(:) + rho*Hits_Vol(ib,:)
-        end where
-
-        call matl_model%alloc_phase_prop(m, 'enthalpy', func)
-        do iz = 1, ncells
-          if (Hits_Vol(ib,iz) .gt. alittle) then
-            temp = Body_Temp(ib)%eval(Cell(iz)%Centroid)
-            enth_matl    = func%eval([temp])
-            enth_sum(iz) = enth_sum(iz) + enth_matl * Hits_Vol(ib,iz)
-            ! If the maximum mass contribution is from this body, assign the temp
-            if (count(maxloc(bzRho(:,iz)).eq.ib).gt.0) Zone(iz)%Temp = temp
-          end if
-        end do
-
-      end do TOTAL_ENTHALPY_LOOP
-
-      DEALLOCATE (bzRho)
-
-      ! Complete and store Enthaply
-      where(mass_sum(:) .gt. alittle)
-        enth_sum(:) = enth_sum(:)/mass_sum(:)
-      elsewhere
-        enth_sum(:) = 0.0_r8
-      end where
-      Zone(:)%Enthalpy     = enth_sum
-      Zone(:)%Enthalpy_Old = Zone%Enthalpy
-      Zone(:)%Temp_Old = Zone(:)%Temp
-      NULLIFY(mass_sum)
-
-      call update_matl (Volume_Fraction)
-
-      DEALLOCATE (enth_sum)
+      zone(mesh%ncell_onP+1:)%enthalpy = 0 ! gap elements
+      zone%enthalpy_old = zone%enthalpy
 
     end if RESTARTCHECK
 
-    DEALLOCATE (scratch)
-    DEALLOCATE (Volume_Fraction)
-
   end subroutine ZONE_INIT
 
+
+  subroutine compute_equil_cell_temp(mesh, body_pid, body_temp, body_vol, tcell)
+
+    use scalar_func_containers, only: scalar_func_box
+    use equil_temp_type
+    use unstr_mesh_type
+
+    type(unstr_mesh), intent(inout) :: mesh
+    integer, intent(in) :: body_pid(:)
+    type(scalar_func_box), intent(in) :: body_temp(:)
+    real(r8), intent(in) :: body_vol(:,:)
+    real(r8), intent(out) :: tcell(:)
+
+    integer :: i, j
+    integer, allocatable :: nvbi(:)
+    type(equil_temp), allocatable :: equil_temp_func
+    character(:), allocatable :: errmsg
+    real(r8), allocatable :: temps(:)
+
+    ASSERT(size(body_pid) == size(body_temp))
+    ASSERT(size(body_pid) == size(body_vol,dim=1))
+    ASSERT(size(tcell) == size(body_vol,dim=2))
+    ASSERT(size(tcell) >= mesh%ncell_onP)
+
+    !! Default and dummy values
+    tcell(:mesh%ncell_onP) = 0   ! default void temperature for true cells
+    tcell(mesh%ncell_onP+1:) = 0 ! dummies for possible gap element cells
+
+    !! Array of non-void body indices
+    nvbi = pack([(i,i=1,size(body_pid))], body_pid /= matl_model%void_index)
+    if (size(nvbi) == 0) return  ! all bodies are void
+
+    call matl_model%alloc_equil_temp(body_pid(nvbi), equil_temp_func, errmsg)
+    if (.not.allocated(equil_temp_func)) call TLS_fatal(errmsg)
+
+    allocate(temps(size(nvbi)))
+    call mesh%init_cell_centroid
+    do j = 1, mesh%ncell_onP
+      associate (w => body_vol(nvbi,j))
+        if (count(w > 0) == 0) cycle ! entirely void cell
+        do i = 1, size(w)
+          if (w(i) > 0) temps(i) = body_temp(nvbi(i))%eval(mesh%cell_centroid(:,j))
+        end do
+        call equil_temp_func%compute(w, temps, tcell(j))
+      end associate
+    end do
+
+  end subroutine compute_equil_cell_temp
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
 
