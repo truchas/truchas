@@ -2,39 +2,17 @@
 
 import os
 
+# Name of the main executable
 tbin="t-linux.x86_64.intel.opt-3.1.0-alpha"
-dist="truchas"
-os.system("rm -rf %s" % dist)
-os.system("mkdir -p %s/bin" % dist)
-os.system("mkdir -p %s/lib" % dist)
 
-os.system("cp %s %s/bin" % (tbin, dist))
-os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, tbin))
+# Name of the distribution directory / tarball
+dist="truchas-3.1.0"
 
-# Copy openmpi dependencies:
+# mpich root directory
+mpich_root="/home/swuser/ext"
 
-# Disable for now
-#os.system("cp -r /home/swuser/ext/lib/* %s/lib/" % dist)
 
-# Copy other dependencies
-
-os.system("""\
-ldd %s \
-    | grep "=>" \
-    | sed -e '/^[^\t]/ d' \
-    | sed -e 's/\t//' \
-    | sed -e 's/.*=..//' \
-    | sed -e 's/ (0.*)//' \
-    > ldd_output
-""" % tbin)
-
-for l in open("ldd_output").readlines():
-    lib = l.strip()
-    filename = os.path.basename(lib)
-    print("Direct dependency %s" % filename)
-    os.system("cp %s %s/lib" % (lib, dist))
-    lib = "%s/lib/%s" % (dist, filename)
-    os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib)
+def copy_deps(binary_executable):
     os.system("""\
     ldd %s \
         | grep "=>" \
@@ -43,21 +21,51 @@ for l in open("ldd_output").readlines():
         | sed -e 's/.*=..//' \
         | sed -e 's/ (0.*)//' \
         > ldd_output
-    """ % lib)
-    for m in open("ldd_output").readlines():
-        lib2 = m.strip()
-        filename2 = os.path.basename(lib2)
-        print("    Indirect dependency %s" % filename2)
-        os.system("cp %s %s/lib" % (lib2, dist))
-        lib2 = "%s/lib/%s" % (dist, filename2)
-        os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib2)
+    """ % binary_executable)
+
+    for l in open("ldd_output").readlines():
+        lib = l.strip()
+        filename = os.path.basename(lib)
+        print("Direct dependency %s" % filename)
+        os.system("cp %s %s/lib" % (lib, dist))
+        lib = "%s/lib/%s" % (dist, filename)
+        os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib)
+        os.system("""\
+        ldd %s \
+            | grep "=>" \
+            | sed -e '/^[^\t]/ d' \
+            | sed -e 's/\t//' \
+            | sed -e 's/.*=..//' \
+            | sed -e 's/ (0.*)//' \
+            > ldd_output
+        """ % lib)
+        for m in open("ldd_output").readlines():
+            lib2 = m.strip()
+            filename2 = os.path.basename(lib2)
+            print("    Indirect dependency %s" % filename2)
+            os.system("cp %s %s/lib" % (lib2, dist))
+            lib2 = "%s/lib/%s" % (dist, filename2)
+            os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib2)
+
+
+
+os.system("rm -rf %s" % dist)
+os.system("mkdir -p %s/bin" % dist)
+os.system("mkdir -p %s/lib" % dist)
+
+# Copy the main binary and mpich executables
+os.system("cp %s %s/bin" % (tbin, dist))
+os.system("cp %s/mpiexec.hydra %s/bin/mpiexec" % (mpich_root, dist))
+os.system("cp %s/hydra_pmi_proxy %s/bin/" % (mpich_root, dist))
+
+# Copy all dependencies and set rpath properly
+for b in [tbin, "mpiexec", "hydra_pmi_proxy"]:
+    copy_deps("%s/bin/%s" % (dist, b))
+    os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, b))
 
 # Remove libraries that we need to use from the system
-os.system("rm %s/lib/libc.so.*" % dist)
-os.system("rm %s/lib/libm.so.*" % dist)
-os.system("rm %s/lib/libpthread.so.*" % dist)
-os.system("rm %s/lib/libdl.so.*" % dist)
-os.system("rm %s/lib/librt.so.*" % dist)
-# We will distribute this one for now:
-#os.system("rm %s/lib/libgcc_s.so.*" % dist)
+for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
+    os.system("rm %s/lib/%s.so.*" % (dist, lib))
+
+# Create a distribution tarball
 os.system("tar cjf %s.tar.bz2 %s" % (dist, dist))
