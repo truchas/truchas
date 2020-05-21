@@ -55,8 +55,8 @@ os.system("mkdir -p %s/lib" % dist)
 
 # Copy the main binary and mpich executables
 os.system("cp %s %s/bin" % (tbin, dist))
-os.system("cp %s/mpiexec.hydra %s/bin/mpiexec" % (mpich_root, dist))
-os.system("cp %s/hydra_pmi_proxy %s/bin/" % (mpich_root, dist))
+os.system("cp %s/bin/mpiexec.hydra %s/bin/mpiexec" % (mpich_root, dist))
+os.system("cp %s/bin/hydra_pmi_proxy %s/bin/" % (mpich_root, dist))
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "mpiexec", "hydra_pmi_proxy"]:
