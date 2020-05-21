@@ -12,5 +12,5 @@ truchas intel:
   artifacts:
     paths:
       - build/inst/bin/t-*
-      - build/inst/bin/truchas.tar.bz2
+      - build/inst/bin/truchas-*.tar.bz2
     when: always
