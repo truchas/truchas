@@ -844,25 +844,8 @@ CONTAINS
       end do
     end do
 
-    !! Check that the computed VoFs are valid.
-    call check_vof(stat)
-    if (stat /= 0) then
-      call TLS_info('  Computed volume fractions are invalid; attempting to normalize.')
-      total = 0.0_r8
-      do s = 1, mat_slot
-        total = total + matl(s)%cell(:ncells_real)%vof
-      end do
-      total = 1.0_r8/total
-      do s = 1, mat_slot
-        matl(s)%cell(:ncells_real)%vof = total*matl(s)%cell(:ncells_real)%vof
-      end do
-      call check_vof(stat)
-      if (stat /= 0) then
-        call TLS_fatal('normalized volume fractions are invalid')
-      else
-        call TLS_info('  Normalization was successful.')
-      end if
-    end if
+    !! We are guaranteed that HITS_VOL sums to the cell volume within roundoff.
+    !! TODO? tweak the vofs to drop small values and adjust to sum exactly to 1
 
     ! Compute mesh Velocities from body velocities
     call VELOCITY_INIT (Hits_Vol)
