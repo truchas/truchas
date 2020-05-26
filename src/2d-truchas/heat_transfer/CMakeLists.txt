@@ -10,6 +10,7 @@ set(HT2D_SOURCE_FILES
     mfd_2d_diff_matrix_type.F90
     mfd_2d_diff_precon_type.F90
     HT_2d_model_type.F90
+    HT_2d_norm_type.F90
     HT_2d_precon_type.F90)
 
 add_library(ht2d ${HT2D_SOURCE_FILES})
