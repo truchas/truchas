@@ -1,5 +1,12 @@
 MODULE PGSLib_IO_Collate_MODULE
   use pgslib_c_binding
+  use PGSLib_Type_MODULE
+  use pgslib_globals_module,  only : PGSLib_PEInfo
+  use PGSLib_Utility_MODULE,  only : pgslib_check_error,     &
+      PGSLib_Inquire_IO_P,    &
+      PGSLib_Inquire_nPE,     &
+      PGSLib_Output,          &
+      PGSLib_Flush_Output
   use,intrinsic :: iso_fortran_env, only: int8
   IMPLICIT NONE
   SAVE
@@ -10,7 +17,7 @@ MODULE PGSLib_IO_Collate_MODULE
   !  PGSLib_Collate
   !
   !
-  ! For each of these generic routines, scalar and vector versions, 
+  ! For each of these generic routines, scalar and vector versions,
   !          as well as four or five data types are supported.
   ! The data types are
   !
@@ -19,7 +26,7 @@ MODULE PGSLib_IO_Collate_MODULE
   !          PGSLib_DOUBLE_TYPE (typically the default double precision)
   !          PGSLib_Log_Type    (typeically the default logical type)
   !          CHARACTER          (for some of the routines)
-  ! The types are set in the module PGSLib_Types_MODULE, except for CHARACTER, which is the 
+  ! The types are set in the module PGSLib_Types_MODULE, except for CHARACTER, which is the
   !          default character type.
   !
 
@@ -116,7 +123,7 @@ CONTAINS
     implicit none
     CHARACTER (LEN = *), intent(  OUT), dimension(:):: scalarv_out
     CHARACTER (LEN = *), intent(IN   )              :: scalar_in
-    ! Local variables 
+    ! Local variables
     integer in_len, max_in_len, min_in_len, out_len
     integer i, start, c
     integer vec_len
@@ -176,7 +183,7 @@ CONTAINS
        end do
     end if
     deallocate(vector_out_total)
-    
+
     return
     end SUBROUTINE pgslib_Collate_char_scalar_f
 
@@ -267,7 +274,7 @@ CONTAINS
 
     ! Setup lengths for receiving
     ALLOCATE(vec_out_lengths(PGSLib_Inquire_nPE()))
-    vec_in_len = SIZE(vector_in,1) 
+    vec_in_len = SIZE(vector_in,1)
     call pgslib_collate(vec_out_lengths, vec_in_len)
 
     ! Check that destination is large enough

@@ -24,7 +24,7 @@
 #include "vf_mpi.h"
 
 #include <math.h>
-#if defined(WIN32) || defined(macosx)
+#if defined(WIN32) || defined(__APPLE__)
 #  include <float.h>
 #else
 #  include <values.h>

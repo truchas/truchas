@@ -3,22 +3,7 @@
 
 ! $Id: red_any.fpp,v 1.1.1.1 2000/10/11 22:44:29 ferrell Exp $
 
-#ifndef _MASK_
-#error "_MASK_ must be defined before including this file"
-#endif
-
-#ifndef _MASK_SHAPE_
-#error "_MASK_SHAPE_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_
-#error "_ROUTINE_ must be defined before including this file"
-#endif
-
 function _ROUTINE_ (MASK, SCOPE)
-  USE pgslib_globals_module
-  use pgslib_stats,         only: GLOBAL_ANY_STATISTICS, Enter_Routine, Exit_Routine
-  USE PGSLib_Type_MODULE
   IMPLICIT NONE
   logical (PGSLib_LOG_TYPE) _ROUTINE_
   logical (PGSLib_Log_Type),                 &
@@ -40,7 +25,7 @@ function _ROUTINE_ (MASK, SCOPE)
 
   ! Local or Global operation
 #include "red_global_test.fpp"
-  
+
   ! On-PE reduction
   AllMask = MERGE(PGSLib_TRUE, PGSLib_FALSE, ANY( _MASK_ ) )
 
@@ -49,7 +34,7 @@ function _ROUTINE_ (MASK, SCOPE)
 
   ! C routine returns integer, need to convert to logical
   ! Anything .NOT. PGSLib_FALSE is .true.
-  _ROUTINE_ = .NOT.(ALLMask == PGSLib_FALSE) 
+  _ROUTINE_ = .NOT.(ALLMask == PGSLib_FALSE)
 
 #ifdef USE_TIMERS_2
   call Exit_Routine(GLOBAL_ANY_STATISTICS())

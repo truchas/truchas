@@ -236,7 +236,7 @@ CONTAINS
   SUBROUTINE TRUNCATE_VOLUME (Volume_Trunc_Total)
     !=======================================================================
     ! Purpose(s):
-    !  
+    !
     !   Compute the truncation volume.
     !
     !=======================================================================
@@ -281,6 +281,9 @@ CONTAINS
     use parameter_module, only: nicells
     use legacy_mesh_api,  only: nfc
     use vof_data_module,  only: Cases, count_cases
+#ifdef TRUCHAS_ALLOW_UNSAFE_VECTORIZATION
+    use ieee_exceptions
+#endif
 
     ! Arguments
     integer, intent(IN)  :: f
@@ -294,6 +297,13 @@ CONTAINS
     real(r8), dimension(nicells,nvf) :: Y
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+#ifdef TRUCHAS_ALLOW_UNSAFE_VECTORIZATION
+    logical :: old_halting_mode
+    call ieee_get_halting_mode(ieee_divide_by_zero, old_halting_mode)
+    call ieee_set_halting_mode(ieee_divide_by_zero, .false.)
+#endif
+
 
     Y = 0.0_r8
     call Y_FUNCTION (f, Y)
@@ -321,7 +331,7 @@ CONTAINS
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(2) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(3) .and. &
          Trunc_Vol(:,f)%MUp(2) == (1 + MOD(Trunc_Vol(:,f)%MUp(1)+1, nvf)))
-       Vf = Vf + Q 
+       Vf = Vf + Q
     end where
 
     Q = 0.0_r8
@@ -329,7 +339,7 @@ CONTAINS
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(2) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(3) .and. &
          Trunc_Vol(:,f)%MUp(2) == (1 + MOD(Trunc_Vol(:,f)%MUp(1)+1, nvf)))
-       Vf = Vf + Q 
+       Vf = Vf + Q
     end where
 
     ! Count the number of case #5 intersections
@@ -344,21 +354,21 @@ CONTAINS
     Q = 0.0_r8
     call TRUNCATE_FACE_N (4, f, Q, Y)
     where (Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3) .and. &
-           Int_Geom%Rho < Trunc_Vol(:,f)%MUa(4)) Vf = Vf - Q 
+           Int_Geom%Rho < Trunc_Vol(:,f)%MUa(4)) Vf = Vf - Q
 
     ! Count the number of case #3 intersections
     if (count_cases) then
        Face_Trun(:,3) = Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3) .and. &
-                        Int_Geom%Rho < Trunc_Vol(:,f)%MUa(4) 
+                        Int_Geom%Rho < Trunc_Vol(:,f)%MUa(4)
        cases(3) = cases(3) + COUNT(Face_Trun(:,3))
     end if
 
     ! Case #4 intersection.  Note, this term is in common with
-    !    a term in the calculation of case #3.  That is why the 
+    !    a term in the calculation of case #3.  That is why the
     !    conditional doesn-t exclude case #3.
     Q = 0.0_r8
     call TRUNCATE_FACE_4 (f, Q)
-    where (Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3)) Vf = Vf + Q 
+    where (Int_Geom%Rho > Trunc_Vol(:,f)%MUa(3)) Vf = Vf + Q
 
     ! Count the number of case #4 intersections
     if (count_cases) then
@@ -372,7 +382,7 @@ CONTAINS
     where (Int_Geom%Rho >  Trunc_Vol(:,f)%MUa(2) .and. &
            Int_Geom%Rho <= Trunc_Vol(:,f)%MUa(3) .and. &
          Trunc_Vol(:,f)%MUp(2) /= (1+MOD(Trunc_Vol(:,f)%MUp(1)+1,nvf)))
-       Vf = Vf + Q 
+       Vf = Vf + Q
     end where
 
     ! Count the number of case #2 intersections
@@ -388,6 +398,9 @@ CONTAINS
        end do
 
     end if
+#ifdef TRUCHAS_ALLOW_UNSAFE_VECTORIZATION
+    call ieee_set_halting_mode(ieee_divide_by_zero, old_halting_mode)
+#endif
 
   END SUBROUTINE TRUNCATE_FACE
 
@@ -395,7 +408,7 @@ CONTAINS
 
   SUBROUTINE TRUNCATE_FACE_2 (face, Q, Y)
     !=======================================================================
-    ! PURPOSE - 
+    ! PURPOSE -
     !   Compute an expression (for case "2") that is part of
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
@@ -408,7 +421,7 @@ CONTAINS
     ! Arguments
     integer, intent(IN)  :: face
     real(r8), dimension(nicells,nvf), intent(IN)  :: Y
-    real(r8), dimension(nicells), intent(OUT) :: Q 
+    real(r8), dimension(nicells), intent(OUT) :: Q
 
     ! Local Variables
     integer :: i, k
@@ -438,14 +451,14 @@ CONTAINS
     do k = 1, nvf
        i = 1 + mod(k + 1,nvf)
 
-       ! Scan the four face indicies until we get to the 
+       ! Scan the four face indicies until we get to the
        ! 2nd predecessor of MU(b).
        where (Trunc_Vol(:,face)%MUp(2) == k)
 
           ! Z3 is the Y function of the successor of the A vertex
           Z3 = Y(:,k)
 
-          ! W1 is the difference between: 
+          ! W1 is the difference between:
           !   the Mu of the 2nd successor of vertex B and the Mu of vertex A.
           W1 = (Trunc_Vol(:,face)%MUi(i) - Trunc_Vol(:,face)%MUa(1))
        endwhere
@@ -460,7 +473,7 @@ CONTAINS
     do k = 1, nvf
        i = 1 + mod(k + 1,nvf)
 
-       ! Scan the four face indicies until we get to the 
+       ! Scan the four face indicies until we get to the
        ! 2nd predecessor of MU(a).
        where (Trunc_Vol(:,face)%MUp(1) == k)
 
@@ -468,12 +481,12 @@ CONTAINS
           Z1 = Y(:,k)
 
           ! Z2 is the Y function of the 2nd successor of the A vertex
-          Z2 = Y(:,i) 
+          Z2 = Y(:,i)
           W3 = eps(k)*Trunc_Vol(:,face)%Nu*W1
-          Q  = eps(k)*Trunc_Vol(:,face)%V1234*0.5_r8*W1*W1 
+          Q  = eps(k)*Trunc_Vol(:,face)%V1234*0.5_r8*W1*W1
 
-          ! W2 is the difference between: 
-          !   the Mu of the 2nd successor of vertex A and 
+          ! W2 is the difference between:
+          !   the Mu of the 2nd successor of vertex A and
           !   the Mu of vertex B.
           W2 = Trunc_Vol(:,face)%MUi(i) - Trunc_Vol(:,face)%MUa(2)
        endwhere
@@ -511,7 +524,7 @@ CONTAINS
 
   SUBROUTINE TRUNCATE_FACE_4 (face, Q)
     !=======================================================================
-    ! PURPOSE - 
+    ! PURPOSE -
     !   Compute an expression (for case "4") that is part of
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
@@ -545,7 +558,7 @@ CONTAINS
 
   SUBROUTINE TRUNCATE_FACE_N (n, face, Q, Y)
     !=======================================================================
-    ! PURPOSE - 
+    ! PURPOSE -
     !   Compute an expression (for case "n") that is part of
     !   the volume truncated along a hex face by the plane
     !   X*Normal - Ro = 0
@@ -554,7 +567,6 @@ CONTAINS
     use interface_module, only: Int_Geom
     use parameter_module, only: nicells
     use vof_data_module,  only: Eps
-
     ! Arguments
     integer, intent(IN) :: n, face
     real(r8), dimension(nicells,nvf), intent(IN) :: Y
@@ -570,7 +582,7 @@ CONTAINS
     real(r8), parameter :: one_sixtieth  = 1.0_r8 / 60.0_r8
     real(r8), parameter :: one_168th     = 1.0_r8 / 168.0_r8
     real(r8), parameter :: one_105th     = 1.0_r8 / 105.0_r8
-    
+
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     Q = 0.0_r8

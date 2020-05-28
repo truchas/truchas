@@ -225,7 +225,6 @@ contains
 
     case ('element-block')
       call params%get('blockids', ids, stat=stat, errmsg=errmsg)
-      print *, 'ids: ', ids
       if (stat /= 0) return
       call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
       if (stat /= 0) return

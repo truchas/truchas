@@ -15,7 +15,8 @@ module HTSD_solver_type
   use matl_mesh_func_type
   use unstr_mesh_type
   use index_partitioning
-  use bdf2_dae
+  use htsd_idaesol_model_type
+  use idaesol_type
   use parameter_list_type
   implicit none
   private
@@ -23,7 +24,8 @@ module HTSD_solver_type
   type, public :: HTSD_solver
     type(matl_mesh_func), pointer :: mmf => null()
     type(unstr_mesh), pointer :: mesh => null()
-    type(state) :: bdf2_state
+    type(htsd_idaesol_model) :: integ_model
+    type(idaesol) :: integ
     logical :: state_is_pending = .false.
     !! Pending state
     real(r8) :: t, dt
@@ -71,7 +73,7 @@ module HTSD_solver_type
 contains
 
   subroutine HTSD_solver_init (this, mmf, model, params)
-    type(HTSD_solver), intent(out) :: this
+    type(HTSD_solver), intent(out), target :: this
     type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
     type(HTSD_solver_params), intent(in) :: params
@@ -86,9 +88,22 @@ contains
     call HTSD_precon_init (this%precon, model, params%precon_params)
     n = HTSD_model_size(model)
     allocate(this%u(n))
-    call create_state (this%bdf2_state, n, &
-        params%max_nlk_itr, params%nlk_tol, params%max_nlk_vec, params%nlk_vec_tol)
-    if (params%verbose_stepping) call set_verbose_stepping (this%bdf2_state, params%output_unit)
+
+    call this%integ_model%init(this%model, this%precon, this%norm)
+
+    block
+      integer :: stat
+      character(:), allocatable :: errmsg
+      type(parameter_list) :: plist
+      call plist%set('nlk-max-iter', params%max_nlk_itr)
+      call plist%set('nlk-tol', params%nlk_tol)
+      call plist%set('nlk-max-vec', params%max_nlk_vec)
+      call plist%set('nlk-vec-tol', params%nlk_vec_tol)
+      call this%integ%init(this%integ_model, plist, stat, errmsg)
+      INSIST(stat == 0)
+    end block
+
+    if (params%verbose_stepping) call this%integ%set_verbose_stepping(params%output_unit)
     this%hmin = params%hmin
     this%max_step_tries = params%max_step_tries
     !this%step_method = params%step_method
@@ -115,7 +130,6 @@ contains
       call HTSD_norm_delete (this%norm)
       deallocate(this%norm)
     end if
-    call destroy_state (this%bdf2_state)
     !! The solver owns the void cell and face mask components of the model.
     if (associated(this%model%void_cell)) deallocate(this%model%void_cell)
     if (associated(this%model%void_face)) deallocate(this%model%void_face)
@@ -199,24 +213,23 @@ contains
   end subroutine HTSD_solver_get_cell_temp_grad
     
   subroutine HTSD_solver_get_stepping_stats (this, counters)
-    use bdf2_dae, only: get_bdf2_stepping_statistics
     type(HTSD_solver), intent(in) :: this
     integer, intent(out) :: counters(:)
     ASSERT(size(counters) == 6)
-    call get_bdf2_stepping_statistics (this%bdf2_state, counters)
+    call this%integ%get_stepping_statistics(counters)
   end subroutine HTSD_solver_get_stepping_stats
   
   function HTSD_solver_last_time (this) result (t)
     type(HTSD_solver), intent(in) :: this
     real(r8) :: t
-    t = last_time(this%bdf2_state)
+    t = this%integ%last_time()
   end function HTSD_solver_last_time
   
   function HTSD_solver_last_step_size (this) result (h)
     use bdf2_dae, only: last_step_size
     type(HTSD_solver), intent(in) :: this
     real(r8) :: h
-    h = last_step_size(this%bdf2_state)
+    h = this%integ%last_step_size()
   end function HTSD_solver_last_step_size
   
 !TODO!  The BDF2 step procedure invoked by this advance routine may reduce the
@@ -235,8 +248,6 @@ contains
 
   subroutine HTSD_solver_advance_state (this, dt, dtnext, stat)
   
-    use HTSD_BDF2_model
-    
     type(HTSD_solver), intent(inout) :: this
     real(r8), intent(inout) :: dt
     real(r8), intent(out) :: dtnext
@@ -248,10 +259,7 @@ contains
 !    !! Step size.
 !    dt = t - last_time(this%bdf2_state)
 !    INSIST(dt > 0.0_r8)
-    t = last_time(this%bdf2_state) + dt
-    
-    !! Link the lookaside data used by the BDF2 integrator call back procedures.
-    call set_context (this%model, this%precon, this%norm)
+    t = this%integ%last_time() + dt
     
 !    select case (this%step_method)
 !    case (1)  !! Simple backward Cauchy-Euler with no predictor error control
@@ -260,16 +268,15 @@ contains
 !      !                    bdf1_fun, bdf1_pc, bdf1_updpc, bdf1_fnorm)
 !      dtnext = huge(1.0d0) ! step size controlled by caller, not this routine
 !    case default !! Usual BDF2 with adaptive step size selection     
-      call bdf2_step (this%bdf2_state, bdf2_pcfun, bdf2_updpc, bdf2_enorm, &
-                      dt, this%hmin, this%max_step_tries, this%u, dtnext, stat)
+      call this%integ%step(dt, this%hmin, this%max_step_tries, this%u, dtnext, stat)
 !    end select
 
     if (stat == 0) then
-      this%t = t
+      this%t = this%integ%last_time() + dt
       this%dt = dt
       this%state_is_pending = .true.
     else ! failed -- restore last good state before returning
-      this%u = last_solution(this%bdf2_state)
+      call this%integ%get_last_state_copy(this%u)
       this%state_is_pending = .false.
     end if
     
@@ -278,7 +285,8 @@ contains
   subroutine HTSD_solver_commit_pending_state (this)
     type(HTSD_solver), intent(inout) :: this
     INSIST(this%state_is_pending)
-    call commit_solution (this%bdf2_state, this%dt, this%u)
+    call this%integ%commit_state(this%t, this%u)
+    !call commit_solution (this%bdf2_state, this%dt, this%u)
     this%state_is_pending = .false.
   end subroutine HTSD_solver_commit_pending_state
   
@@ -324,7 +332,7 @@ contains
     call this%ic_params%set ('dt', dt)
     call ic%init (this%model, this%ic_params)
     call ic%compute (t, temp, conc, this%u, udot)
-    call set_initial_state (this%bdf2_state, t, this%u, udot)
+    call this%integ%set_initial_state(t, this%u, udot)
     deallocate(udot)
     
   end subroutine HTSD_solver_set_initial_state
@@ -344,7 +352,8 @@ contains
     call this%ic_params%set ('dt', dt)
     call ic%init (this%model, this%ic_params)
     call ic%compute_udot (this%t, this%u, udot)
-    call set_initial_state (this%bdf2_state, this%t, this%u, udot)
+    call this%integ%set_initial_state(this%t, this%u, udot)
+    !call set_initial_state (this%bdf2_state, this%t, this%u, udot)
 
   end subroutine HTSD_solver_restart
 

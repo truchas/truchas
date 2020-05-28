@@ -6,18 +6,6 @@
 
 ! This is included for the var_vector FLATTEN VECTOR routines
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _VAR_DATA_TYPE_
-#error "_VAR_DATA_TYPE_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_(ARRAY) RESULT(BigArray)
     !====================================================================
     ! Purpose(s):
@@ -51,5 +39,3 @@
 #undef _ROUTINE_NAME_
 #undef _DATA_TYPE_
 #undef _VAR_DATA_TYPE_
-
-  

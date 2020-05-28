@@ -10,7 +10,7 @@ def run_test(tenv):
     # early time
     time = output.time(2)
     nfail += truchas.compare_max(output.field(2, "Z_TEMP"), golden.field(2, "Z_TEMP"),
-                                 5e-7, "temp", time)
+                                 5.2e-7, "temp", time)
     nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-10, "temp", time)
     nfail += truchas.compare_max(output.field(2, "Z_VC"), 0, 1e-10, "velocity", time)
     nfail += truchas.compare_max(output.field(2, "VOF")[:,0], golden.field(2, "VOF")[:,0],

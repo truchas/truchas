@@ -3,14 +3,6 @@
 
 ! $Id: eoshift.fpp,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_(Source, SHIFT, BOUNDARY)
     implicit none
     _DATA_TYPE_,       &
@@ -39,7 +31,7 @@
     !      Dest(I)       = Src(I+SHIFT)
     ! But, that does not address the boundary issue.
     ! All items which are not in the range 1 <= I + SHIFT <= N_Tot
-    ! need to be overwritten by the BOUNDARY value.  
+    ! need to be overwritten by the BOUNDARY value.
 
     ! We need to know the largest index.
     N_Tot = PGSLib_Global_SUM(SIZE(Source,1))

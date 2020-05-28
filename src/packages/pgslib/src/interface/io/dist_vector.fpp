@@ -2,17 +2,6 @@
 
 !!CPPP!! $Id: dist_vector.fpp,v 1.2 2001/03/22 00:26:13 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE must be defined before including this file"
-#endif
-
-    use pgslib_io_collate_module
-    USE PGSLib_Type_MODULE
-    USE pgslib_globals_module,  ONLY : PGSLib_PEInfo
-    USE PGSLib_Utility_MODULE,     ONLY : pgslib_check_error,      &
-         &                                PGSLib_Inquire_IO_P,     &
-         &                                PGSLib_Inquire_nPE
-
     IMPLICIT NONE
     _DATA_TYPE_              , INTENT(OUT), DIMENSION(:):: Vector_Out
     _DATA_TYPE_              , INTENT(IN),  DIMENSION(:):: Vector_In

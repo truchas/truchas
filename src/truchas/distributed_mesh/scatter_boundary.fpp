@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# /* include file for index_partitioning.F90 */
+!! include file for index_partitioning.F90
 
 #ifdef _OP_
 #undef _OP_
@@ -105,10 +105,6 @@
 #define _PROC1_ scatter_boundary_and_L1
 #define _PROC2_ scatter_boundary_and_XL1
 #define _AUX_   scatter_boundary_and_aux
-#endif
-
-#ifndef _OP_
-#error "One of {_SUM_, _MIN_, _MAX_, _AND_, _OR_}_REDUCTION_ must be defined"
 #endif
 
   subroutine _PROC1_ (this, onP_data, offP_data)

@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# /* include file for restart_utilities.F90 */
+!! include file for restart_utilities.F90
 
 #ifdef _TYPE_
 #undef _TYPE_
@@ -71,10 +71,6 @@
 #define _READ_VAR1_HALT_ read_var_halt_S1
 #endif
 
-#ifndef _TYPE_
-#error "one of _INTEGER_DATA_, _REAL_DATA_, or _STRING_DATA_ must be defined!"
-#endif
-
   subroutine _READ_VAR0_STAT_ (unit, var, stat)
     use parallel_info_module, only: p_info
     use pgslib_module, only:  pgslib_bcast
@@ -95,7 +91,7 @@
     call _READ_VAR0_STAT_ (unit, var, stat)
     if (stat /= 0) call halt (errmsg)
   end subroutine _READ_VAR0_HALT_
-  
+
   subroutine _READ_VAR1_STAT_ (unit, var, stat)
     use parallel_info_module, only: p_info
     use pgslib_module, only:  pgslib_bcast
@@ -116,7 +112,7 @@
     call _READ_VAR1_STAT_ (unit, var, stat)
     if (stat /= 0) call halt (errmsg)
   end subroutine _READ_VAR1_HALT_
-  
+
 #ifdef _ARRAY_PROCS_
 #undef _ARRAY_PROCS_
   subroutine _READ_ARRAY1_STAT_ (unit, array, perm, stat)
@@ -169,7 +165,7 @@
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
 
-  end subroutine _READ_ARRAY1_STAT_    
+  end subroutine _READ_ARRAY1_STAT_
 
 
   subroutine _READ_ARRAY1_HALT_ (unit, array, perm, errmsg)
@@ -235,7 +231,7 @@
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
 
-  end subroutine _READ_ARRAY2_STAT_    
+  end subroutine _READ_ARRAY2_STAT_
 
 
   subroutine _READ_ARRAY2_HALT_ (unit, array, perm, errmsg)
@@ -303,7 +299,7 @@
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
 
-  end subroutine _READ_ARRAY3_STAT_    
+  end subroutine _READ_ARRAY3_STAT_
 
 
   subroutine _READ_ARRAY3_HALT_ (unit, array, perm, errmsg)

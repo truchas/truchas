@@ -4,41 +4,8 @@
 !!CPP!! the parity-segment to a segment-start-bit.
 
 !!CPP!! $Id: scan-seg-bit-1d.fpp,v 1.1.1.1 2000/10/11 22:44:29 ferrell Exp $
-
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _ON_NODE_SCAN_
-#error "_ON_NODE_SCAN_ must be defined before including this file"
-#endif
-
-#ifndef _OFF_NODE_SCAN_
-#error "_OFF_NODE_SCAN_ must be defined before including this file"
-#endif
-
-#ifndef _SCAN_FIXUP_
-#error "_SCAN_FIXUP_ must be defined before including this file"
-#endif
-
-#ifndef _LAST_
-#error "_LAST_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_ (INPUT_ARRAY, SEGMENT_BIT, MASK, SCOPE)
-    use pgslib_type_module,    only : PGSLib_Scope, &
-                                      PGSLib_Int_Type, &
-                                      PGSLib_Log_Type, &
-                                      PGSLib_Real_Type
-    implicit none 
+    implicit none
 
     ! Subroutine arguments
     _SCAN_DATA_TYPE_ , intent(IN   ),          &
@@ -57,7 +24,7 @@
     _SCAN_DATA_TYPE_ ,dimension(SIZE(INPUT_ARRAY,1)) :: _ROUTINE_NAME_
 
     ! Local variables
-    
+
     integer                                 :: Local_N
     integer                                 :: Src_Seg, Dest_Seg
     _SCAN_DATA_TYPE_                        :: Src_Data, Dest_Data
@@ -75,18 +42,18 @@
 
     Local_N      = SIZE(INPUT_ARRAY, 1)
 
-    
+
     if (PRESENT(MASK)) then
        ALLOCATE(Src_Array(Local_N))
        Src_Array = MERGE(INPUT_Array, _OP_ID_, MASK=MASK)
     else
        Src_Array => INPUT_ARRAY
     end if
-    
+
     ! First we need the on-node scan (either PREFIX or SUFFIX, depending on specific routine)
     ! This returns Dest_Array = SCAN(Dest_ARRAY, Src_ARRAY)
     call _ON_NODE_SCAN_(Dest_ARRAY, Dest_Bit, Src_ARRAY, SEGMENT_Bit)
-    
+
     if (PRESENT(MASK)) DEALLOCATE(Src_Array)
 
     Global: If (PGSLib_Scope_Check(SCOPE) == PGSLib_Global) then
@@ -118,7 +85,7 @@
        call _SCAN_FIXUP_ (_ROUTINE_NAME_, Dest_Array, Dest_Bit, Dest_Data)
 
     END If Global
- 
+
     ! We are done
 
     RETURN

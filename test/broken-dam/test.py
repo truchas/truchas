@@ -21,13 +21,13 @@ def run_test(tenv):
     # test final fluid volume fraction
     vof = output.field(2, "VOF")[:,0]
     vofg = gold.field(2, "VOF")[:,0]
-    nfail += truchas.compare_max(vof, vofg, 1e-9, "vof", time)
+    nfail += truchas.compare_max(vof, vofg, 5e-9, "vof", time)
 
     # test final velocity
     vel = output.field(2, "Z_VC")
     velg = gold.field(2, "Z_VC")
-    nfail += truchas.compare_max(vel[:,0], velg[:,0], 1e-9, "vel-x", time)
-    nfail += truchas.compare_max(vel[:,1], velg[:,1], 1e-9, "vel-y", time)
+    nfail += truchas.compare_max(vel[:,0], velg[:,0], 2e-9, "vel-x", time)
+    nfail += truchas.compare_max(vel[:,1], velg[:,1], 3e-9, "vel-y", time)
 
     truchas.report_summary(nfail)
     return nfail

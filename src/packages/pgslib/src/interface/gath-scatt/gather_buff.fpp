@@ -2,34 +2,7 @@
 
 !!CPP!! $Id: gather_buff.fpp,v 1.2 2001/03/22 00:26:13 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _GATHER_BUF_C_
-#error "_GATHER_BUF_C_ must be defined before including this file"
-#endif
-
-#ifndef _DUP_DIMENSION_
-#error "_DUP_DIMENSION_ must be defined before including this file"
-#endif
-
-#ifndef _SUP_DIMENSION_
-#error "_SUP_DIMENSION_ must be defined before including this file"
-#endif
-
-#ifndef _BLOCKSIZE_
-#error "_BLOCKSIZE_ must be defined before including this file"
-#endif
-
     function _ROUTINE_NAME_ (Duplicate, Trace) RESULT(Supplement)
-    Use pgslib_timing_module
-    USE PGSLib_Type_MODULE
-    USE PGSLib_Utility_MODULE, ONLY : PGSLib_Error
     IMPLICIT NONE
 
     _DATA_TYPE_,            INTENT(IN), &
@@ -55,7 +28,7 @@
     IF (NSupplement .NE. PGSLIB_Size_Of_Sup(Trace)) THEN
        Call PGSLib_Error("Wrong size for Supplement in PGSLib_Gather_Buffer")
     ENDIF
-    
+
     ! This funky piece of code gets the length of the right most dimension
     NDuplicate = SIZE(Duplicate, SIZE(SHAPE(Duplicate)))
     IF (NDuplicate .NE. PGSLib_Size_Of_Dup(Trace)) THEN

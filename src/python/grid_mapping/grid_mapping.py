@@ -14,7 +14,8 @@ import scipy as sp
 import truchas
 
 # load library
-libgridmap = ctypes.cdll.LoadLibrary(truchas.TruchasConfig.libgridmap)
+libgridmap = ctypes.CDLL(truchas.TruchasConfig.libgridmap,
+                         mode=ctypes.RTLD_LOCAL)
 
 
 # Fortran interfaces

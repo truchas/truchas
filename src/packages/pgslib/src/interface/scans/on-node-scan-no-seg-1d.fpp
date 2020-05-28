@@ -1,25 +1,5 @@
 !!CPP!! $Id: on-node-scan-no-seg-1d.fpp,v 1.1.1.1 2000/10/11 22:44:29 ferrell Exp $
 
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file."
-#endif
-
-#ifndef _OP_ID_
-#error "_OP_ID_ must be defined before including this file"
-#endif
-
-#ifndef _FIRST_
-#error "_FIRST_ must be defined before including this file"
-#endif
-
-#ifndef _LAST_
-#error "_LAST_ must be defined before including this file"
-#endif
-
-#ifndef _INDEX_INCREMENT_
-#error "_INDEX_INCREMENT_ must be defined before including this file"
-#endif
-
   subroutine _ROUTINE_NAME_(Dest_ARRAY, Src_ARRAY)
     ! On Node scan operation
     implicit none
@@ -30,7 +10,7 @@
     _SCAN_DATA_TYPE_, intent(  OUT),         &
          &   dimension(SIZE(Src_ARRAY,1)) :: Dest_ARRAY
     ! Local variables
-    
+
     integer (PGSLib_Int_TYPE) :: Local_N, i
 
     Local_N      = SIZE(Src_ARRAY, 1)
@@ -45,7 +25,7 @@
 
     RETURN
   END subroutine _ROUTINE_NAME_
-    
+
 #undef _ROUTINE_NAME_
 #undef _SCAN_DATA_TYPE_
 #undef _OP_ID_

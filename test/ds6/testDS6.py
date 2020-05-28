@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds6.inp")
-    golden = tenv.output("ds6_pgolden/ds6.h5")
+    golden = tenv.output("ds6_golden/ds6.h5")
 
     for sid in (2, 3):
         time = output.time(sid)
@@ -24,11 +24,11 @@ def run_test(tenv):
 
         test = output.field(sid, "phi1")
         gold = golden.field(sid, "phi1")
-        nfail += truchas.compare_max_rel(test, gold, 1e-10, "phi1", time)
+        nfail += truchas.compare_max_rel(test, gold, 5e-10, "phi1", time)
 
         test = output.field(sid, "phi2")
         gold = golden.field(sid, "phi2")
-        nfail += truchas.compare_max_rel(test, gold, 1e-10, "phi2", time)
+        nfail += truchas.compare_max_rel(test, gold, 5e-10, "phi2", time)
 
     truchas.report_summary(nfail)
     return nfail

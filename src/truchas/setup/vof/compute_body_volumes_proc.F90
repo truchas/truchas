@@ -124,7 +124,7 @@ contains
         if (stat /= 0) exit
         vof(:,i) = cell%volumes(stat, errmsg) !/ cell%volume
         if (stat /= 0) exit
-        vof(:,i) = vof(:,i) * mesh%volume(i) / sum(vof(:,i)) ! correct for errors in planar assumption
+        vof(:,i) = (vof(:,i)/sum(vof(:,i))) * mesh%volume(i) ! correct for errors in planar assumption
       end do
 
       ! handle errors across ranks

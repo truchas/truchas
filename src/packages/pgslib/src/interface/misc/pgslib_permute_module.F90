@@ -8,10 +8,21 @@ MODULE PGSLib_Permute_MODULE
 
   ! $Id: pgslib_permute_module.F,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-!  USE PGSLib_Type_MODULE
+  use PGSLib_Type_Module,      only : PGSLib_Int_Type,   &
+                                        PGSLib_Real_Type,  &
+                                        PGSLib_Double_Type,  &
+                                        PGSLib_Log_Type,   &
+                                        PGSLib_GS_Trace
+
+  use PGSLib_GS_MODULE,        only : PGSLib_Setup_Trace,      &
+      PGSLib_Deallocate_Trace
+  use PGSLIB_User_GS_MODULE
+  use PGSLib_Reductions_MODULE,only : PGSLib_Global_SUM, PGSLib_Global_COUNT
+  use PGSLib_Utility_MODULE,   only : pgslib_error
+  use PGSLib_Scan_No_Seg_MODULE,only : PGSLib_SUM_PREFIX
 
   implicit none
-  
+
   PRIVATE
   PUBLIC :: PGSLib_Permute, PGSLib_Redistribute, PGSLib_Global_Pack
 
@@ -41,7 +52,7 @@ CONTAINS
 #define _DATA_TYPE_    integer (PGSLib_Int_Type)
 #define _OP_ID_        0
 #define _SCATTER_OP_   pgslib_scatter_sum
-#define _COMP_OP_      == 
+#define _COMP_OP_      ==
 #include "permute.fpp"
 
 
@@ -49,7 +60,7 @@ CONTAINS
 #define _DATA_TYPE_    REAL (PGSLib_Real_Type)
 #define _OP_ID_        0.0_PGSlib_Real_Type
 #define _SCATTER_OP_   pgslib_scatter_sum
-#define _COMP_OP_      == 
+#define _COMP_OP_      ==
 #include "permute.fpp"
 
 
@@ -57,7 +68,7 @@ CONTAINS
 #define _DATA_TYPE_    REAL (PGSLib_Double_Type)
 #define _OP_ID_        0.0_PGSlib_Double_Type
 #define _SCATTER_OP_   pgslib_scatter_sum
-#define _COMP_OP_      == 
+#define _COMP_OP_      ==
 #include "permute.fpp"
 
 

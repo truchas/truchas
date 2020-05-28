@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-# /* include file for index_partitioning.F90 */
+!! include file for index_partitioning.F90
 
 #ifdef _TYPE_
 #undef _TYPE_
@@ -74,9 +74,6 @@
 #define _EQUAL_ ==
 #endif
 
-#ifndef _TYPE_
-#error "one of LOGICAL_DATA, INTEGER_DATA, SINGLE_DATA, DOUBLE_DATA must be defined"
-#endif
 
   subroutine _PROC_GB_A1_ (this, onP_data, offP_data)
 
@@ -228,7 +225,7 @@
     call gather_boundary (this, local_data(:this%onP_size_), offP_data)
     l = global_all(local_data(this%onP_size_+1:) _EQUAL_ offP_data)
   end function _PROC_BIC1_
-  
+
   logical function _PROC_BIC2_ (this, local_data) result (l)
     type(ip_desc), intent(in) :: this
     _TYPE_, intent(in) :: local_data(:,:)
@@ -245,7 +242,7 @@
 !    call gather_boundary (this, local_data(:,:,:this%onP_size_), offP_data)
 !    l = global_all(local_data(:,:,this%onP_size_+1:) _EQUAL_ offP_data)
 !  end function _PROC_BIC3_
-  
+
 #undef _TYPE_
 #undef _PROC_GB_A1_
 #undef _PROC_GB_A2_
@@ -258,4 +255,3 @@
 #undef _PROC_BIC2_
 #undef _PROC_BIC3_
 #undef _EQUAL_
-

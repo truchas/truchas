@@ -3,14 +3,6 @@
 
 ! $Id: cshift.fpp,v 1.1.1.1 2000/10/11 22:44:28 ferrell Exp $
 
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_ (Source, SHIFT)
     implicit none
     _DATA_TYPE_,       &
@@ -43,6 +35,6 @@
 
     return
   end function _ROUTINE_NAME_
-  
+
 #undef _DATA_TYPE_
 #undef _ROUTINE_NAME_

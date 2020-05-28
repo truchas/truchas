@@ -6,18 +6,6 @@
 
 ! This is included for the var_vector STUFF VECTOR routines
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _DATA_TYPE_
-#error "_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _VAR_DATA_TYPE_
-#error "_VAR_DATA_TYPE_ must be defined before including this file"
-#endif
-
   subroutine _ROUTINE_NAME_(RAGGED_ARRAY, SOURCE)
     !====================================================================
     ! Purpose(s):
@@ -26,7 +14,7 @@
     !   If RAGGED_ARRAY is not allocated, then it is an error to call this routine.
     !   It is required that SIZE(SOURCE) == SIZES(RAGGED_ARRAY)
     !====================================================================
-    
+
     ! Arguments
     type (_VAR_DATA_TYPE_), &
          INTENT(inout),    &
@@ -53,5 +41,3 @@
 #undef _ROUTINE_NAME_
 #undef _DATA_TYPE_
 #undef _VAR_DATA_TYPE_
-
-  

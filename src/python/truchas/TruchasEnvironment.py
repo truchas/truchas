@@ -33,8 +33,7 @@ class TruchasEnvironment:
         self._working_dir = working_dir
 
         # make the working directory if it doesn't exist
-        if not os.path.isdir(self._working_dir):
-            os.makedirs(os.path.abspath(self._working_dir))
+        os.makedirs(os.path.abspath(self._working_dir), exist_ok=True)
 
         assert os.path.isfile(self._truchas_executable)
         assert os.path.isdir(self._input_dir)
@@ -129,6 +128,7 @@ class TruchasEnvironment:
         # run truchas
         print(command)
         process = subprocess.run(command, shell=True, universal_newlines=True,
+                                 encoding='utf-8',
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # WARN: Some cases, like false input file, cause Truchas to exit with

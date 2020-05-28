@@ -16,7 +16,7 @@
 
 #include <sys/utsname.h>
 #include <unistd.h>
-#include <string.h>
+#include <stdio.h>
 
 static void f90strcpy(char *ostring, char *istring)
 {
@@ -26,28 +26,25 @@ static void f90strcpy(char *ostring, char *istring)
 
 void getrunhostinfo(char *arch, char *host)
 {
-  char string[128];
+  char string[32];
   struct utsname data;
 
   /* fill the uname structure */
   uname(&data);
 
   /* build one arch string, as 'uname -a' would return */
-  strcpy (string, data.sysname);
-  strcat (string, " ");
-  strcat (string, data.nodename);
-  strcat (string, " ");
-  strcat (string, data.release);
-  strcat (string, " ");
-  strcat (string, data.version);
-  strcat (string, " ");
-  strcat (string, data.machine);
+  int sz = snprintf(string,
+		    sizeof(string),
+		    "%s %s %s %s %s",
+		    data.sysname, data.nodename, data.release, data.version, data.machine);
+  if (!sz) string[0] = 0;
 
   /* send to f90 */
   f90strcpy (arch, string);
 
   /* get the fully qualified domain name */
-  gethostname (string, sizeof(string));
+  int err = gethostname (string, sizeof(string));
+  if (!err) string[0] = 0;
 
   /* send to f90 */
   f90strcpy (host, string);

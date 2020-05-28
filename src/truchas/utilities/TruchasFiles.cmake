@@ -1,14 +1,7 @@
 # Truchas files in directory
 #   utilities
 
-# List of files to  process
-set(UTIL_FILES)
-
-# List of files to add to the Truchas library
-set(UTIL_SOURCE_FILES)
-
-
-set(UTIL_FILES
+set(UTIL_SOURCE_FILES
          utilities/f90_assert.F90
          utilities/file_utility.F90
          utilities/graph_type.F90
@@ -35,16 +28,6 @@ set(UTIL_FILES
          utilities/gmv/gmvwrite_c_binding.F90
 	 utilities/f08_intrinsics.F90)
 
-set(UTIL_FPP_FLAGS
-        -I${TruchasExe_SOURCE_DIR}/utilities
-	${Truchas_FPP_FLAGS})
-
-# Process files
-fortran_preprocess_files(UTIL_SOURCE_FILES
-                         FILES ${UTIL_FILES}
-			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-			 FPP_FLAGS ${UTIL_FPP_FLAGS}
-			 PROCESS_TARGET ProcessTruchasUtilFiles)
 set_source_files_properties(${UTIL_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS "-I${PGSLib_MODULE_DIR}")
 
@@ -61,4 +44,3 @@ endif()
 
 # Update the Truchas library file list and targets
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${UTIL_SOURCE_FILES})
-list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasUtilFiles)

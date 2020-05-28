@@ -1,6 +1,11 @@
 MODULE PGSLib_Red_Numeric_MODULE
   use PGSLib_Error_MODULE
   use pgslib_c_binding
+  USE PGSLib_Type_MODULE
+  use pgslib_globals_module
+  use pgslib_stats, only: GLOBAL_MIN_STATISTICS, global_max_statistics, &
+      global_sum_statistics, global_all_statistics, global_any_statistics, &
+      global_dot_product_statistics, Enter_Routine, Exit_Routine
   IMPLICIT NONE
   SAVE
   PRIVATE
@@ -89,63 +94,63 @@ CONTAINS
 
 !!!!!!!!!! Scalar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_INT_Scalar_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Real_Scalar_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Double_Scalar_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_min.fpp"
 
 !!!!!!!!!! 1D !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_INT_1D_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Real_1D_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Double_1D_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_min.fpp"
 
 !!!!!!!!!! 2D_F MINVAL ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_INT_2D_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Real_2D_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_min.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MINVAL_Double_2D_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_min.fpp"
@@ -156,63 +161,63 @@ CONTAINS
 
 !!!!!!!!!! Scalar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_INT_Scalar_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Real_Scalar_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Double_Scalar_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
-#define _ARRAY_  
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #include "red_max.fpp"
 
 !!!!!!!!!! 1D !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_INT_1D_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Real_1D_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Double_1D_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
 #define _ARRAY_     ,Dimension(:)
 #define _ARG_       A
 #include "red_max.fpp"
 
 !!!!!!!!!! 2D_F MAXVAL ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_INT_2D_F
-#define _DATA_TYPE_ integer (PGSLib_INT_TYPE) 
+#define _DATA_TYPE_ integer (PGSLib_INT_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Real_2D_F
-#define _DATA_TYPE_ real (PGSLib_Real_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Real_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_max.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _ROUTINE_   PGS_Glbl_MAXVAL_Double_2D_F
-#define _DATA_TYPE_ real (PGSLib_Double_TYPE) 
+#define _DATA_TYPE_ real (PGSLib_Double_TYPE)
 #define _ARRAY_     ,Dimension(:,:)
 #define _ARG_       A
 #include "red_max.fpp"
@@ -223,7 +228,7 @@ CONTAINS
 
 !!!!!!!!!! Scalar Routines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ integer (PGSLib_Int_Type)
-#define _ARRAY_     
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #define _ROUTINE_   PGS_Glbl_SUM_INT_Scalar_F
 #include "red_sum.fpp"
@@ -231,14 +236,14 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ real (PGSLib_REAL_TYPE)
-#define _ARRAY_     
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #define _ROUTINE_   PGS_Glbl_SUM_Real_Scalar_F
 #include "red_sum.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ real (PGSLib_Double_TYPE)
-#define _ARRAY_     
+#define _ARRAY_
 #define _ARG_       (/ A /)
 #define _ROUTINE_   PGS_Glbl_SUM_Double_Scalar_F
 #include "red_sum.fpp"
@@ -246,13 +251,13 @@ CONTAINS
 !!!!!!!!!! 1D Routines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ integer (PGSLib_Int_Type)
 #define _ARRAY_     , Dimension(:)
-#define _ARG_       A 
+#define _ARG_       A
 #define _ROUTINE_   PGS_Glbl_SUM_INT_1D_F
 #include "red_sum.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ real (PGSLib_REAL_TYPE)
-#define _ARRAY_     , Dimension(:) 
+#define _ARRAY_     , Dimension(:)
 #define _ARG_       A
 #define _ROUTINE_   PGS_Glbl_SUM_Real_1D_F
 #include "red_sum.fpp"
@@ -267,13 +272,13 @@ CONTAINS
 !!!!!!!!!! SUM ROUTINES, 2D_F verions !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ integer (PGSLib_Int_Type)
 #define _ARRAY_     , Dimension(:,:)
-#define _ARG_       A 
+#define _ARG_       A
 #define _ROUTINE_   PGS_Glbl_SUM_INT_2D_F
 #include "red_sum.fpp"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #define _DATA_TYPE_ real (PGSLib_REAL_TYPE)
-#define _ARRAY_     , Dimension(:,:) 
+#define _ARRAY_     , Dimension(:,:)
 #define _ARG_       A
 #define _ROUTINE_   PGS_Glbl_SUM_Real_2D_F
 #include "red_sum.fpp"
@@ -356,7 +361,7 @@ CONTAINS
 
 
 #define _ROUTINE_     PGS_Glbl_ALL_LOG_Scalar_F
-#define _MASK_SHAPE_ 
+#define _MASK_SHAPE_
 #define _MASK_        (/ MASK /)
 #include "red_all.fpp"
 
@@ -379,7 +384,7 @@ CONTAINS
 #define _GENERIC_ROUTINE_NAME_ PGSLib_Global_ANY
 
 #define _ROUTINE_     PGS_Glbl_ANY_LOG_Scalar_F
-#define _MASK_SHAPE_ 
+#define _MASK_SHAPE_
 #define _MASK_        (/ MASK /)
 #include "red_any.fpp"
 
@@ -453,4 +458,3 @@ CONTAINS
 #undef _GENERIC_ROUTINE_NAME_
 
 END MODULE PGSLib_Red_Numeric_MODULE
-    

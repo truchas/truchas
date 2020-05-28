@@ -1,4 +1,4 @@
-project(PGSLibMpi C)
+project(PGSLibMpi LANGUAGES C Fortran)
 
 # --- Include paths
 
@@ -83,17 +83,17 @@ list(APPEND PGSLibMpi_SOURCE_FILES utility/tags-c.c utility/utility-c.c)
 
 # --- Define the parallel library target
 
-# Target name 
+# Target name
 add_library(pgslib_mpi ${PGSLibMpi_SOURCE_FILES})
-             
+
 # Set output name to the original name scheme
 # and define this as a Fortran library
 set_target_properties(pgslib_mpi PROPERTIES
                       OUTPUT_NAME       pgslib-par
 		      OUTPUT_NAME_DEBUG pgslib-par_g
-		      LINK_LANGUAGE     Fortran)
+		      LINKER_LANGUAGE     Fortran)
 
-# Define target link libraries		 
+# Define target link libraries
 target_link_libraries(pgslib_mpi ${MPI_C_LIBRARIES})
 
 add_library(truchas::pgslib_mpi ALIAS pgslib_mpi)
@@ -103,4 +103,3 @@ install(TARGETS pgslib_mpi
         EXPORT  pgslib_mpi
         LIBRARY DESTINATION ${PGSLib_LIBRARY_INSTALL_DIR}
 	ARCHIVE DESTINATION ${PGSLib_LIBRARY_INSTALL_DIR})
-

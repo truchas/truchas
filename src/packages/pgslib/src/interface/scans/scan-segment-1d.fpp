@@ -5,40 +5,12 @@
 !!CPP!! versions of the segmented scans.
 
 !!CPP!! Because these versions use SHIFTS for the conversions,
-!!CPP!! they depend on PGSLib_Shift_Module.  
+!!CPP!! they depend on PGSLib_Shift_Module.
 
 !!CPP!! $Id: scan-segment-1d.fpp,v 1.1.1.1 2000/10/11 22:44:30 ferrell Exp $
 
-#ifndef _ROUTINE_NAME_
-#error "_ROUTINE_NAME_ must be defined before including this file"
-#endif
-
-#ifndef _SCAN_DATA_TYPE_
-#error "_SCAN_DATA_TYPE_ must be defined before including this file"
-#endif
-
-#ifndef _SHIFT_DIRECTION_
-#error "_SHIFT_DIRECTION_ must be defined before including this file"
-#endif
-
-#ifndef _GLOBAL_MAX_OR_MIN_VAL_
-#error "_GLOBAL_MAX_OR_MIN_VAL_ must be defined before including this file"
-#endif
-
-#ifndef _SEG_BIT_SCAN_
-#error "_SEG_BIT_SCAN_ must be defined before including this file"
-#endif
-
   function _ROUTINE_NAME_ (INPUT_ARRAY, SEGMENT, DIM, MASK, SCOPE)
-    use pgslib_type_module,    only : PGSLib_Scope, &
-                                      PGSLib_Int_Type, &
-                                      PGSLib_Log_Type, &
-                                      PGSLib_Real_Type
-    use pgslib_scan_no_seg_module
-    use pgslib_scan_seg_bit_module
-    use pgslib_reductions_module
-    use pgslib_shift_module
-    implicit none 
+    implicit none
 
     ! Subroutine arguments
     _SCAN_DATA_TYPE_ , intent(IN   ),          &
@@ -58,7 +30,7 @@
     _SCAN_DATA_TYPE_ ,dimension(SIZE(INPUT_ARRAY,1)) :: _ROUTINE_NAME_
 
     ! Local variables
-    
+
     integer                                 :: Local_N, n, Wrapped_Index
     logical (PGSLib_Log_Type),                 &
              dimension(SIZE(INPUT_ARRAY,1)) :: Segment_BIT
@@ -76,7 +48,7 @@
           call PGSLib_Fatal_ERROR('In SUM_???FIX if DIM is present it must == 1')
        end if
     end if
-    
+
     ! Construct a segment bit from a segment.
     ! This varies slightly depending on whether the scope is global or
     ! local.
@@ -85,7 +57,7 @@
     else
        Shifted_Segment = CSHIFT(Segment, SHIFT = _SHIFT_DIRECTION_)
     end if
-    
+
     ! Need to make sure that first or last bit gets set correctly.
     ! This is a lot of work just to patch up the first or last element,
     ! but cannot think of a robust way of making this easier.
@@ -101,7 +73,7 @@
     ! Now that we have a segment bit, we can call the segment-bit scans
     _ROUTINE_NAME_ = _SEG_BIT_SCAN_ (INPUT_ARRAY, SEGMENT_BIT = Segment_Bit, MASK=MASK, SCOPE=SCOPE)
 
- 
+
     ! We are done
 
     RETURN

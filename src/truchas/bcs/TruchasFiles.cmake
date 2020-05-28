@@ -1,13 +1,7 @@
 # Truchas files in directory
 #   bcs
 
-# List of files to  process
-set(BCS_FILES)
-
-# List of files to add to the Truchas library
-set(BCS_SOURCE_FILES)
-
-set(BCS_FILES
+set(BCS_SOURCE_FILES
         bcs/Update_BCS.F90
         bcs/bc_atlases.F90
         bcs/bc_atlases_data_types.F90
@@ -25,18 +19,8 @@ set(BCS_FILES
         bcs/bc_regions.F90
         bcs/bc_specifications.F90)
 
-set(BCS_FPP_FLAGS 
-	${Truchas_FPP_FLAGS})
-
-# Process files
-fortran_preprocess_files(BCS_SOURCE_FILES
-                         FILES ${BCS_FILES}
-			 FPP_EXECUTABLE ${Truchas_PREPROCESSOR}
-			 FPP_FLAGS ${OUTPUT_FPP_FLAGS}
-			 PROCESS_TARGET ProcessTruchasBcsFiles)
 set_source_files_properties(${BCS_SOURCE_FILES} PROPERTIES
-                            COMPILE_FLAGS "-I${PGSLib_MODULE_DIR}")
+  COMPILE_FLAGS "-I${PGSLib_MODULE_DIR} -I${Truchas_utilities_dir}")
 
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${BCS_SOURCE_FILES})
-list(APPEND Truchas_PROCESS_TARGETS ProcessTruchasBcsFiles)

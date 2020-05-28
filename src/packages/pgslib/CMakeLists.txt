@@ -23,26 +23,15 @@ set(PGSLib_MODULE_DIR ${PGSLib_BINARY_DIR}/include CACHE INTERNAL "")
 set(CMAKE_Fortran_MODULE_DIRECTORY ${PGSLib_MODULE_DIR})
 
 # ---------------------------------------------------------------------------- #
-# Preprocessor definitions 
+# Preprocessor definitions
 # ---------------------------------------------------------------------------- #
-
-# Preprocessor - allow this to be a list to define global flags easily
-if ( NOT PGSLib_PREPROCESSOR )
-  set(PGSLib_PREPROCESSOR cpp -traditional-cpp)
-endif()
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "-D${CMAKE_Fortran_COMPILER_ID}_COMPILER" PGSLib_Compiler_Define)
 add_definitions(${PGSLib_Compiler_Define})
-list(APPEND PGSLib_PREPROCESSOR ${PGSLib_Compiler_Define})
-
-# Add any user defined preprocessor flags
-if (PGSLib_FPP_FLAGS)
-  list(APPEND PGSLib_PREPROCESSOR ${PGSLib_FPP_FLAGS})
-endif()
 
 # ---------------------------------------------------------------------------- #
-# Installation Definitions 
+# Installation Definitions
 # ---------------------------------------------------------------------------- #
 
 # Need the paths defined before adding src to the build
@@ -68,13 +57,13 @@ if (NOT PGSLib_CONFIG_INSTALL_DIR)
 endif()
 
 # ---------------------------------------------------------------------------- #
-# Source Directories 
+# Source Directories
 # ---------------------------------------------------------------------------- #
 
 add_subdirectory(src)
 
 # ---------------------------------------------------------------------------- #
-# Export Definitions 
+# Export Definitions
 # ---------------------------------------------------------------------------- #
 
 # Create the target file
@@ -97,5 +86,3 @@ configure_file(${PGSLib_SOURCE_DIR}/pgslib-config.in
 	       @ONLY)
 install(FILES ${PGSLib_CONFIG_FILE}
         DESTINATION ${PGSLib_CONFIG_INSTALL_DIR})
-
-
