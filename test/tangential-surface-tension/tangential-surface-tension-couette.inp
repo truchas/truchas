@@ -61,8 +61,8 @@ u = dsig/dx / mu * (y - ymin)
 /
 
 &NUMERICS
-  dt_init = 1.0d-03
-  dt_min  = 1.0d-10
+  dt_init = 1.0d-10
+  dt_min  = 1.0d-11
   dt_grow = 1.5
   dt_max  = 1.0
   discrete_ops_type = 'ortho'
