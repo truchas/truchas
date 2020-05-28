@@ -120,7 +120,7 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/FHT_precon_type.F90
            physics/heat_species_transport/FHT_solver_factory.F90
            physics/heat_species_transport/FHT_solver_type.F90
-           physics/heat_species_transport/HTSD_BDF2_model.F90
+           physics/heat_species_transport/HTSD_idaesol_model_type.F90
            physics/heat_species_transport/HTSD_model_factory.F90
            physics/heat_species_transport/HTSD_model_type.F90
            physics/heat_species_transport/HTSD_norm_type.F90

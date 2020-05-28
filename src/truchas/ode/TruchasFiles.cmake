@@ -7,7 +7,9 @@ set(ODE_SOURCE_FILES
        ode/bdf2/bdf2_integrator.F90
        ode/bdf2/bdf2_kinds.F90
        ode/bdf2/bdf2_profiling.F90
-       ode/bdf2/solution_history.F90)
+       ode/bdf2/solution_history.F90
+       ode/idaesol_type.F90
+)
 
 set_source_files_properties(${ODE_SOURCE_FILES} PROPERTIES
   COMPILE_FLAGS
