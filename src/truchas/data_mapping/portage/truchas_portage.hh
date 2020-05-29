@@ -257,8 +257,7 @@ class PortageMapper {
   StateWrapper field2;
   Portage::CoreDriver<3,Entity_kind::CELL,MeshWrapper,StateWrapper> *driver;
 
-  using PartPair = Portage::PartPair<3, Wonton::Entity_kind::CELL,
-                                        MeshWrapper, StateWrapper>;
+  using PartPair = Portage::PartPair<3, MeshWrapper, StateWrapper>;
   std::vector<PartPair> parts_manager;
 
   std::vector<std::vector<int>> part_cells1, part_cells2;
@@ -332,10 +331,29 @@ class PortageMapper {
     }
 
     for (int i = 0; i < parts_manager.size(); i++) {
+      int matid = 0;  // dummy
+
+      // 1st order interpolation the way you had it
       driver->interpolate_mesh_var<double, Portage::Interpolate_1stOrder>(
-        "foo", "foo", weights, lower_bound, upper_bound,
-        limiter, bnd_limiter, partial_fixup, empty_fixup, tol, maxitr,
-        &(parts_manager[i]));
+          "foo", "foo", weights,  &(parts_manager[i]));
+
+      /* If you want 2nd order interpolation (You can even supply your
+       * own gradients if you have a special method to calculate them)
+
+         auto gradients =
+         driver->compute_source_gradient("foo",
+                                         limiter, bnd_limiter,
+                                         matid,
+                                         &(parts_manager[i].source()));
+
+         driver->interpolate_mesh_var<double, Portage::Interpolate_1stOrder>(
+            "foo", "foo", weights,  &(parts_manager[i]), gradients);
+      */
+
+      if (parts_manager[i].has_mismatch())
+        parts_manager[i].fix_mismatch("foo", "foo", lower_bound, upper_bound,
+                                      tol, maxitr, partial_fixup, empty_fixup);
+
     }
 
   }
