@@ -141,5 +141,8 @@ extern "C"
     hypre_HandleDefaultExecPolicy(hypre_handle()) = HYPRE_EXEC_DEVICE;
     //hypre_SetDeviceOn();
     //hypre_HandleSpgemmUseCusparse(hypre_handle()) = spgemm_use_cusparse;
+    // HYPRE_BoomerAMGSetRAP2(amg_solver, 1);
+    // HYPRE_BoomerAMGSetModuleRAP2(amg_solver, 1);
+    hypre_HandleSpgemmUseCusparse(hypre_handle()) = 0;
   }
 }

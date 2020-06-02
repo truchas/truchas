@@ -84,6 +84,8 @@ module hypre_c_binding
   public :: HYPRE_BoomerAMGSetLogging
   public :: HYPRE_BoomerAMGSetOldDefault
   public :: HYPRE_BoomerAMGSetKeepTranspose
+  public :: HYPRE_BoomerAMGSetRap2
+  public :: HYPRE_BoomerAMGSetModuleRap2
 
   !! Functions from the PCG interface
   public :: HYPRE_PCGDestroy
@@ -432,6 +434,20 @@ module hypre_c_binding
       import c_ptr, c_int
       type(c_ptr), value :: solver
       integer(c_int), value :: keep_transpose
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_BoomerAMGSetRAP2(solver, set) &
+        result(ierr) bind(c, name="HYPRE_BoomerAMGSetRAP2")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: set
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_BoomerAMGSetModuleRAP2(solver, set) &
+        result(ierr) bind(c, name="HYPRE_BoomerAMGSetModuleRAP2")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: set
       integer(c_int) :: ierr
     end function
   end interface

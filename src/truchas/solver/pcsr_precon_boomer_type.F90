@@ -116,7 +116,7 @@ contains
     this%iupper = A%graph%row_ip%last_index()
 
     call fHYPRE_ClearAllErrors
-    call fhypre_EnableGPU
+    call fHYPRE_EnableGPU
 
     call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
@@ -189,6 +189,8 @@ contains
     call fHYPRE_BoomerAMGSetTol         (this%solver, this%tol, ierr)
     call fHYPRE_BoomerAMGSetStrongThreshold  (this%solver, this%strong_threshold, ierr)
     call fHYPRE_BoomerAMGSetKeepTranspose (this%solver, this%keep_transpose, ierr)
+    call fHYPRE_BoomerAMGSetRAP2 (this%solver, 1, ierr)
+    call fHYPRE_BoomerAMGSetModuleRAP2 (this%solver, 1, ierr)
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.  Note that B and X are ignored here.
@@ -214,22 +216,46 @@ contains
     !! Global row indices for this process.
     rows = [ (i, i = this%ilower, this%iupper) ]
 
+    ! !! Initialize the Hypre RHS & initial guess vectors.
+    ! x(:this%nrows) = 0.0_r8
+    ! call start_timer('transfer')
+    ! call start_timer('initialize')
+    ! call fHYPRE_IJVectorInitialize_v2 (this%bh, HYPRE_MEMORY_DEVICE, ierr)
+    ! call fHYPRE_IJVectorInitialize_v2 (this%xh, HYPRE_MEMORY_DEVICE, ierr)
+    ! call stop_timer('initialize')
+    ! call fHYPRE_IJVectorSetValues_v2 (this%bh, this%nrows, rows, x, ierr)
+    ! call fHYPRE_IJVectorSetValues_v2 (this%xh, this%nrows, rows, x, ierr)
+    ! call start_timer('assemble')
+    ! call fHYPRE_IJVectorAssemble (this%bh, ierr)
+    ! call fHYPRE_IJVectorAssemble (this%xh, ierr)
+    ! call stop_timer('assemble')
+    ! call stop_timer('transfer')
+    ! INSIST(ierr == 0)
+
     !! Initialize the Hypre RHS vector.
     call start_timer('transfer')
+    call start_timer('initialize')
     call fHYPRE_IJVectorInitialize_v2 (this%bh, HYPRE_MEMORY_DEVICE, ierr)
+    call stop_timer('initialize')
     call fHYPRE_IJVectorSetValues_v2 (this%bh, this%nrows, rows, x, ierr)
+    call start_timer('assemble')
     call fHYPRE_IJVectorAssemble   (this%bh, ierr)
-    INSIST(ierr == 0)
+    call stop_timer('assemble')
     call stop_timer('transfer')
+    INSIST(ierr == 0)
 
     !! Initialize the Hypre initial guess vector.
     x(:this%nrows) = 0.0_r8
     call start_timer('transfer')
+    call start_timer('initialize')
     call fHYPRE_IJVectorInitialize_v2 (this%xh, HYPRE_MEMORY_DEVICE, ierr)
+    call stop_timer('initialize')
     call fHYPRE_IJVectorSetValues_v2 (this%xh, this%nrows, rows, x, ierr)
+    call start_timer('assemble')
     call fHYPRE_IJVectorAssemble   (this%xh, ierr)
-    INSIST(ierr == 0)
+    call stop_timer('assemble')
     call stop_timer('transfer')
+    INSIST(ierr == 0)
 
     !! Call the BoomerAMG solver.
     call start_timer('solve')
@@ -296,8 +322,10 @@ contains
 
     !! After initialization the HYPRE matrix elements can be set.
     call start_timer('transfer')
+    call start_timer('initialize')
     call fHYPRE_IJMatrixInitialize_v2 (matrix, HYPRE_MEMORY_DEVICE, ierr)
     INSIST(ierr == 0)
+    call stop_timer('initialize')
     call stop_timer('transfer')
 
     !! Copy the matrix elements into the HYPRE matrix.  This defines both the
@@ -314,8 +342,10 @@ contains
     INSIST(ierr == 0)
 
     !! After assembly the HYPRE matrix is ready to use.
+    call start_timer('assemble')
     call fHYPRE_IJMatrixAssemble (matrix, ierr)
     INSIST(ierr == 0)
+    call stop_timer('assemble')
     call stop_timer('transfer')
 
   end subroutine copy_to_ijmatrix

@@ -67,6 +67,7 @@ module fhypre
 
   use kinds, only: r8
   use hypre_c_binding
+  use truchas_timers
   use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
   use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
   use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
@@ -140,6 +141,8 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetLogging
   public :: fHYPRE_BoomerAMGSetOldDefault
   public :: fHYPRE_BoomerAMGSetKeepTranspose
+  public :: fHYPRE_BoomerAMGSetRAP2
+  public :: fHYPRE_BoomerAMGSetModuleRAP2
 
   !! PCG interface procedures
   public :: fHYPRE_PCGCreate
@@ -456,6 +459,20 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_BoomerAMGSetKeepTranspose(solver, keep_transpose)
   end subroutine fHYPRE_BoomerAMGSetKeepTranspose
+
+  subroutine fHYPRE_BoomerAMGSetRAP2(solver, set, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: set
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetRAP2(solver, set)
+  end subroutine fHYPRE_BoomerAMGSetRAP2
+
+  subroutine fHYPRE_BoomerAMGSetModuleRAP2(solver, set, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: set
+    integer, intent(out) :: ierr
+    ierr = HYPRE_BoomerAMGSetModuleRAP2(solver, set)
+  end subroutine fHYPRE_BoomerAMGSetModuleRAP2
 
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -797,7 +814,7 @@ contains
 
   subroutine fHYPRE_IJVectorSetValues_v2 (vector, nvalues, indices, values, ierr)
 
-    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc, c_sizeof
     use, intrinsic :: iso_fortran_env, only: int64
     use fcuda
 
@@ -809,31 +826,32 @@ contains
     integer(int64) :: nbytesv, nbytesi
     type(fcuda_dev_ptr) :: vdev, idev
 
-    nbytesv = nvalues * storage_size(values) / 8
-    nbytesi = nvalues * storage_size(indices) / 8
+    call start_timer("vector-transfer")
+    nbytesv = c_sizeof(values)
+    nbytesi = c_sizeof(indices)
+    ASSERT(nbytesv > 0 .and. nbytesi > 0)
+    call start_timer("malloc-free")
     call fHYPRE_MAlloc(vdev, nbytesv, HYPRE_MEMORY_DEVICE)
     call fHYPRE_MAlloc(idev, nbytesi, HYPRE_MEMORY_DEVICE)
+    call stop_timer("malloc-free")
     call fHYPRE_Memcpy(vdev, c_loc(values), nbytesv, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
     call fHYPRE_Memcpy(idev, c_loc(indices), nbytesi, HYPRE_MEMORY_DEVICE, HYPRE_MEMORY_HOST)
-    !call fHYPRE_CAlloc(idev, nvalues, storage_size(indices) / 8, HYPRE_MEMORY_DEVICE)
-    !call fcudaMemcpy(vdev, values, nbytesv, cudaMemcpyHostToDevice, ierr)
-    !INSIST(ierr == 0)
-    ! call fcudaMemcpy(idev, indices, nbytesi, cudaMemcpyHostToDevice, ierr)
-    ! INSIST(ierr == 0)
-    
-    !ierr = HYPRE_IJVectorSetValues(vector, nvalues, indices, vdev)
+
     ierr = HYPRE_IJVectorSetValues(vector, nvalues, idev, vdev)
     INSIST(ierr == 0)
 
+    call start_timer("malloc-free")
     call fHYPRE_Free(vdev, HYPRE_MEMORY_DEVICE)
     call fHYPRE_Free(idev, HYPRE_MEMORY_DEVICE)
+    call stop_timer("malloc-free")
+    call stop_timer("vector-transfer")
 
   end subroutine fHYPRE_IJVectorSetValues_v2
 
 
   subroutine fHYPRE_IJVectorGetValues_v2 (vector, nvalues, indices, values, ierr)
 
-    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc, c_sizeof
     use, intrinsic :: iso_fortran_env, only: int64
     use fcuda
 
@@ -845,20 +863,27 @@ contains
     integer(int64) :: nbytesv
     type(fcuda_dev_ptr) :: vdev
 
+    call start_timer("vector-transfer")
     vdev = c_null_ptr
-    nbytesv = nvalues * storage_size(values) / 8
+    nbytesv = c_sizeof(values)
+    ASSERT(nbytesv > 0)
+    call start_timer("malloc-free")
     call fHYPRE_MAlloc(vdev, nbytesv, HYPRE_MEMORY_DEVICE)
+    call stop_timer("malloc-free")
     ierr = HYPRE_IJVectorGetValues(vector, nvalues, indices, vdev)
     INSIST(ierr == 0)
     call fHYPRE_Memcpy(c_loc(values), vdev, nbytesv, HYPRE_MEMORY_HOST, HYPRE_MEMORY_DEVICE)
+    call start_timer("malloc-free")
     call fHYPRE_Free(vdev, HYPRE_MEMORY_DEVICE)
+    call stop_timer("malloc-free")
+    call stop_timer("vector-transfer")
 
   end subroutine fHYPRE_IJVectorGetValues_v2
 
 
   subroutine fHYPRE_IJMatrixSetValues_v2 (matrix, nrows, ncols, rows, cols, values, ierr)
 
-    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_loc, c_sizeof
     use, intrinsic :: iso_fortran_env, only: int64
     use fcuda
 
@@ -872,9 +897,11 @@ contains
 
     INSIST(size(ncols) == size(rows))
 
-    nbytesv = size(values) * storage_size(values) / 8
-    nbytesr = size(rows) * storage_size(rows) / 8
-    nbytesc = size(cols) * storage_size(rows) / 8
+    call start_timer("matrix-setvalues")
+    nbytesv = c_sizeof(values)
+    nbytesr = c_sizeof(rows)
+    nbytesc = c_sizeof(cols)
+    ASSERT(nbytesv > 0 .and. nbytesr > 0 .and. nbytesc > 0)
     call fHYPRE_MAlloc(valuesd, nbytesv, HYPRE_MEMORY_DEVICE)
     call fHYPRE_MAlloc(ncolsd,  nbytesr, HYPRE_MEMORY_DEVICE)
     call fHYPRE_MAlloc(rowsd,   nbytesr, HYPRE_MEMORY_DEVICE)
@@ -891,13 +918,14 @@ contains
     call fHYPRE_Free(ncolsd, HYPRE_MEMORY_DEVICE)
     call fHYPRE_Free(rowsd, HYPRE_MEMORY_DEVICE)
     call fHYPRE_Free(colsd, HYPRE_MEMORY_DEVICE)
+    call stop_timer("matrix-setvalues")
 
   end subroutine fHYPRE_IJMatrixSetValues_v2
 
 
   subroutine fHYPRE_IJMatrixSetDiagOffdSizes_v2 (matrix, diag_sizes, offd_sizes, ierr)
 
-    use, intrinsic :: iso_c_binding, only: c_null_ptr
+    use, intrinsic :: iso_c_binding, only: c_null_ptr, c_sizeof
     use, intrinsic :: iso_fortran_env, only: int64
     use fcuda
 
@@ -912,8 +940,9 @@ contains
     ddev = c_null_ptr
     odev = c_null_ptr
     esize = storage_size(diag_sizes) / 8
-    nbytesd = size(diag_sizes) * esize
-    nbyteso = size(offd_sizes) * esize
+    nbytesd = c_sizeof(diag_sizes)
+    nbyteso = c_sizeof(offd_sizes)
+    ASSERT(nbytesd > 0 .and. nbyteso > 0)
     call fHYPRE_CAlloc(ddev, size(diag_sizes), esize, HYPRE_MEMORY_DEVICE)
     call fHYPRE_CAlloc(odev, size(offd_sizes), esize, HYPRE_MEMORY_DEVICE)
     call fcudaMemcpy(ddev, diag_sizes, nbytesd, cudaMemcpyHostToDevice, ierr)
@@ -926,6 +955,6 @@ contains
     call fHYPRE_Free(ddev, HYPRE_MEMORY_DEVICE)
     call fHYPRE_Free(odev, HYPRE_MEMORY_DEVICE)
     
-  end subroutine
+  end subroutine fHYPRE_IJMatrixSetDiagOffdSizes_v2
 
 end module fhypre
