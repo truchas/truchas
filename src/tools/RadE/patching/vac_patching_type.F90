@@ -689,10 +689,10 @@ contains
       !! Delete patches
       del_patch = del_patch_set
       call this%delete_patches(del_patch)
-
-      !! Add new patches
-      call this%set_patches()
     end if
+
+    !! Add new patches or restore old ones.
+    call this%set_patches()
 
     if (this%verbosity > 1) then
       print '("MERGE PATCHES BY VERTEX ANCHOR")'
@@ -798,11 +798,12 @@ contains
       !! Delete patches
       del_patch = del_patch_set
       call this%delete_patches(del_patch)
-
-      !! Add new patches.  To avoid incomplete patches, do not re-queue subsets
-      !! of merge candidates.  The old patches will fill the spaces instead.
-      call this%set_patches(.false.)
     end if
+
+    !! Add new patches or restore old ones.  To avoid incomplete patches, do
+    !! not re-queue subsets of merge candidates.  The old patches will fill
+    !! the spaces instead.
+    call this%set_patches(.false.)
 
     if (this%verbosity > 1) then
       print '("MERGE PATCHES BY VERTEX NEIGHBORS")'
