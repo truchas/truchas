@@ -155,15 +155,15 @@ void VF_TopologyConcat(int nsurf_g, int nsurf_l,int vertex_offset,
     if (Csize[i]>0) j++;
   }
   if (j==VFLIB_Size) {
-    VF_AllgathervInt(&conn_g[Coffset[VFLIB_Rank]],conn_g,
+    VF_AllgathervInt(MPI_IN_PLACE,conn_g,
                      Csize[VFLIB_Rank],Csize,Coffset);
-    VF_AllgathervDouble(&surf_x[Noffset[VFLIB_Rank]],surf_x,
+    VF_AllgathervDouble(MPI_IN_PLACE,surf_x,
                         Nsize[VFLIB_Rank],Nsize,Noffset);
-    VF_AllgathervDouble(&surf_y[Noffset[VFLIB_Rank]],surf_y,
+    VF_AllgathervDouble(MPI_IN_PLACE,surf_y,
                         Nsize[VFLIB_Rank],Nsize,Noffset);
-    VF_AllgathervDouble(&surf_z[Noffset[VFLIB_Rank]],surf_z,
+    VF_AllgathervDouble(MPI_IN_PLACE,surf_z,
                         Nsize[VFLIB_Rank],Nsize,Noffset);
-    VF_AllgathervInt(&map[Moffset[VFLIB_Rank]],map,
+    VF_AllgathervInt(MPI_IN_PLACE,map,
                      Msize[VFLIB_Rank],Msize,Moffset);
   } else {
     for (i=0; i<VFLIB_Size; i++) {
