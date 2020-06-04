@@ -104,7 +104,7 @@ module vac_patching_type
   real(r8), parameter :: PI = 3.1415926535897932_r8
 
   !! Parameter defaults
-  integer, parameter  :: VAC_SPLIT_PATCH_SIZE_DEFAULT = 2  !! Maximum patch size to split
+  integer, parameter  :: VAC_SPLIT_PATCH_SIZE_DEFAULT = 3  !! Maximum patch size to split
   integer, parameter  :: VAC_MERGE_LEVEL_DEFAULT = 3       !! Aggressiveness of patch merging
 
   type, private :: vac_patch
