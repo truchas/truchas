@@ -58,14 +58,14 @@
 !!    purposes of error handling.  The patch data is read from process rank 1;
 !!    the object is ignored on all other processes.
 !!
-!!  PATCH_COLORING(THIS, E) computes a coloring of the patches where adjacent
-!!    patches have different colors.  THIS is the TYPE(RE_PATCH) object storing
-!!    the patch data corresponding to the TYPE(ENCL) radiation enclosure E.  If
-!!    THIS has patch data, the returned array PCOLOR will be a rank-1 integer
-!!    array of length THIS%NPATCH containing a valid patch coloring.  If THIS
-!!    has no patch data (i.e. each face is a patch) then PCOLOR will not be
-!!    allocated.  This is a serial procedure (no communication) and must only be
-!!    called on a process with an initialized object.
+!!  PATCH_COLORING(E) computes a coloring of the patches where adjacent patches
+!!    have different colors.  E is the TYPE(ENCL) radiation enclosure whose
+!!    patching is described by this object.  If the object has patch data, the
+!!    returned array PCOLOR will be a rank-1 integer array of length NPATCH
+!!    containing a valid patch coloring.  If the object has no patch data (i.e.
+!!    each face is a patch) then PCOLOR will not be allocated.  This is a serial
+!!    procedure (no communication) and must only be called on a process with an
+!!    initialized object.
 !!
 
 
@@ -92,6 +92,7 @@ module re_patch_type
   !! Parameter defaults
   integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
+  integer, parameter :: RANDOM_SEED_DEFAULT = -1
   real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
 
   type, public :: re_patch
@@ -140,14 +141,16 @@ contains
     integer  :: vsa_max_iter
     real(r8) :: vsa_min_delta
     real(r8) :: vsa_avg_faces_per_patch
+    integer  :: vsa_random_seed
     integer  :: vac_merge_level
     integer  :: vac_split_patch_size
     integer  :: pave_merge_level
     integer  :: pave_split_patch_size
+    integer  :: pave_random_seed
     namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
-      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, &
+      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, vsa_random_seed, &
       vac_merge_level, vac_split_patch_size, &
-      pave_merge_level, pave_split_patch_size
+      pave_merge_level, pave_split_patch_size, pave_random_seed
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
 
@@ -174,10 +177,12 @@ contains
     vsa_max_iter = NULL_I
     vsa_min_delta = NULL_R
     vsa_avg_faces_per_patch = NULL_R
+    vsa_random_seed = NULL_I
     vac_merge_level = NULL_I
     vac_split_patch_size = NULL_I
     pave_merge_level = NULL_I
     pave_split_patch_size = NULL_I
+    pave_random_seed = NULL_I
 
     if (is_IOP) read(lun,nml=patches,iostat=ios,iomsg=iom)
     call scl_bcast(ios)
@@ -190,10 +195,12 @@ contains
     call scl_bcast(vsa_max_iter)
     call scl_bcast(vsa_min_delta)
     call scl_bcast(vsa_avg_faces_per_patch)
+    call scl_bcast(vsa_random_seed)
     call scl_bcast(vac_merge_level)
     call scl_bcast(vac_split_patch_size)
     call scl_bcast(pave_merge_level)
     call scl_bcast(pave_split_patch_size)
+    call scl_bcast(pave_random_seed)
 
     !! Check the values
     stat = 0
@@ -262,6 +269,13 @@ contains
         call data_err('VSA_AVG_FACES_PER_PATCH must be >= 1')
       end if
       call params%set('vsa-avg-faces-per-patch', vsa_avg_faces_per_patch)
+      if (vsa_random_seed == NULL_I) then
+        vsa_random_seed = RANDOM_SEED_DEFAULT
+        call re_info('  using default VSA_RANDOM_SEED')
+      else if (vsa_random_seed < 0) then
+        call data_err('VSA_RANDOM_SEED must be >= 0')
+      end if
+      call params%set('vsa-random-seed', vsa_random_seed)
     end if
 
     !! VAC settings
@@ -298,6 +312,13 @@ contains
         call data_err('PAVE_SPLIT_PATCH_SIZE must be >= 0')
       end if
       call params%set('pave-split-patch-size', pave_split_patch_size)
+      if (pave_random_seed == NULL_I) then
+        pave_random_seed = RANDOM_SEED_DEFAULT
+        call re_info('  using default PAVE_RANDOM_SEED')
+      else if (pave_random_seed < 0) then
+        call data_err('PAVE_RANDOM_SEED must be >= 0')
+      end if
+      call params%set('pave-random-seed', pave_random_seed)
     end if
 
     if (stat /= 0) call re_halt('errors found in PATCHES namelist variables')
@@ -376,7 +397,7 @@ contains
     type(parameter_list), intent(inout)  :: params
 
     type(vsa_patching) :: vsa
-    integer :: verbosity, max_iter
+    integer :: verbosity, max_iter, seed
     real(r8) :: max_angle, min_delta, avg_fpp
 
     call params%get('verbosity-level', verbosity)
@@ -384,11 +405,16 @@ contains
     call params%get('max-angle', max_angle)
     call params%get('vsa-min-delta', min_delta)
     call params%get('vsa-max-iter', max_iter)
+    call params%get('vsa-random-seed', seed)
 
     this%has_patches = .true.
     this%nface = e%nface
 
-    call vsa%init(e, avg_fpp, max_angle, verbosity)
+    if (seed == RANDOM_SEED_DEFAULT) then
+      call vsa%init(e, avg_fpp, max_angle, verbosity)
+    else
+      call vsa%init(e, avg_fpp, max_angle, verbosity, seed)
+    end if
 
     call vsa%run(min_delta, max_iter)
 
@@ -437,18 +463,23 @@ contains
     type(parameter_list), intent(inout)  :: params
 
     type(pave_patching) :: pave
-    integer :: verbosity, merge_level, split_patch_size
+    integer :: verbosity, merge_level, split_patch_size, seed
     real(r8) :: max_angle
 
     call params%get('verbosity-level', verbosity)
     call params%get('max-angle', max_angle)
     call params%get('pave-merge-level', merge_level)
     call params%get('pave-split-patch-size', split_patch_size)
+    call params%get('pave-random-seed', seed)
 
     this%has_patches = .true.
     this%nface = e%nface
 
-    call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
+    if (seed == RANDOM_SEED_DEFAULT) then
+      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
+    else
+      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity, seed)
+    end if
 
     call pave%run()
 

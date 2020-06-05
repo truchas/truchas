@@ -79,11 +79,13 @@ Outline
    #. Let NPATCH_MIN = NFACE / VSA_AVG_FACES_PER_PATCH, where NFACE is the total number of faces
       in the enclosure.
    #. Let NPATCH=0. This variable tracks the current number of patches.
+   #. If provided, use :ref:`tools/RadE/patches/vsa:VSA_RANDOM_SEED` to initialize the
+      random number generator. Otherwise, take the seed from the system clock.
 
 #. **Pick initial seeds**
 
    #. Let `G` be the face adjacency graph of the enclosure defined by the face adjacency matrix. For
-      each connected component of `G`, choose a random face in the component a make it a new seed
+      each connected component of `G`, choose a random face in the component and make it a new seed
       patch.
    #. While NPATCH < NPATCH_MIN:
 
@@ -387,6 +389,26 @@ final configuration:
 Rather than set the number of patches explicitly, which is mesh dependent, expressing this
 parameter as an average allows the same value to apply to a variety of meshes.
 
+
+VSA_RANDOM_SEED
++++++++++++++++
+Defines the seed for the random number generator used to pick the initial seed patches.
+
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_random_seed > 0
+   :default: ``NONE``, the seed is taken from the system clock.
+
+The VSA algorithm uses a 'farthest-point' initialization method to choose the seed patches for the
+first iteration. To start, a random face in each connected component is chosen as a seed patch.
+Then, seed patches are added one at a time by performing a :ref:`partitioning
+<tools/RadE/patches/vsa:Geometry Partitioning>` and then choosing the face with highest total
+distortion as the new seed patch.
+
+This parameter sets the seed for the random number generator used to pick the first seed patch in
+each connected component. Therefore, runs with the same value for this parameter will produce
+identical results. If this parameter is not specified, then the seed is taken from the system clock
+and results will likely vary from run to run.
 
 
 References
