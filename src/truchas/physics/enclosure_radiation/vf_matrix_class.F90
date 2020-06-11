@@ -65,6 +65,7 @@ module vf_matrix_class
   use rad_encl_file_type
   use parallel_communication
   implicit none
+  private
 
   type, abstract, public :: vf_matrix
     integer :: nface      ! number of faces on this process
@@ -73,12 +74,12 @@ module vf_matrix_class
     real, allocatable :: vf(:), amb_vf(:)
     logical :: has_ambient
 
-    contains
-      procedure(init), public, deferred                :: init
-      procedure(partition_ER_faces), public, deferred  :: partition_ER_faces
-      procedure(load_view_factors), public, deferred   :: load_view_factors
-      procedure(phi_x), public, deferred               :: phi_x
-      procedure, public :: distribute_vf_rows
+  contains
+    procedure(init), deferred                :: init
+    procedure(partition_ER_faces), deferred  :: partition_ER_faces
+    procedure(load_view_factors), deferred   :: load_view_factors
+    procedure(phi_x), deferred               :: phi_x
+    procedure :: distribute_vf_rows
   end type
 
   abstract interface

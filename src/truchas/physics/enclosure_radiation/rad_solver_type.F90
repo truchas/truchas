@@ -10,8 +10,6 @@ module rad_solver_type
 
   use kinds, only: r8
   use rad_system_type
-  use rad_encl_type
-  use vf_matrix_class
   use rad_encl_func_type
   use scalar_func_class
   use parallel_communication
@@ -21,8 +19,6 @@ module rad_solver_type
 
   type, public :: rad_solver
     integer :: nface
-    type(rad_encl), allocatable :: encl      ! radiation enclosure surface
-    class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
     class(scalar_func), allocatable :: tamb  ! ambient temperature function
     type(rad_encl_func), allocatable :: eps  ! emissivity enclosure function
     type(rad_system) :: sys
@@ -31,7 +27,7 @@ module rad_solver_type
     real(r8) :: tol
     integer  :: maxitr
   contains
-    procedure :: init  => init_rad_solver
+    procedure :: init
     procedure :: set_ambient
     procedure :: set_emissivity
     procedure :: set_absolute_zero
@@ -50,53 +46,13 @@ module rad_solver_type
 
 contains
 
-  !! Initialize RAD_SOLVER type objects
-  subroutine init_rad_solver (this, path, csf)
-
-    use rad_encl_file_type
-    use vf_matrix_face_type
-    use vf_matrix_patch_type
-
-    class(rad_solver), target, intent(out) :: this
-    character(*), intent(in) :: path
-    real(r8), intent(in) :: csf
-
-    type(rad_encl_file) :: file
-    integer, allocatable :: color(:)
-    logical :: patches
-
-    if (is_IOP) call file%open_ro(path)
-
-    !! Choose correct VF matrix class
-    if (is_IOP) patches = file%has_patches()
-    call broadcast(patches)
-    if (patches) then
-      allocate(vf_matrix_patch :: this%vf_mat)
-    else
-      allocate(vf_matrix_face :: this%vf_mat)
-    end if
-
-    !! Partition VF matrix rows.
-    call this%vf_mat%init(file)
-
-    !! Get enclosure face partition from VF matrix row distribution.
-    call this%vf_mat%partition_ER_faces(color)
-
-    !! Load the distributed enclosure surface.
-    allocate(this%encl)
-    call this%encl%init (file, color, csf)
-    this%nface = this%encl%nface_onP
-
-    !! Load the distributed view factor matrix.
-    call this%vf_mat%load_view_factors (file, this%encl)
-    ASSERT(this%nface == this%vf_mat%nface)
-
-    !! Initialize radiosity system
-    call this%sys%init (this%vf_mat)
-
-    if (is_IOP) call file%close
-
-  end subroutine init_rad_solver
+  subroutine init(this, vf_mat)
+    use vf_matrix_class
+    class(rad_solver), intent(out), target :: this
+    class(vf_matrix), intent(in), target :: vf_mat
+    this%nface = vf_mat%nface
+    call this%sys%init(vf_mat)
+  end subroutine init
 
   subroutine set_ambient (this, tamb)
     class(rad_solver), intent(inout) :: this

@@ -10,7 +10,6 @@ set(PHYSICS_SOURCE_FILES
            physics/enclosure_radiation/rad_solver_type.F90
            physics/enclosure_radiation/rad_problem_type.F90
            physics/enclosure_radiation/rad_encl_gmv.F90
-           physics/enclosure_radiation/rad_solver_gmv.F90
            physics/enclosure_radiation/rad_problem_gmv.F90
            physics/enclosure_radiation/rad_encl_file_type.F90
            physics/enclosure_radiation/ER_input.F90
