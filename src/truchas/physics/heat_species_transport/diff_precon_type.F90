@@ -129,6 +129,7 @@ contains
 
     use pcsr_precon_ssor_type
     use pcsr_precon_boomer_type
+    use pcsr_precon_amgx_type
 
     type(diff_precon), intent(out) :: this
     type(dist_diff_matrix), pointer :: dm
@@ -147,7 +148,8 @@ contains
       call precon_params%set ('num-sweeps', params%ssor_params%num_iter)
       call precon_params%set ('omega', params%ssor_params%omega)
     case ('BoomerAMG')
-      allocate(pcsr_precon_boomer :: this%Sff_precon)
+      !allocate(pcsr_precon_boomer :: this%Sff_precon)
+      allocate(pcsr_precon_amgx :: this%Sff_precon)
       allocate(precon_params)
       call precon_params%set ('num-cycles', params%bamg_params%max_iter)
       call precon_params%set ('print-level', params%bamg_params%print_level)

@@ -72,7 +72,7 @@ list(APPEND Truchas_DEPENDS truchas::io)
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS blas lapack exodus hypre petaca fcuda)
+set(Truchas_LINK_LIBS blas lapack exodus hypre petaca fcuda amgx)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)

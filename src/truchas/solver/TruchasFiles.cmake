@@ -25,7 +25,11 @@ set(SOLVER_FILES
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90
           solver/preconditioners.F90
-          solver/ridders_class.F90)
+          solver/ridders_class.F90
+          solver/amgx_c_binding.F90
+          solver/famgx.F90
+          solver/pcsr_precon_amgx_type.F90
+          )
 
 set(SOLVER_FPP_FLAGS 
         -I${TruchasExe_SOURCE_DIR}/utilities
@@ -46,6 +50,7 @@ set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${SOLVER_COMPILE_FLAGS})
 
 list(APPEND SOLVER_SOURCE_FILES solver/hypre_ext.cu)
+list(APPEND SOLVER_SOURCE_FILES solver/amgx_ext.c)
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${SOLVER_SOURCE_FILES})
 list(APPEND Truchas_PROCESS_TARGETS ${SOLVER_TARGET_NAME})

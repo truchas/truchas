@@ -72,6 +72,7 @@ find_package(FCUDA REQUIRED)
 set(CMAKE_CUDA_FLAGS "-std=c++14 -ccbin=mpicxx ${CMAKE_CUDA_FLAGS}")
 add_definitions(-DHYPRE_USING_CUDA)
 add_definitions(-DHYPRE_USING_UNIFIED_MEMORY)
+find_package(AMGX REQUIRED)
 
 # Python and packages
 include(FindPythonPackage)

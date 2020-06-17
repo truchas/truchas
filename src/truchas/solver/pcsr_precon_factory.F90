@@ -20,6 +20,7 @@ contains
 
     use pcsr_precon_ssor_type
     use pcsr_precon_boomer_type
+    use pcsr_precon_amgx_type
     use truchas_logging_services
     use string_utilities, only: raise_case
 
@@ -38,7 +39,8 @@ contains
     case ('SSOR')
       allocate (pcsr_precon_ssor :: this)
     case ('BOOMERAMG')
-      allocate (pcsr_precon_boomer :: this)
+      !allocate (pcsr_precon_boomer :: this)
+      allocate (pcsr_precon_amgx :: this)
     case default
       call TLS_fatal ('ALLOC_PCSR_PRECON: unknown "method": '// method)
     end select
