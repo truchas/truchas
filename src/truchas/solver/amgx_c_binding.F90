@@ -14,7 +14,7 @@
 
 module amgx_c_binding
 
-  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_size_t
+  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_int64_t, c_size_t, c_double, c_char
   implicit none
   private
 
@@ -48,6 +48,7 @@ module amgx_c_binding
   !! Resource create & destroy
   public :: AMGX_config_create
   public :: AMGX_resources_create_ext
+  public :: AMGX_resources_create_simple
   public :: AMGX_matrix_create_ext
   public :: AMGX_vector_create_ext
   public :: AMGX_solver_create_ext
@@ -61,7 +62,7 @@ module amgx_c_binding
         result(ierr) bind(c, name="AMGX_config_create")
       import c_ptr, c_char, c_int
       type(c_ptr) :: config
-      character(kind=c_char, len=*) :: options
+      character(kind=c_char) :: options(*)
       integer(c_int) :: ierr
     end function
     function AMGX_resources_create_ext(resources, config, ndevices, gpu_ids) &
@@ -71,6 +72,13 @@ module amgx_c_binding
       type(c_ptr), value :: config
       integer(c_int), value :: ndevices
       integer(c_int) :: gpu_ids(*)
+      integer(c_int) :: ierr
+    end function
+    function AMGX_resources_create_simple(resources, config) &
+        result(ierr) bind(c, name="AMGX_resources_create_simple")
+      import c_ptr, c_int
+      type(c_ptr) :: resources
+      type(c_ptr), value :: config
       integer(c_int) :: ierr
     end function
     function AMGX_matrix_create_ext(matrix, resources) &
@@ -128,23 +136,45 @@ module amgx_c_binding
   end interface
 
 
+  public :: AMGX_matrix_upload_all
   public :: AMGX_matrix_upload_all_global
+  public :: AMGX_matrix_replace_coefficients
   public :: AMGX_solver_setup
   public :: AMGX_pin_memory
+  public :: AMGX_unpin_memory
   public :: AMGX_vector_upload
   public :: AMGX_vector_download
   public :: AMGX_vector_set_zero
   public :: AMGX_solver_solve_with_0_initial_guess
   public :: AMGX_solver_get_status
   interface
-    function AMGX_matrix_upload_all_global(matrix, nrow_global, nrow_onP, len_onP, &
+    function AMGX_matrix_upload_all(matrix, nrows, nnz, block_dimx, block_dimy, &
+        row_offsets, col_indices_global, data, diag_data) &
+        result(ierr) bind(c, name="AMGX_matrix_upload_all")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: matrix, diag_data
+      integer(c_int), value :: nrows, nnz, block_dimx, block_dimy
+      integer(c_int) :: row_offsets(*), col_indices_global(*)
+      real(c_double) :: data(*) !, diag_data(*)
+      integer(c_int) :: ierr
+    end function
+    function AMGX_matrix_upload_all_global(matrix, nrows_global, nrows, nnz, &
         block_dimx, block_dimy, row_offsets, col_indices_global, data, diag_data, &
         allocated_halo_depth, num_import_rings, partition_vector) &
         result(ierr) bind(c, name="AMGX_matrix_upload_all_global")
+      import c_ptr, c_int, c_int64_t, c_double
+      type(c_ptr), value :: matrix, diag_data
+      integer(c_int), value :: nrows_global, nrows, nnz, block_dimx, block_dimy, allocated_halo_depth, num_import_rings
+      integer(c_int) :: row_offsets(*), partition_vector(*)
+      integer(c_int64_t) :: col_indices_global(*)
+      real(c_double) :: data(*) !, diag_data(*)
+      integer(c_int) :: ierr
+    end function
+    function AMGX_matrix_replace_coefficients(matrix, nrows, nnz, data, diag_data) &
+        result(ierr) bind(c, name="AMGX_matrix_replace_coefficients")
       import c_ptr, c_int, c_double
       type(c_ptr), value :: matrix, diag_data
-      integer(c_int), value :: nrow_global, nrow_onP, len_onP, block_dimx, block_dimy, allocated_halo_depth, num_import_rings
-      integer(c_int) :: row_offsets(*), col_indices_global(*), partition_vector(*)
+      integer(c_int), value :: nrows, nnz
       real(c_double) :: data(*) !, diag_data(*)
       integer(c_int) :: ierr
     end function
@@ -154,9 +184,16 @@ module amgx_c_binding
       type(c_ptr), value :: solver, matrix
       integer(c_int) :: ierr
     end function
-    function AMGX_pin_memory(amgx_obj) &
+    function AMGX_pin_memory(amgx_obj, nbytes) &
         result(ierr) bind(c, name="AMGX_pin_memory")
-      import c_ptr, c_int
+      import c_ptr, c_int, c_size_t
+      type(c_ptr), value :: amgx_obj
+      integer(c_size_t), value :: nbytes
+      integer(c_int) :: ierr
+    end function
+    function AMGX_unpin_memory(amgx_obj) &
+        result(ierr) bind(c, name="AMGX_unpin_memory")
+      import c_ptr, c_int, c_size_t
       type(c_ptr), value :: amgx_obj
       integer(c_int) :: ierr
     end function

@@ -62,24 +62,18 @@ module pcsr_precon_amgx_type
 
   type, extends(pcsr_precon), public :: pcsr_precon_amgx
     private
-    integer :: nrows = 0, ilower = 0, iupper = 0
-    type(amgx_obj) :: solver = amgx_null_obj    ! HYPRE_Solver object handle
-    type(amgx_obj) :: Ah = amgx_null_obj        ! HYPRE_IJMatrix object handle
-    type(amgx_obj) :: bh = amgx_null_obj, xh = amgx_null_obj  ! HYPRE_IJVector handles
+    integer :: nrows, nnz !, ilower = 0, iupper = 0
+    logical :: amgx_initialized = .false., matrix_initialized = .false.
+    type(amgx_obj) :: solver = amgx_null_obj    ! amgx_solver object handle
+    type(amgx_obj) :: Ah = amgx_null_obj        ! amgx_matrix object handle
+    type(amgx_obj) :: bh = amgx_null_obj, xh = amgx_null_obj  ! amgx_vector handles
     type(amgx_obj) :: amgx_config = amgx_null_obj, amgx_resources = amgx_null_obj
-    !! BoomerAMG parameters -- these are set at initialization
-    integer  :: max_iter          ! number of cycles -- using as a preconditioner
-    integer  :: print_level       ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
-    integer  :: debug_level       ! OFF=0, ON=1
-    integer  :: logging_level     ! OFF=0, ON=1, >1=residual available from hypre
-    !! BoomerAMG parameters -- these are currently hardwired
-    integer  :: coarsen_type = 10 ! HMIS coarsening
-    integer  :: relax_type = 18   ! l-scaled Jacobi smoothing
-    integer  :: num_sweeps = 1    ! number of smoother sweeps
-    integer  :: max_levels = 25   ! max number of multigrid levels
-    integer :: keep_transpose = 1 ! use matvecs and avoid transpose matvecs
-    real(r8) :: tol = 0.0d0       ! no tolerance -- using as a preconditioner
-    real(r8) :: strong_threshold = 0.5_r8 ! should be 0.5 for 3D problems and 0.25 for 2D
+
+    !! AmgX parameters -- these are set at initialization
+    integer  :: max_iter      ! number of cycles -- using as a preconditioner
+    integer  :: print_level   ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
+    integer  :: debug_level   ! OFF=0, ON=1
+    integer  :: logging_level ! OFF=0, ON=1, >1=residual available from hypre
   contains
     procedure :: init
     procedure :: compute
@@ -90,7 +84,7 @@ module pcsr_precon_amgx_type
 contains
 
   !! Final subroutine for PCSR_PRECON_AMGX objects.
-  subroutine pcsr_precon_amgx_delete (this)
+  subroutine pcsr_precon_amgx_delete(this)
     type(pcsr_precon_amgx), intent(inout) :: this
     integer :: ierr
     ierr = 0
@@ -100,12 +94,17 @@ contains
     if (amgx_associated(this%solver)) call famgx_solver_destroy(this%solver, ierr)
     if (amgx_associated(this%amgx_resources)) call famgx_resources_destroy(this%amgx_resources, ierr)
     if (amgx_associated(this%amgx_config)) call famgx_config_destroy(this%amgx_config, ierr)
-    call famgx_finalize_plugins(ierr)
-    call famgx_finalize(ierr)
+    if (this%amgx_initialized) then
+      call famgx_finalize_plugins(ierr)
+      call famgx_finalize(ierr)
+    end if
     INSIST(ierr == 0)
+    this%amgx_initialized = .false. ! TODO: do these need to be here?
+    this%matrix_initialized = .false.
   end subroutine pcsr_precon_amgx_delete
 
-  subroutine init (this, A, params)
+
+  subroutine init(this, A, params)
 
     class(pcsr_precon_amgx), intent(out) :: this
     type(pcsr_matrix), target, intent(in) :: A
@@ -116,35 +115,46 @@ contains
     this%A => A
 
     this%nrows  = A%graph%row_ip%onP_size()
-    this%ilower = A%graph%row_ip%first_index()
-    this%iupper = A%graph%row_ip%last_index()
+    this%nnz = A%graph%xadj(this%nrows+1) - A%graph%xadj(1)
 
     !! Process the parameters.
     call params%get('num-cycles', this%max_iter)
     INSIST(this%max_iter > 0)
     call params%get('print-level', this%print_level, default=0)
-    INSIST(this%print_level >= 0 .and. this%print_level <= 3)
+    INSIST(this%print_level >= 0 .and. this%print_level <= 2)
     call params%get('debug-level', this%debug_level, default=0)
     INSIST(this%debug_level >= 0)
     call params%get('logging-level', this%logging_level, default=0)
     INSIST(this%logging_level >= 0)
 
+    print *, "Initializing AmgX ..."
+    this%print_level = 2
+    !this%logging_level = 1
+
     call famgx_initialize(ierr)
+    INSIST(ierr == 0)
     call famgx_initialize_plugins(ierr)
     INSIST(ierr == 0)
+    this%amgx_initialized = .true.
 
-    call famgx_config_create(this%amgx_config, "", ierr)
+    call famgx_config_create(this%amgx_config, config_string(this), ierr)
+    INSIST(ierr == 0)
     call famgx_resources_create(this%amgx_resources, this%amgx_config, 1, [0], ierr)
-    INSIST(ierr)
-
-    call famgx_vector_create(this%bh, this%amgx_resources, ierr)
+    INSIST(ierr == 0)
+    call famgx_solver_create(this%solver, this%amgx_resources, this%amgx_config, ierr)
     INSIST(ierr == 0)
 
-    call famgx_vector_create(this%xh, this%amgx_resources, ierr)
-    INSIST(ierr == 0)
+    call famgx_matrix_create(this%Ah, this%amgx_resources, ierr); INSIST(ierr == 0)
+    call famgx_vector_create(this%bh, this%amgx_resources, ierr); INSIST(ierr == 0)
+    call famgx_vector_create(this%xh, this%amgx_resources, ierr); INSIST(ierr == 0)
+    !! TODO-WARN: famgx_vector_bind
+
+    print *, "AmgX initialized."
 
   end subroutine init
 
+
+  !! Copy matrix & setup solver. Note that B and X are ignored here.
   subroutine compute(this)
 
     class(pcsr_precon_amgx), intent(inout) :: this
@@ -152,15 +162,20 @@ contains
     integer :: ierr
 
     call start_timer('precon-compute')
-    call copy_to_ijmatrix(this%amgx_resources, this%A, this%Ah)
+    call start_timer('memcopy-matrix')
+    if (.not.this%matrix_initialized) then
+      call copy_to_ijmatrix(this%A, this%Ah)
+      this%matrix_initialized = .true.
+    else
+      call famgx_pin_memory(this%A%values, ierr); INSIST(ierr == 0)
+      call famgx_matrix_replace_coefficients(this%Ah, this%nrows, this%nnz, this%A%values, ierr)
+      INSIST(ierr == 0)
+      call famgx_unpin_memory(this%A%values, ierr); INSIST(ierr == 0)
+    end if
+    call stop_timer('memcopy-matrix')
 
-    !! Create & setup solver.  Note that B and X are ignored here.
-    !! TODO: Is it possible to modify AmgX matrices without destroying the solver
-    !!       and rebuilding from scratch?
+    print *, "AmgX: setup solver"
     call start_timer('setup')
-    if (amgx_associated(this%solver)) call famgx_solver_destroy(this%solver, ierr)
-    call famgx_solver_create(this%solver, this%amgx_resources, this%amgx_config, ierr)
-    INSIST(ierr == 0)
     call famgx_solver_setup(this%solver, this%Ah, ierr)
     INSIST(ierr == 0)
     call stop_timer('setup')
@@ -169,26 +184,24 @@ contains
 
   end subroutine compute
 
+
   subroutine apply(this, x)
 
     class(pcsr_precon_amgx), intent(in) :: this
     real(r8), intent(inout) :: x(:)
 
-    integer :: ierr, stat !, rows(this%nrows)
+    integer :: ierr, stat
 
     ASSERT(size(x) >= this%nrows)
 
     call start_timer('precon-apply')
 
-    ! !! Global row indices for this process.
-    ! rows = [(i, i = this%ilower, this%iupper)]
-
     !! Initialize the AmgX RHS & initial guess vector.
-    call start_timer('transfer')
+    call start_timer('memcpy-vector')
     call famgx_pin_memory(x, ierr); INSIST(ierr == 0)
     call famgx_vector_upload(this%bh, this%nrows, 1, x, ierr); INSIST(ierr == 0)
     call famgx_vector_set_zero(this%xh, this%nrows, 1, ierr); INSIST(ierr == 0)
-    call stop_timer('transfer')
+    call stop_timer('memcpy-vector')
 
     !! Call the AmgX solver.
     call start_timer('solve')
@@ -200,16 +213,17 @@ contains
     call stop_timer('solve')
 
     !! Retrieve the solution vector from AmgX
-    call start_timer('transfer')
+    call start_timer('memcpy-vector')
     call famgx_vector_download(this%xh, x, ierr)
     INSIST(ierr == 0)
-    call stop_timer('transfer')
+    call famgx_unpin_memory(x, ierr); INSIST(ierr == 0)
+    call stop_timer('memcpy-vector')
 
     call stop_timer('precon-apply')
 
   end subroutine apply
-  
-  !!
+
+
   !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
   !! HYPRE_IJMatrix object.  The HYPRE matrix is created if it does not exist.
   !! Otherwise the elements of the existing HYPRE matrix are overwritten with
@@ -221,72 +235,72 @@ contains
   !! rows of this matrix are complete and describe a partitioning of the global
   !! matrix by rows.  The off-process rows, however, are partial and extraneous
   !! and should be ignored.
-  subroutine copy_to_ijmatrix(amgx_resources, src, matrix)
+  subroutine copy_to_ijmatrix(src, matrix)
 
-    type(amgx_obj), intent(in) :: amgx_resources
+    use,intrinsic :: iso_fortran_env, only: int64
+
     type(pcsr_matrix), intent(in) :: src
     type(amgx_obj), intent(inout) :: matrix
 
-    integer :: ierr, nrow_onP, nrow_global, len_onP
-    integer, allocatable :: row_offset(:), col_global(:), global_row_rank(:)
-    !integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
-
-    call start_timer('matrix-copy')
-
-    if (.not.amgx_associated(matrix)) then
-      call famgx_matrix_create(matrix, amgx_resources, ierr)
-      INSIST(ierr == 0)
-    end if
+    integer :: ierr, nrows, nrows_global, nnz
+    integer, allocatable :: row_offset(:), global_row_rank(:)
+    !integer(int64), allocatable :: col_global(:)
+    integer, allocatable :: col_global(:)
 
     !! TODO-WARN: Currently hardwired for serial runs.
     !! Indices are converted to C 0-indexing here.
-    ! ilower = src%graph%row_ip%first_index()
-    ! iupper = src%graph%row_ip%last_index()
-    nrow_onP  = src%graph%row_ip%onP_size()
-    len_onP = nrow_onP
-    nrow_global = nrow_onP
-    allocate(global_row_rank(nrow_global), col_global(len_onP), row_offset(nrow_onP))
+    nrows  = src%graph%row_ip%onP_size()
+    nrows_global = src%graph%row_ip%global_size()
+    nnz = src%graph%xadj(nrows+1) - src%graph%xadj(1)
+    allocate(global_row_rank(nrows_global), col_global(nnz), row_offset(nrows+1))
     global_row_rank = 0
+    col_global = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1)) - 1
+    row_offset = src%graph%xadj(:nrows+1) - 1
 
-    call start_timer('transfer')
-    call famgx_matrix_upload_all_global(matrix, nrow_global, nrow_onP, len_onP, 1, 1, &
-        row_offset, col_global, src%values, &
-        0, 0, global_row_rank, ierr) ! here set halo depth & num import rings to 1, 1 in parallel
+    call famgx_pin_memory(row_offset, ierr); INSIST(ierr == 0)
+    call famgx_pin_memory(col_global, ierr); INSIST(ierr == 0)
+    call famgx_pin_memory(global_row_rank, ierr); INSIST(ierr == 0)
+    call famgx_pin_memory(src%values, ierr); INSIST(ierr == 0)
+
+    print *, "AmgX: upload matrix"
+    ! call famgx_matrix_upload_all_global(matrix, nrows_global, nrows, nnz, 1, 1, &
+    !     row_offset, col_global, src%values, &
+    !     0, 0, global_row_rank, ierr) ! TODO-WARN: here set halo depth & num import rings to 1, 1 in parallel
+    call famgx_matrix_upload_all(matrix, nrows, nnz, 1, 1, row_offset, col_global, src%values, ierr)
     INSIST(ierr == 0)
-    call stop_timer('transfer')
 
-    call stop_timer('matrix-copy')
-
-    ! call fHYPRE_IJMatrixCreate(ilower, iupper, ilower, iupper, matrix, ierr)
-    ! !! For each row we know how many column entries are on-process and how many
-    ! !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
-    ! !! if it knows this info up front.
-    ! allocate(ncols_onP(nrows), ncols_offP(nrows))
-    ! do j = 1, nrows
-    !   ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > nrows)
-    !   ncols_onP(j)  = src%graph%xadj(j+1) - src%graph%xadj(j) - ncols_offP(j)
-    ! end do
-    ! call start_timer('transfer')
-    ! call fHYPRE_IJMatrixSetDiagOffdSizes(matrix, ncols_onP, ncols_offP, ierr)
-    ! deallocate(ncols_onP, ncols_offP)
-    ! !! Let HYPRE know that we won't be setting any off-process matrix values.
-    ! call fHYPRE_IJMatrixSetMaxOffProcElmts(matrix, 0, ierr)
-    ! INSIST(ierr == 0)
-    ! call stop_timer('transfer')
-
-    ! !! Copy the matrix elements into the HYPRE matrix.  This defines both the
-    ! !! nonzero structure of the matrix and the values of those elements. HYPRE
-    ! !! expects global row and column indices.
-    ! nnz = src%graph%xadj(nrows+1) - src%graph%xadj(1)
-    ! allocate(ncols(nrows), rows(nrows), cols(nnz))
-    ! rows = [(j, j = ilower, iupper)]
-    ! ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
-    ! cols = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    ! call start_timer('transfer')
-    ! call fHYPRE_IJMatrixSetValues_v2(matrix, nrows, ncols, rows, cols, src%values, ierr)
-    ! deallocate(ncols, rows, cols)
-    ! INSIST(ierr == 0)
+    call famgx_unpin_memory(src%values, ierr); INSIST(ierr == 0)
 
   end subroutine copy_to_ijmatrix
+
+
+  function config_string(this) result(config)
+
+    type(pcsr_precon_amgx), intent(in) :: this
+    character(:), allocatable :: config
+
+    character(128) :: line
+
+    config = "config_version = 2,"
+
+    write (line,'(a,i2)') "max_iters = ", this%max_iter
+    config = config // trim(line) // ","
+
+    write (line,'(a,i2)') "print_solve_stats = ", min(this%print_level, 1)
+    config = config // trim(line) // ","
+
+    write (line,'(a,i2)') "print_grid_stats = ", max(this%print_level - 1, 0)
+    config = config // trim(line) // ","
+
+    write (line,'(a,i2)') "obtain_timings = ", this%logging_level
+    config = config // trim(line) // ","
+
+    config = config // &
+        "monitor_residual = 0," // & ! run until max_iters is reached (default)
+        "determinism_flag = 1," // & ! use deterministic algorithms
+        !"smoother = PCG," // &
+        "solver = AMG"               ! top-level solver (default)
+
+  end function config_string
 
 end module pcsr_precon_amgx_type

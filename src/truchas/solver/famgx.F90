@@ -34,6 +34,7 @@ module famgx
 
   public :: famgx_config_create
   public :: famgx_resources_create
+  public :: famgx_resources_create_simple
   public :: famgx_matrix_create
   public :: famgx_vector_create
   public :: famgx_solver_create
@@ -43,14 +44,25 @@ module famgx
   public :: famgx_matrix_destroy
   public :: famgx_solver_destroy
 
+  public :: famgx_matrix_upload_all
   public :: famgx_matrix_upload_all_global
+  public :: famgx_matrix_replace_coefficients
   public :: famgx_solver_setup
   public :: famgx_pin_memory
+  public :: famgx_unpin_memory
   public :: famgx_vector_upload
   public :: famgx_vector_download
   public :: famgx_vector_set_zero
   public :: famgx_solver_solve_with_0_initial_guess
   public :: famgx_solver_get_status
+
+  interface famgx_pin_memory
+    module procedure famgx_pin_memory_r8, famgx_pin_memory_int32, famgx_pin_memory_int64
+  end interface famgx_pin_memory
+
+  interface famgx_unpin_memory
+    module procedure famgx_unpin_memory_r8, famgx_unpin_memory_int32, famgx_unpin_memory_int64
+  end interface famgx_unpin_memory
 
 #ifdef INTEL_SRN04330341
   interface amgx_associated
@@ -95,7 +107,6 @@ contains
   end subroutine famgx_finalize_plugins
 
   subroutine famgx_config_create(config, options, ierr)
-    use,intrinsic :: iso_c_binding, only: c_char
     type(amgx_obj), intent(out) :: config
     character(*), intent(in) :: options
     integer, intent(out) :: ierr
@@ -109,6 +120,13 @@ contains
     integer, intent(out) :: ierr
     ierr = AMGX_resources_create_ext(resources, config, ndevices, gpu_ids)
   end subroutine famgx_resources_create
+
+  subroutine famgx_resources_create_simple(resources, config, ierr)
+    type(amgx_obj), intent(out) :: resources
+    type(amgx_obj), intent(in) :: config
+    integer, intent(out) :: ierr
+    ierr = AMGX_resources_create_simple(resources, config)
+  end subroutine famgx_resources_create_simple
 
   subroutine famgx_matrix_create(matrix, resources, ierr)
     type(amgx_obj), intent(out) :: matrix
@@ -128,7 +146,7 @@ contains
     type(amgx_obj), intent(out) :: solver
     type(amgx_obj), intent(in) :: resources, config
     integer, intent(out) :: ierr
-    ierr = AMGX_solver_create_ext(solver, config, resources)
+    ierr = AMGX_solver_create_ext(solver, resources, config)
   end subroutine famgx_solver_create
 
   subroutine famgx_config_destroy(config, ierr)
@@ -167,18 +185,55 @@ contains
   end subroutine famgx_solver_destroy
 
   subroutine famgx_solver_setup(solver, matrix, ierr)
-    type(amgx_obj), intent(out) :: solver
+    type(amgx_obj), intent(in) :: solver
     type(amgx_obj), intent(in) :: matrix
     integer, intent(out) :: ierr
     ierr = AMGX_solver_setup(solver, matrix)
   end subroutine famgx_solver_setup
 
-  subroutine famgx_pin_memory(x, ierr)
-    use,intrinsic :: iso_c_binding, only: c_loc
-    real(r8), intent(inout) :: x(:)
+  subroutine famgx_pin_memory_r8(x, ierr)
+    use,intrinsic :: iso_c_binding, only: c_loc, c_sizeof
+    real(r8), intent(in) :: x(:)
     integer, intent(out) :: ierr
-    ierr = AMGX_pin_memory(c_loc(x))
-  end subroutine famgx_pin_memory
+    ierr = AMGX_pin_memory(c_loc(x), c_sizeof(x))
+  end subroutine famgx_pin_memory_r8
+
+  subroutine famgx_pin_memory_int32(x, ierr)
+    use,intrinsic :: iso_c_binding, only: c_loc, c_sizeof
+    integer, intent(in) :: x(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_pin_memory(c_loc(x), c_sizeof(x))
+  end subroutine famgx_pin_memory_int32
+
+  subroutine famgx_pin_memory_int64(x, ierr)
+    use,intrinsic :: iso_fortran_env, only: int64
+    use,intrinsic :: iso_c_binding, only: c_loc, c_sizeof
+    integer(int64), intent(in) :: x(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_pin_memory(c_loc(x), c_sizeof(x))
+  end subroutine famgx_pin_memory_int64
+
+  subroutine famgx_unpin_memory_r8(x, ierr)
+    use,intrinsic :: iso_c_binding, only: c_loc
+    real(r8), intent(in) :: x(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_unpin_memory(c_loc(x))
+  end subroutine famgx_unpin_memory_r8
+
+  subroutine famgx_unpin_memory_int32(x, ierr)
+    use,intrinsic :: iso_c_binding, only: c_loc
+    integer, intent(in) :: x(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_unpin_memory(c_loc(x))
+  end subroutine famgx_unpin_memory_int32
+
+  subroutine famgx_unpin_memory_int64(x, ierr)
+    use,intrinsic :: iso_fortran_env, only: int64
+    use,intrinsic :: iso_c_binding, only: c_loc
+    integer(int64), intent(in) :: x(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_unpin_memory(c_loc(x))
+  end subroutine famgx_unpin_memory_int64
 
   subroutine famgx_vector_upload(dev, len, block_dim, host, ierr)
     type(amgx_obj), intent(in) :: dev
@@ -215,18 +270,41 @@ contains
   end subroutine famgx_solver_get_status
 
   !! Note diag_data is hardcoded to NULL
-  subroutine famgx_matrix_upload_all_global(matrix, nrow_global, nrow_onP, len_onP, &
-      block_dimx, block_dimy, row_offsets, col_indices_global, data, &
-      allocated_halo_depth, num_import_rings, partition_vector, ierr)
+  subroutine famgx_matrix_upload_all(matrix, nrows, nnz, block_dimx, block_dimy, &
+      row_offsets, col_indices_global, data, ierr)
     type(amgx_obj), intent(in) :: matrix
-    integer, intent(in) :: nrow_global, nrow_onP, len_onP, block_dimx, block_dimy, allocated_halo_depth, num_import_rings
-    integer, intent(in) :: row_offsets(:), col_indices_global(:), partition_vector(:)
+    integer, intent(in) :: nrows, nnz, block_dimx, block_dimy
+    integer, intent(in) :: row_offsets(:), col_indices_global(:)
     real(r8), intent(in) :: data(:)
     integer, intent(out) :: ierr
-    ierr = AMGX_matrix_upload_all_global(matrix, nrow_global, nrow_onP, len_onP, &
+    ierr = AMGX_matrix_upload_all(matrix, nrows, nnz, block_dimx, block_dimy, &
+        row_offsets, col_indices_global, data, amgx_null_obj)
+  end subroutine famgx_matrix_upload_all
+
+  !! Note diag_data is hardcoded to NULL
+  subroutine famgx_matrix_upload_all_global(matrix, nrows_global, nrows, nnz, &
+      block_dimx, block_dimy, row_offsets, col_indices_global, data, &
+      allocated_halo_depth, num_import_rings, partition_vector, ierr)
+    use,intrinsic :: iso_fortran_env, only: int64
+    type(amgx_obj), intent(in) :: matrix
+    integer, intent(in) :: nrows_global, nrows, nnz, block_dimx, block_dimy, allocated_halo_depth, num_import_rings
+    integer, intent(in) :: row_offsets(:), partition_vector(:)
+    integer(int64), intent(in) :: col_indices_global(:)
+    real(r8), intent(in) :: data(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_matrix_upload_all_global(matrix, nrows_global, nrows, nnz, &
         block_dimx, block_dimy, row_offsets, col_indices_global, data, amgx_null_obj, &
         allocated_halo_depth, num_import_rings, partition_vector)
   end subroutine famgx_matrix_upload_all_global
+
+  !! Note diag_data is hardcoded to NULL
+  subroutine famgx_matrix_replace_coefficients(matrix, nrows, nnz, data, ierr)
+    type(amgx_obj), intent(in) :: matrix
+    integer, intent(in) :: nrows, nnz
+    real(r8), intent(in) :: data(:)
+    integer, intent(out) :: ierr
+    ierr = AMGX_matrix_replace_coefficients(matrix, nrows, nnz, data, amgx_null_obj)
+  end subroutine famgx_matrix_replace_coefficients
 
   !! Create a null-terminated C string from an input Fortran character scalar.
   !! This function imitates the Fortran 202x F_C_STRING intrinsic, and can
@@ -239,12 +317,12 @@ contains
     logical, intent(in), optional :: trim_str
     character(kind=c_char, len=:), allocatable :: cstr
 
-    logical :: trimh
+    logical :: trim_
 
-    trimh = .true.
-    if (present(trim_str)) trimh = trim_str
+    trim_ = .true.
+    if (present(trim_str)) trim_ = trim_str
 
-    if (trimh) then
+    if (trim_) then
       cstr = trim(fstr) // c_null_char
     else
       cstr = fstr // c_null_char
