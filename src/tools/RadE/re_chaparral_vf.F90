@@ -306,7 +306,8 @@ contains
     integer, allocatable :: global_ids(:), f2p_map(:)  ! Distributed versions of the collated arrays
     integer, allocatable :: c(:,:), nsizes(:)
     real(r8), allocatable :: x(:), y(:), z(:)
-    real(r8), allocatable :: area(:)  ! Patch areas calculated by Chaparral
+    real(r8), allocatable :: parea(:)  ! Patch areas computed by Chaparral
+    real(r8), allocatable :: farea(:)  ! Face areas computed from the enclosure
     integer :: partial, nonblocking, verbosity, bsp_depth, bsp_length, hc_sub_divide, hc_resolution, smooth_max_iter
     real(r8) :: asink, spatial_tol, hc_min_sep, smooth_wt, smooth_tol
 
@@ -466,15 +467,32 @@ contains
     evf%has_area = .true.
     npatch_tot_chap = npatch_tot + merge(1, 0, partial==1)
     n = merge(npatch_tot, 0, my_rank==1)
-    allocate(area(npatch_tot_chap), evf%area(n))
-    call VF_GetMatrixAreas(area)
-    if (my_rank == 1) evf%area = area(1:npatch_tot)
-    deallocate(area)
+    allocate(parea(npatch_tot_chap), evf%area(n))
+    call VF_GetMatrixAreas(parea)
+    if (my_rank == 1) evf%area = parea(1:npatch_tot)
+    deallocate(parea)
+
+    !! Compute face weights
+    evf%has_weight = ep%has_patches
+    n = merge(e%nface, 0, my_rank==1 .and. evf%has_weight)
+    allocate(farea(n), evf%w(n))
+    if (n > 0) then
+      call compute_face_area(e%xface, e%fnode, e%x, farea)
+      do j = 1, e%nface
+        !TODO: check face areas match patch areas?
+        !! We use the patch areas computed by Chaparral. These should almost exactly
+        !! match the sum of the face areas, but we don't check that explicitly.
+        evf%w(j) = farea(j) / evf%area(f2p_map_g(j))
+        !! Face weight cannot exceed 1
+        ASSERT( evf%w(j) <= 1.0_r8 + epsilon(0.0_r8) )
+        if (evf%w(j) > 1.0_r8) evf%w(j) = 1.0_r8
+      end do
+      ASSERT( all(0.0_r8 < evf%w) )
+      ASSERT( all(evf%w <= 1.0_r8) )
+    end if
 
     !call VF_ResetTopology(handle)
     call VF_CleanUp
-
-    deallocate(global_ids, f2p_map, c)
 
   end subroutine calculate_vf
 

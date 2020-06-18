@@ -23,5 +23,6 @@
   patch_algorithm = 'PAVE'
   verbosity_level = 3
   max_angle = 30.0
-  vac_merge_level = 0
+  pave_merge_level = 0
+  pave_random_seed = 67813317
 /

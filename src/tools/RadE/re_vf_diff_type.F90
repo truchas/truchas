@@ -70,80 +70,36 @@ module re_vf_diff_type
   private
 
   type, public :: vf_diff
-    integer :: nface_tot = 0        ! total number of patches (number of matrix columns)
-    type(dist_vf) :: A, B           ! view factor matrices, D=B-A
-    type(re_patch) :: epA, epB      ! enclosure patches for matrices A and B
-    real(r8), allocatable :: wA(:)  ! ratio of face area to patch area for matrix A
-    real(r8), allocatable :: wB(:)  ! ratio of face area to patch area for matrix B
-    real(r8), pointer :: areaA(:)   ! area of patches for matrix A
-    real(r8), pointer :: areaB(:)   ! area of patches for matrix B
-    real(r8), allocatable :: farea(:)  ! area of enclosure faces
+    integer :: nface_tot = 0    ! total number of patches (number of matrix columns)
+    type(dist_vf) :: A, B       ! view factor matrices, D=B-A
+    type(re_patch) :: epA, epB  ! enclosure patches for matrices A and B
   contains
-    procedure, public :: init => vf_diff_init
+    procedure, public :: init
     procedure, public :: compute_norms
   end type vf_diff
 
 contains
 
   !! Initializes VF_DIFF by reading two enclosure radiation data sets.
-  subroutine vf_diff_init(this, dataset1, dataset2)
-
-    use cell_geometry, only: face_normal, vector_length
-    use rad_encl_file_type
+  subroutine init(this, dataset1, dataset2)
 
     class(vf_diff), target, intent(out) :: this
     character(:), allocatable, intent(in) :: dataset1, dataset2
 
-    type(rad_encl_file) :: file
-    integer,  allocatable :: fnode(:), fsize(:)
-    real(r8), allocatable :: x(:,:)
-    integer :: i, nface, npatch
-    integer :: xface(2) ! range for face nodes
+    call init_VF_fields(this%A, this%epA, dataset1)
+    call init_VF_fields(this%B, this%epB, dataset2)
+    ASSERT(this%epA%nface == this%epB%nface)
 
-    !! Get face areas
-    if (scl_rank() == 1) then
-      call file%open_ro(dataset1)
-      call file%get_patch_dims(nface, npatch)
-      allocate(this%farea(nface))
-      this%nface_tot = nface
+    this%nface_tot = this%epA%nface
 
-      if ((.not. file%has_patches()) .and. file%has_area()) then
-        !! Face areas are stored in file, read them.
-        call file%get_area(this%farea)
-      else
-        !! Compute face areas
-        call file%get_surface(fsize, fnode, x)
-        nface = size(fsize)
-        xface = 0
-        do i = 1, nface
-          xface(1) = xface(2) + 1
-          xface(2) = xface(2) + fsize(i)
-          associate(face_nodes => fnode(xface(1):xface(2)))
-            this%farea(i) = vector_length(face_normal(x(:,face_nodes)))
-          end associate
-        end do
-      end if
-    else
-      allocate(this%farea(0))
-    end if
-    call scl_bcast(this%nface_tot)
-
-    call init_VF_fields(this%A, this%epA, this%wA, this%areaA, this%farea, dataset1)
-    ASSERT(this%nface_tot == this%epA%nface)
-    call init_VF_fields(this%B, this%epB, this%wB, this%areaB, this%farea, dataset2)
-    ASSERT(this%nface_tot == this%epB%nface)
-
-  end subroutine vf_diff_init
+  end subroutine init
 
 
   !! Initializes all the fields of VF_DIFF associated with a particular VF matrix
-  subroutine init_VF_fields(dvf, ep, w, parea, farea, path)
+  subroutine init_VF_fields(dvf, ep, path)
 
     class(dist_vf), target, intent(out) :: dvf
     class(re_patch), intent(out) :: ep
-    real(r8), allocatable, intent(out) :: w(:)
-    real(r8), pointer, intent(out) :: parea(:)
-    real(r8), target, intent(in) :: farea(:)
     character(:), allocatable, intent(in) :: path
 
     integer :: i
@@ -160,38 +116,54 @@ contains
 
     !! All other data is only needed on rank 1
     if (scl_rank() == 1) then
-      ASSERT(all(farea > 0.0_r8))
 
       !! Get patch areas
-      if (.not. ep%has_patches) then
-        parea => farea
-      else
-        !! Patch areas MUST have been written.
-        INSIST(dvf%has_area)
-        parea => dvf%area
+      if (.not. dvf%has_area) then
+        !! Patch areas are always written, so dvf MUST be face-based.
+        INSIST(.not. ep%has_patches)
+        !! Compute face areas
+        block
+          use re_utilities, only: compute_face_area
+          use rad_encl_file_type
+          type(rad_encl_file) :: file
+          integer,  allocatable :: fnode(:), fsize(:), xface(:)
+          real(r8), allocatable :: x(:,:)
+          call file%get_surface(fsize, fnode, x)
+          allocate(xface(ep%nface+1))
+          xface(1) = 1
+          do i = 1, ep%nface
+            xface(i+1) = xface(i) + fsize(i)
+          end do
+          call compute_face_area(xface, fnode, x, dvf%area)
+          deallocate(fsize, fnode, xface, x)
+        end block
       end if
 
-      ASSERT(all(parea > 0.0_r8))
+      ASSERT(all(dvf%area > 0.0_r8))
 
-      !! Compute face weights
-      allocate(w(ep%nface))
-      if (.not. ep%has_patches) then
-        w = 1.0_r8
-      else
-        do i = 1, ep%nface
-          !! We use the patch areas computed by Chaparral. These should almost exactly match
-          !! the sum of the face areas, but we don't check that explicitly.
-          w(i) = farea(i) / parea(ep%f2p_map(i))
-        end do
+      !TODO: should weight of 1.0 already be initialized in DVF?
+      !      or should it be initialized here?
+      !
+      !  What about the face area?
+
+      !! Get face weights.
+      if (.not. dvf%has_weight) then
+        !! Face weights are read by a patch-based dvf, so it MUST be face-based.
+        INSIST(.not. ep%has_patches)
+        ASSERT(.not. allocated(dvf%w))
+        allocate(dvf%w(ep%nface))
+        dvf%w = 1.0_r8
       end if
 
-      ASSERT(all(w > 0.0_r8))
-      ASSERT(all(w <= 1.0_r8 + epsilon(0.0_r8)))
+      ASSERT(all(dvf%w > 0.0_r8))
+      ASSERT(all(dvf%w <= 1.0_r8))
     end if
 
   end subroutine init_VF_fields
 
 
+  !TODO: refactor this and similar computation in DVF?
+  !       - dvf is sparse, but this is dense (full row)
   !! Converts VF row n into VF column n using reciprocity
   subroutine row_to_col(val, n, area)
 
@@ -245,18 +217,18 @@ contains
         call this%epA%patch_to_face_array(pvalA, frowA)
         call this%epB%patch_to_face_array(pvalB, frowB)
         ASSERT(size(frowA) == size(frowB))
-        frowA = frowA * this%wA
-        frowB = frowB * this%wB
+        frowA = frowA * this%A%w
+        frowB = frowB * this%B%w
         rowD = abs(frowB - frowA)
 
         !! Compute face-based columns using reciprocity
-        call row_to_col(pvalA, pA, this%areaA)
-        call row_to_col(pvalB, pB, this%areaB)
+        call row_to_col(pvalA, pA, this%A%area)
+        call row_to_col(pvalB, pB, this%B%area)
         call this%epA%patch_to_face_array(pvalA, fcolA)
         call this%epB%patch_to_face_array(pvalB, fcolB)
         ASSERT(size(fcolA) == size(fcolB))
-        fcolA = fcolA * this%wA(i)
-        fcolB = fcolB * this%wB(i)
+        fcolA = fcolA * this%A%w(i)
+        fcolB = fcolB * this%B%w(i)
         colD = abs(fcolB - fcolA)
 
         !! Compute norms

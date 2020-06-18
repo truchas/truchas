@@ -22,5 +22,6 @@
 &PATCHES
   patch_algorithm = 'PAVE'
   verbosity_level = 3
-  vac_merge_level = 0
+  pave_merge_level = 0
+  pave_random_seed = 67813317
 /
