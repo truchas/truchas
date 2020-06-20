@@ -15,8 +15,10 @@ set(PHYSICS_SOURCE_FILES
            physics/enclosure_radiation/ER_input.F90
            physics/enclosure_radiation/rad_system_type.F90
            physics/enclosure_radiation/vf_matrix_class.F90
+           physics/enclosure_radiation/vf_matrix_constant_class.F90
            physics/enclosure_radiation/vf_matrix_face_type.F90
-           physics/enclosure_radiation/vf_matrix_patch_type.F90)
+           physics/enclosure_radiation/vf_matrix_patch_type.F90
+           physics/enclosure_radiation/vf_data_type.F90)
 
 
 # - fluid_flow

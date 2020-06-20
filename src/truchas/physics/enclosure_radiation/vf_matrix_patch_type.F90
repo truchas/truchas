@@ -1,11 +1,11 @@
 !!
 !! VF_MATRIX_PATCH_TYPE
 !!
-!! A concrete implementation for the abstract base class VF_MATRIX.
+!! A concrete implementation for the abstract base class VF_MATRIX_CONSTANT.
 !! This implementation operates on patch-based view factor data.
 !!
-!! David Neill-Asanza <dhna@lanl.gov>
-!! 18 July 2019
+!! David Neill-Asanza <dhna@lanl.gov>, July 2019
+!! Neil N. Carlson <nnc@lanl.gov>, refactoring June 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -13,185 +13,179 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
 #include "f90_assert.fpp"
 
 module vf_matrix_patch_type
 
-  use kinds, only: r8
-  use vf_matrix_class, only: vf_matrix
-  use rad_encl_type
-  use rad_encl_file_type
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use vf_matrix_constant_class
+  use vf_data_type
   use parallel_communication
   implicit none
+  private
 
-  type, extends(vf_matrix), public :: vf_matrix_patch
-    integer :: npatch       ! number of patches (number of rows) on this process
-    integer :: npatch_tot   ! total number of patches (number of columns)
-    integer, allocatable :: f2p_map(:)    ! maps local faces to local patches
-    integer, allocatable :: f2p_map_g(:)  ! maps global faces to global patches
-                                          !   only available on IO process
-    real(r8), allocatable :: w(:)         ! w(j) is the fraction of total patch
-                                          !  area occupied by face j
-    contains
-      procedure, public  :: init => init_VFP_PATCH
-      procedure, public  :: partition_ER_faces => partition_ER_faces_VFP_PATCH
-      procedure, public  :: load_view_factors => load_view_factors_VFP_PATCH
-      procedure, public  :: phi_x => phi_x_VFP_PATCH
+  type, extends(vf_matrix_constant), public :: vf_matrix_patch
+    private
+    type(vf_data) :: vf
+    real(r8), allocatable :: w(:)
+    integer,  allocatable :: f2p_map(:)
+    ! In parent classes:
+    ! integer, public :: nface, nface_tot
+    ! integer, allocatable :: face_map(:)
+    ! real, allocatable, public :: amb_vf(:)
+    ! logical :: has_ambient
+  contains
+    procedure :: init
+    procedure :: matvec
   end type
 
 contains
 
+  subroutine init(this, file)
 
-  !! Initialize VF_MATRIX_PATCH and define a distribution for the matrix rows.
-  subroutine init_VFP_PATCH (this, file)
-
-    use,intrinsic :: iso_c_binding, only: c_size_t
+    use rad_encl_file_type
+    use permutations
 
     class(vf_matrix_patch), intent(out) :: this
-    type(rad_encl_file), intent(in) :: file
+    type(rad_encl_file), intent(in) :: file  ! only referenced on IOP
 
-    integer :: nface_tot, npatch_tot
-    integer(c_size_t) :: nnonz
-    integer :: n
+    integer :: j, n, offset, bsize(nPE)
+    integer, allocatable :: f2p_map(:), face_map(:), color_p(:), color(:)
+    real(r8), allocatable :: w(:)
 
-    if (is_IOP) call file%get_vf_dims (nface_tot, npatch_tot, nnonz)
+    call this%vf%init(file)
 
-    call broadcast(nface_tot)
-    call broadcast(npatch_tot)
-    this%nface_tot = nface_tot
-    this%npatch_tot = npatch_tot
-
-    !! Partition matrix rows in blocks
-    this%npatch = this%npatch_tot/nPE
-    if (this_PE <= modulo(this%npatch_tot,nPE)) this%npatch = 1 + this%npatch
+    if (is_IOP) call file%get_patch_dims(this%nface_tot, n)
+    call broadcast(this%nface_tot)
 
     !! Get global face to patch map
-    n = merge(this%nface_tot, 0, is_IOP)
-    allocate(this%f2p_map_g(n))
-    if (is_IOP) call file%get_f2p_map(this%f2p_map_g)
+    allocate(f2p_map(merge(this%nface_tot,0,is_IOP)))
+    if (is_IOP) call file%get_f2p_map(f2p_map)
 
-  end subroutine init_VFP_PATCH
+    !! Coloring of the enclosure patches from the block-row matrix partitioning
+    allocate(color_p(merge(this%vf%npatch_tot,0,is_IOP)))
+    call collate(bsize, this%vf%npatch)
+    if (is_IOP) then
+      offset = 0
+      do n = 1, nPE
+        color_p(offset+1:offset+bsize(n)) = n
+        offset = offset + bsize(n)
+      end do
+    end if
 
+    !! Subordinate coloring of the enclosure faces
+    allocate(color(merge(this%nface_tot,0,is_IOP)))
+    if (is_IOP) color = color_p(f2p_map)
 
-  !! Partitions the ER mesh according to the distribution of matrix rows
-  !! defined by THIS%INIT.
-  subroutine partition_ER_faces_VFP_PATCH (this, color)
+    !! Subordinate face renumbering (new-to-old face map)
+    allocate(face_map(merge(this%nface_tot,0,is_IOP)))
+    if (is_IOP) call blocked_coloring_map(color, bsize, face_map)
+    call distribute(this%nface, bsize)
+    allocate(this%face_map(this%nface))
+    call distribute(this%face_map, face_map)
 
-    class(vf_matrix_patch), intent(inout) :: this
-    integer, allocatable, intent(out) :: color(:)
-
-    integer, allocatable :: color_p(:)    ! global patch coloring
-    integer, allocatable :: color_p_l(:)  ! local patch coloring
-    integer :: n
-
-    !! Block coloring of the enclosure patches.
-    n = merge(this%npatch_tot, 0, is_IOP)
-    allocate(color_p(n), color_p_l(this%npatch))
-    color_p_l = this_PE
-    call collate (color_p, color_p_l)
-    deallocate(color_p_l)
-
-    n = merge(this%nface_tot, 0, is_IOP)
-    allocate (color(n))
-    if (is_IOP) color = color_p(this%f2p_map_g)
-
-  end subroutine partition_ER_faces_VFP_PATCH
-
-
-  !! Read and distribute the VF matrix data according to the distribution
-  !! defined in THIS%INIT.
-  subroutine load_view_factors_VFP_PATCH (this, file, encl)
-
-    class(vf_matrix_patch), intent(inout) :: this
-    type(rad_encl_file), intent(in) :: file
-    type(rad_encl), intent(in) :: encl
-
-    real, allocatable :: amb_vf_face(:)
-    real(r8), allocatable :: w_col(:)       ! collated face weights
-    integer, allocatable :: f2p_map_col(:)  ! collated map from local faces to global patches
-    integer, allocatable :: fidx_col(:)     ! collated map from local faces to global faces
-    integer :: n, bsize(nPE), patch_offset
-
-    call this%distribute_vf_rows(file, this%npatch, this%npatch_tot)
-
-    this%nface = encl%nface_onP
-
-    n = merge(this%nface_tot, 0, is_IOP)
-    allocate(f2p_map_col(n), fidx_col(n), w_col(n))
-
-    !! Get face to patch map
-    call collate (fidx_col, encl%face_map)
-    if (is_IOP) f2p_map_col = this%f2p_map_g(fidx_col)
-
+    !! Face-to-patch map (reorder, distribute)
+    if (is_IOP) call reorder(f2p_map, face_map)
     allocate(this%f2p_map(this%nface))
-    call distribute (this%f2p_map, f2p_map_col)
+    call distribute(this%f2p_map, f2p_map)
+    deallocate(f2p_map)
 
     !! Convert global patch indices to local
-    call collate (bsize, this%npatch)
-    call broadcast (bsize)
-    patch_offset = sum(bsize(1:this_PE-1))
-    this%f2p_map = this%f2p_map - patch_offset
-    ASSERT( all(1 <= this%f2p_map) )
-    ASSERT( all(this%f2p_map <= this%npatch) )
+    call collate(bsize, this%vf%npatch)
+    call broadcast(bsize)
+    offset = sum(bsize(1:this_PE-1))
+    this%f2p_map = this%f2p_map - offset
+    ASSERT(all(1 <= this%f2p_map))
+    ASSERT(all(this%f2p_map <= this%vf%npatch))
 
-    !! Get face weights
+    !! Face weights (read, reorder, distribute)
+    allocate(w(merge(this%nface_tot,0,is_IOP)))
     if (is_IOP) then
-      ASSERT( file%has_face_weight() )
-      call file%get_face_weight(w_col)
-      w_col = w_col(fidx_col)
+      call file%get_face_weight(w)
+      call reorder(w, face_map)
     end if
     allocate(this%w(this%nface))
-    call distribute (this%w, w_col)
-    ASSERT( all(0.0_r8 < this%w) )
-    ASSERT( all(this%w <= 1.0_r8) )
+    call distribute(this%w, w)
+    deallocate(w)
 
-    !! Grow patch-based amb_vf into face-based version
-    if (allocated(this%amb_vf)) then
-      ASSERT( size(this%amb_vf) == this%npatch )
-      allocate(amb_vf_face(this%nface))
-      amb_vf_face = this%amb_vf( this%f2p_map )
-      call move_alloc(amb_vf_face, this%amb_vf)
+    !! Expand the patch-based ambient view factors into the face-based version
+    this%has_ambient = allocated(this%vf%amb_vf)
+    allocate(this%amb_vf(this%nface))
+    if (this%has_ambient) then
+      this%amb_vf(:) = this%vf%amb_vf(this%f2p_map)
+    else
+      this%amb_vf = 0
     end if
 
-  end subroutine load_view_factors_VFP_PATCH
+  end subroutine init
 
-
-  !! Computes the global product PHI*x, where x is a local vector.
-  subroutine phi_x_VFP_PATCH (this, lhs, x)
+  !! Computes the matrix-vector product Y = PHI*X.
+  subroutine matvec(this, x, y)
 
     class(vf_matrix_patch), intent(in) :: this
-    real(r8), intent(out) :: lhs(:)
-    real(r8), intent(in) :: x(:)
+    real(r8), intent(in)  :: x(:)
+    real(r8), intent(out) :: y(:)
 
-    real(r8) :: xp(this%npatch)             ! Local patch-based x
-    real(r8) :: global_xp(this%npatch_tot)  ! Global patch-based x
-    real(r8) :: lhsp(this%npatch)           ! Local patch-based result
-    integer :: i, j
+    integer :: j
+    real(r8) :: xp(this%vf%npatch), yp(this%vf%npatch)
 
-    ASSERT(size(lhs) == this%nface)
     ASSERT(size(x) == this%nface)
+    ASSERT(size(y) == this%nface)
 
-    !! Compute intermediate patch-based result
-    xp = 0.0_r8
-    do i = 1, this%nface
-      xp(this%f2p_map(i)) = xp(this%f2p_map(i)) + this%w(i)*x(i)
+    !! Restrict to patch-based space
+    xp = 0
+    do j = 1, this%nface
+      xp(this%f2p_map(j)) = xp(this%f2p_map(j)) + this%w(j)*x(j)
     end do
 
-    call collate (global_xp, xp)
-    call broadcast (global_xp)
+    call this%vf%matvec(xp, yp)
 
-    !! Compute patch-based mat-vec
-    lhsp = 0.0_r8
-    do i = 1, this%npatch
-      do j = this%ia(i), this%ia(i+1)-1
-        lhsp(i) = lhsp(i) + this%vf(j) * global_xp(this%ja(j))
-      end do
+    !! Interpolate to face-based space
+    do j = 1, this%nface
+      y(j) = yp(this%f2p_map(j))
     end do
 
-    !! Compute face-based result
-    lhs = lhsp( this%f2p_map )
+  end subroutine matvec
 
-  end subroutine phi_x_VFP_PATCH
+  !! Given a coloring vector COLOR, this auxiliary routine computes a mapping
+  !! (or renumbering) that makes the coloring a blocked coloring, and the sizes
+  !! of the resulting blocks.  That is, the array COLOR(MAP(:)) is such that
+  !! the first BSIZE(1) elements are color 1, the next BSIZE(2) elements are
+  !! color 2, and so on.  The mapping preserves the relative order of elements
+  !! having the same color.
+
+  subroutine blocked_coloring_map(color, bsize, map)
+
+    use permutations
+
+    integer, intent(in)  :: color(:)  ! coloring
+    integer, intent(out) :: bsize(:)  ! block size
+    integer, intent(out) :: map(:)    ! mapping permutation
+
+    integer :: j, n, next(size(bsize))
+
+    ASSERT(size(color) == size(map))
+    ASSERT(minval(color) >= 1 .and. maxval(color) <= size(bsize))
+
+    !! Compute the block size of each color.
+    bsize = 0
+    do j = 1, size(color)
+      bsize(color(j)) = bsize(color(j)) + 1
+    end do
+
+    !! NEXT(j) is the next free index for block j.
+    next(1) = 1
+    do n = 2, size(bsize)
+      next(n) = next(n-1) + bsize(n-1)
+    end do
+
+    !! Generate the mapping (new-to-old)
+    do j = 1, size(color)
+      map(next(color(j))) = j
+      next(color(j)) = next(color(j)) + 1
+    end do
+    ASSERT(is_perm(map))
+
+  end subroutine blocked_coloring_map
 
 end module vf_matrix_patch_type

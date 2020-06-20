@@ -1,11 +1,11 @@
 !!
 !! VF_MATRIX_FACE_TYPE
 !!
-!! A concrete implementation for the abstract base class VF_MATRIX.
+!! A concrete implementation for the abstract base class VF_MATRIX_CONSTANT.
 !! This implementation operates on face-based view factor data.
 !!
-!! David Neill-Asanza <dhna@lanl.gov>
-!! 18 July 2019
+!! David Neill-Asanza <dhna@lanl.gov>, July 2019
+!! Neil N. Carlson <nnc@lanl.gov>, refactoring June 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -13,128 +13,72 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-#include "f90_assert.fpp"
-
 module vf_matrix_face_type
 
-  use kinds, only: r8
-  use vf_matrix_class, only: vf_matrix
-  use rad_encl_type
-  use rad_encl_file_type
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use vf_matrix_constant_class
+  use vf_data_type
   use parallel_communication
   implicit none
+  private
 
-  type, extends(vf_matrix), public :: vf_matrix_face
-    contains
-      procedure, public  :: init => init_VFM_FACE
-      procedure, public  :: partition_ER_faces => partition_ER_faces_VFM_FACE
-      procedure, public  :: load_view_factors => load_view_factors_VFM_FACE
-      procedure, public  :: phi_x => phi_x_VFM_FACE
+  type, extends(vf_matrix_constant), public :: vf_matrix_face
+    private
+    type(vf_data) :: vf
+    ! In parent classes:
+    ! integer, public :: nface, nface_tot
+    ! integer, allocatable :: face_map(:)
+    ! real, allocatable, public :: amb_vf(:)
+    ! logical :: has_ambient
+  contains
+    procedure :: init
+    procedure :: matvec
   end type
 
 contains
 
+  subroutine init(this, file)
 
-  !! Initialize VF_MATRIX_FACE and define a distribution for the matrix rows.
-  subroutine init_VFM_FACE (this, file)
-
-    use,intrinsic :: iso_c_binding, only: c_size_t
+    use rad_encl_file_type
 
     class(vf_matrix_face), intent(out) :: this
-    type(rad_encl_file), intent(in) :: file
+    type(rad_encl_file), intent(in) :: file  ! only referenced on IOP
 
-    integer :: nface_tot, npatch_tot
-    integer(c_size_t) :: nnonz
+    integer :: j, n, offset, bsize(nPE)
 
-    if (is_IOP) call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
+    call this%vf%init(file)
 
-    call broadcast(nface_tot)
-    this%nface_tot = nface_tot
+    if (is_IOP) call file%get_patch_dims(this%nface_tot, n)
+    call broadcast(this%nface_tot)
 
-    !! Partition matrix rows in blocks
-    this%nface = this%nface_tot/nPE
-    if (this_PE <= modulo(this%nface_tot,nPE)) this%nface = 1 + this%nface
-
-  end subroutine init_VFM_FACE
-
-
-  !! Partitions the ER mesh according to the distribution of matrix rows
-  !! defined by THIS%INIT.
-  subroutine partition_ER_faces_VFM_FACE (this, color)
-
-    class(vf_matrix_face), intent(inout) :: this
-    integer, allocatable, intent(out) :: color(:)
-
-    integer, allocatable :: color_l(:)
-    integer :: n
-
-    !! PARTITION ER FACES. For now we do something really simple and just
-    !! equidistribute the faces, dividing up the faces like a salami (no face
-    !! reordering).  What we really want to do is partition the faces so that
-    !! nonzeros of the (row) distributed view factor matrix are approximately
-    !! equidistributed (computational cost) balanced against the communication
-    !! cost of moving data between the HC and ER partitions.
-
-    !! Block coloring of the enclosure faces.
-    n = merge(this%nface_tot, 0, is_IOP)
-    allocate(color(n), color_l(this%nface))
-    color_l = this_PE
-    call collate (color, color_l)
-    deallocate(color_l)
-
-  end subroutine partition_ER_faces_VFM_FACE
-
-
-  !! Read and distribute the VF matrix data according to the distribution
-  !! defined in THIS%INIT.
-  subroutine load_view_factors_VFM_FACE (this, file, encl)
-
-    class(vf_matrix_face), intent(inout) :: this
-    type(rad_encl_file), intent(in) :: file
-    type(rad_encl), intent(in) :: encl
-
-    logical :: renumbered
-    integer :: i, offset
-
-    !! The current implementation of THIS%DISTRIBUTE_VF_ROWS doesn't allow
-    !! renumbering the enclosure faces, so check that no renumbering has
-    !! occurred.  This should be the case if COLOR is a blocked coloring.
-    renumbered = .false.
-    offset = encl%face_ip%first_index() - 1
-    do i = 1, encl%nface_onP
-      if (encl%face_map(i) /= i+offset) renumbered = .true.
+    !! Distributed face renumbering (new-to-old face map) subordinate to the
+    !! block-row partitioning of the view factor matrix. This is the identity!
+    this%nface = this%vf%npatch
+    allocate(this%face_map(this%nface))
+    call collate(bsize, this%nface)
+    call broadcast(bsize)
+    offset = sum(bsize(:this_PE-1))
+    do j = 1, this%nface
+      this%face_map(j) = offset + j
     end do
-    INSIST(.not.global_any(renumbered))
 
-    call this%distribute_vf_rows(file, this%nface, this%nface_tot)
+    !! Move the ambient view factors to the public vector
+    this%has_ambient = allocated(this%vf%amb_vf)
+    if (this%has_ambient) then
+      call move_alloc(this%vf%amb_vf, this%amb_vf)
+    else
+      allocate(this%amb_vf(this%nface))
+      this%amb_vf = 0
+    end if
 
-  end subroutine load_view_factors_VFM_FACE
+  end subroutine init
 
-
-  !! Computes the global product PHI*x, where x is a local vector.
-  subroutine phi_x_VFM_FACE (this, lhs, x)
-
+  !! Computes the matrix-vector product Y = PHI*X.
+  subroutine matvec(this, x, y)
     class(vf_matrix_face), intent(in) :: this
-    real(r8), intent(out) :: lhs(:)
-    real(r8), intent(in) :: x(:)
-
-    real(r8) :: global_x(this%nface_tot)
-    integer :: i, j
-
-    ASSERT(size(lhs) == this%nface)
-    ASSERT(size(x) == this%nface)
-
-    call collate (global_x, x)
-    call broadcast (global_x)
-
-    lhs = 0.0_r8
-    do i = 1, this%nface
-      do j = this%ia(i), this%ia(i+1)-1
-        lhs(i) = lhs(i) + this%vf(j) * global_x(this%ja(j))
-      end do
-    end do
-
-  end subroutine phi_x_VFM_FACE
+    real(r8), intent(in)  :: x(:)
+    real(r8), intent(out) :: y(:)
+    call this%vf%matvec(x, y)
+  end subroutine
 
 end module vf_matrix_face_type

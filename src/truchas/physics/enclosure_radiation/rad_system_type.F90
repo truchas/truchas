@@ -68,7 +68,7 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(f) == this%nface)
 
-    call this%vf_mat%phi_x(f, q)
+    call this%vf_mat%matvec(q, f)
     f = eps*this%sigma*((t-this%t0)**4) - eps*f
 
     if (this%vf_mat%has_ambient) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%vf_mat%amb_vf
@@ -94,7 +94,7 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(r) == this%nface)
 
-    call this%vf_mat%phi_x(r, q)
+    call this%vf_mat%matvec(q, r)
     r = eps*this%sigma*((t-this%t0)**4) - q + (1.0_r8-eps)*r
 
     if (this%vf_mat%has_ambient) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf_mat%amb_vf
@@ -112,7 +112,7 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call this%vf_mat%phi_x(temp, z)
+    call this%vf_mat%matvec(z, temp)
     z = eps*temp
 
   end subroutine matvec1
@@ -233,7 +233,7 @@ contains
     do
 
       !! Compute the residual of the current iterate.
-      call this%vf_mat%phi_x(r, q)
+      call this%vf_mat%matvec(q, r)
       r = rhs - q + (1.0_r8-eps)*r
 
       if (numitr > 0) then
@@ -297,7 +297,7 @@ contains
     do n = 2, numitr
 
       !! Compute the residual of the current iterate.
-      call this%vf_mat%phi_x(r, q)
+      call this%vf_mat%matvec(q, r)
       r = rhs - q + (1.0_r8-eps)*r
 
       if (n == 2) then ! starting values for the update parameters
@@ -335,7 +335,7 @@ contains
     rhs = z
 
     do n = 2, numitr
-      call this%vf_mat%phi_x(temp, z)
+      call this%vf_mat%matvec(z, temp)
       z = rhs + (1.0_r8-eps)*temp
     end do
 
@@ -410,7 +410,7 @@ contains
       q = p / s
 
       !! Matrix-vector product.
-      call this%vf_mat%phi_x(p, q)
+      call this%vf_mat%matvec(q, p)
       p = shift*q + (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.
@@ -454,7 +454,7 @@ contains
       q = p / s
 
       !! Matrix-vector product.
-      call this%vf_mat%phi_x(p, q)
+      call this%vf_mat%matvec(q, p)
       p = q - (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.

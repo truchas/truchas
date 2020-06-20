@@ -17,7 +17,8 @@ module rad_problem_type
   use parallel_communication
   use parallel_permutations
   use rad_solver_type
-  use vf_matrix_class
+  !use vf_matrix_class
+  use vf_matrix_constant_class
   use rad_encl_type
   implicit none
   private
@@ -37,7 +38,8 @@ module rad_problem_type
     integer :: pc_numitr = 1
     integer :: pc_method = PC_JACOBI
     type(rad_encl), allocatable :: encl      ! radiation enclosure surface
-    class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
+    !class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
+    class(vf_matrix_constant), allocatable :: vf_mat  ! view factor matrix
   contains
     procedure :: init
     procedure :: residual
@@ -114,12 +116,11 @@ contains
     block
       use vf_matrix_face_type
       use vf_matrix_patch_type
-      integer, allocatable :: color(:)
       logical :: patches
 
       if (is_IOP) call file%open_ro(filename)
 
-      !! Choose correct VF matrix class
+      !! Initialize the appropriate VF_MATRIX object
       if (is_IOP) patches = file%has_patches()
       call broadcast(patches)
       if (patches) then
@@ -127,21 +128,14 @@ contains
       else
         allocate(vf_matrix_face :: this%vf_mat)
       end if
-
-      !! Partition VF matrix rows.
       call this%vf_mat%init(file)
-
-      !! Get enclosure face partition from VF matrix row distribution.
-      call this%vf_mat%partition_ER_faces(color)
 
       !! Load the distributed enclosure surface.
       allocate(this%encl)
       call ERI_get_coord_scale_factor(name, csf)
-      call this%encl%init(file, color, csf)
+      call this%encl%init(file, this%vf_mat%face_map, csf)
       this%nface_er = this%encl%nface_onP
 
-      !! Load the distributed view factor matrix.
-      call this%vf_mat%load_view_factors(file, this%encl)
       ASSERT(this%nface_er == this%vf_mat%nface)
       ASSERT(this%vf_mat%nface_tot == global_sum(this%nface_hc))
 
@@ -151,7 +145,7 @@ contains
     end block
 
     !! Create the parallel permutations between the HC and ER partitions.
-    call create_par_perm (this%ge_faces, this%encl%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
+    call create_par_perm (this%ge_faces, this%vf_mat%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
     INSIST(defined(this%perm_er_to_hc))
     INSIST(defined(this%perm_hc_to_er))
 
