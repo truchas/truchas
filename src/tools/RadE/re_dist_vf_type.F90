@@ -53,9 +53,12 @@ module re_dist_vf_type
     integer,  allocatable :: ja(:)    ! column indices for the matrix elements in VAL
     integer,  allocatable :: ia(:)    ! start index in JA and VAL for the rows
     real(r8), allocatable :: area(:)  ! patch areas
+    real(r8), allocatable :: w(:)     ! ratio of face area to patch area (face weights)
     real,     allocatable :: ambient(:)  ! ambient view factors
     logical :: has_ambient
+    !TODO: necessary?
     logical :: has_area
+    logical :: has_weight
   end type
 
 contains
@@ -84,6 +87,7 @@ contains
       call file%put_vf_rows(this%val, this%ja, start=1_i8)
       if (this%has_ambient) call file%put_ambient(this%ambient)
       if (this%has_area) call file%put_area(this%area)
+      if (this%has_weight) call file%put_face_weight(this%w)
       call file%close
 
     else
@@ -105,6 +109,7 @@ contains
         call file%put_vf_rowcount(rowcount)
         if (this%has_ambient) call file%put_ambient(ambient)
         if (this%has_area) call file%put_area(this%area)
+        if (this%has_weight) call file%put_face_weight(this%w)
       end if
       deallocate(rowcount, ambient)
 
@@ -155,6 +160,7 @@ contains
 
       this%has_ambient = file%has_ambient()
       this%has_area = file%has_area()
+      this%has_weight = file%has_face_weight()
       this%npatch = npatch_tot
       this%offset = 0
       this%npatch_tot = npatch_tot
@@ -163,6 +169,12 @@ contains
       if (this%has_area) then
         allocate(this%area(npatch_tot))
         call file%get_area(this%area)
+      end if
+
+      !! Read face weights
+      if (this%has_weight) then
+        allocate(this%w(nface_tot))
+        call file%get_face_weight(this%w)
       end if
 
       !! Read VF matrix
@@ -190,11 +202,13 @@ contains
         call file%get_vf_dims(nface_tot, npatch_tot, nnonz)
         this%has_ambient = file%has_ambient()
         this%has_area = file%has_area()
+        this%has_weight = file%has_face_weight()
       end if
 
       call scl_bcast(npatch_tot)
       call scl_bcast(this%has_ambient)
       call scl_bcast(this%has_area)
+      call scl_bcast(this%has_weight)
 
       this%npatch_tot = npatch_tot
 
@@ -203,6 +217,15 @@ contains
         allocate(this%area(npatch_tot))
         if (my_rank == 1) call file%get_area(this%area)
         call scl_bcast(this%area)
+      end if
+
+      !TODO: initialize weight to 1s for faces?
+      !TODO: only rank 1 needs this. ok to not distribute?
+      !! Read and distribute the face weights
+      if (this%has_weight .and. my_rank==1) then
+        allocate(this%w(nface_tot))
+        call file%get_face_weight(this%w)
+        ! call scl_bcast(this%w)
       end if
 
       !! Divvy up the rows.

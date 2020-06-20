@@ -38,7 +38,6 @@ module vf_matrix_patch_type
       procedure, public  :: partition_ER_faces => partition_ER_faces_VFP_PATCH
       procedure, public  :: load_view_factors => load_view_factors_VFP_PATCH
       procedure, public  :: phi_x => phi_x_VFP_PATCH
-      procedure, private :: get_face_weights
   end type
 
 contains
@@ -109,6 +108,7 @@ contains
     type(rad_encl), intent(in) :: encl
 
     real, allocatable :: amb_vf_face(:)
+    real(r8), allocatable :: w_col(:)       ! collated face weights
     integer, allocatable :: f2p_map_col(:)  ! collated map from local faces to global patches
     integer, allocatable :: fidx_col(:)     ! collated map from local faces to global faces
     integer :: n, bsize(nPE), patch_offset
@@ -117,10 +117,10 @@ contains
 
     this%nface = encl%nface_onP
 
-    !! Get face to patch map
     n = merge(this%nface_tot, 0, is_IOP)
-    allocate(f2p_map_col(n), fidx_col(n))
+    allocate(f2p_map_col(n), fidx_col(n), w_col(n))
 
+    !! Get face to patch map
     call collate (fidx_col, encl%face_map)
     if (is_IOP) f2p_map_col = this%f2p_map_g(fidx_col)
 
@@ -135,8 +135,16 @@ contains
     ASSERT( all(1 <= this%f2p_map) )
     ASSERT( all(this%f2p_map <= this%npatch) )
 
-    !! Compute face weights
-    this%w = this%get_face_weights(encl)
+    !! Get face weights
+    if (is_IOP) then
+      ASSERT( file%has_face_weight() )
+      call file%get_face_weight(w_col)
+      w_col = w_col(fidx_col)
+    end if
+    allocate(this%w(this%nface))
+    call distribute (this%w, w_col)
+    ASSERT( all(0.0_r8 < this%w) )
+    ASSERT( all(this%w <= 1.0_r8) )
 
     !! Grow patch-based amb_vf into face-based version
     if (allocated(this%amb_vf)) then
@@ -185,40 +193,5 @@ contains
     lhs = lhsp( this%f2p_map )
 
   end subroutine phi_x_VFP_PATCH
-
-
-  !! Computes the fraction of total patch area occupied by each face.
-  function get_face_weights(this, encl) result(ret)
-
-    use cell_geometry, only: face_normal, vector_length
-
-    class(vf_matrix_patch), intent(in) :: this
-    type(rad_encl), intent(in) :: encl
-    real(r8), allocatable :: ret(:)
-
-    integer :: i
-    real(r8), allocatable :: f_area(:), p_area(:)
-
-    !! Get face and patch areas
-    allocate(f_area(this%nface),p_area(this%npatch))
-    p_area = 0.0_r8
-    do i = 1, this%nface
-      associate(face_nodes => encl%fnode(encl%xface(i):encl%xface(i+1)-1))
-        f_area(i) = vector_length( face_normal(encl%coord(:,face_nodes)) )
-        p_area( this%f2p_map(i) ) = p_area( this%f2p_map(i) ) + f_area(i)
-      end associate
-    end do
-
-    !! Compute weights
-    allocate(ret(this%nface))
-    do i = 1, this%nface
-      ret(i) = f_area(i) / p_area( this%f2p_map(i) )
-    end do
-    ASSERT( all(0.0_r8 < ret) )
-    ASSERT( all(ret <= 1.0_r8) )
-
-    deallocate(f_area, p_area)
-
-  end function get_face_weights
 
 end module vf_matrix_patch_type

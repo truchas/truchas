@@ -137,5 +137,4 @@ contains
 
   end subroutine phi_x_VFM_FACE
 
-
 end module vf_matrix_face_type

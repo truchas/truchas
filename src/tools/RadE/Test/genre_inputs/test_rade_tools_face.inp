@@ -1,9 +1,8 @@
 &ENCLOSURE
-  name = 'exterior'
-  mesh_file = 'vfrad1-patch.gen'
-  side_set_ids = 3
-  ignore_block_ids = 2
-  symmetries = 'mirrory', 'rotz3', 'mirrorz'
+  name = 'interior_face'
+  mesh_file = 'mesh.g'
+  side_set_ids = 2
+  symmetries = 'mirrory', 'rotz4', 'mirrorz'
 /
 
 &CHAPARRAL
@@ -17,11 +16,4 @@
   max_subdivisions    = 20
   smoothing_tolerance = 1.0e-8
   smoothing_max_iter  = 100
-/
-
-&PATCHES
-  patch_algorithm = 'PAVE'
-  verbosity_level = 3
-  pave_merge_level = 0
-  pave_random_seed = 67813317
 /

@@ -97,6 +97,8 @@ program vizre
           patch_var = unpack_dvf_col(dvf, col(n))
           if (is_IOP) then
               call ep%patch_to_face_array(patch_var, face_var)
+              !! If patch-based, scale column by face weight
+              if (ep%has_patches) face_var = face_var * dvf%w(col(n))
               call gmv_write_face_var(e, face_var, 'col'//i_to_c(col(n)), sym)
           end if
           deallocate(patch_var)

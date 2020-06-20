@@ -58,7 +58,7 @@ contains
 
 
   !! Initialize a VF_DIFF type for testing. The internal matrices A and B are
-  !! patch and face based, respectively. The VF_DIFF data is chosen so that that
+  !! patch and face based, respectively. The VF_DIFF data is chosen so that
   !! all computations are exact.
   subroutine init_data (vfd)
 
@@ -109,21 +109,10 @@ contains
     !! Initialize VF_DIFF !!
     !!!!!!!!!!!!!!!!!!!!!!!!
     vfd%nface_tot = NFACE
-    allocate(vfd%farea(NFACE))
-    vfd%farea = farea
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Initialize patch matrix A !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    allocate(vfd%areaA(NPATCH))
-    vfd%areaA = parea
-
-    !! Face weights
-    allocate(vfd%wA(NFACE))
-    do i = 1, NFACE
-      vfd%wA(i) = farea(i) / parea(f2p_map(i))
-    end do
-
     !! Enclosure patches component
     vfd%epA%npatch = NPATCH
     vfd%epA%nface  = NFACE
@@ -138,6 +127,12 @@ contains
     vfd%A%has_area = .true.
     allocate(vfd%A%area(NPATCH))
     vfd%A%area = parea
+
+    !! Face weights
+    allocate(vfd%A%w(NFACE))
+    do i = 1, NFACE
+      vfd%A%w(i) = farea(i) / parea(f2p_map(i))
+    end do
 
     !! Generate IA indexing array
     allocate(vfd%A%ia(NPATCH+1))
@@ -164,12 +159,6 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Initialize face matrix B !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    allocate(vfd%areaB(NFACE))
-    vfd%areaB = farea
-
-    !! Face weights
-    allocate(vfd%wB(NFACE), source=1.0_r8)
-
     !! Enclosure patches component
     vfd%epB%npatch = NFACE
     vfd%epB%nface  = NFACE
@@ -184,6 +173,9 @@ contains
     vfd%B%has_area = .true.
     allocate(vfd%B%area(NFACE))
     vfd%B%area = farea
+
+    !! Face weights
+    allocate(vfd%B%w(NFACE), source=1.0_r8)
 
     !! Generate IB indexing array
     allocate(vfd%B%ia(NFACE+1))
