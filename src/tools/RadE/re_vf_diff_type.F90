@@ -141,18 +141,13 @@ contains
 
       ASSERT(all(dvf%area > 0.0_r8))
 
-      !TODO: should weight of 1.0 already be initialized in DVF?
-      !      or should it be initialized here?
-      !
-      !  What about the face area?
-
       !! Get face weights.
       if (.not. dvf%has_weight) then
+        dvf%has_weight = .true.
         !! Face weights are read by a patch-based dvf, so it MUST be face-based.
         INSIST(.not. ep%has_patches)
         ASSERT(.not. allocated(dvf%w))
-        allocate(dvf%w(ep%nface))
-        dvf%w = 1.0_r8
+        allocate(dvf%w(ep%nface), source=1.0_r8)
       end if
 
       ASSERT(all(dvf%w > 0.0_r8))
@@ -162,8 +157,6 @@ contains
   end subroutine init_VF_fields
 
 
-  !TODO: refactor this and similar computation in DVF?
-  !       - dvf is sparse, but this is dense (full row)
   !! Converts VF row n into VF column n using reciprocity
   subroutine row_to_col(val, n, area)
 

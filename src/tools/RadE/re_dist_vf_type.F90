@@ -56,7 +56,6 @@ module re_dist_vf_type
     real(r8), allocatable :: w(:)     ! ratio of face area to patch area (face weights)
     real,     allocatable :: ambient(:)  ! ambient view factors
     logical :: has_ambient
-    !TODO: necessary?
     logical :: has_area
     logical :: has_weight
   end type
@@ -219,13 +218,10 @@ contains
         call scl_bcast(this%area)
       end if
 
-      !TODO: initialize weight to 1s for faces?
-      !TODO: only rank 1 needs this. ok to not distribute?
-      !! Read and distribute the face weights
+      !! Read the face weights. Only needed on rank 1.
       if (this%has_weight .and. my_rank==1) then
         allocate(this%w(nface_tot))
         call file%get_face_weight(this%w)
-        ! call scl_bcast(this%w)
       end if
 
       !! Divvy up the rows.

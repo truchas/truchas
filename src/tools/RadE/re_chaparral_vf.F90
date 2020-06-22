@@ -333,8 +333,8 @@ contains
     npatch  = npatch_tot/nproc
     if (my_rank <= modulo(e%nface,nproc)) nfacets = nfacets + 1
     if (my_rank <= modulo(npatch_tot,nproc)) npatch = npatch + 1
-    ASSERT( scl_global_sum(nfacets) == e%nface )
-    ASSERT( scl_global_sum(npatch) == npatch_tot )
+    INSIST( scl_global_sum(nfacets) == e%nface )
+    INSIST( scl_global_sum(npatch) == npatch_tot )
 
     !! Assign virtual surface patch to last rank
     npatch_chap = npatch
@@ -470,7 +470,6 @@ contains
     allocate(parea(npatch_tot_chap), evf%area(n))
     call VF_GetMatrixAreas(parea)
     if (my_rank == 1) evf%area = parea(1:npatch_tot)
-    deallocate(parea)
 
     !! Compute face weights
     evf%has_weight = ep%has_patches
@@ -478,17 +477,23 @@ contains
     allocate(farea(n), evf%w(n))
     if (n > 0) then
       call compute_face_area(e%xface, e%fnode, e%x, farea)
+      !! Check face areas match patch areas computed by Chaparral.
+      parea = 0.0_r8
       do j = 1, e%nface
-        !TODO: check face areas match patch areas?
-        !! We use the patch areas computed by Chaparral. These should almost exactly
-        !! match the sum of the face areas, but we don't check that explicitly.
+        parea(f2p_map_g(j)) = parea(f2p_map_g(j)) + farea(j)
+      end do
+      do j = 1, npatch_tot
+        INSIST( abs(parea(j)-evf%area(j)) <= 1.0D-14 )
+      end do
+      !! Compute face weights
+      do j = 1, e%nface
         evf%w(j) = farea(j) / evf%area(f2p_map_g(j))
         !! Face weight cannot exceed 1
-        ASSERT( evf%w(j) <= 1.0_r8 + epsilon(0.0_r8) )
+        INSIST( evf%w(j) <= 1.0_r8 + 1.0D-14 )
         if (evf%w(j) > 1.0_r8) evf%w(j) = 1.0_r8
       end do
-      ASSERT( all(0.0_r8 < evf%w) )
-      ASSERT( all(evf%w <= 1.0_r8) )
+      INSIST( all(0.0_r8 < evf%w) )
+      INSIST( all(evf%w <= 1.0_r8) )
     end if
 
     !call VF_ResetTopology(handle)
