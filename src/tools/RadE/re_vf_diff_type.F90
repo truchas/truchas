@@ -105,7 +105,7 @@ contains
     integer :: i
 
     !! Read view factor data
-    call read_dist_vf(dvf, path)
+    call dvf%read(path)
 
     !! Read patch data
     call ep%read(path)
@@ -202,8 +202,8 @@ contains
       !! Get unpacked patch-based rows on rank 1
       pA = this%epA%f2p_map(i)
       pB = this%epB%f2p_map(i)
-      pvalA = unpack_dvf_row(this%A, pA)
-      pvalB = unpack_dvf_row(this%B, pB)
+      pvalA = this%A%unpack_row(pA)
+      pvalB = this%B%unpack_row(pB)
 
       if (my_rank == 1) then
         !! Compute face-based rows
