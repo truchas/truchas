@@ -288,9 +288,9 @@ contains
       do j = 1, size(fi)
         k = fi(j)
         if (btest(this%mesh%cfpar(i),pos=j)) then
-          face_normal(:,j) = -this%mesh%normal(:,k)/this%mesh%area(k)
+          face_normal(:,j) = -this%mesh%unit_normal(:,k)
         else
-          face_normal(:,j) = this%mesh%normal(:,k)/this%mesh%area(k)
+          face_normal(:,j) = this%mesh%unit_normal(:,k)
         end if
       end do
 
