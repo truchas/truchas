@@ -89,7 +89,7 @@ contains
     allocate(ckind(nx(1),nx(2)))
     do j = 1, nx(2)
       do i = 1, nx(1)
-        call random_number(r)
+        r = lcg()
         ckind(i,j) = merge(1, 0, r < ptri)
       end do
     end do
@@ -240,7 +240,7 @@ contains
         mask(2) = (j > 1 .and. j <= nx(2))
         do i = 1, nx(1)+1
           mask(1) = (i > 1 .and. i <= nx(1))
-          call random_number(dx)  ! in [0,1)
+          dx = lcg()  ! in [0,1)
           dx = eps*d*(2*dx - 1)     ! in [-eps, eps)*d
           n = node_index(i,j)
           mesh%coord(:,n) = mesh%coord(:,n) + merge(dx, 0.0_r8, mask)
@@ -1096,5 +1096,33 @@ contains
     deallocate(cell_set_mask)
 
   end subroutine init_cell_set_data
+
+  !! Fixed random-number generator from src/tools/RadE/patching/patching_tools.F90
+  !! by David Neill-Asanza
+  !! SOURCE: https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gfortran/RANDOM_005fSEED.html
+  !! This simple PRNG is seeded by a single integer.  This PRNG is used to
+  !! generate a list of numbers with "high entropy" that will serve as the
+  !! actual seed for RANDOM_SEED.
+    real(r8) function lcg(seed)
+
+      use,intrinsic :: iso_fortran_env, only: i8 => int64
+
+      integer, intent(in), optional :: seed
+      integer(i8), save :: s = 0
+      integer(i8) :: lcgi
+
+      if (present(seed)) s = int(seed, i8)
+
+      if (s == 0) then
+         s = 104729
+      else
+         s = mod(s, 4294967296_i8)
+      end if
+      s = mod(s * 279470273_i8, 4294967291_i8)
+      lcgi = int(mod(s, int(huge(0), i8)), kind(0))
+
+      lcg = dble(lcgi) / dble(huge(0))
+
+    end function lcg
 
 end module unstr_2d_mesh_factory
