@@ -24,12 +24,12 @@ program vof_vortex
 
   character(len=100) :: inputfile
   integer  :: nx(2), tsmax, nmat, nvtrack
-  real(r8) :: xmin(2), xmax(2), dt, r
+  real(r8) :: xmin(2), xmax(2), dxeps, ptri, dt, r
   type(unstr_2d_mesh), pointer :: mesh
 
   integer :: i, j, ngp, test_run, nelem, gncell
   integer, allocatable :: global_xcell(:)
-  real(r8) :: t_start, t_end, coord(2)
+  real(r8) :: t_start, t_end, coord(2), vof_err
   real(r8), allocatable :: vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:), myproc(:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
   real(r8), allocatable :: gp_coord(:,:), gp_weight(:)
@@ -49,10 +49,10 @@ program vof_vortex
 
   !! Read input file "input_vortex.txt"
   inputfile = 'input_vortex.txt'
-  call readfile(inputfile, xmin, xmax, nx, tsmax, dt, nmat, nvtrack, test_run)
+  call readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack, test_run)
 
   !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx)
+  mesh => new_unstr_2d_mesh(xmin, xmax, nx, dxeps, ptri)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
   !! by default. But cell centroids and face centroids must be "requested".
@@ -148,7 +148,6 @@ program vof_vortex
     read(3,*) nelem
     if (nelem /= gncell) then
       call TLS_fatal('Number of mesh cells in test standard and current mesh do not match')
-      stop 1
     end if
 
     allocate(vof_std(nelem))
@@ -157,16 +156,11 @@ program vof_vortex
       read(3,*) i, vof_std(j)
     end do
 
+    vof_err = 0.0_r8
     do j = 1, nelem
-      if (dabs(vof_std(j)-global_vof(j)) > 1e-08_r8) then
-        write(*,*) j, vof_std(j), global_vof(j)
-        test_failure = .true.
-      end if
+      vof_err = max(vof_err, abs(vof_std(j)-global_vof(j)))
     end do
-    if (test_failure) then
-      call TLS_panic('VOF in test standard and current calculation do not match')
-      stop 1
-    end if
+    test_failure = vof_err > 1e-07_r8
 
     close(3)
   end if
@@ -175,6 +169,15 @@ program vof_vortex
   call pgslib_finalize
 
   call cpu_time(t_end)
+
+  if (test_run == 1 .and. is_iop) then
+    if (test_failure) then
+      write(*,*) "FAIL: VOF linf error=", vof_err, " (tol=1.00e-7)"
+      stop 1
+    else
+      write(*,*) "PASS: VOF linf error=", vof_err, " (tol=1.00e-7)"
+    end if
+  end if
 
   write(*,*) "Runtime: ", t_end-t_start
 
