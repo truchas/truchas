@@ -1,3 +1,5 @@
+#include "f90_assert.fpp"
+
 module gaussian_quadrature_vofinit
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -6,6 +8,7 @@ module gaussian_quadrature_vofinit
 
 contains
 
+  ! Gaussian quadrature for quadrilaterial elements
   subroutine quadrature_qua4(np, gp_coord, gp_weight)
 
     integer, intent(in) :: np
@@ -149,10 +152,101 @@ contains
 
   end subroutine quadrature_qua4
 
+  ! Gaussian quadrature for triangular elements
+  subroutine quadrature_tri3(np, gp_coord, gp_weight)
+
+    integer, intent(in) :: np
+    real(r8), intent(out) :: gp_coord(:,:), gp_weight(:)
+
+    real(r8) :: gp1, gp2, gp3, gp4, gp5, gp6, w0, w1
+
+    gp_coord = 0.0_r8
+    gp_weight = 0.0_r8
+
+    select case (np)
+    case (1)
+      gp_coord(1,1) = 1.0_r8/3.0_r8
+      gp_coord(2,1) = 1.0_r8/3.0_r8
+
+      gp_weight(1) = 1.0_r8
+
+    case (3)
+      w0 = 1.0_r8/3.0_r8
+
+      gp_coord(1,1) = 2.0_r8/3.0_r8
+      gp_coord(2,1) = 1.0_r8/6.0_r8
+      gp_coord(1,2) = 1.0_r8/6.0_r8
+      gp_coord(2,2) = 2.0_r8/3.0_r8
+      gp_coord(1,3) = 1.0_r8/6.0_r8
+      gp_coord(2,3) = 1.0_r8/6.0_r8
+
+      gp_weight(1) = w0
+      gp_weight(2) = w0
+      gp_weight(3) = w0
+
+    case (4)
+      w1 = 25.0_r8/48.0_r8;
+
+      gp_coord(1,1) = 1.0_r8/3.0_r8
+      gp_coord(2,1) = 1.0_r8/3.0_r8
+      gp_coord(1,2) = 1.0_r8/5.0_r8
+      gp_coord(2,2) = 1.0_r8/5.0_r8
+      gp_coord(1,3) = 3.0_r8/5.0_r8
+      gp_coord(2,3) = 1.0_r8/5.0_r8
+      gp_coord(1,4) = 1.0_r8/5.0_r8
+      gp_coord(2,4) = 3.0_r8/5.0_r8
+
+      gp_weight(1) = -27.0_r8/48.0_r8
+      gp_weight(2) = w1
+      gp_weight(3) = w1
+      gp_weight(4) = w1
+
+    case (6)
+
+      gp1 = 0.816847572980459_r8
+      gp2 = 0.091576213509771_r8
+      gp3 = 0.091576213509771_r8
+      gp4 = 0.108103018168070_r8
+      gp5 = 0.445948490915965_r8
+      gp6 = 0.445948490915965_r8
+      w0 = 0.054975870996713638_r8 * 2.0_r8
+      w1 = 0.1116907969117165_r8 * 2.0_r8
+
+      gp_coord(1,1) = gp1
+      gp_coord(2,1) = gp2
+      gp_coord(1,2) = gp2
+      gp_coord(2,2) = gp3
+      gp_coord(1,3) = gp3
+      gp_coord(2,3) = gp1
+      gp_coord(1,4) = gp4
+      gp_coord(2,4) = gp5
+      gp_coord(1,5) = gp5
+      gp_coord(2,5) = gp6
+      gp_coord(1,6) = gp6
+      gp_coord(2,6) = gp4
+
+      gp_weight(1) = w0
+      gp_weight(2) = w0
+      gp_weight(3) = w0
+      gp_weight(4) = w1
+      gp_weight(5) = w1
+      gp_weight(6) = w1
+
+    case default
+      call TLS_panic('incorrect number of quadrature points for tri3')
+      stop
+
+    end select
+
+  end subroutine quadrature_tri3
+
+  ! transform point from reference space to physical space for quadrilateral element
   subroutine transform_qua4(nodes, gp_coord, coord)
 
-    real(r8), intent(in) :: nodes(2,4), gp_coord(2)
+    real(r8), intent(in) :: nodes(:,:), gp_coord(2)
     real(r8), intent(out) :: coord(2)
+
+    INSIST(size(nodes,dim=1) == 2 .and. size(nodes,dim=2) == 4)
 
     coord = 0.0_r8
 
@@ -169,5 +263,23 @@ contains
     coord = coord * 0.25_r8
 
   end subroutine transform_qua4
+
+  ! transform point from reference space to physical space for triangular element
+  subroutine transform_tri3(nodes, gp_coord, coord)
+
+    real(r8), intent(in) :: nodes(:,:), gp_coord(2)
+    real(r8), intent(out) :: coord(2)
+
+    INSIST(size(nodes,dim=1) == 2 .and. size(nodes,dim=2) == 3)
+
+    coord = 0.0_r8
+
+    coord(1) = (nodes(1,2)-nodes(1,1)) * gp_coord(1) &
+      + (nodes(1,3)-nodes(1,1)) * gp_coord(2) + nodes(1,1)
+
+    coord(2) = (nodes(2,2)-nodes(2,1)) * gp_coord(1) &
+      + (nodes(2,3)-nodes(2,1)) * gp_coord(2) + nodes(2,1)
+
+  end subroutine transform_tri3
 
 end module gaussian_quadrature_vofinit

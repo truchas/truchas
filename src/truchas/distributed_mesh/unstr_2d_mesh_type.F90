@@ -109,6 +109,13 @@
 !!    normal - the rank-2 real array of oriented face areas; normal(:,j) is the
 !!        oriented area of face j.  Its shape is [2,nface].
 !!
+!!    unit-normal - the rank-2 real array of face unit-normals; unit_normal(:,j) is
+!!        the unit-normal of face j.  Its shape is [2,nface].
+!!        The unit-normal is required to be stored separately due to the fact that the
+!!        axis of symmetry has a zero area. This would reduce its area-weighted normal
+!!        to zero. The normal to the axis of symmetry is needed for axisymmetric
+!!        VOF calculations.
+!!
 
 #include "f90_assert.fpp"
 
@@ -133,6 +140,7 @@ module unstr_2d_mesh_type
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
     real(r8), allocatable :: normal(:,:)
+    real(r8), allocatable :: unit_normal(:,:)
     real(r8), allocatable :: cell_centroid(:,:)
     real(r8), allocatable :: face_centroid(:,:)
     !! Mesh interface links.
@@ -174,6 +182,8 @@ contains
       this%normal(1,j) = this%x(2,this%fnode(2,j)) - this%x(2,this%fnode(1,j))
       this%normal(2,j) = this%x(1,this%fnode(1,j)) - this%x(1,this%fnode(2,j))
       this%area(j) = vector_length(this%normal(:,j))
+      this%unit_normal(1,j) = this%normal(1,j) / this%area(j)
+      this%unit_normal(2,j) = this%normal(2,j) / this%area(j)
     end do
   end subroutine compute_geometry
 

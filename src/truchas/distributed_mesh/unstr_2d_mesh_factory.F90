@@ -446,7 +446,8 @@ contains
     call gather_boundary(this%node_ip, this%x)
 
     !! Initialize the mesh geometry data components.
-    allocate(this%volume(this%ncell), this%normal(2,this%nface), this%area(this%nface))
+    allocate(this%volume(this%ncell), this%normal(2,this%nface), &
+      this%unit_normal(2,this%nface), this%area(this%nface))
     call this%compute_geometry
 
   end function new_unstr_2d_mesh_aux

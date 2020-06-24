@@ -98,15 +98,15 @@ contains
           xf(:,1) = mesh%x(:,mesh%fnode(1,k))
           xf(:,2) = mesh%x(:,mesh%fnode(2,k))
           ! Jacobian of transformation to use the Gauss-divergence theorem
-          jacobian = face_area(xf) / mesh%area(k)
+          jacobian = face_area(xf)
           if (btest(mesh%cfpar(i),pos=j)) then ! true if normal points inward
             ! note the thae normal associate with the mesh object has already been scaled
             ! by the face area, so we do not do it again
-            gx(i) = gx(i) - mesh%normal(1,k)*w_face(k)*jacobian
-            gy(i) = gy(i) - mesh%normal(2,k)*w_face(k)*jacobian
+            gx(i) = gx(i) - mesh%unit_normal(1,k)*w_face(k)*jacobian
+            gy(i) = gy(i) - mesh%unit_normal(2,k)*w_face(k)*jacobian
           else
-            gx(i) = gx(i) + mesh%normal(1,k)*w_face(k)*jacobian
-            gy(i) = gy(i) + mesh%normal(2,k)*w_face(k)*jacobian
+            gx(i) = gx(i) + mesh%unit_normal(1,k)*w_face(k)*jacobian
+            gy(i) = gy(i) + mesh%unit_normal(2,k)*w_face(k)*jacobian
           end if
         end do
       end associate
