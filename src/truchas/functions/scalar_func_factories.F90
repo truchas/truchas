@@ -62,6 +62,10 @@ module scalar_func_factories
   public :: new_scalar_func
   public :: alloc_scalar_func
 
+  interface alloc_scalar_func
+    procedure alloc_scalar_func, get_scalar_func
+  end interface
+
 contains
 
   subroutine alloc_const_scalar_func(f, const)
@@ -314,5 +318,50 @@ contains
       end if
     end associate
   end function smooth_ramp
+
+  !! This subroutine gets the scalar function specified by the value of the
+  !! parameter PARAM in the parameter list PLIST. The parameter value is either
+  !! a real scalar, a character string that is the name of a function in the
+  !! function table, or a parameter list that defines the function.
+
+  subroutine get_scalar_func(plist, param, f, stat, errmsg)
+
+    use parameter_list_type
+    use scalar_func_table, only: lookup_func  !TODO: pass underlying object as argument
+
+    type(parameter_list), intent(inout) :: plist
+    character(*), intent(in) :: param
+    class(scalar_func), allocatable, intent(out) :: f
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    real(r8) :: const
+    character(:), allocatable :: fname
+    type(parameter_list), pointer :: func_params
+
+    if (plist%is_sublist(param)) then
+      func_params => plist%sublist(param)
+      call alloc_scalar_func(f, func_params)  !TODO: should return stat, errmsg
+    else if (plist%is_scalar(param)) then
+      call plist%get(param, fname, stat=stat)
+      if (stat == 0) then ! name of a function
+        call lookup_func(fname, f)
+        if (.not.allocated(f)) then
+          stat = 1
+          errmsg = 'unknown function name: ' // fname
+          return
+        end if
+      else  ! it must be a constant value
+        call plist%get(param, const, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        call alloc_const_scalar_func(f, const)
+      end if
+    else
+      stat = 1
+      errmsg = 'invalid parameter value'
+      return
+    end if
+
+  end subroutine get_scalar_func
 
 end module scalar_func_factories

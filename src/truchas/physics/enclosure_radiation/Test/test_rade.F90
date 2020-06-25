@@ -63,14 +63,13 @@ contains
   !! Read Truchas input, set Truchas state, and initialize mesh.
   subroutine init_state (mesh)
 
-    use ER_input
+    use enclosure_radiation_namelist, only: read_enclosure_radiation_namelists
     use mesh_manager
     use physical_constants, only: read_physical_constants
     use function_namelist, only: read_function_namelists
 
     type(unstr_mesh), pointer, intent(out) :: mesh
 
-    character(len=31), allocatable :: encl_name(:)
     character(:), allocatable :: indir
     integer, parameter :: lun = 10
     logical :: exists
@@ -85,8 +84,7 @@ contains
     call read_function_namelists (lun)
 
     !! Enclosure radiation namelists.
-    call ERI_read_enclosure_radiation (lun)
-    call ERI_read_enclosure_surface (lun)
+    call read_enclosure_radiation_namelists(lun)
 
     !! The mesh must be named 'main'
     call enable_mesh ('main', exists)
@@ -96,14 +94,6 @@ contains
     call init_mesh_manager ()
     mesh => unstr_mesh_ptr('main')
     INSIST(associated(mesh))
-
-    !! Check all enclosures are defined.
-    allocate(encl_name(ERI_num_enclosures()))
-    call ERI_get_names (encl_name)
-    ASSERT(any(encl_name == ENCL_EXT_FACE))
-    ASSERT(any(encl_name == ENCL_INT_FACE))
-    ASSERT(any(encl_name == ENCL_EXT_PATCH))
-    ASSERT(any(encl_name == ENCL_INT_PATCH))
 
   end subroutine init_state
 
@@ -131,7 +121,8 @@ contains
   !! Test that radiosity solver converges within given error tolerance
   subroutine test_converge (mesh, encl_name, hc_temp)
 
-    use ER_input, only: ERI_get_error_tolerance
+    use enclosure_radiation_namelist, only: params
+    use parameter_list_type
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     character(len=31), intent(in) :: encl_name
@@ -141,11 +132,13 @@ contains
     real(r8), allocatable :: temp(:), qrad(:), res(:)
     real(r8) :: res_norm, error, tol
     integer :: stat, numitr
+    type(parameter_list), pointer :: plist
 
     if (is_IOP) write(*,'(/,a)') 'Solving radiosity system "' // trim(encl_name) // '" ...'
-    call ERI_get_error_tolerance (encl_name, tol)
 
-    call prob%init (mesh, encl_name)
+    plist => params%sublist(encl_name)
+    call plist%get('error-tol', tol)
+    call prob%init (mesh, encl_name, plist)
 
     allocate(temp(prob%nface_hc), qrad(prob%nface_hc), res(prob%nface_hc))
 

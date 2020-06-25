@@ -20,11 +20,12 @@ contains
 
   function create_HTSD_solver (mmf, model, stat, errmsg) result (solver)
   
-    use ER_input
+    use enclosure_radiation_namelist, only: er_params => params
     use fluid_data_module,  only: fluid_flow
     use parallel_communication
     use diffusion_solver_data
     use truchas_env, only: output_file_name
+    use parameter_list_type
 
     type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
@@ -34,8 +35,11 @@ contains
     
     integer :: j, n, lun
     type(HTSD_solver_params) :: params
-    character(len=31), allocatable :: encl_name(:)
+    !character(len=31), allocatable :: encl_name(:)
     type(diff_precon_params) :: precon_params
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: plist
+    character(:), allocatable :: string
     
     stat = 0
     errmsg = ''
@@ -94,13 +98,15 @@ contains
         !TODO! Assumes model%ht%vf_rad_prob array was initialized under the same
         !TODO! loop so that that array and vfr_precon_coupling are in correspondence.
         !TODO! This is fragile and needs to be fixed.
-        n = ERI_num_enclosures()
-        allocate(encl_name(n), params%precon_params%htprecon_params%vfr_precon_coupling(n))
-        call ERI_get_names (encl_name)
+        piter = parameter_list_iterator(er_params)
+        n = piter%count()
+        allocate(params%precon_params%htprecon_params%vfr_precon_coupling(n))
         do j = 1, n
-          call ERI_get_precon_coupling_method (encl_name(j), params%precon_params%htprecon_params%vfr_precon_coupling(j))
+          plist => piter%sublist()
+          call plist%get('precon-coupling-method', string, default='BACKWARD GS')
+          params%precon_params%htprecon_params%vfr_precon_coupling(j) = string
+          call piter%next
         end do
-        deallocate(encl_name)
       end if
     end if
     if (associated(model%sd)) then

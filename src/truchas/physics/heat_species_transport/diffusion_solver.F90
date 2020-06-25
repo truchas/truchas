@@ -87,7 +87,7 @@ contains
     use thermal_bc_namelist
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
-    use ER_input
+    use enclosure_radiation_namelist
 
     integer, intent(in) :: lun
 
@@ -96,8 +96,7 @@ contains
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
 
-    call ERI_read_enclosure_radiation (lun)
-    call ERI_read_enclosure_surface (lun)
+    call read_enclosure_radiation_namelists(lun)
 
   end subroutine read_ds_namelists
 

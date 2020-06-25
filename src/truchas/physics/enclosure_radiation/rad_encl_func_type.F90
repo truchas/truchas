@@ -137,7 +137,7 @@ contains
     class(scalar_func), allocatable, intent(inout) :: f
     integer, intent(in) :: blockID(:)
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     !! Verify that THIS is in the correct state.
     INSIST(this%ngroup>=0 .and. allocated(this%tag))
@@ -158,12 +158,15 @@ contains
 
   subroutine set_tag_array (this, blockID, stat, errmsg)
 
+    use parallel_communication, only: global_count
+    use string_utilities, only: i_to_c
+
     type(rad_encl_func), intent(inout) :: this
     integer, intent(in) :: blockID(:)
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j
+    integer :: i, j, n
     logical :: mask(this%encl%nface), block_mask(size(this%encl%face_block_id))
 
     !! Create the mask corresponding to blockID.
@@ -174,7 +177,7 @@ contains
       end do
       if (j == 0) then
         stat = 1
-        write(errmsg,'(a,i0)') 'unknown enclosure face block ID: ', blockID(i)
+        errmsg = 'unknown enclosure face block ID: ' // i_to_c(blockID(i))
         return
       end if
       block_mask(j) = .true.
@@ -184,9 +187,10 @@ contains
     mask = block_mask(this%encl%face_block)
 
     !! Check that these faces don't overlap those from preceding calls.
-    if (any(mask .and. this%tag /= 0)) then
+    n = global_count(mask .and. this%tag /= 0)
+    if (n /= 0) then
       stat = 1
-      errmsg = 'enclosure face already associated with a function'
+      errmsg = i_to_c(n) // ' enclosure faces already associated with a function'
       return
     end if
 
@@ -195,7 +199,6 @@ contains
     this%tag = merge(this%ngroup, this%tag, mask)
 
     stat = 0
-    errmsg = ''
 
   end subroutine set_tag_array
 
@@ -205,12 +208,14 @@ contains
  !!
 
   subroutine done (this, stat, errmsg)
-  
+
+    use parallel_communication, only: global_count
+    use string_utilities, only: i_to_c
     use const_scalar_func_type
 
     class(rad_encl_func), intent(inout) :: this
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: n, j
 
@@ -220,14 +225,14 @@ contains
     ASSERT(minval(this%tag)>=0 .and. maxval(this%tag)<=this%ngroup)
 
     !! Verify that every face has been associated with a function.
-    n = count(this%tag > 0)
-    if (n /= this%encl%nface) then
+    n = global_count(this%tag > 0)
+    if (n /= this%encl%face_ip%global_size()) then
       stat = 1
-      errmsg = 'some enclosure faces not associated with a function'
+      errmsg = 'no emissivity for ' // i_to_c(n) // ' enclosure faces'
       return
     end if
 
-    allocate(this%faces(n), this%group(this%ngroup+1))
+    allocate(this%faces(this%encl%nface), this%group(this%ngroup+1))
 
     !! Prepare GROUP: faces of group N will be FACES(GROUP(N):GROUP(N+1)-1).
     this%group(1) = 1
@@ -266,7 +271,6 @@ contains
     end do
 
     stat = 0
-    errmsg = ''
 
   end subroutine done
 

@@ -17,7 +17,7 @@ module rad_problem_type
   use parallel_communication
   use parallel_permutations
   use rad_solver_type
-  !use vf_matrix_class
+  use vf_matrix_class
   use vf_matrix_constant_class
   use rad_encl_type
   implicit none
@@ -38,8 +38,7 @@ module rad_problem_type
     integer :: pc_numitr = 1
     integer :: pc_method = PC_JACOBI
     type(rad_encl), allocatable :: encl      ! radiation enclosure surface
-    !class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
-    class(vf_matrix_constant), allocatable :: vf_mat  ! view factor matrix
+    class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
   contains
     procedure :: init
     procedure :: residual
@@ -58,54 +57,57 @@ contains
  !! INIT
  !!
 
-  subroutine init (this, mesh, name)
+  subroutine init (this, mesh, name, params)
 
-    use ER_input
     use unstr_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
+    use scalar_func_factories, only: alloc_scalar_func
     use rad_encl_file_type
     use rad_encl_func_type
+    use parameter_list_type
     use truchas_logging_services
 
     class(rad_problem), target, intent(out) :: this
     type(unstr_mesh),   intent(in)  :: mesh
     character(len=*),   intent(in)  :: name
+    type(parameter_list), intent(inout) :: params
 
     integer :: stat
-    character(:), allocatable :: filename
+    logical :: flag
+    character(:), allocatable :: filename, method, errmsg
     type(rad_encl_file) :: file
-    character(len=127) :: errmsg
-    character(len=32)  :: method
+    character(len=127) :: string
     integer, allocatable :: setids(:)
     real(r8) :: csf, tol
     class(scalar_func), allocatable :: tamb
     type(rad_encl_func), allocatable :: eps
+    type(parameter_list), pointer :: plist
 
-    call ERI_get_file (name, filename)
+    call params%get('enclosure-filename', filename)
 
     call TLS_info ('  Initializing enclosure radiation problem "' // trim(name) // '" ...')
 
     !! Identify the HC faces that correspond to the ER surface faces.
     call connect_to_mesh (mesh, filename, this%faces, this%ge_faces, stat)
     if (stat /= 0) then
-      write(errmsg,'(a,i0)') 'no matching mesh face for enclosure face ', stat
-      call TLS_fatal (errmsg)
+      write(string,'(a,i0)') 'no matching mesh face for enclosure face ', stat
+      call TLS_fatal (string)
     end if
 
     !! Verify that the identified faces are boundary faces.
     call boundary_face_check (mesh, this%faces, stat, setids)
     if (stat /= 0) then
-      write(errmsg,'(4x,a,i0,a)') 'Error: ', stat, ' enclosure faces are not mesh boundary faces;'
-      call TLS_info (trim(errmsg))
+      write(string,'(4x,a,i0,a)') 'Error: ', stat, ' enclosure faces are not mesh boundary faces;'
+      call TLS_info (trim(string))
       if (size(setids) > 0) then
-        write(errmsg,'(11x,a,i0,99(:,1x,i0))') 'faces belong to face sets ', setids
+        write(string,'(11x,a,i0,99(:,1x,i0))') 'faces belong to face sets ', setids
       else
-        write(errmsg,'(11x,a)') 'faces belong to no mesh face sets.'
+        write(string,'(11x,a)') 'faces belong to no mesh face sets.'
       end if
-      call TLS_info (trim(errmsg))
-      write(errmsg,'(11x,a)') 'Perhaps an internal interface should have been defined?'
-      call TLS_info (trim(errmsg))
+      call TLS_info (trim(string))
+      write(string,'(11x,a)') 'Perhaps an internal interface should have been defined?'
+      call TLS_info (trim(string))
       deallocate(setids)
       call TLS_fatal ('Error initializing enclosure radiation problem "' // trim(name) // '"')
     end if
@@ -128,11 +130,15 @@ contains
       else
         allocate(vf_matrix_face :: this%vf_mat)
       end if
-      call this%vf_mat%init(file)
+
+      select type (vf => this%vf_mat)
+      class is (vf_matrix_constant)
+        call vf%init(file)
+      end select
 
       !! Load the distributed enclosure surface.
       allocate(this%encl)
-      call ERI_get_coord_scale_factor(name, csf)
+      call params%get('coord-scale-factor', csf, default=1.0d0)
       call this%encl%init(file, this%vf_mat%face_map, csf)
       this%nface_er = this%encl%nface_onP
 
@@ -155,22 +161,26 @@ contains
 #endif
 
     !! Check that HC radiation faces are geometrically equal to the enclosure surface.
-    if (ERI_check_geometry(name)) then
+    call params%get('check-geometry', flag, default=.false.)
+    if (flag) then
       call TLS_warn ('Not able to check matching enclosure surface geometry for mixed cell meshes')
       !FIXME -- REWRITE CHECK_SURFACE TO OPERATE ON A UNSTR_MESH TYPE MESH
       !call check_surface (mesh, this%encl, this%faces, this%perm_er_to_hc, stat)
       !if (stat /= 0) then
-      !  write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
-      !  call TLS_fatal (errmsg)
+      !  write(string,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
+      !  call TLS_fatal (string)
       !end if
     end if
 
     !! Set ER system parameters.
-    call ERI_get_ambient (name, tamb)
+    call alloc_scalar_func(params, 'ambient-temp', tamb, stat, errmsg)
+    INSIST(stat == 0)
     call this%sol%set_ambient (tamb)
 
     allocate(eps)
-    call ERI_get_emissivity (name, this%encl, eps)
+    plist => params%sublist('surfaces')
+    call define_emissivity(this%encl, plist, eps, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('error defining emissivity: ' // errmsg)
     call this%sol%set_emissivity (eps)
 
     call this%sol%set_stefan_boltzmann (stefan_boltzmann)
@@ -183,10 +193,11 @@ contains
     !! eigenvalues of the radiosity system and isn't cheap.
     call this%sol%set_cheby_param (time=0.0_r8)
 
-    call ERI_get_error_tolerance (name, tol)
+    call params%get('error-tol', tol)!, default=1e-3_r8)
     call this%sol%set_solver_controls (tol, maxitr=500) !TODO! input maxitr value
 
-    call ERI_get_precon_method (name, method, this%pc_numitr)
+    call params%get('precon-method', method, default='JACOBI')
+    call params%get('precon-iter', this%pc_numitr, default=1)
     select case (method)
     case ('JACOBI')
       this%pc_method = PC_JACOBI
@@ -197,6 +208,42 @@ contains
     end select
 
   end subroutine init
+
+  subroutine define_emissivity(encl, plist, eps, stat, errmsg)
+
+    use rad_encl_func_type
+    use parameter_list_type
+    use scalar_func_factories
+
+    type(rad_encl), intent(in), target :: encl
+    type(parameter_list), intent(inout) :: plist
+    type(rad_encl_func), intent(out) :: eps
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: params
+    class(scalar_func), allocatable :: f
+    integer, allocatable :: block_ids(:)
+
+    call eps%prep(encl)
+    piter = parameter_list_iterator(plist, sublists_only=.true.)
+    do while (.not.piter%at_end())
+      params => piter%sublist()
+      call alloc_scalar_func(params, 'emissivity', f, stat, errmsg)
+      if (stat /= 0) exit
+      call params%get('face-block-ids', block_ids)
+      call eps%add_function(f, block_ids, stat, errmsg)
+      if (stat /= 0) exit
+      call piter%next
+    end do
+    if (stat /= 0) then
+      errmsg = 'error defining emissivity for surface ' // piter%name() // ': ' // errmsg
+      return
+    end if
+    call eps%done(stat, errmsg)
+
+  end subroutine
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

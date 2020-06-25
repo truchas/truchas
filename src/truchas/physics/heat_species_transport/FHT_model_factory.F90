@@ -82,9 +82,10 @@ contains
 
   subroutine vf_rad_init (mesh, model, stat, errmsg)
   
-    use ER_input
+    use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
+    use parameter_list_type
   
     type(unstr_mesh), intent(in) :: mesh
     type(FHT_model), intent(inout) :: model
@@ -94,17 +95,20 @@ contains
     integer :: n, j
     logical, allocatable :: mask(:)
     character(len=31), allocatable :: encl_name(:)
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: plist
     
     stat = 0
     errmsg = ''
     
     !! Initialize the enclosure radiation (view factor) problems, if any.
-    n = ERI_num_enclosures()
+    piter = parameter_list_iterator(params, sublists_only=.true.)
+    n = piter%count()
     if (n > 0) then
       allocate(model%vf_rad_prob(n), encl_name(n))
-      call ERI_get_names (encl_name)
       do j = 1, n
-        call model%vf_rad_prob(j)%init (mesh, encl_name(j))
+        plist => piter%sublist()
+        call model%vf_rad_prob(j)%init (mesh, piter%name(), plist)
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(model%vf_rad_prob(j)%faces),0))) then
           stat = -1
@@ -124,9 +128,9 @@ contains
             mask(model%vf_rad_prob(j)%faces) = .true.
           end if
         end if
+        call piter%next
       end do
       if (allocated(mask)) deallocate(mask)
-      deallocate(encl_name)
     end if
 
   end subroutine vf_rad_init
