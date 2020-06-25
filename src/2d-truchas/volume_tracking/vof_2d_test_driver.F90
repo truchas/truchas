@@ -125,7 +125,7 @@ contains
     real(r8), intent(inout) :: vel_fn(mesh%nface)
     integer :: j
     do j = 1, mesh%nface
-      vel_fn(j) = dot_product([2.0_r8, 1.0_r8], mesh%normal(:,j)/mesh%area(j))
+      vel_fn(j) = dot_product([2.0_r8, 1.0_r8], mesh%unit_normal(:,j))
     end do
   end subroutine constant_vel
 
@@ -148,7 +148,7 @@ contains
       yf = 0.5_r8 * (mesh%x(2,mesh%fnode(1,j)) + mesh%x(2,mesh%fnode(2,j)))
       ux = -2.0_r8 * (sin(pi*xf))**2 * sin(pi*yf) * cos(pi*yf) *cos(pi*t/T_period)
       uy =  2.0_r8 * (sin(pi*yf))**2 * sin(pi*xf) * cos(pi*xf) *cos(pi*t/T_period)
-      vel_fn(j) = dot_product([ux, uy], mesh%normal(:,j)/mesh%area(j))
+      vel_fn(j) = dot_product([ux, uy], mesh%unit_normal(:,j))
     end do
 
   end subroutine vortex_vel
@@ -169,13 +169,10 @@ contains
 
     do j = 1, mesh%nface
       rf = 0.5_r8 * (mesh%x(1,mesh%fnode(1,j)) + mesh%x(1,mesh%fnode(2,j)))
-      ! this mesh velocity field can be used only for radii that are non-zero; since at a
-      ! radius of zero, it becomes infinite.
-      INSIST(abs(rf) > 1e-12_r8)
       zf = 0.5_r8 * (mesh%x(2,mesh%fnode(1,j)) + mesh%x(2,mesh%fnode(2,j)))
       ur = rf/2.0_r8 * cos(pi*t/T_period)
       uz = -zf * cos(pi*t/T_period)
-      vel_fn(j) = dot_product([ur, uz], mesh%normal(:,j)/mesh%area(j))
+      vel_fn(j) = dot_product([ur, uz], mesh%unit_normal(:,j))
     end do
 
   end subroutine axisymmetric_vel
