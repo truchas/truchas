@@ -34,6 +34,8 @@ contains
 
   subroutine read_enclosure_radiation_namelists(lun)
 
+    use toolpath_table, only: known_toolpath
+
     integer, intent(in) :: lun
 
     integer :: n, ios
@@ -47,10 +49,11 @@ contains
     logical  :: skip_geometry_check
     real(r8) :: coord_scale_factor, ambient_constant, error_tolerance
     character(MAX_FILE_LEN) :: enclosure_file
-    character(MAX_NAME_LEN) :: name, ambient_function, precon_method, precon_coupling_method
+    character(MAX_NAME_LEN) :: name, ambient_function, precon_method, precon_coupling_method, toolpath
     namelist /enclosure_radiation/ name, enclosure_file, coord_scale_factor, skip_geometry_check, &
                                    ambient_constant, ambient_function, error_tolerance, &
-                                   precon_method, precon_iter, precon_coupling_method
+                                   precon_method, precon_iter, precon_coupling_method, &
+                                   toolpath
 
     call TLS_info('')
     call TLS_info('Reading ENCLOSURE_RADIATION namelists ...')
@@ -71,6 +74,7 @@ contains
 
       !! Replicate the namelist variables on all processes before reading
       name = NULL_C
+      toolpath = NULL_C
       enclosure_file = NULL_C
       coord_scale_factor = NULL_R
       skip_geometry_check = .false.
@@ -87,6 +91,7 @@ contains
 
       !! Replicate the namelist variables on all processes
       call broadcast(name)
+      call broadcast(toolpath)
       call broadcast(enclosure_file)
       call broadcast(coord_scale_factor)
       call broadcast(skip_geometry_check)
@@ -106,6 +111,13 @@ contains
         plist => params%sublist(trim(name))
       end if
 
+      !! Check optional TOOLPATH
+      if (toolpath /= NULL_C) then
+        if (.not.known_toolpath(toolpath)) &
+            call TLS_fatal(label // ': unknown TOOLPATH: ' // trim(toolpath))
+        call plist%set('toolpath', toolpath)
+      end if
+
       !! Verify ENCLOSURE_FILE was assigned a value
       if (enclosure_file == NULL_C) then
         call TLS_fatal(label // ': ENCLOSURE_FILE not specified')
@@ -116,10 +128,12 @@ contains
         enclosure_file = trim(input_dir) // trim(enclosure_file)
       end if
 
-      !! Check that ENCLOSURE_FILE can at least be found
-      if (is_IOP) inquire(file=enclosure_file,exist=found)
-      call broadcast(found)
-      if (.not.found) call TLS_fatal(label // ': no such ENCLOSURE_FILE: ' // trim(enclosure_file))
+      !! Check that ENCLOSURE_FILE can at least be found (when TOOLPATH not specified)
+      if (.not.plist%is_parameter('toolpath')) then
+        if (is_IOP) inquire(file=enclosure_file,exist=found)
+        call broadcast(found)
+        if (.not.found) call TLS_fatal(label // ': no such ENCLOSURE_FILE: ' // trim(enclosure_file))
+      end if
       call plist%set('enclosure-filename', trim(enclosure_file))
 
       !! Check COORD_SCALE_FACTOR (optional)

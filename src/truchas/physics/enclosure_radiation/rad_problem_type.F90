@@ -17,9 +17,11 @@ module rad_problem_type
   use parallel_communication
   use parallel_permutations
   use rad_solver_type
-  use vf_matrix_class
-  use vf_matrix_constant_class
+  use encl_vf_class
+  use static_vf_class
+  use moving_vf_type
   use rad_encl_type
+  use sim_event_queue_type, only: event_action
   implicit none
   private
 
@@ -37,8 +39,8 @@ module rad_problem_type
     !! Radiosity system preconditioner parameters
     integer :: pc_numitr = 1
     integer :: pc_method = PC_JACOBI
-    type(rad_encl), allocatable :: encl      ! radiation enclosure surface
-    class(vf_matrix), allocatable :: vf_mat  ! view factor matrix
+    type(rad_encl), allocatable :: encl ! radiation enclosure surface
+    class(encl_vf), allocatable :: vf   ! enclosure view factors
   contains
     procedure :: init
     procedure :: residual
@@ -48,7 +50,22 @@ module rad_problem_type
     procedure :: precon_matvec1
     procedure :: rhs
     procedure :: rhs_deriv
+    procedure :: update_moving_vf
+    procedure :: add_moving_vf_events
   end type rad_problem
+
+  integer, parameter, public :: DT_POLICY_NONE   = 0
+  integer, parameter, public :: DT_POLICY_NEXT   = 1
+  integer, parameter, public :: DT_POLICY_FACTOR = 2
+  integer, parameter, public :: DT_POLICY_VALUE  = 3
+
+  type, extends(event_action), public :: vf_event
+    private
+    integer  :: dt_policy = DT_POLICY_NONE
+    real(r8) :: c = 0.0_r8
+  contains
+    procedure :: init_dt => vf_event_init_dt
+  end type
 
 contains
 
@@ -57,7 +74,7 @@ contains
  !! INIT
  !!
 
-  subroutine init (this, mesh, name, params)
+  subroutine init (this, mesh, name, params, tinit)
 
     use unstr_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
@@ -72,6 +89,7 @@ contains
     type(unstr_mesh),   intent(in)  :: mesh
     character(len=*),   intent(in)  :: name
     type(parameter_list), intent(inout) :: params
+    real(r8), intent(in) :: tinit
 
     integer :: stat
     logical :: flag
@@ -84,16 +102,32 @@ contains
     type(rad_encl_func), allocatable :: eps
     type(parameter_list), pointer :: plist
 
-    call params%get('enclosure-filename', filename)
+    !! Load the view factor data
+    if (params%is_parameter('toolpath')) then
+      call alloc_moving_vf(tinit, params, this%vf, filename)
+    else  ! static view factors
+      call alloc_static_vf(params, this%vf, filename)
+    end if
+
+    !! Load the distributed enclosure surface
+    allocate(this%encl)
+    call params%get('coord-scale-factor', csf, default=1.0d0)
+    if (is_IOP) call file%open_ro(filename)
+    call this%encl%init(file, this%vf%face_map, csf)
+    if (is_IOP) call file%close
+    this%nface_er = this%encl%nface_onP
+    ASSERT(this%nface_er == this%vf%nface)
 
     call TLS_info ('  Initializing enclosure radiation problem "' // trim(name) // '" ...')
 
     !! Identify the HC faces that correspond to the ER surface faces.
-    call connect_to_mesh (mesh, filename, this%faces, this%ge_faces, stat)
+    call connect_to_mesh(mesh, filename, this%faces, this%ge_faces, stat)
     if (stat /= 0) then
       write(string,'(a,i0)') 'no matching mesh face for enclosure face ', stat
-      call TLS_fatal (string)
+      call TLS_fatal(string)
     end if
+    this%nface_hc = size(this%faces)
+    ASSERT(this%vf%nface_tot == global_sum(this%nface_hc))
 
     !! Verify that the identified faces are boundary faces.
     call boundary_face_check (mesh, this%faces, stat, setids)
@@ -112,46 +146,8 @@ contains
       call TLS_fatal ('Error initializing enclosure radiation problem "' // trim(name) // '"')
     end if
 
-    this%nface_hc = size(this%faces)
-
-    !! Create the distributed enclosure radiation system.
-    block
-      use vf_matrix_face_type
-      use vf_matrix_patch_type
-      logical :: patches
-
-      if (is_IOP) call file%open_ro(filename)
-
-      !! Initialize the appropriate VF_MATRIX object
-      if (is_IOP) patches = file%has_patches()
-      call broadcast(patches)
-      if (patches) then
-        allocate(vf_matrix_patch :: this%vf_mat)
-      else
-        allocate(vf_matrix_face :: this%vf_mat)
-      end if
-
-      select type (vf => this%vf_mat)
-      class is (vf_matrix_constant)
-        call vf%init(file)
-      end select
-
-      !! Load the distributed enclosure surface.
-      allocate(this%encl)
-      call params%get('coord-scale-factor', csf, default=1.0d0)
-      call this%encl%init(file, this%vf_mat%face_map, csf)
-      this%nface_er = this%encl%nface_onP
-
-      ASSERT(this%nface_er == this%vf_mat%nface)
-      ASSERT(this%vf_mat%nface_tot == global_sum(this%nface_hc))
-
-      if (is_IOP) call file%close
-
-      call this%sol%init(this%vf_mat)
-    end block
-
     !! Create the parallel permutations between the HC and ER partitions.
-    call create_par_perm (this%ge_faces, this%vf_mat%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
+    call create_par_perm (this%ge_faces, this%vf%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
     INSIST(defined(this%perm_er_to_hc))
     INSIST(defined(this%perm_hc_to_er))
 
@@ -172,6 +168,9 @@ contains
       !end if
     end if
 
+    !! Create the enclosure radiation solver.
+    call this%sol%init(this%vf)
+
     !! Set ER system parameters.
     call alloc_scalar_func(params, 'ambient-temp', tamb, stat, errmsg)
     INSIST(stat == 0)
@@ -191,9 +190,9 @@ contains
     !! the parameters once.  Really these need to be computed whenever the
     !! emissivities change significantly, but this involves computing
     !! eigenvalues of the radiosity system and isn't cheap.
-    call this%sol%set_cheby_param (time=0.0_r8)
+    call this%sol%set_cheby_param (time=tinit)
 
-    call params%get('error-tol', tol)!, default=1e-3_r8)
+    call params%get('error-tol', tol, default=1e-3_r8)
     call this%sol%set_solver_controls (tol, maxitr=500) !TODO! input maxitr value
 
     call params%get('precon-method', method, default='JACOBI')
@@ -244,6 +243,99 @@ contains
     call eps%done(stat, errmsg)
 
   end subroutine
+
+  subroutine alloc_static_vf(params, vf, filename)
+
+    use parameter_list_type
+    use static_vf_class
+    use facet_vf_type
+    use patch_vf_type
+    use rad_encl_file_type
+    use truchas_logging_services
+
+    type(parameter_list), intent(inout) :: params
+    class(encl_vf), allocatable, intent(out) :: vf
+    character(:), allocatable, intent(out) :: filename
+
+    type(rad_encl_file) :: file
+    class(static_vf), allocatable :: svf
+    logical :: has_patches
+
+    call params%get('enclosure-filename', filename)
+    call TLS_info('')
+    call TLS_info('Reading enclosure radiation view factors from ' // filename)
+    if (is_IOP) call file%open_ro(filename)
+    if (is_IOP) has_patches = file%has_patches()
+    call broadcast(has_patches)
+
+    if (has_patches) then
+      allocate(patch_vf :: svf)
+    else
+      allocate(facet_vf :: svf)
+    end if
+    call svf%init(file)
+    call move_alloc(svf, vf)
+    if (is_IOP) call file%close
+
+  end subroutine
+
+  subroutine alloc_moving_vf(tinit, params, vf, filename)
+
+    use parameter_list_type
+    use moving_vf_type
+    use toolpath_type
+    use toolpath_table, only: toolpath_ptr
+
+    real(r8), intent(in) :: tinit
+    type(parameter_list), intent(inout) :: params
+    class(encl_vf), allocatable, intent(out) :: vf
+    character(:), allocatable, intent(out) :: filename
+
+    integer :: n, j
+    character(:), allocatable :: tpname, hash(:), ext, basename, filenames(:)
+    real(r8), allocatable :: times(:)
+    type(toolpath), pointer :: tp
+    type(moving_vf), allocatable :: mvf
+
+    call params%get('toolpath', tpname)
+    tp => toolpath_ptr(tpname)
+    INSIST(tp%has_partition())
+    call tp%get_partition(hash=hash, time=times)
+
+    call params%get('enclosure-filename', filename)
+    ext = file_extension(filename)
+    n = index(filename,ext,back=.true.) - 1 ! strip file extension
+    basename = filename(:n) // '.'
+
+    n = len(basename) + len(hash) + len(ext)
+    allocate(character(n) :: filenames(size(hash)))
+    do j = 1, size(hash)
+      filenames(j) = basename // hash(j) // ext
+    end do
+
+    allocate(mvf)
+    call mvf%init(tinit, times, filenames)
+    filename = mvf%filename()
+    call move_alloc(mvf, vf)
+
+  contains
+
+    !! Return the file extension, or empty string if none
+    function file_extension(filename) result(ext)
+      character(*), intent(in) :: filename
+      character(:), allocatable :: ext
+      integer :: n
+      n = scan(filename, '/', back=.true.)
+      ext = filename(n+1:)
+      n = scan(ext, '.', back=.true.)
+      if (n > 1) then
+        ext = ext(n:)
+      else
+        ext = ''
+      end if
+    end function
+
+  end subroutine alloc_moving_vf
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -689,6 +781,11 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%solve_radiosity (time, temp_er, qrad_er, stat, numitr, error)
 
     !! Form the local radiosity vector in the HC ordering.
@@ -705,6 +802,11 @@ contains
     real(r8) :: z_er(this%nface_er)
 
     ASSERT(size(z) == this%nface_hc)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     select case (this%pc_method)
     case (PC_JACOBI)
@@ -732,6 +834,11 @@ contains
 
     !! Form the Z vector in the ER ordering.
     call reorder (this%perm_er_to_hc, z_er, z)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%precon_matvec1 (time, z_er)
 
@@ -766,6 +873,11 @@ contains
     !! Form the local radiosity vector in the ER ordering.
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
     call reorder (this%perm_er_to_hc, temp_er, temp)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%heat_flux (time, qrad_er, temp_er, flux_er)
 !    call ERS_compute_heat_flux (this%sol, time, qrad_er, flux_er)
@@ -802,6 +914,11 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%residual (time, qrad_er, temp_er, res_er)
 
     !! Form the local residual vector in the HC ordering.
@@ -824,6 +941,11 @@ contains
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%rhs_deriv (time, temp_er, drhs_er)
 
     !! Form the local derivative vector in the HC ordering.
@@ -845,6 +967,11 @@ contains
 
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%rhs (time, temp_er, rhs_er)
 
@@ -1016,5 +1143,43 @@ contains
     call gmv_close
 
   end subroutine write_encl_surface
+
+  subroutine update_moving_vf(this)
+    use moving_vf_type
+    class(rad_problem), intent(inout) :: this
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%next_interval
+    end select
+  end subroutine
+
+  subroutine add_moving_vf_events(this, eventq)
+    use sim_event_queue_type
+    class(rad_problem), intent(in) :: this
+    type(sim_event_queue), intent(inout) :: eventq
+    integer :: j
+    select type (vf => this%vf)
+    type is (moving_vf)
+      do j = 1, size(vf%times)
+        call eventq%add_event(vf%times(j), vf_event(DT_POLICY_FACTOR, 0.125_r8))
+      end do
+    end select
+  end subroutine
+
+  pure function vf_event_init_dt(this, dt_last, dt_next) result(dt)
+    class(vf_event), intent(in) :: this
+    real(r8), intent(in) :: dt_last, dt_next
+    real(r8) :: dt
+    select case (this%dt_policy)
+    case (DT_POLICY_NONE, DT_POLICY_NEXT)
+      dt = dt_next
+    case (DT_POLICY_FACTOR)
+      dt = this%c*dt_last
+    case (DT_POLICY_VALUE)
+      dt = this%c
+    case default
+      dt = 0.0_r8 ! should never be here
+    end select
+  end function
 
 end module rad_problem_type

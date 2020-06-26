@@ -1,8 +1,8 @@
 !!
-!! VF_MATRIX_CONSTANT_CLASS
+!! STATIC_VF_CLASS
 !!
 !! A common interface for time-independent view factor implementations that
-!! extends the VF_MATRIX class. This extension specifies an initialization
+!! extends the ENCL_VF class. This extension specifies an initialization
 !! procedure which is expected to acquire the view factors from a radiation
 !! enclosure file.
 !!
@@ -15,24 +15,24 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module vf_matrix_constant_class
+module static_vf_class
 
-  use vf_matrix_class
+  use encl_vf_class
   use rad_encl_file_type
   implicit none
   private
 
-  type, abstract, extends(vf_matrix), public :: vf_matrix_constant
+  type, abstract, extends(encl_vf), public :: static_vf
   contains
     procedure(init), deferred :: init
   end type
 
   abstract interface
     subroutine init(this, file)
-      import :: vf_matrix_constant, rad_encl_file
-      class(vf_matrix_constant), intent(out) :: this
+      import :: static_vf, rad_encl_file
+      class(static_vf), intent(out) :: this
       type(rad_encl_file), intent(in) :: file
     end subroutine
   end interface
 
-end module vf_matrix_constant_class
+end module static_vf_class

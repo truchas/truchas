@@ -46,12 +46,12 @@ module rad_solver_type
 
 contains
 
-  subroutine init(this, vf_mat)
-    use vf_matrix_class
+  subroutine init(this, vf)
+    use encl_vf_class
     class(rad_solver), intent(out), target :: this
-    class(vf_matrix), intent(in), target :: vf_mat
-    this%nface = vf_mat%nface
-    call this%sys%init(vf_mat)
+    class(encl_vf), intent(in), target :: vf
+    this%nface = vf%nface
+    call this%sys%init(vf)
   end subroutine init
 
   subroutine set_ambient (this, tamb)

@@ -159,7 +159,7 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint
-    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view
+    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view, update_moving_vf
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
@@ -331,6 +331,9 @@ call hijack_truchas ()
             restart_ds = .true.
           type is (path_event)
             call ded_head_start_sim_phase(t1)
+          type is (vf_event)
+            call update_moving_vf
+            dt = action%init_dt(dt_old, dt)
           type is (stop_event)
             exit MAIN_CYCLE
           class default

@@ -1,8 +1,9 @@
 !!
-!! VF_MATRIX_PATCH_TYPE
+!! PATCH_VF_TYPE
 !!
-!! A concrete implementation for the abstract base class VF_MATRIX_CONSTANT.
-!! This implementation operates on patch-based view factor data.
+!! A concrete implementation for the abstract base class STATIC_VF.
+!! This implementation operates on patch-based view factor data, with
+!! clusters of enclosure mesh faces comprising patches.
 !!
 !! David Neill-Asanza <dhna@lanl.gov>, July 2019
 !! Neil N. Carlson <nnc@lanl.gov>, refactoring June 2020
@@ -15,16 +16,16 @@
 
 #include "f90_assert.fpp"
 
-module vf_matrix_patch_type
+module patch_vf_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use vf_matrix_constant_class
+  use static_vf_class
   use vf_data_type
   use parallel_communication
   implicit none
   private
 
-  type, extends(vf_matrix_constant), public :: vf_matrix_patch
+  type, extends(static_vf), public :: patch_vf
     private
     type(vf_data) :: vf
     real(r8), allocatable :: w(:)
@@ -46,7 +47,7 @@ contains
     use rad_encl_file_type
     use permutations
 
-    class(vf_matrix_patch), intent(out) :: this
+    class(patch_vf), intent(out) :: this
     type(rad_encl_file), intent(in) :: file  ! only referenced on IOP
 
     integer :: j, n, offset, bsize(nPE)
@@ -122,7 +123,7 @@ contains
   !! Computes the matrix-vector product Y = PHI*X.
   subroutine matvec(this, x, y)
 
-    class(vf_matrix_patch), intent(in) :: this
+    class(patch_vf), intent(in) :: this
     real(r8), intent(in)  :: x(:)
     real(r8), intent(out) :: y(:)
 
@@ -188,4 +189,4 @@ contains
 
   end subroutine blocked_coloring_map
 
-end module vf_matrix_patch_type
+end module patch_vf_type

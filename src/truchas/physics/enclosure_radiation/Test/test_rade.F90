@@ -138,7 +138,7 @@ contains
 
     plist => params%sublist(encl_name)
     call plist%get('error-tol', tol)
-    call prob%init (mesh, encl_name, plist)
+    call prob%init (mesh, encl_name, plist, tinit=0.0d0)  ! dummy time
 
     allocate(temp(prob%nface_hc), qrad(prob%nface_hc), res(prob%nface_hc))
 

@@ -26,6 +26,7 @@
 
 module FHT_model_factory
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use FHT_model_type
   use unstr_mesh_type
   use mfd_disc_type
@@ -34,15 +35,16 @@ module FHT_model_factory
   use thermal_bc_factory_class
   implicit none
   private
-  
+
   public :: create_FHT_model
 
 contains
 
-  function create_FHT_model (disc, mmf, tbc_fac, stat, errmsg) result (model)
+  function create_FHT_model (tinit, disc, mmf, tbc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: void_temperature
-  
+
+    real(r8), intent(in) :: tinit
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
@@ -50,57 +52,58 @@ contains
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
     type(FHT_model), pointer :: model
-    
+
     type(unstr_mesh), pointer :: mesh
 
     mesh => disc%mesh
-    
+
     allocate(model)
-    
+
     !! Initializes the VF_RAD_PROB components of MODEL.
-    call vf_rad_init (mesh, model, stat, errmsg)
+    call vf_rad_init (tinit, mesh, model, stat, errmsg)
     if (stat /= 0) return
-    
+
     !! Defines the heat equation parameter components of MODEL.
     call define_system_parameters (mesh, mmf, model, stat, errmsg)
     if (stat /= 0) return
-    
+
     !! Defines the boundary condition components of MODEL.
     call define_system_bc (mesh, tbc_fac, model, stat, errmsg2)
     if (stat /= 0) then
       errmsg = errmsg2
       return
     end if
-    
+
     !! Perform the final initialization of MODEL.
     call FHT_model_init (model, disc)
 
     model%void_temp = void_temperature
 
   end function create_FHT_model
-  
 
-  subroutine vf_rad_init (mesh, model, stat, errmsg)
-  
+
+  subroutine vf_rad_init (tinit, mesh, model, stat, errmsg)
+
     use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
     use parameter_list_type
-  
+
+    real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in) :: mesh
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
-    
+
     integer :: n, j
     logical, allocatable :: mask(:)
     character(len=31), allocatable :: encl_name(:)
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
-    
+
     stat = 0
     errmsg = ''
-    
+
     !! Initialize the enclosure radiation (view factor) problems, if any.
     piter = parameter_list_iterator(params, sublists_only=.true.)
     n = piter%count()
@@ -108,7 +111,7 @@ contains
       allocate(model%vf_rad_prob(n), encl_name(n))
       do j = 1, n
         plist => piter%sublist()
-        call model%vf_rad_prob(j)%init (mesh, piter%name(), plist)
+        call model%vf_rad_prob(j)%init (mesh, piter%name(), plist, tinit)
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(model%vf_rad_prob(j)%faces),0))) then
           stat = -1

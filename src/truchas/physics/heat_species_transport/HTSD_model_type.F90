@@ -62,6 +62,9 @@ module HTSD_model_type
     integer :: cell_heat_segid, cell_temp_segid, face_temp_segid
     integer, pointer :: rad_segid(:) => null()
     integer, pointer :: cell_conc_segid(:) => null(), face_conc_segid(:) => null()
+  contains
+    procedure :: update_moving_vf
+    procedure :: add_moving_vf_events
   end type HTSD_model
   
   public :: HTSD_model_init
@@ -655,5 +658,26 @@ contains
     ASSERT(index > 0 .and. index <= size(this%face_conc_segid))
     call set_segment (this%layout, source, array, this%face_conc_segid(index))
   end subroutine HTSD_model_set_face_conc
+
+  subroutine update_moving_vf(this)
+    class(HTSD_model), intent(inout) :: this
+    integer :: n
+    if (.not.associated(this%ht%vf_rad_prob)) return
+    do n = 1, size(this%ht%vf_rad_prob)
+      call this%ht%vf_rad_prob(n)%update_moving_vf
+    end do
+  end subroutine
+
+  subroutine add_moving_vf_events(this, eventq)
+    use sim_event_queue_type
+    class(HTSD_model), intent(inout) :: this
+    type(sim_event_queue), intent(inout) :: eventq
+    integer :: n
+    if (.not.associated(this%ht)) return
+    if (.not.associated(this%ht%vf_rad_prob)) return
+    do n = 1, size(this%ht%vf_rad_prob)
+      call this%ht%vf_rad_prob(n)%add_moving_vf_events(eventq)
+    end do
+  end subroutine
   
 end module HTSD_model_type
