@@ -1,0 +1,31 @@
+&ENCLOSURE
+  name = 'inner'
+  mesh_file = 'mesh.gen'
+  coord_scale_factor = 0.01
+  side_set_ids = 6
+  symmetries = "MirrorX", "MirrorY"
+/
+
+&PATCHES
+  patch_algorithm = 'PAVE'
+  verbosity_level = 3
+!  max_angle = 10.0
+!  pave_merge_level = 2
+  pave_split_patch_size = 2
+  pave_random_seed = 1867465541
+/
+
+&CHAPARRAL
+  blocking_enclosure  = f
+  partial_enclosure   = t
+  partial_area        = 1e-4
+  bsp_max_tree_depth  = 10
+  bsp_min_leaf_length = 25
+  spatial_tolerance   = 1.0e-8
+  hemicube_resolution = 500
+  min_separation      = 20.0
+  max_subdivisions    = 60
+  smoothing_tolerance = 1.0e-8
+  smoothing_max_iter  = 100
+  verbosity_level     = 2
+/

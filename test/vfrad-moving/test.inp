@@ -1,0 +1,137 @@
+# Time-dependent view factor simulation -- rod+ring problem
+
+&MESH
+  mesh_file = "mesh.gen"
+  coordinate_scale_factor = 0.01
+/
+
+&PHYSICS
+  heat_transport = t
+  materials = "beryllium", "heater"
+/
+
+&DIFFUSION_SOLVER
+  abs_enthalpy_tol = 0.0
+  rel_enthalpy_tol = 1e-3
+  abs_temp_tol     = 0.0
+  rel_temp_tol     = 1e-3
+  nlk_preconditioner = "Hypre_AMG"
+  max_nlk_itr = 5
+  nlk_tol = 0.01
+  pc_amg_cycles = 1
+/
+
+&NUMERICS
+  dt_init = 1e-7
+  dt_grow = 5.0
+  dt_min  = 1e-8
+  dt_max  = 600.0
+/
+
+&OUTPUTS
+  output_t  = 0.0, 120.0
+  output_dt = 120.0 !5.0
+  move_block_ids = 2
+  move_toolpath_name = "example"
+/
+
+&PROBE
+  coord = 1, 0, 0
+  coord_scale_factor = 0.01
+  data = "temperature"
+  data_file = "probe.dat"
+  digits = 14
+/
+
+&TOOLPATH
+  name = 'example'
+  coord_scale_factor = 0.01
+  start_coord = 0.0, 0.0, -1.0
+  command_string = '[["dwell",10],["moverel",[0,0,2],0.02]]'
+  partition_ds = 1.0
+/
+
+### ENCLOSURE RADIATION ########################################################
+
+&ENCLOSURE_RADIATION
+  name = "inner"
+  enclosure_file = "inner-encl.re"
+  ambient_constant = 300.0
+/
+
+&ENCLOSURE_SURFACE
+  enclosure_name = "inner"
+  name = "inner"
+  face_block_ids = 6
+  emissivity_constant = 0.8
+/
+
+&ENCLOSURE_RADIATION
+  name = "outer"
+  enclosure_file = "outer-encl.re"
+  toolpath = 'example'
+  ambient_constant = 300.0
+/
+
+&ENCLOSURE_SURFACE
+  enclosure_name = "outer"
+  name = "outer"
+  face_block_ids = 4, 5
+  emissivity_constant = 0.8
+/
+
+### BOUNDARY CONDITIONS ########################################################
+
+&THERMAL_BC
+  name = "rod-ends"
+  type = "radiation"
+  face_set_ids = 2
+  emissivity = 0.8
+  ambient_temp = 300.0
+/
+
+&THERMAL_BC
+  name = "heater"
+  type = "temperature"
+  face_set_ids = 3
+  temp = 1200.0
+/
+
+&THERMAL_BC
+  name = "symmetry"
+  type = "flux"
+  face_set_ids = 1
+  flux = 0.0
+/
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = "from mesh file"
+  mesh_material_number = 1
+  material_name = "beryllium"
+  temperature = 300.0
+/
+
+&BODY
+  surface_name = "from mesh file"
+  mesh_material_number = 2
+  material_name = "heater"
+  temperature = 1200.0
+/
+
+### MATERIALS ##################################################################
+
+&MATERIAL
+  name = "beryllium"
+  density = 1850
+  specific_heat = 1885
+  conductivity = 1.75  ! really 175
+/
+
+&MATERIAL
+  name = "heater"
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 10.0
+/
