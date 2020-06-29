@@ -66,12 +66,12 @@ program vizre
   !! We have a view factor matrix
   if (has_vf) then
 
-    call read_dist_vf(dvf, trim(enclosure_file))
+    call dvf%read(trim(enclosure_file))
 
     !! Write ambient view factors
     if (dvf%has_ambient) then
       nvar = nvar + 1
-      patch_var = get_ambient_vf(dvf)
+      patch_var = dvf%get_ambient_vf()
       if (is_IOP) then
           call ep%patch_to_face_array(patch_var, face_var)
           call gmv_write_face_var(e, face_var, 'ambient', sym)
@@ -81,7 +81,7 @@ program vizre
 
     !! Write row sums
     nvar = nvar + 1
-    patch_var = dvf_row_sum(dvf)
+    patch_var = dvf%row_sum()
     if (is_IOP) then
         call ep%patch_to_face_array(patch_var, face_var)
         call gmv_write_face_var(e, face_var, 'row sum', sym)
@@ -94,7 +94,7 @@ program vizre
         if (col(n) >= 1 .and. col(n) <= e%nface) then
           nvar = nvar + 1
           if (nvar > MAX_GMV_VARS) exit
-          patch_var = unpack_dvf_col(dvf, col(n))
+          patch_var = dvf%unpack_col(col(n))
           if (is_IOP) then
               call ep%patch_to_face_array(patch_var, face_var)
               !! If patch-based, scale column by face weight

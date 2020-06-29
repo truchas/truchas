@@ -105,7 +105,7 @@ contains
     integer :: i
 
     !! Read view factor data
-    call read_dist_vf(dvf, path)
+    call dvf%read(path)
 
     !! Read patch data
     call ep%read(path)
@@ -141,18 +141,13 @@ contains
 
       ASSERT(all(dvf%area > 0.0_r8))
 
-      !TODO: should weight of 1.0 already be initialized in DVF?
-      !      or should it be initialized here?
-      !
-      !  What about the face area?
-
       !! Get face weights.
       if (.not. dvf%has_weight) then
+        dvf%has_weight = .true.
         !! Face weights are read by a patch-based dvf, so it MUST be face-based.
         INSIST(.not. ep%has_patches)
         ASSERT(.not. allocated(dvf%w))
-        allocate(dvf%w(ep%nface))
-        dvf%w = 1.0_r8
+        allocate(dvf%w(ep%nface), source=1.0_r8)
       end if
 
       ASSERT(all(dvf%w > 0.0_r8))
@@ -162,8 +157,6 @@ contains
   end subroutine init_VF_fields
 
 
-  !TODO: refactor this and similar computation in DVF?
-  !       - dvf is sparse, but this is dense (full row)
   !! Converts VF row n into VF column n using reciprocity
   subroutine row_to_col(val, n, area)
 
@@ -209,8 +202,8 @@ contains
       !! Get unpacked patch-based rows on rank 1
       pA = this%epA%f2p_map(i)
       pB = this%epB%f2p_map(i)
-      pvalA = unpack_dvf_row(this%A, pA)
-      pvalB = unpack_dvf_row(this%B, pB)
+      pvalA = this%A%unpack_row(pA)
+      pvalB = this%B%unpack_row(pB)
 
       if (my_rank == 1) then
         !! Compute face-based rows

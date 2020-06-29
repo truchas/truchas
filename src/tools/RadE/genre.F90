@@ -65,7 +65,7 @@ program genre
     call ep%write(outfile)
     if (found) then
       call calculate_vf(e, chap_params, ep, vf)
-      call write_dist_vf(vf, outfile)
+      call vf%write(outfile)
     end if
     call re_info('wrote ' // outfile)
     call e%next_encl
