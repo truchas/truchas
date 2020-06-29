@@ -27,6 +27,7 @@
 
 module HTSD_model_factory
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HTSD_model_type
   use unstr_mesh_type
   use mfd_disc_type
@@ -40,10 +41,11 @@ module HTSD_model_factory
 
 contains
 
-  function create_HTSD_model (disc, mmf, tbc_fac, sbc_fac, stat, errmsg) result (model)
+  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: heat_eqn, num_species, void_temperature
 
+    real(r8), intent(in) :: tinit
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
@@ -59,7 +61,7 @@ contains
     mesh => disc%mesh
 
     if (heat_eqn) then
-      htmodel => create_HT_model(mesh, mmf, tbc_fac, stat, errmsg)
+      htmodel => create_HT_model(tinit, mesh, mmf, tbc_fac, stat, errmsg)
       if (stat /= 0) return
     endif
 
@@ -75,10 +77,11 @@ contains
 
   end function create_HTSD_model
 
-  function create_HT_model (mesh, mmf, bc_fac, stat, errmsg) result (model)
+  function create_HT_model (tinit, mesh, mmf, bc_fac, stat, errmsg) result (model)
 
     use rad_problem_type
 
+    real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
@@ -90,7 +93,7 @@ contains
     allocate(model)
 
     !! Initializes the VF_RAD_PROB components of MODEL.
-    model%vf_rad_prob => create_vf_rad_prob(mesh, stat, errmsg)
+    model%vf_rad_prob => create_vf_rad_prob(tinit, mesh, stat, errmsg)
     if (stat /= 0) return
 
     !! Defines the equation parameter components of MODEL.
@@ -330,13 +333,15 @@ contains
 
   end function create_HT_model
 
-  function create_vf_rad_prob (mesh, stat, errmsg) result (vf_rad_prob)
+  function create_vf_rad_prob (tinit, mesh, stat, errmsg) result (vf_rad_prob)
 
     use rad_problem_type
-    use ER_input
+    use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
+    use parameter_list_type
 
+    real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -345,17 +350,20 @@ contains
     integer :: n, j
     logical, allocatable :: mask(:)
     character(len=31), allocatable :: encl_name(:)
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: plist
 
     stat = 0
     errmsg = ''
 
     !! Initialize the enclosure radiation (view factor) problems, if any.
-    n = ERI_num_enclosures()
+    piter = parameter_list_iterator(params, sublists_only=.true.)
+    n = piter%count()
     if (n > 0) then
       allocate(vf_rad_prob(n), encl_name(n))
-      call ERI_get_names (encl_name)
       do j = 1, n
-        call vf_rad_prob(j)%init (mesh, encl_name(j))
+        plist => piter%sublist()
+        call vf_rad_prob(j)%init (mesh, piter%name(), plist, tinit)
         !! Verify that these enclosure faces are boundary faces.
         if (.not.global_all(btest(mesh%face_set_mask(vf_rad_prob(j)%faces),0))) then
           stat = -1
@@ -375,9 +383,9 @@ contains
             mask(vf_rad_prob(j)%faces) = .true.
           end if
         end if
+        call piter%next
       end do
       if (allocated(mask)) deallocate(mask)
-      deallocate(encl_name)
     else
       vf_rad_prob => null()
     end if

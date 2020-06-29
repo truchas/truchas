@@ -10,7 +10,7 @@ module rad_system_type
 
   use kinds
   use parallel_communication
-  use vf_matrix_class
+  use encl_vf_class
   implicit none
   private
 
@@ -19,7 +19,7 @@ module rad_system_type
     real(r8) :: t0        ! absolute-zero temperature
     integer :: nface      ! number of faces (number of rows) on this process
     integer :: nface_tot  ! total number of faces (number of columns)
-    class(vf_matrix), pointer :: vf_mat => null()  ! distributed VF Matrix -- reference only
+    class(encl_vf), pointer :: vf => null()  ! distributed view factors -- reference only
   contains
     procedure :: init => init_rad_system
     procedure :: flux
@@ -37,15 +37,15 @@ module rad_system_type
 contains
 
 
-  subroutine init_rad_system (this, vf_mat)
+  subroutine init_rad_system (this, vf)
 
     class(rad_system), intent(out) :: this
-    class(vf_matrix), target, intent(in) :: vf_mat
+    class(encl_vf), target, intent(in) :: vf
 
-    this%vf_mat => vf_mat
+    this%vf => vf
 
-    this%nface = vf_mat%nface
-    this%nface_tot = vf_mat%nface_tot
+    this%nface = vf%nface
+    this%nface_tot = vf%nface_tot
 
   end subroutine init_rad_system
 
@@ -68,10 +68,10 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(f) == this%nface)
 
-    call this%vf_mat%phi_x(f, q)
+    call this%vf%matvec(q, f)
     f = eps*this%sigma*((t-this%t0)**4) - eps*f
 
-    if (this%vf_mat%has_ambient) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%vf_mat%amb_vf
+    if (this%vf%has_ambient) f = f - (this%sigma*(tamb-this%t0)**4)*eps*this%vf%amb_vf
 
   end subroutine flux
 
@@ -94,10 +94,10 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(r) == this%nface)
 
-    call this%vf_mat%phi_x(r, q)
+    call this%vf%matvec(q, r)
     r = eps*this%sigma*((t-this%t0)**4) - q + (1.0_r8-eps)*r
 
-    if (this%vf_mat%has_ambient) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf_mat%amb_vf
+    if (this%vf%has_ambient) r = r + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf%amb_vf
 
   end subroutine residual
 
@@ -112,7 +112,7 @@ contains
     ASSERT(size(eps) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call this%vf_mat%phi_x(temp, z)
+    call this%vf%matvec(z, temp)
     z = eps*temp
 
   end subroutine matvec1
@@ -148,7 +148,7 @@ contains
     ASSERT(size(b) == this%nface)
 
     b = eps * this%sigma * (t-this%t0)**4
-    if (this%vf_mat%has_ambient) b = b + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf_mat%amb_vf
+    if (this%vf%has_ambient) b = b + (this%sigma*(tamb-this%t0)**4)*(1.0_r8-eps)*this%vf%amb_vf
 
   end subroutine rhs
 
@@ -215,8 +215,8 @@ contains
 
     rhs = eps*this%sigma*(t-this%t0)**4
 
-    if (this%vf_mat%has_ambient) then
-      rhs = rhs + this%sigma*(tamb-this%t0)**4*(1.0_r8-eps)*this%vf_mat%amb_vf
+    if (this%vf%has_ambient) then
+      rhs = rhs + this%sigma*(tamb-this%t0)**4*(1.0_r8-eps)*this%vf%amb_vf
     end if
 
     rhs_norm = global_l2norm(rhs)
@@ -233,7 +233,7 @@ contains
     do
 
       !! Compute the residual of the current iterate.
-      call this%vf_mat%phi_x(r, q)
+      call this%vf%matvec(q, r)
       r = rhs - q + (1.0_r8-eps)*r
 
       if (numitr > 0) then
@@ -297,7 +297,7 @@ contains
     do n = 2, numitr
 
       !! Compute the residual of the current iterate.
-      call this%vf_mat%phi_x(r, q)
+      call this%vf%matvec(q, r)
       r = rhs - q + (1.0_r8-eps)*r
 
       if (n == 2) then ! starting values for the update parameters
@@ -335,7 +335,7 @@ contains
     rhs = z
 
     do n = 2, numitr
-      call this%vf_mat%phi_x(temp, z)
+      call this%vf%matvec(z, temp)
       z = rhs + (1.0_r8-eps)*temp
     end do
 
@@ -410,7 +410,7 @@ contains
       q = p / s
 
       !! Matrix-vector product.
-      call this%vf_mat%phi_x(p, q)
+      call this%vf%matvec(q, p)
       p = shift*q + (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.
@@ -454,7 +454,7 @@ contains
       q = p / s
 
       !! Matrix-vector product.
-      call this%vf_mat%phi_x(p, q)
+      call this%vf%matvec(q, p)
       p = q - (1.0_r8-eps)*p
 
       !! Eigenvalue estimate.

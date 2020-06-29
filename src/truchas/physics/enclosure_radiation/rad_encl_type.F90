@@ -37,7 +37,7 @@ module rad_encl_type
 
 contains
 
-  subroutine init (this, file, fcolor, csf)
+  subroutine init (this, file, fmap, csf)
 
     use rad_encl_file_type
     use permutations
@@ -45,7 +45,7 @@ contains
 
     class(rad_encl), intent(out) :: this
     type(rad_encl_file), intent(in) :: file
-    integer, intent(in) :: fcolor(:)
+    integer, intent(in) :: fmap(:)
     real(r8), intent(in), optional :: csf  ! Coordinate scaling factor
 
     integer :: j, n, nnode, nface
@@ -65,10 +65,6 @@ contains
       !! Read the face block data.
       call file%get_group_info(gnum, group_ids)
 
-      ASSERT(size(fcolor) == nface)
-      ASSERT(minval(fcolor) >= 1)
-      ASSERT(maxval(fcolor) <= nPE)
-
     else  ! allocate dummy arrays
       nface = 0
       nnode = 0
@@ -77,9 +73,11 @@ contains
 
     !! Reorder and block partition the global surface mesh.
     allocate(node_map(nnode), face_map(nface))
+    call collate(face_map, fmap)
+    call collate(face_bsize, size(fmap))
     if (is_IOP) then
-      !! Partition and reorder the faces; reorder the face block index array.
-      call organize_faces (fsize, fnode, fcolor, face_bsize, face_map)
+      !! Reorder the faces; reorder the face block index array.
+      call organize_faces (face_map, fsize, fnode)
       call reorder (gnum, face_map)
       !! Partition and reorder the nodes; reorder the node coordinate array.
       call organize_nodes (fsize, fnode, face_bsize, node_bsize, node_map)
@@ -177,27 +175,18 @@ contains
  !! should be done.
  !!
 
-  subroutine organize_faces (fsize, fnode, fcolor, face_bsize, face_map)
+  subroutine organize_faces (face_map, fsize, fnode)
 
     use permutations
 
+    integer, intent(in)    :: face_map(:)         ! new-to-old face map
     integer, intent(inout) :: fsize(:), fnode(:)  ! face connectivity
-    integer, intent(in)    :: fcolor(:)           ! face coloring
-    integer, intent(out)   :: face_bsize(:)       ! face coloring block sizes
-    integer, intent(out)   :: face_map(:)         ! new-to-old face map
 
     integer :: j, k, first, xface(1+size(fsize)), fnode_new(size(fnode))
 
     ASSERT(all(fsize >= 0))
     ASSERT(sum(fsize) == size(fnode))
-    ASSERT(size(fsize) == size(fcolor))
-
-    call blocked_coloring_map (fcolor, face_bsize, face_map)
-
-    !! At this point we could generate another mapping that respected
-    !! the blocks but created a "good" ordering of the faces within
-    !! each block.  This mapping would then be composed with FACE_MAP
-    !! to generate the final mapping.
+    ASSERT(size(fsize) == size(face_map))
 
     !! Generate face indexing into FNODE from the face sizes:
     !! FNODE(XFACE(j):XFACE(j+1)-1) are the nodes of face j.

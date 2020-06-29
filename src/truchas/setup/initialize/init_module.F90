@@ -196,7 +196,7 @@ CONTAINS
 
     ! Initialize the diffusion solver.
     if (ds_enabled) then
-      call ds_init
+      call ds_init(t)
       select case (ds_sys_type)
       case (DS_SPEC_SYS)
         call ds_set_initial_state (t, dt, conc=phi)

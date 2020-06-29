@@ -124,12 +124,12 @@ add_pytruchas_test(ds11 ds11/testDS11.py
 add_pytruchas_test(htvoid1-old htvoid1/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 add_pytruchas_test(htvoid2-old htvoid2/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
 add_pytruchas_test(htvoid3-old htvoid3/test-old.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE OLD_FLOW)
-add_pytruchas_test(htvoid4-old htvoid4/test-old.py PROCESSORS 4 LABELS DIFFUSION OLD_FLOW)
+add_pytruchas_test(htvoid4-old htvoid4/test-old.py PROCESSORS 4 LABELS DIFFUSION RADIATION OLD_FLOW)
 
 add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 #add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
-add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS DIFFUSION RADIATION FLOW)
 
 add_pytruchas_test(broken-dam-old broken-dam-old/test.py PROCESSORS 4 LABELS OLD_FLOW)
 add_pytruchas_test(broken-dam broken-dam/test.py PROCESSORS 4 LABELS FLOW)

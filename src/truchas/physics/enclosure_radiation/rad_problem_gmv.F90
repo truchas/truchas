@@ -41,7 +41,7 @@
 module rad_problem_gmv
 
   use kinds, only: r8
-  use rad_solver_gmv
+  use rad_encl_gmv
   use rad_problem_type
   use parallel_permutations
   implicit none
@@ -64,7 +64,7 @@ contains
 
   subroutine gmv_write_encl (this)
     type(rad_problem), intent(in) :: this
-    call gmv_write_enclosure (this%sol%encl)
+    call gmv_write_enclosure (this%encl)
   end subroutine gmv_write_encl
 
   subroutine gmv_write_var (this, var, name)
@@ -74,7 +74,7 @@ contains
     real(r8) :: var_er(this%nface_er)
     ASSERT(size(var) == this%nface_hc)
     call reorder (this%perm_er_to_hc, var_er, var)
-    call gmv_write_variable (this%sol%encl, var_er, name)
+    call gmv_write_variable (this%encl, var_er, name)
   end subroutine gmv_write_var
 
 end module rad_problem_gmv
