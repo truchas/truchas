@@ -4,10 +4,14 @@ stages:
 truchas intel:
   stage: build
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-bf773c2
+  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-6ce0db9
   script:
-    - sudo apt-get update
-    - sudo apt-get install -yq --no-install-recommends python3-numpy python3-scipy python3-h5py openssh-client patchelf bzip2 tar
+    - sudo yum install -y python3 openssh-clients bzip2
+    - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.9-10.el7.x86_64.rpm
+    - sudo yum install -y ./patchelf-0.9-10.el7.x86_64.rpm
+    - sudo pip3 install numpy scipy h5py
+    - sudo rm -f /usr/bin/python
+    - sudo ln -s /usr/bin/python3 /usr/bin/python
     - bash ci/build.sh
   artifacts:
     paths:
