@@ -21,6 +21,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
   include(NAGFortranCompilerVersion)
 endif()
 
+# explicitly add NDEBUG to release flags because cmake only does this automatically for
+# C and CXX builds
+set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -DNDEBUG")
+
 # Create all the Fortran module files in a directory at the root build directory
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${Truchas_MODULE_DIR})
