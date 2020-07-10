@@ -8,12 +8,13 @@
 
 module geometric_volume_tracker_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+ use,intrinsic :: iso_fortran_env, only: r8 => real64
   use volume_tracker_class
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
   use index_partitioning
+  use wisp_redistribution_type
   implicit none
   private
 
@@ -29,6 +30,7 @@ module geometric_volume_tracker_type
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
     integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
+    type(wisp_redistribution) :: wisp
   contains
     procedure :: init
     procedure :: flux_volumes
@@ -71,13 +73,14 @@ contains
     call params%get('subcycles', this%subcycles, default=2)
     call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
+
     ! convert user material ids to array index
     if (params%is_vector('material_priority')) then
       call params%get('material_priority', priority)
       allocate(this%priority(size(priority)))
       do i = 1,size(priority)
         if (priority(i) == 'SOLID') cycle ! solid is handled later
-         this%priority(i) = findloc(liq_matid, matl_model%phase_index(priority(i)), dim=1)
+        this%priority(i) = findloc(liq_matid, matl_model%phase_index(priority(i)), dim=1)
 
         ! make sure we found a liquid material
         ! TODO: need better error handling here
@@ -119,6 +122,7 @@ contains
     end do
     this%inflow_mat = 0
 
+    call this%wisp%init(mesh, nrealfluid, params)
   end subroutine init
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
@@ -150,6 +154,8 @@ contains
 
       call this%enforce_bounded_vof(vof, flux_vol, fluids, void)
     end do
+
+    call this%wisp%redistribute(vof, flux_vol, void)
 
   end subroutine flux_volumes
 
@@ -481,7 +487,7 @@ contains
     ! volume.
     integer, parameter :: &
         back_nodes(4,6,4) = reshape([&
-        ! tet
+                                ! tet
         3, 3, 3, 3, &
         1, 1, 1, 1, &
         2, 2, 2, 2, &
@@ -489,7 +495,7 @@ contains
         0, 0, 0, 0, &
         0, 0, 0, 0, &
 
-        ! pyramid
+                                ! pyramid
         4, 3, 3, 4, &
         1, 4, 4, 1, &
         2, 1, 1, 2, &
@@ -497,7 +503,7 @@ contains
         5, 5, 5, 5, &
         0, 0, 0, 0, &
 
-        ! wedge
+                                ! wedge
         3, 3, 6, 6, &
         1, 1, 4, 4, &
         2, 5, 5, 2, &
@@ -505,7 +511,7 @@ contains
         1, 2, 3, 3, &
         0, 0, 0, 0, &
 
-        ! hex
+                                ! hex
         4, 3, 7, 8, &
         1, 4, 8, 5, &
         2, 1, 5, 6, &
@@ -518,7 +524,7 @@ contains
     ! except that triangular faces are treated like a degenerate quadrilaterals
     integer, parameter :: &
         front_nodes(4,6,4) = reshape([&
-        ! tet
+                                ! tet
         1,2,4,4, &
         2,3,4,4, &
         1,4,3,3, &
@@ -526,7 +532,7 @@ contains
         0,0,0,0, &
         0,0,0,0, &
 
-        ! pyramid
+                                ! pyramid
         1,2,5,5, &
         2,3,5,5, &
         3,4,5,5, &
@@ -534,7 +540,7 @@ contains
         1,4,3,2, &
         0,0,0,0, &
 
-        ! wedge
+                                ! wedge
         1,2,5,4, &
         2,3,6,5, &
         1,4,6,3, &
@@ -542,7 +548,7 @@ contains
         4,5,6,6, &
         0,0,0,0, &
 
-        ! hex
+                                ! hex
         1,2,6,5, &
         2,3,7,6, &
         3,4,8,7, &
@@ -933,7 +939,7 @@ contains
       q = sum(vof(fluids+1:fluids+void,i))
 
       if (q > 0.0_r8) then
-         ! we can add or remove enough void from cell
+        ! we can add or remove enough void from cell
         if (excess < 0.0_r8 .or. (excess > 0.0_r8 .and. q >= excess)) then
           do m = fluids+1, fluids+void
             vof(m,i) = vof(m,i) * (1.0_r8 - excess/q)
