@@ -33,6 +33,7 @@ program genre
   if (is_IOP) call parse_command_line(infile, outfile, overwrite)
   call scl_bcast_alloc(infile)
   call scl_bcast_alloc(outfile)
+  call scl_bcast(overwrite)
 
   !! When generating a single radiation enclosure OUTFILE will be used as is.
   !! For multiple enclosures, unique output file names are generated using
