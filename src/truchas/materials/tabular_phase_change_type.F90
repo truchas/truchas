@@ -79,7 +79,7 @@ contains
       fs = 0
     else
       fs = this%fs%eval([temp])
-      ASSERT(fs >= 0 .and. fs <= 1)
+      fs = min(1.0_r8, max(0.0_r8, fs))
       fs = scale(real(int(scale(fs,D),i8),r8),-D) ! See Note 1
     end if
   end function solid_frac
