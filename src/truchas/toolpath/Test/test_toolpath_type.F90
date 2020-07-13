@@ -256,7 +256,7 @@ contains
     end if
     if (size(hash) /= 6) then
       call write_fail('test_partition: A: wrong hash size')
-    else if (any(hash /= ['d3399b7','d3399b7','e28bd59','ecb21b7','81e2bcf','e2b04c2'])) then
+    else if (any(hash /= ['2c513f1','2c513f1','a42a772','6482d12','95d182f','48e2914'])) then
       call write_fail('test_partition: A: wrong hash values')
     end if
 
