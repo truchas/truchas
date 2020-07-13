@@ -236,13 +236,6 @@ CONTAINS
 
        OUTPUT_T_CHECK: do n = 1,nops
 
-          if (Output_T(n) < 0) then
-             write (message,2) n, Output_T(n)
-2            format('Output time Output_T(',i2,') =',1pe10.3,' <= 0.0')
-             call TLS_error (message)
-             fatal = .true.
-          end if
-
           if (Output_T(n) >= Output_T(n+1)) then
              write (message,3) n, Output_T(n), n+1, Output_T(n+1)
 3            format('Output time Output_T(',i2,') =',1pe10.3, &

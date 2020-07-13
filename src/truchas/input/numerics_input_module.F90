@@ -74,7 +74,6 @@ contains
                                  dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                  cycle_max, cycle_number
 
-    if (t < 0) call TLS_fatal('T must be >= 0.0')
     if (cycle_max <= 0) call TLS_fatal('CYCLE_MAX must be > 0')
     if (cycle_number < 0) call TLS_fatal('CYCLE_NUMBER must be >= 0')
     if (cutvof < 0 .or. cutvof > 1) call TLS_fatal('CUTVOF must be in [0,1]')
