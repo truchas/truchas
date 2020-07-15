@@ -6,6 +6,7 @@ include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 include_directories(readinput)
 add_subdirectory(volume_tracking)
+add_subdirectory(heat_transfer)
 
 add_executable(mesh_example volume_tracking/read_inputfile.F90 mesh_example.F90)
 
