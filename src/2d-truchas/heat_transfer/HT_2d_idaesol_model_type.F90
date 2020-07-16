@@ -67,7 +67,6 @@ contains
     call this%model%compute_f(t, u, udot, f)
   end subroutine compute_f
 
-  !TODO: t and u are not used!
   subroutine apply_precon(this, t, u, f)
     class(HT_2d_idaesol_model) :: this
     real(r8), intent(in) :: t

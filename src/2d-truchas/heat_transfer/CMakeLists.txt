@@ -12,7 +12,8 @@ set(HT2D_SOURCE_FILES
     HT_2d_model_type.F90
     HT_2d_norm_type.F90
     HT_2d_precon_type.F90
-    HT_2d_idaesol_model_type.F90)
+    HT_2d_idaesol_model_type.F90
+    HT_2d_solver_type.F90)
 
 add_library(ht2d ${HT2D_SOURCE_FILES})
 target_link_libraries(ht2d truchas ${Truchas_LINK_LIBS})
