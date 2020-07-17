@@ -9,7 +9,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Chaco DEFAULT_MSG CHACO_LIBRARY)
 
 if(Chaco_FOUND)
-  set(PORTAGE_INCLUDE_DIRECTORIES "${PORTAGE_INCLUDE_DIR}")
   add_library(chaco UNKNOWN IMPORTED)
   set_target_properties(chaco PROPERTIES
       IMPORTED_LOCATION "${CHACO_LIBRARY}")

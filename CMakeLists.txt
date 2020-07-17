@@ -147,14 +147,20 @@ endif()
 
 # Chaco library
 find_package(Chaco)
-if(NOT CHACO_FOUND)
+if(NOT Chaco_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
 endif()
 
 # Chaparral library
 find_package(Chaparral)
-if(NOT CHAPARRAL_FOUND)
+if(NOT Chaparral_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Chaparral installation")
+endif()
+
+# Scorpio library
+find_package(Scorpio)
+if(NOT Scorpio_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Scorpio installation")
 endif()
 
 # Test - need a swith here to enable testing

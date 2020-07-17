@@ -102,3 +102,7 @@ message("")
 message("Chaparral library (version ${CHAPARRAL_VERSION}):")
 message("  CHAPARRAL_LIBRARY=${CHAPARRAL_LIBRARY}")
 message("")
+
+message("Scorpio library (version ${SCORPIO_VERSION}):")
+message("  SCORPIO_LIBRARY=${SCORPIO_LIBRARY}")
+message("")
