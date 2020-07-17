@@ -145,6 +145,24 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
+# Chaco library
+find_package(Chaco)
+if(NOT Chaco_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
+endif()
+
+# Chaparral library
+find_package(Chaparral)
+if(NOT Chaparral_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaparral installation")
+endif()
+
+# Scorpio library
+find_package(Scorpio)
+if(NOT Scorpio_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Scorpio installation")
+endif()
+
 # Test - need a swith here to enable testing
 enable_testing()
 

@@ -1,15 +1,13 @@
 ## Truchas Copyright and License
 
 Truchas version 3 (LA-CC-15-097) is open source software; it is distributed
-under the terms of the 3-clause BSD license. Truchas also includes third-party
-software and libraries, which are listed in the file
-[TPL-LICENSES.md](TPL-LICENSES.md) with their respective licenses.
+under the terms of the 3-clause BSD license.
 
 --------------------------------------------------------------------------------
 
 ### Copyright
 
-Copyright 2007-2019. Triad National Security, LLC.  All rights reserved.
+Copyright 2007-2020. Triad National Security, LLC.  All rights reserved.
 
 This program was produced under U.S. Government contract 89233218CNA000001
 for Los Alamos National Laboratory (LANL), which is operated by Triad National
