@@ -1,8 +1,5 @@
 set(ENABLE_MPI True) # Some packages have both serial and parallel versions
 
-message(STATUS "Configuring src/packages/chaco")
-add_subdirectory(chaco)
-
 message(STATUS "Configuring src/packages/chaparral")
 add_subdirectory(chaparral)
 

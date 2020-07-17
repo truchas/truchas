@@ -145,6 +145,12 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
+# Chaco library
+find_package(Chaco)
+if(NOT CHACO_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
+endif()
+
 # Test - need a swith here to enable testing
 enable_testing()
 
