@@ -151,6 +151,12 @@ if(NOT CHACO_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
 endif()
 
+# Chaparral library
+find_package(Chaparral)
+if(NOT CHAPARRAL_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaparral installation")
+endif()
+
 # Test - need a swith here to enable testing
 enable_testing()
 

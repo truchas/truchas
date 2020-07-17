@@ -98,3 +98,7 @@ message("")
 message("Chaco library (version ${CHACO_VERSION}):")
 message("  CHACO_LIBRARY=${CHACO_LIBRARY}")
 message("")
+
+message("Chaparral library (version ${CHAPARRAL_VERSION}):")
+message("  CHAPARRAL_LIBRARY=${CHAPARRAL_LIBRARY}")
+message("")
