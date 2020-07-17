@@ -1,17 +1,18 @@
 Building Truchas
-------------------------------------------------------------------------------
-### Quick Start Guide
+===============================================================================
+## Quick Start Guide
 
-#### Requirements
+### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
 and testing is done on 64-bit Linux and Cray CLE platforms with both Intel and
 NAG compilers and on MacOS with NAG Fortran (experimental).
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
-        - version 17.0.7 (anything 17.0.1 or later should be okay)
         - version 18.0.5 (anything 18.0.2 or later should be okay)
-        - version 19.1.0. Version 19.0.x **will not** work due to compiler bugs.
+        - version 19.1.0
+        - Many versions are known to **not work** due to compiler bugs. These
+          include 19.0.x (any x), 19.1.1, and 19.1.2.
     - NAG Fortran (with GNU C/C++):
         - version 6.1 (build 6149 or later preferred)
         - version 6.2 (build 6252 or later preferred)
@@ -33,15 +34,15 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
 Truchas requires some additional libraries, but these can be built by the
 third party library build step described below.
 
-#### Compiling
+### Compiling
 Compiling Truchas for the first time is usually a two-stage process.  The
 first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v10" bundle of TPLs;
-do a `git checkout v10` after cloning the TPL repository. *v10 is required if
-using the Intel 19.1 compiler*. See its README file for further instructions.
+on GitLab. This version of Truchas is tested against the "v13" bundle of TPLs;
+do a `git checkout v13` after cloning the TPL repository. See its README file
+for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
 straightforward. You create a build directory, run cmake from that directory,
@@ -66,7 +67,7 @@ than it must be different than the current directory). Here is an example:
   top-level source directory. Use the `-D CMAKE_INSTALL_PREFIX=<truchas_dir>`
   cmake argument to specify a different directory.
 
-#### Compiling on a Mac
+### Compiling on a Mac
 The test suite is currently failing so mac support is still considered
 experimental.  So far, this has only been tested using the NAG Fortran
 compiler and the Apple Clang compilers.  This is a 3 step process
@@ -89,8 +90,8 @@ directory):
 The `-fpp` option can be removed for later OpenMPI releases
 
 ##### Notes for TPL
-Configuring cmake using the `config/linux-nag.cmake` is sufficent.  No other special
-flags have been needed
+Configuring cmake using the `config/linux-nag.cmake` is sufficent.  No other
+special flags have been needed
 
 ##### Notes for Truchas
 `PGSLib` is a subpackage of Truchas that depends heavily on the linux
@@ -106,7 +107,7 @@ building truchas on a mac
     $ make
     $ make install
 
-#### Testing
+### Testing
 From the build directory run the command
 
     $ ctest
