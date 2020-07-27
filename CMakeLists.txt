@@ -7,10 +7,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 
 include(NoInSourceBuild)
 
-project(Truchas VERSION 3.1.0 LANGUAGES C Fortran)
+project(Truchas VERSION 20.07 LANGUAGES C Fortran)
 
 # Append a pre-release tag to the version if needed
-set(Truchas_PRERELEASE alpha)
+#set(Truchas_PRERELEASE alpha)
 if(Truchas_PRERELEASE)
   string(APPEND Truchas_VERSION -${Truchas_PRERELEASE})
 endif()

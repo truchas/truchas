@@ -1,6 +1,6 @@
 ## Truchas Copyright and License
 
-Truchas version 3 (LA-CC-15-097) is open source software; it is distributed
+Truchas (LA-CC-15-097) is open source software; it is distributed
 under the terms of the 3-clause BSD license.
 
 --------------------------------------------------------------------------------

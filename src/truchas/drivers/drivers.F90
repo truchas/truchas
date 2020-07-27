@@ -35,7 +35,7 @@ MODULE DRIVERS
 
   ! Copyright Notice
   character (LEN=string_len), dimension(8),target :: copyright = [                       &
-     '   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.     ', &
+     '   Copyright 2007-2020.  Triad National Security, LLC.  All rights reserved.     ', &
      '                                                                                 ', &
      '   This program was produced under U.S. Government contract 89233218CNA000001    ', &
      '   for Los Alamos National Laboratory (LANL), which is operated by Triad         ', &
