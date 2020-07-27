@@ -416,8 +416,10 @@ call hijack_truchas ()
     use utilities_module,     only: TIMESTAMP
     use truchas_logging_services
     use string_utilities, only: i_to_c
+    use version_info
 
     character(LEN=32)  :: run_date, run_host, run_architecture
+    character(:), allocatable :: version_str
 
     interface
       subroutine getrunhostinfo(arch, host) bind(c, name='getrunhostinfo')
@@ -431,8 +433,10 @@ call hijack_truchas ()
     call getrunhostinfo (run_architecture, run_host)
     call TIMESTAMP (run_date)
 
+    call version(version_str)
+
     call TLS_info ('   code:                ' // 'Truchas')
-    call TLS_info ('   version:             ' // VERSION)
+    call TLS_info ('   version:             ' // version_str)
     call TLS_info ('   build architecture:  ' // ARCHITECTURE)
     call TLS_info ('   build date/time:     ' // BUILD_DATE)
     call TLS_info ('   build flags:         ' // COMPILER_FLAGS)
