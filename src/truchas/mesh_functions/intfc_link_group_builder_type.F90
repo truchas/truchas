@@ -16,7 +16,7 @@
 !!
 !! The INTFC_LINK_GROUP_BUILDER type has the following type bound procedures.
 !!
-!!  INIT(MESH) initializes the object. MESH is of type UNSTR_MESH.
+!!  INIT(MESH) initializes the object. MESH is of UNSTR_BASE_MESH class.
 !!
 !!  ADD_LINK_GROUP(SETIDS, STAT, ERRMSG) defines a group of interface links
 !!    comprising those links that belong to a link set with ID in the integer
@@ -37,13 +37,13 @@
 
 module intfc_link_group_builder_type
 
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   implicit none
   private
 
   type, public :: intfc_link_group_builder
     private
-    type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
+    class(unstr_base_mesh), pointer :: mesh => null() ! reference only -- not owned
     integer :: ngroup = 0
     integer, allocatable :: tag(:)
     logical, allocatable :: mask(:) ! work space for add_group
@@ -57,7 +57,7 @@ contains
 
   subroutine init(this, mesh)
     class(intfc_link_group_builder), intent(out) :: this
-    class(unstr_mesh), target :: mesh
+    class(unstr_base_mesh), target :: mesh
     this%mesh => mesh
     this%ngroup = 0
     allocate(this%tag(mesh%nlink), this%mask(mesh%nlink))

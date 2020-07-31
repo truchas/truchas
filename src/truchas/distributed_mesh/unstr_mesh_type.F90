@@ -128,7 +128,7 @@
 module unstr_mesh_type
 
   use kinds, only: r8
-  use base_mesh_class
+  use unstr_base_mesh_class
   use index_partitioning
   use parallel_communication
   use bitfield_type
@@ -139,7 +139,7 @@ module unstr_mesh_type
   implicit none
   private
 
-  type, extends(base_mesh), public :: unstr_mesh
+  type, extends(unstr_base_mesh), public :: unstr_mesh
     integer, allocatable :: xcnode(:), cnode(:) ! cell nodes
     integer, allocatable :: xcface(:), cface(:) ! cell faces
     integer, allocatable :: xfnode(:), fnode(:) ! face nodes
@@ -150,13 +150,7 @@ module unstr_mesh_type
     real(r8), allocatable :: cell_centroid(:,:)
     real(r8), allocatable :: face_centroid(:,:)
     real(r8), allocatable :: face_normal_dist(:)  ! minimum distance from face along edges
-    !! Mesh interface links.
-    integer :: nlink = 0, nlink_onP = 0
-    integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
-    integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
-    type(bitfield), allocatable :: link_set_mask(:)  ! link block index
-    type(ip_desc) :: link_ip
-    !! Additional link data aiding transition from old mesh.
+    !! Additional interface link data aiding transition from old mesh.
     integer, allocatable :: link_cell_id(:)   ! external cell ID the link was derived from (or 0)
     integer, allocatable :: lnhbr(:,:)        ! link cell neighbors (2)
     integer, allocatable :: xlnode(:), lnode(:) ! link nodes
@@ -167,13 +161,14 @@ module unstr_mesh_type
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
-    procedure :: get_link_set_bitmask
-    procedure :: get_link_set_ids
     procedure :: init_cell_centroid
     procedure :: init_face_centroid
     procedure :: init_face_normal_dist
     procedure :: nearest_node
     procedure :: nearest_cell
+    procedure :: cell_node_list_view
+    procedure :: cell_face_list_view
+    procedure :: face_node_list_view
   end type unstr_mesh
 
 contains
@@ -492,56 +487,6 @@ contains
 
   end subroutine check_bndry_face_set
 
-  !! Returns a scalar bit mask for use in bit operations with the link_set_mask
-  !! array component.  The corresponding bit is set for each link set ID given
-  !! in the array SETIDS.  STAT returns a non-zero value if an unknown link set
-  !! ID is specified, and the optional allocatable deferred-length character
-  !! ERRMSG is assigned an explanatory message if present.
-
-  subroutine get_link_set_bitmask (this, setids, bitmask, stat, errmsg)
-    use string_utilities, only: i_to_c
-    class(unstr_mesh), intent(in) :: this
-    integer, intent(in) :: setids(:)
-    type(bitfield), intent(out) :: bitmask
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out), optional :: errmsg
-    integer :: i, j
-    bitmask = ZERO_BITFIELD
-    do i = 1, size(setids)
-      do j = size(this%link_set_id), 1, -1
-        if (setids(i) == this%link_set_id(j)) exit
-      end do
-      if (j == 0) then
-        stat = 1
-        if (present(errmsg)) errmsg = 'unknown link set ID: ' // i_to_c(setids(i))
-        return
-      end if
-      bitmask = ibset(bitmask, j)
-    end do
-    stat = 0
-  end subroutine get_link_set_bitmask
-
-  subroutine get_link_set_ids(this, mask, setids)
-
-    class(unstr_mesh), intent(in) :: this
-    logical, intent(in) :: mask(:)
-    integer, allocatable, intent(out) :: setids(:)
-
-    integer :: j
-    type(bitfield) :: bitmask
-
-    ASSERT(size(mask) == this%nface)
-
-    bitmask = ZERO_BITFIELD
-    do j = 1, this%nlink_onP
-      if (any(mask(this%lface(:,j)))) bitmask = ior(bitmask, this%link_set_mask(j))
-    end do
-    bitmask = global_ior(bitmask)
-
-    setids = pack(this%link_set_id, mask=btest(bitmask, pos=[(j,j=1,size(this%link_set_id))]))
-
-  end subroutine get_link_set_ids
-
   !! This function identifies the global cell that is nearest the given point,
   !! and returns its local index on the process that owns the cell, and 0 on
   !! all other processes. Here nearest means the cell whose centroid is nearest
@@ -616,5 +561,29 @@ contains
     nearest_node = merge(min_node, 0, (this_PE == min_PE))
 
   end function nearest_node
+
+  !! Returns the nodes of the given cell
+  function cell_node_list_view(this, n) result(view)
+    class(unstr_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%cnode(this%xcnode(n):this%xcnode(n+1)-1)
+  end function
+
+  !! Returns the faces of the given cell
+  function cell_face_list_view(this, n) result(view)
+    class(unstr_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%cface(this%xcface(n):this%xcface(n+1)-1)
+  end function
+
+  !! Returns the nodes of the given face
+  function face_node_list_view(this, n) result(view)
+    class(unstr_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%fnode(this%xfnode(n):this%xfnode(n+1)-1)
+  end function
 
 end module unstr_mesh_type
