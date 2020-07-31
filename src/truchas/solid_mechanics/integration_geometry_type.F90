@@ -57,34 +57,43 @@ module integration_geometry_type
   private
 
   type, public :: integration_geometry
-    type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
-
     integer :: npt
-    real(r8), allocatable :: x(:,:), n(:,:), volume(:), subvolume(:)
-    real(r8), allocatable, private :: xi(:,:), jacobian_inverse(:,:,:)
+    real(r8), allocatable :: n(:,:), volume(:)
+    type(matrix_box), allocatable :: grad_shape(:)
     integer, allocatable :: nppar(:)
     integer, allocatable :: npoint(:), xnpoint(:) ! node to IP connectivity
-    integer, allocatable :: cpoint(:), xcpoint(:) ! cell to IP connectivity
-    integer, allocatable :: pcell(:) ! IP to cell connectivity
+    integer, allocatable :: xcpoint(:) ! cell to IP connectivity
 
-    type(matrix_box), allocatable :: grad_shape(:)
-
-    real(r8), private :: tet4_xi_ip(3,4), pyr5_xi_ip(3,5), wed6_xi_ip(3,6), hex8_xi_ip(3,8)
-    real(r8), private :: tet4_grad_shape_l(3,4,4), pyr5_grad_shape_l(3,5,5), wed6_grad_shape_l(3,6,5), hex8_grad_shape_l(3,8,6)
+    ! TODO: needed? delete?
+    !integer, allocatable :: pcell(:) ! IP to cell connectivity
+    !real(r8), allocatable, private :: xi(:,:), jacobian_inverse(:,:,:), x(:,:), subvolume(:)
+    type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
-    procedure :: compute_linear_grad
   end type integration_geometry
-
 
   type matrix_box
     real(r8), allocatable :: p(:,:)
   end type matrix_box
-
-
-  real(r8), parameter :: tet4_xi_node(3,4) = reshape([], [3,4])
-  real(r8), parameter :: pyr5_xi_node(3,5) = reshape([], [3,5])
-  real(r8), parameter :: wed6_xi_node(3,6) = reshape([], [3,6])
+  
+  real(r8), parameter :: tet4_xi_node(3,4) = reshape([&
+      & -1.0_r8, -1.0_r8, -1.0_r8, &
+      &  1.0_r8, -1.0_r8, -1.0_r8, &
+      &  0.0_r8,  1.0_r8, -1.0_r8, & ! coalesced hex nodes 3 & 4
+      &  0.0_r8,  0.0_r8,  1.0_r8], [3,4]) ! coalesced hex nodes 5, 6, 7, & 8
+  real(r8), parameter :: pyr5_xi_node(3,5) = reshape([&
+      & -1.0_r8, -1.0_r8, -1.0_r8, &
+      &  1.0_r8, -1.0_r8, -1.0_r8, &
+      &  1.0_r8,  1.0_r8, -1.0_r8, &
+      & -1.0_r8,  1.0_r8, -1.0_r8, &
+      &  0.0_r8,  0.0_r8,  1.0_r8], [3,5]) ! coalesced hex nodes 5, 6, 7, & 8
+  real(r8), parameter :: wed6_xi_node(3,6) = reshape([&
+      & -1.0_r8, -1.0_r8, -1.0_r8, &
+      &  1.0_r8, -1.0_r8, -1.0_r8, &
+      &  0.0_r8,  1.0_r8, -1.0_r8, & ! coalesced hex nodes 3 & 4
+      & -1.0_r8, -1.0_r8,  1.0_r8, &
+      &  1.0_r8, -1.0_r8,  1.0_r8, &
+      &  0.0_r8,  1.0_r8,  1.0_r8], [3,6]) ! coalesced hex nodes 7 & 8
   real(r8), parameter :: hex8_xi_node(3,8) = reshape([&
       & -1.0_r8, -1.0_r8, -1.0_r8, &
       &  1.0_r8, -1.0_r8, -1.0_r8, &
@@ -95,111 +104,118 @@ module integration_geometry_type
       &  1.0_r8,  1.0_r8,  1.0_r8, &
       & -1.0_r8,  1.0_r8,  1.0_r8], [3,8])
 
-  real(r8), parameter :: tet4_shape_coeff(4) = []
-  real(r8), parameter :: pyr5_shape_coeff(5) = []
-  real(r8), parameter :: wed6_shape_coeff(6) = []
-  real(r8), parameter :: hex8_shape_coeff(8) = 1.0_r8 / 8.0_r8
+  real(r8), parameter :: tet4_shape_coeff(4) = [0.125_r8, 0.125_r8, 0.25_r8, 0.5_r8]
+  real(r8), parameter :: pyr5_shape_coeff(5) = [0.125_r8, 0.125_r8, 0.125_r8, 0.125_r8, 0.5_r8]
+  real(r8), parameter :: wed6_shape_coeff(6) = [0.125_r8, 0.125_r8, 0.25_r8, 0.125_r8, 0.125_r8, 0.25_r8]
+  real(r8), parameter :: hex8_shape_coeff(8) = 0.125_r8
+
+  interface select_topology
+    module procedure select_topology_r8xxx
+  end interface select_topology
 
 contains
 
   subroutine init(this, mesh)
 
+    use cell_topology, only: cell_edges
+
     class(integration_geometry), intent(out) :: this
-    type(unstr_mesh), intent(in) :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
 
     integer :: f, n, i, j
-    integer, allocatable :: nface(:), xnface(:), k(:)
+    integer, pointer :: edges => null()
 
-    this%npt = count(mesh%fcell(:,:this%nface_onP) > 0)
-    allocate(this%x(3,this%npt), this%n(3,this%npt), this%nppar(this%npt), k(this%nnode_onP), &
-        this%xnpoint(mesh%nnode_onP+1), this%volume(this%nnode_onP), this%subvolume(this%npt))
+    this%mesh => mesh
 
-    ! Get the xnpoint offsets.
-    ! Each node is associated with j internal integration points. There
-    ! is one integration point for each pair (face,cell). Domain
-    ! boundaries are not accociated with a cell center, and are skipped.
-    call compute_nface(mesh, nface, xnface) ! TODO might be able to get rid of this using k(n) and a loop like the next one
-    j = 1
-    this%xnpoint(1) = 1
-    do n = 1, mesh%nnode_onP
-      j = 0
-      do xf = xnface(n), xnface(n+1)-1
-        f = nface(xf)
-        j = j + count(mesh%fcell(:,f) > 0)
-      end do
-      this%xnpoint(n+1) = this%xnpoint(n) + j
-    end do
-
-    ! For each integration point, compute the position, area vector and
-    ! node connectivity
-    j = 1
-    k = 0
-    do f = 1, this%nface_onP
-      do k = 1, 2
-        i = mesh%fcell(k,f)
-        if (i < 1) cycle
-        this%x(:,j) = (this%face_centroid(:,f) + this%cell_centroid(:,i)) / 2
-        this%n(:,j) =
-        do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
-          n = mesh%fnode(xn)
-          if (n <= mesh%nnode_onP) then
-            this%npoint(this%xnpoint(n)+k(n)) = j
-            k(n) = k(n) + 1
-          end if
+    call compute_connectivity(this)
+    
+    ! Accumulate the node volume and compute the control volume face areas
+    ! associated with each integration point.
+    allocate(this%n(3,this%npt), this%nppar(this%npt), this%volume(this%nnode_onP))
+    this%volume = 0
+    do j = 1, this%mesh%ncell
+      !this%volume(n) = sum(this%subvolume(this%npoint(this%xnpoint(n):this%xnpoint(n+1)-1)))
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        edges => cell_edges(cn)
+        do xp = 1, this%xcpoint(j+1)-this%xcpoint(j)
+          p = this%xcpoint(j) + xp - 1
+          n1 = cn(edges(1,xp))
+          n2 = cn(edges(2,xp))
+          
         end do
-        j = j + 1
-      end do
+      end associate
     end do
 
-    do n = 1, this%nnode_onP
-      this%volume(n) = sum(this%subvolume(this%npoint(this%xnpoint(n):this%xnpoint(n+1)-1)))
-    end do
+    call compute_grad_shape(this)
 
   end subroutine init
 
 
-  !! Compute the node-face connectivity from the mesh data.
-  subroutine compute_nface(mesh, nface, xnface)
+  ! Each node is associated with j integration points. There
+  ! is one integration point for each pair (edge,cell). Domain
+  ! boundaries are not accociated with a cell center, and are skipped.
+  subroutine compute_connectivity(this)
 
-    type(unstr_mesh), intent(in) :: mesh
-    integer, intent(out), allocatable :: nface(:), xnface(:)
+    use cell_topology, only: cell_edges
 
-    integer :: f, n, j, k(mesh%nnode_onP)
+    class(integration_geometry), intent(inout) :: this
 
-    n = 0
-    do f = 1, mesh%nface
-      n = n + count(mesh%fnode(xfnode(f):xfnode(f+1)-1) <= mesh%nnode_onP)
+    integer :: j, n, p, xp, node1, node2, k(this%mesh%nnode_onP)
+    integer, pointer :: edges(:,:) => null()
+
+    ! cell-IP connectivity
+    allocate(this%xcpoint(this%mesh%ncell+1))
+    this%xcpoint(1) = 1
+    do j = 1, this%mesh%ncell
+      edges => cell_edges(this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+      this%xcpoint(j+1) = this%xcpoint(j) + size(edges, dim=2)
     end do
-    allocate(xnface(mesh%nnode_onP+1), nface(n))
+    this%npt = this%xcpoint(this%mesh%ncell+1)-1
 
-    ! Set up offsets (xnface)
+    ! IP-node connectivity
     k = 0
-    do f = 1, this%nface
-      do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
-        n = mesh%fnode(xn)
-        if (n <= mesh%nnode_onP) k(n) = k(n) + 1
-      end do
+    do j = 1, this%mesh%ncell
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        edges => cell_edges(cn)
+        do p = this%xcpoint(j), this%xcpoint(j+1)-1
+          xp = p - this%xcpoint(j) + 1
+          node1 = cn(edges(1,xp))
+          node2 = cn(edges(2,xp))
+          if (node1 <= this%mesh%nnode_onP) k(node1) = k(node1) + 1
+          if (node2 <= this%mesh%nnode_onP) k(node2) = k(node2) + 1
+        end do
+      end associate
     end do
 
-    xnface(1) = 1
-    do n = 1, this%nnode_onP
-      xnface(n+1) = xnface(n) + k(n)
+    allocate(this%xnpoint(nnode_onP+1))
+    this%xnpoint(1) = 1
+    do n = 1, this%mesh%nnode_onP
+      this%xnpoint(n+1) = this%xnpoint(n) + k(n)
     end do
 
-    ! Write nface data
-    j = 1
+    allocate(this%npoint(this%xnpoint(this%nnode_onP+1)-1))
     k = 0
-    do f = 1, mesh%nface
-      do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
-        n = mesh%fnode(xn)
-        if (n <= mesh%nnode_onP) then
-          nface(xnface(n) + k(n)) = f
-          k(n) = k(n) + 1
-        end if
-      end do
+    do j = 1, this%mesh%ncell
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        edges => cell_edges(cn)
+        do p = this%xcpoint(j), this%xcpoint(j+1)-1
+          xp = p - this%xcpoint(j) + 1
+          node1 = cn(edges(1,xp))
+          node2 = cn(edges(2,xp))
+
+          if (node1 <= this%mesh%nnode_onP) then
+            this%npoint(this%xnpoint(j)+k(node1)) = p
+            k(node1) = k(node1) + 1
+          end if
+          if (node2 <= this%mesh%nnode_onP) then
+            this%npoint(this%xnpoint(j)+k(node2)) = p
+            k(node2) = k(node2) + 1
+          end if
+        end do
+      end associate
     end do
 
-  end subroutine compute_nface
+  end subroutine compute_connectivity
 
 
   !! Compute the gradient of the shape function in global coordinates for each
@@ -210,79 +226,98 @@ contains
   !! for the cell type.
   subroutine compute_grad_shape(this)
 
+    external dgesv ! LAPACK general system solve
+
     class(integration_geometry), intent(inout) :: this
 
-    integer :: j, d, p, xp
-    real(r8) :: jacobian(3,3), jacobian_inverse(3,3)
+    integer :: j, d, p, xp, ipiv, stat, nnode
+    real(r8) :: jacobian(3,3)
+    real(r8), target :: tet4_grad_shape_l(3,4,6), pyr5_grad_shape_l(3,5,8), &
+        wed6_grad_shape_l(3,6,9), hex8_grad_shape_l(3,8,12)
+    real(r8), pointer :: grad_shape_l(:,:,:) => null()
 
-    call this%compute_reference_quantities
+    call compute_reference_quantities(this)
 
     allocate(this%grad_shape(this%npt))
 
     do j = 1, this%mesh%ncell
-      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1), &
-          cp => this%cpoint(this%xcpoint(j):this%xcpoint(j+1)-1))
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        nnode = size(cn)
+        grad_shape_l => select_topology(nnode, tet4_grad_shape_l, pyr5_grad_shape_l, &
+            wed6_grad_shape_l, hex8_grad_shape_l)
+
         do xp = 1, this%xcpoint(j+1)-this%xcpoint(j)
-          p = this%xcpoint(j) + xp - 1
           do d = 1, 3
-            !call compute_linear_grad(this%mesh%x(d,cn), p, jacobian(:,d), global=.false.)
             jacobian(:,d) = matmul(grad_shape_l(:,:,xp), this%mesh%x(d,cn))
           end do
 
-          call invert_3x3(jacobian, jacobian_inverse)
-
-          this%grad_shape(p)%p = matmul(jacobian_inverse, grad_shape_l(:,:,p))
+          ! Compute G = J^-1 * L, where G are the shape function gradients
+          ! in global coordinates and L are the shape function gradients in
+          ! reference coordinates, and J is the Jacobian.
+          ! call invert_3x3(jacobian, jacobian_inverse)
+          ! this%grad_shape(p)%p = matmul(jacobian_inverse, grad_shape_l(:,:,xp))
+          p = this%xcpoint(j) + xp - 1
+          this%grad_shape(p)%p = grad_shape_l(:,:,xp)
+          call dgesv(3, nnode, jacobian, 3, ipiv, this%grad_shape(p)%p, 3, stat)
+          ASSERT(stat == 0)
         end do
       end associate
     end do
 
+  contains
+
+    !! For each cell type, compute the integration point coordinates and shape
+    !! function gradients in reference coordinate-space. Outputs are *_xi_ip and
+    !! *_grad_shape_l arrays
+    subroutine compute_reference_quantities(this)
+
+      use cell_topology
+
+      class(integration_geometry), intent(inout) :: this
+
+      real(r8) :: tet4_xi_ip(3,6), pyr5_xi_ip(3,8), wed6_xi_ip(3,9), hex8_xi_ip(3,12)
+
+      call compute_xi_ip(tet4_xi_node, tet4_edges, tet4_xi_ip)
+      call compute_xi_ip(pyr5_xi_node, pyr5_edges, pyr5_xi_ip)
+      call compute_xi_ip(wed6_xi_node, wed6_edges, wed6_xi_ip)
+      call compute_xi_ip(hex8_xi_node, hex8_edges, hex8_xi_ip)
+
+      call compute_grad_shape_l(tet4_shape_coeff, tet4_xi_node, tet4_xi_ip, tet4_grad_shape_l)
+      call compute_grad_shape_l(pyr5_shape_coeff, pyr5_xi_node, pyr5_xi_ip, pyr5_grad_shape_l)
+      call compute_grad_shape_l(wed6_shape_coeff, wed6_xi_node, wed6_xi_ip, wed6_grad_shape_l)
+      call compute_grad_shape_l(hex8_shape_coeff, hex8_xi_node, hex8_xi_ip, hex8_grad_shape_l)
+
+    end subroutine compute_reference_quantities
+
   end subroutine compute_grad_shape
 
 
-  subroutine compute_reference_quantities(this)
-
-    use cell_topology
-
-    class(integration_geometry), intent(inout) :: this
-
-    integer :: t
-
-    ! compute the integration point coordinates for each cell type in reference coordinate-space
-    call compute_xi_ip(tet4_xi_node, tet4_faces, tet4_xface, tet4_fsize, this%tet4_xi_ip)
-    call compute_xi_ip(pyr5_xi_node, pyr5_faces, pyr5_xface, pyr5_fsize, this%pyr5_xi_ip)
-    call compute_xi_ip(wed6_xi_node, wed6_faces, wed6_xface, wed6_fsize, this%wed6_xi_ip)
-    call compute_xi_ip(hex8_xi_node, hex8_faces, hex8_xface, hex8_fsize, this%hex8_xi_ip)
-
-    call compute_grad_shape_l(tet4_shape_coeff, tet4_xi_node, tet4_xi_ip, this%tet4_grad_shape_l)
-    call compute_grad_shape_l(pyr5_shape_coeff, pyr5_xi_node, pyr5_xi_ip, this%pyr5_grad_shape_l)
-    call compute_grad_shape_l(wed6_shape_coeff, wed6_xi_node, wed6_xi_ip, this%wed6_grad_shape_l)
-    call compute_grad_shape_l(hex8_shape_coeff, hex8_xi_node, hex8_xi_ip, this%hex8_grad_shape_l)
-
-  end subroutine compute_reference_quantities
-
-
-  !! Returns the local coordinate xi of the integration point p of a cell with
-  !! nnode nodes. p is expected to correspond to a local face ID. Since this
-  !! occurs on a reference element in a local coordinate space, the
-  !! physical-space coordinates of the actual cell are not needed.
-  subroutine compute_xi_ip(xi_node, faces, xface, fsize, xi_ip)
+  !! Returns the local coordinates xi of the integration points of a cell. Since
+  !! this occurs on a reference element in a local coordinate space, the
+  !! physical-space coordinates of an actual cell are not needed.
+  subroutine compute_xi_ip(xi_node, edges, xi_ip)
 
     real(r8), intent(in) :: xi_node(:,:)
-    integer, intent(in) :: faces(:), xface(:), fsize(:)
+    integer, intent(in) :: edges(:,:)
     real(r8), intent(out) :: xi_ip(:,:)
 
     integer :: p
-    real(r8) :: xi_cc(3), xi_fc(3)
+    real(r8) :: xi_cc(3), xi_ec(3)
 
     xi_cc = sum(xi_node, dim=2) / size(xi_node, dim=2)
-    do p = 1, size(fsize)
-      xi_fc = sum(xi_node(:,faces(xface(p):xface(p+1)-1)), dim=2) / fsize(p)
-      xi_ip(:,p) = (xi_cc + xi_fc) / 2
+    do p = 1, size(edges, dim=2)
+      !xi_fc = sum(xi_node(:,faces(xface(p):xface(p+1)-1)), dim=2) / fsize(p)
+      xi_ec = sum(xi_node(:,edges(:,e), dim=2) / 2
+      xi_ip(:,p) = (xi_cc + xi_ec) / 2
     end do
 
   end subroutine compute_xi_ip
 
 
+  !! Returns the gradients of the shape functions in reference coordinates. This
+  !! is done for a list of integration points, for the shape functions
+  !! associated with the provided list of node coordinates, and provided
+  !! coefficients associated with those nodes.
   subroutine compute_grad_shape_l(coeff, xi_node, xi_ip, grad_shape_l)
 
     real(r8), intent(in) :: coeff(:), xi_node(:,:), xi_ip(:,:)
@@ -301,5 +336,25 @@ contains
     end do
 
   end subroutine compute_grad_shape_l
+
+
+  function select_topology_r8xxx(nnode, tet4, pyr5, wed6, hex8) result(s)
+    integer, intent(in) :: nnode
+    real(r8), intent(in), target :: tet4(:,:,:), pyr5(:,:,:), wed6(:,:,:), hex8(:,:,:)
+    real(r8), pointer :: s(:,:,:) => null()
+    select case (nnode)
+    case (4)
+      s => tet4
+    case (5)
+      s => pyr5
+    case (6)
+      s => wed6
+    case (8)
+      s => hex8
+    case default
+      ASSERT(.false.)
+    end select
+  end function
+    
 
 end module integration_geometry_type

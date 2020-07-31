@@ -182,20 +182,19 @@ contains
     real(r8), intent(in) :: displ(:,:)
     real(r8), intent(out) :: total_strain(:,:)
 
-    integer :: p, j, d, xp
+    integer :: p, j, d
     real(r8) :: grad_displ(3,3)
 
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        do xp = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
-          p = this%ig%cpoint(xp)
+        do p = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
 
           !! Compute the derivative of a scalar phi in global coordinates using the
           !! formula on page 1765 of Bailey & Cross 1995--linear interpolation.
           !! The Jacobian inverse multiplication is already performed and stored
           !! in the grad_shape matrix.
           do d = 1, 3
-            grad_displ(:,d) = matmul(this%ig%grad_shape(xp)%p, displ(d,cn))
+            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
           end do
 
           total_strain(1,p) = grad_displ(1,1)
