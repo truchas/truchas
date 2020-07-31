@@ -52,7 +52,6 @@ module integration_geometry_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
-  use integration_geometry_type
   implicit none
   private
 
@@ -122,8 +121,8 @@ contains
     class(integration_geometry), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
 
-    integer :: f, n, i, j
-    integer, pointer :: edges => null()
+    integer :: j, xp, p, n1, n2
+    integer, pointer :: edges(:,:) => null()
 
     this%mesh => mesh
 
@@ -131,7 +130,7 @@ contains
     
     ! Accumulate the node volume and compute the control volume face areas
     ! associated with each integration point.
-    allocate(this%n(3,this%npt), this%nppar(this%npt), this%volume(this%nnode_onP))
+    allocate(this%n(3,this%npt), this%nppar(this%npt), this%volume(this%mesh%nnode_onP))
     this%volume = 0
     do j = 1, this%mesh%ncell
       !this%volume(n) = sum(this%subvolume(this%npoint(this%xnpoint(n):this%xnpoint(n+1)-1)))
@@ -151,9 +150,9 @@ contains
   end subroutine init
 
 
-  ! Each node is associated with j integration points. There
-  ! is one integration point for each pair (edge,cell). Domain
-  ! boundaries are not accociated with a cell center, and are skipped.
+  !! Each node is associated with j integration points. There is one integration
+  !! point for each pair (edge,cell). Domain boundaries are not accociated with
+  !! a cell center, and are skipped.
   subroutine compute_connectivity(this)
 
     use cell_topology, only: cell_edges
@@ -187,13 +186,13 @@ contains
       end associate
     end do
 
-    allocate(this%xnpoint(nnode_onP+1))
+    allocate(this%xnpoint(this%mesh%nnode_onP+1))
     this%xnpoint(1) = 1
     do n = 1, this%mesh%nnode_onP
       this%xnpoint(n+1) = this%xnpoint(n) + k(n)
     end do
 
-    allocate(this%npoint(this%xnpoint(this%nnode_onP+1)-1))
+    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1))
     k = 0
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
@@ -307,7 +306,7 @@ contains
     xi_cc = sum(xi_node, dim=2) / size(xi_node, dim=2)
     do p = 1, size(edges, dim=2)
       !xi_fc = sum(xi_node(:,faces(xface(p):xface(p+1)-1)), dim=2) / fsize(p)
-      xi_ec = sum(xi_node(:,edges(:,e), dim=2) / 2
+      xi_ec = sum(xi_node(:,edges(:,p)), dim=2) / 2
       xi_ip(:,p) = (xi_cc + xi_ec) / 2
     end do
 
@@ -341,7 +340,7 @@ contains
   function select_topology_r8xxx(nnode, tet4, pyr5, wed6, hex8) result(s)
     integer, intent(in) :: nnode
     real(r8), intent(in), target :: tet4(:,:,:), pyr5(:,:,:), wed6(:,:,:), hex8(:,:,:)
-    real(r8), pointer :: s(:,:,:) => null()
+    real(r8), pointer :: s(:,:,:)
     select case (nnode)
     case (4)
       s => tet4
@@ -352,9 +351,9 @@ contains
     case (8)
       s => hex8
     case default
+      s => null()
       ASSERT(.false.)
     end select
   end function
     
-
 end module integration_geometry_type

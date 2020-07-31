@@ -47,8 +47,12 @@ module solid_mechanics_type
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(integration_geometry) :: ig
 
+    !! TODO: These will probably vary across the mesh
+    real(r8) :: poissons_ratio, youngs_modulus, thermal_expansion_coeff
+    real(r8), allocatable :: density(:), delta_temperature(:)
+
     !! input parameters
-    real(r8) :: body_force_density(3)
+    real(r8), allocatable :: body_force_density(:)
     real(r8) :: contact_distance, contact_normal_traction, contact_penalty, strain_limit
 
     integer, public :: thermoelastic_niter = 0 ! linear iteration count
@@ -70,16 +74,20 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
 
+    type(parameter_list), pointer :: plist => null()
+
     call start_timer("solid mechanics")
 
     this%mesh => mesh
     call this%ig%init(mesh)
 
-    call params%get('body-force-per-mass', this%body_force_density, default=[0d0, 0d0, 0d0])
+    call params%get('body-force-density', this%body_force_density, default=[0d0, 0d0, 0d0])
     call params%get('contact-distance', this%contact_distance, default=1e-7_r8)
     call params%get('contact-normal-traction', this%contact_normal_traction, default=1e4_r8)
     call params%get('contact-penalty', this%contact_penalty, default=1e3_r8)
     call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
+
+    ASSERT(size(this%body_force_density) == 3)
 
     plist => params%sublist("nonlinear-solver")
     ! call this%solver%init(plist)
@@ -106,15 +114,20 @@ contains
   subroutine compute_residual(this, displ, r)
 
     class(solid_mechanics), intent(in) :: this
+    real(r8), intent(in) :: displ(:,:)
     real(r8), intent(out) :: r(:)
 
-    integer :: n
-    real(r8) :: rhs(3*this%mesh%nnode_onP), tmp, tmp2(3), Dmatr(3,6), total_strain(6,this%ig%npt)
+    integer :: n, xp, p
+    real(r8) :: lhs(3*this%mesh%nnode_onP), rhs(3*this%mesh%nnode_onP), total_strain(6,this%ig%npt)
+    real(r8) :: a, b, tmp, tmp2(3), Dmatr(3,6)
+
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
 
     call this%compute_total_strain(displ, total_strain)
 
     do n = 1, this%mesh%nnode_onP
       associate (rhsn => rhs(3*(n-1)+1:3*(n-1)+3), &
+          lhsn => lhs(3*(n-1)+1:3*(n-1)+3), &
           rn => r(3*(n-1)+1:3*(n-1)+3), &
           np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
 
@@ -126,7 +139,7 @@ contains
           ! right hand side
           tmp = this%youngs_modulus / (1-2*this%poissons_ratio) * this%thermal_expansion_coeff
           if (btest(this%ig%nppar(n),xp)) tmp = -tmp
-          rhsn = rhsn + tmp * this%ig%n(:,p) * delta_temperature(p)
+          rhsn = rhsn + tmp * this%ig%n(:,p) * this%delta_temperature(p)
 
           ! left hand side
           tmp = this%youngs_modulus / (2*(1-this%poissons_ratio))
