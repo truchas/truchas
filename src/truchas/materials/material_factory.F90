@@ -24,6 +24,7 @@ module material_factory
   use material_class
   use material_database_type
   use parameter_list_type
+  use scalar_func_factories, only: alloc_scalar_func
   implicit none
   private
 
@@ -329,7 +330,7 @@ contains
       if (stat == 0) then ! this is an attribute
         if (flag) call this%add_attr(pname)
       else  ! this is a property
-        call get_scalar_func(params, pname, f, stat, errmsg)
+        call alloc_scalar_func(params, pname, f, stat, errmsg)
         if (stat /= 0) then
           errmsg = pname // ' property value error: ' // errmsg
           return
@@ -342,41 +343,5 @@ contains
     stat = 0
 
   end subroutine add_phase_properties
-
-  !! This auxiliary subroutine gets the scalar function specified by the value
-  !! of the parameter PARAM in the parameter list PLIST. The parameter value is
-  !! either a real scalar or a character string that is the name of a function
-  !! in the function table.
-  !! TODO: extend to allow a parameter list value that defines the function.
-
-  subroutine get_scalar_func(plist, param, f, stat, errmsg)
-
-    use scalar_func_factories
-    use scalar_func_table, only: lookup_func  !TODO: pass underlying object as argument
-
-    type(parameter_list), intent(inout) :: plist
-    character(*), intent(in) :: param
-    class(scalar_func), allocatable, intent(out) :: f
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    real(r8) :: const
-    character(:), allocatable :: fname
-
-    call plist%get(param, fname, stat=stat)
-    if (stat == 0) then ! name of a function
-      call lookup_func(fname, f)
-      if (.not.allocated(f)) then
-        stat = 1
-        errmsg = 'unknown function name: ' // fname
-        return
-      end if
-    else  ! it must be a constant value
-      call plist%get(param, const, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      call alloc_const_scalar_func(f, const)
-    end if
-
-  end subroutine get_scalar_func
 
 end module material_factory
