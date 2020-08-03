@@ -45,7 +45,7 @@ News (updated 2020-02-08)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 
-Building Truchas (updated 2020-01-26)
+Building Truchas (updated 2020-07-17)
 ------------------------------------------------------------------------------
 See [BUILDING.md](BUILDING.md) for instructions on compiling and testing
 Truchas.

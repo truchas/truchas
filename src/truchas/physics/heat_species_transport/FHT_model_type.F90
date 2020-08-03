@@ -48,6 +48,9 @@ module FHT_model_type
     class(intfc_func2), allocatable :: ic_rad  ! internal gap radiation
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
+  contains
+    procedure :: update_moving_vf
+    procedure :: add_moving_vf_events
   end type FHT_model
 
   public :: FHT_model_init
@@ -526,5 +529,25 @@ contains
     integer, intent(in) :: n
     index = layout_index(this%layout, this%face_temp_segid, n)
   end function FHT_model_face_temp_index
+
+  subroutine update_moving_vf(this)
+    class(FHT_model), intent(inout) :: this
+    integer :: n
+    if (.not.associated(this%vf_rad_prob)) return
+    do n = 1, size(this%vf_rad_prob)
+      call this%vf_rad_prob(n)%update_moving_vf
+    end do
+  end subroutine
+
+  subroutine add_moving_vf_events(this, eventq)
+    use sim_event_queue_type
+    class(FHT_model), intent(inout) :: this
+    type(sim_event_queue), intent(inout) :: eventq
+    integer :: n
+    if (.not.associated(this%vf_rad_prob)) return
+    do n = 1, size(this%vf_rad_prob)
+      call this%vf_rad_prob(n)%add_moving_vf_events(eventq)
+    end do
+  end subroutine
 
 end module FHT_model_type

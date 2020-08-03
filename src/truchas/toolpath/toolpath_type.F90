@@ -373,6 +373,7 @@ contains
   subroutine set_partition(this, ds)
 
     use sha1_hash_type
+    use,intrinsic :: iso_fortran_env, only: real32
 
     class(toolpath), intent(inout) :: this
     real(r8), intent(in) :: ds
@@ -401,7 +402,7 @@ contains
     n = 1; seg => this%first%next
     this%time(1) = seg%move%start_time()
     this%coord(:,1) = seg%move%start_coord()
-    call hash%update(this%coord(:,1))
+    call hash%update(real(this%coord(:,1),kind=real32))
     this%hash(1) = hash%hexdigest()
     do while (associated(seg%next))
       times = seg%move%partition(ds)
@@ -409,7 +410,7 @@ contains
         n = n + 1
         this%time(n) = times(j)
         this%coord(:,n) = seg%move%coord(times(j))
-        call hash%update(this%coord(:,n))
+        call hash%update(real(this%coord(:,n),kind=real32))
         this%hash(n) = hash%hexdigest()
       end do
       seg => seg%next

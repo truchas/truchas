@@ -19,7 +19,7 @@ program genre
   implicit none
 
   integer :: lun, ios, n, num_encl, stat
-  logical :: is_IOP, found
+  logical :: is_IOP, found, overwrite, exist
   type(encl_list) :: e
   type(re_patch) :: ep
   type(parameter_list) :: encl_params, chap_params, patch_params
@@ -30,9 +30,10 @@ program genre
   call scl_init
   is_IOP = (scl_rank()==1)
 
-  if (is_IOP) call parse_command_line(infile, outfile)
+  if (is_IOP) call parse_command_line(infile, outfile, overwrite)
   call scl_bcast_alloc(infile)
   call scl_bcast_alloc(outfile)
+  call scl_bcast(overwrite)
 
   !! When generating a single radiation enclosure OUTFILE will be used as is.
   !! For multiple enclosures, unique output file names are generated using
@@ -61,11 +62,20 @@ program genre
   num_encl = e%num_encl()
   do n = 1, num_encl
     if (num_encl > 1) outfile = basename // e%this_label() // ext
+    if (.not.overwrite) then
+      if (is_IOP) inquire(file=outfile,exist=exist)
+      call scl_bcast(exist)
+      if (exist) then
+        call re_info('refusing to overwrite ' // outfile // '; use "-f" to overwrite')
+        call e%next_encl
+        cycle
+      end if
+    end if
     call e%write(outfile)
     call ep%write(outfile)
     if (found) then
       call calculate_vf(e, chap_params, ep, vf)
-      call write_dist_vf(vf, outfile)
+      call vf%write(outfile)
     end if
     call re_info('wrote ' // outfile)
     call e%next_encl

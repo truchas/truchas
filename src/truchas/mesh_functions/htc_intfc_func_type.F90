@@ -78,7 +78,7 @@ contains
     class(htc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, var(:)
     integer :: n, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), c
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), c1, c2, fp, fm, df, fdinc
     ASSERT(allocated(this%index))
     args(0) = t
     do n = 1, this%ngroup
@@ -89,10 +89,21 @@ contains
           associate(fnode => this%mesh%fnode(this%mesh%xfnode(index(1,j)):this%mesh%xfnode(index(1,j)+1)-1))
             args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
           end associate
-          c = this%f(n)%eval(args)*this%mesh%area(index(1,j))
-          value(j) = c*(var(index(1,j)) - var(index(2,j)))
-          deriv(1,j) = c
-          deriv(2,j) = -c
+          associate (v1 => var(index(1,j)), v2 => var(index(2,j)))
+            args(-1) = max(v1, v2)
+            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+            value(j) = c1*(v1 - v2)
+            fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
+            fdinc = scale(1.0_r8,exponent(fdinc))
+            args(-1) = max(v1, v2) + fdinc
+            fp = this%f(n)%eval(args)
+            args(-1) = max(v1, v2) - fdinc
+            fm = this%f(n)%eval(args)
+            df = (fp - fm) / (2*fdinc)
+            c2 = df * (v1 - v2) * this%mesh%area(index(1,j))
+            deriv(1,j) =  c1 + merge(c2, 0.0_r8, v1 > v2)
+            deriv(2,j) = -c1 + merge(c2, 0.0_r8, v2 > v1)
+          end associate
         end do
       end associate
     end do

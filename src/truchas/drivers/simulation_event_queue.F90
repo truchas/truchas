@@ -21,6 +21,7 @@ module simulation_event_queue
   use sim_event_queue_type
   use parameter_list_type
   use ded_head_driver, only: path_event
+  use diffusion_solver, only: vf_event
   implicit none
   private
 
@@ -59,7 +60,7 @@ module simulation_event_queue
   end type
 
   type(sim_event_queue), public :: event_queue
-  public :: path_event
+  public :: path_event, vf_event
 
   type(parameter_list), allocatable :: params
 
@@ -68,12 +69,16 @@ contains
   subroutine init_sim_event_queue
 
     use ded_head_driver, only: ded_head_path_events
+    use diffusion_solver_data, only: ds_enabled
+    use diffusion_solver, only: add_moving_vf_events
     use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
     integer :: j, dt_policy
     real(r8) :: c
     real(r8), allocatable :: array(:)
+
+    if (ds_enabled) call add_moving_vf_events(event_queue)
 
     !! Add toolpath segment endpoints to the simulation event queue.
     !! Do this first to avoid times being adjusted to avoid small spacings.

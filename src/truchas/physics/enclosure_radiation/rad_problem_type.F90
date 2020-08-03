@@ -17,6 +17,11 @@ module rad_problem_type
   use parallel_communication
   use parallel_permutations
   use rad_solver_type
+  use encl_vf_class
+  use static_vf_class
+  use moving_vf_type
+  use rad_encl_type
+  use sim_event_queue_type, only: event_action
   implicit none
   private
 
@@ -34,6 +39,8 @@ module rad_problem_type
     !! Radiosity system preconditioner parameters
     integer :: pc_numitr = 1
     integer :: pc_method = PC_JACOBI
+    type(rad_encl), allocatable :: encl ! radiation enclosure surface
+    class(encl_vf), allocatable :: vf   ! enclosure view factors
   contains
     procedure :: init
     procedure :: residual
@@ -43,7 +50,22 @@ module rad_problem_type
     procedure :: precon_matvec1
     procedure :: rhs
     procedure :: rhs_deriv
+    procedure :: update_moving_vf
+    procedure :: add_moving_vf_events
   end type rad_problem
+
+  integer, parameter, public :: DT_POLICY_NONE   = 0
+  integer, parameter, public :: DT_POLICY_NEXT   = 1
+  integer, parameter, public :: DT_POLICY_FACTOR = 2
+  integer, parameter, public :: DT_POLICY_VALUE  = 3
+
+  type, extends(event_action), public :: vf_event
+    private
+    integer  :: dt_policy = DT_POLICY_NONE
+    real(r8) :: c = 0.0_r8
+  contains
+    procedure :: init_dt => vf_event_init_dt
+  end type
 
 contains
 
@@ -52,66 +74,80 @@ contains
  !! INIT
  !!
 
-  subroutine init (this, mesh, name)
+  subroutine init (this, mesh, name, params, tinit)
 
-    use ER_input
     use unstr_mesh_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
     use scalar_func_class
+    use scalar_func_factories, only: alloc_scalar_func
+    use rad_encl_file_type
     use rad_encl_func_type
+    use parameter_list_type
     use truchas_logging_services
 
     class(rad_problem), target, intent(out) :: this
     type(unstr_mesh),   intent(in)  :: mesh
     character(len=*),   intent(in)  :: name
+    type(parameter_list), intent(inout) :: params
+    real(r8), intent(in) :: tinit
 
     integer :: stat
-    character(:), allocatable :: file
-    character(len=127) :: errmsg
-    character(len=32)  :: method
+    logical :: flag
+    character(:), allocatable :: filename, method, errmsg
+    type(rad_encl_file) :: file
+    character(len=127) :: string
     integer, allocatable :: setids(:)
     real(r8) :: csf, tol
     class(scalar_func), allocatable :: tamb
     type(rad_encl_func), allocatable :: eps
+    type(parameter_list), pointer :: plist
 
-    call ERI_get_file (name, file)
+    !! Load the view factor data
+    if (params%is_parameter('toolpath')) then
+      call alloc_moving_vf(tinit, params, this%vf, filename)
+    else  ! static view factors
+      call alloc_static_vf(params, this%vf, filename)
+    end if
+
+    !! Load the distributed enclosure surface
+    allocate(this%encl)
+    call params%get('coord-scale-factor', csf, default=1.0d0)
+    if (is_IOP) call file%open_ro(filename)
+    call this%encl%init(file, this%vf%face_map, csf)
+    if (is_IOP) call file%close
+    this%nface_er = this%encl%nface_onP
+    ASSERT(this%nface_er == this%vf%nface)
 
     call TLS_info ('  Initializing enclosure radiation problem "' // trim(name) // '" ...')
 
     !! Identify the HC faces that correspond to the ER surface faces.
-    call connect_to_mesh (mesh, file, this%faces, this%ge_faces, stat)
+    call connect_to_mesh(mesh, filename, this%faces, this%ge_faces, stat)
     if (stat /= 0) then
-      write(errmsg,'(a,i0)') 'no matching mesh face for enclosure face ', stat
-      call TLS_fatal (errmsg)
+      write(string,'(a,i0)') 'no matching mesh face for enclosure face ', stat
+      call TLS_fatal(string)
     end if
+    this%nface_hc = size(this%faces)
+    ASSERT(this%vf%nface_tot == global_sum(this%nface_hc))
 
     !! Verify that the identified faces are boundary faces.
     call boundary_face_check (mesh, this%faces, stat, setids)
     if (stat /= 0) then
-      write(errmsg,'(4x,a,i0,a)') 'Error: ', stat, ' enclosure faces are not mesh boundary faces;'
-      call TLS_info (trim(errmsg))
+      write(string,'(4x,a,i0,a)') 'Error: ', stat, ' enclosure faces are not mesh boundary faces;'
+      call TLS_info (trim(string))
       if (size(setids) > 0) then
-        write(errmsg,'(11x,a,i0,99(:,1x,i0))') 'faces belong to face sets ', setids
+        write(string,'(11x,a,i0,99(:,1x,i0))') 'faces belong to face sets ', setids
       else
-        write(errmsg,'(11x,a)') 'faces belong to no mesh face sets.'
+        write(string,'(11x,a)') 'faces belong to no mesh face sets.'
       end if
-      call TLS_info (trim(errmsg))
-      write(errmsg,'(11x,a)') 'Perhaps an internal interface should have been defined?'
-      call TLS_info (trim(errmsg))
+      call TLS_info (trim(string))
+      write(string,'(11x,a)') 'Perhaps an internal interface should have been defined?'
+      call TLS_info (trim(string))
       deallocate(setids)
       call TLS_fatal ('Error initializing enclosure radiation problem "' // trim(name) // '"')
     end if
 
-    this%nface_hc = size(this%faces)
-
-    !! Create the distributed enclosure radiation system.
-    call ERI_get_coord_scale_factor (name, csf)
-    call this%sol%init (file, csf)
-    this%nface_er = this%sol%nface
-    ASSERT( this%sol%vf_mat%nface_tot == global_sum(this%nface_hc) )
-
     !! Create the parallel permutations between the HC and ER partitions.
-    call create_par_perm (this%ge_faces, this%sol%encl%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
+    call create_par_perm (this%ge_faces, this%vf%face_map, this%perm_hc_to_er, this%perm_er_to_hc)
     INSIST(defined(this%perm_er_to_hc))
     INSIST(defined(this%perm_hc_to_er))
 
@@ -121,22 +157,29 @@ contains
 #endif
 
     !! Check that HC radiation faces are geometrically equal to the enclosure surface.
-    if (ERI_check_geometry(name)) then
+    call params%get('check-geometry', flag, default=.false.)
+    if (flag) then
       call TLS_warn ('Not able to check matching enclosure surface geometry for mixed cell meshes')
       !FIXME -- REWRITE CHECK_SURFACE TO OPERATE ON A UNSTR_MESH TYPE MESH
-      !call check_surface (mesh, this%sol%encl, this%faces, this%perm_er_to_hc, stat)
+      !call check_surface (mesh, this%encl, this%faces, this%perm_er_to_hc, stat)
       !if (stat /= 0) then
-      !  write(errmsg,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
-      !  call TLS_fatal (errmsg)
+      !  write(string,'(4x,a,i0,a)') 'enclosure surface doesn''t match mesh: ', stat, ' faces differ'
+      !  call TLS_fatal (string)
       !end if
     end if
 
+    !! Create the enclosure radiation solver.
+    call this%sol%init(this%vf)
+
     !! Set ER system parameters.
-    call ERI_get_ambient (name, tamb)
+    call alloc_scalar_func(params, 'ambient-temp', tamb, stat, errmsg)
+    INSIST(stat == 0)
     call this%sol%set_ambient (tamb)
 
     allocate(eps)
-    call ERI_get_emissivity (name, this%sol%encl, eps)
+    plist => params%sublist('surfaces')
+    call define_emissivity(this%encl, plist, eps, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('error defining emissivity: ' // errmsg)
     call this%sol%set_emissivity (eps)
 
     call this%sol%set_stefan_boltzmann (stefan_boltzmann)
@@ -147,12 +190,13 @@ contains
     !! the parameters once.  Really these need to be computed whenever the
     !! emissivities change significantly, but this involves computing
     !! eigenvalues of the radiosity system and isn't cheap.
-    call this%sol%set_cheby_param (time=0.0_r8)
+    call this%sol%set_cheby_param (time=tinit)
 
-    call ERI_get_error_tolerance (name, tol)
+    call params%get('error-tol', tol, default=1e-3_r8)
     call this%sol%set_solver_controls (tol, maxitr=500) !TODO! input maxitr value
 
-    call ERI_get_precon_method (name, method, this%pc_numitr)
+    call params%get('precon-method', method, default='JACOBI')
+    call params%get('precon-iter', this%pc_numitr, default=1)
     select case (method)
     case ('JACOBI')
       this%pc_method = PC_JACOBI
@@ -163,6 +207,135 @@ contains
     end select
 
   end subroutine init
+
+  subroutine define_emissivity(encl, plist, eps, stat, errmsg)
+
+    use rad_encl_func_type
+    use parameter_list_type
+    use scalar_func_factories
+
+    type(rad_encl), intent(in), target :: encl
+    type(parameter_list), intent(inout) :: plist
+    type(rad_encl_func), intent(out) :: eps
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: params
+    class(scalar_func), allocatable :: f
+    integer, allocatable :: block_ids(:)
+
+    call eps%prep(encl)
+    piter = parameter_list_iterator(plist, sublists_only=.true.)
+    do while (.not.piter%at_end())
+      params => piter%sublist()
+      call alloc_scalar_func(params, 'emissivity', f, stat, errmsg)
+      if (stat /= 0) exit
+      call params%get('face-block-ids', block_ids)
+      call eps%add_function(f, block_ids, stat, errmsg)
+      if (stat /= 0) exit
+      call piter%next
+    end do
+    if (stat /= 0) then
+      errmsg = 'error defining emissivity for surface ' // piter%name() // ': ' // errmsg
+      return
+    end if
+    call eps%done(stat, errmsg)
+
+  end subroutine
+
+  subroutine alloc_static_vf(params, vf, filename)
+
+    use parameter_list_type
+    use static_vf_class
+    use facet_vf_type
+    use patch_vf_type
+    use rad_encl_file_type
+    use truchas_logging_services
+
+    type(parameter_list), intent(inout) :: params
+    class(encl_vf), allocatable, intent(out) :: vf
+    character(:), allocatable, intent(out) :: filename
+
+    type(rad_encl_file) :: file
+    class(static_vf), allocatable :: svf
+    logical :: has_patches
+
+    call params%get('enclosure-filename', filename)
+    call TLS_info('')
+    call TLS_info('Reading enclosure radiation view factors from ' // filename)
+    if (is_IOP) call file%open_ro(filename)
+    if (is_IOP) has_patches = file%has_patches()
+    call broadcast(has_patches)
+
+    if (has_patches) then
+      allocate(patch_vf :: svf)
+    else
+      allocate(facet_vf :: svf)
+    end if
+    call svf%init(file)
+    call move_alloc(svf, vf)
+    if (is_IOP) call file%close
+
+  end subroutine
+
+  subroutine alloc_moving_vf(tinit, params, vf, filename)
+
+    use parameter_list_type
+    use moving_vf_type
+    use toolpath_type
+    use toolpath_table, only: toolpath_ptr
+
+    real(r8), intent(in) :: tinit
+    type(parameter_list), intent(inout) :: params
+    class(encl_vf), allocatable, intent(out) :: vf
+    character(:), allocatable, intent(out) :: filename
+
+    integer :: n, j
+    character(:), allocatable :: tpname, hash(:), ext, basename, filenames(:)
+    real(r8), allocatable :: times(:)
+    type(toolpath), pointer :: tp
+    type(moving_vf), allocatable :: mvf
+
+    call params%get('toolpath', tpname)
+    tp => toolpath_ptr(tpname)
+    INSIST(tp%has_partition())
+    call tp%get_partition(hash=hash, time=times)
+
+    call params%get('enclosure-filename', filename)
+    ext = file_extension(filename)
+    n = index(filename,ext,back=.true.) - 1 ! strip file extension
+    basename = filename(:n) // '.'
+
+    n = len(basename) + len(hash) + len(ext)
+    allocate(character(n) :: filenames(size(hash)))
+    do j = 1, size(hash)
+      filenames(j) = basename // hash(j) // ext
+    end do
+
+    allocate(mvf)
+    call mvf%init(tinit, times, filenames)
+    filename = mvf%filename()
+    call move_alloc(mvf, vf)
+
+  contains
+
+    !! Return the file extension, or empty string if none
+    function file_extension(filename) result(ext)
+      character(*), intent(in) :: filename
+      character(:), allocatable :: ext
+      integer :: n
+      n = scan(filename, '/', back=.true.)
+      ext = filename(n+1:)
+      n = scan(ext, '.', back=.true.)
+      if (n > 1) then
+        ext = ext(n:)
+      else
+        ext = ''
+      end if
+    end function
+
+  end subroutine alloc_moving_vf
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -608,6 +781,11 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%solve_radiosity (time, temp_er, qrad_er, stat, numitr, error)
 
     !! Form the local radiosity vector in the HC ordering.
@@ -624,6 +802,11 @@ contains
     real(r8) :: z_er(this%nface_er)
 
     ASSERT(size(z) == this%nface_hc)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     select case (this%pc_method)
     case (PC_JACOBI)
@@ -651,6 +834,11 @@ contains
 
     !! Form the Z vector in the ER ordering.
     call reorder (this%perm_er_to_hc, z_er, z)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%precon_matvec1 (time, z_er)
 
@@ -685,6 +873,11 @@ contains
     !! Form the local radiosity vector in the ER ordering.
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
     call reorder (this%perm_er_to_hc, temp_er, temp)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%heat_flux (time, qrad_er, temp_er, flux_er)
 !    call ERS_compute_heat_flux (this%sol, time, qrad_er, flux_er)
@@ -721,6 +914,11 @@ contains
     call reorder (this%perm_er_to_hc, temp_er, temp)
     call reorder (this%perm_er_to_hc, qrad_er, qrad)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%residual (time, qrad_er, temp_er, res_er)
 
     !! Form the local residual vector in the HC ordering.
@@ -743,6 +941,11 @@ contains
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
 
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
+
     call this%sol%rhs_deriv (time, temp_er, drhs_er)
 
     !! Form the local derivative vector in the HC ordering.
@@ -764,6 +967,11 @@ contains
 
     !! Form the local temperature vector in the ER ordering.
     call reorder (this%perm_er_to_hc, temp_er, temp)
+
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%set_time(time)
+    end select
 
     call this%sol%rhs (time, temp_er, rhs_er)
 
@@ -923,17 +1131,55 @@ contains
 !
 !  end subroutine write_mesh_surface
 
-  subroutine write_encl_surface (file, sol)
+  subroutine write_encl_surface(file, encl)
 
-    use rad_solver_gmv
+    use rad_encl_gmv
 
     character(*), intent(in) :: file
-    type(rad_solver), intent(in) :: sol
+    type(rad_encl), intent(in) :: encl
 
-    call gmv_open (file)
-    call gmv_write_enclosure (sol)
+    call gmv_open(file)
+    call gmv_write_enclosure(encl)
     call gmv_close
 
   end subroutine write_encl_surface
+
+  subroutine update_moving_vf(this)
+    use moving_vf_type
+    class(rad_problem), intent(inout) :: this
+    select type (vf => this%vf)
+    type is (moving_vf)
+      call vf%next_interval
+    end select
+  end subroutine
+
+  subroutine add_moving_vf_events(this, eventq)
+    use sim_event_queue_type
+    class(rad_problem), intent(in) :: this
+    type(sim_event_queue), intent(inout) :: eventq
+    integer :: j
+    select type (vf => this%vf)
+    type is (moving_vf)
+      do j = 1, size(vf%times)
+        call eventq%add_event(vf%times(j), vf_event(DT_POLICY_FACTOR, 0.125_r8))
+      end do
+    end select
+  end subroutine
+
+  pure function vf_event_init_dt(this, dt_last, dt_next) result(dt)
+    class(vf_event), intent(in) :: this
+    real(r8), intent(in) :: dt_last, dt_next
+    real(r8) :: dt
+    select case (this%dt_policy)
+    case (DT_POLICY_NONE, DT_POLICY_NEXT)
+      dt = dt_next
+    case (DT_POLICY_FACTOR)
+      dt = this%c*dt_last
+    case (DT_POLICY_VALUE)
+      dt = this%c
+    case default
+      dt = 0.0_r8 ! should never be here
+    end select
+  end function
 
 end module rad_problem_type

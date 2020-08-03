@@ -87,13 +87,14 @@ contains
     if (associated(this%rel_C_tol)) deallocate(this%rel_C_tol)
   end subroutine HTSD_norm_delete
   
-  subroutine HTSD_norm_compute (this, u, du, du_norm)
+  subroutine HTSD_norm_compute (this, t, u, du, du_norm)
 
 #ifdef G95_COMPILER_WORKAROUND
     type(HTSD_norm), intent(inout) :: this
 #else
     type(HTSD_norm), intent(in) :: this
 #endif
+    real(r8), intent(in) :: t
     real(r8), intent(in), target :: u(:), du(:)
     real(r8), intent(out) :: du_norm
     
@@ -134,8 +135,8 @@ contains
           allocate(res(size(faces)), rhs(size(faces)))
           call HTSD_model_get_radiosity_view (this%model, n, u, qrad)
           call HTSD_model_get_face_temp_view (this%model, u, temp)
-          call this%model%ht%vf_rad_prob(n)%residual (0.0_r8, qrad, temp(faces), res)
-          call this%model%ht%vf_rad_prob(n)%rhs (0.0_r8, temp(faces), rhs)
+          call this%model%ht%vf_rad_prob(n)%residual (t, qrad, temp(faces), res)
+          call this%model%ht%vf_rad_prob(n)%rhs (t, temp(faces), rhs)
           qerror = sqrt(global_sum(res**2)) / sqrt(global_sum(rhs**2))
           !if (is_IOP) write(*,'(e10.3)',advance='no') qerror
           ht_du_norm = max(ht_du_norm, qerror/1.0d-3)

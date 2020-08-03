@@ -155,7 +155,7 @@ contains
     if (.not. has_vf) call re_halt ('No view factor data in file: ' // infile)
 
     call ep%read(infile)
-    call read_dist_vf(dvf, infile)
+    call dvf%read(infile)
 
   end subroutine init_data_from_file
 
@@ -178,8 +178,8 @@ contains
     min_rel_err = huge(0.0)
 
     do i = 1, dvf%npatch_tot
-      col1 = unpack_dvf_col(dvf, i)
-      col2 = unpack_dvf_col_explicit(dvf, i)
+      col1 = dvf%unpack_col(i)
+      col2 = dvf%unpack_col_explicit(i)
 
       if (is_IOP) then
         do j = 1, size(col1)

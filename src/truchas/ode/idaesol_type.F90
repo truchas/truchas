@@ -123,9 +123,10 @@ module idaesol_type
       real(r8), intent(in) :: t, dt
       real(r8), intent(in), contiguous :: u(:)
     end subroutine
-    subroutine du_norm(this, u, du, error)
+    subroutine du_norm(this, t, u, du, error)
       import :: idaesol_model, r8
       class(idaesol_model) :: this
+      real(r8), intent(in) :: t
       real(r8), intent(in), contiguous :: u(:), du(:)
       real(r8), intent(out) :: error
     end subroutine
@@ -489,7 +490,7 @@ contains
 
       !! Predictor error control.
       u0 = u - up
-      call this%model%du_norm (u, u0, perr)
+      call this%model%du_norm (t, u, u0, perr)
       if (perr < 4.0_r8) then ! accept the step.
         if (this%verbose) write(this%unit,fmt=4) perr
         errc = 0
@@ -627,7 +628,7 @@ contains
       u = u - du
 
       !! Error estimate.
-      call this%model%du_norm(u, du, error)
+      call this%model%du_norm(t, u, du, error)
       if (this%verbose) write(this%unit,fmt=3) itr, error
 
       !! Check for convergence.

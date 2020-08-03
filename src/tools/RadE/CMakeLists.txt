@@ -11,9 +11,6 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 # Truchas module directory
 include_directories(${Truchas_MODULE_DIR})
 
-# Chaparral
-include_directories(${ChaparralVF_SOURCE_DIR})
-
 # MPI
 include_directories(${MPI_C_INCLUDE_PATH})
 
@@ -53,8 +50,7 @@ list(APPEND LIBRARY_RADE_FILES
 	    scl_f77.c)
 
 add_library(rade ${LIBRARY_RADE_FILES})
-add_dependencies(rade vflib)
-target_link_libraries(rade truchas ${Truchas_LINK_LIBS} vflib)
+target_link_libraries(rade truchas ${Truchas_LINK_LIBS} chaparral)
 
 # --- cmpre binary
 set(CMPRE_SOURCE_FILES cmpre.F90)

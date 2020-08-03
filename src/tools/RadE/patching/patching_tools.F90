@@ -23,10 +23,45 @@
 
 module patching_tools
 
-  use kinds, only: r8
+  use kinds, only: r8, i8
   implicit none
 
 contains
+
+  !TODO: refactor to more general module?
+  subroutine init_random_seed(seed)
+
+    integer, intent(in) :: seed
+
+    integer, allocatable :: put(:)
+    integer :: n, i
+    integer(i8) :: s
+
+    call random_seed(size=n)
+    allocate(put(n))
+    s = seed
+    do i = 1, n
+      put(i) = lcg(s)
+    end do
+    call random_seed(put=put)
+
+    contains
+      !! SOURCE: https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gfortran/RANDOM_005fSEED.html
+      !! This simple PRNG is seeded by a single integer.  This PRNG is used to
+      !! generate a list of numbers with "high entropy" that will serve as the
+      !! actual seed for RANDOM_SEED.
+      function lcg(s)
+        integer :: lcg
+        integer(i8) :: s
+        if (s == 0) then
+           s = 104729
+        else
+           s = mod(s, 4294967296_i8)
+        end if
+        s = mod(s * 279470273_i8, 4294967291_i8)
+        lcg = int(mod(s, int(huge(0), i8)), kind(0))
+      end function lcg
+  end subroutine init_random_seed
 
 
   ! TODO: merge with 3D code (unstr_mesh_tools?)

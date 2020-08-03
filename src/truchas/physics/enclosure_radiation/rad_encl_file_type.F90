@@ -55,10 +55,13 @@ module rad_encl_file_type
     procedure :: get_f2p_map
     procedure :: put_area
     procedure :: get_area
+    procedure :: put_face_weight
+    procedure :: get_face_weight
     procedure :: has_vf_data
     procedure :: has_ambient
     procedure :: has_patches
     procedure :: has_area
+    procedure :: has_face_weight
   end type rad_encl_file
 
 contains
@@ -409,11 +412,11 @@ contains
 
   end subroutine get_source_info
 
-  subroutine init_patch(this, npatch, write_f2p_map)
+  subroutine init_patch(this, npatch, write_patch_data)
 
     class(rad_encl_file), intent(in) :: this
     integer(c_size_t), intent(in) :: npatch
-    logical, intent(in) :: write_f2p_map
+    logical, intent(in) :: write_patch_data
 
     integer :: stat, dimid, varid
     character(:), allocatable :: errmsg
@@ -425,10 +428,12 @@ contains
     call this%file%def_dim('num_patches', npatch, dimid, stat, errmsg)
     if (stat /= 0) call error_exit(proc//errmsg)
 
-    if (write_f2p_map) then
+    if (write_patch_data) then
       call this%file%inq_dimid('num_faces', dimid, stat, errmsg)
       if (stat /= 0) call error_exit(proc//errmsg)
       call this%file%def_var('f2p_map', NF_INT32, dimid, varid, stat, errmsg)
+      if (stat /= 0) call error_exit(proc//errmsg)
+      call this%file%def_var('face_weight', NF_REAL64, dimid, varid, stat, errmsg)
       if (stat /= 0) call error_exit(proc//errmsg)
     end if
 
@@ -660,6 +665,30 @@ contains
     if (stat /= 0) call error_exit('rad_encl_file%get_area: '//errmsg)
   end subroutine get_area
 
+  subroutine put_face_weight(this, face_weight)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(in) :: face_weight(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('face_weight', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_face_weight: '//errmsg)
+    call this%file%put_var(varid, face_weight, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%put_face_weight: '//errmsg)
+  end subroutine put_face_weight
+
+  subroutine get_face_weight(this, face_weight)
+    class(rad_encl_file), intent(in) :: this
+    real(real64), intent(out) :: face_weight(:)
+    integer :: stat, varid
+    character(:), allocatable :: errmsg
+    !! Should check the length is correct
+    call this%file%inq_varid('face_weight', varid, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_face_weight: '//errmsg)
+    call this%file%get_var(varid, face_weight, stat, errmsg)
+    if (stat /= 0) call error_exit('rad_encl_file%get_face_weight: '//errmsg)
+  end subroutine get_face_weight
+
   logical function has_vf_data(this)
     class(rad_encl_file), intent(in) :: this
     integer :: varid, stat
@@ -687,6 +716,13 @@ contains
     call this%file%inq_varid('area', varid, stat)
     has_area = (stat == 0)
   end function has_area
+
+  logical function has_face_weight(this)
+    class(rad_encl_file), intent(in) :: this
+    integer :: varid, stat
+    call this%file%inq_varid('face_weight', varid, stat)
+    has_face_weight = (stat == 0)
+  end function has_face_weight
 
   subroutine error_exit(errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit

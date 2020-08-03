@@ -84,11 +84,12 @@ contains
     INSIST(errc == 0)
   end subroutine compute_precon
 
-  subroutine du_norm(this, u, du, error)
+  subroutine du_norm(this, t, u, du, error)
     class(htsd_idaesol_model) :: this
+    real(r8), intent(in) :: t
     real(r8), contiguous, intent(in) :: u(:), du(:)
     real(r8), intent(out) :: error
-    call htsd_norm_compute(this%norm, u, du, error)
+    call htsd_norm_compute(this%norm, t, u, du, error)
   end subroutine du_norm
 
 end module htsd_idaesol_model_type

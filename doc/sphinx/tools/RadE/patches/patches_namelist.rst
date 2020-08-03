@@ -15,7 +15,7 @@ PATCHES Namelist
 :superscript:`Example PATCHES namelist`
 
 The `PATCHES` namelist defines the parameters used by the patching algorithms. The namelist supports
-ten parameters, but not all parameters are used by all algorithms. Parameters only used by a
+many parameters, but not all parameters are used by all algorithms. Parameters only used by a
 particular algorithm are prefixed with the algorithm's name.
 
 These parameters are described in detail below.
@@ -172,6 +172,27 @@ possible due to a merge.
    and to 5 for triangular meshes. This avoids splitting too many patches.
 
 
+PAVE_RANDOM_SEED
+++++++++++++++++
+Defines the seed for the random number generator used to pick the initial seed patches for the
+:doc:`PAVE algorithm <pave>`.
+
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_random_seed > 0
+   :default: ``NONE``, the seed is taken from the system clock.
+
+The PAVE algorithm begins by creating a 'seed patch' in each connected component of the enclosure.
+Each component is then 'paved' or 'tiled' with patches, starting from the seed patch. The seed
+patches are chosen randomly from a set of patches determined to produce optimal results. Refer to
+the :ref:`seed patches section <tools/RadE/patches/pave:Choosing Seed Patches>` of the PAVE
+documentation for more information on how the seed patches are selected.
+
+This parameter sets the seed for the random number generator used to pick the seed patches.
+Therefore, runs with the same value for this parameter will produce identical results. If this
+parameter is not specified, then the seed is taken from the system clock and results will likely
+vary from run to run.
+
 
 VAC Parameters
 --------------
@@ -260,8 +281,8 @@ terminating conditions.
 
 VSA_MIN_DELTA
 +++++++++++++
-Defines the minimum allowable change in patch proxies between successive
-iterations of the :doc:`VSA algorithm <vsa>`.
+Defines the minimum allowable change in patch proxies between successive iterations of the
+:doc:`VSA algorithm <vsa>`.
 
 .. namelist_parameter::
    :type: REAL
@@ -277,7 +298,8 @@ stops at that iteration.
 
 VSA_AVG_FACES_PER_PATCH
 +++++++++++++++++++++++
-Defines the average faces per patch, and by extension the total number of patches.
+Defines the average faces per patch, and by extension the total number of patches, of the
+:doc:`VSA algorithm <vsa>`.
 
 .. namelist_parameter::
    :type: REAL
@@ -298,3 +320,25 @@ final configuration:
 
 Rather than set the number of patches explicitly, which is mesh dependent, expressing this parameter
 as an average allows the same value to apply to a variety of meshes.
+
+
+VSA_RANDOM_SEED
++++++++++++++++
+Defines the seed for the random number generator used to pick the initial seed patches for the
+:doc:`VSA algorithm <vsa>`.
+
+.. namelist_parameter::
+   :type: INTEGER
+   :domain: pave_random_seed > 0
+   :default: ``NONE``, the seed is taken from the system clock.
+
+The VSA algorithm uses a 'farthest-point' initialization method to choose the seed patches for the
+first iteration. To start, a random face in each connected component of the enclosure is chosen as a
+seed patch.  Then, seed patches are added one at a time by performing a :ref:`partitioning
+<tools/RadE/patches/vsa:Geometry Partitioning>` and then choosing the face with highest total
+distortion as the new seed patch.
+
+This parameter sets the seed for the random number generator used to pick the first seed patch in
+each connected component. Therefore, runs with the same value for this parameter will produce
+identical results. If this parameter is not specified, then the seed is taken from the system clock
+and results will likely vary from run to run.

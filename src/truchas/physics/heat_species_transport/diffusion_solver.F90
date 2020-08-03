@@ -33,6 +33,7 @@ module diffusion_solver
   use unstr_mesh_type
   use enthalpy_advector_class
   use parameter_list_type
+  use rad_problem_type, only: vf_event
   implicit none
   private
 
@@ -40,6 +41,7 @@ module diffusion_solver
   public :: read_ds_namelists
   public :: ds_set_initial_state, ds_restart
   public :: ds_delete
+  public :: update_moving_vf, add_moving_vf_events, vf_event
 
   !! These return cell-centered results relative to the old Truchas mesh.
   public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
@@ -87,7 +89,7 @@ contains
     use thermal_bc_namelist
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
-    use ER_input
+    use enclosure_radiation_namelist
 
     integer, intent(in) :: lun
 
@@ -96,8 +98,7 @@ contains
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
 
-    call ERI_read_enclosure_radiation (lun)
-    call ERI_read_enclosure_surface (lun)
+    call read_enclosure_radiation_namelists(lun)
 
   end subroutine read_ds_namelists
 
@@ -377,7 +378,7 @@ contains
  !!
  !! DS_INIT
  !!
-  subroutine ds_init ()
+  subroutine ds_init (tinit)
 
     use EM_data_proxy, only: EM_is_on
     use fluid_data_module,  only: fluid_flow
@@ -391,6 +392,8 @@ contains
     use thermal_bc_factory1_type
     use species_bc_factory1_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
+
+    real(r8), intent(in) :: tinit
 
     integer :: stat
     character(len=200) :: errmsg
@@ -461,7 +464,7 @@ contains
         type(species_bc_factory1) :: sbc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call sbc_fac%init(this%mesh, this%species_bc_params)
-        this%mod1 => create_HTSD_model(this%disc, this%mmf, tbc_fac, sbc_fac, stat, errmsg)
+        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
@@ -473,7 +476,7 @@ contains
       block
         type(thermal_bc_factory1) :: bc_fac
         call bc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
-        this%mod2 => create_FHT_model (this%disc, this%mmf, bc_fac, stat, errmsg)
+        this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
@@ -733,5 +736,29 @@ contains
     if (present(culled)) culled = (cell_count > 0)
 
   end subroutine cull_material_fragments
+
+  subroutine update_moving_vf
+    select case (this%solver_type)
+    case (SOLVER1)
+      call this%mod1%update_moving_vf
+    case (SOLVER2)
+      call this%mod2%update_moving_vf
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
+  subroutine add_moving_vf_events(eventq)
+    use sim_event_queue_type
+    type(sim_event_queue), intent(inout) :: eventq
+    select case (this%solver_type)
+    case (SOLVER1)
+      call this%mod1%add_moving_vf_events(eventq)
+    case (SOLVER2)
+      call this%mod2%add_moving_vf_events(eventq)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
 
 end module diffusion_solver

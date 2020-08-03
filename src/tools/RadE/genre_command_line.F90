@@ -15,9 +15,10 @@ module genre_command_line
 
 contains
 
-  subroutine parse_command_line(infile, outfile)
+  subroutine parse_command_line(infile, outfile, overwrite)
 
     character(:), allocatable, intent(out) :: infile, outfile
+    logical, intent(out) :: overwrite
 
     integer :: i, n, num_arg
     character(255) :: arg
@@ -31,6 +32,7 @@ contains
 
     n = 0
     num_arg = command_argument_count()
+    overwrite = .false.
 
     do while (n < num_arg)
 
@@ -38,6 +40,10 @@ contains
       call get_command_argument(n, arg)
 
       select case (arg)
+
+      case ('-f')
+
+        overwrite = .true.
 
       case ('-h','--help')
 

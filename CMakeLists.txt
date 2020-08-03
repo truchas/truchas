@@ -7,10 +7,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 
 include(NoInSourceBuild)
 
-project(Truchas VERSION 3.1.0 LANGUAGES C Fortran)
+project(Truchas VERSION 20.07 LANGUAGES C Fortran)
 
 # Append a pre-release tag to the version if needed
-set(Truchas_PRERELEASE alpha)
+#set(Truchas_PRERELEASE alpha)
 if(Truchas_PRERELEASE)
   string(APPEND Truchas_VERSION -${Truchas_PRERELEASE})
 endif()
@@ -20,6 +20,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
   set(CMAKE_Fortran_COMPILE_OPTIONS_PIE "-PIC")
   include(NAGFortranCompilerVersion)
 endif()
+
+# explicitly add NDEBUG to release flags because cmake only does this automatically for
+# C and CXX builds
+set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -DNDEBUG")
 
 # Create all the Fortran module files in a directory at the root build directory
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
@@ -139,6 +143,24 @@ endif()
 find_package(PETACA)
 if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
+endif()
+
+# Chaco library
+find_package(Chaco)
+if(NOT Chaco_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
+endif()
+
+# Chaparral library
+find_package(Chaparral)
+if(NOT Chaparral_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Chaparral installation")
+endif()
+
+# Scorpio library
+find_package(Scorpio)
+if(NOT Scorpio_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Scorpio installation")
 endif()
 
 # Test - need a swith here to enable testing

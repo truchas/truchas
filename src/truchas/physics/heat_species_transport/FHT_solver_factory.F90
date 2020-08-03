@@ -20,11 +20,12 @@ contains
 
   function create_FHT_solver (mmf, model, stat, errmsg) result (solver)
   
-    use ER_input
+    use enclosure_radiation_namelist, only: er_params => params
     use cutoffs_module, only: cutvof
     use parallel_communication
     use diffusion_solver_data
     use truchas_env, only: output_file_name
+    use parameter_list_type
     
     type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(in), target :: model
@@ -34,7 +35,10 @@ contains
     
     integer :: j, n, lun
     type(FHT_solver_params) :: params
-    character(len=31), allocatable :: encl_name(:)
+    !character(len=31), allocatable :: encl_name(:)
+    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: plist
+    character(:), allocatable :: string
     
     stat = 0
     errmsg = ''
@@ -85,15 +89,16 @@ contains
       !TODO! Assumes model%vf_rad_prob array was initialized under the same
       !TODO! loop so that that array and vfr_precon_coupling are in correspondence.
       !TODO! This is fragile and needs to be fixed.
-      n = ERI_num_enclosures()
-      allocate(encl_name(n))
+      piter = parameter_list_iterator(er_params, sublists_only=.true.)
+      n = piter%count()
       allocate(params%precon_params%vfr_precon_coupling(n), params%norm_params%rad_tol(n))
-      call ERI_get_names (encl_name)
       do j = 1, n
-        call ERI_get_precon_coupling_method (encl_name(j), params%precon_params%vfr_precon_coupling(j))
-        call ERI_get_error_tolerance (encl_name(j), params%norm_params%rad_tol(j))
+        plist => piter%sublist()
+        call plist%get('precon-coupling-method', string, default='BACKWARD GS')
+        params%precon_params%vfr_precon_coupling(j) = string
+        call plist%get('error-tol', params%norm_params%rad_tol(j), default=1d-3)
+        call piter%next
       end do
-      deallocate(encl_name)
     end if
     
     allocate(solver)
