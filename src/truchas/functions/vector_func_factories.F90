@@ -47,6 +47,13 @@ module vector_func_factories
   public :: alloc_fptr_vector_func
   public :: alloc_div_radial_cyl_flow_func
 
+  !! These higher-level procedures take a parameter list as input.
+  public :: alloc_vector_func
+
+  interface alloc_vector_func
+    procedure alloc_vector_func, get_vector_func
+  end interface
+
 contains
 
   subroutine alloc_const_vector_func (f, const)
@@ -137,5 +144,50 @@ contains
     fx = x(1:3) - (xdota/adota)*p(1:3)
     fx = fx * (sqrt(adota)/(fx(1)*fx(1) + fx(2)*fx(2) + fx(3)*fx(3)))
   end function div_radial_cyl_flow
+
+  !! This subroutine gets the vector function specified by the value of the
+  !! parameter PARAM in the parameter list PLIST. The parameter value is either
+  !! a real array, a character string that is the name of a vector function in
+  !! the vector function table, or a parameter list that defines the function.
+
+  subroutine get_vector_func(plist, param, f, stat, errmsg)
+
+    use parameter_list_type
+    use vector_func_table, only: lookup_func  !TODO: pass underlying object as argument
+
+    type(parameter_list), intent(inout) :: plist
+    character(*), intent(in) :: param
+    class(vector_func), allocatable, intent(out) :: f
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    real(r8), allocatable :: const(:)
+    character(:), allocatable :: fname
+    type(parameter_list), pointer :: func_params
+
+    if (plist%is_sublist(param)) then
+      func_params => plist%sublist(param)
+      call alloc_vector_func(f, func_params)  !TODO: should return stat, errmsg
+    else if (plist%is_scalar(param)) then
+      call plist%get(param, fname, stat=stat)
+      if (stat == 0) then ! name of a function
+        call lookup_func(fname, f)
+        if (.not.allocated(f)) then
+          stat = 1
+          errmsg = 'unknown function name: ' // fname
+          return
+        end if
+      end if
+    else if (plist%is_vector(param)) then
+      call plist%get(param, const, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      call alloc_const_vector_func(f, const)
+    else
+      stat = 1
+      errmsg = 'invalid parameter value'
+      return
+    end if
+
+  end subroutine get_vector_func
 
 end module vector_func_factories

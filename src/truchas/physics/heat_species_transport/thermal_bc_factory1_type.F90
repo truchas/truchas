@@ -98,6 +98,7 @@ module thermal_bc_factory1_type
   use unstr_mesh_type
   use parameter_list_type
   use scalar_func_class
+  use scalar_func_factories, only: alloc_scalar_func
   use string_utilities, only: lower_case
   use truchas_logging_services
   implicit none
@@ -182,7 +183,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
-      call get_scalar_func(plist, 'temp', f, stat, errmsg)
+      call alloc_scalar_func(plist, 'temp', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(bff)) then
         allocate(bff)
@@ -229,7 +230,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
-      call get_scalar_func(plist, 'flux', f, stat, errmsg)
+      call alloc_scalar_func(plist, 'flux', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(bff)) then
         allocate(bff)
@@ -276,9 +277,9 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f1, f2
-      call get_scalar_func(plist, 'htc', f1, stat, errmsg)
+      call alloc_scalar_func(plist, 'htc', f1, stat, errmsg)
       if (stat /= 0) return
-      call get_scalar_func(plist, 'ambient-temp', f2, stat, errmsg)
+      call alloc_scalar_func(plist, 'ambient-temp', f2, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(htc)) then
         allocate(htc)
@@ -325,9 +326,9 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f1, f2
-      call get_scalar_func(plist, 'emissivity', f1, stat, errmsg)
+      call alloc_scalar_func(plist, 'emissivity', f1, stat, errmsg)
       if (stat /= 0) return
-      call get_scalar_func(plist, 'ambient-temp', f2, stat, errmsg)
+      call alloc_scalar_func(plist, 'ambient-temp', f2, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(rad)) then
         allocate(rad)
@@ -374,7 +375,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
-      call get_scalar_func(plist, 'htc', f, stat, errmsg)
+      call alloc_scalar_func(plist, 'htc', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(htc)) then
         allocate(htc)
@@ -421,7 +422,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
-      call get_scalar_func(plist, 'emissivity', f, stat, errmsg)
+      call alloc_scalar_func(plist, 'emissivity', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(rad)) then
         allocate(rad)
@@ -467,40 +468,5 @@ contains
     if (stat /= 0) errmsg = 'THERMAL_BC[' // piter%name() // ']: ' // errmsg
 
   end subroutine iterate_list
-
-  !! This auxiliary subroutine gets the scalar function specified by the value
-  !! of the parameter PARAM in the parameter list PLIST. The parameter value is
-  !! either a real acalar or a character string that is the name of a function
-  !! in the function table.
-
-  subroutine get_scalar_func(plist, param, f, stat, errmsg)
-
-    use scalar_func_factories
-    use scalar_func_table, only: lookup_func
-
-    type(parameter_list), intent(inout) :: plist
-    character(*), intent(in) :: param
-    class(scalar_func), allocatable, intent(out) :: f
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    real(r8) :: const
-    character(:), allocatable :: fname
-
-    call plist%get(param, fname, stat=stat)
-    if (stat == 0) then ! name of a function
-      call lookup_func(fname, f)
-      if (.not.allocated(f)) then
-        stat = 1
-        errmsg = 'unknown function name: ' // fname
-        return
-      end if
-    else  ! it must be a constant value
-      call plist%get(param, const, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      call alloc_const_scalar_func(f, const)
-    end if
-
-  end subroutine
 
 end module thermal_bc_factory1_type
