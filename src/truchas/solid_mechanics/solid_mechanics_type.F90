@@ -22,7 +22,7 @@
 !! 1977.
 !!
 !! Zach Jibben <zjibben@lanl.gov>
-!! July 2020
+!! August 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -201,7 +201,6 @@ contains
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
         do p = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
-
           !! Compute the derivative of a scalar phi in global coordinates using the
           !! formula on page 1765 of Bailey & Cross 1995--linear interpolation.
           !! The Jacobian inverse multiplication is already performed and stored

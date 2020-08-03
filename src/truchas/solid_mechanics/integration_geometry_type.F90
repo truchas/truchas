@@ -38,7 +38,7 @@
 !! 1977.
 !!
 !! Zach Jibben <zjibben@lanl.gov>
-!! July 2020
+!! August 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -116,36 +116,38 @@ contains
 
   subroutine init(this, mesh)
 
-    use cell_topology, only: cell_edges
+    use integration_cell_type
 
     class(integration_geometry), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
 
     integer :: j, xp, p, n1, n2
-    integer, pointer :: edges(:,:) => null()
+    type(integration_cell) :: ic
 
     this%mesh => mesh
 
     call compute_connectivity(this)
+    call compute_grad_shape(this)
     
     ! Accumulate the node volume and compute the control volume face areas
     ! associated with each integration point.
-    allocate(this%n(3,this%npt), this%nppar(this%npt), this%volume(this%mesh%nnode_onP))
+    allocate(this%n(3,this%npt), this%volume(this%mesh%nnode_onP))
     this%volume = 0
     do j = 1, this%mesh%ncell
-      !this%volume(n) = sum(this%subvolume(this%npoint(this%xnpoint(n):this%xnpoint(n+1)-1)))
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
-        edges => cell_edges(cn)
+        call ic%init(mesh%x(:,cn))
+
+        do xn = 1, size(cn)
+          n = cn(xn)
+          this%volume(n) = this%volume(n) + ic%subvolume(xn)
+        end do
+
         do xp = 1, this%xcpoint(j+1)-this%xcpoint(j)
           p = this%xcpoint(j) + xp - 1
-          n1 = cn(edges(1,xp))
-          n2 = cn(edges(2,xp))
-          
+          this%n(:,p) = ic%normal(xp)
         end do
       end associate
     end do
-
-    call compute_grad_shape(this)
 
   end subroutine init
 
@@ -192,7 +194,8 @@ contains
       this%xnpoint(n+1) = this%xnpoint(n) + k(n)
     end do
 
-    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1))
+    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%nnode_onP))
+    this%nppar = 0
     k = 0
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
@@ -207,6 +210,9 @@ contains
             k(node1) = k(node1) + 1
           end if
           if (node2 <= this%mesh%nnode_onP) then
+            ! By convention, the normal is oriented
+            ! toward the 2nd node of the associated edge.
+            this%nppar(node2) = ibset(this%nppar(node2),k(node2))
             this%npoint(this%xnpoint(j)+k(node2)) = p
             k(node2) = k(node2) + 1
           end if
@@ -253,9 +259,7 @@ contains
           ! Compute G = J^-1 * L, where G are the shape function gradients
           ! in global coordinates and L are the shape function gradients in
           ! reference coordinates, and J is the Jacobian.
-          ! call invert_3x3(jacobian, jacobian_inverse)
-          ! this%grad_shape(p)%p = matmul(jacobian_inverse, grad_shape_l(:,:,xp))
-          p = this%xcpoint(j) + xp - 1
+          p = xp + this%xcpoint(j) - 1
           this%grad_shape(p)%p = grad_shape_l(:,:,xp)
           call dgesv(3, nnode, jacobian, 3, ipiv, this%grad_shape(p)%p, 3, stat)
           ASSERT(stat == 0)
