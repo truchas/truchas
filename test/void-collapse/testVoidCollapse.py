@@ -6,7 +6,7 @@
 # NNC, Sept 2013.  I've kept comments by DAK about the test for reference.
 # I've migrated the test as it was.  I don't understant it at all.
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -34,14 +34,14 @@ def run_test(tenv):
     time = output.time(sid)
 
     vof = output.field(sid, "VOF")[:,0]
-    test = sp.ma.masked_where(vof < 0.01, output.field(sid, "Z_P")).compressed()
-    P_anal = sp.array([65.9934,55.9944,45.9954,35.9964,25.9974,15.9984,5.9994,0.49995])
+    test = np.ma.masked_where(vof < 0.01, output.field(sid, "Z_P")).compressed()
+    P_anal = np.array([65.9934,55.9944,45.9954,35.9964,25.9974,15.9984,5.9994,0.49995])
     nfail += truchas.compare_max(test, P_anal, 1e-3, "pressure", time)
 
     # pressure at cycle 2
     sid = output.series_id(2)
     time = output.time(sid)
-    test = sp.ma.masked_where(vof < 0.01, output.field(sid, "Z_P")).compressed()
+    test = np.ma.masked_where(vof < 0.01, output.field(sid, "Z_P")).compressed()
     nfail += truchas.compare_max(test, 0, 1e-3, "pressure", time)
 
     # void volume fraction at cycle 30

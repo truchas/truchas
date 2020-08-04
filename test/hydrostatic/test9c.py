@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -12,11 +12,11 @@ def run_test(tenv):
     xc = output.centroids()[fluid_region]
 
     # pressure
-    pex = 2*(xc[:,0]+xc[:,2])/sp.sqrt(2)
-    pex -= sp.mean(pex)
+    pex = 2*(xc[:,0]+xc[:,2])/np.sqrt(2)
+    pex -= np.mean(pex)
     for sid in (1, 2):
         pressure = output.field(sid, "Z_P")[fluid_region]
-        pressure -= sp.mean(pressure)
+        pressure -= np.mean(pressure)
 
         nfail += truchas.compare_max(pressure, pex, 1e-12, "pressure", output.time(sid))
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -14,7 +14,7 @@ def run_test(tenv):
     nseries = output.num_series()
     T = output.field(nseries, "Z_TEMP")
 
-    error = sp.empty(T.shape[0])
+    error = np.empty(T.shape[0])
     for j in range(error.shape[0]):
         if min(abs(xc[j,:2])) < 1e-3:
             # exclude gap cells from error calc

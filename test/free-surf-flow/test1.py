@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -36,7 +36,7 @@ def run_test(tenv):
 def vof_test(vof, xc, tol, time):
     # analytic vof solution at cell centroids
     p = -2 + time
-    vof_ex = sp.array([1 if x < p-0.1 else 0 if x > p+0.1 else 5*(p-(x-0.1)) for x in xc[:,0]])
+    vof_ex = np.array([1 if x < p-0.1 else 0 if x > p+0.1 else 5*(p-(x-0.1)) for x in xc[:,0]])
     return truchas.compare_max(vof[:,0], vof_ex, tol, "VOF", time)
 
 

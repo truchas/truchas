@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -16,8 +16,8 @@ def run_test(tenv):
         time = output.time(sid)
 
         p = -6 + 6*time
-        vofex = sp.array([1 if x < p-0.5 else 0 if x > p+0.5 else 0.5
-                          for x in (xc[:,0] + xc[:,1])/sp.sqrt(2)])
+        vofex = np.array([1 if x < p-0.5 else 0 if x > p+0.5 else 0.5
+                          for x in (xc[:,0] + xc[:,1])/np.sqrt(2)])
         nfail += truchas.compare_max(vof, vofex, 1e-10, "vof", time)
 
     truchas.report_summary(nfail)

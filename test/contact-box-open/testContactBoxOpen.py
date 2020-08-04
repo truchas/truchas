@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import scipy as sp
-import scipy.linalg as spla
+import numpy as np
+import numpy.linalg as npla
 
 import truchas
 
@@ -63,8 +63,8 @@ def run_test(tenv):
     rel_tol = 1e-4
     test = output.field(sid, "Displacement")
     gold = golden.field(sid, "Displacement")
-    dtest = spla.norm(test, axis=1)
-    dgold = spla.norm(gold, axis=1)
+    dtest = npla.norm(test, axis=1)
+    dgold = npla.norm(gold, axis=1)
     err = abs(dtest - dgold) / (abs_tol + rel_tol*abs(dgold))
     nfail += truchas.compare_max(err, 0, 1, "displacement", time)
 

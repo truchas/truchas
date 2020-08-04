@@ -7,7 +7,7 @@ def run_test(tenv):
     stdout, output = tenv.truchas(4, "pipe-flow-old-1d.inp")
 
     xc = output.centroids()
-    uex = (2 - (xc[:,0]-xc[:,1])**2) / (4*sp.sqrt(2))
+    uex = (2 - (xc[:,0]-xc[:,1])**2) / (4*np.sqrt(2))
 
     time = output.time(2)
     test = output.field(2, "Z_VC")

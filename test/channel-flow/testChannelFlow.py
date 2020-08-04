@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -32,8 +32,8 @@ def analytic_solution(ncelly):
     dy = 1 / ncelly
     rhs = dy**2 * grad_pressure / mu
 
-    velx = sp.empty(ncelly)
-    gamma = sp.empty(ncelly)
+    velx = np.empty(ncelly)
+    gamma = np.empty(ncelly)
 
     beta = -3
     BCoeff = -2
