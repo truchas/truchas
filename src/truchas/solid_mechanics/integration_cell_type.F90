@@ -1,10 +1,9 @@
 !!
 !! TODO -- documentation
 !!
-!! By convention, the IP normal vector points in approximately the same
-!! direction as the edge as defined in cell_topology. I.e., from *_edge(1,e) to
-!! *_edge(2,e). This is enforced by the ordering of the nodes in the *_ipface
-!! arrays.
+!! By convention, the IP normal vector is oriented in the same direction as the
+!! edge as defined in cell_topology. I.e., from *_edge(1,e) to *_edge(2,e). This
+!! is enforced by the ordering of the nodes in the *_ipface arrays.
 !!
 !! Zach Jibben <zjibben@lanl.gov>
 !! August 2020
@@ -152,8 +151,8 @@ contains
 
 
   !! Returns the area-weighted normal for the surface associated with
-  !! integration point p. By convention, the normal vector will point in
-  !! approximately the same direction as the edge associated with p.
+  !! integration point p. By convention, the normal vector is oriented in the
+  !! same direction as the edge associated with p.
   function normal(this, p)
     use cell_geometry, only: face_normal
     class(integration_cell), intent(in) :: this

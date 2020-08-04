@@ -62,10 +62,6 @@ module integration_geometry_type
     integer, allocatable :: nppar(:)
     integer, allocatable :: npoint(:), xnpoint(:) ! node to IP connectivity
     integer, allocatable :: xcpoint(:) ! cell to IP connectivity
-
-    ! TODO: needed? delete?
-    !integer, allocatable :: pcell(:) ! IP to cell connectivity
-    !real(r8), allocatable, private :: xi(:,:), jacobian_inverse(:,:,:), x(:,:), subvolume(:)
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
@@ -155,6 +151,9 @@ contains
   !! Each node is associated with j integration points. There is one integration
   !! point for each pair (edge,cell). Domain boundaries are not accociated with
   !! a cell center, and are skipped.
+  !!
+  !! On output, this routine will have computed npt, xcpoint, xnpoint, npoint,
+  !! and nppar.
   subroutine compute_connectivity(this)
 
     use cell_topology, only: cell_edges
