@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -18,7 +18,7 @@ def run_test(tenv):
     # vof
     vof = output.field(2, "VOF")[:,0]
     p = 0.25 * time - 0.375
-    vofex = sp.array([1 if x + 0.125 < p
+    vofex = np.array([1 if x + 0.125 < p
                       else 0 if x - 0.125 > p
                       else 4*(p-(x-0.125))
                       for x in xc[:,0]])
@@ -26,12 +26,12 @@ def run_test(tenv):
 
     # the x-velocity is 0.25 in cells containing fluid
     vel = output.field(2, "Z_VC")
-    velex = sp.array([[0.25 if vf > 0 else 0, 0, 0] for vf in vof])
+    velex = np.array([[0.25 if vf > 0 else 0, 0, 0] for vf in vof])
     nfail += truchas.compare_max(vel, velex, 1e-15, "velocity", time)
 
     # temperature is 2 in cells containing fluid
     temp = output.field(2, "Z_TEMP")
-    tempex = sp.array([2 if vf > 0 else 0 for vf in vof])
+    tempex = np.array([2 if vf > 0 else 0 for vf in vof])
     nfail += truchas.compare_max(temp, tempex, 1e-15, "temperature", time)
 
     truchas.report_summary(nfail)

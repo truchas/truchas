@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import scipy as sp
-import scipy.linalg as spla
+import numpy as np
+import numpy.linalg as npla
 
 import truchas
 
@@ -16,14 +16,14 @@ def run_test(tenv):
 
     # pressure
     vof = output.field(sid, "VOF")[:,0]
-    pressure = sp.array([p for p, vf in zip(output.field(sid, "Z_P"), vof) if vf > 0.99])
-    pressure -= sp.mean(pressure)
+    pressure = np.array([p for p, vf in zip(output.field(sid, "Z_P"), vof) if vf > 0.99])
+    pressure -= np.mean(pressure)
 
     dpdz = -9.81e3
     pex = [dpdz*z for z, vf in zip(xc[:,2], vof) if vf > 0.99]
-    pex -= sp.mean(pex)
+    pex -= np.mean(pex)
 
-    error = spla.norm(pressure - pex) / sp.sqrt(pex.size)
+    error = npla.norm(pressure - pex) / np.sqrt(pex.size)
     nfail += truchas.compare_l2(error, 0, 1e-5, "pressure", time)
 
     # velocity zero everywhere

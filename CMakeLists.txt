@@ -73,7 +73,7 @@ find_package(MPI REQUIRED)
 # Python and packages
 include(FindPythonPackage)
 find_package(PythonInterp 3.5 REQUIRED)
-find_python_package(scipy 0.18.0)
+find_python_package(numpy 1.12)
 find_python_package(h5py 2.6.0)
 
 # BLAS and LAPACK -- these are not required

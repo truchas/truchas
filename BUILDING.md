@@ -28,7 +28,7 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
 * Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
-  later) and scipy (version 0.18.0 or later)
+  later) and numpy (version 1.12.0 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the

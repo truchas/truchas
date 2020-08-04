@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -57,7 +57,7 @@ def run_test(tenv):
     return nfail
 
 def eps_eff(eps):
-    return sp.sqrt(2/9 * ((eps[:,0]-eps[:,1])**2 + (eps[:,1]-eps[:,2])**2 +
+    return np.sqrt(2/9 * ((eps[:,0]-eps[:,1])**2 + (eps[:,1]-eps[:,2])**2 +
                            (eps[:,2]-eps[:,0])**2) +
                     4/3 * (eps[:,3]**2 + eps[:,4]**2 + eps[:,5]**2))
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -29,13 +29,13 @@ def run_test(tenv):
 
     # traction sideset 7
     test = output.field(sid, "NTRAC_07")
-    gold = sp.ma.masked_values(golden.field(sid, "NTRAC_07"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "NTRAC_07"), 0)
     error = abs((test-gold)/gold).max()
     nfail += truchas.compare_max(error, 0, 1e-6, "normal traction 7", time)
 
     # traction sideset 8
     test = output.field(sid, "NTRAC_08")
-    gold = sp.ma.masked_values(golden.field(sid, "NTRAC_08"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "NTRAC_08"), 0)
     error = abs((test-gold)/gold).max()
     nfail += truchas.compare_max(error, 0, 1e-6, "normal traction 8", time)
 

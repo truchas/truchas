@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -19,7 +19,7 @@ def run_test(tenv):
     # max <= l2 <= sqrt(ncell)*max = sqrt(3)*31*max
     err = abs(vof - vof_gold)
     nfail += truchas.compare_max(err, 0, 0.2, "vof", time)
-    nfail += truchas.compare_l2(err / sp.sqrt(len(err)), 0, 0.02, "vof", time)
+    nfail += truchas.compare_l2(err / np.sqrt(len(err)), 0, 0.02, "vof", time)
 
     truchas.report_summary(nfail)
     return nfail

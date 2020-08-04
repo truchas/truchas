@@ -4,7 +4,7 @@
 #
 #===============================================================================
 
-import scipy as sp
+import numpy as np
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory, set by CMake at configure-time.
@@ -56,7 +56,7 @@ class TruchasMappedData(TruchasData):
         elif len(shape) == 2 and field_name == "VOF":
             # VOF components are all mapped independently
             mapped_field = \
-                sp.array([grid_mapping.map_cell_field(f, self._mesh_map, self.ncell)
+                np.array([grid_mapping.map_cell_field(f, self._mesh_map, self.ncell)
                           for f in field.transpose()]).transpose()
         else:
             raise NotImplementedError(("Multidimensional fields other than VOF "

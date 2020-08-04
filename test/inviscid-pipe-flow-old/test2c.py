@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -14,7 +14,7 @@ def run_test(tenv):
 
     # analytic expression for exact pressure
     xc = output.centroids()[flow_region]
-    pressure_ex = 6*(0.5 - (xc[:,0]+xc[:,2])/sp.sqrt(2))
+    pressure_ex = 6*(0.5 - (xc[:,0]+xc[:,2])/np.sqrt(2))
 
     # pressure
     for i in range(1,4):
@@ -32,7 +32,7 @@ def run_test(tenv):
 
 def velocity_test(velocity, tol, time):
     nfail = 0
-    velex = sp.sqrt(2)*time
+    velex = np.sqrt(2)*time
     nfail += truchas.compare_max_rel(velocity[:,0], velex, tol, "x-velocity", time)
     nfail += truchas.compare_max(velocity[:,1], 0, tol, "y-velocity", time)
     nfail += truchas.compare_max_rel(velocity[:,2], velex, tol, "z-velocity", time)

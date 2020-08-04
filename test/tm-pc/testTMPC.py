@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -34,7 +34,7 @@ def run_test(tenv):
     epstherm = output.field(sid, "epstherm")[:,0]
     gold = golden.field(sid, "epstherm")[:,0]
 
-    epsref = sp.array([     (T-T0)*cte[0]               if T >= Ti
+    epsref = np.array([     (T-T0)*cte[0]               if T >= Ti
                        else pcstrain[0] + (T-Ti)*cte[1] if T >= Th
                        else epsgold                     if T >= Tl
                        else pcstrain[1] + (T-Tl)*cte[2]
