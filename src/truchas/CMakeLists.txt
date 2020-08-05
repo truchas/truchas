@@ -109,7 +109,7 @@ add_executable(truchas_exe ${MAIN_SOURCE_FILES})
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
 
 # Keep binary name consistent with old naming convention
-set(truchas_exe_name t-${Truchas_BUILD_ID}-${Truchas_VERSION})
+set(truchas_exe_name t-${Truchas_BUILD_ID})
 set_target_properties(truchas_exe PROPERTIES
                       OUTPUT_NAME ${truchas_exe_name}
                       EchoString "Built Truchas executable ${truchas_exe_name}")
