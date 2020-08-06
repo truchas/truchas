@@ -202,6 +202,7 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "7.0")
     add_compile_definitions(NO_2008_FINDLOC)
+    add_compile_definitions(NO_2008_C_LOC)
   endif()
 endif()
 

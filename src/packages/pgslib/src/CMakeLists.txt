@@ -1,5 +1,5 @@
 # Serial library
-add_subdirectory(serial-src)
+#add_subdirectory(serial-src)
 
 # Parallel library
 if (ENABLE_MPI)
