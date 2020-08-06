@@ -418,25 +418,25 @@ call hijack_truchas ()
     use string_utilities, only: i_to_c
     use version_info
 
-    character(LEN=32)  :: run_date, run_host, run_architecture
+    character(LEN=48)  :: run_date, run_host, run_architecture
     character(:), allocatable :: version_str
 
     interface
-      subroutine getrunhostinfo(arch, host) bind(c, name='getrunhostinfo')
+      subroutine getrunhostinfo(n, arch, host) bind(c, name='getrunhostinfo')
         use,intrinsic :: iso_c_binding, only: c_char
+        integer, value :: n
         character(kind=c_char), intent(out) :: arch(*), host(*)
       end subroutine
     end interface
 
     run_architecture = ""
     run_host         = ""
-    call getrunhostinfo (run_architecture, run_host)
+    call getrunhostinfo (len(run_architecture), run_architecture, run_host)
     call TIMESTAMP (run_date)
 
     call version(version_str)
 
-    call TLS_info ('   code:                ' // 'Truchas')
-    call TLS_info ('   version:             ' // version_str)
+    call TLS_info ('   code:                ' // 'Truchas ' // version_str)
     call TLS_info ('   build architecture:  ' // ARCHITECTURE)
     call TLS_info ('   build date/time:     ' // BUILD_DATE)
     call TLS_info ('   build flags:         ' // COMPILER_FLAGS)

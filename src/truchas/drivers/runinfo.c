@@ -24,9 +24,9 @@ static void f90strcpy(char *ostring, char *istring)
     *ostring++ = *istring++;
 }
 
-void getrunhostinfo(char *arch, char *host)
+void getrunhostinfo(int n, char *arch, char *host)
 {
-  char string[32];
+  char string[n];
   struct utsname data;
 
   /* fill the uname structure */
@@ -44,7 +44,7 @@ void getrunhostinfo(char *arch, char *host)
 
   /* get the fully qualified domain name */
   int err = gethostname (string, sizeof(string));
-  if (!err) string[0] = 0;
+  if (err) string[0] = 0;
 
   /* send to f90 */
   f90strcpy (host, string);
