@@ -14,8 +14,8 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
         - Many versions are known to **not work** due to compiler bugs. These
           include 19.0.x (any x), 19.1.1, and 19.1.2.
     - NAG Fortran (with GNU C/C++):
-        - version 6.1 (build 6149 or later preferred)
         - version 6.2 (build 6252 or later preferred)
+        - version 7.0 (build 7026 or later required)
         - most any version of GNU C/C++ should be okay
     - NAG Fortran on MacOS (with Apple Clang C/C++)
 	    - NAG version 6.2
