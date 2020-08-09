@@ -50,9 +50,9 @@ module elliptic_integrals
 
   implicit none
   private
-  
+
   public :: elk, ele, elrf, elrd
-  
+
   interface elk
     module procedure d_elk
   end interface
@@ -64,11 +64,11 @@ module elliptic_integrals
   interface elrf
     module procedure d_elrf
   end interface
-  
+
   interface elrd
     module procedure d_elrd
   end interface
-  
+
 contains
 
   !!
@@ -81,17 +81,17 @@ contains
   !!  errors, and their relative accuracy should be equivalent in the asymptotic regime,
   !!  though perhaps at greater expense.
   !!
-  
+
   double precision function d_elk (x)
     double precision, intent(in) :: x
     d_elk = elrf(0.0d0, 1.0d0-x, 1.0d0)
   end function d_elk
-  
+
   double precision function d_ele (x)
     double precision, intent(in) :: x
     d_ele = elrf(0.0d0, 1.d0-x, 1.0d0) - (x/3.0d0) * elrd(0.0d0, 1.d0-x, 1.0d0)
   end function d_ele
-  
+
   !!
   !!  CARLSON'S INCOMPLETE ELLIPTIC INTEGRAL OF THE FIRST KIND R_F(X,Y,Z)
   !!
@@ -107,24 +107,26 @@ contains
   !!
   !! We set ERRTOL = 1.0D-3.
   !!
-  
+
   double precision function d_elrf (x, y, z)
-  
+
+    use,intrinsic :: ieee_arithmetic
+
     double precision, intent(in) :: x, y, z
-  
+
     double precision :: xn, yn, zn, xndev, yndev, zndev, xnroot, ynroot, znroot, mu, eps, lambda, e2, e3, s
     double precision, parameter :: LOLIM = 5.0d0 * tiny(1.0d0)
     double precision, parameter :: UPLIM = 0.2d0 * huge(1.0d0)
     double precision, parameter :: C1 = 1.d0/24.0d0, C2 = 3.0d0/44.0d0, C3 = 1.0d0/14.0d0
     double precision, parameter :: ERRTOL = 1.0d-3
-  
+
     if (min(x,y,z)<0.0d0 .or. max(x,y,z)>UPLIM .or. min(x+y,x+z,y+z)<LOLIM) then
-    
-      d_elrf = d_elrf_raise_invalid()
-      d_elrf = huge(1.0d0)  ! IMSL function behavior
-      
+
+      call ieee_set_flag(ieee_invalid, .true.)
+      d_elrf = ieee_value(d_elrf, ieee_quiet_nan)
+
     else
-    
+
       xn = x
       yn = y
       zn = z
@@ -147,22 +149,10 @@ contains
       e3 = xndev * yndev * zndev
       s = 1.0d0 + (C1 * e2 - 0.1d0 - C2 * e3) * e2 + C3 * e3
       d_elrf = s / sqrt(mu)
-      
+
     end if
-    
-  contains
-  
-    !!  We want to raise an ieee invalid exception, such as would be raised by sqrt(-1.0);
-    !!  however we must be a bit obtuse in doing it, else a compiler may catch it at
-    !!  compile time.
-    
-    function d_elrf_raise_invalid ()
-      double precision :: d_elrf_raise_invalid
-      double precision, save :: x = 1.0d0
-      d_elrf_raise_invalid = sqrt(1.0d0 - 2.0d0 * x)
-    end function d_elrf_raise_invalid
-      
-  end function d_elrf    
+
+  end function d_elrf
 
   !!
   !!  CARLSON'S INCOMPLETE ELLIPTIC INTEGRAL OF THE SECOND KIND R_D(X,Y,Z).
@@ -177,32 +167,34 @@ contains
   !!                      3.D-2    3.D-9
   !!                      1.D-1    4.D-6
   !!
-  !!  We choose ERRTOL = 1.0D-3.  
+  !!  We choose ERRTOL = 1.0D-3.
   !!
-  
+
   double precision function d_elrd (x, y, z)
-  
+
+    use,intrinsic :: ieee_arithmetic
+
     double precision, intent(in) :: x, y, z
-  
+
     double precision :: xn, yn, zn, xndev, yndev, zndev, xnroot, ynroot, znroot
     double precision :: mu, lambda, eps, sigma, power4, ea, eb, ec, ed, ef, s1, s2
     double precision :: LOLIM, UPLIM
-    
+
     double precision, parameter :: C1 = 3.0d0 / 14.0d0, C2 = 1.0d0 /  6.0d0
     double precision, parameter :: C3 = 9.0d0 / 22.0d0, C4 = 3.0d0 / 26.0d0
     double precision, parameter :: ERRTOL = 1.0d-3
-  
+
     !! Because of the powers, we can't make these parameters.
     LOLIM = 2.0d0 / huge(1.0d0)**(2.0d0/3.0d0)
     UPLIM = (0.1d0 * ERRTOL / tiny(1.0d0))**(2.0d0/3.0d0)
-    
+
     if (min(x,y)<0.0d0 .or. min(x+y,z)<LOLIM.or. max(x,y,z)>UPLIM) then
-    
-      d_elrd = d_elrd_raise_invalid()
-      d_elrd = huge(1.0d0)  ! IMSL function behavior
-      
+
+      call ieee_set_flag(ieee_invalid, .true.)
+      d_elrd = ieee_value(d_elrd, ieee_quiet_nan)
+
     else
-          
+
       xn = x
       yn = y
       zn = z
@@ -233,21 +225,9 @@ contains
       s1 = ed * (- C1 + 0.25d0 * C3 * ed - 1.5d0 * C4 * zndev * ef)
       s2 = zndev * (C2 * ef + zndev * (-C3 * ec + zndev * C4 * ea))
       d_elrd = 3.0d0 * sigma + power4 * (1.0d0 + s1 + s2) / (mu * sqrt(mu))
-      
+
     end if
-    
-  contains
-  
-    !! We want to raise an ieee invalid exception, such as would be raised by sqrt(-1.0);
-    !! however we must be a bit obtuse in doing it, else a compiler may catch it at
-    !! compile time.
-    
-    function d_elrd_raise_invalid ()
-      double precision :: d_elrd_raise_invalid
-      double precision, save :: x = 1.0d0
-      d_elrd_raise_invalid = sqrt(1.0d0 - 2.0d0 * x)
-    end function d_elrd_raise_invalid
-      
-  end function d_elrd    
-  
+
+  end function d_elrd
+
 end module elliptic_integrals

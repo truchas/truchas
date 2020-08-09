@@ -55,7 +55,7 @@
 
 module pgslib_c_binding
 
-  use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_float, c_double, c_char, c_int8_t
+  use,intrinsic :: iso_c_binding, only: c_loc, c_ptr, c_int, c_float, c_double, c_char, c_int8_t
   implicit none
   public
 
@@ -173,11 +173,12 @@ module pgslib_c_binding
     subroutine PGSLib_Gather_Buf_LOG_C (Supplement, Duplicate, BlockSize, GS_Trace) &
         bind(c, name="pgslib_gather_buf_log_c")
       import c_ptr, c_int
-      logical(c_int) :: Supplement(*), Duplicate(*) ! A LIE: SEE NOTE 1
+      type(c_ptr), value :: Supplement, Duplicate
       integer(c_int) :: BlockSize
       type(c_ptr) :: GS_Trace
     end subroutine
   end interface
+  private :: PGSLib_Gather_Buf_LOG_C
 
   !! Functions from par-src/gath-scatt/scatter-*.c
   interface
@@ -205,11 +206,12 @@ module pgslib_c_binding
     subroutine PGSLib_Scatter_Buf_LOG_C (Duplicate, Supplement, BlockSize, GS_Trace) &
         bind(c, name="pgslib_scatter_buf_log_c")
       import c_ptr, c_int
-      logical(c_int) :: Duplicate(*), Supplement(*) ! A LIE: SEE NOTE 1
+      type(c_ptr), value :: Duplicate, Supplement
       integer(c_int) :: BlockSize
       type(c_ptr) :: GS_Trace
     end subroutine
   end interface
+  private :: PGSLib_Scatter_Buf_LOG_C
 
   !! Functions from par-src/io/io-c.c
   interface
@@ -235,8 +237,8 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_bcast_log_scalar_c (scalar) &
         bind(c, name="pgslib_bcast_log_scalar_c")
-      import c_int
-      logical(c_int) :: scalar ! A LIE: SEE NOTE 1
+      import c_ptr
+      type(c_ptr), value :: scalar
     end subroutine
     subroutine PGSLib_bcast_int8_vector_c (vector, vec_len) &
         bind(c, name="pgslib_bcast_int8_vector_c")
@@ -264,8 +266,8 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_bcast_log_vector_c (vector, vec_len) &
         bind(c, name="pgslib_bcast_log_vector_c")
-      import c_int
-      logical(c_int) :: vector(*) ! A LIE: SEE NOTE 1
+      import c_int, c_ptr
+      type(c_ptr), value :: vector
       integer(c_int), intent(in) :: vec_len
     end subroutine
     subroutine PGSLib_bcast_char_vector_c (vector, vec_len) &
@@ -275,9 +277,10 @@ module pgslib_c_binding
       integer(c_int), intent(in) :: vec_len
     end subroutine
   end interface
+  private :: PGSLib_bcast_log_scalar_c, PGSLib_bcast_log_vector_c
 
   !! Functions from par-src/io/io-c.c
-  interface PGSLib_Collate_Scalar_C ! SEE NOTE 3
+  interface
     subroutine PGSLib_Collate_int8_scalar_c (scalarv_out, scalar_in) &
         bind(c, name="pgslib_collate_int8_scalar_c")
       import c_int8_t
@@ -304,16 +307,22 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_Collate_log_scalar_c (scalarv_out, scalar_in) &
         bind(c, name="pgslib_collate_log_scalar_c")
-      import c_int
-      logical(c_int), intent(out) :: scalarv_out(*) ! A LIE: SEE NOTE 1
-      logical(c_int), intent(in)  :: scalar_in      ! A LIE: SEE NOTE 1
+      import c_ptr
+      type(c_ptr), value :: scalarv_out, scalar_in
     end subroutine
   end interface
-  private :: PGSLib_Collate_int_scalar_c, PGSLib_Collate_float_scalar_c, &
-             PGSLib_Collate_double_scalar_c, PGSLib_Collate_log_scalar_c
+
+  interface PGSLib_Collate_Scalar_C
+    procedure PGSLib_Collate_int8_scalar_c, PGSLib_Collate_int_scalar_c, &
+              PGSLib_Collate_float_scalar_c, PGSLib_Collate_double_scalar_c, &
+              PGSLib_Collate_log_scalar
+  end interface
+  private :: PGSLib_Collate_int8_scalar_c, PGSLib_Collate_int_scalar_c, &
+             PGSLib_Collate_float_scalar_c, PGSLib_Collate_double_scalar_c, &
+             PGSLib_Collate_log_scalar_c, PGSLib_Collate_log_scalar
 
   !! Functions from par-src/io/io-c.c
-  interface PGSLib_Collate_Vector_c ! SEE NOTE 3
+  interface
     subroutine PGSLib_Collate_int8_vector_c (vector_out, Lengths, vector_in, In_Length) &
         bind(c, name="pgslib_collate_int8_vector_c")
       import c_int, c_int8_t
@@ -344,10 +353,9 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_Collate_log_vector_c (vector_out, Lengths, vector_in, In_Length) &
         bind(c, name="pgslib_collate_log_vector_c")
-      import c_int
-      logical(c_int), intent(out) :: vector_out(*) ! A LIE: SEE NOTE 1
-      logical(c_int), intent(in)  :: vector_in(*)  ! A LIE: SEE NOTE 1
-      integer(c_int), intent(in)  :: Lengths(*), In_Length
+      import c_int, c_ptr
+      type(c_ptr), value :: vector_out, vector_in
+      integer(c_int), intent(in) :: Lengths(*), In_Length
     end subroutine
     subroutine PGSLib_Collate_char_vector_c (vector_out, Lengths, vector_in, In_Length) &
         bind(c, name="pgslib_collate_char_vector_c")
@@ -357,12 +365,19 @@ module pgslib_c_binding
       integer(c_int), intent(in) :: Lengths(*), In_Length
     end subroutine
   end interface
-  private :: PGSLib_Collate_int_vector_c, PGSLib_Collate_float_vector_c, &
-             PGSLib_Collate_double_vector_c, PGSLib_Collate_log_vector_c, &
+
+  interface PGSLib_Collate_Vector_c
+    procedure PGSLib_Collate_int_vector_c, PGSLib_Collate_int8_vector_c, &
+              PGSLib_Collate_float_vector_c, PGSLib_Collate_double_vector_c, &
+              PGSLib_Collate_log_vector, PGSLib_Collate_char_vector_c
+  end interface
+  private :: PGSLib_Collate_int_vector_c, PGSLib_Collate_int8_vector_c, &
+             PGSLib_Collate_float_vector_c, PGSLib_Collate_double_vector_c, &
+             PGSLib_Collate_log_vector_c, PGSLib_Collate_log_vector, &
              PGSLib_Collate_char_vector_c
 
   !! Functions from par-src/io/io-c.c
-  interface PGSLib_Dist_Scalar_c  ! SEE NOTE 3
+  interface
     subroutine PGSLib_Dist_int8_scalar_c (scalar_out, scalarv_in) &
         bind(c, name="pgslib_dist_int8_scalar_c")
       import c_int8_t
@@ -389,16 +404,22 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_Dist_log_scalar_c (scalar_out, scalarv_in) &
         bind(c, name="pgslib_dist_log_scalar_c")
-      import c_int
-      logical(c_int), intent(out) :: scalar_out    ! A LIE: SEE NOTE 1
-      logical(c_int), intent(in)  :: scalarv_in(*) ! A LIE: SEE NOTE 1
+      import c_int, c_ptr
+      type(c_ptr), value :: scalar_out, scalarv_in
     end subroutine
   end interface
-  private :: PGSLib_Dist_int_scalar_c, PGSLib_Dist_float_scalar_c, &
-             PGSLib_Dist_double_scalar_c, PGSLib_Dist_log_scalar_c
+
+  interface PGSLib_Dist_Scalar_c
+    procedure PGSLib_Dist_int_scalar_c, PGSLib_Dist_int8_scalar_c, &
+              PGSLib_Dist_float_scalar_c, PGSLib_Dist_double_scalar_c, &
+              PGSLib_Dist_log_scalar
+  end interface
+  private :: PGSLib_Dist_int_scalar_c, PGSLib_Dist_int8_scalar_c, &
+             PGSLib_Dist_float_scalar_c, PGSLib_Dist_double_scalar_c, &
+             PGSLib_Dist_log_scalar_c, PGSLib_Dist_log_scalar
 
   !! Functions from par-src/io/io-c.c
-  interface PGSLib_Dist_Vector_c  ! SEE NOTE 3
+  interface
     subroutine PGSLib_dist_int8_vector_c (vector_out, out_len, vector_in, lengths) &
         bind(c, name="pgslib_dist_int8_vector_c")
       import c_int, c_int8_t
@@ -429,17 +450,23 @@ module pgslib_c_binding
     end subroutine
     subroutine PGSLib_dist_log_vector_c (vector_out, out_len, vector_in, lengths) &
         bind(c, name="pgslib_dist_log_vector_c")
-      import c_int
-      logical(c_int), intent(out) :: vector_out(*) ! A LIE: SEE NOTE 1
-      logical(c_int), intent(in)  :: vector_in(*)  ! A LIE: SEE NOTE 1
+      import c_int, c_ptr
+      type(c_ptr), value :: vector_out, vector_in
       integer(c_int), intent(in)  :: out_len, lengths(*)
     end subroutine
   end interface
-  private :: PGSLib_dist_int_vector_c, PGSLib_dist_float_vector_c, &
-             PGSLib_dist_double_vector_c, PGSLib_dist_log_vector_c
+
+  interface PGSLib_Dist_Vector_c
+    procedure PGSLib_dist_int_vector_c, PGSLib_dist_int8_vector_c, &
+              PGSLib_dist_float_vector_c, PGSLib_dist_double_vector_c, &
+              PGSLib_dist_log_vector
+  end interface
+  private :: PGSLib_dist_int_vector_c, PGSLib_dist_int8_vector_c, &
+             PGSLib_dist_float_vector_c, PGSLib_dist_double_vector_c, &
+             PGSLib_dist_log_vector_c, PGSLib_dist_log_vector
 
   !! Functions from par-src/scans/scan-c-*.c
-  interface Off_Node_SUM_PREFIX ! SEE NOTE 3
+  interface
     subroutine Off_Node_SUM_PREFIX_INT_C (Dest_Data, Dest_Seg, Src_Data, Src_Seg) &
         bind(c, name="off_node_sum_prefix_int_c")
       import c_int
@@ -458,10 +485,14 @@ module pgslib_c_binding
       integer(c_int) :: Dest_Seg, Src_Seg
     end subroutine
   end interface
+
+  interface Off_Node_SUM_PREFIX
+    procedure Off_Node_SUM_PREFIX_INT_C, Off_Node_SUM_PREFIX_FLOAT_C, Off_Node_SUM_PREFIX_DOUBLE_C
+  end interface
   private :: Off_Node_SUM_PREFIX_INT_C, Off_Node_SUM_PREFIX_FLOAT_C, Off_Node_SUM_PREFIX_DOUBLE_C
 
   !! Functions from par-src/scans/scan-c-*.c
-  interface Off_Node_SUM_SUFFIX ! SEE NOTE 3
+  interface
     subroutine Off_Node_SUM_SUFFIX_INT_C (Dest_Data, Dest_Seg, Src_Data, Src_Seg) &
         bind(c, name="off_node_sum_suffix_int_c")
       import c_int
@@ -479,6 +510,10 @@ module pgslib_c_binding
       real(c_double) :: Dest_Data, Src_Data
       integer(c_int) :: Dest_Seg, Src_Seg
     end subroutine
+  end interface
+
+  interface Off_Node_SUM_SUFFIX
+    procedure Off_Node_SUM_SUFFIX_INT_C, Off_Node_SUM_SUFFIX_FLOAT_C, Off_Node_SUM_SUFFIX_DOUBLE_C
   end interface
   private :: Off_Node_SUM_SUFFIX_INT_C, Off_Node_SUM_SUFFIX_FLOAT_C, Off_Node_SUM_SUFFIX_DOUBLE_C
 
@@ -524,7 +559,7 @@ module pgslib_c_binding
   end interface
 
   !! Functions from par-src/reductions/redux-c.c
-  interface PGSLib_Global_MIN_c ! SEE NOTE 3
+  interface
     subroutine PGSLib_global_min_int_c (MinA) &
         bind(c, name="pgslib_global_min_int_c")
       import c_int
@@ -541,10 +576,14 @@ module pgslib_c_binding
       real(c_double), intent(inout):: MinA
     end subroutine
   end interface
+
+  interface PGSLib_Global_MIN_c
+    procedure PGSLib_global_min_int_c, PGSLib_global_min_float_c, PGSLib_global_min_double_c
+  end interface
   private :: PGSLib_global_min_int_c, PGSLib_global_min_float_c, PGSLib_global_min_double_c
 
   !! Functions from par-src/reductions/redux-c.c
-  interface PGSLib_Global_MAX_C ! SEE NOTE 3
+  interface
     subroutine PGSLib_global_max_int_c (MaxA) &
         bind(c, name="pgslib_global_max_int_c")
       import c_int
@@ -561,10 +600,14 @@ module pgslib_c_binding
       real(c_double), intent(inout):: MaxA
     end subroutine
   end interface
+
+  interface PGSLib_Global_MAX_C
+    procedure PGSLib_global_max_int_c, PGSLib_global_max_float_c, PGSLib_global_max_double_c
+  end interface
   private :: PGSLib_global_max_int_c, PGSLib_global_max_float_c, PGSLib_global_max_double_c
 
   !! Functions from par-src/reductions/redux-c.c
-  interface PGSLib_Global_SUM_C ! SEE NOTE 3
+  interface
     subroutine PGSLib_global_sum_int_c (SumA) &
         bind(c, name="pgslib_global_sum_int_c")
       import c_int
@@ -580,6 +623,10 @@ module pgslib_c_binding
       import c_double
       real(c_double), intent(inout):: SumA
     end subroutine
+  end interface
+
+  interface PGSLib_Global_SUM_C
+    procedure PGSLib_global_sum_int_c, PGSLib_global_sum_float_c, PGSLib_global_sum_double_c
   end interface
   private :: PGSLib_global_sum_int_c, PGSLib_global_sum_float_c, PGSLib_global_sum_double_c
 
@@ -598,7 +645,7 @@ module pgslib_c_binding
   end interface
 
   !! Functions from par-src/reductions/redux-c.c
-  interface PGSLib_Global_MINLOC_C  ! SEE NOTE 3
+  interface
     subroutine PGSLib_Global_MINLOC_int_C (MinV, GlobalIndex) &
         bind(c, name="pgslib_global_minloc_int_c")
       import c_int
@@ -618,10 +665,14 @@ module pgslib_c_binding
       real(c_double), intent(inout) :: MinV
     end subroutine
   end interface
+
+  interface PGSLib_Global_MINLOC_C
+    procedure PGSLib_Global_MINLOC_int_C, PGSLib_Global_MINLOC_float_C, PGSLib_Global_MINLOC_double_C
+  end interface
   private :: PGSLib_Global_MINLOC_int_C, PGSLib_Global_MINLOC_float_C, PGSLib_Global_MINLOC_double_C
 
   !! Functions from par-src/reductions/redux-c.c
-  interface PGSLib_Global_MAXLOC_C  ! SEE NOTE 3
+  interface
     subroutine PGSLib_Global_MAXLOC_int_C (MaxV, GlobalIndex) &
         bind(c, name="pgslib_global_maxloc_int_c")
       import c_int
@@ -641,6 +692,154 @@ module pgslib_c_binding
       real(c_double), intent(inout) :: MaxV
     end subroutine
   end interface
+
+  interface PGSLib_Global_MAXLOC_C
+    procedure PGSLib_Global_MAXLOC_int_C, PGSLib_Global_MAXLOC_float_C, PGSLib_Global_MAXLOC_double_C
+  end interface
   private :: PGSLib_Global_MAXLOC_int_C, PGSLib_Global_MAXLOC_float_C, PGSLib_Global_MAXLOC_double_C
+
+  interface PGSLib_Gather_Buf_LOG
+    procedure PGSLib_Gather_Buf_LOG1, PGSLib_Gather_Buf_LOG2, PGSLib_Gather_Buf_LOG3
+  end interface
+
+  interface PGSLib_Scatter_Buf_LOG
+    procedure PGSLib_Scatter_Buf_LOG1, PGSLib_Scatter_Buf_LOG2, PGSLib_Scatter_Buf_LOG3
+  end interface
+
+contains
+
+  !! NNC, August 2020. The NAG 7.0 compiler is now stricter about enforcing C
+  !! interoperability restrictions, here specifically that logical variables
+  !! are not interoperable. It no longer allows logical arguments in BIND(C)
+  !! procedures, so the previous approach (Note 2) of defining a BIND(C)
+  !! interface to the underlying C routine, and lying about the type of its
+  !! integer arguments, no longer works. Instead, the interface presents the
+  !! integer arguments as void* and we provide the following Fortran wrappers
+  !! and that use C_LOC on the logical arguments and call the C functions.
+  !! Note 1 still applies here.
+
+  subroutine PGSLib_Dist_log_scalar(scalar_out, scalarv_in)
+    logical(c_int), intent(out), target :: scalar_out
+    logical(c_int), intent(in), contiguous, target :: scalarv_in(:)
+    call pgslib_dist_log_scalar_c(c_loc(scalar_out), my_c_loc(scalarv_in))
+  end subroutine
+
+  subroutine PGSLib_dist_log_vector(vector_out, out_len, vector_in, lengths)
+    logical(c_int), intent(out), contiguous, target :: vector_out(:)
+    logical(c_int), intent(in),  contiguous, target :: vector_in(:)
+    integer(c_int), intent(in)  :: out_len, lengths(*)
+    call pgslib_dist_log_vector_c(my_c_loc(vector_out), out_len, my_c_loc(vector_in), lengths)
+  end subroutine
+
+  subroutine PGSLib_Collate_log_scalar(scalarv_out, scalar_in)
+    logical(c_int), intent(out), contiguous, target :: scalarv_out(:)
+    logical(c_int), intent(in), target :: scalar_in
+    call pgslib_collate_log_scalar_c(my_c_loc(scalarv_out), c_loc(scalar_in))
+  end subroutine
+
+  subroutine PGSLib_Collate_log_vector(vector_out, Lengths, vector_in, In_Length)
+    logical(c_int), intent(out), contiguous, target :: vector_out(:)
+    logical(c_int), intent(in),  contiguous, target :: vector_in(:)
+    integer(c_int), intent(in)  :: Lengths(*), In_Length
+    call pgslib_collate_log_vector_c(my_c_loc(vector_out), Lengths, my_c_loc(vector_in), In_Length)
+  end subroutine
+
+  subroutine PGSLib_Gather_Buf_LOG1(Supplement, Duplicate, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Supplement(:), Duplicate(:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_gather_buf_log_c(my_c_loc(Supplement), my_c_loc(Duplicate), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_Gather_Buf_LOG2(Supplement, Duplicate, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Supplement(:,:), Duplicate(:,:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_gather_buf_log_c(my_c_loc2(Supplement), my_c_loc2(Duplicate), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_Gather_Buf_LOG3(Supplement, Duplicate, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Supplement(:,:,:), Duplicate(:,:,:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_gather_buf_log_c(my_c_loc3(Supplement), my_c_loc3(Duplicate), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_Scatter_Buf_LOG1(Duplicate, Supplement, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Duplicate(:), Supplement(:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_scatter_buf_log_c(my_c_loc(Duplicate), my_c_loc(Supplement), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_Scatter_Buf_LOG2(Duplicate, Supplement, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Duplicate(:,:), Supplement(:,:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_scatter_buf_log_c(my_c_loc2(Duplicate), my_c_loc2(Supplement), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_Scatter_Buf_LOG3(Duplicate, Supplement, BlockSize, GS_Trace)
+    logical(c_int), contiguous, target :: Duplicate(:,:,:), Supplement(:,:,:)
+    integer(c_int) :: BlockSize
+    type(c_ptr) :: GS_Trace
+    call pgslib_scatter_buf_log_c(my_c_loc3(Duplicate), my_c_loc3(Supplement), BlockSize, GS_Trace)
+  end subroutine
+
+  subroutine PGSLib_bcast_log_scalar(scalar)
+    logical(c_int), target :: scalar
+    call pgslib_bcast_log_scalar_c(c_loc(scalar))
+  end subroutine
+
+  subroutine PGSLib_bcast_log_vector(vector, vec_len)
+    logical(c_int), contiguous, target :: vector(:)
+    integer(c_int), intent(in) :: vec_len
+    call pgslib_bcast_log_vector_c(my_c_loc(vector), vec_len)
+  end subroutine
+
+  function my_c_loc(array) result(loc)
+    use,intrinsic :: iso_c_binding, only: c_null_ptr
+    logical(c_int), intent(in), target :: array(:)
+    type(c_ptr) :: loc
+    if (size(array) == 0) then
+      loc = c_null_ptr
+    else
+#ifdef NO_2008_C_LOC
+      loc = c_loc(array(1))
+#else
+      loc = c_loc(array)
+#endif
+    end if
+  end function
+
+  function my_c_loc2(array) result(loc)
+    use,intrinsic :: iso_c_binding, only: c_null_ptr
+    logical(c_int), intent(in), target :: array(:,:)
+    type(c_ptr) :: loc
+    if (size(array) == 0) then
+      loc = c_null_ptr
+    else
+#ifdef NO_2008_C_LOC
+      loc = c_loc(array(1,1))
+#else
+      loc = c_loc(array)
+#endif
+    end if
+  end function
+
+  function my_c_loc3(array) result(loc)
+    use,intrinsic :: iso_c_binding, only: c_null_ptr
+    logical(c_int), intent(in), target :: array(:,:,:)
+    type(c_ptr) :: loc
+    if (size(array) == 0) then
+      loc = c_null_ptr
+    else
+#ifdef NO_2008_C_LOC
+      loc = c_loc(array(1,1,1))
+#else
+      loc = c_loc(array)
+#endif
+    end if
+  end function
 
 end module pgslib_c_binding
