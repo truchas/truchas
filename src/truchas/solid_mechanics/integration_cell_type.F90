@@ -25,6 +25,7 @@ module integration_cell_type
 
   type, public :: integration_cell
     private
+    integer :: nnode, nface, nedge
     real(r8), allocatable :: x(:,:)
     integer, pointer :: subcell(:) => null()
     integer, pointer :: xsubcell(:) => null()
@@ -32,7 +33,7 @@ module integration_cell_type
     integer, pointer :: faces(:) => null()
     integer, pointer :: xface(:) => null()
     integer, pointer :: fsize(:) => null()
-    integer, pointer :: edges(:) => null()
+    integer, pointer :: edges(:,:) => null()
   contains
     procedure :: init
     procedure :: subvolume
@@ -40,19 +41,19 @@ module integration_cell_type
   end type integration_cell
 
   integer, target :: tet4_subcell(40), tet4_xsubcell(5), tet4_ipface(4,6)
-  data TET4_SUBCELL//
-  data TET4_XSUBCELL//
-  data TET4_IPFACE//
+  ! data TET4_SUBCELL//
+  ! data TET4_XSUBCELL//
+  ! data TET4_IPFACE//
 
-  integer, target :: pyr5_subcell(??), pyr5_xsubcell(6), pyr5_ipface(4,8)
-  data PYR5_SUBCELL//
-  data PYR5_XSUBCELL//
-  data PYR5_IPFACE//
+  integer, target :: pyr5_subcell(0), pyr5_xsubcell(6), pyr5_ipface(4,8)
+  ! data PYR5_SUBCELL//
+  ! data PYR5_XSUBCELL//
+  ! data PYR5_IPFACE//
 
-  integer, target :: wed6_subcell(??), wed6_xsubcell(7), wed6_ipface(4,9)
-  data WED6_SUBCELL//
-  data WED6_XSUBCELL//
-  data WED6_IPFACE//
+  integer, target :: wed6_subcell(0), wed6_xsubcell(7), wed6_ipface(4,9)
+  ! data WED6_SUBCELL//
+  ! data WED6_XSUBCELL//
+  ! data WED6_IPFACE//
 
   integer, target :: hex8_subcell(64), hex8_xsubcell(9), hex8_ipface(4,12)
   data HEX8_SUBCELL/1,15,13,16,17,9,27,12, &
@@ -84,7 +85,7 @@ contains
     class(integration_cell), intent(out) :: this
     real(r8), intent(in), target :: x(:,:)
 
-    integer :: j, f
+    integer :: j, f, e
 
     this%nnode = size(x, dim=2)
 
@@ -136,7 +137,7 @@ contains
 
     do f = 1, this%nface
       j = this%nnode + f
-      this%x(:,j) = sum(this%x(:,this%faces(this%xfaces(f):this%xfaces(f+1)-1)), dim=2) / this%fsize(f)
+      this%x(:,j) = sum(this%x(:,this%faces(this%xface(f):this%xface(f+1)-1)), dim=2) / this%fsize(f)
     end do
 
     do e = 1, this%nedge

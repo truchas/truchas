@@ -117,7 +117,7 @@ contains
     class(integration_geometry), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
 
-    integer :: j, xp, p, n1, n2
+    integer :: j, xp, p, xn, n
     type(integration_cell) :: ic
 
     this%mesh => mesh
@@ -139,7 +139,7 @@ contains
         end do
 
         do xp = 1, this%xcpoint(j+1)-this%xcpoint(j)
-          p = this%xcpoint(j) + xp - 1
+          p = xp + this%xcpoint(j) - 1
           this%n(:,p) = ic%normal(xp)
         end do
       end associate
@@ -193,7 +193,7 @@ contains
       this%xnpoint(n+1) = this%xnpoint(n) + k(n)
     end do
 
-    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%nnode_onP))
+    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%mesh%nnode_onP))
     this%nppar = 0
     k = 0
     do j = 1, this%mesh%ncell
