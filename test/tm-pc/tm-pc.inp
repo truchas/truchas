@@ -227,9 +227,10 @@ Elastic constants (stresses) in MPa to make test checking easier
 
     name                    = 'displacement precon',
     method                  = 'none',
-    preconditioning_steps   = 4,
+    preconditioning_steps   = 1,
     relaxation_parameter    = 1.0,
-    preconditioning_method  = 'tm_ssor',
+    preconditioning_method  = 'tm_diag',
+    preconditioning_scope = 'local'
 
 /
 

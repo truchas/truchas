@@ -225,9 +225,10 @@ solid mechanics and heat transfer
 
     name                    = 'displacement precon', 
     method                  = 'none', 
-    preconditioning_steps   = 4, 
-    relaxation_parameter    = 1.6, 
-    preconditioning_method  = 'tm_ssor', 
+    preconditioning_steps   = 1,
+    relaxation_parameter    = 1.0,
+    preconditioning_method  = 'tm_diag',
+    preconditioning_scope = 'local'
 /
 
 &NONLINEAR_SOLVER 
@@ -235,10 +236,10 @@ solid mechanics and heat transfer
     name                    = 'displacement nonlin', 
     method                  = 'nlk', 
     linear_solver_name      = 'displacement precon', 
-    convergence_criterion   = 1e-13, 
-    nlk_max_vectors         = 40
+    convergence_criterion   = 1e-13,
+    nlk_max_vectors         = 60
     nlk_vector_tolerance    = 0.01
-    maximum_iterations      = 1000
+    maximum_iterations      = 500
 /
 
 Transient heat transfer and elastic_viscoplasticity

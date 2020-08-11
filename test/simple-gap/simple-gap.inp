@@ -161,26 +161,22 @@ define the material properties
 
 &LINEAR_SOLVER
         name                   = 'displacement nk',
-        method                 = 'fgmres',
-        preconditioning_steps  = 4,
+        method                 = 'none',
+        preconditioning_steps  = 1,
         relaxation_parameter   = 1.0,
-        preconditioning_method = 'tm_ssor',
-	krylov_vectors         = 200,
-        convergence_criterion  = 1.0e-8,
-        stopping_criterion     = '||r||/||r0||'
-	maximum_iterations     = 200,
-	output_mode            = 'none'
+        preconditioning_method = 'tm_diag',
+        preconditioning_scope = 'local'
 /
 
   
 &NONLINEAR_SOLVER 
            name = 'displacement solve' , 
-           method = 'nk' , 
+           method = 'nlk' ,
            linear_solver_name = 'displacement nk' , 
            convergence_criterion = 1e-12, 
-           use_damper = .false. ,
-           Damper_Parameters =   0.5 , 2 , 1 , 1 , 
-           perturbation_parameter = 1e-06, 
+           nlk_max_vectors         = 20
+           nlk_vector_tolerance    = 0.01
+           maximum_iterations      = 100
 /
 
 constant time increment
