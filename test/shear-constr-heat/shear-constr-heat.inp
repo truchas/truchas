@@ -240,30 +240,12 @@ solid mechanics only
 /
 
 &SOLID_MECHANICS
-  displacement_nonlinear_solution  = 'displacement solve'
-/
-
-&LINEAR_SOLVER
-
-    name                    = 'displacement nk', 
-    method                  = 'none',
-    preconditioning_steps   = 1,
-    relaxation_parameter    = 1.0, 
-    preconditioning_method  = 'tm_diag',
-    preconditioning_scope = 'local'
-
-/
-
-&NONLINEAR_SOLVER 
-
-    name                    = 'displacement solve', 
-    method                  = 'nlk',
-    linear_solver_name      = 'displacement nk', 
-    convergence_criterion   = 1.0e-12,
-    nlk_max_vectors         = 20
-    nlk_vector_tolerance    = 0.01
-    maximum_iterations      = 100
-
+  convergence_criterion   = 1.0e-12,
+  nlk_max_vectors         = 20
+  nlk_vector_tolerance    = 0.01
+  maximum_iterations      = 100
+  preconditioning_steps   = 1,
+  relaxation_parameter    = 1.0, 
 /
 
 constant time increment

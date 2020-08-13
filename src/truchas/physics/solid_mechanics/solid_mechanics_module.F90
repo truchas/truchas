@@ -43,7 +43,6 @@ Module SOLID_MECHANICS_MODULE
   use material_model_driver, only: matl_model
   use parameter_list_type
   use smold_nlsol_model_type
-  use smold_solver_namelist
   use nlsol_type
   Implicit None
   Private
@@ -607,7 +606,6 @@ Contains
     !---------------------------------------------------------------------------
     !
     use legacy_mesh_api, only: nnodes
-    use solid_mechanics_input, only: NK_DISPLACEMENT
     use solid_mechanics_mesh, only: ndim
     use string_utilities, only: i_to_c
 
@@ -854,6 +852,7 @@ Contains
     use mech_bc_data_module
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
+    use solid_mechanics_namelist, only: linear_params, nonlinear_params
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
     type(real_var_vector), pointer, save, dimension(:) :: A_Elas
