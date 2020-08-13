@@ -171,6 +171,8 @@ list(APPEND PHYSICS_SOURCE_FILES
 
 # - solid_mechanics
 list(APPEND PHYSICS_SOURCE_FILES
+           physics/solid_mechanics/smold_nlsol_model_type.F90
+           physics/solid_mechanics/smold_solver_namelist.F90
            physics/solid_mechanics/mech_bc_data_module.F90
            physics/solid_mechanics/node_op_setup_module.F90
            physics/solid_mechanics/node_operator_module.F90

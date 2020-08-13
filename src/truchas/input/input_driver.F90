@@ -60,6 +60,7 @@ contains
     use turbulence_module,         only: read_turbulence_namelist_for_legacy
     use solid_mechanics_input,     only: solid_mechanics
     use solid_mechanics_namelist,  only: read_solid_mechanics_namelist
+    use smold_solver_namelist,     only: read_smold_solver_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
@@ -145,6 +146,7 @@ contains
     if (solid_mechanics) then
       call read_solid_mechanics_namelist (lun)
       call read_viscoplastic_model_namelists (lun)
+      call read_smold_solver_namelist (lun)
     end if
 
     ! read bc specifications
