@@ -33,7 +33,7 @@ module FHT_model_factory
   use matl_mesh_func_type
   use rad_problem_type
   use thermal_bc_factory_class
-  use source_factory_type
+  use thermal_source_factory_type
   implicit none
   private
 
@@ -49,7 +49,7 @@ contains
     type(mfd_disc), intent(in), target :: disc
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
-    type(source_factory), intent(inout) :: tsrc_fac
+    type(thermal_source_factory), intent(inout) :: tsrc_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -151,7 +151,7 @@ contains
 
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
-    type(source_factory), intent(inout) :: src_fac
+    type(thermal_source_factory), intent(inout) :: src_fac
     type(FHT_model), intent(inout) :: model
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
@@ -196,7 +196,7 @@ contains
     call define_external_source (mesh, 'temperature', model%q)
 
     !! Additional heat sources
-    call src_fac%alloc_source(model%src, stat, errmsg2)
+    call src_fac%alloc_source_func1(model%src, stat, errmsg2)
     if (stat /= 0) then
       errmsg = errmsg2
       return

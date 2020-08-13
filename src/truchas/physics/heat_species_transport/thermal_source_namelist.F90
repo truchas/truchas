@@ -26,7 +26,7 @@ contains
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R, NULL_I
     use string_utilities, only: i_to_c
     use parameter_list_type
     use truchas_logging_services
@@ -41,10 +41,12 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    real(r8) :: prefactor
-    character(32) :: name, prefactor_func
+    integer :: cell_set_ids(100)
+    real(r8) :: prefactor, source
+    character(32) :: name, prefactor_func, source_func
     character(128) :: data_file
-    namelist /thermal_source/ name, data_file, prefactor, prefactor_func
+    namelist /thermal_source/ name, data_file, prefactor, prefactor_func, &
+        cell_set_ids, source, source_func
 
     call TLS_info('')
     call TLS_info('Reading THERMAL_SOURCE namelists ...')
@@ -67,6 +69,9 @@ contains
       data_file = NULL_C
       prefactor = NULL_R
       prefactor_func = NULL_C
+      cell_set_ids = NULL_I
+      source = NULL_R
+      source_func = NULL_C
 
       if (is_IOP) read(lun,nml=thermal_source,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -76,6 +81,9 @@ contains
       call broadcast(data_file)
       call broadcast(prefactor)
       call broadcast(prefactor_func)
+      call broadcast(cell_set_ids)
+      call broadcast(source)
+      call broadcast(source_func)
 
       !! A unique NAME is required; becomes the source sublist parameter name.
       if (name == NULL_C) then
@@ -95,8 +103,17 @@ contains
         else if (prefactor_func /= NULL_C) then
           call plist%set('prefactor', trim(prefactor_func))
         end if
+      else if (any(cell_set_ids /= NULL_I)) then
+        call plist%set('cell-set-ids', pack(cell_set_ids, mask=(cell_set_ids/=NULL_I)))
+        if (source /= NULL_R .and. source_func /= NULL_C) then
+          call TLS_fatal(label // ': both SOURCE and SOURCE_FUNC specified')
+        else if (source /= NULL_R) then
+          call plist%set('source', source)
+        else if (source_func /= NULL_C) then
+          call plist%set('source', trim(source_func))
+        end if
       else
-        call TLS_fatal('DATA_FILE not specified')
+        call TLS_fatal('neither CELL_SET_IDS nor DATA_FILE specified')
       end if
 
     end do

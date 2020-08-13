@@ -393,7 +393,7 @@ contains
     use enthalpy_advector2_type
     use thermal_bc_factory1_type
     use species_bc_factory1_type
-    use source_factory_type
+    use thermal_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
     real(r8), intent(in) :: tinit
@@ -463,9 +463,9 @@ contains
     select case (this%solver_type)
     case (SOLVER1)
       block
-        type(thermal_bc_factory1) :: tbc_fac
-        type(species_bc_factory1) :: sbc_fac
-        type(source_factory)      :: tsrc_fac
+        type(thermal_bc_factory1)    :: tbc_fac
+        type(species_bc_factory1)    :: sbc_fac
+        type(thermal_source_factory) :: tsrc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call sbc_fac%init(this%mesh, this%species_bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
@@ -479,8 +479,8 @@ contains
 
     case (SOLVER2)
       block
-        type(thermal_bc_factory1) :: bc_fac
-        type(source_factory)      :: tsrc_fac
+        type(thermal_bc_factory1)    :: bc_fac
+        type(thermal_source_factory) :: tsrc_fac
         call bc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
         this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, tsrc_fac, stat, errmsg)
