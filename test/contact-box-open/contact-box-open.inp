@@ -58,7 +58,7 @@
   method = 'nlk'
   linear_solver_name = 'displacement precon'
   convergence_criterion = 1.0e-12
-  NLK_max_vectors = 10
+  NLK_max_vectors = 20
   NLK_vector_tolerance = 0.01
   maximum_iterations = 500
 /

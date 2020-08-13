@@ -38,7 +38,6 @@ Module SOLID_MECHANICS_MODULE
   Use var_vector_module
   use solid_mechanics_data
   use solid_mechanics_input, only: solid_mechanics_body_force
-  use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
   use truchas_timers
   use material_model_driver, only: matl_model
@@ -65,9 +64,6 @@ Module SOLID_MECHANICS_MODULE
   ! Gradient data for preconditioners
   type(real_var_vector), save, pointer, Dimension(:)                :: M1
   type(real_var_vector), save, pointer, Dimension(:)                :: M2
-  !
-  ! Instantiate an NK space-time data type.
-  type(NK_SOLUTION_FIELD),  save    :: VP_Solution_Field
 
   !-----------------------------------------------------------------------------
 
@@ -610,10 +606,6 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    Use linear_solution, Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
-    use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
-                                  NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
-    Use preconditioners, Only: PRECONDITION
     use legacy_mesh_api, only: nnodes
     use solid_mechanics_input, only: NK_DISPLACEMENT
     use solid_mechanics_mesh, only: ndim
@@ -856,7 +848,6 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use preconditioners,        only: TM_P, TM_P_Map
     use legacy_mesh_api,        only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1, EN_SUM_Scatter
     use legacy_mesh_api,        only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
     use node_operator_module,   only: mech_precond_init
@@ -1041,11 +1032,6 @@ Contains
     deallocate(Nvol)
     deallocate(L1tmp)
     deallocate(L2tmp)
-
-    ! Associate preconditioner matrix and connectivity
-
-    TM_P => A_Elas
-    TM_P_Map => A_Conn
 
     call stop_timer("Precondition")
 
@@ -1716,55 +1702,6 @@ Contains
     Residual = Y - RHS
 
   End Subroutine ELAS_VP_RESIDUAL
-
-  !
-  Subroutine VP_MATVEC (X_vec, Y, status)
-    !=======================================================================
-    ! Purpose:
-    !
-    !   Compute the matrix-vector multiply y = J*v = F(h + eps) - F(h)]/eps
-    !   where J is the Jacobian needed for the matrix-free Newton-Krylov method
-    !   and F(h) is the nonlinear function for which solutions F(h)=0 are
-    !   being sought.
-    !
-    !=======================================================================
-    use UbikSolve_module
-    use nonlinear_solution, only: P_Residual, P_Future, p_control, P_Past
-    use lnorm_module,       only: L1NORM, L2NORM
-    use legacy_mesh_api,    only: nnodes, nnodes_tot
-    use solid_mechanics_mesh, only: ndim
-
-    ! arguments
-    type (Ubik_vector_type), intent(INOUT) :: X_vec
-    real(r8), dimension(:), target, intent(INOUT) :: Y
-    integer, intent(OUT) :: status
-
-    ! Local Variables
-    real(r8), dimension(ndim * nnodes) :: Perturbed_Residual, Perturbed_X
-    real(r8) :: pert, vnorm
-    real(r8), dimension(:), pointer :: X
-    !
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-    !
-    X => Ubik_values_ptr(X_vec)
-
-    ! Define scalar pert and perturbed vector.
-    pert = L1NORM(P_Future)
-    vnorm = L2NORM(X)
-    if (vnorm == 0.0_r8) vnorm = 1.0_r8
-
-    pert = p_control%eps_NK * pert / nnodes_tot / vnorm + p_control%eps_NK
-    Perturbed_X = X * pert + P_Future
-
-    ! Define perturbed residual: (this is the only line a user should change!)
-    call ELAS_VP_RESIDUAL (P_Past, Perturbed_X, Perturbed_Residual)
-
-    ! Perform approximate "matvec"  (note sign!)
-    Y = (Perturbed_Residual - P_Residual) / pert
-
-    status = 0
-
-  END SUBROUTINE VP_MATVEC
 
  !!
  !! DEFINE_TM_DENSITY_PROPERTY
