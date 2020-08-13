@@ -146,7 +146,10 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/enthalpy_advector1_type.F90
            physics/heat_species_transport/enthalpy_advector2_type.F90
            physics/heat_species_transport/evap_heat_flux_type.F90
-           physics/heat_species_transport/evaporation_namelist.F90)
+           physics/heat_species_transport/evaporation_namelist.F90
+           physics/heat_species_transport/thermal_source_namelist.F90
+           physics/heat_species_transport/thermal_source_factory_type.F90
+)
 
 # - induction_heating
 list(APPEND PHYSICS_SOURCE_FILES

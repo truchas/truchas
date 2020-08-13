@@ -14,6 +14,7 @@ module HTSD_model_type
   use data_layout_type
   use prop_mesh_func_type
   use source_mesh_function
+  use scalar_mesh_func_class
   use bndry_func1_class
   use bndry_func2_class
   use intfc_func2_class
@@ -22,12 +23,13 @@ module HTSD_model_type
   use truchas_timers
   implicit none
   private
-  
+
   type, public :: HT_model
     !! Equation parameters
     type(prop_mesh_func) :: conductivity ! thermal conductivity
     type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
     type(source_mf) :: source     ! external heat source
+    class(scalar_mesh_func), allocatable :: src ! another external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -39,7 +41,7 @@ module HTSD_model_type
     !! Enclosure radiation problems
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
   end type HT_model
-  
+
   type, public :: SD_model
     !! Equation parameters
     type(prop_mesh_func) :: diffusivity
@@ -49,7 +51,7 @@ module HTSD_model_type
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! simple flux
   end type SD_model
-  
+
   type, public :: HTSD_model
     integer :: num_comp = 0
     type(HT_model), pointer :: ht => null()
@@ -66,46 +68,46 @@ module HTSD_model_type
     procedure :: update_moving_vf
     procedure :: add_moving_vf_events
   end type HTSD_model
-  
+
   public :: HTSD_model_init
   public :: HTSD_model_delete
   public :: HTSD_model_size
   public :: HTSD_model_compute_f
   public :: HTSD_model_new_state_array
-  
+
   public :: HTSD_model_get_cell_heat_view, HTSD_model_get_cell_heat_copy
   public :: HTSD_model_get_cell_temp_view, HTSD_model_get_cell_temp_copy
   public :: HTSD_model_get_face_temp_view, HTSD_model_get_face_temp_copy
   public :: HTSD_model_get_radiosity_view, HTSD_model_get_radiosity_copy
   public :: HTSD_model_get_cell_conc_view, HTSD_model_get_cell_conc_copy
   public :: HTSD_model_get_face_conc_view, HTSD_model_get_face_conc_copy
-  
+
   public :: HTSD_model_set_cell_heat
   public :: HTSD_model_set_cell_temp
   public :: HTSD_model_set_face_temp
   public :: HTSD_model_set_radiosity
   public :: HTSD_model_set_cell_conc
   public :: HTSD_model_set_face_conc
-  
+
 contains
-  
+
   subroutine HTSD_model_init (this, disc, htmodel, sdmodel)
-  
+
     type(HTSD_model), intent(out) :: this
     type(mfd_disc), intent(in), target :: disc
     type(HT_model), pointer :: htmodel
     type(SD_model), pointer :: sdmodel(:)
-    
+
     integer :: n
-    
+
     this%disc => disc
     this%mesh => disc%mesh
-    
+
     this%ht => htmodel  ! take ownership
     this%sd => sdmodel  ! take ownership
-    
+
     ASSERT(associated(this%ht) .or. associated(this%sd))
-    
+
     !! Create the packed layout of the model variables.
     if (associated(this%ht)) then
       this%cell_heat_segid = alloc_segment(this%layout, this%mesh%ncell_onP)
@@ -129,9 +131,9 @@ contains
       end do
     end if
     call alloc_complete (this%layout)
-    
+
   end subroutine HTSD_model_init
-  
+
   subroutine HTSD_model_delete (this)
     type(HTSD_model), intent(inout) :: this
     integer :: n
@@ -150,7 +152,7 @@ contains
       deallocate(this%sd)
     end if
   end subroutine HTSD_model_delete
-  
+
   subroutine HT_model_delete (this)
     type(HT_model), intent(inout) :: this
     integer :: n
@@ -159,7 +161,7 @@ contains
     call smf_destroy (this%source)
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine HT_model_delete
-  
+
   subroutine SD_model_delete (this)
     type(SD_model), intent(inout) :: this
     !call destroy (this%diffusivity)
@@ -169,7 +171,7 @@ contains
     !end if
     call smf_destroy (this%source)
   end subroutine SD_model_delete
-  
+
   function HTSD_model_new_state_array (this, u) result (state)
     type(HTSD_model), intent(in) :: this
     real(r8), intent(in) :: u(:)
@@ -191,29 +193,29 @@ contains
   end function HTSD_model_new_state_array
 
   subroutine HTSD_model_compute_f (this, t, u, udot, f)
-  
+
     use mfd_disc_type
-  
+
     type(HTSD_model), intent(inout) :: this
     real(r8), intent(in)  :: t, u(:), udot(:)
     real(r8), intent(out) :: f(:)
     target :: u, udot, f
-    
+
     integer :: n
     !real(r8), allocatable, target :: state(:,:)
     real(r8), pointer :: state(:,:)
-    
+
     call start_timer ('HTSD function')
-    
+
     state => HTSD_model_new_state_array(this, u)
-    
+
     !! HT residual.
     if (associated(this%ht)) then
       call start_timer ('HT function')
       call HT_model_compute_f
       call stop_timer ('HT function')
     end if
-    
+
     !! SD residual.
     if (associated(this%sd)) then
       call start_timer ('SD function')
@@ -222,13 +224,13 @@ contains
       end do
       call stop_timer ('SD function')
     end if
-    
+
     deallocate(state)
-    
+
     call stop_timer ('HTSD function')
 
   contains
-  
+
     subroutine HT_model_compute_f ()
 
       integer :: j, n, n1, n2
@@ -279,6 +281,12 @@ contains
       call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
       call smf_eval (this%ht%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Hdot - value)
+
+      !! Additional heat source
+      if (allocated(this%ht%src)) then
+        call this%ht%src%compute(t)
+        Fcell = Fcell - this%mesh%volume*this%ht%src%value
+      end if
 
       !! Dirichlet condition residuals.
       if (allocated(this%ht%bc_dir)) then
@@ -345,7 +353,7 @@ contains
         end do
         if (allocated(void_link)) deallocate(void_link)
       end if
-      
+
       !! Internal gap radiation contribution.
       if (allocated(this%ht%ic_rad)) then
         call this%ht%ic_rad%compute(t, Tface)
@@ -398,7 +406,7 @@ contains
     end subroutine HT_model_compute_f
 
     subroutine SD_model_compute_f (index)
-    
+
       integer, intent(in) :: index
 
       integer :: j, n
@@ -491,12 +499,12 @@ contains
 
   end subroutine HTSD_model_compute_f
 
-  
+
   pure integer function HTSD_model_size (this)
     type(HTSD_model), intent(in) :: this
     HTSD_model_size = layout_size(this%layout)
   end function HTSD_model_size
-  
+
   subroutine HTSD_model_get_cell_heat_view (this, array, view)
     type(HTSD_model), intent(in) :: this
     real(r8), target, intent(in) :: array(:)
@@ -504,7 +512,7 @@ contains
     ASSERT(associated(this%ht))
     call get_segment_view (this%layout, array, this%cell_heat_segid, view)
   end subroutine HTSD_model_get_cell_heat_view
-  
+
   subroutine HTSD_model_get_cell_temp_view (this, array, view)
     type(HTSD_model), intent(in) :: this
     real(r8), target, intent(in) :: array(:)
@@ -512,7 +520,7 @@ contains
     ASSERT(associated(this%ht))
     call get_segment_view (this%layout, array, this%cell_temp_segid, view)
   end subroutine HTSD_model_get_cell_temp_view
-  
+
   subroutine HTSD_model_get_face_temp_view (this, array, view)
     type(HTSD_model), intent(in) :: this
     real(r8), target, intent(in) :: array(:)
@@ -520,7 +528,7 @@ contains
     ASSERT(associated(this%ht))
     call get_segment_view (this%layout, array, this%face_temp_segid, view)
   end subroutine HTSD_model_get_face_temp_view
-  
+
   subroutine HTSD_model_get_radiosity_view (this, index, array, view)
     type(HTSD_model), intent(in) :: this
     integer, intent(in) :: index
@@ -530,7 +538,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%rad_segid))
     call get_segment_view (this%layout, array, this%rad_segid(index), view)
   end subroutine HTSD_model_get_radiosity_view
-  
+
   subroutine HTSD_model_get_cell_heat_copy (this, array, copy)
     type(HTSD_model), intent(in) :: this
     real(r8), intent(in), target :: array(:)
@@ -564,7 +572,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%rad_segid))
     call get_segment_copy (this%layout, array, this%rad_segid(index), copy)
   end subroutine HTSD_model_get_radiosity_copy
-  
+
   subroutine HTSD_model_get_cell_conc_view (this, index, array, view)
     type(HTSD_model), intent(in) :: this
     integer, intent(in) :: index
@@ -574,7 +582,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%cell_conc_segid))
     call get_segment_view (this%layout, array, this%cell_conc_segid(index), view)
   end subroutine HTSD_model_get_cell_conc_view
-  
+
   subroutine HTSD_model_get_face_conc_view (this, index, array, view)
     type(HTSD_model), intent(in) :: this
     integer, intent(in) :: index
@@ -584,7 +592,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%face_conc_segid))
     call get_segment_view (this%layout, array, this%face_conc_segid(index), view)
   end subroutine HTSD_model_get_face_conc_view
-  
+
   subroutine HTSD_model_get_cell_conc_copy (this, index, array, copy)
     type(HTSD_model), intent(in) :: this
     integer, intent(in) :: index
@@ -594,7 +602,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%cell_conc_segid))
     call get_segment_copy (this%layout, array, this%cell_conc_segid(index), copy)
   end subroutine HTSD_model_get_cell_conc_copy
-  
+
   subroutine HTSD_model_get_face_conc_copy (this, index, array, copy)
     type(HTSD_model), intent(in) :: this
     integer, intent(in) :: index
@@ -604,7 +612,7 @@ contains
     ASSERT(index > 0 .and. index <= size(this%face_conc_segid))
     call get_segment_copy (this%layout, array, this%face_conc_segid(index), copy)
   end subroutine HTSD_model_get_face_conc_copy
-  
+
   subroutine HTSD_model_set_cell_heat (this, source, array)
     type(HTSD_model), intent(in) :: this
     real(r8), intent(in) :: source(:)
@@ -679,5 +687,5 @@ contains
       call this%ht%vf_rad_prob(n)%add_moving_vf_events(eventq)
     end do
   end subroutine
-  
+
 end module HTSD_model_type
