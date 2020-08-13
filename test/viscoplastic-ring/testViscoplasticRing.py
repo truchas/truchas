@@ -19,7 +19,7 @@ def run_test(tenv):
     test = output.field(sid, "sigma")[true_region]
     gold = golden.field(sid, "sigma")[true_region]
     for j in range(6):
-        nfail += truchas.compare_max(test[:,j], gold[:,j], 0.1, "sigma{:1d}".format(j+1), time)
+        nfail += truchas.compare_max(test[:,j], gold[:,j], 1e-3, "sigma{:1d}".format(j+1), time)
 
     # strain
     test = output.field(sid, "epsilon")[true_region]
@@ -30,17 +30,17 @@ def run_test(tenv):
     # normal traction
     test = output.field(sid, "NTRAC_04")[gap_region_node]
     gold = golden.field(sid, "NTRAC_04")[gap_region_node]
-    nfail += truchas.compare_max(test, gold, 0.1, "normal traction", time)
+    nfail += truchas.compare_max(test, gold, 1e-3, "normal traction", time)
 
     # final time
     sid = output.series_id(5)
     time = output.time(sid)
 
-    # stress (loose tolerance)
+    # stress
     test = output.field(sid, "sigma")[true_region]
     gold = golden.field(sid, "sigma")[true_region]
     for j in range(6):
-        nfail += truchas.compare_max(test[:,j], gold[:,j], 5e3, "sigma{:1d}".format(j+1), time)
+        nfail += truchas.compare_max(test[:,j], gold[:,j], 2e2, "sigma{:1d}".format(j+1), time)
 
     # strain
     test = output.field(sid, "epsilon")[true_region]

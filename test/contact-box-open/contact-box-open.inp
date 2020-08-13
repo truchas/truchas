@@ -31,10 +31,15 @@
 /
 
 &SOLID_MECHANICS
-  displacement_nonlinear_solution  = 'displacement solve'
   contact_distance = 1.0e-7
   contact_norm_trac = 1.0e4
   contact_penalty = 1.0e3
+  convergence_criterion = 1.0e-12
+  NLK_max_vectors = 20
+  NLK_vector_tolerance = 0.01
+  maximum_iterations = 500
+  preconditioning_steps = 1
+  relaxation_parameter = 1.0
 /
 
 &NUMERICS
@@ -47,19 +52,14 @@
 &LINEAR_SOLVER
   name = 'displacement precon'
   method = 'none'
-  preconditioning_steps = 4
-  relaxation_parameter = 1.6
-  preconditioning_method = 'tm_ssor'
+  preconditioning_method = 'tm_diag'
+  preconditioning_scope = 'local'
 /
 
 &NONLINEAR_SOLVER 
   name = 'displacement solve'
   method = 'nlk'
   linear_solver_name = 'displacement precon'
-  convergence_criterion = 1.0e-12
-  NLK_max_vectors = 10
-  NLK_vector_tolerance = 0.001
-  maximum_iterations = 2000
 /
 
 &BODY

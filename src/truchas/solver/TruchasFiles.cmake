@@ -15,7 +15,9 @@ set(SOLVER_SOURCE_FILES
           solver/nonlinear_solution.F90
           solver/ortho_matvec.F90
           solver/preconditioners.F90
-          solver/ridders_class.F90)
+          solver/ridders_class.F90
+          solver/nlsol_type.F90
+          )
 
 set(fc_flags
   -I${PGSLib_MODULE_DIR}

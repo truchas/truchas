@@ -42,7 +42,7 @@ def run_test(tenv):
     time = output.time(sid)
 
     # stress
-    tol = 1e3
+    tol = 2e-1
     test = output.field(sid, "sigma")[true_region]
     gold = golden.field(sid, "sigma")[true_region]
     name = "sigma{:1d}"
