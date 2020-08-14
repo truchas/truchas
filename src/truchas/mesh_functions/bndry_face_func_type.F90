@@ -2,8 +2,8 @@
 !! BNDRY_FACE_FUNC_TYPE
 !!
 !! This module defines an implementation of the base class BNDRY_FUNC1 that
-!! describes a time-dependent function on a subset of the boundary faces of
-!! a mesh of type UNSTR_MESH.
+!! describes a time-dependent function on a subset of the boundary faces of a
+!! mesh type that extends the UNSTR_BASE_MESH class.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! Adapted for Fortran 2008, February 2014
@@ -28,10 +28,10 @@
 !! bound subroutines:
 !!
 !!  INIT(MESH [,BNDRY_ONLY]) initializes the object to begin receiving the
-!!    specification of the boundary face data. MESH is the UNSTR_MESH object
-!!    on which the data s defined. The object maintains an internal read-only
-!!    reference to MESH. Faces will be required to be boundary faces unless
-!!    the option BNDRY_ONLY is present with value .false.
+!!    specification of the boundary face data. MESH is the UNSTR_BASE_MESH
+!!    object on which the data is defined. The object maintains an internal
+!!    read-only reference to MESH. Faces will be required to be boundary faces
+!!    unless the option BNDRY_ONLY is present with value .false.
 !!
 !!  ADD(F, SETIDS, STAT, ERRMSG) specifies that the SCALAR_FUNC class object F
 !!    should be used to compute the data for the mesh faces belonging to the
@@ -64,7 +64,7 @@ module bndry_face_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use bndry_func1_class
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use scalar_func_class
   use scalar_func_containers
   use bndry_face_group_builder_type
@@ -73,7 +73,7 @@ module bndry_face_func_type
 
   type, extends(bndry_func1), public :: bndry_face_func
     private
-    type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
+    class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     logical :: evaluated = .false.
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup
@@ -101,7 +101,7 @@ contains
 
   subroutine init(this, mesh, bndry_only)
     class(bndry_face_func), intent(out) :: this
-    type(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
     logical, intent(in), optional :: bndry_only
     this%mesh => mesh
     allocate(this%builder)
@@ -223,7 +223,7 @@ contains
         case (DATA_HINT_T_INDEP)
           if (.not.this%evaluated) then
             do j = 1, size(faces)
-              associate (fnode => this%mesh%fnode(this%mesh%xfnode(faces(j)):this%mesh%xfnode(faces(j)+1)-1))
+              associate (fnode => this%mesh%face_node_list_view(faces(j)))
                 args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
                 value(j) = this%farray(n)%f%eval(args)
               end associate
@@ -231,7 +231,7 @@ contains
           end if
         case default
           do j = 1, size(faces)
-            associate (fnode => this%mesh%fnode(this%mesh%xfnode(faces(j)):this%mesh%xfnode(faces(j)+1)-1))
+            associate (fnode => this%mesh%face_node_list_view(faces(j)))
               args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
               value(j) = this%farray(n)%f%eval(args)
             end associate

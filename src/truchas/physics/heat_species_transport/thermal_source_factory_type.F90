@@ -19,7 +19,7 @@
 module thermal_source_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use parameter_list_type
   use scalar_mesh_func_class
   use scalar_func_class
@@ -31,7 +31,7 @@ module thermal_source_factory_type
 
   type, public :: thermal_source_factory
     private
-    class(unstr_mesh), pointer :: mesh => null()      ! reference only
+    class(unstr_base_mesh), pointer :: mesh => null() ! reference only
     type(parameter_list), pointer :: params => null() ! reference only
   contains
     procedure :: init
@@ -59,7 +59,7 @@ contains
 
   subroutine init(this, mesh, params)
     class(thermal_source_factory), intent(out) :: this
-    type(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
     type(parameter_list), intent(in), target :: params
     this%mesh => mesh
     this%params => params

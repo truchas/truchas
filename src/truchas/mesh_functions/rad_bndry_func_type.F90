@@ -2,8 +2,8 @@
 !! RAD_BNDRY_FUNC_TYPE
 !!
 !! This module defines an extension of the base class BNDRY_FUNC2 that
-!! implements the radiation boundary condition flux function on a subset
-!! of the boundary faces of a mesh of type UNSTR_MESH.
+!! implements the radiation boundary condition flux function on a subset of
+!! the boundary faces of a mesh type that extends the UNSTR_BASE_MESH class.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! December 2017
@@ -20,7 +20,7 @@ module rad_bndry_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use bndry_func2_class
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use scalar_func_containers
   use bndry_face_group_builder_type
   implicit none
@@ -28,7 +28,7 @@ module rad_bndry_func_type
 
   type, extends(bndry_func2), public :: rad_bndry_func
     private
-    type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
+    class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     real(r8) :: sigma, abszero
     integer :: ngroup
     integer, allocatable :: xgroup(:)
@@ -49,7 +49,7 @@ contains
 
   subroutine init(this, mesh, sigma, abszero)
     class(rad_bndry_func), intent(out) :: this
-    type(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: sigma, abszero
     this%mesh => mesh
     this%sigma = sigma
@@ -93,7 +93,7 @@ contains
                 value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
                 deriv => this%deriv(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index)
-          associate (fnode => this%mesh%fnode(this%mesh%xfnode(index(j)):this%mesh%xfnode(index(j)+1)-1))
+          associate (fnode => this%mesh%face_node_list_view(index(j)))
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
           temp = var(index(j))

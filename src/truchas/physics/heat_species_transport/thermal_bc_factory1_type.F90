@@ -3,8 +3,8 @@
 !!
 !! A concrete factory class that implements methods for creating the abstract
 !! boundary condition objects used by the heat conduction model. This factory
-!! creates boundary conditions over a UNSTR_MESH object that are defined by
-!! a parameter list.
+!! creates boundary conditions over a UNSTR_BASE_MESH object that are defined
+!! by a parameter list.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! November 2018
@@ -16,9 +16,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !!  INIT(MESH, SIGMA, ABSZERO, PARAMS) initializes the factory, which will hold
-!!    a reference to the specified UNSTR_MESH object MESH and parameter list
-!!    PARAMS. SIGMA is the value of the Stefan-Boltzmann constant, and ABSZERO
-!!    the temperature of absolute zero, which are needed for the radiation BC.
+!!    a reference to the specified UNSTR_BASE_MESH object MESH and parameter
+!!    list PARAMS. SIGMA is the value of the Stefan-Boltzmann constant, and
+!!    ABSZERO the temperature of absolute zero, which are needed for the
+!!    radiation BC.
 !!
 !! The parameter list is expected to be a collection of sublist parameters
 !! with each sublist defining a specific boundary condition. Any parameter
@@ -95,7 +96,7 @@ module thermal_bc_factory1_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use thermal_bc_factory_class
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use parameter_list_type
   use scalar_func_class
   use scalar_func_factories, only: alloc_scalar_func
@@ -105,7 +106,7 @@ module thermal_bc_factory1_type
   private
 
   type, extends(thermal_bc_factory), public :: thermal_bc_factory1
-    type(unstr_mesh), pointer :: mesh => null() ! reference only
+    class(unstr_base_mesh), pointer :: mesh => null() ! reference only
     type(parameter_list), pointer :: params => null() ! reference only
     real(r8) :: sigma, abszero
   contains
@@ -136,7 +137,7 @@ contains
   subroutine init(this, mesh, sigma, abszero, params)
 
     class(thermal_bc_factory1), intent(out) :: this
-    type(unstr_mesh), intent(in), target:: mesh
+    class(unstr_base_mesh), intent(in), target:: mesh
     real(r8), intent(in) :: sigma, abszero
     type(parameter_list), intent(in), target :: params
 

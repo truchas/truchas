@@ -15,7 +15,7 @@
 module scalar_cell_func2_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use scalar_mesh_func_class
   use scalar_func_containers
   use cell_group_builder_type
@@ -24,7 +24,7 @@ module scalar_cell_func2_type
 
   type, extends(scalar_mesh_func), public :: scalar_cell_func2
     private
-    type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
+    class(unstr_base_mesh), pointer :: mesh => null()  ! reference only -- not owned
     real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup
     integer, allocatable :: xgroup(:), index(:)
@@ -50,7 +50,7 @@ contains
 
   subroutine init(this, mesh)
     class(scalar_cell_func2), intent(out) :: this
-    type(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
     this%mesh => mesh
     allocate(this%builder)
     call this%builder%init(mesh)
@@ -115,7 +115,7 @@ contains
           this%value(index) = this%farray(n)%eval(args)
         case default
           do j = 1, size(index)
-            associate (cnode => this%mesh%cnode(this%mesh%xcnode(index(j)):this%mesh%xcnode(index(j)+1)-1))
+            associate (cnode => this%mesh%cell_node_list_view(index(j)))
               args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
             end associate
             this%value(index(j)) = this%farray(n)%eval(args)
