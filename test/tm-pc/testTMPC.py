@@ -49,10 +49,10 @@ def run_test(tenv):
 
     nfail += truchas.compare_max_rel(test[:,0], XXref, 1e-8, "sigma_xx", time)
     nfail += truchas.compare_max_rel(test[:,1], XXref, 1e-8, "sigma_yy", time)
-    nfail += truchas.compare_max(test[:,2], 0, 5e-2, "sigma_zz", time)
-    nfail += truchas.compare_max(test[:,3], 0, 5e-3, "sigma_xy", time)
-    nfail += truchas.compare_max(test[:,4], 0, 5e-4, "sigma_xz", time)
-    nfail += truchas.compare_max(test[:,5], 0, 5e-3, "sigma_xx", time)
+    nfail += truchas.compare_max(test[:,2], 0, 5e-1, "sigma_zz", time)
+    nfail += truchas.compare_max(test[:,3], 0, 5e-2, "sigma_xy", time)
+    nfail += truchas.compare_max(test[:,4], 0, 5e-2, "sigma_xz", time)
+    nfail += truchas.compare_max(test[:,5], 0, 5e-1, "sigma_xx", time)
 
     # strain
     test = output.field(sid, "epsilon")

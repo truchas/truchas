@@ -17,12 +17,12 @@ def run_test(tenv):
     time = output.time(sid)
 
     # stress
-    tol = 1e-4
+    tol = 1e-3
     test = output.field(sid, "sigma")[true_region]
     gold = [-2.288e7, -5.720e6, -1.716e7, 0.0, 0.0, -9.90733e6]
     name = "sigma{:1d}"
     for j in range(6):
-        if j == 5: tol = 1e0
+        if j == 5: tol = 2e0
         nfail += truchas.compare_max(test[:,j], gold[j], tol, name.format(j+1), time)
 
     # strain
@@ -44,7 +44,7 @@ def run_test(tenv):
     time = output.time(sid)
 
     # stress
-    tol = 5e0
+    tol = 1e1
     test = output.field(sid, "sigma")[true_region]
     gold = golden.field(sid, "sigma")[true_region]
     name = "sigma{:1d}"
@@ -80,7 +80,7 @@ def run_test(tenv):
     time = output.time(sid)
 
     # stress
-    tol = 5e0
+    tol = 1e1
     test = output.field(sid, "sigma")[true_region]
     gold = golden.field(sid, "sigma")[true_region]
     name = "sigma{:1d}"
