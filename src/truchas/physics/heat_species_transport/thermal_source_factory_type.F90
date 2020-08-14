@@ -102,7 +102,7 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
       character(:), allocatable :: file
-      call plist%get('data-file', file, stat=stat)
+      call plist%get('data-file', file, stat=stat, errmsg=errmsg)
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'prefactor', f, stat, errmsg)
       if (stat /= 0) return
@@ -170,9 +170,9 @@ contains
 
   integer function sublist_type(plist)
     type(parameter_list), intent(in) :: plist
-    if (plist%is_scalar('data-file')) then
+    if (plist%is_parameter('data-file')) then
       sublist_type = TYPE_SCF1
-    else if (plist%is_scalar('cell-set-ids')) then
+    else if (plist%is_parameter('source')) then
       sublist_type = TYPE_SCF2
     else
       sublist_type = TYPE_NONE
