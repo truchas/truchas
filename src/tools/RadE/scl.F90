@@ -9,7 +9,7 @@
 
 module scl
 
-  use,intrinsic :: iso_c_binding, only: c_int, c_float, c_double, c_char
+  use,intrinsic :: iso_c_binding, only: c_int, c_float, c_double, c_char, c_ptr, c_loc
   implicit none
   private
 
@@ -72,13 +72,13 @@ module scl
       integer(c_int), intent(in) :: len, root
     end subroutine
     subroutine MPI_Bcast_logical_scalar(buffer, root) bind(c,name='MPI_Bcast_logical_scalar')
-      import c_int
-      logical(c_int), intent(inout) :: buffer
+      import c_int, c_ptr
+      type(c_ptr), value :: buffer
       integer(c_int), intent(in) :: root
     end subroutine
     subroutine MPI_Bcast_logical_vector(buffer, len, root) bind(c,name='MPI_Bcast_logical_vector')
-      import c_int
-      logical(c_int), intent(inout) :: buffer(*)
+      import c_int, c_ptr
+      type(c_ptr), value :: buffer
       integer(c_int), intent(in) :: len, root
     end subroutine
     subroutine MPI_Bcast_float_scalar(buffer, root) bind(c,name='MPI_Bcast_float_scalar')
@@ -405,32 +405,50 @@ contains
   end subroutine
 
   subroutine bcast_l0 (x, root)
-    logical, intent(inout) :: x
+    logical, intent(inout), target :: x
     integer, intent(in), optional :: root
     if (present(root)) then
-      call MPI_Bcast_logical_scalar (x, root-1)
+      call MPI_Bcast_logical_scalar (c_loc(x), root-1)
+      call MPI_Bcast_logical_scalar (c_loc(x), root-1)
     else
-      call MPI_Bcast_logical_scalar (x, 0)
+      call MPI_Bcast_logical_scalar (c_loc(x), 0)
+      call MPI_Bcast_logical_scalar (c_loc(x), 0)
     endif
   end subroutine
 
   subroutine bcast_l1 (x, root)
-    logical, intent(inout) :: x(:)
+    logical, intent(inout), target :: x(:)
     integer, intent(in), optional :: root
     if (present(root)) then
-      call MPI_Bcast_logical_vector (x,size(x),root-1)
+#ifdef NO_2008_C_LOC
+      call MPI_Bcast_logical_vector (c_loc(x(1)),size(x),root-1)
+#else
+      call MPI_Bcast_logical_vector (c_loc(x),size(x),root-1)
+#endif
     else
-      call MPI_Bcast_logical_vector (x,size(x),0)
+#ifdef NO_2008_C_LOC
+      call MPI_Bcast_logical_vector (c_loc(x(1)),size(x),0)
+#else
+      call MPI_Bcast_logical_vector (c_loc(x),size(x),0)
+#endif
     endif
   end subroutine
 
   subroutine bcast_l2 (x, root)
-    logical, intent(inout) :: x(:,:)
+    logical, intent(inout), contiguous, target :: x(:,:)
     integer, intent(in), optional :: root
     if (present(root)) then
-      call MPI_Bcast_logical_vector (x,size(x),root-1)
+#ifdef NO_2008_C_LOC
+      call MPI_Bcast_logical_vector (c_loc(x(1,1)),size(x),root-1)
+#else
+      call MPI_Bcast_logical_vector (c_loc(x),size(x),root-1)
+#endif
     else
-      call MPI_Bcast_logical_vector (x,size(x),0)
+#ifdef NO_2008_C_LOC
+      call MPI_Bcast_logical_vector (c_loc(x(1,1)),size(x),0)
+#else
+      call MPI_Bcast_logical_vector (c_loc(x),size(x),0)
+#endif
     endif
   end subroutine
 

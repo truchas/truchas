@@ -16,6 +16,9 @@ set(MESH_FUNC_SOURCE_FILES
     mesh_functions/rad_bndry_func_type.F90
     mesh_functions/htc_intfc_func_type.F90
     mesh_functions/rad_intfc_func_type.F90
+    mesh_functions/scalar_mesh_func_class.F90
+    mesh_functions/scalar_cell_func1_type.F90
+    mesh_functions/scalar_cell_func2_type.F90
 )
 
 

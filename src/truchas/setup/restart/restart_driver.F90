@@ -202,14 +202,14 @@ contains
     use kinds, only: r8
     use zone_module, only: read_zone_data
     use matl_utilities, only: read_matl_data
-    use fluid_data_module, only: read_flow_data
-    use flow_driver, only: read_fluxing_velocity
-    real(r8), allocatable, intent(out), optional :: vel_fn(:)
+    use flow_driver, only: flow_enabled, read_fluxing_velocity
+    use restart_utilities, only: skip_records
+    real(r8), allocatable, intent(out) :: vel_fn(:)
     call read_zone_data (unit, version)
-    if (present(vel_fn)) then
+    if (flow_enabled()) then
       call read_fluxing_velocity(unit, version, vel_fn)
-    else  ! legacy flow
-      call read_flow_data (unit, version)
+    else
+      call skip_records(unit, 6, 'RESTART_MATLZONE: error skipping the fluxing_velocity data')
     end if
     call read_matl_data (unit, version)
   end subroutine restart_matlzone

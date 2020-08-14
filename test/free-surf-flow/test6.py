@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -37,7 +37,7 @@ def vof_test(vof, xc, tol, time):
     # analytic vof solution at cell centroids
     pl = -2 + time**2 / 3
     pr = -1 + time**2 / 3
-    vof_ex = sp.array([0 if x <= pl-0.1 or x >= pr+0.1
+    vof_ex = np.array([0 if x <= pl-0.1 or x >= pr+0.1
                        else 1 if pl+0.1 <= x <= pr-0.1
                        else 5*( x - pl + 0.1) if x < pl+0.1
                        else 5*(-x + pr + 0.1)

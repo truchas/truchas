@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -34,7 +34,7 @@ def run_test(tenv):
     epstherm = output.field(sid, "epstherm")[:,0]
     gold = golden.field(sid, "epstherm")[:,0]
 
-    epsref = sp.array([     (T-T0)*cte[0]               if T >= Ti
+    epsref = np.array([     (T-T0)*cte[0]               if T >= Ti
                        else pcstrain[0] + (T-Ti)*cte[1] if T >= Th
                        else epsgold                     if T >= Tl
                        else pcstrain[1] + (T-Tl)*cte[2]
@@ -49,10 +49,10 @@ def run_test(tenv):
 
     nfail += truchas.compare_max_rel(test[:,0], XXref, 1e-8, "sigma_xx", time)
     nfail += truchas.compare_max_rel(test[:,1], XXref, 1e-8, "sigma_yy", time)
-    nfail += truchas.compare_max(test[:,2], 0, 2, "sigma_zz", time)
-    nfail += truchas.compare_max(test[:,3], 0, 2, "sigma_xy", time)
-    nfail += truchas.compare_max(test[:,4], 0, 2, "sigma_xz", time)
-    nfail += truchas.compare_max(test[:,5], 0, 2, "sigma_xx", time)
+    nfail += truchas.compare_max(test[:,2], 0, 5e-1, "sigma_zz", time)
+    nfail += truchas.compare_max(test[:,3], 0, 5e-2, "sigma_xy", time)
+    nfail += truchas.compare_max(test[:,4], 0, 5e-2, "sigma_xz", time)
+    nfail += truchas.compare_max(test[:,5], 0, 5e-1, "sigma_xx", time)
 
     # strain
     test = output.field(sid, "epsilon")

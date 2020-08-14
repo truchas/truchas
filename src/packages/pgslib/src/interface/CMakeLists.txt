@@ -4,7 +4,7 @@ project(PGSLibIface C Fortran)
 #include_directories(${PGSLib_MODULE_DIR})
 
 # --- Define *.F -> *.f90 files
-set(PGSLibIface_SOURCE_FILES pgslib_c_binding.f90)
+set(PGSLibIface_SOURCE_FILES pgslib_c_binding.F90)
 
 # gath-scatt files
 set(GS_SOURCE_FILES

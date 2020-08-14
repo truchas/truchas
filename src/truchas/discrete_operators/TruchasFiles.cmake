@@ -19,7 +19,6 @@ set(DISOP_SOURCE_FILES
 include(BuildWhitespaceString)
 set(DISOP_COMPILE_FLAGS
   -I${PGSLib_MODULE_DIR}
-  -I${UbikSolve_MODULE_DIR}
   -I${PETACA_MODULE_DIR}
   -I${Truchas_utilities_dir})
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)

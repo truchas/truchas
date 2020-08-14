@@ -60,7 +60,6 @@ set(Truchas_DEPENDS)
 list(APPEND Truchas_DEPENDS pgslib_fe)
 list(APPEND Truchas_DEPENDS pgslib_mpi)
 
-list(APPEND Truchas_DEPENDS ubiksolve)
 list(APPEND Truchas_DEPENDS chaco)
 list(APPEND Truchas_DEPENDS truchas::io)
 
@@ -74,7 +73,6 @@ set(Truchas_LINK_LIBS blas lapack exodus hypre petaca hdf5)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)
-list(APPEND Truchas_LINK_LIBS ubiksolve)
 list(APPEND Truchas_LINK_LIBS chaco)
 list(APPEND Truchas_LINK_LIBS truchas::io)
 
@@ -96,7 +94,6 @@ set(Truchas_LINK_LIBS ${Truchas_LINK_LIBS} PARENT_SCOPE)
 set(MAIN_SOURCE_FILES drivers/main.F90)
 
 set(fc_flags -I${PGSLib_MODULE_DIR})
-list(APPEND fc_flags -I${UbikSolve_MODULE_DIR})
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   list(APPEND fc_flags -C)
 endif()
@@ -109,7 +106,7 @@ add_executable(truchas_exe ${MAIN_SOURCE_FILES})
 target_link_libraries(truchas_exe truchas ${Truchas_LINK_LIBS})
 
 # Keep binary name consistent with old naming convention
-set(truchas_exe_name t-${Truchas_BUILD_ID}-${Truchas_VERSION})
+set(truchas_exe_name t-${Truchas_BUILD_ID})
 set_target_properties(truchas_exe PROPERTIES
                       OUTPUT_NAME ${truchas_exe_name}
                       EchoString "Built Truchas executable ${truchas_exe_name}")

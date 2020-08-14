@@ -46,7 +46,6 @@ CONTAINS
     !=======================================================================
     use time_step_module, only: cycle_number, dt, dt_constraint, t
 
-    integer :: iStatus
     character(128) :: string
 
     !! Log the time step and cycle number.
@@ -67,20 +66,12 @@ CONTAINS
     !=======================================================================
     use kinds
     use debug_control_data
-    use fluid_data_module,      only: fluid_flow, minVel, maxVel
     use process_info_module,    only: get_process_size
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
     use parallel_communication
-    use projection_data_module, only: mac_projection_iterations, &
-        prelim_projection_iterations
-    use viscous_data_module,    only: inviscid,             &
-        viscous_implicitness, &
-        viscous_iterations,   &
-        prelim_viscous_iterations
     use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
     use solid_mechanics_input,  only: solid_mechanics
     use time_step_module,       only: cycle_number
-    use fluid_utilities_module
     use flow_driver, only: flow_enabled, flow_vel_cc_view
 
     ! Local variables.
@@ -92,23 +83,6 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 110 format ('SOLVER="',a,'" COUNT="',i10,'"')
 
-    ! Count the linear and nonlinear iterations.
-    if (fluid_flow) then
-      if(cycle_number == 1) then
-        write (string, 10) prelim_projection_iterations,'Preliminary projection iterations (linear)'
-        call TLS_info (string)
-        if (.not. inviscid .and. viscous_implicitness > 0) then
-          write (string, 10) prelim_viscous_iterations,'Preliminary Viscous iterations (linear)'
-          call TLS_info (string)
-        end if
-      endif
-      write (string, 10) mac_projection_iterations,'Projection iterations (linear)'
-      call TLS_info (string)
-      if (.not. inviscid .and. viscous_implicitness > 0) then
-        write (string, 10) viscous_iterations,'Viscous iterations (linear)'
-        call TLS_info (string)
-      end if
-    end if
     if (solid_mechanics) then
       write (string, 10) thermo_elastic_iterations,'Solid mechanics iterations (linear)'
       call TLS_info (string)
@@ -132,16 +106,6 @@ CONTAINS
       x(3) = global_maxval(vel_cc(3,:))
       write(string, 98) x
 98    format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
-      call TLS_info (string)
-    else if(fluid_flow) then
-      ! Output the min/max velocities
-      call calcVelLimits()
-      call TLS_info ('')
-      write(string, 30) minVel(1), minVel(2), minVel(3)
-30    format(12x,'Min Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
-      call TLS_info (string)
-      write(string, 40) maxVel(1), maxVel(2), maxVel(3)
-40    format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
       call TLS_info (string)
     endif
 

@@ -38,16 +38,20 @@ Module SOLID_MECHANICS_MODULE
   Use var_vector_module
   use solid_mechanics_data
   use solid_mechanics_input, only: solid_mechanics_body_force
-  use nonlinear_solution, only: NK_SOLUTION_FIELD
   use truchas_logging_services
   use truchas_timers
   use material_model_driver, only: matl_model
+  use parameter_list_type
+  use smold_nlsol_model_type
+  use nlsol_type
   Implicit None
   Private
 
   integer, save, public :: thermo_elastic_iterations ! linear iteration count
   integer, save, public :: viscoplastic_iterations ! nonlinear iteration count
 
+  type(smold_nlsol_model), target :: this_model
+  type(nlsol) :: this_solver
 
   ! Public procedures
   Public :: SOLID_MECHANICS_ALLOCATE,   &
@@ -59,9 +63,6 @@ Module SOLID_MECHANICS_MODULE
   ! Gradient data for preconditioners
   type(real_var_vector), save, pointer, Dimension(:)                :: M1
   type(real_var_vector), save, pointer, Dimension(:)                :: M2
-  !
-  ! Instantiate an NK space-time data type.
-  type(NK_SOLUTION_FIELD),  save    :: VP_Solution_Field
 
   !-----------------------------------------------------------------------------
 
@@ -205,7 +206,6 @@ Contains
     use legacy_mesh_api,      only: EN_GATHER, EN_SUM_SCATTER
     use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
-    use UbikSolve_module
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
     use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
     use truchas_logging_services
@@ -605,24 +605,15 @@ Contains
     !
     !---------------------------------------------------------------------------
     !
-    Use linear_solution, Only: Ubik_user, PRECOND_NONE, PRECOND_TM_SSOR, PRECOND_TM_DIAG
     use legacy_mesh_api, only: nnodes
-    Use preconditioners, Only: PRECONDITION
-    use UbikSolve_module
-    use nonlinear_solution, only: Nonlinear_Solve, NKuser,                     &
-                                  NK_GET_SOLUTION_FIELD, NK_INITIALIZE, NK_FINALIZE
-    use solid_mechanics_input, only: NK_DISPLACEMENT
     use solid_mechanics_mesh, only: ndim
     use string_utilities, only: i_to_c
 
     real(r8), Dimension(ndim*nnodes) :: Solution
 
     ! Local variables
-    integer :: idim, inodes, status, precon_type
-    ! Solution time and space information
-    integer, parameter :: FUTURE            = 2
-    integer, parameter :: PRESENT           = 1
-    integer, parameter :: PAST              = 1
+    integer :: idim, inodes, status
+    real(r8), allocatable :: solution_old(:)
 
     !---------------------------------------------------------------------------
 
@@ -637,35 +628,13 @@ Contains
     Call RHS_THERMO_MECH()
 
     ! Solve the nonlinear system of equations for the vertex-centered displacement field
+    call MECH_PRECONDITION ()
 
-    ! Call preconditioner if required
-    precon_type = Ubik_user(NKuser(NK_DISPLACEMENT)%linear_solver_index)%precond
-
-    ! Check for allowable preconditioners for solid mechanics
-    select case (precon_type)
-    case (PRECOND_TM_SSOR, PRECOND_TM_DIAG)
-       call MECH_PRECONDITION ()
-    case (PRECOND_NONE)
-       ! Do nothing
-    case DEFAULT
-       call TLS_fatal ('MATERIAL_DISPLACEMENTS: invalid displacement preconditioner: ' // i_to_c(precon_type))
-    end select
-
-
-    ! Initialize Newton Krylov data
-    Call NK_INITIALIZE(Solution_field=VP_Solution_Field, VECTORSIZE = (ndim*nnodes), UNKNOWNS_PER_ELEMENT = 1, &
-                          TIME_LEVELS = 2, SOLUTION_OLD = Solution, SOLUTION_CURRENT = Solution)
-
-    ! Call the nonlinear solver.
-    call Nonlinear_Solve (NK_DATA=VP_Solution_Field, RESIDUAL = ELAS_VP_RESIDUAL, MATVEC = VP_MATVEC,            &
-                PRECONDITIONER = PRECONDITION, NLS = NKuser(NK_DISPLACEMENT), &
-                LS = Ubik_user(NKuser(NK_DISPLACEMENT)%linear_solver_index), STATUS = status)
-
-    ! Get the NK solution field and copy it into the data structure.
-    call NK_GET_SOLUTION_FIELD (VP_Solution_Field, Solution, FUTURE)
-
-    ! Destroy/deallocate the HT NK solution data structure.
-    call NK_FINALIZE (VP_Solution_Field)
+    ! dt = 1 must be provided here, as it is assumed internally
+    solution_old = solution
+    call this_solver%solve(0.0_r8, 1.0_r8, solution_old, solution, status)
+    if (status /= 0) call TLS_fatal('NLK-SM did not converge')
+    viscoplastic_iterations = this_solver%itr
 
     ! Store the solution of the linear system of equations in the displacement vector
     Do inodes = 1, nnodes
@@ -673,9 +642,6 @@ Contains
           Displacement(idim,inodes) = Solution((inodes - 1)*ndim + idim)
        End Do
     End Do
-    ! Store the iteration counts
-    thermo_elastic_iterations   = NKuser(NK_DISPLACEMENT)%linear_tot
-    viscoplastic_iterations = NKuser(NK_DISPLACEMENT)%Newton_tot
 
   End Subroutine MATERIAL_DISPLACEMENTS
   !
@@ -880,13 +846,13 @@ Contains
     !
     ! Author(s): Dave Korzekwa, LANL (dak@lanl.gov)
     !=============================================================================
-    use preconditioners,        only: TM_P, TM_P_Map
     use legacy_mesh_api,        only: nnodes, ncells, Cell, Mesh, GAP_ELEMENT_1, EN_SUM_Scatter
     use legacy_mesh_api,        only: Vertex_Ngbr_All, Vertex_Ngbr_All_Orig
     use node_operator_module,   only: mech_precond_init
     use mech_bc_data_module
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
+    use solid_mechanics_namelist, only: linear_params, nonlinear_params
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
     type(real_var_vector), pointer, save, dimension(:) :: A_Elas
@@ -896,6 +862,7 @@ Contains
     real(r8), pointer, dimension(:) :: Lame1_Node, Lame2_Node , Nvol, L1tmp, L2tmp
     integer :: idim, jdim, lnode,  inode, jnode, nmax
     integer :: status
+    character(:), allocatable :: errmsg
     integer, dimension(nnodes) :: NN_Sizes
     integer, dimension(nnodes*ndim) :: C_Sizes
     ! Pointers to var_vector data
@@ -979,6 +946,12 @@ Contains
        call start_timer("Solid Mechanics")
 
        !NNC: call TIMER_START(TIMER_CYCLE)
+
+       ! The model must be initialized before the solver
+       call this_model%init(ELAS_VP_RESIDUAL, A_Elas, linear_params, status, errmsg)
+       if (status /= 0) call TLS_fatal('SOLID_MECH_INIT: ' // errmsg)
+       call this_solver%init(this_model, nonlinear_params, status, errmsg)
+       if (status /= 0) call TLS_fatal('SOLID_MECH_INIT: ' // errmsg)
     end if
 
     call start_timer ("Precondition")
@@ -1058,11 +1031,6 @@ Contains
     deallocate(Nvol)
     deallocate(L1tmp)
     deallocate(L2tmp)
-
-    ! Associate preconditioner matrix and connectivity
-
-    TM_P => A_Elas
-    TM_P_Map => A_Conn
 
     call stop_timer("Precondition")
 
@@ -1584,7 +1552,6 @@ Contains
     Use legacy_mesh_api,        only: EN_GATHER, EN_SUM_Scatter
     use node_operator_module,   only: CV_Internal, nipc, LINEAR_GRAD
     use mech_bc_data_module
-    Use UbikSolve_module
     Use viscoplasticity,        only: PLASTIC_STRAIN_INCREMENT
     use solid_mech_constraints, only: DISPLACEMENT_CONSTRAINTS
     use solid_mechanics_input, only: stress_reduced_integration
@@ -1734,55 +1701,6 @@ Contains
     Residual = Y - RHS
 
   End Subroutine ELAS_VP_RESIDUAL
-
-  !
-  Subroutine VP_MATVEC (X_vec, Y, status)
-    !=======================================================================
-    ! Purpose:
-    !
-    !   Compute the matrix-vector multiply y = J*v = F(h + eps) - F(h)]/eps
-    !   where J is the Jacobian needed for the matrix-free Newton-Krylov method
-    !   and F(h) is the nonlinear function for which solutions F(h)=0 are
-    !   being sought.
-    !
-    !=======================================================================
-    use lnorm_module,       only: L1NORM, L2NORM
-    use nonlinear_solution, only: P_Residual, P_Future, p_control, P_Past
-    use legacy_mesh_api,    only: nnodes, nnodes_tot
-    use solid_mechanics_mesh, only: ndim
-    use UbikSolve_module
-
-    ! arguments
-    type (Ubik_vector_type), intent(INOUT) :: X_vec
-    real(r8), dimension(:), target, intent(INOUT) :: Y
-    integer, intent(OUT) :: status
-
-    ! Local Variables
-    real(r8), dimension(ndim * nnodes) :: Perturbed_Residual, Perturbed_X
-    real(r8) :: pert, vnorm
-    real(r8), dimension(:), pointer :: X
-    !
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-    !
-    X => Ubik_values_ptr(X_vec)
-
-    ! Define scalar pert and perturbed vector.
-    pert = L1NORM(P_Future)
-    vnorm = L2NORM(X)
-    if (vnorm == 0.0_r8) vnorm = 1.0_r8
-
-    pert = p_control%eps_NK * pert / nnodes_tot / vnorm + p_control%eps_NK
-    Perturbed_X = X * pert + P_Future
-
-    ! Define perturbed residual: (this is the only line a user should change!)
-    call ELAS_VP_RESIDUAL (P_Past, Perturbed_X, Perturbed_Residual)
-
-    ! Perform approximate "matvec"  (note sign!)
-    Y = (Perturbed_Residual - P_Residual) / pert
-
-    status = 0
-
-  END SUBROUTINE VP_MATVEC
 
  !!
  !! DEFINE_TM_DENSITY_PROPERTY

@@ -4,6 +4,7 @@
 set(DISMESH_SOURCE_FILES
            distributed_mesh/bitfield_type.F90
            distributed_mesh/base_mesh_class.F90
+           distributed_mesh/unstr_base_mesh_class.F90
            distributed_mesh/facet_hash_type.F90
            distributed_mesh/facet_table_type.F90
            distributed_mesh/face_neighbor_table_type.F90

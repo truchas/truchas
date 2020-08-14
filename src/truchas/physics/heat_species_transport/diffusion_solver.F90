@@ -75,7 +75,7 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
-    type(parameter_list) :: bc_params, species_bc_params
+    type(parameter_list) :: bc_params, species_bc_params, thermal_source_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -87,6 +87,7 @@ contains
   subroutine read_ds_namelists (lun)
 
     use thermal_bc_namelist
+    use thermal_source_namelist
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
@@ -95,6 +96,7 @@ contains
 
     call read_ds_namelist (lun)
     call read_thermal_bc_namelists(lun, this%bc_params)
+    call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
 
@@ -110,7 +112,6 @@ contains
   subroutine ds_step (h, hnext, errc)
 
     use zone_module, only: zone
-    use flow_phase_change, only: set_reference_fluid_density, set_solidified_density
     use cutoffs_module, only: cutvof
 
     real(r8), intent(inout) :: h
@@ -124,15 +125,14 @@ contains
 
     call start_timer ('Diffusion Solver')
 
-    if (this%have_heat_transfer .and. this%have_phase_change) call set_reference_fluid_density
-
     if (this%have_fluid_flow) then
       call update_mmf_from_matl (this%mmf)
       if (this%have_void) call cull_material_fragments (this%mmf, cutvof)
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
-    if (this%have_species_diffusion) call update_adv_conc
+    !TODO: see issue 367
+    !if (this%have_species_diffusion) call update_adv_conc
 
     select case (this%solver_type)
     case (SOLVER1)  ! HT/SD solver with static void
@@ -178,8 +178,6 @@ contains
     1 format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
     2 format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
     call TLS_info (message)
-
-    if (this%have_heat_transfer .and. this%have_phase_change) call set_solidified_density
 
     call stop_timer ('Diffusion Solver')
 
@@ -243,29 +241,29 @@ contains
 
     end subroutine update_adv_heat
 
-    subroutine update_adv_conc
-
-      use legacy_mesh_api, only: ncells
-      use advection_module,   only: advected_phi
-      use index_partitioning, only: gather_boundary
-
-      integer :: i
-      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
-
-      if (this%have_fluid_flow) then
-        allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
-        do i = 1, num_species
-          call ds_get_phi (i, phi_t)
-          call advected_phi(phi_t, q_t)    ! species deltas for the time step
-          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
-          call gather_boundary (this%mesh%cell_ip, q_ds)
-          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
-          call smf_set_extra_source (this%sd_source(i), q_ds)
-        end do
-        deallocate(q_t, q_ds, phi_t)
-      end if
-
-    end subroutine update_adv_conc
+!    subroutine update_adv_conc
+!
+!      use legacy_mesh_api, only: ncells
+!      use advection_module,   only: advected_phi
+!      use index_partitioning, only: gather_boundary
+!
+!      integer :: i
+!      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
+!
+!      if (this%have_fluid_flow) then
+!        allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
+!        do i = 1, num_species
+!          call ds_get_phi (i, phi_t)
+!          call advected_phi(phi_t, q_t)    ! species deltas for the time step
+!          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
+!          call gather_boundary (this%mesh%cell_ip, q_ds)
+!          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
+!          call smf_set_extra_source (this%sd_source(i), q_ds)
+!        end do
+!        deallocate(q_t, q_ds, phi_t)
+!      end if
+!
+!    end subroutine update_adv_conc
 
   end subroutine ds_step
 
@@ -381,16 +379,15 @@ contains
   subroutine ds_init (tinit)
 
     use EM_data_proxy, only: EM_is_on
-    use fluid_data_module,  only: fluid_flow
     use FHT_model_factory
     use FHT_solver_factory
     use HTSD_model_factory
     use HTSD_solver_factory
-    use physics_module, only: flow, legacy_flow
+    use physics_module, only: flow
     use enthalpy_advector1_type
-    use enthalpy_advector2_type
     use thermal_bc_factory1_type
     use species_bc_factory1_type
+    use thermal_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
     real(r8), intent(in) :: tinit
@@ -422,14 +419,11 @@ contains
     this%have_heat_transfer = heat_eqn
     this%have_species_diffusion = (num_species > 0)
     this%have_joule_heat = EM_is_on()
-    this%have_fluid_flow = fluid_flow
+    this%have_fluid_flow = .false.
     this%have_phase_change = multiphase_problem(this%mmf)
     this%have_void = void_is_present()
 
-    if (legacy_flow) then
-      this%have_fluid_flow = .true.
-      allocate(enthalpy_advector2 :: this%hadv)
-    else if (flow) then
+    if (flow) then
       this%have_fluid_flow = .true.
       allocate(hadv1)
       call hadv1%init(this%mesh, stat, errmsg2)
@@ -460,11 +454,13 @@ contains
     select case (this%solver_type)
     case (SOLVER1)
       block
-        type(thermal_bc_factory1) :: tbc_fac
-        type(species_bc_factory1) :: sbc_fac
+        type(thermal_bc_factory1)    :: tbc_fac
+        type(species_bc_factory1)    :: sbc_fac
+        type(thermal_source_factory) :: tsrc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call sbc_fac%init(this%mesh, this%species_bc_params)
-        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, stat, errmsg)
+        call tsrc_fac%init(this%mesh, this%thermal_source_params)
+        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
@@ -474,9 +470,11 @@ contains
 
     case (SOLVER2)
       block
-        type(thermal_bc_factory1) :: bc_fac
+        type(thermal_bc_factory1)    :: bc_fac
+        type(thermal_source_factory) :: tsrc_fac
         call bc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
-        this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, stat, errmsg)
+        call tsrc_fac%init(this%mesh, this%thermal_source_params)
+        this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, tsrc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step

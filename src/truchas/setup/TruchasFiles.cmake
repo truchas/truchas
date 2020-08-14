@@ -68,7 +68,6 @@ list(APPEND SETUP_SOURCE_FILES
 include(BuildWhitespaceString)
 set(fc_flags
   -I${PGSLib_MODULE_DIR}
-  -I${UbikSolve_MODULE_DIR}
   -I${Truchas_utilities_dir})
 build_whitespace_string(SETUP_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${SETUP_SOURCE_FILES} PROPERTIES

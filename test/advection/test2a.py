@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -15,7 +15,7 @@ def run_test(tenv):
         time = output.time(sid)
 
         p = -6 + 6*time
-        vofex = sp.array([1 if x < p-0.75 \
+        vofex = np.array([1 if x < p-0.75 \
                           else 0 if x > p+0.75 \
                           else 15/16 if x < p-0.25 \
                           else 1/16 if x > p+0.25 \

@@ -9,7 +9,7 @@ import os
 import sys
 
 import h5py
-import scipy as sp
+import numpy as np
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory, set by CMake at configure-time.
@@ -44,13 +44,13 @@ class TruchasData:
 
         # load the cell map, correct for Fortran ordering, and invert
         cm = self._root["Simulations/MAIN/Non-series Data/CELLMAP"][:] - 1
-        self._cellmap = sp.empty(cm.size, cm.dtype)
-        self._cellmap[cm] = sp.arange(cm.size)
+        self._cellmap = np.empty(cm.size, cm.dtype)
+        self._cellmap[cm] = np.arange(cm.size)
 
         # repeat for node map
         nm = self._root["Simulations/MAIN/Non-series Data/NODEMAP"][:] - 1
-        self._nodemap = sp.empty(nm.size, nm.dtype)
-        self._nodemap[nm] = sp.arange(nm.size)
+        self._nodemap = np.empty(nm.size, nm.dtype)
+        self._nodemap[nm] = np.arange(nm.size)
 
         self.ncell = self._cellmap.size
         self.nnode = self._nodemap.size
@@ -80,7 +80,7 @@ class TruchasData:
         """Within an element block, assign a value to a field."""
         field = self.field(series_id, field_name)
         blockids = self.blockid()
-        if ((type(value) == list or type(value) == sp.array)
+        if ((type(value) == list or type(value) == np.array)
             and len(value) > 1 and len(value) == field.shape[1]):
             for i in range(len(field)):
                 if (blockid == blockids[i]):
@@ -89,7 +89,7 @@ class TruchasData:
             # In this case, the field is either a mesh-wide field
             # or a scalar, and we can do a simple broadcast. It
             # might also be an erroneous input.
-            field = sp.where(blockids == blockid, value, field)
+            field = np.where(blockids == blockid, value, field)
         self.assign_field(series_id, field_name, field)
 
 
@@ -107,9 +107,9 @@ class TruchasData:
         This will read the entire field from disk."""
         length = self._series(series_id)[field_name].shape[0]
         if length == self._h5_ncell:
-            field = sp.array(self._series(series_id)[field_name])[self._cellmap]
+            field = np.array(self._series(series_id)[field_name])[self._cellmap]
         elif length == self._h5_nnode:
-            field = sp.array(self._series(series_id)[field_name])[self._nodemap]
+            field = np.array(self._series(series_id)[field_name])[self._nodemap]
         else:
             raise NotImplementedError(("Reading fields which are neither "
                                        "cell-centered nor node-centered is not "
@@ -121,7 +121,7 @@ class TruchasData:
         """Return the requested field of the requested series as a ndarray.
         Assumed to be node-centered. This will read the entire field from
         disk."""
-        return sp.array(self._series(series_id)[field_name])[self._nodemap]
+        return np.array(self._series(series_id)[field_name])[self._nodemap]
 
 
     def probes(self):
@@ -185,16 +185,16 @@ class TruchasData:
         if self._centroid is None:
             node = self.node_coordinates()
             cnode = self.cell_node_map()
-            self._centroid = sp.zeros((cnode.shape[0],3))
+            self._centroid = np.zeros((cnode.shape[0],3))
             for i, cn in enumerate(cnode):
                 if cn[0] == cn[1]: # TET
-                    self._centroid[i,:] = sp.sum(node[cn[1:5]], axis=0) / 4
+                    self._centroid[i,:] = np.sum(node[cn[1:5]], axis=0) / 4
                 elif cn[4] == cn[5]: # PYR
-                    self._centroid[i,:] = sp.sum(node[cn[:5]], axis=0) / 5
+                    self._centroid[i,:] = np.sum(node[cn[:5]], axis=0) / 5
                 elif cn[4] == cn[7]: # WED
-                    self._centroid[i,:] = sp.sum(node[cn[:6]], axis=0) / 6
+                    self._centroid[i,:] = np.sum(node[cn[:6]], axis=0) / 6
                 else: # HEX
-                    self._centroid[i,:] = sp.sum(node[cn], axis=0) / 8
+                    self._centroid[i,:] = np.sum(node[cn], axis=0) / 8
         return self._centroid
 
 
@@ -209,7 +209,7 @@ class TruchasData:
     def region(self, *region_blockids):
         """Return a list of bools indicating which cells are part of a given
         set of block ids. Input is an arbitrary number of block id integers."""
-        cell_in_region = sp.array([bid in region_blockids
+        cell_in_region = np.array([bid in region_blockids
                                    for bid in self.blockid()])
         # for c,cn in zip(cell_in_region,cnode):
         #     if c: node_in_region[cn] = True
@@ -222,7 +222,7 @@ class TruchasData:
         region_cell = self.region(*region_blockids)
         cnode = self.cell_node_map()
 
-        region_node = sp.zeros(self.nnode, dtype=bool)
+        region_node = np.zeros(self.nnode, dtype=bool)
         for cn, rc in zip(cnode, region_cell):
             if rc:
                 region_node[cn] = True
@@ -311,7 +311,7 @@ class TruchasData:
             for v in self.field(series_id, "Face_Vel").transpose():
                 fw.write_r8x1(v)
         else:
-            dummy = sp.zeros(self.ncell)
+            dummy = np.zeros(self.ncell)
             for i in range(10):
                 fw.write_r8x1(dummy)
     
@@ -323,7 +323,7 @@ class TruchasData:
         else:
             # single phase problem
             fw.write_i4x0(1)
-            fw.write_r8x1(sp.ones(self.ncell))
+            fw.write_r8x1(np.ones(self.ncell))
     
         # SOLID MECHANICS SEGMENT
         if "solid_mechanics" in features:

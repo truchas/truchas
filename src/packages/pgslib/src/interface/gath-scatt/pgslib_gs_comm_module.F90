@@ -135,7 +135,7 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Gather_Buf_1_1_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    logical (PGSLib_Log_TYPE)
@@ -194,7 +194,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_2_2_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
@@ -252,7 +252,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Gather_Buf_3_3_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
@@ -321,7 +321,7 @@ CONTAINS
 !======================================================================
 
 #define _ROUTINE_NAME_ PGSLIb_Buf_Gather_1_1_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DUP_DIMENSION_ dimension(:) 
 #define _SUP_DIMENSION_ dimension(Trace%N_Supplement) 
 #define _DATA_TYPE_    logical (PGSLib_Log_TYPE)
@@ -380,7 +380,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_2_2_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_TYPE)
 #define _DUP_DIMENSION_ dimension(:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),Trace%N_Supplement) 
@@ -438,7 +438,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLIb_Buf_Gather_3_3_Log
-#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG_C
+#define _GATHER_BUF_C_  PGSLib_Gather_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _DUP_DIMENSION_ dimension(:,:,:) 
 #define _SUP_DIMENSION_ dimension(SIZE(Duplicate,1),SIZE(Duplicate,2),Trace%N_Supplement) 
@@ -500,7 +500,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_1_1_LOG
-#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:)
 #define _DUP_DIMENSION_ dimension(Trace%N_Duplicate)
@@ -558,7 +558,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_2_2_Log
-#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),Trace%N_Duplicate)
@@ -616,7 +616,7 @@ CONTAINS
 !
 !======================================================================
 #define _ROUTINE_NAME_  PGSLib_Scatter_Buf_3_3_LOG
-#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG_C
+#define _SCATTER_BUF_C_ PGSLib_Scatter_Buf_LOG
 #define _DATA_TYPE_     logical (PGSLib_Log_Type)
 #define _SUP_DIMENSION_ dimension(:,:,:)
 #define _DUP_DIMENSION_ dimension(SIZE(Supplement,1),SIZE(Supplement,2), Trace%N_Duplicate)

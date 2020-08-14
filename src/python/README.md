@@ -1,5 +1,5 @@
 Dependencies:
 
 - Python 3.5 or greater
-- scipy
+- numpy
 - h5py

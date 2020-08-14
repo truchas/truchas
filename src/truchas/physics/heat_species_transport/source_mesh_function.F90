@@ -104,7 +104,7 @@ module source_mesh_function
 
   use kinds
   use scalar_func_containers
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   implicit none
   private
 
@@ -114,7 +114,7 @@ module source_mesh_function
 
   type :: source_mf
     private
-    type(unstr_mesh), pointer :: mesh => null()
+    class(unstr_base_mesh), pointer :: mesh => null()
     real(r8) :: tlast = -huge(1.0_r8)
     real(r8) :: default = 0.0_r8
     real(r8), pointer :: fvalue(:) => null()
@@ -145,7 +145,7 @@ contains
   subroutine smf_prep (this, mesh)
 
     type(source_mf), intent(out) :: this
-    type(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
 
     this%mesh => mesh
     this%ngroup = 0
@@ -376,7 +376,7 @@ contains
         case (SMF_HINT_T_INDEP)
           if (unevaluated) then
             do j = 1, size(cells)
-              associate (cnode => this%mesh%cnode(this%mesh%xcnode(cells(j)):this%mesh%xcnode(cells(j)+1)-1))
+              associate (cnode => this%mesh%cell_node_list_view(cells(j)))
                 args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
                 this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
               end associate
@@ -384,7 +384,7 @@ contains
           end if
         case default
           do j = 1, size(cells)
-            associate (cnode => this%mesh%cnode(this%mesh%xcnode(cells(j)):this%mesh%xcnode(cells(j)+1)-1))
+            associate (cnode => this%mesh%cell_node_list_view(cells(j)))
               args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
               this%fvalue(cells(j)) = this%farray(n)%f%eval(args)
             end associate

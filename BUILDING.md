@@ -14,8 +14,8 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
         - Many versions are known to **not work** due to compiler bugs. These
           include 19.0.x (any x), 19.1.1, and 19.1.2.
     - NAG Fortran (with GNU C/C++):
-        - version 6.1 (build 6149 or later preferred)
         - version 6.2 (build 6252 or later preferred)
+        - version 7.0 (build 7026 or later required)
         - most any version of GNU C/C++ should be okay
     - NAG Fortran on MacOS (with Apple Clang C/C++)
 	    - NAG version 6.2
@@ -28,7 +28,7 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
 * Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
-  later) and scipy (version 0.18.0 or later)
+  later) and numpy (version 1.12.0 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the

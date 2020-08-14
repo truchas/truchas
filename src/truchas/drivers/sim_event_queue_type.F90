@@ -242,9 +242,9 @@ contains
   !!!! ACTION_LIST TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !! Final subroutine for ACTION_LIST objects.
-  subroutine action_list_delete(this)
+  pure subroutine action_list_delete(this)
     type(action_list), intent(inout) :: this
-    type(list_item), pointer :: item => null()
+    type(list_item), pointer :: item
     do while (associated(this%first))
       item => this%first
       this%first => item%next

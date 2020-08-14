@@ -33,7 +33,6 @@ contains
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
-    use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
     use parallel_info_module,      only: p_info
@@ -41,9 +40,7 @@ contains
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
-    use lin_solver_input,          only: linear_solver_input
     use EM_data_proxy,             only: em_is_on
-    use region_input_module,       only: region_read
     use mesh_manager,              only: read_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
@@ -54,10 +51,6 @@ contains
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
     use material_namelist,         only: read_material_namelists
-    use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
-    use fluid_data_module,         only: applyflow
-    use viscous_data_module,       only: inviscid
-    use turbulence_module,         only: read_turbulence_namelist_for_legacy
     use solid_mechanics_input,     only: solid_mechanics
     use solid_mechanics_namelist,  only: read_solid_mechanics_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
@@ -65,7 +58,6 @@ contains
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
     use physics_module,            only: heat_transport, flow, legacy_flow
-    use legacy_flow_namelist,      only: read_legacy_flow_namelist
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
@@ -116,14 +108,10 @@ contains
     if (restart) then
       call read_restart_namelist (lun)
       call open_restart_file () ! NB: reads ncells and nnodes used later by mesh_sizes.
-      call region_read (lun) ! What is this and what does it have to do with restarts? (NNC)
     end if
 
     ! Read the MESH and ALTMESH namelists: used to initialize MESH_MANAGER (new mesh)
     call read_truchas_mesh_namelists (lun)
-
-    call linear_solver_input (lun)
-    call nonlinear_solver_input (lun)
 
     ! read volume fraction data
     call interfaces_input (lun)
@@ -133,13 +121,6 @@ contains
     call numerics_input (lun)
 
     if (flow) call read_flow_namelists(lun)
-
-    if (legacy_flow) then
-      call read_legacy_flow_namelist(lun)
-      if (.not.inviscid) call read_turbulence_namelist_for_legacy(lun)
-      if (surface_tension) call read_surface_tension_namelist (lun)
-      if (applyflow) call read_advection_velocity_namelist(lun)
-    end if
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then

@@ -4,7 +4,7 @@
 #
 #===============================================================================
 
-import scipy.linalg as spla
+import numpy.linalg as npla
 
 
 def compare_max(field1, field2, tol, name, time):
@@ -22,7 +22,7 @@ def compare_l2(field1, field2, tol, name, time):
     and compares against an input tolerance. Returns 0 if error is below
     tolerance and 1 otherwise. Prints result of comparison to terminal.
     Fields may be a scalar value."""
-    err = spla.norm(abs(field1 - field2))
+    err = npla.norm(abs(field1 - field2))
     report_test(name, time, err, tol, "l2")
     return 1 if not err <= tol else 0 # checks if err is nan
 

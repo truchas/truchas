@@ -1,0 +1,7 @@
+module version_info
+contains
+  subroutine version(info)
+    character(:), allocatable, intent(out) :: info
+    info = "@TRUCHAS_VER@"
+  end subroutine version
+end module version_info

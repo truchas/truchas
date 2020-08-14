@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -12,13 +12,13 @@ def run_test(tenv):
 
     # pressure
     pex = (-2 + 0.05 * xc[:,1]) * xc[:,1]
-    pex -= sp.mean(pex)
+    pex -= np.mean(pex)
     Tex = 1.5 + xc[:,1] / 10
     for sid in (1, 2):
         time = output.time(sid)
 
         pressure = output.field(sid, "Z_P")
-        pressure -= sp.mean(pressure)
+        pressure -= np.mean(pressure)
         nfail += truchas.compare_max(pressure, pex, 1e-10, "pressure", time)
 
         nfail += truchas.compare_max(output.field(sid, "Z_TEMP"), Tex, 1e-14, "temperature", time)

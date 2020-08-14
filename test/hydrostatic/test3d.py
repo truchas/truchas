@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -11,11 +11,11 @@ def run_test(tenv):
     xc = output.centroids()
 
     # pressure
-    pex = sp.array([-2*y if y < 0 else -y for y in (xc[:,1] - xc[:,0])/sp.sqrt(2)])
-    pex -= sp.mean(pex)
+    pex = np.array([-2*y if y < 0 else -y for y in (xc[:,1] - xc[:,0])/np.sqrt(2)])
+    pex -= np.mean(pex)
     for sid in (1, 2):
         pressure = output.field(sid, "Z_P")
-        pressure -= sp.mean(pressure)
+        pressure -= np.mean(pressure)
 
         nfail += truchas.compare_max(pressure, pex, 4e-9, "pressure", output.time(sid))
 

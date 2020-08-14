@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import scipy as sp
-import scipy.linalg as spla
+import numpy as np
+import numpy.linalg as npla
 
 import truchas
 
@@ -12,13 +12,13 @@ def run_test(tenv):
     xc = output.centroids()
 
     # pressure
-    pex = sp.array([-2*y if y < 0 else -y-0.5 for y in xc[:,1]])
-    pex -= sp.mean(pex)
+    pex = np.array([-2*y if y < 0 else -y-0.5 for y in xc[:,1]])
+    pex -= np.mean(pex)
     for sid in (1, 2):
         pressure = output.field(sid, "Z_P")
-        pressure -= sp.mean(pressure)
+        pressure -= np.mean(pressure)
 
-        error = spla.norm(pressure - pex) / pex.size
+        error = npla.norm(pressure - pex) / pex.size
         nfail += truchas.compare_l2(error, 0, 8e-3, "pressure", output.time(sid))
 
     # velocity zero everywhere

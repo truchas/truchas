@@ -16,7 +16,8 @@ export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
 mkdir build
 cd build
 cmake \
-    -C ../config/intel-opt.cmake \
+    -C ../config/linux-intel.cmake \
+    -DCMAKE_BUILD_TYPE=Release \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
     ..

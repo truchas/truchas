@@ -1,10 +1,14 @@
 module solid_mechanics_namelist
 
+  use parameter_list_type
   use solid_mechanics_input
   implicit none
   private
 
   public :: read_solid_mechanics_namelist
+
+  type(parameter_list), public :: linear_params
+  type(parameter_list), public :: nonlinear_params
 
 contains
 
@@ -12,15 +16,20 @@ contains
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
-    use input_utilities, only: seek_to_namelist
+    use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
     use string_utilities, only: i_to_c
     use truchas_logging_services
 
     integer, intent(in) :: lun
 
     namelist /solid_mechanics/ solid_mechanics_body_force, stress_reduced_integration, &
-        displacement_linear_solution, displacement_nonlinear_solution, &
         contact_distance, contact_norm_trac, contact_penalty, strain_limit
+
+    !! Parameters formerly in LINEAR_SOLVER and NONLINEAR_SOLVER
+    real(r8) :: convergence_criterion, nlk_vector_tolerance, relaxation_parameter
+    integer :: maximum_iterations, nlk_max_vectors, preconditioning_steps
+    namelist /solid_mechanics/convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
+        nlk_max_vectors, preconditioning_steps, relaxation_parameter
 
     integer :: ios
     logical :: found
@@ -42,14 +51,19 @@ contains
     !! Default values
     solid_mechanics_body_force = .false.
     stress_reduced_integration = .false.
-    displacement_linear_solution = 'default'
-    displacement_nonlinear_solution = 'default'
     contact_distance  = 1.0e-7_r8
     contact_norm_trac = 1.0e4_r8
     contact_penalty   = 1.0e3_r8
     strain_limit = 1.0e-10_r8
 
-    !! Read the FLOW namelist
+    convergence_criterion = NULL_R
+    maximum_iterations = NULL_I
+    nlk_vector_tolerance = NULL_R
+    nlk_max_vectors = NULL_I
+    preconditioning_steps = NULL_I
+    relaxation_parameter = NULL_R
+
+    !! Read the namelist
     if (is_IOP) read(lun,nml=solid_mechanics,iostat=ios,iomsg=iom)
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading SOLID_MECHANICS namelist: ' // trim(iom))
@@ -57,75 +71,28 @@ contains
     !! Broadcast the namelist variables
     call broadcast(solid_mechanics_body_force)
     call broadcast(stress_reduced_integration)
-    call broadcast(displacement_linear_solution)
-    call broadcast(displacement_nonlinear_solution)
     call broadcast(contact_distance)
     call broadcast(contact_norm_trac)
     call broadcast(contact_penalty)
     call broadcast(strain_limit)
 
+    call broadcast(maximum_iterations)
+    call broadcast(convergence_criterion)
+    call broadcast(nlk_max_vectors)
+    call broadcast(nlk_vector_tolerance)
+    call broadcast(preconditioning_steps)
+    call broadcast(relaxation_parameter)
+
     if (strain_limit < 0) call TLS_fatal('STRAIN_LIMIT must be >= 0.0')
     ! none of the other real parameters were checked :-/
 
-    call solver_init
+    if (maximum_iterations /= NULL_I) call nonlinear_params%set('nlk-max-iter', maximum_iterations)
+    if (convergence_criterion /= NULL_R) call nonlinear_params%set('nlk-tol', convergence_criterion)
+    if (nlk_max_vectors /= NULL_I) call nonlinear_params%set('nlk-max-vec', nlk_max_vectors)
+    if (nlk_vector_tolerance /= NULL_R) call nonlinear_params%set('nlk-vec-tol', nlk_vector_tolerance)
+    if (preconditioning_steps /= NULL_I) call linear_params%set('precon-num-iter', preconditioning_steps)
+    if (relaxation_parameter /= NULL_R) call linear_params%set('precon-relaxation-parameter', relaxation_parameter)
 
   end subroutine read_solid_mechanics_namelist
-
-  subroutine solver_init
-
-    use linear_solution, only: UBIK_NK_DEFAULT, linear_solutions, Ubik_user, DEFAULT_UBIK_CONTROLS
-    use nonlinear_solution, only: NK_DEFAULT, NKuser, nonlinear_solutions, DEFAULT_NK_CONTROLS
-    use parameter_module, only: string_len
-    use utilities_module, only: string_compare
-    use truchas_logging_services
-
-    integer :: j, k
-    character(string_len) :: string
-    logical :: this_string_matches
-
-    NK_DISPLACEMENT = NK_DEFAULT
-
-    do j = DEFAULT_NK_CONTROLS + 1, DEFAULT_NK_CONTROLS + nonlinear_solutions
-      string = NKuser(j)%name
-      this_string_matches = .false.
-      call STRING_COMPARE (TRIM(displacement_nonlinear_solution), string, this_string_matches)
-      if (this_string_matches) then
-        NK_DISPLACEMENT = j
-        call TLS_info('Using nonlinear solver "' // trim(displacement_nonlinear_solution) // &
-                      '" for displacement nonlinear solution.')
-        exit
-      end if
-    end do
-
-    if (NK_DISPLACEMENT == NK_DEFAULT) then
-      if (displacement_nonlinear_solution == 'default') then
-        call TLS_info ('Using default nonlinear solver parameters for displacement nonlinear solution.')
-      else
-        call TLS_warn('Nonlinear solver "' // trim(displacement_nonlinear_solution) // &
-                      '" for displacement nonlinear solution not found! &
-                      & Reverting to default nonlinear solver parameters.')
-      end if
-    end if
-
-    ! Find the correct linear solver for each input nonlinear solver.
-    do j = DEFAULT_NK_CONTROLS + 1, DEFAULT_NK_CONTROLS + nonlinear_solutions
-      string = NKuser(j)%linear_solver_name
-      this_string_matches = .false.
-      do k = DEFAULT_UBIK_CONTROLS + 1, DEFAULT_UBIK_CONTROLS + linear_solutions
-        call string_compare(TRIM(Ubik_user(k)%name), string, this_string_matches)
-        if (this_string_matches) then
-          NKuser(j)%linear_solver_index = k
-          call TLS_info('Using linear solver "' // trim(Ubik_user(k)%name) // &
-                        '" for nonlinear solver " // trim(NKuser(j)%name) // ".')
-          exit
-        end if
-        if (NKuser(j)%linear_solver_index == UBIK_NK_DEFAULT) then
-          call TLS_info('Using default linear solver "' // trim(Ubik_user(k)%name) // &
-                        '" for nonlinear solver "' // trim(NKuser(j)%name) // '".')
-        end if
-      end do
-    end do
-
-  end subroutine solver_init
 
 end module solid_mechanics_namelist

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -12,7 +12,7 @@ def run_test(tenv):
     # early velocity
     time = output.time(2)
     velocity = output.field(2, "Z_VC")
-    velex = sp.sqrt(2)*time
+    velex = np.sqrt(2)*time
     nfail += truchas.compare_max_rel(velocity[:,0], velex, 1e-11, "x-velocity", time)
     nfail += truchas.compare_max(velocity[:,1], 0, 1e-12, "y-velocity", time)
     nfail += truchas.compare_max_rel(velocity[:,2], velex, 1e-11, "z-velocity", time)
@@ -20,7 +20,7 @@ def run_test(tenv):
     # final velocity
     time = output.time(3)
     velocity = output.field(3, "Z_VC")
-    velex = sp.sqrt(2)*time
+    velex = np.sqrt(2)*time
     nfail += truchas.compare_max(velocity[:,0], velex, 1e-12, "x-velocity", time)
     nfail += truchas.compare_max(velocity[:,1], 0, 1e-13, "y-velocity", time)
     nfail += truchas.compare_max(velocity[:,2], velex, 1e-12, "z-velocity", time)

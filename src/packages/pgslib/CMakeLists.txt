@@ -68,7 +68,7 @@ add_subdirectory(src)
 
 # Create the target file
 set(PGSLib_TARGETS_FILE pgslib-targets.cmake)
-set(export_targets pgslib_fe pgslib_serial)
+set(export_targets pgslib_fe)
 if (ENABLE_MPI)
   list(APPEND export_targets pgslib_mpi)
 endif()

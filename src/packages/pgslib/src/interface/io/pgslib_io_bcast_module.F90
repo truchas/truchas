@@ -121,7 +121,7 @@ CONTAINS
     USE PGSLib_TYPE_MODULE
     IMPLICIT NONE
     LOGICAL (PGSLib_Log_Type) :: scalar
-    Call PGSLib_BCast_log_Scalar_c(scalar)
+    Call PGSLib_BCast_log_Scalar(scalar)
     RETURN
   END SUBROUTINE PGSLib_bcast_log_scalar_F
 
@@ -195,7 +195,7 @@ CONTAINS
     ! Local variables
     integer vec_len
     vec_len = SIZE(vector)
-    call pgslib_bcast_log_vector_c (vector, vec_len)
+    call pgslib_bcast_log_vector(vector, vec_len)
     return
 
   END SUBROUTINE PGSLib_bcast_log_vector_F

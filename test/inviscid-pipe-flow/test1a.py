@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import scipy as sp
-
 import truchas
 
 

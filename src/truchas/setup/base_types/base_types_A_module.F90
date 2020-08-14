@@ -56,10 +56,8 @@ CONTAINS
     use legacy_mesh_api,     only: nfc, ncells
     use parameter_module,    only: mat_slot, mat_slot_new, nmat
     use zone_module,            only: Zone
-    use fluid_data_module,       only: Fluxing_Velocity
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
     use solid_mechanics_input,  only: solid_mechanics
-    use turbulence_module,      only: TURBULENCE_ALLOCATE
     use EM_data_proxy,          only: EM_is_on
 
     ! Arguments
@@ -85,19 +83,12 @@ CONTAINS
     ALLOCATE (Zone(ncells), STAT = memstat)
     if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: Zone derived type memory allocation error')
 
-    !Allocate Fluxing Velocity variable
-    ALLOCATE (Fluxing_Velocity(nfc,ncells), STAT = memstat)
-    if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: Fluxing_Velocity derived type memory allocation error')
-
     ! Allocate the Matl derived type.
     mat_slot_new = merge(1, 2, nmat <= 1)
     call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
 
     ! Allocate the material property, displacement, strain, and stress arrays
     call SOLID_MECHANICS_ALLOCATE ()
-
-    ! allocate arrays for the turbulence model
-    call TURBULENCE_ALLOCATE ()
 
     ! Set the new arrays to their defaults
     call BASE_TYPES_DEFAULT ()
@@ -118,21 +109,12 @@ CONTAINS
     use matl_module,       only: SLOT_DECREASE, Matl
     use parameter_module,  only: mat_slot, mat_slot_new
     use zone_module,       only: ZONE
-    use fluid_data_module, only: Fluxing_Velocity
-
-    ! Local Variables
-    integer :: i
-    
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! deallocate the BC derived type.
     if (ASSOCIATED(BC)) DEALLOCATE (BC)
 
     ! Deallocate the Zone derived type.
     if (ASSOCIATED(Zone)) DEALLOCATE (Zone)
-
-    ! Deallocate Fluxing_Velocity.
-    if (ASSOCIATED(Fluxing_Velocity)) DEALLOCATE (Fluxing_Velocity)
 
     ! Deallocate the Matl derived type by decreasing to zero slots.
     mat_slot_new = 0

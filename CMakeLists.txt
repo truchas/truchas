@@ -7,23 +7,13 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 
 include(NoInSourceBuild)
 
-project(Truchas VERSION 20.07 LANGUAGES C Fortran)
-
-# Append a pre-release tag to the version if needed
-#set(Truchas_PRERELEASE alpha)
-if(Truchas_PRERELEASE)
-  string(APPEND Truchas_VERSION -${Truchas_PRERELEASE})
-endif()
+project(Truchas LANGUAGES C Fortran)
 
 # Fix a few things that cmake gets wrong for the NAG compiler.
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
   set(CMAKE_Fortran_COMPILE_OPTIONS_PIE "-PIC")
   include(NAGFortranCompilerVersion)
 endif()
-
-# explicitly add NDEBUG to release flags because cmake only does this automatically for
-# C and CXX builds
-set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} -DNDEBUG")
 
 # Create all the Fortran module files in a directory at the root build directory
 set(Truchas_MODULE_DIR ${Truchas_BINARY_DIR}/modules)
@@ -73,7 +63,7 @@ find_package(MPI REQUIRED)
 # Python and packages
 include(FindPythonPackage)
 find_package(PythonInterp 3.5 REQUIRED)
-find_python_package(scipy 0.18.0)
+find_python_package(numpy 1.12)
 find_python_package(h5py 2.6.0)
 
 # BLAS and LAPACK -- these are not required
@@ -163,6 +153,9 @@ if(NOT Scorpio_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Scorpio installation")
 endif()
 
+# optional for building version information
+find_package(Git)
+
 # Test - need a swith here to enable testing
 enable_testing()
 
@@ -205,6 +198,7 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "7.0")
     add_compile_definitions(NO_2008_FINDLOC)
+    add_compile_definitions(NO_2008_C_LOC)
   endif()
 endif()
 
@@ -224,7 +218,6 @@ string(TIMESTAMP Truchas_BUILD_DATE "%Y-%m-%d %H:%M:%S")
 site_name(Truchas_HOSTNAME)
 # Flags for extra defines in drivers/drivers.F90
 set(Truchas_INFO_FLAGS
-  "VERSION='${Truchas_VERSION}'"
   "BUILD_DATE='${Truchas_BUILD_DATE}'"
   "HOST_NAME='${Truchas_HOSTNAME}'"
   "ARCHITECTURE='${CMAKE_SYSTEM_PROCESSOR}'")
@@ -340,48 +333,6 @@ endif()
 #	       @ONLY)
 #install(FILES ${Truchas_CONFIG_FILE} ${Truchas_TARGETS_FILE}
 #        DESTINATION ${Truchas_CONFIG_INSTALL_DIR})
-
-# ---------------------------------------------------------------------------- #
-# Package Definitions
-# ---------------------------------------------------------------------------- #
-
-# Package name
-set(CPACK_PACKAGE_NAME truchas)
-
-# Version information
-set(CPACK_PACKAGE_VERSION_MAJOR "${Truchas_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${Truchas_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${Truchas_VERSION_PATCH}")
-set(CPACK_PACKAGE_VERSION       "${Truchas_VERSION}")
-
-# Basic package information
-set(CPACK_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}-${CMAKE_SYSTEM_NAME}")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Truchas: Cool code package")
-set(CPACK_PACKAGE_VENDOR "Los Alamos National Laboratory")
-set(CPACK_RESOURCE_FILE_LICENSE ${Truchas_SOURCE_DIR}/LICENSE.md)
-
-# Name of the source file distribution
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "truchas-${Truchas_VERSION}"
-    CACHE INTERNAL "Distribution base file name")
-
-# Gzip tar files are defined as my generator, many other options are available
-set(CPACK_SOURCE_GENERATOR TGZ)
-
-# Files to ignore regular expressions are allowed
-set(CPACK_SOURCE_IGNORE_FILES
-     "/\\\\.hg/"
-     "/CVS/"
-     "/\\\\.svn/"
-     "\\\\.swp$"
-     "/install/"
-     "/build/"
-     "Makefile"
-     "/CMakeFiles/"
-     "CMakeCache.txt"
-     "cmake_install.cmake")
-
-# This will add a 'package' and 'package_source' targets
-include(CPack)
 
 # Print a summary of the build configuration
 include(configuration_summary)

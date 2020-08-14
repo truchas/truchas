@@ -41,7 +41,6 @@ CONTAINS
     !
     !=======================================================================
     use input_utilities, only: NULL_I, NULL_C
-    use fluid_data_module, only: fluid_flow
     use bc_data_module,   only: BC_Type, BC_Variable,                       &
                                 Inflow_Material, Inflow_Index,              &
                                 BC_Name,                                    &
@@ -192,47 +191,6 @@ CONTAINS
 
        ! Overwrite Input Character Strings
        select case (v)
-       case (2) ! Pressure
-          if(.not.fluid_flow) then
-             write (errmsg,155) p
-155          format('pressure boundary conditions require a', &
-                  ' fluid flow solution. BC namelist #',i2)
-             call TLS_error (errmsg)
-             fatal = .true.
-             cycle CHECK_BC_SURFACES
-          endif
-          BC_Variable(p) = 'pressure'
-          select case (n)
-          case (1:2)
-             BC_Type(p) = 'neumann'
-          case (3)
-             BC_Type(p) = 'dirichlet'
-          end select
-          Inflow_Index(p) = p
-
-       case (4) ! Velocity
-          if(.not.fluid_flow) then
-             write (errmsg,175) p
-175          format('velocity boundary conditions require a', &
-                  ' fluid flow solution. BC namelist #',i2)
-             call TLS_error (errmsg)
-             fatal = .true.
-             cycle CHECK_BC_SURFACES
-          endif
-          BC_Variable(p) = 'velocity'
-          select case (n)
-          case (1)
-             BC_Type(p) = 'free-slip'
-          case (2)
-             BC_Type(p) = 'no-slip'
-          case (3)
-             BC_Type(p) = 'dirichlet'
-             Inflow_Index(p) = p
-          case (4:5)
-             BC_Type(p) = 'neumann'
-             Inflow_Index(p) = p
-          end select
-
        case (5) ! Displacement
           if(.not.solid_mechanics) then
              write (errmsg,185) p
@@ -318,22 +276,6 @@ CONTAINS
        
     end do CHECK_BC_SURFACES
     
-    ! Check Inflow Parameters
-    if(fluid_flow) then
-       do p = 1,nbc_surfaces
-          if (Inflow_Index(p) > 0) then
-             if (Inflow_Material(Inflow_Index(p)) /= NULL_C) then
-                if (matl_model%phase_index(Inflow_Material(Inflow_Index(p))) == 0) then
-                   write (errmsg, FMT=35) trim(Inflow_Material(Inflow_Index(p))), p
-35                 format('unknown inflow material "',a,'" for BC surface ',i2)
-                   call TLS_error (errmsg)
-                   fatal = .true.
-                end if
-             end if
-          end if
-       end do
-    endif
-    
   END SUBROUTINE BC_CHECK
   
   SUBROUTINE BC_DEFAULT ()
@@ -411,16 +353,6 @@ CONTAINS
     ! BC Types Character Strings
     Type_Forms = ''
 
-    Type_Forms(2,1) = 'neumann'       ! 2: Pressure
-    Type_Forms(2,2) = 'von neumann'
-    Type_Forms(2,3) = 'dirichlet'
-
-    Type_Forms(4,1) = 'free-slip'     ! 4: Velocity
-    Type_Forms(4,2) = 'no-slip'
-    Type_Forms(4,3) = 'dirichlet'
-    Type_Forms(4,4) = 'neumann'
-    Type_Forms(4,5) = 'von neumann'
-
     Type_Forms(5,1) = 'x-traction'     ! 5: Displacement
     Type_Forms(5,2) = 'y-traction'
     Type_Forms(5,3) = 'z-traction'
@@ -436,12 +368,6 @@ CONTAINS
 
     ! BC Variable Character Strings
     Variable_Forms = ''
-
-    Variable_Forms(2,1) = 'pressure'      ! 2: Pressure
-    Variable_Forms(2,2) = 'pres'
-
-    Variable_Forms(4,1) = 'velocity'      ! 4: Velocity
-    Variable_Forms(4,2) = 'vel'
 
     Variable_Forms(5,1) = 'displacement'  ! 5: Displacement
     Variable_Forms(5,2) = 'disp'

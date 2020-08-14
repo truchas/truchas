@@ -9,7 +9,7 @@
 import ctypes
 import collections
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -53,14 +53,14 @@ MapData = collections.namedtuple("MapData", ("ncell",
 
 def mesh_map(nnode, ncell, cnode, blockid, coords, filename, scale_factor):
     # Copy data to contiguous arrays and cast as needed
-    cnodec = sp.ascontiguousarray(cnode)
-    cnodec = cnodec.astype(sp.int32, casting="same_kind", copy=False)
+    cnodec = np.ascontiguousarray(cnode)
+    cnodec = cnodec.astype(np.int32, casting="same_kind", copy=False)
 
-    blockidc = sp.ascontiguousarray(blockid)
-    blockidc = blockidc.astype(sp.int32, casting="same_kind", copy=False)
+    blockidc = np.ascontiguousarray(blockid)
+    blockidc = blockidc.astype(np.int32, casting="same_kind", copy=False)
 
-    coordsc = sp.ascontiguousarray(coords)
-    coordsc = coordsc.astype(sp.float64, casting="same_kind", copy=False)
+    coordsc = np.ascontiguousarray(coords)
+    coordsc = coordsc.astype(np.float64, casting="same_kind", copy=False)
 
     # send back data on the mesh mapping and the new mesh
     cdata = libgridmap.mesh_map(nnode, ncell,
@@ -69,21 +69,21 @@ def mesh_map(nnode, ncell, cnode, blockid, coords, filename, scale_factor):
                                 coordsc.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                                 bytes(filename, "utf-8"), scale_factor)
 
-    # pull data out of the addresses indicated, and put in scipy arrays
+    # pull data out of the addresses indicated, and put in numpy arrays
     return MapData(cdata.ncell,
                    cdata.nnode,
-                   sp.ctypeslib.as_array(cdata.coord, shape=(cdata.nnode,3)),
-                   sp.ctypeslib.as_array(cdata.connect, shape=(cdata.ncell,8)),
-                   sp.ctypeslib.as_array(cdata.blockid, shape=(cdata.ncell,)),
+                   np.ctypeslib.as_array(cdata.coord, shape=(cdata.nnode,3)),
+                   np.ctypeslib.as_array(cdata.connect, shape=(cdata.ncell,8)),
+                   np.ctypeslib.as_array(cdata.blockid, shape=(cdata.ncell,)),
                    cdata.mesh_map)
 
 
 def map_cell_field(src, mesh_map, dest_ncell):
     # Copy to contiguous arrays and cast as needed,
     # then send pointer
-    srcc = sp.ascontiguousarray(src)
-    srcc = srcc.astype(sp.float64, casting="same_kind", copy=False)
-    dest = sp.empty(dest_ncell)
+    srcc = np.ascontiguousarray(src)
+    srcc = srcc.astype(np.float64, casting="same_kind", copy=False)
+    dest = np.empty(dest_ncell)
     libgridmap.map_cell_field_c(mesh_map, 1, len(srcc), dest_ncell, 0.,
                                 srcc.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                                 dest.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))

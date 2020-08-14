@@ -14,6 +14,7 @@ module FHT_model_type
   use data_layout_type
   use prop_mesh_func_type
   use source_mesh_function
+  use scalar_mesh_func_class
   use bndry_func1_class
   use bndry_func2_class
   use intfc_func2_class
@@ -39,6 +40,7 @@ module FHT_model_type
     type(prop_mesh_func), pointer :: conductivity => null()   ! thermal conductivity
     type(prop_mesh_func), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
     type(source_mf), pointer :: q => null()    ! external heat source
+    class(scalar_mesh_func), allocatable :: src ! another external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -178,6 +180,12 @@ contains
       Fcell(j) = Fcell(j) + this%mesh%volume(j)*(hdot(j) - value(j))
     end do
     !call gather_boundary (this%mesh%cell_ip, Fcell) ! off-process not used below
+
+    !! Additional heat source
+    if (allocated(this%src)) then
+      call this%src%compute(t)
+      Fcell = Fcell - this%mesh%volume*this%src%value
+    end if
 
     !! Dirichlet condition residuals.
     if (allocated(this%bc_dir)) then

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -36,8 +36,8 @@ def run_test(tenv):
 
 def vof_ex(xc, t):
     p = -4 + 4*t
-    return sp.array([1 if x < p-0.5 else 0 if x > p+0.5 else p-(x-0.5)
-                     for x in (xc[:,0]+xc[:,2])/sp.sqrt(2)])
+    return np.array([1 if x < p-0.5 else 0 if x > p+0.5 else p-(x-0.5)
+                     for x in (xc[:,0]+xc[:,2])/np.sqrt(2)])
 
 
 if __name__ == "__main__":

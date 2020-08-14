@@ -44,7 +44,6 @@ CONTAINS
     !=======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
-    use interface_output_module, only: Int_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
@@ -63,7 +62,6 @@ CONTAINS
 
     ! Define OUTPUTS namelist
     namelist /OUTPUTS/ Output_Dt_Multiplier,       &
-                       Int_Output_Dt_Multiplier,       &
                        Output_Dt,                      &
                        Output_T,                       &
                        Short_Output_Dt_Multiplier,     &
@@ -138,7 +136,6 @@ CONTAINS
     !=======================================================================
     use kinds, only: r8
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
-    use interface_output_module, only: Int_Output_Dt_Multiplier, interface_dump
     use output_control,          only: Output_Dt, Output_T
     use output_control,          only: Output_Dt_Multiplier
 
@@ -151,10 +148,6 @@ CONTAINS
     ! Edit variables
     short_edit                 = .false.
     Short_Output_Dt_Multiplier = 0
-
-    ! interface output
-    interface_dump           = .false.
-    Int_Output_Dt_Multiplier = 0
 
     ! User output
     Output_Dt_Multiplier  = 1
@@ -169,7 +162,6 @@ CONTAINS
     !
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
-    use interface_output_module, only: Int_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
@@ -179,7 +171,6 @@ CONTAINS
 
     ! Broadcast Data
     if (.NOT. p_info%UseGlobalServices) then
-       call PGSLIB_BCAST (Int_Output_Dt_Multiplier)
        call PGSLIB_BCAST (Output_Dt)
        call PGSLIB_BCAST (Output_T)
        call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
@@ -196,7 +187,6 @@ CONTAINS
     !
     !=======================================================================
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
-    use interface_output_module, only: interface_dump, Int_Output_Dt_Multiplier
     use output_control,          only: nops, Output_Dt, Output_T
     use parameter_module,        only: mops
     use time_step_module,        only: t
@@ -264,11 +254,7 @@ CONTAINS
     end if
 
     ! Initialize output flags
-    interface_dump   = .false.
     short_edit       = .false.
-
-    ! Interface output flag.
-    if (ANY(Int_Output_Dt_Multiplier      /= 0)) interface_dump = .true.
 
     ! Short edit output flag.
     if (ANY(Short_Output_Dt_Multiplier    /= 0)) short_edit     = .true.

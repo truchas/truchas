@@ -10,7 +10,7 @@ import struct
 import argparse
 import sys
 
-import scipy as sp
+import numpy as np
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory, set by CMake at configure-time.
@@ -131,12 +131,12 @@ def write_gmv(args, truchas_data):
 def block_data(x):
     """Given a block id array, returns a "GMV-corrected" list with ,
     and a list of names."""
-    present_blocks = sp.unique(x)
+    present_blocks = np.unique(x)
 
     # Convert to GMV-style blockids. This transforms, for instance,
     # blocks 1, 2, 7, 10 -> 1, 2, 3, 4
-    gmv_map = sp.empty(present_blocks[-1]+1, dtype=present_blocks.dtype)
-    gmv_map[present_blocks] = sp.arange(1, present_blocks.size+1)
+    gmv_map = np.empty(present_blocks[-1]+1, dtype=present_blocks.dtype)
+    gmv_map[present_blocks] = np.arange(1, present_blocks.size+1)
     x_gmv = gmv_map[x]
 
     return x_gmv, ["blk_" + str(i) for i in present_blocks]
@@ -147,7 +147,7 @@ def gmv_str(field):
     the Truchas 'Z_' prefix if applicable, and pads or trims to return
     8-character string. Accepts strings and byte-like objects."""
 
-    name = field.decode() if type(field) == bytes or type(field) == sp.bytes_ \
+    name = field.decode() if type(field) == bytes or type(field) == np.bytes_ \
         else field
     if name[:2] == "Z_": name = name[2:]
     name = "{:8s}".format(name)[:8]
@@ -178,16 +178,16 @@ class FileWriter:
             self._write[int] = lambda x: self._f.write(struct.pack('<i', x))
             self._write[float] = lambda x: self._f.write(struct.pack('<d', x))
             self._write[str] = lambda x: self._f.write(x.encode())
-            self._write[sp.ndarray] = lambda x: x.tofile(self._f)
-            self._write[sp.int32] = self._write[int]
-            self._write[sp.float64] = self._write[float]
+            self._write[np.ndarray] = lambda x: x.tofile(self._f)
+            self._write[np.int32] = self._write[int]
+            self._write[np.float64] = self._write[float]
         else:
             self._write[int] = lambda x: self._f.write(str(x) + " ")
             self._write[str] = lambda x: self._f.write(x + " ")
-            self._write[sp.ndarray] = lambda x: x.tofile(self._f, sep=" ")
+            self._write[np.ndarray] = lambda x: x.tofile(self._f, sep=" ")
             self._write[float] = self._write[int]
-        self._write[sp.int32] = self._write[int]
-        self._write[sp.float64] = self._write[float]
+        self._write[np.int32] = self._write[int]
+        self._write[np.float64] = self._write[float]
 
     def write(self, *args):
         for x in args:

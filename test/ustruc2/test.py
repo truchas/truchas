@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -19,32 +19,32 @@ def run_test(tenv):
     # G
     atol = 200
     rtol = 1e-4
-    test = sp.ma.masked_values(output.field(2, "uStruc-G"), 0)
-    gold = sp.ma.masked_values(golden.field(3, "uStruc-G"), 0)
+    test = np.ma.masked_values(output.field(2, "uStruc-G"), 0)
+    gold = np.ma.masked_values(golden.field(3, "uStruc-G"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "G", time)
 
     # V
     atol = 1e-4
     rtol = 1e-4
-    test = sp.ma.masked_values(output.field(2, "uStruc-V"), 0)
-    gold = sp.ma.masked_values(golden.field(3, "uStruc-V"), 0)
+    test = np.ma.masked_values(output.field(2, "uStruc-V"), 0)
+    gold = np.ma.masked_values(golden.field(3, "uStruc-V"), 0)
     error = abs((test-gold) / (atol + rtol* gold))
     nfail += truchas.compare_max(error, 0, 1.0, "V", time)
 
     # lambda1
     atol = 1e-5
     rtol = 1e-4
-    test = sp.ma.masked_values(output.field(2, "uStruc-gv1-lambda1"), 0)
-    gold = sp.ma.masked_values(golden.field(3, "uStruc-gv1-lambda1"), 0)
+    test = np.ma.masked_values(output.field(2, "uStruc-gv1-lambda1"), 0)
+    gold = np.ma.masked_values(golden.field(3, "uStruc-gv1-lambda1"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda1", time)
 
     # lambda2
     atol = 2e-6
     rtol = 1e-4
-    test = sp.ma.masked_values(output.field(2, "uStruc-gv1-lambda2"), 0)
-    gold = sp.ma.masked_values(golden.field(3, "uStruc-gv1-lambda2"), 0)
+    test = np.ma.masked_values(output.field(2, "uStruc-gv1-lambda2"), 0)
+    gold = np.ma.masked_values(golden.field(3, "uStruc-gv1-lambda2"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda2", time)
 

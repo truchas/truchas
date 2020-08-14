@@ -66,12 +66,10 @@
 !!    NK (nonlinear) solver control parameter. Used in NUMERICS_INPUT_MODULE.
 !!    
 module solid_mechanics_input
-  use kinds, only: r8
-  use parameter_module, only: string_len
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   public
-  save
 
   logical :: solid_mechanics
   logical :: solid_mechanics_body_force
@@ -79,10 +77,6 @@ module solid_mechanics_input
 
   !! Numeric input parameters
       
-  !! solution names
-  character(string_len) :: displacement_linear_solution
-  character(string_len) :: displacement_nonlinear_solution
-
   !! Contact parameters
   real(r8) :: contact_distance
   real(r8) :: contact_norm_trac
@@ -90,9 +84,6 @@ module solid_mechanics_input
   
   !! Maximum plsatic strain increment
   real(r8) :: strain_limit
-
-  !! NKuser element number to use for energy solution
-  integer :: NK_DISPLACEMENT
 
 end module solid_mechanics_input
 

@@ -79,7 +79,6 @@ CONTAINS
     use zone_module,              only: Zone
     use diffusion_solver_data,    only: ds_enabled
     use flow_driver,              only: flow_timestep
-    use flow_time_step_module,    only: legacy_flow_time_step
     use truchas_logging_services
     use truchas_timers
 
@@ -124,9 +123,6 @@ CONTAINS
     !                       completed
     if (flow) then
       call flow_timestep(dt_flow, dt_flow_constraint)
-      dt_next = min(dt_next, dt_flow)
-    else if (legacy_flow) then
-      call legacy_flow_time_step(t, dt_flow, dt_flow_constraint)
       dt_next = min(dt_next, dt_flow)
     endif
 

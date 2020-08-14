@@ -1,1 +1,0 @@
-../nat-conv/square-7-tet.g

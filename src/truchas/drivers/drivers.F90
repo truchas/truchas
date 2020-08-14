@@ -148,10 +148,8 @@ call hijack_truchas ()
     !
     !   Cycle through each time step
     !---------------------------------------------------------------------------
-    use advection_module,         only: ADVECT_MASS
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
-    use fluid_flow_module,        only: FLUID_FLOW_DRIVER
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
     use pgslib_module,            only: PGSLib_GLOBAL_ANY
@@ -194,9 +192,6 @@ call hijack_truchas ()
     ts_sync = time_step_sync(5)
 
     call start_timer('Main Cycle')
-
-    ! Prepass to initialize a solenoidal velocity field for Advection
-    if(.not.restart) call Fluid_Flow_Driver (t) ! a no-op unless legacy flow is active
 
     call mem_diag_write('Before main loop:')
 
@@ -246,8 +241,6 @@ call hijack_truchas ()
           vof => vtrack_vof_view()
           flux_vol => vtrack_flux_vol_view()
           call flow_set_pre_solidification_density(vof)
-        else
-          call ADVECT_MASS
         end if
 
         ! solve heat transfer and phase change
@@ -276,8 +269,6 @@ call hijack_truchas ()
           call flow_step(t,dt,vof,flux_vol,temperature_fc)
           ! since this driver doesn't know any better, always accept
           call flow_accept()
-        else
-          call fluid_flow_driver(t)
         end if
 
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
@@ -368,7 +359,6 @@ call hijack_truchas ()
     !---------------------------------------------------------------------------
     use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
     use debug_control_data
-    use fluid_utilities_module, only: FLUID_DEALLOCATE
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
@@ -380,7 +370,6 @@ call hijack_truchas ()
     !---------------------------------------------------------------------------
 
     !deallocate the fluidvof array, and others
-    call FLUID_DEALLOCATE()
 !NNC    call flow_destroy()
 
     ! deallocate the base types
@@ -416,23 +405,27 @@ call hijack_truchas ()
     use utilities_module,     only: TIMESTAMP
     use truchas_logging_services
     use string_utilities, only: i_to_c
+    use version_info
 
-    character(LEN=32)  :: run_date, run_host, run_architecture
+    character(LEN=48)  :: run_date, run_host, run_architecture
+    character(:), allocatable :: version_str
 
     interface
-      subroutine getrunhostinfo(arch, host) bind(c, name='getrunhostinfo')
+      subroutine getrunhostinfo(n, arch, host) bind(c, name='getrunhostinfo')
         use,intrinsic :: iso_c_binding, only: c_char
+        integer, value :: n
         character(kind=c_char), intent(out) :: arch(*), host(*)
       end subroutine
     end interface
 
     run_architecture = ""
     run_host         = ""
-    call getrunhostinfo (run_architecture, run_host)
+    call getrunhostinfo (len(run_architecture), run_architecture, run_host)
     call TIMESTAMP (run_date)
 
-    call TLS_info ('   code:                ' // 'Truchas')
-    call TLS_info ('   version:             ' // VERSION)
+    call version(version_str)
+
+    call TLS_info ('   code:                ' // 'Truchas ' // version_str)
     call TLS_info ('   build architecture:  ' // ARCHITECTURE)
     call TLS_info ('   build date/time:     ' // BUILD_DATE)
     call TLS_info ('   build flags:         ' // COMPILER_FLAGS)

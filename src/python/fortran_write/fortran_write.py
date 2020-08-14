@@ -7,7 +7,7 @@
 import ctypes
 import os
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -52,15 +52,15 @@ class FortranWrite:
         libfwrite.fwrite_str(self._unit, bytes(x, "utf-8"))
 
     def write_i4x1(self, x):
-        y = sp.ascontiguousarray(x)
-        y = y.astype(sp.int32, casting="same_kind", copy=False)
+        y = np.ascontiguousarray(x)
+        y = y.astype(np.int32, casting="same_kind", copy=False)
         libfwrite.fwrite_i4x1(self._unit, y.ctypes.data_as(ctypes.POINTER(ctypes.c_int)), y.size)
 
     def write_r8x1(self, x):
-        y = sp.ascontiguousarray(x)
-        y = y.astype(sp.float64, casting="same_kind", copy=False)
+        y = np.ascontiguousarray(x)
+        y = y.astype(np.float64, casting="same_kind", copy=False)
         libfwrite.fwrite_r8x1(self._unit, y.ctypes.data_as(ctypes.POINTER(ctypes.c_double)), y.size)
 
     def write_i8x2(self, x):
-        y = sp.ascontiguousarray(x)
+        y = np.ascontiguousarray(x)
         libfwrite.fwrite_i8x1(self._unit, y.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)), y.size)
