@@ -54,10 +54,6 @@ contains
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
     use material_namelist,         only: read_material_namelists
-    use surface_tension_module,    only: surface_tension, read_surface_tension_namelist
-    use fluid_data_module,         only: applyflow
-    use viscous_data_module,       only: inviscid
-    use turbulence_module,         only: read_turbulence_namelist_for_legacy
     use solid_mechanics_input,     only: solid_mechanics
     use solid_mechanics_namelist,  only: read_solid_mechanics_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
@@ -65,7 +61,6 @@ contains
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
     use physics_module,            only: heat_transport, flow, legacy_flow
-    use legacy_flow_namelist,      only: read_legacy_flow_namelist
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
@@ -133,13 +128,6 @@ contains
     call numerics_input (lun)
 
     if (flow) call read_flow_namelists(lun)
-
-    if (legacy_flow) then
-      call read_legacy_flow_namelist(lun)
-      if (.not.inviscid) call read_turbulence_namelist_for_legacy(lun)
-      if (surface_tension) call read_surface_tension_namelist (lun)
-      if (applyflow) call read_advection_velocity_namelist(lun)
-    end if
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then

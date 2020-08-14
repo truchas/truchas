@@ -51,8 +51,6 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,         only: alittle
-    use fluid_data_module,      only: fluid_flow, qin, qout
-    use fluid_type_module,      only: Div_c
     use matl_module,            only: GATHER_VOF
     use legacy_mesh_api,        only: ncells, ndim, Cell
     use nonlinear_solution,     only: NKuser, nonlinear_solutions, DEFAULT_NK_CONTROLS
@@ -61,13 +59,8 @@ CONTAINS
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, &
                                       PGSLIB_GLOBAL_MINLOC, PGSLIB_GLOBAL_MINVAL, &
                                       PGSLIB_GLOBAL_SUM
-    use projection_data_module, only: mac_projection_iterations,     &
-                                      mac_projection_precond_iter,   &
-                                      projection_precond_iterations, &
-                                      projection_iterations
     use material_model_driver,  only: matl_model
     use time_step_module,       only: cycle_number, t
-    use viscous_data_module,    only: viscous_iterations
     use zone_module,            only: Zone
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
     use solid_mechanics_output, only: Cell_Mech_Invariant, &
@@ -97,21 +90,6 @@ CONTAINS
     call TLS_info ('')
     call TLS_info (string)
     call TLS_info ('')
-
-    ! Print out a summary of the linear solver performance.
-    call TLS_info ('')
-    call TLS_info ('  Linear Solver Performance Summary')
-    call TLS_info ('  ---------------------------------')
-    write(string,'(4x,i4,1x,a)') mac_projection_iterations, 'MAC projection iterations'
-    call TLS_info (string)
-    write(string,'(4x,i4,1x,a)') viscous_iterations, 'viscous iterations'
-    call TLS_info (string)
-    write(string,'(4x,i4,1x,a)') projection_iterations, 'projection iterations'
-    call TLS_info (string)
-    write(string,'(4x,i4,1x,a)') mac_projection_precond_iter, 'MAC projection preconditioner iterations'
-    call TLS_info (string)
-    write(string,'(4x,i4,1x,a)') projection_precond_iterations, 'projection preconditioner iterations'
-    call TLS_info (string)
 
     ! Print out a summary of the nonlinear solver performance.
     ! Loop over the NKuser derived type, printing out useful
@@ -342,33 +320,6 @@ CONTAINS
        DEALLOCATE(mech_info)
 
     end if SOLID_MECHANICS_OUTPUT_LOOP
-
-
-    ! If fluid flow is on, write out velocity divergence norms
-    ! and Inflow/Outflow volume if appropriate
-    if (fluid_flow) then
-       call TLS_info ('')
-       call TLS_info ('                            Normalized Velocity Divergence Norms')
-       call TLS_info ('')
-       call TLS_info ('              Quantity            L1          L2         Linf     Linf Location')
-       call TLS_info ('          ----------------        --          --         ----     -------------')
-       write(string,45) Div_c%V_f%L1, Div_c%V_f%L2, Div_c%V_f%Linf, Div_c%V_f%Linf_Location
-45     format(10x,'(Div)c*Vf*dt/Vol',3x,3(1pe11.4,1x),3x,i6)
-       call TLS_info (string)
-       call TLS_info ('')
-
-       if (qin /= 0.0_r8 .or. qout /= 0.0_r8) then
-          call TLS_info ('')
-          call TLS_info ('                                   Inflow-Outflow Summary')
-          call TLS_info ('')
-          call TLS_info ('                               Inflow Volume  Outflow Volume')
-          call TLS_info ('                               -------------  --------------')
-          write(string,50) qin, qout
-50        format(32x,1pe11.4,4x,1pe11.4)
-          call TLS_info (string)
-       end if
-
-    end if
 
     ! Write out the trailing header.
     write (string, 10) t, cycle_number

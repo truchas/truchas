@@ -6,7 +6,6 @@ set(OUTPUT_SOURCE_FILES
           output/diagnostics_module.F90
           output/edit_module.F90
           output/gap_output.F90
-          output/interface_output_module.F90
           output/output_control.F90
           output/output_utilities.F90
           output/probes_type.F90
