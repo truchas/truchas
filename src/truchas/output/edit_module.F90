@@ -53,7 +53,6 @@ CONTAINS
     use cutoffs_module,         only: alittle
     use matl_module,            only: GATHER_VOF
     use legacy_mesh_api,        only: ncells, ndim, Cell
-    use nonlinear_solution,     only: NKuser, nonlinear_solutions, DEFAULT_NK_CONTROLS
     use truchas_env,            only: output_file_name
     use parameter_module,       only: nmat
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, &
@@ -90,38 +89,6 @@ CONTAINS
     call TLS_info ('')
     call TLS_info (string)
     call TLS_info ('')
-
-    ! Print out a summary of the nonlinear solver performance.
-    ! Loop over the NKuser derived type, printing out useful
-    ! information if it's present.
-    NK_DIAGNOSTICS: do i = 1,DEFAULT_NK_CONTROLS + nonlinear_solutions
-    
-       ! Cycle if this type contains nothing useful.
-       if (NKuser(i)%Newton_tot == 0) cycle NK_DIAGNOSTICS
-
-       ! Print out a summary of this nonlinear solver performance.
-       call TLS_info ('')
-       call TLS_info (repeat(' ',28) // 'Nonlinear Solver Performance Summary')
-       call TLS_info ('')
-       call TLS_info ('         Name  Convergence     Eps      Low Damper  High Damper  Iters  Linear Iters')
-       call TLS_info ('         ----  -----------     ---      ----------  -----------  -----  ------------')
-       write(string,'(9x,a,2x,1pe11.4,3(1x,1pe11.4),4x,i2,8x,i3)') TRIM(NKuser(i)%name), NKuser(i)%tolnewt, & 
-           NKuser(i)%eps_NK, NKuser(i)%limit_low, NKuser(i)%limit_high, NKuser(i)%Newton_tot, NKuser(i)%linear_tot
-       call TLS_info (string)
-
-       call TLS_info ('')
-       call TLS_info ('                    Iter  L2(Residual)  Linf(Residual)  Linf Location')
-       call TLS_info ('                    ----  ------------  --------------  -------------')
-
-       do n = 0,NKuser(i)%Newton_tot
-
-          write (string, 18) n, NKuser(i)%L2(n), NKuser(i)%LI(n), &
-                                    NKuser(i)%LI_Location(n)
-18        format (21x,i2,3x,1pe11.4,4x,1pe11.4,6x,i6)
-          call TLS_info (string)
-
-       end do   
-    end do NK_DIAGNOSTICS
 
     ! Compute mass, momentum, kinetic energy, enthalpy, and
     ! total energy for each material. Also compute the sum

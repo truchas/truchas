@@ -11,18 +11,13 @@ set(SOLVER_SOURCE_FILES
           solver/pcsr_precon_ssor_type.F90
           solver/pcsr_precon_boomer_type.F90
           solver/pcsr_precon_factory.F90
-          solver/linear_solution.F90
-          solver/nonlinear_solution.F90
-          solver/ortho_matvec.F90
-          solver/preconditioners.F90
           solver/ridders_class.F90
           solver/nlsol_type.F90
           )
 
 set(fc_flags
   -I${PGSLib_MODULE_DIR}
-  -I${Truchas_utilities_dir}
-  -I${UbikSolve_MODULE_DIR})
+  -I${Truchas_utilities_dir})
 
 build_whitespace_string(SOLVER_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${SOLVER_SOURCE_FILES} PROPERTIES

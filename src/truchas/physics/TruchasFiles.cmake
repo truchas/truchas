@@ -138,7 +138,6 @@ list(APPEND PHYSICS_SOURCE_FILES
 include(BuildWhitespaceString)
 set(fc_flags
   -I${PGSLib_MODULE_DIR}
-  -I${UbikSolve_MODULE_DIR}
   -I${Truchas_utilities_dir}
   -I${Truchas_solver_dir})
 

@@ -33,7 +33,6 @@ contains
     use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
-    use nonlin_solver_input,       only: nonlinear_solver_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
     use parallel_info_module,      only: p_info
@@ -41,9 +40,7 @@ contains
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
-    use lin_solver_input,          only: linear_solver_input
     use EM_data_proxy,             only: em_is_on
-    use region_input_module,       only: region_read
     use mesh_manager,              only: read_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
@@ -111,14 +108,10 @@ contains
     if (restart) then
       call read_restart_namelist (lun)
       call open_restart_file () ! NB: reads ncells and nnodes used later by mesh_sizes.
-      call region_read (lun) ! What is this and what does it have to do with restarts? (NNC)
     end if
 
     ! Read the MESH and ALTMESH namelists: used to initialize MESH_MANAGER (new mesh)
     call read_truchas_mesh_namelists (lun)
-
-    call linear_solver_input (lun)
-    call nonlinear_solver_input (lun)
 
     ! read volume fraction data
     call interfaces_input (lun)
