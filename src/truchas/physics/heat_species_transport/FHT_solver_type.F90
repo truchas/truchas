@@ -633,39 +633,6 @@ contains
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
- !! COMPUTE_ADVECTED_HEAT
- !!
- !! Given cell temperatures, this auxillary procedure returns the heat
- !! increment for each cell due to material phase advection.  It also returns
- !! the minimum and maximum temperature of the heat parcels advected into (or
- !! remaining in) each cell.  The actual computation is done by a procedure
- !! from ADVECTION_MODULE; this procedure primarily handles the mapping of
- !! fields between old and new meshes.
- !!
-  
-  subroutine compute_advected_heat (this, T, dQ, Tmin, Tmax)
-  
-    use legacy_mesh_api, only: ncells
-    use advection_module, only: compute_advected_enthalpy
-
-    type(FHT_solver), intent(in) :: this
-    real(r8), intent(in) :: T(:)
-    real(r8), intent(out) :: dQ(:), Tmin(:), Tmax(:)
-    
-    real(r8), dimension(ncells) :: T_t, dQ_t, Tmin_t, Tmax_t
-    
-    T_t(:this%mesh%ncell_onP) = T
-    T_t(this%mesh%ncell_onP+1:) = 0.0_r8
-    call compute_advected_enthalpy (T_t, dQ_t, Tmin_t, Tmax_t)
-    dQ = dQ_t(:this%mesh%ncell_onP)
-    Tmin = Tmin_t(:this%mesh%ncell_onP)
-    Tmax = Tmax_t(:this%mesh%ncell_onP)
-    ASSERT(all(Tmin <= T .and. T <= Tmax))
-    
-  end subroutine compute_advected_heat
-  
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
  !! BACKWARD_EULER_SOLVE
  !!
  !! This procedure solves the backward Euler time step system for the heat

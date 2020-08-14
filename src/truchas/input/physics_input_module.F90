@@ -40,9 +40,7 @@ contains
   subroutine physics_input(lun)
 
     use physics_module
-    use body_data_module,       only: body_force
     use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
-    use fluid_data_module,      only: fluid_flow
     use input_utilities,        only: seek_to_namelist, NULL_C
     use solid_mechanics_input,  only: solid_mechanics
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
@@ -57,7 +55,7 @@ contains
     character(80) :: iom
 
     namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
-                       legacy_flow, body_force_density, prescribed_flow, &
+                       body_force_density, prescribed_flow, &
                        electromagnetics, solid_mechanics, materials
 
     call TLS_info ('')
@@ -82,7 +80,6 @@ contains
       electromagnetics = .false.
       solid_mechanics = .false.
       body_force_density = 0.0_r8
-      legacy_flow = .false.
       prescribed_flow = .false.
       materials = NULL_C
       read(lun,nml=physics,iostat=ios,iomsg=iom)
@@ -93,7 +90,6 @@ contains
     !! Broadcast all the namelist variables
     call broadcast(flow)
     call broadcast(body_force_density)
-    call broadcast(legacy_flow)
     call broadcast(heat_transport)
     call broadcast(species_transport)
     call broadcast(number_of_species)
@@ -102,18 +98,13 @@ contains
     call broadcast(prescribed_flow)
     call broadcast(materials)
 
-    ! flow and legacy_flow are mutually exclusive
     ! flow and prescribed_flow are mutually exclusive
 
     ! Check for stupid input errors.
     call physics_check
 
-    ! Configure the legacy flow solver
-    fluid_flow = legacy_flow
-    if (legacy_flow) body_force = body_force_density
-
     !NNC: temporary test code
-    if (prescribed_flow .and. (fluid_flow .or. heat_transport .or. species_transport &
+    if (prescribed_flow .and. (heat_transport .or. species_transport &
                                         .or. solid_mechanics .or. electromagnetics)) then
        call TLS_fatal('prescribed_flow is not compatible with any other physics')
     end if

@@ -60,10 +60,6 @@ CONTAINS
     !   Initialize all probe objects.
     !
     !=======================================================================
-    use fluid_data_module,      only: Void_Material_Exists,     &
-        Void_Material_Index,      &
-        Void_Material_Count, fluid_flow
-    use fluid_utilities_module, only: FLUID_INIT
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
         OVERWRITE_VEL, OVERWRITE_ZONE
     use parameter_module,       only: nmat
@@ -81,7 +77,7 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
-    use physics_module,         only: heat_transport, flow, legacy_flow
+    use physics_module,         only: heat_transport, flow
     use ded_head_driver,        only: ded_head_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -108,15 +104,6 @@ CONTAINS
 
     call property_init
 
-    ! Used only by legacy flow.
-    Void_Material_Index  = 0
-    Void_Material_Count  = 0
-    Void_Material_Exists = matl_model%have_void
-    if (Void_Material_Exists) then
-      Void_Material_Count = 1
-      Void_Material_Index(1) = matl_model%void_index
-    end if
-
     ! Set up Thermodynamic Reference Temperatures and Enthalpies
     !call THERMO_REFERENCES
 
@@ -132,12 +119,8 @@ CONTAINS
     ! Either read Zone and Matl from a restart file or initialize them
     if (restart) then
 
-      if (flow) then
-        call restart_matlzone (vel_fn)
-      else
-        call restart_matlzone ()
-      end if
-      call restart_solid_mechanics ()
+      call restart_matlzone(vel_fn)
+      call restart_solid_mechanics
 
     else
 
@@ -160,14 +143,14 @@ CONTAINS
 
     if (flow) then
       call flow_driver_init
-    else if (legacy_flow) then
-      !! NNC, December 2012.  Flow initialization is really messed up.  It does
-      !! necessary stuff even when flow is inactive.  The work of ensuring the
-      !! relevant properties are defined belongs there but for now it's here so
-      !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
-      !! always because fluid_init uses its results regardless of whether flow is on.
-      call flow_property_init
-      call FLUID_INIT (t)
+!    else if (legacy_flow) then
+!      !! NNC, December 2012.  Flow initialization is really messed up.  It does
+!      !! necessary stuff even when flow is inactive.  The work of ensuring the
+!      !! relevant properties are defined belongs there but for now it's here so
+!      !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
+!      !! always because fluid_init uses its results regardless of whether flow is on.
+!      call flow_property_init
+!      call FLUID_INIT (t)
     end if
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
@@ -256,25 +239,25 @@ CONTAINS
 
   end subroutine property_init
 
-  subroutine flow_property_init
-
-    use material_utilities
-    use fluid_data_module, only: boussinesq_approximation
-    use viscous_data_module, only: inviscid
-
-    integer :: stat
-    character(:), allocatable :: errmsg
-
-    if (boussinesq_approximation) then
-      call define_fluid_property_default(matl_model, 'density-delta', default=0.0_r8)
-    end if
-
-    if (.not.inviscid) then
-      call required_fluid_property_check(matl_model, 'viscosity', stat, errmsg)
-      if (stat /= 0) call TLS_fatal(errmsg)
-    end if
-
-  end subroutine flow_property_init
+!  subroutine flow_property_init
+!
+!    use material_utilities
+!    use fluid_data_module, only: boussinesq_approximation
+!    use viscous_data_module, only: inviscid
+!
+!    integer :: stat
+!    character(:), allocatable :: errmsg
+!
+!    if (boussinesq_approximation) then
+!      call define_fluid_property_default(matl_model, 'density-delta', default=0.0_r8)
+!    end if
+!
+!    if (.not.inviscid) then
+!      call required_fluid_property_check(matl_model, 'viscosity', stat, errmsg)
+!      if (stat /= 0) call TLS_fatal(errmsg)
+!    end if
+!
+!  end subroutine flow_property_init
 
   subroutine init_conc (hits_vol, phi)
 
@@ -328,11 +311,9 @@ CONTAINS
                                       Make_Displacement_BC_Atlases, Interface_Surface_Id
     use bc_pressure_init,       only: Initialize_Pressure_BC
     use input_utilities,        only: NULL_I, NULL_R
-    use fluid_data_module,      only: fluid_flow
     use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
     use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
-    use projection_data_module, only: dirichlet_pressure
     use solid_mechanics_input,  only: solid_mechanics
     use physics_module,         only: heat_transport
     use string_utilities,       only: i_to_c
@@ -381,21 +362,6 @@ CONTAINS
     !NULLIFY (BC_Vel, BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
     NULLIFY (BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
 
-    if (fluid_flow) then
-       !ALLOCATE (BC_Vel(ndim,nfc,ncells))
-       !BC_Vel = NULL_R
-       ALLOCATE (BC_Pressure(nfc,ncells))
-       BC_Pressure = 0.0_r8
-       ALLOCATE (BC_Zero(nfc,ncells))
-       BC_Zero = 0.0_r8
-       ALLOCATE (BC_Mat(nfc,ncells))
-       BC_Mat = NULL_I
-       if (heat_transport) then
-          ALLOCATE (BC_Temp(nfc,ncells))
-          BC_Temp = NULL_R
-       end if
-    end if
-
     BC_Prs => BC_Pressure
 
     ! Thermo-mechanics bcs are handled differently using the "new" bc stuff
@@ -418,7 +384,7 @@ CONTAINS
        where (Mesh%Ngbr_Face(f) == 0) Mask1 = .true.
        call SET_FREE_SLIP (Mask1, BC%Flag, bit_position)
     end do
-    dirichlet_pressure = .false.
+    !dirichlet_pressure = .false.
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !! NNC, Jan 2014.  New code to handle time-dependent velocity Dirichlet BC
@@ -543,62 +509,6 @@ CONTAINS
 
           ! Treat temperature differently than all others.
           select case (BC_Variable(p))
-
-             case ('pressure')
-
-                bit_position = Prs%Face_bit(f)
-
-                select case (BC_Type(p))
-
-                   case ('neumann')
-
-                      call SET_NEUMANN (Mask1, BC%Flag, bit_position)
-
-                   case ('dirichlet')
-
-                      call SET_DIRICHLET (Mask1, BC%Flag, bit_position)
-                      where (Mask1) BC_Prs(f,:) = BC_Value(1,p)
-                      dirichlet_pressure = .true.
-
-                      ! if dirichlet pressure, then no velocity BC
-                      bit_position = Vel%Face_bit(f)
-                      call SET_NO_VEL_BC (Mask1, BC%Flag, bit_position)
-
-                end select
-
-             case ('velocity')
-
-                bit_position = Vel%Face_bit(f)
-
-                select case (BC_Type(p))
-
-                   case ('free-slip')
-
-                      call SET_FREE_SLIP (Mask1, BC%Flag, bit_position)
-
-                   case ('no-slip')
-
-                      call SET_DIRICHLET_VEL (Mask1, BC%Flag, bit_position)
-                      !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
-                      !ORIG: do n = 1, ndim
-                      !ORIG:    where (Mask1) BC_Vel(n,f,:) = 0.0_r8
-                      !ORIG: end do
-                      call bndry_vel%set_no_slip (f, Mask1)
-
-                   case ('dirichlet')
-
-                      call SET_DIRICHLET_VEL (Mask1, BC%Flag, bit_position)
-                      !! NNC, Jan 2014.  Time-dependent dirichlet velocity.
-                      !ORIG: do n = 1, ndim
-                      !ORIG:    where (Mask1) BC_Vel(n,f,:) = BC_Value(n,p)
-                      !ORIG: end do
-                      call bndry_vel%set_dirichlet (p, f, Mask1)
-
-                   case ('neumann')
-
-                      CALL SET_NEUMANN_VEL (Mask1, BC%Flag, bit_position)
-
-                   end select
 
                    ! Handle all displacement bc setup with "new" bc stuff in another routine
                 case ('displacement')

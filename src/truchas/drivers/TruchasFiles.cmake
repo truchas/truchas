@@ -24,7 +24,7 @@ set(DRIVERS_SOURCE_FILES
 # Set compile flags
 include(BuildWhitespaceString)
 set(fc_flags
-  -I${PGSLib_MODULE_DIR} -I${UbikSolve_MODULE_DIR} -I${Truchas_utilities_dir})
+  -I${PGSLib_MODULE_DIR} -I${Truchas_utilities_dir})
 build_whitespace_string(DRIVERS_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${DRIVERS_SOURCE_FILES} PROPERTIES
   COMPILE_FLAGS ${DRIVERS_COMPILE_FLAGS})

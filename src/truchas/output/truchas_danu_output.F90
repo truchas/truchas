@@ -124,7 +124,6 @@ contains
   subroutine TDO_write_timestep
 
     use time_step_module, only: t, dt, cycle_number
-    use fluid_data_module, only: fluid_flow
     use physics_module, only: heat_transport, species_transport
     use EM_data_proxy, only: EM_is_on
     use solid_mechanics_input, only: solid_mechanics
@@ -156,11 +155,7 @@ contains
     call write_common_data
 
     !! Flow-related fields.
-    if (flow_enabled()) then
-      call write_new_flow_data
-    else if (fluid_flow) then
-      call write_fluid_flow_data
-    end if
+    if (flow_enabled()) call write_new_flow_data
 
     !! Heat transfer fields (other than temperature).
     if (heat_transport) call write_heat_transfer_data
@@ -184,7 +179,6 @@ contains
       use parameter_module, only: nmat
       use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
-      use flow_property_module, only: get_density
       use matl_module, only: gather_vof
 
       integer :: j, m, stat
@@ -197,8 +191,7 @@ contains
       !! using the value in zone%rho; not sure why, as the computation is the
       !! same, but perhaps the zone%rho value is stale?  NNC, 8/9/2012.
       allocate(rho(ncells))
-      call get_density (zone%temp, rho)
-      call write_seq_cell_field (seq, rho, 'Z_RHO', for_viz=.true., viz_name='Density')
+      call write_seq_cell_field (seq, zone%rho, 'Z_RHO', for_viz=.true., viz_name='Density')
       deallocate(rho)
 
       !! Cell temperature
@@ -227,50 +220,6 @@ contains
       deallocate(xc)
 
     end subroutine write_common_data
-
-    subroutine write_fluid_flow_data
-
-      use legacy_mesh_api, only: ndim, ncells
-      use zone_module, only: zone
-      use fluid_data_module, only: fluxing_velocity, courant, boussinesq_approximation
-      use flow_property_module, only: get_density_delta
-      use diagnostics_module, only: divergence
-
-      integer :: n
-      real(r8), allocatable :: vcell(:,:), div(:), drho(:)
-
-      !! Cell-centered fluid velocity.
-      allocate(vcell(ndim,ncells))
-      do n = 1, ndim
-        vcell(n,:) = zone%vc(n) ! work around flawed data structure
-      end do
-      call write_seq_cell_field (seq, vcell, 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
-      deallocate(vcell)
-
-      !! Cell-centered fluid pressure.
-      call write_seq_cell_field (seq, zone%p, 'Z_P', for_viz=.true., viz_name='P')
-
-      !! Face fluxing velocities.
-      call write_seq_cell_field (seq, fluxing_velocity, 'Face_Vel', for_viz=.false.)
-
-      !! Cell-centered fluid Courant number.
-      call write_seq_cell_field (seq, courant, 'COURANT', for_viz=.true.)
-
-      !! Cell-centered divergence (the volume error).
-      allocate(div(ncells))
-      call divergence (div)
-      call write_seq_cell_field (seq, div, 'Volume_Error', for_viz=.true., viz_name='vol_err')
-      deallocate(div)
-
-      !! Cell-centered fluid density delta.
-      if (boussinesq_approximation) then
-        allocate(drho(ncells))
-        call get_density_delta (zone%temp, drho)
-        call write_seq_cell_field (seq, drho, 'del-rho', for_viz=.true., viz_name='delrho')
-        deallocate(drho)
-      end if
-
-    end subroutine write_fluid_flow_data
 
     subroutine write_new_flow_data
       use legacy_mesh_api, only: ndim, ncells, nfc

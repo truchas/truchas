@@ -22,73 +22,6 @@ set(PHYSICS_SOURCE_FILES
            physics/enclosure_radiation/vf_data_type.F90)
 
 
-# - fluid_flow
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/legacy_flow_namelist.F90
-           physics/fluid_flow/flow_property_module.F90
-           physics/fluid_flow/flow_phase_change.F90
-           physics/fluid_flow/flow_time_step_module.F90
-           physics/fluid_flow/fluid_data_module.F90
-           physics/fluid_flow/fluid_flow_module.F90
-           physics/fluid_flow/fluid_type_module.F90
-           physics/fluid_flow/fluid_utilities_module.F90)
-
-# - fluid_flow/advection
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/advection/advect_volume_module.F90
-           physics/fluid_flow/advection/advection_data.F90
-           physics/fluid_flow/advection/advection_module.F90
-           physics/fluid_flow/advection/hoadvection.F90
-           physics/fluid_flow/advection/limiter.F90
-           physics/fluid_flow/advection/limiter_data.F90
-           physics/fluid_flow/advection/limiter_module.F90
-           physics/fluid_flow/advection/riemann_module.F90)
-
-# - fluid_flow/body_force
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/body_force/body_data_module.F90
-           physics/fluid_flow/body_force/body_force_module.F90)
-
-# - fluid_flow/porous_drag
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/porous_drag/porous_drag_data.F90
-           physics/fluid_flow/porous_drag/porous_drag_module.F90)
-
-# - fluid_flow/predictor
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/predictor/predictor_module.F90
-           physics/fluid_flow/predictor/y_eq_Ax_vel.F90)
-
-# - fluid_flow/projection
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/projection/coordinates_module.F90
-           physics/fluid_flow/projection/fischer_module.F90
-           physics/fluid_flow/projection/projection_data_module.F90
-           physics/fluid_flow/projection/projection_module.F90
-           physics/fluid_flow/projection/y_eq_Ax_prs.F90)
-
-# - fluid_flow/surface_tension
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/surface_tension/kernel_interpolation_module.F90
-           physics/fluid_flow/surface_tension/surface_tension_module.F90)
-
-# - fluid_flow/viscous
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/viscous/turbulence_module.F90
-           physics/fluid_flow/viscous/viscous_data_module.F90
-           physics/fluid_flow/viscous/viscous_module.F90)
-
-# - fluid_flow/vof
-list(APPEND PHYSICS_SOURCE_FILES
-           physics/fluid_flow/vof/flux_volume_module.F90
-           physics/fluid_flow/vof/interface_module.F90
-           physics/fluid_flow/vof/interface_triangle_module.F90
-           physics/fluid_flow/vof/locate_plane_module.F90
-           physics/fluid_flow/vof/mollify.F90
-           physics/fluid_flow/vof/truncate_volume_module.F90
-           physics/fluid_flow/vof/vof_data_module.F90
-           physics/fluid_flow/vof/volume_track_module.F90)
-
 # - volume_tracking
 list(APPEND PHYSICS_SOURCE_FILES
           physics/volume_tracking/advection_velocity_namelist.F90
@@ -144,7 +77,6 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/upper_packed_matrix.F90
            physics/heat_species_transport/enthalpy_advector_class.F90
            physics/heat_species_transport/enthalpy_advector1_type.F90
-           physics/heat_species_transport/enthalpy_advector2_type.F90
            physics/heat_species_transport/evap_heat_flux_type.F90
            physics/heat_species_transport/evaporation_namelist.F90
            physics/heat_species_transport/thermal_source_namelist.F90
@@ -206,7 +138,6 @@ list(APPEND PHYSICS_SOURCE_FILES
 include(BuildWhitespaceString)
 set(fc_flags
   -I${PGSLib_MODULE_DIR}
-  -I${UbikSolve_MODULE_DIR}
   -I${Truchas_utilities_dir}
   -I${Truchas_solver_dir})
 

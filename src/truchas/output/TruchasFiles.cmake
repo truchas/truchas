@@ -6,7 +6,6 @@ set(OUTPUT_SOURCE_FILES
           output/diagnostics_module.F90
           output/edit_module.F90
           output/gap_output.F90
-          output/interface_output_module.F90
           output/output_control.F90
           output/output_utilities.F90
           output/probes_type.F90
@@ -18,7 +17,7 @@ set(OUTPUT_SOURCE_FILES
           output/truchas_danu_output_tools.F90)
 
 
-set(fc_flags -I${UbikSolve_MODULE_DIR} -I${Truchas_utilities_dir})
+set(fc_flags -I${Truchas_utilities_dir})
 build_whitespace_string(OUTPUT_COMPILE_FLAGS ${fc_flags})
 set_source_files_properties(${OUTPUT_SOURCE_FILES} PROPERTIES
                             COMPILE_FLAGS ${OUTPUT_COMPILE_FLAGS})

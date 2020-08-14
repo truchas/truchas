@@ -1,1 +1,0 @@
-../nat-conv/square-49.g

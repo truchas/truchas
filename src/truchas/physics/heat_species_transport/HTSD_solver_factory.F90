@@ -21,7 +21,6 @@ contains
   function create_HTSD_solver (mmf, model, stat, errmsg) result (solver)
   
     use enclosure_radiation_namelist, only: er_params => params
-    use fluid_data_module,  only: fluid_flow
     use parallel_communication
     use diffusion_solver_data
     use truchas_env, only: output_file_name
@@ -53,11 +52,6 @@ contains
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
       params%output_unit = lun
     end if
-!    if (mmf%has_matID(0) .and. fluid_flow) then
-!      params%step_method = 1
-!    else
-!      params%step_method = 0
-!    end if
     !! BDF2 nonlinear solver parameters
     params%max_nlk_itr = max_nlk_itr
     params%nlk_tol = nlk_tol
