@@ -122,7 +122,7 @@
 module unstr_2d_mesh_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use base_mesh_class
+  use unstr_base_mesh_class
   use index_partitioning
   use parallel_communication
   use bitfield_type
@@ -131,7 +131,7 @@ module unstr_2d_mesh_type
   implicit none
   private
 
-  type, extends(base_mesh), public :: unstr_2d_mesh
+  type, extends(unstr_base_mesh), public :: unstr_2d_mesh
     integer, allocatable :: cnode(:) ! cell nodes connectivity
     integer, allocatable :: cface(:) ! cell faces connectivity
     integer, allocatable :: cnhbr(:) ! cell neighbors connectivity
@@ -143,12 +143,6 @@ module unstr_2d_mesh_type
     real(r8), allocatable :: unit_normal(:,:)
     real(r8), allocatable :: cell_centroid(:,:)
     real(r8), allocatable :: face_centroid(:,:)
-    !! Mesh interface links.
-    integer :: nlink = 0, nlink_onP = 0
-    integer, allocatable :: lface(:,:)        ! pointer due to localize_index_array
-    integer, allocatable :: link_set_id(:)    ! user-assigned ID for each link block
-    type(bitfield), allocatable :: link_set_mask(:)  ! link block index
-    type(ip_desc) :: link_ip
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array
@@ -161,6 +155,9 @@ module unstr_2d_mesh_type
     procedure :: init_face_centroid
     procedure :: nearest_node
     procedure :: nearest_cell
+    procedure :: cell_node_list_view
+    procedure :: cell_face_list_view
+    procedure :: face_node_list_view
   end type unstr_2d_mesh
 
 contains
@@ -540,5 +537,29 @@ contains
     nearest_node = merge(min_node, 0, (this_PE == min_PE))
 
   end function nearest_node
+
+  !! Returns the nodes of the given cell
+  function cell_node_list_view(this, n) result(view)
+    class(unstr_2d_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%cnode(this%cstart(n):this%cstart(n+1)-1)
+  end function
+
+  !! Returns the faces of the given cell
+  function cell_face_list_view(this, n) result(view)
+    class(unstr_2d_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%cface(this%cstart(n):this%cstart(n+1)-1)
+  end function
+
+  !! Returns the nodes of the given face
+  function face_node_list_view(this, n) result(view)
+    class(unstr_2d_mesh), intent(in), target :: this
+    integer, intent(in) :: n
+    integer, pointer, contiguous :: view(:)
+    view => this%fnode(:,n)
+  end function
 
 end module unstr_2d_mesh_type
