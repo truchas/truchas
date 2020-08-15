@@ -2,6 +2,47 @@
 
 Important changes since the 3.0 release.
 
+## 2020-08-14 Version 20.08
+
+## 2020-08-14 (3b61747)
+
+The original legacy flow solver has been removed.
+
+## 2020-08-14 (38145ea)
+
+User-defined heat sources are now defined using the new `THERMAL_SOURCE`
+namelist instead of the `DS_SOURCE` namelist. There is no change in the
+variable names, except that the `equation` variable is no longer needed;
+"temperature" is naturally assumed.
+
+With the new namelist comes a new option to read the source from a data
+file. See the Reference Manual description of `THERMAL_SOURCE` for details.
+
+## 2020-08-13 (b6fa8e7)
+
+The linear and nonlinear solver parameters for solid mechanics have been
+moved into the `SOLID_MECHANICS` namelist from `LINEAR_SOLVER` and
+`NONLINEAR_SOLVER`. The current solver uses an accelerated nonlinear Krylov
+(NKA) method with simple diagonal preconditioning. For a linear problem this
+effectively reduces to GMRES. Originally other options were available, but
+this was the only one used in practice. See the Reference Manual description
+of `SOLID_MECHANICS` for details.
+
+## 2020-07-27 (5d41b69) Version 20.07
+
+We are moving to a rolling release of Truchas and monthly date-based tagging
+of the master branch using a YY.MM format.
+
+## 2020-07-14 (8941aef)
+
+Interface heat transfer boundary conditions may now be temperature dependent.
+This can be used to model the change in heat conduction across a metal/mold
+interface due to the shrinkage of the metal as it solidifies, for example.
+A side-efect of this change is that time and spatially dependent Interface
+heat transfer coefficients must be defined slightly differently. See the
+Reference Manual description of interface heat transfer boundary conditions
+in `THERMAL_BC` for details.
+
 ## 2020-02-08 (21c6bb7)
 
 The input format for materials and properties was completely overhauled. The

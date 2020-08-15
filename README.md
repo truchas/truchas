@@ -31,21 +31,18 @@ Resources
 * The [official repository][2] is located at GitLab.com.  Truchas on GitHub
   is a [mirror](https://github.com/truchas), and we do not actively monitor
   issues there.
-* The current Truchas Reference Manual is available from the wiki page
-  https://gitlab.com/truchas/truchas-release/wikis/home
+* The Truchas Reference Manual is available [here](https://www.truchas.org/docs/)
 * Use the [issue tracker][3] to submit bug reports and feature suggestions.
-* Community discussion takes place on the truchas-users mailing list.
-  Send email to <truchas-users+subscribe@googlegroups.com> to subscribe.
 * Truchas project leaders can be contacted at <truchas@lanl.gov>
 
-[2]: https://gitlab.com/groups/truchas
-[3]: https://gitlab.com/groups/truchas/issues
+[2]: https://gitlab.com/truchas/truchas
+[3]: https://gitlab.com/truchas/truchas/issues
 
-News (updated 2020-02-08)
+News (updated 2020-08-14)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 
-Building Truchas (updated 2020-07-17)
+Building Truchas (updated 2020-08-14)
 ------------------------------------------------------------------------------
 See [BUILDING.md](BUILDING.md) for instructions on compiling and testing
 Truchas.

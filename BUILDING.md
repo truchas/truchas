@@ -17,8 +17,8 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
         - version 6.2 (build 6252 or later preferred)
         - version 7.0 (build 7026 or later required)
         - most any version of GNU C/C++ should be okay
-    - NAG Fortran on MacOS (with Apple Clang C/C++)
-	    - NAG version 6.2
+    - NAG Fortran on MacOS (with Apple Clang C/C++):
+	    - NAG version 6.2 and 7.0 (build 7028 or later required)
 		- Likely any version of Apple Clang should be fine
     - GFortran is *not* currently supported due to incomplete and/or flawed
       support for some Fortran 2003 features. There are GFortran configuration
@@ -51,7 +51,8 @@ than it must be different than the current directory). Here is an example:
 
     $ mkdir build
     $ cd build
-    $ cmake -C ../config/intel-opt.cmake \
+    $ cmake -C ../config/linux-intel.cmake \
+            -D CMAKE_BUILD_TYPE=Release \
             -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
     $ make
     $ make install
@@ -61,6 +62,9 @@ than it must be different than the current directory). Here is an example:
   file. The `config` subdirectory contains some examples. If none of those are
   suitable, create your own, or simply define the various variables directly
   on the cmake command line (using the `-D` flag).
+* `Release`directs CMake to configure an optimized build of Truchas. Another
+  option is `Debug` for an unoptimized build with lots of additional runtime
+  checking.
 * Set the `TRUCHAS_TPL_DIR` variable to the TPL installation directory you
   used in the first stage. It must be an absolute path.
 * By default Truchas will be installed into the `install` subdirectory of the
@@ -102,7 +106,8 @@ building truchas on a mac
 
 	$ mkdir build
     $ cd build
-    $ cmake -C ../config/mac-nag-chk.cmake \
+    $ cmake -C ../config/mac-nag.cmake \
+          -D CMAKE_BUILD_TYPE=Release \
 	        -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
     $ make
     $ make install
