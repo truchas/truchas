@@ -103,11 +103,27 @@ contains
     end if
 
     !! Inverse of enthalpy-temperature relation.
-    !TODO we need some user-settable parameters here, especially DELTA
-    TofH_tol = 0.0d0       ! absolute temperature convergence tolerance, >= 0
-    TofH_delta  = 1.0d-3   ! initial endpoint shift when seeking bracket, > 0
-    TofH_max_try = 50      ! max tries at seeking a bracketing interval, >= 0
-    call this%T_of_H%init(this%H_of_T, eps=TofH_tol, max_try=TofH_max_try, delta=TofH_delta)
+    !TODO is "TofH" the right name for this?
+    ! if (params%is_sublist('TofH')) then
+    !TODO: ok to make entire list optional? ok to create the empty sublist if it does not exist?
+    !      or better to not put these in a sublist?
+      sublist => params%sublist('TofH')
+      !! absolute temperature convergence tolerance, >= 0
+      call sublist%get('tolerance', TofH_tol, default=0.0d0, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      !! initial endpoint shift when seeking bracket, > 0
+      call sublist%get('delta', TofH_delta, default=1.0d-3, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      !! max tries at seeking a bracketing interval, >= 0
+      call sublist%get('max-try', TofH_max_try, default=50, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+
+      call this%T_of_H%init(this%H_of_T, eps=TofH_tol, max_try=TofH_max_try, delta=TofH_delta)
+    ! else
+    !   stat = 1
+    !   errmsg = context // 'missing "TofH" sublist parameter'
+    !   return
+    ! end if
 
     !! Thermal conductivity.
     call required_property_check(matl_model, 'conductivity', stat, errmsg)
@@ -474,7 +490,10 @@ contains
 
   end subroutine compute_udot
 
-  !TODO: is there a better way to set/get rel_tol, max_itr
+  !TODO: is there a better way to set/get rel_tol, max_itr? 4 options:
+  !        - Choose whether they belong to model or solver.
+  !          1. part of init. Store as components directly.
+  !          2. Store reference to parameter list as component. Get them when needed.
   !! Solves for the algebraic equation of the heat transfer model for the face temperatures
 
   subroutine compute_face_temp(this, t, u, rel_tol, max_itr, stat, errmsg)
