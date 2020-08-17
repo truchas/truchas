@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
 
 truchas intel:
   stage: build
@@ -18,3 +19,11 @@ truchas intel:
       - build/inst/bin/t-*
       - build/inst/bin/truchas-*.tar.bz2
     when: always
+
+test truchas binary:
+  stage: test
+  image: ubuntu:18.04
+  script:
+    - tar xaf build/inst/bin/truchas-3.1.0.tar.bz2
+    - cd truchas-3.1.0/
+    - ./bin/t-linux.x86_64.intel.opt-3.1.0-alpha -h
