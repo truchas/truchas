@@ -3,7 +3,7 @@
 import os
 
 # Name of the main executable
-tbin="t-linux.x86_64.intel.opt-3.1.0-alpha"
+tbin="t-linux.x86_64.intel"
 
 # Name of the distribution directory / tarball
 dist="truchas-3.1.0"
@@ -71,3 +71,7 @@ for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
 
 # Create a distribution tarball
 os.system("tar cjf %s.tar.bz2 %s" % (dist, dist))
+
+# Print the contents of the tarball
+
+os.system("tar tjf %s.tar.bz2" % dist)
