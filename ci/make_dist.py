@@ -3,7 +3,7 @@
 import os
 
 # Name of the main executable
-tbin="t-linux.x86_64.intel.opt-3.1.0-alpha"
+tbin="t-linux.x86_64.intel"
 
 # Name of the distribution directory / tarball
 dist="truchas-3.1.0"
