@@ -71,3 +71,7 @@ for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
 
 # Create a distribution tarball
 os.system("tar cjf %s.tar.bz2 %s" % (dist, dist))
+
+# Print the contents of the tarball
+
+os.system("tar tjf %s.tar.bz2" % dist)
