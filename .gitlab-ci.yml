@@ -2,26 +2,48 @@ stages:
   - build
   - test
 
-truchas intel:
+build truchas binary:
   stage: build
+  needs: []
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
   script:
     - sudo yum install -y python3 openssh-clients bzip2
-    - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.9-10.el7.x86_64.rpm
-    - sudo yum install -y ./patchelf-0.9-10.el7.x86_64.rpm
-    - sudo pip3 install numpy scipy h5py
+    - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.11-1.el7.x86_64.rpm
+    - sudo yum install -y ./patchelf-0.11-1.el7.x86_64.rpm
+    - sudo pip3 install numpy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
     - bash ci/build.sh
+    - cd build/inst/bin/
+    - export INTELDIR=/opt/intel/
+    - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+    - ../../../ci/make_dist.py
   artifacts:
     paths:
       - build/inst/bin/t-*
       - build/inst/bin/truchas-*.tar.bz2
     when: always
 
+test truchas intel:
+  stage: build
+  needs: []
+  tags: ["intel"]
+  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  script:
+    - sudo yum install -y python3 openssh-clients
+    - sudo pip3 install numpy scipy h5py
+    - sudo rm -f /usr/bin/python
+    - sudo ln -s /usr/bin/python3 /usr/bin/python
+    - bash ci/build.sh
+    - cd build
+    - export INTELDIR=/opt/intel/
+    - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+    - ctest --output-on-failure
+
 test truchas binary:
   stage: test
+  needs: ["build truchas binary"]
   image: ubuntu:18.04
   script:
     - tar xaf build/inst/bin/truchas-3.1.0.tar.bz2
