@@ -2,6 +2,12 @@
 
 set -ex
 
+if [[ $1 == "Debug" ]]; then
+    build_type="Debug"
+else
+    build_type="Release"
+fi
+
 export INTELDIR=/opt/intel/
 export PATH=$INTELDIR/bin/:$PATH
 export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
@@ -17,7 +23,7 @@ mkdir build
 cd build
 cmake \
     -C ../config/linux-intel.cmake \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=${build_type} \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
     ..
