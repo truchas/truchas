@@ -5,11 +5,19 @@ import os
 # Name of the main executable
 tbin="t-linux.x86_64.intel"
 
-# Name of the distribution directory / tarball
-dist="truchas-3.1.0"
-
 # mpich root directory
 mpich_root="/home/swuser/ext"
+
+# Determine Truchas version
+print("Determining version")
+r = os.system("git describe --tags --dirty > version")
+if r != 0:
+    raise Exception("`git describe` failed")
+version = open("version").read().strip()
+print("Version:", version)
+
+# Name of the distribution directory / tarball
+dist="truchas-%s-Linux" % version
 
 
 def copy_deps(binary_executable):

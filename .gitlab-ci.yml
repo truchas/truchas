@@ -8,6 +8,9 @@ build truchas binary:
   needs: []
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  variables:
+    GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
+    GIT_DEPTH: 0 # fetch all commits and tags
   script:
     - sudo yum install -y python3 openssh-clients bzip2
     - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.11-1.el7.x86_64.rpm
