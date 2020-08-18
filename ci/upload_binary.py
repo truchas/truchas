@@ -62,7 +62,9 @@ async def get_installation_access_token(gh, jwt, installation_id):
 
 async def main(release):
     print("Determining version")
-    os.system("git describe --tags --dirty > version")
+    r = os.system("git describe --tags --dirty > version")
+    if r != 0:
+        raise Exception("`git describe` failed")
     version = open("version").read().strip()
     print("Version:", version)
     print("Authenticating")
