@@ -25,7 +25,6 @@ build truchas binary:
     - ../../../ci/make_dist.py
   artifacts:
     paths:
-      - build/inst/bin/t-*
       - build/inst/bin/truchas-*.tar.bz2
     when: always
 
