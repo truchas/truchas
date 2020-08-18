@@ -97,27 +97,36 @@ async def main(release):
             print("Release information:")
 
             url_base = "https://github.com/truchas/truchas_releases/releases/download"
+            tarball_url = "{url_base}/{version}/{tarball}".format(
+                    url_base=url_base,
+                    version=version,
+                    tarball=tarball,
+                    )
+            release_url="https://github.com/truchas/truchas_releases/releases/tag/{version}".format(version=version)
             tarball_path = "dist/" + tarball
+            tarball_size = len(open(tarball_path, "rb").read())
             release_name = "Release version %s" % version
             release_body="""\
-Truchas binary release.
+Truchas binary release. Version: {version}
 
 | Filename | Size |
 | -------- | ---- |
-| [{tarball}]({url_base}/{version}/{tarball}) | {t_size} MB |
+| [{tarball}]({tarball_url}) | {t_size_MB} MB |
 
 """.format(
-        url_base=url_base,
         tarball=tarball,
+        tarball_url=tarball_url,
         version=version,
-        t_size="%.1f" % (len(open(tarball_path, "rb").read()) / 1024.**2),
+        t_size_MB="%.1f" % (tarball_size / 1024.**2),
     )
 
             print("Release name:", release_name)
             print("Release body:")
             print(release_body)
             print("Release url:")
-            print("https://github.com/truchas/truchas_releases/releases/{version}".format(version=version))
+            print(release_url)
+            print("Truchas tarball url:")
+            print(tarball_url)
 
             if not release:
                 print("Not uploading release.")
