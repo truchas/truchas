@@ -14,7 +14,7 @@ else
     dest_dir="release"
 fi
 
-version=$(<version)
+version=$(<dist/version)
 
 mkdir ~/.ssh
 chmod 700 ~/.ssh
