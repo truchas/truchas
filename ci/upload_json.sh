@@ -61,7 +61,8 @@ fi
 #     ssh-keygen -f deploy_key -N ""
 #
 # then set the $SSH_PRIVATE_KEY_TARBALL environment variable in the GitLab-CI
-# to the base64 encoded private key (uncheck the "Masked" check box):
+# to the base64 encoded private key (check the "Masked" check box for extra
+# security):
 #
 #     cat deploy_key | base64 -w0
 #
