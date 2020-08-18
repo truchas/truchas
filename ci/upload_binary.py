@@ -117,7 +117,7 @@ Truchas binary release.
             print("Release body:")
             print(release_body)
             print("Release url:")
-            print("https://github.com/truchas/truchas_releases/releases/{version}".format(version=version))
+            print("https://github.com/truchas/truchas_releases/releases/tag/{version}".format(version=version))
 
             if not release:
                 print("Not uploading release.")
