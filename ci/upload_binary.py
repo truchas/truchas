@@ -62,11 +62,10 @@ async def get_installation_access_token(gh, jwt, installation_id):
 
 async def main(release):
     print("Determining version")
-    r = os.system("git describe --tags --dirty > version")
-    if r != 0:
-        raise Exception("`git describe` failed")
-    version = open("version").read().strip()
+    version = open("dist/version").read().strip()
     print("Version:", version)
+    tarball="truchas-%s-Linux.tar.bz2" % version
+    print("Tarball:", tarball)
     print("Authenticating")
     async with aiohttp.ClientSession() as session:
         app_id = os.getenv("GH_APP_ID")
@@ -98,17 +97,18 @@ async def main(release):
             print("Release information:")
 
             url_base = "https://github.com/truchas/truchas_releases/releases/download"
-            tarball_path = "build/inst/bin/truchas-3.1.0.tar.bz2"
+            tarball_path = "dist/" + tarball
             release_name = "Release version %s" % version
             release_body="""\
 Truchas binary release.
 
 | Filename | Size |
 | -------- | ---- |
-| [truchas-3.1.0.tar.bz2]({url_base}/{version}/truchas-3.1.0.tar.bz2) | {t_size} MB |
+| [{tarball}]({url_base}/{version}/{tarball}) | {t_size} MB |
 
 """.format(
         url_base=url_base,
+        tarball=tarball,
         version=version,
         t_size="%.1f" % (len(open(tarball_path, "rb").read()) / 1024.**2),
     )
@@ -116,6 +116,8 @@ Truchas binary release.
             print("Release name:", release_name)
             print("Release body:")
             print(release_body)
+            print("Release url:")
+            print("https://github.com/truchas/truchas_releases/releases/{version}".format(version=version))
 
             if not release:
                 print("Not uploading release.")
@@ -126,9 +128,11 @@ Truchas binary release.
                     name=release_name,
                     body=release_body,
                     draft=False)
+            print("Release URL:")
+            print(r.html_url)
             print("Uploading binay tarball")
             f = open(tarball_path, "rb")
-            s = r.upload_asset("application/x-bzip2", "truchas-3.1.0.tar.bz2", f)
+            s = r.upload_asset("application/x-bzip2", tarball, f)
             print("Uploaded:")
             print(s.browser_download_url)
 

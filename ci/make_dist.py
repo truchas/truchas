@@ -5,11 +5,18 @@ import os
 # Name of the main executable
 tbin="t-linux.x86_64.intel"
 
-# Name of the distribution directory / tarball
-dist="truchas-3.1.0"
-
 # mpich root directory
 mpich_root="/home/swuser/ext"
+
+# Determine Truchas version
+this_dir = os.path.dirname(os.path.abspath(__file__))
+version_file = os.path.realpath(this_dir + "/../version")
+print("Reading version from %s" % version_file)
+version = open(version_file).read().strip()
+print("Version:", version)
+
+# Name of the distribution directory / tarball
+dist="truchas-%s-Linux" % version
 
 
 def copy_deps(binary_executable):
