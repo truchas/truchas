@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - deploy
+  - website
 
 build truchas binary:
   stage: build
@@ -87,7 +88,7 @@ upload truchas binary:
 
 # Update the downloads page
 downloads_update:
-  stage: deploy
+  stage: website
   needs: ["upload truchas binary"]
   image: ubuntu:20.04
   script:
