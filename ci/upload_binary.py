@@ -134,9 +134,10 @@ Truchas binary release.
 
 
 
-if (len(sys.argv) > 1):
+release = False
+if (len(sys.argv) > 1 and sys.argv[1] == "master"):
+    # Only upload the binary if the first argument is "master"
     release = True
-else:
-    release = False
+print("Upload binary:", release)
 
 asyncio.run(main(release))
