@@ -104,7 +104,7 @@ async def main(release):
                     )
             release_url="https://github.com/truchas/truchas_releases/releases/tag/{version}".format(version=version)
             tarball_path = "dist/" + tarball
-            tarball_size = len(open(tarball_path, "rb").read()
+            tarball_size = len(open(tarball_path, "rb").read())
             release_name = "Release version %s" % version
             release_body="""\
 Truchas binary release. Version: {version}
