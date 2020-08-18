@@ -93,7 +93,7 @@ downloads_update:
   image: ubuntu:20.04
   script:
     - apt-get update
-    - apt-get install -yq --no-install-recommends curl
+    - apt-get install -yq --no-install-recommends curl ca-certificates
     - curl -X POST -F token=${DOWNLOAD_UPDATE_TOKEN} -F ref=master https://gitlab.com/api/v4/projects/19864631/trigger/pipeline
   only:
     - master
