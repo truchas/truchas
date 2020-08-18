@@ -117,7 +117,7 @@ Truchas binary release. Version: {version}
         tarball=tarball,
         tarball_url=tarball_url,
         version=version,
-        t_size_MB="%.1f" % tarball_size / 1024.**2),
+        t_size_MB="%.1f" % (tarball_size / 1024.**2),
     )
 
             print("Release name:", release_name)
