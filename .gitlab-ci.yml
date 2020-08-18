@@ -23,9 +23,13 @@ build truchas binary:
     - export INTELDIR=/opt/intel/
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
     - ../../../ci/make_dist.py
+    - cd ../../..
+    - mkdir dist
+    - cp build/inst/bin/truchas-*.tar.bz2 dist/
+    - cp version dist/
   artifacts:
     paths:
-      - build/inst/bin/truchas-*.tar.bz2
+      - dist/*
     when: always
 
 test truchas intel (Release):
@@ -65,7 +69,7 @@ test truchas binary:
   needs: ["build truchas binary"]
   image: ubuntu:18.04
   script:
-    - tar xaf build/inst/bin/truchas-*.tar.bz2
+    - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
     - ./bin/t-linux.x86_64.intel -h
 
@@ -73,9 +77,6 @@ upload truchas binary:
   stage: deploy
   needs: ["build truchas binary"]
   image: ubuntu:20.04
-  variables:
-    GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
-    GIT_DEPTH: 0 # fetch all commits and tags
   script:
     - apt-get update
     - apt-get install -yq --no-install-recommends git python3 python3-pip python3-setuptools
