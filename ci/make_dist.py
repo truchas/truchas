@@ -9,11 +9,10 @@ tbin="t-linux.x86_64.intel"
 mpich_root="/home/swuser/ext"
 
 # Determine Truchas version
-print("Determining version")
-r = os.system("git describe --tags --dirty > version")
-if r != 0:
-    raise Exception("`git describe` failed")
-version = open("version").read().strip()
+this_dir = os.path.dirname(os.path.abspath(__file__))
+version_file = os.path.realpath(this_dir + "/../version")
+print("Reading version from %s" % version_file)
+version = open(version_file).read().strip()
 print("Version:", version)
 
 # Name of the distribution directory / tarball

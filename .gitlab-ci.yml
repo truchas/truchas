@@ -18,6 +18,7 @@ build truchas binary:
     - sudo pip3 install numpy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
+    - bash ci/version.sh
     - bash ci/build.sh
     - cd build/inst/bin/
     - export INTELDIR=/opt/intel/
