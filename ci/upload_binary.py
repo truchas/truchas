@@ -126,6 +126,8 @@ Truchas binary release.
                     name=release_name,
                     body=release_body,
                     draft=False)
+            print("Release URL:")
+            print(r.html_url)
             print("Uploading binay tarball")
             f = open(tarball_path, "rb")
             s = r.upload_asset("application/x-bzip2", "truchas-3.1.0.tar.bz2", f)
