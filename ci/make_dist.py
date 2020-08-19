@@ -90,6 +90,8 @@ run("cp -r ../lib/python3.6/site-packages/fortran_write %s/lib/python3.6/site-pa
 run("cp -r ../lib/python3.6/site-packages/grid_mapping %s/lib/python3.6/site-packages/" % (dist))
 run("cp -r ../lib/libfwrite.so %s/lib/" % (dist))
 run("cp -r ../lib/libgridmap.so %s/lib/" % (dist))
+for lib in ["libfwrite.so", "libgridmap.so"]:
+    run("patchelf --set-rpath '$ORIGIN/.' %s/lib/%s" % (dist, lib))
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
