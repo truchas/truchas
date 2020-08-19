@@ -40,7 +40,7 @@ test truchas intel (Release):
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
   script:
-    - sudo yum install -y python3 openssh-clients
+    - sudo yum install -y python3 openssh-clients openssl-devel
     - sudo pip3 install numpy scipy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
@@ -56,7 +56,7 @@ test truchas intel (Debug):
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
   script:
-    - sudo yum install -y python3 openssh-clients
+    - sudo yum install -y python3 openssh-clients openssl-devel
     - sudo pip3 install numpy scipy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
