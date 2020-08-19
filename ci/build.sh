@@ -20,8 +20,10 @@ export CXX=icpc
 export PATH=$HOME/ext/bin/:$PATH
 export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
 
-# Prepend our `python` executable into path
-export PATH="${HOME}/ext/python-install/bin:$PATH"
+sudo rm -f /usr/bin/python
+sudo ln -s ${HOME}/ext/python-install/bin/python /usr/bin/python
+sudo ln -s ${HOME}/ext/python-install/bin/python3 /usr/bin/python3
+
 
 # Install Truchas
 mkdir build
