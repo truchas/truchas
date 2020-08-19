@@ -13,7 +13,7 @@ build truchas binary:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
-    - sudo yum install -y python3 openssh-clients bzip2 openssl-devel
+    - sudo yum install -y python3 openssh-clients bzip2-devel openssl-devel
     - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.11-1.el7.x86_64.rpm
     - sudo yum install -y ./patchelf-0.11-1.el7.x86_64.rpm
     - sudo pip3 install numpy h5py
