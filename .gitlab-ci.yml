@@ -13,7 +13,7 @@ build truchas binary:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
-    - sudo yum install -y python3 openssh-clients bzip2
+    - sudo yum install -y python3 openssh-clients bzip2-devel openssl-devel
     - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.11-1.el7.x86_64.rpm
     - sudo yum install -y ./patchelf-0.11-1.el7.x86_64.rpm
     - sudo pip3 install numpy h5py
@@ -40,7 +40,7 @@ test truchas intel (Release):
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
   script:
-    - sudo yum install -y python3 openssh-clients
+    - sudo yum install -y python3 openssh-clients openssl-devel
     - sudo pip3 install numpy scipy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
@@ -56,7 +56,7 @@ test truchas intel (Debug):
   tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
   script:
-    - sudo yum install -y python3 openssh-clients
+    - sudo yum install -y python3 openssh-clients openssl-devel
     - sudo pip3 install numpy scipy h5py
     - sudo rm -f /usr/bin/python
     - sudo ln -s /usr/bin/python3 /usr/bin/python
@@ -75,8 +75,11 @@ test truchas binary (Ubuntu 18.04):
     - cd truchas-*/
     - cat README.md
     - ./bin/t-linux.x86_64.intel -h
+    - ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
+    - ./bin/python bin/write-restart.py -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
     - sed -i s/0.075/0.005/ broken-dam.inp
     - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
@@ -90,8 +93,11 @@ test truchas binary (Centos 7):
     - cd truchas-*/
     - cat README.md
     - ./bin/t-linux.x86_64.intel -h
+    - ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
+    - ./bin/python bin/write-restart.py -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
     - sed -i s/0.075/0.005/ broken-dam.inp
     - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
