@@ -73,6 +73,7 @@ test truchas binary (Ubuntu 18.04):
   script:
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
+    - cat README.md
     - ./bin/t-linux.x86_64.intel -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
@@ -87,6 +88,7 @@ test truchas binary (Centos 7):
     - yum install -y bzip2
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
+    - cat README.md
     - ./bin/t-linux.x86_64.intel -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
