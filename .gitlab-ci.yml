@@ -8,17 +8,12 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-40bebb5
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
-    - sudo yum install -y python3 openssh-clients bzip2-devel openssl-devel
-    - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.11-1.el7.x86_64.rpm
-    - sudo yum install -y ./patchelf-0.11-1.el7.x86_64.rpm
-    - sudo pip3 install numpy h5py
-    - sudo rm -f /usr/bin/python
-    - sudo ln -s /usr/bin/python3 /usr/bin/python
+    - sudo yum install -y bzip2
     - bash ci/version.sh
     - bash ci/build.sh
     - cd build/inst/bin/
@@ -38,12 +33,8 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-40bebb5
   script:
-    - sudo yum install -y python3 openssh-clients openssl-devel
-    - sudo pip3 install numpy scipy h5py
-    - sudo rm -f /usr/bin/python
-    - sudo ln -s /usr/bin/python3 /usr/bin/python
     - bash ci/build.sh
     - cd build
     - export INTELDIR=/opt/intel/
@@ -54,12 +45,8 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-40bebb5
   script:
-    - sudo yum install -y python3 openssh-clients openssl-devel
-    - sudo pip3 install numpy scipy h5py
-    - sudo rm -f /usr/bin/python
-    - sudo ln -s /usr/bin/python3 /usr/bin/python
     - bash ci/build.sh Debug
     - cd build
     - export INTELDIR=/opt/intel/
