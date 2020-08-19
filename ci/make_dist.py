@@ -73,6 +73,10 @@ os.system("mkdir -p %s/examples/broken-dam" % dist)
 os.system("cp %s/test/broken-dam/broken-dam.inp %s/examples/broken-dam/" % \
         (root_dir, dist))
 
+# Copy a README
+os.system("cp %s/ci/README-binary-Linux.md %s/README.md" % \
+        (root_dir, dist))
+
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
     copy_deps("%s/bin/%s" % (dist, b))
