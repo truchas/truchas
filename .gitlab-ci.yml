@@ -79,6 +79,7 @@ test truchas binary (Ubuntu 18.04):
     - ./bin/python bin/write-restart.py -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
     - sed -i s/0.075/0.005/ broken-dam.inp
     - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
@@ -96,6 +97,7 @@ test truchas binary (Centos 7):
     - ./bin/python bin/write-restart.py -h
     - cd examples/broken-dam
     - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
     - sed -i s/0.075/0.005/ broken-dam.inp
     - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
