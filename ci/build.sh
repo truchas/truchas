@@ -22,7 +22,7 @@ make install
 cd ..
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 ./python-install/bin/python get-pip.py
-./python-install/bin/python -m pip install numpy
+./python-install/bin/python -m pip install numpy h5py
 cd ..
 
 # Set Intel compilers env variables
