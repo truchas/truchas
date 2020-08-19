@@ -81,6 +81,10 @@ run("cp %s/test/broken-dam/broken-dam.inp %s/examples/broken-dam/" % \
 run("cp %s/ci/README-binary-Linux.md %s/README.md" % \
         (root_dir, dist))
 
+# Copy Python
+run("cp %s/scratch/python-install/bin/python %s/bin/" % (root_dir, dist))
+run("cp -r %s/scratch/python-install/lib/python3.6 %s/lib/" % (root_dir, dist))
+
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
     copy_deps("%s/bin/%s" % (dist, b))
