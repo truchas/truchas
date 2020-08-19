@@ -82,8 +82,8 @@ run("cp %s/ci/README-binary-Linux.md %s/README.md" % \
         (root_dir, dist))
 
 # Copy Python
-run("cp %s/../ext/python-install/bin/python %s/bin/" % (root_dir, dist))
-run("cp -r %s/../ext/python-install/lib/python3.6 %s/lib/" % (root_dir, dist))
+run("cp /home/swuser/ext/python-install/bin/python %s/bin/" % (dist))
+run("cp -r /home/swuser/ext/python-install/lib/python3.6 %s/lib/" % (dist))
 run("cp write-restart.py %s/bin" % (dist))
 run("cp -r ../lib/python3.6/site-packages/truchas %s/lib/python3.6/site-packages/" % (dist))
 run("cp %s/ci/TruchasConfigInstall-binary-Linux.py %s/lib/python3.6/site-packages/truchas/TruchasConfigInstall.py" % (root_dir, dist))
