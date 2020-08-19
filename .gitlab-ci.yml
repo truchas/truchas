@@ -13,6 +13,7 @@ build truchas binary:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
+    - sudo yum install -y bzip2
     - bash ci/version.sh
     - bash ci/build.sh
     - cd build/inst/bin/
