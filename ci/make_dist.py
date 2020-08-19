@@ -84,6 +84,12 @@ run("cp %s/ci/README-binary-Linux.md %s/README.md" % \
 # Copy Python
 run("cp %s/scratch/python-install/bin/python %s/bin/" % (root_dir, dist))
 run("cp -r %s/scratch/python-install/lib/python3.6 %s/lib/" % (root_dir, dist))
+run("cp write-restart.py %s/bin" % (dist))
+run("cp -r ../lib/python3.6/site-packages/truchas %s/lib/python3.6/site-packages/" % (dist))
+run("cp -r ../lib/python3.6/site-packages/fortran_write %s/lib/python3.6/site-packages/" % (dist))
+run("cp -r ../lib/python3.6/site-packages/grid_mapping %s/lib/python3.6/site-packages/" % (dist))
+run("cp -r ../lib/libfwrite.so %s/lib/" % (dist))
+run("cp -r ../lib/libgridmap.so %s/lib/" % (dist))
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
