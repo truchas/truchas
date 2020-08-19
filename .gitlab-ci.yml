@@ -80,6 +80,7 @@ test truchas binary (Centos 7):
   needs: ["build truchas binary"]
   image: centos:7
   script:
+    - yum install -y bzip2
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
     - ./bin/t-linux.x86_64.intel -h
