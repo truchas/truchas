@@ -66,11 +66,21 @@ test truchas intel (Debug):
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
     - ctest --output-on-failure
 
-test truchas binary:
+test truchas binary (Ubuntu 18.04):
   stage: test
   needs: ["build truchas binary"]
   image: ubuntu:18.04
   script:
+    - tar xaf dist/truchas-*.tar.bz2
+    - cd truchas-*/
+    - ./bin/t-linux.x86_64.intel -h
+
+test truchas binary (Centos 7):
+  stage: test
+  needs: ["build truchas binary"]
+  image: centos:7
+  script:
+    - yum install -y bzip2
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
     - ./bin/t-linux.x86_64.intel -h
