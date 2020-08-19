@@ -10,7 +10,8 @@ mpich_root="/home/swuser/ext"
 
 # Determine Truchas version
 this_dir = os.path.dirname(os.path.abspath(__file__))
-version_file = os.path.realpath(this_dir + "/../version")
+root_dir = os.path.realpath(this_dir + "/..")
+version_file = root_dir + "/version"
 print("Reading version from %s" % version_file)
 version = open(version_file).read().strip()
 print("Version:", version)
@@ -66,6 +67,11 @@ os.system("cp genre %s/bin" % (dist))
 os.system("cp vizre %s/bin" % (dist))
 os.system("cp %s/bin/mpiexec.hydra %s/bin/mpiexec" % (mpich_root, dist))
 os.system("cp %s/bin/hydra_pmi_proxy %s/bin/" % (mpich_root, dist))
+
+# Copy an example
+os.system("mkdir -p %s/examples/broken-dam" % dist)
+os.system("cp %s/test/broken-dam/broken-dam.inp %s/examples/broken-dam/" % \
+        (root_dir, dist))
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:

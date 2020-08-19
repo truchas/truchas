@@ -74,6 +74,10 @@ test truchas binary (Ubuntu 18.04):
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
     - ./bin/t-linux.x86_64.intel -h
+    - cd examples/broken-dam
+    - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - sed -i s/0.075/0.005/ broken-dam.inp
+    - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
 test truchas binary (Centos 7):
   stage: test
@@ -84,6 +88,10 @@ test truchas binary (Centos 7):
     - tar xaf dist/truchas-*.tar.bz2
     - cd truchas-*/
     - ./bin/t-linux.x86_64.intel -h
+    - cd examples/broken-dam
+    - ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - sed -i s/0.075/0.005/ broken-dam.inp
+    - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
 
 upload truchas binary:
   stage: deploy
