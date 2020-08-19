@@ -9,7 +9,7 @@ else
 fi
 
 export INTELDIR=/opt/intel/
-export PATH=$INTELDIR/bin/:$PATH
+export PATH="$INTELDIR/bin/:$PATH"
 export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
 export FC=ifort
 export CC=icc
@@ -19,6 +19,27 @@ export CXX=icpc
 export PATH=$HOME/ext/bin/:$PATH
 export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
 
+# Install Python
+mkdir scratch
+cd scratch
+SCRATCH=`pwd`
+git clone --depth=1 https://github.com/python-cmake-buildsystem/python-cmake-buildsystem.git
+mkdir python-build
+mkdir python-install
+cd python-build
+cmake -DCMAKE_INSTALL_PREFIX:PATH=${SCRATCH}/python-install ../python-cmake-buildsystem
+make -j8
+make install
+cd ..
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+./python-install/bin/python get-pip.py
+./python-install/bin/python -m pip install numpy
+cd ..
+# Add the new `python` executable into path
+export PATH="${SCRATCH}/python-install/bin:$PATH"
+
+
+# Install Truchas
 mkdir build
 cd build
 cmake \
