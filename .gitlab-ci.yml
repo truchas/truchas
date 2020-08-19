@@ -58,17 +58,7 @@ test truchas binary (Ubuntu 18.04):
   needs: ["build truchas binary"]
   image: ubuntu:18.04
   script:
-    - tar xaf dist/truchas-*.tar.bz2
-    - cd truchas-*/
-    - cat README.md
-    - ./bin/t-linux.x86_64.intel -h
-    - ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
-    - ./bin/python bin/write-restart.py -h
-    - cd examples/broken-dam
-    - ../../bin/t-linux.x86_64.intel broken-dam.inp
-    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
-    - sed -i s/0.075/0.005/ broken-dam.inp
-    - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ci/test_tarball.sh
 
 test truchas binary (Centos 7):
   stage: test
@@ -76,17 +66,7 @@ test truchas binary (Centos 7):
   image: centos:7
   script:
     - yum install -y bzip2
-    - tar xaf dist/truchas-*.tar.bz2
-    - cd truchas-*/
-    - cat README.md
-    - ./bin/t-linux.x86_64.intel -h
-    - ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
-    - ./bin/python bin/write-restart.py -h
-    - cd examples/broken-dam
-    - ../../bin/t-linux.x86_64.intel broken-dam.inp
-    - ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
-    - sed -i s/0.075/0.005/ broken-dam.inp
-    - ../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
+    - ci/test_tarball.sh
 
 upload truchas binary:
   stage: deploy
