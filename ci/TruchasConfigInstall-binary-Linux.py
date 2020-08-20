@@ -9,6 +9,7 @@ class TruchasConfig:
     bin_dir = root_dir + "/bin"
     lib_dir = root_dir + "/lib"
     lib_suffix = ".so"
+    python_executable = root_dir + "/bin/python"
 
     truchas_executable = os.path.join(bin_dir, "t-linux.x86_64.intel")
     write_restart_executable = os.path.join(bin_dir, "write-restart.py")
