@@ -150,9 +150,10 @@ class TruchasEnvironment:
         """Write a restart file from the given H5 dump and cycle number to
         the given output file. Files expected to be relative to working directory."""
 
-        command = "python {:s} -n {:d} -o '{:s}' '{:s}'" \
-            .format(self._write_restart_executable, cycle_number, restart_file, \
-                    h5file)
+        command = "{:s} {:s} -n {:d} -o '{:s}' '{:s}'" \
+            .format(TruchasConfig.python_executable,
+                    self._write_restart_executable,
+                    cycle_number, restart_file, h5file)
 
         print(command)
         process = subprocess.run(command, shell=True, universal_newlines=True,
