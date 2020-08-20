@@ -98,7 +98,7 @@ contains
     class(sm_model), intent(inout) :: this
     real(r8), intent(in) :: temperature_cc(:), vof(:,:)
 
-    integer :: j, m
+    integer :: j, n, m, xp, p
     real(r8) :: s, state(1), thermal_strain(6), thermal_stress(6)
 
     ASSERT(size(vof, dim=1) == this%nmat)
@@ -119,13 +119,23 @@ contains
       end do
 
       ! this%delta_temperature(j) =
-      ! thermal_strain =
-      call compute_stress(this%lame1(j), this%lame2(j), thermal_stress, thermal_strain)
-      
-      ! right hand side
-      s = merge(-1, 1, btest(this%ig%nppar(n),xp))
-      this%rhs(:,n) = this%body_force_density * this%density(n) * this%ig%volume(n)
-      this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress, this%ig%n(:,p))
+    end do
+
+    ! right hand side
+    do n = 1, this%mesh%nnode_onP
+      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
+
+        this%rhs(:,n) = this%body_force_density * this%density(n) * this%ig%volume(n)
+        do xp = 1, size(np)
+          p = np(xp)
+          j = this%ig%pcell(p)
+
+          ! thermal_strain =
+          call compute_stress(this%lame1(j), this%lame2(j), thermal_stress, thermal_strain)
+          s = merge(-1, 1, btest(this%ig%nppar(n),xp))
+          this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress, this%ig%n(:,p))
+        end do
+      end associate
     end do
 
   end subroutine update_properties
@@ -138,10 +148,8 @@ contains
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:)
 
-    integer :: n, xp, p
+    integer :: n, xp, p, j
     real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
-    !real(r8) :: lhs(3,this%mesh%nnode_onP)
-    !real(r8) :: a, b, tmp, tmp2(3), Dmatr(3,6)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
 
@@ -156,52 +164,9 @@ contains
         lhs = 0
         do xp = 1, size(np)
           p = np(xp)
+          j = this%ig%pcell(p)
 
-          ! ! right hand side
-          ! tmp = this%youngs_modulus / (1-2*this%poissons_ratio) * this%thermal_expansion_coeff
-          ! if (btest(this%ig%nppar(n),xp)) tmp = -tmp
-          ! rhsn = rhsn + tmp * this%ig%n(:,p) * this%delta_temperature(p)
-
-          ! left hand side
-          ! tmp = this%youngs_modulus / (2*(1-this%poissons_ratio))
-          ! if (btest(this%ig%nppar(n),xp)) tmp = -tmp
-
-          ! ! Dmatr(1,1) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(1,1,p) + this%poissons_ratio*(grad_displ(2,2,p)+grad_displ(3,3,p)))
-          ! ! Dmatr(2,1) = grad_displ(1,2) + grad_displ(2,1) ! total_strain(4)
-          ! ! Dmatr(3,1) = grad_displ(1,3) + grad_displ(3,1) ! total_strain(5)
-          ! ! Dmatr(1,2) = grad_displ(2,1) + grad_displ(1,2) ! total_strain(4)
-          ! ! Dmatr(2,2) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(2,2,p) + this%poissons_ratio*(grad_displ(1,1,p)+grad_displ(3,3,p)))
-          ! ! Dmatr(3,2) = grad_displ(2,3) + grad_displ(3,2) ! total_strain(6)
-          ! ! Dmatr(1,3) = grad_displ(3,1) + grad_displ(1,3) ! total_strain(5)
-          ! ! Dmatr(2,3) = grad_displ(3,2) + grad_displ(2,3) ! total_strain(6)
-          ! ! Dmatr(3,3) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(3,3,p) + this%poissons_ratio*(grad_displ(1,1,p)+grad_displ(2,2,p)))
-
-          ! ! Dmatr(1,1) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(1,p) + this%poissons_ratio*(total_strain(2,p)+total_strain(3,p)))
-          ! ! Dmatr(2,2) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(2,p) + this%poissons_ratio*(total_strain(1,p)+total_strain(3,p)))
-          ! ! Dmatr(3,3) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(3,p) + this%poissons_ratio*(total_strain(1,p)+total_strain(2,p)))
-          ! ! Dmatr(2,1) = total_strain(4)
-          ! ! Dmatr(1,2) = total_strain(4)
-          ! ! Dmatr(3,1) = total_strain(5)
-          ! ! Dmatr(1,3) = total_strain(5)
-          ! ! Dmatr(3,2) = total_strain(6)
-          ! ! Dmatr(2,3) = total_strain(6)
-          ! ! lhsn = lhsn + tmp * matmul(Dmatr, this%ig%n(:,p))
-
-          ! Dmatr = 0
-          ! a = 2/(1-2*this%poissons_ratio) * (1-this%poissons_ratio)
-          ! b = 2/(1-2*this%poissons_ratio) * this%poissons_ratio
-          ! Dmatr(:,1) = this%ig%n(:,p) * [a, b, b]
-          ! Dmatr(:,2) = this%ig%n(:,p) * [b, a, b]
-          ! Dmatr(:,3) = this%ig%n(:,p) * [b, b, a]
-          ! Dmatr(1,4) = this%ig%n(2,p)
-          ! Dmatr(1,5) = this%ig%n(3,p)
-          ! Dmatr(2,4) = this%ig%n(1,p)
-          ! Dmatr(2,6) = this%ig%n(3,p)
-          ! Dmatr(3,5) = this%ig%n(1,p)
-          ! Dmatr(3,6) = this%ig%n(2,p)
-          ! lhsn = lhsn + tmp * matmul(Dmatr, total_strain(:,p))
-
-          call compute_stress(this%lame1(c), this%lame2(c), total_strain(:,p), stress)
+          call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
           s = merge(-1, 1, btest(this%ig%nppar(n),xp))
           lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
         end do

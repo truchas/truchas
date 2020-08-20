@@ -58,6 +58,8 @@ module solid_mechanics_type
   contains
     procedure :: init
     procedure :: step
+    procedure :: strain_view
+    procedure :: stress_view
     procedure :: displacement_view
   end type solid_mechanics
 
@@ -120,10 +122,22 @@ contains
   end subroutine step
 
 
-  function displacement_view(this)
+  function displacement_view(this) result(view)
     class(solid_mechanics), intent(in), target :: this
-    real(r8), pointer :: displacement_view => null()
-    displacement_view => this%displacement
-  end function displacement_view
+    real(r8), pointer :: view => null()
+    view => this%displacement
+  end function
+
+  function strain_view(this) result(view)
+    class(solid_mechanics), intent(in), target :: this
+    real(r8), pointer :: view => null()
+    view => this%strain
+  end function
+
+  function stress_view(this) result(view)
+    class(solid_mechanics), intent(in), target :: this
+    real(r8), pointer :: view => null()
+    view => this%stress
+  end function
 
 end module solid_mechanics_type

@@ -65,12 +65,12 @@ module integration_geometry_type
     type(matrix_box), allocatable :: grad_shape(:)
     integer, allocatable :: nppar(:)
     integer, allocatable :: npoint(:), xnpoint(:) ! node to IP connectivity
-    integer, allocatable :: xcpoint(:) ! cell to IP connectivity
+    integer, allocatable :: xcpoint(:), pcell(:) ! cell to IP connectivity
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
   end type integration_geometry
-  
+
   real(r8), parameter :: tet4_xi_node(3,4) = reshape([&
       & -1.0_r8, -1.0_r8, -1.0_r8, &
       &  1.0_r8, -1.0_r8, -1.0_r8, &
@@ -124,7 +124,7 @@ contains
 
     call compute_connectivity(this)
     call compute_grad_shape(this)
-    
+
     ! Accumulate the node volume and compute the control volume face areas
     ! associated with each integration point.
     allocate(this%n(3,this%npt), this%volume(this%mesh%nnode_onP))
@@ -171,6 +171,10 @@ contains
       this%xcpoint(j+1) = this%xcpoint(j) + size(edges, dim=2)
     end do
     this%npt = this%xcpoint(this%mesh%ncell+1)-1
+    allocate(this%pcell(this%npt))
+    do j = 1, this%mesh%ncell
+      this%pcell(this%xcpoint(j):this%xcpoint(j+1)-1) = j
+    end do
 
     ! IP-node connectivity
     k = 0
@@ -358,5 +362,5 @@ contains
       ASSERT(.false.)
     end select
   end function
-    
+
 end module integration_geometry_type

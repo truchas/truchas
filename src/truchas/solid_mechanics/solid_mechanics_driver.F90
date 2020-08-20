@@ -20,6 +20,8 @@ module solid_mechanics_driver
 
   public :: solid_mechanics_init
   public :: solid_mechanics_step
+  public :: solid_mechanics_strain_view
+  public :: solid_mechanics_stress_view
   public :: solid_mechanics_displacement_view
 
   type(solid_mechanics), target :: this
@@ -74,9 +76,19 @@ contains
   end subroutine solid_mechanics_step
 
 
-  function solid_mechanics_displacement_view() result(p)
-    real(r8), pointer :: p(:) => null()
-    p => this%displacement_view()
-  end function solid_mechanics_displacement_view
+  function solid_mechanics_displacement_view() result(view)
+    real(r8), pointer :: view(:) => null()
+    view => this%displacement_view()
+  end function
+
+  function solid_mechanics_strain_view() result(view)
+    real(r8), pointer :: view(:) => null()
+    view => this%strain_view()
+  end function
+
+  function solid_mechanics_stress_view() result(view)
+    real(r8), pointer :: view(:) => null()
+    view => this%stress_view()
+  end function
 
 end module solid_mechanics_driver
