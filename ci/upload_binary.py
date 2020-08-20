@@ -149,7 +149,7 @@ Truchas binary release. Version: {version}
 
 print("Arguments (%d):" % len(sys.argv), sys.argv)
 release = False
-if (len(sys.argv) == 2 and sys.argv[1] == "master"):
+if (len(sys.argv) >= 2 and sys.argv[1] == "master"):
     # If the first argument is "master", it is a development version, upload it
     release = True
 if (len(sys.argv) == 3 and sys.argv[2] != ""):
