@@ -13,9 +13,9 @@ Unpack the tarball using:
 You can run the example as follows in serial:
 
     cd examples/broken-dam
-    ../../bin/t-linux.x86_64.intel broken-dam.inp
+    ../../bin/truchas broken-dam.inp
 
 or parallel (4 cores):
 
     cd examples/broken-dam
-    ../../bin/mpiexec -n 4 ../../bin/t-linux.x86_64.intel broken-dam.inp
+    ../../bin/mpiexec -n 4 ../../bin/truchas broken-dam.inp
