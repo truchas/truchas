@@ -44,8 +44,11 @@ git commit -m "${COMMIT_MESSAGE}"
 git show HEAD -p --stat
 dest_commit=$(git show HEAD -s --format=%H)
 
-if [[ ${CI_COMMIT_REF_NAME} != "master" ]]; then
-    # We only execute the rest on master
+if [[ ${CI_COMMIT_REF_NAME} != "master" && $CI_COMMIT_TAG == "" ]]; then
+    # The CI_COMMIT_REF_NAME is either equal to the branch name (for master we
+    # make a development tarball, otherwise we exit now), or a tag (we make a
+    # release tarball).
+    # We only execute the rest on master or if the commit is tagged
     echo "Not a master branch, not tagged, skipping..."
     exit 0
 fi
