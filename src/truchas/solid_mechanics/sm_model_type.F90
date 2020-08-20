@@ -1,0 +1,276 @@
+!!
+!! Zach Jibben <zjibben@lanl.gov>
+!! August 2020
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#include "f90_assert.fpp"
+
+module sm_model_type
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use truchas_timers
+  use unstr_mesh_type
+  use scalar_func_containers
+  use integration_geometry_type
+  implicit none
+  private
+
+  type, public :: sm_model
+    private
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
+    type(integration_geometry) :: ig
+
+    integer :: nmat
+    real(r8), allocatable :: density(:), delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
+    type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
+
+    !! TODO: These will probably vary across the mesh
+    real(r8) :: poissons_ratio, youngs_modulus, thermal_expansion_coeff
+
+    !! input parameters
+    real(r8), allocatable :: body_force_density(:)
+    real(r8) :: contact_distance, contact_normal_traction, contact_penalty, strain_limit
+  contains
+    procedure :: init
+    procedure :: size => model_size
+    procedure :: update_properties
+    procedure :: compute_residual
+    procedure, private :: compute_total_strain
+  end type sm_model
+
+contains
+
+  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf)
+
+    use parameter_list_type
+
+    class(sm_model), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
+    type(parameter_list), intent(inout) :: params
+    integer, intent(in) :: nmat
+    type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
+
+    type(parameter_list), pointer :: plist => null()
+
+    ASSERT(nmat > 0)
+    ASSERT(size(lame1f) == nmat)
+    ASSERT(size(lame2f) == nmat)
+    ASSERT(size(densityf) == nmat)
+
+    this%mesh => mesh
+    call this%ig%init(mesh)
+
+    call params%get('body-force-density', this%body_force_density, default=[0d0, 0d0, 0d0])
+    call params%get('contact-distance', this%contact_distance, default=1e-7_r8)
+    call params%get('contact-normal-traction', this%contact_normal_traction, default=1e4_r8)
+    call params%get('contact-penalty', this%contact_penalty, default=1e3_r8)
+    call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
+
+    ASSERT(size(this%body_force_density) == 3)
+
+    allocate(this%density(this%mesh%ncell), this%delta_temperature(this%mesh%ncell), &
+        this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), this%rhs(3,this%mesh%nnode_onP))
+
+    this%nmat = nmat
+    call move_alloc(lame1f, this%lame1f)
+    call move_alloc(lame2f, this%lame2f)
+    call move_alloc(densityf, this%densityf)
+
+  end subroutine init
+
+
+  integer function model_size(this)
+    class(sm_model), intent(in) :: this
+    model_size = this%mesh%nnode_onP
+  end function model_size
+
+
+  !! Computes the Lame parameters, density, and RHS of the system. This routine
+  !! should be called before compute_residual, after which the residual can be
+  !! repeatedly computed for any number of different inputs (displacements).
+  subroutine update_properties(this, vof, temperature_cc)
+
+    class(sm_model), intent(inout) :: this
+    real(r8), intent(in) :: temperature_cc(:), vof(:,:)
+
+    integer :: j, m
+    real(r8) :: s, state(1), thermal_strain(6), thermal_stress(6)
+
+    ASSERT(size(vof, dim=1) == this%nmat)
+    ASSERT(size(vof, dim=2) == this%mesh%ncell)
+    ASSERT(size(temperature_cc) == this%mesh%ncell)
+
+    do j = 1, this%mesh%ncell
+      state(1) = temperature_cc(j)
+
+      this%lame1(j) = 0
+      this%lame2(j) = 0
+      this%density(j) = 0
+      do m = 1, this%nmat
+        if (vof(m,j) == 0) cycle
+        this%lame1(j) = this%lame1(j) + vof(m,j) * this%lame1f(m)%f%eval(state)
+        this%lame2(j) = this%lame2(j) + vof(m,j) * this%lame2f(m)%f%eval(state)
+        this%density(j) = this%density(j) + vof(m,j) * this%densityf(m)%f%eval(state)
+      end do
+
+      ! this%delta_temperature(j) =
+      ! thermal_strain =
+      call compute_stress(this%lame1(j), this%lame2(j), thermal_stress, thermal_strain)
+      
+      ! right hand side
+      s = merge(-1, 1, btest(this%ig%nppar(n),xp))
+      this%rhs(:,n) = this%body_force_density * this%density(n) * this%ig%volume(n)
+      this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress, this%ig%n(:,p))
+    end do
+
+  end subroutine update_properties
+
+
+  ! This evaluates the equations on page 1765 of Bailey & Cross 1995.
+  subroutine compute_residual(this, t, displ, r)
+
+    class(sm_model), intent(in) :: this
+    real(r8), intent(in) :: t, displ(:,:)
+    real(r8), intent(out) :: r(:)
+
+    integer :: n, xp, p
+    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+    !real(r8) :: lhs(3,this%mesh%nnode_onP)
+    !real(r8) :: a, b, tmp, tmp2(3), Dmatr(3,6)
+
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
+
+    call start_timer("residual")
+
+    call this%compute_total_strain(displ, total_strain)
+
+    do n = 1, this%mesh%nnode_onP
+      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1), &
+          rn => r(3*(n-1)+1:3*(n-1)+3))
+
+        lhs = 0
+        do xp = 1, size(np)
+          p = np(xp)
+
+          ! ! right hand side
+          ! tmp = this%youngs_modulus / (1-2*this%poissons_ratio) * this%thermal_expansion_coeff
+          ! if (btest(this%ig%nppar(n),xp)) tmp = -tmp
+          ! rhsn = rhsn + tmp * this%ig%n(:,p) * this%delta_temperature(p)
+
+          ! left hand side
+          ! tmp = this%youngs_modulus / (2*(1-this%poissons_ratio))
+          ! if (btest(this%ig%nppar(n),xp)) tmp = -tmp
+
+          ! ! Dmatr(1,1) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(1,1,p) + this%poissons_ratio*(grad_displ(2,2,p)+grad_displ(3,3,p)))
+          ! ! Dmatr(2,1) = grad_displ(1,2) + grad_displ(2,1) ! total_strain(4)
+          ! ! Dmatr(3,1) = grad_displ(1,3) + grad_displ(3,1) ! total_strain(5)
+          ! ! Dmatr(1,2) = grad_displ(2,1) + grad_displ(1,2) ! total_strain(4)
+          ! ! Dmatr(2,2) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(2,2,p) + this%poissons_ratio*(grad_displ(1,1,p)+grad_displ(3,3,p)))
+          ! ! Dmatr(3,2) = grad_displ(2,3) + grad_displ(3,2) ! total_strain(6)
+          ! ! Dmatr(1,3) = grad_displ(3,1) + grad_displ(1,3) ! total_strain(5)
+          ! ! Dmatr(2,3) = grad_displ(3,2) + grad_displ(2,3) ! total_strain(6)
+          ! ! Dmatr(3,3) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*grad_displ(3,3,p) + this%poissons_ratio*(grad_displ(1,1,p)+grad_displ(2,2,p)))
+
+          ! ! Dmatr(1,1) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(1,p) + this%poissons_ratio*(total_strain(2,p)+total_strain(3,p)))
+          ! ! Dmatr(2,2) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(2,p) + this%poissons_ratio*(total_strain(1,p)+total_strain(3,p)))
+          ! ! Dmatr(3,3) = 2/(2-2*this%poissons_ratio) * ((1-this%poissons_ratio)*total_strain(3,p) + this%poissons_ratio*(total_strain(1,p)+total_strain(2,p)))
+          ! ! Dmatr(2,1) = total_strain(4)
+          ! ! Dmatr(1,2) = total_strain(4)
+          ! ! Dmatr(3,1) = total_strain(5)
+          ! ! Dmatr(1,3) = total_strain(5)
+          ! ! Dmatr(3,2) = total_strain(6)
+          ! ! Dmatr(2,3) = total_strain(6)
+          ! ! lhsn = lhsn + tmp * matmul(Dmatr, this%ig%n(:,p))
+
+          ! Dmatr = 0
+          ! a = 2/(1-2*this%poissons_ratio) * (1-this%poissons_ratio)
+          ! b = 2/(1-2*this%poissons_ratio) * this%poissons_ratio
+          ! Dmatr(:,1) = this%ig%n(:,p) * [a, b, b]
+          ! Dmatr(:,2) = this%ig%n(:,p) * [b, a, b]
+          ! Dmatr(:,3) = this%ig%n(:,p) * [b, b, a]
+          ! Dmatr(1,4) = this%ig%n(2,p)
+          ! Dmatr(1,5) = this%ig%n(3,p)
+          ! Dmatr(2,4) = this%ig%n(1,p)
+          ! Dmatr(2,6) = this%ig%n(3,p)
+          ! Dmatr(3,5) = this%ig%n(1,p)
+          ! Dmatr(3,6) = this%ig%n(2,p)
+          ! lhsn = lhsn + tmp * matmul(Dmatr, total_strain(:,p))
+
+          call compute_stress(this%lame1(c), this%lame2(c), total_strain(:,p), stress)
+          s = merge(-1, 1, btest(this%ig%nppar(n),xp))
+          lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
+        end do
+
+        rn = lhs - this%rhs(:,n)
+      end associate
+    end do
+
+    call stop_timer("residual")
+
+  end subroutine compute_residual
+
+
+  !! From the node-centered displacement, compute the integration-point-centered total strain
+  subroutine compute_total_strain(this, displ, total_strain)
+
+    class(sm_model), intent(in) :: this
+    real(r8), intent(in) :: displ(:,:)
+    real(r8), intent(out) :: total_strain(:,:)
+
+    integer :: p, j, d
+    real(r8) :: grad_displ(3,3)
+
+    do j = 1, this%mesh%ncell
+      associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
+        do p = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
+          !! Compute the derivative of a scalar phi in global coordinates using the
+          !! formula on page 1765 of Bailey & Cross 1995--linear interpolation.
+          !! The Jacobian inverse multiplication is already performed and stored
+          !! in the grad_shape matrix.
+          do d = 1, 3
+            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
+          end do
+
+          total_strain(1,p) = grad_displ(1,1) ! exx
+          total_strain(2,p) = grad_displ(2,2) ! eyy
+          total_strain(3,p) = grad_displ(3,3) ! ezz
+          total_strain(4,p) = grad_displ(1,2) + grad_displ(2,1) ! exy
+          total_strain(5,p) = grad_displ(1,3) + grad_displ(3,1) ! exz
+          total_strain(6,p) = grad_displ(2,3) + grad_displ(3,2) ! eyz
+        end do
+      end associate
+    end do
+
+  end subroutine compute_total_strain
+
+
+  !! Computes the stress from the strain and Lame parameters.
+  pure subroutine compute_stress(lame1, lame2, strain, stress)
+    real(r8), intent(in) :: lame1, lame2, strain(:)
+    real(r8), intent(out) :: stress(:)
+    ASSERT(size(strain) == 6)
+    ASSERT(size(stress) == 6)
+    stress(:3) = lame1 * sum(strain(:3)) + 2*lame2*strain(:3)
+    stress(4:) = 2*lame2*strain(4:)
+  end subroutine compute_stress
+
+
+  !! Computes the dot product t_i = a_ij * n_j, given a_ij like the
+  !! total_strain: (a_xx, a_yy, a_zz, a_xy, a_xz, a_yz), and assuming
+  !! symmetry.
+  pure function tensor_dot(a, n) result(t)
+    real(r8), intent(in) :: a(:), n(:)
+    real(r8) :: t(3)
+    ASSERT(size(a) == 6)
+    ASSERT(size(n) == 3)
+    t(1) = a(1)*n(1) + a(4)*n(2) + a(5)*n(1)
+    t(2) = a(2)*n(2) + a(4)*n(1) + a(6)*n(3)
+    t(3) = a(3)*n(3) + a(5)*n(2) + a(6)*n(1)
+  end function tensor_dot
+
+end module sm_model_type

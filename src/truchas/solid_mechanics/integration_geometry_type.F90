@@ -55,6 +55,10 @@ module integration_geometry_type
   implicit none
   private
 
+  type matrix_box
+    real(r8), allocatable :: p(:,:)
+  end type matrix_box
+
   type, public :: integration_geometry
     integer :: npt
     real(r8), allocatable :: n(:,:), volume(:)
@@ -66,10 +70,6 @@ module integration_geometry_type
   contains
     procedure :: init
   end type integration_geometry
-
-  type matrix_box
-    real(r8), allocatable :: p(:,:)
-  end type matrix_box
   
   real(r8), parameter :: tet4_xi_node(3,4) = reshape([&
       & -1.0_r8, -1.0_r8, -1.0_r8, &
