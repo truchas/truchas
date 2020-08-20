@@ -90,3 +90,4 @@ downloads_update:
     - curl -X POST -F token=${DOWNLOAD_UPDATE_TOKEN} -F ref=master https://gitlab.com/api/v4/projects/19864631/trigger/pipeline
   only:
     - master
+    - tags
