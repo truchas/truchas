@@ -12,10 +12,11 @@ tar xaf dist/truchas-*.tar.bz2
 cd truchas-*/
 cat README.md
 ./bin/t-linux.x86_64.intel -h
+./bin/truchas -h
 ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
 ./bin/python bin/write-restart.py -h
 cd examples/broken-dam
-../../bin/t-linux.x86_64.intel broken-dam.inp
+../../bin/truchas broken-dam.inp
 ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
 sed -i s/0.075/0.005/ broken-dam.inp
-../../bin/mpiexec -n 2 ../../bin/t-linux.x86_64.intel broken-dam.inp
+../../bin/mpiexec -n 2 ../../bin/truchas broken-dam.inp

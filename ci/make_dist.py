@@ -72,6 +72,9 @@ run("cp vizre %s/bin" % (dist))
 run("cp %s/bin/mpiexec.hydra %s/bin/mpiexec" % (mpich_root, dist))
 run("cp %s/bin/hydra_pmi_proxy %s/bin/" % (mpich_root, dist))
 
+# Copy the truchas launch script
+run("cp %s/ci/truchas-binary-Linux.sh %s/bin/truchas" % (root_dir, dist))
+
 # Copy an example
 run("mkdir -p %s/examples/broken-dam" % dist)
 run("cp %s/test/broken-dam/broken-dam.inp %s/examples/broken-dam/" % \
