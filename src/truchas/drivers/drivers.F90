@@ -550,6 +550,21 @@ call hijack_truchas ()
              f = .true.
           end if
 
+       else if (string == '--version') then
+
+          block
+             use version_info
+             use pgslib_module
+             use,intrinsic :: iso_fortran_env, only: output_unit
+             character(:), allocatable :: string
+             if (p_info%IOP) then
+                call version(string)
+                write(output_unit,'(a)') string
+             end if
+             call pgslib_finalize
+             stop
+          end block
+
        else
 
           ! arguments must have at least two characters
