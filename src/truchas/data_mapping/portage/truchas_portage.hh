@@ -279,6 +279,13 @@ class PortageMapper {
       driver(new Portage::CoreDriver<3,Entity_kind::CELL,MeshWrapper,StateWrapper>
            (mesh1, field1, mesh2, field2)) {
 
+    // Set default tolerances
+    Portage::NumericTolerances_t numtols = Portage::DEFAULT_NUMERIC_TOLERANCES<3>;
+
+    // Tweak min allowable negative intersection volume
+    numtols.minimal_intersection_volume = -1.0e-12;  // or -1e-12 or ....
+    driver->set_num_tols(numtols);
+
     // The raw mesh-mesh intersection volumes.
     auto candidates = driver->search<Portage::SearchKDTree>();
     weights = driver->intersect_meshes<Portage::IntersectR3D>(candidates);
