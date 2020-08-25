@@ -44,25 +44,10 @@ contains
     type(sm_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
-    character(:), allocatable :: context, errmsg
-    integer :: stat
-
     this%model => model
     allocate(this%diag(model%size()))
-
-    context = 'processing ' // params%name() // ': '
-
-    call params%get('precon-num-iter', this%niter, default=1, stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = context//errmsg
-      return
-    end if
-
-    call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = context//errmsg
-      return
-    end if
+    call params%get('num-iter', this%niter, default=1)
+    call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
 
   end subroutine init
 

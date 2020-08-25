@@ -26,7 +26,8 @@ module sm_model_type
     type(integration_geometry) :: ig
 
     integer :: nmat
-    real(r8), allocatable :: density(:), delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
+    real(r8), allocatable :: density_c(:), density_n(:)
+    real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
 
     !! TODO: These will probably vary across the mesh
@@ -48,6 +49,7 @@ contains
   subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf)
 
     use parameter_list_type
+    use truchas_logging_services
 
     class(sm_model), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -72,8 +74,10 @@ contains
     call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
 
     ASSERT(size(this%body_force_density) == 3)
+    if (this%strain_limit < 0) call TLS_fatal('strain-limit must be >= 0')
 
-    allocate(this%density(this%mesh%ncell), this%delta_temperature(this%mesh%ncell), &
+    allocate(this%density_c(this%mesh%ncell), this%density_n(this%mesh%nnode_onP), &
+        this%delta_temperature(this%mesh%ncell), &
         this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), this%rhs(3,this%mesh%nnode_onP))
 
     this%nmat = nmat
@@ -99,49 +103,94 @@ contains
     real(r8), intent(in) :: temperature_cc(:), vof(:,:)
 
     integer :: j, n, m, xp, p
-    real(r8) :: s, state(1), thermal_strain(6), thermal_stress(6)
+    real(r8) :: s, state(1), thermal_strain(6), thermal_stress(6, this%mesh%ncell)
+    real(r8) :: density_old, dstrain
 
     ASSERT(size(vof, dim=1) == this%nmat)
     ASSERT(size(vof, dim=2) == this%mesh%ncell)
     ASSERT(size(temperature_cc) == this%mesh%ncell)
 
+    call start_timer("properties")
+
     do j = 1, this%mesh%ncell
       state(1) = temperature_cc(j)
 
+      density_old = this%density_c(j)
+
       this%lame1(j) = 0
       this%lame2(j) = 0
-      this%density(j) = 0
+      this%density_c(j) = 0
       do m = 1, this%nmat
         if (vof(m,j) == 0) cycle
         this%lame1(j) = this%lame1(j) + vof(m,j) * this%lame1f(m)%f%eval(state)
         this%lame2(j) = this%lame2(j) + vof(m,j) * this%lame2f(m)%f%eval(state)
-        this%density(j) = this%density(j) + vof(m,j) * this%densityf(m)%f%eval(state)
+        this%density_c(j) = this%density_c(j) + vof(m,j) * this%densityf(m)%f%eval(state)
       end do
 
-      ! this%delta_temperature(j) =
+      dstrain = (density_old / this%density_c(j)) ** (1 / 3.0_r8) - 1
+      thermal_strain(:3) = dstrain
+      thermal_strain(4:) = 0
+      call compute_stress(this%lame1(j), this%lame2(j), thermal_strain, thermal_stress(:,j))
     end do
+
+    call cell_to_node(this%mesh, this%density_c, this%density_n)
 
     ! right hand side
     do n = 1, this%mesh%nnode_onP
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
 
-        this%rhs(:,n) = this%body_force_density * this%density(n) * this%ig%volume(n)
+        this%rhs(:,n) = this%body_force_density * this%density_n(n) * this%ig%volume(n)
         do xp = 1, size(np)
           p = np(xp)
           j = this%ig%pcell(p)
 
-          ! thermal_strain =
-          call compute_stress(this%lame1(j), this%lame2(j), thermal_stress, thermal_strain)
           s = merge(-1, 1, btest(this%ig%nppar(n),xp))
-          this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress, this%ig%n(:,p))
+          this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress(:,j), this%ig%n(:,p))
         end do
       end associate
     end do
 
+    call stop_timer("properties")
+
   end subroutine update_properties
 
 
-  ! This evaluates the equations on page 1765 of Bailey & Cross 1995.
+  !! Computes a cell-to-node averaging, weighted by volume It assumes x_cell is
+  !! of length ncell, and x_node is of length nnode_onP, and that each of the
+  !! cells adjacent to an onP node is available to this rank.
+  subroutine cell_to_node(mesh, x_cell, x_node)
+
+    type(unstr_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: x_cell(:)
+    real(r8), intent(out) :: x_node(:)
+
+    integer :: c, n, xn
+    real(r8) :: w_node(mesh%nnode_onP)
+
+    ASSERT(size(x_cell) == mesh%ncell)
+    ASSERT(size(x_node) >= mesh%nnode_onP)
+
+    x_node = 0
+    w_node = 0
+    do c = 1, mesh%ncell
+      associate (cn => mesh%cnode(mesh%xcnode(c):mesh%xcnode(c+1)-1))
+        do xn = 1, size(cn)
+          n = cn(xn)
+          if (n > mesh%nnode_onP) cycle
+          x_node(n) = x_node(n) + mesh%volume(c)*x_cell(c)
+          w_node(n) = w_node(n) + mesh%volume(c)
+        end do
+      end associate
+    end do
+
+    do n = 1, mesh%nnode_onP
+      x_node(n) = x_node(n) / w_node(n)
+    end do
+
+  end subroutine cell_to_node
+
+
+  !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_residual(this, t, displ, r)
 
     class(sm_model), intent(in) :: this
@@ -215,7 +264,7 @@ contains
 
 
   !! Computes the stress from the strain and Lame parameters.
-  pure subroutine compute_stress(lame1, lame2, strain, stress)
+  subroutine compute_stress(lame1, lame2, strain, stress)
     real(r8), intent(in) :: lame1, lame2, strain(:)
     real(r8), intent(out) :: stress(:)
     ASSERT(size(strain) == 6)
@@ -228,7 +277,7 @@ contains
   !! Computes the dot product t_i = a_ij * n_j, given a_ij like the
   !! total_strain: (a_xx, a_yy, a_zz, a_xy, a_xz, a_yz), and assuming
   !! symmetry.
-  pure function tensor_dot(a, n) result(t)
+  function tensor_dot(a, n) result(t)
     real(r8), intent(in) :: a(:), n(:)
     real(r8) :: t(3)
     ASSERT(size(a) == 6)

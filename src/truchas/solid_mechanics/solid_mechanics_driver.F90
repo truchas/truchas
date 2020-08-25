@@ -13,8 +13,9 @@
 module solid_mechanics_driver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use solid_mechanics_type
+  use parameter_list_type
   use truchas_logging_services
+  use solid_mechanics_type
   implicit none
   private
 
@@ -25,17 +26,37 @@ module solid_mechanics_driver
   public :: solid_mechanics_displacement_view
 
   type(solid_mechanics), target :: this
+  type(parameter_list) :: params
 
 contains
 
+  subroutine solid_mechanics_build_parameter_list(lun)
+
+    use physics_module, only: body_force_density
+    use sm_namelist
+
+    integer, intent(in) :: lun
+
+    type(parameter_list), pointer :: plist => null()
+
+    call read_sm_namelist(lun, params)
+
+    plist => params%sublist('model')
+    call plist%set('body-force-density', body_force_density)
+
+  end subroutine solid_mechanics_build_parameter_list
+
+
   subroutine solid_mechanics_init()
 
+    use mesh_manager, only: unstr_mesh_ptr
+    use material_model_driver, only: matl_model
     use scalar_func_class
     use scalar_func_containers
-    use material_model_driver, only: matl_model
     use tm_density
 
     integer :: m, nmat, stat
+    real(r8) :: ref_dens, ref_temp
     character(:), allocatable :: errmsg
     type(scalar_func_box), allocatable :: lame1(:), lame2(:), density(:)
     class(scalar_func), allocatable :: cte
@@ -45,7 +66,7 @@ contains
     do m = 1, nmat
       ref_dens = matl_model%const_phase_prop(m, 'tm-ref-density')
       ref_temp = matl_model%const_phase_prop(m, 'tm-ref-temp')
-      call matl_model%alloc_phase_prop(p, 'tm-linear-cte', cte)
+      call matl_model%alloc_phase_prop(m, 'tm-linear-cte', cte)
       ASSERT(allocated(cte))
       call alloc_tm_density_func(density(m)%f, ref_dens, ref_temp, cte, stat, errmsg)
       if (stat /= 0) call tls_fatal("SOLID MECHANICS ERROR: tm-linear-cte -- " // errmsg)
@@ -55,39 +76,38 @@ contains
       ASSERT(allocated(lame1(m)%f))
       ASSERT(allocated(lame2(m)%f))
     end do
-    
 
-    call this%init(params)
+    call this%init(unstr_mesh_ptr('MAIN'), params, nmat, lame1, lame2, density)
     
   end subroutine solid_mechanics_init
 
 
-  subroutine solid_mechanics_step(t, dt, temperature_cc)
+  subroutine solid_mechanics_step(t, dt, vof, temperature_cc)
 
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in) :: temperature_cc(:)
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
 
     integer :: stat
     character(:), allocatable :: errmsg
 
-    call this%step(t, dt, stat, errmsg)
+    call this%step(t, dt, vof, temperature_cc, stat, errmsg)
     if (stat /= 0) call tls_fatal(errmsg)
     
   end subroutine solid_mechanics_step
 
 
   function solid_mechanics_displacement_view() result(view)
-    real(r8), pointer :: view(:) => null()
+    real(r8), pointer :: view(:)
     view => this%displacement_view()
   end function
 
   function solid_mechanics_strain_view() result(view)
-    real(r8), pointer :: view(:) => null()
+    real(r8), pointer :: view(:,:)
     view => this%strain_view()
   end function
 
   function solid_mechanics_stress_view() result(view)
-    real(r8), pointer :: view(:) => null()
+    real(r8), pointer :: view(:,:)
     view => this%stress_view()
   end function
 

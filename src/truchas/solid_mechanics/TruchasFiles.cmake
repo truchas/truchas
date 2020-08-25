@@ -4,6 +4,7 @@
 set(SM_SOURCE_FILES
   solid_mechanics/solid_mechanics_driver.F90
   solid_mechanics/solid_mechanics_type.F90
+  solid_mechanics/sm_namelist.F90
   solid_mechanics/integration_geometry_type.F90
   solid_mechanics/integration_cell_type.F90
   solid_mechanics/sm_model_type.F90

@@ -65,14 +65,17 @@ module solid_mechanics_type
 
 contains
 
-  subroutine init(this, mesh, params)
+  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf)
 
     use parameter_list_type
     use unstr_mesh_type
+    use scalar_func_containers
 
     class(solid_mechanics), intent(out), target :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(inout) :: params
+    integer, intent(in) :: nmat
+    type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
 
     integer :: stat
     character(:), allocatable :: errmsg
@@ -80,7 +83,10 @@ contains
 
     call start_timer("solid mechanics")
 
-    call this%model%init(mesh, plist)
+    plist => params%sublist("model")
+    call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf)
+
+    plist => params%sublist("preconditioner")
     call this%precon%init(this%model, plist)
 
     call this%solver_model%init(this%model, this%precon)
@@ -97,10 +103,10 @@ contains
   end subroutine init
 
 
-  subroutine step(this, t, dt, temperature_cc, vof, stat, errmsg)
+  subroutine step(this, t, dt, vof, temperature_cc, stat, errmsg)
 
     class(solid_mechanics), intent(inout) :: this
-    real(r8), intent(in) :: t, dt, temperature_cc(:), vof(:,:)
+    real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:)
     integer, intent(out) :: stat
     character(:), intent(out), allocatable :: errmsg
 
@@ -109,7 +115,7 @@ contains
     call start_timer("solid mechanics")
 
     displ0 = this%displacement
-    call this%model%update_properties(temperature_cc, vof)
+    call this%model%update_properties(vof, temperature_cc)
     call this%solver%solve(t, dt, displ0, this%displacement, stat)
     if (stat /= 0) then
       errmsg = "NLK-SM did not converge"
@@ -124,19 +130,19 @@ contains
 
   function displacement_view(this) result(view)
     class(solid_mechanics), intent(in), target :: this
-    real(r8), pointer :: view => null()
+    real(r8), pointer :: view(:)
     view => this%displacement
   end function
 
   function strain_view(this) result(view)
     class(solid_mechanics), intent(in), target :: this
-    real(r8), pointer :: view => null()
+    real(r8), pointer :: view(:,:)
     view => this%strain
   end function
 
   function stress_view(this) result(view)
     class(solid_mechanics), intent(in), target :: this
-    real(r8), pointer :: view => null()
+    real(r8), pointer :: view(:,:)
     view => this%stress
   end function
 
