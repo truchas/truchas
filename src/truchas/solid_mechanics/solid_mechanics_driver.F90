@@ -21,6 +21,7 @@ module solid_mechanics_driver
   private
 
   public :: read_solid_mechanics_namelist ! re-export
+  public :: solid_mechanics_enabled
   public :: solid_mechanics_init
   public :: solid_mechanics_step
   public :: solid_mechanics_strain_view
@@ -46,6 +47,11 @@ module solid_mechanics_driver
   type(solid_mechanics_data), target :: this
 
 contains
+
+  logical function solid_mechanics_enabled()
+    use physics_module, only: solid_mechanics
+    solid_mechanics_enabled = solid_mechanics
+  end function solid_mechanics_enabled
 
   subroutine solid_mechanics_init()
 
