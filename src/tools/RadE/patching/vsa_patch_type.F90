@@ -15,17 +15,17 @@
 !!
 !! PROGRAMMING INTERFACE
 !!
-!!  INIT (THIS, FACEID, AREA, CENTER, NORMAL) initializes THIS with a single
+!!  INIT(THIS, FACEID, AREA, CENTER, NORMAL) initializes THIS with a single
 !!    face.  FACEID is the global index of the face. AREA, CENTER, and NORMAL
 !!    are the corresponding 3D geometrical properties of the face, stored
 !!    respectively as a real scalar, and two length 3 rank-1 real arrays.
 !!
-!!  RESET_PATCH (THIS, FACEID, AREA, WEIGHT) resets THIS to a single face. The
+!!  RESET_PATCH(THIS, FACEID, AREA, WEIGHT) resets THIS to a single face. The
 !!    patch proxy is NOT modified.  FACEID is the global index of the face.
 !!    AREA is the area of the face.  WEIGHT is a real scalar representing the
 !!    weight of the face relative to the patch.
 !!
-!!  REPLACE (THIS, OTHER) replaces THIS with OTHER, a TYPE(VSA_PATCH) object.
+!!  REPLACE(THIS, OTHER) replaces THIS with OTHER, a TYPE(VSA_PATCH) object.
 !!    The dynamic memory of OTHER is safely deallocated.
 !!
 !!  ADD_FACE(THIS, FACEID, AREA, WEIGHT) adds a face to THIS.  FACEID is the
@@ -33,14 +33,20 @@
 !!    the face.  WEIGHT is a real scalar representing the weight of the face
 !!    relative to the patch.
 !!
-!!  REMOVE_FACE (THIS, FACEID, AREA) removes a face from THIS.  FACEID is the
+!!  REMOVE_FACE(THIS, FACEID, AREA) removes a face from THIS.  FACEID is the
 !!    global index of the face.  AREA is a real scalar representing the area of
 !!    the face.
 !!
-!!  GET_WEIGHT (THIS, AREA, CENTER, NORMAL) computes the weight of a face
-!!    relative to THIS.  AREA, CENTER, and NORMAL are the corresponding 3D
-!!    geometrical properties of the face, stored respectively as a real scalar,
-!!    and two length 3 rank-1 real arrays.
+!!  GET_WEIGHT(THIS, AREA, CENTER, NORMAL, RADIUS, MAX_RADIUS, NORMALIZE)
+!!    computes the weight of a face relative to THIS.  AREA, CENTER, and NORMAL
+!!    are the corresponding 3D geometrical properties of the face, stored
+!!    respectively as a real scalar, and two length 3 rank-1 real arrays.
+!!    RADIUS is a real scalar representing the maximum distance from CENTER to
+!!    any of the face nodes.  MAX_RADIUS is a real scalar representing the
+!!    maximum desired radius for a patch.  A face outside MAX_RADIUS will have a
+!!    penalty added to its weight that is proportional to its distance from the
+!!    patch center.  NORMALIZE is a logical scalar that determines whether the
+!!    Voronoi distance bias should be normalized by the face radius.
 !!
 
 
@@ -51,8 +57,8 @@ module vsa_patch_type
   use kinds, only: r8
   implicit none
 
-  !! Coefficient for Voronoi distance bias
-  real(r8), parameter :: DIST_COEFF = 5_r8
+  !! Coefficient for patch radius bias
+  real(r8), parameter :: RADIUS_COEFF = 100.0_r8
 
   !! Minimum size of face data arrays
   integer, parameter :: MIN_PATCH_CAPACITY = 8
@@ -172,17 +178,22 @@ contains
 
 
   !! Calculate weight of adding a face to the patch
-  function get_weight(this, center, normal, radius) result(ret)
+  function get_weight(this, center, normal, radius, max_radius, normalize) result(ret)
 
     class(vsa_patch), intent(in) :: this
-    real(r8), intent(in) :: center(3), normal(3), radius
-    real(r8) :: ret
+    real(r8), intent(in) :: center(3), normal(3), radius, max_radius
+    logical, intent(in) :: normalize
+    real(r8) :: ret, dist
 
     !! L^{2,1} error
     ret = sum((normal - this%normal)**2)
 
     !! L^2 error
-    ret = ret + sum((center - this%center)**2) / radius**2
+    dist = sum((center - this%center)**2) + radius**2
+    ret = ret + merge(dist/radius**2, dist, normalize)
+
+    !! Patch size error
+    ret = ret + merge(0.0, RADIUS_COEFF*(dist/(max_radius**2)), dist <= max_radius**2)
 
   end function get_weight
 
@@ -202,6 +213,5 @@ contains
     this%total_weight = other%total_weight
 
   end subroutine replace
-
 
 end module vsa_patch_type
