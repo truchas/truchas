@@ -124,9 +124,8 @@ contains
   subroutine TDO_write_timestep
 
     use time_step_module, only: t, dt, cycle_number
-    use physics_module, only: heat_transport, species_transport
+    use physics_module, only: heat_transport, species_transport, legacy_solid_mechanics
     use EM_data_proxy, only: EM_is_on
-    use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
@@ -164,7 +163,7 @@ contains
     if (EM_is_on()) call write_EM_data
 
     !! Solid mechanics fields.
-    if (solid_mechanics) call write_solid_mech_data
+    if (legacy_solid_mechanics) call write_solid_mech_data
 
     !! Species fields.
     if (species_transport) call write_species_data

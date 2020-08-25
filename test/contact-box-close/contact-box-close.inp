@@ -16,7 +16,7 @@
 &PHYSICS
   materials = 'aluminum'
   heat_transport = .true.
-  solid_mechanics = .true.
+  legacy_solid_mechanics = .true.
 /
 
 &DIFFUSION_SOLVER
@@ -30,7 +30,7 @@
   pc_amg_cycles = 5
 /
 
-&SOLID_MECHANICS
+&LEGACY_SOLID_MECHANICS
   contact_distance = 1.0e-7
   contact_norm_trac = 1.0e4
   contact_penalty = 1.0e3

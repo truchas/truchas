@@ -9,7 +9,7 @@ set(INPUT_SOURCE_FILES
          input/numerics_input_module.F90
          input/outputs_input_module.F90
          input/physics_input_module.F90
-         input/solid_mechanics_namelist.F90
+         input/legacy_solid_mechanics_namelist.F90
 )
 
 set(fc_flags

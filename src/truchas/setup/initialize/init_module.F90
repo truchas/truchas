@@ -67,7 +67,6 @@ CONTAINS
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use zone_module,            only: Zone
-    use solid_mechanics_input,  only: solid_mechanics
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
@@ -77,7 +76,8 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
-    use physics_module,         only: heat_transport, flow
+    use solid_mechanics_driver, only: solid_mechanics_init
+    use physics_module,         only: heat_transport, flow, solid_mechanics, legacy_solid_mechanics
     use ded_head_driver,        only: ded_head_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -160,7 +160,11 @@ CONTAINS
     call OVERWRITE_BC   ()
 
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
-    if (solid_mechanics) Call SOLID_MECH_INIT
+    if (solid_mechanics) then
+      call solid_mechanics_init
+    else if (legacy_solid_mechanics) then
+      Call SOLID_MECH_INIT
+    end if
 
     call ded_head_init(t)
 
@@ -314,8 +318,7 @@ CONTAINS
     use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
     use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
-    use solid_mechanics_input,  only: solid_mechanics
-    use physics_module,         only: heat_transport
+    use physics_module,         only: heat_transport, legacy_solid_mechanics
     use string_utilities,       only: i_to_c
     use vector_func_factories
 
@@ -618,7 +621,7 @@ CONTAINS
     ! Setup the "New" BCs.  Temperature always is used.  Pressure only with new pressure BCs.
     ! Always setup pressure BCs, since need them for the discrete operators.
     call Initialize_Pressure_BC(Pressure_BC)
-    if (solid_mechanics) call Make_Displacement_BC_Atlases
+    if (legacy_solid_mechanics) call Make_Displacement_BC_Atlases
 
     !  Should we DEALLOCATE BC_T at this point?   JMS
 

@@ -32,7 +32,7 @@ contains
     use parameter_module,            only: ncomps
     use legacy_mesh_api,             only: ncells, nfc, Mesh, EE_GATHER
     use legacy_mesh_api,             only: GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5 
-    use solid_mechanics_input,       only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use solid_mechanics_output,      only: get_sm_rotation_magnitude,          &
                                            set_sm_rotation_magnitude,          &
                                            get_smech_cell_total_strain,        &

@@ -150,10 +150,10 @@ define the material properties
 &PHYSICS
   materials = 'aluminum', 'bogosium'
 	heat_transport	  = .false.,
-	solid_mechanics   = .true.
+	legacy_solid_mechanics   = .true.
 /
 
-&SOLID_MECHANICS
+&LEGACY_SOLID_MECHANICS
   contact_penalty  = 1.0e3
   contact_distance = 1.0e-6
   convergence_criterion = 1e-12, 

@@ -1,17 +1,17 @@
-module solid_mechanics_namelist
+module legacy_solid_mechanics_namelist
 
   use parameter_list_type
   use solid_mechanics_input
   implicit none
   private
 
-  public :: read_solid_mechanics_namelist
+  public :: read_legacy_solid_mechanics_namelist
 
   type(parameter_list), public :: nonlinear_params
 
 contains
 
-  subroutine read_solid_mechanics_namelist(lun)
+  subroutine read_legacy_solid_mechanics_namelist(lun)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
@@ -21,13 +21,13 @@ contains
 
     integer, intent(in) :: lun
 
-    namelist /solid_mechanics/ solid_mechanics_body_force, stress_reduced_integration, &
+    namelist /legacy_solid_mechanics/ solid_mechanics_body_force, stress_reduced_integration, &
         contact_distance, contact_norm_trac, contact_penalty, strain_limit
 
     !! Parameters formerly in LINEAR_SOLVER and NONLINEAR_SOLVER
     real(r8) :: convergence_criterion, nlk_vector_tolerance
     integer :: maximum_iterations, nlk_max_vectors
-    namelist /solid_mechanics/convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
+    namelist /legacy_solid_mechanics/convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
         nlk_max_vectors
 
     integer :: ios
@@ -35,17 +35,17 @@ contains
     character(80) :: iom
 
     call TLS_info('')
-    call TLS_info('Reading SOLID_MECHANICS namelist ...')
+    call TLS_info('Reading LEGACY_SOLID_MECHANICS namelist ...')
 
-    !! Locate the SOLID_MECHANICS namelist (required)
+    !! Locate the LEGACY_SOLID_MECHANICS namelist (required)
     if (is_IOP) then
       rewind(lun)
-      call seek_to_namelist(lun, 'solid_mechanics', found, iostat=ios)
+      call seek_to_namelist(lun, 'legacy_solid_mechanics', found, iostat=ios)
     end if
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
     call broadcast(found)
-    if (.not.found) call TLS_fatal('SOLID_MECHANICS namelist not found')
+    if (.not.found) call TLS_fatal('LEGACY_SOLID_MECHANICS namelist not found')
 
     !! Default values
     solid_mechanics_body_force = .false.
@@ -61,9 +61,9 @@ contains
     nlk_max_vectors = NULL_I
 
     !! Read the namelist
-    if (is_IOP) read(lun,nml=solid_mechanics,iostat=ios,iomsg=iom)
+    if (is_IOP) read(lun,nml=legacy_solid_mechanics,iostat=ios,iomsg=iom)
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading SOLID_MECHANICS namelist: ' // trim(iom))
+    if (ios /= 0) call TLS_fatal('error reading LEGACY_SOLID_MECHANICS namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables
     call broadcast(solid_mechanics_body_force)
@@ -86,6 +86,6 @@ contains
     if (nlk_max_vectors /= NULL_I) call nonlinear_params%set('nlk-max-vec', nlk_max_vectors)
     if (nlk_vector_tolerance /= NULL_R) call nonlinear_params%set('nlk-vec-tol', nlk_vector_tolerance)
 
-  end subroutine read_solid_mechanics_namelist
+  end subroutine read_legacy_solid_mechanics_namelist
 
-end module solid_mechanics_namelist
+end module legacy_solid_mechanics_namelist

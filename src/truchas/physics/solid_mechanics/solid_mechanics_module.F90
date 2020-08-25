@@ -78,7 +78,7 @@ Contains
     !---------------------------------------------------------------------------
     use legacy_mesh_api, only: ncells, nnodes
     Use node_operator_module, Only: nipc
-    use solid_mechanics_input, only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
 
     Integer :: ip
@@ -211,7 +211,7 @@ Contains
     use truchas_logging_services
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE
-    use solid_mechanics_input,  only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use solid_mechanics_mesh,   only: SM_MESH_INIT, ndim, nvc, nfc
     use pgslib_module,        only: PGSLib_Global_MAXVAL
     Use zone_module,          Only: Zone
@@ -443,7 +443,7 @@ Contains
                                     DEVIATORIC_STRESS
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_UPDATE
-    use solid_mechanics_input, only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use solid_mechanics_mesh, only: ndim, ncomps
     use zone_module, only: zone
 
@@ -852,7 +852,7 @@ Contains
     use mech_bc_data_module
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
-    use solid_mechanics_namelist, only: nonlinear_params
+    use legacy_solid_mechanics_namelist, only: nonlinear_params
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
     type(real_var_vector), pointer, save, dimension(:) :: A_Elas

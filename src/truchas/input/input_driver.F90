@@ -47,17 +47,18 @@ contains
     use evaporation_namelist,      only: read_evaporation_namelist
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
+    use solid_mechanics_driver,    only: read_solid_mechanics_namelist
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
     use material_namelist,         only: read_material_namelists
-    use solid_mechanics_input,     only: solid_mechanics
-    use solid_mechanics_namelist,  only: read_solid_mechanics_namelist
+    use legacy_solid_mechanics_namelist, only: read_legacy_solid_mechanics_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_namelist,         only: read_toolpath_namelists
     use ded_head_namelist,         only: read_ded_head_namelist
-    use physics_module,            only: heat_transport, flow, legacy_flow
+    use physics_module,            only: heat_transport, flow, solid_mechanics, &
+        legacy_flow, legacy_solid_mechanics
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
@@ -125,6 +126,8 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
       call read_solid_mechanics_namelist (lun)
+    else if (legacy_solid_mechanics) then
+      call read_legacy_solid_mechanics_namelist (lun)
       call read_viscoplastic_model_namelists (lun)
     end if
 

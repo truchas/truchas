@@ -207,7 +207,7 @@ Elastic constants (stresses) in MPa to make test checking easier
 &PHYSICS
   materials = 'Pseudo_Al'
   heat_transport  = T
-  solid_mechanics = T
+  legacy_solid_mechanics = T
 /
 
 &DIFFUSION_SOLVER
@@ -219,7 +219,7 @@ Elastic constants (stresses) in MPa to make test checking easier
   nlk_preconditioner = 'hypre_amg'
 /
 
-&SOLID_MECHANICS
+&LEGACY_SOLID_MECHANICS
   convergence_criterion   = 1.0e-12,
   nlk_max_vectors         = 20
   nlk_vector_tolerance    = 0.01

@@ -13,15 +13,14 @@
 module solid_mechanics_driver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_list_type
   use truchas_logging_services
   use unstr_mesh_type
   use solid_mechanics_type
+  use solid_mechanics_namelist, only: read_solid_mechanics_namelist
   implicit none
   private
 
-  logical, parameter, public :: solid_mechanics_enabled = .true.
-
+  public :: read_solid_mechanics_namelist ! re-export
   public :: solid_mechanics_init
   public :: solid_mechanics_step
   public :: solid_mechanics_strain_view
@@ -32,7 +31,6 @@ module solid_mechanics_driver
   type :: solid_mechanics_data
     type(unstr_mesh), pointer :: mesh => null() ! reference only -- not owned
     type(solid_mechanics) :: sm
-    type(parameter_list) :: params
 
     ! matl_phase indirection
     integer :: nphase
@@ -49,27 +47,11 @@ module solid_mechanics_driver
 
 contains
 
-  subroutine solid_mechanics_build_parameter_list(lun)
-
-    use physics_module, only: body_force_density
-    use sm_namelist
-
-    integer, intent(in) :: lun
-
-    type(parameter_list), pointer :: plist => null()
-
-    call read_sm_namelist(lun, this%params)
-
-    plist => this%params%sublist('model')
-    call plist%set('body-force-density', body_force_density)
-
-  end subroutine solid_mechanics_build_parameter_list
-
-
   subroutine solid_mechanics_init()
 
     use mesh_manager, only: unstr_mesh_ptr
     use material_model_driver, only: matl_model
+    use solid_mechanics_namelist, only: params
     use scalar_func_class
     use scalar_func_containers
     use tm_density
@@ -101,7 +83,7 @@ contains
       ASSERT(allocated(lame2(p)%f))
     end do
 
-    call this%sm%init(this%mesh, this%params, this%nphase, lame1, lame2, density)
+    call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density)
     
   end subroutine solid_mechanics_init
 

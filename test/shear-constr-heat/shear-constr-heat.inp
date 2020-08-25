@@ -226,7 +226,7 @@ solid mechanics only
   materials = 'aluminum'
 
     heat_transport   = .false. 
-    solid_mechanics  = .true.
+    legacy_solid_mechanics  = .true.
 
 /
 
@@ -239,7 +239,7 @@ solid mechanics only
   nlk_preconditioner = 'hypre_amg'
 /
 
-&SOLID_MECHANICS
+&LEGACY_SOLID_MECHANICS
   convergence_criterion   = 1.0e-12,
   nlk_max_vectors         = 20
   nlk_vector_tolerance    = 0.01

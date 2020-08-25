@@ -10,26 +10,27 @@
 
 #include "f90_assert.fpp"
 
-module sm_namelist
+module solid_mechanics_namelist
 
+  use parameter_list_type
   implicit none
   private
 
-  public :: read_sm_namelist
+  public :: read_solid_mechanics_namelist
+  type(parameter_list), public :: params
 
 contains
 
-  subroutine read_sm_namelist(lun, params)
+  subroutine read_solid_mechanics_namelist(lun)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
     use string_utilities, only: i_to_c
     use truchas_logging_services
-    use parameter_list_type
+    use physics_module, only: body_force_density
 
     integer, intent(in) :: lun
-    type(parameter_list), intent(out) :: params
     
     real(r8) :: contact_distance, contact_norm_trac, contact_penalty
     real(r8) :: strain_limit ! Maximum plastic strain increment
@@ -45,12 +46,12 @@ contains
     type(parameter_list), pointer :: plist => null()
 
     call TLS_info('')
-    call TLS_info('Reading SM namelist ...')
+    call TLS_info('Reading SOLID_MECHANICS namelist ...')
 
-    !! Locate the SOLID_MECHANICS_NEW namelist (required)
+    !! Locate the SOLID_MECHANICS namelist (required)
     if (is_IOP) then
       rewind(lun)
-      call seek_to_namelist(lun, 'solid_mechanics_new', found, iostat=ios)
+      call seek_to_namelist(lun, 'solid_mechanics', found, iostat=ios)
     end if
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
@@ -102,8 +103,9 @@ contains
     if (contact_distance /= NULL_R) call plist%set('contact-distance', contact_distance)
     if (contact_norm_trac /= NULL_R) call plist%set('contact-norm-trac', contact_norm_trac)
     if (contact_penalty /= NULL_R) call plist%set('contact-penalty', contact_penalty)
-    if (strain_limit /= NULL_R) call plist%set('strain-limit', strain_limit)    
+    if (strain_limit /= NULL_R) call plist%set('strain-limit', strain_limit)
+    call plist%set('body-force-density', body_force_density)
 
-  end subroutine read_sm_namelist
+  end subroutine read_solid_mechanics_namelist
 
-end module sm_namelist
+end module solid_mechanics_namelist
