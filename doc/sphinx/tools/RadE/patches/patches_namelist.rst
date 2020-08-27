@@ -322,6 +322,44 @@ Rather than set the number of patches explicitly, which is mesh dependent, expre
 as an average allows the same value to apply to a variety of meshes.
 
 
+VSA_MAX_PATCH_RADIUS
+++++++++++++++++++++
+Defines the desired maximum radius for a patch for the :doc:`VSA algorithm <vsa>`.
+
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_max_patch_radius > 0.0
+   :default: vsa_max_patch_radius = sqrt(huge(0.0_r8))
+
+This parameter is used to compute the *size bias* term of the weight of a face relative to
+a patch proxy. Refer to the :ref:`size bias section <tools/RadE/patches/vsa:Size Bias>` of the
+VSA documentation for more information on how the parameter affects the face weight computation.
+
+Note that the default value of this parameter is :fortran:`sqrt(huge(0.0_r8))` because it is squared
+in the face weight computation. By taking the root of :fortran:`huge(0.0_r8)` we prevent floating
+point overflow errors. Numerically, the default value on the order of `1.34*10^{154}`.
+
+
+VSA_NORMALIZE_DIST
+++++++++++++++++++
+Determines whether to normalize the distance bias for the :doc:`VSA algorithm <vsa>`.
+
+.. namelist_parameter::
+   :type: LOGICAL
+   :domain: Must be ``.true.`` or ``.false.``
+   :default: vsa_normalize_dist = ``.true.``
+
+This parameter affects the computation of the *distance bias* term of the weight of a face relative
+to a patch proxy. Broadly speaking, enabling normalization tends to produce patches with a similar
+number of faces, regardless of the physical size of each patch. Conversely, disabling normalization
+tends to make all patches about the same physical size, regardless of the number of faces in each
+patch.
+
+Refer to the :ref:`distance bias section <tools/RadE/patches/vsa:Distance Bias>`
+of the VSA documentation for more information on how the parameter affects the face weight
+computation.
+
+
 VSA_RANDOM_SEED
 +++++++++++++++
 Defines the seed for the random number generator used to pick the initial seed patches for the

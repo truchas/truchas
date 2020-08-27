@@ -19,22 +19,28 @@
 !! The VSA_PATCHING type encapsulates the Variational Shape Approximation face
 !! clustering algorithm.  It has the following type bound procedures.
 !!
-!!  INIT(E, AVG_FPP, MAX_ANGLE, VERBOSITY [,SEED]) initializes the object.  E
-!!    is an instance of the TYPE(ENCL) radiation enclosure.  AVG_FPP is a real
-!!    scalar that defines the average faces per patch desired.  The average
-!!    faces per patch is calculated as [# FACES]/[# PATCHES].  AVG_FPP defines
-!!    the number of patch seeds with which to initialize the algorithm, and
-!!    therefore the total number of patches in the output:
+!!  INIT(E, AVG_FPP, MAX_ANGLE, MAX_RADIUS, NORMALIZE, VERBOSITY [,SEED])
+!!    initializes the object.  E is an instance of the TYPE(ENCL) radiation
+!!    enclosure.  AVG_FPP is a real scalar that defines the average faces per
+!!    patch desired.  The average faces per patch is calculated as
+!!      [# FACES] / [# PATCHES]
+!!    AVG_FPP defines the number of patch seeds with which to initialize the
+!!    algorithm, and therefore the total number of patches in the output:
 !!      [# SEEDS] = [# FACES] / AVG_FPP
 !!    MAX_ANGLE is a real scalar that defines the maximum allowable angle in
 !!    degrees between normals of adjacent faces.  If two topologically adjacent
 !!    faces are at an angle greater than MAX_ANGLE degrees, they will not be
-!!    considered adjacent during patch construction.  VERBOSITY is a integer
-!!    scalar that specifies the verbosity level of all messages printed by the
-!!    object.  A verbosity level <= 0 suppresses all output.  If the optional
-!!    integer argument SEED is present, it is used to initialize the random
-!!    number generator used to pick the initial seeds.  If SEED is not present,
-!!    the seed is taken from the system clock.
+!!    considered adjacent during patch construction.  MAX_RADIUS is a real
+!!    scalar representing the maximum desired radius for a patch.  A face
+!!    outside MAX_RADIUS will have a penalty added to its weight that is
+!!    proportional to its distance from the patch center.  NORMALIZE is a
+!!    logical scalar that determines whether the Voronoi distance bias should be
+!!    normalized by the face radius.  VERBOSITY is an integer scalar that
+!!    specifies the verbosity level of all messages printed by the object.  A
+!!    verbosity level <= 0 suppresses all output.  If the optional integer
+!!    argument SEED is present, it is used to initialize the random number
+!!    generator used to pick the initial seeds.  If SEED is not present, the
+!!    seed is taken from the system clock.
 !!
 !!  RUN(MIN_DELTA, MAX_ITER) executes the VSA patching algorithm.  MIN_DELTA is
 !!    a real scalar that defines the threshold for the minimum change in patch
@@ -74,6 +80,8 @@ module vsa_patching_type
   integer, parameter :: VSA_MAX_ITER_DEFAULT = 1000
   real(r8), parameter :: VSA_MIN_DELTA_DEFAULT = 1E-6_r8
   real(r8), parameter :: VSA_AVG_FACES_PER_PATCH_DEFAULT = 4.0_r8
+  real(r8), parameter :: VSA_MAX_PATCH_RADIUS_DEFAULT = sqrt(huge(0.0_r8))
+  logical, parameter :: VSA_NORMALIZE_DIST_DEFAULT = .true.
 
   integer, parameter :: TELEPORT_PATCH_EVERY_ITER = 5
 
@@ -88,6 +96,8 @@ module vsa_patching_type
     integer :: npatch, npatch_min
     real(r8) :: iter_delta  ! Change in proxies between successive iterations
     logical :: dir          ! Determines direction of patch traversal
+    real(r8) :: max_radius  ! Maximum desired patch radius
+    logical :: normalize    ! Whether to normalize the Voronoi distance bias
     real(r8) :: max_face_err, max_patch_err
     integer :: max_face_idx, max_patch_idx
     integer :: verbosity
@@ -113,15 +123,17 @@ contains
 
 
   !! Allocate and initialize VSA_PATCHING data
-  subroutine init_vsa_patching(this, e, avg_fpp, max_angle, verbosity, seed)
+  subroutine init_vsa_patching(this, e, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
 
     use cell_geometry, only: face_normal, vector_length, normalized, polygon_center
     use patching_tools, only: init_random_seed, get_face_neighbor_array
 
     class(vsa_patching), intent(out) :: this
     type(encl), target, intent(in) :: e
-    real(r8), intent(in) :: avg_fpp    ! Average faces per patch
-    real(r8), intent(in) :: max_angle  ! Maximum allowable angle for adjacent faces (in degrees)
+    real(r8), intent(in) :: avg_fpp     ! Average faces per patch
+    real(r8), intent(in) :: max_angle   ! Maximum allowable angle for adjacent faces (in degrees)
+    real(r8), intent(in) :: max_radius  ! Maximum desired patch radius
+    logical, intent(in) :: normalize    ! Whether to normalize the Voronoi distance bias
     integer, intent(in) :: verbosity
     integer, intent(in), optional :: seed
 
@@ -132,6 +144,8 @@ contains
     this%dir = .true.
     this%npatch = 0
     this%npatch_min = e%nface / avg_fpp
+    this%max_radius = max_radius
+    this%normalize = normalize
     this%verbosity = verbosity
 
     if (present(seed)) then
@@ -175,9 +189,11 @@ contains
     if (this%verbosity > 1) then
       print '("INITIALIZING VSA:")'
       print '("  AVERAGE FACES PER PATCH:", f6.2)', avg_fpp
-      print '("  MIN NPATCH:", i5)', this%npatch_min
+      print '("  MAX PATCH RADIUS:", es11.3)', max_radius
+      print '("  NORMALIZE DISTANCE:", l2)', normalize
+      print '("  MIN NPATCH:", i0)', this%npatch_min
       print '("  MAX ANGLE:", f6.2)', max_angle
-      print '("  RANDOM SEED:", i10)', seed_
+      print '("  RANDOM SEED:", i0)', seed_
     end if
 
   end subroutine init_vsa_patching
@@ -204,10 +220,10 @@ contains
     call this%proxy_fit()
     if (this%verbosity > 1) then
       print '("------------------------------------------------------------")'
-      print '("VSA ITER ", i4)', i
+      print '("VSA ITER ", i0)', i
       print '("  ITER_DELTA: ", es11.4)', this%iter_delta
-      print '("  MAX_PATCH_ERR: ", es11.4, " | PATCH: ", i5)', this%max_patch_err, this%max_patch_idx
-      print '("  MAX_FACE_ERR:  ", es11.4, " | FACE: ", i5)', this%max_face_err, this%max_face_idx
+      print '("  MAX_PATCH_ERR: ", es11.4, " | PATCH: ", i0)', this%max_patch_err, this%max_patch_idx
+      print '("  MAX_FACE_ERR:  ", es11.4, " | FACE: ", i0)', this%max_face_err, this%max_face_idx
       print '("------------------------------------------------------------")'
     end if
 
@@ -226,11 +242,11 @@ contains
 
       if (this%verbosity > 1) then
         print '("------------------------------------------------------------")'
-        print '("VSA ITER ", i4)', i
+        print '("VSA ITER ", i0)', i
         print '("  ITER_DELTA: ", es11.4)', this%iter_delta
-        print '("  NPATCH: ", i5)', this%npatch
-        print '("  MAX_PATCH_ERR: ", es11.4, " | PATCH: ", i5)', this%max_patch_err, this%max_patch_idx
-        print '("  MAX_FACE_ERR:  ", es11.4, " | FACE: ", i5)', this%max_face_err, this%max_face_idx
+        print '("  NPATCH: ", i0)', this%npatch
+        print '("  MAX_PATCH_ERR: ", es11.4, " | PATCH: ", i0)', this%max_patch_err, this%max_patch_idx
+        print '("  MAX_FACE_ERR:  ", es11.4, " | FACE: ", i0)', this%max_face_err, this%max_face_idx
         print '("------------------------------------------------------------")'
       end if
     end do
@@ -240,7 +256,7 @@ contains
     if (this%verbosity > 0) then
       print '("------------------------------------------------------------")'
       print '("VSA STOPED:")'
-      print '("  ITERATIONS: ", i4, " out of maximum ", i4)', i, max_iter
+      print '("  ITERATIONS: ", i0, " out of maximum ", i0)', i, max_iter
       print '("  ITER_DELTA: ", es11.4, " with MIN_DELTA of ", es11.4)', this%iter_delta, min_delta
       print '("------------------------------------------------------------")'
     end if
@@ -330,21 +346,21 @@ contains
 
     print '("------------------------------------------------------------")'
     print '("VSA STATS:")'
-    print '("  NFACE:  ", i5)', this%e%nface
-    print '("  NPATCH: ", i5)', this%npatch
+    print '("  NFACE:  ", i0)', this%e%nface
+    print '("  NPATCH: ", i0)', this%npatch
     print '("  AVG FACES PER PATCH: ", es11.4)', avg_nfp
     print '("  S.D. FACES PER PATCH: ", es11.4)', std_nfp
     print '("  PATCHES BY SIZE:")'
     do i = 1, size(nps)
-      print '("  ", i3, " : ", i5, "  (",  f6.2, "%)")', i, nps(i), nps(i)/REAL(this%npatch)*100
+      print '("  ", i0, " : ", i0, "  (",  f6.2, "%)")', i, nps(i), nps(i)/REAL(this%npatch)*100
     end do
     if (this%verbosity > 1) then
       print '("  AVG PATCH WEIGHT: ", es11.4)', avg_pe
       print '("  MAX PATCH WEIGHT: ", es11.4)', this%max_patch_err
-      print '("    IN PATCH: ", i5)', this%max_patch_idx
+      print '("    IN PATCH: ", i0)', this%max_patch_idx
       print '("  AVG FACE WEIGHT: ", es11.4)', avg_fe
       print '("  MAX FACE WEIGHT: ", es11.4)', this%max_face_err
-      print '("    IN FACE, PATCH: ", i5, ", ", i5)', this%max_face_idx, this%f2p_map(this%max_face_idx)
+      print '("    IN FACE, PATCH: ", i0, ", ", i0)', this%max_face_idx, this%f2p_map(this%max_face_idx)
     end if
     print '("------------------------------------------------------------")'
 
@@ -377,7 +393,7 @@ contains
 
     if (this%verbosity > 2) then
       do p = 1, this%npatch
-        print '("Face ", i5, " seeds patch ", i5, " of ", i5)', this%seeds(p), p, this%npatch
+        print '("Face ", i0, " seeds patch ", i0, " of ", i0)', this%seeds(p), p, this%npatch
       end do
     end if
 
@@ -402,7 +418,7 @@ contains
     !! Get connected components in face neighbor graph
     call get_connected_faces(this%e%nface, this%xfnhbr, this%fnhbr, ncomp, xcomp, comp)
     ASSERT(ncomp == size(xcomp) - 1)
-    if (this%verbosity > 1) print '("Found ", i3, " connected components")', ncomp
+    if (this%verbosity > 1) print '("Found ", i0, " connected components")', ncomp
 
     !! Pick random seed in each component
     do i = 1, ncomp
@@ -421,7 +437,7 @@ contains
 
     if (this%verbosity > 1) then
       do i = 1, ncomp
-        print '("Face ", i5, " seeds patch ", i5, " of ", i5, " in component ", i5)', this%seeds(i), i, this%npatch_min, i
+        print '("Face ", i0, " seeds patch ", i0, " of ", i0, " in component ", i0)', this%seeds(i), i, this%npatch_min, i
       end do
     end if
 
@@ -450,7 +466,7 @@ contains
       call this%patch_init(fmax, this%npatch)
 
       !! Picking starts seeds takes a while, so report progress on each iteration
-      if (this%verbosity > 2) print '("Face ", i5, " seeds patch ", i5, " of ", i5)', fmax, this%npatch, this%npatch_min
+      if (this%verbosity > 2) print '("Face ", i0, " seeds patch ", i0, " of ", i0)', fmax, this%npatch, this%npatch_min
     end do
 
   end subroutine pick_start_seeds_iter
@@ -767,36 +783,27 @@ contains
 
   !! Initializes patch p with face f
   subroutine patch_init(this, f, p)
-
     class(vsa_patching), intent(inout) :: this
     integer, intent(in) :: f, p
-
     call this%patch(p)%init(f, this%area(f), this%center(:,f), this%normal(:,f))
-
   end subroutine patch_init
 
 
   !! Computes the weight of adding face f to patch p
   function compute_weight(this, f, p) result(ret)
-
     class(vsa_patching), intent(in) :: this
     integer, intent(in) :: f, p
     real(r8) :: ret
-
-    ret = this%patch(p)%get_weight(this%center(:,f), this%normal(:,f), this%radius(f))
-
+    ret = this%patch(p)%get_weight(this%center(:,f), this%normal(:,f), this%radius(f), this%max_radius, this%normalize)
   end function compute_weight
 
 
   !! Recomputes the weights of patch p
   subroutine recompute_weights(this, p)
-
     class(vsa_patching), intent(inout) :: this
     integer, intent(in) :: p
-
     real(r8) :: weight
     integer :: i, f
-
     associate (patch => this%patch(p))
       patch%total_weight = 0.0_r8
       do i = 1, patch%nface
@@ -806,7 +813,6 @@ contains
         patch%total_weight = patch%total_weight + weight
       end do
     end associate
-
   end subroutine recompute_weights
 
 

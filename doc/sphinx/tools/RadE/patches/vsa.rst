@@ -180,7 +180,7 @@ The error functional `E(\mathcal{R}, \mathcal{P})` of a mesh with `k` patches is
    = \sum_{i=1 .. k} E(P_i, \rho_i)
 
 where `P_i \in \mathcal{R}` is a patch with corresponding proxy `\rho_i \in \mathcal{P}`. The proxy
-`rho = (X_i, \vec{n}_i)` *represents* the patch `P_i` with the coordinate `X_i` and normal vector
+`\rho_i = (X_i, \vec{n}_i)` *represents* the patch `P_i` with the coordinate `X_i` and normal vector
 `\vec{n}_i`. The distortion error `E(P_i, \rho_i)` of a patch-proxy pair is in turn given by:
 
 .. math::
@@ -237,8 +237,8 @@ times. Note also that the partitioning phase runs in time `N\log(N)`
 reducing overall computation time.
 
 
-Patch Weight
-^^^^^^^^^^^^
+Face Weight
+^^^^^^^^^^^
 Each entry of the global priority queue has an associated weight which determines their order in the
 queue. The VSA queue prioritizes entries with a lower weight, so the faces with least distortion
 relative to a patch will get added to that patch first.
@@ -249,7 +249,7 @@ and unit normal of `P_i`. The weight `E` of a queue entry `(F_k, \rho_i)` is giv
 metric:
 
 .. math::
-  E(F_k, \rho_i) = E_{normal}(F_k, \rho_i) + E_{dist}(F_k, \rho_i)
+  E(F_k, \rho_i) = E_{normal}(F_k, \rho_i) + E_{dist}(F_k, \rho_i) + E_{size}(F_k, \rho_i)
 
 The terms of `E(F_k, \rho_i)` are discussed below.
 
@@ -274,13 +274,44 @@ We define the *distance bias* of a face `F_k` relative to a patch `P_i` with pro
 `X_i`, normalized by the face radius `r_k`.
 
 .. math::
-   E_{normal}(F_k, \rho_i) = \frac{\lVert X_k - X_i \rVert^2}{r_k}
+   E_{dist}(F_k, \rho_i) =
+   \begin{cases}
+      \left(\lVert X_k - X_i \rVert^2 + r_k^2\right) /\ r_k^2 & \text{if distance normalization is enabled} \\
+      \lVert X_k - X_i \rVert^2 + r_k^2 & \text{otherwise}
+   \end{cases} \\
 
-We normalize by the face radius `r_k` to make `E_{normal}` less dependent on the size of the face.
-Without this normalization, larger faces will tend to have a larger weight than smaller faces since
-their centroids are further from the edges of the face. In particular, this causes large faces to
-get preferentially selected as initial seeds, resulting in components covered with one face patches.
+The :ref:`tools/RadE/patches/vsa:VSA_NORMALIZE_DIST` parameter controls whether the distance is
+normalized by the face radius `r_k`. With normalization, `E_{dist}` roughly measures how many "faces
+away" the patch center is (assuming the surrounding faces are of similar size). Therefore, enabling
+normalization tends to produce patches wit a similar number of faces, regardless of the physical
+size of each patch. Conversely, disabling normalization tends to make all patches about the same
+physical size, regardless of the number of faces in each patch.
 
+Normalization is enabled by default. This makes `E_{dist}` less dependent on the size of the face.
+Without normalization, larger faces tend to have a larger weight than smaller faces since their
+centroids are further from the nodes of the face. In particular, this causes large faces to get
+preferentially selected as initial seeds, resulting in components covered with one face patches.
+
+Size Bias
+~~~~~~~~~
+We define the *size bias* of a face `F_k` relative to a patch `P_i` with proxy `\rho_i=(X_i,
+\vec{n}_i)` as
+
+.. math::
+   E_{size}(F_k, \rho_i) =
+   \begin{cases}
+      0 & \text{if } \lVert X_k - X_i \rVert \le r_{max} \\
+      100 * \lVert X_k - X_i \rVert^2\ /\ r_{max}^2  & \text{otherwise}
+   \end{cases} \\
+
+where `r_k` is the face radius and `r_{max}` is the maximum patch radius defined by the
+:ref:`tools/RadE/patches/vsa:VSA_MAX_PATCH_RADIUS` parameter. The size bias heavily penalizes faces
+that are outside the maximum patch radius. This discourages the formation of patches that are
+significantly larger than the specified radius. We use this "strong suggestion" approach because
+outright preventing faces from being added to a patch might result in faces with no patch assignment.
+
+By default, `r_{max}` is set to a very large positive real number. Thus, the size bias has no effect
+unless it is explicitly set to a value comparable to the mesh size.
 
 
 Proxy Fitting
@@ -388,6 +419,44 @@ final configuration:
 
 Rather than set the number of patches explicitly, which is mesh dependent, expressing this
 parameter as an average allows the same value to apply to a variety of meshes.
+
+
+VSA_MAX_PATCH_RADIUS
+++++++++++++++++++++
+Defines the desired maximum radius for a patch.
+
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_max_patch_radius > 0.0
+   :default: vsa_max_patch_radius = sqrt(huge(0.0_r8))
+
+This parameter is used to compute the *size bias* term of the weight of a face relative to
+a patch proxy. Refer to the :ref:`size bias section <tools/RadE/patches/vsa:Size Bias>` of the
+VSA documentation for more information on how the parameter affects the face weight computation.
+
+Note that the default value of this parameter is :fortran:`sqrt(huge(0.0_r8))` because it is squared
+in the face weight computation. By taking the root of :fortran:`huge(0.0_r8)` we prevent floating
+point overflow errors. Numerically, the default value on the order of `1.34*10^{154}`.
+
+
+VSA_NORMALIZE_DIST
+++++++++++++++++++
+Determines whether to normalize the distance bias.
+
+.. namelist_parameter::
+   :type: LOGICAL
+   :domain: Must be ``.true.`` or ``.false.``
+   :default: vsa_normalize_dist = ``.true.``
+
+This parameter affects the computation of the *distance bias* term of the weight of a face relative
+to a patch proxy. Broadly speaking, enabling normalization tends to produce patches with a similar
+number of faces, regardless of the physical size of each patch. Conversely, disabling normalization
+tends to make all patches about the same physical size, regardless of the number of faces in each
+patch.
+
+Refer to the :ref:`distance bias section <tools/RadE/patches/vsa:Distance Bias>`
+of the VSA documentation for more information on how the parameter affects the face weight
+computation.
 
 
 VSA_RANDOM_SEED

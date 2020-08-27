@@ -122,7 +122,7 @@ contains
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use re_utilities
     use vsa_patching_type, only: VSA_MAX_ITER_DEFAULT, VSA_MIN_DELTA_DEFAULT, &
-      VSA_AVG_FACES_PER_PATCH_DEFAULT
+      VSA_AVG_FACES_PER_PATCH_DEFAULT, VSA_MAX_PATCH_RADIUS_DEFAULT, VSA_NORMALIZE_DIST_DEFAULT
     use vac_patching_type, only: VAC_MERGE_LEVEL_DEFAULT, VAC_SPLIT_PATCH_SIZE_DEFAULT
 
     integer, intent(in) :: lun
@@ -141,6 +141,8 @@ contains
     integer  :: vsa_max_iter
     real(r8) :: vsa_min_delta
     real(r8) :: vsa_avg_faces_per_patch
+    real(r8) :: vsa_max_patch_radius
+    logical  :: vsa_normalize_dist
     integer  :: vsa_random_seed
     integer  :: vac_merge_level
     integer  :: vac_split_patch_size
@@ -148,7 +150,8 @@ contains
     integer  :: pave_split_patch_size
     integer  :: pave_random_seed
     namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
-      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, vsa_random_seed, &
+      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, &
+        vsa_max_patch_radius, vsa_normalize_dist, vsa_random_seed, &
       vac_merge_level, vac_split_patch_size, &
       pave_merge_level, pave_split_patch_size, pave_random_seed
 
@@ -177,6 +180,8 @@ contains
     vsa_max_iter = NULL_I
     vsa_min_delta = NULL_R
     vsa_avg_faces_per_patch = NULL_R
+    vsa_max_patch_radius = NULL_R
+    vsa_normalize_dist = VSA_NORMALIZE_DIST_DEFAULT
     vsa_random_seed = NULL_I
     vac_merge_level = NULL_I
     vac_split_patch_size = NULL_I
@@ -195,6 +200,8 @@ contains
     call scl_bcast(vsa_max_iter)
     call scl_bcast(vsa_min_delta)
     call scl_bcast(vsa_avg_faces_per_patch)
+    call scl_bcast(vsa_max_patch_radius)
+    call scl_bcast(vsa_normalize_dist)
     call scl_bcast(vsa_random_seed)
     call scl_bcast(vac_merge_level)
     call scl_bcast(vac_split_patch_size)
@@ -269,6 +276,19 @@ contains
         call data_err('VSA_AVG_FACES_PER_PATCH must be >= 1')
       end if
       call params%set('vsa-avg-faces-per-patch', vsa_avg_faces_per_patch)
+      if (vsa_max_patch_radius == NULL_R) then
+        vsa_max_patch_radius = VSA_MAX_PATCH_RADIUS_DEFAULT
+        write(string,fmt='(es9.2)') vsa_max_patch_radius
+        call re_info('  using default VSA_MAX_PATCH_RADIUS='//string)
+      else if (vsa_max_patch_radius <= 0.0_r8) then
+        call data_err('VSA_MAX_PATCH_RADIUS must be > 0')
+      end if
+      call params%set('vsa-max-patch-radius', vsa_max_patch_radius)
+      if (vsa_normalize_dist == VSA_NORMALIZE_DIST_DEFAULT) then
+        write(string,fmt='(l)') vsa_normalize_dist
+        call re_info('  using default VSA_NORMALIZE_DIST='//trim(string))
+      end if
+      call params%set('vsa-normalize-dist', vsa_normalize_dist)
       if (vsa_random_seed == NULL_I) then
         vsa_random_seed = RANDOM_SEED_DEFAULT
         call re_info('  using default VSA_RANDOM_SEED')
@@ -398,10 +418,13 @@ contains
 
     type(vsa_patching) :: vsa
     integer :: verbosity, max_iter, seed
-    real(r8) :: max_angle, min_delta, avg_fpp
+    real(r8) :: max_angle, min_delta, avg_fpp, max_radius
+    logical :: normalize
 
     call params%get('verbosity-level', verbosity)
     call params%get('vsa-avg-faces-per-patch', avg_fpp)
+    call params%get('vsa-max-patch-radius', max_radius)
+    call params%get('vsa-normalize-dist', normalize)
     call params%get('max-angle', max_angle)
     call params%get('vsa-min-delta', min_delta)
     call params%get('vsa-max-iter', max_iter)
@@ -411,9 +434,9 @@ contains
     this%nface = e%nface
 
     if (seed == RANDOM_SEED_DEFAULT) then
-      call vsa%init(e, avg_fpp, max_angle, verbosity)
+      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity)
     else
-      call vsa%init(e, avg_fpp, max_angle, verbosity, seed)
+      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
     end if
 
     call vsa%run(min_delta, max_iter)
