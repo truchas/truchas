@@ -22,8 +22,8 @@ module sm_model_type
 
   type, public :: sm_model
     private
-    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
-    type(integration_geometry) :: ig
+    type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference -- expose to precon type
+    type(integration_geometry), public :: ig ! expose to precon type
 
     integer :: nmat
     real(r8), allocatable :: density_c(:), density_n(:)
@@ -41,6 +41,9 @@ module sm_model_type
     procedure :: size => model_size
     procedure :: update_properties
     procedure :: compute_residual
+    procedure :: compute_lame_node_parameters
+    procedure, nopass :: compute_stress
+    procedure, nopass :: tensor_dot
     procedure, private :: compute_total_strain
   end type sm_model
 
@@ -90,7 +93,7 @@ contains
 
   integer function model_size(this)
     class(sm_model), intent(in) :: this
-    model_size = this%mesh%nnode_onP
+    model_size = 3*this%mesh%nnode_onP
   end function model_size
 
 
@@ -153,6 +156,17 @@ contains
     call stop_timer("properties")
 
   end subroutine update_properties
+
+
+  subroutine compute_lame_node_parameters(this, lame1_n, lame2_n)
+
+    class(sm_model), intent(in) :: this
+    real(r8), intent(out) :: lame1_n(:), lame2_n(:)
+
+    call cell_to_node(this%mesh, this%lame1, lame1_n)
+    call cell_to_node(this%mesh, this%lame2, lame2_n)
+
+  end subroutine compute_lame_node_parameters
 
 
   !! Computes a cell-to-node averaging, weighted by volume It assumes x_cell is

@@ -26,6 +26,12 @@
 !!        oriented with respect to node j, and false when it is outward
 !!        oriented. The shape of nnpar is [nnode].
 !!
+!!   xpxn - a rank-1 integer array storing cell-local node IDs, ordered by
+!!        node-local IP IDs. That is,
+!!        mesh%cnode(mesh%xcnode(c)-1 + xpxn(xnpoint(n)-1+k)) = n
+!!        For global cell ID c, global node ID n for a node associated with c,
+!!        and k is a node-local IP ID.
+!!
 !! References:
 !!
 !! - Truchas Physics & Algorithms handbook.
@@ -66,6 +72,7 @@ module integration_geometry_type
     integer, allocatable :: nppar(:)
     integer, allocatable :: npoint(:), xnpoint(:) ! node to IP connectivity
     integer, allocatable :: xcpoint(:), pcell(:) ! cell to IP connectivity
+    integer, allocatable :: xpxn(:) ! cell-local node ID from node-local IP ID (see above)
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
@@ -197,7 +204,8 @@ contains
       this%xnpoint(n+1) = this%xnpoint(n) + k(n)
     end do
 
-    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%mesh%nnode_onP))
+    allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), &
+        this%xpxn(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%mesh%nnode_onP))
     this%nppar = 0
     k = 0
     do j = 1, this%mesh%ncell
@@ -210,6 +218,7 @@ contains
 
           if (node1 <= this%mesh%nnode_onP) then
             this%npoint(this%xnpoint(j)+k(node1)) = p
+            this%xpxn(this%xnpoint(j)+k(node1)) = edges(1,xp)
             k(node1) = k(node1) + 1
           end if
           if (node2 <= this%mesh%nnode_onP) then
@@ -217,6 +226,7 @@ contains
             ! toward the 2nd node of the associated edge.
             this%nppar(node2) = ibset(this%nppar(node2),k(node2))
             this%npoint(this%xnpoint(j)+k(node2)) = p
+            this%xpxn(this%xnpoint(j)+k(node2)) = edges(2,xp)
             k(node2) = k(node2) + 1
           end if
         end do
