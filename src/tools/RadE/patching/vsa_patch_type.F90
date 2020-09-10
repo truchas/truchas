@@ -193,7 +193,7 @@ contains
     ret = ret + merge(dist/radius**2, dist, normalize)
 
     !! Patch size error
-    ret = ret + merge(0.0, RADIUS_COEFF*(dist/(max_radius**2)), dist <= max_radius**2)
+    ret = ret + merge(0.0_r8, RADIUS_COEFF*(dist/(max_radius**2)), dist <= max_radius**2)
 
   end function get_weight
 

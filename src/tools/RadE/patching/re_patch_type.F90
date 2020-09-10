@@ -284,8 +284,8 @@ contains
         call data_err('VSA_MAX_PATCH_RADIUS must be > 0')
       end if
       call params%set('vsa-max-patch-radius', vsa_max_patch_radius)
-      if (vsa_normalize_dist == VSA_NORMALIZE_DIST_DEFAULT) then
-        write(string,fmt='(l)') vsa_normalize_dist
+      if (vsa_normalize_dist .eqv. VSA_NORMALIZE_DIST_DEFAULT) then
+        write(string,fmt='(l1)') vsa_normalize_dist
         call re_info('  using default VSA_NORMALIZE_DIST='//trim(string))
       end if
       call params%set('vsa-normalize-dist', vsa_normalize_dist)
