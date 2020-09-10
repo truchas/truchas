@@ -20,8 +20,8 @@ module smold_nlsol_model_type
 
     ! preconditioner data & parameters
     type(real_var_vector), pointer :: precon_a(:) => null() ! unowned reference
-    real(r8) :: omega ! relaxation parameter
-    integer :: niter
+    real(r8) :: omega = 1.0_r8
+    integer :: niter = 1
   contains
     procedure :: init
     !! Deferred procedures from nlsol_model
@@ -42,14 +42,11 @@ module smold_nlsol_model_type
 
 contains
 
-  subroutine init(this, residualf, precon_a, params, stat, errmsg)
-
-    use parameter_list_type
+  subroutine init(this, residualf, precon_a, stat, errmsg)
 
     class(smold_nlsol_model), intent(out) :: this
     procedure(residual) :: residualf
     type(real_var_vector), intent(in), target :: precon_a(:)
-    type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -57,20 +54,6 @@ contains
 
     this%residualf => residualf
     this%precon_a => precon_a
-
-    context = 'processing ' // params%name() // ': '
-
-    call params%get('precon-num-iter', this%niter, default=1, stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = context//errmsg
-      return
-    end if
-
-    call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = context//errmsg
-      return
-    end if
 
   end subroutine init
 
