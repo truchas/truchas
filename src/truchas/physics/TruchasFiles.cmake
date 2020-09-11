@@ -39,7 +39,8 @@ list(APPEND PHYSICS_SOURCE_FILES
 	  physics/volume_tracking/vtrack_driver.F90
 	  physics/volume_tracking/cell_geometry_type.F90
 	  physics/volume_tracking/locate_plane_os_function.F90
-	  physics/volume_tracking/truncation_volume_type.F90)
+	  physics/volume_tracking/truncation_volume_type.F90
+	  physics/volume_tracking/wisp_redistribution_type.F90)
 
 # - heat_species_transport
 list(APPEND PHYSICS_SOURCE_FILES
