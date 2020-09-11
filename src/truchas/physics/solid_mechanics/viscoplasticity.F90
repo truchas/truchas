@@ -550,7 +550,6 @@ Contains
     !   ratio of Jacobian-like determinants.
     !
     !---------------------------------------------------------------------------
-    Use discrete_op_module, Only: DETERMINANT_VOL_AVG
     use legacy_mesh_api, only: nnodes, ncells, Cell, EN_GATHER, gather_vertex_coord
     use solid_mechanics_mesh, only: nvc
 
@@ -589,6 +588,86 @@ Contains
     dQ_dz(:) = dQ_dz(:)*Q_f(:)
 
   End Subroutine DISPLACEMENT_GRADIENT
+
+
+
+  SUBROUTINE DETERMINANT_VOL_AVG (Xv, Yv, Zv, Avg)
+    !=======================================================================
+    ! Purpose(s):
+    !
+    !   Compute the volume-averaged value of a Jacobian determinant |J|:
+    !   Avg = Integral(|J|dV), where J is given by column vectors X, Y,
+    !   and Z:             -                       -
+    !                      |  X_xi   Y_xi   Z_xi   |
+    !                J =   |  X_eta  Y_eta  Z_eta  |
+    !                      |  X_zeta Y_zeta Z_zeta |
+    !                      -                       -
+    !   where X_xi == dX/dxi, X_eta == dX/deta, X_zeta == dX/dzeta, etc.
+    !   The volume integral is converted to a surface integral and
+    !   evaluated following J. Dukowicz, JCP 74: 493-496 (1988).
+    !
+    !=======================================================================
+    use legacy_mesh_api, only: ncells, nfc, nvc
+
+    ! Arguments
+    real(r8), dimension(nvc,ncells), intent(IN)  :: Xv, Yv, Zv
+    real(r8), dimension(ncells),     intent(OUT) :: Avg
+
+    ! Local Variables
+    integer :: f
+    integer :: v1, v2, v3, v4, v5, v6
+
+    real(r8), dimension(ncells) :: X1, Y1, Z1
+    real(r8), dimension(ncells) :: X2, Y2, Z2
+    real(r8), dimension(ncells) :: X3, Y3, Z3
+
+    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+    ! Initialize relevant quantities
+    Avg = 0.0_r8
+
+    ! Loop over faces, accumulating the average
+    do f = 1,nfc
+       select case (f)
+          case (1)
+          ! Side 1 (vertices 4-8-7-3)
+          v1 = 8; v2 = 4; v3 = 7; v4 = 8; v5 = 3; v6 = 4
+          case (2)
+          ! Side 2 (vertices 1-2-6-5)
+          v1 = 6; v2 = 2; v3 = 5; v4 = 6; v5 = 1; v6 = 2
+          case (3)
+          ! Side 3 (vertices 4-1-5-8)
+          v1 = 5; v2 = 1; v3 = 8; v4 = 5; v5 = 4; v6 = 1
+          case (4)
+          ! Side 4 (vertices 3-7-6-2)
+          v1 = 7; v2 = 3; v3 = 6; v4 = 7; v5 = 2; v6 = 3
+          case (5)
+          ! Side 5 (vertices 4-3-2-1)
+          v1 = 3; v2 = 4; v3 = 2; v4 = 3; v5 = 1; v6 = 4
+          case (6)
+          ! Side 6 (vertices 8-5-6-7)
+          v1 = 6; v2 = 5; v3 = 7; v4 = 6; v5 = 8; v6 = 5
+       end select
+
+       X1 = Xv(v1,:) + Xv(v2,:)
+       Y1 = Yv(v1,:) + Yv(v2,:)
+       Z1 = Zv(v1,:) + Zv(v2,:)
+
+       X2 = Xv(v3,:) + Xv(v4,:)
+       Y2 = Yv(v3,:) + Yv(v4,:)
+       Z2 = Zv(v3,:) + Zv(v4,:)
+
+       X3 = Xv(v5,:) + Xv(v6,:)
+       Y3 = Yv(v5,:) + Yv(v6,:)
+       Z3 = Zv(v5,:) + Zv(v6,:)
+
+       Avg = Avg + X1*(Y2*Z3 - Y3*Z2) + Y1*(X3*Z2 - X2*Z3) + Z1*(X2*Y3 - X3*Y2)
+    end do
+
+    Avg = Avg / 12.0_r8
+
+  END SUBROUTINE DETERMINANT_VOL_AVG
+
   !
   !-----------------------------------------------------------------------------
   !
