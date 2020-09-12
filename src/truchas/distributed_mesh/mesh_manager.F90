@@ -217,7 +217,7 @@ contains
 
     !! Namelist variables
     character(16)  :: partitioner
-    character(120) :: mesh_file, partition_file
+    character(511) :: mesh_file, partition_file
     real(r8) :: coordinate_scale_factor
     integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127), first_partition
     namelist /mesh/ mesh_file, coordinate_scale_factor, exodus_block_modulus, &

@@ -14,7 +14,7 @@ module altmesh_namelist
 
   logical, public :: altmesh_exists = .false.
   character(16), public :: partitioner
-  character(256), public :: altmesh_file, grid_transfer_file, partition_file
+  character(511), public :: altmesh_file, grid_transfer_file, partition_file
   real(r8), public :: altmesh_coordinate_scale_factor
   integer, public :: first_partition
 
