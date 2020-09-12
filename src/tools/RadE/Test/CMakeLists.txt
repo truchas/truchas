@@ -13,11 +13,6 @@ include_directories(${TruchasToolsRade_BINARY_DIR})
 add_executable(test_dist_vf_type test_dist_vf_type.F90 test_rade_tools_common.F90)
 target_link_libraries(test_dist_vf_type rade truchas ${Truchas_LINK_LIBS})
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set_source_files_properties(test_dist_vf_type.F90 PROPERTIES
-      COMPILE_FLAGS "-assume realloc_lhs")
-endif()
-
 set(test_launch-synthetic-1p ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ${ToolsRadeTest_BINARY_DIR}/test_dist_vf_type
   ${MPIEXEC_POSTFLAGS})
@@ -57,11 +52,6 @@ set_property(TEST dist_vf_type-patch-4p PROPERTY LABELS UNIT RADIATION)
 # --- RE_VF_DIFF_TYPE tests
 add_executable(test_vf_diff_type test_vf_diff_type.F90 test_rade_tools_common.F90)
 target_link_libraries(test_vf_diff_type rade truchas ${Truchas_LINK_LIBS})
-
-if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
-  set_source_files_properties(test_vf_diff_type.F90 PROPERTIES
-      COMPILE_FLAGS "-assume realloc_lhs")
-endif()
 
 set(test_launch-synthetic-1p ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ${ToolsRadeTest_BINARY_DIR}/test_vf_diff_type

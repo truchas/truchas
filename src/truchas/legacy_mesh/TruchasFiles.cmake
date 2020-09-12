@@ -18,9 +18,6 @@ set(LEGACYMESH_SOURCE_FILES
 set(LEGACYMESH_COMPILE_FLAGS
   -I${PGSLib_MODULE_DIR}
   -I${Truchas_utilities_dir})
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-    list(APPEND LEGACYMESH_COMPILE_FLAGS "-assume realloc_lhs")
-endif()
 include(BuildWhitespaceString)
 build_whitespace_string(LEGACYMESH_COMPILE_FLAGS_STR ${LEGACYMESH_COMPILE_FLAGS})
 set_source_files_properties(${LEGACYMESH_SOURCE_FILES} PROPERTIES
