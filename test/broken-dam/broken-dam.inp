@@ -86,8 +86,6 @@ data by Martin & Moyce for this regression test.
   abs_tol = 0
   max_ds_iter = 50
   max_amg_iter = 50
-  krylov_method = "cg"
-  !gmres_krylov_dim = 5
 /
 
 Right side

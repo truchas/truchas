@@ -178,7 +178,7 @@ contains
     INSIST(ierr == 0)
 
     !! Kyrlov method (required)
-    call this%params%get ('krylov-method', cpar)
+    call this%params%get ('krylov-method', cpar, default='cg')
     select case (cpar)
     case ('cg')
       call fHYPRE_ParCSRHybridSetSolverType (this%solver, 1, ierr)
