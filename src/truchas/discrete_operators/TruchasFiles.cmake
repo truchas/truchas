@@ -21,9 +21,6 @@ set(DISOP_COMPILE_FLAGS
   -I${PGSLib_MODULE_DIR}
   -I${PETACA_MODULE_DIR}
   -I${Truchas_utilities_dir})
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  list(APPEND DISOP_COMPILE_FLAGS "-assume realloc_lhs") # for cell_grad_type.F90
-endif()
 
 build_whitespace_string(DISOP_COMPILE_FLAGS_STR ${DISOP_COMPILE_FLAGS})
 set_source_files_properties(${DISOP_SOURCE_FILES} PROPERTIES

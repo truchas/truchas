@@ -42,6 +42,11 @@ program genre
   n = index(outfile,ext,back=.true.) - 1 ! strip file extension
   basename = outfile(:n) // '.'
 
+  !! If OUTFILE is a path, ensure the directory exists.
+  if (is_IOP) call execute_command_line('mkdir -p `dirname ' // outfile // '`', exitstat=stat)
+  call scl_bcast(stat)
+  if (stat /= 0) call re_halt('unable to create directory for output file: ' // outfile)
+
   if (is_IOP) open(newunit=lun,file=infile,status='old',action='read',iostat=ios,iomsg=iom)
   call scl_bcast(ios)
   if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))

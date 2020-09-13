@@ -34,9 +34,6 @@ set(DISMESH_COMPILE_FLAGS -I${PGSLib_MODULE_DIR}
 	-I${TruchasExe_SOURCE_DIR}/utilities
 	)
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  list(APPEND DISMESH_COMPILE_FLAGS "-assume realloc_lhs")
-endif()
 include(BuildWhitespaceString)
 build_whitespace_string(DISMESH_COMPILE_FLAGS_STR ${DISMESH_COMPILE_FLAGS})
 set_source_files_properties(${DISMESH_SOURCE_FILES} PROPERTIES

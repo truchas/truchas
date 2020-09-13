@@ -20,9 +20,6 @@ set(USTRUC_SOURCE_FILES
 include(BuildWhitespaceString)
 set(ustruc_source_flags
   -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR} -I${Truchas_utilities_dir})
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  list(APPEND ustruc_source_flags "-assume realloc_lhs")
-endif()
 
 build_whitespace_string(ustruc_source_flags_str ${ustruc_source_flags})
 set_source_files_properties(${USTRUC_SOURCE_FILES} PROPERTIES

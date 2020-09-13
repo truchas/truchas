@@ -14,11 +14,6 @@ include_directories(${Truchas_MODULE_DIR})
 # MPI
 include_directories(${MPI_C_INCLUDE_PATH})
 
-# Ensure necessary Intel compiler options are there.
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume realloc_lhs")
-endif()
-
 # --- Compile defines
 add_definitions(-DUSE_MPI)
 
