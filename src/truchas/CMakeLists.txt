@@ -118,6 +118,7 @@ install(TARGETS truchas truchas_exe
         ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
 
 # --- Unit tests
+add_subdirectory(functions/Test)
 add_subdirectory(solver/Test)
 add_subdirectory(physics/heat_species_transport/Test)
 add_subdirectory(physics/additive_manufacturing/Test)

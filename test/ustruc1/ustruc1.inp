@@ -11,8 +11,8 @@ solidification has completed in order to capture a full mixture of liquid,
 solidifying, solid, and undefined cell states from the microstructure model.
 
 &OUTPUTS
-  output_t = 0.0, 10.0, 40.0
-  output_dt = 10.0, 30.0
+  output_t = 0.0, 4.0, 10.0
+  output_dt = 4.0, 6.0
 /
 
 &MESH
