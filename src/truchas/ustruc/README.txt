@@ -34,28 +34,10 @@ class objects, like a set of nested russian dolls.
 
 TODO
 
-This is a work in progess, and much remains to be done.  A number of the
+This is a work in progess, and some remains to be done.  A number of the
 issues that need to be addressed are described in code comments; look for
 the the tags "FIXME" or "TODO".  Other larger issues are listed below
 roughly in order of importance.
-
-Restart capability.  There is currently no way to restart the microstructure
-model, which will severely limit its applicability for large simulations.
-It is not merely an issue of using existing output data to initialize the
-model on restart, for the analysis data that is being written is not at all
-the internal state data needed to checkpoint the model.
-
-Optimization.  The model is expensive, consuming nearly as much time as the
-heat transfer itself.  This is largely accountable to the solution for the
-solid fraction gradient which requires the solution of a global linear system.
-The current implementation sets up and solves the problem at each time step,
-because the coefficient matrix could in principle differ from one step to the
-next.  However this is only the case if the domain containing the subject
-material is changing.  This is very often not the case, however.  This means
-that the setup of the system, which is the most expensive piece, need not be
-done every step.  There are additional places in the model where work can be
-short circuited because there is actually nothing to be done; the code needs
-to be carefully examined for opportunities to avoid needless work.
 
 Redistribution of work.  The microstructure modeling is limited to a fixed
 subset of mesh cells where the subject material may be present.  Currently

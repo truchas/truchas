@@ -87,10 +87,10 @@ module ustruc_comp_class
   end type
 
   abstract interface
-    subroutine update (this, t, temp, temp_grad, frac, frac_grad, invalid)
+    subroutine update (this, t, temp, temp_grad, frac, invalid)
       import ustruc_comp, r8
       class(ustruc_comp), intent(inout) :: this
-      real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+      real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
       logical,  intent(in) :: invalid(:)
     end subroutine
     logical function has (this, name)

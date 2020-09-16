@@ -101,17 +101,16 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios, cell_set_ids(32), symmetry_face_sets(32)
-    real(r8) :: grad_abs_tol, grad_rel_tol
+    integer :: ios, cell_set_ids(32)
     real(r8) :: vel_max, vel_lo_solid_frac, vel_hi_solid_frac
     real(r8) :: theta1, theta1p, theta2, theta2p, theta_gv
     logical :: found
     integer, allocatable :: setids(:)
-    character(32) :: material
+    character(64) :: material
     character(128) :: iom, gv_model_file
 
-    namelist /microstructure/ material, cell_set_ids, symmetry_face_sets, &
-        grad_abs_tol, grad_rel_tol, vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
+    namelist /microstructure/ material, cell_set_ids, &
+        vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
         theta1, theta1p, theta2, theta2p, theta_gv, gv_model_file
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
@@ -132,9 +131,6 @@ contains
     if (is_IOP) then
       material = NULL_C
       cell_set_ids = NULL_I
-      symmetry_face_sets = NULL_I
-      grad_abs_tol = NULL_R
-      grad_rel_tol = NULL_R
       vel_max = NULL_R
       vel_lo_solid_frac = NULL_R
       vel_hi_solid_frac = NULL_R
@@ -152,9 +148,6 @@ contains
     !! Broadcast the namelist variables
     call broadcast (material)
     call broadcast (cell_set_ids)
-    call broadcast (symmetry_face_sets)
-    call broadcast (grad_abs_tol)
-    call broadcast (grad_rel_tol)
     call broadcast (vel_max)
     call broadcast (vel_lo_solid_frac)
     call broadcast (vel_hi_solid_frac)
@@ -187,27 +180,6 @@ contains
       call TLS_fatal ('no values assigned to CELL-SET-IDS')
     else
       call params%set ('cell-set-ids', setids)
-    end if
-
-    !! Check SYMMETRY-FACE-SETS.
-    setids = pack(symmetry_face_sets, mask=(symmetry_face_sets /= NULL_I))
-    call params%set ('symmetry-face-sets', setids)
-
-    !! Check gradient solver tolerances GRAD_ABS_TOL and GRAD_REL_TOL.
-    if (grad_abs_tol /= NULL_R) then
-      if (grad_abs_tol < 0.0_r8) then
-        call TLS_fatal ('GRAD_ABS_TOL must be >= 0')
-      else
-        call params%set ('grad-abs-tol', grad_abs_tol)
-      end if
-    end if
-
-    if (grad_rel_tol /= NULL_R) then
-      if (grad_rel_tol < 0.0_r8) then
-        call TLS_fatal ('GRAD_REL_TOL must be >= 0')
-      else
-        call params%set ('grad-rel-tol', grad_rel_tol)
-      end if
     end if
 
     !! Check VEL-MAX
@@ -364,7 +336,9 @@ contains
     call start_timer ('collect input')
     call ustruct_update_aux (tcell, tface, liq_vf, sol_vf)
     call stop_timer ('collect input')
+    call start_timer ('analysis')
     call this%model%update_state (t, tcell, tface, liq_vf, sol_vf)
+    call stop_timer ('analysis')
     call stop_timer ('Microstructure')
   end subroutine ustruc_update
 
@@ -391,11 +365,10 @@ contains
     !! Core module: temperature and gradient -- modeled cells only
     call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
     call write_vector_field (data_name='temp-grad', hdf_name='uStruc-gradT', viz_name=['dT/dx','dT/dy','dT/dz'])
+    call write_scalar_field (data_name='temp-rate', hdf_name='uStruc-Tdot',  viz_name='dT/dt')
 
     !! Core module: solid fraction, gradient, and rate of change
-    call write_scalar_field (data_name='frac',      hdf_name='uStruc-F',     viz_name='F')
-    call write_vector_field (data_name='frac-grad', hdf_name='uStruc-gradF', viz_name=['dF/dx','dF/dy','dF/dz'])
-    call write_scalar_field (data_name='frac-rate', hdf_name='uStruc-Fdot',  viz_name='dF/dt')
+    call write_scalar_field (data_name='frac',      hdf_name='uStruc-Fs',     viz_name='Fs')
 
     !! VEL1 analysis module: solidification front velocity and speed
     call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])

@@ -29,9 +29,6 @@ solidifying, solid, and undefined cell states from the microstructure model.
 &MICROSTRUCTURE
   material = 'alloy'
   cell_set_ids = 1
-  symmetry_face_sets = 1
-  grad_abs_tol = 0.0
-  grad_rel_tol = 1.0e-5
   vel_max = 1.0
   vel_lo_solid_frac = 0.05
   vel_hi_solid_frac = 0.95
