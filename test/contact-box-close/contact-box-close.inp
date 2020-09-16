@@ -27,6 +27,7 @@
   nlk_tol = 0.01
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping = .true.
+  pc_amg_cycles = 5
 /
 
 &SOLID_MECHANICS

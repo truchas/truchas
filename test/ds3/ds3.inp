@@ -32,7 +32,7 @@ remain identical as they should.
   rel_enthalpy_tol   = 1.0e-4
   nlk_tol            = 1.0e-4
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 2
+  pc_amg_cycles      = 5
   verbose_stepping   = .true.
 /
 

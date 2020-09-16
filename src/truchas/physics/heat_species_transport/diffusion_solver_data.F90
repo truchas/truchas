@@ -434,7 +434,7 @@ contains
     if (ds_nlk_pc == DS_NLK_PC_HYPRE_AMG) then
 
       if (pc_amg_cycles == NULL_I) then
-        pc_amg_cycles = 2
+        pc_amg_cycles = 4
         call TLS_info ('  using default PC_AMG_CYCLES value: ' // i_to_c(pc_amg_cycles))
       else if (pc_amg_cycles < 1) then
         call TLS_fatal ('PC_AMG_CYCLES must be > 0')

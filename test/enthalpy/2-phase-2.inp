@@ -1,4 +1,4 @@
-TWO-PHASE ENTHALPY TEST 2
+WO-PHASE ENTHALPY TEST 2
 -------------------------
 The sole purpose of this test is to verify for a two-phase material that
 different equivalent methods of specifying the internal derived enthalpy
@@ -82,6 +82,7 @@ h(T) = 1 + (T - 2)/2
   nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  pc_amg_cycles = 5
 /
 
 &NUMERICS

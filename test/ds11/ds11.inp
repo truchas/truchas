@@ -38,7 +38,7 @@ Should give the same results
   rel_enthalpy_tol   = 1.0e-3
   nlk_tol            = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 2
+  pc_amg_cycles      = 5
 /
 
 &NUMERICS

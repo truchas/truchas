@@ -81,6 +81,7 @@ will still be very small.
   nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  pc_amg_cycles = 5
 /
 
 &NUMERICS
