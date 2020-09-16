@@ -40,7 +40,6 @@ module ustruc_comp_factory
 
   use ustruc_comp_class
   use ustruc_core_type
-  use ustruc_vel1_type
   use ustruc_time_type
   use ustruc_gv0_type
   use ustruc_gv1_type
@@ -54,20 +53,19 @@ module ustruc_comp_factory
 contains
 
   function new_ustruc_comp (n, params) result (comp)
-  
+
     use truchas_logging_services
 
     integer, intent(in) :: n
     type(parameter_list) :: params
     class(ustruc_comp), pointer :: comp
-    
+
     integer :: lun, stat
     character(:), allocatable :: filename, errmsg, gv_model_type
     type(parameter_list), pointer :: plist
 
-    comp => new_ustruc_core(n)
-    comp => new_ustruc_vel1(comp, params)
-    
+    comp => new_ustruc_core(n, params)
+
     if (params%is_parameter('gv-model-file')) then
       call params%get ('gv-model-file', filename)
       plist => params%sublist('gv-params')

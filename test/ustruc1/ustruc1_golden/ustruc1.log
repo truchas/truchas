@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 20.09-14-g3d5c04f7
+   code:                Truchas 20.09-17-geeba5642-dirty
    build architecture:  x86_64
-   build date/time:     2020-09-13 22:37:21
+   build date/time:     2020-09-15 10:47:58
    build flags:          -u -C -C=dangling -gline -nan
    build host:          thelio.indiana
    run architecture:    Linux thelio.indiana 5.3.11-100.fc29.x86_64 #1
    run host:            thelio.indiana
-   run date/time:       13 Sep 20 22:38:19
+   run date/time:       15 Sep 20 12:13:26
    processors:          1
 
 ================================================================================
@@ -1328,33 +1328,31 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  7.367E+01 --- Total
-    5.286E-03 --- Input
-    2.150E+00 --- Initialization
-      1.551E-02 --- VOF Initialize
-      7.773E-02 --- HTSD function
-        7.226E-02 --- HT function
-      1.242E-03 --- ssor-setup
-      3.869E-02 --- ssor-solve
-      2.778E-01 --- Microstructure
-    7.151E+01 --- Main Cycle
-      5.401E+01 --- Microstructure
-        5.006E-02 --- collect input
-        5.962E+00 --- temperature gradient
-        4.790E+01 --- solid fraction gradient
-        7.559E-02 --- analysis
-      2.216E-02 --- Time Step
-      1.721E+01 --- Diffusion Solver
-        2.487E+00 --- HTSD precon compute
-          1.332E-01 --- hypre-matrix-copy
-          7.144E-01 --- boomer-setup
-        7.432E+00 --- HTSD function
-          6.760E+00 --- HT function
-        4.302E+00 --- HTSD precon apply
-          4.302E+00 --- HT precon apply
-            2.547E+00 --- boomer-solve
+  2.424E+01 --- Total
+    5.362E-03 --- Input
+    1.942E+00 --- Initialization
+      1.529E-02 --- VOF Initialize
+      7.739E-02 --- HTSD function
+        7.143E-02 --- HT function
+      1.215E-03 --- ssor-setup
+      3.783E-02 --- ssor-solve
+      9.186E-02 --- Microstructure
+    2.229E+01 --- Main Cycle
+      6.143E+00 --- Microstructure
+        4.911E-02 --- collect input
+        6.084E+00 --- analysis
+      1.738E-02 --- Time Step
+      1.587E+01 --- Diffusion Solver
+        2.461E+00 --- HTSD precon compute
+          1.305E-01 --- hypre-matrix-copy
+          7.137E-01 --- boomer-setup
+        6.996E+00 --- HTSD function
+          6.814E+00 --- HT function
+        4.291E+00 --- HTSD precon apply
+          4.290E+00 --- HT precon apply
+            2.492E+00 --- boomer-solve
 
-                  Process virtual memory used: 3.42E+02 mB
-                                   words/cell: 13789
+                  Process virtual memory used: 2.91E+02 mB
+                                   words/cell: 11764
 
-truchas terminated normally on 13 Sep 20 at 22:39:33
+truchas terminated normally on 15 Sep 20 at 12:13:50

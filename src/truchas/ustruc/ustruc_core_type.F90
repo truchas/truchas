@@ -24,10 +24,10 @@
 !!  SET_STATE.
 !!
 !!  Objects of this type respond to the following data names in the generic
-!!  GET subroutine: 'temp', 'temp-grad', 'frac', 'frac-grad', and 'invalid'.
+!!  GET subroutine: 'temp', 'temp-grad', 'frac', and 'invalid'.
 !!  These correspond exactly to the data passed in the SET_STATE and
-!!  UPDATE_STATE calls.  They also respond to 'frac-rate' which returns the
-!!  time rate of change of solid fraction, which is computed using a simple
+!!  UPDATE_STATE calls.  They also respond to 'temp-rate' which returns the
+!!  time rate of change of temperature, which is computed using a simple
 !!  backward time difference between successive states.  Before the first
 !!  state update, it returns a dummy value of 0.
 !!
@@ -70,15 +70,14 @@ module ustruc_core_type
   type, extends(ustruc_comp), public :: ustruc_core
     real(r8) :: t = 0.0_r8
     real(r8), allocatable :: temp(:)
-    real(r8), allocatable :: temp_grad(:,:)
+    real(r8), allocatable :: temp_rate(:)   ! R
+    real(r8), allocatable :: temp_grad(:,:) ! magnitude is G
     real(r8), allocatable :: frac(:)
-    real(r8), allocatable :: frac_grad(:,:)
-    real(r8), allocatable :: frac_rate(:)
     logical,  allocatable :: invalid(:)
-    !! These are managed by the USTRUC_VELOCITY type
-    real(r8), allocatable :: speed(:)
+    real(r8), allocatable :: speed(:)       ! V
     real(r8), allocatable :: velocity(:,:)
     logical,  allocatable :: invalid_velocity(:)
+    real(r8), private :: vmax, theta1, theta2
   contains
     procedure, private :: init
     procedure :: set_state
@@ -93,76 +92,114 @@ module ustruc_core_type
     procedure :: deserialize
   end type ustruc_core
 
+#ifndef INTEL_COMPILER_WORKAROUND
+  !! Number of bytes (per cell) of internal state for serialization/deserialization
+  type(ustruc_core), allocatable :: dummy  ! only use is in the following parameter declaration
+  integer, parameter :: NBYTES = storage_size(dummy%speed)/8 + &
+                               3*storage_size(dummy%velocity)/8 + &
+                                 storage_size(dummy%invalid_velocity)/8
+#endif
+
 contains
 
-  function new_ustruc_core (n) result (this)
+  function new_ustruc_core (n, params) result (this)
+    use parameter_list_type
     integer, intent(in) :: n
+    type(parameter_list) :: params
     type(ustruc_core), pointer :: this
     allocate(this)
-    call this%init (n)
+    call this%init (n, params)
   end function
 
-  subroutine init (this, n)
-    integer, intent(in) :: n
+  subroutine init (this, n, params)
+
+    use parameter_list_type
+
     class(ustruc_core), intent(out) :: this
+    integer, intent(in) :: n
+    type(parameter_list) :: params
+
     ASSERT(n >= 0)
+
     this%n = n
-    allocate(this%temp(n), this%temp_grad(3,n))
-    allocate(this%frac(n), this%frac_grad(3,n), this%frac_rate(n))
+    allocate(this%temp(n), this%temp_grad(3,n), this%temp_rate(n))
+    allocate(this%frac(n))
     allocate(this%invalid(n))
+    allocate(this%invalid_velocity(n), this%velocity(3,n), this%speed(n))
+
+    call params%get ('vel-lo-solid-frac', this%theta1)
+    INSIST(this%theta1 > 0.0_r8)
+    call params%get ('vel-hi-solid-frac', this%theta2)
+    INSIST(this%theta2 < 1.0_r8)
+    INSIST(this%theta1 <= this%theta2)
+    call params%get ('vel-max', this%vmax)
+    INSIST(this%vmax >= 0.0_r8)
+
   end subroutine init
 
-  subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine set_state (this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_core), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
     ASSERT(size(temp) == this%n)
     ASSERT(size(temp_grad,1) == 3)
     ASSERT(size(temp_grad,2) == size(temp))
     ASSERT(size(frac) == this%n)
-    ASSERT(size(frac_grad,1) == 3)
-    ASSERT(size(frac_grad,2) == size(frac))
     ASSERT(size(invalid) == this%n)
 
     this%t = t
     this%temp = temp
     this%temp_grad = temp_grad
+    this%temp_rate = 0.0_r8 ! no valid data here
     this%frac = frac
-    this%frac_grad = frac_grad
-    this%frac_rate = 0.0_r8 ! no valid data here
     this%invalid = invalid
+    this%invalid_velocity = .true.
+    this%velocity = 0.0_r8
+    this%speed = 0.0_r8
 
   end subroutine set_state
 
-  subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine update_state (this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_core), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
-    real(r8) :: dt
+    integer :: j
+    real(r8) :: dt, grad_norm
 
     ASSERT(size(temp) == this%n)
     ASSERT(size(temp_grad,1) == 3)
     ASSERT(size(temp_grad,2) == size(temp))
     ASSERT(size(frac) == this%n)
-    ASSERT(size(frac_grad,1) == 3)
-    ASSERT(size(frac_grad,2) == size(frac))
     ASSERT(size(invalid) == this%n)
 
     dt = t - this%t
     this%t = t
 
+    this%temp_rate = (temp - this%temp)/dt
+    where (invalid) this%temp_rate = 0.0_r8
     this%temp = temp
     this%temp_grad = temp_grad
-    this%frac_rate = (frac - this%frac)/dt
-    where (invalid) this%frac_rate = 0.0_r8
     this%frac = frac
-    this%frac_grad = frac_grad
-
     this%invalid = invalid
+
+    do j = 1, this%n
+      this%invalid_velocity(j) = .true.
+      this%velocity(:,j) = 0.0_r8
+      this%speed(j) = 0.0_r8
+      if (invalid(j)) cycle
+      if (frac(j) >= this%theta1 .and. frac(j) <= this%theta2) then
+        grad_norm = this%vector_magnitude(temp_grad(:,j))
+        if (abs(this%temp_rate(j)) < this%vmax * grad_norm) then
+          this%speed(j) = -this%temp_rate(j) / grad_norm
+          this%velocity(:,j) = this%speed(j) * (temp_grad(:,j)/grad_norm)
+          this%invalid_velocity(j) = .false.
+        end if
+      end if
+    end do
 
   end subroutine update_state
 
@@ -176,7 +213,7 @@ contains
     class(ustruc_core), intent(in) :: this
     character(*), intent(in) :: name
     select case (name)
-    case ('invalid', 'temp', 'frac-rate', 'temp-grad', 'frac-grad')
+    case ('invalid', 'temp', 'temp-rate', 'temp-grad', 'speed', 'velocity')
       has = .true.
     case default
       has = .false.
@@ -219,6 +256,15 @@ contains
       else
         where (this%invalid)  array = 0.0_r8
       end if
+    case ('temp-rate')
+      ASSERT(size(array) == this%n)
+      array = this%temp_rate
+      if (present(invalid)) then
+        ASSERT(size(invalid) == this%n)
+        invalid = this%invalid
+      else
+        where (this%invalid)  array = 0.0_r8
+      end if
     case ('frac')
       ASSERT(size(array) == this%n)
       array = this%frac
@@ -228,14 +274,12 @@ contains
       else
         where (this%invalid)  array = 0.0_r8
       end if
-    case ('frac-rate')
+    case ('speed')
       ASSERT(size(array) == this%n)
-      array = this%frac_rate
+      array = this%speed
       if (present(invalid)) then
         ASSERT(size(invalid) == this%n)
-        invalid = this%invalid
-      else
-        where (this%invalid)  array = 0.0_r8
+        invalid = this%invalid_velocity
       end if
     case default
       call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
@@ -260,34 +304,76 @@ contains
           if (this%invalid(j)) array(:,j) = 0.0_r8
         end do
       end if
-    case ('frac-grad')
-      ASSERT(all(shape(array) == shape(this%frac_grad)))
-      array = this%frac_grad
+    case ('velocity')
+      ASSERT(all(shape(array) == shape(this%velocity)))
+      array = this%velocity
       if (present(invalid)) then
         ASSERT(size(invalid) == this%n)
-        invalid = this%invalid
-      else
-        do j = 1, this%n
-          if (this%invalid(j)) array(:,j) = 0.0_r8
-        end do
+        invalid = this%invalid_velocity
       end if
     case default
       call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
     end select
   end subroutine getr2
 
+
   subroutine serialize (this, cid, array)
+
     use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_to_bytes
+
     class(ustruc_core), intent(in) :: this
     integer, intent(in) :: cid
     integer(int8), allocatable, intent(out) :: array(:,:)
-  end subroutine
+
+    integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%speed)/8 + &
+           3*storage_size(this%velocity)/8 + &
+             storage_size(this%invalid_velocity)/8
+#endif
+
+    if (cid == 1) then
+      allocate(array(NBYTES,this%n))
+      do j = 1, this%n
+        offset = 0
+        call copy_to_bytes (this%speed(j), array(:,j), offset)
+        call copy_to_bytes (this%velocity(:,j), array(:,j), offset)
+        call copy_to_bytes (this%invalid_velocity(j), array(:,j), offset)
+      end do
+    end if
+
+  end subroutine serialize
 
   subroutine deserialize (this, cid, array)
+
     use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_from_bytes
+
     class(ustruc_core), intent(inout) :: this
     integer, intent(in) :: cid
     integer(int8), intent(in) :: array(:,:)
-  end subroutine
+
+    integer :: j, offset
+#ifdef INTEL_COMPILER_WORKAROUND
+    integer :: NBYTES
+    NBYTES = storage_size(this%speed)/8 + &
+           3*storage_size(this%velocity)/8 + &
+             storage_size(this%invalid_velocity)/8
+#endif
+
+    if (cid == 1) then
+      INSIST(size(array,1) == NBYTES)
+      INSIST(size(array,2) == this%n)
+      do j = 1, this%n
+        offset = 0
+        call copy_from_bytes (array(:,j), offset, this%speed(j))
+        call copy_from_bytes (array(:,j), offset, this%velocity(:,j))
+        call copy_from_bytes (array(:,j), offset, this%invalid_velocity(j))
+      end do
+    end if
+
+  end subroutine deserialize
 
 end module ustruc_core_type

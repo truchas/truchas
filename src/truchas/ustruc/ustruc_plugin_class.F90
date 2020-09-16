@@ -70,7 +70,7 @@ module ustruc_plugin_class
   end type
 
   !! Unique IDs for the existing analysis components
-  integer, parameter, public :: USTRUC_VEL1_ID = 1
+  integer, parameter, public :: USTRUC_CORE_ID = 1
   integer, parameter, public :: USTRUC_GV0_ID  = 2
   integer, parameter, public :: USTRUC_GV1_ID  = 3
 
@@ -101,20 +101,20 @@ contains
     this%n = this%core%n
   end subroutine init
 
-  recursive subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  recursive subroutine set_state (this, t, temp, temp_grad, frac, invalid)
     class(ustruc_plugin), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
     ASSERT(associated(this%comp))
-    call this%comp%set_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%comp%set_state (t, temp, temp_grad, frac, invalid)
   end subroutine set_state
 
-  recursive subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  recursive subroutine update_state (this, t, temp, temp_grad, frac, invalid)
     class(ustruc_plugin), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
     ASSERT(associated(this%comp))
-    call this%comp%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%comp%update_state (t, temp, temp_grad, frac, invalid)
   end subroutine update_state
 
   recursive subroutine get_comp_list (this, list)

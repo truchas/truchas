@@ -84,8 +84,6 @@ module ustruc_model_type
     integer, allocatable :: map(:)
     !! Model parameters
     real(r8) :: mfrac_min
-    integer, allocatable :: sym_setids(:)
-    type(parameter_list) :: grad_params ! gradient solver parameters
   contains
     procedure :: init
     procedure :: set_state
@@ -141,18 +139,6 @@ contains
     INSIST(this%mfrac_min <= 1.0_r8)
     INSIST(this%mfrac_min >= 0.0_r8)
 
-    call params%get ('symmetry-face-sets', this%sym_setids, default=[integer::])
-    
-    if (params%is_parameter('grad-abs-tol')) then
-      call params%get ('grad-abs-tol', rpar)
-      call this%grad_params%set ('grad-abs-tol', rpar)
-    end if
-
-    if (params%is_parameter('grad-rel-tol')) then
-      call params%get ('grad-rel-tol', rpar)
-      call this%grad_params%set ('grad-rel-tol', rpar)
-    end if
-
     !! For now we instantiate the analysis components here, but this needs to
     !! be done outside and the result passed in.
     this%comp => new_ustruc_comp(this%ncell, params)
@@ -163,30 +149,20 @@ contains
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)
     logical,  allocatable :: invalid(:)
-    real(r8), allocatable :: sol_frac(:), sol_frac_grad(:,:), temp(:), temp_grad(:,:)
+    real(r8), allocatable :: sol_frac(:), temp(:), temp_grad(:,:)
     call get_temp_state (this, tcell, tface, temp, temp_grad)
-    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, sol_frac_grad, invalid)
-    call this%comp%set_state (t, temp, temp_grad, sol_frac, sol_frac_grad, invalid)
+    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
+    call this%comp%set_state (t, temp, temp_grad, sol_frac, invalid)
   end subroutine set_state
 
   subroutine update_state (this, t, tcell, tface, liq_vf, sol_vf)
-use process_info_module
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)
     logical,  allocatable :: invalid(:)
-    real(r8), allocatable :: temp(:), temp_grad(:,:), sol_frac(:), sol_frac_grad(:,:)
-    call start_timer ('temperature gradient')
+    real(r8), allocatable :: temp(:), temp_grad(:,:), sol_frac(:)
     call get_temp_state (this, tcell, tface, temp, temp_grad)
-    call stop_timer ('temperature gradient')
-    call start_timer ('solid fraction gradient')
-call mem_diag_write ('***A calling get_sol_frac_state')
-    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, sol_frac_grad, invalid)
-    call stop_timer ('solid fraction gradient')
-    call start_timer ('analysis')
-call mem_diag_write ('***B calling comp%update_state')
-    call this%comp%update_state (t, temp, temp_grad, sol_frac, sol_frac_grad, invalid)
-    call stop_timer ('analysis')
-call mem_diag_write ('***C returning from ustruc_model%update_state')
+    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
+    call this%comp%update_state (t, temp, temp_grad, sol_frac, invalid)
   end subroutine update_state
 
   subroutine get_comp_list (this, list)
@@ -303,36 +279,19 @@ call mem_diag_write ('***C returning from ustruc_model%update_state')
   !! expected by the microstructure analysis kernel.  Input volume fraction
   !! data is provided at all on-process cells, but the output solid fraction
   !! state only on active cells.
-  !!
-  !! NB1: The gradient is computed using a mimetic finite difference scheme
-  !! that computes face fluxes.  This requires a global linear mass matrix
-  !! type solve.  This is generally quite an easy solve and underlying solver
-  !! parameters have been hardwired within the gradient solver object
-  !! (CELL_GRAD), however some of the solver parameters ought to be exposed
-  !! and made setable via the input (FIXME).
-  !!
-  !! NB2: The gradient linear system matrix depends on the calculated mask
-  !! (cells where valid solid fraction data exists), which may differ from
-  !! one call to the next.  Consequently the solver is created afresh locally.
-  !! However, it will be most often the case that the mask is changing very
-  !! infrequently, if at all, and there could be significant savings in
-  !! reusing the setup solver when possible (FIXME).
 
-  subroutine get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, sol_frac_grad, invalid)
+  subroutine get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
 
-    use cell_grad_type
     use index_partitioning, only: gather_boundary
 
     class(ustruc_model), intent(inout), target :: this
     real(r8), intent(in)  :: liq_vf(:), sol_vf(:)
-    real(r8), allocatable, intent(out) :: sol_frac(:), sol_frac_grad(:,:)
+    real(r8), allocatable, intent(out) :: sol_frac(:)
     logical,  allocatable, intent(out) :: invalid(:)
 
     integer  :: j, stat
     logical  :: mask(this%mesh%ncell)
-    real(r8) :: sfrac(this%mesh%ncell), sfrac_grad(3,this%mesh%ncell)
-    type(cell_grad), target :: grad
-    character(:), allocatable :: errmsg
+    real(r8) :: sfrac(this%mesh%ncell)
 
     ASSERT(size(liq_vf) == this%mesh%ncell_onP)
     ASSERT(size(sol_vf) == this%mesh%ncell_onP)
@@ -352,15 +311,6 @@ call mem_diag_write ('***C returning from ustruc_model%update_state')
     !! Extract the relevant solid fraction and invalid mask data.
     sol_frac = sfrac(this%map)
     invalid  = .not.mask(this%map)
-
-    !! Setup the gradient solver; see NB1 and NB2 above.
-    call grad%init (this%disc, mask, this%sym_setids, this%grad_params, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('USTRUC_MODEL%INIT: gradient solver setup error: ' // errmsg)
-
-    !! Solve for the solid fraction gradient and extract the relevant data.
-    call grad%compute (sfrac, sfrac_grad, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('USTRUC_MODEL%INIT: gradient solver error: ' // errmsg)
-    sol_frac_grad = sfrac_grad(:,this%map)
 
   end subroutine get_sol_frac_state
 
