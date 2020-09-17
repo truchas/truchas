@@ -344,8 +344,7 @@ contains
 
   !! Output the microstructure analysis data to the HDF output file.
   !! No control over what gets written is provided; we write most everything
-  !! that is available.  NB: The choice of things to write must be consistent
-  !! with the analysis modules instantiated by USTRUC_COMP_FACTORY.
+  !! that is available.
 
   subroutine ustruc_output (seq)
 
@@ -363,26 +362,22 @@ contains
     allocate(scalar_out(ncells), vector_out(3,ncells))
 
     !! Core module: temperature and gradient -- modeled cells only
-    call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
-    call write_vector_field (data_name='temp-grad', hdf_name='uStruc-gradT', viz_name=['dT/dx','dT/dy','dT/dz'])
-    call write_scalar_field (data_name='temp-rate', hdf_name='uStruc-Tdot',  viz_name='dT/dt')
-
-    !! Core module: solid fraction, gradient, and rate of change
-    call write_scalar_field (data_name='frac',      hdf_name='uStruc-Fs',     viz_name='Fs')
-
-    !! VEL1 analysis module: solidification front velocity and speed
-    call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])
-    call write_scalar_field (data_name='speed',     hdf_name='uStruc-speed', viz_name='solid-speed')
+    !call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
+    !call write_vector_field (data_name='temp-grad', hdf_name='uStruc-gradT', viz_name=['dT/dx','dT/dy','dT/dz'])
+    !call write_scalar_field (data_name='temp-rate', hdf_name='uStruc-Tdot',  viz_name='dT/dt')
+    !call write_scalar_field (data_name='frac',      hdf_name='uStruc-Fs',    viz_name='F_solid')
+    !call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])
+    !call write_scalar_field (data_name='speed',     hdf_name='uStruc-speed', viz_name='V')
 
     !! GV0 or GV1 analysis modules: time to solidify
     call write_scalar_field (data_name='solid-time', hdf_name='uStruc-solid-time', viz_name='solid-time')
 
     !! GV0 analysis module: temp gradient and solidification front speed at onset
-    call write_scalar_field (data_name='g', hdf_name='uStruc-G', viz_name='G')
-    call write_scalar_field (data_name='v', hdf_name='uStruc-V', viz_name='V')
+    call write_scalar_field (data_name='g', hdf_name='uStruc-G', viz_name='ustruc-G')
+    call write_scalar_field (data_name='v', hdf_name='uStruc-V', viz_name='ustruc-V')
 
     !! GV0 analysis module: count of steps in mushy zone
-    call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='count')
+    !call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='ustruc-count')
 
     !! GV1 analysis module
     call write_scalar_field (data_name='ustruc',  hdf_name='uStruc-gv1-ustruc',  viz_name='gv1-ustruc')
