@@ -29,19 +29,6 @@ def test_remap(tenv):
     print("{:s}: temperature: min {:8.2e} max {:8.2e} L2 {:8.2e}".format(status,min,max,l2))
     if max > tol: nfail += 1
 
-    # compare the final temperature gradients
-    field2 = output2.field(sid2, "Grad_T")
-    field4 = output4.field(sid4, "Grad_T")
-
-    max2 = npla.norm(field2,  np.inf)
-    max = npla.norm(field4 - field2,  np.inf)
-    min = npla.norm(field4 - field2, -np.inf)
-    l2  = npla.norm(field4 - field2)
-
-    status = "PASS" if max/max2 <= tol else "FAIL"
-    print("{:s}: grad_T: max of 2pe {:8.2e} min {:8.2e} max {:8.2e} L2 {:8.2e}".format(status,max2,min,max,l2))
-    if max/max2 > tol: nfail += 1
-
     return nfail
 
 if __name__=="__main__":

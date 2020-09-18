@@ -190,9 +190,9 @@ contains
       !! computed like that done by the call to density below, instead of just
       !! using the value in zone%rho; not sure why, as the computation is the
       !! same, but perhaps the zone%rho value is stale?  NNC, 8/9/2012.
-      !allocate(rho(ncells))
-      !call write_seq_cell_field (seq, zone%rho, 'Z_RHO', for_viz=.true., viz_name='Density')
-      !deallocate(rho)
+      allocate(rho(ncells))
+      call write_seq_cell_field (seq, zone%rho, 'Z_RHO', for_viz=.true., viz_name='Density')
+      deallocate(rho)
 
       !! Cell temperature
       call write_seq_cell_field (seq, zone%temp, 'Z_TEMP', for_viz=.true., viz_name='T')
