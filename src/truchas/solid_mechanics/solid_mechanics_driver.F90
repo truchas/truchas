@@ -16,11 +16,10 @@ module solid_mechanics_driver
   use truchas_logging_services
   use unstr_mesh_type
   use solid_mechanics_type
-  use solid_mechanics_namelist, only: read_solid_mechanics_namelist
   implicit none
   private
 
-  public :: read_solid_mechanics_namelist ! re-export
+  public :: read_solid_mechanics_namelists
   public :: solid_mechanics_enabled
   public :: solid_mechanics_init
   public :: solid_mechanics_step
@@ -52,6 +51,18 @@ contains
     use physics_module, only: solid_mechanics
     solid_mechanics_enabled = solid_mechanics
   end function solid_mechanics_enabled
+
+  subroutine read_solid_mechanics_namelists(lun)
+    use solid_mechanics_namelist
+    use sm_bc_namelist
+    use parameter_list_type
+    integer, intent(in) :: lun
+    type(parameter_list), pointer :: plist
+    call read_solid_mechanics_namelist(lun)
+    plist => params%sublist('bc')
+    call read_sm_bc_namelists(lun, plist)
+  end subroutine read_solid_mechanics_namelists
+
 
   subroutine solid_mechanics_init()
 

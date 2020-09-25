@@ -36,8 +36,8 @@ contains
     real(r8) :: strain_limit ! Maximum plastic strain increment
     real(r8) :: convergence_criterion, nlk_vector_tolerance, relaxation_parameter
     integer :: maximum_iterations, nlk_max_vectors, preconditioning_steps
-    namelist /solid_mechanics/ contact_distance, contact_norm_trac, contact_penalty, strain_limit, &
-        convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
+    namelist /solid_mechanics/ contact_distance, contact_norm_trac, contact_penalty, &
+        strain_limit, convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
         nlk_max_vectors, preconditioning_steps, relaxation_parameter
 
     integer :: ios

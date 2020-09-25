@@ -47,7 +47,7 @@ contains
     use evaporation_namelist,      only: read_evaporation_namelist
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
-    use solid_mechanics_driver,    only: read_solid_mechanics_namelist
+    use solid_mechanics_driver,    only: read_solid_mechanics_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
@@ -125,7 +125,7 @@ contains
 
     ! read namelists for solid mechanics options
     if (solid_mechanics) then
-      call read_solid_mechanics_namelist (lun)
+      call read_solid_mechanics_namelists (lun)
     else if (legacy_solid_mechanics) then
       call read_legacy_solid_mechanics_namelist (lun)
       call read_viscoplastic_model_namelists (lun)

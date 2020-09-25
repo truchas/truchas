@@ -16,22 +16,22 @@ module sm_model_type
   use truchas_timers
   use unstr_mesh_type
   use scalar_func_containers
+  use sm_bc_type
   use integration_geometry_type
   implicit none
   private
 
   type, public :: sm_model
     private
-    type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference -- expose to precon type
-    type(integration_geometry), public :: ig ! expose to precon type
+    ! expose these to precon type
+    type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference
+    type(integration_geometry), public :: ig
+    type(sm_bc), public :: bc
 
     integer :: nmat
     real(r8), allocatable :: density_c(:), density_n(:)
     real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
-
-    !! TODO: These will probably vary across the mesh
-    real(r8) :: poissons_ratio, youngs_modulus, thermal_expansion_coeff
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
@@ -60,6 +60,8 @@ contains
     integer, intent(in) :: nmat
     type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
 
+    integer :: stat
+    character(:), allocatable :: errmsg
     type(parameter_list), pointer :: plist => null()
 
     ASSERT(nmat > 0)
@@ -87,6 +89,10 @@ contains
     call move_alloc(lame1f, this%lame1f)
     call move_alloc(lame2f, this%lame2f)
     call move_alloc(densityf, this%densityf)
+
+    plist => params%sublist('bc')
+    call this%bc%init(plist, mesh, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
 
   end subroutine init
 
@@ -116,10 +122,9 @@ contains
     call start_timer("properties")
 
     do j = 1, this%mesh%ncell
-      state(1) = temperature_cc(j)
-
       density_old = this%density_c(j)
 
+      state(1) = temperature_cc(j)
       this%lame1(j) = 0
       this%lame2(j) = 0
       this%density_c(j) = 0
@@ -130,10 +135,14 @@ contains
         this%density_c(j) = this%density_c(j) + vof(m,j) * this%densityf(m)%f%eval(state)
       end do
 
-      dstrain = (density_old / this%density_c(j)) ** (1 / 3.0_r8) - 1
-      thermal_strain(:3) = dstrain
-      thermal_strain(4:) = 0
-      call compute_stress(this%lame1(j), this%lame2(j), thermal_strain, thermal_stress(:,j))
+      if (this%density_c(j) /= 0) then
+        dstrain = (density_old / this%density_c(j)) ** (1.0_r8 / 3) - 1
+        thermal_strain(:3) = dstrain
+        thermal_strain(4:) = 0
+        call compute_stress(this%lame1(j), this%lame2(j), thermal_strain, thermal_stress(:,j))
+      else
+        thermal_stress(:,j) = 0
+      end if
     end do
 
     call cell_to_node(this%mesh, this%density_c, this%density_n)
@@ -207,22 +216,22 @@ contains
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_residual(this, t, displ, r)
 
-    class(sm_model), intent(in) :: this
+    class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:)
 
-    integer :: n, xp, p, j
+    integer :: n, xp, p, j, i, f, xn, d
     real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
+    ASSERT(size(r) == 3*this%mesh%nnode_onP)
 
     call start_timer("residual")
 
     call this%compute_total_strain(displ, total_strain)
 
     do n = 1, this%mesh%nnode_onP
-      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1), &
-          rn => r(3*(n-1)+1:3*(n-1)+3))
+      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
 
         lhs = 0
         do xp = 1, size(np)
@@ -234,8 +243,46 @@ contains
           lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
         end do
 
-        rn = lhs - this%rhs(:,n)
+        r(3*(n-1)+1:3*(n-1)+3) = lhs - this%rhs(:,n)
       end associate
+    end do
+
+    do d = 1, 3
+      ! At traction BCs the stress is defined along the face. Each
+      ! face has traction discretized at the integration points, one for each node.
+      ! The values array provides the equivalent of traction = tensor_dot(stress, n)
+      ! where n is normal of the boundary with magnitude equal to the area of this
+      ! integration region (associated with node and face center, not the whole face).
+      if (allocated(this%bc%traction(d)%p)) then
+        call this%bc%traction(d)%p%compute(t)
+        associate (faces => this%bc%traction(d)%p%index, values => this%bc%traction(d)%p%value)
+          do i = 1, size(faces)
+            f = faces(i)
+            do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
+              n = this%mesh%fnode(xn)
+              if (n > this%mesh%nnode_onP) cycle
+              r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
+            end do
+          end do
+        end associate
+      end if
+
+      ! Displacement BCs transform the matrix to a diagonal and the right hand
+      ! side to the desired solution.
+      if (allocated(this%bc%displacement(d)%p)) then
+        call this%bc%displacement(d)%p%compute(t)
+        associate (faces => this%bc%displacement(d)%p%index, &
+            values => this%bc%displacement(d)%p%value)
+          do i = 1, size(faces)
+            f = faces(i)
+            do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
+              n = this%mesh%fnode(xn)
+              if (n > this%mesh%nnode_onP) cycle
+              r(3*(n-1)+d) = displ(d,n) - values(i)
+            end do
+          end do
+        end associate
+      end if
     end do
 
     call stop_timer("residual")
@@ -283,8 +330,8 @@ contains
     real(r8), intent(out) :: stress(:)
     ASSERT(size(strain) == 6)
     ASSERT(size(stress) == 6)
-    stress(:3) = lame1 * sum(strain(:3)) + 2*lame2*strain(:3)
-    stress(4:) = 2*lame2*strain(4:)
+    stress = 2 * lame2 * strain
+    stress(:3) = stress(:3) + lame1 * sum(strain(:3))
   end subroutine compute_stress
 
 

@@ -16,6 +16,7 @@ module sm_ds_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use sm_model_type
+  use sm_bc_type
   use truchas_timers
   implicit none
   private
@@ -24,6 +25,7 @@ module sm_ds_precon_type
   type, public :: sm_ds_precon
     private
     type(sm_model), pointer, public :: model => null() ! unowned reference
+    type(sm_bc), pointer, public :: bc => null() ! unowned reference
 
     real(r8), allocatable :: diag(:), d1(:), d2(:), lame1_n(:), lame2_n(:)
     real(r8) :: omega
@@ -45,6 +47,7 @@ contains
     type(parameter_list), intent(inout) :: params
 
     this%model => model
+    this%bc => model%bc
     allocate(this%diag(model%size()))
     allocate(this%lame1_n(model%mesh%nnode_onP), this%lame2_n(model%mesh%nnode_onP))
     call params%get('num-iter', this%niter, default=1)
@@ -136,8 +139,7 @@ contains
     class(sm_ds_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt, displ(:,:)
 
-    integer :: n, d, j
-
+    integer :: n, d, j, i, f, xn
 
     call start_timer("precon-compute")
 
@@ -158,6 +160,23 @@ contains
     end do
 
     ! TODO: Enforce constraints
+
+    ! Dirichlet BCs
+    do d = 1, 3
+      call this%bc%displacement(d)%p%compute(t)
+      associate (faces => this%bc%displacement(d)%p%index, &
+          values => this%bc%displacement(d)%p%value)
+        do i = 1, size(faces)
+          f = faces(i)
+          do xn = this%model%mesh%xfnode(f), this%model%mesh%xfnode(f+1)-1
+            n = this%model%mesh%fnode(xn)
+            j = 3*(n-1) + d
+            if (n > this%model%mesh%nnode_onP) cycle
+            this%diag(j) = 1
+          end do
+        end do
+      end associate
+    end do
 
     call stop_timer("precon-compute")
 
