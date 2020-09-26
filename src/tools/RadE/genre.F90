@@ -16,6 +16,8 @@ program genre
   use genre_command_line
   use parameter_list_type
   use scl
+  use timer_tree_type, only: start_timer, stop_timer, write_timer_tree
+  use,intrinsic :: iso_fortran_env, only: output_unit
   implicit none
 
   integer :: lun, ios, n, num_encl, stat
@@ -29,6 +31,8 @@ program genre
 
   call scl_init
   is_IOP = (scl_rank()==1)
+
+  call start_timer('Total genre execution time')
 
   if (is_IOP) call parse_command_line(infile, outfile, overwrite)
   call scl_bcast_alloc(infile)
@@ -52,14 +56,18 @@ program genre
   if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))
 
   !! Construct enclosure
+  call start_timer('enclosure mesh creation')
   call read_toolpath_namelists(lun)
   call read_enclosure_namelist(lun, encl_params)
   call init_encl_list(e, encl_params, stat, errmsg)
   if (stat /= 0) call re_halt('error creating the enclosure: ' // errmsg)
+  call stop_timer('enclosure mesh creation')
 
   !! Generate patches
   call read_patches_namelist(lun, patch_params, found)
+  if (found) call start_timer('  mesh patch generation')
   call ep%generate_patches(e, patch_params)
+  if (found) call stop_timer('  mesh patch generation')
 
   call read_chaparral_namelist(lun, chap_params, found)
 
@@ -76,15 +84,27 @@ program genre
         cycle
       end if
     end if
+    call start_timer('  enclosure mesh output')
     call e%write(outfile)
     call ep%write(outfile)
+    call stop_timer('  enclosure mesh output')
     if (found) then
+      call start_timer('view factor computation')
       call calculate_vf(e, chap_params, ep, vf)
+      call stop_timer('view factor computation')
+      call start_timer('     view factor output')
       call vf%write(outfile)
+      call stop_timer('     view factor output')
     end if
     call re_info('wrote ' // outfile)
     call e%next_encl
   end do
+
+  call stop_timer('Total genre execution time')
+  if (is_IOP) then
+    call re_info('')
+    call write_timer_tree(unit=output_unit, indent=3)
+  end if
 
   call scl_finalize
 
