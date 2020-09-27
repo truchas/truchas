@@ -83,11 +83,12 @@ module re_patch_type
   public :: read_patches_namelist
 
   !! Patch algorithms
-  character(32), parameter :: PATCH_ALGORITHMS(4) = ['NONE','VSA ','VAC ','PAVE']
+  character(32), parameter :: PATCH_ALGORITHMS(5) = ['NONE','VSA ','VAC ','PAVE','FILE']
   integer, parameter :: PATCH_ALG_NONE = 1
   integer, parameter :: PATCH_ALG_VSA = 2
   integer, parameter :: PATCH_ALG_VAC = 3
   integer, parameter :: PATCH_ALG_PAVE = 4
+  integer, parameter :: PATCH_ALG_FILE = 5
 
   !! Parameter defaults
   integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
@@ -112,6 +113,7 @@ module re_patch_type
     procedure, private :: vsa_patches
     procedure, private :: vac_patches
     procedure, private :: pave_patches
+    procedure, private :: file_patches
   end type
 
 contains
@@ -132,7 +134,7 @@ contains
     logical :: is_IOP
     integer :: ios, stat, patch_alg
     character(9) :: string
-    character(255) :: iom
+    character(255) :: iom, patch_file
 
     !! The PATCHES namelist variables; user visible.
     character(32) :: patch_algorithm
@@ -153,7 +155,7 @@ contains
       vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, &
         vsa_max_patch_radius, vsa_normalize_dist, vsa_random_seed, &
       vac_merge_level, vac_split_patch_size, &
-      pave_merge_level, pave_split_patch_size, pave_random_seed
+      pave_merge_level, pave_split_patch_size, pave_random_seed, patch_file
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
 
@@ -188,6 +190,7 @@ contains
     pave_merge_level = NULL_I
     pave_split_patch_size = NULL_I
     pave_random_seed = NULL_I
+    patch_file = NULL_C
 
     if (is_IOP) read(lun,nml=patches,iostat=ios,iomsg=iom)
     call scl_bcast(ios)
@@ -208,6 +211,7 @@ contains
     call scl_bcast(pave_merge_level)
     call scl_bcast(pave_split_patch_size)
     call scl_bcast(pave_random_seed)
+    call scl_bcast(patch_file)
 
     !! Check the values
     stat = 0
@@ -227,6 +231,8 @@ contains
         patch_alg = PATCH_ALG_VAC
       case ('PAVE')
         patch_alg = PATCH_ALG_PAVE
+      case ('FILE')
+        patch_alg = PATCH_ALG_FILE
       case default
         call data_err('unrecognized PATCH_ALGORITHM: '//trim(patch_algorithm))
     end select
@@ -341,6 +347,12 @@ contains
       call params%set('pave-random-seed', pave_random_seed)
     end if
 
+    !! FILE settings
+    if (patch_alg == PATCH_ALG_FILE) then
+      if (patch_file == NULL_C) call data_err('PATCH_FILE not specified')
+      call params%set('patch-file', trim(patch_file))
+    end if
+
     if (stat /= 0) call re_halt('errors found in PATCHES namelist variables')
 
   contains
@@ -376,6 +388,9 @@ contains
       case (PATCH_ALG_PAVE)
         write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
         call this%pave_patches(e, params)
+      case (PATCH_ALG_FILE)
+        write (*,'(a)') 'Reading patches from a disk file'
+        call this%file_patches(e, params)
       case default
         !! Programming error, exit immediately.
         INSIST(.false.)
@@ -509,6 +524,27 @@ contains
     call pave%output(this%f2p_map, this%global_ids, this%npatch)
 
   end subroutine pave_patches
+
+
+  !! Read patches from a file
+  subroutine file_patches (this, e, params)
+    class(re_patch), intent(out) :: this
+    class(encl), target, intent(in) :: e
+    character(:), allocatable :: path
+    type(parameter_list), intent(inout) :: params
+    call params%get('patch-file', path)
+    call re_patch_read(this, path)
+    INSIST(this%nface == e%nface) !TODO: need parallel-aware error handling
+    block !TODO: re_patch_read really ought to set this as well
+      integer :: j
+      if (this%has_patches) then
+        allocate(this%global_ids(this%npatch))
+        do j = 1, this%npatch
+          this%global_ids(j) = j
+        end do
+      end if
+    end block
+  end subroutine file_patches
 
 
   subroutine re_patch_bcast (this)
