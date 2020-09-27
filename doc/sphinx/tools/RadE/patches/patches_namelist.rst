@@ -34,7 +34,7 @@ Selects one of the three available algorithms, or disables patching.
 
 .. namelist_parameter::
    :type: STRING
-   :domain: Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, or ``'VSA'``
+   :domain: Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, ``'VSA'``, or ``'FILE'``
    :default: patch_algorithm = ``'PAVE'``
 
 Each option selects a different patch algorithm:
@@ -44,6 +44,10 @@ Each option selects a different patch algorithm:
 #. **PAVE:** Generate patches with the :doc:`PAVE algorithm <pave>`.
 #. **VAC:** Generate patches with the :doc:`VAC algorithm <vac>`.
 #. **VSA:** Generate patches with the :doc:`VSA algorithm <vsa>`.
+#. **FILE:** Patches will be read from a file. Because the cost of computing
+   patches can be quite substantial for very large enclosure meshes, this
+   pseudo-algorithm is provided to enable the use of previously computed
+   patches.
 
 
 VERBOSITY_LEVEL
@@ -105,6 +109,16 @@ edges whose angle exceeds the parameter. Patches will never span more than one c
    The effects of ``max_angle`` vary by algorithm. Refer to the documentation of the :doc:`PAVE
    <pave>`, :doc:`VAC <vac>`, and :doc:`VSA <vsa>` algorithms for more details.
 
+
+FILE Parameters
+---------------
+The following namelist parameter applies only to the FILE algorithm.
+
+PATCH_FILE
+++++++++++
+The path to an existing radiation enclosure file containing patch information.
+The enclosure defined by the file must be identical to current enclosure.
+This may be an absolute path or a relative path.
 
 
 PAVE Parameters
