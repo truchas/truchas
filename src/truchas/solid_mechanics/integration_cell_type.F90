@@ -147,7 +147,7 @@ contains
     end do
 
     j = this%nnode+this%nface+this%nedge+1
-    this%x(:,j) = sum(this%x, dim=2) / this%nnode
+    this%x(:,j) = sum(this%x(:,:this%nnode), dim=2) / this%nnode
 
   end subroutine init
 

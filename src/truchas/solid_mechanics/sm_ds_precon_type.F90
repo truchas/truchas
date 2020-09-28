@@ -120,6 +120,8 @@ contains
     integer :: d
     real(r8) :: grad_displ(3,3)
 
+    ASSERT(p > 0)
+
     do d = 1, 3
       grad_displ(:,d) = this%model%ig%grad_shape(p)%p(:,xnc) * displ(d)
     end do

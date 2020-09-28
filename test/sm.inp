@@ -24,12 +24,26 @@ TODO -- Problem description.
 
 &PHYSICS
   materials = 'stuff'
-  legacy_solid_mechanics = .true.
-  heat_transfer = .false.
+  solid_mechanics = .true.
+  heat_transport = .false.
 /
 
-&LEGACY_SOLID_MECHANICS /
-#&DIFFUSION_SOLVER /
+&SOLID_MECHANICS /
+&DIFFUSION_SOLVER /
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  tm_lame1 = 1e10
+  tm_lame2 = 2e10
+  ref_temp = 0.0
+  ref_enthalpy = 0.0
+  specific_heat = 1.0
+  conductivity = 1.0
+  tm_ref_density = 1.0
+  tm_ref_temp = 1.0
+  tm_linear_cte = 1e-5
+/
 
 &BODY
   surface_name = 'from mesh file'
@@ -38,44 +52,32 @@ TODO -- Problem description.
   temperature = 1.0
 /
 
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 1
-  bc_variable  = 'displacement'
-  bc_type      = 'x-displacement'
-  bc_value     = 0.0
+&SM_BC
+  name = 'displx'
+  face_set_ids = 1
+  type = 'displacement-x'
+  displacement = 0
 /
 
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 2
-  bc_variable  = 'displacement'
-  bc_type      = 'x-displacement'
-  bc_value     = 0.0
+&SM_BC
+  name = 'disply'
+  face_set_ids = 1
+  type = 'displacement-y'
+  displacement = 0
 /
 
-&BC
-  surface_name     = 'from mesh file'
-  mesh_surface          = 3
-  bc_variable      = 'displacement'
-  bc_type          = 'y-displacement'
-  bc_value         = 0.0e+00
+&SM_BC
+  name = 'displz'
+  face_set_ids = 1
+  type = 'displacement-z'
+  displacement = 0
 /
 
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 4
-  bc_variable  = 'displacement'
-  bc_type      = 'y-displacement'
-  bc_value     = 0.0e+00
-/
-
-&BC
-  surface_name = 'from mesh file'
-  mesh_surface = 5
-  bc_variable  = 'displacement'
-  bc_type      = 'z-displacement'
-  bc_value     = 0.0e+00
+&SM_BC
+  name = 'tracy'
+  face_set_ids = 2
+  type = 'traction-y'
+  traction = 1
 /
 
 # &THERMAL_BC
@@ -119,22 +121,3 @@ TODO -- Problem description.
 #   face_set_ids = 6
 #   flux = 0.0
 # /
-
-&MATERIAL
-  name = 'stuff'
-  phases = 'stuff'
-  density = 1.0
-  tm_lame1 = 1e10
-  tm_lame2 = 2e10
-  ref_temp = 0.0
-  ref_enthalpy = 0.0
-/
-
-&PHASE
-  name = 'stuff'
-  specific_heat = 1.0
-  conductivity = 1.0
-  tm_ref_density = 1.0
-  tm_ref_temp = 1.0
-  tm_linear_cte = 1e-5
-/
