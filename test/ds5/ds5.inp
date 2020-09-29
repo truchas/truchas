@@ -34,7 +34,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 
 &DIFFUSION_SOLVER
   abs_conc_tol       = 0.0
-  rel_conc_tol       = 1.0e-3
+  rel_conc_tol       = 1.0e-4
   nlk_tol            = 0.01
   nlk_preconditioner = 'hypre_amg'
 /

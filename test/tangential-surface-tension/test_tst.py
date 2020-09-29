@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "tangential-surface-tension.inp")
-    golden = tenv.output("tangential-surface-tension_pgolden/tangential-surface-tension.h5")
+    golden = tenv.output("tangential-surface-tension_golden/tangential-surface-tension.h5")
 
     # cycle numbers
     for sid in (1, 2, 3):
@@ -41,7 +41,7 @@ def run_test(tenv):
     # velocity
     test = output.field(sid, "Z_VC")
     gold = golden.field(sid, "Z_VC")
-    nfail += truchas.compare_max(test, gold, 1e-6, "velocity", time)
+    nfail += truchas.compare_max(test, gold, 5e-6, "velocity", time)
 
     truchas.report_summary(nfail)
     return nfail

@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds2.inp")
-    golden = tenv.output("ds2_pgolden/ds2.h5")
+    golden = tenv.output("ds2_golden/ds2.h5")
 
     # test final cycle number
     cycle = output.cycle(2)
