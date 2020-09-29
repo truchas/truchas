@@ -256,7 +256,7 @@ contains
       !   errc = 0
       !   exit
       ! end if
-      max_du_norm = global_maxval(du)
+      max_du_norm = global_maxval(abs(du))
       if (itr > 1) convergence_rate = max_du_norm / max_du_norm_old
       max_du_norm_old = max_du_norm
       tol = this%ntol

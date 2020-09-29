@@ -41,7 +41,7 @@ def run_test(tenv):
     # velocity
     test = output.field(sid, "Z_VC")
     gold = golden.field(sid, "Z_VC")
-    nfail += truchas.compare_max(test, gold, 1e-6, "velocity", time)
+    nfail += truchas.compare_max(test, gold, 5e-6, "velocity", time)
 
     truchas.report_summary(nfail)
     return nfail
