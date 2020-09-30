@@ -66,6 +66,7 @@ contains
     integer,  intent(in)  :: map_type
     logical,  intent(in), optional :: pullback
 
+    integer :: n
     logical :: reverse_order, preserve_constants, exactly_conservative
     real(r8), allocatable :: col_src(:), col_dest(:)
 
@@ -94,8 +95,10 @@ contains
       ASSERT(size(dest) == this%n2)
     end if
 
-    allocate(col_src(merge(global_sum(size(src)),0,is_IOP)))
-    allocate(col_dest(merge(global_sum(size(dest)),0,is_IOP)))
+    n = global_sum(size(src))
+    allocate(col_src(merge(n,0,is_IOP)))
+    n = global_sum(size(dest))
+    allocate(col_dest(merge(n,0,is_IOP)))
 
     call collate(col_src, src)
 
