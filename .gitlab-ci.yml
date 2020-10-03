@@ -8,7 +8,7 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.1.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.2.0
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
@@ -32,7 +32,7 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.1.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.2.0
   script:
     - bash ci/build.sh
     - cd build
@@ -44,7 +44,7 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.1.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.2.0
   script:
   script:
     - bash ci/build.sh Debug
