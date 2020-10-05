@@ -32,6 +32,7 @@ module sm_model_type
     real(r8), allocatable :: density_c(:), density_n(:)
     real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
+    logical :: first_step = .true.
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
@@ -136,7 +137,7 @@ contains
         this%density_c(j) = this%density_c(j) + vof(m,j) * this%densityf(m)%f%eval(state)
       end do
 
-      if (this%density_c(j) /= 0) then
+      if (this%density_c(j) /= 0 .and. .not.this%first_step) then
         dstrain = (density_old / this%density_c(j)) ** (1.0_r8 / 3) - 1
         thermal_strain(:3) = dstrain
         thermal_strain(4:) = 0
@@ -163,11 +164,14 @@ contains
       end associate
     end do
 
+    this%first_step = .false.
+
     call stop_timer("properties")
 
   end subroutine update_properties
 
 
+  !! Needed for the preconditioner.
   subroutine compute_lame_node_parameters(this, lame1_n, lame2_n)
 
     class(sm_model), intent(in) :: this

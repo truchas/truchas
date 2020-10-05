@@ -175,6 +175,7 @@ contains
     use parallel_communication, only: global_dot_product
     real(r8), intent(in) :: a(:), b(:)
     real(r8) :: dp
+    ASSERT(size(a) == size(b))
     dp = global_dot_product(a, b)
   end function
 

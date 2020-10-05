@@ -95,8 +95,9 @@ contains
     call this%solver%init(this%solver_model, plist, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS INIT: " // errmsg)
 
-    allocate(this%displacement(3*this%model%size()), this%stress(6,this%model%size()), &
+    allocate(this%displacement(this%model%size()), this%stress(6,this%model%size()), &
         this%strain(6,this%model%size()))
+    this%displacement = 0 ! TODO: initial displacement
 
     call stop_timer("solid mechanics")
 
@@ -111,6 +112,8 @@ contains
     character(:), intent(out), allocatable :: errmsg
 
     real(r8) :: displ0(size(this%displacement))
+
+    ASSERT(dt > 0)
 
     call start_timer("solid mechanics")
 

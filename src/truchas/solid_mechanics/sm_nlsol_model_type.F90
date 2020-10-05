@@ -56,7 +56,7 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous :: u(:), udot(:)
     real(r8), intent(out), contiguous :: f(:)
-    call this%model%compute_residual(t, reshape(u, [3,this%model_size]), f)
+    call this%model%compute_residual(t, reshape(u, [3,this%model%mesh%nnode_onP]), f)
   end subroutine
 
   subroutine apply_precon(this, t, u, f)

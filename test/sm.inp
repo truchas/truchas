@@ -34,8 +34,8 @@ TODO -- Problem description.
 &MATERIAL
   name = 'stuff'
   density = 1.0
-  tm_lame1 = 1e10
-  tm_lame2 = 2e10
+  tm_lame1 = 2e10
+  tm_lame2 = 1e10
   ref_temp = 0.0
   ref_enthalpy = 0.0
   specific_heat = 1.0
