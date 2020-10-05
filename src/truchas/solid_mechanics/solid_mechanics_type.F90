@@ -51,7 +51,7 @@ module solid_mechanics_type
     type(sm_nlsol_model) :: solver_model
     type(nlsol) :: solver
 
-    real(r8), allocatable :: displacement(:), strain(:,:), stress(:,:)
+    real(r8), allocatable :: displacement(:,:), strain(:,:), stress(:,:)
 
     integer, public :: thermoelastic_niter = 0 ! linear iteration count
     integer, public :: viscoplastic_niter = 0  ! nonlinear iteration count
@@ -95,8 +95,8 @@ contains
     call this%solver%init(this%solver_model, plist, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS INIT: " // errmsg)
 
-    allocate(this%displacement(this%model%size()), this%stress(6,this%model%size()), &
-        this%strain(6,this%model%size()))
+    allocate(this%displacement(3,mesh%nnode_onP), this%stress(6,mesh%nnode_onP), &
+        this%strain(6,mesh%nnode_onP))
     this%displacement = 0 ! TODO: initial displacement
 
     call stop_timer("solid mechanics")
@@ -106,20 +106,23 @@ contains
 
   subroutine step(this, t, dt, vof, temperature_cc, stat, errmsg)
 
-    class(solid_mechanics), intent(inout) :: this
+    class(solid_mechanics), intent(inout), target :: this
     real(r8), intent(in) :: t, dt, vof(:,:), temperature_cc(:)
     integer, intent(out) :: stat
     character(:), intent(out), allocatable :: errmsg
 
+    !real(r8) :: displ(size(this%displacement)), displ0(size(this%displacement))
     real(r8) :: displ0(size(this%displacement))
+    real(r8), pointer :: displ(:)
 
     ASSERT(dt > 0)
 
     call start_timer("solid mechanics")
 
-    displ0 = this%displacement
+    displ(1:size(this%displacement)) => this%displacement
+    displ0 = displ
     call this%model%update_properties(vof, temperature_cc)
-    call this%solver%solve(t, dt, displ0, this%displacement, stat)
+    call this%solver%solve(t, dt, displ0, displ, stat)
     if (stat /= 0) then
       errmsg = "NLK-SM did not converge"
       return
@@ -133,7 +136,7 @@ contains
 
   function displacement_view(this) result(view)
     class(solid_mechanics), intent(in), target :: this
-    real(r8), pointer :: view(:)
+    real(r8), pointer :: view(:,:)
     view => this%displacement
   end function
 

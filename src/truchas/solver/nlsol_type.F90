@@ -67,21 +67,21 @@ module nlsol_type
       import nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
-      real(r8), intent(in), contiguous :: u(:), udot(:)
+      real(r8), intent(in), contiguous, target :: u(:), udot(:)
       real(r8), intent(out), contiguous :: f(:)
     end subroutine
     subroutine apply_precon(this, t, u, f)
       import nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
-      real(r8), intent(in), contiguous :: u(:)
+      real(r8), intent(in), contiguous, target :: u(:)
       real(r8), intent(inout), contiguous :: f(:)
     end subroutine
     subroutine compute_precon(this, t, u, dt)
       import nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t, dt
-      real(r8), intent(in), contiguous :: u(:)
+      real(r8), intent(in), contiguous, target :: u(:)
     end subroutine
     real(r8) function du_norm(this, t, u, du)
       import :: nlsol_model, r8

@@ -126,7 +126,7 @@ contains
 
 
   function solid_mechanics_displacement_view() result(view)
-    real(r8), pointer :: view(:)
+    real(r8), pointer :: view(:,:)
     view => this%sm%displacement_view()
   end function
 

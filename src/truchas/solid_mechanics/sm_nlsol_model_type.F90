@@ -54,15 +54,17 @@ contains
   subroutine compute_f(this, t, u, udot, f)
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous :: u(:), udot(:)
+    real(r8), intent(in), contiguous, target :: u(:), udot(:)
     real(r8), intent(out), contiguous :: f(:)
-    call this%model%compute_residual(t, reshape(u, [3,this%model%mesh%nnode_onP]), f)
+    real(r8), pointer :: u2(:,:)
+    u2(1:3, 1:this%model%mesh%nnode_onP) => u
+    call this%model%compute_residual(t, u2, f)
   end subroutine
 
   subroutine apply_precon(this, t, u, f)
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous :: u(:)
+    real(r8), intent(in), contiguous, target :: u(:)
     real(r8), intent(inout), contiguous :: f(:)
     call this%precon%apply(reshape(u, [3,this%model_size]), f)
   end subroutine
@@ -70,8 +72,10 @@ contains
   subroutine compute_precon(this, t, u, dt)
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in), contiguous :: u(:)
-    call this%precon%compute(t, dt, reshape(u, [3,this%model_size]))
+    real(r8), intent(in), contiguous, target :: u(:)
+    real(r8), pointer :: u2(:,:)
+    u2(1:3, 1:this%model%mesh%nnode_onP) => u
+    call this%precon%compute(t, dt, u2)
   end subroutine
 
   real(r8) function du_norm(this, t, u, du)

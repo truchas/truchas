@@ -65,7 +65,7 @@ contains
   subroutine compute_f(this, t, u, udot, f)
     class(smold_nlsol_model) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous :: u(:), udot(:)
+    real(r8), intent(in), contiguous, target :: u(:), udot(:)
     real(r8), intent(out), contiguous :: f(:)
     real(r8) :: u_old(size(u))
     u_old = u - udot ! h = 1 was passed to the solver
@@ -77,7 +77,7 @@ contains
 
     class(smold_nlsol_model) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous :: u(:)
+    real(r8), intent(in), contiguous, target :: u(:)
     real(r8), intent(inout), contiguous :: f(:)
 
     integer :: i, j
@@ -95,7 +95,7 @@ contains
   subroutine compute_precon(this, t, u, dt)
     class(smold_nlsol_model) :: this
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in), contiguous :: u(:)
+    real(r8), intent(in), contiguous, target :: u(:)
     ! no op
   end subroutine
 
