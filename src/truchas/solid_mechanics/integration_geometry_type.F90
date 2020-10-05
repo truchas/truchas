@@ -206,6 +206,7 @@ contains
 
     allocate(this%npoint(this%xnpoint(this%mesh%nnode_onP+1)-1), &
         this%xpxn(this%xnpoint(this%mesh%nnode_onP+1)-1), this%nppar(this%mesh%nnode_onP))
+    this%npoint = -1
     this%nppar = 0
     k = 0
     do j = 1, this%mesh%ncell
@@ -217,21 +218,24 @@ contains
           node2 = cn(edges(2,xp))
 
           if (node1 <= this%mesh%nnode_onP) then
-            this%npoint(this%xnpoint(j)+k(node1)) = p
-            this%xpxn(this%xnpoint(j)+k(node1)) = edges(1,xp)
+            this%npoint(this%xnpoint(node1)+k(node1)) = p
+            this%xpxn(this%xnpoint(node1)+k(node1)) = edges(1,xp)
             k(node1) = k(node1) + 1
           end if
           if (node2 <= this%mesh%nnode_onP) then
             ! By convention, the normal is oriented
             ! toward the 2nd node of the associated edge.
             this%nppar(node2) = ibset(this%nppar(node2),k(node2))
-            this%npoint(this%xnpoint(j)+k(node2)) = p
-            this%xpxn(this%xnpoint(j)+k(node2)) = edges(2,xp)
+            this%npoint(this%xnpoint(node2)+k(node2)) = p
+            this%xpxn(this%xnpoint(node2)+k(node2)) = edges(2,xp)
             k(node2) = k(node2) + 1
           end if
         end do
       end associate
     end do
+
+    ASSERT(all(this%npoint > 0))
+    ASSERT(all(this%npoint <= this%npt))
 
   end subroutine compute_connectivity
 
@@ -248,7 +252,7 @@ contains
 
     class(integration_geometry), intent(inout) :: this
 
-    integer :: j, d, p, xp, ipiv, stat, nnode
+    integer :: j, d, p, xp, ipiv(3), stat, nnode
     real(r8) :: jacobian(3,3)
     real(r8), target :: tet4_grad_shape_l(3,4,6), pyr5_grad_shape_l(3,5,8), &
         wed6_grad_shape_l(3,6,9), hex8_grad_shape_l(3,8,12)
@@ -279,6 +283,16 @@ contains
         end do
       end associate
     end do
+
+#ifndef NDEBUG
+    ! Ensure each integration point's matrix is allocated.
+    do p = 1, this%npt
+      if (.not.allocated(this%grad_shape(p)%p)) then
+        print *, p
+        ASSERT(.false.)
+      end if
+    end do
+#endif
 
   contains
 

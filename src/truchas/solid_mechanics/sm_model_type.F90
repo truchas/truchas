@@ -84,6 +84,7 @@ contains
     allocate(this%density_c(this%mesh%ncell), this%density_n(this%mesh%nnode_onP), &
         this%delta_temperature(this%mesh%ncell), &
         this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), this%rhs(3,this%mesh%nnode_onP))
+    this%density_c = 0 ! TODO -- set for first time step
 
     this%nmat = nmat
     call move_alloc(lame1f, this%lame1f)
