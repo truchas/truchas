@@ -129,6 +129,7 @@ contains
     use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
+    use solid_mechanics_driver, only: solid_mechanics_enabled
     use output_control, only: part_path
 
     integer :: stat
@@ -163,7 +164,8 @@ contains
     if (EM_is_on()) call write_EM_data
 
     !! Solid mechanics fields.
-    if (legacy_solid_mechanics) call write_solid_mech_data
+    if (legacy_solid_mechanics) call write_legacy_solid_mech_data
+    if (solid_mechanics_enabled()) call write_solid_mechanics_data
 
     !! Species fields.
     if (species_transport) call write_species_data
@@ -286,7 +288,39 @@ contains
 
     end subroutine write_EM_data
 
-    subroutine write_solid_mech_data
+    subroutine write_solid_mechanics_data
+
+      use solid_mechanics_driver
+
+      real(r8), pointer :: displ(:,:), strain(:,:), stress(:,:)
+
+      displ => solid_mechanics_displacement_view()
+      strain => solid_mechanics_strain_view()
+      stress => solid_mechanics_stress_view()
+
+      call write_seq_node_field(seq, displ, 'Displacement', for_viz=.true., &
+          viz_name=['Dx', 'Dy', 'Dz'])
+      ! call write_seq_cell_field (seq, strain, 'epsilon', for_viz=.true., &
+      !     viz_name=['epsxx', 'epsyy', 'epszz', 'epsxy', 'epsxz', 'epsyz'])
+      ! call write_seq_cell_field (seq, stress, 'sigma', for_viz=.true., &
+      !     viz_name=['sigxx', 'sigyy', 'sigzz', 'sigxy', 'sigxz', 'sigyz'])
+
+      !! TODO: - Total strain (cells)
+      !!       - Phase change strain (cells)
+      !!       - Plastic strain (cells)
+      !!       - Plastic strain rate (cells)
+      !!       - Thermal strain (cells)
+      !!       - Rotation magnitude (cells)
+      !!       - Elastic stress (cells)
+      !!       - Node gap (nodes)
+      !!       - Gap normal traction (nodes)
+
+      !! TODO: Restart-only data (just density?)
+      !call write_seq_node_field(seq, scratch, 'RHS', for_viz=.false.)
+
+    end subroutine write_solid_mechanics_data
+
+    subroutine write_legacy_solid_mech_data
 
       use parameter_module, only: ncomps
       use legacy_mesh_api, only: ndim, nnodes, ncells
@@ -389,7 +423,7 @@ contains
       deallocate(node_gap)
       deallocate(node_norm_trac)
 
-    end subroutine write_solid_mech_data
+    end subroutine write_legacy_solid_mech_data
 
     subroutine write_species_data
 
