@@ -59,7 +59,8 @@ contains
     integer, intent(in) :: lun
     type(parameter_list), pointer :: plist
     call read_solid_mechanics_namelist(lun)
-    plist => params%sublist('bc')
+    plist => params%sublist('model')
+    plist => plist%sublist('bc')
     call read_sm_bc_namelists(lun, plist)
   end subroutine read_solid_mechanics_namelists
 

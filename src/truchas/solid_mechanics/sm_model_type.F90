@@ -258,36 +258,32 @@ contains
       ! The values array provides the equivalent of traction = tensor_dot(stress, n)
       ! where n is normal of the boundary with magnitude equal to the area of this
       ! integration region (associated with node and face center, not the whole face).
-      if (allocated(this%bc%traction(d)%p)) then
-        call this%bc%traction(d)%p%compute(t)
-        associate (faces => this%bc%traction(d)%p%index, values => this%bc%traction(d)%p%value)
-          do i = 1, size(faces)
-            f = faces(i)
-            do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
-              n = this%mesh%fnode(xn)
-              if (n > this%mesh%nnode_onP) cycle
-              r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
-            end do
+      call this%bc%traction(d)%p%compute(t)
+      associate (faces => this%bc%traction(d)%p%index, values => this%bc%traction(d)%p%value)
+        do i = 1, size(faces)
+          f = faces(i)
+          do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
+            n = this%mesh%fnode(xn)
+            if (n > this%mesh%nnode_onP) cycle
+            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
           end do
-        end associate
-      end if
+        end do
+      end associate
 
       ! Displacement BCs transform the matrix to a diagonal and the right hand
       ! side to the desired solution.
-      if (allocated(this%bc%displacement(d)%p)) then
-        call this%bc%displacement(d)%p%compute(t)
-        associate (faces => this%bc%displacement(d)%p%index, &
-            values => this%bc%displacement(d)%p%value)
-          do i = 1, size(faces)
-            f = faces(i)
-            do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
-              n = this%mesh%fnode(xn)
-              if (n > this%mesh%nnode_onP) cycle
-              r(3*(n-1)+d) = displ(d,n) - values(i)
-            end do
+      call this%bc%displacement(d)%p%compute(t)
+      associate (faces => this%bc%displacement(d)%p%index, &
+          values => this%bc%displacement(d)%p%value)
+        do i = 1, size(faces)
+          f = faces(i)
+          do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
+            n = this%mesh%fnode(xn)
+            if (n > this%mesh%nnode_onP) cycle
+            r(3*(n-1)+d) = displ(d,n) - values(i)
           end do
-        end associate
-      end if
+        end do
+      end associate
     end do
 
     call stop_timer("residual")

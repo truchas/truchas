@@ -124,7 +124,6 @@ contains
         end if
       end select
       call plist%set('type', trim(type))
-
     end do
 
   end subroutine read_sm_bc_namelists
