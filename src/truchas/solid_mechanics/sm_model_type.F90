@@ -93,7 +93,7 @@ contains
     call move_alloc(densityf, this%densityf)
 
     plist => params%sublist('bc')
-    call this%bc%init(plist, mesh, stat, errmsg)
+    call this%bc%init(plist, mesh, this%ig, stat, errmsg)
     if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
 
   end subroutine init
@@ -257,30 +257,21 @@ contains
       ! The values array provides the equivalent of traction = tensor_dot(stress, n)
       ! where n is normal of the boundary with magnitude equal to the area of this
       ! integration region (associated with node and face center, not the whole face).
-      call this%bc%traction(d)%p%compute(t)
-      associate (faces => this%bc%traction(d)%p%index, values => this%bc%traction(d)%p%value)
-        do i = 1, size(faces)
-          f = faces(i)
-          do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
-            n = this%mesh%fnode(xn)
-            if (n > this%mesh%nnode_onP) cycle
-            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
-          end do
+      call this%bc%traction(d)%compute(t)
+      associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
         end do
       end associate
 
       ! Displacement BCs transform the matrix to a diagonal and the right hand
       ! side to the desired solution.
-      call this%bc%displacement(d)%p%compute(t)
-      associate (faces => this%bc%displacement(d)%p%index, &
-          values => this%bc%displacement(d)%p%value)
-        do i = 1, size(faces)
-          f = faces(i)
-          do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
-            n = this%mesh%fnode(xn)
-            if (n > this%mesh%nnode_onP) cycle
-            r(3*(n-1)+d) = displ(d,n) - values(i)
-          end do
+      call this%bc%displacement(d)%compute(t)
+      associate (nodes => this%bc%displacement(d)%index, values => this%bc%displacement(d)%value)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          r(3*(n-1)+d) = displ(d,n) - values(i)
         end do
       end associate
     end do

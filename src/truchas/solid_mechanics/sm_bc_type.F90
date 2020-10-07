@@ -15,32 +15,30 @@ module sm_bc_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   use truchas_logging_services
-  use bndry_func1_class
   use bndry_face_func_type
+  use bndry_ip_func_type
   implicit none
   private
 
-  type :: bndry_func1_box
-    class(bndry_func1), allocatable :: p
-  end type bndry_func1_box
-
   type, public :: sm_bc
-    type(bndry_func1_box) :: displacement(3), traction(3)
-    class(bndry_func1), allocatable :: displacementn, tractionn
+    type(bndry_ip_func) :: displacement(3), traction(3)
+    type(bndry_ip_func) :: displacementn, tractionn
   contains
     procedure :: init
   end type sm_bc
 
 contains
 
-  subroutine init(this, params, mesh, stat, errmsg)
+  subroutine init(this, params, mesh, ig, stat, errmsg)
 
     use parameter_list_type
     use unstr_mesh_type
+    use integration_geometry_type
 
     class(sm_bc), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     type(unstr_mesh), intent(in), target :: mesh
+    type(integration_geometry), intent(in) :: ig
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -62,7 +60,7 @@ contains
     subroutine alloc_bc(prefix, bc)
 
       character(*), intent(in) :: prefix
-      class(bndry_func1_box), intent(out) :: bc(:)
+      type(bndry_ip_func), intent(out) :: bc(:)
 
       character(1), parameter :: dirstr(3) = ['x','y','z']
       integer :: d
@@ -74,7 +72,7 @@ contains
         call iterate_list(params, prefix//'-'//dirstr(d), prefix, bff, stat, errmsg)
         if (stat /= 0) return
         call bff%add_complete
-        call move_alloc(bff, bc(d)%p)
+        call bc(d)%init(mesh, ig, bff)
       end do
 
     end subroutine alloc_bc

@@ -16,6 +16,13 @@
 !!   n - the rank-2 real array of oriented IP face areas; n(:,j) is the oriented
 !!       area of IP j. Its shape is [3,npoint]
 !!
+!!   fface - a rank-2 integer array storing cell-local face IDs for a given
+!!       global face ID. For global face ID f corresponding to local face ID k
+!!       of cell j, such that f = cface(xcface(j) - 1 + k), k is given by the
+!!       fface array. fcell(1,f) gives the local face ID for the cell opposite
+!!       the face normal direction, and fcell(2,f) gives the local face ID for
+!!       the cell in the face normal direction.
+!!
 !!   npoint, xnpoint - pair of rank-1 integer arrays storing the node-IP data:
 !!       npoint(xnpoint(j):xnpoint(j+1)-1) is the unordered list of IP indices
 !!       surrounding mesh node j. The shape of xnpoint is [nnode+1] and the
@@ -73,6 +80,7 @@ module integration_geometry_type
     integer, allocatable :: npoint(:), xnpoint(:) ! node to IP connectivity
     integer, allocatable :: xcpoint(:), pcell(:) ! cell to IP connectivity
     integer, allocatable :: xpxn(:) ! cell-local node ID from node-local IP ID (see above)
+    integer, allocatable :: fface(:,:) ! cell-local face IDs for a given global face
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
@@ -167,7 +175,7 @@ contains
 
     class(integration_geometry), intent(inout) :: this
 
-    integer :: j, n, p, xp, node1, node2, k(this%mesh%nnode_onP)
+    integer :: j, n, p, xf, f, xp, node1, node2, k(this%mesh%nnode_onP)
     integer, pointer :: edges(:,:) => null()
 
     ! cell-IP connectivity
@@ -230,6 +238,19 @@ contains
             this%xpxn(this%xnpoint(node2)+k(node2)) = edges(2,xp)
             k(node2) = k(node2) + 1
           end if
+        end do
+      end associate
+    end do
+
+    ! Face-cell local face connectivity
+    allocate(this%fface(2,this%mesh%nface))
+    this%fface = 0
+    do j = 1, this%mesh%ncell
+      associate(cf => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
+        do xf = 1, size(cf)
+          f = cf(xf)
+          n = merge(2, 1, btest(this%mesh%cfpar(j),xf))
+          this%fface(n,f) = xf
         end do
       end associate
     end do

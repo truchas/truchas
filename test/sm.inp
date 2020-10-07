@@ -17,8 +17,8 @@ TODO -- Problem description.
 /
 
 &NUMERICS
-  dt_init = 1.0e0
-  dt_max  = 1.0e0
+  dt_init = 1.0
+  dt_max  = 1.0
 /
 
 &PHYSICS

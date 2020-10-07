@@ -53,6 +53,10 @@ contains
     call params%get('num-iter', this%niter, default=1)
     call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
 
+    this%diag = 0
+    this%lame1_n = 0
+    this%lame2_n = 0
+
     call compute_diagonals
 
   contains
@@ -165,17 +169,12 @@ contains
 
     ! Dirichlet BCs
     do d = 1, 3
-      call this%bc%displacement(d)%p%compute(t)
-      associate (faces => this%bc%displacement(d)%p%index, &
-          values => this%bc%displacement(d)%p%value)
-        do i = 1, size(faces)
-          f = faces(i)
-          do xn = this%model%mesh%xfnode(f), this%model%mesh%xfnode(f+1)-1
-            n = this%model%mesh%fnode(xn)
-            j = 3*(n-1) + d
-            if (n > this%model%mesh%nnode_onP) cycle
-            this%diag(j) = 1
-          end do
+      call this%bc%displacement(d)%compute(t)
+      associate (nodes => this%bc%displacement(d)%index, values => this%bc%displacement(d)%value)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          j = 3*(n-1) + d
+          this%diag(j) = 1
         end do
       end associate
     end do
