@@ -225,7 +225,7 @@ contains
           if (node2 <= this%mesh%nnode_onP) then
             ! By convention, the normal is oriented
             ! toward the 2nd node of the associated edge.
-            this%nppar(node2) = ibset(this%nppar(node2),k(node2))
+            this%nppar(node2) = ibset(this%nppar(node2),k(node2)+1)
             this%npoint(this%xnpoint(node2)+k(node2)) = p
             this%xpxn(this%xnpoint(node2)+k(node2)) = edges(2,xp)
             k(node2) = k(node2) + 1

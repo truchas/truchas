@@ -148,17 +148,17 @@ contains
     call this%model%compute_lame_node_parameters(this%lame1_n, this%lame2_n)
 
     do n = 1, this%model%mesh%nnode_onP
-      ! Set displacements to zero for empty or fluid filled cells
-      if (this%lame1_n(n) < 1e-6_r8) then
+      if (this%lame1_n(n) < 1e-6_r8 .and. this%lame2_n(n) < 1e-6_r8) then
+        ! Set displacements to zero for empty or fluid filled cells
         j = 3*(n-1) + 1
         this%diag(j:j+2) = 1
-        cycle
+      else
+        do d = 1, 3
+          j = 3*(n-1) + d
+          this%diag(j) = (this%lame1_n(n) * this%d1(j) + this%lame2_n(n) * this%d2(j)) ! / cscale(d,n)
+        end do
       end if
-
-      do d = 1, 3
-        j = 3*(n-1) + d
-        this%diag(j) = (this%lame1_n(n) * this%d1(j) + this%lame2_n(n) * this%d2(j)) ! / cscale(d,n)
-      end do
+      ASSERT(this%diag(j) /= 0)
     end do
 
     ! TODO: Enforce constraints

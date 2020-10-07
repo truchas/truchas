@@ -157,7 +157,6 @@ contains
         do xp = 1, size(np)
           p = np(xp)
           j = this%ig%pcell(p)
-
           s = merge(-1, 1, btest(this%ig%nppar(n),xp))
           this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress(:,j), this%ig%n(:,p))
         end do
@@ -344,9 +343,9 @@ contains
     real(r8) :: t(3)
     ASSERT(size(a) == 6)
     ASSERT(size(n) == 3)
-    t(1) = a(1)*n(1) + a(4)*n(2) + a(5)*n(1)
-    t(2) = a(2)*n(2) + a(4)*n(1) + a(6)*n(3)
-    t(3) = a(3)*n(3) + a(5)*n(2) + a(6)*n(1)
+    t(1) = a(1)*n(1) + a(4)*n(2) + a(5)*n(3)
+    t(2) = a(4)*n(1) + a(2)*n(2) + a(6)*n(3)
+    t(3) = a(5)*n(1) + a(6)*n(2) + a(3)*n(3)
   end function tensor_dot
 
 end module sm_model_type

@@ -23,11 +23,11 @@ TODO -- Problem description.
 
 &PHYSICS
   materials = 'stuff'
-  solid_mechanics = .true.
+  legacy_solid_mechanics = .true.
   heat_transport = .false.
 /
 
-&SOLID_MECHANICS /
+&LEGACY_SOLID_MECHANICS /
 &DIFFUSION_SOLVER /
 
 &MATERIAL
@@ -51,32 +51,40 @@ TODO -- Problem description.
   temperature = 1.0
 /
 
-&SM_BC
-  name = 'displx'
-  face_set_ids = 1
-  type = 'displacement-x'
-  displacement = 0
+&BC
+  bc_name = 'displx'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'x-displacement'
+  bc_value = 0
 /
 
-&SM_BC
-  name = 'disply'
-  face_set_ids = 1
-  type = 'displacement-y'
-  displacement = 0
+&BC
+  bc_name = 'disply'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'y-displacement'
+  bc_value = 0
 /
 
-&SM_BC
-  name = 'displz'
-  face_set_ids = 1
-  type = 'displacement-z'
-  displacement = 0
+&BC
+  bc_name = 'displz'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'z-displacement'
+  bc_value = 0
 /
 
-&SM_BC
-  name = 'tracy'
-  face_set_ids = 2
-  type = 'traction-y'
-  traction = 1
+&BC
+  bc_name = 'tracy'
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable = 'displacement'
+  bc_type = 'y-traction'
+  bc_value = 1
 /
 
 # &THERMAL_BC
