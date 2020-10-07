@@ -133,9 +133,9 @@ contains
     strain(1) = grad_displ(1,1) ! exx
     strain(2) = grad_displ(2,2) ! eyy
     strain(3) = grad_displ(3,3) ! ezz
-    strain(4) = grad_displ(1,2) + grad_displ(2,1) ! exy
-    strain(5) = grad_displ(1,3) + grad_displ(3,1) ! exz
-    strain(6) = grad_displ(2,3) + grad_displ(3,2) ! eyz
+    strain(4) = (grad_displ(1,2) + grad_displ(2,1)) / 2 ! exy
+    strain(5) = (grad_displ(1,3) + grad_displ(3,1)) / 2 ! exz
+    strain(6) = (grad_displ(2,3) + grad_displ(3,2)) / 2 ! eyz
 
   end subroutine compute_strain_contribution
 

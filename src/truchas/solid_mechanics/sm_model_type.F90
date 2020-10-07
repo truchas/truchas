@@ -305,9 +305,9 @@ contains
           total_strain(1,p) = grad_displ(1,1) ! exx
           total_strain(2,p) = grad_displ(2,2) ! eyy
           total_strain(3,p) = grad_displ(3,3) ! ezz
-          total_strain(4,p) = grad_displ(1,2) + grad_displ(2,1) ! exy
-          total_strain(5,p) = grad_displ(1,3) + grad_displ(3,1) ! exz
-          total_strain(6,p) = grad_displ(2,3) + grad_displ(3,2) ! eyz
+          total_strain(4,p) = (grad_displ(1,2) + grad_displ(2,1)) / 2 ! exy
+          total_strain(5,p) = (grad_displ(1,3) + grad_displ(3,1)) / 2 ! exz
+          total_strain(6,p) = (grad_displ(2,3) + grad_displ(3,2)) / 2 ! eyz
         end do
       end associate
     end do
