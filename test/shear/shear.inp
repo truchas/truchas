@@ -6,7 +6,7 @@ TODO -- Problem description.
   x_axis%coarse_grid = 0.0, 1.0
   y_axis%coarse_grid = 0.0, 1.0
   z_axis%coarse_grid = 0.0, 1.0
-  x_axis%intervals   = 5
+  x_axis%intervals   = 20
   y_axis%intervals   = 1
   z_axis%intervals   = 1
 /
@@ -27,7 +27,11 @@ TODO -- Problem description.
   heat_transport = .false.
 /
 
-&SOLID_MECHANICS /
+&SOLID_MECHANICS
+  nlk_max_vectors = 200
+  nlk_vector_tolerance = 1e-2
+  maximum_iterations = 500
+/
 &DIFFUSION_SOLVER /
 
 &MATERIAL

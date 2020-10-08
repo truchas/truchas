@@ -284,12 +284,17 @@ contains
   !! From the node-centered displacement, compute the integration-point-centered total strain
   subroutine compute_total_strain(this, displ, total_strain)
 
+    use index_partitioning, only: gather_boundary
+
     class(sm_model), intent(in) :: this
     real(r8), intent(in) :: displ(:,:)
     real(r8), intent(out) :: total_strain(:,:)
 
     integer :: p, j, d
-    real(r8) :: grad_displ(3,3)
+    real(r8) :: grad_displ(3,3), displ_(3,this%mesh%nnode)
+
+    displ_(:,:this%mesh%nnode_onP) = displ
+    call gather_boundary(this%mesh%node_ip, displ_)
 
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
@@ -299,7 +304,7 @@ contains
           !! The Jacobian inverse multiplication is already performed and stored
           !! in the grad_shape matrix.
           do d = 1, 3
-            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
+            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ_(d,cn))
           end do
 
           total_strain(1,p) = grad_displ(1,1) ! exx

@@ -150,6 +150,7 @@ contains
 
         do xn = 1, size(cn)
           n = cn(xn)
+          if (n > this%mesh%nnode_onP) cycle
           this%volume(n) = this%volume(n) + ic%subvolume(xn)
         end do
 

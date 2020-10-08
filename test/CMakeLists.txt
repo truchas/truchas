@@ -191,6 +191,16 @@ add_pytruchas_test(shear-constr-heat
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(shear
+                   shear/test-shear.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(shear-legacy
+                   shear/test-shear-legacy.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
+
 add_pytruchas_test(simple-gap
                    simple-gap/testSimpleGap.py
 		   PROCESSORS 4
