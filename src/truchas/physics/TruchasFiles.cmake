@@ -92,7 +92,6 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/induction_heating/EM_boundary_data.F90
            physics/induction_heating/EM_data_proxy.F90
            physics/induction_heating/EM_graphics_output.F90
-           physics/induction_heating/EM_hex_tet_mapping.F90
            physics/induction_heating/EM_properties.F90
            physics/induction_heating/GeometricModeler.F90
            physics/induction_heating/MaxwellBoundaryData.F90
