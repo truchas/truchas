@@ -1,6 +1,57 @@
 # NEWS
 
-Important changes since the 3.0 release.
+## 2020-10-09 (122a475)
+
+Induction heating simulations employ a tool for mapping data fields between
+the main heat transfer mesh and the electromagnetic solver mesh. An alternative
+data mapper based on the Portage toolkit, https://laristra.github.io/portage,
+has been added. Unlike the existing data mapper, this new experimental data
+mapper is capable of handling main meshes containing prism and pyramid cells.
+It is *much* slower however, and not used by default. See the Reference Manual
+chapter on the `ALTMESH` namelist on how to enable it.
+
+## 2020-09-29 (48c2de2)
+
+The configuration of the Hypre BoomerAMG preconditioner used in heat transport
+has been updated to follow recommendations from the Hypre team. As a result the
+default number of AMG cycles (`pc_amg_cycles`) has been increased from 2 to 4,
+and users should expect to use significantly more cycles than previously.
+Nevertheless users should hope to see a noticeable overall improvement in
+performance.
+
+## 2020-09-15 (1cf4670)
+
+The method of computing solidification velocity for microstructure GV-analysis
+has been greatly simplified. The new method is much less costly, but more
+significantly it resolves a long-standing, difficult-to-locate, memory leak
+that occurred when using the Intel compiler. Users will observe some differences
+in the new solidification velocities.
+
+## 2020-09-13 (a9d9c2a)
+
+Fixed an error that occurred when using a polynomial-type specific heat
+function for the high temperature phase of a 2-phase material. See
+https://gitlab.com/truchas/truchas/-/issues/161
+
+## 2020-09-11 (b7db4ef)
+
+A new flow algorithm option has been added that helps suppress the formation
+of tiny isolated fragments of fluid (wisps) during splashy filling simulations.
+These wisps often cause significantly reduced time step sizes, and even
+complete stalling on occasion. This algorithm option is enabled using the new
+`FLOW` namelist flag `wisp_redistribution`. By default the option is disabled.
+See the Reference Manual for a description of the associated `wisp_*` algorithm
+parameters. A detailed description of the algorithm will be found in the
+Physics and Algorithms manual.
+
+## 2020-09-11 (1429272)
+
+The `SOLID MECHANICS` namelist preconditioner variables `preconditioning_steps`
+and `relaxation_parameter` have been removed. Internally they default to 1 and
+1.0, respectively, which correspond to the diagonal preconditioning used in
+practice.
+
+## 2020-09-02 Version 20.09
 
 ## 2020-08-14 Version 20.08
 
