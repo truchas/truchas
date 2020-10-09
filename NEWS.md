@@ -1,5 +1,7 @@
 # NEWS
 
+## 2020-10-09 Version 20.10
+
 ## 2020-10-09 (122a475)
 
 Induction heating simulations employ a tool for mapping data fields between
