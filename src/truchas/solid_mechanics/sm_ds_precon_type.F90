@@ -179,6 +179,18 @@ contains
       end associate
     end do
 
+    call this%bc%displacementn%compute(t)
+    associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
+        rot => this%bc%displacementn%rotation_matrix)
+      do i = 1, size(nodes)
+        n = nodes(i)
+        associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
+          rn = matmul(rot(:,:,i), rn)
+          rn(3) = 1
+        end associate
+      end do
+    end associate
+
     call stop_timer("precon-compute")
 
   end subroutine compute

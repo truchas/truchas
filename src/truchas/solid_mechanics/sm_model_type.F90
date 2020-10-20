@@ -251,32 +251,78 @@ contains
       end associate
     end do
 
-    do d = 1, 3
-      ! At traction BCs the stress is defined along the face. Each
-      ! face has traction discretized at the integration points, one for each node.
-      ! The values array provides the equivalent of traction = tensor_dot(stress, n)
-      ! where n is normal of the boundary with magnitude equal to the area of this
-      ! integration region (associated with node and face center, not the whole face).
-      call this%bc%traction(d)%compute(t)
-      associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
-        end do
-      end associate
-
-      ! Displacement BCs transform the matrix to a diagonal and the right hand
-      ! side to the desired solution.
-      call this%bc%displacement(d)%compute(t)
-      associate (nodes => this%bc%displacement(d)%index, values => this%bc%displacement(d)%value)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          r(3*(n-1)+d) = displ(d,n) - values(i)
-        end do
-      end associate
-    end do
+    call bcs
 
     call stop_timer("residual")
+
+  contains
+
+    subroutine bcs()
+
+      real(r8) :: x(3)
+
+      do d = 1, 3
+        ! At traction BCs the stress is defined along the face. Each face has
+        ! traction discretized at the integration points, one for each node. The
+        ! values array provides the equivalent of traction = tensor_dot(stress,
+        ! n) where n is normal of the boundary with magnitude equal to the area
+        ! of this integration region (associated with node and face center, not
+        ! the whole face).
+        call this%bc%traction(d)%compute(t)
+        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value)
+          do i = 1, size(nodes)
+            n = nodes(i)
+            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
+          end do
+        end associate
+
+        ! Displacement BCs transform the matrix to a diagonal and the right hand
+        ! side to the desired solution.
+        call this%bc%displacement(d)%compute(t)
+        associate (nodes => this%bc%displacement(d)%index, &
+            values => this%bc%displacement(d)%value)
+          do i = 1, size(nodes)
+            n = nodes(i)
+            r(3*(n-1)+d) = displ(d,n) - values(i)
+          end do
+        end associate
+      end do
+
+      ! Normal traction BCs apply traction in the normal direction, but zero
+      ! traction in tangential directions. Each element of this BC contains a
+      ! vector traction, which corresponds to the accumulated area-multiplied
+      ! traction contribution to a node from its neighboring boundary
+      ! integration points.
+      call this%bc%tractionn%compute(t)
+      associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
+        do i = 1, size(nodes)
+          r(3*(n-1)+1:3*(n-1)+3) = r(3*(n-1)+1:3*(n-1)+3) + values(:,i)
+        end do
+      end associate
+
+      ! Normal displacement BCs enforce a given displacement in the normal
+      ! direction, and apply zerotraction in tangential directions. To do this
+      ! we must rotate the residual components components to a surface-aligned
+      ! coordinate space, and set the normal component of the residual to the
+      ! appropriate value. The node normal vector is computed from an
+      ! area-weighted average of the surrounding integration points.
+      !
+      ! NB: If at some point we want to apply other conditions after this one,
+      !     we should rotate the residual back to the global coordinate space.
+      call this%bc%displacementn%compute(t)
+      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
+          rot => this%bc%displacementn%rotation_matrix)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          associate (rn => r(3*(n-1)+1:3*(n-1)+3))
+            x = matmul(rot(:,:,i), displ(:,n))
+            rn = matmul(rot(:,:,i), rn)
+            rn(3) = x(3) - values(i)
+          end associate
+        end do
+      end associate
+
+    end subroutine bcs
 
   end subroutine compute_residual
 

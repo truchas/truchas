@@ -27,9 +27,7 @@ module bndry_ip_func_type
 
   type, extends(bndry_func1), public :: bndry_ip_func
     private
-    ! integer, public, allocatable :: index(:)
-    ! real(r8), public, allocatable :: value(:), factor(:)
-    real(r8), public, allocatable :: factor(:)
+    real(r8), allocatable :: factor(:)
 
     type(bndry_face_func), allocatable :: bff
     class(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
@@ -42,7 +40,6 @@ contains
 
   subroutine init(this, mesh, ig, bff)
 
-    use unstr_mesh_type
     use integration_geometry_type
 
     class(bndry_ip_func), intent(out) :: this
@@ -64,7 +61,7 @@ contains
         f = faces(i)
         do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
           n = this%mesh%fnode(xn)
-          if (n <= this%mesh%nnode_onP) j = j + 1
+          if (n <= this%mesh%nnode_onP) j = j+1
         end do
       end do
 
@@ -82,6 +79,7 @@ contains
             n = xn(xf)
             if (n > this%mesh%nnode_onP) cycle
             this%index(j) = n
+            !this%normal(:,j) = 
             this%factor(j) = area(xf)
             j = j+1
           end do
@@ -94,9 +92,6 @@ contains
 
   !! Return the areas for each integration surface on a face. Each surface
   !! is associated with a node.
-  !!
-  !! NB: This will allocate new arrays repeatedly, so will be slow. But as
-  !!     written now, it will only be evaluated during initialization...
   subroutine area_boundary_ips(this, ig, f, area)
 
     use integration_cell_type

@@ -17,12 +17,15 @@ module sm_bc_type
   use truchas_logging_services
   use bndry_face_func_type
   use bndry_ip_func_type
+  use sm_normal_displacement_bc_type
+  use sm_normal_traction_bc_type
   implicit none
   private
 
   type, public :: sm_bc
     type(bndry_ip_func) :: displacement(3), traction(3)
-    type(bndry_ip_func) :: displacementn, tractionn
+    type(sm_normal_displacement_bc) :: displacementn
+    type(sm_normal_traction_bc) :: tractionn
   contains
     procedure :: init
   end type sm_bc
@@ -47,8 +50,8 @@ contains
     if (stat /= 0) return
     call alloc_bc('traction', this%traction)
     if (stat /= 0) return
-    ! call alloc_displacementn_bc
-    ! call alloc_tractionn_bc
+    call alloc_displacementn_bc
+    call alloc_tractionn_bc
     ! call alloc_contact_gaps
     ! call alloc_normalconstraint_gaps
     ! call alloc_freeinterface_gaps
@@ -76,6 +79,26 @@ contains
       end do
 
     end subroutine alloc_bc
+
+    subroutine alloc_displacementn_bc
+      type(bndry_face_func), allocatable :: bff
+      allocate(bff)
+      call bff%init(mesh, bndry_only=.false.)
+      call iterate_list(params, 'displacementn', 'displacement', bff, stat, errmsg)
+      if (stat /= 0) return
+      call bff%add_complete
+      call this%displacementn%init(mesh, ig, bff)
+    end subroutine alloc_displacementn_bc
+
+    subroutine alloc_tractionn_bc
+      type(bndry_face_func), allocatable :: bff
+      allocate(bff)
+      call bff%init(mesh, bndry_only=.false.)
+      call iterate_list(params, 'tractionn', 'traction', bff, stat, errmsg)
+      if (stat /= 0) return
+      call bff%add_complete
+      call this%tractionn%init(mesh, ig, bff)
+    end subroutine alloc_tractionn_bc
 
   end subroutine init
 
