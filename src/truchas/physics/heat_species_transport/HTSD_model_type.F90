@@ -389,7 +389,8 @@ contains
           allocate(flux(size(faces)))
           call this%ht%vf_rad_prob(n)%heat_flux (t, qrad, Tface(faces), flux)
           do j = 1, size(faces)
-            Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
+            if (this%ht%vf_rad_prob(n)%fmask(j)) &
+                Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
           end do
           deallocate(flux)
           !! Residual of the algebraic radiosity system.

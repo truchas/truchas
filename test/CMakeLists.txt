@@ -164,6 +164,7 @@ add_pytruchas_test(vfrad2
 		   LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(vfrad-moving vfrad-moving/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
+add_pytruchas_test(vfrad-heater vfrad-heater/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(vfrad3
                    vfrad3/testVFRad3.py

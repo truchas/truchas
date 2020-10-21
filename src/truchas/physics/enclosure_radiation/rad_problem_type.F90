@@ -30,6 +30,7 @@ module rad_problem_type
 
   type, public :: rad_problem
     integer, allocatable :: faces(:)
+    logical, allocatable :: fmask(:)
     !! The rest are private
     type(rad_solver) :: sol
     integer, allocatable :: ge_faces(:)
@@ -128,6 +129,7 @@ contains
     end if
     this%nface_hc = size(this%faces)
     ASSERT(this%vf%nface_tot == global_sum(this%nface_hc))
+    allocate(this%fmask(this%nface_hc), source=.true.)
 
     !! Verify that the identified faces are boundary faces.
     call boundary_face_check (mesh, this%faces, stat, setids)
