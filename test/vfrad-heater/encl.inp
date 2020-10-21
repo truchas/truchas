@@ -1,0 +1,29 @@
+
+&ENCLOSURE
+  name                      = "cavity"
+  mesh_file                 = "mesh.gen"
+  symmetries                = MirrorX, MirrorY, MirrorZ
+  side_set_ids              = 2, 3
+/
+
+&PATCHES
+  patch_algorithm = 'PAVE'
+  verbosity_level = 3
+  pave_merge_level = 0
+  pave_random_seed = 67813317
+/
+
+&CHAPARRAL
+  blocking_enclosure        = T
+  partial_enclosure         = F
+  bsp_max_tree_depth        = 10
+  bsp_min_leaf_length       = 25
+  spatial_tolerance         = 1e-08
+  hemicube_resolution       = 500
+  min_separation            = 10.0
+  max_subdivisions          = 50
+  smoothing_tolerance       = 1e-08
+  smoothing_max_iter        = 100
+  smoothing_weight          = 2.0
+  verbosity_level           = 2
+/

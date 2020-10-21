@@ -670,6 +670,7 @@ contains
           associate (faces => this%ht%vf_rad_prob(index)%faces)
             allocate(values(size(faces)))
             call this%ht%vf_rad_prob(index)%rhs_deriv (t, Tface(faces), values)
+            where (.not.this%ht%vf_rad_prob(index)%fmask) values = 0
             call matrix%incr_face_diag (faces, this%mesh%area(faces) * values)
             deallocate(values)
           end associate

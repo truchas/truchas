@@ -136,8 +136,10 @@ contains
           !! Update the heat equation face residual.
           call this%model%vf_rad_prob(index)%precon_matvec1 (t, z)
           do j = 1, size(z)
-            n = this%model%vf_rad_prob(index)%faces(j)
-            f2(n) = f2(n) + this%mesh%area(n) * z(j)
+            if (this%model%vf_rad_prob(index)%fmask(j)) then
+              n = this%model%vf_rad_prob(index)%faces(j)
+              f2(n) = f2(n) + this%mesh%area(n) * z(j)
+            end if
           end do
           deallocate(z)
         end if
@@ -304,6 +306,7 @@ contains
         faces => this%model%vf_rad_prob(index)%faces
         allocate(values(size(faces)))
         call this%model%vf_rad_prob(index)%rhs_deriv (t, Tface(faces), values)
+        where (.not.this%model%vf_rad_prob(index)%fmask) values = 0
         call dm%incr_face_diag (faces, this%mesh%area(faces) * values)
         deallocate(values)
       end do

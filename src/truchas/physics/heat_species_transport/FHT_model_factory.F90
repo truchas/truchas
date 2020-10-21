@@ -213,6 +213,7 @@ contains
     use bitfield_type
     use parallel_communication, only: global_any, global_count
     use string_utilities, only: i_to_c
+    use f08_intrinsics, only: findloc
 
     type(unstr_mesh), intent(in), target :: mesh
     class(thermal_bc_factory), intent(inout) :: bc_fac
@@ -284,10 +285,10 @@ contains
     if (associated(model%vf_rad_prob)) then
       do j = 1, size(model%vf_rad_prob)
         rmask(model%vf_rad_prob(j)%faces) = .true.
-        fmask(model%vf_rad_prob(j)%faces) = .true.
+        !fmask(model%vf_rad_prob(j)%faces) = .true.
       end do
       call gather_boundary (mesh%face_ip, rmask)
-      call gather_boundary (mesh%face_ip, fmask)
+      !call gather_boundary (mesh%face_ip, fmask)
     end if
 
     !! Define the (simple) radiation boundary conditions.
@@ -300,7 +301,6 @@ contains
         return
       end if
     end if
-    deallocate(rmask)
     if (allocated(model%bc_rad)) then
       if (global_any(mask(model%bc_rad%index))) then
         stat = -1
@@ -325,6 +325,18 @@ contains
       end if
       mask(model%bc_dir%index) = .true. ! mark the dirichlet faces
     end if
+
+    !! Update enclosure radiation face mask for temperature Dirichlet faces.
+    if (associated(model%vf_rad_prob) .and. allocated(model%bc_dir)) then
+      do n = 1, size(model%vf_rad_prob)
+        associate (faces => model%vf_rad_prob(n)%faces, fmask => model%vf_rad_prob(n)%fmask)
+        do j = 1, size(faces)
+          if (findloc(model%bc_dir%index, faces(j), dim=1) > 0) fmask(j) = .false.
+        end do
+        end associate
+      end do
+    end if
+    mask = mask .or. rmask
 
     !! Finally verify that a condition has been applied to every boundary face.
     mask = mask .neqv. btest(mesh%face_set_mask,0)

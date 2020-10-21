@@ -1,0 +1,105 @@
+&MESH
+  mesh_file = "mesh.gen"
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0
+  output_dt  = 1.0
+/
+
+&PHYSICS
+  heat_transport = T
+  materials = "solid"
+/
+
+&PHYSICAL_CONSTANTS
+  absolute_zero = 0.0
+  stefan_boltzmann = 1.0e-2
+/
+
+&NUMERICS
+  dt_init = 1e-3
+  dt_min  = 1e-6
+  dt_grow = 10.0
+/
+
+&DIFFUSION_SOLVER
+  abs_enthalpy_tol          = 0.0
+  rel_enthalpy_tol          = 0.001
+  abs_temp_tol              = 0.0
+  rel_temp_tol              = 0.001
+  nlk_preconditioner        = "Hypre_AMG"
+  max_nlk_itr               = 5
+  max_nlk_vec               = 4
+  nlk_tol                   = 0.05
+  pc_amg_cycles             = 2
+  verbose_stepping          = T
+/
+
+&MATERIAL
+  name = "solid"
+  is_fluid = .false.
+  density = 4.0
+  specific_heat = 0.25
+  conductivity = 0.1
+/
+
+Heating element
+&BODY
+  surface_name = "from mesh file"
+  mesh_material_number = 2
+  material_name = "solid"
+  temperature = 6.0
+/
+
+Container
+&BODY
+  surface_name = "from mesh file"
+  mesh_material_number = 1
+  material_name = "solid"
+  temperature = 1.0
+/
+
+Thermal radiation inside the container
+
+&ENCLOSURE_RADIATION
+  name                      = "encl"
+  enclosure_file            = "encl.re"
+  ambient_constant          = 1.0
+  error_tolerance           = 0.001
+  precon_method             = "jacobi"
+  precon_iter               = 1
+  precon_coupling_method    = "backward GS"
+/
+
+&ENCLOSURE_SURFACE
+  enclosure_name            = "encl"
+  name                      = "cavity"
+  face_block_ids            = 2, 3
+  emissivity_constant       = 0.8
+/
+
+Surface temperature of the heating element is imposed
+&THERMAL_BC
+  name = "heater"
+  type = "temperature"
+  face_set_ids = 2
+  temp = 6.0
+/
+
+Outside of container radiates to ambient
+&THERMAL_BC
+  name = "outer"
+  type = "radiation"
+  face_set_ids = 4
+  emissivity = 0.8
+  ambient_temp = 1.0
+/
+
+Symmetry planes
+&THERMAL_BC
+  name = "symmetry"
+  type = "flux"
+  face_set_ids = 1, 3
+  flux = 0.0
+/

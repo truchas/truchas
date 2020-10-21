@@ -1,0 +1,68 @@
+## /opt/cubit/15.6-417051/bin/clarox
+## Cubit Version 15.6
+## Cubit Build 417051
+## Revised 2020-04-14 12:40:40 -0600 (Tue, 14 Apr 2020)
+## Running 10/20/2020 10:56:54 PM
+## Command Options:
+undo on
+create cylinder height 1 radius 0.5
+create cylinder height 0.8 radius 0.4
+subtract volume 2 from volume 1
+webcut volume 3 with plane yplane offset 0
+delete volume 3
+webcut volume 4 with plane xplane offset 0
+delete volume 5
+create cylinder height 0.2 radius 0.3
+webcut volume 6 with cylinder radius 0.25 axis z
+webcut volume 6 with plane yplane offset 0
+webcut volume 8 with plane xplane offset 0
+delete volume 9 7 6
+webcut volume all with plane zplane offset 0
+delete volume 11 10
+webcut volume 4 with sheet extended from surface 75
+undo group begin
+imprint volume all
+merge volume all
+undo group end
+undo group begin
+volume 4 size 0.025
+mesh volume 4
+undo group end
+undo group begin
+volume 8 size 0.025
+mesh volume 8
+undo group end
+surface 96 size 0.025
+surface 96 scheme pave
+mesh surface 96
+undo group begin
+surface 96 smooth scheme laplacian
+smooth surface 96
+undo group end
+undo group begin
+surface 96 smooth scheme laplacian
+smooth surface 96
+undo group end
+undo group begin
+surface 96 smooth scheme centroid area pull
+smooth surface 96
+undo group end
+undo group begin
+surface 96 smooth scheme centroid area pull
+smooth surface 96
+undo group end
+volume 12 scheme auto
+mesh volume 12
+set duplicate block elements off
+block 1 add volume 4 12
+set duplicate block elements off
+block 2 add volume 8
+sideset 1 add surface 93 95 82 97 91 84 81 71
+sideset 2 add surface 83 64 85
+sideset 3 add surface 98 25
+sideset 4 add surface 73 92 96
+undo group begin
+set exodus netcdf4 off
+set large exodus file on
+export mesh "mesh.gen" overwrite
+undo group end
