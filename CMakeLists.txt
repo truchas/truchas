@@ -154,9 +154,12 @@ if(NOT Scorpio_FOUND)
 endif()
 
 # Portage library
-find_package(Portage)
-if(NOT PORTAGE_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Portage installation")
+option(USE_PORTAGE "Build with support for the Portage data mapping tool" OFF)
+if (USE_PORTAGE)
+  find_package(Portage)
+  if(NOT PORTAGE_FOUND)
+    message(FATAL_ERROR "Could NOT find a suitable Portage installation")
+  endif()
 endif()
 
 # optional for building version information
@@ -217,6 +220,10 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
   add_compile_definitions(INTEL_DPD200237439)
+endif()
+
+if(USE_PORTAGE)
+  add_compile_definitions(USE_PORTAGE)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move

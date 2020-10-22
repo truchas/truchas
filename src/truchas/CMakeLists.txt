@@ -69,12 +69,15 @@ list(APPEND Truchas_DEPENDS truchas::io)
 add_dependencies(truchas ${Truchas_DEPENDS})
 
 # - Link libraries
-set(Truchas_LINK_LIBS blas lapack exodus hypre petaca hdf5 portage)
+set(Truchas_LINK_LIBS blas lapack exodus hypre petaca hdf5)
 
 list(APPEND Truchas_LINK_LIBS pgslib_fe)
 list(APPEND Truchas_LINK_LIBS pgslib_mpi)
 list(APPEND Truchas_LINK_LIBS chaco)
 list(APPEND Truchas_LINK_LIBS truchas::io)
+if(USE_PORTAGE)
+  list(APPEND Truchas_LINK_LIBS portage)
+endif()
 
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})
