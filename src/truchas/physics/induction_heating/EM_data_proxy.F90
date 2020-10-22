@@ -319,7 +319,9 @@ CONTAINS
     use mesh_manager, only: named_mesh_ptr
     use EM_input, only: coil_array
     use kuprat_mapper_type
+#ifdef USE_PORTAGE
     use portage_mapper_type
+#endif
     use altmesh_namelist, only: data_mapper_kind
     
     integer :: j
@@ -330,7 +332,11 @@ CONTAINS
     em_mesh => named_mesh_ptr('alt')
     select case (data_mapper_kind)
     case ('portage')
+#ifdef USE_PORTAGE
       allocate(portage_mapper :: ht2em)
+#else
+      INSIST(.false.)
+#endif
     case default
       allocate(kuprat_mapper :: ht2em)
     end select

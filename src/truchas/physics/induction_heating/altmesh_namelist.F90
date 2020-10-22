@@ -108,7 +108,11 @@ contains
     end select
 
     select case (data_mapper_kind)
-    case ('default', 'portage')
+    case ('default')
+    case ('portage')
+#ifndef USE_PORTAGE
+      call TLS_fatal('DATA_MAPPER_KIND = "portage" is not supported by this Truchas build')
+#endif
     case default
       call TLS_fatal('invalid value for DATA_MAPPER_KIND: ' // trim(data_mapper_kind))
     end select

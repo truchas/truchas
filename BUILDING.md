@@ -62,7 +62,7 @@ than it must be different than the current directory). Here is an example:
   file. The `config` subdirectory contains some examples. If none of those are
   suitable, create your own, or simply define the various variables directly
   on the cmake command line (using the `-D` flag).
-* `Release`directs CMake to configure an optimized build of Truchas. Another
+* `Release` directs CMake to configure an optimized build of Truchas. Another
   option is `Debug` for an unoptimized build with lots of additional runtime
   checking.
 * Set the `TRUCHAS_TPL_DIR` variable to the TPL installation directory you
@@ -70,6 +70,13 @@ than it must be different than the current directory). Here is an example:
 * By default Truchas will be installed into the `install` subdirectory of the
   top-level source directory. Use the `-D CMAKE_INSTALL_PREFIX=<truchas_dir>`
   cmake argument to specify a different directory.
+
+#### Optional Portage data mapping component
+Truchas provides optional support for using the Portage library to do solution
+field mapping in induction heating simulations. To enable support, which is
+not included by default, add `-D USE_PORTAGE=ON` to the cmake command line.
+This requires that the portage library has been compiled and installed. See
+the TPL superbuild project referenced above.
 
 ### Compiling on a Mac
 The test suite is currently failing so mac support is still considered
