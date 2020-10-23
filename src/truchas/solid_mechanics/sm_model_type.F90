@@ -269,10 +269,11 @@ contains
         ! of this integration region (associated with node and face center, not
         ! the whole face).
         call this%bc%traction(d)%compute(t)
-        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value)
+        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value, &
+            area => this%bc%traction(d)%factor)
           do i = 1, size(nodes)
             n = nodes(i)
-            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i)
+            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i) * area(i)
           end do
         end associate
 
@@ -292,7 +293,7 @@ contains
       ! traction in tangential directions. Each element of this BC contains a
       ! vector traction, which corresponds to the accumulated area-multiplied
       ! traction contribution to a node from its neighboring boundary
-      ! integration points.
+      ! integration points. The area is already factored into the values.
       call this%bc%tractionn%compute(t)
       associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
         do i = 1, size(nodes)

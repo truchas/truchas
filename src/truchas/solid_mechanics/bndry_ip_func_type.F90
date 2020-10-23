@@ -27,7 +27,7 @@ module bndry_ip_func_type
 
   type, extends(bndry_func1), public :: bndry_ip_func
     private
-    real(r8), allocatable :: factor(:)
+    real(r8), public, allocatable :: factor(:)
 
     type(bndry_face_func), allocatable :: bff
     class(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
@@ -53,7 +53,7 @@ contains
     this%mesh => mesh
     call move_alloc(bff, this%bff)
 
-    associate (faces => this%bff%index, value => this%bff%value)
+    associate (faces => this%bff%index)
       !! Get the size of index (number of on-rank boundary integration points in
       !! this face set)
       j = 0
@@ -72,14 +72,13 @@ contains
       allocate(this%index(j), this%value(j), this%factor(j))
       j = 1
       do i = 1, size(faces)
+        f = faces(i)
+        call area_boundary_ips(this, ig, f, area)
         associate (xn => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
-          f = faces(i)
-          call area_boundary_ips(this, ig, f, area)
           do xf = 1, size(xn)
             n = xn(xf)
             if (n > this%mesh%nnode_onP) cycle
             this%index(j) = n
-            !this%normal(:,j) = 
             this%factor(j) = area(xf)
             j = j+1
           end do
@@ -128,7 +127,7 @@ contains
     class(bndry_ip_func), intent(inout) :: this
     real(r8), intent(in) :: t
 
-    integer :: i, j, f, xn, n
+    integer :: i, j, f, xf, n
     real(r8) :: v
 
     call this%bff%compute(t)
@@ -137,12 +136,14 @@ contains
     do i = 1, size(this%bff%value)
       f = this%bff%index(i)
       v = this%bff%value(i)
-      do xn = this%mesh%xfnode(f), this%mesh%xfnode(f+1)-1
-        n = this%mesh%fnode(xn)
-        if (n > this%mesh%nnode_onP) cycle
-        this%value(j) = this%factor(j) * v
-        j = j + 1
-      end do
+      associate (xn => this%mesh%fnode(this%mesh%xfnode(f):this%mesh%xfnode(f+1)-1))
+        do xf = 1, size(xn)
+          n = xn(xf)
+          if (n > this%mesh%nnode_onP) cycle
+          this%value(j) = v
+          j = j + 1
+        end do
+      end associate
     end do
 
   end subroutine compute
