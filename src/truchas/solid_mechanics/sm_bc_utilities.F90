@@ -66,7 +66,7 @@ contains
         n = mesh%fnode(xn)
         if (n <= mesh%nnode_onP) count = count + 1
       end do
-      xfini(fi+1) = xfini(f) + count
+      xfini(fi+1) = xfini(fi) + count
     end do
 
     ! count the unique nodes
@@ -156,7 +156,7 @@ contains
     i = 0
     do j = 1, ic%fsize(xf)
       n = mesh%fnode(mesh%xfnode(f)+j-1)
-      if (n > mesh%ncell_onP) cycle
+      if (n > mesh%nnode_onP) cycle
       i = i + 1
       normal(:,i) = ic%normal_boundary(xf,j)
     end do

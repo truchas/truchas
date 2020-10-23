@@ -51,7 +51,9 @@ contains
     call alloc_bc('traction', this%traction)
     if (stat /= 0) return
     call alloc_displacementn_bc
+    if (stat /= 0) return
     call alloc_tractionn_bc
+    if (stat /= 0) return
     ! call alloc_contact_gaps
     ! call alloc_normalconstraint_gaps
     ! call alloc_freeinterface_gaps
@@ -84,7 +86,7 @@ contains
       type(bndry_face_func), allocatable :: bff
       allocate(bff)
       call bff%init(mesh, bndry_only=.false.)
-      call iterate_list(params, 'displacementn', 'displacement', bff, stat, errmsg)
+      call iterate_list(params, 'displacement-n', 'displacement', bff, stat, errmsg)
       if (stat /= 0) return
       call bff%add_complete
       call this%displacementn%init(mesh, ig, bff)
@@ -94,7 +96,7 @@ contains
       type(bndry_face_func), allocatable :: bff
       allocate(bff)
       call bff%init(mesh, bndry_only=.false.)
-      call iterate_list(params, 'tractionn', 'traction', bff, stat, errmsg)
+      call iterate_list(params, 'traction-n', 'traction', bff, stat, errmsg)
       if (stat /= 0) return
       call bff%add_complete
       call this%tractionn%init(mesh, ig, bff)
@@ -135,7 +137,7 @@ contains
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
         call alloc_scalar_func(plist, data_label, f, stat, errmsg)
-        if (stat /= 0) return
+        if (stat /= 0) exit
         call bff%add(f, setids, stat, errmsg)
         if (stat /= 0) exit
       end if

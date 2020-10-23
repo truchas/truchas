@@ -187,6 +187,7 @@ contains
         associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
           rn = matmul(rot(:,:,i), rn)
           rn(3) = 1
+          rn = matmul(transpose(rot(:,:,i)), rn)
         end associate
       end do
     end associate
@@ -200,7 +201,7 @@ contains
 
     class(sm_ds_precon), intent(in) :: this
     real(r8), intent(in), contiguous :: u(:,:) ! current displacement guess
-    real(r8), intent(inout), contiguous :: f(:) ! in residual, out next displacement guess
+    real(r8), intent(inout), contiguous :: f(:) ! in residual, out next displacement step guess
 
     integer :: i, j
     real(r8) :: d

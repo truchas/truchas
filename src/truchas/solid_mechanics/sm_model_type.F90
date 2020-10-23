@@ -305,10 +305,10 @@ contains
       ! we must rotate the residual components components to a surface-aligned
       ! coordinate space, and set the normal component of the residual to the
       ! appropriate value. The node normal vector is computed from an
-      ! area-weighted average of the surrounding integration points.
-      !
-      ! NB: If at some point we want to apply other conditions after this one,
-      !     we should rotate the residual back to the global coordinate space.
+      ! area-weighted average of the surrounding integration points. After
+      ! setting the appropriate coordinate-aligned value, it's important to
+      ! rotate back into the usual coordinate space, for consistency with the
+      ! preconditioner.
       call this%bc%displacementn%compute(t)
       associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
           rot => this%bc%displacementn%rotation_matrix)
@@ -318,6 +318,7 @@ contains
             x = matmul(rot(:,:,i), displ(:,n))
             rn = matmul(rot(:,:,i), rn)
             rn(3) = x(3) - values(i)
+            rn = matmul(transpose(rot(:,:,i)), rn)
           end associate
         end do
       end associate

@@ -100,7 +100,7 @@ contains
       select case (lower_case(type))
       case (NULL_C)
         call TLS_fatal(label // ': TYPE not specified')
-      case ('displacement-x', 'displacement-y', 'displacement-z')
+      case ('displacement-x', 'displacement-y', 'displacement-z', 'displacement-n')
         if (displacement /= NULL_R .and. displacement_func /= NULL_C) then
           call TLS_fatal(label // ': cannot specify both DISPLACEMENT and DISPLACEMENT_FUNC')
         else if (displacement /= NULL_R) then
@@ -111,7 +111,7 @@ contains
         else
           call TLS_fatal(label // ': either DISPLACEMENT or DISPLACEMENT_FUNC is required')
         end if
-      case ('traction-x', 'traction-y', 'traction-z')
+      case ('traction-x', 'traction-y', 'traction-z', 'traction-n')
         if (traction /= NULL_R .and. traction_func /= NULL_C) then
           call TLS_fatal(label // ': cannot specify both TRACTION and TRACTION_FUNC')
         else if (traction /= NULL_R) then
@@ -122,6 +122,8 @@ contains
         else
           call TLS_fatal(label // ': either TRACTION or TRACTION_FUNC is required')
         end if
+      case default
+        call TLS_fatal(label // ': TYPE not recognized')
       end select
       call plist%set('type', trim(type))
     end do
