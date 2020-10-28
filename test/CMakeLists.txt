@@ -206,6 +206,11 @@ add_pytruchas_test(stretch-z
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(thermoelastic-consistency
+                   stretch/test-thermoelastic-consistency.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
+
 add_pytruchas_test(shear
                    shear/test-shear.py
 		   PROCESSORS 4
