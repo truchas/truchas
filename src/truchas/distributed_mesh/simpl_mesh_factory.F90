@@ -93,6 +93,7 @@ contains
     type(exodus_mesh), target :: mesh
     character(:), allocatable :: mesh_file
     real(r8) :: csf
+    real(r8), allocatable :: angle(:)
 
     this => null()
 
@@ -293,9 +294,20 @@ contains
     if (is_IOP) then
       call params%get ('coord-scale-factor', csf, default=1.0_r8)
       if (csf /= 1.0_r8) mesh%coord = csf * mesh%coord
+      call params%get('rotation-angles', angle, default=[0.0_r8, 0.0_r8, 0.0_r8])
+      if (size(angle) == 3) then
+        call rotate_coord(angle(1), mesh%coord(2,:), mesh%coord(3,:))  ! about x-axis
+        call rotate_coord(angle(2), mesh%coord(3,:), mesh%coord(1,:))  ! about y-axis
+        call rotate_coord(angle(3), mesh%coord(1,:), mesh%coord(2,:))  ! about z-axis
+      else
+        stat = 1
+        errmsg = '3 rotation angles required'
+      end if
     else
       allocate(mesh%coord(3,0))
     end if
+    call broadcast_status(stat, errmsg)
+    if (stat /= 0) return
     allocate(this%x(3,this%nnode))
     call distribute (this%x(:,:this%nnode_onP), mesh%coord)
     call gather_boundary (this%node_ip, this%x)
@@ -303,6 +315,24 @@ contains
     !! Initialize the mesh geometry data components.
     allocate(this%length(this%nedge), this%area(this%nface), this%volume(this%ncell))
     call this%compute_geometry
+
+  contains
+
+    subroutine rotate_coord(angle, x, y)
+      real(r8), intent(in) :: angle
+      real(r8), intent(inout) :: x(:), y(:)
+      real(r8), parameter :: RAD_PER_DEG = 1.7453292519943295D-02
+      integer :: j
+      real(r8) :: c, s, xj, yj
+      if (angle == 0) return
+      c = cos(RAD_PER_DEG*angle)
+      s = sin(RAD_PER_DEG*angle)
+      do j = 1, size(x)
+        xj = x(j); yj = y(j)
+        x(j) = c*xj - s*yj
+        y(j) = s*xj + c*yj
+      end do
+    end subroutine
 
   end function new_simpl_mesh
 

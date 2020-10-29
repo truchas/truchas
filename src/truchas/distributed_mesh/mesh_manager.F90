@@ -187,6 +187,7 @@ contains
       call plist%set ('mesh', any_mesh())
       call plist%set ('mesh-file', trim(altmesh_file))
       call plist%set ('coord-scale-factor', altmesh_coordinate_scale_factor)
+      call plist%set ('rotation-angles', rotation_angles)
       call plist%set ('em-mesh', .true.)
       call plist%set ('partitioner', trim(partitioner))
       if (partitioner == 'file') then
@@ -218,10 +219,10 @@ contains
     !! Namelist variables
     character(16)  :: partitioner
     character(511) :: mesh_file, partition_file
-    real(r8) :: coordinate_scale_factor
+    real(r8) :: coordinate_scale_factor, rotation_angles(3)
     integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127), first_partition
-    namelist /mesh/ mesh_file, coordinate_scale_factor, exodus_block_modulus, &
-                    gap_element_blocks, interface_side_sets, &
+    namelist /mesh/ mesh_file, coordinate_scale_factor, rotation_angles, &
+                    exodus_block_modulus, gap_element_blocks, interface_side_sets, &
                     partitioner, partition_file, first_partition
 
     !! Namelist variables for the internal mesh
@@ -250,6 +251,7 @@ contains
     !! Default values
     mesh_file = NULL_C
     coordinate_scale_factor = 1.0_r8
+    rotation_angles = 0
     exodus_block_modulus = 10000
     gap_element_blocks = NULL_I
     interface_side_sets = NULL_I
@@ -269,6 +271,7 @@ contains
     !! Broadcast the namelist variables
     call broadcast(mesh_file)
     call broadcast(coordinate_scale_factor)
+    call broadcast(rotation_angles)
     call broadcast(exodus_block_modulus)
     call broadcast(gap_element_blocks)
     call broadcast(interface_side_sets)
@@ -291,6 +294,8 @@ contains
 
     if (coordinate_scale_factor <= 0.0_r8) call TLS_fatal('COORDINATE_SCALE_FACTOR must be > 0')
     call params%set('coord-scale-factor', coordinate_scale_factor)
+
+    call params%set('rotation-angles', rotation_angles)
 
     if (partitioner == NULL_C) partitioner = 'chaco'
     select case (lower_case(partitioner))
