@@ -81,6 +81,9 @@ module integration_geometry_type
     integer, allocatable :: xcpoint(:), pcell(:) ! cell to IP connectivity
     integer, allocatable :: xpxn(:) ! cell-local node ID from node-local IP ID (see above)
     integer, allocatable :: fface(:,:) ! cell-local face IDs for a given global face
+
+    integer, allocatable :: lnode(:,:)
+
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
     procedure :: init
@@ -138,6 +141,7 @@ contains
     this%mesh => mesh
 
     call compute_connectivity(this)
+    call compute_link_nodes(this)
     call compute_grad_shape(this)
 
     ! Accumulate the node volume and compute the control volume face areas
@@ -262,6 +266,91 @@ contains
   end subroutine compute_connectivity
 
 
+  !! Finds linked node pairs from linked face pairs. Places linked nodes into
+  !! appropriate link set IDs, and ensures linked nodes aren't duplicated.
+  subroutine compute_link_nodes(this)
+
+    class(integration_geometry), intent(inout) :: this
+
+    logical :: touched(this%mesh%nnode)
+    integer :: count, l, n
+    integer, allocatable :: lnode(:,:)
+
+    count = 0
+    touched = .false.
+    do l = 1, this%mesh%nlink
+      lnode = face_lnode(this%mesh%lface(:,l), this%mesh)
+      do n = 1, size(lnode,dim=2)
+        if (.not.touched(lnode(1,n))) then
+          touched(lnode(1,n)) = .true.
+          count = count + 1
+        end if
+      end do
+    end do
+
+    allocate(this%lnode(2,count))
+    count = 0
+    touched = .false.
+    do l = 1, this%mesh%nlink
+      lnode = face_lnode(this%mesh%lface(:,l), this%mesh)
+      do n = 1, size(lnode,dim=2)
+        if (.not.touched(lnode(1,n))) then
+          touched(lnode(1,n)) = .true.
+          count = count + 1
+          this%lnode(:,count) = lnode(:,n)
+        end if
+      end do
+    end do
+
+  contains
+
+    !! Compute the global IDs for linked nodes on either side of a given face
+    !! link, for the entire face. This algorithm searches the 2 face for a node
+    !! matching the position of the first node of the 1 face. Then it matches up
+    !! the following nodes relying on the assumption that these faces are
+    !! oriented in opposite directions.
+    !!
+    !! Example: If node 1 of face 1 is linked against node 1 of face 2, then
+    !! node 2 of face 1 would be linked against the last node of face 2.
+    function face_lnode(lface, mesh) result(lnode)
+
+      integer, intent(in) :: lface(:)
+      type(unstr_mesh), intent(in) :: mesh
+      integer, allocatable :: lnode(:,:)
+
+      integer :: i, j, n2, fsize
+      real(r8) :: x1(3), x2(3)
+
+      fsize = mesh%xfnode(lface(1)+1) - mesh%xfnode(lface(1))
+      allocate(lnode(2,fsize))
+
+      ! Find the match in the second face to the first node of the first face.
+      ! Put the result in j.
+      x1 = mesh%x(:,mesh%fnode(mesh%xfnode(lface(1))))
+      do j = 1, fsize
+        n2 = mesh%fnode(mesh%xfnode(lface(2))+j-1)
+        ASSERT(n2 <= mesh%nnode)
+        x2 = mesh%x(:,n2)
+        if (all(x1 == x2)) exit
+      end do
+      ASSERT(j <= fsize)
+
+      ! Increment j backwards as i goes forwards. This relies on the faces being
+      ! oriented in opposite direction.
+      do i = 1, fsize
+        !j = modulo(i + offset - 1, fsize) + 1
+        lnode(1,i) = mesh%fnode(mesh%xfnode(lface(1))+i-1)
+        lnode(2,i) = mesh%fnode(mesh%xfnode(lface(2))+j-1)
+        j = merge(j-1, fsize, j>1) 
+        ASSERT(all(mesh%x(:,lnode(1,i)) == mesh%x(:,lnode(2,i))))
+      end do
+
+    end function face_lnode
+    
+
+  end subroutine compute_link_nodes
+
+
   !! Compute the gradient of the shape function in global coordinates for each
   !! node of each cell at each of the integration points associated with that
   !! cell. This involves first computing the Jacobian as described on pg 1762 of
@@ -280,7 +369,7 @@ contains
         wed6_grad_shape_l(3,6,9), hex8_grad_shape_l(3,8,12)
     real(r8), pointer :: grad_shape_l(:,:,:) => null()
 
-    call compute_reference_quantities(this)
+    call compute_reference_quantities
 
     allocate(this%grad_shape(this%npt))
 
@@ -321,11 +410,9 @@ contains
     !! For each cell type, compute the integration point coordinates and shape
     !! function gradients in reference coordinate-space. Outputs are *_xi_ip and
     !! *_grad_shape_l arrays
-    subroutine compute_reference_quantities(this)
+    subroutine compute_reference_quantities()
 
       use cell_topology
-
-      class(integration_geometry), intent(inout) :: this
 
       real(r8) :: tet4_xi_ip(3,6), pyr5_xi_ip(3,8), wed6_xi_ip(3,9), hex8_xi_ip(3,12)
 

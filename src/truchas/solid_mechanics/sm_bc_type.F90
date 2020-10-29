@@ -19,6 +19,7 @@ module sm_bc_type
   use bndry_ip_func_type
   use sm_normal_displacement_bc_type
   use sm_normal_traction_bc_type
+  use sm_gap_contact_bc_type
   implicit none
   private
 
@@ -26,6 +27,7 @@ module sm_bc_type
     type(bndry_ip_func) :: displacement(3), traction(3)
     type(sm_normal_displacement_bc) :: displacementn
     type(sm_normal_traction_bc) :: tractionn
+    type(sm_gap_contact_bc) :: gap_contact
   contains
     procedure :: init
   end type sm_bc
@@ -54,9 +56,8 @@ contains
     if (stat /= 0) return
     call alloc_tractionn_bc
     if (stat /= 0) return
-    ! call alloc_contact_gaps
-    ! call alloc_normalconstraint_gaps
-    ! call alloc_freeinterface_gaps
+    call alloc_gap_contact_bc
+    if (stat /= 0) return
 
     ! TODO: ensure consistency
 
@@ -101,6 +102,16 @@ contains
       call bff%add_complete
       call this%tractionn%init(mesh, ig, bff)
     end subroutine alloc_tractionn_bc
+
+    subroutine alloc_gap_contact_bc
+      type(bndry_face_func), allocatable :: bff
+      allocate(bff)
+      call bff%init(mesh, bndry_only=.false.)
+      call iterate_list(params, 'gap-contact', 'displacement', bff, stat, errmsg)
+      if (stat /= 0) return
+      call bff%add_complete
+      call this%gap_contact%init(mesh, ig, bff)
+    end subroutine alloc_gap_contact_bc
 
   end subroutine init
 

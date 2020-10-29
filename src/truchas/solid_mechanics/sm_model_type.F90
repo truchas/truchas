@@ -252,6 +252,7 @@ contains
     end do
 
     call bcs
+    if (this%bc%gap_contact%enabled) call gap_conditions
 
     call stop_timer("residual")
 
@@ -323,6 +324,55 @@ contains
       end associate
 
     end subroutine bcs
+
+
+    ! Normal displacement gap condition. Enforces a given separation between two
+    ! sides of a gap face, and possibly a shear force on each side.
+    subroutine gap_conditions()
+
+      integer :: l, n1, n2
+      real(r8) :: x1(3), x2(3), stress1(3), stress2(3)
+
+      call this%bc%gap_contact%compute(t)
+
+      associate (link => this%bc%gap_contact%index, values => this%bc%gap_contact%value, &
+          rot => this%bc%gap_contact%rotation_matrix)
+
+        if (this%bc%gap_contact%enabled) then
+          ! TODO-WARN: need halo node displacements and stresses/residuals?
+        end if
+
+        do i = 1, size(link)
+          l = link(i)
+          n1 = this%ig%lnode(1,l)
+          n2 = this%ig%lnode(2,l)
+          x1 = matmul(rot(:,:,i), displ(:,n1))
+          x2 = matmul(rot(:,:,i), displ(:,n2))
+          stress1 = r(:,n1) + this%rhs(:,n1)
+          stress2 = r(:,n2) + this%rhs(:,n2)
+          stress1 = matmul(rot(:,:,i), stress1)
+          stress2 = matmul(rot(:,:,i), stress2)
+
+          ! In the first node we put the equal & opposite normal contact force constraint
+          if (n1 <= this%mesh%nnode_onP) then
+            r(:,n1) = matmul(rot(:,:,i), r(:,n1))
+            r(1:2,n1) = 0 ! If there is a sliding constraint... TODO: is this right?
+            r(3,n1) = stress1(3) + stress2(3)
+            r(:,n1) = matmul(transpose(rot(:,:,i)), r(:,n1))
+          end if
+
+          ! In the second node we put the zero-displacement constraint
+          if (n2 <= this%mesh%nnode_onP) then
+            r(:,n2) = matmul(rot(:,:,i), r(:,n2))
+            r(1:2,n2) = 0 ! If there is a sliding constraint... TODO: is this right?
+            r(3,n2) = x1(3) - x2(3) + values(i)
+            r(:,n2) = matmul(transpose(rot(:,:,i)), r(:,n2))
+          end if
+        end do
+
+      end associate
+
+    end subroutine gap_conditions
 
   end subroutine compute_residual
 
