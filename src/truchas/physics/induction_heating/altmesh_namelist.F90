@@ -15,12 +15,12 @@ module altmesh_namelist
   logical, public :: altmesh_exists = .false.
   character(16), public :: partitioner
   character(511), public :: altmesh_file, grid_transfer_file, partition_file
-  real(r8), public :: altmesh_coordinate_scale_factor
+  real(r8), public :: altmesh_coordinate_scale_factor, rotation_angles(3)
   integer, public :: first_partition
   character(16), public :: data_mapper_kind
 
-  namelist /altmesh/ altmesh_file, altmesh_coordinate_scale_factor, grid_transfer_file, &
-                     partitioner, partition_file, first_partition, data_mapper_kind
+  namelist /altmesh/ altmesh_file, altmesh_coordinate_scale_factor, rotation_angles, &
+      grid_transfer_file, partitioner, partition_file, first_partition, data_mapper_kind
 
 contains
 
@@ -54,6 +54,7 @@ contains
     if (is_IOP) then
       altmesh_file = NULL_C
       altmesh_coordinate_scale_factor = 1.0_r8
+      rotation_angles = 0
       grid_transfer_file = NULL_C
       partitioner = NULL_C
       partition_file = NULL_C
@@ -68,6 +69,7 @@ contains
     call broadcast(altmesh_exists)
     call broadcast(altmesh_file)
     call broadcast(altmesh_coordinate_scale_factor)
+    call broadcast(rotation_angles)
     call broadcast(grid_transfer_file)
     call broadcast(partitioner)
     call broadcast(partition_file)
