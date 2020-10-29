@@ -55,18 +55,21 @@ contains
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:), udot(:)
-    real(r8), intent(out), contiguous :: f(:)
-    real(r8), pointer :: u2(:,:)
+    real(r8), intent(out), contiguous, target :: f(:)
+    real(r8), pointer :: u2(:,:), f2(:,:)
     u2(1:3, 1:this%model%mesh%nnode_onP) => u
-    call this%model%compute_residual(t, u2, f)
+    f2(1:3, 1:this%model%mesh%nnode_onP) => f
+    call this%model%compute_residual(t, u2, f2)
   end subroutine
 
   subroutine apply_precon(this, t, u, f)
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:)
-    real(r8), intent(inout), contiguous :: f(:)
-    call this%precon%apply(reshape(u, [3,this%model_size]), f)
+    real(r8), intent(inout), contiguous, target :: f(:)
+    real(r8), pointer :: u2(:,:)
+    u2(1:3, 1:this%model_size) => u
+    call this%precon%apply(u2, f)
   end subroutine
 
   subroutine compute_precon(this, t, u, dt)
@@ -82,7 +85,7 @@ contains
     use parallel_communication, only: global_maxval
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous :: u(:), du(:)
+    real(r8), intent(in), contiguous, target :: u(:), du(:)
     real(r8) :: l
     du_norm = 1
     l = global_maxval(abs(u))

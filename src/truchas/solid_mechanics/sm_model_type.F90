@@ -222,13 +222,13 @@ contains
 
     class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t, displ(:,:)
-    real(r8), intent(out) :: r(:)
+    real(r8), intent(out) :: r(:,:)
 
     integer :: n, xp, p, j, i, f, xn, d
     real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
-    ASSERT(size(r) == 3*this%mesh%nnode_onP)
+    ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) == this%mesh%nnode_onP)
 
     call start_timer("residual")
 
@@ -247,7 +247,7 @@ contains
           lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
         end do
 
-        r(3*(n-1)+1:3*(n-1)+3) = lhs - this%rhs(:,n)
+        r(:,n) = lhs - this%rhs(:,n)
       end associate
     end do
 
@@ -273,7 +273,7 @@ contains
             area => this%bc%traction(d)%factor)
           do i = 1, size(nodes)
             n = nodes(i)
-            r(3*(n-1)+d) = r(3*(n-1)+d) + values(i) * area(i)
+            r(d,n) = r(d,n) + values(i) * area(i)
           end do
         end associate
 
@@ -284,7 +284,7 @@ contains
             values => this%bc%displacement(d)%value)
           do i = 1, size(nodes)
             n = nodes(i)
-            r(3*(n-1)+d) = displ(d,n) - values(i)
+            r(d,n) = displ(d,n) - values(i)
           end do
         end associate
       end do
@@ -297,7 +297,7 @@ contains
       call this%bc%tractionn%compute(t)
       associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
         do i = 1, size(nodes)
-          r(3*(n-1)+1:3*(n-1)+3) = r(3*(n-1)+1:3*(n-1)+3) + values(:,i)
+          r(:,n) = r(:,n) + values(:,i)
         end do
       end associate
 
@@ -315,12 +315,10 @@ contains
           rot => this%bc%displacementn%rotation_matrix)
         do i = 1, size(nodes)
           n = nodes(i)
-          associate (rn => r(3*(n-1)+1:3*(n-1)+3))
-            x = matmul(rot(:,:,i), displ(:,n))
-            rn = matmul(rot(:,:,i), rn)
-            rn(3) = x(3) - values(i)
-            rn = matmul(transpose(rot(:,:,i)), rn)
-          end associate
+          x = matmul(rot(:,:,i), displ(:,n))
+          r(:,n) = matmul(rot(:,:,i), r(:,n))
+          r(3,n) = x(3) - values(i)
+          r(:,n) = matmul(transpose(rot(:,:,i)), r(:,n))
         end do
       end associate
 

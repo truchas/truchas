@@ -40,7 +40,7 @@ module nlsol_type
 
     !! Diagnostics
     integer :: unit = 0
-    logical :: verbose = .false.
+    logical :: verbose = .true.
 
     ! !! For state save/restore
     ! type(nlsol), pointer :: cache => null()
@@ -68,14 +68,14 @@ module nlsol_type
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
       real(r8), intent(in), contiguous, target :: u(:), udot(:)
-      real(r8), intent(out), contiguous :: f(:)
+      real(r8), intent(out), contiguous, target :: f(:)
     end subroutine
     subroutine apply_precon(this, t, u, f)
       import nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
       real(r8), intent(in), contiguous, target :: u(:)
-      real(r8), intent(inout), contiguous :: f(:)
+      real(r8), intent(inout), contiguous, target :: f(:)
     end subroutine
     subroutine compute_precon(this, t, u, dt)
       import nlsol_model, r8
@@ -87,7 +87,7 @@ module nlsol_type
       import :: nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
-      real(r8), intent(in), contiguous :: u(:), du(:)
+      real(r8), intent(in), contiguous, target :: u(:), du(:)
     end function
   end interface
 
