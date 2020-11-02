@@ -215,13 +215,6 @@ if(ENABLE_DYNAMIC_LOADING)
   add_compile_definitions(ENABLE_DYNAMIC_LOADING)
 endif()
 
-# Specific compiler bug workarounds and defines.
-# These are used when compiling code that has not been preprocessed.
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
-  add_compile_definitions(INTEL_DPD200237439)
-endif()
-
 if(USE_PORTAGE)
   add_compile_definitions(USE_PORTAGE)
 endif()
