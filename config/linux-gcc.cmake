@@ -7,5 +7,5 @@ set(CMAKE_Fortran_COMPILER gfortran CACHE STRING "Fortran Compiler")
 set(CMAKE_Fortran_FLAGS_RELEASE "-fimplicit-none -ffree-line-length-none -DNDEBUG"
     CACHE STRING "Fortran compile flags")
 
-set(CMAKE_Fortran_FLAGS_DEBUG "-fimplicit-none -ffree-line-length-none"
+set(CMAKE_Fortran_FLAGS_DEBUG "-g -fimplicit-none -ffree-line-length-none"
     CACHE STRING "Fortran compile flags")
