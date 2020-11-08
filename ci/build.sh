@@ -32,6 +32,7 @@ cmake \
     -DCMAKE_BUILD_TYPE=${build_type} \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
+    -DUSE_PORTAGE=Yes \
     ..
 make -j8
 make install
