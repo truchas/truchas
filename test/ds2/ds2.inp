@@ -35,7 +35,7 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 1.0e-5
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 1.0e-3
+  nlk_tol            = 5.0e-3
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /

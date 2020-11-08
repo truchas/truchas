@@ -40,7 +40,7 @@ so ortho operators are used for HT/PC.
   rel_enthalpy_tol   = 1.0e-7
   nlk_tol            = 0.05
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 5
+  pc_amg_cycles      = 2
 /
 
 &NUMERICS

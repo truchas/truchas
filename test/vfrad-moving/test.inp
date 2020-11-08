@@ -18,7 +18,7 @@
   nlk_preconditioner = "Hypre_AMG"
   max_nlk_itr = 5
   nlk_tol = 0.001
-  pc_amg_cycles = 4
+  pc_amg_cycles = 2
 /
 
 &NUMERICS

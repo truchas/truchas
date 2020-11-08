@@ -33,7 +33,7 @@ u = dsig/dx / mu * (y - ymin)
   rel_enthalpy_tol   = 1.0e-3
   nlk_tol            = 0.01
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 4
+  pc_amg_cycles      = 2
   verbose_stepping   = .true.
 /
 

@@ -72,8 +72,8 @@ module pcsr_precon_boomer_type
     integer  :: debug_level       ! OFF=0, ON=1
     integer  :: logging_level     ! OFF=0, ON=1, >1=residual available from hypre
     !! BoomerAMG parameters -- these are currently hardwired
-    integer  :: coarsen_type = 10 ! HMIS coarsening
-    integer  :: relax_type = 18   ! l-scaled Jacobi smoothing
+    integer  :: coarsen_type = 6  ! Falgout coarsening
+    integer  :: relax_type = 3    ! hybrid Gauss-Seidel smoothing
     integer  :: num_sweeps = 1    ! number of smoother sweeps
     integer  :: max_levels = 25   ! max number of multigrid levels
     real(r8) :: tol = 0.0d0       ! no tolerance -- using as a preconditioner

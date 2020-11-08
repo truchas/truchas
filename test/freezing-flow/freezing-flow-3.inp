@@ -81,7 +81,7 @@ the flow solver.
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-5
   max_nlk_itr        = 10
-  nlk_tol            = 0.0001
+  nlk_tol            = 0.001
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /
