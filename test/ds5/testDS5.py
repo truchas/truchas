@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "ds5.inp")
-    golden = tenv.output("ds5_golden/ds5.h5")
+    golden = tenv.output("ds5_pgolden/ds5.h5")
 
     for sid in (2, 3):
         # cycle number

@@ -71,7 +71,7 @@ h(T) = 1 + (T - 2)/2
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 0.001
+  nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /

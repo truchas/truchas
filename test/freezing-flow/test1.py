@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "freezing-flow-1.inp")
-    golden = tenv.output("freezing-flow-1_golden/freezing-flow-1.h5")
+    golden = tenv.output("freezing-flow-1_pgolden/freezing-flow-1.h5")
 
     # early time
     time = output.time(2)

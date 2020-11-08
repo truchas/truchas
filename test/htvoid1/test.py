@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "htvoid1.inp")
-    golden = tenv.output("htvoid1_golden/htvoid1.h5")
+    golden = tenv.output("htvoid1_pgolden/htvoid1.h5")
 
     # checking final values
     sid = output.num_series()
