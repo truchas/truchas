@@ -12,7 +12,7 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
         - version 18.0.5 (anything 18.0.2 or later should be okay)
         - version 19.1.0
         - Many versions are known to **not work** due to compiler bugs. These
-          include 19.0.x (any x), 19.1.1, and 19.1.2.
+          include 19.0.x (any x), and 19.1.1 through at least 19.1.3
     - NAG Fortran (with GNU C/C++):
         - version 6.2 (build 6252 or later preferred)
         - version 7.0 (build 7026 or later required)

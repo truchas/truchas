@@ -1,5 +1,32 @@
 # NEWS
 
+## 2020-11-09 Version 20.11
+
+## 2020-11-08 (914f932c)
+
+The recent configuration change to the Hypre BoomerAMG preconditioner used in
+heat transport has be reverted to its original configuration. Further testing
+on large problems showed little, if any, performance benefit and a loss in
+robustness requiring more careful attention to the number of cycles.
+
+## 2020-10-29 (78ce9948)
+
+An option to apply rotations to the computational mesh has been added. See the
+Reference Manual description of the `rotation_angles` variable in the `MESH`
+and `ALTMESH` namelists.
+
+## 2020-10-22 (8772728b)
+
+The recently introduced Portage data mapper has been made an optional
+compile-time component due to the difficulty in compiling the Portage library
+on some platforms.
+
+## 2020-10-21 (cbc562ea)
+
+A Dirichlet temperature boundary condition can now be imposed on a surface
+that participates in enclosure radiation. This greatly simplifies the modeling
+of heating elements with a prescribed surface temperature.
+
 ## 2020-10-09 Version 20.10
 
 ## 2020-10-09 (122a475)
