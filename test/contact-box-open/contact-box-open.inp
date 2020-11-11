@@ -1,0 +1,133 @@
+&OUTPUTS
+  output_t = 0.0, 50.0, 53.0, 150.0
+  output_dt = 100.0, 100.0, 100.0
+  output_dt_multiplier = 1
+  !short_output_dt_multiplier = 1
+  !long_output_dt_multiplier = 5
+  !Long_Edit_Bounding_Coords = 0.0, 8.0e-2, 0.00, 8.0e-2, 0.00, 8.0e-2
+/
+
+&MESH
+  mesh_file = 'split-rotated-cube.exo'
+  coordinate_scale_factor = 0.01
+  gap_element_blocks = 3
+/
+
+&PHYSICS
+  materials = 'aluminum'
+  heat_transport = .true.
+  legacy_solid_mechanics = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0.0
+  rel_temp_tol = 5.0e-5
+  abs_enthalpy_tol = 0.0
+  rel_enthalpy_tol = 5.0e-5
+  nlk_tol = 0.05
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles = 4
+  verbose_stepping = .true.
+/
+
+&SOLID_MECHANICS
+  convergence_criterion = 1e-12
+  nlk_max_vectors = 20
+  nlk_vector_tolerance = 1e-2
+  maximum_iterations = 500
+/
+
+&NUMERICS
+  dt_init = 1.0
+  dt_grow = 5.0
+  dt_max = 5.0
+  dt_min = 1.0e-3
+/
+
+&LINEAR_SOLVER
+  name = 'displacement precon'
+  method = 'none'
+  preconditioning_method = 'tm_diag'
+  preconditioning_scope = 'local'
+/
+
+&NONLINEAR_SOLVER
+  name = 'displacement solve'
+  method = 'nlk'
+  linear_solver_name = 'displacement precon'
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'aluminum'
+  temperature = 308.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_name = 'aluminum'
+  temperature = 308.0
+/
+
+&THERMAL_BC
+  name = 'ends'
+  type = 'temperature'
+  face_set_ids = 1, 2
+  temp_func = 'applied temperature profile'
+/
+
+&FUNCTION
+  name = 'applied temperature profile'
+  type = 'smooth step'
+  smooth_step_x0 = 0.0
+  smooth_step_y0 = 308.0
+  smooth_step_x1 = 100.0
+  smooth_step_y1 = 288.0
+/
+
+&THERMAL_BC
+  name = 'lateral sides'
+  type = 'flux'
+  face_set_ids = 3, 4, 5, 6
+  flux = 0.0
+/
+
+&THERMAL_BC
+  name = 'gap interface'
+  type = 'interface-htc'
+  face_set_ids = 3
+  htc = 1.0e4
+/
+
+&SM_BC
+  name = 'left/right/front/bottom/top ends -- no normal displacement'
+  face_set_ids = 1, 2, 3, 5, 6
+  type = 'displacement-n'
+  displacement = 0
+/
+
+&SM_BC
+  name = 'gap interface'
+  face_set_ids = 10
+  type = 'contact'
+  contact_distance = 1.0e-7
+  contact_norm_trac = 1.0e4
+  contact_penalty = 1.0e3
+/
+
+define the material properties (aluminum, SI units)
+Elastic constants (stresses) in MPa to make test checking easier
+
+&MATERIAL
+  name = 'aluminum'
+  density = 2.7e3
+  specific_heat = 9.0e2
+  conductivity = 2.4e2
+  tm_ref_density = 2.7e3
+  tm_ref_temp = 298.0
+  tm_linear_cte = 2.2e-5
+  tm_lame1 = 5.20e+10
+  tm_lame2 = 2.60e+10
+/

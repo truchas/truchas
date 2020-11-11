@@ -171,23 +171,8 @@ add_pytruchas_test(vfrad3
 		   PROCESSORS 4
 		   LABELS RADIATION CONDUCTION)
 
-add_pytruchas_test(contact-box-close
-                   contact-box-close/testContactBoxClose.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
-
-add_pytruchas_test(contact-box-open
-                   contact-box-open/testContactBoxOpen.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
-
-add_pytruchas_test(viscoplastic-ring
-                   viscoplastic-ring/testViscoplasticRing.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
-
-add_pytruchas_test(shear-constr-heat
-                   shear-constr-heat/testShearConstrHeat.py
+add_pytruchas_test(shear
+                   shear/test-shear.py
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
@@ -206,30 +191,55 @@ add_pytruchas_test(stretch-z
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
-add_pytruchas_test(thermoelastic-consistency
-                   stretch/test-thermoelastic-consistency.py
+# add_pytruchas_test(contact-box-close
+#                    contact-box-close/testContactBoxClose.py
+# 		   PROCESSORS 4
+# 		   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(contact-box-open
+                   contact-box-open/test.py
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
-add_pytruchas_test(shear
-                   shear/test-shear.py
+add_pytruchas_test(contact-box-close-legacy
+                   contact-box-close-legacy/testContactBoxClose.py
 		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+		   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(contact-box-open-legacy
+                   contact-box-open-legacy/testContactBoxOpen.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(viscoplastic-ring
+                   viscoplastic-ring/testViscoplasticRing.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(shear-constr-heat
+                   shear-constr-heat/testShearConstrHeat.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(thermoelastic-consistency
+                   stretch/test-thermoelastic-consistency.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(shear-legacy
                    shear/test-shear-legacy.py
 		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+		   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(simple-gap
                    simple-gap/testSimpleGap.py
 		   PROCESSORS 4
-		   LABELS OLD_FLOW SOLID_MECHANICS)
+		   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(tm-pc
                    tm-pc/testTMPC.py
 		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS PHASE_CHANGE)
+		   LABELS SOLID_MECHANICS_LEGACY PHASE_CHANGE)
 
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
