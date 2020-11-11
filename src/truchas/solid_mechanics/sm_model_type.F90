@@ -339,7 +339,8 @@ contains
           rot => this%bc%gap_contact%rotation_matrix)
 
         if (this%bc%gap_contact%enabled) then
-          ! TODO-WARN: need halo node displacements and stresses/residuals?
+          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
+          !            everything working in serial.
         end if
 
         do i = 1, size(link)

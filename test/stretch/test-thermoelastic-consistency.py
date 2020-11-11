@@ -12,14 +12,14 @@ def run_test(tenv):
 
     # stretch in the x direction, compare displacements, strains
     for d in ("x", "y", "z"):
-        name = "stretch-n{:s}".format(d)
-        stdout1, output1 = tenv.truchas(4, "{:s}.inp".format(name))
-        stdout2, output2 = tenv.truchas(4, "{:s}-legacy.inp".format(name))
+        name = f"stretch-n{d}"
+        stdout1, output1 = tenv.truchas(4, f"{name}.inp")
+        stdout2, output2 = tenv.truchas(4, f"{name}-legacy.inp")
         sid = 2
         time = output1.time(sid)
         out1 = output1.field(sid, "Displacement")
         out2 = output2.field(sid, "Displacement")
-        nfail += truchas.compare_max(out1, out2, 1e-12, "{:s}-displacement".format(name), time)
+        nfail += truchas.compare_max(out1, out2, 1e-12, f"{name}-displacement", time)
         # TODO: strain
         # TODO: stress
         print()
