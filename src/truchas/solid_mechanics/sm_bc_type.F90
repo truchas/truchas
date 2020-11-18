@@ -104,13 +104,43 @@ contains
     end subroutine alloc_tractionn_bc
 
     subroutine alloc_gap_contact_bc
-      type(bndry_face_func), allocatable :: bff
-      allocate(bff)
-      call bff%init(mesh, bndry_only=.false.)
-      call iterate_list(params, 'gap-contact', 'displacement', bff, stat, errmsg)
-      if (stat /= 0) return
-      call bff%add_complete
-      call this%gap_contact%init(mesh, ig, bff)
+
+      use scalar_func_class
+      use scalar_func_factories, only: alloc_scalar_func
+      use string_utilities, only: lower_case
+
+      type(parameter_list_iterator) :: piter
+      type(parameter_list), pointer :: plist
+      integer, allocatable :: setids(:)
+      character(:), allocatable :: this_type
+      class(scalar_func), allocatable :: f
+
+      call this%gap_contact%init(mesh, ig)
+
+      stat = 0
+      piter = parameter_list_iterator(params, sublists_only=.true.)
+      do while (.not.piter%at_end())
+        plist => piter%sublist()
+        call plist%get('type', this_type, stat=stat, errmsg=errmsg)
+        if (stat /= 0) exit
+        if (lower_case(this_type) == 'gap-contact') then  ! use this sublist
+          call TLS_info('  using SM_BC[' // piter%name() // ']')
+          call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+          if (stat /= 0) exit
+          call alloc_scalar_func(plist, 'displacement', f, stat, errmsg)
+          if (stat /= 0) exit
+          call this%gap_contact%add(f, setids, stat, errmsg)
+          if (stat /= 0) exit
+        end if
+        call piter%next
+      end do
+      if (stat /= 0) then
+        errmsg = 'SM_BC[' // piter%name() // ']: ' // errmsg
+        return
+      end if
+
+      call this%gap_contact%add_complete
+
     end subroutine alloc_gap_contact_bc
 
   end subroutine init

@@ -330,7 +330,7 @@ contains
     ! sides of a gap face, and possibly a shear force on each side.
     subroutine gap_conditions()
 
-      integer :: l, n1, n2
+      integer :: n1, n2
       real(r8) :: x1(3), x2(3), stress1(3), stress2(3)
 
       call this%bc%gap_contact%compute(t)
@@ -344,9 +344,8 @@ contains
         end if
 
         do i = 1, size(link)
-          l = link(i)
-          n1 = this%ig%lnode(1,l)
-          n2 = this%ig%lnode(2,l)
+          n1 = link(1,i)
+          n2 = link(2,i)
           x1 = matmul(rot(:,:,i), displ(:,n1))
           x2 = matmul(rot(:,:,i), displ(:,n2))
           stress1 = r(:,n1) + this%rhs(:,n1)
@@ -357,7 +356,7 @@ contains
           ! In the first node we put the equal & opposite normal contact force constraint
           if (n1 <= this%mesh%nnode_onP) then
             r(:,n1) = matmul(rot(:,:,i), r(:,n1))
-            r(1:2,n1) = 0 ! If there is a sliding constraint... TODO: is this right?
+            r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
             r(3,n1) = stress1(3) + stress2(3)
             r(:,n1) = matmul(transpose(rot(:,:,i)), r(:,n1))
           end if
@@ -365,7 +364,7 @@ contains
           ! In the second node we put the zero-displacement constraint
           if (n2 <= this%mesh%nnode_onP) then
             r(:,n2) = matmul(rot(:,:,i), r(:,n2))
-            r(1:2,n2) = 0 ! If there is a sliding constraint... TODO: is this right?
+            r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
             r(3,n2) = x1(3) - x2(3) + values(i)
             r(:,n2) = matmul(transpose(rot(:,:,i)), r(:,n2))
           end if

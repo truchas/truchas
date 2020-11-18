@@ -51,6 +51,7 @@ module intfc_link_group_builder_type
     procedure :: init
     procedure :: add_link_group
     procedure :: get_link_groups
+    procedure :: get_link_id_groups
   end type intfc_link_group_builder
 
 contains
@@ -130,5 +131,40 @@ contains
     xgroup(1) = 1
 
   end subroutine get_link_groups
+
+  !! Return index(xgroup(n)) = j instead of index(:,xgroup(n)) = this%mesh%lface(:,j)
+  subroutine get_link_id_groups(this, ngroup, xgroup, index)
+
+    class(intfc_link_group_builder), intent(in) :: this
+    integer, intent(out) :: ngroup
+    integer, allocatable, intent(out) :: xgroup(:), index(:)
+
+    integer :: n, j
+
+    ngroup = this%ngroup
+    n = count(this%tag > 0)
+    allocate(index(n), xgroup(ngroup+1))
+
+    !! Prepare XGROUP: indices in group N will be INDEX(XGROUP(N):XGROUP(N+1)-1).
+    xgroup(1) = 1
+    do n = 1, ngroup
+      xgroup(n+1) = xgroup(n) + count(this%tag == n)
+    end do
+
+    !! Fill the INDEX array; XGROUP(N) stores the next free location for group N.
+    do j = 1, size(this%tag)
+      n = this%tag(j)
+      if (n == 0) cycle
+      index(xgroup(n)) = j
+      xgroup(n) = 1 + xgroup(n)
+    end do
+
+    !! Restore XGROUP; XGROUP(N) is now the start of group N+1 instead of N.
+    do n = ngroup, 1, -1
+      xgroup(n+1) = xgroup(n)
+    end do
+    xgroup(1) = 1
+
+  end subroutine get_link_id_groups
 
 end module intfc_link_group_builder_type

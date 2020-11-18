@@ -54,22 +54,12 @@ contains
     n = this%xfini(size(this%xfini))-1
     allocate(normal_ip(3,n), this%area_ip(n))
     allocate(this%rotation_matrix(3,3,size(this%index)), this%value(size(this%index)))
+    allocate(normal_node(3,size(this%index)))
     call compute_ip_normals(this%bff%index, this%xfini, mesh, ig, normal_ip)
+    call compute_node_normals(this%xfini, this%fini, normal_ip, normal_node)
 
     do n = 1, size(normal_ip, dim=2)
       this%area_ip(n) = norm2(normal_ip(:,n))
-    end do
-
-    ! Compute the rotation matrices to a node-normal-aligned coordinate space.
-    ! The "node normals" are computed as an area-weighted average of the
-    ! surrounding integration point contributions.
-    allocate(normal_node(3,size(this%index)))
-    normal_node = 0
-    do fi = 1, size(this%bff%index)
-      do xni = this%xfini(fi), this%xfini(fi+1)-1
-        ni = this%fini(xni)
-        normal_node(:,ni) = normal_node(:,ni) + normal_ip(:,xni)
-      end do
     end do
 
     do ni = 1, size(this%index)

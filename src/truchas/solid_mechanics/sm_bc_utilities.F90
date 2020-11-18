@@ -22,7 +22,9 @@ module sm_bc_utilities
   private
 
   public :: compute_index_connectivity
+  public :: compute_link_index_connectivity
   public :: compute_ip_normals
+  public :: compute_node_normals
   public :: rotation_matrix
 
 contains
@@ -82,7 +84,7 @@ contains
         ni_(n) = count
       end do
     end do
-    
+
     ! compute the connectivity
     allocate(fini(xfini(nfi+1)-1), node_index(count))
     count = 0
@@ -104,6 +106,77 @@ contains
     end do
 
   end subroutine compute_index_connectivity
+
+
+  !! This routine is almost identical to above, except instead of operating on
+  !! literal faces and nodes, it will operate on a given connectivity structure
+  !! xfnode/fnode. This provides the generality needed to work on connections
+  !! between link faces and link nodes. As a consequence, it does not check if
+  !! nodes are on-process before adding them to the new structure.
+  subroutine compute_link_index_connectivity(xfnode, fnode, face_index, fini, xfini, node_index)
+
+    integer, intent(in) :: xfnode(:), fnode(:), face_index(:)
+    integer, intent(out), allocatable :: fini(:), xfini(:), node_index(:)
+
+    integer :: f, n, fi, xn, xfi, nfi, count, nnode, stat
+    integer, allocatable :: ni_(:)
+
+    nnode = maxval(fnode)
+    allocate(ni_(nnode), stat=stat)
+    INSIST(stat == 0)
+
+    if (allocated(fini)) deallocate(fini)
+    if (allocated(xfini)) deallocate(xfini)
+    if (allocated(node_index)) deallocate(node_index)
+
+    nfi = size(face_index) ! number of face indices
+
+    ! compute the offsets by counting the valid nodes for each face
+    allocate(xfini(nfi+1))
+    xfini(1) = 1
+    do fi = 1, nfi
+      count = 0
+      f = face_index(fi)
+      do xn = xfnode(f), xfnode(f+1)-1
+        n = fnode(xn)
+        count = count + 1
+      end do
+      xfini(fi+1) = xfini(fi) + count
+    end do
+
+    ! count the unique nodes
+    count = 0
+    ni_ = 0
+    do fi = 1, nfi
+      f = face_index(fi)
+      do xn = xfnode(f), xfnode(f+1)-1
+        n = fnode(xn)
+        if (ni_(n) /= 0) cycle
+        count = count + 1
+        ni_(n) = count
+      end do
+    end do
+
+    ! compute the connectivity
+    allocate(fini(xfini(nfi+1)-1), node_index(count))
+    count = 0
+    ni_ = 0
+    do fi = 1, nfi
+      f = face_index(fi)
+      xfi = 0
+      do xn = xfnode(f), xfnode(f+1)-1
+        n = fnode(xn)
+        if (ni_(n) == 0) then
+          count = count + 1
+          ni_(n) = count
+          node_index(count) = n
+        end if
+        xfi = xfi + 1
+        fini(xfi) = ni_(n)
+      end do
+    end do
+
+  end subroutine compute_link_index_connectivity
 
 
   !! Compute the oriented face areas for the integration points
@@ -162,6 +235,31 @@ contains
     end do
 
   end subroutine compute_face_ip_normals
+
+
+  !! Compute the "node normals", evaluated from an area-weighted average of the
+  !! surrounding integration point face normals. The routine takes a mapping
+  !! between faces and nodes, with each face-node pair indicating an integration
+  !! point.
+  subroutine compute_node_normals(xfini, fini, normal_ip, normal_node)
+
+    integer, intent(in) :: xfini(:), fini(:)
+    real(r8), intent(in) :: normal_ip(:,:)
+    real(r8), intent(out) :: normal_node(:,:)
+
+    integer :: nface, fi, xni, ni
+
+    nface = size(xfini)-1
+
+    normal_node = 0
+    do fi = 1, nface
+      do xni = xfini(fi), xfini(fi+1)-1
+        ni = fini(xni)
+        normal_node(:,ni) = normal_node(:,ni) + normal_ip(:,xni)
+      end do
+    end do
+
+  end subroutine compute_node_normals
 
 
   !! Generate matrix which rotates such that normal is in the "z" direction.

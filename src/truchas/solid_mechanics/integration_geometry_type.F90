@@ -82,7 +82,9 @@ module integration_geometry_type
     integer, allocatable :: xpxn(:) ! cell-local node ID from node-local IP ID (see above)
     integer, allocatable :: fface(:,:) ! cell-local face IDs for a given global face
 
+    integer :: nlnode
     integer, allocatable :: lnode(:,:)
+    integer, allocatable :: xlflnode(:), lflnode(:) ! link-face to link-node connectivity
 
     type(unstr_mesh), pointer, private :: mesh => null() ! unowned reference
   contains
@@ -266,6 +268,7 @@ contains
   end subroutine compute_connectivity
 
 
+  !! TODO-WARN: need xlflnode/lflnode
   !! Finds linked node pairs from linked face pairs. Places linked nodes into
   !! appropriate link set IDs, and ensures linked nodes aren't duplicated.
   subroutine compute_link_nodes(this)
@@ -288,6 +291,7 @@ contains
       end do
     end do
 
+    this%nlnode = count
     allocate(this%lnode(2,count))
     count = 0
     touched = .false.
