@@ -346,12 +346,12 @@ contains
         do i = 1, size(link)
           n1 = link(1,i)
           n2 = link(2,i)
-          x1 = matmul(rot(:,:,i), displ(:,n1))
-          x2 = matmul(rot(:,:,i), displ(:,n2))
           stress1 = r(:,n1) + this%rhs(:,n1)
           stress2 = r(:,n2) + this%rhs(:,n2)
           stress1 = matmul(rot(:,:,i), stress1)
           stress2 = matmul(rot(:,:,i), stress2)
+          x1 = matmul(rot(:,:,i), displ(:,n1))
+          x2 = matmul(rot(:,:,i), displ(:,n2))
 
           ! In the first node we put the equal & opposite normal contact force constraint
           if (n1 <= this%mesh%nnode_onP) then

@@ -268,7 +268,6 @@ contains
   end subroutine compute_connectivity
 
 
-  !! TODO-WARN: need xlflnode/lflnode
   !! Finds linked node pairs from linked face pairs. Places linked nodes into
   !! appropriate link set IDs, and ensures linked nodes aren't duplicated.
   subroutine compute_link_nodes(this)
@@ -276,13 +275,17 @@ contains
     class(integration_geometry), intent(inout) :: this
 
     logical :: touched(this%mesh%nnode)
-    integer :: count, l, n
+    integer :: count, l, n, lni(this%mesh%nnode)
     integer, allocatable :: lnode(:,:)
+
+    allocate(this%xlflnode(this%mesh%nlink+1))
+    this%xlflnode(1) = 1
 
     count = 0
     touched = .false.
     do l = 1, this%mesh%nlink
       lnode = face_lnode(this%mesh%lface(:,l), this%mesh)
+      this%xlflnode(l+1) = this%xlflnode(l) + size(lnode,dim=2)
       do n = 1, size(lnode,dim=2)
         if (.not.touched(lnode(1,n))) then
           touched(lnode(1,n)) = .true.
@@ -292,17 +295,20 @@ contains
     end do
 
     this%nlnode = count
-    allocate(this%lnode(2,count))
+    allocate(this%lnode(2,count), this%lflnode(this%xlflnode(size(this%xlflnode))-1))
+    lni = 0
     count = 0
     touched = .false.
     do l = 1, this%mesh%nlink
       lnode = face_lnode(this%mesh%lface(:,l), this%mesh)
       do n = 1, size(lnode,dim=2)
         if (.not.touched(lnode(1,n))) then
-          touched(lnode(1,n)) = .true.
           count = count + 1
+          touched(lnode(1,n)) = .true.
+          lni(lnode(1,n)) = count
           this%lnode(:,count) = lnode(:,n)
         end if
+        this%lflnode(this%xlflnode(l)+n-1) = lni(lnode(1,n))
       end do
     end do
 

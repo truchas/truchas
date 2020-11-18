@@ -113,6 +113,13 @@ contains
   !! xfnode/fnode. This provides the generality needed to work on connections
   !! between link faces and link nodes. As a consequence, it does not check if
   !! nodes are on-process before adding them to the new structure.
+  !!
+  !! Note that it's important here that the node index be listed in the correct
+  !! order: we are given a list of faces in a certain order, and each node
+  !! is added to the list as we iterate through those faces, and only if that
+  !! node hasn't been added before. In the sm_gap_contact_bc type, we expect
+  !! this behavior so that we can make a semblance of node groups from face
+  !! groups.
   subroutine compute_link_index_connectivity(xfnode, fnode, face_index, fini, xfini, node_index)
 
     integer, intent(in) :: xfnode(:), fnode(:), face_index(:)

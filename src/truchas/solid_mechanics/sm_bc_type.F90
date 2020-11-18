@@ -43,7 +43,7 @@ contains
     class(sm_bc), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     type(unstr_mesh), intent(in), target :: mesh
-    type(integration_geometry), intent(in) :: ig
+    type(integration_geometry), intent(in), target :: ig
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 

@@ -33,15 +33,12 @@ module sm_gap_contact_bc_type
     real(r8), allocatable, public :: value(:), rotation_matrix(:,:,:)
     logical, public :: enabled
 
-    integer, allocatable :: lface_index(:)
-    ! type(bndry_face_func), allocatable :: bff
     ! real(r8), allocatable :: area_ip(:)
-    integer, allocatable :: fini(:), xfini(:)
 
     type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
     type(integration_geometry), pointer :: ig => null() ! reference only - do not own
     integer :: ngroup
-    integer, allocatable :: xgroup(:), xgroup_face(:)
+    integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: displacement(:)
     ! temporaries used during construction
     type(intfc_link_group_builder), allocatable :: builder
@@ -80,6 +77,9 @@ contains
   end subroutine add
 
 
+  !! This BC is along nodes, specifically linked nodes. We have a list of face
+  !! links, from which we must get the node links. We also must group the node
+  !! links appropriately, and compute normal rotation matrices.
   subroutine add_complete(this)
 
     use parallel_communication, only: global_any
@@ -87,23 +87,25 @@ contains
 
     class(sm_gap_contact_bc), intent(inout) :: this
 
-    integer, allocatable :: lnode_index(:)
+    integer :: n
+    integer, allocatable :: lnode_index(:), lface_index(:), fini(:), xfini(:), xgroup_face(:)
 
     INSIST(allocated(this%builder))
-    call this%builder%get_link_id_groups(this%ngroup, this%xgroup_face, this%lface_index)
+    call this%builder%get_link_id_groups(this%ngroup, xgroup_face, lface_index)
     deallocate(this%builder)
     call scalar_func_list_to_box_array(this%flist, this%displacement)
 
-    call compute_link_index_connectivity(this%ig%xlflnode, this%ig%lflnode, this%lface_index, &
-        this%xfini, this%fini, lnode_index)
+    call compute_link_index_connectivity(this%ig%xlflnode, this%ig%lflnode, lface_index, &
+        xfini, fini, lnode_index)
+
     this%index = this%ig%lnode(:,lnode_index)
 
-    !call compute_index
-    allocate(this%value(size(this%index,dim=2)))
-    allocate(this%rotation_matrix(3,3,size(this%index,dim=2)))
-    call compute_rotation_matrix
+    n = size(this%index,dim=2)
+    this%enabled = global_any(n > 0)
+    allocate(this%value(n), this%rotation_matrix(3,3,n))
 
-    this%enabled = global_any(size(this%index) > 0)
+    call compute_node_groups(xfini, fini, xgroup_face, this%xgroup)
+    call compute_rotation_matrix
 
   contains
 
@@ -153,12 +155,14 @@ contains
       integer, allocatable :: face_index(:)
       real(r8), allocatable :: normal_ip(:,:), normal_node(:,:)
 
-      face_index = this%mesh%lface(1,this%lface_index)
-      nip = this%xfini(size(this%xfini))-1
+      if (size(xfini) == 0) return
+      nip = xfini(size(xfini))-1
+
+      face_index = this%mesh%lface(1,lface_index)
       allocate(normal_ip(3,nip), normal_node(3,size(this%index,dim=2)))
 
-      call compute_ip_normals(face_index, this%xfini, this%mesh, this%ig, normal_ip)
-      call compute_node_normals(this%xfini, this%fini, normal_ip, normal_node)
+      call compute_ip_normals(face_index, xfini, this%mesh, this%ig, normal_ip)
+      call compute_node_normals(xfini, fini, normal_ip, normal_node)
 
       do ni = 1, size(this%index,dim=2)
         this%rotation_matrix(:,:,ni) = rotation_matrix(normal_node(:,ni))
@@ -166,26 +170,37 @@ contains
 
     end subroutine compute_rotation_matrix
 
+
+    !! From the face groups, compute the node groups. The nodes have already
+    !! been arranged by compute_link_index_connectivity to be listed in an
+    !! appropriate order: first nodes from this face group, then nodes from the
+    !! next face group that weren't in the previous groups, and so on. From this
+    !! assumption, each node group starts at the node following the maximum node
+    !! ID from the previous group.
+    subroutine compute_node_groups(xfini, fini, xgroup_face, xgroup)
+
+      integer, intent(in) :: xfini(:), fini(:), xgroup_face(:)
+      integer, intent(out), allocatable :: xgroup(:)
+
+      integer :: n, fi, k, last_node
+
+      allocate(xgroup(size(xgroup_face)))
+      if (size(xgroup) == 0) return
+
+      xgroup(1) = 1
+      last_node = 1
+      do n = 1, this%ngroup
+        do fi = xgroup_face(n), xgroup_face(n+1)-1
+          k = maxval(fini(xfini(fi):xfini(fi+1)-1))
+          last_node = max(last_node, k)
+        end do
+        xgroup(n+1) = last_node+1
+        ASSERT(xgroup(n+1) >= xgroup(n))
+      end do
+
+    end subroutine compute_node_groups
+
   end subroutine add_complete
-
-
-  ! TODO-WARN
-  subroutine compute_xgroup(xgroup_face, xgroup)
-
-    integer, intent(in) :: xgroup_face(:)
-    integer, intent(out), allocatable :: xgroup(:)
-
-    integer :: n
-
-    allocate(xgroup(size(xgroup_face)))
-
-    xgroup(1) = 1
-    !xgroup(size(xgroup_face)) = size(index)+1
-    do n = 1, size(xgroup_face)
-      !xgroup(n+1)
-    end do
-
-  end subroutine compute_xgroup
 
 
   subroutine compute(this, t)
@@ -194,7 +209,7 @@ contains
     real(r8), intent(in) :: t
 
     integer :: n, lni, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), x(3)
+    real(r8) :: args(0:size(this%mesh%x,dim=1))
 
     do n = 1, this%ngroup
       do lni = this%xgroup(n), this%xgroup(n+1)-1
