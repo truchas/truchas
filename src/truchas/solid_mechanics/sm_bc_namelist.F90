@@ -122,6 +122,28 @@ contains
         else
           call TLS_fatal(label // ': either TRACTION or TRACTION_FUNC is required')
         end if
+      case ('gap-contact')
+        if (traction /= NULL_R .and. traction_func /= NULL_C) then
+          call TLS_fatal(label // ': cannot specify both TRACTION and TRACTION_FUNC')
+        else if (traction /= NULL_R) then
+          call plist%set('traction', traction)
+        else if (traction_func /= NULL_C) then
+          ! TODO: verify a function with this name exists
+          call plist%set('traction', trim(traction_func))
+        ! else
+        !   call TLS_fatal(label // ': either TRACTION or TRACTION_FUNC is required')
+        end if
+        if (displacement /= NULL_R .and. displacement_func /= NULL_C) then
+          call TLS_fatal(label // ': cannot specify both DISPLACEMENT and DISPLACEMENT_FUNC')
+        else if (displacement /= NULL_R) then
+          call plist%set('displacement', displacement)
+        else if (displacement_func /= NULL_C) then
+          ! TODO: verify a function with this name exists
+          call plist%set('displacement', trim(displacement_func))
+        else
+          call plist%set('displacement', 0.0_r8)
+          !call TLS_fatal(label // ': either DISPLACEMENT or DISPLACEMENT_FUNC is required')
+        end if
       case default
         call TLS_fatal(label // ': TYPE not recognized')
       end select

@@ -170,7 +170,7 @@ contains
     ! Dirichlet BCs
     do d = 1, 3
       call this%bc%displacement(d)%compute(t)
-      associate (nodes => this%bc%displacement(d)%index, values => this%bc%displacement(d)%value)
+      associate (nodes => this%bc%displacement(d)%index)
         do i = 1, size(nodes)
           n = nodes(i)
           j = 3*(n-1) + d
@@ -180,8 +180,7 @@ contains
     end do
 
     call this%bc%displacementn%compute(t)
-    associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
-        rot => this%bc%displacementn%rotation_matrix)
+    associate (nodes => this%bc%displacementn%index, rot => this%bc%displacementn%rotation_matrix)
       do i = 1, size(nodes)
         n = nodes(i)
         associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
@@ -191,6 +190,67 @@ contains
         end associate
       end do
     end associate
+
+    call this%bc%gap_contact%compute(t)
+    associate (link => this%bc%gap_contact%index, rot => this%bc%gap_contact%rotation_matrix)
+
+        if (this%bc%gap_contact%enabled) then
+          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
+          !            everything working in serial.
+#ifndef NDEBUG
+          do i = 1, size(link, dim=2)
+            block
+              integer :: n1, n2
+              n1 = link(1,i)
+              n2 = link(2,i)
+              if (n1 <= this%model%mesh%nnode_onP .or. n2 <= this%model%mesh%nnode_onP) then
+                ASSERT(n1 <= this%model%mesh%nnode_onP .and. n2 <= this%model%mesh%nnode_onP)
+              end if
+            end block
+          end do
+#endif
+        end if
+
+        do i = 1, size(link, dim=2)
+          block
+            integer :: n1, n2
+            n1 = link(1,i)
+            n2 = link(2,i)
+
+            associate (r1 => this%diag(3*(n1-1)+1:3*(n1-1)+3), &
+                r2 => this%diag(3*(n2-1)+1:3*(n2-1)+3))
+
+              ! stress1 = r(:,n1) + this%rhs(:,n1)
+              ! stress2 = r(:,n2) + this%rhs(:,n2)
+              ! stress1 = matmul(rot(:,:,i), stress1)
+              ! stress2 = matmul(rot(:,:,i), stress2)
+              ! x1 = matmul(rot(:,:,i), displ(:,n1))
+              ! x2 = matmul(rot(:,:,i), displ(:,n2))
+
+              ! In the first node we put the equal & opposite normal contact force constraint
+              if (n1 <= this%model%mesh%nnode_onP) then
+                r1 = matmul(rot(:,:,i), r1)
+                !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
+                !r1(3) = stress1(3) + stress2(3)
+                r1(3) = r1(3) - 1d3*1
+                !r1(3) = 1
+                r1 = matmul(transpose(rot(:,:,i)), r1)
+              end if
+
+              ! In the second node we put the zero-displacement constraint
+              if (n2 <= this%model%mesh%nnode_onP) then
+                r2 = matmul(rot(:,:,i), r2)
+                !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
+                !r2(3) = -1
+                r2(3) = r2(3) - 1d3*1
+                !r2(3) = -1
+                r2 = matmul(transpose(rot(:,:,i)), r2)
+              end if
+            end associate
+          end block
+        end do
+
+      end associate
 
     call stop_timer("precon-compute")
 

@@ -95,8 +95,8 @@ contains
     deallocate(this%builder)
     call scalar_func_list_to_box_array(this%flist, this%displacement)
 
-    call compute_link_index_connectivity(this%ig%xlflnode, this%ig%lflnode, lface_index, &
-        xfini, fini, lnode_index)
+    call compute_link_index_connectivity(this%ig%lflnode, this%ig%xlflnode, lface_index, &
+        fini, xfini, lnode_index)
 
     this%index = this%ig%lnode(:,lnode_index)
 
@@ -104,7 +104,7 @@ contains
     this%enabled = global_any(n > 0)
     allocate(this%value(n), this%rotation_matrix(3,3,n))
 
-    call compute_node_groups(xfini, fini, xgroup_face, this%xgroup)
+    call compute_node_groups(fini, xfini, xgroup_face, this%xgroup)
     call compute_rotation_matrix
 
   contains
@@ -155,14 +155,14 @@ contains
       integer, allocatable :: face_index(:)
       real(r8), allocatable :: normal_ip(:,:), normal_node(:,:)
 
-      if (size(xfini) == 0) return
+      if (size(xfini) <= 1) return
       nip = xfini(size(xfini))-1
 
       face_index = this%mesh%lface(1,lface_index)
       allocate(normal_ip(3,nip), normal_node(3,size(this%index,dim=2)))
 
       call compute_ip_normals(face_index, xfini, this%mesh, this%ig, normal_ip)
-      call compute_node_normals(xfini, fini, normal_ip, normal_node)
+      call compute_node_normals(fini, xfini, normal_ip, normal_node)
 
       do ni = 1, size(this%index,dim=2)
         this%rotation_matrix(:,:,ni) = rotation_matrix(normal_node(:,ni))
@@ -177,9 +177,9 @@ contains
     !! next face group that weren't in the previous groups, and so on. From this
     !! assumption, each node group starts at the node following the maximum node
     !! ID from the previous group.
-    subroutine compute_node_groups(xfini, fini, xgroup_face, xgroup)
+    subroutine compute_node_groups(fini, xfini, xgroup_face, xgroup)
 
-      integer, intent(in) :: xfini(:), fini(:), xgroup_face(:)
+      integer, intent(in) :: fini(:), xfini(:), xgroup_face(:)
       integer, intent(out), allocatable :: xgroup(:)
 
       integer :: n, fi, k, last_node

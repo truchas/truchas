@@ -8,15 +8,15 @@
 /
 
 &MESH
-  mesh_file = 'split-rotated-cube.exo'
+  mesh_file = 'rotated-cube.exo'
   coordinate_scale_factor = 0.01
-  gap_element_blocks = 3
+  interface_side_sets = 10
 /
 
 &PHYSICS
   materials = 'aluminum'
   heat_transport = .true.
-  legacy_solid_mechanics = .true.
+  solid_mechanics = .true.
 /
 
 &DIFFUSION_SOLVER
@@ -42,19 +42,6 @@
   dt_grow = 5.0
   dt_max = 5.0
   dt_min = 1.0e-3
-/
-
-&LINEAR_SOLVER
-  name = 'displacement precon'
-  method = 'none'
-  preconditioning_method = 'tm_diag'
-  preconditioning_scope = 'local'
-/
-
-&NONLINEAR_SOLVER
-  name = 'displacement solve'
-  method = 'nlk'
-  linear_solver_name = 'displacement precon'
 /
 
 &BODY
@@ -97,7 +84,7 @@
 &THERMAL_BC
   name = 'gap interface'
   type = 'interface-htc'
-  face_set_ids = 3
+  face_set_ids = 10
   htc = 1.0e4
 /
 
@@ -111,7 +98,7 @@
 &SM_BC
   name = 'gap interface'
   face_set_ids = 10
-  type = 'contact'
+  type = 'gap-contact'
   displacement = 1.0e-7
   traction = 1.0e4
   !contact_penalty = 1.0e3

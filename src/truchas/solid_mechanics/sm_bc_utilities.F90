@@ -89,9 +89,9 @@ contains
     allocate(fini(xfini(nfi+1)-1), node_index(count))
     count = 0
     ni_ = 0
+    xfi = 0
     do fi = 1, nfi
       f = face_index(fi)
-      xfi = 0
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
         if (n > mesh%nnode_onP) cycle
@@ -104,6 +104,9 @@ contains
         fini(xfi) = ni_(n)
       end do
     end do
+
+    ASSERT(all(fini > 0))
+    ASSERT(all(fini <= mesh%nnode_onP))
 
   end subroutine compute_index_connectivity
 
@@ -120,9 +123,9 @@ contains
   !! node hasn't been added before. In the sm_gap_contact_bc type, we expect
   !! this behavior so that we can make a semblance of node groups from face
   !! groups.
-  subroutine compute_link_index_connectivity(xfnode, fnode, face_index, fini, xfini, node_index)
+  subroutine compute_link_index_connectivity(fnode, xfnode, face_index, fini, xfini, node_index)
 
-    integer, intent(in) :: xfnode(:), fnode(:), face_index(:)
+    integer, intent(in) :: fnode(:), xfnode(:), face_index(:)
     integer, intent(out), allocatable :: fini(:), xfini(:), node_index(:)
 
     integer :: f, n, fi, xn, xfi, nfi, count, nnode, stat
@@ -168,9 +171,9 @@ contains
     allocate(fini(xfini(nfi+1)-1), node_index(count))
     count = 0
     ni_ = 0
+    xfi = 0
     do fi = 1, nfi
       f = face_index(fi)
-      xfi = 0
       do xn = xfnode(f), xfnode(f+1)-1
         n = fnode(xn)
         if (ni_(n) == 0) then
@@ -182,6 +185,8 @@ contains
         fini(xfi) = ni_(n)
       end do
     end do
+
+    ASSERT(all(fini > 0))
 
   end subroutine compute_link_index_connectivity
 
@@ -248,9 +253,9 @@ contains
   !! surrounding integration point face normals. The routine takes a mapping
   !! between faces and nodes, with each face-node pair indicating an integration
   !! point.
-  subroutine compute_node_normals(xfini, fini, normal_ip, normal_node)
+  subroutine compute_node_normals(fini, xfini, normal_ip, normal_node)
 
-    integer, intent(in) :: xfini(:), fini(:)
+    integer, intent(in) :: fini(:), xfini(:)
     real(r8), intent(in) :: normal_ip(:,:)
     real(r8), intent(out) :: normal_node(:,:)
 

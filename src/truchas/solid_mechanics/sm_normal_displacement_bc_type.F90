@@ -56,7 +56,7 @@ contains
     allocate(this%rotation_matrix(3,3,size(this%index)), this%value(size(this%index)))
     allocate(normal_node(3,size(this%index)))
     call compute_ip_normals(this%bff%index, this%xfini, mesh, ig, normal_ip)
-    call compute_node_normals(this%xfini, this%fini, normal_ip, normal_node)
+    call compute_node_normals(this%fini, this%xfini, normal_ip, normal_node)
 
     do n = 1, size(normal_ip, dim=2)
       this%area_ip(n) = norm2(normal_ip(:,n))
