@@ -39,7 +39,7 @@ contains
     real, intent(out) :: rand
 
     !! We only want fractions of the form 1/2^k
-    integer(i4), parameter :: mask = Z'3F800000'
+    integer(i4), parameter :: mask = int(Z'3F800000',i4)
     integer(i4) :: i
     real :: r
 
