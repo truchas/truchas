@@ -34,6 +34,7 @@ module diffusion_solver_data
   character(4), parameter, public :: mesh_name = 'MAIN'
 
   !! Time stepping control parameters.
+  integer,  public :: pc_freq
   integer,  public :: max_step_tries
   real(r8), public :: hmin = tiny(1.0_r8)
   logical,  public :: verbose_stepping
@@ -91,7 +92,7 @@ contains
 
     namelist /diffusion_solver/ max_step_tries, abs_conc_tol, rel_conc_tol, &
                                 abs_temp_tol, rel_temp_tol, abs_enthalpy_tol, rel_enthalpy_tol, &
-                                max_nlk_itr, nlk_tol, max_nlk_vec, nlk_vec_tol, &
+                                max_nlk_itr, nlk_tol, max_nlk_vec, nlk_vec_tol, pc_freq, &
                                 pc_ssor_sweeps, pc_ssor_relax, verbose_stepping, stepping_method, &
                                 nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
                                 hypre_amg_debug, hypre_amg_logging_level, &
@@ -148,6 +149,7 @@ contains
       abs_enthalpy_tol = NULL_R
       rel_enthalpy_tol = NULL_R
       nlk_preconditioner = NULL_C
+      pc_freq = NULL_I
       pc_ssor_sweeps = NULL_I
       pc_ssor_relax  = NULL_R
       pc_amg_cycles  = NULL_I
@@ -179,6 +181,7 @@ contains
     call broadcast (abs_enthalpy_tol)
     call broadcast (rel_enthalpy_tol)
     call broadcast (nlk_preconditioner)
+    call broadcast (pc_freq)
     call broadcast (pc_ssor_sweeps)
     call broadcast (pc_ssor_relax)
     call broadcast (pc_amg_cycles)
@@ -227,6 +230,11 @@ contains
         call TLS_info ('  using default MAX_STEP_TRIES value: ' // i_to_c(max_step_tries))
       else if (max_step_tries < 1) then
         call TLS_fatal ('MAX_STEP_TRIES must be > 0')
+      end if
+      if (pc_freq == NULL_I) then
+        pc_freq = huge(pc_freq)
+      else if (pc_freq < 1) then
+        call TLS_fatal ('PC_FREQ must be > 0')
       end if
     case default
       if (nlk_tol /= NULL_R) then

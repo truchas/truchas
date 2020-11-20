@@ -47,6 +47,7 @@ contains
     params%hmin = hmin
     params%max_step_tries = max_step_tries
     params%verbose_stepping = verbose_stepping
+    params%pc_freq = pc_freq
     if (verbose_stepping) then
       lun = -1
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
