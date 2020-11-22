@@ -51,6 +51,7 @@ module idaesol_type
     real(r8) :: hlast               ! last step size
     real(r8) :: hpc                 ! step size built into the current preconditioner
     logical  :: usable_pc = .false. ! whether the current preconditioner is usable
+    integer  :: pc_age, pc_freq
     integer  :: freeze_count = 0    ! don't increase step size for this number of steps
     integer  :: mitr = 5            ! maximum number of nonlinear iterations
     real(r8) :: ntol = 0.1_r8       ! nonlinear solver error tolerance (relative to 1)
@@ -212,6 +213,18 @@ contains
       errmsg = context//'"nlk-vec-tol" must be > 0.0'
       return
     end if
+
+    call params%get('pc-freq', this%pc_freq, default=huge(this%pc_freq), stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context//errmsg
+      return
+    end if
+    if (this%pc_freq < 1) then
+      stat = 1
+      errmsg = context//'"pc-freq" must be > 0'
+      return
+    end if
+
 
     !! Initialize the NKA structure.
     if (maxv > 0) then
@@ -446,6 +459,11 @@ contains
 
     fresh_pc = .false.
 
+    if (this%usable_pc) then
+      this%pc_age = this%pc_age + 1
+      if (this%pc_age >= this%pc_freq) this%usable_pc = .false.
+    end if
+
     !! If the PC step size is too different than the current step size we tag
     !! it as unusable in order to preempt a possible nonlinear solve failure.
     if (this%usable_pc) then
@@ -462,6 +480,7 @@ contains
         if (this%verbose) write(this%unit,fmt=3) t
         this%hpc = etah
         this%usable_pc = .true.
+        this%pc_age = 0
         fresh_pc = .true.
       end if
 

@@ -66,6 +66,7 @@ module HTSD_solver_type
     integer :: output_unit
     integer :: max_nlk_itr, max_nlk_vec
     real(r8) :: nlk_tol, nlk_vec_tol
+    integer :: pc_freq
   end type HTSD_solver_params
   public :: HT_precon_params, SD_precon_params
   public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
@@ -99,6 +100,7 @@ contains
       call plist%set('nlk-tol', params%nlk_tol)
       call plist%set('nlk-max-vec', params%max_nlk_vec)
       call plist%set('nlk-vec-tol', params%nlk_vec_tol)
+      call plist%set('pc-freq', params%pc_freq)
       call this%integ%init(this%integ_model, plist, stat, errmsg)
       INSIST(stat == 0)
     end block
