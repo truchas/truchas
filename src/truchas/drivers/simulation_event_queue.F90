@@ -62,7 +62,7 @@ module simulation_event_queue
   type(sim_event_queue), public :: event_queue
   public :: path_event, vf_event
 
-  type(parameter_list), allocatable :: params
+  type(parameter_list), public :: params
 
 contains
 
@@ -85,7 +85,7 @@ contains
     call ded_head_path_events(event_queue)
 
     !! Add user-specified phase start times
-    if (allocated(params)) then
+    if (params%is_parameter('phase-start-times')) then
       call params%get('phase-start-times', array)
       if (params%is_parameter('phase-init-dt')) then
         call params%get('phase-init-dt', c)
@@ -152,7 +152,7 @@ contains
   subroutine read_simulation_control_namelist (lun)
 
     use kinds, only: r8
-    use input_utilities, only: seek_to_namelist, NULL_R
+    use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
     use sort_module, only: sort
     use string_utilities, only: i_to_c
     use parallel_communication, only: is_IOP, broadcast
@@ -164,8 +164,10 @@ contains
     logical :: found
     real(r8), allocatable :: array(:)
 
+    integer :: event_lookahead
     real(r8) :: phase_init_dt, phase_init_dt_factor, phase_start_times(500)
-    namelist /simulation_control/ phase_start_times, phase_init_dt, phase_init_dt_factor
+    namelist /simulation_control/ phase_start_times, phase_init_dt, phase_init_dt_factor, &
+        event_lookahead
 
     !! Locate the optional SIMULATION_CONTROL namelist (first occurence).
     if (is_IOP) then
@@ -186,6 +188,7 @@ contains
       phase_init_dt = NULL_R
       phase_init_dt_factor = NULL_R
       phase_start_times = NULL_R
+      event_lookahead = NULL_I
       read(lun,nml=simulation_control,iostat=ios)
     end if
     call broadcast(ios)
@@ -195,11 +198,11 @@ contains
     call broadcast(phase_init_dt)
     call broadcast(phase_init_dt_factor)
     call broadcast(phase_start_times)
+    call broadcast(event_lookahead)
 
     !! Check the variables.
     array = pack(phase_start_times, mask=(phase_start_times /= NULL_R))
     if (size(array) > 0) then
-      allocate(params)
       call sort(array) !NB: should check for, or cull, duplicates
       call params%set('phase-start-times', array)
       if (phase_init_dt == NULL_R .eqv. phase_init_dt_factor == NULL_R) then
@@ -211,6 +214,13 @@ contains
         if (phase_init_dt_factor <= 0.0_r8) call TLS_fatal('PHASE_INIT_DT_FACTOR must be > 0')
         call params%set('phase-init-dt-factor', phase_init_dt_factor)
       end if
+    end if
+
+    if (event_lookahead /= NULL_I) then
+      if (event_lookahead < 2) then
+        call TLS_fatal('EVENT_LOOKAHEAD must be >= 2')
+      end if
+      call params%set('event-lookahead', event_lookahead)
     end if
 
   end subroutine read_simulation_control_namelist

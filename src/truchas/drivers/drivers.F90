@@ -178,7 +178,7 @@ call hijack_truchas ()
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
-    integer :: c, errc
+    integer :: c, errc, lookahead
     type(time_step_sync) :: ts_sync
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
@@ -189,7 +189,8 @@ call hijack_truchas ()
     if (mem_on) call mem_diag_open
 
     call init_sim_event_queue
-    ts_sync = time_step_sync(5)
+    call params%get('event-lookahead', lookahead, default=5)
+    ts_sync = time_step_sync(lookahead)
 
     call start_timer('Main Cycle')
 
