@@ -158,7 +158,7 @@ contains
     if (flow_enabled()) call write_new_flow_data
 
     !! Heat transfer fields (other than temperature and enthalpy).
-    !if (heat_transport) call write_heat_transfer_data
+    if (heat_transport) call write_heat_transfer_data
 
     !! Induction heating fields.
     if (EM_is_on()) call write_EM_data
