@@ -191,6 +191,11 @@ add_pytruchas_test(stretch-z
 		   PROCESSORS 4
 		   LABELS SOLID_MECHANICS)
 
+add_pytruchas_test(stretch-rotated
+                   stretch/test-stretch-rotated.py
+		   PROCESSORS 4
+		   LABELS SOLID_MECHANICS)
+
 # add_pytruchas_test(contact-box-close
 #                    contact-box-close/testContactBoxClose.py
 # 		   PROCESSORS 4

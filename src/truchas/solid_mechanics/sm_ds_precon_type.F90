@@ -179,14 +179,20 @@ contains
       end associate
     end do
 
+    ! The residual passed in will have, in the surface-aligned reference frame,
+    ! the difference between the test normal displacement and the BC normal
+    ! displacement. So we want the application of the preconditioner (inverse of
+    ! diagonal) to result in this difference in that rotated reverence frame.
     call this%bc%displacementn%compute(t)
     associate (nodes => this%bc%displacementn%index, rot => this%bc%displacementn%rotation_matrix)
       do i = 1, size(nodes)
         n = nodes(i)
         associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
+          rn = 1 / rn
           rn = matmul(rot(:,:,i), rn)
           rn(3) = 1
           rn = matmul(transpose(rot(:,:,i)), rn)
+          rn = 1 / rn
         end associate
       end do
     end associate
@@ -269,6 +275,7 @@ contains
     call start_timer("precon-apply")
 
     do j = 1, size(this%diag)
+      ! f(j) = f(j) / diag(j)
       d = f(j) / this%diag(j)
       do i = 1, this%niter
         f(j) = f(j) + this%omega*(d-f(j))
