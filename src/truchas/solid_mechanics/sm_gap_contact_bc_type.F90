@@ -30,10 +30,15 @@ module sm_gap_contact_bc_type
   type, public :: sm_gap_contact_bc
     private
     integer, allocatable, public :: index(:,:)
-    real(r8), allocatable, public :: value(:), rotation_matrix(:,:,:)
+    real(r8), allocatable, public :: value(:,:,:), dvalue(:,:,:)
+    real(r8), allocatable, public :: rotation_matrix(:,:,:)
     logical, public :: enabled
 
-    ! real(r8), allocatable :: area_ip(:)
+    real(r8) :: contact_distance = 1e-7_r8
+    real(r8) :: contact_normal_traction = 1e4_r8
+    real(r8) :: contact_penalty = 1e3_r8
+
+    real(r8), allocatable :: area(:)
 
     type(unstr_mesh), pointer :: mesh => null() ! reference only - do not own
     type(integration_geometry), pointer :: ig => null() ! reference only - do not own
@@ -49,7 +54,9 @@ module sm_gap_contact_bc_type
     procedure :: add_complete
     procedure :: compute
     procedure :: compute_value => compute
-    procedure :: compute_deriv => compute
+    procedure :: compute_deriv
+    procedure :: contact_factor
+    procedure :: derivative_contact_factor
   end type sm_gap_contact_bc
 
 contains
@@ -102,7 +109,7 @@ contains
 
     n = size(this%index,dim=2)
     this%enabled = global_any(n > 0)
-    allocate(this%value(n), this%rotation_matrix(3,3,n))
+    allocate(this%value(3,2,n), this%dvalue(3,2,n), this%rotation_matrix(3,3,n), this%area(n))
 
     call compute_node_groups(fini, xfini, xgroup_face, this%xgroup)
     call compute_rotation_matrix
@@ -166,6 +173,7 @@ contains
 
       do ni = 1, size(this%index,dim=2)
         this%rotation_matrix(:,:,ni) = rotation_matrix(normal_node(:,ni))
+        this%area(ni) = norm2(normal_node(:,ni))
       end do
 
     end subroutine compute_rotation_matrix
@@ -203,22 +211,194 @@ contains
   end subroutine add_complete
 
 
-  subroutine compute(this, t)
+  subroutine compute(this, t, displ, ftot, stress)
 
     class(sm_gap_contact_bc), intent(inout) :: this
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress(:,:)
 
-    integer :: n, lni, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1))
+    ! integer :: n, lni, j
+    ! real(r8) :: args(0:size(this%mesh%x,dim=1))
+    integer :: i, n1, n2
+    real(r8) :: stress1, stress2, x1, x2, s, tn, l, dl(2), dldu1, dldu2, v(2), normal(3)
 
-    do n = 1, this%ngroup
-      do lni = this%xgroup(n), this%xgroup(n+1)-1
-        j = this%index(1,lni)
-        args(1:) = this%mesh%x(:,j)
-        this%value(lni) = this%displacement(n)%eval(args)
-      end do
+    ! do n = 1, this%ngroup
+    !   do lni = this%xgroup(n), this%xgroup(n+1)-1
+    !     j = this%index(1,lni)
+    !     args(1:) = this%mesh%x(:,j)
+    !     this%value(lni) = this%displacement(n)%eval(args)
+    !   end do
+    ! end do
+
+    do i = 1, size(this%index, dim=2)
+      n1 = this%index(1,i)
+      n2 = this%index(2,i)
+      normal = this%rotation_matrix(3,:,i)
+      stress1 = dot_product(normal, ftot(:,n1)) !+ this%rhs(:,n1)
+      stress2 = dot_product(normal, ftot(:,n2)) !+ this%rhs(:,n2)
+      x1 = dot_product(normal, displ(:,n1))
+      x2 = dot_product(normal, displ(:,n2))
+
+      s = x2 - x1
+      tn = dot_product(normal, ftot(:,n1)) ! TODO-WARN: is this the right idea?
+      l = this%contact_factor(s, tn)
+      ! dl = this%derivative_contact_factor(s, tn)
+      ! dldu1 =  dl(1) + dl(2)*diag1
+      ! dldu2 = -dl(1) + dl(2)*diag2
+
+      v(1) = stress2 * this%area(i) + this%contact_penalty*(x2 - x1)
+      v(2) = stress1 * this%area(i) + this%contact_penalty*(x1 - x2)
+
+      this%value(:,1,i) = normal * l * v(1)
+      this%value(:,2,i) = normal * l * v(2)
+
+      ! this%dvalue(:,1,i) = normal * (-l*this%contact_penalty + dldu1*v(1))
+      ! this%dvalue(:,2,i) = normal * (-l*this%contact_penalty + dldu2*v(2))
+
+      !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
+      !r(3,n1) = stress1(3) + stress2(3)
+      !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
+      !r(3,n1) = x1(3) - x2(3) + values(i)
+      !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
+      !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
+      !r(3,n2) = x1(3) - x2(3) + values(i)
+      !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
+      !r(3,n2) = x1(3) - x2(3) + values(i)
     end do
 
   end subroutine compute
+
+
+  subroutine compute_deriv(this, t, displ, ftot, stress, diag)
+
+    class(sm_gap_contact_bc), intent(inout) :: this
+    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress(:,:), diag(:)
+
+    ! integer :: n, lni, j
+    ! real(r8) :: args(0:size(this%mesh%x,dim=1))
+    integer :: i, n1, n2
+    real(r8) :: stress1, stress2, x1, x2, dldu1, dldu2, diag1, diag2
+    real(r8) :: s, tn, l, dl(2), v(2), normal(3)
+
+    ! do n = 1, this%ngroup
+    !   do lni = this%xgroup(n), this%xgroup(n+1)-1
+    !     j = this%index(1,lni)
+    !     args(1:) = this%mesh%x(:,j)
+    !     this%value(lni) = this%displacement(n)%eval(args)
+    !   end do
+    ! end do
+
+    do i = 1, size(this%index, dim=2)
+      n1 = this%index(1,i)
+      n2 = this%index(2,i)
+      normal = this%rotation_matrix(3,:,i)
+      stress1 = dot_product(normal, ftot(:,n1)) !+ this%rhs(:,n1)
+      stress2 = dot_product(normal, ftot(:,n2)) !+ this%rhs(:,n2)
+      x1 = dot_product(normal, displ(:,n1))
+      x2 = dot_product(normal, displ(:,n2))
+      diag1 = dot_product(normal, diag(3*(n1-1)+1:3*(n1-1)+3))
+      diag2 = dot_product(normal, diag(3*(n2-1)+1:3*(n2-1)+3))
+
+      s = x2 - x1
+      tn = dot_product(normal, ftot(:,n1)) ! TODO-WARN: is this the right idea?
+      l = this%contact_factor(s, tn)
+      dl = this%derivative_contact_factor(s, tn)
+      dldu1 = -dl(1) + dl(2)*diag1
+      dldu2 =  dl(1) !+ dl(2)*diag2
+
+      v(1) = stress2 * this%area(i) + this%contact_penalty*(x2 - x1)
+      v(2) = stress1 * this%area(i) + this%contact_penalty*(x1 - x2)
+
+      ! this%value(:,1,i) = normal * l*v(1)
+      ! this%value(:,2,i) = normal * l*v(2)
+
+      this%dvalue(:,1,i) = normal * (-l*this%contact_penalty * this%area(i) + dldu1*v(1))
+      this%dvalue(:,2,i) = normal * (-l*this%contact_penalty * this%area(i) + dldu2*v(2))
+
+      !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
+      !r(3,n1) = stress1(3) + stress2(3)
+      !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
+      !r(3,n1) = x1(3) - x2(3) + values(i)
+      !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
+      !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
+      !r(3,n2) = x1(3) - x2(3) + values(i)
+      !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
+      !r(3,n2) = x1(3) - x2(3) + values(i)
+    end do
+
+  end subroutine compute_deriv
+
+
+  ! Given the difference in normal displacements s, and the tensile force normal
+  ! to the surface tn, compute the contact factor.
+  !
+  ! If s <= 0, then the nodes are in contact or inside one another.
+  ! If tn <= 0, the normal traction is compressive
+  real(r8) function contact_factor(this, s, tn)
+
+    class(sm_gap_contact_bc), intent(in) :: this
+    real(r8), intent(in) :: s, tn
+
+    real(r8) :: ls, lt, x
+
+    if (s <= 0) then
+      ls = 1
+    else if (s >= this%contact_distance) then
+      ls = 0
+    else
+      x = s / this%contact_distance - 1
+      ls = 2 * x**3 + 3 * x**2
+    end if
+
+    if (tn <= 0) then
+      lt = 1
+    else if (tn >= this%contact_normal_traction) then
+      lt = 0
+    else
+      x = tn / this%contact_normal_traction - 1
+      lt = 2 * x**3 + 3 * x**2
+    end if
+
+    contact_factor = ls * lt
+    ASSERT(contact_factor >= 0 .and. contact_factor <= 1)
+    !contact_factor = 1
+
+  end function contact_factor
+
+
+  pure function derivative_contact_factor(this, s, tn) result(dl)
+
+    class(sm_gap_contact_bc), intent(in) :: this
+    real(r8), intent(in) :: s, tn
+    real(r8) :: dl(2)
+
+    real(r8) :: ls, lt, x
+
+    dl = 0
+
+    if (s <= 0) then
+      ls = 1
+    else if (s >= this%contact_distance) then
+      ls = 0
+    else
+      x = s / this%contact_distance - 1
+      ls = 2 * x**3 + 3 * x**2
+      dl(1) = 6 * x * (x + 1) / this%contact_distance
+    end if
+
+    if (tn <= 0) then
+      lt = 1
+    else if (tn >= this%contact_normal_traction) then
+      lt = 0
+    else
+      x = tn / this%contact_normal_traction - 1
+      lt = 2 * x**3 + 3 * x**2
+      dl(2) = 6 * x * (x + 1) / this%contact_normal_traction
+    end if
+
+    dl(1) = dl(1) * lt
+    dl(2) = dl(2) * ls
+    !dl = 0
+
+  end function derivative_contact_factor
 
 end module sm_gap_contact_bc_type

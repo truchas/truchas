@@ -27,10 +27,11 @@ module sm_model_type
     type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference
     type(integration_geometry), public :: ig
     type(sm_bc), public :: bc
+    real(r8), allocatable, public :: rhs(:,:)
 
     integer :: nmat
     real(r8), allocatable :: density_c(:), density_n(:)
-    real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:), rhs(:,:)
+    real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
     logical :: first_step = .true.
 
@@ -42,6 +43,7 @@ module sm_model_type
     procedure :: size => model_size
     procedure :: update_properties
     procedure :: compute_residual
+    procedure :: compute_forces
     procedure :: compute_lame_node_parameters
     procedure, nopass :: compute_stress
     procedure, nopass :: tensor_dot
@@ -331,9 +333,9 @@ contains
     subroutine gap_conditions()
 
       integer :: n1, n2
-      real(r8) :: x1(3), x2(3), stress1(3), stress2(3)
+      real(r8) :: x1(3), x2(3), stress1(3), stress2(3), s, tn, l
 
-      call this%bc%gap_contact%compute(t)
+      call this%bc%gap_contact%compute(t, displ, r, r + this%rhs)
 
       associate (link => this%bc%gap_contact%index, values => this%bc%gap_contact%value, &
           rot => this%bc%gap_contact%rotation_matrix)
@@ -355,34 +357,40 @@ contains
         do i = 1, size(link, dim=2)
           n1 = link(1,i)
           n2 = link(2,i)
-          stress1 = r(:,n1) + this%rhs(:,n1)
-          stress2 = r(:,n2) + this%rhs(:,n2)
-          stress1 = matmul(rot(:,:,i), stress1)
-          stress2 = matmul(rot(:,:,i), stress2)
-          x1 = matmul(rot(:,:,i), displ(:,n1))
-          x2 = matmul(rot(:,:,i), displ(:,n2))
+          ! stress1 = matmul(rot(:,:,i), r(:,n1)) !+ this%rhs(:,n1)
+          ! stress2 = matmul(rot(:,:,i), r(:,n2)) !+ this%rhs(:,n2)
+          ! x1 = matmul(rot(:,:,i), displ(:,n1))
+          ! x2 = matmul(rot(:,:,i), displ(:,n2))
 
-          ! In the first node we put the equal & opposite normal contact force constraint
-          if (n1 <= this%mesh%nnode_onP) then
-            r(:,n1) = matmul(rot(:,:,i), r(:,n1))
-            !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
-            !r(3,n1) = stress1(3) + stress2(3)
-            !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
-            !r(3,n1) = x1(3) - x2(3) + values(i)
-            r(3,n1) = r(3,n1) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
-            r(:,n1) = matmul(transpose(rot(:,:,i)), r(:,n1))
-          end if
+          ! s = x1(3) - x2(3)
+          ! tn = stress1(3)
+          ! l = this%bc%gap_contact%contact_factor(s, tn)
 
-          ! In the second node we put the zero-displacement constraint
-          if (n2 <= this%mesh%nnode_onP) then
-            r(:,n2) = matmul(rot(:,:,i), r(:,n2))
-            !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
-            !r(3,n2) = x1(3) - x2(3) + values(i)
-            !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
-            !r(3,n2) = x1(3) - x2(3) + values(i)
-            r(3,n2) = r(3,n2) + stress1(3) + 1d3*(x1(3) - x2(3) + values(i))
-            r(:,n2) = matmul(transpose(rot(:,:,i)), r(:,n2))
-          end if
+          ! ! In the first node we put the equal & opposite normal contact force constraint
+          ! if (n1 <= this%mesh%nnode_onP) then
+          !   r(:,n1) = matmul(rot(:,:,i), r(:,n1))
+          !   !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
+          !   !r(3,n1) = stress1(3) + stress2(3)
+          !   !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
+          !   !r(3,n1) = x1(3) - x2(3) + values(i)
+          !   !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
+          !   r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3)))
+          !   r(:,n1) = matmul(transpose(rot(:,:,i)), r(:,n1))
+          ! end if
+
+          ! ! In the second node we put the zero-displacement constraint
+          ! if (n2 <= this%mesh%nnode_onP) then
+          !   r(:,n2) = matmul(rot(:,:,i), r(:,n2))
+          !   !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
+          !   !r(3,n2) = x1(3) - x2(3) + values(i)
+          !   !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
+          !   !r(3,n2) = x1(3) - x2(3) + values(i)
+          !   r(3,n2) = r(3,n2) + l*(stress1(3) + 1d3*(x1(3) - x2(3) + values(i)))
+          !   r(:,n2) = matmul(transpose(rot(:,:,i)), r(:,n2))
+          ! end if
+
+          if (n1 <= this%mesh%nnode_onP) r(:,n1) = r(:,n1) + values(:,1,i)
+          if (n2 <= this%mesh%nnode_onP) r(:,n2) = r(:,n2) + values(:,2,i)
         end do
 
       end associate
@@ -390,6 +398,116 @@ contains
     end subroutine gap_conditions
 
   end subroutine compute_residual
+
+
+  !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
+  subroutine compute_forces(this, t, displ, r)
+
+    class(sm_model), intent(inout) :: this ! inout to update BCs
+    real(r8), intent(in) :: t, displ(:,:)
+    real(r8), intent(out) :: r(:,:)
+
+    integer :: n, xp, p, j, i, f, xn, d
+    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
+    ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) == this%mesh%nnode_onP)
+
+    call start_timer("residual")
+
+    call this%compute_total_strain(displ, total_strain)
+
+    do n = 1, this%mesh%nnode_onP
+      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
+
+        lhs = 0
+        do xp = 1, size(np)
+          p = np(xp)
+          j = this%ig%pcell(p)
+
+          call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
+          s = merge(-1, 1, btest(this%ig%nppar(n),xp))
+          lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
+        end do
+
+        r(:,n) = lhs !- this%rhs(:,n)
+      end associate
+    end do
+
+    call bcs
+
+    call stop_timer("residual")
+
+  contains
+
+    subroutine bcs()
+
+      real(r8) :: x(3)
+
+      do d = 1, 3
+        ! At traction BCs the stress is defined along the face. Each face has
+        ! traction discretized at the integration points, one for each node. The
+        ! values array provides the equivalent of traction = tensor_dot(stress,
+        ! n) where n is normal of the boundary with magnitude equal to the area
+        ! of this integration region (associated with node and face center, not
+        ! the whole face).
+        call this%bc%traction(d)%compute(t)
+        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value, &
+            area => this%bc%traction(d)%factor)
+          do i = 1, size(nodes)
+            n = nodes(i)
+            r(d,n) = r(d,n) + values(i) * area(i)
+          end do
+        end associate
+
+        ! Displacement BCs transform the matrix to a diagonal and the right hand
+        ! side to the desired solution.
+        call this%bc%displacement(d)%compute(t)
+        associate (nodes => this%bc%displacement(d)%index, &
+            values => this%bc%displacement(d)%value)
+          do i = 1, size(nodes)
+            n = nodes(i)
+            r(d,n) = displ(d,n) - values(i)
+          end do
+        end associate
+      end do
+
+      ! Normal traction BCs apply traction in the normal direction, but zero
+      ! traction in tangential directions. Each element of this BC contains a
+      ! vector traction, which corresponds to the accumulated area-multiplied
+      ! traction contribution to a node from its neighboring boundary
+      ! integration points. The area is already factored into the values.
+      call this%bc%tractionn%compute(t)
+      associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
+        do i = 1, size(nodes)
+          r(:,n) = r(:,n) + values(:,i)
+        end do
+      end associate
+
+      ! Normal displacement BCs enforce a given displacement in the normal
+      ! direction, and apply zerotraction in tangential directions. To do this
+      ! we must rotate the residual components components to a surface-aligned
+      ! coordinate space, and set the normal component of the residual to the
+      ! appropriate value. The node normal vector is computed from an
+      ! area-weighted average of the surrounding integration points. After
+      ! setting the appropriate coordinate-aligned value, it's important to
+      ! rotate back into the usual coordinate space, for consistency with the
+      ! preconditioner.
+      call this%bc%displacementn%compute(t)
+      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
+          rot => this%bc%displacementn%rotation_matrix)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          x = matmul(rot(:,:,i), displ(:,n))
+          r(:,n) = matmul(rot(:,:,i), r(:,n))
+          r(3,n) = x(3) - values(i)
+          r(:,n) = matmul(transpose(rot(:,:,i)), r(:,n))
+        end do
+      end associate
+
+    end subroutine bcs
+
+  end subroutine compute_forces
 
 
   !! From the node-centered displacement, compute the integration-point-centered total strain

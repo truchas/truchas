@@ -32,9 +32,9 @@ direction.
 /
 
 &LEGACY_SOLID_MECHANICS
-  contact_distance = 0.0
-  contact_norm_trac = 1.0
-  contact_penalty = 1.0e5
+  ! contact_distance = 0.0
+  ! contact_norm_trac = 1.0
+  ! contact_penalty = 1.0e3
   nlk_max_vectors = 200
   nlk_vector_tolerance = 1e-2
   maximum_iterations = 500

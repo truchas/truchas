@@ -146,6 +146,7 @@ contains
     real(r8), intent(in) :: t, dt, displ(:,:)
 
     integer :: n, d, j, i, f, xn
+    real(r8) :: force(size(displ,dim=1),size(displ,dim=2))
 
     call start_timer("precon-compute")
 
@@ -197,12 +198,13 @@ contains
       end do
     end associate
 
-    call this%bc%gap_contact%compute(t)
-    associate (link => this%bc%gap_contact%index, rot => this%bc%gap_contact%rotation_matrix)
+    associate (link => this%bc%gap_contact%index, dvalues => this%bc%gap_contact%dvalue)
 
         if (this%bc%gap_contact%enabled) then
           ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
           !            everything working in serial.
+          call this%model%compute_forces(t, displ, force)
+          call this%bc%gap_contact%compute_deriv(t, displ, force-this%model%rhs, force, this%diag)
 #ifndef NDEBUG
           do i = 1, size(link, dim=2)
             block
@@ -220,38 +222,53 @@ contains
         do i = 1, size(link, dim=2)
           block
             integer :: n1, n2
+            real(r8) :: s, tn, l, dl(2)
+
             n1 = link(1,i)
             n2 = link(2,i)
 
             associate (r1 => this%diag(3*(n1-1)+1:3*(n1-1)+3), &
                 r2 => this%diag(3*(n2-1)+1:3*(n2-1)+3))
 
-              ! stress1 = r(:,n1) + this%rhs(:,n1)
-              ! stress2 = r(:,n2) + this%rhs(:,n2)
-              ! stress1 = matmul(rot(:,:,i), stress1)
-              ! stress2 = matmul(rot(:,:,i), stress2)
+              if (n1 <= this%model%mesh%nnode_onP) r1 = r1 + dvalues(:,1,i)
+              if (n2 <= this%model%mesh%nnode_onP) r2 = r2 + dvalues(:,2,i)
+
+              ! stress1 = matmul(rot(:,:,i), r(:,n1)) !+ this%rhs(:,n1)
+              ! stress2 = matmul(rot(:,:,i), r(:,n2)) !+ this%rhs(:,n2)
               ! x1 = matmul(rot(:,:,i), displ(:,n1))
               ! x2 = matmul(rot(:,:,i), displ(:,n2))
+              
+              ! s = x1(3) - x2(3)
+              ! tn = stress1(3)
+              ! l = this%bc%gap_contact%contact_factor(s, tn)
+              ! dl = this%bc%gap_contact%derivative_contact_factor(s, tn)
+              ! dldu1 =  dl(1) + dl(2)*stress1(3)
+              ! dldu2 = -dl(1) + dl(2)*stress2(3)
 
-              ! In the first node we put the equal & opposite normal contact force constraint
-              if (n1 <= this%model%mesh%nnode_onP) then
-                r1 = matmul(rot(:,:,i), r1)
-                !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
-                !r1(3) = stress1(3) + stress2(3)
-                r1(3) = r1(3) - 1d3*1
-                !r1(3) = 1
-                r1 = matmul(transpose(rot(:,:,i)), r1)
-              end if
+              ! ! In the first node we put the equal & opposite normal contact force constraint
+              ! if (n1 <= this%model%mesh%nnode_onP) then
+              !   !r1 = 1 / r1
+              !   r1 = matmul(rot(:,:,i), r1)
+              !   !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
+              !   !r1(3) = stress1(3) + stress2(3)
+              !   !r1(3) = r1(3) - l*1d3*1
+              !   r1(3) = r1(3) - l*1d3*1 + dldu1*(stress2(3) + 1d3*(x2(3) - x1(3)))
+              !   !r1(3) = 1
+              !   r1 = matmul(transpose(rot(:,:,i)), r1)
+              !   !r1 = 1 / r1
+              ! end if
 
-              ! In the second node we put the zero-displacement constraint
-              if (n2 <= this%model%mesh%nnode_onP) then
-                r2 = matmul(rot(:,:,i), r2)
-                !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
-                !r2(3) = -1
-                r2(3) = r2(3) - 1d3*1
-                !r2(3) = -1
-                r2 = matmul(transpose(rot(:,:,i)), r2)
-              end if
+              ! ! In the second node we put the zero-displacement constraint
+              ! if (n2 <= this%model%mesh%nnode_onP) then
+              !   !r2 = 1 / r2
+              !   r2 = matmul(rot(:,:,i), r2)
+              !   !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
+              !   !r2(3) = -1
+              !   r2(3) = r2(3) - 1d3*1
+              !   !r2(3) = -1
+              !   r2 = matmul(transpose(rot(:,:,i)), r2)
+              !   !r2 = 1 / r2
+              ! end if
             end associate
           end block
         end do

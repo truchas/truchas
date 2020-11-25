@@ -5,9 +5,9 @@ exactly the same result as the version applying the displacement in the normal
 direction.
 
 &MESH
-  interface_side_sets = 10
   mesh_file = 'aligned-cube.exo'
   !mesh_file = 'rotated-cube.exo'
+  interface_side_sets = 10
   ! x_axis%coarse_grid = 0.0, 4.0
   ! y_axis%coarse_grid = 0.0, 4.0
   ! z_axis%coarse_grid = 0.0, 4.0
