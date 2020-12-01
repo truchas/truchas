@@ -229,7 +229,7 @@ contains
       ASSERT(size(array) == size(this%invalid))
       array = this%invalid
     case default
-      call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
+      call TLS_fatal ('USTRUC_COMP%GET: unknown name: ' // name)
     end select
   end subroutine getl1
 
@@ -238,7 +238,7 @@ contains
     character(*), intent(in) :: name
     integer, intent(out) :: array(:)
     logical, intent(out), optional :: invalid(:)
-    call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
+    call TLS_fatal ('USTRUC_COMP%GET: unknown name: ' // name)
   end subroutine geti1
 
   subroutine getr1 (this, name, array, invalid)
@@ -282,7 +282,7 @@ contains
         invalid = this%invalid_velocity
       end if
     case default
-      call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
+      call TLS_fatal ('USTRUC_COMP%GET: unknown name: ' // name)
     end select
   end subroutine getr1
 
@@ -312,7 +312,7 @@ contains
         invalid = this%invalid_velocity
       end if
     case default
-      call TLS_fatal ('USTRUCT_COMP%GET: unknown name: ' // name)
+      call TLS_fatal ('USTRUC_COMP%GET: unknown name: ' // name)
     end select
   end subroutine getr2
 
