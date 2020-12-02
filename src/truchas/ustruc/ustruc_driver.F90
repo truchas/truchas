@@ -369,7 +369,7 @@ contains
     !call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])
     !call write_scalar_field (data_name='speed',     hdf_name='uStruc-speed', viz_name='V')
 
-    !! GV0 or GV1 analysis modules: time to solidify
+    !! GV0, GV1, or GL analysis modules: time to solidify
     call write_scalar_field (data_name='solid-time', hdf_name='uStruc-solid-time', viz_name='solid-time')
 
     !! GV0 analysis module: temp gradient and solidification front speed at onset
@@ -383,6 +383,10 @@ contains
     call write_scalar_field (data_name='ustruc',  hdf_name='uStruc-gv1-ustruc',  viz_name='gv1-ustruc')
     call write_scalar_field (data_name='lambda1', hdf_name='uStruc-gv1-lambda1', viz_name='gv1-lambda1')
     call write_scalar_field (data_name='lambda2', hdf_name='uStruc-gv1-lambda2', viz_name='gv1-lambda2')
+
+    !! GL analysis module: temp gradient and solidification front speed at onset
+    call write_vector_field (data_name='G', hdf_name='uStruc-G', viz_name=['Gx','Gy','Gz'])
+    call write_scalar_field (data_name='L', hdf_name='uStruc-L', viz_name='L')
 
     call stop_timer ('Microstructure')
 

@@ -73,6 +73,7 @@ module ustruc_plugin_class
   integer, parameter, public :: USTRUC_CORE_ID = 1
   integer, parameter, public :: USTRUC_GV0_ID  = 2
   integer, parameter, public :: USTRUC_GV1_ID  = 3
+  integer, parameter, public :: USTRUC_GL_ID  = 4
 
 contains
 

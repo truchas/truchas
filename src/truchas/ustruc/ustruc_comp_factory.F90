@@ -43,6 +43,7 @@ module ustruc_comp_factory
   use ustruc_time_type
   use ustruc_gv0_type
   use ustruc_gv1_type
+  use ustruc_gl_type
   use parameter_list_type
   use parameter_list_json
   implicit none
@@ -80,6 +81,8 @@ contains
         comp => new_ustruc_gv0(comp, plist)
       case ('gv1')
         comp => new_ustruc_gv1(comp, plist)
+      case ('gl')
+        comp => new_ustruc_gl(comp, plist)
       case default
         call TLS_fatal ('unknown value for gv-model-type: "' // gv_model_type // '"')
       end select
