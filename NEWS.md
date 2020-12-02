@@ -1,5 +1,24 @@
 # NEWS
 
+## 2020-11-23 Version 20.11.1
+
+## 2020-11-23 (8dd75d28)
+
+Added a new variable `event_lookahead` to the `SIMULATION_CONTROL` namelist,
+which is the number of steps over which the time step size is gradually
+adjusted in order to hit an event time -- typically an output time. This had
+been hardwired to 5, which is now the default. See the Reference Manual.
+
+## 2020-11-23 (2550bd1b)
+
+Output of the temperature gradient and time derivative fields was restored.
+
+## 2020-11-22 (42adcb44)
+
+A minimum frequency with which the preconditioner is updated can now be
+specified in the input file. See the Reference Manual description of the
+`DIFFUSION_SOLVER` namelist variable `pc_freq` for details.
+
 ## 2020-11-09 Version 20.11
 
 ## 2020-11-08 (914f932c)
