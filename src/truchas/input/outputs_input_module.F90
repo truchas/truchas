@@ -48,7 +48,7 @@ CONTAINS
     use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier
-    use output_control,          only: part, part_path
+    use output_control,          only: part, part_path, write_mesh_partition
     use toolpath_table,          only: toolpath_ptr
          
     integer, intent(in) :: lun
@@ -65,7 +65,7 @@ CONTAINS
                        Output_Dt,                      &
                        Output_T,                       &
                        Short_Output_Dt_Multiplier,     &
-                       move_block_ids, move_toolpath_name
+                       move_block_ids, move_toolpath_name, write_mesh_partition
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -93,6 +93,7 @@ CONTAINS
           ! Read namelist
           move_block_ids = NULL_I
           move_toolpath_name = NULL_C
+          write_mesh_partition = .false.
           read (lun, outputs, IOSTAT = ioerror)
           fatal_error_string = 'OUTPUTS_INPUT: Error reading OUTPUTS namelist'
           fatal = (ioerror/=0)
@@ -106,6 +107,7 @@ CONTAINS
     call OUTPUTS_INPUT_PARALLEL ()
     call PGSLIB_BCAST (move_block_ids)
     call PGSLIB_BCAST (move_toolpath_name)
+    call PGSLIB_BCAST (write_mesh_partition)
 
     ! Check namelist
     call OUTPUTS_CHECK (fatal)
