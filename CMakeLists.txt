@@ -215,8 +215,6 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   add_compile_definitions(GNU_PR49213)
   add_compile_definitions(GNU_PR69563)
   add_compile_definitions(GNU_PR98141)
-  #TODO: rename? this fix is need by GNU too.
-  add_compile_definitions(NAG_COMPILER_WORKAROUND)
 endif()
 
 if(ENABLE_DYNAMIC_LOADING)
