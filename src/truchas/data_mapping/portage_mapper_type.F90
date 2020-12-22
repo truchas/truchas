@@ -121,8 +121,8 @@ contains
   subroutine map_field(this, src, dest, defval, map_type, pullback)
 
     class(portage_mapper), intent(in) :: this
-    real(r8), contiguous, intent(in)  :: src(:)
-    real(r8), contiguous, intent(out) :: dest(:)
+    real(r8), intent(in)  :: src(:)
+    real(r8), intent(out) :: dest(:)
     real(r8), intent(in)  :: defval
     integer,  intent(in)  :: map_type
     logical,  intent(in), optional :: pullback
