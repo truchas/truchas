@@ -73,6 +73,12 @@ contains
     character(:), allocatable :: filename
 
     if (.not.mpi_initialized) call mpi_init
+
+#ifdef USE_PORTAGE
+    print *, "Using Portage mapper..."
+#else
+    print *, "Using Kuprat mapper..."
+#endif
     
     allocate(this)
     call mesh_from_raw(coord, connect, blockid, this%src)
@@ -117,21 +123,6 @@ contains
     call init_parallel_communication
     prefix = 'grid-mapper' ! TLS will write to 'grid-mapper.log'
     call TLS_initialize
-
-    ! use mpi
-
-    ! call MPI_Initialized(flag, stat)
-    ! if (stat /= 0) then
-    !   write(error_unit,'(a)') "ERROR: could not check if MPI was initialized"
-    !   error stop
-    ! end if
-    ! if (.not.flag) then
-    !   call MPI_Init(stat)
-    !   if (stat /= 0) then
-    !     write(error_unit,'(a)') "ERROR: could initialize MPI"
-    !     error stop
-    !   end if
-    ! end if
 
     mpi_initialized = .true.
 
