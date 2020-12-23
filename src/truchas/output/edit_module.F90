@@ -26,6 +26,7 @@ MODULE EDIT_MODULE
   use kinds, only: r8
   use parameter_module, only: mops
   use truchas_logging_services
+  use scalar_func_class
   implicit none
   private
 
@@ -66,7 +67,6 @@ CONTAINS
                                       STRESS_STRAIN_INVARIANTS
     use solid_mechanics_input,  only: solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
-    use scalar_func_class
 
     ! Local Variables
     character(LEN = 128) :: string, string2

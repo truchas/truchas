@@ -218,7 +218,14 @@ contains
 
     !! Write probe output file header.
     if (this%index > 0) then
+#if defined(GNU_PR98141)
+      block
+        character(len=1) :: s = ''
+        call params%get('description', string, default=s)
+      end block
+#else
       call params%get('description', string, default='')
+#endif
       write(this%lun,'(4a)') '# ', data_file, ': ', string
       write(this%lun,'(a,3(es13.6,:,","))',advance='no') '# location (', coord
       select case (this%field%kind)
