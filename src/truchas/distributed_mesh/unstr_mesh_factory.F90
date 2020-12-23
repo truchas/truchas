@@ -48,7 +48,7 @@ module unstr_mesh_factory
   implicit none
   private
 
-  public :: unstr_mesh, new_unstr_mesh
+  public :: unstr_mesh, new_unstr_mesh, new_unstr_mesh_aux
 
 contains
 

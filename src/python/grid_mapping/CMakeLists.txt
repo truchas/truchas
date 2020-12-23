@@ -15,8 +15,8 @@ endforeach(f)
 add_custom_target(GridMappingPython ALL DEPENDS ${PYTHON_SCRIPT_FILES})
 
 include_directories(${Truchas_MODULE_DIR})
-add_library(gridmap grid_mapping_wrapper.f90)
-add_dependencies(gridmap truchas)
+add_library(gridmap grid_mapping_wrapper.F90)
+add_dependencies(gridmap truchas ${Truchas_DEPENDS})
 target_link_libraries(gridmap truchas ${Truchas_LINK_LIBS})
 
 # install rules

@@ -27,11 +27,11 @@ class TruchasMappedData(TruchasData):
         super().__init__(output_filename)
         self.mapped = True
 
-        map_data = grid_mapping.mesh_map(self.nnode, self.ncell,
-                                         self.cell_node_map()+1,
-                                         self.blockid(),
-                                         self.node_coordinates(),
-                                         exodus_filename, scale_factor)
+        map_data = grid_mapping.mapper_init(self.nnode, self.ncell,
+                                            self.cell_node_map()+1,
+                                            self.blockid(),
+                                            self.node_coordinates(),
+                                            exodus_filename, scale_factor)
 
         # get destination mesh data and map data
         self.ncell = map_data.ncell
@@ -39,7 +39,7 @@ class TruchasMappedData(TruchasData):
         self._node_coordinates = map_data.node_coordinates
         self._cnode = map_data.cnode - 1
         self._blockid = map_data.blockid
-        self._mesh_map = map_data.mesh_map
+        self._mapper = map_data.mapper
         self._centroid = None
 
 
@@ -52,11 +52,11 @@ class TruchasMappedData(TruchasData):
 
         field = super()._field(series_id, field_name)
         if len(shape) == 1:
-            mapped_field = grid_mapping.map_cell_field(field, self._mesh_map, self.ncell)
+            mapped_field = grid_mapping.map_field(field, self._mapper, self.ncell)
         elif len(shape) == 2 and field_name == "VOF":
             # VOF components are all mapped independently
             mapped_field = \
-                np.array([grid_mapping.map_cell_field(f, self._mesh_map, self.ncell)
+                np.array([grid_mapping.map_field(f, self._mapper, self.ncell)
                           for f in field.transpose()]).transpose()
         else:
             raise NotImplementedError(("Multidimensional fields other than VOF "
