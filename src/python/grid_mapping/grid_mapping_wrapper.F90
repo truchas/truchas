@@ -18,10 +18,13 @@ module grid_mapping_wrapper
   use,intrinsic :: iso_c_binding
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: iso_fortran_env, only: error_unit
-  use kuprat_mapper_type
-  use portage_mapper_type
   use unstr_mesh_type
   use ext_exodus_mesh_type
+#ifdef USE_PORTAGE
+  use portage_mapper_type
+#else
+  use kuprat_mapper_type
+#endif
   implicit none
   private
 
