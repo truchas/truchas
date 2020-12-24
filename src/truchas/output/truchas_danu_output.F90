@@ -130,7 +130,7 @@ contains
     use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
-    use output_control, only: part_path
+    use output_control, only: part_path, write_mesh_partition
 
     integer :: stat
     real(r8) :: r(3)
@@ -218,6 +218,13 @@ contains
       !end do
       !call write_seq_cell_field (seq, xc, 'CENTROID', for_viz=.true., viz_name=['XC', 'YC', 'ZC'])
       !deallocate(xc)
+
+      !! This is a stop-gap because the Truchas paraview reader ignores this
+      !! data written with the mesh. It is only written to the first snapshot.
+      if (write_mesh_partition) then
+        call write_seq_cell_field(seq, spread(real(this_PE,r8),dim=1,ncopies=ncells), 'CELLPART', for_viz=.true., viz_name='rank')
+        write_mesh_partition = .false.
+      end if
 
     end subroutine write_common_data
 

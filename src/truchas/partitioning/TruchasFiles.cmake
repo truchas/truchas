@@ -8,6 +8,12 @@ set(PART_SOURCE_FILES
         partitioning/chaco_c_binding.F90
         partitioning/chaco_partitioner_type.F90)
 
+if(USE_METIS)
+  list(APPEND PART_SOURCE_FILES
+        partitioning/metis_c_binding.F90
+        partitioning/metis_partitioner_type.F90)
+endif()
+
 # Define compile flags
 include(BuildWhitespaceString)
 set(part_source_flags
