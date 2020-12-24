@@ -78,6 +78,9 @@ list(APPEND Truchas_LINK_LIBS truchas::io)
 if(USE_PORTAGE)
   list(APPEND Truchas_LINK_LIBS portage)
 endif()
+if(USE_METIS)
+  list(APPEND Truchas_LINK_LIBS metis)
+endif()
 
 # To pick up the dlopen and dlclose symbols
 list(APPEND Truchas_LINK_LIBS ${CMAKE_DL_LIBS})

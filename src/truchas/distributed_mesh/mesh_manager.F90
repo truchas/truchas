@@ -182,6 +182,7 @@ contains
   subroutine read_truchas_mesh_namelists (lun)
 
     use altmesh_namelist
+    use input_utilities, only: NULL_I
 
     integer, intent(in) :: lun
 
@@ -203,10 +204,23 @@ contains
       call plist%set ('rotation-angles', rotation_angles)
       call plist%set ('em-mesh', .true.)
       call plist%set ('partitioner', trim(partitioner))
-      if (partitioner == 'file') then
+      select case (partitioner)
+      case ('file')
         call plist%set ('partition-file', trim(partition_file))
         call plist%set ('first-partition', first_partition)
-      end if
+#ifdef USE_METIS
+      case ('metis')
+        plist => plist%sublist('metis-options')
+        if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
+        if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
+        if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
+        if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+        if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+        if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
+        if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
+        if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
+#endif
+      end select
     end if
 
   end subroutine read_truchas_mesh_namelists
@@ -228,6 +242,7 @@ contains
     integer :: ios
     logical :: found
     character(80) :: iom
+    type(parameter_list), pointer :: plist
 
     !! Namelist variables
     character(16)  :: partitioner
@@ -237,6 +252,12 @@ contains
     namelist /mesh/ mesh_file, coordinate_scale_factor, rotation_angles, &
                     exodus_block_modulus, gap_element_blocks, interface_side_sets, &
                     partitioner, partition_file, first_partition
+
+    !! Metis parameters
+    integer :: metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
+               metis_minconn, metis_contig, metis_seed, metis_dbglvl
+    namelist /mesh/ metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
+                    metis_minconn, metis_contig, metis_seed, metis_dbglvl
 
     !! Namelist variables for the internal mesh
     type :: coord_grid
@@ -276,6 +297,15 @@ contains
     call coord_grid_default(z_axis)
     noise_factor = NULL_R
 
+    metis_ctype   = NULL_I
+    metis_ncuts   = NULL_I
+    metis_niter   = NULL_I
+    metis_ufactor = NULL_I
+    metis_minconn = NULL_I
+    metis_contig  = NULL_I
+    metis_seed    = -314159
+    metis_dbglvl  = NULL_I
+
     !! Read the MESH namelist
     if (is_IOP) read(lun,nml=mesh,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -296,6 +326,15 @@ contains
     call coord_grid_broadcast(z_axis)
     call broadcast(noise_factor)
 
+    call broadcast(metis_ctype)
+    call broadcast(metis_ncuts)
+    call broadcast(metis_niter)
+    call broadcast(metis_ufactor)
+    call broadcast(metis_minconn)
+    call broadcast(metis_contig)
+    call broadcast(metis_seed)
+    call broadcast(metis_dbglvl)
+
     !! Check and process the namelist variables, and stuff them into the return PARAMS.
 
     if (mesh_file /= NULL_C) then
@@ -313,6 +352,21 @@ contains
     if (partitioner == NULL_C) partitioner = 'chaco'
     select case (lower_case(partitioner))
     case ('chaco')
+    case ('metis')
+#ifdef USE_METIS
+      plist => params%sublist('metis-options')
+      if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
+      if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
+      if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
+      if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+      if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+      if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
+      if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
+      if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
+#else
+      call TLS_fatal('PARTITIONER = "metis" is not supported by this Truchas build')
+#endif
+
     case ('block')
     case ('file')
       if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')

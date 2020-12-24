@@ -107,6 +107,12 @@ message("Scorpio library (version ${SCORPIO_VERSION}):")
 message("  SCORPIO_LIBRARY=${SCORPIO_LIBRARY}")
 message("")
 
+if(USE_METIS)
+  message("Metis library (version ${METIS_VERSION}):")
+  message("  METIS_LIBRARY=${METIS_LIBRARIES}")
+  message("")
+endif()
+
 if(USE_PORTAGE)
   message("Portage library (version ${PORTAGE_VERSION}):")
   message("  PORTAGE_INCLUDE_DIR=${PORTAGE_INCLUDE_DIR}")

@@ -416,7 +416,7 @@ contains
         errmsg = 'error reading cell partition: ' // errmsg
         return
       end if
-    case ('chaco')
+    case ('chaco', 'metis')
       !! Generate the cell neighbor data array CNHBR.
       allocate(cnhbr, mold=cnode) ! valid for simplicial cells
       call get_tet_neighbor_array (cnode, cnhbr, stat)
