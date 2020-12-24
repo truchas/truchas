@@ -1,5 +1,30 @@
 # NEWS
 
+## 2020-12-24 (a0c0dd62)
+
+Added an option to use METIS graph partitioning to compute the parallel
+decomposition of the mesh. This appears to produce much higher quality
+decompositions than the default Chaco partitioner, especially for large
+meshes. Users are encouraged to try it. To use, set `partitioner = 'metis'`
+in the `MESH` and `ALTMESH` namelists. See the Reference Manual for more
+details and additional options for modifying the METIS graph partitioning
+algorithm.
+
+## 2020-12-23 (856efdcb)
+
+Truchas can now be built for the first time using the GFortran compiler.
+Versions 9.1, 9.2, 9.3, 10.1, and 10.2 have been tested. All but a couple
+tests are passing.
+
+## 2020-12-01 Version 20.12
+
+## 2020-12-01 (1b1aff7b)
+
+Added a new microstructure analysis module "gl", which collects the thermal
+gradient vector G and the rate of cooling L at the onset of solidification,
+and the total solidification time. This module uses temperature values for
+specifying the thresholds rather than solid fraction values.
+
 ## 2020-11-23 Version 20.11.1
 
 ## 2020-11-23 (8dd75d28)

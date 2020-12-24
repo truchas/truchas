@@ -20,10 +20,8 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
     - NAG Fortran on MacOS (with Apple Clang C/C++):
 	    - NAG version 6.2 and 7.0 (build 7028 or later required)
 		- Likely any version of Apple Clang should be fine
-    - GFortran is *not* currently supported due to incomplete and/or flawed
-      support for some Fortran 2003 features. There are GFortran configuration
-      files for internal testing purposes, which you can try if you are feeling
-      adventurous.
+    - GNU Fortran and C/C++. Versions 9.x and 10.x appear to be mostly working
+      now. You may find a couple failing tests, which are being investigated.
 * Cmake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
@@ -40,8 +38,8 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v14" bundle of TPLs;
-do a `git checkout v14` after cloning the TPL repository. See its README file
+on GitLab. This version of Truchas is tested against the "v15" bundle of TPLs;
+do a `git checkout v15` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is

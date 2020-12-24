@@ -38,11 +38,11 @@ Resources
 [2]: https://gitlab.com/truchas/truchas
 [3]: https://gitlab.com/truchas/truchas/issues
 
-News (updated 2020-12-01)
+News (updated 2020-12-24)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 
-Building Truchas (updated 2020-11-09)
+Building Truchas (updated 2020-12-24)
 ------------------------------------------------------------------------------
 See [BUILDING.md](BUILDING.md) for instructions on compiling and testing
 Truchas.
