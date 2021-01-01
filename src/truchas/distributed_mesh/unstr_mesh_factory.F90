@@ -45,6 +45,7 @@ module unstr_mesh_factory
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use parameter_list_type
+  use truchas_timers
   implicit none
   private
 
@@ -346,9 +347,11 @@ contains
     end if
 
     !! Identify off-process ghost cells to include with each partition.
+    call start_timer('ghost-cells')
     call TLS_info('  identifying off-process ghost cells', TLS_VERB_NORMAL)
     call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
+    call stop_timer('ghost-cells')
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
@@ -769,7 +772,7 @@ contains
   subroutine select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
       xcface, cface, face_psize, lnhbr, offP_size, offP_index)
 
-    use integer_set_type
+    use integer_set_type_wavl
     use parallel_communication, only: is_IOP, nPE
 
     integer, intent(in) :: cell_psize(:), node_psize(:), face_psize(:)
@@ -783,14 +786,19 @@ contains
     type(integer_set), allocatable :: ghosts(:)
 
     if (is_IOP) then
+      call start_timer('cell-ghosts')
       allocate(ghosts(nPE))
       call all_cell_neighbors(xcnode, cnode, cell_psize, ghosts)
       !NNC, Feb 2016.  The above call produces the same ghosts below, and more.
       !call overlapping_cells (xcnhbr, cnhbr, cell_psize, cell_psize, ghosts)
       !call overlapping_cells (xcnode, cnode, cell_psize, node_psize, ghosts)
       !call overlapping_cells (xcface, cface, cell_psize, face_psize, ghosts)
+      call stop_timer('cell-ghosts')
+      call start_timer('link-ghosts')
       call overlapping_cells2(lnhbr, cell_psize, ghosts)
+      call stop_timer('link-ghosts')
       !! Copy the sets into packed array storage
+      call start_timer('assemble-ghosts')
       offP_size = ghosts%size()
       n = sum(offP_size)
       allocate(offP_index(n))
@@ -800,6 +808,7 @@ contains
         offset = offset + offP_size(n)
       end do
       deallocate(ghosts)
+      call stop_timer('assemble-ghosts')
     else
       allocate(offP_size(0), offP_index(0))
     end if
@@ -817,14 +826,15 @@ contains
 
   subroutine all_cell_neighbors(xcnode, cnode, cell_psize, xcells)
 
-    use integer_set_type
+    use integer_set_type_wavl, only: wavl_integer_set => integer_set
+    use integer_set_type, only: integer_set
 
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: cell_psize(:)
-    type(integer_set), intent(inout) :: xcells(:)
+    type(wavl_integer_set), intent(inout) :: xcells(:)
 
-    integer :: i, j, k, n, offset, jlower, jupper
-    integer, allocatable :: nhbr(:)
+    integer :: i, j, k, n
+    integer, allocatable :: pfirst(:), nhbr(:), nhbr_part(:)
     type(integer_set) :: nsupp(maxval(cnode))
 
     ASSERT(all(cell_psize >= 0))
@@ -834,6 +844,7 @@ contains
     ASSERT(minval(cnode) >= 0)
 
     !! For each node, generate the set of cells that contain it.
+    call start_timer('node-neighbors')
     do j = 1, size(xcnode)-1
       associate(jnode => cnode(xcnode(j):xcnode(j+1)-1))
         do k = 1, size(jnode)
@@ -841,27 +852,80 @@ contains
         end do
       end associate
     end do
+    call stop_timer('node-neighbors')
 
-    !! For each cell, scan all the cells that contain one of its nodes, and add
-    !! those that belong to another partition to the ghost set of the partition.
-    offset = 0
-    do n = 1, size(cell_psize)
-      jlower = offset + 1
-      jupper = offset + cell_psize(n)
-      do j = jlower, jupper ! loop over cells in partition N
-        associate (jnode => cnode(xcnode(j):xcnode(j+1)-1))
-          do k = 1, size(jnode) ! for each node of cell J
-            nhbr = nsupp(jnode(k))
-            do i = 1, size(nhbr) ! loop over cells containing the node
-              if (nhbr(i) < jlower .or. nhbr(i) > jupper) call xcells(n)%add(nhbr(i))
-            end do
-          end do
-        end associate
-      end do
-      offset = offset + cell_psize(n)
+    call start_timer('ghost-cells')
+    !! Range of cells belonging to each partition.
+    !! partition j: all cells n such that pfirst(j) <= n < pfirst(j+1)
+    allocate(pfirst(size(cell_psize)+1))
+    pfirst(1) = 1
+    do j = 1, size(cell_psize)
+      pfirst(j+1) = pfirst(j) + cell_psize(j)
     end do
 
+    !! For each node, scan the cells that contain it. For every pair of cells
+    !! p and q that belong to different partitions, add q to the ghosts of the
+    !! partition of p, and add p to the ghosts of the partition of q.
+    allocate(nhbr(32), nhbr_part(32)) ! initial buffer size
+    do j = 1, size(nsupp)
+      n = nsupp(j)%size()
+      if (n == 0) cycle ! every node should belong to some cell, but ...
+      if (size(nhbr) < n) then
+        deallocate(nhbr, nhbr_part)
+        allocate(nhbr(n), nhbr_part(n))
+      end if
+      call nsupp(j)%copy_to_array(nhbr) ! nhbr values are strictly increasing
+
+      !! Get the cell partition for each of the NHBR cells. The cells are in
+      !! increasing order, and so then are their partition numbers.
+      nhbr_part(1) = partition(nhbr(1), pfirst, 1)
+      nhbr_part(n) = partition(nhbr(n), pfirst, nhbr_part(1))
+      if (nhbr_part(n) == nhbr_part(1)) cycle ! all in the same partition; no ghosts
+
+      !! Get the remaining partition numbers
+      do k = 2, n-1
+        nhbr_part(k) = partition(nhbr(k), pfirst, nhbr_part(k-1))
+      end do
+
+      do k = 1, n - 1
+        do i = k+1, n
+          if (nhbr_part(i) /= nhbr_part(k)) then
+            call xcells(nhbr_part(k))%add(nhbr(i))
+            call xcells(nhbr_part(i))%add(nhbr(k))
+          end if
+        end do
+      end do
+    end do
+    call stop_timer('ghost-cells')
+
   end subroutine all_cell_neighbors
+
+  !! Return the partition number P such that M(P) <= N < M(P+1). The array
+  !! M is an increasing list of values and NP = SIZE(M)-1 is the number of
+  !! partitions. N must satisfy M(PLAST) <= N < M(NP+1). The intended use is
+  !! a sequence of calls with increasing N, with PLAST the result of the
+  !! last call. Use PLAST = 1 to start. The most likely case is that P will
+  !! be PLAST, and this is checked first. If not, then a binary search is
+  !! used to determine P.
+
+  pure integer function partition(n, m, plast) result(p)
+    integer, intent(in) :: n, m(:), plast
+    integer :: k1, k2, k
+    k1 = plast
+    if (n >= m(k1+1)) then ! not in [m(k),m(k+1))
+      k1 = k1 + 1
+      k2 = size(m)
+      do while (k2 > k1 + 1)
+        k = (k1 + k2)/2
+        if (n < m(k)) then
+          k2 = k
+        else
+          k1 = k
+        end if
+      end do
+    end if
+    p = k1
+  end function
 
   !! This auxiliary subroutine identifies for each partition those cells that
   !! contain a facet in the partition but that themselves belong to a different
@@ -944,7 +1008,7 @@ contains
 
   subroutine overlapping_cells2(lnhbr, cell_psize, xcells)
 
-    use integer_set_type
+    use integer_set_type_wavl
 
     integer, intent(in) :: lnhbr(:,:)     ! link cell neighbors
     integer, intent(in) :: cell_psize(:)  ! cell partition block sizes
