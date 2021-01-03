@@ -83,12 +83,13 @@ module re_patch_type
   public :: read_patches_namelist
 
   !! Patch algorithms
-  character(32), parameter :: PATCH_ALGORITHMS(5) = ['NONE','VSA ','VAC ','PAVE','FILE']
+  character(32), parameter :: PATCH_ALGORITHMS(6) = ['NONE ','VSA  ','VAC  ','PAVE ','METIS','FILE ']
   integer, parameter :: PATCH_ALG_NONE = 1
   integer, parameter :: PATCH_ALG_VSA = 2
   integer, parameter :: PATCH_ALG_VAC = 3
   integer, parameter :: PATCH_ALG_PAVE = 4
-  integer, parameter :: PATCH_ALG_FILE = 5
+  integer, parameter :: PATCH_ALG_METIS = 5
+  integer, parameter :: PATCH_ALG_FILE = 6
 
   !! Parameter defaults
   integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
@@ -123,11 +124,16 @@ contains
     use vsa_patching_type, only: VSA_MAX_ITER_DEFAULT, VSA_MIN_DELTA_DEFAULT, &
       VSA_FACE_PATCH_RATIO_DEFAULT, VSA_MAX_PATCH_RADIUS_DEFAULT, VSA_NORMALIZE_DIST_DEFAULT
     use vac_patching_type, only: VAC_MERGE_LEVEL_DEFAULT, VAC_SPLIT_PATCH_SIZE_DEFAULT
+#ifdef USE_METIS
+    use metis_patching_type, only: METIS_FACE_PATCH_RATIO_DEFAULT, METIS_FACE_WEIGHT_DEFAULT, &
+      METIS_EDGE_WEIGHT_DEFAULT
+#endif
 
     integer, intent(in) :: lun
     type(parameter_list), intent(out) :: params
     logical, intent(out) :: found
 
+    type(parameter_list), pointer :: plist
     logical :: is_IOP
     integer :: ios, stat, patch_alg
     character(9) :: string
@@ -148,11 +154,22 @@ contains
     integer  :: pave_merge_level
     integer  :: pave_split_patch_size
     integer  :: pave_random_seed
+    real(r8) :: metis_face_patch_ratio
+    logical :: metis_face_weight
+    logical :: metis_edge_weight
+    integer :: metis_ctype, metis_iptype, metis_objtype, metis_no2hop, &
+      metis_contig, metis_minconn, metis_ufactor, metis_niter, &
+      metis_ncuts, metis_seed, metis_dbglvl, metis_ptype
     namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
-      vsa_max_iter, vsa_min_delta, vsa_face_patch_ratio, &
-        vsa_max_patch_radius, vsa_normalize_dist, vsa_random_seed, &
+      vsa_max_iter, vsa_min_delta, vsa_face_patch_ratio, vsa_max_patch_radius, &
+        vsa_normalize_dist, vsa_random_seed, &
       vac_merge_level, vac_split_patch_size, &
-      pave_merge_level, pave_split_patch_size, pave_random_seed, patch_file
+      pave_merge_level, pave_split_patch_size, pave_random_seed, &
+      metis_face_patch_ratio, metis_face_weight, metis_edge_weight, &
+        metis_ctype, metis_iptype, metis_objtype, metis_no2hop, &
+        metis_contig, metis_minconn, metis_ufactor, metis_niter, &
+        metis_ncuts, metis_seed, metis_dbglvl, metis_ptype, &
+      patch_file
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
     call params%set_name('patches')  ! used when printing errors
@@ -177,17 +194,38 @@ contains
     patch_algorithm = NULL_C
     verbosity_level = NULL_I
     max_angle = NULL_R
+
     vsa_max_iter = NULL_I
     vsa_min_delta = NULL_R
     vsa_face_patch_ratio = NULL_R
     vsa_max_patch_radius = NULL_R
     vsa_normalize_dist = VSA_NORMALIZE_DIST_DEFAULT
     vsa_random_seed = NULL_I
+
     vac_merge_level = NULL_I
     vac_split_patch_size = NULL_I
     pave_merge_level = NULL_I
     pave_split_patch_size = NULL_I
     pave_random_seed = NULL_I
+
+#ifdef USE_METIS
+    metis_face_patch_ratio = NULL_R
+    metis_face_weight = METIS_FACE_WEIGHT_DEFAULT
+    metis_edge_weight = METIS_EDGE_WEIGHT_DEFAULT
+    metis_ctype = NULL_I
+    metis_iptype = NULL_I
+    metis_objtype = NULL_I
+    metis_no2hop = NULL_I
+    metis_contig = NULL_I
+    metis_minconn = NULL_I
+    metis_ufactor = NULL_I
+    metis_niter = NULL_I
+    metis_ncuts = NULL_I
+    metis_seed = NULL_I
+    metis_dbglvl = NULL_I
+    metis_ptype = NULL_I
+#endif
+
     patch_file = NULL_C
 
     if (is_IOP) read(lun,nml=patches,iostat=ios,iomsg=iom)
@@ -198,17 +236,38 @@ contains
     call scl_bcast(patch_algorithm)
     call scl_bcast(verbosity_level)
     call scl_bcast(max_angle)
+
     call scl_bcast(vsa_max_iter)
     call scl_bcast(vsa_min_delta)
     call scl_bcast(vsa_face_patch_ratio)
     call scl_bcast(vsa_max_patch_radius)
     call scl_bcast(vsa_normalize_dist)
     call scl_bcast(vsa_random_seed)
+
     call scl_bcast(vac_merge_level)
     call scl_bcast(vac_split_patch_size)
     call scl_bcast(pave_merge_level)
     call scl_bcast(pave_split_patch_size)
     call scl_bcast(pave_random_seed)
+
+#ifdef USE_METIS
+    call scl_bcast(metis_face_patch_ratio)
+    call scl_bcast(metis_face_weight)
+    call scl_bcast(metis_edge_weight)
+    call scl_bcast(metis_ctype)
+    call scl_bcast(metis_iptype)
+    call scl_bcast(metis_objtype)
+    call scl_bcast(metis_no2hop)
+    call scl_bcast(metis_contig)
+    call scl_bcast(metis_minconn)
+    call scl_bcast(metis_ufactor)
+    call scl_bcast(metis_niter)
+    call scl_bcast(metis_ncuts)
+    call scl_bcast(metis_seed)
+    call scl_bcast(metis_dbglvl)
+    call scl_bcast(metis_ptype)
+#endif
+
     call scl_bcast(patch_file)
 
     !! Check the values
@@ -229,6 +288,8 @@ contains
         patch_alg = PATCH_ALG_VAC
       case ('PAVE')
         patch_alg = PATCH_ALG_PAVE
+      case ('METIS')
+        patch_alg = PATCH_ALG_METIS
       case ('FILE')
         patch_alg = PATCH_ALG_FILE
       case default
@@ -347,6 +408,44 @@ contains
       end if
     end if
 
+    !! METIS settings
+#ifdef USE_METIS
+    if (patch_alg == PATCH_ALG_METIS) then
+      if (metis_face_patch_ratio == NULL_R) then
+        metis_face_patch_ratio = METIS_FACE_PATCH_RATIO_DEFAULT
+        write(string,fmt='(es9.2)') metis_face_patch_ratio
+        call re_info('  using default METIS_FACE_PATCH_RATIO='//string)
+      else if (metis_face_patch_ratio < 1.0_r8) then
+        call data_err('METIS_FACE_PATCH_RATIO must be >= 1')
+      end if
+      call params%set('face-patch-ratio', metis_face_patch_ratio)
+      if (metis_face_weight .eqv. METIS_FACE_WEIGHT_DEFAULT) then
+        write(string,fmt='(l1)') metis_face_weight
+        call re_info('  using default METIS_FACE_WEIGHT='//trim(string))
+      end if
+      call params%set('face-weight', metis_face_weight)
+      if (metis_edge_weight .eqv. METIS_EDGE_WEIGHT_DEFAULT) then
+        write(string,fmt='(l1)') metis_edge_weight
+        call re_info('  using default METIS_EDGE_WEIGHT='//trim(string))
+      end if
+      call params%set('edge-weight', metis_edge_weight)
+      !! METIS library options
+      plist => params%sublist('metis-options')
+      if (metis_ptype   /= NULL_I) call plist%set('ptype', metis_ptype)
+      if (metis_ctype   /= NULL_I) call plist%set('ctype', metis_ctype)
+      if (metis_iptype  /= NULL_I) call plist%set('iptype', metis_iptype)
+      if (metis_objtype /= NULL_I) call plist%set('objtype', metis_objtype)
+      if (metis_no2hop  /= NULL_I) call plist%set('no2hop', metis_no2hop)
+      if (metis_contig  /= NULL_I) call plist%set('contig', metis_contig)
+      if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+      if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+      if (metis_niter   /= NULL_I) call plist%set('niter', metis_niter)
+      if (metis_ncuts   /= NULL_I) call plist%set('ncuts', metis_ncuts)
+      if (metis_seed    /= NULL_I) call plist%set('seed', metis_seed)
+      if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl', metis_dbglvl)
+    end if
+#endif
+
     !! FILE settings
     if (patch_alg == PATCH_ALG_FILE) then
       if (patch_file == NULL_C) call data_err('PATCH_FILE not specified')
@@ -462,6 +561,14 @@ contains
     case (PATCH_ALG_PAVE)
       write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
       allocate(pave_patching :: patch)
+    case (PATCH_ALG_METIS)
+#ifdef USE_METIS
+      write (*,'(a)') 'Generating patches using the METIS graph partitioner'
+      allocate(metis_patching :: patch)
+#else
+      stat = 1
+      errmsg = 'the "METIS" patching algorithm is not supported by this Truchas build'
+#endif
     case default
       stat = 1
       errmsg = 'no such patching algorithm'
