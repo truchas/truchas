@@ -212,7 +212,8 @@
     else  ! SUP_BUFFER == OFFP_DATA
 
       !! Global communication: DUP_BUFFER -> SUP_BUFFER (= OFFP_DATA).
-      offP_data = pgslib_gather_buffer(dup_buffer, this%trace)
+      sup_buffer = pgslib_gather_buffer(dup_buffer, this%trace)
+      offP_data = sup_buffer
 
     end if
 
