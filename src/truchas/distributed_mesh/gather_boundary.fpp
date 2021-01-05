@@ -212,8 +212,12 @@
     else  ! SUP_BUFFER == OFFP_DATA
 
       !! Global communication: DUP_BUFFER -> SUP_BUFFER (= OFFP_DATA).
+#ifdef GNU_ISSUE437
       sup_buffer = pgslib_gather_buffer(dup_buffer, this%trace)
       offP_data = sup_buffer
+#else
+      offP_data = pgslib_gather_buffer(dup_buffer, this%trace)
+#endif
 
     end if
 
