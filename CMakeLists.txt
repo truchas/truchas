@@ -228,6 +228,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   add_compile_definitions(GNU_PR49213)
   add_compile_definitions(GNU_PR69563)
   add_compile_definitions(GNU_PR98141)
+  add_compile_definitions(GNU_ISSUE437)
 endif()
 
 if(ENABLE_DYNAMIC_LOADING)
