@@ -122,6 +122,7 @@ contains
 #ifdef DEBUG_MESH
     use unstr_mesh_gmv
 #endif
+    use truchas_timers
 
     integer :: stat
     logical :: enabled, em_mesh
@@ -139,6 +140,7 @@ contains
       plist => piter%sublist()
       call plist%get ('enabled', enabled, default=.false.)
       if (enabled) then
+        call start_timer('mesh-'//piter%name())
         call TLS_info ('')
         call TLS_info ('Initializing mesh "' // piter%name() // '" ...')
         call plist%get ('em-mesh', em_mesh, default=.false.)
@@ -170,6 +172,7 @@ contains
 #endif
         end if
         call TLS_info ('  Mesh "' // trim(piter%name()) // '" initialized')
+        call stop_timer('mesh-'//piter%name())
       end if
       call piter%next
     end do

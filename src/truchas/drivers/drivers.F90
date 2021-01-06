@@ -186,6 +186,12 @@ call hijack_truchas ()
     real(r8) :: tout, t_write
     !---------------------------------------------------------------------------
 
+    if (cycle_max == 0) then
+      call TLS_info('')
+      call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
+      return
+    end if
+
     if (mem_on) call mem_diag_open
 
     call init_sim_event_queue
