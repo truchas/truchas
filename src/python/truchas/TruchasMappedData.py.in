@@ -23,7 +23,7 @@ class TruchasMappedData(TruchasData):
     Wrapper for mapping Truchas Data to new exodus mesh.
     """
 
-    def __init__(self, output_filename, exodus_filename, scale_factor=1):
+    def __init__(self, output_filename, exodus_filename, scale_factor=1, use_portage=False):
         super().__init__(output_filename)
         self.mapped = True
 
@@ -31,7 +31,7 @@ class TruchasMappedData(TruchasData):
                                             self.cell_node_map()+1,
                                             self.blockid(),
                                             self.node_coordinates(),
-                                            exodus_filename, scale_factor)
+                                            exodus_filename, scale_factor, use_portage)
 
         # get destination mesh data and map data
         self.ncell = map_data.ncell
