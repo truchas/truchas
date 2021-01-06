@@ -58,6 +58,7 @@ contains
 
     integer(idx_t) :: ierr, objval
     integer(idx_t), target :: options(0:METIS_NOPTIONS-1)
+    integer :: ptype
 
     ASSERT(nvrtx >= 0)
     ASSERT(size(xadj) == nvrtx+1)
@@ -81,6 +82,8 @@ contains
     !! Despite what the documentation suggests IPTYPE only applies to recursive
     !! bisection, RTYPE value is entirely ignored
 
+    call this%params%get('iptype', options(METIS_OPTION_IPTYPE), default=-1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
     call this%params%get('ctype', options(METIS_OPTION_CTYPE), default=-1, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
     call this%params%get('ncuts', options(METIS_OPTION_NCUTS), default=-1, stat=stat, errmsg=errmsg)
@@ -98,9 +101,23 @@ contains
     call this%params%get('dbglvl', options(METIS_OPTION_DBGLVL), default=0, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
 
-    ierr = METIS_PartGraphKway(nvrtx, 1, xadj, adjncy, &
-        c_null_ptr, c_null_ptr, c_null_ptr, npart, c_null_ptr, c_null_ptr, &
-        c_loc(options), objval, part)
+    call this%params%get('ptype', ptype, default=METIS_PTYPE_RB, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    select case (ptype)
+    case (METIS_PTYPE_RB)
+      ierr = METIS_PartGraphRecursive(nvrtx, 1, xadj, adjncy, &
+          c_null_ptr, c_null_ptr, c_null_ptr, npart, c_null_ptr, c_null_ptr, &
+          c_loc(options), objval, part)
+    case (METIS_PTYPE_KWAY)
+      ierr = METIS_PartGraphKway(nvrtx, 1, xadj, adjncy, &
+          c_null_ptr, c_null_ptr, c_null_ptr, npart, c_null_ptr, c_null_ptr, &
+          c_loc(options), objval, part)
+    case default
+      stat = 1
+      errmsg = 'unknown metis partitioning method ptype=' // i_to_c(ptype)
+      return
+    end select
+
     if (ierr /= METIS_OK) then
       stat = 1
       select case (ierr)

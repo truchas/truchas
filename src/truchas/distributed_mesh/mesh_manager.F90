@@ -214,6 +214,8 @@ contains
 #ifdef USE_METIS
       case ('metis')
         plist => plist%sublist('metis-options')
+        if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
+        if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
         if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
         if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
         if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
@@ -257,10 +259,10 @@ contains
                     partitioner, partition_file, first_partition
 
     !! Metis parameters
-    integer :: metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
-               metis_minconn, metis_contig, metis_seed, metis_dbglvl
-    namelist /mesh/ metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
-                    metis_minconn, metis_contig, metis_seed, metis_dbglvl
+    integer :: metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+               metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+    namelist /mesh/ metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+                    metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
 
     !! Namelist variables for the internal mesh
     type :: coord_grid
@@ -300,6 +302,8 @@ contains
     call coord_grid_default(z_axis)
     noise_factor = NULL_R
 
+    metis_ptype   = NULL_I
+    metis_iptype  = NULL_I
     metis_ctype   = NULL_I
     metis_ncuts   = NULL_I
     metis_niter   = NULL_I
@@ -329,6 +333,8 @@ contains
     call coord_grid_broadcast(z_axis)
     call broadcast(noise_factor)
 
+    call broadcast(metis_ptype)
+    call broadcast(metis_iptype)
     call broadcast(metis_ctype)
     call broadcast(metis_ncuts)
     call broadcast(metis_niter)
@@ -358,6 +364,8 @@ contains
     case ('metis')
 #ifdef USE_METIS
       plist => params%sublist('metis-options')
+      if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
+      if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
       if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
       if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
       if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
