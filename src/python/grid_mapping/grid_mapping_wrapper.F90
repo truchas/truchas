@@ -223,6 +223,7 @@ contains
       error stop
     end if
     if (scale_factor /= 1) exomesh%coord = scale_factor * exomesh%coord
+    call exomesh%set_no_links
 
     mesh => new_unstr_mesh_aux(exomesh, params, stat, errmsg)
     if (stat /= 0) then
@@ -243,6 +244,7 @@ contains
     mesh%num_node = size(coord, dim=2)
     mesh%num_elem = size(connect, dim=2)
     mesh%coord = coord
+    allocate(mesh%nset(0), mesh%sset(0))
     call identify_blocks
     call mesh%set_no_links
 
