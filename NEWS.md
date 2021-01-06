@@ -1,5 +1,12 @@
 # NEWS
 
+## 2021-01-05 (540d6109)
+
+Significant performance improvements were made to the initialization of the
+main mesh. Users can expect to see dramatically shorter mesh initialization
+times for meshes larger than several million cells, with greater relative
+improvements for larger meshes.
+
 ## 2020-12-24 (a0c0dd62)
 
 Added an option to use METIS graph partitioning to compute the parallel

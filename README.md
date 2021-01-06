@@ -38,7 +38,7 @@ Resources
 [2]: https://gitlab.com/truchas/truchas
 [3]: https://gitlab.com/truchas/truchas/issues
 
-News (updated 2020-12-24)
+News (updated 2021-01-05)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 
