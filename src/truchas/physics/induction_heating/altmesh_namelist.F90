@@ -23,10 +23,10 @@ module altmesh_namelist
       grid_transfer_file, partitioner, partition_file, first_partition, data_mapper_kind
 
   !! Metis parameters
-  integer, public :: metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
-      metis_minconn, metis_contig, metis_seed, metis_dbglvl
-  namelist /mesh/ metis_ctype, metis_ncuts, metis_niter, metis_ufactor, &
-                  metis_minconn, metis_contig, metis_seed, metis_dbglvl
+  integer, public :: metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+      metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+  namelist /altmesh/ metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+                  metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
 
 contains
 
@@ -66,6 +66,8 @@ contains
       partition_file = NULL_C
       first_partition = NULL_I
       data_mapper_kind = 'default'
+      metis_ptype   = NULL_I
+      metis_iptype  = NULL_I
       metis_ctype   = NULL_I
       metis_ncuts   = NULL_I
       metis_niter   = NULL_I
@@ -89,6 +91,8 @@ contains
     call broadcast(partition_file)
     call broadcast(first_partition)
     call broadcast(data_mapper_kind)
+    call broadcast(metis_ptype)
+    call broadcast(metis_iptype)
     call broadcast(metis_ctype)
     call broadcast(metis_ncuts)
     call broadcast(metis_niter)
