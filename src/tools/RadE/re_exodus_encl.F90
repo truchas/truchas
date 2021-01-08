@@ -416,7 +416,15 @@ contains
 
     !! Extract the surface from the mesh
     call params%get('side-set-ids', ssid)
+#ifdef GNU_PR86277
+    if (params%is_parameter('ignore-block-ids')) then
+      call params%get('ignore-block-ids', ebid)
+    else
+      allocate(ebid(0))
+    end if
+#else
     call params%get('ignore-block-ids', ebid, default=[integer::])
+#endif
     call extract_surface_from_exodus(mesh, ssid, ebid, this, stat, errmsg)
     if (stat /= 0) return
     call params%get('coord-scale-factor', scale, default=1.0_r8)
@@ -540,7 +548,15 @@ contains
 
     stat = 0
 
+#ifdef GNU_PR86277
+    if (params%is_parameter('ignore-block-ids')) then
+      call params%get('ignore-block-ids', ibid)
+    else
+      allocate(ibid(0))
+    end if
+#else
     call params%get('ignore-block-ids', ibid, default=[integer::])
+#endif
     do n = 1, size(ibid)  ! verify ignored blocks are valid blocks
       if (.not.any(ibid(n) == mesh%eblk%id)) then
         stat = -1
@@ -549,7 +565,15 @@ contains
       end if
     end do
 
+#ifdef GNU_PR86277
+    if (params%is_parameter('displace-block-ids')) then
+      call params%get('displace-block-ids', dbid)
+    else
+      allocate(dbid(0))
+    end if
+#else
     call params%get('displace-block-ids', dbid, default=[integer::])
+#endif
     do n = 1, size(dbid) ! verify displaced blocks are valid blocks
       if (.not.any(dbid(n) == mesh%eblk%id)) then
         stat = -1
