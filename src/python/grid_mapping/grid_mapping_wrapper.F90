@@ -20,11 +20,7 @@ module grid_mapping_wrapper
   use,intrinsic :: iso_fortran_env, only: error_unit
   use unstr_mesh_type
   use ext_exodus_mesh_type
-#ifdef USE_PORTAGE
-  use portage_mapper_type
-#else
-  use kuprat_mapper_type
-#endif
+  use data_mapper_class
   implicit none
   private
 
@@ -38,12 +34,8 @@ module grid_mapping_wrapper
   type :: mapper_switch
     type(unstr_mesh), pointer :: src => null()
     type(unstr_mesh), pointer :: dest => null()
-    integer, allocatable :: connect(:,:), blockid(:) ! TODO populate these from dest
-#ifdef USE_PORTAGE
-    type(portage_mapper) :: mapper
-#else
-    type(kuprat_mapper) :: mapper
-#endif
+    integer, allocatable :: connect(:,:), blockid(:)
+    class(data_mapper), allocatable :: mapper
   contains
     final :: delete
   end type mapper_switch
@@ -62,14 +54,21 @@ contains
 
   !! Compute a mesh map from base mesh (ultimately an h5 file coming from python)
   !! to an exodus mesh. Returns both the exodus mesh data and the mapper.
-  function mapper_init(nnode, ncell, connect, blockid, coord, exodus_filename, scale_factor) &
+  function mapper_init(nnode, ncell, connect, blockid, coord, exodus_filename, scale_factor, &
+      use_portage_backend) &
     result(mesh_map) bind(c)
+
+    use kuprat_mapper_type
+#ifdef USE_PORTAGE
+    use portage_mapper_type
+#endif
 
     integer(c_int), intent(in), value :: nnode, ncell
     integer(c_int), intent(in) :: connect(8,ncell), blockid(ncell)
     real(c_double), intent(in) :: coord(3,nnode)
     character(kind=c_char), intent(in) :: exodus_filename(*)
     real(c_double), intent(in), value :: scale_factor
+    logical(c_bool), intent(in), value :: use_portage_backend
     type(map_data) :: mesh_map
 
     type(mapper_switch), pointer :: this => null()
@@ -77,13 +76,25 @@ contains
 
     if (.not.mpi_initialized) call mpi_init
 
-#ifdef USE_PORTAGE
-    print *, "Using Portage mapper..."
-#else
-    print *, "Using Kuprat mapper..."
-#endif
-    
     allocate(this)
+
+#ifdef USE_PORTAGE
+    if (use_portage_backend) then
+      print "(a)", "Using Portage mapper..."
+      allocate(portage_mapper :: this%mapper)
+    else
+      print "(a)", "Using Kuprat mapper..."
+      allocate(kuprat_mapper :: this%mapper)
+    end if
+#else
+    if (use_portage_backend) then
+      write(error_unit,"(a)") "ERROR: Portage is not supported in the build of Truchas. Aborting."
+      error stop
+    end if
+    print "(a)", "Using Kuprat mapper..."
+    allocate(kuprat_mapper :: this%mapper)
+#endif
+
     call mesh_from_raw(coord, connect, blockid, this%src)
     call mesh_from_file(c_to_f_str(exodus_filename), scale_factor, this%dest)
     call compute_connect_blockid(this)
@@ -113,7 +124,7 @@ contains
 
 
   subroutine mpi_init()
-    
+
     use parallel_util_module, only: parallel_init
     use parallel_communication
     use pgslib_module
@@ -204,7 +215,7 @@ contains
     character(:), allocatable :: errmsg
     type(parameter_list) :: params
     type(ext_exodus_mesh) :: exomesh
-    
+
     !! Read and scale the exodus mesh.
     call read_exodus_mesh(exodus_filename, exomesh, stat, errmsg)
     if (stat /= 0) then
@@ -212,13 +223,14 @@ contains
       error stop
     end if
     if (scale_factor /= 1) exomesh%coord = scale_factor * exomesh%coord
+    call exomesh%set_no_links
 
     mesh => new_unstr_mesh_aux(exomesh, params, stat, errmsg)
     if (stat /= 0) then
       write(error_unit,'(a)') errmsg
       error stop
     end if
-    
+
   end subroutine mesh_from_file
 
 
@@ -232,6 +244,7 @@ contains
     mesh%num_node = size(coord, dim=2)
     mesh%num_elem = size(connect, dim=2)
     mesh%coord = coord
+    allocate(mesh%nset(0), mesh%sset(0))
     call identify_blocks
     call mesh%set_no_links
 
@@ -304,14 +317,14 @@ contains
         nnode = 5 ! pyramid
       else if (cnode(6) == cnode(7)) then
         nnode = 6 ! wedge
-      else 
+      else
         nnode = 8 ! hex
       end if
     end function nnode
 
   end subroutine init_exodus_mesh
 
-  
+
   !! Convert a null-terminated C char* to a Fortran character scalar.
   pure function c_to_f_str(cstr) result(fstr)
     character(kind=c_char), intent(in) :: cstr(*)

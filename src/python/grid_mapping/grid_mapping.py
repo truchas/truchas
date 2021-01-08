@@ -32,7 +32,8 @@ libgridmap.mapper_init.argtypes = [ctypes.c_int, ctypes.c_int,
                                    ctypes.POINTER(ctypes.c_int),
                                    ctypes.POINTER(ctypes.c_double),
                                    ctypes.c_char_p,
-                                   ctypes.c_double]
+                                   ctypes.c_double,
+                                   ctypes.c_bool]
 libgridmap.mapper_init.restype = _MapData
 
 libgridmap.map_field.argtypes = [ctypes.c_void_p, ctypes.c_int,
@@ -51,7 +52,7 @@ MapData = collections.namedtuple("MapData", ("ncell",
                                              "blockid",
                                              "mapper"))
 
-def mapper_init(nnode, ncell, cnode, blockid, coords, filename, scale_factor):
+def mapper_init(nnode, ncell, cnode, blockid, coords, filename, scale_factor, use_portage):
     # Copy data to contiguous arrays and cast as needed
     cnodec = np.ascontiguousarray(cnode)
     cnodec = cnodec.astype(np.int32, casting="same_kind", copy=False)
@@ -67,7 +68,7 @@ def mapper_init(nnode, ncell, cnode, blockid, coords, filename, scale_factor):
                                    cnodec.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
                                    blockidc.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
                                    coordsc.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                                   bytes(filename, "utf-8"), scale_factor)
+                                   bytes(filename, "utf-8"), scale_factor, use_portage)
 
     # pull data out of the addresses indicated, and put in numpy arrays
     return MapData(cdata.ncell,
