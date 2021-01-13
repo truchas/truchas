@@ -151,7 +151,15 @@ CONTAINS
             fatal_error_string = 'MATERIAL_NAME not specified'
             fatal = .true.
          else
-            Matnum(nbody) = matl_model%phase_index(material_name)
+            Matnum(nbody) = matl_model%phase_index(material_name) ! yes, really a phase name
+            if (Matnum(nbody) <= 0) then
+              fatal = .true.
+              if (matl_model%has_matl(material_name)) then
+                fatal_error_string = 'must specify the phase of MATERIAL_NAME: ' // trim(material_name)
+              else
+                fatal_error_string = 'unknown MATERIAL_NAME: ' // trim(material_name)
+              end if
+            end if
          end if
          Body_Phi(nbody,:) = phi
          Body_Vel(:,nbody) = Velocity
