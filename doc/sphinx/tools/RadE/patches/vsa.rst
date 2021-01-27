@@ -76,7 +76,7 @@ Outline
 
    #. Generate the face adjacency matrix. Faces at angles greater than
       :ref:`MAX_ANGLE <tools/RadE/patches/patches_namelist:MAX_ANGLE>` are not adjacent.
-   #. Let NPATCH_MIN = NFACE / VSA_AVG_FACES_PER_PATCH, where NFACE is the total number of faces
+   #. Let NPATCH_MIN = NFACE / VSA_FACE_PATCH_RATIO, where NFACE is the total number of faces
       in the enclosure.
    #. Let NPATCH=0. This variable tracks the current number of patches.
    #. If provided, use :ref:`tools/RadE/patches/vsa:VSA_RANDOM_SEED` to initialize the
@@ -360,7 +360,7 @@ namelist documentation <tools/RadE/patches/patches_namelist:General Parameters>`
 information on those parameters.
 
 The three parameters unique to VSA are aptly named VSA_MAX_ITER, VSA_MIN_DELTA, and
-VSA_AVG_FACES_PER_PATCH. We discuss these parameters briefly below.
+VSA_FACE_PATCH_RATIO. We discuss these parameters briefly below.
 
 
 VSA_MAX_ITER
@@ -396,29 +396,23 @@ For more details on how the change between old and new proxies is computed, refe
 the :ref:`algorithm outline <tools/RadE/patches/vsa:Outline>`.
 
 
-VSA_AVG_FACES_PER_PATCH
-+++++++++++++++++++++++
-Defines the average faces per patch, and by extension the total number of patches.
+VSA_FACE_PATCH_RATIO
+++++++++++++++++++++
+Defines the ratio of total faces to total patches, and by extension the total number of patches.
 
 .. namelist_parameter::
    :type: REAL
-   :domain: vsa_avg_faces_per_patch >= 1.0
-   :default: vsa_avg_faces_per_patch = 4.0
-
-The average faces per patch is given by
-
-.. math::
-   \text{(Total Faces)}/\text{(Total Patches)}
+   :domain: vsa_face_patch_ratio >= 1.0
+   :default: vsa_face_patch_ratio = 4.0
 
 Since the number of faces is fixed, this parameter determines the total number of patches in the
 final configuration:
 
 .. math::
-   \text{(Total Patches)} = \text{(Total Faces)} *
-   \text{vsa_avg_faces_per_patch}
+   \text{(Total Patches)} = \text{(Total Faces)}\ /\ \text{vsa_face_patch_ratio}
 
 Rather than set the number of patches explicitly, which is mesh dependent, expressing this
-parameter as an average allows the same value to apply to a variety of meshes.
+parameter as a ratio allows the same value to apply to a variety of meshes.
 
 
 VSA_MAX_PATCH_RADIUS

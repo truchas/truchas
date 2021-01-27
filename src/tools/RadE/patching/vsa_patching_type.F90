@@ -19,30 +19,29 @@
 !! The VSA_PATCHING type encapsulates the Variational Shape Approximation face
 !! clustering algorithm.  It has the following type bound procedures.
 !!
-!!  INIT(E, MAX_ITER, MIN_DELTA, AVG_FPP, MAX_ANGLE, MAX_RADIUS, NORMALIZE,
+!!  INIT(E, FP_RATIO, MAX_ITER, MIN_DELTA, MAX_ANGLE, MAX_RADIUS, NORMALIZE,
 !!    VERBOSITY [,SEED]) initializes the object.  E is an instance of the
-!!    TYPE(ENCL) radiation enclosure.  MAX_ITER is an integer scalar that
-!!    defines the maximum number of iterations allowed.  The procedure stops
-!!    when MAX_ITER is reached, regardless of other stopping conditions.
-!!    MIN_DELTA is a real scalar that defines the threshold for the minimum
-!!    change in patch proxies between successive iterations.  The procedure
-!!    stops if the minimum change in patch proxies is less than MIN_DELTA.
-!!    AVG_FPP is a real scalar that defines the desired ratio of total faces to
-!!    total patches.  AVG_FPP defines the number of patch seeds with which to
-!!    initialize the algorithm, and therefore the total number of patches in the
-!!    output:
-!!      [# SEEDS] = [# FACES] / AVG_FPP
-!!    MAX_ANGLE is a real scalar that defines the maximum allowable angle in
-!!    degrees between normals of adjacent faces.  If two topologically adjacent
-!!    faces are at an angle greater than MAX_ANGLE degrees, they will not be
-!!    considered adjacent during patch construction.  MAX_RADIUS is a real
-!!    scalar representing the maximum desired radius for a patch.  A face
-!!    outside MAX_RADIUS will have a penalty added to its weight that is
-!!    proportional to its distance from the patch center.  NORMALIZE is a
-!!    logical scalar that determines whether the Voronoi distance bias should
+!!    TYPE(ENCL) radiation enclosure.  FP_RATIO is a real scalar that defines
+!!    the desired ratio of total faces to total patches.  FP_RATIO defines the
+!!    number of patch seeds with which to initialize the algorithm, and
+!!    therefore the total number of patches in the output:
+!!      [# SEEDS] = [# FACES] / FP_RATIO
+!!    MAX_ITER is an integer scalar that defines the maximum number of
+!!    iterations allowed.  The procedure stops when MAX_ITER is reached,
+!!    regardless of other stopping conditions.  MIN_DELTA is a real scalar that
+!!    defines the threshold for the minimum change in patch proxies between
+!!    successive iterations.  The procedure stops if the minimum change in patch
+!!    proxies is less than MIN_DELTA.  MAX_ANGLE is a real scalar that defines
+!!    the maximum allowable angle in degrees between normals of adjacent faces.
+!!    If two topologically adjacent faces are at an angle greater than MAX_ANGLE
+!!    degrees, they will not be considered adjacent during patch construction.
+!!    MAX_RADIUS is a real scalar representing the maximum desired radius for a
+!!    patch.  A face outside MAX_RADIUS will have a penalty added to its weight
+!!    that is proportional to its distance from the patch center.  NORMALIZE is
+!!    a logical scalar that determines whether the Voronoi distance bias should
 !!    be normalized by the face radius.  VERBOSITY is an integer scalar that
-!!    specifies the verbosity level of all messages printed by the object.
-!!    A verbosity level <= 0 suppresses all output.  If the optional integer
+!!    specifies the verbosity level of all messages printed by the object.  A
+!!    verbosity level <= 0 suppresses all output.  If the optional integer
 !!    argument SEED is present, it is used to initialize the random number
 !!    generator used to pick the initial seeds.  If SEED is not present, the
 !!    seed is taken from the system clock.
@@ -76,7 +75,7 @@ module vsa_patching_type
   !! Parameter defaults
   integer, parameter :: VSA_MAX_ITER_DEFAULT = 1000
   real(r8), parameter :: VSA_MIN_DELTA_DEFAULT = 1E-6_r8
-  real(r8), parameter :: VSA_AVG_FACES_PER_PATCH_DEFAULT = 4.0_r8
+  real(r8), parameter :: VSA_FACE_PATCH_RATIO_DEFAULT = 4.0_r8
   real(r8), parameter :: VSA_MAX_PATCH_RADIUS_DEFAULT = sqrt(huge(0.0_r8))
   logical, parameter :: VSA_NORMALIZE_DIST_DEFAULT = .true.
 
@@ -122,16 +121,16 @@ contains
 
 
   !! Allocate and initialize VSA_PATCHING data
-  subroutine init(this, e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, stat, errmsg, seed)
+  subroutine init(this, e, fp_ratio, max_iter, min_delta, max_angle, max_radius, normalize, verbosity, stat, errmsg, seed)
 
     use cell_geometry, only: face_normal, vector_length, normalized, polygon_center
     use patching_tools, only: init_random_seed, get_face_neighbor_array
 
     class(vsa_patching), intent(out) :: this
     type(encl), target, intent(in) :: e
+    real(r8), intent(in) :: fp_ratio    ! Total faces / total patches
     integer, intent(in) :: max_iter     ! Maximum iterations
     real(r8), intent(in) :: min_delta   ! Stopping threshold
-    real(r8), intent(in) :: avg_fpp     ! Average faces per patch
     real(r8), intent(in) :: max_angle   ! Maximum allowable angle for adjacent faces (in degrees)
     real(r8), intent(in) :: max_radius  ! Maximum desired patch radius
     logical, intent(in) :: normalize    ! Whether to normalize the Voronoi distance bias
@@ -146,7 +145,7 @@ contains
     this%e => e
     this%dir = .true.
     this%npatch = 0
-    this%npatch_min = e%nface / avg_fpp
+    this%npatch_min = e%nface / fp_ratio
     this%max_radius = max_radius
     this%min_delta = min_delta
     this%max_iter = max_iter
@@ -193,12 +192,12 @@ contains
 
     if (this%verbosity > 1) then
       print '("INITIALIZING VSA:")'
-      print '("  AVERAGE FACES PER PATCH:", f6.2)', avg_fpp
-      print '("  MAX PATCH RADIUS:", es11.3)', max_radius
-      print '("  NORMALIZE DISTANCE:", l2)', normalize
-      print '("  MIN NPATCH:", i0)', this%npatch_min
-      print '("  MAX ANGLE:", f6.2)', max_angle
-      print '("  RANDOM SEED:", i0)', seed_
+      print '("  FACE-PATCH RATIO: ", f0.2)', fp_ratio
+      print '("  MAX PATCH RADIUS: ", es11.3)', max_radius
+      print '("  NORMALIZE DISTANCE: ", l1)', normalize
+      print '("  MIN NPATCH: ", i0)', this%npatch_min
+      print '("  MAX ANGLE: ", f0.2)', max_angle
+      print '("  RANDOM SEED: ", i0)', seed_
     end if
 
   end subroutine init
@@ -371,10 +370,10 @@ contains
 
     class(vsa_patching), intent(inout) :: this
     integer :: p, f
-    real(r8) :: fpp  ! average faces per patch
+    real(r8) :: fpr  ! face-patch ratio
 
-    fpp = REAL(this%e%nface,kind=r8)/REAL(this%npatch_min,kind=r8)
-    fpp = merge(1.0_r8, fpp, fpp < 1.0_r8)
+    fpr = REAL(this%e%nface,kind=r8)/REAL(this%npatch_min,kind=r8)
+    fpr = merge(1.0_r8, fpr, fpr < 1.0_r8)
 
     !! Set the number of patches
     this%npatch = this%npatch_min
@@ -383,7 +382,7 @@ contains
     this%f2p_map = -1
 
     do p = 1,this%npatch_min
-      f = (p-1)*fpp + 1
+      f = (p-1)*fpr + 1
       this%seeds(p) = f   ! face f is seed for patch p
       this%f2p_map(f) = p ! face f belongs to patch p
       call this%patch_init(f, p)

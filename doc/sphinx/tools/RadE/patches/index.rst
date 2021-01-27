@@ -80,7 +80,7 @@ The `PATCHES` namelist parameters include:
 #. :ref:`tools/RadE/patches/patches_namelist:VAC_SPLIT_PATCH_SIZE`: Split patches with up to this number of faces
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_MAX_ITER`: Maximum iterations for the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_MIN_DELTA`: Minimum change in patch proxies for the VSA algorithm
-#. :ref:`tools/RadE/patches/patches_namelist:VSA_AVG_FACES_PER_PATCH`: Average faces per patch for the VSA algorithm
+#. :ref:`tools/RadE/patches/patches_namelist:VSA_FACE_PATCH_RATIO`: Face to patch ratio for the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_MAX_PATCH_RADIUS`: Desired maximum patch radius for the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_NORMALIZE_DIST`: Whether to normalize the distance bias in the VSA algorithm
 #. :ref:`tools/RadE/patches/patches_namelist:VSA_RANDOM_SEED`: Sets random number generator seed.
