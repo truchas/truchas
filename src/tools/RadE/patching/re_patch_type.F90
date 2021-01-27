@@ -553,15 +553,6 @@ contains
       stat = 1
       errmsg = "face count in patch file '"//trim(path)//"' does not match input mesh"
     end if
-    block !TODO: re_patch_read really ought to set this as well
-      integer :: j
-      if (this%has_patches) then
-        allocate(this%global_ids(this%npatch))
-        do j = 1, this%npatch
-          this%global_ids(j) = j
-        end do
-      end if
-    end block
   end subroutine file_patches
 
 
@@ -583,18 +574,27 @@ contains
     character(*), intent(in) :: path
 
     type(rad_encl_file) :: file
-    integer :: nface_tot, npatch_tot
+    integer :: i, nface, npatch
 
     if (scl_rank() == 1) then
       call file%open_ro(path)
-      call file%get_patch_dims(nface_tot, npatch_tot)
-      this%npatch = npatch_tot
-      this%nface = nface_tot
+      call file%get_patch_dims(nface, npatch)
+      this%npatch = npatch
+      this%nface = nface
       this%has_patches = file%has_patches()
-      if (.not. this%has_patches) return
 
-      allocate(this%f2p_map(nface_tot))
-      call file%get_f2p_map(this%f2p_map)
+      allocate(this%global_ids(npatch))
+      do i = 1, this%npatch
+        this%global_ids(i) = i
+      end do
+
+      allocate(this%f2p_map(nface))
+      if (this%has_patches) then
+        call file%get_f2p_map(this%f2p_map)
+      else
+        ASSERT(nface==npatch)
+        this%f2p_map = this%global_ids
+      end if
     end if
 
   end subroutine re_patch_read
