@@ -57,6 +57,7 @@ module solid_mechanics_type
     integer, public :: viscoplastic_niter = 0  ! nonlinear iteration count
   contains
     procedure :: init
+    procedure :: compute_initial_state
     procedure :: step
     procedure :: strain_view
     procedure :: stress_view
@@ -65,7 +66,7 @@ module solid_mechanics_type
 
 contains
 
-  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf)
+  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density)
 
     use parameter_list_type
     use unstr_mesh_type
@@ -76,6 +77,7 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(in) :: nmat
     type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
+    real(r8), intent(in) :: reference_density(:)
 
     integer :: stat
     character(:), allocatable :: errmsg
@@ -84,7 +86,7 @@ contains
     call start_timer("solid mechanics")
 
     plist => params%sublist("model")
-    call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf)
+    call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf, reference_density)
 
     plist => params%sublist("preconditioner")
     call this%precon%init(this%model, plist)
@@ -97,11 +99,29 @@ contains
 
     allocate(this%displacement(3,mesh%nnode_onP), this%stress(6,mesh%nnode_onP), &
         this%strain(6,mesh%nnode_onP))
-    this%displacement = 0 ! TODO: initial displacement
+    this%displacement = 0
 
     call stop_timer("solid mechanics")
 
   end subroutine init
+
+
+  !! Computes the initial state of the solver
+  !! Right now, this isn't any different than a step. It computes the reference
+  !! density before calling step(), but the current version does this during
+  !! update_properties() anyways. In the future, update_properties() will rely
+  !! on the density already having a valid value.
+  subroutine compute_initial_state(this, vof, temperature_cc, stat, errmsg)
+    class(solid_mechanics), intent(inout), target :: this
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
+    integer, intent(out) :: stat
+    character(:), intent(out), allocatable :: errmsg
+    call start_timer("solid mechanics")
+    call this%model%compute_reference_density(vof)
+    call stop_timer("solid mechanics")
+    call this%step(0.0_r8, 1e-6_r8, vof, temperature_cc, stat, errmsg)
+    if (stat /= 0) errmsg = "Initialization failure" // errmsg
+  end subroutine compute_initial_state
 
 
   subroutine step(this, t, dt, vof, temperature_cc, stat, errmsg)

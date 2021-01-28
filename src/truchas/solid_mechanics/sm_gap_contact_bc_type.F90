@@ -211,15 +211,17 @@ contains
   end subroutine add_complete
 
 
-  subroutine compute(this, t, displ, ftot, stress)
+  subroutine compute(this, t, displ, ftot, stress_factor)
 
     class(sm_gap_contact_bc), intent(inout) :: this
-    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress(:,:)
+    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:)
 
     ! integer :: n, lni, j
     ! real(r8) :: args(0:size(this%mesh%x,dim=1))
-    integer :: i, n1, n2
+    integer :: i, n1, n2, sgn
     real(r8) :: stress1, stress2, x1, x2, s, tn, l, dl(2), dldu1, dldu2, v(2), normal(3)
+    real(r8) :: l1, l2
+    sgn = 1
 
     ! do n = 1, this%ngroup
     !   do lni = this%xgroup(n), this%xgroup(n+1)-1
@@ -239,45 +241,30 @@ contains
       x2 = dot_product(normal, displ(:,n2))
 
       s = x2 - x1
-      tn = dot_product(normal, ftot(:,n1)) ! TODO-WARN: is this the right idea?
+      tn = - sgn * stress1 / this%area(i) ! TODO-WARN: is the sign right?
       l = this%contact_factor(s, tn)
-      ! dl = this%derivative_contact_factor(s, tn)
-      ! dldu1 =  dl(1) + dl(2)*diag1
-      ! dldu2 = -dl(1) + dl(2)*diag2
 
-      v(1) = stress2 * this%area(i) + this%contact_penalty*(x2 - x1)
-      v(2) = stress1 * this%area(i) + this%contact_penalty*(x1 - x2)
+      v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
+      v(2) = stress1 / stress_factor(n2) + this%contact_penalty*(x1 - x2)
 
       this%value(:,1,i) = normal * l * v(1)
       this%value(:,2,i) = normal * l * v(2)
-
-      ! this%dvalue(:,1,i) = normal * (-l*this%contact_penalty + dldu1*v(1))
-      ! this%dvalue(:,2,i) = normal * (-l*this%contact_penalty + dldu2*v(2))
-
-      !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
-      !r(3,n1) = stress1(3) + stress2(3)
-      !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
-      !r(3,n1) = x1(3) - x2(3) + values(i)
-      !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
-      !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
-      !r(3,n2) = x1(3) - x2(3) + values(i)
-      !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
-      !r(3,n2) = x1(3) - x2(3) + values(i)
     end do
 
   end subroutine compute
 
 
-  subroutine compute_deriv(this, t, displ, ftot, stress, diag)
+  subroutine compute_deriv(this, t, displ, ftot, stress_factor, diag)
 
     class(sm_gap_contact_bc), intent(inout) :: this
-    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress(:,:), diag(:)
+    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:), diag(:)
 
     ! integer :: n, lni, j
     ! real(r8) :: args(0:size(this%mesh%x,dim=1))
-    integer :: i, n1, n2
-    real(r8) :: stress1, stress2, x1, x2, dldu1, dldu2, diag1, diag2
+    integer :: i, n1, n2, sgn
+    real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3), diag2(3)
     real(r8) :: s, tn, l, dl(2), v(2), normal(3)
+    real(r8) :: dl1(2), dl2(2)
 
     ! do n = 1, this%ngroup
     !   do lni = this%xgroup(n), this%xgroup(n+1)-1
@@ -286,7 +273,7 @@ contains
     !     this%value(lni) = this%displacement(n)%eval(args)
     !   end do
     ! end do
-
+    sgn = 1
     do i = 1, size(this%index, dim=2)
       n1 = this%index(1,i)
       n2 = this%index(2,i)
@@ -295,34 +282,25 @@ contains
       stress2 = dot_product(normal, ftot(:,n2)) !+ this%rhs(:,n2)
       x1 = dot_product(normal, displ(:,n1))
       x2 = dot_product(normal, displ(:,n2))
-      diag1 = dot_product(normal, diag(3*(n1-1)+1:3*(n1-1)+3))
-      diag2 = dot_product(normal, diag(3*(n2-1)+1:3*(n2-1)+3))
+      ! diag1 = dot_product(normal, diag(3*(n1-1)+1:3*(n1-1)+3)) * stress_factor(n1)
+      ! diag2 = dot_product(normal, diag(3*(n2-1)+1:3*(n2-1)+3)) * stress_factor(n2)
+      diag1 = diag(3*(n1-1)+1:3*(n1-1)+3) * normal * stress_factor(n1)
+      diag2 = diag(3*(n2-1)+1:3*(n2-1)+3) * normal * stress_factor(n2)
 
       s = x2 - x1
-      tn = dot_product(normal, ftot(:,n1)) ! TODO-WARN: is this the right idea?
+      tn = - sgn * stress1 / this%area(i) ! TODO-WARN: is the sign right?
       l = this%contact_factor(s, tn)
       dl = this%derivative_contact_factor(s, tn)
-      dldu1 = -dl(1) + dl(2)*diag1
-      dldu2 =  dl(1) !+ dl(2)*diag2
+      dldu1 = -dl(1)*normal - sgn * dl(2)*diag1 / this%area(i)
+      dldu2 =  dl(1)*normal !+ dl(2)*diag2
+      ! dldu1 = -dl(1) - sgn * dl(2)*diag1 / this%area(i)
+      ! dldu2 =  dl(1)
 
-      v(1) = stress2 * this%area(i) + this%contact_penalty*(x2 - x1)
-      v(2) = stress1 * this%area(i) + this%contact_penalty*(x1 - x2)
+      v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
+      v(2) = stress1 / stress_factor(n2) + this%contact_penalty*(x1 - x2)
 
-      ! this%value(:,1,i) = normal * l*v(1)
-      ! this%value(:,2,i) = normal * l*v(2)
-
-      this%dvalue(:,1,i) = normal * (-l*this%contact_penalty * this%area(i) + dldu1*v(1))
-      this%dvalue(:,2,i) = normal * (-l*this%contact_penalty * this%area(i) + dldu2*v(2))
-
-      !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
-      !r(3,n1) = stress1(3) + stress2(3)
-      !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
-      !r(3,n1) = x1(3) - x2(3) + values(i)
-      !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
-      !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
-      !r(3,n2) = x1(3) - x2(3) + values(i)
-      !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
-      !r(3,n2) = x1(3) - x2(3) + values(i)
+      this%dvalue(:,1,i) = normal * (-l*this%contact_penalty*normal + dldu1*v(1))
+      this%dvalue(:,2,i) = normal * (-l*this%contact_penalty*normal + dldu2*v(2))
     end do
 
   end subroutine compute_deriv
@@ -346,7 +324,7 @@ contains
       ls = 0
     else
       x = s / this%contact_distance - 1
-      ls = 2 * x**3 + 3 * x**2
+      ls = x**2 * (2*x + 3)
     end if
 
     if (tn <= 0) then
@@ -355,12 +333,11 @@ contains
       lt = 0
     else
       x = tn / this%contact_normal_traction - 1
-      lt = 2 * x**3 + 3 * x**2
+      lt = x**2 * (2*x + 3)
     end if
 
     contact_factor = ls * lt
     ASSERT(contact_factor >= 0 .and. contact_factor <= 1)
-    !contact_factor = 1
 
   end function contact_factor
 
@@ -381,7 +358,7 @@ contains
       ls = 0
     else
       x = s / this%contact_distance - 1
-      ls = 2 * x**3 + 3 * x**2
+      ls = x**2 * (2*x + 3)
       dl(1) = 6 * x * (x + 1) / this%contact_distance
     end if
 
@@ -391,13 +368,12 @@ contains
       lt = 0
     else
       x = tn / this%contact_normal_traction - 1
-      lt = 2 * x**3 + 3 * x**2
+      lt = x**2 * (2*x + 3)
       dl(2) = 6 * x * (x + 1) / this%contact_normal_traction
     end if
 
     dl(1) = dl(1) * lt
     dl(2) = dl(2) * ls
-    !dl = 0
 
   end function derivative_contact_factor
 

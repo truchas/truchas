@@ -40,7 +40,7 @@ module nlsol_type
 
     !! Diagnostics
     integer :: unit = 0
-    logical :: verbose = .true.
+    integer :: verbose = 1
 
     ! !! For state save/restore
     ! type(nlsol), pointer :: cache => null()
@@ -231,13 +231,11 @@ contains
     if (allocated(this%nka)) call this%nka%restart
     call this%model%compute_precon(t, u0, h)
 
-    convergence_rate = 0
+    max_du_norm_old = huge(1.0_r8)
     do itr = 1, this%mitr
-
       !! Evaluate the nonlinear function and precondition it.
       this%pcfun_calls = this%pcfun_calls + 1
       call this%model%compute_f(t, u, (u-u0)/h, du)
-      if (itr == 1) lnorm0 = lnorm(du)
       lnormi = lnorm(du)
       call this%model%apply_precon(t, u, du)
 
@@ -249,7 +247,7 @@ contains
 
       !! Error estimate.
       error = this%model%du_norm(t, u, du)
-      if (this%verbose) write(this%unit,fmt=3) itr, error
+      if (this%verbose >= 2) write(this%unit,fmt=3) itr, error
 
       !! Check for convergence.
       ! if (((error < this%ntol) .and. (itr > 1)) .or. (error < 0.01_r8 * this%ntol)) then
@@ -258,16 +256,17 @@ contains
       !   exit
       ! end if
       max_du_norm = global_maxval(abs(du))
-      if (itr > 1) convergence_rate = max_du_norm / max_du_norm_old
+      convergence_rate = max_du_norm / max_du_norm_old
       max_du_norm_old = max_du_norm
       tol = this%ntol
       if (convergence_rate >= 0.5_r8) tol = tol * (1-convergence_rate) / convergence_rate
 
       converged = itr > 1 .and. error < tol
       converged = converged .or. (itr == 1 .and. max_du_norm == 0)
+      if (itr == 1) lnorm0 = lnormi
       if (lnorm0(2) > tiny(1.0)) converged = converged .or. lnormi(2)/lnorm0(2) < tol
       if (converged) then
-        if (this%verbose) write(this%unit,fmt=2) itr, error
+        if (this%verbose >= 1) write(this%unit,fmt=2) itr, error, lnormi(3)
         errc = 0
         exit
       end if
@@ -277,12 +276,12 @@ contains
     this%itr = itr ! expose the number of iterations performed
 
     if (itr > this%mitr) then ! too many nonlinear iterations
-      if (this%verbose) write(this%unit,fmt=1) itr, error
+      if (this%verbose >= 1) write(this%unit,fmt=1) itr, error, lnormi(3)
       errc = 1
     end if
 
-1   format(2x,'NLK BCE solve FAILED: ',i3,' iterations (max), error=',es13.3)
-2   format(2x,'NLK BCE solve succeeded: ',i3,' iterations, error=',es13.3)
+1   format(2x,'NLK BCE solve FAILED: ',i3,' iterations (max), error=',2es13.3)
+2   format(2x,'NLK BCE solve succeeded: ',i3,' iterations, error=',2es13.3)
 3   format(2x,i3,': error=',es13.3)
 
   end subroutine solve

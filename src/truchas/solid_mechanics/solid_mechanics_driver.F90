@@ -75,7 +75,8 @@ contains
     use tm_density
 
     integer :: p, m, stat
-    real(r8) :: ref_dens, ref_temp
+    real(r8) :: ref_temp
+    real(r8), allocatable :: ref_dens(:)
     character(:), allocatable :: errmsg
     type(scalar_func_box), allocatable :: lame1(:), lame2(:), density(:)
     class(scalar_func), allocatable :: cte
@@ -84,15 +85,16 @@ contains
     call init_phase_table
 
     allocate(this%vof(this%nphase,this%mesh%ncell), this%temperature_cc(this%mesh%ncell))
-    
+
+    allocate(ref_dens(this%nphase))
     allocate(lame1(this%nphase), lame2(this%nphase), density(this%nphase))
     do p = 1, this%nphase
       m = this%matl_phase(p)
-      ref_dens = matl_model%const_phase_prop(m, 'tm-ref-density')
+      ref_dens(p) = matl_model%const_phase_prop(m, 'tm-ref-density')
       ref_temp = matl_model%const_phase_prop(m, 'tm-ref-temp')
       call matl_model%alloc_phase_prop(m, 'tm-linear-cte', cte)
       ASSERT(allocated(cte))
-      call alloc_tm_density_func(density(p)%f, ref_dens, ref_temp, cte, stat, errmsg)
+      call alloc_tm_density_func(density(p)%f, ref_dens(p), ref_temp, cte, stat, errmsg)
       if (stat /= 0) call tls_fatal("SOLID MECHANICS ERROR: tm-linear-cte -- " // errmsg)
 
       call matl_model%alloc_phase_prop(m, 'tm-lame1', lame1(p)%f)
@@ -101,8 +103,10 @@ contains
       ASSERT(allocated(lame2(p)%f))
     end do
 
-    call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density)
-    
+    call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density, ref_dens)
+
+    call compute_initial_state()
+
   end subroutine solid_mechanics_init
 
 
@@ -118,11 +122,11 @@ contains
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
-    call get_vof(this%vof)    
+    call get_vof(this%vof)
 
     call this%sm%step(t, dt, this%vof, this%temperature_cc, stat, errmsg)
     if (stat /= 0) call tls_fatal(errmsg)
-    
+
   end subroutine solid_mechanics_step
 
 
@@ -142,6 +146,22 @@ contains
   end function
 
 
+  subroutine compute_initial_state()
+
+    use zone_module, only: zone
+    use index_partitioning, only: gather_boundary
+
+    integer :: stat
+    character(:), allocatable :: errmsg
+
+    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+    call get_vof(this%vof)
+    call this%sm%compute_initial_state(this%vof, this%temperature_cc, stat, errmsg)
+    if (stat /= 0) call tls_fatal(errmsg)
+
+  end subroutine compute_initial_state
+
   !! PHASE_TABLE routines.
   !! These routines interface with the matl_model to provide volume fractions
   !! and a mapping between the matl_model and the phases solid mechanics cares
@@ -152,7 +172,7 @@ contains
     use material_model_driver, only: matl_model
 
     integer :: m, p
-    
+
     this%nphase = count(.not.matl_model%is_fluid)
     allocate(this%matl_phase(this%nphase))
 

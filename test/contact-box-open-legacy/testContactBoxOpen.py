@@ -7,7 +7,7 @@ import truchas
 
 def run_test(tenv):
     nfail = 0
-    stdout, output = tenv.truchas(4, "contact-box-open.inp")
+    stdout, output = tenv.truchas(4, "contact-box-open-legacy.inp")
     golden = tenv.output("contact-box-open_golden/contact-box-open.h5")
     true_region = output.region(1, 2)
     gap_region_node = output.region_node(3)

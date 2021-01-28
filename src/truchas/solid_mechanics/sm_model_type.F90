@@ -27,24 +27,28 @@ module sm_model_type
     type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference
     type(integration_geometry), public :: ig
     type(sm_bc), public :: bc
+
+    ! expose to the preconditioner
     real(r8), allocatable, public :: rhs(:,:)
+    real(r8), allocatable, public :: lame1_n(:), lame2_n(:), scaling_factor(:)
 
     integer :: nmat
-    real(r8), allocatable :: density_c(:), density_n(:)
+    real(r8) :: max_cell_halfwidth
+    real(r8), allocatable :: density_c(:), density_n(:), reference_density(:)
     real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
-    logical :: first_step = .true.
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
-    real(r8) :: contact_distance, contact_normal_traction, contact_penalty, strain_limit
+    real(r8) :: contact_distance, contact_normal_traction, strain_limit
+    real(r8), public :: contact_penalty
   contains
     procedure :: init
     procedure :: size => model_size
     procedure :: update_properties
     procedure :: compute_residual
     procedure :: compute_forces
-    procedure :: compute_lame_node_parameters
+    procedure :: compute_reference_density
     procedure, nopass :: compute_stress
     procedure, nopass :: tensor_dot
     procedure, private :: compute_total_strain
@@ -52,7 +56,7 @@ module sm_model_type
 
 contains
 
-  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf)
+  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density)
 
     use parameter_list_type
     use truchas_logging_services
@@ -62,6 +66,7 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(in) :: nmat
     type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
+    real(r8), intent(in) :: reference_density(:)
 
     integer :: stat
     character(:), allocatable :: errmsg
@@ -71,6 +76,7 @@ contains
     ASSERT(size(lame1f) == nmat)
     ASSERT(size(lame2f) == nmat)
     ASSERT(size(densityf) == nmat)
+    ASSERT(size(reference_density) == nmat)
 
     this%mesh => mesh
     call this%ig%init(mesh)
@@ -86,10 +92,14 @@ contains
 
     allocate(this%density_c(this%mesh%ncell), this%density_n(this%mesh%nnode_onP), &
         this%delta_temperature(this%mesh%ncell), &
-        this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), this%rhs(3,this%mesh%nnode_onP))
-    this%density_c = 0 ! TODO -- set for first time step
+        this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), &
+        this%lame1_n(this%mesh%nnode_onP), this%lame2_n(this%mesh%nnode_onP), &
+        this%rhs(3,this%mesh%nnode_onP), &
+        this%scaling_factor(this%mesh%nnode_onP))
 
+    this%max_cell_halfwidth = max_cell_halfwidth()
     this%nmat = nmat
+    this%reference_density = reference_density
     call move_alloc(lame1f, this%lame1f)
     call move_alloc(lame2f, this%lame2f)
     call move_alloc(densityf, this%densityf)
@@ -98,7 +108,30 @@ contains
     call this%bc%init(plist, mesh, this%ig, stat, errmsg)
     if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
 
+  contains
+
+    ! compute the maximum cell half-width, used for the
+    ! vector scaling factor applied to the system
+    real(r8) function max_cell_halfwidth()
+      use parallel_communication, only: global_maxval
+      real(r8) :: halfwidth(mesh%ncell_onP)
+      halfwidth = 0.5_r8 * this%mesh%volume(:this%mesh%ncell_onP)**(1.0_r8/3.0_r8)
+      max_cell_halfwidth = global_maxval(halfwidth)
+    end function max_cell_halfwidth
+
   end subroutine init
+
+
+  !! Compute the reference density, based on input volume fractions. This is
+  !! done during initialization.
+  subroutine compute_reference_density(this, vof)
+    class(sm_model), intent(inout) :: this
+    real(r8), intent(in) :: vof(:,:)
+    integer :: j
+    do j = 1, this%mesh%ncell
+      this%density_c(j) = sum(this%reference_density * vof(:,j))
+    end do
+  end subroutine compute_reference_density
 
 
   integer function model_size(this)
@@ -111,6 +144,8 @@ contains
   !! should be called before compute_residual, after which the residual can be
   !! repeatedly computed for any number of different inputs (displacements).
   subroutine update_properties(this, vof, temperature_cc)
+
+    use parallel_communication, only: global_maxval, global_minval
 
     class(sm_model), intent(inout) :: this
     real(r8), intent(in) :: temperature_cc(:), vof(:,:)
@@ -126,7 +161,8 @@ contains
     call start_timer("properties")
 
     do j = 1, this%mesh%ncell
-      density_old = this%density_c(j)
+      !density_old = this%density_c(j)
+      density_old = sum(this%reference_density * vof(:,j))
 
       state(1) = temperature_cc(j)
       this%lame1(j) = 0
@@ -139,20 +175,35 @@ contains
         this%density_c(j) = this%density_c(j) + vof(m,j) * this%densityf(m)%f%eval(state)
       end do
 
-      if (this%density_c(j) /= 0 .and. .not.this%first_step) then
-        dstrain = (density_old / this%density_c(j)) ** (1.0_r8 / 3) - 1
+      if (this%density_c(j) /= 0) then
+        !dstrain = (density_old / this%density_c(j)) ** (1.0_r8 / 3) - 1
+        dstrain = log(density_old / this%density_c(j)) / 3
         thermal_strain(:3) = dstrain
         thermal_strain(4:) = 0
         call compute_stress(this%lame1(j), this%lame2(j), thermal_strain, thermal_stress(:,j))
       else
         thermal_stress(:,j) = 0
+        ! TODO-WARN: set density_c to something? reference?
+        ASSERT(.false.)
       end if
     end do
 
     call cell_to_node(this%mesh, this%density_c, this%density_n)
+    call cell_to_node(this%mesh, this%lame1, this%lame1_n)
+    call cell_to_node(this%mesh, this%lame2, this%lame2_n)
 
-    ! right hand side
+    ! right hand side & scaling factor
     do n = 1, this%mesh%nnode_onP
+      if (this%lame2_n(n) /= 0) then
+        this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
+        !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) / this%ig%volume(n)
+        !this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
+        !this%scaling_factor(n) = 2e3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
+      else
+        this%scaling_factor(n) = 1
+      end if
+      !this%scaling_factor(n) = 1 ! DEBUGGING
+
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
 
         this%rhs(:,n) = this%body_force_density * this%density_n(n) * this%ig%volume(n)
@@ -165,23 +216,15 @@ contains
       end associate
     end do
 
-    this%first_step = .false.
+    !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
+    !this%contact_penalty = global_maxval(this%rhs)
+    this%contact_penalty = 1e3_r8
+    !this%contact_penalty = global_maxval(this%lame2) * this%max_cell_halfwidth
+    !this%contact_penalty = 1
 
     call stop_timer("properties")
 
   end subroutine update_properties
-
-
-  !! Needed for the preconditioner.
-  subroutine compute_lame_node_parameters(this, lame1_n, lame2_n)
-
-    class(sm_model), intent(in) :: this
-    real(r8), intent(out) :: lame1_n(:), lame2_n(:)
-
-    call cell_to_node(this%mesh, this%lame1, lame1_n)
-    call cell_to_node(this%mesh, this%lame2, lame2_n)
-
-  end subroutine compute_lame_node_parameters
 
 
   !! Computes a cell-to-node averaging, weighted by volume It assumes x_cell is
@@ -227,7 +270,7 @@ contains
     real(r8), intent(out) :: r(:,:)
 
     integer :: n, xp, p, j, i, f, xn, d
-    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3), ftot(3,this%mesh%nnode_onP)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) == this%mesh%nnode_onP)
@@ -253,41 +296,35 @@ contains
       end associate
     end do
 
-    call bcs
+    call traction_bcs
+
+    ftot = r
+    do n = 1, this%mesh%nnode_onP
+      r(:,n) = r(:,n) / this%scaling_factor(n)
+    end do
+
     call gap_conditions
+    call displacement_bcs
 
     call stop_timer("residual")
 
   contains
 
-    subroutine bcs()
+    subroutine traction_bcs()
 
-      real(r8) :: x(3)
-
+      ! At traction BCs the stress is defined along the face. Each face has
+      ! traction discretized at the integration points, one for each node. The
+      ! values array provides the equivalent of traction = tensor_dot(stress,
+      ! n) where n is normal of the boundary with magnitude equal to the area
+      ! of this integration region (associated with node and face center, not
+      ! the whole face).
       do d = 1, 3
-        ! At traction BCs the stress is defined along the face. Each face has
-        ! traction discretized at the integration points, one for each node. The
-        ! values array provides the equivalent of traction = tensor_dot(stress,
-        ! n) where n is normal of the boundary with magnitude equal to the area
-        ! of this integration region (associated with node and face center, not
-        ! the whole face).
         call this%bc%traction(d)%compute(t)
         associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value, &
             area => this%bc%traction(d)%factor)
           do i = 1, size(nodes)
             n = nodes(i)
             r(d,n) = r(d,n) + values(i) * area(i)
-          end do
-        end associate
-
-        ! Displacement BCs transform the matrix to a diagonal and the right hand
-        ! side to the desired solution.
-        call this%bc%displacement(d)%compute(t)
-        associate (nodes => this%bc%displacement(d)%index, &
-            values => this%bc%displacement(d)%value)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = displ(d,n) - values(i)
           end do
         end associate
       end do
@@ -304,28 +341,7 @@ contains
         end do
       end associate
 
-      ! Normal displacement BCs enforce a given displacement in the normal
-      ! direction, and apply zerotraction in tangential directions. To do this
-      ! we must rotate the residual components components to a surface-aligned
-      ! coordinate space, and set the normal component of the residual to the
-      ! appropriate value. The node normal vector is computed from an
-      ! area-weighted average of the surrounding integration points. After
-      ! setting the appropriate coordinate-aligned value, it's important to
-      ! rotate back into the usual coordinate space, for consistency with the
-      ! preconditioner.
-      call this%bc%displacementn%compute(t)
-      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
-          rot => this%bc%displacementn%rotation_matrix)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          x = matmul(rot(:,:,i), displ(:,n))
-          r(:,n) = matmul(rot(:,:,i), r(:,n))
-          r(3,n) = x(3) - values(i)
-          r(:,n) = matmul(transpose(rot(:,:,i)), r(:,n))
-        end do
-      end associate
-
-    end subroutine bcs
+    end subroutine traction_bcs
 
 
     ! Normal displacement gap condition. Enforces a given separation between two
@@ -335,7 +351,7 @@ contains
       integer :: n1, n2
       real(r8) :: x1(3), x2(3), stress1(3), stress2(3), s, tn, l
 
-      call this%bc%gap_contact%compute(t, displ, r, r + this%rhs)
+      call this%bc%gap_contact%compute(t, displ, ftot, this%scaling_factor)
 
       associate (link => this%bc%gap_contact%index, values => this%bc%gap_contact%value, &
           rot => this%bc%gap_contact%rotation_matrix)
@@ -397,6 +413,46 @@ contains
 
     end subroutine gap_conditions
 
+    subroutine displacement_bcs()
+
+      real(r8) :: displn
+
+      ! Displacement BCs transform the matrix to a diagonal and the right hand
+      ! side to the desired solution.
+      do d = 1, 3
+        call this%bc%displacement(d)%compute(t)
+        associate (nodes => this%bc%displacement(d)%index, &
+            values => this%bc%displacement(d)%value)
+          do i = 1, size(nodes)
+            n = nodes(i)
+            r(d,n) = this%contact_penalty * (displ(d,n) - values(i))
+          end do
+        end associate
+      end do
+
+      ! Normal displacement BCs enforce a given displacement in the normal
+      ! direction, and apply zerotraction in tangential directions. To do this
+      ! we must rotate the residual components components to a surface-aligned
+      ! coordinate space, and set the normal component of the residual to the
+      ! appropriate value. The node normal vector is computed from an
+      ! area-weighted average of the surrounding integration points. After
+      ! setting the appropriate coordinate-aligned value, it's important to
+      ! rotate back into the usual coordinate space, for consistency with the
+      ! preconditioner.
+      call this%bc%displacementn%compute(t)
+      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
+          rot => this%bc%displacementn%rotation_matrix, &
+          normal => this%bc%displacementn%rotation_matrix(3,:,:))
+        do i = 1, size(nodes)
+          n = nodes(i)
+          displn = dot_product(displ(:,n), normal(:,i))
+          r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
+          r(:,n) = r(:,n) - this%contact_penalty * (displn - values(i)) * normal(:,i)
+        end do
+      end associate
+
+    end subroutine displacement_bcs
+
   end subroutine compute_residual
 
 
@@ -430,19 +486,17 @@ contains
           lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
         end do
 
-        r(:,n) = lhs !- this%rhs(:,n)
+        r(:,n) = lhs - this%rhs(:,n)
       end associate
     end do
 
-    call bcs
+    call traction_bcs
 
     call stop_timer("residual")
 
   contains
 
-    subroutine bcs()
-
-      real(r8) :: x(3)
+    subroutine traction_bcs()
 
       do d = 1, 3
         ! At traction BCs the stress is defined along the face. Each face has
@@ -459,17 +513,6 @@ contains
             r(d,n) = r(d,n) + values(i) * area(i)
           end do
         end associate
-
-        ! Displacement BCs transform the matrix to a diagonal and the right hand
-        ! side to the desired solution.
-        call this%bc%displacement(d)%compute(t)
-        associate (nodes => this%bc%displacement(d)%index, &
-            values => this%bc%displacement(d)%value)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = displ(d,n) - values(i)
-          end do
-        end associate
       end do
 
       ! Normal traction BCs apply traction in the normal direction, but zero
@@ -484,28 +527,7 @@ contains
         end do
       end associate
 
-      ! Normal displacement BCs enforce a given displacement in the normal
-      ! direction, and apply zerotraction in tangential directions. To do this
-      ! we must rotate the residual components components to a surface-aligned
-      ! coordinate space, and set the normal component of the residual to the
-      ! appropriate value. The node normal vector is computed from an
-      ! area-weighted average of the surrounding integration points. After
-      ! setting the appropriate coordinate-aligned value, it's important to
-      ! rotate back into the usual coordinate space, for consistency with the
-      ! preconditioner.
-      call this%bc%displacementn%compute(t)
-      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
-          rot => this%bc%displacementn%rotation_matrix)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          x = matmul(rot(:,:,i), displ(:,n))
-          r(:,n) = matmul(rot(:,:,i), r(:,n))
-          r(3,n) = x(3) - values(i)
-          r(:,n) = matmul(transpose(rot(:,:,i)), r(:,n))
-        end do
-      end associate
-
-    end subroutine bcs
+    end subroutine traction_bcs
 
   end subroutine compute_forces
 

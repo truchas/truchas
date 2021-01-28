@@ -105,6 +105,9 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:), du(:)
     real(r8) :: l
+    ! du_norm = global_maxval(abs(du))
+    ! l = global_maxval(abs(u))
+    ! if (l > 0) du_norm = du_norm / l
     du_norm = 1
     l = global_maxval(abs(u))
     if (l > 0) du_norm = global_maxval(abs(du)) / l

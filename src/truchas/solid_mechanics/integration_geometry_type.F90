@@ -351,12 +351,12 @@ contains
         !j = modulo(i + offset - 1, fsize) + 1
         lnode(1,i) = mesh%fnode(mesh%xfnode(lface(1))+i-1)
         lnode(2,i) = mesh%fnode(mesh%xfnode(lface(2))+j-1)
-        j = merge(j-1, fsize, j>1) 
+        j = merge(j-1, fsize, j>1)
         ASSERT(all(mesh%x(:,lnode(1,i)) == mesh%x(:,lnode(2,i))))
       end do
 
     end function face_lnode
-    
+
 
   end subroutine compute_link_nodes
 

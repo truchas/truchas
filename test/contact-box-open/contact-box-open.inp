@@ -46,14 +46,7 @@
 
 &BODY
   surface_name = 'from mesh file'
-  mesh_material_number = 1
-  material_name = 'aluminum'
-  temperature = 308.0
-/
-
-&BODY
-  surface_name = 'from mesh file'
-  mesh_material_number = 2
+  mesh_material_number = 1, 2
   material_name = 'aluminum'
   temperature = 308.0
 /
@@ -99,8 +92,8 @@
   name = 'gap interface'
   face_set_ids = 10
   type = 'gap-contact'
-  displacement = 1.0e-7
-  traction = 1.0e4
+  ! displacement = 1.0e-7
+  ! traction = 1.0e4
   !contact_penalty = 1.0e3
 /
 

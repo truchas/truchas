@@ -1,0 +1,122 @@
+Applies a linear temperature gradient along the x-direction, and computes the
+resulting stress, strain, and displacement.
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  y_axis%coarse_grid = 0.0, 1.0
+  z_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals   = 4
+  y_axis%intervals   = 1
+  z_axis%intervals   = 1
+  !rotation_angles = 0., 0., 45.
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0
+  output_dt = 1.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+  heat_transport = .true.
+  legacy_solid_mechanics = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol     = 0.0
+  rel_temp_tol     = 1.0e-4
+  abs_enthalpy_tol = 0.0
+  rel_enthalpy_tol = 1.0e-4
+/
+
+&LEGACY_SOLID_MECHANICS
+  maximum_iterations = 500
+/
+
+&NUMERICS
+  dt_init = 1.0
+  dt_max = 1.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature_function = 'applied temperature profile'
+/
+
+&FUNCTION
+  name = 'applied temperature profile'
+  type = 'polynomial'
+  poly_coefficients = 1.0
+  poly_exponents(1,:) = 1
+/
+
+&THERMAL_BC
+  name = 'left dirichlet'
+  type = 'temperature'
+  face_set_ids = 1
+  temp = 1.0
+/
+
+&THERMAL_BC
+  name = 'right dirichlet'
+  type = 'temperature'
+  face_set_ids = 2
+  temp = 2.0
+/
+
+&THERMAL_BC
+  name = 'symmetry planes'
+  type = 'flux'
+  face_set_ids = 3, 4, 5, 6
+  flux = 0.0
+/
+
+&BC
+  bc_name = 'immobile left x'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'x-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile left y'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'y-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile left z'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'z-displacement'
+  bc_value = 0.0
+/
+
+! &SM_BC
+!   name = 'symmetry planes'
+!   face_set_ids = 3, 5, 6
+!   type = 'displacement-n'
+!   displacement = 0.0
+! /
+
+define the material properties (aluminum, SI units)
+Elastic constants (stresses) in MPa to make test checking easier
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
+  tm_ref_density = 1.0
+  tm_ref_temp = 1.0
+  tm_linear_cte = 1.0
+  tm_lame1 = 1.0
+  tm_lame2 = 1.0
+/

@@ -27,7 +27,7 @@ module sm_ds_precon_type
     type(sm_model), pointer, public :: model => null() ! unowned reference
     type(sm_bc), pointer, public :: bc => null() ! unowned reference
 
-    real(r8), allocatable :: diag(:), d1(:), d2(:), lame1_n(:), lame2_n(:)
+    real(r8), allocatable :: diag(:), d1(:), d2(:)
     real(r8) :: omega
     integer :: niter
   contains
@@ -49,13 +49,10 @@ contains
     this%model => model
     this%bc => model%bc
     allocate(this%diag(model%size()))
-    allocate(this%lame1_n(model%mesh%nnode_onP), this%lame2_n(model%mesh%nnode_onP))
     call params%get('num-iter', this%niter, default=1)
     call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
 
     this%diag = 0
-    this%lame1_n = 0
-    this%lame2_n = 0
 
     call compute_diagonals
 
@@ -89,13 +86,12 @@ contains
 
               ! This is the local ID for node n according to the cell associated with p
               xnc = ig%xpxn(xp)
-
               call compute_strain_contribution(this, p, xnc, displ, strain)
+
               call this%model%compute_stress(1.0_r8, 0.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
               this%d1(j) = this%d1(j) + s * lhs(d)
 
-              call compute_strain_contribution(this, p, xnc, displ, strain)
               call this%model%compute_stress(0.0_r8, 1.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
               this%d2(j) = this%d2(j) + s * lhs(d)
@@ -150,23 +146,26 @@ contains
 
     call start_timer("precon-compute")
 
-    call this%model%compute_lame_node_parameters(this%lame1_n, this%lame2_n)
-
     do n = 1, this%model%mesh%nnode_onP
-      if (this%lame1_n(n) < 1e-6_r8 .and. this%lame2_n(n) < 1e-6_r8) then
+      if (this%model%lame1_n(n) < 1e-6_r8 .and. this%model%lame2_n(n) < 1e-6_r8) then
         ! Set displacements to zero for empty or fluid filled cells
         j = 3*(n-1) + 1
         this%diag(j:j+2) = 1
       else
         do d = 1, 3
           j = 3*(n-1) + d
-          this%diag(j) = (this%lame1_n(n) * this%d1(j) + this%lame2_n(n) * this%d2(j)) ! / cscale(d,n)
+          this%diag(j) = (this%model%lame1_n(n) * this%d1(j) + this%model%lame2_n(n) * this%d2(j))
         end do
       end if
       ASSERT(this%diag(j) /= 0)
     end do
 
-    ! TODO: Enforce constraints
+    do n = 1, this%model%mesh%nnode_onP
+      j = 3*(n-1) + 1
+      this%diag(j:j+2) = this%diag(j:j+2) / this%model%scaling_factor(n)
+    end do
+
+    call gap_conditions
 
     ! Dirichlet BCs
     do d = 1, 3
@@ -175,7 +174,7 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           j = 3*(n-1) + d
-          this%diag(j) = 1
+          this%diag(j) = this%model%contact_penalty
         end do
       end associate
     end do
@@ -185,26 +184,31 @@ contains
     ! displacement. So we want the application of the preconditioner (inverse of
     ! diagonal) to result in this difference in that rotated reverence frame.
     call this%bc%displacementn%compute(t)
-    associate (nodes => this%bc%displacementn%index, rot => this%bc%displacementn%rotation_matrix)
+    associate (nodes => this%bc%displacementn%index, &
+        rot => this%bc%displacementn%rotation_matrix, &
+        normal => this%bc%displacementn%rotation_matrix(3,:,:))
       do i = 1, size(nodes)
         n = nodes(i)
         associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
-          rn = 1 / rn
-          rn = matmul(rot(:,:,i), rn)
-          rn(3) = 1
-          rn = matmul(transpose(rot(:,:,i)), rn)
-          rn = 1 / rn
+          rn = rn - rn * normal(:,i)**2
+          rn = rn - this%model%contact_penalty * normal(:,i)**2
         end associate
       end do
     end associate
 
-    associate (link => this%bc%gap_contact%index, dvalues => this%bc%gap_contact%dvalue)
+    call stop_timer("precon-compute")
+
+  contains
+
+    subroutine gap_conditions()
+
+      associate (link => this%bc%gap_contact%index, dvalues => this%bc%gap_contact%dvalue)
 
         if (this%bc%gap_contact%enabled) then
           ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
           !            everything working in serial.
           call this%model%compute_forces(t, displ, force)
-          call this%bc%gap_contact%compute_deriv(t, displ, force-this%model%rhs, force, this%diag)
+          call this%bc%gap_contact%compute_deriv(t, displ, force, this%model%scaling_factor, this%diag)
 #ifndef NDEBUG
           do i = 1, size(link, dim=2)
             block
@@ -237,7 +241,7 @@ contains
               ! stress2 = matmul(rot(:,:,i), r(:,n2)) !+ this%rhs(:,n2)
               ! x1 = matmul(rot(:,:,i), displ(:,n1))
               ! x2 = matmul(rot(:,:,i), displ(:,n2))
-              
+
               ! s = x1(3) - x2(3)
               ! tn = stress1(3)
               ! l = this%bc%gap_contact%contact_factor(s, tn)
@@ -275,7 +279,7 @@ contains
 
       end associate
 
-    call stop_timer("precon-compute")
+    end subroutine gap_conditions
 
   end subroutine compute
 
@@ -292,10 +296,11 @@ contains
     call start_timer("precon-apply")
 
     do j = 1, size(this%diag)
-      ! f(j) = f(j) / diag(j)
+      !f(j) = f(j) / this%diag(j)
       d = f(j) / this%diag(j)
       do i = 1, this%niter
         f(j) = f(j) + this%omega*(d-f(j))
+        !f(j) = (f(j) - this%omega*f(j)) + this%omega*d
       end do
     end do
 
