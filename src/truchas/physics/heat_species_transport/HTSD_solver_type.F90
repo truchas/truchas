@@ -55,38 +55,25 @@ module HTSD_solver_type
   public :: HTSD_solver_last_step_size
   public :: HTSD_solver_last_time
    
-  type, public :: HTSD_solver_params
-    type(HTSD_norm_params) :: norm_params
-    type(HTSD_precon_params) :: precon_params
-    real(r8) :: hmin
-    integer :: max_step_tries
-    !integer :: step_method
-    !! Destined for the BDF2 DAE integrator
-    logical :: verbose_stepping
-    integer :: output_unit
-    integer :: max_nlk_itr, max_nlk_vec
-    real(r8) :: nlk_tol, nlk_vec_tol
-    integer :: pc_freq
-  end type HTSD_solver_params
-  public :: HT_precon_params, SD_precon_params
-  public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
-  
 contains
 
   subroutine HTSD_solver_init (this, mmf, model, params)
     type(HTSD_solver), intent(out), target :: this
     type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
-    type(HTSD_solver_params), intent(in) :: params
-    integer :: n
+    type(parameter_list), intent(inout) :: params
+    integer :: n, output_unit
     type(parameter_list), pointer :: plist
+    logical :: verbose_stepping
     this%mmf   => mmf
     this%model => model
     this%mesh  => model%mesh
     allocate(this%norm)
-    call HTSD_norm_init (this%norm, model, params%norm_params)
+    plist => params%sublist('norm')
+    call HTSD_norm_init (this%norm, model, plist)
     allocate(this%precon)
-    call HTSD_precon_init (this%precon, model, params%precon_params)
+    plist => params%sublist('precon')
+    call HTSD_precon_init (this%precon, model, plist)
     n = HTSD_model_size(model)
     allocate(this%u(n))
 
@@ -95,29 +82,33 @@ contains
     block
       integer :: stat
       character(:), allocatable :: errmsg
-      type(parameter_list) :: plist
-      call plist%set('nlk-max-iter', params%max_nlk_itr)
-      call plist%set('nlk-tol', params%nlk_tol)
-      call plist%set('nlk-max-vec', params%max_nlk_vec)
-      call plist%set('nlk-vec-tol', params%nlk_vec_tol)
-      call plist%set('pc-freq', params%pc_freq)
-      call this%integ%init(this%integ_model, plist, stat, errmsg)
+      call this%integ%init(this%integ_model, params, stat, errmsg)
       INSIST(stat == 0)
     end block
 
-    if (params%verbose_stepping) call this%integ%set_verbose_stepping(params%output_unit)
-    this%hmin = params%hmin
-    this%max_step_tries = params%max_step_tries
+    call params%get('verbose-stepping', verbose_stepping)
+    if (verbose_stepping) then
+      call params%get('output-unit', output_unit)
+      call this%integ%set_verbose_stepping(output_unit)
+    end if
+    call params%get('hmin', this%hmin)
+    call params%get('max-step-tries', this%max_step_tries)
     !this%step_method = params%step_method
     !! Grab parameters for HTSD_init_cond%init
     allocate(this%ic_params)
     if (associated(model%ht)) then
-      call this%ic_params%set ('atol-temp', 0.01_r8 * params%norm_params%abs_T_tol)
-      call this%ic_params%set ('rtol-temp', 0.01_r8 * params%norm_params%rel_T_tol)
+      block
+      real(r8) :: rval
+      plist => params%sublist('norm')
+      call plist%get('abs-t-tol', rval)
+      call this%ic_params%set ('atol-temp', 0.01_r8 * rval)
+      call plist%get('rel-t-tol', rval)
+      call this%ic_params%set ('rtol-temp', 0.01_r8 * rval)
       call this%ic_params%set ('max-iter', 50)
       call this%ic_params%set ('method', 'SSOR')
       plist => this%ic_params%sublist('params')
       call plist%set ('num-sweeps', 1)
+      end block
     end if
   end subroutine HTSD_solver_init
   
@@ -128,10 +119,7 @@ contains
       call HTSD_precon_delete (this%precon)
       deallocate(this%precon)
     end if
-    if (associated(this%norm)) then
-      call HTSD_norm_delete (this%norm)
-      deallocate(this%norm)
-    end if
+    if (associated(this%norm)) deallocate(this%norm)
     !! The solver owns the void cell and face mask components of the model.
     if (associated(this%model%void_cell)) deallocate(this%model%void_cell)
     if (associated(this%model%void_face)) deallocate(this%model%void_face)

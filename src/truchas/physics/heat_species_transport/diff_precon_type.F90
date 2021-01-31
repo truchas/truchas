@@ -105,57 +105,35 @@ module diff_precon_type
   public :: diff_precon_init, diff_precon_compute, diff_precon_delete
   public :: diff_precon_apply, diff_precon_matrix
 
-  type, public :: ssor_precon_params
-    integer  :: num_iter = 1
-    real(r8) :: omega = 1.0_r8
-  end type ssor_precon_params
-
-  type, public :: boomer_amg_precon_params
-    integer  :: max_iter = 1      ! number of cycles -- using as a preconditioner
-    integer  :: print_level = 0   ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
-    integer  :: debug_level = 0   ! OFF=0, ON=1
-    integer  :: logging_level = 0 ! OFF=0, ON=1, >1=residual available from hypre
-  end type boomer_amg_precon_params
-
-  type, public :: diff_precon_params
-    character(16) :: solver
-    type(ssor_precon_params) :: ssor_params
-    type(boomer_amg_precon_params) :: bamg_params
-  end type diff_precon_params
-
 contains
 
   subroutine diff_precon_init (this, dm, params)
 
     use pcsr_precon_ssor_type
     use pcsr_precon_boomer_type
+    use parameter_list_type
 
     type(diff_precon), intent(out) :: this
     type(dist_diff_matrix), pointer :: dm
-    type(diff_precon_params), intent(in) :: params
+    type(parameter_list) :: params
 
     type(parameter_list), pointer :: precon_params
+    character(:), allocatable :: method
 
     this%dm => dm ! take ownership
     allocate(this%Sff)
     call this%Sff%init (mold=dm%a22)
     !! Process the parameters.
-    select case (params%solver)
+    call params%get('method', method)
+    select case (method)
     case ('SSOR')
       allocate(pcsr_precon_ssor :: this%Sff_precon)
-      allocate(precon_params)
-      call precon_params%set ('num-sweeps', params%ssor_params%num_iter)
-      call precon_params%set ('omega', params%ssor_params%omega)
     case ('BoomerAMG')
       allocate(pcsr_precon_boomer :: this%Sff_precon)
-      allocate(precon_params)
-      call precon_params%set ('num-cycles', params%bamg_params%max_iter)
-      call precon_params%set ('print-level', params%bamg_params%print_level)
-      call precon_params%set ('debug-level', params%bamg_params%debug_level)
-      call precon_params%set ('logging-level', params%bamg_params%logging_level)
     case default
       INSIST(.false.)
     end select
+    precon_params => params%sublist('params')
     call this%Sff_precon%init (this%Sff, precon_params)
     nullify(dm) ! object takes ownership of the matrix
 

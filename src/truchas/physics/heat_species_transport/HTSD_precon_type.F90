@@ -37,19 +37,6 @@ module HTSD_precon_type
   public :: HTSD_precon_compute
   public :: HTSD_precon_apply
 
-  type, public :: HT_precon_params
-    type(diff_precon_params) :: hcprecon_params
-    character(len=16), pointer :: vfr_precon_coupling(:) => null()
-  end type
-  type, public :: SD_precon_params
-    type(diff_precon_params) :: precon_params
-  end type SD_precon_params
-  type, public :: HTSD_precon_params
-    type(HT_precon_params) :: htprecon_params
-    type(SD_precon_params) :: sdprecon_params
-  end type HTSD_precon_params
-  public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
-
   !! Methods of coupling heat conduction and radiosity preconditioning.
   integer, parameter :: VFR_JAC = 1 ! Jacobi (radiosity and conduction decoupled)
   integer, parameter :: VFR_FGS = 2 ! Forward Gauss-Seidel (radiosity, then conduction)
@@ -60,12 +47,15 @@ contains
 
   subroutine HTSD_precon_init (this, model, params)
 
+    use parameter_list_type
+
     type(HTSD_precon), intent(out) :: this
     type(HTSD_model), intent(in), target :: model
-    type(HTSD_precon_params), intent(in) :: params
+    type(parameter_list), intent(inout) :: params
 
     integer :: n, j
     type(dist_diff_matrix), pointer :: matrix, mold_matrix => null()
+    character(:), allocatable :: string_array(:)
 
     this%model => model
     this%mesh  => model%mesh
@@ -82,15 +72,15 @@ contains
         mold_matrix => matrix
       end if
       allocate(this%hcprecon)
-      call diff_precon_init (this%hcprecon, matrix, params%htprecon_params%hcprecon_params)
+      call diff_precon_init (this%hcprecon, matrix, params)
       !! Initialize the heat equation/view factor radiation
       if (associated(model%ht%vf_rad_prob)) then
         n = size(model%ht%vf_rad_prob)
-        INSIST(associated(params%htprecon_params%vfr_precon_coupling))
-        INSIST(size(params%htprecon_params%vfr_precon_coupling) == n)
         allocate(this%vfr_precon_coupling(n))
+        call params%get('vfr-precon-coupling', string_array)
+        INSIST(size(string_array) == n)
         do j = 1, n
-          select case (params%htprecon_params%vfr_precon_coupling(j))
+          select case (string_array(j))
           case ('JACOBI')
             this%vfr_precon_coupling(j) = VFR_JAC
           case ('FORWARD GS')
@@ -116,7 +106,7 @@ contains
           call matrix%init (model%disc)
           mold_matrix => matrix
         end if
-        call diff_precon_init (this%sdprecon(n), matrix, params%sdprecon_params%precon_params)
+        call diff_precon_init (this%sdprecon(n), matrix, params)
         if (associated(model%sd(n)%soret)) this%have_soret_coupling = .true.
       end do
       this%have_soret_coupling = (associated(model%ht) .and. this%have_soret_coupling)

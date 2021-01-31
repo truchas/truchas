@@ -23,7 +23,7 @@ module FHT_precon_type
   type, public :: FHT_precon
     type(FHT_model), pointer :: model => null()
     type(unstr_mesh), pointer :: mesh => null()
-    integer, pointer :: vfr_precon_coupling(:) => null()
+    integer, allocatable :: vfr_precon_coupling(:)
     type(dist_diff_matrix), pointer :: matrix => null()
     type(diff_precon) :: precon
   end type FHT_precon
@@ -32,12 +32,6 @@ module FHT_precon_type
   
   public :: FHT_precon_init, FHT_precon_delete
   public :: FHT_precon_compute, FHT_precon_apply
-  
-  type, public :: FHT_precon_params
-    type(diff_precon_params) :: HC_precon_params
-    character(len=16), pointer :: vfr_precon_coupling(:) => null()
-  end type
-  public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
   
   !! Methods of coupling heat conduction and radiosity preconditioning.
   integer, parameter :: VFR_JAC = 1 ! Jacobi (radiosity and conduction decoupled)
@@ -49,11 +43,15 @@ contains
 
   subroutine FHT_precon_init (this, model, params)
   
+    use parameter_list_type
+
     type(FHT_precon), intent(out) :: this
     type(FHT_model), intent(in), target :: model
-    type(FHT_precon_params), intent(in) :: params
+    type(parameter_list) :: params
     
     integer :: j, n
+    type(parameter_list), pointer :: plist
+    character(:), allocatable :: string_array(:)
 
     this%model => model
     this%mesh => model%mesh
@@ -61,16 +59,16 @@ contains
     !! Create the preconditioner for the heat equation.
     allocate(this%matrix)
     call this%matrix%init (model%disc)
-    call diff_precon_init (this%precon, this%matrix, params%HC_precon_params)
+    call diff_precon_init (this%precon, this%matrix, params)
     
     !! Initialize the heat equation/view factor radiation
     if (associated(model%vf_rad_prob)) then
       n = size(model%vf_rad_prob)
-      INSIST(associated(params%vfr_precon_coupling))
-      INSIST(size(params%vfr_precon_coupling) == n)
       allocate(this%vfr_precon_coupling(n))
+      call params%get('vfr-precon-coupling', string_array)
+      INSIST(size(string_array) == n)
       do j = 1, n
-        select case (params%vfr_precon_coupling(j))
+        select case (string_array(j))
         case ('JACOBI')
           this%vfr_precon_coupling(j) = VFR_JAC
         case ('FORWARD GS')
@@ -91,7 +89,6 @@ contains
     type(FHT_precon), intent(inout) :: this
     if (associated(this%matrix)) deallocate(this%matrix)
     call diff_precon_delete (this%precon)
-    if (associated(this%vfr_precon_coupling)) deallocate(this%vfr_precon_coupling)
   end subroutine FHT_precon_delete
 
   subroutine FHT_precon_apply (this, t, u, f)

@@ -14,7 +14,7 @@ module HTSD_norm_type
   use parallel_communication
   implicit none
   private
-  
+
   type, public :: HTSD_norm
     private
     type(HTSD_model), pointer :: model
@@ -26,53 +26,45 @@ module HTSD_norm_type
     real(r8) :: abs_H_tol
     real(r8) :: rel_H_tol
     !! Species diffusion tolerances
-    real(r8), pointer :: abs_C_tol(:) => null()
-    real(r8), pointer :: rel_C_tol(:) => null()
+    real(r8), allocatable :: abs_C_tol(:)
+    real(r8), allocatable :: rel_C_tol(:)
   end type HTSD_norm
-  
+
   public :: HTSD_norm_init
-  public :: HTSD_norm_delete
   public :: HTSD_norm_compute
-  
-  type, public :: HTSD_norm_params
-    real(r8) :: abs_T_tol
-    real(r8) :: rel_T_tol
-    real(r8) :: abs_H_tol
-    real(r8) :: rel_H_tol
-    real(r8), pointer :: abs_C_tol(:) => null()
-    real(r8), pointer :: rel_C_tol(:) => null()
-    logical  :: verbose
-    integer  :: unit
-  end type HTSD_norm_params
-  
+
 contains
 
   subroutine HTSD_norm_init (this, model, params)
+
+    use parameter_list_type
     use parallel_communication, only: is_IOP
+
     type(HTSD_norm), intent(out) :: this
     type(HTSD_model), intent(in), target :: model
-    type(HTSD_norm_params), intent(in) :: params
+    type(parameter_list), intent(inout) :: params
+    integer :: stat
+    character(:), allocatable :: errmsg
     this%model => model
     if (associated(model%ht)) then
-      INSIST(valid_tol(params%abs_T_tol, params%rel_T_tol))
-      this%abs_T_tol = params%abs_T_tol
-      this%rel_T_tol = params%rel_T_tol
-      INSIST(valid_tol(params%abs_H_tol, params%rel_H_tol))
-      this%abs_H_tol = params%abs_H_tol
-      this%rel_H_tol = params%rel_H_tol
+      call params%get('abs-t-tol', this%abs_T_tol, stat=stat, errmsg=errmsg)
+      if (stat /= 0) print *, params%name() // ': ' // errmsg
+      call params%get('rel-t-tol', this%rel_T_tol)
+      INSIST(valid_tol(this%abs_T_tol, this%rel_T_tol))
+      call params%get('abs-h-tol', this%abs_h_tol)
+      call params%get('rel-h-tol', this%rel_h_tol)
+      INSIST(valid_tol(this%abs_H_tol, this%rel_H_tol))
     end if
     if (associated(model%sd)) then
-      allocate(this%abs_C_tol(model%num_comp), this%rel_C_tol(model%num_comp))
-      INSIST(associated(params%abs_C_tol))
-      INSIST(size(params%abs_C_tol)==model%num_comp)
-      INSIST(associated(params%rel_C_tol))
-      INSIST(size(params%rel_C_tol)==model%num_comp)
-      INSIST(all(valid_tol(params%abs_C_tol, params%rel_C_tol)))
-      this%abs_C_tol = params%abs_C_tol
-      this%rel_C_tol = params%rel_C_tol
+      call params%get('abs-c-tol', this%abs_c_tol)
+      call params%get('rel-c-tol', this%rel_c_tol)
+      INSIST(size(this%abs_C_tol)==model%num_comp)
+      INSIST(size(this%rel_C_tol)==model%num_comp)
+      INSIST(all(valid_tol(this%abs_C_tol, this%rel_C_tol)))
     end if
-    this%verbose = (is_IOP .and. params%verbose)
-    this%unit = params%unit
+    call params%get('verbose', this%verbose)
+    this%verbose = (is_IOP .and. this%verbose)
+    call params%get('unit', this%unit, default=-1)
   contains
     elemental logical function valid_tol (abs_tol, rel_tol)
       real(r8), intent(in) :: abs_tol, rel_tol
@@ -80,13 +72,7 @@ contains
                   ((abs_tol > 0.0_r8 .or. rel_tol > 0.0_r8))
     end function valid_tol
   end subroutine HTSD_norm_init
-  
-  subroutine HTSD_norm_delete (this)
-    type(HTSD_norm), intent(inout) :: this
-    if (associated(this%abs_C_tol)) deallocate(this%abs_C_tol)
-    if (associated(this%rel_C_tol)) deallocate(this%rel_C_tol)
-  end subroutine HTSD_norm_delete
-  
+
   subroutine HTSD_norm_compute (this, t, u, du, du_norm)
 
 #ifdef G95_COMPILER_WORKAROUND
@@ -97,16 +83,16 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in), target :: u(:), du(:)
     real(r8), intent(out) :: du_norm
-    
+
     integer :: n
     real(r8) :: ht_du_norm, sd_du_norm, qerror
     real(r8), pointer :: useg(:), duseg(:), qrad(:), temp(:)
     integer, pointer :: faces(:)
     real(r8), allocatable :: res(:), rhs(:)
-    
+
     ASSERT(size(u) == size(du))
     ASSERT(size(u) == HTSD_model_size(this%model))
-    
+
     if (associated(this%model%ht)) then
       ht_du_norm = 0.0_r8
       !! Cell temperature delta norm.
@@ -147,7 +133,7 @@ contains
     else
       ht_du_norm = 0.0_r8
     end if
-    
+
     if (associated(this%model%sd)) then
       sd_du_norm = 0.0_r8
       do n = 1, this%model%num_comp
@@ -164,11 +150,11 @@ contains
     else
       sd_du_norm = 0.0_r8
     end if
-    
+
     du_norm = max(ht_du_norm, sd_du_norm)
-    
+
   contains
-  
+
     real(r8) function maxerr (u, du, atol, rtol, void)
       real(r8), intent(in) :: u(:), du(:), atol, rtol
       logical, pointer :: void(:)
@@ -187,4 +173,4 @@ contains
 
   end subroutine HTSD_norm_compute
 
-end module HTSD_norm_type  
+end module HTSD_norm_type

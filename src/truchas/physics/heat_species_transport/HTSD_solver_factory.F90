@@ -8,6 +8,7 @@
 
 module HTSD_solver_factory
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HTSD_model_type
   use HTSD_solver_type
   use matl_mesh_func_type
@@ -33,79 +34,79 @@ contains
     type(HTSD_solver), pointer :: solver
     
     integer :: j, n, lun
-    type(HTSD_solver_params) :: params
-    !character(len=31), allocatable :: encl_name(:)
-    type(diff_precon_params) :: precon_params
+    type(parameter_list) :: params
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
     character(:), allocatable :: string
+    character(16), allocatable :: vfr_precon_coupling(:)
+    real(r8), allocatable :: rad_tol(:)
     
     stat = 0
     errmsg = ''
 
     !! BDF2 control parameters
-    params%hmin = hmin
-    params%max_step_tries = max_step_tries
-    params%verbose_stepping = verbose_stepping
-    params%pc_freq = pc_freq
+    call params%set('hmin', hmin)
+    call params%set('max-step-tries', max_step_tries)
+    call params%set('verbose-stepping', verbose_stepping)
+    call params%set('pc-freq', pc_freq)
     if (verbose_stepping) then
       lun = -1
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
-      params%output_unit = lun
+      call params%set('output-unit', lun)
     end if
     !! BDF2 nonlinear solver parameters
-    params%max_nlk_itr = max_nlk_itr
-    params%nlk_tol = nlk_tol
-    params%max_nlk_vec = max_nlk_vec
-    params%nlk_vec_tol = nlk_vec_tol
+    call params%set('nlk-max-iter', max_nlk_itr)
+    call params%set('nlk-tol', nlk_tol)
+    call params%set('nlk-max-vec', max_nlk_vec)
+    call params%set('nlk-vec-tol', nlk_vec_tol)
     !! BDF2 error norm parameters
+    plist => params%sublist('norm')
     if (associated(model%ht)) then
-      params%norm_params%abs_T_tol = abs_temp_tol
-      params%norm_params%rel_T_tol = rel_temp_tol
-      params%norm_params%abs_H_tol = abs_enthalpy_tol
-      params%norm_params%rel_H_tol = rel_enthalpy_tol
+      call plist%set('abs-t-tol', abs_temp_tol)
+      call plist%set('rel-t-tol', rel_temp_tol)
+      call plist%set('abs-h-tol', abs_enthalpy_tol)
+      call plist%set('rel-h-tol', rel_enthalpy_tol)
     end if
     if (associated(model%sd)) then
-      allocate(params%norm_params%abs_C_tol(model%num_comp))
-      params%norm_params%abs_C_tol = abs_conc_tol
-      allocate(params%norm_params%rel_C_tol(model%num_comp))
-      params%norm_params%rel_C_tol = rel_conc_tol
+      call plist%set('abs-c-tol', spread(abs_conc_tol, dim=1, ncopies=model%num_comp))
+      call plist%set('rel-c-tol', spread(rel_conc_tol, dim=1, ncopies=model%num_comp))
     end if
-    params%norm_params%verbose = verbose_stepping
-    if (verbose_stepping) params%norm_params%unit = lun ! defined above
+    call plist%set('verbose', verbose_stepping)
+    if (verbose_stepping) call plist%set('unit', lun) ! defined above
     !! BDF2 nonlinear solver precon parameters.
     !! We use the same configuration for each of the diffusion equations.
+    plist => params%sublist('precon')
     select case (ds_nlk_pc)
     case (DS_NLK_PC_SSOR)
-      precon_params%solver = 'SSOR'
-      precon_params%ssor_params%num_iter = pc_ssor_sweeps
-      precon_params%ssor_params%omega = pc_ssor_relax
+      call plist%set('method', 'SSOR')
+      plist => plist%sublist('params')
+      call plist%set('num-sweeps', pc_ssor_sweeps)
+      call plist%set('omega', pc_ssor_relax)
     case (DS_NLK_PC_HYPRE_AMG)
-      precon_params%solver = 'BoomerAMG'
-      precon_params%bamg_params%max_iter = pc_amg_cycles
-      precon_params%bamg_params%print_level = hypre_amg_print_level
-      precon_params%bamg_params%debug_level = hypre_amg_debug_level
-      precon_params%bamg_params%logging_level = hypre_amg_logging_level
+      call plist%set('method', 'BoomerAMG')
+      plist => plist%sublist('params')
+      call plist%set('num-cycles', pc_amg_cycles)
+      call plist%set('print-level', hypre_amg_print_level)
+      call plist%set('debug-level', hypre_amg_debug_level)
+      call plist%set('logging-level', hypre_amg_logging_level)
     end select      
     if (associated(model%ht)) then
-      params%precon_params%htprecon_params%hcprecon_params = precon_params
       if (associated(model%ht%vf_rad_prob)) then
         !TODO! Assumes model%ht%vf_rad_prob array was initialized under the same
         !TODO! loop so that that array and vfr_precon_coupling are in correspondence.
         !TODO! This is fragile and needs to be fixed.
         piter = parameter_list_iterator(er_params)
         n = piter%count()
-        allocate(params%precon_params%htprecon_params%vfr_precon_coupling(n))
+        allocate(vfr_precon_coupling(n), rad_tol(n))
         do j = 1, n
           plist => piter%sublist()
           call plist%get('precon-coupling-method', string, default='BACKWARD GS')
-          params%precon_params%htprecon_params%vfr_precon_coupling(j) = string
+          vfr_precon_coupling(j) = string
           call piter%next
         end do
+        plist => params%sublist('precon')
+        call plist%set('vfr-precon-coupling', vfr_precon_coupling)
       end if
-    end if
-    if (associated(model%sd)) then
-      params%precon_params%sdprecon_params%precon_params = precon_params
     end if
     
     allocate(solver)

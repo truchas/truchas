@@ -78,23 +78,6 @@ module FHT_solver_type
     integer  :: max_itr
   end type FHT_solver
   
-  type, public :: FHT_solver_params
-    type(FHT_norm_params) :: norm_params
-    type(FHT_precon_params) :: precon_params
-    real(r8) :: epsilon  ! material vol frac conduction threshold, > 0
-    integer  :: nlk_max_itr
-    integer  :: nlk_max_vec
-    real(r8) :: nlk_vec_tol
-    logical  :: verbose
-    integer  :: unit
-    !! Parameters for the TofH solver
-    real(r8) :: TofH_tol      ! absolute temperature convergence tolerance, >= 0
-    real(r8) :: TofH_delta    ! initial endpoint shift when seeking bracket, > 0
-    integer  :: TofH_max_try  ! max tries at seeking a bracketing interval, >= 0
-  end type FHT_solver_params
-  public :: FHT_norm_params, FHT_precon_params
-  public :: diff_precon_params, ssor_precon_params, boomer_amg_precon_params
-  
   public :: FHT_solver_init
   public :: FHT_solver_delete
   public :: FHT_solver_advance_state
@@ -117,13 +100,16 @@ contains
 
   subroutine FHT_solver_init (this, mmf, model, params)
   
+    use parameter_list_type
+
     type(FHT_solver), intent(out) :: this
     type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(in), target :: model
-    type(FHT_solver_params), intent(inout) :: params
+    type(parameter_list), intent(inout) :: params
     
     integer :: n
     procedure(pardp), pointer :: dp
+    type(parameter_list), pointer :: plist
   
     this%mmf   => mmf
     this%model => model
@@ -136,24 +122,39 @@ contains
     allocate(this%void_face(this%mesh%nface), this%last_void_face(this%mesh%nface))
     allocate(this%tot_void_cell(this%mesh%ncell), this%last_tot_void_cell(this%mesh%ncell))
     
-    call FHT_precon_init (this%precon, this%model, params%precon_params)
-    call FHT_norm_init (this%norm, this%model, params%norm_params)
+    plist => params%sublist('precon')
+    call FHT_precon_init (this%precon, this%model, plist)
+    plist => params%sublist('norm')
+    call FHT_norm_init (this%norm, this%model, plist)
     
-    call this%T_of_H%init (model%H_of_T, eps=params%TofH_tol, &
-        max_try=params%TofH_max_try, delta=params%TofH_delta)
+    block
+      real(r8) :: eps, delta
+      integer  :: max_try
+      call params%get('tofh-tol', eps)
+      call params%get('tofh-max-try', max_try)
+      call params%get('tofh-delta', delta)
+      call this%T_of_H%init (model%H_of_T, eps=eps, max_try=max_try, delta=delta)
+    end block
     
     !! Setup the backward-Euler integrator.
-    n = FHT_model_size(model)
-    call this%accel%init (n, params%nlk_max_vec)
-    call this%accel%set_vec_tol (params%nlk_vec_tol)
-    dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
-    call this%accel%set_dot_prod (dp)
-    call create_history (this%uhist, 2, n)
-    this%max_itr = params%nlk_max_itr
-    
-    this%epsilon = params%epsilon
-    this%verbose = params%verbose .and. is_IOP
-    this%unit = params%unit
+    block
+      integer  :: nlk_max_vec
+      real(r8) :: nlk_vec_tol
+      n = FHT_model_size(model)
+      call params%get('nlk-max-vec', nlk_max_vec)
+      call this%accel%init (n, nlk_max_vec)
+      call params%get('nlk-vec-tol', nlk_vec_tol)
+      call this%accel%set_vec_tol (nlk_vec_tol)
+      dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
+      call this%accel%set_dot_prod (dp)
+      call create_history (this%uhist, 2, n)
+      call params%get('nlk-max-itr', this%max_itr)
+
+      call params%get('epsilon', this%epsilon)
+      call params%get('verbose', this%verbose)
+      if (this%verbose) call params%get('unit', this%unit)
+      this%verbose = this%verbose .and. is_IOP
+    end block
     
   end subroutine FHT_solver_init
   
