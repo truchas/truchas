@@ -424,10 +424,7 @@ contains
   
   subroutine compute_face_temp (this, t, state, u, params)
   
-    use diffusion_matrix
-    !use hypre_hybrid_type
-    !use pcsr_precon_boomer_type
-    !use pcsr_precon_ssor_type
+    use mfd_diff_matrix_type
     use pcsr_precon_class
     use pcsr_precon_factory
     use parameter_list_type
@@ -440,8 +437,7 @@ contains
     type(parameter_list) :: params
     
     integer :: n, j, stat, num_itr, max_iter, iter
-    type(dist_diff_matrix), target :: matrix
-    !type(hypre_hybrid) :: pcg
+    type(mfd_diff_matrix), target :: matrix
     real(r8) :: atol, rtol, error, r0_err, r_err, dT_max
     real(r8), pointer :: Tface(:), var(:), Fface(:)
     real(r8), allocatable :: z(:), udot(:), f(:)
@@ -449,7 +445,7 @@ contains
     procedure(pardp), pointer :: dp
     target :: f
     character(80) :: string
-    !type(pcsr_precon_ssor) :: precon
+    character(:), allocatable :: errmsg
     class(pcsr_precon), allocatable :: precon
     
     call TLS_info ('  Computing consistent face temperatures and radiosities ...')
@@ -487,7 +483,8 @@ contains
     call matrix%init (this%disc)
     call make_matrix (matrix)
     
-    call alloc_pcsr_precon (precon, matrix%a22, params)
+    call alloc_pcsr_precon (precon, matrix%a22, params, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('COMPUTE_FACE_TEMP: ' // errmsg)
     call precon%compute
     
     call params%get ('atol-temp', atol, default=0.0_r8)
@@ -564,7 +561,7 @@ contains
 
     subroutine make_matrix (matrix)
     
-      type(dist_diff_matrix), intent(inout) :: matrix
+      type(mfd_diff_matrix), intent(inout) :: matrix
       
       integer :: j, n, n1, n2, index
       integer, allocatable :: more_dir_faces(:)

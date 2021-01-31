@@ -66,13 +66,13 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/HTSD_init_cond_type.F90
            physics/heat_species_transport/TofH_type.F90
            physics/heat_species_transport/data_layout_type.F90
-           physics/heat_species_transport/diff_precon_type.F90
-           physics/heat_species_transport/diffusion_matrix.F90
+           physics/heat_species_transport/mfd_disc_type.F90
+           physics/heat_species_transport/mfd_diff_matrix_type.F90
+           physics/heat_species_transport/mfd_diff_precon_type.F90
            physics/heat_species_transport/diffusion_solver.F90
            physics/heat_species_transport/diffusion_solver_data.F90
            physics/heat_species_transport/ds_source_input.F90
            physics/heat_species_transport/mesh_interop.F90
-           physics/heat_species_transport/mfd_disc_type.F90
            physics/heat_species_transport/prop_mesh_func_type.F90
            physics/heat_species_transport/source_mesh_function.F90
            physics/heat_species_transport/upper_packed_matrix.F90

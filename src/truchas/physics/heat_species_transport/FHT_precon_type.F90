@@ -12,8 +12,8 @@ module FHT_precon_type
   use FHT_model_type
   use unstr_mesh_type
   use index_partitioning
-  use diffusion_matrix
-  use diff_precon_type
+  use mfd_diff_matrix_type
+  use mfd_diff_precon_type
   use data_layout_type
   use rad_problem_type
   use truchas_timers
@@ -24,13 +24,12 @@ module FHT_precon_type
     type(FHT_model), pointer :: model => null()
     type(unstr_mesh), pointer :: mesh => null()
     integer, allocatable :: vfr_precon_coupling(:)
-    type(dist_diff_matrix), pointer :: matrix => null()
-    type(diff_precon) :: precon
+    type(mfd_diff_precon) :: precon
   end type FHT_precon
-  !TODO! Consider having the diff_precon objects take ownership of the dist_diff_matrix
-  !TODO! objects so that the FHT_precon object doesn't need to hold them directly
+  !TODO! Consider having the MFD_DIFF_PRECON objects take ownership of the MFD_DIFF_MATRIX
+  !TODO! objects so that the FHT_PRECON object doesn't need to hold them directly
   
-  public :: FHT_precon_init, FHT_precon_delete
+  public :: FHT_precon_init
   public :: FHT_precon_compute, FHT_precon_apply
   
   !! Methods of coupling heat conduction and radiosity preconditioning.
@@ -44,22 +43,25 @@ contains
   subroutine FHT_precon_init (this, model, params)
   
     use parameter_list_type
+    use truchas_logging_services
 
     type(FHT_precon), intent(out) :: this
     type(FHT_model), intent(in), target :: model
     type(parameter_list) :: params
     
-    integer :: j, n
+    integer :: j, n, stat
     type(parameter_list), pointer :: plist
-    character(:), allocatable :: string_array(:)
+    character(:), allocatable :: string_array(:), errmsg
+    type(mfd_diff_matrix), allocatable :: matrix
 
     this%model => model
     this%mesh => model%mesh
     
     !! Create the preconditioner for the heat equation.
-    allocate(this%matrix)
-    call this%matrix%init (model%disc)
-    call diff_precon_init (this%precon, this%matrix, params)
+    allocate(matrix)
+    call matrix%init(model%disc)
+    call this%precon%init(matrix, params, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('FHT_PRECON_INIT: '//errmsg)
     
     !! Initialize the heat equation/view factor radiation
     if (associated(model%vf_rad_prob)) then
@@ -85,12 +87,6 @@ contains
 
   end subroutine FHT_precon_init
   
-  subroutine FHT_precon_delete (this)
-    type(FHT_precon), intent(inout) :: this
-    if (associated(this%matrix)) deallocate(this%matrix)
-    call diff_precon_delete (this%precon)
-  end subroutine FHT_precon_delete
-
   subroutine FHT_precon_apply (this, t, u, f)
   
     type(FHT_precon), intent(inout) :: this
@@ -153,7 +149,7 @@ contains
     call gather_boundary (this%mesh%face_ip, f2x)
 
     !! Precondition the heat equation.
-    call diff_precon_apply (this%precon, f1x, f2x)
+    call this%precon%apply(f1x, f2x)
     call FHT_model_set_cell_temp (this%model, f1x, f)
     call FHT_model_set_face_temp (this%model, f2x, f)
 
@@ -195,7 +191,7 @@ contains
     real(r8) :: fdinc, term
     real(r8) :: state(this%mesh%ncell,1), D(this%mesh%ncell), A(this%mesh%ncell), Tface(this%mesh%nface)
     real(r8), allocatable :: values(:), values2(:,:)
-    type(dist_diff_matrix), pointer :: dm
+    type(mfd_diff_matrix), pointer :: dm
     integer, pointer :: faces(:) => null()
     integer, allocatable :: more_dir_faces(:)
     
@@ -230,7 +226,7 @@ contains
 
     !! Jacobian of the basic heat equation that ignores nonlinearities
     !! in the conductivity.  This has the H/T relation eliminated.
-    dm => diff_precon_matrix(this%precon)
+    dm => this%precon%matrix_ref()
     call dm%compute (D)
     call dm%incr_cell_diag (A)
     
@@ -310,7 +306,7 @@ contains
     end if
 
     !! The matrix is now complete; re-compute the preconditioner.
-    call diff_precon_compute (this%precon)
+    call this%precon%compute
       
     call stop_timer ('FHT precon compute')
     
