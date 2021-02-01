@@ -8,6 +8,7 @@
 
 module FHT_solver_factory
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use FHT_model_type
   use FHT_solver_type
   use matl_mesh_func_type
@@ -34,55 +35,59 @@ contains
     type(FHT_solver), pointer :: solver
     
     integer :: j, n, lun
-    type(FHT_solver_params) :: params
-    !character(len=31), allocatable :: encl_name(:)
+    type(parameter_list) :: params
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
     character(:), allocatable :: string
+    character(16), allocatable :: vfr_precon_coupling(:)
+    real(r8), allocatable :: rad_tol(:)
     
     stat = 0
     errmsg = ''
     
     !! Material volume fraction threshold.
-    !FIXME! we need a user-settable parameter for epsilon
-    params%epsilon = cond_vfrac_threshold  ! conduction threshold
+    call params%set('epsilon', cond_vfrac_threshold)
 
     !! Parameters for the TofH solver.
     !FIXME! we need some user-settable parameters here, especially DELTA
-    params%TofH_tol = 0.0d0       ! absolute temperature convergence tolerance, >= 0
-    params%TofH_delta  = 1.0d-3   ! initial endpoint shift when seeking bracket, > 0
-    params%TofH_max_try = 50      ! max tries at seeking a bracketing interval, >= 0
+    call params%set('tofh-tol', 0.0d0)
+    call params%set('tofh-delta', 1.0d-3)
+    call params%set('tofh-max-try', 50)
     
     !! HT system nonlinear solver parameters.
-    params%nlk_max_itr = max_nlk_itr
-    params%nlk_max_vec = max_nlk_vec
-    params%nlk_vec_tol = nlk_vec_tol
-    params%verbose = verbose_stepping
+    call params%set('nlk-max-itr', max_nlk_itr)
+    call params%set('nlk-max-vec', max_nlk_vec)
+    call params%set('nlk-vec-tol', nlk_vec_tol)
+    call params%set('verbose', verbose_stepping)
     if (verbose_stepping) then
       lun = -1
       if (is_IOP) open(newunit=lun,file=output_file_name('bdf2.out'),position='rewind',action='write')
-      params%unit = lun
+      call params%set('unit', lun)
     end if
 
     !! HT system nonlinear solver preconditioner parameters.
+    plist => params%sublist('precon')
     select case (ds_nlk_pc)
     case (DS_NLK_PC_SSOR)
-      params%precon_params%HC_precon_params%solver = 'SSOR'
-      params%precon_params%HC_precon_params%ssor_params%num_iter = pc_ssor_sweeps
-      params%precon_params%HC_precon_params%ssor_params%omega = pc_ssor_relax
+      call plist%set('method', 'SSOR')
+      plist => plist%sublist('params')
+      call plist%set('num-sweeps', pc_ssor_sweeps)
+      call plist%set('omega', pc_ssor_relax)
     case (DS_NLK_PC_HYPRE_AMG)
-      params%precon_params%HC_precon_params%solver = 'BoomerAMG'
-      params%precon_params%HC_precon_params%bamg_params%max_iter = pc_amg_cycles
-      params%precon_params%HC_precon_params%bamg_params%print_level = hypre_amg_print_level
-      params%precon_params%HC_precon_params%bamg_params%debug_level = hypre_amg_debug_level
-      params%precon_params%HC_precon_params%bamg_params%logging_level = hypre_amg_logging_level
+      call plist%set('method', 'BoomerAMG')
+      plist => plist%sublist('params')
+      call plist%set('num-cycles', pc_amg_cycles)
+      call plist%set('print-level', hypre_amg_print_level)
+      call plist%set('debug-level', hypre_amg_debug_level)
+      call plist%set('logging-level', hypre_amg_logging_level)
     end select      
 
     !! HT system nonlinear solver error norm parameters.
-    params%norm_params%abs_tol = residual_atol
-    params%norm_params%rel_tol = residual_rtol
-    params%norm_params%verbose = verbose_stepping
-    if (verbose_stepping) params%norm_params%unit = lun	! defined above
+    plist => params%sublist('norm')
+    call plist%set('abs-tol', residual_atol)
+    call plist%set('rel-tol', residual_rtol)
+    call plist%set('verbose', verbose_stepping)
+    if (verbose_stepping) call plist%set('unit', lun) ! defined above
     
     !! Nonlinear solver and preconditioner parameters connected to enclosure radiation.
     if (associated(model%vf_rad_prob)) then
@@ -91,14 +96,18 @@ contains
       !TODO! This is fragile and needs to be fixed.
       piter = parameter_list_iterator(er_params, sublists_only=.true.)
       n = piter%count()
-      allocate(params%precon_params%vfr_precon_coupling(n), params%norm_params%rad_tol(n))
+      allocate(vfr_precon_coupling(n), rad_tol(n))
       do j = 1, n
         plist => piter%sublist()
         call plist%get('precon-coupling-method', string, default='BACKWARD GS')
-        params%precon_params%vfr_precon_coupling(j) = string
-        call plist%get('error-tol', params%norm_params%rad_tol(j), default=1d-3)
+        vfr_precon_coupling(j) = string
+        call plist%get('error-tol', rad_tol(j), default=1d-3)
         call piter%next
       end do
+      plist => params%sublist('precon')
+      call plist%set('vfr-precon-coupling', vfr_precon_coupling)
+      plist => params%sublist('norm')
+      call plist%set('rad-tol', rad_tol)
     end if
     
     allocate(solver)
