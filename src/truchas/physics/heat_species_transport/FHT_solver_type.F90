@@ -166,7 +166,6 @@ contains
   
   subroutine FHT_solver_delete (this)
     type(FHT_solver), intent(inout) :: this
-    call FHT_precon_delete (this%precon)
     call destroy (this%uhist)
   end subroutine FHT_solver_delete
   

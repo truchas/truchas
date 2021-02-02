@@ -47,7 +47,7 @@
 
 module pcsr_precon_class
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use pcsr_matrix_type
   use parameter_list_type
   implicit none
@@ -63,17 +63,19 @@ module pcsr_precon_class
   end type pcsr_precon
 
   abstract interface
-    subroutine init (this, A, params)
+    subroutine init(this, A, params, stat, errmsg)
       import pcsr_precon, pcsr_matrix, parameter_list
       class(pcsr_precon), intent(out) :: this
       type(pcsr_matrix), intent(in), target :: A
       type(parameter_list) :: params
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
     end subroutine
-    subroutine compute (this)
+    subroutine compute(this)
       import pcsr_precon
       class(pcsr_precon), intent(inout) :: this
     end subroutine
-    subroutine apply (this, x)
+    subroutine apply(this, x)
       import pcsr_precon, r8
       class(pcsr_precon), intent(in) :: this
       real(r8), intent(inout) :: x(:)
@@ -82,10 +84,10 @@ module pcsr_precon_class
 
 contains
 
-  function matrix (this)
+  function matrix(this)
     class(pcsr_precon), intent(in) :: this
     type(pcsr_matrix), pointer :: matrix
     matrix => this%A
-  end function matrix
+  end function
 
 end module pcsr_precon_class

@@ -12,8 +12,8 @@ module HTSD_precon_type
   use HTSD_model_type
   use rad_problem_type
   use unstr_mesh_type
-  use diff_precon_type
-  use diffusion_matrix
+  use mfd_diff_precon_type
+  use mfd_diff_matrix_type
   use index_partitioning
   use truchas_timers
   implicit none
@@ -25,10 +25,10 @@ module HTSD_precon_type
     !! Heat transfer preconditioning data
     real(r8) :: dt
     real(r8), pointer :: dHdT(:) => null()
-    type(diff_precon), pointer :: hcprecon => null()
+    type(mfd_diff_precon), pointer :: hcprecon => null()
     integer, pointer :: vfr_precon_coupling(:) => null()
     !! Species diffusion preconditioning data
-    type(diff_precon), pointer :: sdprecon(:) => null()
+    type(mfd_diff_precon), pointer :: sdprecon(:) => null()
     logical :: have_soret_coupling = .false.
   end type HTSD_precon
 
@@ -48,14 +48,16 @@ contains
   subroutine HTSD_precon_init (this, model, params)
 
     use parameter_list_type
+    use truchas_logging_services
 
     type(HTSD_precon), intent(out) :: this
     type(HTSD_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
-    integer :: n, j
-    type(dist_diff_matrix), pointer :: matrix, mold_matrix => null()
-    character(:), allocatable :: string_array(:)
+    integer :: n, j, stat
+    type(mfd_diff_matrix), allocatable, target :: matrix
+    type(mfd_diff_matrix), pointer :: mold_matrix => null()
+    character(:), allocatable :: string_array(:), errmsg
 
     this%model => model
     this%mesh  => model%mesh
@@ -65,14 +67,11 @@ contains
       allocate(this%dHdT(this%mesh%ncell))
       !! Create the preconditioner for the heat equation.
       allocate(matrix)
-      if (associated(mold_matrix)) then
-        call matrix%init (mold=mold_matrix)
-      else
-        call matrix%init (model%disc)
-        mold_matrix => matrix
-      end if
+      call matrix%init(model%disc)
       allocate(this%hcprecon)
-      call diff_precon_init (this%hcprecon, matrix, params)
+      call this%hcprecon%init(matrix, params, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('HTSD_PRECON_INIT: ' // errmsg)
+      mold_matrix => this%hcprecon%matrix_ref()
       !! Initialize the heat equation/view factor radiation
       if (associated(model%ht%vf_rad_prob)) then
         n = size(model%ht%vf_rad_prob)
@@ -101,12 +100,13 @@ contains
       do n = 1, this%model%num_comp
         allocate(matrix)
         if (associated(mold_matrix)) then
-          call matrix%init (mold=mold_matrix)
+          call matrix%init(mold=mold_matrix)
         else
-          call matrix%init (model%disc)
-          mold_matrix => matrix
+          call matrix%init(model%disc)
         end if
-        call diff_precon_init (this%sdprecon(n), matrix, params)
+        call this%sdprecon(n)%init(matrix, params, stat, errmsg)
+        if (stat /= 0) call TLS_fatal('HTSD_PRECON_INIT: ' // errmsg)
+        if (.not.associated(mold_matrix)) mold_matrix => this%sdprecon(n)%matrix_ref()
         if (associated(model%sd(n)%soret)) this%have_soret_coupling = .true.
       end do
       this%have_soret_coupling = (associated(model%ht) .and. this%have_soret_coupling)
@@ -122,16 +122,8 @@ contains
 
     if (associated(this%dHdT)) deallocate(this%dHdT)
     if (associated(this%vfr_precon_coupling)) deallocate(this%vfr_precon_coupling)
-    if (associated(this%hcprecon)) then
-      call diff_precon_delete (this%hcprecon)
-      deallocate(this%hcprecon)
-    end if
-    if (associated(this%sdprecon)) then
-      do n = 1, size(this%sdprecon)
-        call diff_precon_delete (this%sdprecon(n))
-      end do
-      deallocate(this%sdprecon)
-    end if
+    if (associated(this%hcprecon)) deallocate(this%hcprecon)
+    if (associated(this%sdprecon)) deallocate(this%sdprecon)
 
   end subroutine HTSD_precon_delete
 
@@ -191,7 +183,7 @@ contains
       integer :: index, j, n1, n2
       real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), Tface(this%mesh%nface), term
       real(r8), allocatable :: values(:), values2(:,:)
-      type(dist_diff_matrix), pointer :: dm
+      type(mfd_diff_matrix), pointer :: dm
       integer, pointer :: faces(:) => null()
 
       call HTSD_model_get_face_temp_copy (this%model, u, Tface)
@@ -216,7 +208,7 @@ contains
 
       !! Jacobian of the basic heat equation that ignores nonlinearities
       !! in the conductivity.  This has the H/T relation eliminated.
-      dm => diff_precon_matrix(this%hcprecon)
+      dm => this%hcprecon%matrix_ref()
       call dm%compute (D)
       call dm%incr_cell_diag (A)
 
@@ -298,7 +290,7 @@ contains
       end if
 
       !! The matrix is now complete; re-compute the preconditioner.
-      call diff_precon_compute (this%hcprecon)
+      call this%hcprecon%compute
 
     end subroutine HT_precon_compute
 
@@ -307,9 +299,9 @@ contains
       integer, intent(in) :: index
 
       real(r8) :: values(this%mesh%ncell)
-      type(dist_diff_matrix), pointer :: matrix
+      type(mfd_diff_matrix), pointer :: matrix
 
-      matrix => diff_precon_matrix(this%sdprecon(index))
+      matrix => this%sdprecon(index)%matrix_ref()
       !! Jacobian of the diffusion operator that ignores nonlinearities.
       call this%model%sd(index)%diffusivity%compute_value(state, values)
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 0.0_r8
@@ -325,7 +317,7 @@ contains
       end if
       call matrix%set_dir_faces (more_dir_faces)
       !! The matrix is now complete; re-compute the preconditioner.
-      call diff_precon_compute (this%sdprecon(index))
+      call this%sdprecon(index)%compute
 
     end subroutine SD_precon_compute
 
@@ -446,7 +438,7 @@ contains
       call gather_boundary (this%mesh%face_ip, f2x)
 
       !! Precondition the heat equation.
-      call diff_precon_apply (this%hcprecon, f1x, f2x)
+      call this%hcprecon%apply(f1x, f2x)
       call HTSD_model_set_cell_temp (this%model, f1x, f)
       call HTSD_model_set_face_temp (this%model, f2x, f)
 
@@ -513,7 +505,7 @@ contains
       call HTSD_model_get_face_conc_copy (this%model, index, f, Fface)
       call gather_boundary (this%mesh%face_ip, Fface)
       !! Precondition the diffusion equation for this component.
-      call diff_precon_apply (this%sdprecon(index), Fcell, Fface)
+      call this%sdprecon(index)%apply(Fcell, Fface)
       !! Return the on-process components of the result.
       call HTSD_model_set_cell_conc (this%model, index, Fcell, f)
       call HTSD_model_set_face_conc (this%model, index, Fface, f)

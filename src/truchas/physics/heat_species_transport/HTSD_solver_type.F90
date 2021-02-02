@@ -107,7 +107,7 @@ contains
       call this%ic_params%set ('max-iter', 50)
       call this%ic_params%set ('method', 'SSOR')
       plist => this%ic_params%sublist('params')
-      call plist%set ('num-sweeps', 1)
+      call plist%set ('num-cycles', 1)
       end block
     end if
   end subroutine HTSD_solver_init
