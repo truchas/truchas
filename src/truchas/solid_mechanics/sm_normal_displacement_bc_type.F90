@@ -23,6 +23,7 @@ module sm_normal_displacement_bc_type
   type, extends(bndry_func1), public :: sm_normal_displacement_bc
     private
     real(r8), public, allocatable :: rotation_matrix(:,:,:)
+    real(r8), public, allocatable :: normal(:,:)
 
     type(bndry_face_func), allocatable :: bff
     real(r8), allocatable :: area_ip(:)
@@ -54,16 +55,17 @@ contains
     n = this%xfini(size(this%xfini))-1
     allocate(normal_ip(3,n), this%area_ip(n))
     allocate(this%rotation_matrix(3,3,size(this%index)), this%value(size(this%index)))
-    allocate(normal_node(3,size(this%index)))
+    allocate(this%normal(3,size(this%index)))
     call compute_ip_normals(this%bff%index, this%xfini, mesh, ig, normal_ip)
-    call compute_node_normals(this%fini, this%xfini, normal_ip, normal_node)
+    call compute_node_normals(this%fini, this%xfini, normal_ip, this%normal)
 
     do n = 1, size(normal_ip, dim=2)
       this%area_ip(n) = norm2(normal_ip(:,n))
     end do
 
     do ni = 1, size(this%index)
-      this%rotation_matrix(:,:,ni) = rotation_matrix(normal_node(:,ni))
+      this%rotation_matrix(:,:,ni) = rotation_matrix(this%normal(:,ni))
+      this%normal(:,ni) = this%normal(:,ni) / norm2(this%normal(:,ni))
     end do
 
   end subroutine init
@@ -79,7 +81,7 @@ contains
 
     integer :: fi, xni, ni
     real(r8) :: v, weight(size(this%value))
-    
+
     call this%bff%compute(t)
     this%value = 0
     weight = 0

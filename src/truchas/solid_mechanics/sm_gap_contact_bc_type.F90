@@ -216,32 +216,20 @@ contains
     class(sm_gap_contact_bc), intent(inout) :: this
     real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:)
 
-    ! integer :: n, lni, j
-    ! real(r8) :: args(0:size(this%mesh%x,dim=1))
-    integer :: i, n1, n2, sgn
-    real(r8) :: stress1, stress2, x1, x2, s, tn, l, dl(2), dldu1, dldu2, v(2), normal(3)
-    real(r8) :: l1, l2
-    sgn = 1
-
-    ! do n = 1, this%ngroup
-    !   do lni = this%xgroup(n), this%xgroup(n+1)-1
-    !     j = this%index(1,lni)
-    !     args(1:) = this%mesh%x(:,j)
-    !     this%value(lni) = this%displacement(n)%eval(args)
-    !   end do
-    ! end do
+    integer :: i, n1, n2
+    real(r8) :: stress1, stress2, x1, x2, s, tn, l, dl(2), v(2), normal(3)
 
     do i = 1, size(this%index, dim=2)
       n1 = this%index(1,i)
       n2 = this%index(2,i)
       normal = this%rotation_matrix(3,:,i)
-      stress1 = dot_product(normal, ftot(:,n1)) !+ this%rhs(:,n1)
-      stress2 = dot_product(normal, ftot(:,n2)) !+ this%rhs(:,n2)
+      stress1 = dot_product(normal, ftot(:,n1))
+      stress2 = dot_product(normal, ftot(:,n2))
       x1 = dot_product(normal, displ(:,n1))
       x2 = dot_product(normal, displ(:,n2))
 
       s = x2 - x1
-      tn = - sgn * stress1 / this%area(i) ! TODO-WARN: is the sign right?
+      tn = - stress1 / this%area(i) ! TODO-WARN: is the sign right?
       l = this%contact_factor(s, tn)
 
       v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
@@ -259,42 +247,28 @@ contains
     class(sm_gap_contact_bc), intent(inout) :: this
     real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:), diag(:)
 
-    ! integer :: n, lni, j
-    ! real(r8) :: args(0:size(this%mesh%x,dim=1))
-    integer :: i, n1, n2, sgn
+    integer :: i, n1, n2
     real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3), diag2(3)
     real(r8) :: s, tn, l, dl(2), v(2), normal(3)
     real(r8) :: dl1(2), dl2(2)
 
-    ! do n = 1, this%ngroup
-    !   do lni = this%xgroup(n), this%xgroup(n+1)-1
-    !     j = this%index(1,lni)
-    !     args(1:) = this%mesh%x(:,j)
-    !     this%value(lni) = this%displacement(n)%eval(args)
-    !   end do
-    ! end do
-    sgn = 1
     do i = 1, size(this%index, dim=2)
       n1 = this%index(1,i)
       n2 = this%index(2,i)
       normal = this%rotation_matrix(3,:,i)
-      stress1 = dot_product(normal, ftot(:,n1)) !+ this%rhs(:,n1)
-      stress2 = dot_product(normal, ftot(:,n2)) !+ this%rhs(:,n2)
+      stress1 = dot_product(normal, ftot(:,n1))
+      stress2 = dot_product(normal, ftot(:,n2))
       x1 = dot_product(normal, displ(:,n1))
       x2 = dot_product(normal, displ(:,n2))
-      ! diag1 = dot_product(normal, diag(3*(n1-1)+1:3*(n1-1)+3)) * stress_factor(n1)
-      ! diag2 = dot_product(normal, diag(3*(n2-1)+1:3*(n2-1)+3)) * stress_factor(n2)
       diag1 = diag(3*(n1-1)+1:3*(n1-1)+3) * normal * stress_factor(n1)
       diag2 = diag(3*(n2-1)+1:3*(n2-1)+3) * normal * stress_factor(n2)
 
       s = x2 - x1
-      tn = - sgn * stress1 / this%area(i) ! TODO-WARN: is the sign right?
+      tn = - stress1 / this%area(i)
       l = this%contact_factor(s, tn)
       dl = this%derivative_contact_factor(s, tn)
-      dldu1 = -dl(1)*normal - sgn * dl(2)*diag1 / this%area(i)
-      dldu2 =  dl(1)*normal !+ dl(2)*diag2
-      ! dldu1 = -dl(1) - sgn * dl(2)*diag1 / this%area(i)
-      ! dldu2 =  dl(1)
+      dldu1 = -dl(1)*normal - dl(2)*diag1 / this%area(i)
+      dldu2 =  dl(1)*normal
 
       v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
       v(2) = stress1 / stress_factor(n2) + this%contact_penalty*(x1 - x2)

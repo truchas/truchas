@@ -373,38 +373,6 @@ contains
         do i = 1, size(link, dim=2)
           n1 = link(1,i)
           n2 = link(2,i)
-          ! stress1 = matmul(rot(:,:,i), r(:,n1)) !+ this%rhs(:,n1)
-          ! stress2 = matmul(rot(:,:,i), r(:,n2)) !+ this%rhs(:,n2)
-          ! x1 = matmul(rot(:,:,i), displ(:,n1))
-          ! x2 = matmul(rot(:,:,i), displ(:,n2))
-
-          ! s = x1(3) - x2(3)
-          ! tn = stress1(3)
-          ! l = this%bc%gap_contact%contact_factor(s, tn)
-
-          ! ! In the first node we put the equal & opposite normal contact force constraint
-          ! if (n1 <= this%mesh%nnode_onP) then
-          !   r(:,n1) = matmul(rot(:,:,i), r(:,n1))
-          !   !r(1:2,n1) = stress1(1:2) ! If there is a sliding constraint... TODO: is this right?
-          !   !r(3,n1) = stress1(3) + stress2(3)
-          !   !r(3,n1) = stress1(3) + stress2(3) + 1d3*(x1(3) - x2(3) + values(i))
-          !   !r(3,n1) = x1(3) - x2(3) + values(i)
-          !   !r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3) + values(i)))
-          !   r(3,n1) = r(3,n1) + l*(stress2(3) + 1d3*(x2(3) - x1(3)))
-          !   r(:,n1) = matmul(transpose(rot(:,:,i)), r(:,n1))
-          ! end if
-
-          ! ! In the second node we put the zero-displacement constraint
-          ! if (n2 <= this%mesh%nnode_onP) then
-          !   r(:,n2) = matmul(rot(:,:,i), r(:,n2))
-          !   !r(1:2,n2) = stress2(1:2) ! If there is a sliding constraint... TODO: is this right?
-          !   !r(3,n2) = x1(3) - x2(3) + values(i)
-          !   !r(3,n2) = stress1(3) + stress2(3) + 1d3*(x2(3) - x1(3) + values(i))
-          !   !r(3,n2) = x1(3) - x2(3) + values(i)
-          !   r(3,n2) = r(3,n2) + l*(stress1(3) + 1d3*(x1(3) - x2(3) + values(i)))
-          !   r(:,n2) = matmul(transpose(rot(:,:,i)), r(:,n2))
-          ! end if
-
           if (n1 <= this%mesh%nnode_onP) r(:,n1) = r(:,n1) + values(:,1,i)
           if (n2 <= this%mesh%nnode_onP) r(:,n2) = r(:,n2) + values(:,2,i)
         end do
