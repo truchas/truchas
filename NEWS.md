@@ -1,5 +1,23 @@
 # NEWS
 
+## 2021-02-04 Version 21.02
+
+## 2021-01-07 (77d200c2)
+
+The `write-restart.py` utility for creating restart files has been updated
+give the option of using Portage to compute the mapping of fields in "mapped
+restart" use cases. Use the `-h` option for usage information. This also
+applies to the underlying python tools that can be used to write custom
+scripts.
+
+## 2021-01-06 (fe855127)
+
+Adds an option `metis_ptype` to METIS mesh partitioning to choose between
+using multilevel recursive bisection, the new default, and multilevel k-way
+partitioning, which was used originally. See the Reference Manual for details.
+
+## 2021-01-05 Version 21.01
+
 ## 2021-01-05 (540d6109)
 
 Significant performance improvements were made to the initialization of the
