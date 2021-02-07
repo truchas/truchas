@@ -47,9 +47,9 @@ program genre
   basename = outfile(:n) // '.'
 
   !! If OUTFILE is a path, ensure the directory exists.
-  if (is_IOP) call execute_command_line('mkdir -p `dirname ' // outfile // '`', exitstat=stat)
-  call scl_bcast(stat)
-  if (stat /= 0) call re_halt('unable to create directory for output file: ' // outfile)
+  if (is_IOP) call make_directory_path(outfile, ios)
+  call scl_bcast(ios)
+  if (ios /= 0) call re_halt('unable to create directory for output file: ' // outfile)
 
   if (is_IOP) open(newunit=lun,file=infile,status='old',action='read',iostat=ios,iomsg=iom)
   call scl_bcast(ios)
@@ -124,5 +124,23 @@ contains
       ext = ''
     end if
   end function
+
+  !! If PATH contains a directory path component, create it if necessary
+  subroutine make_directory_path(path, stat)
+    use,intrinsic :: iso_c_binding, only: c_null_char
+    character(*), intent(in) :: path
+    integer, intent(out) :: stat
+    integer :: n
+    interface ! from libtruchas
+      subroutine make_directory_hier_c(path, status) bind(c)
+        use,intrinsic :: iso_c_binding, only: c_char, c_int
+        character(kind=c_char), intent(in) :: path(*)
+        integer(c_int), intent(out) :: status
+      end subroutine
+    end interface
+    stat = 0
+    n = scan(path, '/', back=.true.)
+    if (n > 0) call make_directory_hier_c(path(:n-1)//c_null_char, stat)
+  end subroutine
 
 end program genre
