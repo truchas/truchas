@@ -17,7 +17,7 @@ def run_test(tenv):
     # test final concentration
     cnctr = output.field(2, "phi1")
     exact = golden.field(2, "phi1")
-    nfail += truchas.compare_max_rel(cnctr, exact, 3e-7, "conc", output.time(2))
+    nfail += truchas.compare_max_rel(cnctr, exact, 3e-6, "conc", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail
