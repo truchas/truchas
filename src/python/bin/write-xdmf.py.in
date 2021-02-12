@@ -8,7 +8,6 @@
 
 import sys
 import os
-import posixpath
 import copy
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
@@ -24,19 +23,20 @@ def series_xdmf(series, grid_pointer):
         # get field name and type
         if field.ndim == 1:
             attr_type = "Scalar"
-            field_name = field.attrs["FIELDNAME"].decode()
+            field_name = field.attrs["FIELDNAME"].decode() if "FIELDNAME" in field.attrs \
+                else os.path.basename(field.name)
             dims = str(field.shape[0])
         elif field.ndim == 2:
-            field_name = posixpath.basename(field.name)
+            field_name = os.path.basename(field.name)
             attr_type = "Vector" if field_name in ("Z_VC", "Displacement") \
                 else "Matrix"
             dims = "{:d} {:d}".format(*field.shape)
         else:
             raise ValueError("Fields with >2 dimensions are not supported")
 
-        try:
+        if "FIELDTYPE" in field.attrs:
             field_center = field.attrs["FIELDTYPE"].capitalize().decode()
-        except:
+        else:
             continue
 
         xdmf_data = ET.Element("DataItem", {"Format": "HDF",
