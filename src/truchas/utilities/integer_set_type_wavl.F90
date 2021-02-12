@@ -288,7 +288,11 @@ contains
   end subroutine
 
   !! Add VALUE to the set
-  elemental subroutine set_add(this, value)
+#ifdef GNU_PR69563
+  subroutine set_add (this, value)
+#else
+  elemental subroutine set_add (this, value)
+#endif
     class(integer_set), intent(inout) :: this
     integer, intent(in) :: value
     call rbt_insert(this%root, value)
