@@ -186,10 +186,10 @@ contains
           abs_err = abs(col1(j) - col2(j))
           if (abs_err == 0.0) cycle
           rel_err = abs_err / col2(j)
-          if (abs_err > max_abs_err) max_abs_err = abs_err
-          if (abs_err < min_abs_err) min_abs_err = abs_err
-          if (rel_err > max_rel_err) max_rel_err = rel_err
-          if (rel_err < min_rel_err) min_rel_err = rel_err
+          max_abs_err = max(max_abs_err, abs_err)
+          min_abs_err = min(min_abs_err, abs_err)
+          max_rel_err = max(max_rel_err, rel_err)
+          min_rel_err = min(min_rel_err, rel_err)
           if (rel_err > tol) cnt = cnt + 1
         end do
       end if

@@ -413,7 +413,6 @@ contains
     this%nface = e%nface
 
     allocate(this%f2p_map(e%nface), this%global_ids(e%nface))
-
     do i = 1, e%nface
       this%f2p_map(i) = i
       this%global_ids(i) = i
@@ -437,10 +436,10 @@ contains
     logical :: normalize
 
     call params%get('verbosity-level', verbosity)
+    call params%get('max-angle', max_angle)
     call params%get('vsa-avg-faces-per-patch', avg_fpp)
     call params%get('vsa-max-patch-radius', max_radius)
     call params%get('vsa-normalize-dist', normalize)
-    call params%get('max-angle', max_angle)
     call params%get('vsa-min-delta', min_delta)
     call params%get('vsa-max-iter', max_iter)
     call params%get('vsa-random-seed', seed)
@@ -449,12 +448,12 @@ contains
     this%nface = e%nface
 
     if (seed == RANDOM_SEED_DEFAULT) then
-      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity)
+      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity)
     else
-      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
+      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
     end if
 
-    call vsa%run(min_delta, max_iter)
+    call vsa%run()
 
     call vsa%output(this%f2p_map, this%global_ids, this%npatch)
 
