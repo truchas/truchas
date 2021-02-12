@@ -365,14 +365,17 @@ contains
 
 
   !! Select and run a patching algorithm
-  subroutine generate_patches (this, e, params)
+  subroutine generate_patches (this, e, params, stat, errmsg)
 
     class(re_patch), intent(out) :: this
     class(encl), intent(in)  :: e
     type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: patch_alg
 
+    stat = 0
     if (scl_rank() == 1) then
       call params%get('patch-alg', patch_alg)
       select case (patch_alg)
@@ -381,21 +384,22 @@ contains
         call this%no_patches(e)
       case (PATCH_ALG_VSA)
         write (*,'(a)') 'Generating patches using the VSA algorithm'
-        call this%vsa_patches(e, params)
+        call this%vsa_patches(e, params, stat, errmsg)
       case (PATCH_ALG_VAC)
         write (*,'(a)') 'Generating patches using the VAC algorithm'
-        call this%vac_patches(e, params)
+        call this%vac_patches(e, params, stat, errmsg)
       case (PATCH_ALG_PAVE)
         write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
-        call this%pave_patches(e, params)
+        call this%pave_patches(e, params, stat, errmsg)
       case (PATCH_ALG_FILE)
         write (*,'(a)') 'Reading patches from a disk file'
-        call this%file_patches(e, params)
+        call this%file_patches(e, params, stat, errmsg)
       case default
-        !! Programming error, exit immediately.
-        INSIST(.false.)
+        stat = 1
+        errmsg = 'no such patching algorithm'
       end select
     end if
+    call scl_bcast(stat)
 
   end subroutine generate_patches
 
@@ -422,13 +426,15 @@ contains
 
 
   !! Generate patches using the VSA algorithm
-  subroutine vsa_patches (this, e, params)
+  subroutine vsa_patches (this, e, params, stat, errmsg)
 
     use vsa_patching_type
 
     class(re_patch), intent(out) :: this
     class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(vsa_patching) :: vsa
     integer :: verbosity, max_iter, seed
@@ -448,10 +454,11 @@ contains
     this%nface = e%nface
 
     if (seed == RANDOM_SEED_DEFAULT) then
-      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity)
+      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, stat, errmsg)
     else
-      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
+      call vsa%init(e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, stat, errmsg, seed)
     end if
+    if (stat/=0) return
 
     call vsa%run()
 
@@ -461,13 +468,15 @@ contains
 
 
   !! Generate patches using the VAC algorithm
-  subroutine vac_patches (this, e, params)
+  subroutine vac_patches (this, e, params, stat, errmsg)
 
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
     class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(vac_patching) :: vac
     integer :: verbosity, merge_level, split_patch_size
@@ -481,7 +490,8 @@ contains
     this%has_patches = .true.
     this%nface = e%nface
 
-    call vac%init(e, max_angle, merge_level, split_patch_size, verbosity)
+    call vac%init(e, max_angle, merge_level, split_patch_size, verbosity, stat, errmsg)
+    if (stat/=0) return
 
     call vac%run()
 
@@ -491,13 +501,15 @@ contains
 
 
   !! Generate patches using the VAC PAVE algorithm
-  subroutine pave_patches (this, e, params)
+  subroutine pave_patches (this, e, params, stat, errmsg)
 
     use vac_patching_type
 
     class(re_patch), intent(out) :: this
     class(encl), target, intent(in)  :: e
     type(parameter_list), intent(inout)  :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(pave_patching) :: pave
     integer :: verbosity, merge_level, split_patch_size, seed
@@ -513,10 +525,11 @@ contains
     this%nface = e%nface
 
     if (seed == RANDOM_SEED_DEFAULT) then
-      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
+      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity, stat, errmsg)
     else
-      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity, seed)
+      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity, stat, errmsg, seed)
     end if
+    if (stat/=0) return
 
     call pave%run()
 
@@ -526,14 +539,20 @@ contains
 
 
   !! Read patches from a file
-  subroutine file_patches (this, e, params)
+  subroutine file_patches (this, e, params, stat, errmsg)
     class(re_patch), intent(out) :: this
     class(encl), target, intent(in) :: e
     character(:), allocatable :: path
     type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    stat = 0
     call params%get('patch-file', path)
     call re_patch_read(this, path)
-    INSIST(this%nface == e%nface) !TODO: need parallel-aware error handling
+    if (this%nface /= e%nface) then
+      stat = 1
+      errmsg = "face count in patch file '"//trim(path)//"' does not match input mesh"
+    end if
     block !TODO: re_patch_read really ought to set this as well
       integer :: j
       if (this%has_patches) then
@@ -602,25 +621,27 @@ contains
 
   !! Color patches so that adjacent patches have different colors.
   !! The procedure does nothing if this%has_patches is false.
-  function patch_coloring (this, e) result(pcolor)
+  subroutine patch_coloring (this, e, pcolor, stat, errmsg)
 
     use patching_tools, only: get_face_neighbor_array
     use graph_type
 
     class(re_patch), intent(in) :: this
     type(encl), intent(in) :: e
-    integer, allocatable :: pcolor(:)
+    integer, allocatable, intent(out) :: pcolor(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(graph) :: pgraph  ! Patch adjacency graph
     integer, allocatable :: xfnhbr(:), fnhbr(:)
     integer :: p1, p2
-    integer :: i, f, n, ncolor, stat
+    integer :: i, f, n, ncolor
 
     if (.not. this%has_patches) return
 
     call pgraph%init(this%npatch)
-    call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat)
-    ASSERT( stat == 0 )
+    call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat, errmsg)
+    if (stat /= 0) return
 
     !! Construct patch adjacency graph
     do f = 1, e%nface
@@ -635,7 +656,7 @@ contains
 
     call pgraph%vertex_coloring(pcolor, ncolor)
 
-  end function patch_coloring
+  end subroutine patch_coloring
 
 
   !! Expands a patch-length array into a face-length array

@@ -20,6 +20,8 @@ module patching_tools
   use kinds, only: r8, i8
   implicit none
 
+  real(r8), parameter :: PI = 3.1415926535897932_r8
+
 contains
 
   !TODO: refactor to more general module?
@@ -59,25 +61,26 @@ contains
 
 
   ! TODO: merge with 3D code (unstr_mesh_tools?)
-  subroutine get_face_neighbor_array(xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+  subroutine get_face_neighbor_array(xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
     use edge_neighbor_table_type
 
     integer, intent(in) :: xface(:), fnode(:)
     integer, allocatable, intent(out) :: xfnhbr(:), fnhbr(:)
     integer, intent(out) :: stat
-    real(r8), intent(in), optional :: normals(:,:), max_angle ! max_angle is in radians
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: normals(:,:), max_angle  ! max_angle is in degrees
 
     type(edge_neighbor_table) :: nhbr_table
 
     call nhbr_table%init(xface, fnode)
-    call get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+    call get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
   end subroutine get_face_neighbor_array
 
 
   ! TODO: merge with 3D code (unstr_mesh_tools?)
-  subroutine get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+  subroutine get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
     use edge_neighbor_table_type
     use cell_topology, only: get_edge_nodes
@@ -86,14 +89,19 @@ contains
     integer, intent(in) :: xface(:), fnode(:)
     integer, allocatable, intent(out) :: xfnhbr(:), fnhbr(:)
     integer, intent(out) :: stat
-    real(r8), intent(in), optional :: normals(:,:), max_angle
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: normals(:,:), max_angle  ! max_angle is in degrees
 
     integer :: i, j, k, jj, kk, nmatch, bad_edges, nface, offset
     integer, allocatable :: edge(:)
-    real(r8) :: angle
+    real(r8) :: angle, max_angle_rad
     type(edge_neighbor), allocatable :: nhbrs(:)
 
     nface = size(xface) - 1
+
+    if (present(max_angle)) then
+      max_angle_rad = PI*max_angle/180.0_r8
+    end if
 
     !! Generate XFNHBR: FNHBR(XFNHBR(J):XFNHBR(J+1)-1) will store the edge
     !! neighbors of face J.
@@ -137,7 +145,7 @@ contains
               angle = dot_product(normals(:,j), normals(:,jj))
               if (angle > 1) angle = 1  ! Fix floating point errors
               angle = acos( angle )
-              if (angle >= max_angle) cycle
+              if (angle >= max_angle_rad) cycle
             end if
             !! Found a unique neighbor; assign the neighbor data.
             fnhbr(k) = jj ! my neighbor, and
@@ -153,6 +161,8 @@ contains
         end do
       end associate
     end do
+
+    if (stat/=0) errmsg = 'bad mesh topology: more than two faces share an edge'
 
   end subroutine get_fnhbr_aux
 

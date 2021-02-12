@@ -98,10 +98,9 @@ module vac_patching_type
   use re_encl_type
   use vac_min_heap
   use edge_neighbor_table_type
+  use patching_tools, only: PI
   use graph_type
   implicit none
-
-  real(r8), parameter :: PI = 3.1415926535897932_r8
 
   !! Parameter defaults
   integer, parameter  :: VAC_SPLIT_PATCH_SIZE_DEFAULT = 3  !! Maximum patch size to split
@@ -158,7 +157,7 @@ module vac_patching_type
 contains
 
   !! Allocate and initialize VAC_PATCHING data
-  subroutine init(this, e, max_angle, merge_level, split_patch_size, verbosity, seed)
+  subroutine init(this, e, max_angle, merge_level, split_patch_size, verbosity, stat, errmsg, seed)
 
     use cell_topology, only: get_edge_nodes
     use cell_geometry, only: face_normal, vector_length, normalized
@@ -170,11 +169,13 @@ contains
     integer, intent(in) :: merge_level
     integer, intent(in) :: split_patch_size
     integer, intent(in) :: verbosity
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
     integer, intent(in), optional :: seed
 
     type(edge_neighbor), allocatable :: nhbrs(:)
     integer, allocatable :: face_nodes(:), edge(:)
-    integer :: i, j, stat, seed_
+    integer :: i, j, seed_
     real(r8) :: normal(3), angle, max_angle_rad
 
     this%e => e
@@ -224,11 +225,11 @@ contains
     call this%vgraph%get_adjacency(this%xvnhbr, this%vnhbr)
 
     !! Get face adjacency matrix
-    max_angle_rad = PI*max_angle/180.0_r8
-    call get_fnhbr_aux(this%enhbr, this%e%xface, this%e%fnode, this%xfnhbr, this%fnhbr, stat, this%normal, max_angle_rad)
-    ASSERT(stat == 0)
+    call get_fnhbr_aux(this%enhbr, this%e%xface, this%e%fnode, this%xfnhbr, this%fnhbr, stat, errmsg, this%normal, max_angle)
+    if (stat/=0) return
 
     !! Mark vertices on mesh boundary
+    max_angle_rad = PI*max_angle/180.0_r8
     if (.not. allocated(edge)) allocate(edge(2))
     this%boundary_node = .false.
     do i = 1, e%nnode

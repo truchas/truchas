@@ -66,7 +66,8 @@ program genre
   !! Generate patches
   call read_patches_namelist(lun, patch_params, found)
   if (found) call start_timer('  mesh patch generation')
-  call ep%generate_patches(e, patch_params)
+  call ep%generate_patches(e, patch_params, stat, errmsg)
+  if (stat /= 0) call re_halt('error creating patches: ' // errmsg)
   if (found) call stop_timer('  mesh patch generation')
 
   call read_chaparral_namelist(lun, chap_params, found)

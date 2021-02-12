@@ -73,8 +73,6 @@ module vsa_patching_type
   use vsa_patch_type
   implicit none
 
-  real(r8), parameter :: PI = 3.1415926535897932_r8
-
   !! Parameter defaults
   integer, parameter :: VSA_MAX_ITER_DEFAULT = 1000
   real(r8), parameter :: VSA_MIN_DELTA_DEFAULT = 1E-6_r8
@@ -124,7 +122,7 @@ contains
 
 
   !! Allocate and initialize VSA_PATCHING data
-  subroutine init(this, e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
+  subroutine init(this, e, max_iter, min_delta, avg_fpp, max_angle, max_radius, normalize, verbosity, stat, errmsg, seed)
 
     use cell_geometry, only: face_normal, vector_length, normalized, polygon_center
     use patching_tools, only: init_random_seed, get_face_neighbor_array
@@ -138,9 +136,11 @@ contains
     real(r8), intent(in) :: max_radius  ! Maximum desired patch radius
     logical, intent(in) :: normalize    ! Whether to normalize the Voronoi distance bias
     integer, intent(in) :: verbosity
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
     integer, intent(in), optional :: seed
 
-    integer :: i, j, n, stat, max_edges, seed_
+    integer :: i, j, n, max_edges, seed_
     real(r8) :: normal(3), rface
 
     this%e => e
@@ -188,8 +188,8 @@ contains
     end do
 
     !! Get face neighbors
-    call get_face_neighbor_array(e%xface, e%fnode, this%xfnhbr, this%fnhbr, stat, this%normal, PI*max_angle/180.0_r8)
-    ASSERT(stat == 0)
+    call get_face_neighbor_array(e%xface, e%fnode, this%xfnhbr, this%fnhbr, stat, errmsg, this%normal, max_angle)
+    if (stat/=0) return
 
     if (this%verbosity > 1) then
       print '("INITIALIZING VSA:")'
