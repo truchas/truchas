@@ -27,7 +27,7 @@ module sm_ds_precon_type
     type(sm_model), pointer, public :: model => null() ! unowned reference
     type(sm_bc), pointer, public :: bc => null() ! unowned reference
 
-    real(r8), allocatable :: diag(:), d1(:), d2(:)
+    real(r8), allocatable :: diag(:,:), d1(:,:), d2(:,:)
     real(r8) :: omega
     integer :: niter
   contains
@@ -48,7 +48,7 @@ contains
 
     this%model => model
     this%bc => model%bc
-    allocate(this%diag(model%size()))
+    allocate(this%diag(3,model%mesh%nnode_onP))
     call params%get('num-iter', this%niter, default=1)
     call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
 
@@ -64,21 +64,21 @@ contains
     !! computing local stress contributions, so it should be fairly fast.
     subroutine compute_diagonals()
 
-      integer :: n, d, j, p, k, xp, xnc, s
+      integer :: n, d, p, k, xp, xnc, s
       real(r8) :: displ(3), lhs(3), strain(6), stress(6)
 
       associate (mesh => this%model%mesh, ig => this%model%ig)
 
-        allocate(this%d1(3*mesh%nnode_onP), this%d2(3*mesh%nnode_onP))
+        allocate(this%d1(3,mesh%nnode_onP), this%d2(3,mesh%nnode_onP))
 
         do n = 1, mesh%nnode_onP
+          this%d1(:,n) = 0
+          this%d2(:,n) = 0
+
           do d = 1, 3
-            j = 3*(n-1) + d
             displ = 0
             displ(d) = 1
 
-            this%d1(j) = 0
-            this%d2(j) = 0
             do xp = ig%xnpoint(n), ig%xnpoint(n+1)-1
               k = xp - ig%xnpoint(n) + 1
               p = ig%npoint(xp)
@@ -90,11 +90,11 @@ contains
 
               call this%model%compute_stress(1.0_r8, 0.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
-              this%d1(j) = this%d1(j) + s * lhs(d)
+              this%d1(d,n) = this%d1(d,n) + s * lhs(d)
 
               call this%model%compute_stress(0.0_r8, 1.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
-              this%d2(j) = this%d2(j) + s * lhs(d)
+              this%d2(d,n) = this%d2(d,n) + s * lhs(d)
             end do
           end do
         end do
@@ -141,7 +141,7 @@ contains
     class(sm_ds_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt, displ(:,:)
 
-    integer :: n, d, j, i, f, xn
+    integer :: n, d, i, f, xn
     real(r8) :: force(size(displ,dim=1),size(displ,dim=2))
 
     call start_timer("precon-compute")
@@ -149,114 +149,46 @@ contains
     do n = 1, this%model%mesh%nnode_onP
       if (this%model%lame1_n(n) < 1e-6_r8 .and. this%model%lame2_n(n) < 1e-6_r8) then
         ! Set displacements to zero for empty or fluid filled cells
-        j = 3*(n-1) + 1
-        this%diag(j:j+2) = 1
+        this%diag(:,n) = 1
       else
-        do d = 1, 3
-          j = 3*(n-1) + d
-          this%diag(j) = (this%model%lame1_n(n) * this%d1(j) + this%model%lame2_n(n) * this%d2(j))
-        end do
+        this%diag(:,n) = this%model%lame1_n(n) * this%d1(:,n) + this%model%lame2_n(n) * this%d2(:,n)
       end if
-      ASSERT(this%diag(j) /= 0)
+      ASSERT(all(this%diag(:,n) /= 0))
     end do
+
+    if (this%bc%gap_contact_active) call this%model%compute_forces(t, displ, force)
+    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag)
 
     do n = 1, this%model%mesh%nnode_onP
-      j = 3*(n-1) + 1
-      this%diag(j:j+2) = this%diag(j:j+2) / this%model%scaling_factor(n)
+      this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)
     end do
-
-    call gap_conditions
-
-    ! Dirichlet BCs
-    do d = 1, 3
-      call this%bc%displacement(d)%compute(t)
-      associate (nodes => this%bc%displacement(d)%index)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          j = 3*(n-1) + d
-          this%diag(j) = this%model%contact_penalty
-        end do
-      end associate
-    end do
-
-    ! The residual passed in will have, in the surface-aligned reference frame,
-    ! the difference between the test normal displacement and the BC normal
-    ! displacement. So we want the application of the preconditioner (inverse of
-    ! diagonal) to result in this difference in that rotated reverence frame.
-    call this%bc%displacementn%compute(t)
-    associate (nodes => this%bc%displacementn%index, &
-        rot => this%bc%displacementn%rotation_matrix, &
-        normal => this%bc%displacementn%rotation_matrix(3,:,:))
-      do i = 1, size(nodes)
-        n = nodes(i)
-        associate (rn => this%diag(3*(n-1)+1:3*(n-1)+3))
-          rn = rn - rn * normal(:,i)**2
-          rn = rn - this%model%contact_penalty * normal(:,i)**2
-        end associate
-      end do
-    end associate
 
     call stop_timer("precon-compute")
-
-  contains
-
-    subroutine gap_conditions()
-
-      integer :: n1, n2
-      real(r8) :: s, tn, l, dl(2)
-
-      associate (link => this%bc%gap_contact%index, dvalues => this%bc%gap_contact%dvalue)
-
-        if (this%bc%gap_contact%enabled) then
-          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
-          !            everything working in serial.
-          call this%model%compute_forces(t, displ, force)
-          call this%bc%gap_contact%compute_deriv(t, displ, force, this%model%scaling_factor, this%diag)
-#ifndef NDEBUG
-          do i = 1, size(link, dim=2)
-            n1 = link(1,i)
-            n2 = link(2,i)
-            if (n1 <= this%model%mesh%nnode_onP .or. n2 <= this%model%mesh%nnode_onP) then
-              ASSERT(n1 <= this%model%mesh%nnode_onP .and. n2 <= this%model%mesh%nnode_onP)
-            end if
-          end do
-#endif
-        end if
-
-        do i = 1, size(link, dim=2)
-          n1 = link(1,i)
-          n2 = link(2,i)
-          associate (r1 => this%diag(3*(n1-1)+1:3*(n1-1)+3), &
-              &      r2 => this%diag(3*(n2-1)+1:3*(n2-1)+3))
-            if (n1 <= this%model%mesh%nnode_onP) r1 = r1 + dvalues(:,1,i)
-            if (n2 <= this%model%mesh%nnode_onP) r2 = r2 + dvalues(:,2,i)
-          end associate
-        end do
-
-      end associate
-
-    end subroutine gap_conditions
 
   end subroutine compute
 
 
   subroutine apply(this, u, f)
 
-    class(sm_ds_precon), intent(in) :: this
+    class(sm_ds_precon), intent(in), target :: this
     real(r8), intent(in), contiguous :: u(:,:) ! current displacement guess
-    real(r8), intent(inout), contiguous :: f(:) ! in residual, out next displacement step guess
+    real(r8), intent(inout), contiguous :: f(:) ! in residual, out next displacement guess
 
     integer :: i, j
-    real(r8) :: d
+    real(r8) :: x
+    real(r8), pointer :: diag(:) => null()
 
     call start_timer("precon-apply")
 
-    do j = 1, size(this%diag)
+    !! TODO: reshape f outside this routine instead.
+    diag(1:3*this%model%mesh%nnode_onP) => this%diag
+
+    do j = 1, size(diag)
       !f(j) = f(j) / this%diag(j)
-      d = f(j) / this%diag(j)
+      x = f(j) / diag(j)
       do i = 1, this%niter
-        f(j) = f(j) + this%omega*(d-f(j))
-        !f(j) = (f(j) - this%omega*f(j)) + this%omega*d
+        f(j) = f(j) + this%omega*(x-f(j))
+        !f(j) = (f(j) - this%omega*f(j)) + this%omega*x
       end do
     end do
 

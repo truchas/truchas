@@ -61,12 +61,16 @@ module sm_gap_contact_bc_type
 
 contains
 
-  subroutine init(this, mesh, ig)
+  subroutine init(this, mesh, ig, penalty, distance, traction)
     class(sm_gap_contact_bc), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(integration_geometry), intent(in), target :: ig
+    real(r8), intent(in) :: penalty, distance, traction
     this%mesh => mesh
     this%ig => ig
+    this%contact_penalty = penalty
+    this%contact_distance = distance
+    this%contact_normal_traction = traction
     allocate(this%builder)
     call this%builder%init(mesh)
   end subroutine init
@@ -232,8 +236,8 @@ contains
       tn = - stress1 / this%area(i) ! TODO-WARN: is the sign right?
       l = this%contact_factor(s, tn)
 
-      v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
-      v(2) = stress1 / stress_factor(n2) + this%contact_penalty*(x1 - x2)
+      v(1) = stress2 + this%contact_penalty*(x2 - x1) * stress_factor(n1)
+      v(2) = stress1 + this%contact_penalty*(x1 - x2) * stress_factor(n2)
 
       this%value(:,1,i) = normal * l * v(1)
       this%value(:,2,i) = normal * l * v(2)
@@ -245,7 +249,7 @@ contains
   subroutine compute_deriv(this, t, displ, ftot, stress_factor, diag)
 
     class(sm_gap_contact_bc), intent(inout) :: this
-    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:), diag(:)
+    real(r8), intent(in) :: t, displ(:,:), ftot(:,:), stress_factor(:), diag(:,:)
 
     integer :: i, n1, n2
     real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3), diag2(3)
@@ -260,8 +264,8 @@ contains
       stress2 = dot_product(normal, ftot(:,n2))
       x1 = dot_product(normal, displ(:,n1))
       x2 = dot_product(normal, displ(:,n2))
-      diag1 = diag(3*(n1-1)+1:3*(n1-1)+3) * normal * stress_factor(n1)
-      diag2 = diag(3*(n2-1)+1:3*(n2-1)+3) * normal * stress_factor(n2)
+      diag1 = diag(:,n1) * normal !* stress_factor(n1)
+      diag2 = diag(:,n2) * normal !* stress_factor(n2)
 
       s = x2 - x1
       tn = - stress1 / this%area(i)
@@ -270,11 +274,11 @@ contains
       dldu1 = -dl(1)*normal - dl(2)*diag1 / this%area(i)
       dldu2 =  dl(1)*normal
 
-      v(1) = stress2 / stress_factor(n1) + this%contact_penalty*(x2 - x1)
-      v(2) = stress1 / stress_factor(n2) + this%contact_penalty*(x1 - x2)
+      v(1) = stress2 + this%contact_penalty*(x2 - x1) * stress_factor(n1)
+      v(2) = stress1 + this%contact_penalty*(x1 - x2) * stress_factor(n2)
 
-      this%dvalue(:,1,i) = normal * (-l*this%contact_penalty*normal + dldu1*v(1))
-      this%dvalue(:,2,i) = normal * (-l*this%contact_penalty*normal + dldu2*v(2))
+      this%dvalue(:,1,i) = normal * (-l*this%contact_penalty*normal * stress_factor(n1) + dldu1*v(1))
+      this%dvalue(:,2,i) = normal * (-l*this%contact_penalty*normal * stress_factor(n2) + dldu2*v(2))
     end do
 
   end subroutine compute_deriv

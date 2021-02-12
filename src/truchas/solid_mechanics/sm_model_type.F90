@@ -40,8 +40,7 @@ module sm_model_type
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
-    real(r8) :: contact_distance, contact_normal_traction, strain_limit
-    real(r8), public :: contact_penalty
+    real(r8) :: strain_limit
   contains
     procedure :: init
     procedure :: size => model_size
@@ -69,6 +68,7 @@ contains
     real(r8), intent(in) :: reference_density(:)
 
     integer :: stat
+    real(r8) :: penalty, traction, distance
     character(:), allocatable :: errmsg
     type(parameter_list), pointer :: plist => null()
 
@@ -82,9 +82,6 @@ contains
     call this%ig%init(mesh)
 
     call params%get('body-force-density', this%body_force_density, default=[0d0, 0d0, 0d0])
-    call params%get('contact-distance', this%contact_distance, default=1e-7_r8)
-    call params%get('contact-normal-traction', this%contact_normal_traction, default=1e4_r8)
-    call params%get('contact-penalty', this%contact_penalty, default=1e3_r8)
     call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
 
     ASSERT(size(this%body_force_density) == 3)
@@ -104,8 +101,11 @@ contains
     call move_alloc(lame2f, this%lame2f)
     call move_alloc(densityf, this%densityf)
 
+    call params%get('contact-distance', distance, default=1e-7_r8)
+    call params%get('contact-normal-traction', traction, default=1e4_r8)
+    call params%get('contact-penalty', penalty, default=1e3_r8)
     plist => params%sublist('bc')
-    call this%bc%init(plist, mesh, this%ig, stat, errmsg)
+    call this%bc%init(plist, mesh, this%ig, penalty, distance, traction, stat, errmsg)
     if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
 
   contains
@@ -195,9 +195,9 @@ contains
     ! right hand side & scaling factor
     do n = 1, this%mesh%nnode_onP
       if (this%lame2_n(n) /= 0) then
-        this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
+        !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
         !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) / this%ig%volume(n)
-        !this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
+        this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
         !this%scaling_factor(n) = 2e3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
       else
         this%scaling_factor(n) = 1
@@ -218,7 +218,7 @@ contains
 
     !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
     !this%contact_penalty = global_maxval(this%rhs)
-    this%contact_penalty = 1e3_r8
+    !this%contact_penalty = 1e3_r8
     !this%contact_penalty = global_maxval(this%lame2) * this%max_cell_halfwidth
     !this%contact_penalty = 1
 
@@ -296,130 +296,13 @@ contains
       end associate
     end do
 
-    call traction_bcs
+    call this%bc%apply(t, this%scaling_factor, displ, r)
 
-    ftot = r
     do n = 1, this%mesh%nnode_onP
       r(:,n) = r(:,n) / this%scaling_factor(n)
     end do
 
-    call gap_conditions
-    call displacement_bcs
-
     call stop_timer("residual")
-
-  contains
-
-    subroutine traction_bcs()
-
-      ! At traction BCs the stress is defined along the face. Each face has
-      ! traction discretized at the integration points, one for each node. The
-      ! values array provides the equivalent of traction = tensor_dot(stress,
-      ! n) where n is normal of the boundary with magnitude equal to the area
-      ! of this integration region (associated with node and face center, not
-      ! the whole face).
-      do d = 1, 3
-        call this%bc%traction(d)%compute(t)
-        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value, &
-            area => this%bc%traction(d)%factor)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = r(d,n) + values(i) * area(i)
-          end do
-        end associate
-      end do
-
-      ! Normal traction BCs apply traction in the normal direction, but zero
-      ! traction in tangential directions. Each element of this BC contains a
-      ! vector traction, which corresponds to the accumulated area-multiplied
-      ! traction contribution to a node from its neighboring boundary
-      ! integration points. The area is already factored into the values.
-      call this%bc%tractionn%compute(t)
-      associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
-        do i = 1, size(nodes)
-          r(:,n) = r(:,n) + values(:,i)
-        end do
-      end associate
-
-    end subroutine traction_bcs
-
-
-    ! Normal displacement gap condition. Enforces a given separation between two
-    ! sides of a gap face, and possibly a shear force on each side.
-    subroutine gap_conditions()
-
-      integer :: n1, n2
-      real(r8) :: x1(3), x2(3), stress1(3), stress2(3), s, tn, l
-
-      call this%bc%gap_contact%compute(t, displ, ftot, this%scaling_factor)
-
-      associate (link => this%bc%gap_contact%index, values => this%bc%gap_contact%value, &
-          rot => this%bc%gap_contact%rotation_matrix)
-
-        if (this%bc%gap_contact%enabled) then
-          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
-          !            everything working in serial.
-#ifndef NDEBUG
-          do i = 1, size(link, dim=2)
-            n1 = link(1,i)
-            n2 = link(2,i)
-            if (n1 <= this%mesh%nnode_onP .or. n2 <= this%mesh%nnode_onP) then
-              ASSERT(n1 <= this%mesh%nnode_onP .and. n2 <= this%mesh%nnode_onP)
-            end if
-          end do
-#endif
-        end if
-
-        do i = 1, size(link, dim=2)
-          n1 = link(1,i)
-          n2 = link(2,i)
-          if (n1 <= this%mesh%nnode_onP) r(:,n1) = r(:,n1) + values(:,1,i)
-          if (n2 <= this%mesh%nnode_onP) r(:,n2) = r(:,n2) + values(:,2,i)
-        end do
-
-      end associate
-
-    end subroutine gap_conditions
-
-    subroutine displacement_bcs()
-
-      real(r8) :: displn
-
-      ! Displacement BCs transform the matrix to a diagonal and the right hand
-      ! side to the desired solution.
-      do d = 1, 3
-        call this%bc%displacement(d)%compute(t)
-        associate (nodes => this%bc%displacement(d)%index, &
-            values => this%bc%displacement(d)%value)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = this%contact_penalty * (displ(d,n) - values(i))
-          end do
-        end associate
-      end do
-
-      ! Normal displacement BCs enforce a given displacement in the normal
-      ! direction, and apply zerotraction in tangential directions. To do this
-      ! we must rotate the residual components components to a surface-aligned
-      ! coordinate space, and set the normal component of the residual to the
-      ! appropriate value. The node normal vector is computed from an
-      ! area-weighted average of the surrounding integration points. After
-      ! setting the appropriate coordinate-aligned value, it's important to
-      ! rotate back into the usual coordinate space, for consistency with the
-      ! preconditioner.
-      call this%bc%displacementn%compute(t)
-      associate (nodes => this%bc%displacementn%index, values => this%bc%displacementn%value, &
-          rot => this%bc%displacementn%rotation_matrix, &
-          normal => this%bc%displacementn%rotation_matrix(3,:,:))
-        do i = 1, size(nodes)
-          n = nodes(i)
-          displn = dot_product(displ(:,n), normal(:,i))
-          r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
-          r(:,n) = r(:,n) - this%contact_penalty * (displn - values(i)) * normal(:,i)
-        end do
-      end associate
-
-    end subroutine displacement_bcs
 
   end subroutine compute_residual
 
@@ -458,44 +341,9 @@ contains
       end associate
     end do
 
-    call traction_bcs
+    call this%bc%apply_traction(t, r)
 
     call stop_timer("residual")
-
-  contains
-
-    subroutine traction_bcs()
-
-      do d = 1, 3
-        ! At traction BCs the stress is defined along the face. Each face has
-        ! traction discretized at the integration points, one for each node. The
-        ! values array provides the equivalent of traction = tensor_dot(stress,
-        ! n) where n is normal of the boundary with magnitude equal to the area
-        ! of this integration region (associated with node and face center, not
-        ! the whole face).
-        call this%bc%traction(d)%compute(t)
-        associate (nodes => this%bc%traction(d)%index, values => this%bc%traction(d)%value, &
-            area => this%bc%traction(d)%factor)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = r(d,n) + values(i) * area(i)
-          end do
-        end associate
-      end do
-
-      ! Normal traction BCs apply traction in the normal direction, but zero
-      ! traction in tangential directions. Each element of this BC contains a
-      ! vector traction, which corresponds to the accumulated area-multiplied
-      ! traction contribution to a node from its neighboring boundary
-      ! integration points. The area is already factored into the values.
-      call this%bc%tractionn%compute(t)
-      associate (nodes => this%bc%tractionn%index, values => this%bc%tractionn%value)
-        do i = 1, size(nodes)
-          r(:,n) = r(:,n) + values(:,i)
-        end do
-      end associate
-
-    end subroutine traction_bcs
 
   end subroutine compute_forces
 
