@@ -6,7 +6,7 @@
 
 module test_rade_tools_common
 
-  use kinds, only: i4, r8
+  use,intrinsic :: iso_fortran_env, only: int32
   implicit none
 
 contains
@@ -39,8 +39,8 @@ contains
     real, intent(out) :: rand
 
     !! We only want fractions of the form 1/2^k
-    integer(i4), parameter :: mask = int(Z'3F800000',i4)
-    integer(i4) :: i
+    integer(int32), parameter :: mask = int(Z'3F800000',int32)
+    integer(int32) :: i
     real :: r
 
     call random_number(r)
