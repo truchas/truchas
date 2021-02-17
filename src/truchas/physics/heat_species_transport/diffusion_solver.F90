@@ -75,7 +75,7 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
-    type(parameter_list) :: bc_params, species_bc_params, thermal_source_params
+    type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -91,16 +91,21 @@ contains
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
+    use diffusion_solver_namelist
+    use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
 
     integer, intent(in) :: lun
 
-    call read_ds_namelist (lun)
+    call ds_data_init
+    call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
     call read_thermal_bc_namelists(lun, this%bc_params)
     call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
 
     call read_enclosure_radiation_namelists(lun)
+
+    call this%ds_params%get('void-temperature', void_temperature)
 
   end subroutine read_ds_namelists
 
@@ -395,7 +400,7 @@ contains
     integer :: stat
     character(len=200) :: errmsg
     type(enthalpy_advector1), allocatable :: hadv1
-    character(:), allocatable :: errmsg2
+    character(:), allocatable :: integrator, errmsg2
 
     call TLS_info ('')
     call TLS_info ('Initializing diffusion solver ...')
@@ -405,7 +410,7 @@ contains
     INSIST(associated(this%mesh))
 
     allocate(this%disc)
-    call this%disc%init (this%mesh, use_new_mfd)
+    call this%disc%init (this%mesh, use_new_mfd=.true.)
 
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg2)
@@ -431,6 +436,8 @@ contains
       call move_alloc(hadv1, this%hadv)
     end if
 
+    call this%ds_params%get('integrator', integrator)
+
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
     if (this%have_void .and. this%have_fluid_flow) then
@@ -440,13 +447,13 @@ contains
         INSIST(.false.)
       end if
       this%solver_type = SOLVER2
-      if (integrator /= DS_NONADAPTIVE_BDF1) then
+      if (integrator /= 'nonadaptive-bdf1') then
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     else
       !! Void (if any) is fixed; use standard solver
       this%solver_type = SOLVER1
-      if (integrator /= DS_ADAPTIVE_BDF2) then
+      if (integrator /= 'adaptive-bdf2') then
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     end if
@@ -465,8 +472,7 @@ contains
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
-      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
+      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, this%ds_params)
 
     case (SOLVER2)
       block
@@ -478,7 +484,7 @@ contains
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
-      this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)
+      this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params)
       call move_alloc(this%hadv, this%sol2%hadv)
 
     case default

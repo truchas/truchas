@@ -44,6 +44,7 @@ list(APPEND PHYSICS_SOURCE_FILES
 
 # - heat_species_transport
 list(APPEND PHYSICS_SOURCE_FILES
+           physics/heat_species_transport/diffusion_solver_namelist.F90
            physics/heat_species_transport/thermal_bc_namelist.F90
            physics/heat_species_transport/thermal_bc_factory_class.F90
            physics/heat_species_transport/thermal_bc_factory1_type.F90
