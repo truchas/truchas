@@ -148,10 +148,10 @@ contains
       dp => pardp ! NB: in F2008 can make pardp an internal sub and pass directly
       call this%accel%set_dot_prod (dp)
       call create_history (this%uhist, 2, n)
-      call params%get('nlk-max-itr', this%max_itr)
+      call params%get('nlk-max-iter', this%max_itr)
 
       call params%get('epsilon', this%epsilon)
-      call params%get('verbose', this%verbose)
+      call params%get('verbose-stepping', this%verbose)
       if (this%verbose) call params%get('unit', this%unit)
       this%verbose = this%verbose .and. is_IOP
     end block
