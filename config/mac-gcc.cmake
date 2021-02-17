@@ -9,7 +9,7 @@ set(Truchas_Fortran_FLAGS "-fimplicit-none -ffree-line-length-none"
 set(CMAKE_Fortran_FLAGS_RELEASE "${Truchas_Fortran_FLAGS} -O2 -DNDEBUG"
     CACHE STRING "Fortran compile flags")
 set(CMAKE_Fortran_FLAGS_DEBUG "${Truchas_Fortran_FLAGS} \
--g -O0 -fcheck=bounds,do,mem,pointer -finit-real=nan -finit-integer=-inf"
+-g -O0 -fcheck=bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647"
     CACHE STRING "Fortran compile flags")
 set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-g ${CMAKE_Fortran_FLAGS_RELEASE}"
     CACHE STRING "Fortran compile flags")
