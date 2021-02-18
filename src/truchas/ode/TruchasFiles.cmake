@@ -9,6 +9,10 @@ set(ODE_SOURCE_FILES
        ode/bdf2/bdf2_profiling.F90
        ode/bdf2/solution_history.F90
        ode/idaesol_type.F90
+       ode/vector_class.F90
+       ode/new_nka_type.F90
+       ode/new_state_history_type.F90
+       ode/new_idaesol_type.F90
 )
 
 set_source_files_properties(${ODE_SOURCE_FILES} PROPERTIES

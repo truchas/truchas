@@ -51,6 +51,15 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/species_bc_namelist.F90
            physics/heat_species_transport/species_bc_factory_class.F90
            physics/heat_species_transport/species_bc_factory1_type.F90
+           physics/heat_species_transport/ht_vector_type.F90
+           physics/heat_species_transport/ht_model_type.F90
+           physics/heat_species_transport/ht_model_factory.F90
+           physics/heat_species_transport/ht_norm_type.F90
+           physics/heat_species_transport/ht_precon_type.F90
+           physics/heat_species_transport/ht_idaesol_model_type.F90
+           physics/heat_species_transport/ht_solver_type.F90
+           physics/heat_species_transport/ht_solver_factory.F90
+           physics/heat_species_transport/ht_ic_solver_type.F90
            physics/heat_species_transport/FHT_model_factory.F90
            physics/heat_species_transport/FHT_model_type.F90
            physics/heat_species_transport/FHT_norm_type.F90
