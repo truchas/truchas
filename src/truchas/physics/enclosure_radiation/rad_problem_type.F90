@@ -53,6 +53,7 @@ module rad_problem_type
     procedure :: rhs_deriv
     procedure :: update_moving_vf
     procedure :: add_moving_vf_events
+    procedure :: size => prob_size
   end type rad_problem
 
   integer, parameter, public :: DT_POLICY_NONE   = 0
@@ -1181,6 +1182,11 @@ contains
     case default
       dt = 0.0_r8 ! should never be here
     end select
+  end function
+
+  elemental integer function prob_size(this)
+    class(rad_problem), intent(in) :: this
+    prob_size = size(this%faces)
   end function
 
 end module rad_problem_type

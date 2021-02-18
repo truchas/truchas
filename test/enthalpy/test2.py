@@ -18,14 +18,14 @@ def run_test(outA, outB):
     # test final temperature
     tempA = outA.field(2,"Z_TEMP")
     tempB = outB.field(2,"Z_TEMP")
-    nfail += truchas.compare_max_rel(tempA, tempB, 1e-15, "temperature", outA.time(2))
+    nfail += truchas.compare_max_rel(tempA, tempB, 2e-8, "temperature", outA.time(2))
 
     # test the enthalpy probe data
     filename = os.path.join(outA.directory, "probe1.dat")
     dataA = numpy.loadtxt(filename)
     filename = os.path.join(outB.directory, "probe1.dat")
     dataB = numpy.loadtxt(filename)
-    nfail += truchas.compare_max_rel(dataA[:,1], dataB[:,1], 1e-15, 'enthalpy', -1.0)
+    nfail += truchas.compare_max_rel(dataA[:,1], dataB[:,1], 2e-8, 'enthalpy', -1.0)
 
     truchas.report_summary(nfail)
     return nfail
