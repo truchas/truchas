@@ -23,9 +23,11 @@ module diffusion_solver
   use matl_mesh_func_type
   use string_utilities, only: i_to_c
   use mesh_interop
+  use ht_model_type
+  use ht_solver_type
   use FHT_model_type
   use FHT_solver_type
-  use HTSD_model_type
+  use HTSD_model_type, only: htsd_model, htsd_model_delete
   use HTSD_solver_type
   use truchas_timers
   use truchas_logging_services
@@ -71,6 +73,9 @@ module diffusion_solver
     !! The special model and solver that works with transient void.
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
+    !! New prototype HT-only solver
+    type(ht_model),  pointer :: mod3 => null()
+    type(ht_solver), pointer :: sol3 => null()
     class(enthalpy_advector), allocatable :: hadv
     type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
@@ -81,6 +86,7 @@ module diffusion_solver
 
   integer, parameter :: SOLVER1 = 1 ! the standard solver
   integer, parameter :: SOLVER2 = 2 ! special solver that works with transient void
+  integer, parameter :: SOLVER3 = 3 ! new HT prototype
 
 contains
 
@@ -139,6 +145,9 @@ contains
       t = h + FHT_solver_last_time(this%sol2)
       call FHT_solver_advance_state(this%sol2, t, errc)
       hnext = merge(h/2, huge(1.0_r8), (errc /= 0))
+    case (SOLVER3)  ! new HT prototype
+      t = h + this%sol3%last_time()
+      call this%sol3%step(t, hnext, errc)
     case default
       INSIST(.false.)
     end select
@@ -177,6 +186,8 @@ contains
           call this%mod1%set_ht_adv_source(q_ds)
         case (SOLVER2)  ! HT solver with transient void
           call this%mod2%set_ht_adv_source(q_ds)
+        case (SOLVER3)
+          call this%mod3%set_ht_adv_source(q_ds)
         end select
         deallocate(q_ds)
       end if
@@ -217,6 +228,8 @@ contains
       call HTSD_solver_commit_pending_state(this%sol1)
     case (SOLVER2)  ! HT solver with transient void
       call FHT_solver_commit_pending_state(this%sol2)
+    case (SOLVER3)  ! new HT prototype
+      call this%sol3%commit_pending_state
     case default
       INSIST(.false.)
     end select
@@ -245,6 +258,10 @@ contains
       hlast = FHT_solver_last_step_size(this%sol2)
       call FHT_solver_get_stepping_stats (this%sol2, counters)
       write(message,2) hlast, counters(2:4)
+    case (SOLVER3)
+      hlast = this%sol3%last_step_size()
+      call this%sol3%get_stepping_stats(counters)
+      write(message,1) hlast, counters(1:2), counters(4:6)
     case default
       INSIST(.false.)
     end select
@@ -273,6 +290,8 @@ contains
         end do
       case (SOLVER2)
         call FHT_solver_get_cell_temp_copy(this%sol2, state(:,0))
+      case (SOLVER3)
+        call this%sol3%get_cell_temp_copy(state(:,0))
       case default
         INSIST(.false.)
       end select
@@ -289,6 +308,8 @@ contains
       call HTSD_solver_get_cell_temp_copy (this%sol1, array)
     case (SOLVER2)
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
+    case (SOLVER3)
+      call this%sol3%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -303,6 +324,8 @@ contains
       call HTSD_solver_get_cell_heat_copy (this%sol1, array)
     case (SOLVER2)
       call FHT_solver_get_cell_heat_copy (this%sol2, array)
+    case (SOLVER3)
+      call this%sol3%get_cell_heat_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -331,6 +354,8 @@ contains
       call HTSD_solver_get_cell_temp_grad (this%sol1, array(:,:this%mesh%ncell_onP))
     case (SOLVER2)
       call FHT_solver_get_cell_temp_grad (this%sol2, array(:,:this%mesh%ncell_onP))
+    case (SOLVER3)
+      call this%sol3%get_cell_temp_grad(array(:,:this%mesh%ncell_onP))
     case default
       INSIST(.false.)
     end select
@@ -347,6 +372,8 @@ contains
       call HTSD_solver_get_cell_temp_copy (this%sol1, array)
     case (SOLVER2)
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
+    case (SOLVER3)
+      call this%sol3%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -362,6 +389,8 @@ contains
       call HTSD_solver_get_face_temp_copy (this%sol1, array)
     case (SOLVER2)
       call FHT_solver_get_face_temp_copy (this%sol2, array)
+    case (SOLVER3)
+      call this%sol3%get_face_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -376,6 +405,8 @@ contains
       call HTSD_solver_get_face_temp_view (this%sol1, view)
     case (SOLVER2)
       call FHT_solver_get_face_temp_view (this%sol2, view)
+    case (SOLVER3)
+      call this%sol3%get_face_temp_view(view)
     case default
       INSIST(.false.)
     end select
@@ -392,6 +423,8 @@ contains
     use FHT_solver_factory
     use HTSD_model_factory
     use HTSD_solver_factory
+    use ht_model_factory
+    use ht_solver_factory
     use physics_module, only: flow
     use enthalpy_advector1_type
     use thermal_bc_factory1_type
@@ -466,7 +499,11 @@ contains
       end if
     else
       !! Void (if any) is fixed; use standard solver
-      this%solver_type = SOLVER1
+      if (this%have_species_diffusion) then
+        this%solver_type = SOLVER1
+      else
+        this%solver_Type = SOLVER3
+      end if
       if (integrator /= 'adaptive-bdf2') then
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
@@ -500,6 +537,17 @@ contains
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params)
       call move_alloc(this%hadv, this%sol2%hadv)
 
+    case (SOLVER3)
+      block
+        type(thermal_bc_factory1)    :: tbc_fac
+        type(thermal_source_factory) :: tsrc_fac
+        call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
+        call tsrc_fac%init(this%mesh, this%thermal_source_params)
+        this%mod3 => create_ht_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, stat, errmsg2)
+      end block
+      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
+      this%sol3 => create_ht_solver(this%mmf, this%mod3, this%ds_params, stat, errmsg2)
+      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
     case default
       INSIST(.false.)
     end select
@@ -569,6 +617,8 @@ contains
       call HTSD_solver_set_initial_state (this%sol1, t, dt, temp, conc)
     case (SOLVER2)
       call FHT_solver_set_initial_state (this%sol2, t, temp)
+    case (SOLVER3)
+      call this%sol3%set_initial_state(t, temp, dt)
     case default
       INSIST(.false.)
     end select
@@ -592,6 +642,8 @@ contains
       call HTSD_solver_restart (this%sol1, dt)
     case (SOLVER2)
       ! nothing to do here yet
+    case (SOLVER3)
+      call this%sol3%restart(dt)
     case default
       INSIST(.false.)
     end select
@@ -752,6 +804,8 @@ contains
       call this%mod1%update_moving_vf
     case (SOLVER2)
       call this%mod2%update_moving_vf
+    case (SOLVER3)
+      call this%mod3%update_moving_vf
     case default
       INSIST(.false.)
     end select
@@ -765,6 +819,8 @@ contains
       call this%mod1%add_moving_vf_events(eventq)
     case (SOLVER2)
       call this%mod2%add_moving_vf_events(eventq)
+    case (SOLVER3)
+      call this%mod3%add_moving_vf_events(eventq)
     case default
       INSIST(.false.)
     end select

@@ -20,6 +20,15 @@ target_sources(truchas PRIVATE
   HTSD_solver_factory.F90
   HTSD_solver_type.F90
   HTSD_init_cond_type.F90
+  ht_vector_type.F90
+  ht_model_type.F90
+  ht_model_factory.F90
+  ht_norm_type.F90
+  ht_precon_type.F90
+  ht_idaesol_model_type.F90
+  ht_solver_type.F90
+  ht_solver_factory.F90
+  ht_ic_solver_type.F90
   TofH_type.F90
   data_layout_type.F90
   mfd_disc_type.F90
