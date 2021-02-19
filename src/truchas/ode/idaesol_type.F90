@@ -75,7 +75,7 @@ module idaesol_type
     procedure :: init
     procedure :: set_initial_state
     procedure :: integrate => bdf2_step_driver
-    procedure :: step => bdf2_step
+    procedure :: step
     procedure :: commit_state
     procedure :: get_interpolated_state
     procedure :: get_last_state_copy

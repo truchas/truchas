@@ -157,7 +157,7 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint
-    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view, update_moving_vf
+    use diffusion_solver,         only: ds_step, ds_accept, ds_restart, ds_get_face_temp_view, update_moving_vf
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
@@ -178,7 +178,8 @@ call hijack_truchas ()
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
-    integer :: c, errc, lookahead
+    integer :: c, errc, lookahead, num_try
+    integer, parameter :: MAX_TRY = 10  !TODO: make expert parameter
     type(time_step_sync) :: ts_sync
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
@@ -239,29 +240,42 @@ call hijack_truchas ()
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
         call induction_heating(t1, t2)
 
-        ! move materials and associated quantities
-        call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before advection:')
+        do num_try = 1, MAX_TRY
 
-        if (vtrack_enabled() .and. flow_enabled()) then
-          vel_fn => flow_vel_fn_view()
-          call vtrack_update(t, dt, vel_fn)
-          vof => vtrack_vof_view()
-          flux_vol => vtrack_flux_vol_view()
-          call flow_set_pre_solidification_density(vof)
-        end if
+          ! move materials and associated quantities
+          call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before advection:')
 
-        ! solve heat transfer and phase change
-        call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
+          if (vtrack_enabled() .and. flow_enabled()) then
+            vel_fn => flow_vel_fn_view()
+            call vtrack_update(t, dt, vel_fn)
+            vof => vtrack_vof_view()
+            flux_vol => vtrack_flux_vol_view()
+            call flow_set_pre_solidification_density(vof)
+          end if
 
-        ! Diffusion solver: species concentration and/or heat.
-        if (ds_enabled) then
-          if (restart_ds) call ds_restart(t2 - t1)
-          call ds_step(dt, dt_ds, errc)
-          if (errc /= 0) call TLS_fatal('CYCLE_DRIVER: Diffusion Solver step failed')
-          ! The step size may have been reduced.  This assumes all other physics
-          ! is off, and will need to be redone when the diffusion solver is made
-          ! co-operable with the rest of the physics.
-          t2 = t1 + dt
+          ! solve heat transfer and phase change
+          call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
+
+          ! Diffusion solver: species concentration and/or heat.
+          if (ds_enabled) then
+            if (restart_ds) call ds_restart(t2 - t1)
+            call ds_step(dt, dt_ds, errc)
+            if (errc == 0) then
+              call ds_accept
+              exit
+            end if
+            dt = dt_ds
+            t2 = t1 + dt
+            call TLS_info('Diffusion solver step failed; retrying with reduced step size')
+          else
+            exit
+          end if
+
+        end do
+
+        if (num_try > max_try) then
+          call TLS_info('Too many repeated failures to take a step; giving up')
+          exit MAIN_CYCLE
         end if
 
         ! calculate new velocity field
