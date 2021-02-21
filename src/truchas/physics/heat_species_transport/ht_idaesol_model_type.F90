@@ -50,7 +50,7 @@ contains
     class(vector), allocatable, intent(out) :: vec
     type(ht_vector), allocatable :: tmp
     allocate(tmp)
-    call tmp%init(this%model%mesh)
+    call this%model%init_vector(tmp)
     call move_alloc(tmp, vec)
   end subroutine
 

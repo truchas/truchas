@@ -20,15 +20,14 @@ module ht_solver_factory
 
 contains
 
-  function create_ht_solver(mmf, model, params, stat, errmsg) result(solver)
+  function create_ht_solver(mmf, model, params, er_params, stat, errmsg) result(solver)
 
-    use enclosure_radiation_namelist, only: er_params => params
     use parallel_communication
     use truchas_env, only: output_file_name
 
     type(matl_mesh_func), intent(in), target :: mmf
     type(ht_model), intent(in), target :: model
-    type(parameter_list), intent(inout) :: params
+    type(parameter_list), intent(inout) :: params, er_params
     type(ht_solver), pointer :: solver
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -50,25 +49,23 @@ contains
       call plist%set('unit', lun)
     end if
 
-!TODO    !TODO: read enclosure radiation namelists directly into sublist
-!TODO    if (associated(model%ht)) then
-!TODO      if (associated(model%ht%vf_rad_prob)) then
-!TODO        !TODO! Assumes model%ht%vf_rad_prob array was initialized under the same
-!TODO        !TODO! loop so that that array and vfr_precon_coupling are in correspondence.
-!TODO        !TODO! This is fragile and needs to be fixed.
-!TODO        piter = parameter_list_iterator(er_params)
-!TODO        n = piter%count()
-!TODO        allocate(vfr_precon_coupling(n), rad_tol(n))
-!TODO        do j = 1, n
-!TODO          plist => piter%sublist()
-!TODO          call plist%get('precon-coupling-method', string, default='BACKWARD GS')
-!TODO          vfr_precon_coupling(j) = string
-!TODO          call piter%next
-!TODO        end do
-!TODO        plist => params%sublist('precon')
-!TODO        call plist%set('vfr-precon-coupling', vfr_precon_coupling)
-!TODO      end if
-!TODO    end if
+    !TODO: read enclosure radiation namelists directly into sublist
+    if (associated(model%vf_rad_prob)) then
+      !TODO! Assumes model%vf_rad_prob array was initialized under the same
+      !TODO! loop so that that array and vfr_precon_coupling are in correspondence.
+      !TODO! This is fragile and needs to be fixed.
+      piter = parameter_list_iterator(er_params)
+      n = piter%count()
+      allocate(vfr_precon_coupling(n), rad_tol(n))
+      do j = 1, n
+        plist => piter%sublist()
+        call plist%get('precon-coupling-method', string, default='BACKWARD GS')
+        vfr_precon_coupling(j) = string
+        call piter%next
+      end do
+      plist => params%sublist('precon')
+      call plist%set('vfr-precon-coupling', vfr_precon_coupling)
+    end if
 
     allocate(solver)
     call solver%init(mmf, model, params, stat, errmsg)

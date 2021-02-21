@@ -107,11 +107,9 @@ contains
     type(ht_vector), intent(in) :: u, du
     real(r8), intent(out) :: du_norm
 
-    !integer :: n
-    !real(r8) :: qerror
-    !real(r8), pointer :: qrad(:)
-    !integer, pointer :: faces(:)
-    !real(r8), allocatable :: res(:), rhs(:)
+    integer :: n
+    real(r8) :: qerror
+    real(r8), allocatable :: res(:)
     integer :: ncell, nface
 
     ncell = this%model%mesh%ncell_onP
@@ -128,22 +126,22 @@ contains
     !TODO! integrator thinks it's computing the norm of the correction du but
     !TODO! in this case it is the actual residual norm.  We need more general
     !TODO! norms in the integrator.
-!TODO    if (associated(this%model%ht%vf_rad_prob)) then
-!TODO      !if (is_IOP) write(*,'(a)',advance='no')'ER error: ||res||/||rhs||='
-!TODO      do n = 1, size(this%model%ht%vf_rad_prob)
-!TODO        faces => this%model%ht%vf_rad_prob(n)%faces
-!TODO        allocate(res(size(faces)), rhs(size(faces)))
-!TODO        call HTSD_model_get_radiosity_view (this%model, n, u, qrad)
-!TODO        call HTSD_model_get_face_temp_view (this%model, u, temp)
-!TODO        call this%model%ht%vf_rad_prob(n)%residual (t, qrad, temp(faces), res)
-!TODO        call this%model%ht%vf_rad_prob(n)%rhs (t, temp(faces), rhs)
-!TODO        qerror = sqrt(global_sum(res**2)) / sqrt(global_sum(rhs**2))
-!TODO        !if (is_IOP) write(*,'(e10.3)',advance='no') qerror
-!TODO        ht_du_norm = max(ht_du_norm, qerror/1.0d-3)
-!TODO        deallocate(res, rhs)
-!TODO      end do
-!TODO      !if (is_IOP) write(*,*)
-!TODO    end if
+    if (associated(this%model%vf_rad_prob)) then
+      !if (is_IOP) write(*,'(a)',advance='no')'ER error: ||res||/||rhs||='
+      do n = 1, size(this%model%vf_rad_prob)
+        associate (q => u%encl(n)%qrad, faces => this%model%vf_rad_prob(n)%faces)
+          allocate(res(size(faces)))
+          call this%model%vf_rad_prob(n)%residual(t, q, u%tf(faces), res)
+          qerror = sqrt(global_sum(norm2(res)**2))
+          call this%model%vf_rad_prob(n)%rhs(t, u%tf(faces), res)
+          qerror = qerror / sqrt(global_sum(norm2(res)**2))
+          !if (is_IOP) write(*,'(e10.3)',advance='no') qerror
+          du_norm = max(du_norm, qerror/1.0d-3)
+          deallocate(res)
+        end associate
+      end do
+      !if (is_IOP) write(*,*)
+    end if
 
   contains
 

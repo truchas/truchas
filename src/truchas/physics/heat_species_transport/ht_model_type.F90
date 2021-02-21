@@ -49,6 +49,7 @@ module ht_model_type
     type(rad_problem), pointer :: vf_rad_prob(:) => null()
   contains
     procedure :: init
+    procedure :: init_vector
     procedure :: compute_f
     procedure :: update_moving_vf
     procedure :: add_moving_vf_events
@@ -61,6 +62,16 @@ contains
     type(ht_model), intent(inout) :: this
     call smf_destroy(this%source)
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
+  end subroutine
+
+  subroutine init_vector(this, vec)
+    class(ht_model), intent(in) :: this
+    type(ht_vector), intent(out) :: vec
+    if (associated(this%vf_rad_prob)) then
+      call vec%init(this%mesh, this%vf_rad_prob%size())
+    else
+      call vec%init(this%mesh)
+    end if
   end subroutine
 
   subroutine init(this, disc)
@@ -77,7 +88,7 @@ contains
       call params%get('tofh-tol', eps, default=0.0_r8)
       call params%get('tofh-max-try', max_try, default=50)
       call params%get('tofh-delta', delta, default=1.0_r8)
-      call this%T_of_H%init (this%H_of_T, eps=eps, max_try=max_try, delta=delta)
+      call this%T_of_H%init(this%H_of_T, eps=eps, max_try=max_try, delta=delta)
     end block
   end subroutine
 
@@ -93,11 +104,9 @@ contains
     target :: u
 
     integer :: j, n, n1, n2
-    real(r8) :: term
     real(r8), pointer :: qrad(:)
     real(r8), dimension(this%mesh%ncell) :: value
-    real(r8), allocatable :: Tdir(:), flux(:)
-    integer, pointer :: faces(:)
+    real(r8), allocatable :: Tdir(:)
     logical, allocatable :: void_link(:)
     real(r8), pointer :: state(:,:)
 
@@ -242,30 +251,25 @@ contains
 
     !!!! RESIDUALS OF THE ENCLOSURE RADIATION SYSTEMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!TODO      if (associated(this%vf_rad_prob)) then
-!TODO        do n = 1, size(this%vf_rad_prob)
-!TODO          call HTSD_model_get_radiosity_view (this, n, u, qrad)
-!TODO          faces => this%vf_rad_prob(n)%faces
-!TODO          !! Radiative heat flux contribution to the heat conduction face residual.
-!TODO          allocate(flux(size(faces)))
-!TODO          call this%vf_rad_prob(n)%heat_flux (t, qrad, Tface(faces), flux)
-!TODO          do j = 1, size(faces)
-!TODO            if (this%vf_rad_prob(n)%fmask(j)) &
-!TODO                Fface(faces(j)) = Fface(faces(j)) + this%mesh%area(faces(j)) * flux(j)
-!TODO          end do
-!TODO          deallocate(flux)
-!TODO          !! Residual of the algebraic radiosity system.
-!TODO          call HTSD_model_get_radiosity_view (this, n, f, fptr)
-!TODO          call this%vf_rad_prob(n)%residual (t, qrad, Tface(faces), fptr)
-!TODO          fptr = -fptr
-!TODO        end do
-!TODO      end if
+    if (associated(this%vf_rad_prob)) then
+      do n = 1, size(this%vf_rad_prob)
+        associate (q => u%encl(n)%qrad, r => f%encl(n)%qrad, faces => this%vf_rad_prob(n)%faces)
+          !! Radiative heat flux contribution to the heat conduction face residual.
+          call this%vf_rad_prob(n)%heat_flux(t, q, u%tf(faces), r)
+          do j = 1, size(faces)
+            if (this%vf_rad_prob(n)%fmask(j)) &
+                f%tf(faces(j)) = f%tf(faces(j)) + this%mesh%area(faces(j)) * r(j)
+          end do
+          !! Residual of the algebraic radiosity system.
+          call this%vf_rad_prob(n)%residual(t, q, u%tf(faces), r)
+          r = -r
+        end associate
+      end do
+    end if
 
-      !TODO: is this necessary? Off-process values are not needed, but may be
-      !      used in dummy vector operations, and we don't want fp exceptions.
-      call gather_boundary(this%mesh%cell_ip, f%hc)
-      call gather_boundary(this%mesh%cell_ip, f%tc)
-      call gather_boundary(this%mesh%face_ip, f%tf)
+    !TODO: is this necessary? Off-process values are not needed, but may be
+    !      used in dummy vector operations, and we don't want fp exceptions.
+    call f%gather_boundary()
 
     call stop_timer('ht-function')
 

@@ -97,7 +97,11 @@ contains
     call this%precon%init(model, plist, stat, errmsg)
     if (stat /= 0) return
 
-    call this%u%init(this%mesh)
+    if (associated(this%model%vf_rad_prob)) then
+      call this%u%init(this%mesh, this%model%vf_rad_prob%size())
+    else
+      call this%u%init(this%mesh)
+    end if
 
     call this%integ_model%init(this%model, this%precon, this%norm)
 
