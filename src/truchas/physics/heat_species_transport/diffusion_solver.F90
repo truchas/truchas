@@ -80,7 +80,7 @@ module diffusion_solver
     type(ht_model),  pointer :: mod3 => null()
     type(ht_solver), pointer :: sol3 => null()
     class(enthalpy_advector), allocatable :: hadv
-    type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
+    type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params, er_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -109,7 +109,7 @@ contains
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
 
-    call read_enclosure_radiation_namelists(lun)
+    call read_enclosure_radiation_namelists(lun, this%er_params)
 
     call this%ds_params%get('void-temperature', void_temperature)
 
@@ -517,12 +517,12 @@ contains
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call sbc_fac%init(this%mesh, this%species_bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg)
+        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, this%er_params, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
-      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, this%ds_params)
+      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, this%ds_params, this%er_params)
 
     case (SOLVER2)
       block
@@ -530,11 +530,11 @@ contains
         type(thermal_source_factory) :: tsrc_fac
         call bc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, tsrc_fac, stat, errmsg)
+        this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, tsrc_fac, this%er_params, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
-      this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params)
+      this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params, this%er_params)
       call move_alloc(this%hadv, this%sol2%hadv)
 
     case (SOLVER3)
@@ -543,11 +543,11 @@ contains
         type(thermal_source_factory) :: tsrc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod3 => create_ht_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, stat, errmsg2)
+        this%mod3 => create_ht_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, this%er_params, stat, errmsg2)
       end block
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       this%ht_source => this%mod3%source
-      this%sol3 => create_ht_solver(this%mmf, this%mod3, this%ds_params, stat, errmsg2)
+      this%sol3 => create_ht_solver(this%mmf, this%mod3, this%ds_params, this%er_params, stat, errmsg2)
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
     case default
       INSIST(.false.)

@@ -26,17 +26,16 @@ module enclosure_radiation_namelist
 
   public :: read_enclosure_radiation_namelists
 
-  type(parameter_list), public :: params
-
   integer, parameter :: MAX_NAME_LEN = 31, MAX_FILE_LEN = 255, MAX_FACE_BLOCK_IDS = 32
 
 contains
 
-  subroutine read_enclosure_radiation_namelists(lun)
+  subroutine read_enclosure_radiation_namelists(lun, params)
 
     use toolpath_table, only: known_toolpath
 
     integer, intent(in) :: lun
+    type(parameter_list), intent(inout) :: params
 
     integer :: n, ios
     logical :: found
@@ -196,14 +195,15 @@ contains
 
     end do
 
-    call read_enclosure_surface_namelists(lun)
+    call read_enclosure_surface_namelists(lun, params)
 
   end subroutine read_enclosure_radiation_namelists
 
 
-  subroutine read_enclosure_surface_namelists(lun)
+  subroutine read_enclosure_surface_namelists(lun, params)
 
     integer, intent(in) :: lun
+    type(parameter_list), intent(inout) :: params
 
     integer :: n, ios
     logical :: found

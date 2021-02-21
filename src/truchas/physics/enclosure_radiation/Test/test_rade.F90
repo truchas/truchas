@@ -16,11 +16,13 @@ program test_rade
   use truchas_logging_services
   use unstr_mesh_type
   use rad_problem_type
+  use parameter_list_type
   implicit none
 
   type(unstr_mesh), pointer :: mesh
   character(len=PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:)
   real(r8), allocatable :: hc_temp(:)
+  type(parameter_list) :: params
 
   !! Enclosures to be tested
   character(len=31), parameter :: ENCL_EXT_FACE  = "exterior_face"
@@ -84,7 +86,7 @@ contains
     call read_function_namelists (lun)
 
     !! Enclosure radiation namelists.
-    call read_enclosure_radiation_namelists(lun)
+    call read_enclosure_radiation_namelists(lun, params)
 
     !! The mesh must be named 'main'
     call enable_mesh ('main', exists)
@@ -120,9 +122,6 @@ contains
 
   !! Test that radiosity solver converges within given error tolerance
   subroutine test_converge (mesh, encl_name, hc_temp)
-
-    use enclosure_radiation_namelist, only: params
-    use parameter_list_type
 
     type(unstr_mesh), pointer, intent(in) :: mesh
     character(len=31), intent(in) :: encl_name
