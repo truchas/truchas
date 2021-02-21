@@ -103,7 +103,6 @@ contains
     real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), term
     real(r8), allocatable :: values(:), values2(:,:)
     type(mfd_diff_matrix), pointer :: dm
-    integer, pointer :: faces(:) => null()
 
     ASSERT(dt > 0.0_r8)
 
@@ -221,12 +220,13 @@ contains
     !! TODO: what about factorization coupling?  Is this still correct?
     if (associated(this%model%vf_rad_prob)) then
       do index = 1, size(this%model%vf_rad_prob)
-        faces => this%model%vf_rad_prob(index)%faces
-        allocate(values(size(faces)))
-        call this%model%vf_rad_prob(index)%rhs_deriv(t, u%tf(faces), values)
-        where (.not.this%model%vf_rad_prob(index)%fmask) values = 0
-        call dm%incr_face_diag(faces, this%mesh%area(faces) * values)
-        deallocate(values)
+        associate (faces => this%model%vf_rad_prob(index)%faces)
+          allocate(values(size(faces)))
+          call this%model%vf_rad_prob(index)%rhs_deriv(t, u%tf(faces), values)
+          where (.not.this%model%vf_rad_prob(index)%fmask) values = 0
+          call dm%incr_face_diag(faces, this%mesh%area(faces) * values)
+          deallocate(values)
+        end associate
       end do
     end if
 
@@ -246,7 +246,6 @@ contains
     type(ht_vector), intent(inout) :: f   ! data is intent(inout)
 
     integer :: index, j, n
-    real(r8), pointer :: fq(:)
     real(r8), allocatable :: z(:)
 
     call start_timer('ht-precon-apply')
@@ -259,11 +258,9 @@ contains
       do index = 1, size(this%model%vf_rad_prob)
         if (this%vfr_precon_coupling(index) == VFR_FGS .or. &
             this%vfr_precon_coupling(index) == VFR_FAC) then
-          !TODO: call HTSD_model_get_radiosity_view (this%model, index, f, fq)
-          allocate(z(size(fq)))
-          z = fq
+          z = f%encl(index)%qrad
           call this%model%vf_rad_prob(index)%precon(t, z)
-          if (this%vfr_precon_coupling(index) == VFR_FGS) fq = z
+          if (this%vfr_precon_coupling(index) == VFR_FGS) f%encl(index)%qrad = z
           !! Update the heat equation face residual.
           call this%model%vf_rad_prob(index)%precon_matvec1(t, z)
           do j = 1, size(z)
@@ -316,15 +313,17 @@ contains
         if (this%vfr_precon_coupling(index) == VFR_JAC .or. &
             this%vfr_precon_coupling(index) == VFR_BGS .or. &
             this%vfr_precon_coupling(index) == VFR_FAC) then
-          !! Update the radiosity residual components.
-          !TODO: call HTSD_model_get_radiosity_view (this%model, index, f, fq)
-          if (this%vfr_precon_coupling(index) /= VFR_JAC) then
-            allocate(z(size(fq)))
-            call this%model%vf_rad_prob(index)%rhs_deriv(t, u%tf(this%model%vf_rad_prob(index)%faces), z)
-            fq = fq + z * f%tf(this%model%vf_rad_prob(index)%faces)
-            deallocate(z)
-          end if
-          call this%model%vf_rad_prob(index)%precon(t, fq)
+          associate (fq => f%encl(index)%qrad, faces => this%model%vf_rad_prob(index)%faces)
+            !! Update the radiosity residual components.
+            !TODO: call HTSD_model_get_radiosity_view (this%model, index, f, fq)
+            if (this%vfr_precon_coupling(index) /= VFR_JAC) then
+              allocate(z(size(fq)))
+              call this%model%vf_rad_prob(index)%rhs_deriv(t, u%tf(faces), z)
+              fq = fq + z * f%tf(faces)
+              deallocate(z)
+            end if
+            call this%model%vf_rad_prob(index)%precon(t, fq)
+          end associate
         end if
       end do
       call stop_timer('vf-rad-precon')

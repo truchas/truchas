@@ -97,7 +97,7 @@ contains
     type(ht_vector), intent(inout) :: udot ! data is intent(out)
     target :: u, udot
 
-    integer :: j
+    integer :: j, n
     real(r8), pointer :: state(:,:)
     real(r8) :: dt, Tmin, Tmax
 
@@ -148,18 +148,6 @@ contains
     !f = (f - u) / dt
     call udot%update(-1.0_r8, u)
     call udot%scale(1.0_r8/dt)
-
-!TODO    !! Finite difference approx of face temp and radiosity derivatives.
-!TODO    if (associated(this%model%ht)) then
-!TODO      call HTSD_model_get_face_temp_view (this%model, f, var)
-!TODO      call HTSD_model_set_face_temp (this%model, var, udot)
-!TODO      if (associated(this%model%vf_rad_prob)) then
-!TODO        do n = 1, size(this%model%vf_rad_prob)
-!TODO          call HTSD_model_get_radiosity_view (this%model, n, f, var)
-!TODO          call HTSD_model_set_radiosity (this%model, n, var, udot)
-!TODO        end do
-!TODO      end if
-!TODO    end if
 
   end subroutine compute_udot
 
@@ -234,21 +222,20 @@ contains
 
     call TLS_info ('  Computing consistent face temperatures and radiosities ...')
 
-!TODO    !! Solve for the radiosity components given the (approx) face temperatures.
-!TODO    if (associated(this%vf_rad_prob)) then
-!TODO      do n = 1, size(this%vf_rad_prob)
-!TODO        call HTSD_model_get_radiosity_view (this, n, u, var)
-!TODO        var = 0.0_r8
-!TODO        associate (faces => this%vf_rad_prob(n)%faces)
-!TODO          call this%vf_rad_prob(n)%solve_radiosity (t, u%tf(faces), var, stat, num_itr, error)
-!TODO        end associate
-!TODO        if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-!TODO          write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
-!TODO          call TLS_info (string)
-!TODO        end if
-!TODO        if (stat /= 0) call TLS_info ('      WARNING: radiosities not converged')
-!TODO      end do
-!TODO    end if
+    !! Solve for the radiosity components given the (approx) face temperatures.
+    if (associated(this%vf_rad_prob)) then
+      do n = 1, size(this%vf_rad_prob)
+        associate (q => u%encl(n)%qrad, faces => this%vf_rad_prob(n)%faces)
+          q = 0.0_r8
+          call this%vf_rad_prob(n)%solve_radiosity(t, u%tf(faces), q, stat, num_itr, error)
+        end associate
+        if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
+          write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
+          call TLS_info (string)
+        end if
+        if (stat /= 0) call TLS_info ('      WARNING: radiosities not converged')
+      end do
+    end if
 
     !! Initial residual of the face temperature equations.
     call udot%init(u)
@@ -298,20 +285,19 @@ contains
 
         dT_max = global_maxval(abs(z))
 
-!TODO      !! Solve the radiosity components given the new face temperatures.
-!TODO      if (associated(this%vf_rad_prob)) then
-!TODO        do n = 1, size(this%vf_rad_prob)
-!TODO          call HTSD_model_get_radiosity_view(this, n, u, var)
-!TODO          associate (faces => this%vf_rad_prob(n)%faces)
-!TODO            call this%vf_rad_prob(n)%solve_radiosity(t, Tface(faces), var, stat, num_itr, error)
-!TODO          end associate
-!TODO          if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-!TODO            write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
-!TODO            call TLS_info (string)
-!TODO          end if
-!TODO          if (stat /= 0) call TLS_info ('    WARNING: radiosities not converged')
-!TODO        end do
-!TODO      end if
+        !! Solve the radiosity components given the new face temperatures.
+        if (associated(this%vf_rad_prob)) then
+          do n = 1, size(this%vf_rad_prob)
+            associate (q => u%encl(n)%qrad, faces => this%vf_rad_prob(n)%faces)
+              call this%vf_rad_prob(n)%solve_radiosity(t, u%tf(faces), q, stat, num_itr, error)
+            end associate
+            if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
+              write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
+              call TLS_info (string)
+            end if
+            if (stat /= 0) call TLS_info ('    WARNING: radiosities not converged')
+          end do
+        end if
 
         !! Recompute the face temp residual.
         call this%compute_f(t, u, udot, f)
@@ -351,10 +337,10 @@ contains
 
       type(mfd_diff_matrix), intent(inout) :: matrix
 
-      integer :: j, n, n1, n2, index
+      integer :: n, index
       integer, allocatable :: more_dir_faces(:)
-      real(r8) :: D(this%mesh%ncell), term
-      real(r8), allocatable :: values(:), values2(:,:)
+      real(r8) :: D(this%mesh%ncell)
+      real(r8), allocatable :: values(:)
 
       !! Generate list of void faces; these are treated like Dirichlet BC.
       if (associated(this%void_face)) then

@@ -15,6 +15,7 @@ module ht_model_factory
   use matl_mesh_func_type
   use thermal_bc_factory_class
   use thermal_source_factory_type
+  use parameter_list_type
   implicit none
   private
 
@@ -22,7 +23,7 @@ module ht_model_factory
 
 contains
 
-  function create_ht_model(tinit, disc, mmf, bc_fac, src_fac, stat, errmsg) result(model)
+  function create_ht_model(tinit, disc, mmf, bc_fac, src_fac, er_params, stat, errmsg) result(model)
 
     use diffusion_solver_data, only: void_temperature
     use rad_problem_type
@@ -32,10 +33,9 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
     type(thermal_source_factory), intent(inout) :: src_fac
+    type(parameter_list), intent(inout) :: er_params
     integer, intent(out) :: stat
     character(:), allocatable , intent(out):: errmsg
-
-    character(128) :: errmsg2
     type(ht_model), pointer :: model
 
     allocate(model)
@@ -43,11 +43,8 @@ contains
     call model%init(disc)
 
     !! Initializes the VF_RAD_PROB components of MODEL.
-    model%vf_rad_prob => create_vf_rad_prob(tinit, disc%mesh, stat, errmsg2)
-    if (stat /= 0) then
-      errmsg = trim(errmsg2)
-      return
-    end if
+    model%vf_rad_prob => create_vf_rad_prob(tinit, disc%mesh, er_params, stat, errmsg)
+    if (stat /= 0) return
 
     !! Defines the equation parameter components of MODEL.
     call define_system_parameters(disc%mesh, mmf, model, stat, errmsg)
@@ -295,34 +292,31 @@ contains
 
   end function create_HT_model
 
-  function create_vf_rad_prob (tinit, mesh, stat, errmsg) result (vf_rad_prob)
+  function create_vf_rad_prob(tinit, mesh, params, stat, errmsg) result (vf_rad_prob)
 
     use rad_problem_type
-    use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
-    use parameter_list_type
 
     real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
-    character(len=*), intent(out) :: errmsg
+    character(:), allocatable, intent(out) :: errmsg
     type(rad_problem), pointer :: vf_rad_prob(:)
 
     integer :: n, j
     logical, allocatable :: mask(:)
-    character(len=31), allocatable :: encl_name(:)
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
 
     stat = 0
-    errmsg = ''
 
     !! Initialize the enclosure radiation (view factor) problems, if any.
     piter = parameter_list_iterator(params, sublists_only=.true.)
     n = piter%count()
     if (n > 0) then
-      allocate(vf_rad_prob(n), encl_name(n))
+      allocate(vf_rad_prob(n))
       do j = 1, n
         plist => piter%sublist()
         call vf_rad_prob(j)%init (mesh, piter%name(), plist, tinit)

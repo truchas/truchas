@@ -36,6 +36,7 @@ module HTSD_model_factory
   use species_bc_factory_class
   use thermal_source_factory_type
   use truchas_logging_services
+  use parameter_list_type
   implicit none
   private
 
@@ -43,7 +44,7 @@ module HTSD_model_factory
 
 contains
 
-  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg) result (model)
+  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, tsrc_fac, er_params, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: heat_eqn, num_species, void_temperature
 
@@ -53,6 +54,7 @@ contains
     class(thermal_bc_factory), intent(inout) :: tbc_fac
     class(species_bc_factory), intent(inout) :: sbc_fac
     type(thermal_source_factory), intent(inout) :: tsrc_fac
+    type(parameter_list), intent(inout) :: er_params
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(HTSD_model), pointer :: model
@@ -64,7 +66,7 @@ contains
     mesh => disc%mesh
 
     if (heat_eqn) then
-      htmodel => create_HT_model(tinit, mesh, mmf, tbc_fac, tsrc_fac, stat, errmsg)
+      htmodel => create_HT_model(tinit, mesh, mmf, tbc_fac, tsrc_fac, er_params, stat, errmsg)
       if (stat /= 0) return
     endif
 
@@ -80,7 +82,7 @@ contains
 
   end function create_HTSD_model
 
-  function create_HT_model (tinit, mesh, mmf, bc_fac, src_fac, stat, errmsg) result (model)
+  function create_HT_model (tinit, mesh, mmf, bc_fac, src_fac, er_params, stat, errmsg) result (model)
 
     use rad_problem_type
 
@@ -89,6 +91,7 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
     type(thermal_source_factory), intent(inout) :: src_fac
+    type(parameter_list), intent(inout) :: er_params
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -97,7 +100,7 @@ contains
     allocate(model)
 
     !! Initializes the VF_RAD_PROB components of MODEL.
-    model%vf_rad_prob => create_vf_rad_prob(tinit, mesh, stat, errmsg)
+    model%vf_rad_prob => create_vf_rad_prob(tinit, mesh, er_params, stat, errmsg)
     if (stat /= 0) return
 
     !! Defines the equation parameter components of MODEL.
@@ -345,16 +348,15 @@ contains
 
   end function create_HT_model
 
-  function create_vf_rad_prob (tinit, mesh, stat, errmsg) result (vf_rad_prob)
+  function create_vf_rad_prob (tinit, mesh, params, stat, errmsg) result (vf_rad_prob)
 
     use rad_problem_type
-    use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
-    use parameter_list_type
 
     real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
     type(rad_problem), pointer :: vf_rad_prob(:)
