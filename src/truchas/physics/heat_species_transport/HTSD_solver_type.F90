@@ -28,7 +28,7 @@ module HTSD_solver_type
     type(idaesol) :: integ
     logical :: state_is_pending = .false.
     !! Pending state
-    real(r8) :: t, dt
+    real(r8) :: t
     real(r8), pointer :: u(:) => null()
     type(HTSD_model),  pointer :: model  => null()
     type(HTSD_precon), pointer :: precon => null()
@@ -216,67 +216,30 @@ contains
   end function HTSD_solver_last_time
   
   function HTSD_solver_last_step_size (this) result (h)
-    use bdf2_dae, only: last_step_size
     type(HTSD_solver), intent(in) :: this
     real(r8) :: h
     h = this%integ%last_step_size()
   end function HTSD_solver_last_step_size
   
-!TODO!  The BDF2 step procedure invoked by this advance routine may reduce the
-!TODO!  step size if it is unable to succeed with the given step size.  This is
-!TODO!  okay as long as no other physics precedes this DS step in the cycle
-!TODO!  driver loop (i.e., flow), but otherwise this is wrong.  A different
-!TODO!  stepper is required here -- one that won't cut the step size in the
-!TODO!  case of a failure, and push that handling to a higher level where it
-!TODO!  can be done properly in the context of all the other physics.
-
-!TODO!  We want to pass the target time t instead of the step size, but since
-!TODO!  right now this procedure may adjust the step size, we continue to pass
-!TODO!  the step size as an inout parameter.  Why pass t?  Want to ensure that
-!TODO!  all physics have the bit-identical notion of time.  If dt is used instead
-!TODO!  each phyiscs builds each version of t by successive increments -- iffy. 
-
-  subroutine HTSD_solver_advance_state (this, dt, dtnext, stat)
-  
+  subroutine HTSD_solver_advance_state(this, t, hnext, stat)
     type(HTSD_solver), intent(inout) :: this
-    real(r8), intent(inout) :: dt
-    real(r8), intent(out) :: dtnext
+    real(r8), intent(in) :: t
+    real(r8), intent(out) :: hnext
     integer, intent(out) :: stat
-    
-!    real(r8) :: dt
-    real(r8) :: t
-    
-!    !! Step size.
-!    dt = t - last_time(this%bdf2_state)
-!    INSIST(dt > 0.0_r8)
-    t = this%integ%last_time() + dt
-    
-!    select case (this%step_method)
-!    case (1)  !! Simple backward Cauchy-Euler with no predictor error control
-!      call bdf1_step (this%bdf2_state, dt, this%u, stat, bdf2_pcfun, bdf2_updpc, bdf2_enorm)
-!      !call bdf1_step_new (this%bdf2_state, dt, this%u, errc, &
-!      !                    bdf1_fun, bdf1_pc, bdf1_updpc, bdf1_fnorm)
-!      dtnext = huge(1.0d0) ! step size controlled by caller, not this routine
-!    case default !! Usual BDF2 with adaptive step size selection     
-      call this%integ%step(dt, this%hmin, this%max_step_tries, this%u, dtnext, stat)
-!    end select
-
+    call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
-      this%t = this%integ%last_time() + dt
-      this%dt = dt
+      this%t = t
       this%state_is_pending = .true.
     else ! failed -- restore last good state before returning
       call this%integ%get_last_state_copy(this%u)
       this%state_is_pending = .false.
     end if
-    
   end subroutine HTSD_solver_advance_state
-  
+
   subroutine HTSD_solver_commit_pending_state (this)
     type(HTSD_solver), intent(inout) :: this
     INSIST(this%state_is_pending)
     call this%integ%commit_state(this%t, this%u)
-    !call commit_solution (this%bdf2_state, this%dt, this%u)
     this%state_is_pending = .false.
   end subroutine HTSD_solver_commit_pending_state
   
