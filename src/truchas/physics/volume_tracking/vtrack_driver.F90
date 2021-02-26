@@ -67,9 +67,10 @@ module vtrack_driver
 
   public :: vtrack_driver_init, vtrack_update, vtrack_driver_final
   public :: vtrack_enabled
-  public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
+  public :: vtrack_vof_view, vtrack_vof_old_view, vtrack_flux_vol_view, vtrack_liq_matid_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
+  public :: vtrack_wisp_donors_view, vtrack_wisp_acceptor_fractions_view
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -104,6 +105,12 @@ contains
     p => this%fvof_o
   end function vtrack_vof_view
 
+  function vtrack_vof_old_view() result(p)
+    real(r8), pointer :: p(:,:)
+    ASSERT(vtrack_enabled())
+    p => this%fvof_i
+  end function vtrack_vof_old_view
+
   function vtrack_flux_vol_view() result(p)
     real(r8), pointer :: p(:,:)
     ASSERT(vtrack_enabled())
@@ -114,7 +121,20 @@ contains
   function vtrack_liq_matid_view() result(p)
     integer, pointer :: p(:)
     p => this%liq_matid(:this%fluids)
-  end function
+  end function vtrack_liq_matid_view
+
+  ! expose volumes from wisp redistribution
+  function vtrack_wisp_donors_view() result(p)
+    real(r8), pointer :: p(:,:)
+    ASSERT(vtrack_enabled())
+    p => this%vt%donor_volumes_view()
+  end function vtrack_wisp_donors_view
+
+  function vtrack_wisp_acceptor_fractions_view() result(p)
+    real(r8), pointer :: p(:)
+    ASSERT(vtrack_enabled())
+    p => this%vt%acceptor_fractions_view()
+  end function vtrack_wisp_acceptor_fractions_view
 
 
   subroutine vtrack_driver_init(params)

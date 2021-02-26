@@ -37,6 +37,7 @@ module FHT_solver_type
   use parallel_communication
   use index_partitioning
   use enthalpy_advector_class
+  use enthalpy_redistributor_type
   implicit none
   private
 
@@ -48,6 +49,7 @@ module FHT_solver_type
     type(FHT_norm) :: norm
     type(TofH) :: T_of_H
     class(enthalpy_advector), allocatable :: hadv
+    type(enthalpy_redistributor) :: hred
     
     real(r8) :: epsilon
     integer  :: seq = 0
@@ -154,6 +156,8 @@ contains
     this%epsilon = params%epsilon
     this%verbose = params%verbose .and. is_IOP
     this%unit = params%unit
+
+    call this%hred%init(this%mesh)
     
   end subroutine FHT_solver_init
   
@@ -215,7 +219,7 @@ contains
     integer :: j, k, n
     real(r8), pointer :: ulast(:), Tcell(:), Tface(:)
     real(r8) :: dt, void_vol_frac(this%mesh%ncell)
-    real(r8), allocatable :: dQ(:), Tmin(:), Tmax(:)
+    real(r8), allocatable :: dQ(:), Tmin(:), Tmax(:), dQ_wisp(:)
     integer, allocatable :: fnbr(:,:)
 
     !! Update the void and totally-void domain masks.
@@ -229,7 +233,7 @@ contains
     !! are used later when solving for temperature given the heat density.
     ulast => most_recent_solution(this%uhist)
     call FHT_model_get_cell_temp_view (this%model, ulast, Tcell)
-    allocate(dQ(size(Tcell)), Tmin(size(Tcell)), Tmax(size(Tcell)))
+    allocate(dQ(size(Tcell)), Tmin(size(Tcell)), Tmax(size(Tcell)), dQ_wisp(size(Tcell)))
     call this%hadv%get_advected_enthalpy(Tcell, dQ, Tmin, Tmax)
     do j = 1, this%mesh%ncell_onP
       if (this%tot_void_cell(j)) then
@@ -238,7 +242,33 @@ contains
         this%H(j) = this%Hlast(j) + dQ(j) / this%mesh%volume(j)
       end if
     end do
+    !! Handle enthalpy adjustments due to wisp redistribution
+    call this%hred%get_redistributed_enthalpy(Tcell, dQ_wisp, this%Hlast, this%h, this%tot_void_cell)
+    do j = 1, this%mesh%ncell_onP      
+      if (this%tot_void_cell(j)) cycle
+      
+      associate(qq => dq_wisp(j) / this%mesh%volume(j))
+        if (qq /= 0.0_r8) then
+          if (abs(qq) / this%Hlast(j) > 0.01_r8) then
+            write(*, '("[",i5,"] <<< LARGE REDISTRIBUTED/BASELINE: ", 4es15.5)') j, qq, this%Hlast(j), qq/this%Hlast(j), this%Hlast(j) + qq
+            write(*, '("     <<< Last / Advected / Wisped / New ", 4es15.5)') &
+                this%Hlast(j), dQ(j) / this%mesh%volume(j), qq, this%H(j) + qq
+            write(*, '("     <<< OLD FLUID/VOID/SOLID VOF:", 3es15.5)') this%hred%vtrack_vofs_old(:,j)
+            write(*, '("     <<<     FLUID/VOID/SOLID VOF:", 3es15.5)') this%hred%vtrack_vofs(:,j)
+          end if
+          if (this%H(j) + qq < 0.0_r8) then
+            write(*, '("[",i5,"] <<< NEGATIVE ENTHALPY: ", 4es15.5)') j, qq, this%H(j), qq/this%H(j), this%H(j) + qq
+            write(*, '("     <<< Last / Advected / Wisped / New ", 4es15.5)') &
+                this%Hlast(j), dQ(j) / this%mesh%volume(j), qq, this%H(j) + qq
+            write(*, '("     <<< OLD FLUID/VOID/SOLID VOF:", 3es15.5)') this%hred%vtrack_vofs_old(:,j)
+            write(*, '("     <<<     FLUID/VOID/SOLID VOF:", 3es15.5)') this%hred%vtrack_vofs(:,j)
+          end if
+        end if 
+      end associate
+        this%H(j) = max(this%H(j) + dQ_wisp(j) / this%mesh%volume(j), 0.0_r8)
+    end do
     deallocate(dQ)
+    deallocate(dQ_wisp)
     
     !! COMPUTE THE PREDICTED STATE FOR THE HEAT CONDUCTION SOLVE
         

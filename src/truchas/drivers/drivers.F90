@@ -157,13 +157,14 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint
-    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view, update_moving_vf
+    use diffusion_solver,         only: ds_step, ds_restart, ds_get_face_temp_view, &
+        update_moving_vf
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
-        flow_set_pre_solidification_density
+        flow_set_pre_solidification_density, flow_correct_wisp_momentum
     use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
-        get_vof_from_matl
+        get_vof_from_matl, vtrack_wisp_donors_view
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -183,6 +184,7 @@ call hijack_truchas ()
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
+    real(r8), pointer :: wisp_donor_volumes(:,:)
     real(r8) :: tout, t_write
     !---------------------------------------------------------------------------
 
@@ -204,6 +206,14 @@ call hijack_truchas ()
     call time_step  ! Does stuff not related to dt
 
     call event_queue%fast_forward(t)
+    
+    ! handle pointer assignments for vof and flow
+    if (vtrack_enabled() .and. flow_enabled()) then
+      vel_fn => flow_vel_fn_view()
+      vof => vtrack_vof_view()
+      flux_vol => vtrack_flux_vol_view()
+      wisp_donor_volumes => vtrack_wisp_donors_view()
+    end if
 
     c = 0
     MAIN_CYCLE: do
@@ -236,11 +246,11 @@ call hijack_truchas ()
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before advection:')
 
         if (vtrack_enabled() .and. flow_enabled()) then
-          vel_fn => flow_vel_fn_view()
           call vtrack_update(t, dt, vel_fn)
-          vof => vtrack_vof_view()
-          flux_vol => vtrack_flux_vol_view()
           call flow_set_pre_solidification_density(vof)
+          call flow_correct_wisp_momentum(wisp_donor_volumes)
+          ! wisp correction is handled in ds_step so there's no need
+          ! to do something explicit here.
         end if
 
         ! solve heat transfer and phase change

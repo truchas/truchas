@@ -32,6 +32,8 @@ module flow_type
     real(r8), allocatable :: vel_fn_n(:) ! outward oriented face-normal velocity
     real(r8), allocatable :: P_cc(:) ! cell-centered pressure
     real(r8), allocatable :: grad_p_rho_cc_n(:,:) ! dynamic pressure gradient over rho
+    real(r8), allocatable :: flux_volumes(:,:)
+    logical, allocatable :: wisp_cells(:)
     real(r8) :: body_force(3)
     type(flow_projection) :: proj
     type(flow_prediction) :: pred
@@ -46,12 +48,14 @@ module flow_type
     procedure :: step
     procedure :: accept
     procedure :: correct_non_regular_cells
+    procedure :: correct_wisp_momentum
     procedure :: timestep
     ! views into data
     procedure :: vel_cc_view
     procedure :: vel_fn_view
     procedure :: P_cc_view
     procedure :: dump_state
+    procedure, private :: print_point
   end type flow
 
 contains
@@ -155,6 +159,8 @@ contains
       allocate(this%vel_fn(nf))
       allocate(this%vel_fn_n(nf))
       allocate(this%grad_p_rho_cc_n(3,nc))
+      allocate(this%flux_volumes(this%props%nfluid, size(mesh%cface)))
+      allocate(this%wisp_cells(nc))
     end associate
 
     ! Disable BC initialization and the prediction and
@@ -227,6 +233,8 @@ contains
       this%grad_p_rho_cc_n = 0
     end if
 
+    this%wisp_cells = .false.
+
   end subroutine set_initial_state_start
 
   !! This assigns initial values to all the state variables in the case they
@@ -261,6 +269,7 @@ contains
     call this%props%set_initial_state(vof, tcell)
     call this%proj%get_dyn_press_grad(this%props, this%p_cc, this%body_force, this%grad_p_rho_cc_n)
 
+    this%wisp_cells = .false.
     !call this%dump_state
 
   end subroutine set_initial_state_restart
@@ -313,11 +322,15 @@ contains
 
     integer :: i
 
-    associate (cell_t => this%props%cell_t, face_t => this%props%face_t, vof_novoid => this%props%vof_novoid)
+    associate (cell_t => this%props%cell_t, face_t => this%props%face_t, &
+        vof_novoid => this%props%vof_novoid, wisp => this%wisp_cells)
       do i = 1, this%mesh%ncell
         if (vof_novoid(i) == 0.0_r8) then
           this%vel_cc(:,i) = 0.0_r8
           this%P_cc(i) = 0.0_r8
+        else if (wisp(i)) then
+          this%vel_cc(:,i) = 0.0_r8
+         ! this%P_cc(i) = 0.0_r8
         end if
       end do
 
@@ -337,7 +350,8 @@ contains
     real(r8), intent(in) :: t, dt, vof(:,:), flux_volumes(:,:), tcell(:)
 
     real(r8) :: p_max, p_min
-    integer :: j
+    integer :: j, ui(1), vi(1), wi(1), uj(1), vj(1), wj(1)
+
 
     call this%props%update_cc(vof, tcell)
 
@@ -347,23 +361,118 @@ contains
       return
     end if
 
+    ui = maxloc(this%vel_cc(1,1:this%mesh%ncell_onP))
+    vi = maxloc(this%vel_cc(2,1:this%mesh%ncell_onP))
+    wi = minloc(this%vel_cc(3,1:this%mesh%ncell_onP))
+    write(*, "(/, a)") 'STARTING FLOW STEP'
+    write(*, "('Max U[',i5,']:', es15.5)") ui(1), this%vel_cc(1,ui(1))
+    write(*, "('Max V[',i5,']:', es15.5)") vi(1), this%vel_cc(2,vi(1))
+    write(*, "('Min W[',i5,']:', es15.5)") wi(1), this%vel_cc(3,wi(1))
+
+    ! write(*, "(/, a, es15.5)") "FLUID VOF_N[8256]: ", this%props%vof_novoid_n(8256)
+    ! write(*, "(a, es15.5)") "FLUID VOF  [8256]: ", this%props%vof_novoid(8256)
+    ! write(*, "(a, es15.5)") "VOID VOF [8256]: ", this%props%vof(8256)-this%props%vof_novoid(8256)
+    ! write(*, "(a, es15.5)") "SOLID VOF [8256]: ", 1.0_r8 - this%props%vof(8256)
+
+    ! write(*, "(/, a, es15.5)") "RHO_CC_N[8256]: ", this%props%rho_cc_n(8256)
+    ! write(*, "(a, es15.5)") "RHO CC  [8256]: ", this%props%rho_cc(8256)
+
+    ! write(*, "(/, a, es15.5)") "RHO PRE SOL [8256]: ", this%props%rho_pre_sol(8256)
+    ! write(*, "(a, es15.5)") "SOLIDIFIED RHO [8256]: ", this%props%solidified_rho(8256)
+
     call this%bc%compute(t, dt)
+
+    ! prepare wisp-aware flux volumes
+    this%flux_volumes = this%flux_volumes * flux_volumes(:this%props%nfluid,:)
 
     call start_timer("prediction")
     this%vel_cc = this%vel_cc_n
     call this%pred%setup(dt, this%props, this%vel_cc)
-    call this%pred%solve(dt, this%props, this%grad_p_rho_cc_n, flux_volumes, this%vel_fn_n, this%vel_cc)
+    call this%pred%solve(dt, this%props, this%grad_p_rho_cc_n, this%flux_volumes, &
+      this%vel_fn_n, this%vel_cc)
     call stop_timer("prediction")
 
+    ! lets correct these again and see what happens
+    ! do j = 1, this%mesh%ncell
+    !   if (this%wisp_cells(j)) this%vel_cc(:, j) = 0.0_r8
+    ! end do
+
+    write(*, "(/, a)") 'After Prediction'
+    ui = maxloc(this%vel_cc(1,1:this%mesh%ncell_onP))
+    uj = minloc(this%vel_cc(1,1:this%mesh%ncell_onP))
+    vi = maxloc(this%vel_cc(2,1:this%mesh%ncell_onP))
+    vj = minloc(this%vel_cc(2,1:this%mesh%ncell_onP))
+    wi = maxloc(this%vel_cc(3,1:this%mesh%ncell_onP))
+    wj = minloc(this%vel_cc(3,1:this%mesh%ncell_onP))
+    write(*, "(/, 'Max U[',i5,']:', es15.5)") ui(1), this%vel_cc(1,ui(1))
+    call this%print_point(ui(1));
+    write(*, "(/, 'Min U[',i5,']:', es15.5)") uj(1), this%vel_cc(1,uj(1))
+    call this%print_point(uj(1));
+    write(*, "(/, 'Max V[',i5,']:', es15.5)") vi(1), this%vel_cc(2,vi(1))
+    if (vi(1) /= ui(1) .and. vi(1) /= uj(1)) call this%print_point(vi(1))
+    write(*, "(/, 'Min V[',i5,']:', es15.5)") vj(1), this%vel_cc(2,vj(1))
+    if (vj(1) /= ui(1) .and. vj(1) /= uj(1)) call this%print_point(vj(1))
+    write(*, "(/, 'Max W[',i5,']:', es15.5)") wi(1), this%vel_cc(3,wi(1))
+    if (wi(1) /= vi(1) .and. wi(1) /= ui(1) .and. wi(1) /= vj(1) .and. wi(1) /= uj(1)) call this%print_point(wi(1))
+    write(*, "(/, 'Min W[',i5,']:', es15.5)") wj(1), this%vel_cc(3,wj(1))
+    if (wj(1) /= vi(1) .and. wj(1) /= ui(1) .and. wj(1) /= vj(1) .and. wj(1) /= uj(1)) call this%print_point(wj(1))
+
     call start_timer("projection")
-    call this%proj%setup(dt, this%props, this%grad_p_rho_cc_n, this%body_force, this%vel_cc, this%P_cc, this%vel_fn)
+    call this%proj%setup(dt, this%props, this%grad_p_rho_cc_n, this%body_force, &
+      this%vel_cc, this%P_cc, this%vel_fn)
     call this%proj%solve(dt, this%props, this%grad_p_rho_cc_n, this%vel_cc, this%P_cc, this%vel_fn)
     call stop_timer("projection")
 
     call this%correct_non_regular_cells()
 
+    write(*, "(/, a)") 'EXITING FLOW STEP'
+    ui = maxloc(this%vel_cc(1,1:this%mesh%ncell_onP))
+    uj = minloc(this%vel_cc(1,1:this%mesh%ncell_onP))
+    vi = maxloc(this%vel_cc(2,1:this%mesh%ncell_onP))
+    vj = minloc(this%vel_cc(2,1:this%mesh%ncell_onP))
+    wi = maxloc(this%vel_cc(3,1:this%mesh%ncell_onP))
+    wj = minloc(this%vel_cc(3,1:this%mesh%ncell_onP))
+    write(*, "(/, 'Max U[',i5,']:', es15.5)") ui(1), this%vel_cc(1,ui(1))
+    call this%print_point(ui(1));
+    write(*, "(/, 'Min U[',i5,']:', es15.5)") uj(1), this%vel_cc(1,uj(1))
+    call this%print_point(uj(1));
+    write(*, "(/, 'Max V[',i5,']:', es15.5)") vi(1), this%vel_cc(2,vi(1))
+    if (vi(1) /= ui(1) .and. vi(1) /= uj(1)) call this%print_point(vi(1))
+    write(*, "(/, 'Min V[',i5,']:', es15.5)") vj(1), this%vel_cc(2,vj(1))
+    if (vj(1) /= ui(1) .and. vj(1) /= uj(1)) call this%print_point(vj(1))
+    write(*, "(/, 'Max W[',i5,']:', es15.5)") wi(1), this%vel_cc(3,wi(1))
+    if (wi(1) /= vi(1) .and. wi(1) /= ui(1) .and. wi(1) /= vj(1) .and. wi(1) /= uj(1)) call this%print_point(wi(1))
+    write(*, "(/, 'Min W[',i5,']:', es15.5)") wj(1), this%vel_cc(3,wj(1))
+    if (wj(1) /= vi(1) .and. wj(1) /= ui(1) .and. wj(1) /= vj(1) .and. wj(1) /= uj(1)) call this%print_point(wj(1))
+
   end subroutine step
 
+  subroutine print_point(this, i)
+    class(flow), intent(inout) :: this
+    integer,intent(in) :: i
+
+    integer :: j
+
+    write(*, "('    ',a,3es15.5)") "VEL_CC_N: ", this%vel_cc_n(:,i)
+    write(*, "('    ',a, 2es15.5)") "FLUID VOF_N/VOF: ", this%props%vof_novoid_n(i), this%props%vof_novoid(i)
+    write(*, "('    ',a, 2es15.5)") "VOID VOF_N/VOF: ", this%props%vof_n(i)-this%props%vof_novoid_n(i), &
+      this%props%vof(i)-this%props%vof_novoid(i)
+    write(*, "('    ',a, 2es15.5)") "SOLID VOF_N/VOF]: ", 1.0_r8 - this%props%vof_n(i), &
+    1.0_r8 - this%props%vof(i)
+
+    write(*, "('    ', a, 2es15.5)") "RHO_CC_N/RHO_CC: ", this%props%rho_cc_n(i), this%props%rho_cc(i)
+    write(*, "('    ', a, 2es15.5)") "RHO-PRE-SOL//SOLIDIFIED RHO: ", this%props%rho_pre_sol(i), this%props%solidified_rho(i)
+
+    ! write neighbor vofs
+    associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(i):this%mesh%xcnhbr(i+1)-1))
+      do j = 1, size(cn)
+        if (cn(j) <= 0) cycle
+        write(*, '("     ", a,i6,a,es15.5)') "Neighbor VOF[", cn(j), "]: ", this%props%vof_novoid(cn(j))
+      end do
+
+    end associate
+  
+  end subroutine print_point
 
   subroutine accept(this)
 
@@ -394,5 +503,28 @@ contains
     write(lun,'(/,a)') 'GRAD_P_RHO_CC_N'
     write(lun,'(3es20.12)') this%grad_p_rho_cc_n(:,:this%mesh%ncell_onP)
   end subroutine dump_state
+
+  subroutine correct_wisp_momentum(this, wisp_donor_volumes)
+    class(flow), intent(inout) :: this
+    real(r8), intent(in) :: wisp_donor_volumes(:,:)
+    !-
+
+    integer :: i
+    
+    this%flux_volumes = 1.0_r8
+    this%wisp_cells = .false.
+
+    do i = 1, this%mesh%ncell_onP
+      if (any(wisp_donor_volumes(:,i) > 0.0_r8)) then        
+        write(*, '(a,i6)') 'FLOW: correcting wisp_momentum in cell ', i
+        this%wisp_cells(i) = .true.
+        this%flux_volumes(:,this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1)) = 0.0_r8
+        this%vel_cc(:,i) = 0.0_r8
+        this%vel_cc_n(:,i) = 0.0_r8
+        this%P_cc(i) = 0.0_r8
+        this%grad_p_rho_cc_n(:, i) = 0.0_r8
+      end if
+    end do
+  end subroutine correct_wisp_momentum
 
 end module flow_type

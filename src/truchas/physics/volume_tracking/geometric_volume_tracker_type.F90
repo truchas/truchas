@@ -35,6 +35,8 @@ module geometric_volume_tracker_type
     procedure :: init
     procedure :: flux_volumes
     procedure :: set_inflow_material
+    procedure :: donor_volumes_view
+    procedure :: acceptor_fractions_view
     procedure, private :: normals
     procedure, private :: donor_fluxes
     procedure, private :: donor_fluxes_nd_cell
@@ -47,6 +49,20 @@ module geometric_volume_tracker_type
   end type geometric_volume_tracker
 
 contains
+
+  function donor_volumes_view(this) result(p)
+    class(geometric_volume_tracker), intent(in) :: this
+    real(r8), pointer :: p(:,:)
+
+    p => this%wisp%donor_volumes_view()
+  end function donor_volumes_view
+
+  function acceptor_fractions_view(this) result(p)
+    class(geometric_volume_tracker), intent(in) :: this
+    real(r8), pointer :: p(:)
+
+    p => this%wisp%acceptor_fractions_view()
+  end function acceptor_fractions_view
 
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, liq_matid, params)
 

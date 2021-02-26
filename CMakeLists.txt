@@ -9,6 +9,9 @@ include(NoInSourceBuild)
 
 project(Truchas LANGUAGES C CXX Fortran)
 
+message("TRUCHAS_TPL_DIR: ${TRUCHAS_TPL_DIR}")
+
+
 # Fix a few things that cmake gets wrong for the NAG compiler.
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
   set(CMAKE_Fortran_COMPILE_OPTIONS_PIE "-PIC")

@@ -82,6 +82,7 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/evaporation_namelist.F90
            physics/heat_species_transport/thermal_source_namelist.F90
            physics/heat_species_transport/thermal_source_factory_type.F90
+           physics/heat_species_transport/enthalpy_redistributor_type.F90
 )
 
 # - induction_heating

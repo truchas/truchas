@@ -168,7 +168,7 @@ contains
 
   subroutine update_mmf_from_matl (mmf)
 
-!    use material_class
+    !    use material_class
     use matl_module, only: gather_vof
     use legacy_mesh_api, only: ncells
     use index_partitioning, only: gather_boundary
@@ -188,7 +188,7 @@ contains
     character(len=90) :: string
 #endif
     integer :: material_to_system(matl_model%nphase)
-!    class(material), pointer :: matl
+    !    class(material), pointer :: matl
 
     ASSERT(mmf%num_reg() == 1)
 
@@ -200,10 +200,10 @@ contains
     !! We assume an identity mapping from region cells to mesh cells.
     ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
-! All materials plus void exist in MMF
-! non-void MMF material IDs are same as in MATL_MODEL
-! MMF material ID 0 is void and corresponds to phase NMAT
-! if void is present it is the first material in MMF
+    ! All materials plus void exist in MMF
+    ! non-void MMF material IDs are same as in MATL_MODEL
+    ! MMF material ID 0 is void and corresponds to phase NMAT
+    ! if void is present it is the first material in MMF
 
     material_id => mmf%reg_matl(1) ! array of material system IDs
 
@@ -227,10 +227,12 @@ contains
     end do
     deallocate(vofm, vf)
 
+    write(*,*) "PRE DS VOF(:,8256): ", vfrac(8256,:)
+
 #ifdef EXTRA_VOF_DIAGNOSTICS
     INSIST(all(vfrac >= 0.0_r8 .and. vfrac <= 1.0_r8))
     write(string,'(3(a,f18.16))') 'UPDATE_MMF_FROM_MATL: vfrac sum interval: [', &
-       global_minval(sum(vfrac,dim=2)), ', ', global_maxval(sum(vfrac,dim=2)) , ']'
+        global_minval(sum(vfrac,dim=2)), ', ', global_maxval(sum(vfrac,dim=2)) , ']'
     call TLS_info (string)
 #endif
 
@@ -342,6 +344,8 @@ contains
 
       end select
     end do
+
+    write(*,*) "AFTER DS VOF(:,8256): ", vof(:, 8256)
 
     !! Copy the volume fraction data for gap elements from MATL into VOF.
     do j = mesh%ncell_onP+1, ncells

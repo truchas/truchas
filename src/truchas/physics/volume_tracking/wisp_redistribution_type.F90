@@ -37,6 +37,7 @@ module wisp_redistribution_type
     real(r8) :: wisp_neighbor_cutoff !
     real(r8), allocatable :: wisp_donor_volumes(:,:)
     real(r8), allocatable :: wisp_acceptor_volumes(:,:)
+    real(r8), allocatable :: wisp_acceptor_fractions(:)
     real(r8), allocatable :: total_wisp_donor_v(:)
     real(r8), allocatable :: total_wisp_acceptor_v(:)
     real(r8), allocatable :: local_wisp_donor_v(:)
@@ -47,15 +48,42 @@ module wisp_redistribution_type
   contains
     procedure :: init
     procedure :: redistribute
+    procedure :: donor_volumes_view
+    procedure :: acceptor_fractions_view
     procedure, private :: wisp_volumes
     procedure, private :: check_acceptor
     procedure, private :: sort_donors
     procedure, private :: remove_wisp_donors
     procedure, private :: fill_wisp_acceptors
+    procedure, private :: compute_fractional_field
     procedure, private :: statistics
   end type wisp_redistribution
 
 contains
+
+  function donor_volumes_view(this) result(p)
+
+    class(wisp_redistribution), intent(in), target :: this
+    real(r8), pointer :: p(:,:)
+
+    if (this%do_redistribution) then
+      p => this%wisp_donor_volumes
+    else
+      p => null()
+    endif
+  end function donor_volumes_view
+
+  function acceptor_fractions_view(this) result(p)
+
+    class(wisp_redistribution), intent(in), target :: this
+    real(r8), pointer :: p(:)
+
+    if (this%do_redistribution) then
+      p => this%wisp_acceptor_fractions
+    else
+      p => null()
+    endif
+  end function acceptor_fractions_view
 
   subroutine init(this, mesh, nrealfluid, params)
 
@@ -78,6 +106,7 @@ contains
     if (this%do_redistribution) then
       allocate(this%wisp_donor_volumes(nrealfluid,this%mesh%ncell_onP))
       allocate(this%wisp_acceptor_volumes(nrealfluid,this%mesh%ncell_onP))
+      allocate(this%wisp_acceptor_fractions(this%mesh%ncell_onP))
       allocate(this%total_wisp_donor_v(nrealfluid))
       allocate(this%total_wisp_acceptor_v(nrealfluid))
       allocate(this%local_wisp_donor_v(nrealfluid))
@@ -113,10 +142,14 @@ contains
     call this%sort_donors(mean_donor_volumes, enough_acceptor, remove_type, remove_volume)
 
     ! Step 4: remove local wisp donors from vof/flux_vol
-    call this%remove_wisp_donors(remove_type, remove_volume, vof, flux_vol)
+    call this%remove_wisp_donors(enough_acceptor, remove_type, remove_volume, vof, flux_vol)
 
     ! Step 5: add wisp acceptor volumes to vof/flux_vol
     call this%fill_wisp_acceptors(vof, flux_vol)
+
+    ! Step 6: redistributing scalar quantities associated with the wisps is
+    !         easier if we compresss acceptor_volumes into a fractional field
+    call this%compute_fractional_field()
 
     ! communicate results... I don't think we need to communicate flux_vol changes since
     ! they are strictly local.  May need to be revistied if odd bugs show up
@@ -142,7 +175,7 @@ contains
     real(r8), intent(out) :: mean_donor_volumes(:)
     !-
     integer :: i, m, void_i
-
+    real(r8) :: neighbor_vof
 
     this%wisp_donor_volumes = 0.0_r8
     this%wisp_acceptor_volumes = 0.0_r8
@@ -162,8 +195,11 @@ contains
 
             ! check donor cell criteria. Check for > 0 so we don't bias the mean
             if (vof(m, i) > 0.0_r8 .and. vof(m, i) <= this%wisp_cutoff) then
-              ! check neighbor criteria
-              if (all(vof(m, pack(cn, cn > 0)) < this%wisp_neighbor_cutoff)) then
+              ! check neighbor criteria - average vof of neighbors
+              neighbor_vof = sum(vof(m, pack(cn, cn > 0))) / size(pack(cn, cn > 0))
+              ! check neighbor criteria - max vof of neighbors
+              ! neighbor_vof = maxval(vof(m, pack(cn, cn > 0)))
+              if (neighbor_vof < this%wisp_neighbor_cutoff) then
                 this%wisp_donor_volumes(m, i) = vof(m, i) * this%mesh%volume(i)
                 this%donor_n(m) = this%donor_n(m) + 1
                 this%local_wisp_donor_v(m) = this%local_wisp_donor_v(m) + this%wisp_donor_volumes(m, i)
@@ -183,6 +219,9 @@ contains
         end associate
       end if
     end do
+    ! write(*,*) "VOF[:,5048]: ", vof(:,5048)
+    ! write(*,*) "WISP DONOR VOLUME[:,5048]: ", this%wisp_donor_volumes(:,5048)/this%mesh%volume(5048)
+    ! write(*,*) "WISP ACCEPTOR VOLUME[:,5048]: ", this%wisp_acceptor_volumes(:,5048)
 
     ! At this point, the sum of acceptor volumes may push the fluid vof out of bounds in
     ! a cell with multiple acceptor fluids.
@@ -250,6 +289,10 @@ contains
           this%total_wisp_acceptor_v(m) < this%total_wisp_donor_v(m)) then
         enough_acceptor(m) = .false.
       end if
+    end do
+
+    do m = 1, this%nrealfluid
+      write(*, '("ENOUGH_ACCEPTOR[",i2,"]: ", L1)') m, enough_acceptor(m)
     end do
 
   end subroutine check_acceptor
@@ -328,15 +371,16 @@ contains
   !
   !---
 
-  subroutine remove_wisp_donors(this, remove_type, remove_volume, vof, flux_vol)
+  subroutine remove_wisp_donors(this, enough_acceptor, remove_type, remove_volume, vof, flux_vol)
     use sort_utilities, only: quick_sort
 
     class(wisp_redistribution), intent(inout) :: this
     integer, intent(in) :: remove_type(:)
     real(r8), intent(in) :: remove_volume(:)
     real(r8), intent(inout) :: vof(:,:), flux_vol(:,:)
+    logical, intent(in) :: enough_acceptor(:)
     !-
-    integer :: i, m, ic, void_i
+    integer :: i, m, ic, void_i, j
     real(r8) :: sum_before, sum_after, remaining, donated, f
     integer, allocatable :: sorted_ic(:)
     real(r8), allocatable :: wisp_v(:)
@@ -349,9 +393,15 @@ contains
     do m = 1, this%nrealfluid
       this%uncorrected_n(m) = this%donor_n(m)
 
-      if (remove_volume(m) == 0.0_r8 .or. remove_type(m) == remove_none) cycle
+      if (this%donor_n(m) == 0) cycle
 
-      if (remove_type(m) == remove_all) then
+      if (remove_volume(m) == 0.0_r8 .or. remove_type(m) == remove_none) then
+        write(*,*) "REMOVE_NONE"
+        ! zero the wisp donor volumes so the corrective procedures in 
+        ! heat transfer/flow are not triggered
+        this%wisp_donor_volumes(m,:) = 0.0_r8
+      else if (remove_type(m) == remove_all) then
+        write(*,*) "REMOVE_ALL"
         this%uncorrected_n(m) = 0
         do i = 1, this%mesh%ncell_onP
           ! ideally we would like to get rid of this check and just do
@@ -361,10 +411,13 @@ contains
             donated = this%wisp_donor_volumes(m, i) / this%mesh%volume(i)
 
             vof(m, i) = 0.0_r8
-            vof(void_i, i) = vof(void_i, i) + donated
+            vof(void_i, i) = min(vof(void_i, i) + donated, 1.0_r8)
+            ! remove flux vol for this cell
+            !flux_vol(m, this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = 0.0_r8
           endif
         end do
       else ! remove_type(m) == remove_some
+        write(*,*) "REMOVE_SOME"
         sorted_ic = [ (i, i=1, this%mesh%ncell_onP) ]
         wisp_v = this%wisp_donor_volumes(m,:)
 
@@ -384,18 +437,18 @@ contains
               donated = wisp_v(i) / this%mesh%volume(ic)
               ! handle vof
               vof(m, ic) = 0.0_r8
-              vof(void_i, ic) = vof(void_i, ic) + donated
+              vof(void_i, ic) = min(vof(void_i, ic) + donated, 1.0_r8)
               ! remove flux vol for this cell
-              flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) = 0.0_r8
+              ! flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) = 0.0_r8
               ! do we need to remove the flux_vol for neighbors fluxing into/out of ic?
             end if
           else
-            ! remove a portion of the largest wisp and exit
+            ! remove a portion of the largest wisp 
             remaining = remove_volume(m) - sum_before
-            i = this%mesh%ncell_onP
-            ic = sorted_ic(i)
+            j = this%mesh%ncell_onP
+            ic = sorted_ic(j)
 
-            ASSERT(wisp_v(i) > remaining)
+            ASSERT(wisp_v(j) > remaining)
 
             ! fraction of material volume to be removed
             f = min(1.0_r8, remaining / (this%mesh%volume(ic) * vof(m, ic)))
@@ -406,22 +459,42 @@ contains
             ! XXX we should really have some notion of the vof_cutoff here since there's a
             ! chance that this math here may result in 0 < vof < cutoff...
             vof(m, ic) = vof(m, ic) - donated
-            vof(void_i, ic) = vof(void_i, ic) + donated
+            vof(void_i, ic) = min(vof(void_i, ic) + donated, 1.0_r8)
             ! shrink flux vol for this cell
 
-            flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) = &
-                flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) * (1.0_r8 - f)
+            !flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) = &
+            !    flux_vol(m, this%mesh%xcface(ic):this%mesh%xcface(ic+1)-1) * (1.0_r8 - f)
+
+            ! remove remaining donor volume in largest wisp cell
+            this%wisp_donor_volumes(m, ic) = max(this%wisp_donor_volumes(m, ic) - remaining, 0.0_r8)
+
+            ! remove remaining donor volumes in rest of cells
+            do j = i, this%mesh%ncell_onP-1
+              ic = sorted_ic(j)
+              this%wisp_donor_volumes(m, ic) = 0.0_r8
+            end do
             exit
           end if
           ! advance
           sum_before = sum_after
           i = i + 1
         end do
-
-
       end if
-
     end do
+    
+    do m = 1, this%nrealfluid
+      ! update global quantities with adjusted wisp_volumes
+      if (.not.enough_acceptor(m)) then
+          this%local_wisp_donor_v(m) = sum(this%wisp_donor_volumes(m,:this%mesh%ncell_onP))
+          this%total_wisp_donor_v(m) = global_sum(this%local_wisp_donor_v(m))
+      end if
+    end do
+
+    ! write(*,"(/,a)") "POST WISP DISTRIBUTION"
+    ! write(*,*) "VOF[:,5048]: ", vof(:,5048)
+    ! write(*,*) "WISP DONOR VOLUME[:,5048]: ", this%wisp_donor_volumes(:,5048)/this%mesh%volume(5048)
+    ! write(*,*) "WISP ACCEPTOR VOLUME[:,5048]: ", this%wisp_acceptor_volumes(:,5048)
+
 
   end subroutine remove_wisp_donors
 
@@ -467,9 +540,31 @@ contains
 
   end subroutine fill_wisp_acceptors
 
+  !--
+  ! Convert wisp_acceptor_volumes into a fractional field with all materials combined.
+  ! Facilitates the redistribution of scalar quantities associated with wisps
+  !--
+  subroutine compute_fractional_field(this)
+    class(wisp_redistribution), intent(inout) :: this
 
-  !---
-  ! Compute:
+    integer :: i
+    real(r8) :: acceptor_total
+
+    acceptor_total = sum(this%total_wisp_acceptor_v)
+
+    if (acceptor_total > 0.0_r8) then
+      do i = 1, this%mesh%ncell_onP
+        this%wisp_acceptor_fractions(i) = &
+          sum(this%wisp_acceptor_volumes(:,i)) / acceptor_total
+      end do
+    else
+      this%wisp_acceptor_fractions = 0.0_r8
+    end if
+
+  end subroutine compute_fractional_field
+ 
+  !--
+  !  Compute:
   !  ND -> Total number of donor cells
   !  NA -> Total number of acceptor cells
   !  NU -> Total number of uncorrected cells

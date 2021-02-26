@@ -17,6 +17,8 @@ module volume_tracker_class
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes
     procedure(vt_set_inflow_material), deferred :: set_inflow_material
+    procedure :: donor_volumes_view
+    procedure :: acceptor_fractions_view
   end type volume_tracker
 
   abstract interface
@@ -43,4 +45,19 @@ module volume_tracker_class
     end subroutine
   end interface
 
+contains
+
+  function donor_volumes_view(this) result(p)
+    class(volume_tracker), intent(in) :: this
+    real(r8), pointer :: p(:,:)
+
+    p => null()
+  end function donor_volumes_view
+
+  function acceptor_fractions_view(this) result(p)
+    class(volume_tracker), intent(in) :: this
+    real(r8), pointer :: p(:)
+
+    p => null()
+  end function acceptor_fractions_view
 end module volume_tracker_class

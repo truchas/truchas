@@ -83,6 +83,7 @@ module flow_driver
   public :: flow_driver_set_initial_state
   public :: flow_driver_dump_state
   public :: flow_set_pre_solidification_density
+  public :: flow_correct_wisp_momentum
   public :: inflow_plist
 
   type :: flow_driver_data
@@ -345,6 +346,8 @@ contains
 
     call start_timer('Flow')
 
+    write(*,'(a,2es15.5)') 'FS:  VOF POST_SOL[64]: ', vof(:2,64)
+
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
 
@@ -509,5 +512,14 @@ contains
     real(r8), intent(in) :: vof(:,:)
     call this%props%set_pre_solidification_density(vof)
   end subroutine flow_set_pre_solidification_density
+
+
+  subroutine flow_correct_wisp_momentum(wisp_donor_volumes)
+    real(r8), pointer, intent(in) :: wisp_donor_volumes(:,:)
+
+    if (.not.associated(wisp_donor_volumes)) return
+
+    call this%flow%correct_wisp_momentum(wisp_donor_volumes)
+  end subroutine flow_correct_wisp_momentum
 
 end module flow_driver

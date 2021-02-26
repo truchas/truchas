@@ -278,10 +278,12 @@ contains
 
               if (props%void_delta_cc(j) < 0.0_r8) then
                 this%rhs(j) = this%rhs(j)+m%volume(j)*max(props%void_delta_cc(j),-void)/dt
+                write(*, "(a,i6,a,es15.5)") "VOID COLLAPSE TRIGGERED[", j, "]: ", this%rhs(j) / dt
               end if
 
               if (props%void_delta_cc(j) > 0.0_r8) then
                 this%rhs(j) = this%rhs(j)-m%volume(j)*min(props%void_delta_cc(j),void)/dt
+                write(*, "(a,i6,a,es15.5)") "VOID COLLAPSE TRIGGERED[", j, "]: ", this%rhs(j) / dt
               end if
             end block
           end if

@@ -104,10 +104,10 @@ contains
 
   end subroutine read_ds_namelists
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DS_STEP
- !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!
+  !! DS_STEP
+  !!
 
   subroutine ds_step (h, hnext, errc)
 
@@ -175,8 +175,8 @@ contains
     case default
       INSIST(.false.)
     end select
-    1 format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
-    2 format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
+1   format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
+2   format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
     call TLS_info (message)
 
     call stop_timer ('Diffusion Solver')
@@ -241,29 +241,29 @@ contains
 
     end subroutine update_adv_heat
 
-!    subroutine update_adv_conc
-!
-!      use legacy_mesh_api, only: ncells
-!      use advection_module,   only: advected_phi
-!      use index_partitioning, only: gather_boundary
-!
-!      integer :: i
-!      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
-!
-!      if (this%have_fluid_flow) then
-!        allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
-!        do i = 1, num_species
-!          call ds_get_phi (i, phi_t)
-!          call advected_phi(phi_t, q_t)    ! species deltas for the time step
-!          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
-!          call gather_boundary (this%mesh%cell_ip, q_ds)
-!          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
-!          call smf_set_extra_source (this%sd_source(i), q_ds)
-!        end do
-!        deallocate(q_t, q_ds, phi_t)
-!      end if
-!
-!    end subroutine update_adv_conc
+    !    subroutine update_adv_conc
+    !
+    !      use legacy_mesh_api, only: ncells
+    !      use advection_module,   only: advected_phi
+    !      use index_partitioning, only: gather_boundary
+    !
+    !      integer :: i
+    !      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
+    !
+    !      if (this%have_fluid_flow) then
+    !        allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
+    !        do i = 1, num_species
+    !          call ds_get_phi (i, phi_t)
+    !          call advected_phi(phi_t, q_t)    ! species deltas for the time step
+    !          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
+    !          call gather_boundary (this%mesh%cell_ip, q_ds)
+    !          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
+    !          call smf_set_extra_source (this%sd_source(i), q_ds)
+    !        end do
+    !        deallocate(q_t, q_ds, phi_t)
+    !      end if
+    !
+    !    end subroutine update_adv_conc
 
   end subroutine ds_step
 
@@ -280,7 +280,7 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine
+  end subroutine ds_get_temp
 
   subroutine ds_get_enthalpy (array)
     use legacy_mesh_api, only: ncells
@@ -295,7 +295,7 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine
+  end subroutine ds_get_enthalpy
 
   subroutine ds_get_phi (n, array)
     use legacy_mesh_api, only: ncells
@@ -370,12 +370,12 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine
+  end subroutine ds_get_face_temp_view
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DS_INIT
- !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!
+  !! DS_INIT
+  !!
   subroutine ds_init (tinit)
 
     use EM_data_proxy, only: EM_is_on
@@ -587,118 +587,118 @@ contains
 
   end subroutine ds_restart
 
-!TODO: Replace this with something equivalent? The new material data type has no
-! notion of being temperature dependent nor of being multi-component
-!
-! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! !!
-! !! VERIFY_MATERIAL_COMPATIBILITY
-! !!
-! !! This routine verifies that the attributes of the material systems
-! !! referenced by the material mesh function MMF are compatible with the
-! !! requirements of the type of diffusion system being solved.   If an
-! !! incompatibility is detected STAT returns a nonzero value and an
-! !! explanatory error message is returned in ERRMSG.
-! !!
-! !! The material system requirements are as follows.
-! !!
-! !! Species diffusion only:
-! !!   * temperature-independent material systems
-! !!   * number of species equal to the number of material components less 1
-! !! Heat conduction only:
-! !!   * temperature-dependent material systems
-! !!   * single-component material systems
-! !! Heat conduction/species diffusion:
-! !!   * temperature-dependent material systems
-! !!   * number of species equal to the number of material components less 1
-! !!
-!
-!  subroutine verify_material_compatibility (mmf, stat, errmsg)
-!
-!    use material_system
-!    use material_table
-!
-!    type(matl_mesh_func), intent(in) :: mmf
-!    integer, intent(out) :: stat
-!    character(len=*), intent(out) :: errmsg
-!
-!    integer :: i
-!    integer, allocatable :: matid(:)
-!    type(mat_system), pointer :: ms
-!
-!    !! Retrieve a list of all the material IDs that may be encountered.
-!    call mmf%get_all_matl(matid, drop_void=.true.)
-!
-!    !! Verify that the material system attributes are compatible
-!    !! with the constraints imposed by the type of diffusion system.
-!    select case (ds_sys_type)
-!    case (DS_SPEC_SYS)      ! Species diffusion
-!      do i = 1, size(matid)
-!        ms => mt_get_material(matid(i))
-!        ASSERT(associated(ms))
-!        if (ms_temp_dep(ms)) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires temperature-independent material systems'
-!          return
-!        end if
-!        if (ms_num_component(ms) /= num_species+1) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
-!                   '-component material systems'
-!          return
-!        end if
-!      end do
-!    case (DS_TEMP_SYS)      ! Heat conduction
-!      do i = 1, size(matid)
-!        ms => mt_get_material(matid(i))
-!        ASSERT(associated(ms))
-!        if (.not.ms_temp_dep(ms)) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires temperature-dependent material systems'
-!          return
-!        end if
-!        if (ms_num_component(ms) /= 1) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires single-component material systems'
-!          return
-!        end if
-!      end do
-!    case (DS_TEMP_SPEC_SYS) ! Heat conduction and species diffusion
-!      do i = 1, size(matid)
-!        ms => mt_get_material(matid(i))
-!        ASSERT(associated(ms))
-!        if (.not.ms_temp_dep(ms)) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires temperature-dependent material systems'
-!          return
-!        end if
-!        if (ms_num_component(ms) /= num_species+1) then
-!          stat = -1
-!          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
-!                   '-component material systems'
-!          return
-!        end if
-!      end do
-!    case default
-!      INSIST(.false.)
-!    end select
-!
-!    stat = 0
-!    errmsg = ''
-!
-!  end subroutine verify_material_compatibility
+  !TODO: Replace this with something equivalent? The new material data type has no
+  ! notion of being temperature dependent nor of being multi-component
+  !
+  ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! !!
+  ! !! VERIFY_MATERIAL_COMPATIBILITY
+  ! !!
+  ! !! This routine verifies that the attributes of the material systems
+  ! !! referenced by the material mesh function MMF are compatible with the
+  ! !! requirements of the type of diffusion system being solved.   If an
+  ! !! incompatibility is detected STAT returns a nonzero value and an
+  ! !! explanatory error message is returned in ERRMSG.
+  ! !!
+  ! !! The material system requirements are as follows.
+  ! !!
+  ! !! Species diffusion only:
+  ! !!   * temperature-independent material systems
+  ! !!   * number of species equal to the number of material components less 1
+  ! !! Heat conduction only:
+  ! !!   * temperature-dependent material systems
+  ! !!   * single-component material systems
+  ! !! Heat conduction/species diffusion:
+  ! !!   * temperature-dependent material systems
+  ! !!   * number of species equal to the number of material components less 1
+  ! !!
+  !
+  !  subroutine verify_material_compatibility (mmf, stat, errmsg)
+  !
+  !    use material_system
+  !    use material_table
+  !
+  !    type(matl_mesh_func), intent(in) :: mmf
+  !    integer, intent(out) :: stat
+  !    character(len=*), intent(out) :: errmsg
+  !
+  !    integer :: i
+  !    integer, allocatable :: matid(:)
+  !    type(mat_system), pointer :: ms
+  !
+  !    !! Retrieve a list of all the material IDs that may be encountered.
+  !    call mmf%get_all_matl(matid, drop_void=.true.)
+  !
+  !    !! Verify that the material system attributes are compatible
+  !    !! with the constraints imposed by the type of diffusion system.
+  !    select case (ds_sys_type)
+  !    case (DS_SPEC_SYS)      ! Species diffusion
+  !      do i = 1, size(matid)
+  !        ms => mt_get_material(matid(i))
+  !        ASSERT(associated(ms))
+  !        if (ms_temp_dep(ms)) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires temperature-independent material systems'
+  !          return
+  !        end if
+  !        if (ms_num_component(ms) /= num_species+1) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
+  !                   '-component material systems'
+  !          return
+  !        end if
+  !      end do
+  !    case (DS_TEMP_SYS)      ! Heat conduction
+  !      do i = 1, size(matid)
+  !        ms => mt_get_material(matid(i))
+  !        ASSERT(associated(ms))
+  !        if (.not.ms_temp_dep(ms)) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires temperature-dependent material systems'
+  !          return
+  !        end if
+  !        if (ms_num_component(ms) /= 1) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires single-component material systems'
+  !          return
+  !        end if
+  !      end do
+  !    case (DS_TEMP_SPEC_SYS) ! Heat conduction and species diffusion
+  !      do i = 1, size(matid)
+  !        ms => mt_get_material(matid(i))
+  !        ASSERT(associated(ms))
+  !        if (.not.ms_temp_dep(ms)) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires temperature-dependent material systems'
+  !          return
+  !        end if
+  !        if (ms_num_component(ms) /= num_species+1) then
+  !          stat = -1
+  !          errmsg = 'diffusion system type requires ' // i_to_c(num_species+1) // &
+  !                   '-component material systems'
+  !          return
+  !        end if
+  !      end do
+  !    case default
+  !      INSIST(.false.)
+  !    end select
+  !
+  !    stat = 0
+  !    errmsg = ''
+  !
+  !  end subroutine verify_material_compatibility
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! CULL_MATERIAL_FRAGMENTS
- !!
- !! This procedure removes all material from cells with a small non-void
- !! volume fraction.  Where the void volume fraction exceeds 1 - THRESHOLD,
- !! the void volume fraction is set to 1 and the volume fraction for all other
- !! materials is set to 0.  Note that this doesn't remove materials with a
- !! small volume fraction unless the total non-void volume fraction is less
- !! than THRESHOLD.
- !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!
+  !! CULL_MATERIAL_FRAGMENTS
+  !!
+  !! This procedure removes all material from cells with a small non-void
+  !! volume fraction.  Where the void volume fraction exceeds 1 - THRESHOLD,
+  !! the void volume fraction is set to 1 and the volume fraction for all other
+  !! materials is set to 0.  Note that this doesn't remove materials with a
+  !! small volume fraction unless the total non-void volume fraction is less
+  !! than THRESHOLD.
+  !!
 
   subroutine cull_material_fragments (mmf, threshold, culled)
 
@@ -744,7 +744,7 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine
+  end subroutine update_moving_vf
 
   subroutine add_moving_vf_events(eventq)
     use sim_event_queue_type
@@ -757,6 +757,6 @@ contains
     case default
       INSIST(.false.)
     end select
-  end subroutine
+  end subroutine add_moving_vf_events
 
 end module diffusion_solver

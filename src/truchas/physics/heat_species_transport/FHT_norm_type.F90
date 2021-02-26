@@ -80,22 +80,34 @@ contains
     real(r8), intent(out), optional :: error
     target :: u, f
     
-    integer :: i, num1, num2
+    integer :: i, num1, num2, loc(1)
     real(r8), pointer :: fseg(:), qres(:), temp(:)
     integer, pointer :: faces(:)
-    real(r8), allocatable :: rhs(:)
+    real(r8), allocatable :: rhs(:), local_cell_error(:), local_face_error(:)
     real(r8) :: sum1, sum2, err
     
     ASSERT(size(u) == FHT_model_size(this%model))
     ASSERT(size(f) == FHT_model_size(this%model))
     
+    allocate(local_cell_error(this%model%mesh%ncell_onP))
+    allocate(local_face_error(this%model%mesh%nface_onP))
+
     call FHT_model_get_cell_temp_view (this%model, f, fseg)
+    local_cell_error = merge(fseg**2, 0.0_r8, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     sum1 = global_sum(fseg**2, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     num1 = global_count(.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     call FHT_model_get_face_temp_view (this%model, f, fseg)
+    local_face_error = merge(fseg**2, 0.0_r8, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     sum2 = global_sum(fseg**2, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     num2 = global_count(.not.this%model%void_face(:this%model%mesh%nface_onP))
     
+    ! find largest cell and face error
+    loc = maxloc(local_cell_error)
+    write(*, '("  *** FHT_NORM MAX-CELL-ERROR[",i5,"]: ",es15.5)') loc(1), local_cell_error(loc(1))
+    !loc = maxloc(local_face_error)
+    !write(*, '("  *** FHT_NORM MAX-FACE-ERROR[",i6,"]: ",es15.5)') loc(1), local_face_error(loc(1))
+
+
     err = sqrt((sum1+sum2)/(num1+num2))
     
     if (present(error)) then

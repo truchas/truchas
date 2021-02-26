@@ -90,6 +90,7 @@ module flow_props_type
 
   type, public :: flow_props
     type(unstr_mesh), pointer, private :: mesh => null() ! reference only -- do not own
+    real(r8), allocatable :: largest_rho_cc(:) ! largest value of neighborhood rho
     real(r8), allocatable :: rho_cc(:), rho_cc_n(:) ! cell centered fluid density
     real(r8), allocatable :: rho_fc(:), rho_fc_n(:) ! face centered fluid density
     real(r8), allocatable :: mu_cc(:), mu_cc_n(:) ! cell centered fluid viscosity
@@ -144,7 +145,7 @@ contains
 
     plist => params%sublist("cutoffs")
     call plist%get("cutvof", this%cutoff, default=0.01_r8)
-    call plist%get("min face fraction", this%min_face_fraction, default=0.001_r8)
+    call plist%get("min face fraction", this%min_face_fraction, default=0.1_r8)
 
     ASSERT(size(viscosity) == size(density_delta))
     allocate(this%viscosity(size(viscosity)))
@@ -169,6 +170,7 @@ contains
         this%solidified_rho(nc), &
         this%rho_pre_sol(nc), &
         this%cell_t(nc), this%face_t(fc), &
+        this%largest_rho_cc(nc), &
         stat=s)
     if (s /= 0) call TLS_Fatal("allocation of flow_props failed")
 
@@ -193,7 +195,8 @@ contains
     real(r8), intent(in) :: vof(:,:), temperature_cc(:)
 
     integer :: m, i, j
-    real(r8) :: minrho, w(2), min_face_rho, state(1)
+    real(r8) :: minrho, w(2), min_face_rho, state(1), scaled_vof(size(this%density))
+    real(r8) :: tmp
 
     call start_timer("update properties")
 
@@ -205,17 +208,25 @@ contains
       this%mu_cc(i) = 0.0_r8
       this%rho_delta_cc(i) = 0.0_r8
       state(1) = temperature_cc(i)
+
+      scaled_vof = vof(:size(this%density), i)
+      
+      this%vof(i) = sum(vof(:this%nfluid,i))
+      ! last element of input vof array is void
+      this%vof_novoid(i) = sum(vof(:size(this%density),i))
+      ! check if we need to use a "scaled" density
+      if (this%vof(i) > this%cutoff .and. this%vof_novoid(i) > 0 &
+          .and. this%vof_novoid(i) < this%cutoff) then
+        scaled_vof = this%cutoff * vof(:size(this%density),i) / this%vof_novoid(i) ! sum(scaled_vof) = cutoff
+      end if
       do m = 1, size(this%density)
-        this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
+        this%rho_cc(i) = this%rho_cc(i) + scaled_vof(m)*this%density(m)
         this%mu_cc(i) = this%mu_cc(i) + &
             vof(m,i)*this%viscosity(m)%f%eval(state)
         this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
             vof(m,i)*this%density_delta(m)%f%eval(state)
       end do
 
-      this%vof(i) = sum(vof(:this%nfluid,i))
-      ! last element of input vof array is void
-      this%vof_novoid(i) = sum(vof(:size(this%density),i))
       this%solidified_rho(i) = max(this%rho_pre_sol(i) - this%rho_cc(i), 0.0_r8)
 
       if (this%vof(i) > 0.0_r8) then
@@ -294,6 +305,8 @@ contains
       this%rho_pre_sol(i) = sum(this%density*vof(:nfluid,i))
     end do
 
+    write(*,'(a,2es15.5)') 'FS:  VOF PRE_SOL[64]: ', vof(:2,64)
+
   end subroutine set_pre_solidification_density
 
 
@@ -304,7 +317,17 @@ contains
     integer :: m, i, j
     real(r8) :: minrho, w(2), min_face_rho
 
-    min_face_rho = this%minrho*this%min_face_fraction
+    ! min_face_rho = this%minrho*this%min_face_fraction
+
+    do j = 1, this%mesh%ncell_onP
+      associate(cn => this%mesh%cnhbr(this%mesh%xcnhbr(j):this%mesh%xcnhbr(j+1)-1))
+        if (this%rho_cc(j) > 0) then
+          this%largest_rho_cc(j) = max(this%rho_cc(j), maxval(this%rho_cc(cn)))
+        else
+          this%largest_rho_cc(j) = 0.0_r8
+        end if
+      end associate
+    end do
 
     ! compute face types
     do j = 1, this%mesh%nface_onP
@@ -339,6 +362,7 @@ contains
           this%rho_fc(j) = this%rho_cc(cn(1))
         else if (any(this%cell_t(cn) <= regular_t)) then
           w = this%mesh%volume(cn)*this%vof(cn)
+          min_face_rho = this%min_face_fraction * sum(this%largest_rho_cc(cn)*w)/sum(w)
           this%rho_fc(j) = max(min_face_rho, sum(this%rho_cc(cn)*w)/sum(w))
         end if
       end associate
