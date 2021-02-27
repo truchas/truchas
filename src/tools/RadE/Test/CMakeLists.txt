@@ -9,9 +9,13 @@ include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasToolsRade_BINARY_DIR})
 
+# --- Common modules
+add_library(test_rade_tools OBJECT test_rade_tools_common.F90)
+
+
 # --- RE_DIST_VF_TYPE tests
-add_executable(test_dist_vf_type test_dist_vf_type.F90 test_rade_tools_common.F90)
-target_link_libraries(test_dist_vf_type rade truchas ${Truchas_LINK_LIBS})
+add_executable(test_dist_vf_type test_dist_vf_type.F90)
+target_link_libraries(test_dist_vf_type test_rade_tools rade truchas ${Truchas_LINK_LIBS})
 
 set(test_launch-synthetic-1p ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ${ToolsRadeTest_BINARY_DIR}/test_dist_vf_type
@@ -50,8 +54,8 @@ set_property(TEST dist_vf_type-patch-4p PROPERTY LABELS UNIT RADIATION)
 
 
 # --- RE_VF_DIFF_TYPE tests
-add_executable(test_vf_diff_type test_vf_diff_type.F90 test_rade_tools_common.F90)
-target_link_libraries(test_vf_diff_type rade truchas ${Truchas_LINK_LIBS})
+add_executable(test_vf_diff_type test_vf_diff_type.F90)
+target_link_libraries(test_vf_diff_type test_rade_tools rade truchas ${Truchas_LINK_LIBS})
 
 set(test_launch-synthetic-1p ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ${ToolsRadeTest_BINARY_DIR}/test_vf_diff_type
