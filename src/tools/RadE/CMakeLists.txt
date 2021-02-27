@@ -34,11 +34,17 @@ set(LIBRARY_RADE_FILES
     patching/patching_tools.F90
     patching/edge_hash_type.F90
     patching/edge_neighbor_table_type.F90
+    patching/patching_class.F90
     patching/vsa_min_heap.F90
     patching/vsa_patch_type.F90
     patching/vsa_patching_type.F90
     patching/vac_min_heap.F90
     patching/vac_patching_type.F90)
+
+if(USE_METIS)
+  list(APPEND LIBRARY_RADE_FILES
+        patching/metis_patching_type.F90)
+endif()
 
 list(APPEND LIBRARY_RADE_FILES
             chaparral_ext.c

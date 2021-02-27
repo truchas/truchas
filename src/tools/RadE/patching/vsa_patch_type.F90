@@ -20,10 +20,10 @@
 !!    are the corresponding 3D geometrical properties of the face, stored
 !!    respectively as a real scalar, and two length 3 rank-1 real arrays.
 !!
-!!  RESET_PATCH(THIS, FACEID, AREA, WEIGHT) resets THIS to a single face. The
-!!    patch proxy is NOT modified.  FACEID is the global index of the face.
-!!    AREA is the area of the face.  WEIGHT is a real scalar representing the
-!!    weight of the face relative to the patch.
+!!  RESET(THIS, FACEID, AREA, WEIGHT) resets THIS to a single face. The patch
+!!    proxy is NOT modified.  FACEID is the global index of the face.  AREA is
+!!    the area of the face.  WEIGHT is a real scalar representing the weight of
+!!    the face relative to the patch.
 !!
 !!  REPLACE(THIS, OTHER) replaces THIS with OTHER, a TYPE(VSA_PATCH) object.
 !!    The dynamic memory of OTHER is safely deallocated.
@@ -56,6 +56,7 @@ module vsa_patch_type
 
   use kinds, only: r8
   implicit none
+  private
 
   !! Coefficient for patch radius bias
   real(r8), parameter :: RADIUS_COEFF = 100.0_r8
@@ -73,8 +74,8 @@ module vsa_patch_type
     real(r8), allocatable :: weight(:)
 
     contains
-      procedure, public :: init => init_patch
-      procedure, public :: reset => reset_patch
+      procedure, public :: init
+      procedure, public :: reset
       procedure, public :: replace
       procedure, public :: add_face
       procedure, public :: remove_face
@@ -85,7 +86,7 @@ contains
 
 
   !! Initialize patch data
-  subroutine init_patch(this, faceid, area, center, normal)
+  subroutine init(this, faceid, area, center, normal)
 
     class(vsa_patch), intent(inout) :: this
     real(r8), intent(in) :: area, center(3), normal(3)
@@ -103,11 +104,11 @@ contains
     this%weight(1)    = 0.0_r8
     this%total_weight = 0.0_r8
 
-  end subroutine init_patch
+  end subroutine init
 
 
   !! Reset patch to a single face
-  subroutine reset_patch(this, faceid, area, weight)
+  subroutine reset(this, faceid, area, weight)
 
     class(vsa_patch), intent(inout) :: this
     integer, intent(in) :: faceid
@@ -119,7 +120,7 @@ contains
     this%weight(1) = weight
     this%total_weight = weight
 
-  end subroutine reset_patch
+  end subroutine reset
 
 
   !! Add a face to the patch

@@ -310,30 +310,24 @@ proxy vectors. If the minimum change in patch proxies is less than ``vsa_min_del
 stops at that iteration.
 
 
-VSA_AVG_FACES_PER_PATCH
-+++++++++++++++++++++++
-Defines the average faces per patch, and by extension the total number of patches, of the
-:doc:`VSA algorithm <vsa>`.
+VSA_FACE_PATCH_RATIO
+++++++++++++++++++++
+Defines the ratio of total faces to total patches, and by extension the total number of patches, of
+the :doc:`VSA algorithm <vsa>`.
 
 .. namelist_parameter::
    :type: REAL
-   :domain: vsa_avg_faces_per_patch >= 1.0
-   :default: vsa_avg_faces_per_patch = 4.0
-
-The average faces per patch is given by
-
-.. math::
-   \text{(Total Faces)}/\text{(Total Patches)}
+   :domain: vsa_face_patch_ratio >= 1.0
+   :default: vsa_face_patch_ratio = 4.0
 
 Since the number of faces is fixed, this parameter determines the total number of patches in the
 final configuration:
 
 .. math::
-   \text{(Total Patches)} = \text{(Total Faces)} *
-   \text{vsa_avg_faces_per_patch}
+   \text{(Total Patches)} = \text{(Total Faces)}\ /\ \text{vsa_face_patch_ratio}
 
-Rather than set the number of patches explicitly, which is mesh dependent, expressing this parameter
-as an average allows the same value to apply to a variety of meshes.
+Rather than set the number of patches explicitly, which is mesh dependent, expressing this
+parameter as a ratio allows the same value to apply to a variety of meshes.
 
 
 VSA_MAX_PATCH_RADIUS

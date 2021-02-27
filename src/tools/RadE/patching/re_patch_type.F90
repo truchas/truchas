@@ -83,17 +83,17 @@ module re_patch_type
   public :: read_patches_namelist
 
   !! Patch algorithms
-  character(32), parameter :: PATCH_ALGORITHMS(5) = ['NONE','VSA ','VAC ','PAVE','FILE']
+  character(32), parameter :: PATCH_ALGORITHMS(6) = ['NONE ','VSA  ','VAC  ','PAVE ','METIS','FILE ']
   integer, parameter :: PATCH_ALG_NONE = 1
   integer, parameter :: PATCH_ALG_VSA = 2
   integer, parameter :: PATCH_ALG_VAC = 3
   integer, parameter :: PATCH_ALG_PAVE = 4
-  integer, parameter :: PATCH_ALG_FILE = 5
+  integer, parameter :: PATCH_ALG_METIS = 5
+  integer, parameter :: PATCH_ALG_FILE = 6
 
   !! Parameter defaults
   integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
-  integer, parameter :: RANDOM_SEED_DEFAULT = -1
   real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
 
   type, public :: re_patch
@@ -110,10 +110,8 @@ module re_patch_type
     procedure, public :: patch_coloring
     procedure, public :: patch_to_face_array
     procedure, private :: no_patches
-    procedure, private :: vsa_patches
-    procedure, private :: vac_patches
-    procedure, private :: pave_patches
     procedure, private :: file_patches
+    procedure, private :: run_patches
   end type
 
 contains
@@ -124,13 +122,18 @@ contains
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use re_utilities
     use vsa_patching_type, only: VSA_MAX_ITER_DEFAULT, VSA_MIN_DELTA_DEFAULT, &
-      VSA_AVG_FACES_PER_PATCH_DEFAULT, VSA_MAX_PATCH_RADIUS_DEFAULT, VSA_NORMALIZE_DIST_DEFAULT
+      VSA_FACE_PATCH_RATIO_DEFAULT, VSA_MAX_PATCH_RADIUS_DEFAULT, VSA_NORMALIZE_DIST_DEFAULT
     use vac_patching_type, only: VAC_MERGE_LEVEL_DEFAULT, VAC_SPLIT_PATCH_SIZE_DEFAULT
+#ifdef USE_METIS
+    use metis_patching_type, only: METIS_FACE_PATCH_RATIO_DEFAULT, METIS_FACE_WEIGHT_DEFAULT, &
+      METIS_EDGE_WEIGHT_DEFAULT
+#endif
 
     integer, intent(in) :: lun
     type(parameter_list), intent(out) :: params
     logical, intent(out) :: found
 
+    type(parameter_list), pointer :: plist
     logical :: is_IOP
     integer :: ios, stat, patch_alg
     character(9) :: string
@@ -142,7 +145,7 @@ contains
     real(r8) :: max_angle
     integer  :: vsa_max_iter
     real(r8) :: vsa_min_delta
-    real(r8) :: vsa_avg_faces_per_patch
+    real(r8) :: vsa_face_patch_ratio
     real(r8) :: vsa_max_patch_radius
     logical  :: vsa_normalize_dist
     integer  :: vsa_random_seed
@@ -151,13 +154,25 @@ contains
     integer  :: pave_merge_level
     integer  :: pave_split_patch_size
     integer  :: pave_random_seed
+    real(r8) :: metis_face_patch_ratio
+    logical :: metis_face_weight
+    logical :: metis_edge_weight
+    integer :: metis_ctype, metis_iptype, metis_objtype, metis_no2hop, &
+      metis_contig, metis_minconn, metis_ufactor, metis_niter, &
+      metis_ncuts, metis_seed, metis_dbglvl, metis_ptype
     namelist /patches/ patch_algorithm, verbosity_level, max_angle, &
-      vsa_max_iter, vsa_min_delta, vsa_avg_faces_per_patch, &
-        vsa_max_patch_radius, vsa_normalize_dist, vsa_random_seed, &
+      vsa_max_iter, vsa_min_delta, vsa_face_patch_ratio, vsa_max_patch_radius, &
+        vsa_normalize_dist, vsa_random_seed, &
       vac_merge_level, vac_split_patch_size, &
-      pave_merge_level, pave_split_patch_size, pave_random_seed, patch_file
+      pave_merge_level, pave_split_patch_size, pave_random_seed, &
+      metis_face_patch_ratio, metis_face_weight, metis_edge_weight, &
+        metis_ctype, metis_iptype, metis_objtype, metis_no2hop, &
+        metis_contig, metis_minconn, metis_ufactor, metis_niter, &
+        metis_ncuts, metis_seed, metis_dbglvl, metis_ptype, &
+      patch_file
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
+    call params%set_name('patches')  ! used when printing errors
 
     !! Seek to the first instance of the PATCH namelist.
     if (is_IOP) then
@@ -179,17 +194,38 @@ contains
     patch_algorithm = NULL_C
     verbosity_level = NULL_I
     max_angle = NULL_R
+
     vsa_max_iter = NULL_I
     vsa_min_delta = NULL_R
-    vsa_avg_faces_per_patch = NULL_R
+    vsa_face_patch_ratio = NULL_R
     vsa_max_patch_radius = NULL_R
     vsa_normalize_dist = VSA_NORMALIZE_DIST_DEFAULT
     vsa_random_seed = NULL_I
+
     vac_merge_level = NULL_I
     vac_split_patch_size = NULL_I
     pave_merge_level = NULL_I
     pave_split_patch_size = NULL_I
     pave_random_seed = NULL_I
+
+#ifdef USE_METIS
+    metis_face_patch_ratio = NULL_R
+    metis_face_weight = METIS_FACE_WEIGHT_DEFAULT
+    metis_edge_weight = METIS_EDGE_WEIGHT_DEFAULT
+    metis_ctype = NULL_I
+    metis_iptype = NULL_I
+    metis_objtype = NULL_I
+    metis_no2hop = NULL_I
+    metis_contig = NULL_I
+    metis_minconn = NULL_I
+    metis_ufactor = NULL_I
+    metis_niter = NULL_I
+    metis_ncuts = NULL_I
+    metis_seed = NULL_I
+    metis_dbglvl = NULL_I
+    metis_ptype = NULL_I
+#endif
+
     patch_file = NULL_C
 
     if (is_IOP) read(lun,nml=patches,iostat=ios,iomsg=iom)
@@ -200,17 +236,38 @@ contains
     call scl_bcast(patch_algorithm)
     call scl_bcast(verbosity_level)
     call scl_bcast(max_angle)
+
     call scl_bcast(vsa_max_iter)
     call scl_bcast(vsa_min_delta)
-    call scl_bcast(vsa_avg_faces_per_patch)
+    call scl_bcast(vsa_face_patch_ratio)
     call scl_bcast(vsa_max_patch_radius)
     call scl_bcast(vsa_normalize_dist)
     call scl_bcast(vsa_random_seed)
+
     call scl_bcast(vac_merge_level)
     call scl_bcast(vac_split_patch_size)
     call scl_bcast(pave_merge_level)
     call scl_bcast(pave_split_patch_size)
     call scl_bcast(pave_random_seed)
+
+#ifdef USE_METIS
+    call scl_bcast(metis_face_patch_ratio)
+    call scl_bcast(metis_face_weight)
+    call scl_bcast(metis_edge_weight)
+    call scl_bcast(metis_ctype)
+    call scl_bcast(metis_iptype)
+    call scl_bcast(metis_objtype)
+    call scl_bcast(metis_no2hop)
+    call scl_bcast(metis_contig)
+    call scl_bcast(metis_minconn)
+    call scl_bcast(metis_ufactor)
+    call scl_bcast(metis_niter)
+    call scl_bcast(metis_ncuts)
+    call scl_bcast(metis_seed)
+    call scl_bcast(metis_dbglvl)
+    call scl_bcast(metis_ptype)
+#endif
+
     call scl_bcast(patch_file)
 
     !! Check the values
@@ -231,6 +288,8 @@ contains
         patch_alg = PATCH_ALG_VAC
       case ('PAVE')
         patch_alg = PATCH_ALG_PAVE
+      case ('METIS')
+        patch_alg = PATCH_ALG_METIS
       case ('FILE')
         patch_alg = PATCH_ALG_FILE
       case default
@@ -265,7 +324,7 @@ contains
       else if (vsa_max_iter < 1) then
         call data_err('VSA_MAX_ITER must be >= 1')
       end if
-      call params%set('vsa-max-iter', vsa_max_iter)
+      call params%set('max-iter', vsa_max_iter)
       if (vsa_min_delta == NULL_R) then
         vsa_min_delta = VSA_MIN_DELTA_DEFAULT
         write(string,fmt='(es9.2)') vsa_min_delta
@@ -273,15 +332,15 @@ contains
       else if (vsa_min_delta < 0.0_r8) then
         call data_err('VSA_MIN_DELTA must be >= 0')
       end if
-      call params%set('vsa-min-delta', vsa_min_delta)
-      if (vsa_avg_faces_per_patch == NULL_R) then
-        vsa_avg_faces_per_patch = VSA_AVG_FACES_PER_PATCH_DEFAULT
-        write(string,fmt='(es9.2)') vsa_avg_faces_per_patch
-        call re_info('  using default VSA_AVG_FACES_PER_PATCH='//string)
-      else if (vsa_avg_faces_per_patch < 1.0_r8) then
-        call data_err('VSA_AVG_FACES_PER_PATCH must be >= 1')
+      call params%set('min-delta', vsa_min_delta)
+      if (vsa_face_patch_ratio == NULL_R) then
+        vsa_face_patch_ratio = VSA_FACE_PATCH_RATIO_DEFAULT
+        write(string,fmt='(es9.2)') vsa_face_patch_ratio
+        call re_info('  using default VSA_FACE_PATCH_RATIO='//string)
+      else if (vsa_face_patch_ratio < 1.0_r8) then
+        call data_err('VSA_FACE_PATCH_RATIO must be >= 1')
       end if
-      call params%set('vsa-avg-faces-per-patch', vsa_avg_faces_per_patch)
+      call params%set('face-patch-ratio', vsa_face_patch_ratio)
       if (vsa_max_patch_radius == NULL_R) then
         vsa_max_patch_radius = VSA_MAX_PATCH_RADIUS_DEFAULT
         write(string,fmt='(es9.2)') vsa_max_patch_radius
@@ -289,19 +348,20 @@ contains
       else if (vsa_max_patch_radius <= 0.0_r8) then
         call data_err('VSA_MAX_PATCH_RADIUS must be > 0')
       end if
-      call params%set('vsa-max-patch-radius', vsa_max_patch_radius)
+      call params%set('max-patch-radius', vsa_max_patch_radius)
       if (vsa_normalize_dist .eqv. VSA_NORMALIZE_DIST_DEFAULT) then
         write(string,fmt='(l1)') vsa_normalize_dist
         call re_info('  using default VSA_NORMALIZE_DIST='//trim(string))
       end if
-      call params%set('vsa-normalize-dist', vsa_normalize_dist)
+      call params%set('normalize-dist', vsa_normalize_dist)
       if (vsa_random_seed == NULL_I) then
-        vsa_random_seed = RANDOM_SEED_DEFAULT
         call re_info('  using default VSA_RANDOM_SEED')
       else if (vsa_random_seed < 0) then
         call data_err('VSA_RANDOM_SEED must be >= 0')
+      else
+        !! Optional, only set if specified by user and valid
+        call params%set('random-seed', vsa_random_seed)
       end if
-      call params%set('vsa-random-seed', vsa_random_seed)
     end if
 
     !! VAC settings
@@ -312,14 +372,14 @@ contains
       else if (vac_merge_level < 0) then
         call data_err('VAC_MERGE_LEVEL must be >= 0')
       end if
-      call params%set('vac-merge-level', vac_merge_level)
+      call params%set('merge-level', vac_merge_level)
       if (vac_split_patch_size == NULL_I) then
         vac_split_patch_size = VAC_SPLIT_PATCH_SIZE_DEFAULT
         call re_info('  using default VAC_SPLIT_PATCH_SIZE='//i_to_c(vac_split_patch_size))
       else if (vac_split_patch_size < 0) then
         call data_err('VAC_SPLIT_PATCH_SIZE must be >= 0')
       end if
-      call params%set('vac-split-patch-size', vac_split_patch_size)
+      call params%set('split-patch-size', vac_split_patch_size)
     end if
 
     !! PAVE settings
@@ -330,22 +390,61 @@ contains
       else if (pave_merge_level < 0) then
         call data_err('PAVE_MERGE_LEVEL must be >= 0')
       end if
-      call params%set('pave-merge-level', pave_merge_level)
+      call params%set('merge-level', pave_merge_level)
       if (pave_split_patch_size == NULL_I) then
         pave_split_patch_size = VAC_SPLIT_PATCH_SIZE_DEFAULT
         call re_info('  using default PAVE_SPLIT_PATCH_SIZE='//i_to_c(pave_split_patch_size))
       else if (pave_split_patch_size < 0) then
         call data_err('PAVE_SPLIT_PATCH_SIZE must be >= 0')
       end if
-      call params%set('pave-split-patch-size', pave_split_patch_size)
+      call params%set('split-patch-size', pave_split_patch_size)
       if (pave_random_seed == NULL_I) then
-        pave_random_seed = RANDOM_SEED_DEFAULT
         call re_info('  using default PAVE_RANDOM_SEED')
       else if (pave_random_seed < 0) then
         call data_err('PAVE_RANDOM_SEED must be >= 0')
+      else
+        !! Optional, only set if specified by user and valid
+        call params%set('random-seed', pave_random_seed)
       end if
-      call params%set('pave-random-seed', pave_random_seed)
     end if
+
+    !! METIS settings
+#ifdef USE_METIS
+    if (patch_alg == PATCH_ALG_METIS) then
+      if (metis_face_patch_ratio == NULL_R) then
+        metis_face_patch_ratio = METIS_FACE_PATCH_RATIO_DEFAULT
+        write(string,fmt='(es9.2)') metis_face_patch_ratio
+        call re_info('  using default METIS_FACE_PATCH_RATIO='//string)
+      else if (metis_face_patch_ratio < 1.0_r8) then
+        call data_err('METIS_FACE_PATCH_RATIO must be >= 1')
+      end if
+      call params%set('face-patch-ratio', metis_face_patch_ratio)
+      if (metis_face_weight .eqv. METIS_FACE_WEIGHT_DEFAULT) then
+        write(string,fmt='(l1)') metis_face_weight
+        call re_info('  using default METIS_FACE_WEIGHT='//trim(string))
+      end if
+      call params%set('face-weight', metis_face_weight)
+      if (metis_edge_weight .eqv. METIS_EDGE_WEIGHT_DEFAULT) then
+        write(string,fmt='(l1)') metis_edge_weight
+        call re_info('  using default METIS_EDGE_WEIGHT='//trim(string))
+      end if
+      call params%set('edge-weight', metis_edge_weight)
+      !! METIS library options
+      plist => params%sublist('metis-options')
+      if (metis_ptype   /= NULL_I) call plist%set('ptype', metis_ptype)
+      if (metis_ctype   /= NULL_I) call plist%set('ctype', metis_ctype)
+      if (metis_iptype  /= NULL_I) call plist%set('iptype', metis_iptype)
+      if (metis_objtype /= NULL_I) call plist%set('objtype', metis_objtype)
+      if (metis_no2hop  /= NULL_I) call plist%set('no2hop', metis_no2hop)
+      if (metis_contig  /= NULL_I) call plist%set('contig', metis_contig)
+      if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+      if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+      if (metis_niter   /= NULL_I) call plist%set('niter', metis_niter)
+      if (metis_ncuts   /= NULL_I) call plist%set('ncuts', metis_ncuts)
+      if (metis_seed    /= NULL_I) call plist%set('seed', metis_seed)
+      if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl', metis_dbglvl)
+    end if
+#endif
 
     !! FILE settings
     if (patch_alg == PATCH_ALG_FILE) then
@@ -365,37 +464,31 @@ contains
 
 
   !! Select and run a patching algorithm
-  subroutine generate_patches (this, e, params)
+  subroutine generate_patches (this, e, params, stat, errmsg)
 
     class(re_patch), intent(out) :: this
     class(encl), intent(in)  :: e
     type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: patch_alg
 
+    stat = 0
     if (scl_rank() == 1) then
       call params%get('patch-alg', patch_alg)
       select case (patch_alg)
       case (PATCH_ALG_NONE)
         write (*,'(a)') 'No patches will be generated'
         call this%no_patches(e)
-      case (PATCH_ALG_VSA)
-        write (*,'(a)') 'Generating patches using the VSA algorithm'
-        call this%vsa_patches(e, params)
-      case (PATCH_ALG_VAC)
-        write (*,'(a)') 'Generating patches using the VAC algorithm'
-        call this%vac_patches(e, params)
-      case (PATCH_ALG_PAVE)
-        write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
-        call this%pave_patches(e, params)
       case (PATCH_ALG_FILE)
         write (*,'(a)') 'Reading patches from a disk file'
-        call this%file_patches(e, params)
+        call this%file_patches(e, params, stat, errmsg)
       case default
-        !! Programming error, exit immediately.
-        INSIST(.false.)
+        call this%run_patches(e, params, stat, errmsg)
       end select
     end if
+    call scl_bcast(stat)
 
   end subroutine generate_patches
 
@@ -413,7 +506,6 @@ contains
     this%nface = e%nface
 
     allocate(this%f2p_map(e%nface), this%global_ids(e%nface))
-
     do i = 1, e%nface
       this%f2p_map(i) = i
       this%global_ids(i) = i
@@ -422,129 +514,80 @@ contains
   end subroutine no_patches
 
 
-  !! Generate patches using the VSA algorithm
-  subroutine vsa_patches (this, e, params)
-
-    use vsa_patching_type
-
-    class(re_patch), intent(out) :: this
-    class(encl), target, intent(in)  :: e
-    type(parameter_list), intent(inout)  :: params
-
-    type(vsa_patching) :: vsa
-    integer :: verbosity, max_iter, seed
-    real(r8) :: max_angle, min_delta, avg_fpp, max_radius
-    logical :: normalize
-
-    call params%get('verbosity-level', verbosity)
-    call params%get('vsa-avg-faces-per-patch', avg_fpp)
-    call params%get('vsa-max-patch-radius', max_radius)
-    call params%get('vsa-normalize-dist', normalize)
-    call params%get('max-angle', max_angle)
-    call params%get('vsa-min-delta', min_delta)
-    call params%get('vsa-max-iter', max_iter)
-    call params%get('vsa-random-seed', seed)
-
-    this%has_patches = .true.
-    this%nface = e%nface
-
-    if (seed == RANDOM_SEED_DEFAULT) then
-      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity)
-    else
-      call vsa%init(e, avg_fpp, max_angle, max_radius, normalize, verbosity, seed)
-    end if
-
-    call vsa%run(min_delta, max_iter)
-
-    call vsa%output(this%f2p_map, this%global_ids, this%npatch)
-
-  end subroutine vsa_patches
-
-
-  !! Generate patches using the VAC algorithm
-  subroutine vac_patches (this, e, params)
-
-    use vac_patching_type
-
-    class(re_patch), intent(out) :: this
-    class(encl), target, intent(in)  :: e
-    type(parameter_list), intent(inout)  :: params
-
-    type(vac_patching) :: vac
-    integer :: verbosity, merge_level, split_patch_size
-    real(r8) :: max_angle
-
-    call params%get('verbosity-level', verbosity)
-    call params%get('max-angle', max_angle)
-    call params%get('vac-merge-level', merge_level)
-    call params%get('vac-split-patch-size', split_patch_size)
-
-    this%has_patches = .true.
-    this%nface = e%nface
-
-    call vac%init(e, max_angle, merge_level, split_patch_size, verbosity)
-
-    call vac%run()
-
-    call vac%output(this%f2p_map, this%global_ids, this%npatch)
-
-  end subroutine vac_patches
-
-
-  !! Generate patches using the VAC PAVE algorithm
-  subroutine pave_patches (this, e, params)
-
-    use vac_patching_type
-
-    class(re_patch), intent(out) :: this
-    class(encl), target, intent(in)  :: e
-    type(parameter_list), intent(inout)  :: params
-
-    type(pave_patching) :: pave
-    integer :: verbosity, merge_level, split_patch_size, seed
-    real(r8) :: max_angle
-
-    call params%get('verbosity-level', verbosity)
-    call params%get('max-angle', max_angle)
-    call params%get('pave-merge-level', merge_level)
-    call params%get('pave-split-patch-size', split_patch_size)
-    call params%get('pave-random-seed', seed)
-
-    this%has_patches = .true.
-    this%nface = e%nface
-
-    if (seed == RANDOM_SEED_DEFAULT) then
-      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity)
-    else
-      call pave%init(e, max_angle, merge_level, split_patch_size, verbosity, seed)
-    end if
-
-    call pave%run()
-
-    call pave%output(this%f2p_map, this%global_ids, this%npatch)
-
-  end subroutine pave_patches
-
-
   !! Read patches from a file
-  subroutine file_patches (this, e, params)
+  subroutine file_patches (this, e, params, stat, errmsg)
     class(re_patch), intent(out) :: this
     class(encl), target, intent(in) :: e
     character(:), allocatable :: path
     type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    stat = 0
     call params%get('patch-file', path)
     call re_patch_read(this, path)
-    INSIST(this%nface == e%nface) !TODO: need parallel-aware error handling
-    block !TODO: re_patch_read really ought to set this as well
-      integer :: j
-      if (this%has_patches) then
-        allocate(this%global_ids(this%npatch))
-        do j = 1, this%npatch
-          this%global_ids(j) = j
-        end do
-      end if
-    end block
+    if (this%nface /= e%nface) then
+      stat = 1
+      errmsg = "face count in patch file '"//trim(path)//"' does not match input mesh"
+    end if
   end subroutine file_patches
+
+
+  !! Generate patches using one of the patching algorithms
+  subroutine run_patches (this, e, params, stat, errmsg)
+
+    use patching_class
+    use vsa_patching_type
+    use vac_patching_type
+    use metis_patching_type
+
+    class(re_patch), intent(out) :: this
+    class(encl), target, intent(in)  :: e
+    type(parameter_list), intent(inout)  :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    class(patching), allocatable :: patch
+    integer :: patch_alg
+
+    !! Choose algorithm
+    call params%get('patch-alg', patch_alg)
+    select case (patch_alg)
+    case (PATCH_ALG_VSA)
+      write (*,'(a)') 'Generating patches using the VSA algorithm'
+      allocate(vsa_patching :: patch)
+    case (PATCH_ALG_VAC)
+      write (*,'(a)') 'Generating patches using the VAC algorithm'
+      allocate(vac_patching :: patch)
+    case (PATCH_ALG_PAVE)
+      write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
+      allocate(pave_patching :: patch)
+    case (PATCH_ALG_METIS)
+#ifdef USE_METIS
+      write (*,'(a)') 'Generating patches using the METIS graph partitioner'
+      allocate(metis_patching :: patch)
+#else
+      stat = 1
+      errmsg = 'the "METIS" patching algorithm is not supported by this Truchas build'
+#endif
+    case default
+      stat = 1
+      errmsg = 'no such patching algorithm'
+    end select
+    if (stat/=0) return
+
+    !! Run patching algorithm
+    this%has_patches = .true.
+    this%nface = e%nface
+
+    call patch%init(e, params, stat, errmsg)
+    if (stat/=0) return
+
+    call patch%run(stat, errmsg)
+    if (stat/=0) return
+
+    call patch%output(this%f2p_map, this%global_ids, this%npatch)
+
+  end subroutine run_patches
 
 
   subroutine re_patch_bcast (this)
@@ -565,18 +608,27 @@ contains
     character(*), intent(in) :: path
 
     type(rad_encl_file) :: file
-    integer :: nface_tot, npatch_tot
+    integer :: i, nface, npatch
 
     if (scl_rank() == 1) then
       call file%open_ro(path)
-      call file%get_patch_dims(nface_tot, npatch_tot)
-      this%npatch = npatch_tot
-      this%nface = nface_tot
+      call file%get_patch_dims(nface, npatch)
+      this%npatch = npatch
+      this%nface = nface
       this%has_patches = file%has_patches()
-      if (.not. this%has_patches) return
 
-      allocate(this%f2p_map(nface_tot))
-      call file%get_f2p_map(this%f2p_map)
+      allocate(this%global_ids(npatch))
+      do i = 1, this%npatch
+        this%global_ids(i) = i
+      end do
+
+      allocate(this%f2p_map(nface))
+      if (this%has_patches) then
+        call file%get_f2p_map(this%f2p_map)
+      else
+        ASSERT(nface==npatch)
+        this%f2p_map = this%global_ids
+      end if
     end if
 
   end subroutine re_patch_read
@@ -603,25 +655,27 @@ contains
 
   !! Color patches so that adjacent patches have different colors.
   !! The procedure does nothing if this%has_patches is false.
-  function patch_coloring (this, e) result(pcolor)
+  subroutine patch_coloring (this, e, pcolor, stat, errmsg)
 
     use patching_tools, only: get_face_neighbor_array
     use graph_type
 
     class(re_patch), intent(in) :: this
     type(encl), intent(in) :: e
-    integer, allocatable :: pcolor(:)
+    integer, allocatable, intent(out) :: pcolor(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(graph) :: pgraph  ! Patch adjacency graph
     integer, allocatable :: xfnhbr(:), fnhbr(:)
     integer :: p1, p2
-    integer :: i, f, n, ncolor, stat
+    integer :: i, f, n, ncolor
 
     if (.not. this%has_patches) return
 
     call pgraph%init(this%npatch)
-    call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat)
-    ASSERT( stat == 0 )
+    call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat, errmsg)
+    if (stat /= 0) return
 
     !! Construct patch adjacency graph
     do f = 1, e%nface
@@ -636,7 +690,7 @@ contains
 
     call pgraph%vertex_coloring(pcolor, ncolor)
 
-  end function patch_coloring
+  end subroutine patch_coloring
 
 
   !! Expands a patch-length array into a face-length array

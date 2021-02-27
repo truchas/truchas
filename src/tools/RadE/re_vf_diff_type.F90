@@ -111,9 +111,6 @@ contains
     call ep%read(path)
     call ep%bcast()
 
-    !! Face-to-patch map is not initialized for face-based matrices
-    if (.not. ep%has_patches) ep%f2p_map = [(i, i=1,ep%nface)]
-
     !! All other data is only needed on rank 1
     if (scl_rank() == 1) then
 
