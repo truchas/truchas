@@ -1,20 +1,6 @@
-set(SRC
-    scorpio_c_binding.F90
-    scorpio_file_type.F90
-    truchas_h5_outfile.F90
-    scorpio_ext.c
-    )
-
-add_library(truchas_io ${SRC})
-target_link_libraries(truchas_io PUBLIC truchas::pgslib_fe
-  truchas::pgslib_mpi scorpio hdf5)
-
-add_library(truchas::io ALIAS truchas_io)
-target_include_directories(truchas_io PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>
+target_sources(truchas PRIVATE
+  scorpio_c_binding.F90
+  scorpio_file_type.F90
+  truchas_h5_outfile.F90
+  scorpio_ext.c
 )
-
-install(TARGETS truchas_io
-        EXPORT  truchas_io
-	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

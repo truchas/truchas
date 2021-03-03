@@ -1,0 +1,7 @@
+add_subdirectory(additive_manufacturing)
+add_subdirectory(enclosure_radiation)
+add_subdirectory(heat_species_transport)
+add_subdirectory(induction_heating)
+add_subdirectory(solid_mechanics)
+add_subdirectory(volume_tracking)
+

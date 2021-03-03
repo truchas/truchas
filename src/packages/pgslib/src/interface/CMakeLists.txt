@@ -118,6 +118,8 @@ set_target_properties(pgslib_fe PROPERTIES
 		      OUTPUT_NAME_DEBUG pgslib_fe_g
 		      LINKER_LANGUAGE     Fortran)
 
+target_link_libraries(pgslib_fe truchas::pgslib_mpi)
+
 # Define the installation location
 install(TARGETS pgslib_fe
         EXPORT  pgslib_fe

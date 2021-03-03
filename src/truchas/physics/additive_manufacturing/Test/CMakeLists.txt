@@ -3,11 +3,9 @@ include(CTest)
 # Want test modules in the build directory.
 unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
-include_directories(${Truchas_MODULE_DIR})
-
 # test_dwell_xyz_motion_type
 add_executable(test_ded_head_type test_ded_head_type.F90)
-target_link_libraries(test_ded_head_type truchas ${Truchas_LINK_LIBS})
+target_link_libraries(test_ded_head_type truchas)
 
 add_test(ded_head_type test_ded_head_type)
 

@@ -1,0 +1,43 @@
+target_sources(truchas PRIVATE
+  diffusion_solver_namelist.F90
+  thermal_bc_namelist.F90
+  thermal_bc_factory_class.F90
+  thermal_bc_factory1_type.F90
+  species_bc_namelist.F90
+  species_bc_factory_class.F90
+  species_bc_factory1_type.F90
+  FHT_model_factory.F90
+  FHT_model_type.F90
+  FHT_norm_type.F90
+  FHT_precon_type.F90
+  FHT_solver_factory.F90
+  FHT_solver_type.F90
+  HTSD_idaesol_model_type.F90
+  HTSD_model_factory.F90
+  HTSD_model_type.F90
+  HTSD_norm_type.F90
+  HTSD_precon_type.F90
+  HTSD_solver_factory.F90
+  HTSD_solver_type.F90
+  HTSD_init_cond_type.F90
+  TofH_type.F90
+  data_layout_type.F90
+  mfd_disc_type.F90
+  mfd_diff_matrix_type.F90
+  mfd_diff_precon_type.F90
+  diffusion_solver.F90
+  diffusion_solver_data.F90
+  ds_source_input.F90
+  mesh_interop.F90
+  prop_mesh_func_type.F90
+  source_mesh_function.F90
+  upper_packed_matrix.F90
+  enthalpy_advector_class.F90
+  enthalpy_advector1_type.F90
+  evap_heat_flux_type.F90
+  evaporation_namelist.F90
+  thermal_source_namelist.F90
+  thermal_source_factory_type.F90
+)
+
+add_subdirectory(Test)
