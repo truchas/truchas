@@ -852,7 +852,7 @@ Contains
     use mech_bc_data_module
     use solid_mech_constraints, only: MECH_PRECOND_DISP_CONSTRAINTS
     use solid_mechanics_mesh,   only: ndim
-    use solid_mechanics_namelist, only: linear_params, nonlinear_params
+    use solid_mechanics_namelist, only: nonlinear_params
 
     ! Preconditioning matrix.  TM_P will be pointed at this.
     type(real_var_vector), pointer, save, dimension(:) :: A_Elas
@@ -948,7 +948,7 @@ Contains
        !NNC: call TIMER_START(TIMER_CYCLE)
 
        ! The model must be initialized before the solver
-       call this_model%init(ELAS_VP_RESIDUAL, A_Elas, linear_params, status, errmsg)
+       call this_model%init(ELAS_VP_RESIDUAL, A_Elas, status, errmsg)
        if (status /= 0) call TLS_fatal('SOLID_MECH_INIT: ' // errmsg)
        call this_solver%init(this_model, nonlinear_params, status, errmsg)
        if (status /= 0) call TLS_fatal('SOLID_MECH_INIT: ' // errmsg)

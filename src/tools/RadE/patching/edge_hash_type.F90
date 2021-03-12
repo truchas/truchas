@@ -81,10 +81,15 @@ module edge_hash_type
 contains
 
   !! Source: https://github.com/skeeto/hash-prospector
+  !! NB: c2 = 0x846ca68b but the standard (as of F2018) first converts BOZ
+  !!     constants to signed integers, which c2 overflows.  The workaround
+  !!     below works for machines with a two's-complement representation of
+  !!     signed integers.
   pure integer(int32) function integer_hash (x) result(ret)
 
     integer(int32), intent(in) :: x
-    integer(int32), parameter :: c1 = Z'7feb352d', c2 = Z'846ca68b'
+    integer(int32), parameter :: c1 =  int(Z'7feb352d',int32)
+    integer(int32), parameter :: c2 = -int(Z'7b935975',int32)
 
     ret = x
     ret = ieor(ret, ishft(ret, -16))

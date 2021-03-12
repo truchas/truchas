@@ -6,7 +6,7 @@ import truchas
 
 def run_test(tenv):
     nfail = 0
-    stdout, output = tenv.truchas(4, "ustruc2.inp", restart_file="ustruc1.restart.177")
+    stdout, output = tenv.truchas(4, "ustruc2.inp", restart_file="ustruc1.restart.142")
     golden = tenv.output("ustruc2_golden/ustruc2.h5")
 
     time = output.time(2) # final time

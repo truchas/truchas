@@ -158,6 +158,7 @@ module unstr_mesh_type
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array
+    procedure :: get_global_fnode_array
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
@@ -299,6 +300,16 @@ contains
     end associate
   end subroutine get_global_cface_array
 
+  !! Creates the global ragged FNODE array on the IO process, 0-sized on others.
+  subroutine get_global_fnode_array (this, xfnode, fnode)
+    class(unstr_mesh), intent(in) :: this
+    integer, allocatable, intent(out) :: xfnode(:), fnode(:)
+    associate (xfnode_onP => this%xfnode(:this%nface_onP+1), &
+                fnode_onP => this%fnode(:this%xfnode(this%nface_onP+1)-1))
+      call get_global_ragged_array (xfnode_onP, this%node_ip%global_index(fnode_onP), xfnode, fnode)
+    end associate
+  end subroutine get_global_fnode_array
+
   !! Auxiliary subroutine creates a global ragged array on the IO process,
   !! 0-sized on others, given a distributed ragged array.
   subroutine get_global_ragged_array (xarray_l, array_l, xarray, array)
@@ -310,27 +321,13 @@ contains
     ASSERT(xarray_l(1) == 1)
     ASSERT(size(array_l) == xarray_l(size(xarray_l))-1)
     ASSERT(all(xarray_l(2:) - xarray_l(:size(xarray_l)-1) >= 0))
-#ifdef NAG_COMPILER_WORKAROUND
-    !! NAGFOR 6.0(1052)/GCC 4.8.3 produce bad code under optimization (-O2)
-    !! with the one-line allocation in parallel, getting the wrong value for
-    !! the global_sum expression, apparently it gets the value of its argument
-    !! instead.  Looking at the intermediate C code suggests that tha problem
-    !! may not be here but in global_sum and perhaps a race condition?
-    offset = global_sum(size(xarray_l)-1)
+    offset = global_sum(size(xarray_l)-1)  !! in case scalar merge short-circuits evaluation of its arguments
     allocate(xarray(1+merge(offset,0,is_IOP)))
-#else
-    allocate(xarray(1+merge(global_sum(size(xarray_l)-1),0,is_IOP)))
-#endif
     offset = excl_prefix_sum(size(array_l))
     xarray(1) = 1
     call collate (xarray(2:), xarray_l(2:)+offset)
-#ifdef NAG_COMPILER_WORKAROUND
-    !! Same comments as above.
-    offset = global_sum(size(array_l))
+    offset = global_sum(size(array_l))  !! same comments as above
     allocate(array(merge(offset,0,is_IOP)))
-#else
-    allocate(array(merge(global_sum(size(array_l)),0,is_IOP)))
-#endif
     call collate (array, array_l)
     if (is_IOP) then
       ASSERT(size(xarray) >= 1)

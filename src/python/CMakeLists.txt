@@ -26,7 +26,6 @@ set(PYTHON_BIN_FILES
   bin/write-xdmf.py
   bin/write-gmv.py
   bin/write-restart.py
-  bin/write-probe.py
   )
 
 # Both Build and Install config files get configured

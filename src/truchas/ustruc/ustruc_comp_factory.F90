@@ -40,10 +40,10 @@ module ustruc_comp_factory
 
   use ustruc_comp_class
   use ustruc_core_type
-  use ustruc_vel1_type
   use ustruc_time_type
   use ustruc_gv0_type
   use ustruc_gv1_type
+  use ustruc_gl_type
   use parameter_list_type
   use parameter_list_json
   implicit none
@@ -54,20 +54,19 @@ module ustruc_comp_factory
 contains
 
   function new_ustruc_comp (n, params) result (comp)
-  
+
     use truchas_logging_services
 
     integer, intent(in) :: n
     type(parameter_list) :: params
     class(ustruc_comp), pointer :: comp
-    
+
     integer :: lun, stat
     character(:), allocatable :: filename, errmsg, gv_model_type
     type(parameter_list), pointer :: plist
 
-    comp => new_ustruc_core(n)
-    comp => new_ustruc_vel1(comp, params)
-    
+    comp => new_ustruc_core(n, params)
+
     if (params%is_parameter('gv-model-file')) then
       call params%get ('gv-model-file', filename)
       plist => params%sublist('gv-params')
@@ -82,6 +81,8 @@ contains
         comp => new_ustruc_gv0(comp, plist)
       case ('gv1')
         comp => new_ustruc_gv1(comp, plist)
+      case ('gl')
+        comp => new_ustruc_gl(comp, plist)
       case default
         call TLS_fatal ('unknown value for gv-model-type: "' // gv_model_type // '"')
       end select

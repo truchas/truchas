@@ -22,7 +22,9 @@ program test_integer_set_type
   call test_remove
   call test_to_array
   call test_copy_to_array
+#ifndef GNU_PR69563
   call test_elemental
+#endif
   call test_add_set
   call test_iterator
 
@@ -141,6 +143,7 @@ contains
   end subroutine test_copy_to_array
 
 
+#ifndef GNU_PR69563
   subroutine test_elemental
 
     type(integer_set) :: A(2), B(1)
@@ -163,6 +166,7 @@ contains
     if (size(array2) /= 0) call write_fail ('test_elemental: wrong size for array2')
 
   end subroutine test_elemental
+#endif
 
   subroutine test_add_set
 

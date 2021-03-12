@@ -14,12 +14,19 @@ module altmesh_namelist
 
   logical, public :: altmesh_exists = .false.
   character(16), public :: partitioner
-  character(256), public :: altmesh_file, grid_transfer_file, partition_file
-  real(r8), public :: altmesh_coordinate_scale_factor
+  character(511), public :: altmesh_file, grid_transfer_file, partition_file
+  real(r8), public :: altmesh_coordinate_scale_factor, rotation_angles(3)
   integer, public :: first_partition
+  character(16), public :: data_mapper_kind
 
-  namelist /altmesh/ altmesh_file, altmesh_coordinate_scale_factor, grid_transfer_file, &
-                     partitioner, partition_file, first_partition
+  namelist /altmesh/ altmesh_file, altmesh_coordinate_scale_factor, rotation_angles, &
+      grid_transfer_file, partitioner, partition_file, first_partition, data_mapper_kind
+
+  !! Metis parameters
+  integer, public :: metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+      metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+  namelist /altmesh/ metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+                  metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
 
 contains
 
@@ -53,10 +60,22 @@ contains
     if (is_IOP) then
       altmesh_file = NULL_C
       altmesh_coordinate_scale_factor = 1.0_r8
+      rotation_angles = 0
       grid_transfer_file = NULL_C
       partitioner = NULL_C
       partition_file = NULL_C
       first_partition = NULL_I
+      data_mapper_kind = 'default'
+      metis_ptype   = NULL_I
+      metis_iptype  = NULL_I
+      metis_ctype   = NULL_I
+      metis_ncuts   = NULL_I
+      metis_niter   = NULL_I
+      metis_ufactor = NULL_I
+      metis_minconn = NULL_I
+      metis_contig  = NULL_I
+      metis_seed    = -314159
+      metis_dbglvl  = NULL_I
       read(lun,nml=altmesh,iostat=ios)
     end if
     call broadcast(ios)
@@ -66,10 +85,22 @@ contains
     call broadcast(altmesh_exists)
     call broadcast(altmesh_file)
     call broadcast(altmesh_coordinate_scale_factor)
+    call broadcast(rotation_angles)
     call broadcast(grid_transfer_file)
     call broadcast(partitioner)
     call broadcast(partition_file)
     call broadcast(first_partition)
+    call broadcast(data_mapper_kind)
+    call broadcast(metis_ptype)
+    call broadcast(metis_iptype)
+    call broadcast(metis_ctype)
+    call broadcast(metis_ncuts)
+    call broadcast(metis_niter)
+    call broadcast(metis_ufactor)
+    call broadcast(metis_minconn)
+    call broadcast(metis_contig)
+    call broadcast(metis_seed)
+    call broadcast(metis_dbglvl)
 
     !! Check the input variables for errors.
     if (altmesh_file == NULL_C) call TLS_fatal ('ALTMESH_FILE not specified')
@@ -91,6 +122,10 @@ contains
     if (partitioner == NULL_C) partitioner = 'chaco'
     select case (lower_case(partitioner))
     case ('chaco')
+    case ('metis')
+#ifndef USE_METIS
+      call TLS_fatal('PARTITIONER = "metis" is not supported by this Truchas build')
+#endif
     case ('block')
     case ('file')
       if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')
@@ -102,6 +137,16 @@ contains
       if (.not.any(first_partition == [0,1])) call TLS_fatal ('FIRST_PARTITION must be 0 or 1')
     case default
       call TLS_fatal ('unknown value for PARTITIONER: ' // trim(partitioner))
+    end select
+
+    select case (data_mapper_kind)
+    case ('default')
+    case ('portage')
+#ifndef USE_PORTAGE
+      call TLS_fatal('DATA_MAPPER_KIND = "portage" is not supported by this Truchas build')
+#endif
+    case default
+      call TLS_fatal('invalid value for DATA_MAPPER_KIND: ' // trim(data_mapper_kind))
     end select
 
   end subroutine read_altmesh_namelist

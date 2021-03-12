@@ -12,6 +12,8 @@ class TruchasConfig:
 
     lib_suffix = "@CMAKE_SHARED_LIBRARY_SUFFIX@"
 
+    python_executable = "@PYTHON_EXECUTABLE@"
+
     test_build_dir = os.path.join(build_dir, "test")
     test_source_dir = os.path.join(source_dir, "test")
 

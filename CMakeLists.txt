@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 
 include(NoInSourceBuild)
 
-project(Truchas LANGUAGES C Fortran)
+project(Truchas LANGUAGES C CXX Fortran)
 
 # Fix a few things that cmake gets wrong for the NAG compiler.
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
@@ -153,6 +153,28 @@ if(NOT Scorpio_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Scorpio installation")
 endif()
 
+# Portage library
+option(USE_PORTAGE "Build with support for the Portage data mapping tool" OFF)
+if (USE_PORTAGE)
+  find_package(Portage)
+  if(NOT PORTAGE_FOUND)
+    message(FATAL_ERROR "Could NOT find a suitable Portage installation")
+  endif()
+endif()
+
+# Metis library
+option(USE_METIS "Build with support for the Portage data mapping tool" ON)
+if (USE_METIS)
+  find_package(METIS 5.1.0)
+  if(NOT METIS_FOUND)
+    message(FATAL_ERROR "Could NOT find a suitable Metis installation")
+  endif()
+  add_library(metis UNKNOWN IMPORTED)
+  set_target_properties(metis PROPERTIES
+      IMPORTED_LOCATION "${METIS_LIBRARIES}")
+  set_property(TARGET metis PROPERTY INTERFACE_LINK_LIBRARIES "${METIS_LIBRARIES}")
+endif()
+
 # optional for building version information
 find_package(Git)
 
@@ -202,15 +224,24 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   endif()
 endif()
 
+if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+  add_compile_definitions(GNU_PR49213)
+  add_compile_definitions(GNU_PR69563)
+  add_compile_definitions(GNU_PR86277)
+  add_compile_definitions(GNU_PR98141)
+  add_compile_definitions(GNU_ISSUE437)
+endif()
+
 if(ENABLE_DYNAMIC_LOADING)
   add_compile_definitions(ENABLE_DYNAMIC_LOADING)
 endif()
 
-# Specific compiler bug workarounds and defines.
-# These are used when compiling code that has not been preprocessed.
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
-  add_compile_definitions(INTEL_DPD200237439)
+if(USE_PORTAGE)
+  add_compile_definitions(USE_PORTAGE)
+endif()
+
+if(USE_METIS)
+  add_compile_definitions(USE_METIS)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move

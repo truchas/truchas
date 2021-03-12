@@ -106,8 +106,7 @@ contains
         end if
       end if
       n = count(f%c /= 0.0_r8)
-      if (g0 /= 0.0_r8) n = n + 1
-      allocate(c(n), e(n))
+      allocate(c(0:n), e(0:n))
       n = 0
       do j = f%emin, f%emax
         if (f%c(j) /= 0.0_r8) then
@@ -116,13 +115,10 @@ contains
           e(n) = j + 1
         end if
       end do
-      if (g0 /= 0.0_r8) then
-        n = n + 1
-        c(n) = g0
-        e(n) = 0
-      end if
-      call alloc_poly_scalar_func(g, c, e, f%x0)
-      deallocate(c, e)
+      call alloc_poly_scalar_func(g, c(1:), e(1:), f%x0)
+      c(0) = g0 - g%eval([x0])
+      e(0) = 0
+      if (c(0) /= 0) call alloc_poly_scalar_func(g, c(0:), e(0:), f%x0)
 
     class default
 

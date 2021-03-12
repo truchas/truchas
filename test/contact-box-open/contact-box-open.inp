@@ -38,8 +38,6 @@
   NLK_max_vectors = 20
   NLK_vector_tolerance = 0.01
   maximum_iterations = 500
-  preconditioning_steps = 1
-  relaxation_parameter = 1.0
 /
 
 &NUMERICS

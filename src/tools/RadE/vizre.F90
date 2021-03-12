@@ -12,6 +12,7 @@ program vizre
   use re_patch_type
   use re_dist_vf_type
   use re_graphics_gmv
+  use re_utilities
   use vizre_command_line
   use string_utilities, only: i_to_c
   use scl
@@ -19,10 +20,11 @@ program vizre
 
   integer, parameter :: MAX_GMV_VARS = 200  ! GMV says 250 but it segfaults before then...
 
-  integer :: n, nvar
+  integer :: n, nvar, stat
   logical :: sym, has_vf, is_IOP
-  integer, allocatable :: col(:)
+  integer, allocatable :: col(:), pcolor(:)
   character(len=512) :: enclosure_file, gmv_file
+  character(:), allocatable :: errmsg
   type(encl) :: e
   type(dist_vf) :: dvf
   type(re_patch) :: ep
@@ -57,11 +59,17 @@ program vizre
 
     !! Write patch coloring
     nvar = nvar + 1
-    patch_var = REAL(ep%patch_coloring(e))
-    call ep%patch_to_face_array(patch_var, face_var)
-    call gmv_write_face_var(e, face_var, 'pcolor', sym)
-    deallocate(patch_var)
+    call ep%patch_coloring(e, pcolor, stat, errmsg)
+    if (stat==0) then
+      patch_var = REAL(pcolor)
+      call ep%patch_to_face_array(patch_var, face_var)
+      call gmv_write_face_var(e, face_var, 'pcolor', sym)
+      deallocate(patch_var, pcolor)
+    end if
   end if
+
+  call scl_bcast(stat)
+  if (stat/=0) call re_halt(errmsg)
 
   !! We have a view factor matrix
   if (has_vf) then

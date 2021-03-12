@@ -142,17 +142,17 @@ contains
 
   end function new_ustruc_gv0
 
-  subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine set_state (this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_gv0), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
     integer :: j
 
     !! Set the initial state for the next analysis component in the chain.
     !! This will define the CORE component state arrays.
-    call this%ustruc_plugin%set_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%ustruc_plugin%set_state (t, temp, temp_grad, frac, invalid)
 
     do j = 1, this%n
       if (invalid(j)) then
@@ -172,10 +172,10 @@ contains
 
   end subroutine set_state
 
-  subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine update_state (this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_gv0), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
     integer  :: j
@@ -186,7 +186,7 @@ contains
 
     !! Update the next analysis component in the chain.
     !! Note that the core analysis component always ends the chain.
-    call this%ustruc_plugin%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%ustruc_plugin%update_state (t, temp, temp_grad, frac, invalid)
 
     !! Update the state of this analysis component.
     do j = 1, this%n
@@ -279,7 +279,7 @@ contains
     pure function interp_frac (t1, f1, t2, f2, f) result (t)
       real(r8), intent(in) :: t1, f1, t2, f2, f
       real(r8) :: t
-      t = t1*((f-f1)/(f2-f1)) + t2*((f2-f)/(f2-f1))
+      t = t1*((f2-f)/(f2-f1)) + t2*((f-f1)/(f2-f1))
     end function
 
   end subroutine update_state

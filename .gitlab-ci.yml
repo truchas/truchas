@@ -1,20 +1,96 @@
 stages:
   - build
+  - test
+  - deploy
+  - website
 
-truchas intel:
+build truchas binary:
   stage: build
+  needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images/ci-test:tpl-mpich-centos7-2db5337
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.3.0
+  variables:
+    GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
+    GIT_DEPTH: 0 # fetch all commits and tags
   script:
-    - sudo yum install -y python3 openssh-clients bzip2
-    - curl -O https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/p/patchelf-0.9-10.el7.x86_64.rpm
-    - sudo yum install -y ./patchelf-0.9-10.el7.x86_64.rpm
-    - sudo pip3 install numpy scipy h5py
-    - sudo rm -f /usr/bin/python
-    - sudo ln -s /usr/bin/python3 /usr/bin/python
+    - source /opt/rh/devtoolset-9/enable
+    - bash ci/version.sh
     - bash ci/build.sh
+    - cd build/inst/bin/
+    - export INTELDIR=/opt/intel/
+    - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+    - ../../../ci/make_dist.py
+    - cd ../../..
+    - mkdir dist
+    - cp build/inst/bin/truchas-*.tar.bz2 dist/
+    - cp version dist/
   artifacts:
     paths:
-      - build/inst/bin/t-*
-      - build/inst/bin/truchas-*.tar.bz2
+      - dist/*
     when: always
+
+test truchas intel (Release):
+  stage: build
+  needs: []
+  tags: ["intel"]
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.3.0
+  script:
+    - source /opt/rh/devtoolset-9/enable
+    - bash ci/build.sh
+    - cd build
+    - export INTELDIR=/opt/intel/
+    - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+    - ctest --output-on-failure
+
+test truchas intel (Debug):
+  stage: build
+  needs: []
+  tags: ["intel"]
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.3.0
+  script:
+  script:
+    - source /opt/rh/devtoolset-9/enable
+    - bash ci/build.sh Debug
+    - cd build
+    - export INTELDIR=/opt/intel/
+    - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
+    - ctest --output-on-failure
+
+test truchas binary (Ubuntu 18.04):
+  stage: test
+  needs: ["build truchas binary"]
+  image: ubuntu:18.04
+  script:
+    - ci/test_tarball.sh
+
+test truchas binary (Centos 7):
+  stage: test
+  needs: ["build truchas binary"]
+  image: centos:7
+  script:
+    - yum install -y bzip2
+    - ci/test_tarball.sh
+
+upload truchas binary:
+  stage: deploy
+  needs: ["build truchas binary"]
+  image: ubuntu:20.04
+  script:
+    - apt-get update
+    - apt-get install -yq --no-install-recommends git python3 python3-pip python3-setuptools openssh-client
+    - pip3 install aiohttp==3.5.4 gidgethub==3.1.0 PyJWT==1.7.1 github3.py==1.3.0
+    - python3 ci/upload_binary.py $CI_COMMIT_REF_NAME $CI_COMMIT_TAG
+    - ci/upload_json.sh
+
+# Update the downloads page
+downloads_update:
+  stage: website
+  needs: ["upload truchas binary"]
+  image: ubuntu:20.04
+  script:
+    - apt-get update
+    - apt-get install -yq --no-install-recommends curl ca-certificates
+    - curl -X POST -F token=${DOWNLOAD_UPDATE_TOKEN} -F ref=master https://gitlab.com/api/v4/projects/19864631/trigger/pipeline
+  only:
+    - master
+    - tags

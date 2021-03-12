@@ -144,6 +144,7 @@ module simpl_mesh_type
     procedure :: get_global_cnode_array
     procedure :: get_global_cedge_array
     procedure :: get_global_cface_array
+    procedure :: get_global_fnode_array
     procedure :: get_global_cblock_array
     procedure :: compute_geometry
     procedure :: write_profile
@@ -197,6 +198,15 @@ contains
     allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size(),0,is_IOP)))
     call collate (cface, this%face_ip%global_index(this%cface(:,:this%ncell_onP)))
   end subroutine get_global_cface_array
+
+  !! Creates the global FNODE array on the IO process, 0-sized array on others.
+  subroutine get_global_fnode_array (this, fnode)
+    use parallel_communication, only: is_IOP, collate
+    class(simpl_mesh), intent(in) :: this
+    integer, allocatable, intent(out) :: fnode(:,:)
+    allocate(fnode(size(this%fnode,1),merge(this%face_ip%global_size(),0,is_IOP)))
+    call collate (fnode, this%node_ip%global_index(this%fnode(:,:this%ncell_onP)))
+  end subroutine get_global_fnode_array
 
   !! Creates the global CBLOCK array on the IO process; 0-sized array on others.
   subroutine get_global_cblock_array (this, cblock)

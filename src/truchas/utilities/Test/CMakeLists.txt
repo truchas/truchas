@@ -8,18 +8,6 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 include_directories(${Truchas_MODULE_DIR})
 #include_directories(${PGSLib_MODULE_DIR})
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "16.0.0")
-    set_source_files_properties(test_integer_set_type.F90 PROPERTIES
-                                COMPILE_FLAGS "-assume realloc_lhs -DINTEL_INTEGER_SET_ICE")
-  else()
-    set_source_files_properties(test_integer_set_type.F90 PROPERTIES
-                                COMPILE_FLAGS "-assume realloc_lhs")
-  endif()
-  set_source_files_properties(test_graph_type.F90 PROPERTIES
-                              COMPILE_FLAGS "-assume realloc_lhs")
-endif()
-
 add_executable(test_integer_set_type test_integer_set_type.F90)
 target_link_libraries(test_integer_set_type truchas ${Truchas_LINK_LIBS})
 

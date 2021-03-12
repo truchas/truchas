@@ -7,7 +7,6 @@ module solid_mechanics_namelist
 
   public :: read_solid_mechanics_namelist
 
-  type(parameter_list), public :: linear_params
   type(parameter_list), public :: nonlinear_params
 
 contains
@@ -26,10 +25,10 @@ contains
         contact_distance, contact_norm_trac, contact_penalty, strain_limit
 
     !! Parameters formerly in LINEAR_SOLVER and NONLINEAR_SOLVER
-    real(r8) :: convergence_criterion, nlk_vector_tolerance, relaxation_parameter
-    integer :: maximum_iterations, nlk_max_vectors, preconditioning_steps
+    real(r8) :: convergence_criterion, nlk_vector_tolerance
+    integer :: maximum_iterations, nlk_max_vectors
     namelist /solid_mechanics/convergence_criterion, maximum_iterations, nlk_vector_tolerance, &
-        nlk_max_vectors, preconditioning_steps, relaxation_parameter
+        nlk_max_vectors
 
     integer :: ios
     logical :: found
@@ -60,8 +59,6 @@ contains
     maximum_iterations = NULL_I
     nlk_vector_tolerance = NULL_R
     nlk_max_vectors = NULL_I
-    preconditioning_steps = NULL_I
-    relaxation_parameter = NULL_R
 
     !! Read the namelist
     if (is_IOP) read(lun,nml=solid_mechanics,iostat=ios,iomsg=iom)
@@ -80,8 +77,6 @@ contains
     call broadcast(convergence_criterion)
     call broadcast(nlk_max_vectors)
     call broadcast(nlk_vector_tolerance)
-    call broadcast(preconditioning_steps)
-    call broadcast(relaxation_parameter)
 
     if (strain_limit < 0) call TLS_fatal('STRAIN_LIMIT must be >= 0.0')
     ! none of the other real parameters were checked :-/
@@ -90,8 +85,6 @@ contains
     if (convergence_criterion /= NULL_R) call nonlinear_params%set('nlk-tol', convergence_criterion)
     if (nlk_max_vectors /= NULL_I) call nonlinear_params%set('nlk-max-vec', nlk_max_vectors)
     if (nlk_vector_tolerance /= NULL_R) call nonlinear_params%set('nlk-vec-tol', nlk_vector_tolerance)
-    if (preconditioning_steps /= NULL_I) call linear_params%set('precon-num-iter', preconditioning_steps)
-    if (relaxation_parameter /= NULL_R) call linear_params%set('precon-relaxation-parameter', relaxation_parameter)
 
   end subroutine read_solid_mechanics_namelist
 

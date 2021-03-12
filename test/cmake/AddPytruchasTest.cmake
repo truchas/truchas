@@ -45,9 +45,9 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
 
   # Now add the test
   if (IS_ABSOLUTE ${test_script})
-    set(py_command ${test_script} -v)
+    set(py_command ${PYTHON_EXECUTABLE} ${test_script} -v)
   else()
-    set(py_command ${CMAKE_CURRENT_SOURCE_DIR}/${test_script} -v)
+    set(py_command ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${test_script} -v)
   endif()
   add_test(${test_name} ${py_command})
 

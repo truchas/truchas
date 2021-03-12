@@ -56,6 +56,10 @@ def parse_argv():
     parser.add_argument("-s", type=float, default=1, metavar="FLOAT",
                         help=("Scale the mapped restart mesh by the "
                               "factor FLOAT."))
+    parser.add_argument("--use-portage", action="store_true",
+                        help=("Use the Portage grid mapper backend. Truchas must"
+                              " be built with Portage support. The default is "
+                              "Truchas's built-in Kuprat mapper."))
     parser.add_argument("h5file", help="Input H5 file.")
     return parser.parse_args()
 
@@ -68,7 +72,8 @@ if __name__ == "__main__":
             exofile = os.path.abspath(args.m)
             assert os.path.isfile(exofile)
             print('Mapping to mesh at "{:s}"'.format(exofile))
-            truchas_data = truchas.TruchasMappedData(args.h5file, exofile, args.s)
+            truchas_data = truchas.TruchasMappedData(args.h5file, exofile, args.s,
+                                                     args.use_portage)
         else:
             truchas_data = truchas.TruchasData(args.h5file)
     except OSError as e:

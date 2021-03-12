@@ -44,6 +44,7 @@ module vac_min_heap
 
   use kinds, only: r8
   implicit none
+  private
 
   type, public :: heap_entry
     integer :: node

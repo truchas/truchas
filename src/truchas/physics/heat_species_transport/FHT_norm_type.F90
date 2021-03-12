@@ -14,55 +14,51 @@ module FHT_norm_type
   use parallel_communication
   implicit none
   private
-  
+
   type, public :: FHT_norm
     private
     type(FHT_model), pointer :: model
     real(r8) :: abs_tol
     real(r8) :: rel_tol
-    real(r8), pointer :: rad_tol(:) => null()
+    real(r8), allocatable :: rad_tol(:)
     real(r8) :: err1_0, err2_0, err0
     logical  :: verbose
     integer  :: unit
   end type FHT_norm
-  
-  type, public :: FHT_norm_params
-    real(r8) :: abs_tol
-    real(r8) :: rel_tol
-    real(r8), pointer :: rad_tol(:) => null()
-    logical  :: verbose
-    integer  :: unit
-  end type FHT_norm_params
-  
+
   public :: FHT_norm_init, FHT_norm_fnorm
-  
+
   interface FHT_norm_fnorm
     module procedure FHT_norm_f2norm
     !module procedure FHT_norm_fmaxnorm
     !module procedure FHT_norm_norm_old
   end interface
-  
+
 contains
 
   subroutine FHT_norm_init (this, model, params)
+
+    use parameter_list_type
+
     type(FHT_norm), intent(out) :: this
     type(FHT_model), intent(in), target :: model
-    type(FHT_norm_params), intent(in) :: params
+    type(parameter_list) :: params
     integer :: n
     this%model => model
-    INSIST(valid_tol(params%abs_tol, params%rel_tol))
-    this%abs_tol = params%abs_tol
-    this%rel_tol = params%rel_tol
-    this%verbose = (is_IOP .and. params%verbose)
-    this%unit = params%unit
-    
+
+    !TODO: add error checking to parameter list calls
+    call params%get('abs-tol', this%abs_tol)
+    call params%get('rel-tol', this%rel_tol)
+    INSIST(valid_tol(this%abs_tol, this%rel_tol))
+    call params%get('verbose', this%verbose)
+    this%verbose = (is_IOP .and. this%verbose)
+    call params%get('unit', this%unit, default=-1)
+
     !! Initialize the heat equation/view factor radiation
     if (associated(model%vf_rad_prob)) then
       n = size(model%vf_rad_prob)
-      INSIST(associated(params%rad_tol))
-      INSIST(size(params%rad_tol) == n)
-      allocate(this%rad_tol(n))
-      this%rad_tol = params%rad_tol
+      call params%get('rad-tol', this%rad_tol)
+      INSIST(size(this%rad_tol) == n)
       INSIST(all(this%rad_tol >= 0.0_r8))
     end if
   contains
@@ -74,37 +70,37 @@ contains
   end subroutine FHT_norm_init
 
   subroutine FHT_norm_f2norm (this, t, u, hdot, f, error)
-    
+
     type(FHT_norm), intent(inout) :: this
     real(r8), intent(in) :: t, u(:), hdot(:), f(:)
     real(r8), intent(out), optional :: error
     target :: u, f
-    
+
     integer :: i, num1, num2
     real(r8), pointer :: fseg(:), qres(:), temp(:)
     integer, pointer :: faces(:)
     real(r8), allocatable :: rhs(:)
     real(r8) :: sum1, sum2, err
-    
+
     ASSERT(size(u) == FHT_model_size(this%model))
     ASSERT(size(f) == FHT_model_size(this%model))
-    
+
     call FHT_model_get_cell_temp_view (this%model, f, fseg)
     sum1 = global_sum(fseg**2, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     num1 = global_count(.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     call FHT_model_get_face_temp_view (this%model, f, fseg)
     sum2 = global_sum(fseg**2, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     num2 = global_count(.not.this%model%void_face(:this%model%mesh%nface_onP))
-    
+
     err = sqrt((sum1+sum2)/(num1+num2))
-    
+
     if (present(error)) then
-    
+
       error = err / (this%abs_tol + this%rel_tol * this%err0)
       if (this%verbose) then
         write(this%unit,'(2(a,es10.3))') '  HC error: ||F||_2 =', err, ', scaled =', error
       end if
-      
+
       !! Enclosure radiation system error norms
       if (associated(this%model%vf_rad_prob)) then
         if (this%verbose) then
@@ -127,47 +123,47 @@ contains
       end if
 
     else
-    
+
       this%err0 = err
       if (this%verbose) then
       	write(this%unit,'(a)') 'HEAT TRANSFER FUNCTION NORMS'
         write(this%unit,'(a,es10.3,a)') '  HC error: ||F||_2 =', err, ' (initial)'
       end if
-    
+
     end if
-    
+
   end subroutine FHT_norm_f2norm
 
 
   subroutine FHT_norm_fmaxnorm (this, t, u, hdot, f, error)
-    
+
     type(FHT_norm), intent(inout) :: this
     real(r8), intent(in) :: t, u(:), hdot(:), f(:)
     real(r8), intent(out), optional :: error
     target :: u, f
-    
+
     integer :: i
     real(r8), pointer :: fseg(:), qres(:), temp(:)
     integer, pointer :: faces(:)
     real(r8), allocatable :: rhs(:)
     real(r8) :: err1, err2, err
-    
+
     ASSERT(size(u) == FHT_model_size(this%model))
     ASSERT(size(f) == FHT_model_size(this%model))
-    
+
     call FHT_model_get_cell_temp_view (this%model, f, fseg)
     err1 = global_maxval(abs(fseg), mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     call FHT_model_get_face_temp_view (this%model, f, fseg)
     err2 = global_maxval(abs(fseg), mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     err = max(err1,err2)
-    
+
     if (present(error)) then
-    
+
       error = err / (this%abs_tol + this%rel_tol * this%err0)
       if (this%verbose) then
         write(this%unit,'(2(a,es10.3))') '  HC error: ||F||_max =', err, ', scaled =', error
       end if
-      
+
       !! Enclosure radiation system error norms
       !TODO! Fix the hardwired tolerance.
       if (associated(this%model%vf_rad_prob)) then
@@ -191,52 +187,52 @@ contains
       end if
 
     else
-    
+
       this%err0 = err
       if (this%verbose) then
       	write(this%unit,'(a)') 'HEAT TRANSFER FUNCTION NORMS'
         write(this%unit,'(a,es10.3,a)') '  HC error: ||F||_max =', err, ' (initial)'
       end if
-    
+
     end if
-    
+
   end subroutine FHT_norm_fmaxnorm
 
 
   subroutine FHT_norm_fnorm_old (this, t, u, hdot, f, error)
-    
+
     type(FHT_norm), intent(inout) :: this
     real(r8), intent(in) :: t, u(:), hdot(:), f(:)
     real(r8), intent(out), optional :: error
     target :: u, f
-    
+
     integer :: i, loc1, loc2, pid1, pid2
     real(r8), pointer :: useg(:), fseg(:), qres(:), temp(:)
     integer, pointer :: faces(:)
     real(r8), allocatable :: rhs(:)
     real(r8) :: qerror, err1, err2, bad_vfrac, bad_T, bad_F
-    
+
     ASSERT(size(u) == FHT_model_size(this%model))
     ASSERT(size(f) == FHT_model_size(this%model))
-                                
+
     !! Heat equation residual norm.
     call FHT_model_get_cell_temp_view (this%model, f, fseg)
     call global_maxloc (abs(fseg), pid1, loc1, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     err1 = global_maxval(abs(fseg), mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
-    
+
     !! Flux matching residual norm.
     call FHT_model_get_face_temp_view (this%model, f, fseg)
     call global_maxloc (abs(fseg), pid2, loc2, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     err2 = global_maxval(abs(fseg), mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
-    
+
     if (present(error)) then
-    
+
       err1 = err1 / (this%abs_tol + this%rel_tol * this%err1_0)
       err2 = err2 / (this%abs_tol + this%rel_tol * this%err2_0)
       error = max(err1, err2)
-      
+
       if (this%verbose) write(this%unit,'(2es25.3)') err1, err2
-      
+
 !      !! Some extra diagnostics when F1 determines the error.
 !      if (err1 == error .and. global_any(this%verbose)) then
 !        call get_value (this%model%vfrac, pid1, loc1, bad_vfrac)
@@ -250,7 +246,7 @@ contains
 !          write(this%unit,'(4x,a,es13.5)') 'F1 cell data: F=', bad_F
 !        end if
 !      end if
-      
+
       !! Enclosure radiation system error norms
       if (associated(this%model%vf_rad_prob)) then
         if (is_IOP) write(*,'(a)',advance='no')'ER error: ||res||/||rhs||='
@@ -269,7 +265,7 @@ contains
       end if
 
     else
-    
+
       this%err1_0 = err1
       this%err2_0 = err2
       if (this%verbose) then
@@ -279,9 +275,9 @@ contains
 	write(this%unit,'(2(a,es10.3))') '  ||F1_0||_max =', err1, ', ||F2_0||_max =', err2
 	write(this%unit,'(a)') '  ||F1||_max/||F1_0||_max  ||F2||_max/||F2_0||_max'
       end if
-    
+
     end if
-    
+
   end subroutine FHT_norm_fnorm_old
 
-end module FHT_norm_type  
+end module FHT_norm_type

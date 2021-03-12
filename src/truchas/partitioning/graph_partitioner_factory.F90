@@ -59,6 +59,17 @@ contains
     select case (raise_case(partitioner))
     case ('CHACO')
       allocate(this, source=chaco_partitioner())
+    case ('METIS')
+#ifdef USE_METIS
+      block
+        use metis_partitioner_type
+        type(parameter_list), pointer :: plist
+        plist => params%sublist('metis-options')
+        allocate(this, source=metis_partitioner(plist))
+      end block
+#else
+      call TLS_fatal('the "metis" partitioner is not supported by this Truchas build')
+#endif
     case default
       call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: unknown "partitioner": ' // partitioner)
     end select

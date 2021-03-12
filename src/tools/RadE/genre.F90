@@ -16,6 +16,8 @@ program genre
   use genre_command_line
   use parameter_list_type
   use scl
+  use timer_tree_type, only: start_timer, stop_timer, write_timer_tree
+  use,intrinsic :: iso_fortran_env, only: output_unit
   implicit none
 
   integer :: lun, ios, n, num_encl, stat
@@ -30,6 +32,8 @@ program genre
   call scl_init
   is_IOP = (scl_rank()==1)
 
+  call start_timer('Total genre execution time')
+
   if (is_IOP) call parse_command_line(infile, outfile, overwrite)
   call scl_bcast_alloc(infile)
   call scl_bcast_alloc(outfile)
@@ -42,19 +46,29 @@ program genre
   n = index(outfile,ext,back=.true.) - 1 ! strip file extension
   basename = outfile(:n) // '.'
 
+  !! If OUTFILE is a path, ensure the directory exists.
+  if (is_IOP) call make_directory_path(outfile, ios)
+  call scl_bcast(ios)
+  if (ios /= 0) call re_halt('unable to create directory for output file: ' // outfile)
+
   if (is_IOP) open(newunit=lun,file=infile,status='old',action='read',iostat=ios,iomsg=iom)
   call scl_bcast(ios)
   if (ios /= 0) call re_halt('unable to open input file: ' // infile // ': ' // trim(iom))
 
   !! Construct enclosure
+  call start_timer('enclosure mesh creation')
   call read_toolpath_namelists(lun)
   call read_enclosure_namelist(lun, encl_params)
   call init_encl_list(e, encl_params, stat, errmsg)
   if (stat /= 0) call re_halt('error creating the enclosure: ' // errmsg)
+  call stop_timer('enclosure mesh creation')
 
   !! Generate patches
   call read_patches_namelist(lun, patch_params, found)
-  call ep%generate_patches(e, patch_params)
+  if (found) call start_timer('  mesh patch generation')
+  call ep%generate_patches(e, patch_params, stat, errmsg)
+  if (stat /= 0) call re_halt('error creating patches: ' // errmsg)
+  if (found) call stop_timer('  mesh patch generation')
 
   call read_chaparral_namelist(lun, chap_params, found)
 
@@ -71,15 +85,27 @@ program genre
         cycle
       end if
     end if
+    call start_timer('  enclosure mesh output')
     call e%write(outfile)
     call ep%write(outfile)
+    call stop_timer('  enclosure mesh output')
     if (found) then
+      call start_timer('view factor computation')
       call calculate_vf(e, chap_params, ep, vf)
+      call stop_timer('view factor computation')
+      call start_timer('     view factor output')
       call vf%write(outfile)
+      call stop_timer('     view factor output')
     end if
     call re_info('wrote ' // outfile)
     call e%next_encl
   end do
+
+  call stop_timer('Total genre execution time')
+  if (is_IOP) then
+    call re_info('')
+    call write_timer_tree(unit=output_unit, indent=3)
+  end if
 
   call scl_finalize
 
@@ -99,5 +125,23 @@ contains
       ext = ''
     end if
   end function
+
+  !! If PATH contains a directory path component, create it if necessary
+  subroutine make_directory_path(path, stat)
+    use,intrinsic :: iso_c_binding, only: c_null_char
+    character(*), intent(in) :: path
+    integer, intent(out) :: stat
+    integer :: n
+    interface ! from libtruchas
+      subroutine make_directory_hier_c(path, status) bind(c)
+        use,intrinsic :: iso_c_binding, only: c_char, c_int
+        character(kind=c_char), intent(in) :: path(*)
+        integer(c_int), intent(out) :: status
+      end subroutine
+    end interface
+    stat = 0
+    n = scan(path, '/', back=.true.)
+    if (n > 0) call make_directory_hier_c(path(:n-1)//c_null_char, stat)
+  end subroutine
 
 end program genre

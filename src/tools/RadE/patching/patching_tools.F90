@@ -1,4 +1,3 @@
-!TODO: Finish documentation
 !!
 !! PATCHING_TOOLS
 !!
@@ -13,11 +12,6 @@
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! PROGRAMMING INTERFACE
-!!
-!!
-
 
 #include "f90_assert.fpp"
 
@@ -25,6 +19,8 @@ module patching_tools
 
   use kinds, only: r8, i8
   implicit none
+
+  real(r8), parameter :: PI = 3.1415926535897932_r8
 
 contains
 
@@ -65,25 +61,26 @@ contains
 
 
   ! TODO: merge with 3D code (unstr_mesh_tools?)
-  subroutine get_face_neighbor_array (xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+  subroutine get_face_neighbor_array(xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
     use edge_neighbor_table_type
 
     integer, intent(in) :: xface(:), fnode(:)
     integer, allocatable, intent(out) :: xfnhbr(:), fnhbr(:)
     integer, intent(out) :: stat
-    real(r8), intent(in), optional :: normals(:,:), max_angle ! max_angle is in radians
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: normals(:,:), max_angle  ! max_angle is in degrees
 
     type(edge_neighbor_table) :: nhbr_table
 
-    call nhbr_table%init (xface, fnode)
-    call get_fnhbr_aux (nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+    call nhbr_table%init(xface, fnode)
+    call get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
   end subroutine get_face_neighbor_array
 
 
   ! TODO: merge with 3D code (unstr_mesh_tools?)
-  subroutine get_fnhbr_aux (nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, normals, max_angle)
+  subroutine get_fnhbr_aux(nhbr_table, xface, fnode, xfnhbr, fnhbr, stat, errmsg, normals, max_angle)
 
     use edge_neighbor_table_type
     use cell_topology, only: get_edge_nodes
@@ -92,14 +89,19 @@ contains
     integer, intent(in) :: xface(:), fnode(:)
     integer, allocatable, intent(out) :: xfnhbr(:), fnhbr(:)
     integer, intent(out) :: stat
-    real(r8), intent(in), optional :: normals(:,:), max_angle
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: normals(:,:), max_angle  ! max_angle is in degrees
 
     integer :: i, j, k, jj, kk, nmatch, bad_edges, nface, offset
     integer, allocatable :: edge(:)
-    real(r8) :: angle
+    real(r8) :: angle, max_angle_rad
     type(edge_neighbor), allocatable :: nhbrs(:)
 
     nface = size(xface) - 1
+
+    if (present(max_angle)) then
+      max_angle_rad = PI*max_angle/180.0_r8
+    end if
 
     !! Generate XFNHBR: FNHBR(XFNHBR(J):XFNHBR(J+1)-1) will store the edge
     !! neighbors of face J.
@@ -122,8 +124,8 @@ contains
         do k = xfnhbr(j), xfnhbr(j+1)-1
           if (fnhbr(k) /= 0) cycle  ! info already assigned
           !! Get a edge and the list of its neighbor faces.
-          call get_edge_nodes (face, k-offset, edge, normalize=.true.)
-          call nhbr_table%get_neighbors (edge, nhbrs)
+          call get_edge_nodes(face, k-offset, edge, normalize=.true.)
+          call nhbr_table%get_neighbors(edge, nhbrs)
           !! Locate the face neighbor, but scan all for valid topology.
           jj = 0
           kk = 0
@@ -143,7 +145,7 @@ contains
               angle = dot_product(normals(:,j), normals(:,jj))
               if (angle > 1) angle = 1  ! Fix floating point errors
               angle = acos( angle )
-              if (angle >= max_angle) cycle
+              if (angle >= max_angle_rad) cycle
             end if
             !! Found a unique neighbor; assign the neighbor data.
             fnhbr(k) = jj ! my neighbor, and
@@ -159,6 +161,8 @@ contains
         end do
       end associate
     end do
+
+    if (stat/=0) errmsg = 'bad mesh topology: more than two faces share an edge'
 
   end subroutine get_fnhbr_aux
 
@@ -182,7 +186,7 @@ contains
     do i = 1, nface
       if (tag(i) /= 0) cycle
       ncomp = ncomp + 1
-      call tag_component (i)
+      call tag_component(i)
     end do
     allocate(xcomp(ncomp+1),comp(nface))
 
@@ -209,7 +213,7 @@ contains
     xcomp(1) = 1
   contains
     !! Tag all the nodes connected to ROOT with the current component number
-    recursive subroutine tag_component (root)
+    recursive subroutine tag_component(root)
       integer, intent(in) :: root
       integer :: k, f
       tag(root) = ncomp
@@ -217,14 +221,14 @@ contains
         f = fnhbr(k)
         ! Skip missing neighbors (i.e. f is on the mesh boundary)
         if ( f <= 0) cycle
-        if (tag(f) == 0) call tag_component (f)
+        if (tag(f) == 0) call tag_component(f)
       end do
     end subroutine
   end subroutine get_connected_faces
 
 
   !! Finds the connected components of a subset of faces of the enclosure dual graph
-  subroutine get_connected_faces_subset (xfnhbr, fnhbr, faces, tag, ncomp)
+  subroutine get_connected_faces_subset(xfnhbr, fnhbr, faces, tag, ncomp)
 
     integer, allocatable, intent(in) :: xfnhbr(:), fnhbr(:)
     integer, intent(in) :: faces(:)
@@ -246,7 +250,7 @@ contains
 
   contains
     !! Tag all the faces connected to ROOT with the current component number
-    recursive subroutine tag_component (root)
+    recursive subroutine tag_component(root)
 #ifdef NO_2008_FINDLOC
       use f08_intrinsics, only: findloc
 #endif
@@ -261,7 +265,7 @@ contains
         nid = findloc(faces, n, dim=1)
         !! Ignore neighbors not in face list
         if (nid == 0) cycle
-        if (tag(nid) == 0) call tag_component (nid)
+        if (tag(nid) == 0) call tag_component(nid)
       end do
     end subroutine tag_component
   end subroutine get_connected_faces_subset
@@ -269,7 +273,7 @@ contains
 
   !! Finds the faces of a node
   ! TODO: based on cell_neighboring_vertices in mesh_geom_type.F90
-  function faces_neighboring_vertices (e) result(ret)
+  function faces_neighboring_vertices(e) result(ret)
 
     use re_encl_type
 

@@ -31,5 +31,6 @@ module output_control
 
   integer, allocatable, public :: part(:)
   type(toolpath), pointer, public :: part_path => null()
+  logical, public :: write_mesh_partition
 
 end module output_control

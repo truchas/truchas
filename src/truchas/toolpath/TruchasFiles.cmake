@@ -16,9 +16,6 @@ set(TOOLPATH_SOURCE_FILES
 include(BuildWhitespaceString)
 set(toolpath_source_flags
   -I${PGSLib_MODULE_DIR} -I${PETACA_MODULE_DIR} -I${Truchas_utilities_dir})
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  list(APPEND toolpath_source_flags "-assume realloc_lhs")
-endif()
 
 build_whitespace_string(toolpath_source_flags_str ${toolpath_source_flags})
 set_source_files_properties(${TOOLPATH_SOURCE_FILES} PROPERTIES

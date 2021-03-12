@@ -12,18 +12,16 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
         - version 18.0.5 (anything 18.0.2 or later should be okay)
         - version 19.1.0
         - Many versions are known to **not work** due to compiler bugs. These
-          include 19.0.x (any x), 19.1.1, and 19.1.2.
+          include 19.0.x (any x), and 19.1.1 through at least 19.1.3
     - NAG Fortran (with GNU C/C++):
         - version 6.2 (build 6252 or later preferred)
         - version 7.0 (build 7026 or later required)
         - most any version of GNU C/C++ should be okay
-    - NAG Fortran on MacOS (with Apple Clang C/C++)
-	    - NAG version 6.2
+    - NAG Fortran on MacOS (with Apple Clang C/C++):
+	    - NAG version 6.2 and 7.0 (build 7028 or later required)
 		- Likely any version of Apple Clang should be fine
-    - GFortran is *not* currently supported due to incomplete and/or flawed
-      support for some Fortran 2003 features. There are GFortran configuration
-      files for internal testing purposes, which you can try if you are feeling
-      adventurous.
+    - GNU Fortran and C/C++. Versions 9.x and 10.x appear to be mostly working
+      now. You may find a couple failing tests, which are being investigated.
 * Cmake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
@@ -40,8 +38,8 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v13" bundle of TPLs;
-do a `git checkout v13` after cloning the TPL repository. See its README file
+on GitLab. This version of Truchas is tested against the "v15" bundle of TPLs;
+do a `git checkout v15` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
@@ -51,7 +49,8 @@ than it must be different than the current directory). Here is an example:
 
     $ mkdir build
     $ cd build
-    $ cmake -C ../config/intel-opt.cmake \
+    $ cmake -C ../config/linux-intel.cmake \
+            -D CMAKE_BUILD_TYPE=Release \
             -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
     $ make
     $ make install
@@ -61,11 +60,21 @@ than it must be different than the current directory). Here is an example:
   file. The `config` subdirectory contains some examples. If none of those are
   suitable, create your own, or simply define the various variables directly
   on the cmake command line (using the `-D` flag).
+* `Release` directs CMake to configure an optimized build of Truchas. Another
+  option is `Debug` for an unoptimized build with lots of additional runtime
+  checking.
 * Set the `TRUCHAS_TPL_DIR` variable to the TPL installation directory you
   used in the first stage. It must be an absolute path.
 * By default Truchas will be installed into the `install` subdirectory of the
   top-level source directory. Use the `-D CMAKE_INSTALL_PREFIX=<truchas_dir>`
   cmake argument to specify a different directory.
+
+#### Optional Portage data mapping component
+Truchas provides optional support for using the Portage library to do solution
+field mapping in induction heating simulations. To enable support, which is
+not included by default, add `-D USE_PORTAGE=ON` to the cmake command line.
+This requires that the portage library has been compiled and installed. See
+the TPL superbuild project referenced above.
 
 ### Compiling on a Mac
 The test suite is currently failing so mac support is still considered
@@ -102,7 +111,8 @@ building truchas on a mac
 
 	$ mkdir build
     $ cd build
-    $ cmake -C ../config/mac-nag-chk.cmake \
+    $ cmake -C ../config/mac-nag.cmake \
+          -D CMAKE_BUILD_TYPE=Release \
 	        -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
     $ make
     $ make install

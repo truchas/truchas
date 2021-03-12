@@ -37,7 +37,7 @@ module diffusion_solver
   implicit none
   private
 
-  public :: ds_init, ds_step
+  public :: ds_init, ds_step, ds_accept
   public :: read_ds_namelists
   public :: ds_set_initial_state, ds_restart
   public :: ds_delete
@@ -75,7 +75,7 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
-    type(parameter_list) :: bc_params, species_bc_params, thermal_source_params
+    type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -91,10 +91,13 @@ contains
     use species_bc_namelist
     use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
+    use diffusion_solver_namelist
+    use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
 
     integer, intent(in) :: lun
 
-    call read_ds_namelist (lun)
+    call ds_data_init
+    call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
     call read_thermal_bc_namelists(lun, this%bc_params)
     call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
@@ -102,32 +105,26 @@ contains
 
     call read_enclosure_radiation_namelists(lun)
 
+    call this%ds_params%get('void-temperature', void_temperature)
+
   end subroutine read_ds_namelists
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! DS_STEP
- !!
 
-  subroutine ds_step (h, hnext, errc)
+  subroutine ds_step(h, hnext, errc)
 
-    use zone_module, only: zone
     use cutoffs_module, only: cutvof
 
-    real(r8), intent(inout) :: h
-    real(r8), intent(out)   :: hnext
-    integer,  intent(out)   :: errc
+    real(r8), intent(in)  :: h
+    real(r8), intent(out) :: hnext
+    integer,  intent(out) :: errc
 
-    real(r8) :: hlast, t
-    integer :: counters(6)
-    character(len=80) :: message(2)
-    real(r8), pointer :: state(:,:)
+    real(r8) :: t
 
-    call start_timer ('Diffusion Solver')
+    call start_timer('Diffusion Solver')
 
     if (this%have_fluid_flow) then
-      call update_mmf_from_matl (this%mmf)
-      if (this%have_void) call cull_material_fragments (this%mmf, cutvof)
+      call update_mmf_from_matl(this%mmf)
+      if (this%have_void) call cull_material_fragments(this%mmf, cutvof)
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
@@ -137,73 +134,18 @@ contains
     select case (this%solver_type)
     case (SOLVER1)  ! HT/SD solver with static void
       t = h + HTSD_solver_last_time(this%sol1)
-      call HTSD_solver_advance_state (this%sol1, h, hnext, errc)
-      if (errc == 0) call HTSD_solver_commit_pending_state (this%sol1)
+      call HTSD_solver_advance_state(this%sol1, t, hnext, errc)
     case (SOLVER2)  ! HT solver with transient void
       t = h + FHT_solver_last_time(this%sol2)
-      call FHT_solver_advance_state (this%sol2, t, errc)
-      if (errc == 0) call FHT_solver_commit_pending_state (this%sol2)
-      hnext = huge(1.0_r8)  ! cede time step control to someone else
+      call FHT_solver_advance_state(this%sol2, t, errc)
+      hnext = merge(h/2, huge(1.0_r8), (errc /= 0))
     case default
       INSIST(.false.)
     end select
-    if (errc /= 0) return
 
-    !! Update MATL in contexts that can modify the phase distribution.
-    if (this%have_phase_change) then
-      call create_state_array (state)
-      call update_matl_from_mmf (this%mmf, state)
-      deallocate(state)
-    end if
-
-    !! Update Truchas data structures to reflect the new HT/SD solution.
-    if (this%have_heat_transfer) then
-      call ds_get_temp (zone%temp)
-      call ds_get_enthalpy (zone%enthalpy)
-    end if
-
-    !! Write some info about the step.
-    select case (this%solver_type)
-    case (SOLVER1)
-      hlast = HTSD_solver_last_step_size(this%sol1)
-      call HTSD_solver_get_stepping_stats (this%sol1, counters)
-      write(message,1) hlast, counters(1:2), counters(4:6)
-    case (SOLVER2)
-      hlast = FHT_solver_last_step_size(this%sol2)
-      call FHT_solver_get_stepping_stats (this%sol2, counters)
-      write(message,2) hlast, counters(2:4)
-    case default
-      INSIST(.false.)
-    end select
-    1 format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
-    2 format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
-    call TLS_info (message)
-
-    call stop_timer ('Diffusion Solver')
+    call stop_timer('Diffusion Solver')
 
   contains
-
-    subroutine create_state_array (state)
-      real(r8), pointer :: state(:,:)
-      integer :: n, i
-      n = 1; if (this%have_heat_transfer) n = 0
-      allocate(state(this%mesh%ncell_onP,n:num_species))
-      select case (this%solver_type)
-      case (SOLVER1)
-        !TODO! HTSD_model_new_state_array returns a ncells state, whereas the user
-        !TODO! of this routine (update_matl_from_mmf) expects a ncells_onP state.
-        !TODO! Is it worthwhile changing that routine, and doing unnecessary comm,
-        !TODO! to use the HTSD_model_new_state_array routine instead?
-        if (this%have_heat_transfer) call HTSD_solver_get_cell_temp_copy(this%sol1, state(:,0))
-        do i = 1, num_species
-          call HTSD_solver_get_cell_conc_copy (this%sol1, i, state(:,i))
-        end do
-      case (SOLVER2)
-        call FHT_solver_get_cell_temp_copy (this%sol2, state(:,0))
-      case default
-        INSIST(.false.)
-      end select
-    end subroutine create_state_array
 
     subroutine update_adv_heat
 
@@ -266,6 +208,84 @@ contains
 !    end subroutine update_adv_conc
 
   end subroutine ds_step
+
+  subroutine ds_accept
+
+    use zone_module, only: zone
+
+    real(r8) :: hlast
+    integer :: counters(6)
+    character(len=80) :: message(2)
+    real(r8), pointer :: state(:,:)
+
+    call start_timer('Diffusion Solver')
+
+    select case (this%solver_type)
+    case (SOLVER1)  ! HT/SD solver with static void
+      call HTSD_solver_commit_pending_state(this%sol1)
+    case (SOLVER2)  ! HT solver with transient void
+      call FHT_solver_commit_pending_state(this%sol2)
+    case default
+      INSIST(.false.)
+    end select
+
+    !! Update MATL in contexts that can modify the phase distribution.
+    if (this%have_phase_change) then
+      call create_state_array(state)
+      call update_matl_from_mmf(this%mmf, state)
+      deallocate(state)
+    end if
+
+    !! Update Truchas data structures to reflect the new HT/SD solution.
+    if (this%have_heat_transfer) then
+      call ds_get_temp(zone%temp)
+      call ds_get_enthalpy(zone%enthalpy)
+    end if
+
+    !! Write some info about the step.
+    select case (this%solver_type)
+    case (SOLVER1)
+      hlast = HTSD_solver_last_step_size(this%sol1)
+      call HTSD_solver_get_stepping_stats (this%sol1, counters)
+      write(message,1) hlast, counters(1:2), counters(4:6)
+    case (SOLVER2)
+      hlast = FHT_solver_last_step_size(this%sol2)
+      call FHT_solver_get_stepping_stats (this%sol2, counters)
+      write(message,2) hlast, counters(2:4)
+    case default
+      INSIST(.false.)
+    end select
+    1 format(/,'DS: dt=',es9.3,', NFUN:NPC=',i7.7,':',i5.5,', NNR:NNF:NSR=',3(i4.4,:,':'))
+    2 format(/,'DS: dt=',es9.3,', NFUN:NPC:NPA=',3(i7.7,:,':'))
+    call TLS_info (message)
+
+    call stop_timer('Diffusion Solver')
+
+  contains
+
+    subroutine create_state_array(state)
+      real(r8), pointer :: state(:,:)
+      integer :: n, i
+      n = 1; if (this%have_heat_transfer) n = 0
+      allocate(state(this%mesh%ncell_onP,n:num_species))
+      select case (this%solver_type)
+      case (SOLVER1)
+        !TODO! HTSD_model_new_state_array returns a ncells state, whereas the user
+        !TODO! of this routine (update_matl_from_mmf) expects a ncells_onP state.
+        !TODO! Is it worthwhile changing that routine, and doing unnecessary comm,
+        !TODO! to use the HTSD_model_new_state_array routine instead?
+        if (this%have_heat_transfer) call HTSD_solver_get_cell_temp_copy(this%sol1, state(:,0))
+        do i = 1, num_species
+          call HTSD_solver_get_cell_conc_copy(this%sol1, i, state(:,i))
+        end do
+      case (SOLVER2)
+        call FHT_solver_get_cell_temp_copy(this%sol2, state(:,0))
+      case default
+        INSIST(.false.)
+      end select
+    end subroutine
+
+  end subroutine ds_accept
 
   subroutine ds_get_temp (array)
     use legacy_mesh_api, only: ncells
@@ -395,7 +415,7 @@ contains
     integer :: stat
     character(len=200) :: errmsg
     type(enthalpy_advector1), allocatable :: hadv1
-    character(:), allocatable :: errmsg2
+    character(:), allocatable :: integrator, errmsg2
 
     call TLS_info ('')
     call TLS_info ('Initializing diffusion solver ...')
@@ -405,7 +425,7 @@ contains
     INSIST(associated(this%mesh))
 
     allocate(this%disc)
-    call this%disc%init (this%mesh, use_new_mfd)
+    call this%disc%init (this%mesh, use_new_mfd=.true.)
 
     allocate(this%mmf)
     call mmf_init (this%mesh, this%mmf, stat, errmsg2)
@@ -431,6 +451,8 @@ contains
       call move_alloc(hadv1, this%hadv)
     end if
 
+    call this%ds_params%get('integrator', integrator)
+
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
     if (this%have_void .and. this%have_fluid_flow) then
@@ -440,13 +462,13 @@ contains
         INSIST(.false.)
       end if
       this%solver_type = SOLVER2
-      if (integrator /= DS_NONADAPTIVE_BDF1) then
+      if (integrator /= 'nonadaptive-bdf1') then
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     else
       !! Void (if any) is fixed; use standard solver
       this%solver_type = SOLVER1
-      if (integrator /= DS_ADAPTIVE_BDF2) then
+      if (integrator /= 'adaptive-bdf2') then
         call TLS_fatal ('DS_INIT: diffusion system characteristics are incompatible with STEPPING_METHOD choice.')
       end if
     end if
@@ -465,8 +487,7 @@ contains
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
       if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
-      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, stat, errmsg)
-      if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
+      this%sol1 => create_HTSD_solver (this%mmf, this%mod1, this%ds_params)
 
     case (SOLVER2)
       block
@@ -478,7 +499,7 @@ contains
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
-      this%sol2 => create_FHT_solver(this%mmf, this%mod2, stat, errmsg)
+      this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params)
       call move_alloc(this%hadv, this%sol2%hadv)
 
     case default

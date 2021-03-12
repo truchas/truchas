@@ -34,7 +34,7 @@ Selects one of the three available algorithms, or disables patching.
 
 .. namelist_parameter::
    :type: STRING
-   :domain: Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, or ``'VSA'``
+   :domain: Must be one of ``'NONE'``, ``'PAVE'``, ``'VAC'``, ``'VSA'``, or ``'FILE'``
    :default: patch_algorithm = ``'PAVE'``
 
 Each option selects a different patch algorithm:
@@ -44,6 +44,10 @@ Each option selects a different patch algorithm:
 #. **PAVE:** Generate patches with the :doc:`PAVE algorithm <pave>`.
 #. **VAC:** Generate patches with the :doc:`VAC algorithm <vac>`.
 #. **VSA:** Generate patches with the :doc:`VSA algorithm <vsa>`.
+#. **FILE:** Patches will be read from a file. Because the cost of computing
+   patches can be quite substantial for very large enclosure meshes, this
+   pseudo-algorithm is provided to enable the use of previously computed
+   patches.
 
 
 VERBOSITY_LEVEL
@@ -105,6 +109,16 @@ edges whose angle exceeds the parameter. Patches will never span more than one c
    The effects of ``max_angle`` vary by algorithm. Refer to the documentation of the :doc:`PAVE
    <pave>`, :doc:`VAC <vac>`, and :doc:`VSA <vsa>` algorithms for more details.
 
+
+FILE Parameters
+---------------
+The following namelist parameter applies only to the FILE algorithm.
+
+PATCH_FILE
+++++++++++
+The path to an existing radiation enclosure file containing patch information.
+The enclosure defined by the file must be identical to current enclosure.
+This may be an absolute path or a relative path.
 
 
 PAVE Parameters
@@ -296,30 +310,62 @@ proxy vectors. If the minimum change in patch proxies is less than ``vsa_min_del
 stops at that iteration.
 
 
-VSA_AVG_FACES_PER_PATCH
-+++++++++++++++++++++++
-Defines the average faces per patch, and by extension the total number of patches, of the
-:doc:`VSA algorithm <vsa>`.
+VSA_FACE_PATCH_RATIO
+++++++++++++++++++++
+Defines the ratio of total faces to total patches, and by extension the total number of patches, of
+the :doc:`VSA algorithm <vsa>`.
 
 .. namelist_parameter::
    :type: REAL
-   :domain: vsa_avg_faces_per_patch >= 1.0
-   :default: vsa_avg_faces_per_patch = 4.0
-
-The average faces per patch is given by
-
-.. math::
-   \text{(Total Faces)}/\text{(Total Patches)}
+   :domain: vsa_face_patch_ratio >= 1.0
+   :default: vsa_face_patch_ratio = 4.0
 
 Since the number of faces is fixed, this parameter determines the total number of patches in the
 final configuration:
 
 .. math::
-   \text{(Total Patches)} = \text{(Total Faces)} *
-   \text{vsa_avg_faces_per_patch}
+   \text{(Total Patches)} = \text{(Total Faces)}\ /\ \text{vsa_face_patch_ratio}
 
-Rather than set the number of patches explicitly, which is mesh dependent, expressing this parameter
-as an average allows the same value to apply to a variety of meshes.
+Rather than set the number of patches explicitly, which is mesh dependent, expressing this
+parameter as a ratio allows the same value to apply to a variety of meshes.
+
+
+VSA_MAX_PATCH_RADIUS
+++++++++++++++++++++
+Defines the desired maximum radius for a patch for the :doc:`VSA algorithm <vsa>`.
+
+.. namelist_parameter::
+   :type: REAL
+   :domain: vsa_max_patch_radius > 0.0
+   :default: vsa_max_patch_radius = sqrt(huge(0.0_r8))
+
+This parameter is used to compute the *size bias* term of the weight of a face relative to
+a patch proxy. Refer to the :ref:`size bias section <tools/RadE/patches/vsa:Size Bias>` of the
+VSA documentation for more information on how the parameter affects the face weight computation.
+
+Note that the default value of this parameter is :fortran:`sqrt(huge(0.0_r8))` because it is squared
+in the face weight computation. By taking the root of :fortran:`huge(0.0_r8)` we prevent floating
+point overflow errors. Numerically, the default value on the order of `1.34*10^{154}`.
+
+
+VSA_NORMALIZE_DIST
+++++++++++++++++++
+Determines whether to normalize the distance bias for the :doc:`VSA algorithm <vsa>`.
+
+.. namelist_parameter::
+   :type: LOGICAL
+   :domain: Must be ``.true.`` or ``.false.``
+   :default: vsa_normalize_dist = ``.true.``
+
+This parameter affects the computation of the *distance bias* term of the weight of a face relative
+to a patch proxy. Broadly speaking, enabling normalization tends to produce patches with a similar
+number of faces, regardless of the physical size of each patch. Conversely, disabling normalization
+tends to make all patches about the same physical size, regardless of the number of faces in each
+patch.
+
+Refer to the :ref:`distance bias section <tools/RadE/patches/vsa:Distance Bias>`
+of the VSA documentation for more information on how the parameter affects the face weight
+computation.
 
 
 VSA_RANDOM_SEED

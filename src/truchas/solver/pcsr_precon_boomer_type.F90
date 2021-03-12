@@ -31,26 +31,12 @@
 !!    'debug-level'   - 0, disable debugging (default); 1 enable debugging.
 !!    'logging-level' - 0, off (default); 1, on; >1, residual info available.
 !!
-!! IMPLEMENTATION NOTES
-!!
-!!  The INIT procedure includes some commented-out code from the Pececillo
-!!  mini-app for error checking the parameter list.  This code, especially
-!!  its error messages, make little sense in the current context, but are
-!!  included for future reference.  The provided parameter list is created
-!!  by the client code using namelist data read from the input file, and it
-!!  is expected that the parameter list is fully vetted at that point.  In
-!!  the future I expect the parameter list to be read directly from the input
-!!  file, and when that happens this included code may become apropos.
-!!  The params derived type is intended as a temporary stand-in for the use of
-!!  a generic parameter list capability similiar to the Teuchos::ParameterList
-!!  class from Trilinos.  A partial F2003 implementation exists.
-!!
 
 #include "f90_assert.fpp"
 
 module pcsr_precon_boomer_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fhypre
   use index_partitioning
   use pcsr_matrix_type
@@ -88,25 +74,29 @@ module pcsr_precon_boomer_type
 contains
 
   !! Final subroutine for PCSR_PRECON_BOOMER objects.
-  subroutine pcsr_precon_boomer_delete (this)
+  subroutine pcsr_precon_boomer_delete(this)
     type(pcsr_precon_boomer), intent(inout) :: this
     integer :: ierr
     ierr = 0
     call fHYPRE_ClearAllErrors
-    if (hypre_associated(this%Ah)) call fHYPRE_IJMatrixDestroy (this%Ah, ierr)
-    if (hypre_associated(this%bh)) call fHYPRE_IJVectorDestroy (this%bh, ierr)
-    if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy (this%xh, ierr)
-    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
+    if (hypre_associated(this%Ah)) call fHYPRE_IJMatrixDestroy(this%Ah, ierr)
+    if (hypre_associated(this%bh)) call fHYPRE_IJVectorDestroy(this%bh, ierr)
+    if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy(this%xh, ierr)
+    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy(this%solver, ierr)
     INSIST(ierr == 0)
-  end subroutine pcsr_precon_boomer_delete
+  end subroutine
 
-  subroutine init (this, A, params)
+
+  subroutine init(this, A, params, stat, errmsg)
 
     class(pcsr_precon_boomer), intent(out) :: this
     type(pcsr_matrix), target, intent(in) :: A
     type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: ierr
+    character(:), allocatable :: context
 
     this%A => A
 
@@ -116,65 +106,82 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
+    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts(this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
-    call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
+    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorSetMaxOffProcElmts(this%xh, 0, ierr)
     INSIST(ierr == 0)
 
     !! Process the parameters.
-    call params%get('num-cycles', this%max_iter)
-    INSIST(this%max_iter > 0)
-    call params%get('print-level', this%print_level, default=0)
-    INSIST(this%print_level >= 0 .and. this%print_level <= 3)
-    call params%get('debug-level', this%debug_level, default=0)
-    INSIST(this%debug_level >= 0)
-    call params%get('logging-level', this%logging_level, default=0)
-    INSIST(this%logging_level >= 0)
-
-!NNC    !! Process the parameters.
-!NNC    use truchas_logging_services
-!NNC    integer :: stat
-!NNC    character(:), allocatable :: context, errmsg
-!NNC    context = 'processing ' // params%name() // ': '
-!NNC    call params%get('num-cycles', this%max_iter, stat=stat, errmsg=errmsg)
-!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
-!NNC    if (this%max_iter <= 0) call TLS_fatal (context//'"num-cycles" must be > 0')
-!NNC    call params%get('print-level', this%print_level, default=0, stat=stat, errmsg=errmsg)
-!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
-!NNC    if (this%print_level < 0 .or. this%print_level > 3) call TLS_fatal (context//'"print-level" must be >= 0 and <= 3')
-!NNC    call params%get('debug-level', this%debug_level, default=0, stat=stat, errmsg=errmsg)
-!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
-!NNC    if (this%debug_level < 0) call TLS_fatal (context//'"debug-level" must be >= 0')
-!NNC    call params%get('logging-level', this%logging_level, default=0, stat=stat, errmsg=errmsg)
-!NNC    if (stat /= 0) call TLS_fatal (context//errmsg)
-!NNC    if (this%logging_level < 0) call TLS_fatal (context//'"logging-level" must be >= 0')
+    context = 'processing ' // params%name() // ': '
+    call params%get('num-cycles', this%max_iter, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+    if (this%max_iter <= 0) then
+      stat = 1
+      errmsg = context // '"num-cycles" must be > 0'
+      return
+    end if
+    call params%get('print-level', this%print_level, default=0, stat=stat, errmsg=errmsg)
+    ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+    if (this%print_level < 0 .or. this%print_level > 3) then
+      stat = 1
+      errmsg = context // '"print-level" must be >= 0 and <= 3'
+      return
+    end if
+    call params%get('debug-level', this%debug_level, default=0, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+    if (this%debug_level < 0) then
+      stat = 1
+      errmsg = context // '"debug-level" must be >= 0'
+      return
+    end if
+    call params%get('logging-level', this%logging_level, default=0, stat=stat, errmsg=errmsg)
+    ! OFF=0, ON=1, >1=residual available from hypre
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+    if (this%logging_level < 0) then
+      stat = 1
+      errmsg = context // '"logging-level" must be >= 0'
+      return
+    end if
 
   end subroutine init
 
-  subroutine compute (this)
+  subroutine compute(this)
 
     class(pcsr_precon_boomer), intent(inout) :: this
 
     integer :: ierr
 
-    call start_timer ('hypre-matrix-copy')
-    call copy_to_ijmatrix (this%A, this%Ah)
-    call stop_timer ('hypre-matrix-copy')
+    call start_timer('hypre-matrix-copy')
+    call copy_to_ijmatrix(this%A, this%Ah)
+    call stop_timer('hypre-matrix-copy')
 
     !! Create the Hypre solver object.  Note that once the solver has
     !! been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it from scratch.
-    call start_timer ('boomer-setup')
-    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy (this%solver, ierr)
-    call fHYPRE_BoomerAMGCreate (this%solver, ierr)
+    call start_timer('boomer-setup')
+    if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy(this%solver, ierr)
+    call fHYPRE_BoomerAMGCreate(this%solver, ierr)
     INSIST(ierr == 0)
 
     !! Set some debugging/diagnostic output options.
-    call fHYPRE_BoomerAMGSetDebugFlag (this%solver, this%debug_level, ierr)
-    call fHYPRE_BoomerAMGSetLogging (this%solver, this%logging_level, ierr)
+    call fHYPRE_BoomerAMGSetDebugFlag(this%solver, this%debug_level, ierr)
+    call fHYPRE_BoomerAMGSetLogging(this%solver, this%logging_level, ierr)
     INSIST(ierr == 0)
 
     !! Set the Boomer AMG parameters.
@@ -185,17 +192,17 @@ contains
     call fHYPRE_BoomerAMGSetMaxLevels   (this%solver, this%max_levels, ierr)
     call fHYPRE_BoomerAMGSetMaxIter     (this%solver, this%max_iter, ierr)
     call fHYPRE_BoomerAMGSetTol         (this%solver, this%tol, ierr)
-    call fHYPRE_BoomerAMGSetStrongThreshold  (this%solver, this%strong_threshold, ierr)
+    call fHYPRE_BoomerAMGSetStrongThreshold (this%solver, this%strong_threshold, ierr)
     INSIST(ierr == 0)
 
     !! After setup the solver is ready to go.  Note that B and X are ignored here.
-    call fHYPRE_BoomerAMGSetup (this%solver, this%Ah, this%bh, this%xh, ierr)
+    call fHYPRE_BoomerAMGSetup(this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
-    call stop_timer ('boomer-setup')
+    call stop_timer('boomer-setup')
 
   end subroutine compute
 
-  subroutine apply (this, x)
+  subroutine apply(this, x)
 
     class(pcsr_precon_boomer), intent(in) :: this
     real(r8), intent(inout) :: x(:)
@@ -204,7 +211,7 @@ contains
 
     ASSERT(size(x) >= this%nrows)
 
-    call start_timer ('boomer-solve')
+    call start_timer('boomer-solve')
 
     call fHYPRE_ClearAllErrors
 
@@ -225,14 +232,14 @@ contains
     INSIST(ierr == 0)
 
     !! Call the BoomerAMG solver.
-    call fHYPRE_BoomerAMGSolve (this%solver, this%Ah, this%bh, this%xh, ierr)
+    call fHYPRE_BoomerAMGSolve(this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
 
     !! Retrieve the solution vector from HYPRE
-    call fHYPRE_IJVectorGetValues (this%xh, this%nrows, rows, x, ierr)
+    call fHYPRE_IJVectorGetValues(this%xh, this%nrows, rows, x, ierr)
     INSIST(ierr == 0)
 
-    call stop_timer ('boomer-solve')
+    call stop_timer('boomer-solve')
 
   end subroutine apply
 
@@ -250,7 +257,7 @@ contains
  !! and should be ignored.
  !!
 
-  subroutine copy_to_ijmatrix (src, matrix)
+  subroutine copy_to_ijmatrix(src, matrix)
 
     type(pcsr_matrix), intent(in) :: src
     type(hypre_obj), intent(inout) :: matrix
@@ -265,7 +272,7 @@ contains
     call fHYPRE_ClearAllErrors
 
     if (.not.hypre_associated(matrix)) then
-      call fHYPRE_IJMatrixCreate (ilower, iupper, ilower, iupper, matrix, ierr)
+      call fHYPRE_IJMatrixCreate(ilower, iupper, ilower, iupper, matrix, ierr)
       !! For each row we know how many column entries are on-process and how many
       !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
       !! if it knows this info up front.
@@ -274,15 +281,15 @@ contains
         ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > nrows)
         ncols_onP(j)  = src%graph%xadj(j+1) - src%graph%xadj(j) - ncols_offP(j)
       end do
-      call fHYPRE_IJMatrixSetDiagOffdSizes (matrix, ncols_onP, ncols_offP, ierr)
+      call fHYPRE_IJMatrixSetDiagOffdSizes(matrix, ncols_onP, ncols_offP, ierr)
       deallocate(ncols_onP, ncols_offP)
       !! Let HYPRE know that we won't be setting any off-process matrix values.
-      call fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, 0, ierr)
+      call fHYPRE_IJMatrixSetMaxOffProcElmts(matrix, 0, ierr)
       INSIST(ierr == 0)
     end if
 
     !! After initialization the HYPRE matrix elements can be set.
-    call fHYPRE_IJMatrixInitialize (matrix, ierr)
+    call fHYPRE_IJMatrixInitialize(matrix, ierr)
     INSIST(ierr == 0)
 
     !! Copy the matrix elements into the HYPRE matrix.  This defines both the
@@ -290,15 +297,15 @@ contains
     !! expects global row and column indices.
     nnz = src%graph%xadj(nrows+1) - src%graph%xadj(1)
     allocate(ncols(nrows), rows(nrows), cols(nnz))
-    rows = (/ (j, j = ilower, iupper) /)
+    rows = [ (j, j = ilower, iupper) ]
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
     cols = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
+    call fHYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)
 
     !! After assembly the HYPRE matrix is ready to use.
-    call fHYPRE_IJMatrixAssemble (matrix, ierr)
+    call fHYPRE_IJMatrixAssemble(matrix, ierr)
     INSIST(ierr == 0)
 
   end subroutine copy_to_ijmatrix

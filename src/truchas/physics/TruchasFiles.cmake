@@ -39,10 +39,12 @@ list(APPEND PHYSICS_SOURCE_FILES
 	  physics/volume_tracking/vtrack_driver.F90
 	  physics/volume_tracking/cell_geometry_type.F90
 	  physics/volume_tracking/locate_plane_os_function.F90
-	  physics/volume_tracking/truncation_volume_type.F90)
+	  physics/volume_tracking/truncation_volume_type.F90
+	  physics/volume_tracking/wisp_redistribution_type.F90)
 
 # - heat_species_transport
 list(APPEND PHYSICS_SOURCE_FILES
+           physics/heat_species_transport/diffusion_solver_namelist.F90
            physics/heat_species_transport/thermal_bc_namelist.F90
            physics/heat_species_transport/thermal_bc_factory_class.F90
            physics/heat_species_transport/thermal_bc_factory1_type.F90
@@ -65,13 +67,13 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/heat_species_transport/HTSD_init_cond_type.F90
            physics/heat_species_transport/TofH_type.F90
            physics/heat_species_transport/data_layout_type.F90
-           physics/heat_species_transport/diff_precon_type.F90
-           physics/heat_species_transport/diffusion_matrix.F90
+           physics/heat_species_transport/mfd_disc_type.F90
+           physics/heat_species_transport/mfd_diff_matrix_type.F90
+           physics/heat_species_transport/mfd_diff_precon_type.F90
            physics/heat_species_transport/diffusion_solver.F90
            physics/heat_species_transport/diffusion_solver_data.F90
            physics/heat_species_transport/ds_source_input.F90
            physics/heat_species_transport/mesh_interop.F90
-           physics/heat_species_transport/mfd_disc_type.F90
            physics/heat_species_transport/prop_mesh_func_type.F90
            physics/heat_species_transport/source_mesh_function.F90
            physics/heat_species_transport/upper_packed_matrix.F90
@@ -91,7 +93,6 @@ list(APPEND PHYSICS_SOURCE_FILES
            physics/induction_heating/EM_boundary_data.F90
            physics/induction_heating/EM_data_proxy.F90
            physics/induction_heating/EM_graphics_output.F90
-           physics/induction_heating/EM_hex_tet_mapping.F90
            physics/induction_heating/EM_properties.F90
            physics/induction_heating/GeometricModeler.F90
            physics/induction_heating/MaxwellBoundaryData.F90
@@ -147,13 +148,5 @@ set_source_files_properties(${PHYSICS_SOURCE_FILES} PROPERTIES
 
 set_source_files_properties(${TruchasExe_BINARY_DIR}/ER_file.f90 PROPERTIES
   COMPILE_FLAGS ${PHYSICS_COMPILE_FLAGS})
-
-# Add special Intel flag for certain sources (A DAMN UGLY HACK)
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  set_source_files_properties(${TruchasExe_BINARY_DIR}/mfd_disc_type.f90
-                              ${TruchasExe_BINARY_DIR}/diffusion_matrix.f90
-                              PROPERTIES
-                              COMPILE_FLAGS "${PHYSICS_COMPILE_FLAGS} -assume realloc_lhs")
-endif()
 
 list(APPEND Truchas_LIBRARY_SOURCE_FILES ${PHYSICS_SOURCE_FILES})

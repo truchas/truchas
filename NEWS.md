@@ -1,6 +1,196 @@
 # NEWS
 
-Important changes since the 3.0 release.
+## 2021-02-04 Version 21.02
+
+## 2021-01-07 (77d200c2)
+
+The `write-restart.py` utility for creating restart files has been updated
+give the option of using Portage to compute the mapping of fields in "mapped
+restart" use cases. Use the `-h` option for usage information. This also
+applies to the underlying python tools that can be used to write custom
+scripts.
+
+## 2021-01-06 (fe855127)
+
+Adds an option `metis_ptype` to METIS mesh partitioning to choose between
+using multilevel recursive bisection, the new default, and multilevel k-way
+partitioning, which was used originally. See the Reference Manual for details.
+
+## 2021-01-05 Version 21.01
+
+## 2021-01-05 (540d6109)
+
+Significant performance improvements were made to the initialization of the
+main mesh. Users can expect to see dramatically shorter mesh initialization
+times for meshes larger than several million cells, with greater relative
+improvements for larger meshes.
+
+## 2020-12-24 (a0c0dd62)
+
+Added an option to use METIS graph partitioning to compute the parallel
+decomposition of the mesh. This appears to produce much higher quality
+decompositions than the default Chaco partitioner, especially for large
+meshes. Users are encouraged to try it. To use, set `partitioner = 'metis'`
+in the `MESH` and `ALTMESH` namelists. See the Reference Manual for more
+details and additional options for modifying the METIS graph partitioning
+algorithm.
+
+## 2020-12-23 (856efdcb)
+
+Truchas can now be built for the first time using the GFortran compiler.
+Versions 9.1, 9.2, 9.3, 10.1, and 10.2 have been tested. All but a couple
+tests are passing.
+
+## 2020-12-01 Version 20.12
+
+## 2020-12-01 (1b1aff7b)
+
+Added a new microstructure analysis module "gl", which collects the thermal
+gradient vector G and the rate of cooling L at the onset of solidification,
+and the total solidification time. This module uses temperature values for
+specifying the thresholds rather than solid fraction values.
+
+## 2020-11-23 Version 20.11.1
+
+## 2020-11-23 (8dd75d28)
+
+Added a new variable `event_lookahead` to the `SIMULATION_CONTROL` namelist,
+which is the number of steps over which the time step size is gradually
+adjusted in order to hit an event time -- typically an output time. This had
+been hardwired to 5, which is now the default. See the Reference Manual.
+
+## 2020-11-23 (2550bd1b)
+
+Output of the temperature gradient and time derivative fields was restored.
+
+## 2020-11-22 (42adcb44)
+
+A minimum frequency with which the preconditioner is updated can now be
+specified in the input file. See the Reference Manual description of the
+`DIFFUSION_SOLVER` namelist variable `pc_freq` for details.
+
+## 2020-11-09 Version 20.11
+
+## 2020-11-08 (914f932c)
+
+The recent configuration change to the Hypre BoomerAMG preconditioner used in
+heat transport has be reverted to its original configuration. Further testing
+on large problems showed little, if any, performance benefit and a loss in
+robustness requiring more careful attention to the number of cycles.
+
+## 2020-10-29 (78ce9948)
+
+An option to apply rotations to the computational mesh has been added. See the
+Reference Manual description of the `rotation_angles` variable in the `MESH`
+and `ALTMESH` namelists.
+
+## 2020-10-22 (8772728b)
+
+The recently introduced Portage data mapper has been made an optional
+compile-time component due to the difficulty in compiling the Portage library
+on some platforms.
+
+## 2020-10-21 (cbc562ea)
+
+A Dirichlet temperature boundary condition can now be imposed on a surface
+that participates in enclosure radiation. This greatly simplifies the modeling
+of heating elements with a prescribed surface temperature.
+
+## 2020-10-09 Version 20.10
+
+## 2020-10-09 (122a475)
+
+Induction heating simulations employ a tool for mapping data fields between
+the main heat transfer mesh and the electromagnetic solver mesh. An alternative
+data mapper based on the Portage toolkit, https://laristra.github.io/portage,
+has been added. Unlike the existing data mapper, this new experimental data
+mapper is capable of handling main meshes containing prism and pyramid cells.
+It is *much* slower however, and not used by default. See the Reference Manual
+chapter on the `ALTMESH` namelist on how to enable it.
+
+## 2020-09-29 (48c2de2)
+
+The configuration of the Hypre BoomerAMG preconditioner used in heat transport
+has been updated to follow recommendations from the Hypre team. As a result the
+default number of AMG cycles (`pc_amg_cycles`) has been increased from 2 to 4,
+and users should expect to use significantly more cycles than previously.
+Nevertheless users should hope to see a noticeable overall improvement in
+performance.
+
+## 2020-09-15 (1cf4670)
+
+The method of computing solidification velocity for microstructure GV-analysis
+has been greatly simplified. The new method is much less costly, but more
+significantly it resolves a long-standing, difficult-to-locate, memory leak
+that occurred when using the Intel compiler. Users will observe some differences
+in the new solidification velocities.
+
+## 2020-09-13 (a9d9c2a)
+
+Fixed an error that occurred when using a polynomial-type specific heat
+function for the high temperature phase of a 2-phase material. See
+https://gitlab.com/truchas/truchas/-/issues/161
+
+## 2020-09-11 (b7db4ef)
+
+A new flow algorithm option has been added that helps suppress the formation
+of tiny isolated fragments of fluid (wisps) during splashy filling simulations.
+These wisps often cause significantly reduced time step sizes, and even
+complete stalling on occasion. This algorithm option is enabled using the new
+`FLOW` namelist flag `wisp_redistribution`. By default the option is disabled.
+See the Reference Manual for a description of the associated `wisp_*` algorithm
+parameters. A detailed description of the algorithm will be found in the
+Physics and Algorithms manual.
+
+## 2020-09-11 (1429272)
+
+The `SOLID MECHANICS` namelist preconditioner variables `preconditioning_steps`
+and `relaxation_parameter` have been removed. Internally they default to 1 and
+1.0, respectively, which correspond to the diagonal preconditioning used in
+practice.
+
+## 2020-09-02 Version 20.09
+
+## 2020-08-14 Version 20.08
+
+## 2020-08-14 (3b61747)
+
+The original legacy flow solver has been removed.
+
+## 2020-08-14 (38145ea)
+
+User-defined heat sources are now defined using the new `THERMAL_SOURCE`
+namelist instead of the `DS_SOURCE` namelist. There is no change in the
+variable names, except that the `equation` variable is no longer needed;
+"temperature" is naturally assumed.
+
+With the new namelist comes a new option to read the source from a data
+file. See the Reference Manual description of `THERMAL_SOURCE` for details.
+
+## 2020-08-13 (b6fa8e7)
+
+The linear and nonlinear solver parameters for solid mechanics have been
+moved into the `SOLID_MECHANICS` namelist from `LINEAR_SOLVER` and
+`NONLINEAR_SOLVER`. The current solver uses an accelerated nonlinear Krylov
+(NKA) method with simple diagonal preconditioning. For a linear problem this
+effectively reduces to GMRES. Originally other options were available, but
+this was the only one used in practice. See the Reference Manual description
+of `SOLID_MECHANICS` for details.
+
+## 2020-07-27 (5d41b69) Version 20.07
+
+We are moving to a rolling release of Truchas and monthly date-based tagging
+of the master branch using a YY.MM format.
+
+## 2020-07-14 (8941aef)
+
+Interface heat transfer boundary conditions may now be temperature dependent.
+This can be used to model the change in heat conduction across a metal/mold
+interface due to the shrinkage of the metal as it solidifies, for example.
+A side-efect of this change is that time and spatially dependent Interface
+heat transfer coefficients must be defined slightly differently. See the
+Reference Manual description of interface heat transfer boundary conditions
+in `THERMAL_BC` for details.
 
 ## 2020-02-08 (21c6bb7)
 

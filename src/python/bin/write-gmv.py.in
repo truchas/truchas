@@ -39,7 +39,7 @@ def write_gmv(args, truchas_data):
 
         # cells
         fw.write("cells   ", truchas_data.ncell)
-        cnode = truchas_data.cell_node_map()
+        cnode = truchas_data.cell_node_map() + 1
         for cn in cnode:
             if cn[0] == cn[1]: # TET
                 fw.write("ptet4   ", 4, cn[1:5])

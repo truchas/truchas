@@ -35,16 +35,19 @@ contains
     !! Namelist variables
     integer  :: vol_track_subcycles, fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection, void_collapse
+    logical  :: wisp_redistribution
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
-    real(r8) :: void_collapse_relaxation
+    real(r8) :: void_collapse_relaxation, wisp_cutoff, wisp_absorption_fraction
+    real(r8) :: wisp_neighbor_cutoff
     character(32) :: material_priority(16)
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
         track_interfaces, nested_dissection, vol_track_subcycles, &
         vol_frac_cutoff, material_priority, fischer_dim, void_collapse, &
-        void_collapse_relaxation
+        void_collapse_relaxation, wisp_redistribution, wisp_cutoff, &
+        wisp_absorption_fraction, wisp_neighbor_cutoff
 
     call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
@@ -65,6 +68,10 @@ contains
     vol_track_subcycles = NULL_I
     vol_frac_cutoff = NULL_R
     material_priority = NULL_C
+    wisp_redistribution = .false.
+    wisp_cutoff = NULL_R
+    wisp_absorption_fraction = NULL_R
+    wisp_neighbor_cutoff = NULL_R
 
     inviscid = .false.
     viscous_implicitness = NULL_R
@@ -102,11 +109,16 @@ contains
     call broadcast(void_collapse)
     call broadcast(void_collapse_relaxation)
 
+    call broadcast(wisp_redistribution)
+    call broadcast(wisp_cutoff)
+    call broadcast(wisp_absorption_fraction)
+    call Broadcast(wisp_neighbor_cutoff)
     !! Check values and stuff into a parameter list for later use.
 
     plist => params%sublist('volume-tracker')
     call plist%set('track_interfaces', track_interfaces)
     call plist%set('nested_dissection', nested_dissection)
+    call plist%set('wisp_redistribution', wisp_redistribution)
 
     n = count(material_priority /= NULL_C)
     if (n > 0) then
@@ -127,6 +139,25 @@ contains
       if (vol_frac_cutoff <= 0.0_r8) call TLS_fatal('VOL_FRAC_CUTOFF must be > 0.0')
       call plist%set('cutoff', vol_frac_cutoff)
     end if
+
+    if (wisp_cutoff /= NULL_R) then
+      if (wisp_cutoff < 0.0_r8 .or. wisp_cutoff > 1.0_r8) &
+          call TLS_fatal("WISP_CUTOFF must be in [0, 1]")
+      call plist%set('wisp_cutoff', wisp_cutoff)
+    end if
+
+    if (wisp_absorption_fraction /= NULL_R) then
+      if (wisp_absorption_fraction <= 0.0_r8 .or. wisp_absorption_fraction > 1.0_r8) &
+          call TLS_fatal("WISP_ABSORBTION_FRACTION must be in (0, 1]")
+      call plist%set('wisp_absorbtion_fraction', wisp_absorption_fraction)
+    end if
+
+    if (wisp_neighbor_cutoff /= NULL_R) then
+      if (wisp_neighbor_cutoff <= 0.0_r8 .or. wisp_neighbor_cutoff > 1.0_r8) &
+          call TLS_fatal("WISP_NEIGHBOR_CUTOFF must be in (0, 1]")
+      call plist%set('wisp_neighbor_cutoff', wisp_neighbor_cutoff)
+    end if
+
 
     plist => params%sublist('options')
     call plist%set('inviscid', inviscid)

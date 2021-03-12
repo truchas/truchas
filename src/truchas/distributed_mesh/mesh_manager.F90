@@ -122,6 +122,7 @@ contains
 #ifdef DEBUG_MESH
     use unstr_mesh_gmv
 #endif
+    use truchas_timers
 
     integer :: stat
     logical :: enabled, em_mesh
@@ -130,24 +131,38 @@ contains
     type(parameter_list_iterator) :: piter
     type(unstr_mesh), pointer :: umesh
     type(simpl_mesh), pointer :: smesh
+#if defined(GNU_PR49213)
+    type(any_mesh) :: box
+#endif
 
     piter = parameter_list_iterator(meshes)
     do while (.not.piter%at_end())
       plist => piter%sublist()
       call plist%get ('enabled', enabled, default=.false.)
       if (enabled) then
+        call start_timer('mesh-'//piter%name())
         call TLS_info ('')
         call TLS_info ('Initializing mesh "' // piter%name() // '" ...')
         call plist%get ('em-mesh', em_mesh, default=.false.)
         if (em_mesh) then
           smesh => new_simpl_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
+#if defined(GNU_PR49213)
+          box%mesh => smesh
+          call plist%set ('mesh', box)
+#else
           call plist%set ('mesh', any_mesh(smesh))
+#endif
           call smesh%write_profile
         else
           umesh => new_unstr_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
+#if defined(GNU_PR49213)
+          box%mesh => umesh
+          call plist%set ('mesh', box)
+#else
           call plist%set ('mesh', any_mesh(umesh))
+#endif
           call umesh%write_profile
           call umesh%check_bndry_face_set
 #ifdef DEBUG_MESH
@@ -157,6 +172,7 @@ contains
 #endif
         end if
         call TLS_info ('  Mesh "' // trim(piter%name()) // '" initialized')
+        call stop_timer('mesh-'//piter%name())
       end if
       call piter%next
     end do
@@ -169,6 +185,7 @@ contains
   subroutine read_truchas_mesh_namelists (lun)
 
     use altmesh_namelist
+    use input_utilities, only: NULL_I
 
     integer, intent(in) :: lun
 
@@ -187,12 +204,28 @@ contains
       call plist%set ('mesh', any_mesh())
       call plist%set ('mesh-file', trim(altmesh_file))
       call plist%set ('coord-scale-factor', altmesh_coordinate_scale_factor)
+      call plist%set ('rotation-angles', rotation_angles)
       call plist%set ('em-mesh', .true.)
       call plist%set ('partitioner', trim(partitioner))
-      if (partitioner == 'file') then
+      select case (partitioner)
+      case ('file')
         call plist%set ('partition-file', trim(partition_file))
         call plist%set ('first-partition', first_partition)
-      end if
+#ifdef USE_METIS
+      case ('metis')
+        plist => plist%sublist('metis-options')
+        if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
+        if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
+        if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
+        if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
+        if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
+        if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+        if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+        if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
+        if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
+        if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
+#endif
+      end select
     end if
 
   end subroutine read_truchas_mesh_namelists
@@ -214,15 +247,22 @@ contains
     integer :: ios
     logical :: found
     character(80) :: iom
+    type(parameter_list), pointer :: plist
 
     !! Namelist variables
     character(16)  :: partitioner
-    character(120) :: mesh_file, partition_file
-    real(r8) :: coordinate_scale_factor
+    character(511) :: mesh_file, partition_file
+    real(r8) :: coordinate_scale_factor, rotation_angles(3)
     integer :: exodus_block_modulus, gap_element_blocks(50), interface_side_sets(127), first_partition
-    namelist /mesh/ mesh_file, coordinate_scale_factor, exodus_block_modulus, &
-                    gap_element_blocks, interface_side_sets, &
+    namelist /mesh/ mesh_file, coordinate_scale_factor, rotation_angles, &
+                    exodus_block_modulus, gap_element_blocks, interface_side_sets, &
                     partitioner, partition_file, first_partition
+
+    !! Metis parameters
+    integer :: metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+               metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+    namelist /mesh/ metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
+                    metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
 
     !! Namelist variables for the internal mesh
     type :: coord_grid
@@ -250,6 +290,7 @@ contains
     !! Default values
     mesh_file = NULL_C
     coordinate_scale_factor = 1.0_r8
+    rotation_angles = 0
     exodus_block_modulus = 10000
     gap_element_blocks = NULL_I
     interface_side_sets = NULL_I
@@ -261,6 +302,17 @@ contains
     call coord_grid_default(z_axis)
     noise_factor = NULL_R
 
+    metis_ptype   = NULL_I
+    metis_iptype  = NULL_I
+    metis_ctype   = NULL_I
+    metis_ncuts   = NULL_I
+    metis_niter   = NULL_I
+    metis_ufactor = NULL_I
+    metis_minconn = NULL_I
+    metis_contig  = NULL_I
+    metis_seed    = -314159
+    metis_dbglvl  = NULL_I
+
     !! Read the MESH namelist
     if (is_IOP) read(lun,nml=mesh,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -269,6 +321,7 @@ contains
     !! Broadcast the namelist variables
     call broadcast(mesh_file)
     call broadcast(coordinate_scale_factor)
+    call broadcast(rotation_angles)
     call broadcast(exodus_block_modulus)
     call broadcast(gap_element_blocks)
     call broadcast(interface_side_sets)
@@ -279,6 +332,17 @@ contains
     call coord_grid_broadcast(y_axis)
     call coord_grid_broadcast(z_axis)
     call broadcast(noise_factor)
+
+    call broadcast(metis_ptype)
+    call broadcast(metis_iptype)
+    call broadcast(metis_ctype)
+    call broadcast(metis_ncuts)
+    call broadcast(metis_niter)
+    call broadcast(metis_ufactor)
+    call broadcast(metis_minconn)
+    call broadcast(metis_contig)
+    call broadcast(metis_seed)
+    call broadcast(metis_dbglvl)
 
     !! Check and process the namelist variables, and stuff them into the return PARAMS.
 
@@ -292,9 +356,28 @@ contains
     if (coordinate_scale_factor <= 0.0_r8) call TLS_fatal('COORDINATE_SCALE_FACTOR must be > 0')
     call params%set('coord-scale-factor', coordinate_scale_factor)
 
+    call params%set('rotation-angles', rotation_angles)
+
     if (partitioner == NULL_C) partitioner = 'chaco'
     select case (lower_case(partitioner))
     case ('chaco')
+    case ('metis')
+#ifdef USE_METIS
+      plist => params%sublist('metis-options')
+      if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
+      if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
+      if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
+      if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
+      if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
+      if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
+      if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
+      if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
+      if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
+      if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
+#else
+      call TLS_fatal('PARTITIONER = "metis" is not supported by this Truchas build')
+#endif
+
     case ('block')
     case ('file')
       if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')
