@@ -65,11 +65,6 @@ CONTAINS
     ! Local Variables
     integer :: memstat
     integer :: i
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Inform the user of allocation.
-    call TLS_info ('')
-    call TLS_info ('Allocating base derived types A ...', advance=.false.)
 
     ! Allocate the BC derived type.
     ALLOCATE (BC(ncells), STAT = memstat)
@@ -92,9 +87,6 @@ CONTAINS
 
     ! Set the new arrays to their defaults
     call BASE_TYPES_DEFAULT ()
-
-    ! Inform the user of allocation.
-    call TLS_info ('done.')
 
   END SUBROUTINE BASE_TYPES_A_ALLOCATE
 
