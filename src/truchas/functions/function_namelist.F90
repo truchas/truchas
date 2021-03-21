@@ -58,6 +58,7 @@ contains
 
     !! local variables
     logical :: found, tabular_smooth
+    character(128) :: iom
     integer :: n, stat, ncoef, nvar, npar, npts
     class(scalar_func), allocatable :: f
 
@@ -111,11 +112,11 @@ contains
         smooth_step_y0    = NULL_R
         smooth_step_x1    = NULL_R
         smooth_step_y1    = NULL_R
-        read(lun, nml=function, iostat=stat)
+        read(lun, nml=function, iostat=stat, iomsg=iom)
       end if
 
       call broadcast(stat)
-      if (stat /= 0) call TLS_fatal ('error reading FUNCTION namelist')
+      if (stat /= 0) call TLS_fatal ('error reading FUNCTION namelist: ' // trim(iom))
 
       !! Broadcast the namelist variables.
       call broadcast (name)

@@ -22,6 +22,7 @@ contains
 
     integer :: ios
     logical :: found
+    character(128) :: iom
     integer, parameter :: MAX_FACE_SET_IDS = 32
 
     integer  :: face_set_ids(MAX_FACE_SET_IDS)
@@ -48,10 +49,10 @@ contains
       temp_exponent = NULL_R
       activation_energy = NULL_R
       face_set_ids = NULL_I
-      read(lun,nml=evaporation,iostat=ios)
+      read(lun,nml=evaporation,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading EVAPORATION namelist')
+    if (ios /= 0) call TLS_fatal('error reading EVAPORATION namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables.
     call broadcast(prefactor)

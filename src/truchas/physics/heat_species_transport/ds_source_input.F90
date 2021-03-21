@@ -136,6 +136,7 @@ contains
     class(scalar_func), allocatable :: srcf
     character(len=7) :: label
     character(len=127) :: errmsg
+    character(128) :: iom
 
     !! Namelist variables
     integer  :: cell_set_ids(MAX_CELL_SET_IDS)
@@ -172,12 +173,12 @@ contains
         cell_set_ids  = NULL_I
         source_constant = NULL_R
         source_function = NULL_C
-        read(lun,nml=ds_source,iostat=stat)
+        read(lun,nml=ds_source,iostat=stat,iomsg=iom)
       end if
 
       call broadcast (stat)
       if (stat /= 0) then
-        errmsg = trim(label) // ' read error, iostat=' // i_to_c(stat)
+        errmsg = trim(label) // ' error reading DS_SOURCE namelist: ' // trim(iom)
         exit
       end if
 

@@ -55,7 +55,8 @@ CONTAINS
 
     ! Local Variables
     logical :: fatal, found
-    integer :: ioerror
+    integer :: ios
+    character(128) :: iom
     character(128) :: fatal_error_string
     integer :: move_block_ids(32)
     character(32) :: move_toolpath_name
@@ -94,9 +95,9 @@ CONTAINS
           move_block_ids = NULL_I
           move_toolpath_name = NULL_C
           write_mesh_partition = .false.
-          read (lun, outputs, IOSTAT = ioerror)
-          fatal_error_string = 'OUTPUTS_INPUT: Error reading OUTPUTS namelist'
-          fatal = (ioerror/=0)
+          read(lun,nml=outputs,iostat=ios,iomsg=iom)
+          fatal_error_string = 'error reading OUTPUTS namelist: ' // trim(iom)
+          fatal = (ios/=0)
        end if
     end if IO_PE_ONLY
 

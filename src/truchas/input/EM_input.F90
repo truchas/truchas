@@ -90,16 +90,18 @@ contains
   
     integer, intent(in) :: lun
     integer :: stat
+    character(128) :: iom
 
     call TLS_info ('Reading ELECTROMAGNETICS and INDUCTION_COIL Namelists ...')
     
     !! Read the ELECTROMAGNETICS namelist from the input file.
-    call read_electromagnetics (lun, stat)
-    if (stat /= 0) call TLS_fatal ('Error reading ELECTROMAGNETICS namelist')
+    call read_electromagnetics (lun, stat, iom)
+    if (stat /= 0) call TLS_fatal ('error reading ELECTROMAGNETICS namelist: ' // trim(iom))
     
     !! Read the INDUCTION_COIL namelists from the input file.
-    call read_induction_coil (lun, stat)
-    if (stat /= 0) call TLS_fatal ('Error reading INDUCTION_COIL namelist ' // i_to_c(stat))
+    call read_induction_coil (lun, stat, iom)
+    if (stat /= 0) call TLS_fatal ('error reading INDUCTION_COIL[' // &
+        i_to_c(stat) // '] namelist: ' // trim(iom))
     
     !! Broadcast the input data to all processors
     call broadcast_EM_input ()
@@ -128,7 +130,7 @@ contains
  !!   reading the namelist.
  !!
   
-  subroutine read_electromagnetics (lun, stat)
+  subroutine read_electromagnetics (lun, stat, iom)
   
     use input_utilities, only: seek_to_namelist
     use parallel_info_module, only: p_info
@@ -136,6 +138,7 @@ contains
     
     integer, intent(in)  :: lun
     integer, intent(out) :: stat
+    character(128), intent(out) :: iom
 
     logical :: found
     real(r8) :: Source_Times(MAXSV-1) = NULL_R
@@ -153,7 +156,7 @@ contains
       stat = 1
       rewind lun
       call seek_to_namelist (lun, 'ELECTROMAGNETICS', found)
-      if (found) read (lun, nml=electromagnetics, iostat=stat)
+      if (found) read (lun, nml=electromagnetics, iostat=stat, iomsg=iom)
       if (stat == 0) then
         call copy_to_packed_array (Source_Times, src_time)
         call copy_to_packed_array (Source_Frequency, src_freq)
@@ -178,7 +181,7 @@ contains
  !! which the error occurred.
  !!
   
-  subroutine read_induction_coil (lun, stat)
+  subroutine read_induction_coil (lun, stat, iom)
   
     use input_utilities, only: seek_to_namelist
     use parallel_info_module, only: p_info
@@ -186,6 +189,7 @@ contains
     
     integer, intent(in)  :: lun
     integer, intent(out) :: stat
+    character(128), intent(out) :: iom
 
     logical :: found
     integer :: nturns
@@ -218,7 +222,7 @@ contains
         nturns = NULL_I
         current = NULL_R
         !! Read the namelist.
-        read(lun, nml=induction_coil, iostat=stat)
+        read(lun, nml=induction_coil, iostat=stat, iomsg=iom)
         if (stat /= 0) exit
         !! Prepend a new instance of the coil data structure to the list.
         old_list => list

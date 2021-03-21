@@ -60,6 +60,7 @@ contains
 
     logical :: found
     integer :: ios
+    character(128) :: iom
 
     !! Locate the restart namelist (it's optional).
     if (p_info%IOP) then
@@ -72,9 +73,9 @@ contains
 
     !! Read the namelist.
     call input_info ('Reading the RESTART namelist ...')
-    if (p_info%IOP) read(lun,nml=restart,iostat=ios)
+    if (p_info%IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
     call pgslib_bcast (ios)
-    if (ios /= 0) call input_error ('Error reading the RESTART namelist')
+    if (ios /= 0) call input_error ('error reading the RESTART namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables to the other processors.
     call pgslib_bcast (ignore_t)

@@ -88,6 +88,7 @@ contains
     
     logical :: found
     integer :: n, ios
+    character(128) :: iom
     class(VP_model), pointer :: vpmodel
     
     call TLS_info ('')
@@ -127,11 +128,11 @@ contains
         mts_sig_a = NULL_R
         mts_sig_i = NULL_R
         mts_temp_0 = NULL_R
-        read(lun,nml=viscoplastic_model,iostat=ios)
+        read(lun,nml=viscoplastic_model,iostat=ios,iomsg=iom)
       end if
       
       call broadcast (ios)
-      if (ios /= 0) call TLS_fatal ('error reading VISCOPLASTIC_MODEL namelist')
+      if (ios /= 0) call TLS_fatal ('error reading VISCOPLASTIC_MODEL namelist: ' // trim(iom))
       
       !! Broadcast the namelist variables
       call broadcast (phase)

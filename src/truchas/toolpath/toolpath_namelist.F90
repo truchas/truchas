@@ -45,6 +45,7 @@ contains
 
     logical :: found
     integer :: n, ios
+    character(128) :: iom
 
     !! namelist variables
     character(31) :: name
@@ -87,10 +88,10 @@ contains
         write_plotfile = .false.
         plotfile_dt = NULL_R
         partition_ds = NULL_R
-        read(lun,nml=toolpath,iostat=ios)
+        read(lun,nml=toolpath,iostat=ios,iomsg=iom)
       end if
       call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading TOOLPATH namelist')
+      if (ios /= 0) call TLS_fatal('error reading TOOLPATH namelist: ' // trim(iom))
 
       !! Broadcast the namelist variables.
       call broadcast(name)

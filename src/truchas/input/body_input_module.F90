@@ -71,6 +71,7 @@ CONTAINS
 
     ! Local Variables
     logical :: fatal
+    character(128) :: iom
     integer :: ioerror, is, n, material_number
     real(r8) :: phi(mphi), temperature, velocity(ndim)
     character(31) :: temperature_function
@@ -104,10 +105,11 @@ CONTAINS
 
        ! Read namelist if found one
        if (body_namelist) then
-          read (lun, NML = body, IOSTAT = ioerror)
+          read(lun,nml=body,iostat=ioerror,iomsg=iom)
           if (ioerror /= 0) then ! If read error, then didn't read namelist
              body_namelist = .false.
              fatal         = .true.
+             fatal_error_string = 'error reading BODY namelist: ' // trim(iom)
           end if
        end if
     end if IO_PE_ONLY
