@@ -15,6 +15,8 @@ module sm_bc_node_types
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use scalar_func_class
+  use sm_bc_node_list_type
+  use sm_bc_list_type
   !use sm_bc_face_type
   !use scalar_func_containers, only: scalar_func_box
   implicit none
@@ -35,6 +37,7 @@ module sm_bc_node_types
     real(r8), allocatable, public :: value(:,:)
     real(r8), allocatable, public :: normal(:,:)
     type(scalar_func_ptr), allocatable :: displf(:)
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
   contains
     procedure :: init => sm_bc_d1_init
     procedure :: compute => sm_bc_d1_compute
@@ -47,9 +50,10 @@ module sm_bc_node_types
     real(r8), allocatable, public :: tangent(:,:)
     real(r8), allocatable :: normal(:,:,:)
     type(scalar_func_ptr), allocatable :: displf(:,:)
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
   contains
-    procedure :: init => sm_bc_d1_init
-    procedure :: compute => sm_bc_d1_compute
+    procedure :: init => sm_bc_d2_init
+    procedure :: compute => sm_bc_d2_compute
   end type sm_bc_d2
 
   type, public :: sm_bc_d3
@@ -58,9 +62,10 @@ module sm_bc_node_types
     real(r8), allocatable, public :: value(:,:)
     real(r8), allocatable :: normal(:,:,:)
     type(scalar_func_ptr), allocatable :: displf(:,:)
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
   contains
-    procedure :: init => sm_bc_d1_init
-    procedure :: compute => sm_bc_d1_compute
+    procedure :: init => sm_bc_d3_init
+    procedure :: compute => sm_bc_d3_compute
   end type sm_bc_d3
 
 contains
@@ -80,30 +85,28 @@ contains
   !! a curved surface, so there is a small tolerance for deciding what qualifies
   !! as 'distinct' normal vectors between faces. Currently the tolerance is set
   !! to about 25 degrees.
-  subroutine sm_bc_d1_init(this, face_displacement)
-
-    use sm_bc_node_list_type
+  subroutine sm_bc_d1_init(this, nodebc, bc)
 
     class(sm_bc_d1), intent(out) :: this
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
-    integer :: nnode, ni
+    integer :: nnode, ni, bcid
 
     nnode = 0
-    do ni = 1, size(face_displacement%ni_index)
+    do ni = 1, size(nodebc%node)
       if (is_single_normal_node(ni)) nnode = nnode + 1
     end do
     allocate(this%index(nnode), this%value(3,nnode), this%normal(3,nnode), this%displf(nnode))
 
     nnode = 0
-    do ni = 1, nodebc%nnode
+    do ni = 1, size(nodebc%node)
       if (.not.is_single_normal_node(ni)) cycle
       nnode = nnode + 1
       this%index(nnode) = nodebc%node(ni)
-      bcid = nodebc%bcid(nodebc%offset(ni))
+      bcid = nodebc%bcid(nodebc%xbcid(ni))
       this%displf(nnode)%f => bc%displacement(bcid)%f
-      this%normal(:,nnode) = nodebc%normal(:,nodebc%offset(ni))
+      this%normal(:,nnode) = nodebc%normal(:,nodebc%xbcid(ni))
     end do
 
   contains
@@ -138,15 +141,15 @@ contains
       integer, intent(in) :: ni
 
       real(r8), parameter :: tol = 0.9_r8
-      integer :: ni, fi, xfi, n, face_set
+      integer :: xfi, bc1, bc2
       real(r8) :: n1(3), n2(3)
 
       is_single_normal_node = .false.
 
-      xfi = nodebc%offset(ni)
+      xfi = nodebc%xbcid(ni)
       bc1 = nodebc%bcid(xfi)
       n1 = nodebc%normal(:,xfi)
-      do xfi = nodebc%offset(ni)+1, nodebc%offset(ni+1)-1
+      do xfi = nodebc%xbcid(ni)+1, nodebc%xbcid(ni+1)-1
         bc2 = nodebc%bcid(xfi)
         n2 = nodebc%normal(:,xfi)
 
@@ -159,6 +162,28 @@ contains
     end function is_single_normal_node
 
   end subroutine sm_bc_d1_init
+
+
+  subroutine sm_bc_d2_init(this, nodebc, bc)
+
+    class(sm_bc_d2), intent(out) :: this
+    type(sm_bc_node_list), intent(in) :: nodebc
+    type(sm_bc_list), intent(in), target :: bc
+
+    INSIST(.false.) ! TODO-WARN: not implemented yet
+
+  end subroutine sm_bc_d2_init
+
+
+  subroutine sm_bc_d3_init(this, nodebc, bc)
+
+    class(sm_bc_d3), intent(out) :: this
+    type(sm_bc_node_list), intent(in) :: nodebc
+    type(sm_bc_list), intent(in), target :: bc
+
+    INSIST(.false.) ! TODO-WARN: not implemented yet
+
+  end subroutine sm_bc_d3_init
 
 
   subroutine sm_bc_d1_compute(this, t)
@@ -190,13 +215,13 @@ contains
 
   subroutine sm_bc_d2_compute(this, t)
 
-    external dgesv ! LAPACK
+    !external dgesv ! LAPACK
 
     class(sm_bc_d2), intent(inout) :: this
     real(r8), intent(in) :: t
 
-    integer :: i, stat
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), displ(2), matrix(3,3), ipiv(3)
+    integer :: i !, stat
+    real(r8) :: args(0:size(this%mesh%x,dim=1)), displ(2) !, matrix(3,3), ipiv(3)
 
     args(0) = t
     do i = 1, size(this%index)
@@ -218,14 +243,15 @@ contains
     !! out a displacement vector a = b1*n1 + b2*n2 such that
     !!   dot(n1, a) = d1
     !!   dot(n2, a) = d2
-    function displacement_vector(normal, displacements) result(a)
+    function displacement_vector(normal, displ) result(a)
       real(r8), intent(in) :: normal(:,:), displ(:)
       real(r8) :: a(3)
-      real(r8) :: matrix(2,2)
+      real(r8) :: matrix(2,2), displacements(2)
       matrix(1,1) = 1
       matrix(2,1) = dot_product(normal(:,1),normal(:,2))
       matrix(2,2) = 1
       matrix(1,2) = matrix(2,1)
+      displacements = displ
       call solve2x2(matrix, displacements)
       a = matmul(normal, displacements)
     end function displacement_vector
@@ -274,7 +300,7 @@ contains
     real(r8), intent(in) :: t
 
     integer :: i, stat
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), displ(3), matrix(3,3), ipiv(3)
+    real(r8) :: args(0:size(this%mesh%x,dim=1)), displ(3), ipiv(3)
 
     args(0) = t
     do i = 1, size(this%index)
@@ -294,7 +320,7 @@ contains
 
 
   !! Private methods
-  pure real(r8) function scalar_func_ptr_eval(this, x)
+  real(r8) function scalar_func_ptr_eval(this, x)
     class(scalar_func_ptr), intent(in) :: this
     real(r8), intent(in) :: x(:)
     scalar_func_ptr_eval = this%f%eval(x)

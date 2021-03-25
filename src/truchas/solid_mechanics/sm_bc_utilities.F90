@@ -156,7 +156,7 @@ contains
     integer, intent(in) :: ab(:), xab(:), nb
     integer, intent(out), allocatable :: ba(:), xba(:)
 
-    integer :: na, j(nb)
+    integer :: a, b, x, na, j(nb)
 
     na = size(xab)-1
 

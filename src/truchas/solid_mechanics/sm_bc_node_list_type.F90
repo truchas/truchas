@@ -21,10 +21,9 @@ module sm_bc_node_list_type
   private
 
   type, public :: sm_bc_node_list
-    public
     real(r8), allocatable :: normal(:,:)
     integer, allocatable :: node(:) ! stores the node id
-    integer, allocatable :: bcid(:), offset(:) ! stores bc values for each node
+    integer, allocatable :: bcid(:), xbcid(:) ! stores bc values for each node
   contains
     procedure :: init
   end type sm_bc_node_list
@@ -42,24 +41,22 @@ contains
   !! the node-face pair. And a normal associated with a particular BC at a
   !! particular node is the sum of the neighboring area-scaled normals at
   !! integration points associated with that BC.
-  subroutine init(this, mesh, bc_face_list, stat, errmsg)
+  subroutine init(this, mesh, ig, bc_face_list)
 
     use unstr_mesh_type
+    use integration_geometry_type
     use sm_bc_face_list_type
     use sm_bc_utilities, only: compute_index_connectivity, compute_ip_normals
 
     class(sm_bc_node_list), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
+    type(integration_geometry), intent(in) :: ig
     type(sm_bc_face_list), intent(in) :: bc_face_list
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: nnode
+    integer :: nnode, fi, ni, xni, n, bcid, xbcid
     integer, allocatable :: fini(:), xfini(:)
     logical, allocatable :: bc_is_active(:,:)
     real(r8), allocatable :: normal(:,:,:), normal_ip(:,:)
-
-    stat = 0
 
     call compute_index_connectivity(mesh, bc_face_list%face, fini, xfini, this%node)
     allocate(normal_ip(3,xfini(size(xfini))-1))
@@ -72,7 +69,7 @@ contains
         ni = fini(xni)
         n = this%node(ni)
 
-        do xbcid = bc_face_list%xfbc(fi), bc_face_list%xfbc(fi+1)-1
+        do xbcid = bc_face_list%xbcid(fi), bc_face_list%xbcid(fi+1)-1
           bcid = bc_face_list%bcid(xbcid)
 
           normal(:,bcid,ni) = normal(:,bcid,ni) + normal_ip(:,xni)
@@ -81,19 +78,19 @@ contains
       end do
     end do
 
-    allocate(offset(nnode+1))
-    offset(1) = 1
+    allocate(this%xbcid(nnode+1))
+    this%xbcid(1) = 1
     n = count(bc_is_active)
     allocate(this%bcid(n), this%normal(3,n))
     do ni = 1, size(this%node)
       do bcid = 1, bc_face_list%nbc
         if (bc_is_active(bcid,ni)) then
-          xbcid = this%offset(ni)+xbcid-1
+          xbcid = this%xbcid(ni)+xbcid-1
           this%bcid(xbcid) = bcid
           this%normal(:,xbcid) = normal(:,bcid,ni)
         end if
       end do
-      this%offset(ni+1) = this%offset(ni) + count(bc_is_active(:,ni))
+      this%xbcid(ni+1) = this%xbcid(ni) + count(bc_is_active(:,ni))
     end do
 
     ! ! ! 1. Get a map from nodes to faces

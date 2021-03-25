@@ -19,7 +19,7 @@
 !! and hold pointers to any functions read into this SM_BC_LIST_TYPE.
 !!
 !! Zach Jibben <zjibben@lanl.gov>
-!! February 2021
+!! March 2021
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -31,7 +31,6 @@
 
 module sm_bc_list_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
@@ -46,7 +45,6 @@ module sm_bc_list_type
   end type smbcl_contact
 
   type, public :: sm_bc_list
-    private
     type(smbcl_displacement), allocatable :: displacement(:)
     type(smbcl_contact), allocatable :: contact(:)
     !type(smbcl_displacement), allocatable :: traction(:)
@@ -84,7 +82,7 @@ contains
     n = n + count_entries('displacement-z', stat, errmsg)
     if (stat /= 0) return
     allocate(this%displacement(n))
-    n = count_entries('gap-contact')
+    n = count_entries('gap-contact', stat, errmsg)
     if (stat /= 0) return
     allocate(this%contact(n))
 
@@ -112,19 +110,22 @@ contains
       integer, intent(inout) :: index
 
       character(1), parameter :: dirstr(4) = ['n','x','y','z']
-      character(:), allocatable :: this_type, type_string
+      character(:), allocatable :: this_type, type_string, data_label
       integer, allocatable :: setids(:)
       integer :: s
       class(scalar_func), allocatable :: f
+      type(parameter_list_iterator) :: piter
+      type(parameter_list), pointer :: plist
 
-      type_string = 'displacement-' // dirstr(type+1)
+      data_label = 'displacement'
+      type_string = data_label // '-' // dirstr(type+1)
       stat = 0
       piter = parameter_list_iterator(params, sublists_only=.true.)
       do while (.not.piter%at_end())
         plist => piter%sublist()
         call plist%get('type', this_type, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
-        if (lower_case(this_type) == type) then  ! use this sublist
+        if (lower_case(this_type) == type_string) then  ! use this sublist
           call TLS_info('  using SM_BC[' // piter%name() // ']')
           call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
           if (stat /= 0) exit
@@ -150,10 +151,9 @@ contains
 
       character(:), allocatable :: this_type, type_string
       integer, allocatable :: setids(:)
-      integer :: s, index
-      class(scalar_func), allocatable :: f
+      type(parameter_list_iterator) :: piter
+      type(parameter_list), pointer :: plist
 
-      index = 0
       type_string = 'gap-contact'
       stat = 0
       piter = parameter_list_iterator(params, sublists_only=.true.)
@@ -161,36 +161,32 @@ contains
         plist => piter%sublist()
         call plist%get('type', this_type, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
-        if (lower_case(this_type) == type) then  ! use this sublist
+        if (lower_case(this_type) == type_string) then  ! use this sublist
           call TLS_info('  using SM_BC[' // piter%name() // ']')
           call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
           if (stat /= 0) exit
-
-          do s = 1, size(setids)
-            index = index + 1
-            this%contact(index)%type = type
-          end do
-
         end if
         call piter%next
       end do
       if (stat /= 0) errmsg = 'SM_BC[' // piter%name() // ']: ' // errmsg
 
-    end subroutine init_displacement
+    end subroutine init_contact
 
 
     !! Count the number of BCs of the given type. Each input face-set-id counts
     !! an independent BC. This is so that, for instance, normal-direction
     !! displacement BCs on different face sets are applied appropriately at any
     !! intersection between those face sets.
-    integer function count_entries(type, stat, errmsg)
+    integer function count_entries(type_string, stat, errmsg)
 
-      character(*), intent(in) :: type
+      character(*), intent(in) :: type_string
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
       character(:), allocatable :: this_type
       integer, allocatable :: setids(:)
+      type(parameter_list_iterator) :: piter
+      type(parameter_list), pointer :: plist
 
       count_entries = 0
       stat = 0
@@ -199,7 +195,7 @@ contains
         plist => piter%sublist()
         call plist%get('type', this_type, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
-        if (lower_case(this_type) == type) then  ! use this sublist
+        if (lower_case(this_type) == type_string) then  ! use this sublist
           call TLS_info('  using SM_BC[' // piter%name() // ']')
           call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
           if (stat /= 0) exit
@@ -209,7 +205,7 @@ contains
       end do
       if (stat /= 0) errmsg = 'SM_BC[' // piter%name() // ']: ' // errmsg
 
-    end function count
+    end function count_entries
 
   end subroutine init
 
