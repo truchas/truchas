@@ -22,7 +22,8 @@ module sm_bc_face_list_type
 
   type, public :: sm_bc_face_list
     public
-    real(r8), allocatable :: normal_node(:,:), normal_face(:,:)
+    integer :: nbc
+    real(r8), allocatable :: normal(:,:)
     integer, allocatable :: face(:) ! stores the face id
     integer, allocatable :: fbc(:), xfbc(:) ! stores bc values for each face
   contains

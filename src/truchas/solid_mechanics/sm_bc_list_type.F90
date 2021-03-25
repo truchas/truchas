@@ -36,15 +36,6 @@ module sm_bc_list_type
   implicit none
   private
 
-  type, public :: sm_bc_list
-    private
-    type(smbcl_displacement), allocatable :: displacement(:)
-    type(smbcl_contact), allocatable :: contact(:)
-    !type(smbcl_displacement), allocatable :: traction(:)
-  contains
-    procedure :: init
-  end type sm_bc_list
-
   type :: smbcl_displacement
     integer :: setid, type
     class(scalar_func), allocatable :: f
@@ -53,6 +44,15 @@ module sm_bc_list_type
   type :: smbcl_contact
     integer :: setid
   end type smbcl_contact
+
+  type, public :: sm_bc_list
+    private
+    type(smbcl_displacement), allocatable :: displacement(:)
+    type(smbcl_contact), allocatable :: contact(:)
+    !type(smbcl_displacement), allocatable :: traction(:)
+  contains
+    procedure :: init
+  end type sm_bc_list
 
   integer, parameter :: SMBCL_N = 0
   integer, parameter :: SMBCL_X = 1
@@ -63,40 +63,46 @@ contains
 
   subroutine init(this, params, stat, errmsg)
 
+    use parameter_list_type
     use scalar_func_class
     use scalar_func_factories, only: alloc_scalar_func
     use string_utilities, only: lower_case
 
+    class(sm_bc_list), intent(out) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
     integer :: n
 
-    n = count_entries('displacement-n')
-    if (stat /= 0) exit
-    n = n + count_entries('displacement-x')
-    if (stat /= 0) exit
-    n = n + count_entries('displacement-y')
-    if (stat /= 0) exit
-    n = n + count_entries('displacement-z')
-    if (stat /= 0) exit
+    n = count_entries('displacement-n', stat, errmsg)
+    if (stat /= 0) return
+    n = n + count_entries('displacement-x', stat, errmsg)
+    if (stat /= 0) return
+    n = n + count_entries('displacement-y', stat, errmsg)
+    if (stat /= 0) return
+    n = n + count_entries('displacement-z', stat, errmsg)
+    if (stat /= 0) return
     allocate(this%displacement(n))
     n = count_entries('gap-contact')
-    if (stat /= 0) exit
+    if (stat /= 0) return
     allocate(this%contact(n))
 
-    start = 0
-    ! do n = SMBCL_N, SMBCL_Z
-    !   call init_displacement(n, start)
-    !   if (stat /= 0) exit
+    n = 0
+    ! do t = SMBCL_N, SMBCL_Z
+    !   call init_displacement(t, n)
+    !   if (stat /= 0) return
     ! end do
-    call init_displacement(SMBCL_N, start)
-    if (stat /= 0) exit
-    call init_displacement(SMBCL_X, start)
-    if (stat /= 0) exit
-    call init_displacement(SMBCL_Y, start)
-    if (stat /= 0) exit
-    call init_displacement(SMBCL_Z, start)
-    if (stat /= 0) exit
+    call init_displacement(SMBCL_N, n)
+    if (stat /= 0) return
+    call init_displacement(SMBCL_X, n)
+    if (stat /= 0) return
+    call init_displacement(SMBCL_Y, n)
+    if (stat /= 0) return
+    call init_displacement(SMBCL_Z, n)
+    if (stat /= 0) return
     call init_contact
-    if (stat /= 0) exit
+    if (stat /= 0) return
 
   contains
 
@@ -177,9 +183,11 @@ contains
     !! an independent BC. This is so that, for instance, normal-direction
     !! displacement BCs on different face sets are applied appropriately at any
     !! intersection between those face sets.
-    integer function count_entries(type)
+    integer function count_entries(type, stat, errmsg)
 
       character(*), intent(in) :: type
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
 
       character(:), allocatable :: this_type
       integer, allocatable :: setids(:)

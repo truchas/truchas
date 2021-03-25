@@ -82,10 +82,11 @@ contains
   !! to about 25 degrees.
   subroutine sm_bc_d1_init(this, face_displacement)
 
-    use sm_bc_face_type
+    use sm_bc_node_list_type
 
     class(sm_bc_d1), intent(out) :: this
-    type(sm_bc_face), intent(in), target :: facebc
+    type(sm_bc_node_list), intent(in) :: nodebc
+    type(sm_bc_list), intent(in), target :: bc
 
     integer :: nnode, ni
 
@@ -93,17 +94,16 @@ contains
     do ni = 1, size(face_displacement%ni_index)
       if (is_single_normal_node(ni)) nnode = nnode + 1
     end do
-
     allocate(this%index(nnode), this%value(3,nnode), this%normal(3,nnode), this%displf(nnode))
 
     nnode = 0
-    do ni = 1, size(face_displacement%ni_index)
+    do ni = 1, nodebc%nnode
       if (.not.is_single_normal_node(ni)) cycle
       nnode = nnode + 1
-      n = face_displacement%ni_index(ni)
-      this%index(nnode) = n
-      this%displf(nnode)%f => face_displacement%func(ni)
-      this%normal(:,nnode) = face_displacement%normal_node(:,ni)
+      this%index(nnode) = nodebc%node(ni)
+      bcid = nodebc%bcid(nodebc%offset(ni))
+      this%displf(nnode)%f => bc%displacement(bcid)%f
+      this%normal(:,nnode) = nodebc%normal(:,nodebc%offset(ni))
     end do
 
   contains
@@ -143,16 +143,15 @@ contains
 
       is_single_normal_node = .false.
 
-      fi = face_displacement%nifi(face_displacement%xnifi(ni))
-      n1 = face_displacement%normal(:,fi)
-      face_set = face_displacement%face_set(fi)
-      do xfi = face_displacement%xnifi(ni), face_displacement%xnifi(ni+1)-1
-        fi = face_displacement%nifi(xfi)
-        n2 = face_displacement%normal(:,fi)
-        face_set2 = face_displacement%face_set(fi)
+      xfi = nodebc%offset(ni)
+      bc1 = nodebc%bcid(xfi)
+      n1 = nodebc%normal(:,xfi)
+      do xfi = nodebc%offset(ni)+1, nodebc%offset(ni+1)-1
+        bc2 = nodebc%bcid(xfi)
+        n2 = nodebc%normal(:,xfi)
 
         ! See above NB
-        if (face_set2 /= face_set .and. dot_product(n1, n2) < tol) return
+        if (bc1 /= bc2 .and. dot_product(n1, n2) < tol) return
       end do
 
       is_single_normal_node = .true.

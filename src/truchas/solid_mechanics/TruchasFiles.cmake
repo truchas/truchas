@@ -16,8 +16,9 @@ set(SM_SOURCE_FILES
   solid_mechanics/sm_gap_contact_bc_type.F90
   solid_mechanics/sm_bc_type.F90
   solid_mechanics/sm_bc_node_types.F90
-  solid_mechanics/sm_bc_face_type.F90
-  #solid_mechanics/sm_bc_list_type.F90
+  solid_mechanics/sm_bc_face_list_type.F90
+  solid_mechanics/sm_bc_node_list_type.F90
+  solid_mechanics/sm_bc_list_type.F90
 
   solid_mechanics/sm_model_type.F90
   solid_mechanics/sm_ds_precon_type.F90
