@@ -23,6 +23,7 @@ module sm_bc_utilities
 
   public :: compute_index_connectivity
   public :: compute_link_index_connectivity
+  public :: compute_inverted_connectivity
   public :: compute_ip_normals
   public :: compute_node_normals
   public :: rotation_matrix
@@ -109,6 +110,82 @@ contains
     ASSERT(all(fini <= mesh%nnode_onP))
 
   end subroutine compute_index_connectivity
+
+
+  ! subroutine compute_inverted_connectivity(nnode, fini, xfini, nifi, xnifi)
+
+  !   integer, intent(in) :: nnode, fini(:), xfini(:)
+  !   integer, intent(out), allocatable :: nifi(:), xnifi(:)
+
+
+
+  !   nface = 0
+  !   do fi = 1, size(xfini)-1
+  !     do xni = xfini(fi), xfini(fi+1)-1
+  !       ni = fini(xni)
+  !       nface(ni) = nface(ni) + 1
+  !     end do
+  !   end do
+
+  !   allocate(xnifi(nnode+1))
+  !   xnifi(1) = 1
+  !   do ni = 1, nnode
+  !     xnifi(ni+1) = xnifi(ni) + nface(ni)
+  !   end do
+
+  !   allocate(nifi(xnifi(nnode+1)-1))
+  !   nface = 0
+  !   do fi = 1, size(xfini)-1
+  !     do xni = xfini(fi), xfini(fi+1)-1
+  !       ni = fini(xni)
+  !       nifi(xnifi(ni)+nface(ni)) = fi
+  !       nface(ni) = nface(ni) + 1
+  !     end do
+  !   end do
+
+  ! end subroutine compute_inverted_connectivity
+
+  !! Given a mapping from a to b (ab and xab), compute a mapping
+  !! from b to a (ba and xba). It is assumed that both a and b start
+  !! at 1. The maximum value of b (nb) must be provided.
+  !!
+  !! Example usage:
+  !!   call compute_inverted_connectivity(mesh%fnode, mesh%xfnode, mesh%nnode, nface, xnface)
+  subroutine compute_inverted_connectivity(ab, xab, nb, ba, xba)
+
+    integer, intent(in) :: ab(:), xab(:), nb
+    integer, intent(out), allocatable :: ba(:), xba(:)
+
+    integer :: na, j(nb)
+
+    na = size(xab)-1
+
+    ! compute offsets
+    allocate(xba(nb+1))
+    xba(1) = 1
+    j = 0
+    do a = 1, na
+      do x = xab(a), xab(a+1)
+        b = ab(x)
+        j(b) = j(b) + 1
+      end do
+    end do
+    do b = 1, nb
+      xba(b+1) = xba(b) + j(b)
+    end do
+
+    ! compute inverse map
+    allocate(ba(xba(size(xba))))
+    j = 0
+    do a = 1, na
+      do x = xab(a), xab(a+1)
+        b = ab(x)
+        ba(xba(b)+j(b)) = a
+        j(b) = j(b) + 1
+      end do
+    end do
+
+  end subroutine compute_inverted_connectivity
 
 
   !! This routine is almost identical to above, except instead of operating on
@@ -272,6 +349,85 @@ contains
     end do
 
   end subroutine compute_node_normals
+
+
+  ! !! For each node, compute a collection of normals. Each node is surrounded by
+  ! !! a number of faces, each with a potentially different normal. These faces
+  ! !! each belong to some face set. For each node, we collect the surrounding
+  ! !! faces into one group for each face set. Faces belonging
+  ! subroutine compute_node_multi_normals(mesh, face, fini, xfini, nnode, normal_ip, normal_node)
+
+  !   type(unstr_mesh), intent(in) :: mesh
+  !   integer, intent(in) :: face(:), fini(:), xfini(:), nnode
+  !   real(r8), intent(in) :: normal_ip(:,:)
+  !   real(r8), intent(out), allocatable :: normal_node(:,:)
+
+  !   integer :: nface, nset, f, fi, xni, ni, j(nnode)
+  !   logical :: touched(nnode)
+
+  !   nface = size(xfini)-1
+  !   nset = size(mesh%face_set_id)
+  !   j = 0
+  !   touched = .false.
+  !   do k = 1, nset
+  !     do fi = 1, nface
+  !       f = face(fi)
+  !       if (btest(mesh%face_set_mask(f),k)) then
+  !         do xni = xfini(fi), xfini(fi+1)-1
+  !           ni = fini(xni)
+  !           if (.not.touched(ni)) then
+  !             j(fi) = j(fi) + 1
+  !             touched(ni) = .true.
+  !           end if
+  !         end do
+  !       end if
+  !     end do
+  !   end do
+  !   j = -1
+  !   touched = .false.
+  !   do k = 1, nset
+  !     do fi = 1, nface
+  !       f = face(fi)
+  !       if (btest(mesh%face_set_mask(f),k)) then
+  !         do xni = xfini(fi), xfini(fi+1)-1
+  !           ni = fini(xni)
+  !           if (.not.touched(ni)) then
+  !             j(fi) = j(fi) + 1
+  !             touched(ni) = .true.
+  !           end if
+  !           normal_node(:,ni+j(ni)) = normal_node(:,ni+j(ni)) + normal_ip(:,xni)
+  !         end do
+  !       end if
+  !     end do
+  !   end do
+
+
+  ! !   nface = size(xfini)-1
+  ! !   do fi = 1, nface
+  ! !     f = face(fi)
+  ! !     face_set = face_set_id(mesh, f)
+
+  ! !     do xni = xfini(fi), xfini(fi+1)-1
+  ! !       ni = fini(xni)
+  ! !       normal_node(:,ni) = normal_node(:,ni) + normal_ip(:,xni)
+  ! !     end do
+  ! !   end do
+
+  ! ! contains
+
+  ! !   pure function face_set_id(mesh, f) result(k)
+  ! !     type(unstr_mesh), intent(in) :: mesh
+  ! !     integer, intent(in) :: f
+  ! !     integer :: k
+  ! !     integer :: nsets
+  ! !     nsets = size(mesh%face_set_id)
+  ! !     do k = 1, nsets
+  ! !       if (btest(mesh%face_set_mask(f),k)) exit
+  ! !     end do
+  ! !     INSIST(k <= nsets)
+  ! !   end function face_set_id
+
+  ! end subroutine compute_node_multi_normals
 
 
   !! Generate matrix which rotates such that normal is in the "z" direction.

@@ -21,6 +21,7 @@ module sm_bc_type
   use sm_normal_displacement_bc_type
   use sm_normal_traction_bc_type
   use sm_gap_contact_bc_type
+  use sm_bc_node_types
   implicit none
   private
 
@@ -30,9 +31,15 @@ module sm_bc_type
     real(r8) :: contact_penalty
 
     type(unstr_mesh), pointer :: mesh ! unowned reference
-    type(bndry_ip_func) :: displacement(3), traction(3)
-    type(sm_normal_displacement_bc) :: displacementn
+
+    ! type(sm_bc_face), pointer :: face_displacement => null()
+    ! type(sm_bc_face), pointer :: face_traction => null()
+
+    type(bndry_ip_func) :: traction(3)
     type(sm_normal_traction_bc) :: tractionn
+    type(sm_bc_d1) :: displacement1n
+    type(sm_bc_d2) :: displacement2n
+    type(sm_bc_d3) :: displacement3n
     type(sm_gap_contact_bc) :: gap_contact
   contains
     procedure :: init
@@ -57,13 +64,20 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    stat = 0
     this%mesh => mesh
     this%contact_penalty = contact_penalty
 
-    stat = 0
-    call alloc_bc('displacement', this%displacement)
+    call this%face_displacement%init(mesh, params, 'displacement', stat, errmsg)
     if (stat /= 0) return
+    call this%face_traction%init(mesh, params, 'traction', stat, errmsg)
+    if (stat /= 0) return
+    call this%face_contact%init(mesh, params, 'contact', stat, errmsg)
+    if (stat /= 0) return
+
     call alloc_bc('traction', this%traction)
+    if (stat /= 0) return
+    call alloc_bc('displacement', this%displacement)
     if (stat /= 0) return
     call alloc_displacementn_bc
     if (stat /= 0) return
@@ -211,15 +225,19 @@ contains
     real(r8), intent(in) :: t, scaling_factor(:), displ(:,:)
     real(r8), intent(inout) :: r(:,:)
 
+    real(r8), allocatable :: ftot(:,:)
+
     call this%apply_traction(t, r)
-    call gap_conditions
+    ftot = r
+    !call this%face_displacement%compute(t)
+    call gap_contact
     call displacement_bcs
 
   contains
 
     ! Normal displacement gap condition. Enforces a given separation between two
     ! sides of a gap face, and possibly a shear force on each side.
-    subroutine gap_conditions()
+    subroutine gap_contact()
 
       integer :: i, n1, n2
 
@@ -250,24 +268,12 @@ contains
 
       end associate
 
-    end subroutine gap_conditions
+    end subroutine gap_contact
 
     subroutine displacement_bcs()
 
-      integer :: d, i, n
-      real(r8) :: displn
-
-      ! Displacement BCs transform the matrix to a diagonal and the right hand
-      ! side to the desired solution.
-      do d = 1, 3
-        call this%displacement(d)%compute(t)
-        associate (nodes => this%displacement(d)%index, values => this%displacement(d)%value)
-          do i = 1, size(nodes)
-            n = nodes(i)
-            r(d,n) = this%contact_penalty * (displ(d,n) - values(i)) * scaling_factor(n)
-          end do
-        end associate
-      end do
+      integer :: i, n
+      real(r8) :: x
 
       ! Normal displacement BCs enforce a given displacement in the normal
       ! direction, and apply zerotraction in tangential directions. To do this
@@ -278,14 +284,40 @@ contains
       ! setting the appropriate coordinate-aligned value, it's important to
       ! rotate back into the usual coordinate space, for consistency with the
       ! preconditioner.
-      call this%displacementn%compute(t)
-      associate (nodes => this%displacementn%index, values => this%displacementn%value, &
-          normal => this%displacementn%normal)
+      call this%displacement1n%compute(t)
+      associate (nodes => this%displacement1n%index, values => this%displacement1n%value, &
+          normal => this%displacement1n%normal)
         do i = 1, size(nodes)
           n = nodes(i)
-          displn = dot_product(displ(:,n), normal(:,i))
+          x = dot_product(displ(:,n), normal(:,i)) * normal(:,i)
           r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
-          r(:,n) = r(:,n) - this%contact_penalty * (displn - values(i)) * normal(:,i) * scaling_factor(n)
+          r(:,n) = r(:,n) - this%contact_penalty * (x - values(i)) * normal(:,i) * scaling_factor(n)
+        end do
+      end associate
+
+      ! 2-normal displacement BC
+      ! Here the residual is projected into the space tangent to the two given
+      ! displacement directions, and a new term in the "displacement space" is
+      ! added to the residual, which ensures the node's displacement matches
+      ! the BCs.
+      call this%displacement2n%compute(t)
+      associate (nodes => this%displacement2n%index, values => this%displacement2n%value, &
+          tangent => this%displacement2n%tangent)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          x = displ(:,n) - values(:,i)
+          x = x - dot_product(x, tangent) * tangent
+          r(:,n) = dot_product(r(:,n), tangent) * tangent
+          r(:,n) = r(:,n) - this%contact_penalty * x * scaling_factor(n)
+        end do
+      end associate
+
+      ! 3-normal displacement BC
+      call this%displacement3n%compute(t)
+      associate (nodes => this%displacement3n%index, values => this%displacement3n%value)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          r(:,n) = - this%contact_penalty * (displ(:,n) - values(:,i)) * scaling_factor(n)
         end do
       end associate
 
@@ -301,6 +333,8 @@ contains
     real(r8), intent(inout) :: r(:,:)
 
     integer :: d, i, n
+
+    call this%face_traction%compute(t)
 
     ! At traction BCs the stress is defined along the face. Each face has
     ! traction discretized at the integration points, one for each node. The
@@ -342,37 +376,14 @@ contains
     real(r8), intent(in) :: t, scaling_factor(:), displ(:,:), force(:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, n, d
+    integer :: i, n
 
-    call gap_conditions
-
-    ! Dirichlet BCs
-    do d = 1, 3
-      call this%displacement(d)%compute(t)
-      associate (nodes => this%displacement(d)%index)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          diag(d,n) = this%contact_penalty * scaling_factor(n)
-        end do
-      end associate
-    end do
-
-    ! The residual passed in will have, in the surface-aligned reference frame,
-    ! the difference between the test normal displacement and the BC normal
-    ! displacement. So we want the application of the preconditioner (inverse of
-    ! diagonal) to result in this difference in that rotated reverence frame.
-    call this%displacementn%compute(t)
-    associate (nodes => this%displacementn%index, normal => this%displacementn%normal)
-      do i = 1, size(nodes)
-        n = nodes(i)
-        diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
-        diag(:,n) = diag(:,n) - this%contact_penalty * normal(:,i)**2 * scaling_factor(n)
-      end do
-    end associate
+    call gap_contact
+    call displacement
 
   contains
 
-    subroutine gap_conditions()
+    subroutine gap_contact()
 
       integer :: n1, n2
 
@@ -402,7 +413,40 @@ contains
 
       end associate
 
-    end subroutine gap_conditions
+    end subroutine gap_contact
+
+    !! NB: these diagonal contributions are all independent of the computed
+    !! value, so we do not call the %compute method here.
+    subroutine displacement()
+
+      ! 1-normal displacement BC
+      associate (nodes => this%displacement1n%index, normal => this%displacement1n%normal)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
+          diag(:,n) = diag(:,n) - this%contact_penalty * normal(:,i)**2 * scaling_factor(n)
+        end do
+      end associate
+
+      ! 2-normal displacement BC
+      associate (nodes => this%displacement2n%index, tangent => this%displacement2n%tangent)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          r(:,n) = r(:,n) + r(:,n) * tangent**2
+          r(:,n) = r(:,n) - this%contact_penalty * (1-tangent**2) * scaling_factor(n)
+        end do
+      end associate
+
+      ! 3-normal displacement BC
+      call this%displacement3n%compute(t)
+      associate (nodes => this%displacement3n%index)
+        do i = 1, size(nodes)
+          n = nodes(i)
+          r(:,n) = - this%contact_penalty * scaling_factor(n)
+        end do
+      end associate
+
+    end subroutine displacement
 
   end subroutine apply_deriv_diagonal
 

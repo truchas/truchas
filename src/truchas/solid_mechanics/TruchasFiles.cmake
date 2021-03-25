@@ -9,11 +9,16 @@ set(SM_SOURCE_FILES
   solid_mechanics/integration_geometry_type.F90
   solid_mechanics/integration_cell_type.F90
   solid_mechanics/bndry_ip_func_type.F90
+
   solid_mechanics/sm_bc_utilities.F90
   solid_mechanics/sm_normal_displacement_bc_type.F90
   solid_mechanics/sm_normal_traction_bc_type.F90
   solid_mechanics/sm_gap_contact_bc_type.F90
   solid_mechanics/sm_bc_type.F90
+  solid_mechanics/sm_bc_node_types.F90
+  solid_mechanics/sm_bc_face_type.F90
+  #solid_mechanics/sm_bc_list_type.F90
+
   solid_mechanics/sm_model_type.F90
   solid_mechanics/sm_ds_precon_type.F90
   solid_mechanics/sm_nlsol_model_type.F90
