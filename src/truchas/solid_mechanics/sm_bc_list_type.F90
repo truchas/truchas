@@ -31,6 +31,7 @@
 
 module sm_bc_list_type
 
+  use truchas_logging_services
   use scalar_func_class
   implicit none
   private

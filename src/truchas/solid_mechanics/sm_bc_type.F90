@@ -1,6 +1,10 @@
 !!
+!! SM_BC_TYPE
+!!
+!! TODO
+!!
 !! Zach Jibben <zjibben@lanl.gov>
-!! September 2020
+!! March 2021
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -21,6 +25,9 @@ module sm_bc_type
   use sm_normal_displacement_bc_type
   use sm_normal_traction_bc_type
   use sm_gap_contact_bc_type
+  use sm_bc_list_type
+  use sm_bc_face_list_type
+  use sm_bc_node_list_type
   use sm_bc_node_types
   implicit none
   private
@@ -32,8 +39,12 @@ module sm_bc_type
 
     type(unstr_mesh), pointer :: mesh ! unowned reference
 
-    ! type(sm_bc_face), pointer :: face_displacement => null()
-    ! type(sm_bc_face), pointer :: face_traction => null()
+    type(sm_bc_list), pointer :: list => null()
+    type(sm_bc_face_list) :: face_list
+    type(sm_bc_node_list) :: node_list
+
+    !type(sm_bc_face), pointer :: face_displacement => null()
+    !type(sm_bc_face), pointer :: face_traction => null()
 
     type(bndry_ip_func) :: traction(3)
     type(sm_normal_traction_bc) :: tractionn
@@ -46,9 +57,19 @@ module sm_bc_type
     procedure :: apply
     procedure :: apply_traction
     procedure :: apply_deriv_diagonal
+    final :: delete_sm_bc
   end type sm_bc
 
 contains
+
+  subroutine delete_sm_bc(this)
+    type(sm_bc), intent(inout) :: this
+    !if (associated(this%face_displacement)) deallocate(this%face_displacement)
+    !if (associated(this%face_traction)) deallocate(this%face_traction)
+    if (associated(this%list)) deallocate(this%list)
+    ! if (associated(this%face_list)) deallocate(this%face_list)
+    ! if (associated(this%node_list)) deallocate(this%node_list)
+  end subroutine delete_sm_bc
 
   subroutine init(this, params, mesh, ig, contact_penalty, contact_distance, contact_traction, &
       stat, errmsg)
@@ -68,19 +89,31 @@ contains
     this%mesh => mesh
     this%contact_penalty = contact_penalty
 
-    call this%face_displacement%init(mesh, params, 'displacement', stat, errmsg)
+    call this%list%init(params, stat, errmsg)
     if (stat /= 0) return
-    call this%face_traction%init(mesh, params, 'traction', stat, errmsg)
+    call this%face_list%init(mesh, this%list)
     if (stat /= 0) return
-    call this%face_contact%init(mesh, params, 'contact', stat, errmsg)
+    call this%node_list%init(mesh, ig, this%face_list)
     if (stat /= 0) return
+
+    call this%displacement1n%init(this%node_list, this%list)
+    call this%displacement2n%init(this%node_list, this%list)
+    call this%displacement3n%init(this%node_list, this%list)
+    !call this%contact1%init(node_list, list)
+
+    ! call this%face_displacement%init(mesh, params, 'displacement', stat, errmsg)
+    ! if (stat /= 0) return
+    ! call this%face_traction%init(mesh, params, 'traction', stat, errmsg)
+    ! if (stat /= 0) return
+    ! call this%face_contact%init(mesh, params, 'contact', stat, errmsg)
+    ! if (stat /= 0) return
 
     call alloc_bc('traction', this%traction)
     if (stat /= 0) return
-    call alloc_bc('displacement', this%displacement)
-    if (stat /= 0) return
-    call alloc_displacementn_bc
-    if (stat /= 0) return
+    ! call alloc_bc('displacement', this%displacement)
+    ! if (stat /= 0) return
+    ! call alloc_displacementn_bc
+    ! if (stat /= 0) return
     call alloc_tractionn_bc
     if (stat /= 0) return
     call alloc_gap_contact_bc
@@ -112,15 +145,15 @@ contains
 
     end subroutine alloc_bc
 
-    subroutine alloc_displacementn_bc
-      type(bndry_face_func), allocatable :: bff
-      allocate(bff)
-      call bff%init(mesh, bndry_only=.false.)
-      call iterate_list(params, 'displacement-n', 'displacement', bff, stat, errmsg)
-      if (stat /= 0) return
-      call bff%add_complete
-      call this%displacementn%init(mesh, ig, bff)
-    end subroutine alloc_displacementn_bc
+    ! subroutine alloc_displacementn_bc
+    !   type(bndry_face_func), allocatable :: bff
+    !   allocate(bff)
+    !   call bff%init(mesh, bndry_only=.false.)
+    !   call iterate_list(params, 'displacement-n', 'displacement', bff, stat, errmsg)
+    !   if (stat /= 0) return
+    !   call bff%add_complete
+    !   call this%displacementn%init(mesh, ig, bff)
+    ! end subroutine alloc_displacementn_bc
 
     subroutine alloc_tractionn_bc
       type(bndry_face_func), allocatable :: bff
@@ -273,7 +306,7 @@ contains
     subroutine displacement_bcs()
 
       integer :: i, n
-      real(r8) :: x
+      real(r8) :: x(3)
 
       ! Normal displacement BCs enforce a given displacement in the normal
       ! direction, and apply zerotraction in tangential directions. To do this
@@ -291,7 +324,7 @@ contains
           n = nodes(i)
           x = dot_product(displ(:,n), normal(:,i)) * normal(:,i)
           r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
-          r(:,n) = r(:,n) - this%contact_penalty * (x - values(i)) * normal(:,i) * scaling_factor(n)
+          r(:,n) = r(:,n) - this%contact_penalty * (x - values(:,i)) * scaling_factor(n)
         end do
       end associate
 
@@ -306,8 +339,8 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           x = displ(:,n) - values(:,i)
-          x = x - dot_product(x, tangent) * tangent
-          r(:,n) = dot_product(r(:,n), tangent) * tangent
+          x = x - dot_product(x, tangent(:,i)) * tangent(:,i)
+          r(:,n) = dot_product(r(:,n), tangent(:,i)) * tangent(:,i)
           r(:,n) = r(:,n) - this%contact_penalty * x * scaling_factor(n)
         end do
       end associate
@@ -334,7 +367,7 @@ contains
 
     integer :: d, i, n
 
-    call this%face_traction%compute(t)
+    !call this%face_traction%compute(t)
 
     ! At traction BCs the stress is defined along the face. Each face has
     ! traction discretized at the integration points, one for each node. The
@@ -432,8 +465,8 @@ contains
       associate (nodes => this%displacement2n%index, tangent => this%displacement2n%tangent)
         do i = 1, size(nodes)
           n = nodes(i)
-          r(:,n) = r(:,n) + r(:,n) * tangent**2
-          r(:,n) = r(:,n) - this%contact_penalty * (1-tangent**2) * scaling_factor(n)
+          diag(:,n) = diag(:,n) + diag(:,n) * tangent(:,i)**2
+          diag(:,n) = diag(:,n) - this%contact_penalty * (1-tangent(:,i)**2) * scaling_factor(n)
         end do
       end associate
 
@@ -442,7 +475,7 @@ contains
       associate (nodes => this%displacement3n%index)
         do i = 1, size(nodes)
           n = nodes(i)
-          r(:,n) = - this%contact_penalty * scaling_factor(n)
+          diag(:,n) = - this%contact_penalty * scaling_factor(n)
         end do
       end associate
 
