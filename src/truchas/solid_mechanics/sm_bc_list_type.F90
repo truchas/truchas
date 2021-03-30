@@ -46,6 +46,7 @@ module sm_bc_list_type
   end type smbcl_contact
 
   type, public :: sm_bc_list
+    integer :: dsz ! displacement size for indexing contact
     type(smbcl_displacement), allocatable :: displacement(:)
     type(smbcl_contact), allocatable :: contact(:)
     !type(smbcl_displacement), allocatable :: traction(:)
@@ -83,6 +84,7 @@ contains
     n = n + count_entries('displacement-z', stat, errmsg)
     if (stat /= 0) return
     allocate(this%displacement(n))
+    this%dsz = n
     n = count_entries('gap-contact', stat, errmsg)
     if (stat /= 0) return
     allocate(this%contact(n))

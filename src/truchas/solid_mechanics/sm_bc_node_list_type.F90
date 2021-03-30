@@ -25,6 +25,8 @@ module sm_bc_node_list_type
     real(r8), allocatable :: normal(:,:)
     integer, allocatable :: node(:) ! stores the node id
     integer, allocatable :: bcid(:), xbcid(:) ! stores bc values for each node
+
+    integer, allocatable :: link(:,:) ! stores indexes to the node array above at links
   contains
     procedure :: init
   end type sm_bc_node_list

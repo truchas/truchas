@@ -22,9 +22,8 @@ module sm_bc_type
   use unstr_mesh_type
   use bndry_face_func_type
   use bndry_ip_func_type
-  use sm_normal_displacement_bc_type
   use sm_normal_traction_bc_type
-  use sm_gap_contact_bc_type
+  !use sm_gap_contact_bc_type
   use sm_bc_list_type
   use sm_bc_face_list_type
   use sm_bc_node_list_type
@@ -43,15 +42,13 @@ module sm_bc_type
     type(sm_bc_face_list) :: face_list
     type(sm_bc_node_list) :: node_list
 
-    !type(sm_bc_face), pointer :: face_displacement => null()
-    !type(sm_bc_face), pointer :: face_traction => null()
-
     type(bndry_ip_func) :: traction(3)
     type(sm_normal_traction_bc) :: tractionn
     type(sm_bc_d1) :: displacement1n
     type(sm_bc_d2) :: displacement2n
     type(sm_bc_d3) :: displacement3n
-    type(sm_gap_contact_bc) :: gap_contact
+    type(sm_bc_c1) :: contact1
+    !type(sm_gap_contact_bc) :: gap_contact
   contains
     procedure :: init
     procedure :: apply
@@ -64,11 +61,7 @@ contains
 
   subroutine delete_sm_bc(this)
     type(sm_bc), intent(inout) :: this
-    !if (associated(this%face_displacement)) deallocate(this%face_displacement)
-    !if (associated(this%face_traction)) deallocate(this%face_traction)
     if (associated(this%list)) deallocate(this%list)
-    ! if (associated(this%face_list)) deallocate(this%face_list)
-    ! if (associated(this%node_list)) deallocate(this%node_list)
   end subroutine delete_sm_bc
 
 
@@ -101,25 +94,14 @@ contains
     call this%displacement1n%init(mesh, this%node_list, this%list)
     call this%displacement2n%init(mesh, this%node_list, this%list)
     call this%displacement3n%init(mesh, this%node_list, this%list)
-    !call this%contact1%init(node_list, list)
-
-    ! call this%face_displacement%init(mesh, params, 'displacement', stat, errmsg)
-    ! if (stat /= 0) return
-    ! call this%face_traction%init(mesh, params, 'traction', stat, errmsg)
-    ! if (stat /= 0) return
-    ! call this%face_contact%init(mesh, params, 'contact', stat, errmsg)
-    ! if (stat /= 0) return
+    call this%contact1%init(mesh, ig, node_list, list)
 
     call alloc_bc('traction', this%traction)
     if (stat /= 0) return
-    ! call alloc_bc('displacement', this%displacement)
-    ! if (stat /= 0) return
-    ! call alloc_displacementn_bc
-    ! if (stat /= 0) return
     call alloc_tractionn_bc
     if (stat /= 0) return
-    call alloc_gap_contact_bc
-    if (stat /= 0) return
+    ! call alloc_gap_contact_bc
+    ! if (stat /= 0) return
 
     this%gap_contact_active = this%gap_contact%enabled ! TODO clean this up
 
@@ -146,16 +128,6 @@ contains
       end do
 
     end subroutine alloc_bc
-
-    ! subroutine alloc_displacementn_bc
-    !   type(bndry_face_func), allocatable :: bff
-    !   allocate(bff)
-    !   call bff%init(mesh, bndry_only=.false.)
-    !   call iterate_list(params, 'displacement-n', 'displacement', bff, stat, errmsg)
-    !   if (stat /= 0) return
-    !   call bff%add_complete
-    !   call this%displacementn%init(mesh, ig, bff)
-    ! end subroutine alloc_displacementn_bc
 
     subroutine alloc_tractionn_bc
       type(bndry_face_func), allocatable :: bff
@@ -264,7 +236,6 @@ contains
 
     call this%apply_traction(t, r)
     ftot = r
-    !call this%face_displacement%compute(t)
     call gap_contact
     call displacement_bcs
 
@@ -276,23 +247,9 @@ contains
 
       integer :: i, n1, n2
 
-      call this%gap_contact%compute(t, displ, r, scaling_factor)
+      call this%contact1%compute(displ, r, scaling_factor)
 
       associate (link => this%gap_contact%index, values => this%gap_contact%value)
-
-        if (this%gap_contact_active) then
-          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
-          !            everything working in serial.
-#ifndef NDEBUG
-          do i = 1, size(link, dim=2)
-            n1 = link(1,i)
-            n2 = link(2,i)
-            if (n1 <= this%mesh%nnode_onP .or. n2 <= this%mesh%nnode_onP) then
-              ASSERT(n1 <= this%mesh%nnode_onP .and. n2 <= this%mesh%nnode_onP)
-            end if
-          end do
-#endif
-        end if
 
         do i = 1, size(link, dim=2)
           n1 = link(1,i)
@@ -369,8 +326,6 @@ contains
 
     integer :: d, i, n
 
-    !call this%face_traction%compute(t)
-
     ! At traction BCs the stress is defined along the face. Each face has
     ! traction discretized at the integration points, one for each node. The
     ! values array provides the equivalent of traction = tensor_dot(stress,
@@ -424,20 +379,8 @@ contains
 
       associate (link => this%gap_contact%index, dvalues => this%gap_contact%dvalue)
 
-        if (this%gap_contact%enabled) then
-          ! TODO-WARN: Need halo node displacements and stresses/residuals? For now just get
-          !            everything working in serial.
-          call this%gap_contact%compute_deriv(t, displ, force, scaling_factor, diag)
-#ifndef NDEBUG
-          do i = 1, size(link, dim=2)
-            n1 = link(1,i)
-            n2 = link(2,i)
-            if (n1 <= this%mesh%nnode_onP .or. n2 <= this%mesh%nnode_onP) then
-              ASSERT(n1 <= this%mesh%nnode_onP .and. n2 <= this%mesh%nnode_onP)
-            end if
-          end do
-#endif
-        end if
+        if (this%gap_contact%enabled) &
+            call this%contact1%compute_deriv(displ, force, scaling_factor, diag)
 
         do i = 1, size(link, dim=2)
           n1 = link(1,i)

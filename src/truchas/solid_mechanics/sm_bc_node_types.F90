@@ -164,9 +164,11 @@ contains
 
       xfi = nodebc%xbcid(ni)
       bc1 = nodebc%bcid(xfi)
+      if (bc1 > bc%dsz) return
       n1 = nodebc%normal(:,xfi)
       do xfi = nodebc%xbcid(ni)+1, nodebc%xbcid(ni+1)-1
         bc2 = nodebc%bcid(xfi)
+        if (bc2 > bc%dsz) return
         n2 = nodebc%normal(:,xfi)
 
         ! See above NB
