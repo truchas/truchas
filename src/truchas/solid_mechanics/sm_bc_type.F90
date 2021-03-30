@@ -71,6 +71,7 @@ contains
     ! if (associated(this%node_list)) deallocate(this%node_list)
   end subroutine delete_sm_bc
 
+
   subroutine init(this, params, mesh, ig, contact_penalty, contact_distance, contact_traction, &
       stat, errmsg)
 

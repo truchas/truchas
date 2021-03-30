@@ -72,6 +72,8 @@ module sm_bc_node_types
     procedure :: compute => sm_bc_d3_compute
   end type sm_bc_d3
 
+  real(r8), parameter :: ntol = 0.9_r8
+
 contains
 
   !! Initialize the single-normal displacement BC nodes.
@@ -95,7 +97,7 @@ contains
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
-    integer :: nnode, ni, bcid
+    integer :: nnode, ni, bcid, xbcid
 
     nnode = 0
     do ni = 1, size(nodebc%node)
@@ -108,9 +110,10 @@ contains
       if (.not.is_single_normal_node(ni)) cycle
       nnode = nnode + 1
       this%index(nnode) = nodebc%node(ni)
-      bcid = nodebc%bcid(nodebc%xbcid(ni))
+      xbcid = nodebc%xbcid(ni)
+      bcid = nodebc%bcid(xbcid)
       this%displf(nnode)%f => bc%displacement(bcid)%f
-      this%normal(:,nnode) = nodebc%normal(:,nodebc%xbcid(ni))
+      this%normal(:,nnode) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
     end do
 
   contains
@@ -138,13 +141,12 @@ contains
     !!     with the first displacement value seen.
     !!   - Touching displacement BCs of the same displacement value, but along a
     !!     curved surface rather than an edge or corner. If the curvature of
-    !!     this surface is high enough to surpase the tol parameter, this will
+    !!     this surface is high enough to surpase the ntol parameter, this will
     !!     be treated as a multi-normal BC.
     pure logical function is_single_normal_node(ni)
 
       integer, intent(in) :: ni
 
-      real(r8), parameter :: tol = 0.9_r8
       integer :: xfi, bc1, bc2
       real(r8) :: n1(3), n2(3)
 
@@ -158,7 +160,9 @@ contains
         n2 = nodebc%normal(:,xfi)
 
         ! See above NB
-        if (bc1 /= bc2 .and. dot_product(n1, n2) < tol) return
+        ! TODO: I think with BCIDs the way they're defined now, they will always
+        !       be distinct, so the comparison bc1 /= bc2 will always be true.
+        if (bc1 /= bc2 .and. dot_product(n1, n2) < ntol) return
       end do
 
       is_single_normal_node = .true.
@@ -170,11 +174,81 @@ contains
 
   subroutine sm_bc_d2_init(this, nodebc, bc)
 
+    use cell_geometry, only: cross_product, normalized
+
     class(sm_bc_d2), intent(out) :: this
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
-    INSIST(.false.) ! TODO-WARN: not implemented yet
+    type(scalar_func_ptr) :: throwaway1(2)
+    real(r8) :: throwaway2(3,2)
+    integer :: nnode, ni
+    logical :: matching_node
+
+    nnode = 0
+    do ni = 1, size(nodebc%node)
+      call check_if_2normal_bc(ni, throwaway1, throwaway2, matching_node)
+      if (matching_node) nnode = nnode + 1
+    end do
+    allocate(this%index(nnode), this%value(3,nnode), this%normal(3,2,nnode), &
+        this%tangent(3,nnode), this%displf(2,nnode))
+
+    nnode = 1
+    nodes: do ni = 1, size(nodebc%node)
+      ASSERT(nnode <= size(this%index))
+      call check_if_2normal_bc(ni, this%displf(:,nnode), this%normal(:,:,nnode), matching_node)
+      if (.not.matching_node) cycle
+      this%index(nnode) = nodebc%node(ni)
+      this%tangent(:,nnode) = normalized(cross_product(this%normal(:,1,nnode), this%normal(:,2,nnode)))
+      nnode = nnode + 1
+    end do nodes
+
+  contains
+
+    subroutine check_if_2normal_bc(ni, displf, normal, matching_node)
+
+      integer, intent(in) :: ni
+      type(scalar_func_ptr), intent(out) :: displf(:)
+      real(r8), intent(out) :: normal(:,:)
+      logical, intent(out) :: matching_node
+
+      integer :: nbc, xbcid, bcid
+
+      matching_node = .false.
+      nbc = 1
+      do xbcid = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        bcid = nodebc%bcid(xbcid)
+        ! If there's a contact BC here, then it's not a 2-normal BC handled by this type.
+        if (bcid > size(bc%displacement)) return
+        if (nbc > 2) then
+          ! If we've already found two displacement BCs, ensure this third
+          ! normal is not pointing in a distinct direction. If the normal points
+          ! in a direction matching one of the already-captured directions, then
+          ! this doesn't affect the BC. If points in a completely different
+          ! direction, then this will be a 3-normal BC, not handled by this
+          ! type.
+          if (dot_product(normal(:,1), nodebc%normal(:,xbcid)) < ntol .and. &
+              dot_product(normal(:,2), nodebc%normal(:,xbcid)) < ntol) then
+            return
+          else
+            cycle
+          end if
+        else if (nbc > 1) then
+          ! If this BC's normal is in the same direction as an already-counted
+          ! BC, then treat them as identical (don't add it as the second
+          ! normal). At some point we will want to smoothly vary from one BC
+          ! to another.
+          if (dot_product(normal(:,1), nodebc%normal(:,xbcid)) >= ntol) cycle
+        end if
+
+        ASSERT(nbc <= 2)
+        displf(nbc)%f => bc%displacement(bcid)%f
+        normal(:,nbc) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
+        nbc = nbc + 1
+      end do
+      matching_node = .true.
+
+    end subroutine check_if_2normal_bc
 
   end subroutine sm_bc_d2_init
 
@@ -185,7 +259,79 @@ contains
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
+    type(scalar_func_ptr) :: throwaway1(3)
+    real(r8) :: throwaway2(3,3)
+    integer :: nnode, ni
+    logical :: matching_node
+
     INSIST(.false.) ! TODO-WARN: not implemented yet
+
+    nnode = 0
+    do ni = 1, size(nodebc%node)
+      call check_if_3normal_bc(ni, throwaway1, throwaway2, matching_node)
+      if (matching_node) nnode = nnode + 1
+    end do
+    allocate(this%index(nnode), this%value(3,nnode), this%normal(3,3,nnode), this%displf(3,nnode))
+
+    nnode = 1
+    nodes: do ni = 1, size(nodebc%node)
+      ASSERT(nnode <= size(this%index))
+      call check_if_3normal_bc(ni, this%displf(:,nnode), this%normal(:,:,nnode), matching_node)
+      if (.not.matching_node) cycle
+      this%index(nnode) = nodebc%node(ni)
+      nnode = nnode + 1
+    end do nodes
+
+  contains
+
+    subroutine check_if_3normal_bc(ni, displf, normal, matching_node)
+
+      integer, intent(in) :: ni
+      type(scalar_func_ptr), intent(out) :: displf(:)
+      real(r8), intent(out) :: normal(:,:)
+      logical, intent(out) :: matching_node
+
+      real(r8), parameter :: tol = 1e-2_r8
+      real(r8) :: nx(3), p
+      integer :: n, nbc, xbcid, bcid
+
+      matching_node = .false.
+      nbc = 1
+      do xbcid = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        bcid = nodebc%bcid(xbcid)
+        ! If there's a contact BC here, then it's not a 3-normal BC handled by this type.
+        if (bcid > size(bc%displacement)) return
+        if (nbc > 3) then
+          ! In this case, either a) this BC points in a normal direction already
+          ! captured by another BC, in which case we wouldn't count it, or b)
+          ! this BC points in a completely unique direction. This case b could
+          ! happen in practice, though it is not likely. For now, we only
+          ! consider the first 3 unique dirichlet normal directions, and exclude
+          ! the rest. This will produce a unique solution. We may eventually
+          ! want to handle all unique normal directions, perhaps via some
+          ! least-squares solution.
+          cycle
+        else
+          ! If the normal for this BC is aligned with the normal of some
+          ! already-accounted BC, then we don't add this BC to the list of those
+          ! handled at this node. We are only interested in identifying 3
+          ! dirichlet BCs in linearly independent directions, to uniquely
+          ! describe the BC.
+          nx = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
+          do n = 1, nbc-1
+            nx = nx - dot_product(nx, normal(:,n)) * normal(:,n)
+          end do
+          if (norm2(nx) < tol) cycle
+        end if
+
+        ASSERT(nbc <= 2)
+        displf(nbc)%f => bc%displacement(bcid)%f
+        normal(:,nbc) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
+        nbc = nbc + 1
+      end do
+      if (nbc == 4) matching_node = .true.
+
+    end subroutine check_if_3normal_bc
 
   end subroutine sm_bc_d3_init
 
