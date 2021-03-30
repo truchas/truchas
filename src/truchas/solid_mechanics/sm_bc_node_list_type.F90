@@ -17,6 +17,7 @@
 module sm_bc_node_list_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use truchas_logging_services
   implicit none
   private
 
@@ -53,6 +54,7 @@ contains
     type(integration_geometry), intent(in) :: ig
     type(sm_bc_face_list), intent(in) :: bc_face_list
 
+    character(32) :: msg
     integer :: nnode, fi, ni, xni, n, bcid, xbcid
     integer, allocatable :: fini(:), xfini(:)
     logical, allocatable :: bc_is_active(:,:)
@@ -95,6 +97,10 @@ contains
       end do
       this%xbcid(ni+1) = this%xbcid(ni) + count(bc_is_active(:,ni))
     end do
+
+    nnode = size(this%xbcid)-1
+    write(msg,"('SM BC nodes: ',i6)") nnode
+    call TLS_info(trim(msg))
 
     ! ! ! 1. Get a map from nodes to faces
     ! ! call compute_inverted_connectivity(mesh%fnode, mesh%xfnode, mesh%nnode, nface, xnface)

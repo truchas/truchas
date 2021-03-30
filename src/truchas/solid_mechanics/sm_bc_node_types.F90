@@ -17,6 +17,7 @@
 module sm_bc_node_types
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use truchas_logging_services
   use unstr_mesh_type
   use scalar_func_class
   use sm_bc_node_list_type
@@ -98,6 +99,7 @@ contains
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
+    character(32) :: msg
     integer :: nnode, ni, bcid, xbcid
 
     this%mesh => mesh
@@ -118,6 +120,11 @@ contains
       this%displf(nnode)%f => bc%displacement(bcid)%f
       this%normal(:,nnode) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
     end do
+
+    if (size(this%index) > 0) then
+      write(msg,"('SM-1N nodes: ',i6)") size(this%index)
+      call TLS_info(trim(msg))
+    end if
 
   contains
 
@@ -184,6 +191,7 @@ contains
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
+    character(32) :: msg
     type(scalar_func_ptr) :: displf(2)
     real(r8) :: normal(3,2)
     integer :: nnode, ni
@@ -210,6 +218,11 @@ contains
       this%tangent(:,nnode) = normalized(cross_product(normal(:,1), normal(:,2)))
       nnode = nnode + 1
     end do nodes
+
+    if (size(this%index) > 0) then
+      write(msg,"('SM-2N nodes: ',i6)") size(this%index)
+      call TLS_info(trim(msg))
+    end if
 
   contains
 
@@ -268,6 +281,7 @@ contains
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
+    character(32) :: msg
     type(scalar_func_ptr) :: displf(3)
     real(r8) :: normal(3,3)
     integer :: nnode, ni
@@ -292,6 +306,11 @@ contains
       this%normal(:,:,nnode) = normal
       nnode = nnode + 1
     end do nodes
+
+    if (size(this%index) > 0) then
+      write(msg,"('SM-3N nodes: ',i6)") size(this%index)
+      call TLS_info(trim(msg))
+    end if
 
   contains
 

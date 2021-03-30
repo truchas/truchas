@@ -197,7 +197,7 @@ contains
         call plist%get('type', this_type, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
         if (lower_case(this_type) == type_string) then  ! use this sublist
-          call TLS_info('  using SM_BC[' // piter%name() // ']')
+          !call TLS_info('  using SM_BC[' // piter%name() // ']')
           call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
           if (stat /= 0) exit
           count_entries = count_entries + size(setids)

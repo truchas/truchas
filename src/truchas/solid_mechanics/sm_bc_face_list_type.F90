@@ -17,6 +17,7 @@
 module sm_bc_face_list_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use truchas_logging_services
   implicit none
   private
 
@@ -41,6 +42,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     type(sm_bc_list), intent(in) :: bc_list
 
+    character(32) :: msg
     integer :: i, j, k, n, nface, bcid
     integer, allocatable :: nbc(:)
 
@@ -101,6 +103,10 @@ contains
         end if
       end do
     end do
+
+    nface = size(this%xbcid)-1
+    write(msg,"('SM BC faces: ',i6)") nface
+    call TLS_info(trim(msg))
 
   end subroutine init
 
