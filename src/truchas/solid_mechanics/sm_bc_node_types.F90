@@ -354,7 +354,7 @@ contains
           if (norm2(nx) < tol) cycle
         end if
 
-        ASSERT(nbc <= 2)
+        ASSERT(nbc <= 3)
         displf(nbc)%f => bc%displacement(bcid)%f
         normal(:,nbc) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
         nbc = nbc + 1
@@ -490,7 +490,7 @@ contains
       displ(2) = this%displf(2,i)%eval(args) ! associated with this%normal(:,2,i)
       displ(3) = this%displf(3,i)%eval(args) ! associated with this%normal(:,3,i)
 
-      call dgesv(3, 1, this%normal(:,:,i), 3, ipiv, displ, 1, stat)
+      call dgesv(3, 1, this%normal(:,:,i), 3, ipiv, displ, 3, stat)
       INSIST(stat == 0)
 
       this%value(:,i) = displ

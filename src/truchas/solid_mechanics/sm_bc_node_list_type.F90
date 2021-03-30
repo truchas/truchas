@@ -42,16 +42,18 @@ contains
   !! the node-face pair. And a normal associated with a particular BC at a
   !! particular node is the sum of the neighboring area-scaled normals at
   !! integration points associated with that BC.
-  subroutine init(this, mesh, ig, bc_face_list)
+  subroutine init(this, mesh, ig, bc_list, bc_face_list)
 
     use unstr_mesh_type
     use integration_geometry_type
+    use sm_bc_list_type
     use sm_bc_face_list_type
     use sm_bc_utilities, only: compute_index_connectivity, compute_ip_normals
 
     class(sm_bc_node_list), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
     type(integration_geometry), intent(in) :: ig
+    type(sm_bc_list), intent(in) :: bc_list
     type(sm_bc_face_list), intent(in) :: bc_face_list
 
     character(32) :: msg
@@ -91,7 +93,7 @@ contains
       do bcid = 1, bc_face_list%nbc
         if (bc_is_active(bcid,ni)) then
           this%bcid(xbcid) = bcid
-          this%normal(:,xbcid) = normal(:,bcid,ni)
+          this%normal(:,xbcid) = select_normal(bc_list%displacement(bcid)%type, normal(:,bcid,ni))
           xbcid = xbcid + 1
         end if
       end do
@@ -112,6 +114,27 @@ contains
     !     nbc(n) = nbc(n) + 1
     !   end do
     ! end do
+
+  contains
+
+    ! Use definitions from sm_bc_list_type.F90 to identify the direction of this BC.
+    function select_normal(type, face_normal) result(normal)
+      integer, intent(in) :: type
+      real(r8), intent(in) :: face_normal(:)
+      real(r8) :: normal(3)
+      select case (type)
+      case (SMBCL_N)
+        normal = face_normal
+      case (SMBCL_X)
+        normal = [1.0_r8, 0.0_r8, 0.0_r8]
+      case (SMBCL_Y)
+        normal = [0.0_r8, 1.0_r8, 0.0_r8]
+      case (SMBCL_Z)
+        normal = [0.0_r8, 0.0_r8, 1.0_r8]
+      case default
+        INSIST(.false.)
+      end select
+    end function select_normal
 
   end subroutine init
 

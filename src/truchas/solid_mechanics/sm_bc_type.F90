@@ -95,7 +95,7 @@ contains
     if (stat /= 0) return
     call this%face_list%init(mesh, this%list)
     if (stat /= 0) return
-    call this%node_list%init(mesh, ig, this%face_list)
+    call this%node_list%init(mesh, ig, this%list, this%face_list)
     if (stat /= 0) return
 
     call this%displacement1n%init(mesh, this%node_list, this%list)

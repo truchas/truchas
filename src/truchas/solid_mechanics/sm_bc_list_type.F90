@@ -53,10 +53,10 @@ module sm_bc_list_type
     procedure :: init
   end type sm_bc_list
 
-  integer, parameter :: SMBCL_N = 0
-  integer, parameter :: SMBCL_X = 1
-  integer, parameter :: SMBCL_Y = 2
-  integer, parameter :: SMBCL_Z = 3
+  integer, parameter, public :: SMBCL_N = 0
+  integer, parameter, public :: SMBCL_X = 1
+  integer, parameter, public :: SMBCL_Y = 2
+  integer, parameter, public :: SMBCL_Z = 3
 
 contains
 
