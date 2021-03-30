@@ -1,0 +1,19 @@
+target_sources(truchas PRIVATE
+  advection_velocity_namelist.F90
+  brent_root_class.F90
+  locate_plane_nd_module.F90
+  multimat_cell_type.F90
+  near_zero_function.F90
+  plane_type.F90
+  polygon_type.F90
+  polyhedron_type.F90
+  pure_polyhedron_type.F90
+  volume_tracker_class.F90
+  geometric_volume_tracker_type.F90
+  simple_volume_tracker_type.F90
+  vtrack_driver.F90
+  cell_geometry_type.F90
+  locate_plane_os_function.F90
+  truncation_volume_type.F90
+  wisp_redistribution_type.F90
+)

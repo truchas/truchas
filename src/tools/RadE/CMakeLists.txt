@@ -8,9 +8,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR True)
 # Want modules in the build directory.
 unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
-# Truchas module directory
-include_directories(${Truchas_MODULE_DIR})
-
 # MPI
 include_directories(${MPI_C_INCLUDE_PATH})
 
@@ -51,12 +48,12 @@ list(APPEND LIBRARY_RADE_FILES
 	    scl_f77.c)
 
 add_library(rade ${LIBRARY_RADE_FILES})
-target_link_libraries(rade truchas ${Truchas_LINK_LIBS} chaparral)
+target_link_libraries(rade truchas chaparral)
 
 # --- cmpre binary
 set(CMPRE_SOURCE_FILES cmpre.F90)
 add_executable(cmpre ${CMPRE_SOURCE_FILES})
-target_link_libraries(cmpre rade truchas ${Truchas_LINK_LIBS})
+target_link_libraries(cmpre rade truchas)
 set(output_name cmpre)
 set_target_properties(cmpre PROPERTIES
                       OUTPUT_NAME ${output_name})
@@ -66,7 +63,7 @@ set(GENRE_SOURCE_FILES
   genre_command_line.F90
   genre.F90)
 add_executable(genre ${GENRE_SOURCE_FILES})
-target_link_libraries(genre rade truchas ${Truchas_LINK_LIBS})
+target_link_libraries(genre rade truchas)
 set(output_name genre)
 set_target_properties(genre PROPERTIES
                       OUTPUT_NAME ${output_name})
@@ -76,7 +73,7 @@ set(VIZRE_SOURCE_FILES
   vizre_command_line.F90
   vizre.F90)
 add_executable(vizre ${VIZRE_SOURCE_FILES})
-target_link_libraries(vizre rade truchas ${Truchas_LINK_LIBS})
+target_link_libraries(vizre rade truchas)
 set(output_name vizre)
 set_target_properties(vizre PROPERTIES
                       OUTPUT_NAME ${output_name})

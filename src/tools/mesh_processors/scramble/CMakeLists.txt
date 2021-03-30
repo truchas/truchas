@@ -5,9 +5,6 @@ project(TruchasToolsScramble Fortran)
 # Add the SOURCE_DIR and BINARY_DIR to the include directories
 set(CMAKE_INCLUDE_CURRENT_DIR True)
 
-# Truchas module directory
-include_directories(${Truchas_MODULE_DIR})
-
 # --- Scramble
 set(SCRAMBLE_SOURCE_FILES
   f90_assert.F90
@@ -16,7 +13,7 @@ set(SCRAMBLE_SOURCE_FILES
   scramble.F90)
 
 add_executable(scramble ${SCRAMBLE_SOURCE_FILES})
-target_link_libraries(scramble truchas ${Truchas_LINK_LIBS})
+target_link_libraries(scramble truchas)
 
 # --- Install rules
 install(TARGETS scramble

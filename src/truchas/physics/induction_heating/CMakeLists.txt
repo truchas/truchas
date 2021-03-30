@@ -1,0 +1,19 @@
+target_sources(truchas PRIVATE
+  altmesh_namelist.F90
+  CGSolver.F90
+  EM.F90
+  EM_boundary_data.F90
+  EM_data_proxy.F90
+  EM_graphics_output.F90
+  EM_properties.F90
+  GeometricModeler.F90
+  MaxwellBoundaryData.F90
+  MaxwellEddy.F90
+  data_explorer.F90
+  debug_EM.F90
+  elliptic_integrals.F90
+  field_probes.F90
+  mimetic_discretization.F90
+  solenoid_fields.F90
+  sparse_matrix.F90
+)
