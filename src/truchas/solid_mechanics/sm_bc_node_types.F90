@@ -91,13 +91,16 @@ contains
   !! a curved surface, so there is a small tolerance for deciding what qualifies
   !! as 'distinct' normal vectors between faces. Currently the tolerance is set
   !! to about 25 degrees.
-  subroutine sm_bc_d1_init(this, nodebc, bc)
+  subroutine sm_bc_d1_init(this, mesh, nodebc, bc)
 
     class(sm_bc_d1), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
     integer :: nnode, ni, bcid, xbcid
+
+    this%mesh => mesh
 
     nnode = 0
     do ni = 1, size(nodebc%node)
@@ -172,22 +175,25 @@ contains
   end subroutine sm_bc_d1_init
 
 
-  subroutine sm_bc_d2_init(this, nodebc, bc)
+  subroutine sm_bc_d2_init(this, mesh, nodebc, bc)
 
     use cell_geometry, only: cross_product, normalized
 
     class(sm_bc_d2), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
-    type(scalar_func_ptr) :: throwaway1(2)
-    real(r8) :: throwaway2(3,2)
+    type(scalar_func_ptr) :: displf(2)
+    real(r8) :: normal(3,2)
     integer :: nnode, ni
     logical :: matching_node
 
+    this%mesh => mesh
+
     nnode = 0
     do ni = 1, size(nodebc%node)
-      call check_if_2normal_bc(ni, throwaway1, throwaway2, matching_node)
+      call check_if_2normal_bc(ni, displf, normal, matching_node)
       if (matching_node) nnode = nnode + 1
     end do
     allocate(this%index(nnode), this%value(3,nnode), this%normal(3,2,nnode), &
@@ -195,11 +201,13 @@ contains
 
     nnode = 1
     nodes: do ni = 1, size(nodebc%node)
-      ASSERT(nnode <= size(this%index))
-      call check_if_2normal_bc(ni, this%displf(:,nnode), this%normal(:,:,nnode), matching_node)
+      call check_if_2normal_bc(ni, displf, normal, matching_node)
       if (.not.matching_node) cycle
+      ASSERT(nnode <= size(this%index))
       this%index(nnode) = nodebc%node(ni)
-      this%tangent(:,nnode) = normalized(cross_product(this%normal(:,1,nnode), this%normal(:,2,nnode)))
+      this%displf(:,nnode) = displf
+      this%normal(:,:,nnode) = normal
+      this%tangent(:,nnode) = normalized(cross_product(normal(:,1), normal(:,2)))
       nnode = nnode + 1
     end do nodes
 
@@ -246,39 +254,42 @@ contains
         normal(:,nbc) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
         nbc = nbc + 1
       end do
-      matching_node = .true.
+      if (nbc == 3) matching_node = .true.
 
     end subroutine check_if_2normal_bc
 
   end subroutine sm_bc_d2_init
 
 
-  subroutine sm_bc_d3_init(this, nodebc, bc)
+  subroutine sm_bc_d3_init(this, mesh, nodebc, bc)
 
     class(sm_bc_d3), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
 
-    type(scalar_func_ptr) :: throwaway1(3)
-    real(r8) :: throwaway2(3,3)
+    type(scalar_func_ptr) :: displf(3)
+    real(r8) :: normal(3,3)
     integer :: nnode, ni
     logical :: matching_node
 
-    INSIST(.false.) ! TODO-WARN: not implemented yet
+    this%mesh => mesh
 
     nnode = 0
     do ni = 1, size(nodebc%node)
-      call check_if_3normal_bc(ni, throwaway1, throwaway2, matching_node)
+      call check_if_3normal_bc(ni, displf, normal, matching_node)
       if (matching_node) nnode = nnode + 1
     end do
     allocate(this%index(nnode), this%value(3,nnode), this%normal(3,3,nnode), this%displf(3,nnode))
 
     nnode = 1
     nodes: do ni = 1, size(nodebc%node)
-      ASSERT(nnode <= size(this%index))
-      call check_if_3normal_bc(ni, this%displf(:,nnode), this%normal(:,:,nnode), matching_node)
+      call check_if_3normal_bc(ni, displf, normal, matching_node)
       if (.not.matching_node) cycle
+      ASSERT(nnode <= size(this%index))
       this%index(nnode) = nodebc%node(ni)
+      this%displf(:,nnode) = displf
+      this%normal(:,:,nnode) = normal
       nnode = nnode + 1
     end do nodes
 
@@ -292,7 +303,7 @@ contains
       logical, intent(out) :: matching_node
 
       real(r8), parameter :: tol = 1e-2_r8
-      real(r8) :: nx(3), p
+      real(r8) :: nx(3)
       integer :: n, nbc, xbcid, bcid
 
       matching_node = .false.

@@ -64,6 +64,8 @@ contains
 
     nnode = size(this%node)
     allocate(normal(3,bc_face_list%nbc,nnode), bc_is_active(bc_face_list%nbc,nnode))
+    normal = 0
+    bc_is_active = .false.
     do fi = 1, size(bc_face_list%face)
       do xni = xfini(fi), xfini(fi+1)-1
         ni = fini(xni)
@@ -83,11 +85,12 @@ contains
     n = count(bc_is_active)
     allocate(this%bcid(n), this%normal(3,n))
     do ni = 1, size(this%node)
+      xbcid = this%xbcid(ni)
       do bcid = 1, bc_face_list%nbc
         if (bc_is_active(bcid,ni)) then
-          xbcid = this%xbcid(ni)+xbcid-1
           this%bcid(xbcid) = bcid
           this%normal(:,xbcid) = normal(:,bcid,ni)
+          xbcid = xbcid + 1
         end if
       end do
       this%xbcid(ni+1) = this%xbcid(ni) + count(bc_is_active(:,ni))

@@ -90,6 +90,7 @@ contains
     this%mesh => mesh
     this%contact_penalty = contact_penalty
 
+    allocate(this%list)
     call this%list%init(params, stat, errmsg)
     if (stat /= 0) return
     call this%face_list%init(mesh, this%list)
@@ -97,9 +98,9 @@ contains
     call this%node_list%init(mesh, ig, this%face_list)
     if (stat /= 0) return
 
-    call this%displacement1n%init(this%node_list, this%list)
-    call this%displacement2n%init(this%node_list, this%list)
-    call this%displacement3n%init(this%node_list, this%list)
+    call this%displacement1n%init(mesh, this%node_list, this%list)
+    call this%displacement2n%init(mesh, this%node_list, this%list)
+    call this%displacement3n%init(mesh, this%node_list, this%list)
     !call this%contact1%init(node_list, list)
 
     ! call this%face_displacement%init(mesh, params, 'displacement', stat, errmsg)

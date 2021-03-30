@@ -44,6 +44,8 @@ contains
     integer :: i, j, k, n, nface, bcid
     integer, allocatable :: nbc(:)
 
+    this%nbc = size(bc_list%displacement) + size(bc_list%contact)
+
     ! 1. Count the BCs on each face
     allocate(nbc(mesh%nface))
     nbc = 0
