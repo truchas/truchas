@@ -33,17 +33,6 @@ MODULE DRIVERS
   ! Public Procedures
   public :: CODE
 
-  ! Copyright Notice
-  character (LEN=string_len), dimension(8),target :: copyright = [                       &
-     '   Copyright 2007-2020.  Triad National Security, LLC.  All rights reserved.     ', &
-     '                                                                                 ', &
-     '   This program was produced under U.S. Government contract 89233218CNA000001    ', &
-     '   for Los Alamos National Laboratory (LANL), which is operated by Triad         ', &
-     '   National Security, LLC for the U.S. Department of Energy/National Nuclear     ', &
-     '   Security Administration.                                                      ', &
-     '                                                                                 ', &
-     '   Truchas is open source software distributed under the 3-Clause BSD License.   ']
-
   logical :: mem_on = .false.
 
 CONTAINS
@@ -96,9 +85,6 @@ CONTAINS
     ! announce
     call ANNOUNCE ('PROGRAM INFORMATION')
     call PROGRAM_SPECIFICATIONS ()
-
-    call ANNOUNCE ('COPYRIGHT')
-    call TLS_info (copyright)
 
     ! open the danu output file
     call TDO_open
