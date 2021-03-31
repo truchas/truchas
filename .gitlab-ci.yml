@@ -40,7 +40,7 @@ test truchas intel (Release):
     - cd build
     - export INTELDIR=/opt/intel/
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
-    - ctest --output-on-failure
+    - ctest --repeat until-pass:2 --output-on-failure
 
 test truchas intel (Debug):
   stage: build
@@ -54,7 +54,7 @@ test truchas intel (Debug):
     - cd build
     - export INTELDIR=/opt/intel/
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
-    - ctest --output-on-failure
+    - ctest --repeat until-pass:2 --output-on-failure
 
 test truchas binary (Ubuntu 18.04):
   stage: test
