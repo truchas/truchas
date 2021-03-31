@@ -431,6 +431,7 @@ call hijack_truchas ()
 
     call version(version_str)
 
+    call TLS_info ('')
     call TLS_info ('   code:                ' // 'Truchas ' // version_str)
     call TLS_info ('   build architecture:  ' // ARCHITECTURE)
     call TLS_info ('   build date/time:     ' // BUILD_DATE)

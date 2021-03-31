@@ -54,7 +54,8 @@ CONTAINS
     type (BC_Region),   POINTER :: Region
     !
     ! Announce what is going on
-    call TLS_info (' Initializing Displacement Boundary Conditions ')
+    call TLS_info ('')
+    call TLS_info ('Initializing displacement boundary conditions ...')
     !
     ! Initialize the BC specifier
     call INITIALIZE(Displacement_BC, 'Displacement', BC_DISPLACEMENT_ID)
@@ -223,8 +224,7 @@ CONTAINS
     end select
     !
     if (f == 1) then
-       call TLS_info ('', TLS_VERB_NOISY)
-       call TLS_info ('   Adding '//trim(BC_TYPE(n))//' operator ... ', .false., TLS_VERB_NOISY)
+       call TLS_info ('  adding '//trim(BC_TYPE(n))//' operator', TLS_VERB_NOISY)
     end if
     !
     ! Get the region
@@ -273,77 +273,66 @@ CONTAINS
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made X-traction atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_Y_TRACTION_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made Y-traction atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_Z_TRACTION_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made Z-traction atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_X_DISPLACEMENT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made X-displacement atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_Y_DISPLACEMENT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made Y-displacement atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_Z_DISPLACEMENT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made Z-displacement atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_NORM_DISPLACEMENT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made normal-displacement atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_NORM_TRACTION_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made normal-traction atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_FREE_INTERFACE_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made free interface atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_NORMAL_CONSTRAINT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made normal constraint atlas.', TLS_VERB_NOISY)
 
     Operator => BC_Spec_Get_Operator(Displacement_BC, BC_CONTACT_OP)
     Region => BC_OP_Get_Region(Operator)
     Atlas => BC_OP_Get_Atlas(Operator)
     call BC_Atlas_From_Region(ATLAS = Atlas, REGION = Region)
     call CANONICALIZE(Atlas)
-    call TLS_info (' Made contact atlas.', TLS_VERB_NOISY)
 
   end SUBROUTINE Make_Displacement_BC_Atlases
   !

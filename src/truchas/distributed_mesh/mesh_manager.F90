@@ -153,7 +153,7 @@ contains
 #else
           call plist%set ('mesh', any_mesh(smesh))
 #endif
-          call smesh%write_profile
+          if (TLS_verbosity >= TLS_VERB_NOISY) call smesh%write_profile
         else
           umesh => new_unstr_mesh(plist, stat, errmsg)
           if (stat /= 0) call TLS_fatal (errmsg)
@@ -163,7 +163,7 @@ contains
 #else
           call plist%set ('mesh', any_mesh(umesh))
 #endif
-          call umesh%write_profile
+          if (TLS_verbosity >= TLS_VERB_NOISY) call umesh%write_profile
           call umesh%check_bndry_face_set
 #ifdef DEBUG_MESH
           call gmv_open (piter%name()//'.gmv')
@@ -171,7 +171,7 @@ contains
           call gmv_close
 #endif
         end if
-        call TLS_info ('  Mesh "' // trim(piter%name()) // '" initialized')
+        call TLS_info ('  mesh "' // trim(piter%name()) // '" initialized', TLS_VERB_NOISY)
         call stop_timer('mesh-'//piter%name())
       end if
       call piter%next

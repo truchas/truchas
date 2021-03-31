@@ -155,7 +155,7 @@ contains
     !! Create internal interfaces from gap element blocks.
     if (is_IOP) then
       if (params%is_parameter('gap-element-block-ids')) then
-        call TLS_info('  processing gap element blocks', TLS_VERB_NORMAL)
+        call TLS_info('  processing gap element blocks', TLS_VERB_NOISY)
         call params%get('gap-element-block-ids', ebid)
         call convert_cells_to_links(mesh, ebid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing gap element blocks: ' // errmsg
@@ -169,7 +169,7 @@ contains
     !! Create internal interfaces from side sets.
     if (is_IOP) then
       if (params%is_parameter('interface-side-set-ids')) then
-        call TLS_info('  processing interface side sets', TLS_VERB_NORMAL)
+        call TLS_info('  processing interface side sets', TLS_VERB_NOISY)
         call params%get('interface-side-set-ids', ssid)
         call create_internal_interfaces(mesh, ssid, stat, errmsg)
         if (stat /= 0) errmsg = 'error processing interface side sets: ' // errmsg
@@ -225,7 +225,7 @@ contains
 
     !! Generate the cell and link neighbor arrays.
     if (is_IOP) then
-      call TLS_info('  finding cell neighbors', TLS_VERB_NORMAL)
+      call TLS_info('  finding cell neighbors', TLS_VERB_NOISY)
       call get_cell_neighbor_array(xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
@@ -238,7 +238,7 @@ contains
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh cells', TLS_VERB_NORMAL)
+      call TLS_info('  partitioning the mesh cells', TLS_VERB_NOISY)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
       call params%get('partitioner', string, default='chaco')
@@ -285,7 +285,7 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NORMAL)
+      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NOISY)
       call partition_facets(xcnode, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder (mesh%coord, node_perm)
@@ -313,7 +313,7 @@ contains
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
-      call TLS_info('  numbering the mesh faces', TLS_VERB_NORMAL)
+      call TLS_info('  numbering the mesh faces', TLS_VERB_NOISY)
       call label_mesh_faces(xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
       !! Extract the relative face orientation info.
       cfpar = 0
@@ -330,7 +330,7 @@ contains
         end associate
       end do
       !! Partition and order the faces.
-      call TLS_info('  partitioning the mesh faces', TLS_VERB_NORMAL)
+      call TLS_info('  partitioning the mesh faces', TLS_VERB_NOISY)
       allocate(perm(nface))
       call partition_facets(xcface, cface, cell_psize, face_psize, perm)
       call invert_perm(perm)
@@ -348,14 +348,14 @@ contains
 
     !! Identify off-process ghost cells to include with each partition.
     call start_timer('ghost-cells')
-    call TLS_info('  identifying off-process ghost cells', TLS_VERB_NORMAL)
+    call TLS_info('  identifying off-process ghost cells', TLS_VERB_NOISY)
     call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
     call stop_timer('ghost-cells')
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
-    call TLS_info('  generating parallel mesh structure')
+    call TLS_info('  generating parallel mesh structure', TLS_VERB_NOISY)
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.

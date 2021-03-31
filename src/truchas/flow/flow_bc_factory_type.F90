@@ -71,10 +71,10 @@ contains
 
     allocate(bff)
     call bff%init(this%mesh, bndry_only=.false.)
-    call TLS_info('Generating velocity boundary condition for "velocity" type')
+    call TLS_info('  generating velocity boundary condition for "velocity" type')
     call this%iterate_list('velocity', proc1, stat, errmsg)
     if (stat /= 0) return
-    call TLS_info('Generating velocity boundary condition for "no-slip" type')
+    call TLS_info('  generating velocity boundary condition for "no-slip" type')
     call this%iterate_list('no-slip', proc2, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete
@@ -130,11 +130,11 @@ contains
     allocate(bff)
     call bff%init(this%mesh, bndry_only=.false.)
 
-    call TLS_info('Generating velocity boundary condition for "free-slip" type')
+    call TLS_info('  generating velocity boundary condition for "free-slip" type')
     call this%iterate_list('free-slip', proc, stat, errmsg)
     if (stat /= 0) return
 
-    call TLS_info('Generating velocity boundary condition for "marangoni" type')
+    call TLS_info('  generating velocity boundary condition for "marangoni" type')
     call this%iterate_list('marangoni', proc, stat, errmsg)
     if (stat /= 0) return
 
@@ -178,7 +178,7 @@ contains
 
     allocate(bff)
     call bff%init(this%mesh, bndry_only=.false.)
-    call TLS_info('Generating pressure boundary condition for "pressure" type')
+    call TLS_info('  generating pressure boundary condition for "pressure" type')
     call this%iterate_list('pressure', proc, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete
@@ -221,16 +221,16 @@ contains
 
     allocate(bff)
     call bff%init(this%mesh, bndry_only=.false.)
-    call TLS_info('Generating pressure boundary condition for "velocity" type')
+    call TLS_info('  generating pressure boundary condition for "velocity" type')
     call this%iterate_list('velocity',  proc, stat, errmsg)
     if (stat /= 0) return
-    call TLS_info('Generating pressure boundary condition for "no-slip" type')
+    call TLS_info('  generating pressure boundary condition for "no-slip" type')
     call this%iterate_list('no-slip',   proc, stat, errmsg)
     if (stat /= 0) return
-    call TLS_info('Generating pressure boundary condition for "free-slip" type')
+    call TLS_info('  generating pressure boundary condition for "free-slip" type')
     call this%iterate_list('free-slip', proc, stat, errmsg)
     if (stat /= 0) return
-    call TLS_info('Generating pressure boundary condition for "marangoni" type')
+    call TLS_info('  generating pressure boundary condition for "marangoni" type')
     call this%iterate_list('marangoni', proc, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete
@@ -282,7 +282,7 @@ contains
       call plist%get('type', this_type, stat=stat, errmsg=errmsg)
       if (stat /= 0) exit
       if (lower_case(this_type) == type) then  ! use this sublist
-        call TLS_info('  using FLOW_BC[' // piter%name() // ']')
+        call TLS_info('    using FLOW_BC[' // piter%name() // ']')
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
         call proc(plist, setids, stat, errmsg)

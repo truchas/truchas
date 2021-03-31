@@ -205,6 +205,9 @@ contains
     plist => params%sublist('volume-tracker')
     call vtrack_driver_init(plist)
 
+    call TLS_info('')
+    call TLS_info('Initializing fluid flow solver ...')
+
     this%mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(this%mesh))
     call this%mesh%init_cell_centroid

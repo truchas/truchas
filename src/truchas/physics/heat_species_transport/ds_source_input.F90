@@ -264,7 +264,7 @@ contains
     character(len=127) :: errmsg
     type(list_node), pointer :: l
 
-    call TLS_info ('  Generating external source for "' // trim(equation) // '" equation')
+    call TLS_info ('  generating external source for "' // trim(equation) // '" equation')
     call smf_prep (q, mesh)
 
     l => list

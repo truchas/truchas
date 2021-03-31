@@ -506,7 +506,7 @@ contains
       INSIST(.false.)
     end select
 
-    call TLS_info ('  Diffusion solver initialized.')
+    call TLS_info ('  diffusion solver initialized')
 
   contains
 

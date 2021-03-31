@@ -72,6 +72,7 @@ contains
     integer :: ios, lun
 
     call start_timer ('Input')
+    call TLS_info ('')
     call TLS_info ('Opening input file ' // trim(infile) // ' ...')
 
     ! open input file
@@ -128,8 +129,8 @@ contains
       call read_viscoplastic_model_namelists (lun)
     end if
 
-    ! read bc specifications
-    call bc_input (lun)
+    ! read bc specifications (only relevant now to solid mechanics)
+    if (solid_mechanics) call bc_input (lun)
 
     ! Read Electromagnetics
     if (em_is_on()) call read_em_input (lun)

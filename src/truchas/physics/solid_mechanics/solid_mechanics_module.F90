@@ -233,6 +233,9 @@ Contains
     ! If not calculating solid mechanics, then skip the rest
     If (.not. solid_mechanics) Return
 
+    call TLS_info('')
+    call TLS_info('Initializing solid mechanics solver ...')
+
     ! Initialize the solid mechanics mesh pointer (NOT YET)
     !call SM_MESH_INIT
 
@@ -319,7 +322,7 @@ Contains
 
        ! Solve for the initial elastic stress, strain and strain rate fields
        call TLS_info ('')
-       call TLS_info (' Calculating initial thermo-elastic state.', advance=.false.)
+       call TLS_info ('Calculating initial thermo-elastic state ...')
 
        call compute_cell_property('tm-ref-density', zone%temp, tm_dens_old)
        where (gap_cell_mask) tm_dens_old = 1.0
@@ -396,13 +399,10 @@ Contains
        ! Cell centered plastic strain rate
        call viscoplastic_strain_rate (Eff_Stress_Cell_old, zone%temp, SMech_Cell%Plastic_Strain_Rate)
 
-       call TLS_info (' Done.')
-
        call stop_timer("Solid Mechanics")
 
 !       thermo_elastic_iterations   = NKuser(NK_DISPLACEMENT)%linear_tot
 !       viscoplastic_iterations = NKuser(NK_DISPLACEMENT)%Newton_tot
-       call TLS_info ('')
        write(message,'(5x,i0,a)') thermo_elastic_iterations, ' Thermo-elastic iterations (linear)'
        call TLS_info (message)
        write(message,'(5x,i0,a)') viscoplastic_iterations, ' Thermo-elastic iterations (nonlinear)'

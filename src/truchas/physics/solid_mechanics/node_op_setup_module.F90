@@ -373,8 +373,7 @@ CONTAINS
     logical                               :: pivot = .true.
 
     ! Inform the user of control volume face calculation.
-    call TLS_info ('')
-    call TLS_info (' Finding control volume faces internal to cells ... ')
+    call TLS_info ('  finding control volume faces internal to cells', TLS_VERB_NOISY)
     ! Define vertex coordinates for logical cell
     Xlc(1,1) = 1.0_r8; Xlc(1,2) = 0.0_r8; Xlc(1,3) = 0.0_r8
     Xlc(2,1) = 1.0_r8; Xlc(2,2) = 1.0_r8; Xlc(2,3) = 0.0_r8
@@ -548,8 +547,7 @@ CONTAINS
     call EN_SUM_Scatter(Nodal_Volume,Cell_Vertex_Volume)
     !
 
-    call TLS_info ('')
-    call TLS_info (' Finding jacobians ... ')
+    call TLS_info ('  computing jacobians', TLS_VERB_NOISY)
     do n=1,ncells
        ! How are other derived types initialized??
        CV_Internal%Face_Ijac(:,:,:,n)=0.0_r8
@@ -565,8 +563,7 @@ CONTAINS
                call LINEAR_GRAD(nipc,CV_Internal%Face_Coord(:,:,n),Xlt(:,:,n),jac(i,:,:,n))
        end do
     end do
-    call TLS_info ('')
-    call TLS_info (' Inverting jacobians ... ')
+    call TLS_info ('  inverting jacobians', TLS_VERB_NOISY)
     do n = 1,ncells
        ! Leave gap elements set to [I]
        if (Mesh(n)%Cell_Shape < GAP_ELEMENT_1) then
@@ -598,8 +595,6 @@ CONTAINS
     if (.not. stress_reduced_integration) then
        deallocate(jac)
     end if
-    ! Inform the user of successful geometry computation.
-    call TLS_info ('done.')
   END SUBROUTINE CELL_CV_FACE
 
   !---------------------------------------------------------------------------------
@@ -637,9 +632,7 @@ CONTAINS
 
     !
     ! Inform the user of control volume face calculation.
-    call TLS_info ('')
-    call TLS_info (' Finding control volume faces on external boundaries ...')
-    call TLS_info ('')
+    call TLS_info ('  finding control volume faces on external boundaries', TLS_VERB_NOISY)
     ! Create temporary arrays
     allocate(Xv(ndim,nvc,ncells), stat=status)
     if (status /= 0) call TLS_panic ('BOUNDARY_CV_FACE: allocation error: Xv')
@@ -760,9 +753,6 @@ CONTAINS
 
     ! Calculate new vectors for combined normal constraint nodel BCs
     CALL DISPLACEMENT_CONSTRAINT_VECTORS()
-
-    ! Inform the user of successful geometry computation.
-    call TLS_info ('done.')
 
   END SUBROUTINE BOUNDARY_CV_FACE
 
@@ -1665,9 +1655,7 @@ CONTAINS
                       if (.not. found_node) then
                          GNode(nnum) = nnum
                          found_node = .true.
-                         call TLS_info ('')
-                         call TLS_info (' Node found at edge of internal gap interface.')
-                         call TLS_info ('')
+                         call TLS_info ('  node found at edge of internal gap interface.')
                       end if
                    end if
                 end do GAP_NODE
