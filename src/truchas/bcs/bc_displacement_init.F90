@@ -223,7 +223,7 @@ CONTAINS
     end select
     !
     if (f == 1) then
-       call TLS_info ('')
+       call TLS_info ('', TLS_VERB_NOISY)
        call TLS_info ('   Adding '//trim(BC_TYPE(n))//' operator ... ', .false., TLS_VERB_NOISY)
     end if
     !
