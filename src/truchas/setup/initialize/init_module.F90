@@ -134,24 +134,9 @@ CONTAINS
     ! Initialize Zone%Rho and Zone%Temp
     call ZONE_INIT (mesh, Hits_Vol)
 
-    ! [sriram] End of original restart if condition
+    if (solid_mechanics) call BC_INIT()
 
-    ! Initialize BC quantities.
-    ! Must be called before FLUID_INIT as Pressure_BC is required
-    ! for the flow restart when a non-ortho operator is used.
-    call BC_INIT()
-
-    if (flow) then
-      call flow_driver_init
-!    else if (legacy_flow) then
-!      !! NNC, December 2012.  Flow initialization is really messed up.  It does
-!      !! necessary stuff even when flow is inactive.  The work of ensuring the
-!      !! relevant properties are defined belongs there but for now it's here so
-!      !! it doesn't get lost in the mess that is fluid_init.  It needs to be done
-!      !! always because fluid_init uses its results regardless of whether flow is on.
-!      call flow_property_init
-!      call FLUID_INIT (t)
-    end if
+    if (flow) call flow_driver_init
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
     call OVERWRITE_MATL ()
@@ -289,39 +274,23 @@ CONTAINS
     !
     !   Initialize boundary condition quantities in the BC structure.
     !=======================================================================
-    use bc_data_module,         only: BC_Type, BC_Name,                                  &
-                                      BC_Value, BC_Table, BC_Variable, Inflow_Material,  &
-                                      Inflow_Index, nbc_surfaces, BC_Pressure,           &
-                                      BC_Conc, BC_Prs, BC_Mat, bndry_vel, BC_Temp, BC_Zero, & !BC_Vel
-                                      Conic_XX, Conic_YY,                                &
-                                      Conic_ZZ, Conic_XY, Conic_XZ, Conic_YZ, Conic_X,   &
-                                      Conic_Y, Conic_Z, Conic_Constant, Conic_Tolerance, &
-                                      Bounding_Box, Inflow_Temperature,                  &
-                                      Surface_Name,                                      &
-                                      Conic_Relation, Surfaces_In_This_BC,               &
-                                      Mesh_Surface
-    use bc_module,              only: DIRICHLET, FREE_SLIP, DIRICHLET_VEL,               &
-                                      SET_DIRICHLET, NEUMANN_VEL,                        &
-                                      SET_NO_VEL_BC, SET_FREE_SLIP, SET_DIRICHLET_VEL,   &
-                                      SET_INTERNAL_BC, SET_NEUMANN, SET_NEUMANN_VEL,     &
-                                      BC, InitializeBoundaryConditions, Prs, Vel
+    use bc_data_module,         only: BC_Type, BC_Name, BC_Variable, nbc_surfaces,          &
+                                      Conic_XX, Conic_YY, Conic_ZZ, Conic_XY, Conic_XZ,     &
+                                      Conic_YZ, Conic_X, Conic_Y, Conic_Z, Conic_Constant,  &
+                                      Conic_Tolerance, Bounding_Box, Surface_Name,          &
+                                      Conic_Relation, Surfaces_In_This_BC, Mesh_Surface
     use bc_operations
     use bc_displacement_init,   only: Initialize_Displacement_BC, Node_Set_BC_Init,         &
                                       append_to_displacement_bc,                            &
                                       Make_Displacement_BC_Atlases, Interface_Surface_Id
-    use bc_pressure_init,       only: Initialize_Pressure_BC
-    use input_utilities,        only: NULL_I, NULL_R
     use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
     use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
     use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
     use solid_mechanics_input,  only: solid_mechanics
-    use physics_module,         only: heat_transport
-    use string_utilities,       only: i_to_c
-    use vector_func_factories
 
     ! Local Variables
-    integer                              :: bit_position, f, n, nf, p, &
-                                                             m, c, mat1, mat2, set1, nssets
+    integer                              :: f, n, nf, p, &
+                                                             c, set1, nssets
     logical, dimension(:),   allocatable :: Mask1, Mask2
     logical, dimension(:,:), allocatable :: Disp_Mask
     logical, dimension(:,:), allocatable :: Found_Faces
@@ -335,7 +304,6 @@ CONTAINS
     real(r8), dimension(:),   allocatable :: Tmp1, Tmp2
     integer :: istatus
     character(128) :: message
-    class(vector_func), pointer :: vel_func
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
@@ -358,12 +326,6 @@ CONTAINS
     !  the parallel data structures yet
     nssets      = 0
 
-    ! Nullify the pointers to BC arrays, and then initialize
-    !NULLIFY (BC_Vel, BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
-    NULLIFY (BC_Mat, BC_Prs, BC_Conc, BC_Temp, BC_Zero, BC_Pressure)
-
-    BC_Prs => BC_Pressure
-
     ! Thermo-mechanics bcs are handled differently using the "new" bc stuff
     ! We still use the face and bc surface loops to get the masks for each surface
     ! specified in the bc namelists
@@ -372,54 +334,6 @@ CONTAINS
     ! displayed.
 !    if (solid_mechanics) call Initialize_Displacement_BC
     call Initialize_Displacement_BC
-
-    ! Initialize BC flag variables - heat transfer, concentration, fluid flow
-    call InitializeBoundaryConditions (.true., .false., .false.)
-
-    ! Initialize velocity BC's; default is a no-BC condition (for internal
-    ! faces);  we set mesh boundary faces to free-slip
-    do f = 1,nfc
-       bit_position = Vel%Face_bit(f)
-       Mask1 = .false.
-       where (Mesh%Ngbr_Face(f) == 0) Mask1 = .true.
-       call SET_FREE_SLIP (Mask1, BC%Flag, bit_position)
-    end do
-    !dirichlet_pressure = .false.
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !! NNC, Jan 2014.  New code to handle time-dependent velocity Dirichlet BC
-    !! Here we create and store functions that return the Dirichlet velocity
-    !! data specified in the BC namelist using either the BC_Value or BC_Table
-    !! arrays.  If anything was specified for BC_Table, we use it to define a
-    !! time-dependent tabular function; otherwise we define a constant function
-    !! using BC_value.
-    call bndry_vel%init (ncells, nbc_surfaces)
-    do p = 1, nbc_surfaces
-      if (BC_Variable(p) == 'velocity' .and. BC_Type(p) == 'dirichlet') then
-        if (any(BC_Table(:,:,p) /= NULL_R)) then  ! time-dependent
-          !! work out the size of the table read from the input file.
-          do n = 1, size(BC_Table,dim=2)
-            if (any(BC_Table(:,n,p) == NULL_R)) exit
-          end do
-          m = n - 1 ! table size
-          if (any(BC_Table(:,m+1:,p) /= NULL_R)) &
-              call TLS_fatal (' Badly specified BC_Table array for BC namelist '// i_to_c(p))
-          do n = 2, m
-            if (BC_Table(1,n,p) <= BC_Table(1,n-1,p)) &
-                call TLS_fatal ('BC_Table time values not in ascending order')
-          end do
-          vel_func => new_tabular_vector_func(BC_Table(1,:m,p), BC_Table(2:,:m,p))
-        else  ! constant using BC_Value (first three elements)
-          vel_func => new_const_vector_func(BC_Value(:3,p))
-        end if
-        call bndry_vel%set_vel_func (p, vel_func)
-      end if
-    end do
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    ! Write notice
-    call TLS_info ('')
-    call TLS_info (' Locating cell faces for which BCs are to be applied ...')
 
     ! Initialize relevant quantities
     Found_Faces = .true.
@@ -527,23 +441,6 @@ CONTAINS
                    end if
                 end select
 
-          ! if velocity or pressure, dirichlet or neumann, assign inflow material,
-          ! temperature & concentration, if provided
-
-          if ((BC_Variable(p) == 'velocity' .or. BC_Variable(p) == 'pressure') .and. &
-              (BC_Type(p) == 'dirichlet' .or. BC_Type(p) == 'neumann')) then
-
-             where (Mask1) BC_Mat(f,:) = matl_model%phase_index(Inflow_Material(Inflow_Index(p)))
-             where (Mask1 .and. BC_Mat(f,:) == 0) BC_Mat(f,:) = NULL_I
-
-             if (heat_transport) then
-                where (Mask1) BC_Temp(f,:) = Inflow_Temperature(Inflow_Index(p))
-             end if
-
-             !FIXME: need inflow species concentrations.
-
-          end if
-
           ! Print out how many cells were affected by this BC
           n = PGSLib_Global_COUNT(Mask1)
           if (n > 0) then
@@ -559,13 +456,8 @@ CONTAINS
 
                 write (message, 20) n, f, p
 20              format (i6,' interior #',i1,' faces are affected by BC namelist ',i2,'!')
-                call TLS_warn (message)
+                !call TLS_warn (message)
                 Mask1 = Mask1 .and. Mesh%Ngbr_cell(f) /= 0
-                ! don't do this for temperature or displacement...
-                if (BC_Variable(p) /= 'temperature' .and. &
-                    BC_Variable(p) /= 'displacement') then
-                   call SET_INTERNAL_BC (Mask1, BC%Internal, bit_position)
-                end if
 
              end if
 
@@ -589,56 +481,11 @@ CONTAINS
           write(message,'(a,i0,2a)') 'BC_INIT: found no faces for BC namelist ', p, ' named ', trim(BC_Name(p))
           call TLS_fatal (message)
 
-       else
-
-          if (p == 1) call TLS_info ('')
-          write (message, 11) p, Area(p), Faces(p)
-11           format (4x,'Boundary conditions in BC namelist ',i2,' will be applied on an area of ', &
-                  1pe13.5,' (',i6,' faces)')
-          call TLS_info (message)
-
        end if
 
     end do BC_SURFACE_CHECK
 
-    ! Make sure that faces don't have both a pressure dirichlet condition and some
-    ! velocity BC assigned
-    VEL_PRS_CONSISTENCY_CHECK: do f = 1,nfc
-
-       Mask1 = DIRICHLET (BC%Flag, Prs%Face_bit(f))
-       Mask2 = FREE_SLIP (BC%Flag, Vel%Face_bit(f)) .or.     &
-               DIRICHLET_VEL (BC%Flag, Vel%Face_bit(f)) .or. &
-               NEUMANN_VEL (BC%Flag, Vel%Face_bit(f))
-       if (ANY (Mask1 .and. Mask2)) then
-          call TLS_fatal ('BC_INIT: faces found with both velocity and pressure BCs assigned')
-       end if
-
-    end do VEL_PRS_CONSISTENCY_CHECK
-
-    ! Setup the "New" BCs.  Temperature always is used.  Pressure only with new pressure BCs.
-    ! Always setup pressure BCs, since need them for the discrete operators.
-    call Initialize_Pressure_BC(Pressure_BC)
     if (solid_mechanics) call Make_Displacement_BC_Atlases
-
-    !  Should we DEALLOCATE BC_T at this point?   JMS
-
-    ! Write notice
-    call TLS_info ('')
-    call TLS_info (' Finished BC initialization.')
-    DEALLOCATE(Mask1,        &
-               Mask2,        &
-               Disp_Mask,    &
-               Found_Faces,  &
-               Coeff_XX,     &
-               Coeff_X,      &
-               Area,         &
-               Faces,        &
-               tmp_r2,       &
-               Tmp_BC,       &
-               Tmp1,         &
-               Tmp2)
-
-     if (nssets.gt.0) DEALLOCATE(Ngbr_Mesh_Face_Set)
 
   END SUBROUTINE BC_INIT
 
