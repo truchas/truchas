@@ -56,8 +56,7 @@ contains
     if (.not.altmesh_exists) return
 
     !! Read the ALTMESH namelist, assigning default values first.
-    call TLS_info ('')
-    call TLS_info ('Reading ALTMESH Namelist ...')
+    call TLS_info ('Reading ALTMESH namelist ...')
     if (is_IOP) then
       altmesh_file = NULL_C
       altmesh_coordinate_scale_factor = 1.0_r8

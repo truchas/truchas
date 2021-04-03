@@ -82,8 +82,7 @@ contains
     if (.not.found) return
 
     !! Read the namelist; variables not read retain their default value.
-    call TLS_info ('')
-    call TLS_info (' Reading PHYSICAL_CONSTANTS namelist ...')
+    call TLS_info ('Reading PHYSICAL_CONSTANTS namelist ...')
     if (is_IOP) read(lun,nml=physical_constants,iostat=ios,iomsg=iom)
     call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error reading PHYSICAL_CONSTANTS namelist: ' // trim(iom))

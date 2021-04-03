@@ -189,7 +189,7 @@ CONTAINS
 
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
-    call restart_ustruc
+    if (restart) call restart_ustruc
 
     ! Initialize probes.
     call probes_init

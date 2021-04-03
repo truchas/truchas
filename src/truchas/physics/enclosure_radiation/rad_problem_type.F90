@@ -145,7 +145,7 @@ contains
       write(string,'(11x,a)') 'Perhaps an internal interface should have been defined?'
       call TLS_info (trim(string))
       deallocate(setids)
-      call TLS_fatal ('Error initializing enclosure radiation problem "' // trim(name) // '"')
+      call TLS_fatal ('error initializing enclosure radiation problem "' // trim(name) // '"')
     end if
 
     !! Create the parallel permutations between the HC and ER partitions.

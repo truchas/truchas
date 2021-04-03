@@ -49,7 +49,6 @@ contains
         temp, temp_func, flux, flux_func, htc, htc_func, ambient_temp, ambient_temp_func, &
         emissivity, emissivity_func
 
-    call TLS_info('')
     call TLS_info('Reading THERMAL_BC namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -234,7 +233,10 @@ contains
 
       end select
 
+      call TLS_info('  read namelist "' // trim(name) // '"')
     end do
+
+    if (n == 0) call TLS_info('  none found')
 
   end subroutine read_thermal_bc_namelists
 

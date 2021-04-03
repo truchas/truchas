@@ -58,7 +58,6 @@ contains
     call broadcast(found)
     if (.not.found) return
 
-    call TLS_info('')
     call TLS_info('Reading DED_HEAD namelist ...')
 
     !! Read the namelist.

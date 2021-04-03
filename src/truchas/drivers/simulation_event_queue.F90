@@ -176,12 +176,11 @@ contains
       call seek_to_namelist(lun, 'SIMULATION_CONTROL', found, iostat=ios)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+    if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
 
     call broadcast(found)
     if (.not.found) return
 
-    call TLS_info('')
     call TLS_info('Reading SIMULATION_CONTROL namelist ...')
 
     !! Read the namelist.

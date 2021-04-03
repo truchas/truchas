@@ -51,6 +51,7 @@ contains
     character(31) :: name
     character(256) :: command_file
     character(1000) :: command_string
+    character(:), allocatable :: label
     real(r8) :: start_time, start_coord(3), time_scale_factor, coord_scale_factor
     real(r8) :: plotfile_dt, partition_ds
     logical :: write_plotfile
@@ -58,7 +59,6 @@ contains
     namelist /toolpath/ name, start_time, start_coord, time_scale_factor, coord_scale_factor, &
                         command_string, command_file, write_plotfile, plotfile_dt, partition_ds
 
-    call TLS_info('')
     call TLS_info('Reading TOOLPATH namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -71,10 +71,10 @@ contains
       if (ios /= 0) call TLS_fatal('error reading input file')
 
       call broadcast(found)
-      if (.not.found) return  ! no further TOOLPATH namelists found
+      if (.not.found) exit  ! no further TOOLPATH namelists found
 
       n = n + 1
-      call TLS_info('  Reading TOOLPATH namelist #' // i_to_c(n))
+      label = 'TOOLPATH[' // i_to_c(n) // ']'
 
       !! Read the namelist variables, assigning default values first.
       if (is_IOP) then
@@ -91,7 +91,7 @@ contains
         read(lun,nml=toolpath,iostat=ios,iomsg=iom)
       end if
       call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('error reading TOOLPATH namelist: ' // trim(iom))
+      if (ios /= 0) call TLS_fatal('error reading ' // label // ' namelist: ' // trim(iom))
 
       !! Broadcast the namelist variables.
       call broadcast(name)
@@ -107,15 +107,15 @@ contains
 
       !! Check the name.
       if (name == NULL_C .or. name == '') &
-          call TLS_fatal('NAME must be assigned a nonempty value')
+          call TLS_fatal(label // ': NAME must be assigned a nonempty value')
       if (known_toolpath(name)) &
-          call TLS_fatal('already read a TOOLPATH namelist with this name: ' // trim(name))
+          call TLS_fatal(label // ': another TOOLPATH namelist has this NAME: ' // trim(name))
 
       !! Check that we got either COMMAND_STRING or COMMAND_FILE, but not both.
       if (command_string == NULL_C .and. command_file == NULL_C) &
-          call TLS_fatal('either COMMAND_STRING or COMMAND_FILE must be specified')
+          call TLS_fatal(label // ': either COMMAND_STRING or COMMAND_FILE must be specified')
       if (command_string /= NULL_C .and. command_file /= NULL_C) &
-          call TLS_fatal('cannot specify both COMMAND_STRING and COMMAND_FILE')
+          call TLS_fatal(label // ': cannot specify both COMMAND_STRING and COMMAND_FILE')
 
       !! Adjust the file path and check it is accessible.
       if (command_file /= NULL_C) then
@@ -124,37 +124,40 @@ contains
         end if
         if (is_IOP) inquire(file=trim(command_file),exist=found)
         call broadcast(found)
-        if (.not.found) call TLS_fatal('COMMAND_FILE not found: ' // trim(command_file))
+        if (.not.found) call TLS_fatal(label // ': COMMAND_FILE not found: ' // trim(command_file))
       end if
 
       !! Check scaling factors if specified
       if (time_scale_factor /= NULL_R) then
-        if (time_scale_factor <= 0) call TLS_fatal('TIME_SCALE_FACTOR must be > 0')
+        if (time_scale_factor <= 0) call TLS_fatal(label // ': TIME_SCALE_FACTOR must be > 0')
       end if
       if (coord_scale_factor /= NULL_R) then
-        if (coord_scale_factor <= 0) call TLS_fatal('COORD_SCALE_FACTOR must be > 0')
+        if (coord_scale_factor <= 0) call TLS_fatal(label // ': COORD_SCALE_FACTOR must be > 0')
       end if
 
       !! Check START_COORD is complete if specified
       if (any(start_coord /= NULL_R)) then
-        if (any(start_coord == NULL_R)) call TLS_fatal('START_COORD not completely specified')
+        if (any(start_coord == NULL_R)) call TLS_fatal(label // ': START_COORD not completely specified')
       end if
 
       !! Check PLOTFILE_DT if needed
       if (write_plotfile) then
-        if (plotfile_dt == NULL_R) call TLS_fatal('PLOTFILE_DT not specified')
-        if (plotfile_dt <= 0.0_r8) call TLS_fatal('PLOTFILE_DT must be > 0')
+        if (plotfile_dt == NULL_R) call TLS_fatal(label // ': PLOTFILE_DT not specified')
+        if (plotfile_dt <= 0.0_r8) call TLS_fatal(label // ': PLOTFILE_DT must be > 0')
         if (time_scale_factor /= NULL_R) plotfile_dt = time_scale_factor * plotfile_dt
       end if
 
       if (partition_ds /= NULL_R) then
-        if (partition_ds <= 0.0_r8) call TLS_fatal('PARTITION_DS must be > 0')
+        if (partition_ds <= 0.0_r8) call TLS_fatal(label // ': PARTITION_DS must be > 0')
         if (coord_scale_factor /= NULL_R) partition_ds = coord_scale_factor * partition_ds
       end if
 
+      call TLS_info('  read namelist "' // trim(name) // '"')
       call make_toolpath
 
     end do
+
+    if (n == 0) call TLS_info('  none found')
 
   contains
 

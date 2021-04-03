@@ -34,7 +34,6 @@ contains
     namelist /numerics/ alittle, cutvof, cycle_number, cycle_max, discrete_ops_type, &
         t, dt_constant, dt_init, dt_grow, dt_min, dt_max
 
-    call TLS_info('')
     call TLS_info('Reading NUMERICS namelist ...')
 
     !! Locate the NUMERICS namelist (required)

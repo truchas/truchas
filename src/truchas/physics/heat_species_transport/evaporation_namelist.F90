@@ -40,7 +40,6 @@ contains
     call broadcast(found)
     if (.not.found) return
 
-    call TLS_info('')
     call TLS_info('Reading EVAPORATION namelist ...')
 
     !! Read the namelist.

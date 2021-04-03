@@ -39,7 +39,6 @@ contains
     namelist /flow_bc/ name, face_set_ids, type, pressure, pressure_func, velocity, &
         velocity_func, dsigma, inflow_material, inflow_temperature
 
-    call TLS_info('')
     call TLS_info('Reading FLOW_BC namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -152,7 +151,10 @@ contains
         if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)
       end select
 
+      call TLS_info('  read namelist "' // trim(name) // '"')
     end do
+
+    if (n == 0) call TLS_info('  none found; using default')
 
   end subroutine read_flow_bc_namelists
 

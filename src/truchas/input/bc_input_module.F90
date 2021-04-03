@@ -404,7 +404,7 @@ CONTAINS
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical :: fatal, no_bc_namelist, found
+    logical :: fatal, found
     integer :: ios, bcs
     character(128) :: iom
     character(128) :: errmsg
@@ -423,10 +423,8 @@ CONTAINS
 
     ! Error Fatal Flag
     fatal = .false.
-    no_bc_namelist = .false.
 
     ! Read Notice
-    call TLS_info ('')
     call TLS_info ('Reading BC namelists ...')
 
     ! Rewind the input deck unit number.
@@ -469,15 +467,7 @@ CONTAINS
 
           ! Find the next BC namelist.
           call seek_to_namelist (lun, 'BC', found)
-          no_bc_namelist = .not.found
-
-          ! Read namelist or set defaults.
-          if (no_bc_namelist) then
-             if (nbc_surfaces == 0) then
-                call TLS_info ('BC namelists not found; using defaults.')
-             end if
-             exit BC_NAMELIST_LOOP
-          end if   
+          if (.not.found) exit
 
           nbc_surfaces = nbc_surfaces + 1
           label = 'BC[' // i_to_c(nbc_surfaces) // ']'
@@ -540,6 +530,15 @@ CONTAINS
 
     ! Error Check
     call TLS_fatal_if_any (fatal, 'terminating execution due to previous input errors')
+
+    select case (nbc_surfaces)
+    case (0)
+      call TLS_info('  none found; using defaults')
+    case (1)
+      call TLS_info('  read 1 BC namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(nbc_surfaces) // ' BC namelists')
+    end select
 
   END SUBROUTINE BC_INPUT
 

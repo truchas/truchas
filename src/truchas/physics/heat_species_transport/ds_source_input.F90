@@ -131,12 +131,12 @@ contains
 
     integer, intent(in) :: lun
 
+    integer :: n, ios
     logical :: found
-    integer :: n, stat
     class(scalar_func), allocatable :: srcf
-    character(len=7) :: label
+    character(:), allocatable :: label
     character(len=127) :: errmsg
-    character(128) :: iom
+    character(80) :: iom
 
     !! Namelist variables
     integer  :: cell_set_ids(MAX_CELL_SET_IDS)
@@ -144,81 +144,52 @@ contains
     character(len=MAX_NAME_LEN) :: equation, source_function
     namelist /ds_source/ equation, cell_set_ids, source_constant, source_function
 
-    call TLS_info ('')
     call TLS_info ('Reading DS_SOURCE namelists ...')
 
     if (is_IOP) rewind(lun)
-    n = 0 ! namelist counter
-    stat = 0
 
+    n = 0 ! namelist counter
     do ! until all DS_SOURCE namelists have been read or an error occurs.
 
-      n = n + 1
-      write(label,'(a,i0,a)') '  [', n, ']'
-
-      if (is_IOP) call seek_to_namelist (lun, 'DS_SOURCE', found, iostat=stat)
-
-      call broadcast (stat)
-      if (stat /= 0) then
-        errmsg = trim(label) // ' seek error, iostat=' // i_to_c(stat)
-        exit
-      end if
-
-      call broadcast (found)
+      if (is_IOP) call seek_to_namelist(lun, 'DS_SOURCE', found, iostat=ios)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
+      call broadcast(found)
       if (.not.found) exit
 
-      !! Read the namelist variables, assigning default values first.
-      if (is_IOP) then
-        equation      = NULL_C
-        cell_set_ids  = NULL_I
-        source_constant = NULL_R
-        source_function = NULL_C
-        read(lun,nml=ds_source,iostat=stat,iomsg=iom)
-      end if
+      n = n + 1
+      label = 'DS_SOURCE[' // i_to_c(n) // ']'
 
-      call broadcast (stat)
-      if (stat /= 0) then
-        errmsg = trim(label) // ' error reading DS_SOURCE namelist: ' // trim(iom)
-        exit
-      end if
+      equation = NULL_C
+      cell_set_ids = NULL_I
+      source_constant = NULL_R
+      source_function = NULL_C
 
-      !! Replicate the namelist variables on all processes.
-      call broadcast (equation)
-      call broadcast (cell_set_ids)
-      call broadcast (source_constant)
-      call broadcast (source_function)
+      if (is_IOP) read(lun,nml=ds_source,iostat=ios,iomsg=iom)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading ' // label // ' namelist: ' // trim(iom))
+
+      call broadcast(equation)
+      call broadcast(cell_set_ids)
+      call broadcast(source_constant)
+      call broadcast(source_function)
 
       !! Verify EQUATION was assigned a value.
-      if (equation == NULL_C) then
-        stat = -1
-        errmsg = trim(label) // ' error: no value assigned to EQUATION'
-        exit
-      end if
+      if (equation == NULL_C) call TLS_fatal(label // ': EQUATION not specified')
 
       !! Check for a non-empty CELL_SET_IDS.
-      if (count(cell_set_ids /= NULL_I) == 0) then
-        stat = -1
-        errmsg = trim(label) // 'error: no values assigned to CELL_SET_IDS'
-        exit
-      endif
+      if (count(cell_set_ids /= NULL_I) == 0) call TLS_fatal( label // ': CELL_SET_IDS no specified')
 
       !! Verify that only one of SOURCE_CONSTANT and SOURCE_FUNCTION were specified.
-      if (source_constant == NULL_R .eqv. source_function == NULL_C) then
-        stat = -1
-        errmsg = trim(label) // ' error: exactly one of SOURCE_CONSTANT and SOURCE_FUNCTION must be assigned a value'
-        exit
-      end if
+      if (source_constant == NULL_R .eqv. source_function == NULL_C) &
+          call TLS_fatal(label // ': neither SOURCE_CONSTANT or SOURCE_FUNCTION was specified')
 
       !! Create or get the source function.
       if (source_constant /= NULL_R) then
-        call alloc_const_scalar_func (srcf, source_constant)
+        call alloc_const_scalar_func(srcf, source_constant)
       else
-        call lookup_func (source_function, srcf)
-        if (.not.allocated(srcf)) then
-          stat = -1
-          errmsg = trim(label) // ' error: unknown function name: ' // trim(source_function)
-          exit
-        end if
+        call lookup_func(source_function, srcf)
+        if (.not.allocated(srcf)) call TLS_fatal(label // ': unknown function name: ' // trim(source_function))
       end if
 
       !! Append the data for this namelist to the list of namelist data.
@@ -231,20 +202,19 @@ contains
       end if
       last%seq = n
       last%equation = equation
-      call move_alloc (srcf, last%srcf)
+      call move_alloc(srcf, last%srcf)
       allocate(last%cell_set_ids(count(cell_set_ids /= NULL_I)))
       last%cell_set_ids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
-
-      call TLS_info (trim(label) // ' read source for "' // trim(equation) // '" equation')
-
     end do
 
-    if (stat /= 0) then
-      call TLS_info (trim(errmsg))
-      call TLS_fatal ('error reading DS_SOURCE namelists')
-    else if (n == 1) then ! if no errors, N is one more than the number of namelists found
-      call TLS_info ('  No DS_SOURCE namelists found.')
-    end if
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 DS_SOURCE namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' DS_SOURCE namelists')
+    end select
 
   end subroutine read_ds_source
 

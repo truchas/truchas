@@ -72,7 +72,7 @@ contains
     if (.not.found) return  ! fine, we'll just use the default values.
 
     !! Read the namelist.
-    call input_info ('Reading the RESTART namelist ...')
+    call input_info ('Reading RESTART namelist ...')
     if (p_info%IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
     call pgslib_bcast (ios)
     if (ios /= 0) call input_error ('error reading the RESTART namelist: ' // trim(iom))

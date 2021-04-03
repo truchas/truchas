@@ -50,8 +50,7 @@ contains
         rotation_angle, rotation_pt, translation_pt, &
         material_name, phi, temperature, temperature_function, velocity, mesh_material_number
 
-    call TLS_info('')
-    call TLS_info('Reading BODY namelists ...')
+    call TLS_info('Reading BODY namelists (second pass) ...')
 
     n = 0
     if (is_IOP) rewind(lun)
@@ -165,6 +164,15 @@ contains
         call TLS_fatal('error reading BODY namelist: invalid surface_name')
       end select
     end do
+
+    select case (n)
+    case (0)
+      call TLS_fatal('no BODY namelist found')
+    case (1)
+      call TLS_info('  read 1 BODY namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' BODY namelists')
+    end select
 
   end subroutine read_body_namelists
 

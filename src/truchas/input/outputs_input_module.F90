@@ -74,8 +74,7 @@ CONTAINS
     fatal = .false.
 
     ! Read notice
-    call TLS_info ('')
-    call TLS_info (' Reading OUTPUTS Namelist ...')
+    call TLS_info ('Reading OUTPUTS namelist ...')
 
     ! Default namelist
     call OUTPUTS_DEFAULT ()

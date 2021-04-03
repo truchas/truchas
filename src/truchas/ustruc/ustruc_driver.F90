@@ -119,12 +119,11 @@ contains
       call seek_to_namelist (lun, 'MICROSTRUCTURE', found, iostat=ios)
     end if
     call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('Error reading input file: iostat=' // i_to_c(ios))
+    if (ios /= 0) call TLS_fatal ('error reading input file: iostat=' // i_to_c(ios))
 
     call broadcast (found)
     if (.not.found) return  ! the namelist is optional
 
-    call TLS_info ('')
     call TLS_info ('Reading MICROSTRUCTURE namelist ...')
 
     !! Read the namelist.
@@ -481,7 +480,7 @@ contains
     integer, allocatable :: lmap(:), gmap(:), map(:), perm(:), perm1(:)
     integer(int8), allocatable :: garray(:,:), larray(:,:)
 
-    call TLS_info ('  Reading microstructure state data from the restart file.')
+    call TLS_info ('  reading microstructure state data from the restart file.')
 
     !! Get the cell list and translate to external cell numbers.  This needs to
     !! exactly match the cell list read from the restart file, modulo the order.

@@ -274,7 +274,6 @@ contains
     real(r8) :: noise_factor
     namelist /mesh/ x_axis, y_axis, z_axis, noise_factor
 
-    call TLS_info('')
     call TLS_info('Reading MESH namelist ...')
 
     !! Locate the MESH namelist (required)

@@ -58,6 +58,7 @@ contains
 
     !! local variables
     logical :: found, tabular_smooth
+    character(:), allocatable :: label
     character(128) :: iom
     integer :: n, stat, ncoef, nvar, npar, npts
     class(scalar_func), allocatable :: f
@@ -76,7 +77,6 @@ contains
         poly_coefficients, poly_exponents, poly_refvars, &
         smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1
 
-    call TLS_info ('')
     call TLS_info ('Reading FUNCTION namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -89,10 +89,10 @@ contains
       if (stat /= 0) call TLS_fatal ('error reading input file')
 
       call broadcast (found)
-      if (.not.found) return  ! no further FUNCTION namelists found
+      if (.not.found) exit  ! no further FUNCTION namelists found
 
       n = n + 1
-      call TLS_info ('  Reading FUNCTION namelist #' // i_to_c(n))
+      label = 'FUNCTION[' // i_to_c(n) // ']'
 
       !! Read the namelist variables, assigning default values first.
       if (is_IOP) then
@@ -116,7 +116,7 @@ contains
       end if
 
       call broadcast(stat)
-      if (stat /= 0) call TLS_fatal ('error reading FUNCTION namelist: ' // trim(iom))
+      if (stat /= 0) call TLS_fatal ('error reading ' // label // ' namelist: ' // trim(iom))
 
       !! Broadcast the namelist variables.
       call broadcast (name)
@@ -137,9 +137,9 @@ contains
       call broadcast (smooth_step_y1)
 
       !! Check the user-supplied name.
-      if (name == NULL_C .or. name == '') call TLS_fatal ('NAME must be assigned a nonempty value')
+      if (name == NULL_C .or. name == '') call TLS_fatal (label // ': NAME must be assigned a nonempty value')
       if (known_func(name)) then
-        call TLS_fatal ('already read a FUNCTION namelist with this name: ' // trim(name))
+        call TLS_fatal (label // ': another FUNCTION namelist has this NAME: ' // trim(name))
       end if
 
       !! Identify the number of parameters.
@@ -152,57 +152,57 @@ contains
       case ('POLYNOMIAL')
       case ('LIBRARY')
 #ifndef ENABLE_DYNAMIC_LOADING
-        call TLS_fatal ('the configuration of this executable does not support TYPE="LIBRARY"')
+        call TLS_fatal (label // ': the configuration of this executable does not support TYPE="LIBRARY"')
 #endif
       case ('TABULAR')
       case ('SMOOTH STEP')
       case ('DED HEAD LASER')
       case (NULL_C)
-        call TLS_fatal ('TYPE must be assigned a value')
+        call TLS_fatal (label // ': TYPE must be assigned a value')
       case default
-        call TLS_fatal ('unknown value for TYPE: ' // trim(type))
+        call TLS_fatal (label // ': unknown value for TYPE: ' // trim(type))
       end select
 
       if (raise_case(type) /= 'POLYNOMIAL') then
         if (any(poly_coefficients /= NULL_R)) &
-            call TLS_warn ('POLY_COEFFICIENTS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': POLY_COEFFICIENTS is ignored when TYPE="' // trim(type) // '"')
         if (any(poly_exponents /= NULL_I)) &
-            call TLS_warn ('POLY_EXPONENTS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': POLY_EXPONENTS is ignored when TYPE="' // trim(type) // '"')
         if (any(poly_refvars /= NULL_R)) &
-            call TLS_warn ('POLY_REFVARS is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': POLY_REFVARS is ignored when TYPE="' // trim(type) // '"')
       end if
 
 #ifdef ENABLE_DYNAMIC_LOADING
       if (raise_case(type) /= 'LIBRARY') then
         if (library_path /= NULL_C) &
-            call TLS_warn ('LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
         if (library_symbol /= NULL_C) &
-            call TLS_warn ('LIBRARY_SYMBOL is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': LIBRARY_SYMBOL is ignored when TYPE="' // trim(type) // '"')
         if (npar /= 0) &
-            call TLS_warn ('PARAMETERS is not used when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': PARAMETERS is not used when TYPE="' // trim(type) // '"')
       end if
 #endif
 
       if (raise_case(type) /= 'TABULAR') then
         if (any(tabular_data /= NULL_R)) &
-            call TLS_warn ('TABULAR_DATA is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': TABULAR_DATA is ignored when TYPE="' // trim(type) // '"')
         if (tabular_dim /= NULL_I) &
-            call TLS_warn ('TABULAR_DIM is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': TABULAR_DIM is ignored when TYPE="' // trim(type) // '"')
         if (tabular_interp /= NULL_C) &
-            call TLS_warn ('TABULAR_INTERP is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': TABULAR_INTERP is ignored when TYPE="' // trim(type) // '"')
         if (tabular_extrap /= NULL_C) &
-            call TLS_warn ('TABULAR_EXTRAP is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': TABULAR_EXTRAP is ignored when TYPE="' // trim(type) // '"')
       end if
 
       if (raise_case(type) /= 'SMOOTH STEP') then
         if (smooth_step_x0 /= NULL_R) &
-            call TLS_warn ('SMOOTH_STEP_X0 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': SMOOTH_STEP_X0 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_y0 /= NULL_R) &
-            call TLS_warn ('SMOOTH_STEP_Y0 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': SMOOTH_STEP_Y0 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_x1 /= NULL_R) &
-            call TLS_warn ('SMOOTH_STEP_X1 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': SMOOTH_STEP_X1 is ignored when TYPE="' // trim(type) // '"')
         if (smooth_step_y1 /= NULL_R) &
-            call TLS_warn ('SMOOTH_STEP_Y1 is ignored when TYPE="' // trim(type) // '"')
+            call TLS_warn (label // ': SMOOTH_STEP_Y1 is ignored when TYPE="' // trim(type) // '"')
       end if
 
       !! Create the specified function and add it to the function table.
@@ -223,10 +223,10 @@ contains
           if (poly_coefficients(ncoef) /= NULL_R) exit
         end do
         if (ncoef == 0) then
-          call TLS_fatal ('POLY_COEFFICIENTS must be assigned at least one value; none found')
+          call TLS_fatal (label // ': POLY_COEFFICIENTS must be assigned at least one value; none found')
         end if
         if (any(poly_coefficients(:ncoef) == NULL_R)) then
-          call TLS_fatal ('values assigned to POLY_COEFFICIENTS are not packed')
+          call TLS_fatal (label // ': values assigned to POLY_COEFFICIENTS are not packed')
         end if
 
         !! Identify the user-specified number of variables and exponents.
@@ -235,18 +235,18 @@ contains
           if (any(poly_exponents(nvar,:ncoef) /= NULL_I)) exit
         end do
         if (nvar == 0) then
-          call TLS_fatal ('POLY_EXPONENTS must be assigned values; none found')
+          call TLS_fatal (label // ': POLY_EXPONENTS must be assigned values; none found')
         end if
         if (any(poly_exponents(:nvar,:ncoef) == NULL_I)) then
-          call TLS_fatal ('not all required POLY_EXPONENTS values have been assigned')
+          call TLS_fatal (label // ': not all required POLY_EXPONENTS values have been assigned')
         end if
         if (any(poly_exponents(:,ncoef+1:) /= NULL_I)) then
-          call TLS_warn ('some values assigned to POLY_EXPONENTS are unused')
+          call TLS_warn (label // ': some values assigned to POLY_EXPONENTS are unused')
         end if
 
         !! Set the default for the reference variables.
         if (any(poly_refvars(nvar+1:) /= NULL_R)) then
-          call TLS_warn ('some values assigned to POLY_REFVARS are unused')
+          call TLS_warn (label // ': some values assigned to POLY_REFVARS are unused')
         else
           where (poly_refvars == NULL_R) poly_refvars = 0.0_r8
         end if
@@ -270,13 +270,13 @@ contains
           if (any(tabular_data(:,npts) /= NULL_R)) exit
         end do
         if (npts == 0) then
-          call TLS_fatal ('no values assigned to TABULAR_DATA')
+          call TLS_fatal (label // ': no values assigned to TABULAR_DATA')
         end if
         if (any(tabular_data(:,:npts) == NULL_R)) then
-          call TLS_fatal ('values assigned to TABULAR_DATA are not packed')
+          call TLS_fatal (label // ': values assigned to TABULAR_DATA are not packed')
         end if
         if (npts < 2) then
-          call TLS_fatal ('at least two data points are required for TABULAR_DATA')
+          call TLS_fatal (label // ': at least two data points are required for TABULAR_DATA')
         end if
         associate (xleft => tabular_data(1,1:npts-1), xright => tabular_data(1,2:npts))
           if (any(xleft >= xright)) call TLS_fatal ('TABULAR_DATA is not ordered')
@@ -285,7 +285,7 @@ contains
         if (tabular_dim == NULL_I) then
           tabular_dim = 1
         else if (tabular_dim <= 0) then
-          call TLS_fatal ('TABULAR_DIM must be >0')
+          call TLS_fatal (label // ': TABULAR_DIM must be >0')
         end if
 
         if (tabular_interp == NULL_C) tabular_interp = 'linear'
@@ -295,7 +295,7 @@ contains
         case ('AKIMA')
           tabular_smooth = .true.
         case default
-          call TLS_fatal ('unknown value for TABULAR_INTERP: ' // trim(tabular_interp))
+          call TLS_fatal (label // ': unknown value for TABULAR_INTERP: ' // trim(tabular_interp))
         end select
 
         if (tabular_extrap == NULL_C) tabular_extrap = 'nearest'
@@ -304,7 +304,7 @@ contains
         case ('nearest')
         case ('linear')
         case default
-          call TLS_fatal ('unknown value for TABULAR_EXTRAP: ' // trim(tabular_extrap))
+          call TLS_fatal (label // ': unknown value for TABULAR_EXTRAP: ' // trim(tabular_extrap))
         end select
 
         call alloc_tabular_scalar_func (f, tabular_data(1,:npts), tabular_data(2,:npts), &
@@ -313,11 +313,11 @@ contains
 
       case ('SMOOTH STEP')
 
-        if (smooth_step_x0 == NULL_R) call TLS_fatal ('SMOOTH_STEP_X0 must be assigned a value')
-        if (smooth_step_y0 == NULL_R) call TLS_fatal ('SMOOTH_STEP_Y0 must be assigned a value')
-        if (smooth_step_x1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_X1 must be assigned a value')
-        if (smooth_step_y1 == NULL_R) call TLS_fatal ('SMOOTH_STEP_Y1 must be assigned a value')
-        if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal ('require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
+        if (smooth_step_x0 == NULL_R) call TLS_fatal (label // ': SMOOTH_STEP_X0 must be assigned a value')
+        if (smooth_step_y0 == NULL_R) call TLS_fatal (label // ': SMOOTH_STEP_Y0 must be assigned a value')
+        if (smooth_step_x1 == NULL_R) call TLS_fatal (label // ': SMOOTH_STEP_X1 must be assigned a value')
+        if (smooth_step_y1 == NULL_R) call TLS_fatal (label // ': SMOOTH_STEP_Y1 must be assigned a value')
+        if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal (label // ': require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
 
         call alloc_sstep_scalar_func (f, smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1)
         call insert_func (name, f)
@@ -328,7 +328,11 @@ contains
         call insert_func (name, f)
 
       end select
+
+      call TLS_info ('  read namelist "' // trim(name) // '"')
     end do
+
+    if (n == 0) call TLS_info('  none found')
 
   end subroutine read_function_namelists
 
