@@ -28,6 +28,7 @@ module sm_bc_node_contact_types
     private
     integer, allocatable, public :: index(:,:)
     real(r8), allocatable, public :: value(:,:,:), dvalue(:,:,:)
+    logical, public :: enabled
 
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     real(r8) :: penalty, distance, normal_traction
@@ -55,19 +56,19 @@ contains
   !! a curved surface, so there is a small tolerance for deciding what qualifies
   !! as 'distinct' normal vectors between faces. Currently the tolerance is set
   !! to about 25 degrees.
-  subroutine c1_init(this, mesh, ig, nodebc, bc, penalty, distance, traction)
+  subroutine c1_init(this, mesh, nodebc, bc, penalty, distance, traction)
 
-    use integration_geometry_type
+    !use integration_geometry_type
 
     class(sm_bc_c1), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
-    type(integration_geometry), intent(in) :: ig
+    !type(integration_geometry), intent(in) :: ig
     type(sm_bc_node_list), intent(in) :: nodebc
     type(sm_bc_list), intent(in), target :: bc
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, li, bcid, xbcid
+    integer :: nnode, li, ni, xbcid
 
     this%mesh => mesh
     this%penalty = penalty
@@ -75,7 +76,7 @@ contains
     this%normal_traction = traction
 
     nnode = 0
-    do li = 1, size(nodebc%link)
+    do li = 1, size(nodebc%link, dim=2)
       if (is_1contact_node(li)) nnode = nnode + 1
     end do
     allocate(this%index(2,nnode), this%value(3,2,nnode), this%dvalue(3,2,nnode), &
@@ -86,12 +87,14 @@ contains
       if (.not.is_1contact_node(li)) cycle
       nnode = nnode + 1
       this%index(:,nnode) = nodebc%node(nodebc%link(:,li))
+      ni = nodebc%link(1,li)
       xbcid = nodebc%xbcid(ni)
       this%area(nnode) = norm2(nodebc%normal(:,xbcid))
       this%normal(:,nnode) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
     end do
 
-    if (size(this%index) > 0) then
+    this%enabled = size(this%index) > 0
+    if (this%enabled) then
       write(msg,"('SM-1N nodes: ',i6)") size(this%index)
       call TLS_info(trim(msg))
     end if
@@ -126,7 +129,7 @@ contains
 
       is_1contact_node = .true.
       do i = 1, 2
-        ni = bc%link(i,li)
+        ni = nodebc%link(i,li)
         xfi = nodebc%xbcid(ni)
         bc1 = nodebc%bcid(xfi)
 
@@ -148,7 +151,7 @@ contains
     real(r8), intent(in) :: displ(:,:), ftot(:,:), stress_factor(:)
 
     integer :: i, n1, n2
-    real(r8) :: stress1, stress2, x1, x2, s, tn, l, dl(2), v(2), normal(3)
+    real(r8) :: stress1, stress2, x1, x2, s, tn, l, v(2)
 
     do i = 1, size(this%index, dim=2)
       n1 = this%index(1,i)
@@ -165,8 +168,8 @@ contains
       v(1) = stress2 + this%penalty*(x2 - x1) * stress_factor(n1)
       v(2) = stress1 + this%penalty*(x1 - x2) * stress_factor(n2)
 
-      this%value(:,1,i) = normal(:,i) * l * v(1)
-      this%value(:,2,i) = normal(:,i) * l * v(2)
+      this%value(:,1,i) = this%normal(:,i) * l * v(1)
+      this%value(:,2,i) = this%normal(:,i) * l * v(2)
     end do
 
   end subroutine c1_compute
@@ -179,8 +182,7 @@ contains
 
     integer :: i, n1, n2
     real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3), diag2(3)
-    real(r8) :: s, tn, l, dl(2), v(2), normal(3)
-    real(r8) :: dl1(2), dl2(2)
+    real(r8) :: s, tn, l, dl(2), v(2)
 
     do i = 1, size(this%index, dim=2)
       n1 = this%index(1,i)
@@ -190,7 +192,7 @@ contains
       x1 = dot_product(this%normal(:,i), displ(:,n1))
       x2 = dot_product(this%normal(:,i), displ(:,n2))
       diag1 = diag(:,n1) * this%normal(:,i) !* stress_factor(n1)
-      diag2 = diag(:,n2) * this%normal(:,i) !* stress_factor(n2)
+      !diag2 = diag(:,n2) * this%normal(:,i) !* stress_factor(n2)
 
       s = x2 - x1
       tn = - stress1 / this%area(i)

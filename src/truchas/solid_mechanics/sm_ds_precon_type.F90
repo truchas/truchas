@@ -156,7 +156,7 @@ contains
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    if (this%bc%gap_contact_active) call this%model%compute_forces(t, displ, force)
+    if (this%bc%contact_active) call this%model%compute_forces(t, displ, force)
     call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag)
 
     do n = 1, this%model%mesh%nnode_onP

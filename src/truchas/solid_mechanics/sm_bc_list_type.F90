@@ -49,6 +49,7 @@ module sm_bc_list_type
     integer :: dsz ! displacement size for indexing contact
     type(smbcl_displacement), allocatable :: displacement(:)
     type(smbcl_contact), allocatable :: contact(:)
+    integer, allocatable :: bc_type(:)
     !type(smbcl_displacement), allocatable :: traction(:)
   contains
     procedure :: init
@@ -104,6 +105,15 @@ contains
     if (stat /= 0) return
     call init_contact
     if (stat /= 0) return
+
+    allocate(this%bc_type(size(this%displacement) + size(this%contact)))
+    do n = 1, size(this%bc_type)
+      if (n <= this%dsz) then
+        this%bc_type(n) = this%displacement(n)%type
+      else
+        this%bc_type(n) = SMBCL_N
+      end if
+    end do
 
   contains
 

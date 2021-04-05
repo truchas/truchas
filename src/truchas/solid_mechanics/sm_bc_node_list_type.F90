@@ -95,27 +95,17 @@ contains
       do bcid = 1, bc_face_list%nbc
         if (bc_is_active(bcid,ni)) then
           this%bcid(xbcid) = bcid
-          this%normal(:,xbcid) = select_normal(bc_list%displacement(bcid)%type, normal(:,bcid,ni))
+          this%normal(:,xbcid) = select_normal(bc_list%bc_type(bcid), normal(:,bcid,ni))
           xbcid = xbcid + 1
         end if
       end do
       this%xbcid(ni+1) = this%xbcid(ni) + count(bc_is_active(:,ni))
     end do
 
-    nnode = size(this%xbcid)-1
-    write(msg,"('SM BC nodes: ',i6)") nnode
+    call compute_links
+
+    write(msg,"('SM BC nodes/links: ',2i6)") size(this%node), size(this%link, dim=2)
     call TLS_info(trim(msg))
-
-    ! ! ! 1. Get a map from nodes to faces
-    ! ! call compute_inverted_connectivity(mesh%fnode, mesh%xfnode, mesh%nnode, nface, xnface)
-
-    ! do fi = 1, size(bc_face_list%face)
-    !   f = bc_face_list%face(fi)
-    !   do xni = mesh%xfnode(f), mesh%xfnode(f+1)-1
-    !     n = mesh%fnode(xni)
-    !     nbc(n) = nbc(n) + 1
-    !   end do
-    ! end do
 
   contains
 
@@ -138,6 +128,39 @@ contains
       end select
     end function select_normal
 
+    ! Generate a list of linked nodes for gaps. The mesh structure holds a list
+    ! of linked faces, which the integration geometry converts to a list of
+    ! linked nodes. Here we generate a list of linked node *indexes* to
+    ! this%node(:). That is, ig%lnode(:,n) = this%node(this%link(:,n)), for
+    ! every n in the length of this%link. Note there might be links in the mesh
+    ! which are not assigned contact conditions.
+    subroutine compute_links()
+
+      integer :: l, nlink, node_index(mesh%nnode)
+
+      node_index = 0
+      do ni = 1, size(this%node)
+        n = this%node(ni)
+        node_index(n) = ni
+      end do
+
+      nlink = 0
+      do l = 1, size(ig%lnode,dim=2)
+        if (all(node_index(ig%lnode(:,l)) > 0)) nlink = nlink + 1
+      end do
+
+      allocate(this%link(2,nlink))
+      nlink = 0
+      do l = 1, size(ig%lnode,dim=2)
+        if (all(node_index(ig%lnode(:,l)) > 0)) then
+          nlink = nlink + 1
+          this%link(:,nlink) = node_index(ig%lnode(:,l))
+        end if
+      end do
+
+    end subroutine compute_links
+
   end subroutine init
+
 
 end module sm_bc_node_list_type

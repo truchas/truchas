@@ -47,7 +47,7 @@ def run_test(tenv):
 
         displ = output.field(sid, "Displacement")
         displ = rotated(displ, ra)
-        nfail += truchas.compare_max(displ0, displ, 1e-10, f"displacement-{i}", time)
+        nfail += truchas.compare_max(displ0, displ, 1e-9, f"displacement-{i}", time)
 
         # TODO: compare other fields
 
