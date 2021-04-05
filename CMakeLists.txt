@@ -347,6 +347,7 @@ option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
 if(BUILD_HTML)
   find_package(Sphinx REQUIRED)
   add_subdirectory(doc/sphinx)
+  add_subdirectory(doc/reference-manual)
 endif()
 
 # ---------------------------------------------------------------------------- #
