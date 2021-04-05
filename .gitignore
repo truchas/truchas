@@ -273,6 +273,10 @@ ENV/
 # emacs
 .projectile
 
+### macOS ###
+.DS_Store
+Desktop.ini
+
 ### Windows ###
 # Windows image file caches
 Thumbs.db
