@@ -48,7 +48,7 @@ contains
 
     this%model => model
     this%bc => model%bc
-    allocate(this%diag(3,model%mesh%nnode_onP))
+    allocate(this%diag(3,model%mesh%nnode))
     call params%get('num-iter', this%niter, default=1)
     call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
 
@@ -138,11 +138,13 @@ contains
 
   subroutine compute(this, t, dt, displ)
 
+    use index_partitioning, only: gather_boundary
+
     class(sm_ds_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt, displ(:,:)
 
     integer :: n, d, i, f, xn
-    real(r8) :: force(size(displ,dim=1),size(displ,dim=2))
+    real(r8) :: force(3,this%model%mesh%nnode), displ_(3,this%model%mesh%nnode)
 
     call start_timer("precon-compute")
 
@@ -156,8 +158,15 @@ contains
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    if (this%bc%contact_active) call this%model%compute_forces(t, displ, force)
-    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag)
+    ! get off-rank halo
+    displ_(:,:this%model%mesh%nnode_onP) = displ
+    call gather_boundary(this%model%mesh%node_ip, displ_)
+    call gather_boundary(this%model%mesh%node_ip, this%diag)
+    if (this%bc%contact_active) then
+      call this%model%compute_forces(t, displ_, force)
+      call gather_boundary(this%model%mesh%node_ip, force)
+    end if
+    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ_, force, this%diag)
 
     do n = 1, this%model%mesh%nnode_onP
       this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)
@@ -181,9 +190,9 @@ contains
     call start_timer("precon-apply")
 
     !! TODO: reshape f outside this routine instead.
-    diag(1:3*this%model%mesh%nnode_onP) => this%diag
+    diag(1:size(this%diag)) => this%diag
 
-    do j = 1, size(diag)
+    do j = 1, size(f)
       !f(j) = f(j) / this%diag(j)
       x = f(j) / diag(j)
       do i = 1, this%niter

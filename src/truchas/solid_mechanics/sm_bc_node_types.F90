@@ -17,6 +17,7 @@
 module sm_bc_node_types
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use parallel_communication, only: global_sum
   use truchas_logging_services
   use unstr_mesh_type
   use scalar_func_class
@@ -121,8 +122,10 @@ contains
       this%normal(:,nnode) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
     end do
 
-    if (size(this%index) > 0) then
-      write(msg,"('SM-1N nodes: ',i6)") size(this%index)
+    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    if (nnode > 0) then
+      write(msg,"('SM-D1 nodes: ',i6)") nnode
       call TLS_info(trim(msg))
     end if
 
@@ -172,9 +175,7 @@ contains
         n2 = nodebc%normal(:,xfi)
 
         ! See above NB
-        ! TODO: I think with BCIDs the way they're defined now, they will always
-        !       be distinct, so the comparison bc1 /= bc2 will always be true.
-        if (bc1 /= bc2 .and. dot_product(n1, n2) < ntol) return
+        if (dot_product(n1, n2) < ntol) return
       end do
 
       is_single_normal_node = .true.
@@ -221,8 +222,10 @@ contains
       nnode = nnode + 1
     end do nodes
 
-    if (size(this%index) > 0) then
-      write(msg,"('SM-2N nodes: ',i6)") size(this%index)
+    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    if (nnode > 0) then
+      write(msg,"('SM-D2 nodes: ',i6)") nnode
       call TLS_info(trim(msg))
     end if
 
@@ -309,8 +312,10 @@ contains
       nnode = nnode + 1
     end do nodes
 
-    if (size(this%index) > 0) then
-      write(msg,"('SM-3N nodes: ',i6)") size(this%index)
+    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    if (nnode > 0) then
+      write(msg,"('SM-D3 nodes: ',i6)") nnode
       call TLS_info(trim(msg))
     end if
 

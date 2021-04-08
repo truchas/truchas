@@ -51,7 +51,7 @@ contains
     integer, intent(out), allocatable :: fini(:), xfini(:), node_index(:)
 
     integer :: f, n, fi, xn, xfi, nfi, count
-    integer :: ni_(mesh%nnode_onP)
+    integer :: ni_(mesh%nnode)
 
     if (allocated(fini)) deallocate(fini)
     if (allocated(xfini)) deallocate(xfini)
@@ -67,7 +67,8 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        if (n <= mesh%nnode_onP) count = count + 1
+        !if (n <= mesh%nnode_onP) count = count + 1
+        count = count + 1
       end do
       xfini(fi+1) = xfini(fi) + count
     end do
@@ -79,7 +80,7 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        if (n > mesh%nnode_onP) cycle
+        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) /= 0) cycle
         count = count + 1
         ni_(n) = count
@@ -95,7 +96,7 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        if (n > mesh%nnode_onP) cycle
+        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) == 0) then
           count = count + 1
           ni_(n) = count
@@ -107,7 +108,7 @@ contains
     end do
 
     ASSERT(all(fini > 0))
-    ASSERT(all(fini <= mesh%nnode_onP))
+    !ASSERT(all(fini <= mesh%nnode_onP))
 
   end subroutine compute_index_connectivity
 
@@ -318,7 +319,7 @@ contains
     i = 0
     do j = 1, ic%fsize(xf)
       n = mesh%fnode(mesh%xfnode(f)+j-1)
-      if (n > mesh%nnode_onP) cycle
+      !if (n > mesh%nnode_onP) cycle
       i = i + 1
       normal(:,i) = ic%normal_boundary(xf,j)
     end do

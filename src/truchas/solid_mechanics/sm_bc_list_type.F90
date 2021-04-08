@@ -166,8 +166,10 @@ contains
       integer, allocatable :: setids(:)
       type(parameter_list_iterator) :: piter
       type(parameter_list), pointer :: plist
+      integer :: s, index
 
       type_string = 'gap-contact'
+      index = 0
       stat = 0
       piter = parameter_list_iterator(params, sublists_only=.true.)
       do while (.not.piter%at_end())
@@ -178,6 +180,11 @@ contains
           call TLS_info('  using SM_BC[' // piter%name() // ']')
           call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
           if (stat /= 0) exit
+
+          do s = 1, size(setids)
+            index = index + 1
+            this%contact(index)%setid = setids(s)
+          end do
         end if
         call piter%next
       end do

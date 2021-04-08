@@ -92,7 +92,7 @@ contains
         this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), &
         this%lame1_n(this%mesh%nnode_onP), this%lame2_n(this%mesh%nnode_onP), &
         this%rhs(3,this%mesh%nnode_onP), &
-        this%scaling_factor(this%mesh%nnode_onP))
+        this%scaling_factor(this%mesh%nnode))
 
     this%max_cell_halfwidth = max_cell_halfwidth()
     this%nmat = nmat
@@ -146,6 +146,7 @@ contains
   subroutine update_properties(this, vof, temperature_cc)
 
     use parallel_communication, only: global_maxval, global_minval
+    use index_partitioning, only: gather_boundary
 
     class(sm_model), intent(inout) :: this
     real(r8), intent(in) :: temperature_cc(:), vof(:,:)
@@ -216,6 +217,8 @@ contains
       end associate
     end do
 
+    call gather_boundary(this%mesh%node_ip, this%scaling_factor)
+
     !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
     !this%contact_penalty = global_maxval(this%rhs)
     !this%contact_penalty = 1e3_r8
@@ -265,44 +268,60 @@ contains
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_residual(this, t, displ, r)
 
+    use index_partitioning, only: gather_boundary
+
     class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:,:)
 
     integer :: n, xp, p, j, i, f, xn, d
-    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3), ftot(3,this%mesh%nnode_onP)
+    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+    real(r8) :: displ_(3,this%mesh%nnode), r_(3,this%mesh%nnode)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) == this%mesh%nnode_onP)
 
+    ! get off-rank halo
+    displ_(:,:this%mesh%nnode_onP) = displ
+    call gather_boundary(this%mesh%node_ip, displ_)
+
+    call compute_forces(this, t, displ_, r_)
     call start_timer("residual")
-
-    call this%compute_total_strain(displ, total_strain)
-
-    do n = 1, this%mesh%nnode_onP
-      associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
-
-        lhs = 0
-        do xp = 1, size(np)
-          p = np(xp)
-          j = this%ig%pcell(p)
-
-          call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
-          s = merge(-1, 1, btest(this%ig%nppar(n),xp))
-          lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
-        end do
-
-        r(:,n) = lhs - this%rhs(:,n)
-      end associate
-    end do
-
-    call this%bc%apply(t, this%scaling_factor, displ, r)
-
-    do n = 1, this%mesh%nnode_onP
-      r(:,n) = r(:,n) / this%scaling_factor(n)
-    end do
-
+    call gather_boundary(this%mesh%node_ip, r_)
+    call this%bc%apply_nontraction(t, this%scaling_factor, displ_, r_)
+    r = r_(:,:this%mesh%nnode_onP)
     call stop_timer("residual")
+
+    ! ! get off-rank halo
+    ! displ_(:,:this%mesh%nnode_onP) = displ
+    ! call gather_boundary(this%mesh%node_ip, displ_)
+
+    ! call this%compute_total_strain(displ_, total_strain)
+
+    ! do n = 1, this%mesh%nnode_onP
+    !   associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
+
+    !     lhs = 0
+    !     do xp = 1, size(np)
+    !       p = np(xp)
+    !       j = this%ig%pcell(p)
+
+    !       call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
+    !       s = merge(-1, 1, btest(this%ig%nppar(n),xp))
+    !       lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
+    !     end do
+
+    !     r(:,n) = lhs - this%rhs(:,n)
+    !   end associate
+    ! end do
+
+    ! call this%bc%apply(t, this%scaling_factor, displ_, r)
+
+    ! do n = 1, this%mesh%nnode_onP
+    !   r(:,n) = r(:,n) / this%scaling_factor(n)
+    ! end do
+
+    ! call stop_timer("residual")
 
   end subroutine compute_residual
 
@@ -317,8 +336,8 @@ contains
     integer :: n, xp, p, j, i, f, xn, d
     real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
 
-    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
-    ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) == this%mesh%nnode_onP)
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode_onP)
+    ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) >= this%mesh%nnode_onP)
 
     call start_timer("residual")
 
@@ -351,17 +370,14 @@ contains
   !! From the node-centered displacement, compute the integration-point-centered total strain
   subroutine compute_total_strain(this, displ, total_strain)
 
-    use index_partitioning, only: gather_boundary
-
     class(sm_model), intent(in) :: this
     real(r8), intent(in) :: displ(:,:)
     real(r8), intent(out) :: total_strain(:,:)
 
     integer :: p, j, d
-    real(r8) :: grad_displ(3,3), displ_(3,this%mesh%nnode)
+    real(r8) :: grad_displ(3,3)
 
-    displ_(:,:this%mesh%nnode_onP) = displ
-    call gather_boundary(this%mesh%node_ip, displ_)
+    ASSERT(size(displ, dim=2) == this%mesh%nnode) ! need off-rank halo
 
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
@@ -371,7 +387,7 @@ contains
           !! The Jacobian inverse multiplication is already performed and stored
           !! in the grad_shape matrix.
           do d = 1, 3
-            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ_(d,cn))
+            grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
           end do
 
           total_strain(1,p) = grad_displ(1,1) ! exx

@@ -17,6 +17,7 @@
 module sm_bc_node_contact_types
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use parallel_communication, only: global_sum
   use truchas_logging_services
   use unstr_mesh_type
   use sm_bc_list_type
@@ -93,26 +94,13 @@ contains
       this%normal(:,nnode) = nodebc%normal(:,xbcid) / norm2(nodebc%normal(:,xbcid))
     end do
 
-    this%enabled = size(this%index) > 0
+    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    this%enabled = nnode > 0
     if (this%enabled) then
-      write(msg,"('SM-1N nodes: ',i6)") size(this%index)
+      write(msg,"('SM-C1 nodes: ',i6)") nnode
       call TLS_info(trim(msg))
     end if
-
-#ifndef NDEBUG
-    block
-      integer :: i, n1, n2
-      ! TODO-WARN: Need halo node displacements and stresses/residuals?
-      !            For now just get everything working in serial.
-      do i = 1, size(this%index, dim=2)
-        n1 = this%index(1,i)
-        n2 = this%index(2,i)
-        if (n1 <= mesh%nnode_onP .or. n2 <= mesh%nnode_onP) then
-          INSIST(n1 <= mesh%nnode_onP .and. n2 <= mesh%nnode_onP)
-        end if
-      end do
-    end block
-#endif
 
   contains
 

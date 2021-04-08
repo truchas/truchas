@@ -46,6 +46,7 @@ contains
   !! integration points associated with that BC.
   subroutine init(this, mesh, ig, bc_list, bc_face_list)
 
+    use parallel_communication, only: global_sum
     use unstr_mesh_type
     use integration_geometry_type
     use sm_bc_list_type
@@ -104,7 +105,11 @@ contains
 
     call compute_links
 
-    write(msg,"('SM BC nodes/links: ',2i6)") size(this%node), size(this%link, dim=2)
+    nnode = count(this%node <= mesh%nnode_onP)
+    n = count(this%link(1,:) <= mesh%nnode_onP .or. this%link(2,:) <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    n = global_sum(n)
+    write(msg,"('SM BC nodes/links: ',2i6)") nnode, n
     call TLS_info(trim(msg))
 
   contains
@@ -146,7 +151,10 @@ contains
 
       nlink = 0
       do l = 1, size(ig%lnode,dim=2)
-        if (all(node_index(ig%lnode(:,l)) > 0)) nlink = nlink + 1
+        if (any(node_index(ig%lnode(:,l)) > 0)) then
+          ASSERT(all(node_index(ig%lnode(:,l)) > 0)) ! we need off-rank nodes to be accounted for
+          nlink = nlink + 1
+        end if
       end do
 
       allocate(this%link(2,nlink))

@@ -54,6 +54,7 @@ module sm_bc_type
     procedure :: init
     procedure :: apply
     procedure :: apply_traction
+    procedure :: apply_nontraction
     procedure :: apply_deriv_diagonal
     final :: delete_sm_bc
   end type sm_bc
@@ -69,6 +70,7 @@ contains
   subroutine init(this, params, mesh, ig, contact_penalty, contact_distance, contact_traction, &
       stat, errmsg)
 
+    use parallel_communication, only: global_sum
     use parameter_list_type
     use integration_geometry_type
 
@@ -107,7 +109,24 @@ contains
 
     this%contact_active = this%contact1%enabled ! TODO clean this up
 
-    ! TODO: ensure consistency
+    ! sanity check
+    block
+      character(128) :: msg
+      integer :: n1, n2
+      n1 = count(this%node_list%node <= mesh%nnode_onP)
+      n1 = global_sum(n1)
+      n2 = 0
+      n2 = n2 + count(this%displacement1n%index <= mesh%nnode_onP)
+      n2 = n2 + count(this%displacement2n%index <= mesh%nnode_onP)
+      n2 = n2 + count(this%displacement3n%index <= mesh%nnode_onP)
+      n2 = n2 + count(this%contact1%index <= mesh%nnode_onP)
+      n2 = global_sum(n2)
+      write(msg,'("Nodes with requested BCs: ",i6,"    Nodes with applied BCs: ",i6)') n1, n2
+      call TLS_info(trim(msg))
+      if (n1 /= n2) then
+        call TLS_fatal("ERROR mismatching node BCs")
+      end if
+    end block
 
   contains
 
@@ -187,17 +206,26 @@ contains
   end subroutine iterate_list
 
 
-  !! Compute & apply boundary conditions to the residual.
   subroutine apply(this, t, scaling_factor, displ, r)
+    use index_partitioning, only: gather_boundary
+    class(sm_bc), intent(inout) :: this
+    real(r8), intent(in) :: t, scaling_factor(:), displ(:,:)
+    real(r8), intent(inout) :: r(:,:)
+    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
+    call this%apply_traction(t, r)
+    call gather_boundary(this%mesh%node_ip, r)
+    call this%apply_nontraction(t, scaling_factor, displ, r)
+  end subroutine apply
+
+
+  !! Compute & apply boundary conditions to the residual.
+  subroutine apply_nontraction(this, t, scaling_factor, displ, r)
 
     class(sm_bc), intent(inout) :: this
     real(r8), intent(in) :: t, scaling_factor(:), displ(:,:)
     real(r8), intent(inout) :: r(:,:)
 
-    real(r8), allocatable :: ftot(:,:)
-
-    call this%apply_traction(t, r)
-    ftot = r
+    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
     call contact_bcs
     call displacement_bcs
 
@@ -208,8 +236,6 @@ contains
     subroutine contact_bcs()
 
       integer :: i, n1, n2
-
-      !if (this%contact_active) halo update?
 
       call this%contact1%compute(displ, r, scaling_factor)
       associate (link => this%contact1%index, values => this%contact1%value)
@@ -242,6 +268,7 @@ contains
           normal => this%displacement1n%normal)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           x = dot_product(displ(:,n), normal(:,i)) * normal(:,i)
           r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
           r(:,n) = r(:,n) - this%contact_penalty * (x - values(:,i)) * scaling_factor(n)
@@ -258,6 +285,7 @@ contains
           tangent => this%displacement2n%tangent)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           x = displ(:,n) - values(:,i)
           x = x - dot_product(x, tangent(:,i)) * tangent(:,i)
           r(:,n) = dot_product(r(:,n), tangent(:,i)) * tangent(:,i)
@@ -270,13 +298,14 @@ contains
       associate (nodes => this%displacement3n%index, values => this%displacement3n%value)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           r(:,n) = - this%contact_penalty * (displ(:,n) - values(:,i)) * scaling_factor(n)
         end do
       end associate
 
     end subroutine displacement_bcs
 
-  end subroutine apply
+  end subroutine apply_nontraction
 
 
   subroutine apply_traction(this, t, r)
@@ -299,6 +328,7 @@ contains
           area => this%traction(d)%factor)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           r(d,n) = r(d,n) + values(i) * area(i)
         end do
       end associate
@@ -312,6 +342,8 @@ contains
     call this%tractionn%compute(t)
     associate (nodes => this%tractionn%index, values => this%tractionn%value)
       do i = 1, size(nodes)
+        n = nodes(i)
+        if (n > this%mesh%nnode_onP) cycle
         r(:,n) = r(:,n) + values(:,i)
       end do
     end associate
@@ -329,6 +361,7 @@ contains
 
     integer :: i, n
 
+    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(force,dim=2) == this%mesh%nnode)
     call gap_contact
     call displacement
 
@@ -337,8 +370,6 @@ contains
     subroutine gap_contact()
 
       integer :: n1, n2
-
-      !if (this%contact_active) halo update?
 
       call this%contact1%compute_deriv(displ, force, scaling_factor, diag)
       associate (link => this%contact1%index, dvalues => this%contact1%dvalue)
@@ -360,6 +391,7 @@ contains
       associate (nodes => this%displacement1n%index, normal => this%displacement1n%normal)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
           diag(:,n) = diag(:,n) - this%contact_penalty * normal(:,i)**2 * scaling_factor(n)
         end do
@@ -369,6 +401,7 @@ contains
       associate (nodes => this%displacement2n%index, tangent => this%displacement2n%tangent)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           diag(:,n) = diag(:,n) + diag(:,n) * tangent(:,i)**2
           diag(:,n) = diag(:,n) - this%contact_penalty * (1-tangent(:,i)**2) * scaling_factor(n)
         end do
@@ -379,6 +412,7 @@ contains
       associate (nodes => this%displacement3n%index)
         do i = 1, size(nodes)
           n = nodes(i)
+          if (n > this%mesh%nnode_onP) cycle
           diag(:,n) = - this%contact_penalty * scaling_factor(n)
         end do
       end associate
