@@ -67,9 +67,10 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:)
     real(r8), intent(inout), contiguous, target :: f(:)
-    real(r8), pointer :: u2(:,:)
-    u2(1:3, 1:this%model_size) => u
-    call this%precon%apply(u2, f)
+    real(r8), pointer :: u2(:,:), f2(:,:)
+    u2(1:3, 1:this%model%mesh%nnode_onP) => u
+    f2(1:3, 1:this%model%mesh%nnode_onP) => f
+    call this%precon%apply(u2, f2)
   end subroutine
 
   subroutine compute_precon(this, t, u, dt)

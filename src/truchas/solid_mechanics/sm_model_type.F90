@@ -206,7 +206,6 @@ contains
       !this%scaling_factor(n) = 1 ! DEBUGGING
 
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
-
         this%rhs(:,n) = this%body_force_density * this%density_n(n) * this%ig%volume(n)
         do xp = 1, size(np)
           p = np(xp)
@@ -291,37 +290,6 @@ contains
     call this%bc%apply_nontraction(t, this%scaling_factor, displ_, r_)
     r = r_(:,:this%mesh%nnode_onP)
     call stop_timer("residual")
-
-    ! ! get off-rank halo
-    ! displ_(:,:this%mesh%nnode_onP) = displ
-    ! call gather_boundary(this%mesh%node_ip, displ_)
-
-    ! call this%compute_total_strain(displ_, total_strain)
-
-    ! do n = 1, this%mesh%nnode_onP
-    !   associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
-
-    !     lhs = 0
-    !     do xp = 1, size(np)
-    !       p = np(xp)
-    !       j = this%ig%pcell(p)
-
-    !       call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
-    !       s = merge(-1, 1, btest(this%ig%nppar(n),xp))
-    !       lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
-    !     end do
-
-    !     r(:,n) = lhs - this%rhs(:,n)
-    !   end associate
-    ! end do
-
-    ! call this%bc%apply(t, this%scaling_factor, displ_, r)
-
-    ! do n = 1, this%mesh%nnode_onP
-    !   r(:,n) = r(:,n) / this%scaling_factor(n)
-    ! end do
-
-    ! call stop_timer("residual")
 
   end subroutine compute_residual
 

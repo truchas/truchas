@@ -117,10 +117,12 @@ contains
     integer, intent(out) :: stat
     character(:), intent(out), allocatable :: errmsg
     call start_timer("solid mechanics")
+    call TLS_info("SM: Computing initial state...")
     call this%model%compute_reference_density(vof)
     call stop_timer("solid mechanics")
     call this%step(0.0_r8, 1e-6_r8, vof, temperature_cc, stat, errmsg)
     if (stat /= 0) errmsg = "SM initialization failure: " // errmsg
+    call TLS_info("") ! line break
   end subroutine compute_initial_state
 
 

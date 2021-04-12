@@ -24,14 +24,9 @@ def run_test(tenv):
 
     # 1. test compression
     displ2 = output2.field(sid, "Displacement")
-    print(displ2)
     nodex = output2.node_coordinates()
     displ2 = remove_links(displ2, nodex)
     nfail += truchas.compare_max(displ1, displ2, 1e-10, "displacement", t)
-
-    print(displ1)
-    print()
-    print(displ2)
 
     # 2. test stretching
     displ3 = output3.field(sid, "Displacement")

@@ -402,7 +402,7 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          diag(:,n) = diag(:,n) + diag(:,n) * tangent(:,i)**2
+          diag(:,n) = diag(:,n) * tangent(:,i)**2
           diag(:,n) = diag(:,n) - this%contact_penalty * (1-tangent(:,i)**2) * scaling_factor(n)
         end do
       end associate

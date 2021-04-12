@@ -181,23 +181,19 @@ contains
 
     class(sm_ds_precon), intent(in), target :: this
     real(r8), intent(in), contiguous :: u(:,:) ! current displacement guess
-    real(r8), intent(inout), contiguous :: f(:) ! in residual, out next displacement guess
+    real(r8), intent(inout), contiguous :: f(:,:) ! in residual, out next displacement guess
 
     integer :: i, j
-    real(r8) :: x
-    real(r8), pointer :: diag(:) => null()
+    real(r8) :: x(3)
 
     call start_timer("precon-apply")
 
-    !! TODO: reshape f outside this routine instead.
-    diag(1:size(this%diag)) => this%diag
-
-    do j = 1, size(f)
-      !f(j) = f(j) / this%diag(j)
-      x = f(j) / diag(j)
+    do j = 1, size(f,dim=2)
+      !f(:,j) = f(:,j) / this%diag(:,j)
+      x = f(:,j) / this%diag(:,j)
       do i = 1, this%niter
-        f(j) = f(j) + this%omega*(x-f(j))
-        !f(j) = (f(j) - this%omega*f(j)) + this%omega*x
+        f(:,j) = f(:,j) + this%omega*(x-f(:,j))
+        !f(:,j) = (f(:,j) - this%omega*f(:,j)) + this%omega*x
       end do
     end do
 
