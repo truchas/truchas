@@ -18,7 +18,7 @@
 
 #include "portage/support/portage.h"
 #include "portage/search/search_kdtree.h"
-#include "portage/intersect/intersect_r3d.h"
+#include "portage/intersect/intersect_rNd.h"
 #include "portage/interpolate/interpolate_1st_order.h"
 #include "wonton/support/Point.h"
 #include "wonton/mesh/AuxMeshTopology.h"
@@ -28,10 +28,11 @@
 
 extern "C" {
 typedef struct {
-  int ncell, nface, nnode;
+  int num_cell, num_face, num_node;
   int *xcnode, *cnode;
   int *xcface, *cface;
   int *xfnode, *fnode;
+  int *xncell, *ncell;
   double *coord;
   int *cfdir;
   int *blockid;
@@ -99,18 +100,20 @@ class StateWrapper {
   Field_type field_type(Entity_kind on_what, std::string const& var_name) const {
     return Field_type::MESH_FIELD;
   }
+
+  int num_materials() const {return 1;}
 };
 
 
 class MeshWrapper : public AuxMeshTopology<MeshWrapper> {
  private:
 
-  int ncell, nface, nnode;
+  int num_cell, num_face, num_node;
   int *xcnode, *cnode;
   int *xcface, *cface, *cfdir;
   int *blockid;
   int *xfnode, *fnode;
-  //int *xnodec, *nodec;
+  int *xncell, *ncell;
   double *coord;
 
  public:
@@ -119,9 +122,9 @@ class MeshWrapper : public AuxMeshTopology<MeshWrapper> {
       AuxMeshTopology<MeshWrapper>(true, true, true) {
 
     // Copy the mesh data from the interface container
-    ncell  = mesh->ncell;
-    nface  = mesh->nface;
-    nnode  = mesh->nnode;
+    num_cell  = mesh->num_cell;
+    num_face  = mesh->num_face;
+    num_node  = mesh->num_node;
     xcnode = mesh->xcnode;
     cnode  = mesh->cnode;
     xcface = mesh->xcface;
@@ -130,8 +133,8 @@ class MeshWrapper : public AuxMeshTopology<MeshWrapper> {
     blockid = mesh->blockid;
     xfnode = mesh->xfnode;
     fnode  = mesh->fnode;
-    //xnodec = mesh->xnodec;
-    //nodec  = mesh->nodec;
+    xncell = mesh->xncell;
+    ncell  = mesh->ncell;
     coord  = mesh->coord;
 
     AuxMeshTopology<MeshWrapper>::build_aux_entities();
@@ -152,9 +155,9 @@ class MeshWrapper : public AuxMeshTopology<MeshWrapper> {
   int space_dimension() const { return 3; }
 
     // Number of OWNED entities
-  int num_owned_cells() const { return ncell; }
-  int num_owned_faces() const { return nface; }
-  int num_owned_nodes() const { return nnode; }
+  int num_owned_cells() const { return num_cell; }
+  int num_owned_faces() const { return num_face; }
+  int num_owned_nodes() const { return num_node; }
 
   // Number of ghost data entities (SERIAL ONLY)
   int num_ghost_cells() const { return 0; }
@@ -220,11 +223,16 @@ class MeshWrapper : public AuxMeshTopology<MeshWrapper> {
     }
   }
 
-  // Get the ID list of cells of a particular type attached to a node. SERIOUSLY???
+  // Get the ID list of cells of a particular (parallel) type attached to a node.
+  // SERIAL ONLY -- ignoring the ptype argument
   void node_get_cells(int const nodeid,
                       Entity_type const ptype,
                       std::vector<int> *nodecells) const {
-    printf("ACK!! Called into NODE_GET_CELLS\n");
+    //printf("Called into node_get_cells\n");
+    nodecells->clear();
+    for (int i(xncell[nodeid]); i < xncell[nodeid+1]; i++) {
+        nodecells->push_back(ncell[i-1]-1);
+    }
   }
 
   // Get the global entity ID (SERIAL ONLY: GLOBAL == LOCAL)
@@ -262,7 +270,7 @@ class PortageMapper {
 
   std::vector<std::vector<int>> part_cells1, part_cells2;
 
-  Portage::vector<std::vector<Portage::Weights_t>> weights;
+  Wonton::vector<std::vector<Portage::Weights_t>> weights;
 
   // parameters for interpolate_mesh_var
   double lower_bound = -1e99, upper_bound = 1e99;
@@ -288,11 +296,11 @@ class PortageMapper {
 
     // The raw mesh-mesh intersection volumes.
     auto candidates = driver->search<Portage::SearchKDTree>();
-    weights = driver->intersect_meshes<Portage::IntersectR3D>(candidates);
+    weights = driver->intersect_meshes<Portage::IntersectRnD>(candidates);
 
     // Generate the set of common block IDs; these are the mapable mesh parts.
-    std::set<int> src_bid(src->blockid, src->blockid+src->ncell); // source block IDs
-    std::set<int> tgt_bid(tgt->blockid, tgt->blockid+tgt->ncell); // target block IDs
+    std::set<int> src_bid(src->blockid, src->blockid+src->num_cell); // source block IDs
+    std::set<int> tgt_bid(tgt->blockid, tgt->blockid+tgt->num_cell); // target block IDs
     std::set<int> part_bid;
     std::set_intersection(tgt_bid.begin(),tgt_bid.end(),src_bid.begin(),src_bid.end(),
                     std::inserter(part_bid,part_bid.begin()));
@@ -304,10 +312,10 @@ class PortageMapper {
     part_cells2.resize(npart);
     int n = 0;
     for (auto &bid: part_bid) {
-      for (int j = 0; j < src->ncell; j++) {
+      for (int j = 0; j < src->num_cell; j++) {
         if (src->blockid[j] == bid) part_cells1[n].push_back(j);
       };
-      for (int j = 0; j < tgt->ncell; j++) {
+      for (int j = 0; j < tgt->num_cell; j++) {
         if (tgt->blockid[j] == bid) part_cells2[n].push_back(j);
       };
       n++;
@@ -334,7 +342,7 @@ class PortageMapper {
     switch (method) {
       case 0: partial_fixup = Portage::LOCALLY_CONSERVATIVE; break;
       case 1: partial_fixup = Portage::CONSTANT; break;
-      case 2: partial_fixup = Portage::SHIFTED_CONSERVATIVE; break;
+      case 2: partial_fixup = Portage::GLOBALLY_CONSERVATIVE; break;
     }
 
     for (int i = 0; i < parts_manager.size(); i++) {
