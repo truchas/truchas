@@ -162,9 +162,7 @@ contains
     call start_timer("properties")
 
     do j = 1, this%mesh%ncell
-      !density_old = this%density_c(j)
-      density_old = sum(this%reference_density * vof(:,j))
-
+      density_old = this%density_c(j)
       state(1) = temperature_cc(j)
       this%lame1(j) = 0
       this%lame2(j) = 0
@@ -184,8 +182,7 @@ contains
         call compute_stress(this%lame1(j), this%lame2(j), thermal_strain, thermal_stress(:,j))
       else
         thermal_stress(:,j) = 0
-        ! TODO-WARN: set density_c to something? reference?
-        ASSERT(.false.)
+        this%density_c(j) = sum(this%reference_density * vof(:,j)) ! for the next iteration
       end if
     end do
 
@@ -273,8 +270,7 @@ contains
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:,:)
 
-    integer :: n, xp, p, j, i, f, xn, d
-    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+    integer :: n
     real(r8) :: displ_(3,this%mesh%nnode), r_(3,this%mesh%nnode)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) == this%mesh%nnode_onP)
@@ -304,7 +300,7 @@ contains
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:,:)
 
-    integer :: n, xp, p, j, i, f, xn, d
+    integer :: n, xp, p, j
     real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode_onP)

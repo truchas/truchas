@@ -172,32 +172,32 @@ add_pytruchas_test(vfrad3
                    LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(shear
-                   shear/test-shear.py
+                   sm-shear/test-shear.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(stretch-x
-                   stretch/test-stretch-x.py
+                   sm-stretch/test-stretch-x.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(stretch-y
-                   stretch/test-stretch-y.py
+                   sm-stretch/test-stretch-y.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(stretch-z
-                   stretch/test-stretch-z.py
+                   sm-stretch/test-stretch-z.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(stretch-rotated
-                   stretch/test-stretch-rotated.py
+                   sm-stretch/test-stretch-rotated.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(stretch-contact
-                   stretch/test-stretch-contact.py
+                   sm-stretch/test-stretch-contact.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
@@ -231,13 +231,18 @@ add_pytruchas_test(shear-constr-heat
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS_LEGACY)
 
-add_pytruchas_test(thermoelastic-consistency-1
-                   stretch/test-thermoelastic-consistency.py
+add_pytruchas_test(stretch-consistency
+                   sm-consistency/test-stretch-consistency.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
 
-add_pytruchas_test(thermoelastic-consistency-2
-                   thermoelastic/test-thermoelastic-consistency.py
+add_pytruchas_test(thermoelastic-consistency
+                   sm-consistency/test-thermoelastic-consistency.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(traction-consistency
+                   sm-consistency/test-traction-consistency.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
 
