@@ -231,8 +231,13 @@ add_pytruchas_test(shear-constr-heat
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS_LEGACY)
 
-add_pytruchas_test(thermoelastic-consistency
+add_pytruchas_test(thermoelastic-consistency-1
                    stretch/test-thermoelastic-consistency.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(thermoelastic-consistency-2
+                   thermoelastic/test-thermoelastic-consistency.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
 
