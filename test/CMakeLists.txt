@@ -247,7 +247,7 @@ add_pytruchas_test(traction-consistency
                    LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(shear-legacy
-                   shear/test-shear-legacy.py
+                   sm-shear/test-shear-legacy.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS_LEGACY)
 
