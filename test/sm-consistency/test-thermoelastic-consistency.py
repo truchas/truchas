@@ -13,13 +13,11 @@ def run_test(tenv):
     # thermal gradients
     for i in range(3):
         name = f"thermoelastic{i}"
-        nfail += test_consistency(1, name, f"{name}.inp", f"{name}-legacy.inp", 1e-12)
+        nfail += test_consistency(1, name, f"{name}.inp", f"{name}-legacy.inp", 1e-10)
 
-    for i in range(3,4):
+    for i in range(3,5):
         name = f"thermoelastic{i}"
-        nfail += test_consistency(4, name, f"{name}.inp", f"{name}-legacy.inp", 1e-12)
-
-    nfail += 1 # add thermoelastic-4
+        nfail += test_consistency(4, name, f"{name}.inp", f"{name}-legacy.inp", 1e-10)
 
     # TODO: off-axis rotations
 
@@ -31,7 +29,7 @@ def test_consistency(nproc, name, infile, infile_legacy, tol):
     nfail = 0
     stdout1, output1 = tenv.truchas(nproc, infile)
     stdout2, output2 = tenv.truchas(nproc, infile_legacy)
-    sid = 2
+    sid = 1
     time = output1.time(sid)
     out1 = output1.field(sid, "Displacement")
     out2 = output2.field(sid, "Displacement")

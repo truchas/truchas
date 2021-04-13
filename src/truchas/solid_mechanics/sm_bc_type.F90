@@ -353,10 +353,10 @@ contains
 
   !! Compute boundary conditions and modify the residual matrix diagonal
   !! accordingly.
-  subroutine apply_deriv_diagonal(this, t, scaling_factor, displ, force, diag)
+  subroutine apply_deriv_diagonal(this, t, scaling_factor, displ, force, diag, F)
 
     class(sm_bc), intent(inout) :: this
-    real(r8), intent(in) :: t, scaling_factor(:), displ(:,:), force(:,:)
+    real(r8), intent(in) :: t, scaling_factor(:), displ(:,:), force(:,:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
     integer :: i, n
@@ -387,12 +387,19 @@ contains
     !! value, so we do not call the %compute method here.
     subroutine displacement()
 
+      integer :: d
+      real(r8) :: x(3)
+
       ! 1-normal displacement BC
       associate (nodes => this%displacement1n%index, normal => this%displacement1n%normal)
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
+          do d = 1,3
+            x(d) = dot_product(normal(:,i), F(:,d,n))
+          end do
+          diag(:,n) = diag(:,n) - normal(:,i) * x
+          !diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
           diag(:,n) = diag(:,n) - this%contact_penalty * normal(:,i)**2 * scaling_factor(n)
         end do
       end associate
@@ -402,7 +409,11 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          diag(:,n) = diag(:,n) * tangent(:,i)**2
+          do d = 1,3
+            x(d) = dot_product(tangent(:,i), F(:,d,n))
+          end do
+          diag(:,n) = tangent(:,i) * x
+          !diag(:,n) = diag(:,n) * tangent(:,i)**2
           diag(:,n) = diag(:,n) - this%contact_penalty * (1-tangent(:,i)**2) * scaling_factor(n)
         end do
       end associate

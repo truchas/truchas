@@ -27,7 +27,7 @@ module sm_ds_precon_type
     type(sm_model), pointer, public :: model => null() ! unowned reference
     type(sm_bc), pointer, public :: bc => null() ! unowned reference
 
-    real(r8), allocatable :: diag(:,:), d1(:,:), d2(:,:)
+    real(r8), allocatable :: diag(:,:), F(:,:,:), d1(:,:,:), d2(:,:,:)
     real(r8) :: omega
     integer :: niter
   contains
@@ -69,11 +69,12 @@ contains
 
       associate (mesh => this%model%mesh, ig => this%model%ig)
 
-        allocate(this%d1(3,mesh%nnode_onP), this%d2(3,mesh%nnode_onP))
+        allocate(this%d1(3,3,mesh%nnode_onP), this%d2(3,3,mesh%nnode_onP), &
+            this%F(3,3,mesh%nnode_onP))
 
         do n = 1, mesh%nnode_onP
-          this%d1(:,n) = 0
-          this%d2(:,n) = 0
+          this%d1(:,:,n) = 0
+          this%d2(:,:,n) = 0
 
           do d = 1, 3
             displ = 0
@@ -90,11 +91,11 @@ contains
 
               call this%model%compute_stress(1.0_r8, 0.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
-              this%d1(d,n) = this%d1(d,n) + s * lhs(d)
+              this%d1(:,d,n) = this%d1(:,d,n) + s * lhs
 
               call this%model%compute_stress(0.0_r8, 1.0_r8, strain, stress)
               lhs = this%model%tensor_dot(stress, ig%n(:,p))
-              this%d2(d,n) = this%d2(d,n) + s * lhs(d)
+              this%d2(:,d,n) = this%d2(:,d,n) + s * lhs
             end do
           end do
         end do
@@ -152,8 +153,15 @@ contains
       if (this%model%lame1_n(n) < 1e-6_r8 .and. this%model%lame2_n(n) < 1e-6_r8) then
         ! Set displacements to zero for empty or fluid filled cells
         this%diag(:,n) = 1
+        this%F(:,:,n) = 0
+        this%F(1,1,n) = 1
+        this%F(2,2,n) = 1
+        this%F(3,3,n) = 1
       else
-        this%diag(:,n) = this%model%lame1_n(n) * this%d1(:,n) + this%model%lame2_n(n) * this%d2(:,n)
+        this%F(:,:,n) = this%model%lame1_n(n) * this%d1(:,:,n) + this%model%lame2_n(n) * this%d2(:,:,n)
+        this%diag(1,n) = this%F(1,1,n)
+        this%diag(2,n) = this%F(2,2,n)
+        this%diag(3,n) = this%F(3,3,n)
       end if
       ASSERT(all(this%diag(:,n) /= 0))
     end do
@@ -166,7 +174,7 @@ contains
       call this%model%compute_forces(t, displ_, force)
       call gather_boundary(this%model%mesh%node_ip, force)
     end if
-    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ_, force, this%diag)
+    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ_, force, this%diag, this%F)
 
     do n = 1, this%model%mesh%nnode_onP
       this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)

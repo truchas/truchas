@@ -22,6 +22,8 @@ module sm_nlsol_model_type
     type(sm_ds_precon), pointer :: precon => null() ! unowned reference
     !type(sm_norm), pointer :: norm => null() ! unowned reference
     integer :: model_size
+
+    real(r8) :: f_lnorm0(3), max_du_norm_old
   contains
     procedure :: init
     !! Deferred procedures from nlsol_model
@@ -30,6 +32,7 @@ module sm_nlsol_model_type
     procedure :: apply_precon
     procedure :: compute_precon
     procedure :: du_norm
+    procedure :: is_converged
   end type sm_nlsol_model
 
 contains
@@ -98,5 +101,36 @@ contains
     ! du_norm = global_maxval(du_norm)
     ! error = this%norm%compute(u, du)
   end function
+
+
+  logical function is_converged(this, itr, t, u, du, f_lnorm, tol)
+
+    use parallel_communication, only: global_maxval
+
+    class(sm_nlsol_model) :: this
+    integer, intent(in) :: itr
+    real(r8), intent(in) :: t, tol
+    real(r8), intent(in), contiguous, target :: u(:), du(:), f_lnorm(:)
+
+    real(r8) :: max_du_norm, convergence_rate, tol_, error
+
+    tol_ = tol
+    if (itr == 1) then
+      this%f_lnorm0 = f_lnorm
+      this%max_du_norm_old = huge(1.0_r8)
+    end if
+
+    max_du_norm = global_maxval(abs(du))
+    convergence_rate = max_du_norm / this%max_du_norm_old
+    this%max_du_norm_old = max_du_norm
+    if (convergence_rate >= 0.5_r8) tol_ = tol_ * (1-convergence_rate) / convergence_rate
+
+    error = this%du_norm(t, u, du)
+    is_converged = error < tol_ .or. max_du_norm < 1e-14_r8
+    !is_converged = (itr > 1 .and. error < tol_) .or. (itr == 1 .and. max_du_norm == 0)
+    if (this%f_lnorm0(2) > tiny(1.0)) &
+        is_converged = is_converged .or. f_lnorm(2) / this%f_lnorm0(2) < tol_
+
+  end function is_converged
 
 end module sm_nlsol_model_type

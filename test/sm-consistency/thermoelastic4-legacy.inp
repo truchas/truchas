@@ -53,9 +53,54 @@ resulting stress, strain, and displacement.
 /
 
 &BC
-  bc_name = 'immobile sides'
+  bc_name = 'immobile sides1'
   surface_name = 'from mesh file'
-  mesh_surface = 1, 2, 3, 4, 5, 6
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'normal-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile sides2'
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable = 'displacement'
+  bc_type = 'normal-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile sides3'
+  surface_name = 'from mesh file'
+  mesh_surface = 3
+  bc_variable = 'displacement'
+  bc_type = 'normal-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile sides4'
+  surface_name = 'from mesh file'
+  mesh_surface = 4
+  bc_variable = 'displacement'
+  bc_type = 'normal-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile sides5'
+  surface_name = 'from mesh file'
+  mesh_surface = 5
+  bc_variable = 'displacement'
+  bc_type = 'normal-displacement'
+  bc_value = 0.0
+/
+
+&BC
+  bc_name = 'immobile sides6'
+  surface_name = 'from mesh file'
+  mesh_surface = 6
   bc_variable = 'displacement'
   bc_type = 'normal-displacement'
   bc_value = 0.0

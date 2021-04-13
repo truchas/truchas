@@ -56,6 +56,7 @@ module nlsol_type
     procedure(apply_precon), deferred :: apply_precon
     procedure(compute_precon), deferred :: compute_precon
     procedure(du_norm), deferred :: du_norm
+    procedure(is_converged), deferred :: is_converged
   end type nlsol_model
 
   abstract interface
@@ -88,6 +89,13 @@ module nlsol_type
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
       real(r8), intent(in), contiguous, target :: u(:), du(:)
+    end function
+    logical function is_converged(this, itr, t, u, du, f_lnorm, tol)
+      import :: nlsol_model, r8
+      class(nlsol_model) :: this
+      integer, intent(in) :: itr
+      real(r8), intent(in) :: t, tol
+      real(r8), intent(in), contiguous, target :: u(:), du(:), f_lnorm(:)
     end function
   end interface
 
@@ -250,21 +258,7 @@ contains
       if (this%verbose >= 2) write(this%unit,fmt=3) itr, error
 
       !! Check for convergence.
-      ! if (((error < this%ntol) .and. (itr > 1)) .or. (error < 0.01_r8 * this%ntol)) then
-      !   if (this%verbose) write(this%unit,fmt=2) itr, error
-      !   errc = 0
-      !   exit
-      ! end if
-      max_du_norm = global_maxval(abs(du))
-      convergence_rate = max_du_norm / max_du_norm_old
-      max_du_norm_old = max_du_norm
-      tol = this%ntol
-      if (convergence_rate >= 0.5_r8) tol = tol * (1-convergence_rate) / convergence_rate
-
-      converged = itr > 1 .and. error < tol
-      converged = converged .or. (itr == 1 .and. max_du_norm == 0)
-      if (itr == 1) lnorm0 = lnormi
-      if (lnorm0(2) > tiny(1.0)) converged = converged .or. lnormi(2)/lnorm0(2) < tol
+      converged = this%model%is_converged(itr, t, u, du, lnormi, this%ntol)
       if (converged) then
         if (this%verbose >= 1) write(this%unit,fmt=2) itr, error, lnormi(3)
         errc = 0
