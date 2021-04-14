@@ -48,7 +48,6 @@ contains
     namelist /thermal_source/ name, data_file, prefactor, prefactor_func, &
         cell_set_ids, source, source_func
 
-    call TLS_info('')
     call TLS_info('Reading THERMAL_SOURCE namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -113,10 +112,19 @@ contains
           call plist%set('source', trim(source_func))
         end if
       else
-        call TLS_fatal('neither CELL_SET_IDS nor DATA_FILE specified')
+        call TLS_fatal(label // ': neither CELL_SET_IDS nor DATA_FILE specified')
       end if
 
     end do
+
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 THERMAL_SOURCE namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' THERMAL_SOURCE namelists')
+    end select
 
   end subroutine read_thermal_source_namelists
 

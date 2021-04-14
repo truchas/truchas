@@ -79,7 +79,6 @@ contains
     character(:), allocatable :: label
     type(parameter_list), pointer :: matl_plist, matl_phase_plist, plist
 
-    call TLS_info('')
     call TLS_info('Reading MATERIAL namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -252,6 +251,7 @@ contains
         call process2i(plist, soret_coef(i), soret_coef_func(i), 'SORET_COEF', 'soret-coef', i, label)
       end do
 
+      call TLS_info('  read namelist "' // trim(name) // '"')
     end do
 
     call read_phase_namelists(lun)
@@ -291,7 +291,6 @@ contains
     character(128) :: iom
     type(parameter_list), pointer :: matl_plist, plist
 
-    call TLS_info('')
     call TLS_info('Reading PHASE namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -420,7 +419,10 @@ contains
         call process2i(plist, soret_coef(i), soret_coef_func(i), 'SORET_COEF', 'soret-coef', i, label)
       end do
 
+      call TLS_info('  read namelist "' // trim(name) // '"')
     end do
+
+    if (n == 0) call TLS_info('  none found')
 
   end subroutine read_phase_namelists
 
@@ -434,13 +436,12 @@ contains
     namelist /phase_change/ low_temp_phase, high_temp_phase, latent_heat, &
         solidus_temp, liquidus_temp, solid_frac_table
 
-    integer :: n, ios
+    integer :: n, ios, j
     logical :: found
     character(:), allocatable :: label, name, matl
     character(128) :: iom
     type(parameter_list), pointer :: matl_plist, plist
 
-    call TLS_info('')
     call TLS_info('Reading PHASE_CHANGE namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -507,15 +508,15 @@ contains
 
       if (any(solid_frac_table /= NULL_R)) then
 
-        do n = size(solid_frac_table,dim=2), 1, -1
-          if (solid_frac_table(1,n) /= NULL_R) exit
+        do j = size(solid_frac_table,dim=2), 1, -1
+          if (solid_frac_table(1,j) /= NULL_R) exit
         end do
 
-        if (any(solid_frac_table(:,:n) == NULL_R) .or. &
-            any(solid_frac_table(:,n+1:) /= NULL_R) .or. n < 2) &
+        if (any(solid_frac_table(:,:j) == NULL_R) .or. &
+            any(solid_frac_table(:,j+1:) /= NULL_R) .or. j < 2) &
             call TLS_fatal('invalid table format')
 
-        call plist%set('solid-frac-table', solid_frac_table(:,:n))
+        call plist%set('solid-frac-table', solid_frac_table(:,:j))
 
       else
 
@@ -534,11 +535,20 @@ contains
       end if
 
       if (latent_heat /= NULL_R) then
-        if (latent_heat < 0) call TLS_fatal('LATENT_HEAT must be >= 0.0')
+        if (latent_heat < 0) call TLS_fatal(label // ': LATENT_HEAT must be >= 0.0')
         call plist%set('latent-heat', latent_heat)
       end if
 
     end do
+
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 PHASE_CHANGE namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' PHASE_CHANGE namelists')
+    end select
 
     block
       type(parameter_list_iterator) :: piter

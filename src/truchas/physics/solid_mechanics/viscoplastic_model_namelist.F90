@@ -88,9 +88,10 @@ contains
     
     logical :: found
     integer :: n, ios
+    character(128) :: iom
+    character(:), allocatable :: label
     class(VP_model), pointer :: vpmodel
     
-    call TLS_info ('')
     call TLS_info ('Reading VISCOPLASTIC_MODEL namelists ...')
     
     if (is_IOP) rewind lun
@@ -106,7 +107,7 @@ contains
       if (.not.found) return  ! no further VISCOPLASTIC_MODEL namelists found
       
       n = n + 1
-      call TLS_info ('  Reading VISCOPLASTIC_MODEL namelist #' // i_to_c(n))
+      label = 'VISCOPLASTIC_MODEL[' // i_to_c(n) // ']'
       
       !! Read the namelist variables, assigning default values first.
       if (is_IOP) then
@@ -127,11 +128,11 @@ contains
         mts_sig_a = NULL_R
         mts_sig_i = NULL_R
         mts_temp_0 = NULL_R
-        read(lun,nml=viscoplastic_model,iostat=ios)
+        read(lun,nml=viscoplastic_model,iostat=ios,iomsg=iom)
       end if
       
       call broadcast (ios)
-      if (ios /= 0) call TLS_fatal ('error reading VISCOPLASTIC_MODEL namelist')
+      if (ios /= 0) call TLS_fatal ('error reading ' // label // ' namelist: ' // trim(iom))
       
       !! Broadcast the namelist variables
       call broadcast (phase)
@@ -156,52 +157,52 @@ contains
       if (phase == NULL_C) call TLS_fatal ('PHASE must be assigned a phase name')
       if (.not.matl_model%has_phase(phase)) call TLS_fatal ('unknown PHASE: "' // trim(phase) // '"')
       if (phase_exists(phase)) &
-          call TLS_fatal ('already read a VISCOPLASTIC_MODEL namelist for this PHASE: "' &
+          call TLS_fatal (label // ': already read a VISCOPLASTIC_MODEL namelist for this PHASE: "' &
                           // trim(phase) // '"')
       
       !! Check the model name.
-      if (model == NULL_C) call TLS_fatal ('MODEL must be assigned a value')
+      if (model == NULL_C) call TLS_fatal (label // ': MODEL must be assigned a value')
       
       select case (raise_case(model))
       case ('ELASTIC')
         vpmodel => null()
       case ('POWER LAW')
         !! Check the parameters
-        if (pwr_law_a == NULL_R) call TLS_fatal ('PWR_LAW_A must be assigned a value')
-        if (pwr_law_a < 0.0_r8)  call TLS_fatal ('PWR_LAW_A must be >= 0')
-        if (pwr_law_n == NULL_R) call TLS_fatal ('PWR_LAW_N must be assigned a value')
-        if (pwr_law_n <= 0.0_r8) call TLS_fatal ('PWR_LAW_N must be > 0')
-        if (pwr_law_q == NULL_R) call TLS_fatal ('PWR_LAW_Q must be assigned a value')
-        if (pwr_law_q <= 0.0_r8) call TLS_fatal ('PWR_LAW_Q must be > 0')
-        if (pwr_law_r == NULL_R) call TLS_fatal ('PWR_LAW_R must be assigned a value')
-        if (pwr_law_r <= 0.0_r8) call TLS_fatal ('PWR_LAW_R must be > 0')
+        if (pwr_law_a == NULL_R) call TLS_fatal (label // ': PWR_LAW_A must be assigned a value')
+        if (pwr_law_a < 0.0_r8)  call TLS_fatal (label // ': PWR_LAW_A must be >= 0')
+        if (pwr_law_n == NULL_R) call TLS_fatal (label // ': PWR_LAW_N must be assigned a value')
+        if (pwr_law_n <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_N must be > 0')
+        if (pwr_law_q == NULL_R) call TLS_fatal (label // ': PWR_LAW_Q must be assigned a value')
+        if (pwr_law_q <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_Q must be > 0')
+        if (pwr_law_r == NULL_R) call TLS_fatal (label // ': PWR_LAW_R must be assigned a value')
+        if (pwr_law_r <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_R must be > 0')
         vpmodel => new_power_law_vp_model(pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r)
       case ('MTS')
-        if (mts_b == NULL_R) call TLS_fatal ('MTS_B must be assigned a value')
-        if (mts_b <= 0.0_r8) call TLS_fatal ('MTS_B must be > 0')
-        if (mts_d == NULL_R) call TLS_fatal ('MTS_D must be assigned a value')
-        if (mts_edot_0i == NULL_R) call TLS_fatal ('MTS_EDOT_0I must be assigned a value')
-        if (mts_edot_0i < 0.0_r8) call TLS_fatal ('MTS_EDOT_0I must be >= 0')
-        if (mts_g_0i == NULL_R) call TLS_fatal ('MTS_G_0I must be assigned a value')
-        if (mts_g_0i <= 0.0_r8) call TLS_fatal ('MTS_G_0I must be > 0')
-        if (mts_k == NULL_R) call TLS_fatal ('MTS_K must be assigned a value')
-        if (mts_k <= 0.0_r8) call TLS_fatal ('MTS_K must be > 0')
-        if (mts_mu_0 == NULL_R) call TLS_fatal ('MTS_MU_0 must be assigned a value')
-        if (mts_mu_0 <= 0.0_r8) call TLS_fatal ('MTS_MU_0 must be > 0')
-        if (mts_p_i == NULL_R) call TLS_fatal ('MTS_P_I must be assigned a value')
-        if (mts_p_i <= 0.0_r8) call TLS_fatal ('MTS_P_I must be > 0')
-        if (mts_q_i == NULL_R) call TLS_fatal ('MTS_Q_I must be assigned a value')
-        if (mts_q_i <= 0.0_r8) call TLS_fatal ('MTS_Q_I must be > 0')
-        if (mts_sig_a == NULL_R) call TLS_fatal ('MTS_SIG_A must be assigned a value')
-        if (mts_sig_a < 0.0_r8) call TLS_fatal ('MTS_SIG_A must be >= 0')
-        if (mts_sig_i == NULL_R) call TLS_fatal ('MTS_SIG_I must be assigned a value')
-        if (mts_sig_i <= 0.0_r8) call TLS_fatal ('MTS_SIG_I must be > 0')
-        if (mts_temp_0 == NULL_R) call TLS_fatal ('MTS_TEMP_0 must be assigned a value')
-        if (mts_temp_0 <= 0.0_r8) call TLS_fatal ('MTS_TEMP_0 must be > 0')
+        if (mts_b == NULL_R) call TLS_fatal (label // ': MTS_B must be assigned a value')
+        if (mts_b <= 0.0_r8) call TLS_fatal (label // ': MTS_B must be > 0')
+        if (mts_d == NULL_R) call TLS_fatal (label // ': MTS_D must be assigned a value')
+        if (mts_edot_0i == NULL_R) call TLS_fatal (label // ': MTS_EDOT_0I must be assigned a value')
+        if (mts_edot_0i < 0.0_r8) call TLS_fatal (label // ': MTS_EDOT_0I must be >= 0')
+        if (mts_g_0i == NULL_R) call TLS_fatal (label // ': MTS_G_0I must be assigned a value')
+        if (mts_g_0i <= 0.0_r8) call TLS_fatal (label // ': MTS_G_0I must be > 0')
+        if (mts_k == NULL_R) call TLS_fatal (label // ': MTS_K must be assigned a value')
+        if (mts_k <= 0.0_r8) call TLS_fatal (label // ': MTS_K must be > 0')
+        if (mts_mu_0 == NULL_R) call TLS_fatal (label // ': MTS_MU_0 must be assigned a value')
+        if (mts_mu_0 <= 0.0_r8) call TLS_fatal (label // ': MTS_MU_0 must be > 0')
+        if (mts_p_i == NULL_R) call TLS_fatal (label // ': MTS_P_I must be assigned a value')
+        if (mts_p_i <= 0.0_r8) call TLS_fatal (label // ': MTS_P_I must be > 0')
+        if (mts_q_i == NULL_R) call TLS_fatal (label // ': MTS_Q_I must be assigned a value')
+        if (mts_q_i <= 0.0_r8) call TLS_fatal (label // ': MTS_Q_I must be > 0')
+        if (mts_sig_a == NULL_R) call TLS_fatal (label // ': MTS_SIG_A must be assigned a value')
+        if (mts_sig_a < 0.0_r8) call TLS_fatal (label // ': MTS_SIG_A must be >= 0')
+        if (mts_sig_i == NULL_R) call TLS_fatal (label // ': MTS_SIG_I must be assigned a value')
+        if (mts_sig_i <= 0.0_r8) call TLS_fatal (label // ': MTS_SIG_I must be > 0')
+        if (mts_temp_0 == NULL_R) call TLS_fatal (label // ': MTS_TEMP_0 must be assigned a value')
+        if (mts_temp_0 <= 0.0_r8) call TLS_fatal (label // ': MTS_TEMP_0 must be > 0')
         vpmodel => new_mts_vp_model(mts_k, mts_mu_0, mts_sig_a, mts_d, mts_temp_0, mts_b, &
                                     mts_edot_0i, mts_g_0i, mts_q_i, mts_p_i, mts_sig_i)
       case default
-        call TLS_fatal ('Unknown viscoplastic MODEL: "' // trim(model) // '"')
+        call TLS_fatal (label // ': unknown viscoplastic MODEL: "' // trim(model) // '"')
       end select
       
       !! Append the data for this namelist to the list.
@@ -217,6 +218,15 @@ contains
       last%model => vpmodel
       
     end do
+
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 VISCOPLASTIC_MODEL namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' VISCOPLASTIC_MODEL namelists')
+    end select
 
   contains
 

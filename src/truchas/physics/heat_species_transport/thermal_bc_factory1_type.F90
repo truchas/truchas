@@ -161,10 +161,10 @@ contains
 
     type(bndry_face_func), allocatable :: bff
 
-    call TLS_info('Generating "temperature" thermal boundary condition')
+    call TLS_info('  generating "temperature" thermal boundary condition')
     call this%iterate_list('temperature', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) call TLS_info('  none specified')
+    if (.not.allocated(bff)) call TLS_info('    none specified')
 
     if (allocated(bff)) then
       call bff%add_complete
@@ -208,10 +208,10 @@ contains
 
     type(bndry_face_func), allocatable :: bff
 
-    call TLS_info('Generating "flux" thermal boundary condition')
+    call TLS_info('  generating "flux" thermal boundary condition')
     call this%iterate_list('flux', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) call TLS_info('  none specified')
+    if (.not.allocated(bff)) call TLS_info('    none specified')
 
     if (allocated(bff)) then
       call bff%add_complete
@@ -255,10 +255,10 @@ contains
 
     type(htc_bndry_func), allocatable :: htc
 
-    call TLS_info('Generating "htc" thermal boundary condition')
+    call TLS_info('  generating "htc" thermal boundary condition')
     call this%iterate_list('htc', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(htc)) call TLS_info('  none specified')
+    if (.not.allocated(htc)) call TLS_info('    none specified')
 
     if (allocated(htc)) then
       call htc%add_complete
@@ -304,10 +304,10 @@ contains
 
     type(rad_bndry_func), allocatable :: rad
 
-    call TLS_info('Generating "radiation" thermal boundary condition')
+    call TLS_info('  generating "radiation" thermal boundary condition')
     call this%iterate_list('radiation', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(rad)) call TLS_info('  none specified')
+    if (.not.allocated(rad)) call TLS_info('    none specified')
 
     if (allocated(rad)) then
       call rad%add_complete
@@ -353,10 +353,10 @@ contains
 
     type(htc_intfc_func), allocatable :: htc
 
-    call TLS_info('Generating "interface-htc" thermal interface condition')
+    call TLS_info('  generating "interface-htc" thermal interface condition')
     call this%iterate_list('interface-htc', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(htc)) call TLS_info('  none specified')
+    if (.not.allocated(htc)) call TLS_info('    none specified')
 
     if (allocated(htc)) then
       call htc%add_complete
@@ -400,10 +400,10 @@ contains
 
     type(rad_intfc_func), allocatable :: rad
 
-    call TLS_info('Generating "gap-radiation" thermal interface condition')
+    call TLS_info('  generating "gap-radiation" thermal interface condition')
     call this%iterate_list('gap-radiation', proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(rad)) call TLS_info('  none specified')
+    if (.not.allocated(rad)) call TLS_info('    none specified')
 
     if (allocated(rad)) then
       call rad%add_complete
@@ -458,7 +458,7 @@ contains
       call plist%get('type', this_type, stat=stat, errmsg=errmsg)
       if (stat /= 0) exit
       if (lower_case(this_type) == lower_case(type)) then  ! use this sublist
-        call TLS_info('  using THERMAL_BC[' // piter%name() // ']')
+        call TLS_info('    using THERMAL_BC[' // piter%name() // ']')
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
         call proc(plist, setids, stat, errmsg)

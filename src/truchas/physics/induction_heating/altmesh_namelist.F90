@@ -42,6 +42,7 @@ contains
 
     logical :: found
     integer :: ios
+    character(128) :: iom
 
     !! Locate the ALTMESH namelist (optional)
     altmesh_exists = .false.
@@ -55,8 +56,7 @@ contains
     if (.not.altmesh_exists) return
 
     !! Read the ALTMESH namelist, assigning default values first.
-    call TLS_info ('')
-    call TLS_info ('Reading ALTMESH Namelist ...')
+    call TLS_info ('Reading ALTMESH namelist ...')
     if (is_IOP) then
       altmesh_file = NULL_C
       altmesh_coordinate_scale_factor = 1.0_r8
@@ -76,10 +76,10 @@ contains
       metis_contig  = NULL_I
       metis_seed    = -314159
       metis_dbglvl  = NULL_I
-      read(lun,nml=altmesh,iostat=ios)
+      read(lun,nml=altmesh,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading ALTMESH namelist')
+    if (ios /= 0) call TLS_fatal('error reading ALTMESH namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables.
     call broadcast(altmesh_exists)

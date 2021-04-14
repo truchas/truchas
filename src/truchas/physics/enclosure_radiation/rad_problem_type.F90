@@ -103,6 +103,8 @@ contains
     type(rad_encl_func), allocatable :: eps
     type(parameter_list), pointer :: plist
 
+    call TLS_info ('  initializing enclosure radiation problem "' // trim(name) // '" ...')
+
     !! Load the view factor data
     if (params%is_parameter('toolpath')) then
       call alloc_moving_vf(tinit, params, this%vf, filename)
@@ -118,8 +120,6 @@ contains
     if (is_IOP) call file%close
     this%nface_er = this%encl%nface_onP
     ASSERT(this%nface_er == this%vf%nface)
-
-    call TLS_info ('  Initializing enclosure radiation problem "' // trim(name) // '" ...')
 
     !! Identify the HC faces that correspond to the ER surface faces.
     call connect_to_mesh(mesh, filename, this%faces, this%ge_faces, stat)
@@ -145,7 +145,7 @@ contains
       write(string,'(11x,a)') 'Perhaps an internal interface should have been defined?'
       call TLS_info (trim(string))
       deallocate(setids)
-      call TLS_fatal ('Error initializing enclosure radiation problem "' // trim(name) // '"')
+      call TLS_fatal ('error initializing enclosure radiation problem "' // trim(name) // '"')
     end if
 
     !! Create the parallel permutations between the HC and ER partitions.
@@ -264,8 +264,7 @@ contains
     logical :: has_patches
 
     call params%get('enclosure-filename', filename)
-    call TLS_info('')
-    call TLS_info('Reading enclosure radiation view factors from ' // filename)
+    call TLS_info('    reading enclosure radiation view factors from ' // filename)
     if (is_IOP) call file%open_ro(filename)
     if (is_IOP) has_patches = file%has_patches()
     call broadcast(has_patches)

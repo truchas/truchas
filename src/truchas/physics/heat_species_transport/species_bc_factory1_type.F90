@@ -118,10 +118,10 @@ contains
 
     type(bndry_face_func), allocatable :: bff
 
-    call TLS_info('Generating "concentration" species-'//i_to_c(comp)//' boundary condition')
+    call TLS_info('  generating "concentration" species-'//i_to_c(comp)//' boundary condition')
     call this%iterate_list('concentration', comp, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) call TLS_info('  none specified')
+    if (.not.allocated(bff)) call TLS_info('    none specified')
 
     if (allocated(bff)) then
       call bff%add_complete
@@ -166,10 +166,10 @@ contains
 
     type(bndry_face_func), allocatable :: bff
 
-    call TLS_info('Generating "flux" species-'//i_to_c(comp)//' boundary condition')
+    call TLS_info('  generating "flux" species-'//i_to_c(comp)//' boundary condition')
     call this%iterate_list('flux', comp, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) call TLS_info('  none specified')
+    if (.not.allocated(bff)) call TLS_info('    none specified')
 
     if (allocated(bff)) then
       call bff%add_complete
@@ -228,7 +228,7 @@ contains
       call plist%get('comp', this_comp, default=1, stat=stat, errmsg=errmsg)
       if (stat /= 0) exit
       if (lower_case(this_type) == type .and. this_comp == comp) then  ! use this sublist
-        call TLS_info('  using species_BC[' // piter%name() // ']')
+        call TLS_info('    using species_BC[' // piter%name() // ']')
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) exit
         call proc(plist, setids, stat, errmsg)

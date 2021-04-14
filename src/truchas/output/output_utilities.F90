@@ -63,7 +63,7 @@ CONTAINS
       call TLS_info (repeat('=',80))
       call TLS_info ('')
       call TLS_info (string)
-      call TLS_info ('')
+      !call TLS_info ('')
 
     END SUBROUTINE ANNOUNCE
 

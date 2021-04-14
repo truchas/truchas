@@ -195,7 +195,7 @@ contains
     integer, allocatable :: prn_seed(:)
     character(len=255) :: msg
 
-    call TLS_info ('    Calculating Chebyshev iteration parameters ...')
+    call TLS_info ('    calculating Chebyshev iteration parameters ...')
 
     call this%eps%eval (time)
 

@@ -79,10 +79,10 @@ contains
     type(scalar_cell_func1), allocatable :: scf
 
     !TODO (08/12/2020): needs a better name than "scalar_cell_func1"?
-    call TLS_info('Generating "scalar_cell_func1" thermal source')
+    call TLS_info('  generating "scalar_cell_func1" thermal source')
     call this%iterate_list(TYPE_SCF1, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(scf)) call TLS_info('  none specified')
+    if (.not.allocated(scf)) call TLS_info('    none specified')
 
     if (allocated(scf)) then
       call scf%assemble
@@ -129,10 +129,10 @@ contains
     type(scalar_cell_func2), allocatable :: scf
 
     !TODO (08/12/2020): needs a better name than "scalar_cell_func2"?
-    call TLS_info('Generating "scalar_cell_func2" thermal source')
+    call TLS_info('  generating "scalar_cell_func2" thermal source')
     call this%iterate_list(TYPE_SCF2, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(scf)) call TLS_info('  none specified')
+    if (.not.allocated(scf)) call TLS_info('    none specified')
 
     if (allocated(scf)) then
       call scf%assemble
@@ -199,7 +199,7 @@ contains
     do while (.not.piter%at_end())
       plist => piter%sublist()
       if (type == sublist_type(plist)) then  ! use this sublist
-        call TLS_info('  using THERMAL_SOURCE[' // piter%name() // ']')
+        call TLS_info('    using THERMAL_SOURCE[' // piter%name() // ']')
         call proc(plist, stat, errmsg)
         if (stat /= 0) exit
       end if

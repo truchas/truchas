@@ -116,8 +116,7 @@ contains
     character(*), intent(in) :: filename
     type(rad_encl_file) :: file
     logical :: has_patches
-    call TLS_info('')
-    call TLS_info('Reading enclosure radiation view factors from ' // filename)
+    call TLS_info('    reading enclosure radiation view factors from ' // filename)
     if (is_IOP) call file%open_ro(filename)
     if (is_IOP) has_patches = file%has_patches()
     call broadcast(has_patches)

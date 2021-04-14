@@ -46,7 +46,6 @@ contains
     character(32) :: name, type, conc_func, flux_func
     namelist /species_bc/ name, face_set_ids, comp, type, conc, conc_func, flux, flux_func
 
-    call TLS_info('')
     call TLS_info('Reading SPECIES_BC namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -152,6 +151,15 @@ contains
       end select
 
     end do
+
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 SPECIES_BC namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(n) // ' SPECIES_BC namelists')
+    end select
 
   end subroutine read_species_bc_namelists
 

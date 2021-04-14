@@ -38,6 +38,7 @@ contains
 
     integer :: ios
     logical :: found
+    character(128) :: iom
     type(parameter_list), pointer :: plist
 
     character(31) :: toolpath, laser_type
@@ -57,7 +58,6 @@ contains
     call broadcast(found)
     if (.not.found) return
 
-    call TLS_info('')
     call TLS_info('Reading DED_HEAD namelist ...')
 
     !! Read the namelist.
@@ -71,10 +71,10 @@ contains
       laser_wave_length = NULL_R
       laser_waist_radius = NULL_R
       laser_beam_param = NULL_R
-      read(lun,nml=ded_head,iostat=ios)
+      read(lun,nml=ded_head,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading DED_HEAD namelist')
+    if (ios /= 0) call TLS_fatal('error reading DED_HEAD namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables.
     call broadcast(toolpath)

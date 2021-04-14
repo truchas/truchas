@@ -33,17 +33,6 @@ MODULE DRIVERS
   ! Public Procedures
   public :: CODE
 
-  ! Copyright Notice
-  character (LEN=string_len), dimension(8),target :: copyright = [                       &
-     '   Copyright 2007-2020.  Triad National Security, LLC.  All rights reserved.     ', &
-     '                                                                                 ', &
-     '   This program was produced under U.S. Government contract 89233218CNA000001    ', &
-     '   for Los Alamos National Laboratory (LANL), which is operated by Triad         ', &
-     '   National Security, LLC for the U.S. Department of Energy/National Nuclear     ', &
-     '   Security Administration.                                                      ', &
-     '                                                                                 ', &
-     '   Truchas is open source software distributed under the 3-Clause BSD License.   ']
-
   logical :: mem_on = .false.
 
 CONTAINS
@@ -96,9 +85,6 @@ CONTAINS
     ! announce
     call ANNOUNCE ('PROGRAM INFORMATION')
     call PROGRAM_SPECIFICATIONS ()
-
-    call ANNOUNCE ('COPYRIGHT')
-    call TLS_info (copyright)
 
     ! open the danu output file
     call TDO_open
@@ -379,7 +365,6 @@ call hijack_truchas ()
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
     use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
-    use debug_control_data
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
@@ -446,6 +431,7 @@ call hijack_truchas ()
 
     call version(version_str)
 
+    call TLS_info ('')
     call TLS_info ('   code:                ' // 'Truchas ' // version_str)
     call TLS_info ('   build architecture:  ' // ARCHITECTURE)
     call TLS_info ('   build date/time:     ' // BUILD_DATE)
@@ -479,8 +465,6 @@ call hijack_truchas ()
     !       -q   quiet, eliminate most trace output, especially to the terminal
     !       -n   normal, write standard amount of trace output (default)
     !       -v   verbose, write lots of trace output
-    !       -d   debug, verbose  debugging output, in addition to trace output
-    !       -t   debug, run all tests, mostly quiet
     !       -r   restart (not yet implemented here)
     !       -m   turn mem diagnostics off/on
     !
@@ -488,7 +472,7 @@ call hijack_truchas ()
     !    have values of 0, 1, 2.  0 is quiet, 1 is normal, 2 is
     !    verbose.  debug is 0 unless debug is explicitly turned on,
     !    then it takes the value 0, 1, or 2, according to the other
-    !    flags.  -q -d is allowed, but is potentially uninteresting.
+    !    flags.
     !
     !    if you change the command line options, please change the
     !    usage string declared below
@@ -501,11 +485,12 @@ call hijack_truchas ()
     !use truchas_logging_services
     use utilities_module,     only: MAKE_DIRECTORY_HIERARCHY
     use parameter_module,     only: string_len
-    use debug_control_data
     use restart_variables,    only: restart_file, restart
     use file_utility,         only: count_tokens, get_token
     use string_utilities,     only: i_to_c
     use truchas_danu_output_data, only: io_group_size
+    use truchas_logging_services, only: TLS_set_verbosity, TLS_VERB_SILENT, &
+                                        TLS_VERB_NORMAL, TLS_VERB_NOISY
 
     ! arguments
     character(*), dimension(:), pointer :: argv
@@ -521,18 +506,16 @@ call hijack_truchas ()
     integer :: indx
     integer :: j
     logical :: v
-    logical :: d
     logical :: o
     logical :: r
     logical :: h
     logical :: f
     logical :: g
-    character (LEN=string_len), dimension(10) :: usage = (/                       &
+    character (LEN=string_len), dimension(9) :: usage = (/                       &
        'usage: truchas [options] infile                                       ', &
        '                                                                      ', &
        'options:                                                              ', &
-       '  -v[:n]        verbose level (0, 1, 2)                               ', &
-       '  -d[:n]        debug level (0, 1, 2)                                 ', &
+       '  -v:n          verbose level (0, 1, 2)                               ', &
        '  -o:filename   output filename root                                  ', &
        '  -r:filename   restart path/filename                                 ', &
        '  -m            turn on memory diagnostics                            ', &
@@ -543,7 +526,6 @@ call hijack_truchas ()
 
     ! mark each flag as "unset"
     v = .false.                         ! verbose
-    d = .false.                         ! debug
     o = .false.                         ! output path
     r = .false.                         ! restart file
     h = .false.                         ! help
@@ -658,48 +640,15 @@ call hijack_truchas ()
                 call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
              end if
              h = .true.
-          case ('d')
-             if (d) then
-                call TLS_error ('repeated argument: ' // trim(string))
-                call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
-             end if
-             d = .true.
-             if (n_tokens == 1) then
-                debug = DEBUG_DEFAULT_SET
-             else
-                call GET_TOKEN(token,2,string,':')
-                if (LEN_TRIM(token) /= 1) then
-                   call TLS_error ('invalid argument: ' // trim(string))
-                   call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
-                end if
-                select case (token(1:1))
-                case ('0')
-                   debug=DEBUG_NONE
-                case ('1')
-                   debug=DEBUG_QUIET
-                case ('2')
-                   debug=DEBUG_NOISY
-                case default
-                   call TLS_error ('invalid argument: ' // trim(string))
-                   call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
-                end select
-             end if
           case ('v')
-             !! The code path that is executed when this option is enabled is
-             !! seriously broken.  So until resources are found to fix it we
-             !! are going to simply disable it -- NNC, 11/13/06.
-
-#define DISABLE_VERBOSE_OPTION
-#ifdef DISABLE_VERBOSE_OPTION
-             call TLS_warn ('the -v argument has been disabled in this release.')
-#else
              if (v) then
                 call TLS_error ('repeated argument: ' // trim(string))
                 call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
              end if
              v = .true.
              if (n_tokens == 1) then
-                verbose = VERBOSE_DEFAULT_SET
+                call TLS_error ('invalid argument (missing verbosity level): ' // trim(string))
+                call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
              else
                 call GET_TOKEN(token,2,string,':')
                 if (LEN_TRIM(token) /= 1) then
@@ -708,17 +657,16 @@ call hijack_truchas ()
                 end if
                 select case (token(1:1))
                 case ('0')
-                   verbose=VERBOSE_QUIET
+                   call TLS_set_verbosity(TLS_VERB_SILENT)
                 case ('1')
-                   verbose=VERBOSE_NORMAL
+                   call TLS_set_verbosity(TLS_VERB_NORMAL)
                 case ('2')
-                   verbose=VERBOSE_NOISY
+                   call TLS_set_verbosity(TLS_VERB_NOISY)
                 case default
                    call TLS_error ('invalid argument: ' // trim(string))
                    call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
                 end select
              end if
-#endif
           case ('o')
              if (o) then
                 call TLS_error ('repeated argument: ' // trim(string))
@@ -760,12 +708,8 @@ call hijack_truchas ()
        io_group_size = 1
     end if
 
-    if (.not. d) then
-       debug = DEBUG_DEFAULT
-    end if
-
     if (.not. v) then
-       verbose = VERBOSE_DEFAULT
+       call TLS_set_verbosity(TLS_VERB_NORMAL)
     end if
 
     if (.not. f) then

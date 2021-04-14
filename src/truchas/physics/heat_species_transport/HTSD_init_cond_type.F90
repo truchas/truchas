@@ -448,7 +448,7 @@ contains
     character(:), allocatable :: errmsg
     class(pcsr_precon), allocatable :: precon
     
-    call TLS_info ('  Computing consistent face temperatures and radiosities ...')
+    call TLS_info ('  computing consistent face temperatures and radiosities ...')
     
     !! Solve for the radiosity components given the (approx) face temperatures.
     call HTSD_model_get_face_temp_view (this, u, Tface)
@@ -460,10 +460,10 @@ contains
           call this%ht%vf_rad_prob(n)%solve_radiosity (t, Tface(faces), var, stat, num_itr, error)
         end associate
         if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-          write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
+          write(string,'(2x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
           call TLS_info (string)
         end if
-        if (stat /= 0) call TLS_info ('      WARNING: radiosities not converged')
+        if (stat /= 0) call TLS_info ('  WARNING: radiosities not converged')
       end do
     end if
     
@@ -475,7 +475,7 @@ contains
     r0_err = sqrt(global_dot_product(Fface,Fface))
     if (r0_err == 0.0_r8) return
     if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-      write(string,'(4x,a,es9.2)') '||Rface(0)||_2 = ', r0_err
+      write(string,'(2x,a,es9.2)') '||Rface(0)||_2 = ', r0_err
       call TLS_info (string)
     end if
     
@@ -519,10 +519,10 @@ contains
             call this%ht%vf_rad_prob(n)%solve_radiosity (t, Tface(faces), var, stat, num_itr, error)
           end associate
           if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-            write(string,'(4x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
+            write(string,'(2x,a,i0,a,es9.2," (",i0,")")') 'radiosity[', n, ']: |r|/|b|=', error, num_itr
             call TLS_info (string)
           end if
-          if (stat /= 0) call TLS_info ('    WARNING: radiosities not converged')
+          if (stat /= 0) call TLS_info ('  WARNING: radiosities not converged')
         end do
       end if
       
@@ -530,7 +530,7 @@ contains
       call HTSD_model_compute_f (this, t, u, udot, f)
       r_err = sqrt(global_dot_product(Fface,Fface))
       if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-        write(string,'(4x,a,i0,2(a,es9.2))') &
+        write(string,'(2x,a,i0,2(a,es9.2))') &
             '||Rface(', iter, ')||=', r_err, ', ||ΔTface||_max=', dT_max
         call TLS_info (string)
       end if
@@ -539,12 +539,12 @@ contains
       if (global_all(abs(z) <= atol + rtol * abs(Tface))) exit
     end do
     
-    write(string,'(4x,a,i0,3(a,es9.2))') &
+    write(string,'(2x,a,i0,3(a,es9.2))') &
         '||Rface(', iter, ')||=', r_err, ', ||Rface(0)||=', r0_err, &
         ', ||ΔTface||_max=', dT_max
     call TLS_info (string)
     
-    if (iter > max_iter) call TLS_info ('    WARNING: face temperatures not converged')
+    if (iter > max_iter) call TLS_info ('  WARNING: face temperatures not converged')
     
   contains
   

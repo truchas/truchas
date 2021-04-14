@@ -131,7 +131,7 @@ contains
     allocate(this)
 
     call TLS_info('')
-    call TLS_info('Configuring volume tracking ...')
+    call TLS_info('Initializing volume tracker ...')
 
     this%mesh => unstr_mesh_ptr('MAIN')
     INSIST(associated(this%mesh))

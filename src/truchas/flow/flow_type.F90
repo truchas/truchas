@@ -192,6 +192,9 @@ contains
     ASSERT(size(vcell,dim=1)==3)
     ASSERT(size(vcell,dim=2)>=this%mesh%ncell_onP)
 
+    call TLS_info('')
+    call TLS_info('Computing initial flow pressures and fluxing velocities ...')
+
     call this%props%set_initial_state(vof, tcell)
 
     this%vel_cc(:,:this%mesh%ncell_onP) = vcell(:,:this%mesh%ncell_onP)

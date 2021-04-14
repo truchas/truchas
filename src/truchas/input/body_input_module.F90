@@ -10,9 +10,9 @@
 MODULE BODY_INPUT_MODULE
 
   use kinds, only: r8
-  use truchas_logging_services
   use interfaces_module
   use material_model_driver, only: matl_model
+  use truchas_logging_services
   implicit none
   private
 
@@ -22,163 +22,117 @@ CONTAINS
 
   SUBROUTINE INTERFACES_INPUT (lun)
 
-    use parallel_info_module, only: p_info
-    use parameter_module,     only: mbody
-
     integer, intent(in) :: lun
-
-    logical :: body_namelist, fatal, found
-    integer :: ios, ib
-    character(128) :: message
-
-    ! Initialize the number of bodies
-    nbody = 0
 
     ! defaults
     Body_mass = 0
-    Body_Vel = 0    
+    Body_Vel = 0
 
-    if (p_info%IOP) rewind lun
-
-    ! Read BODY geometry
-    do ib = 1, mbody
-      call BODY_INPUT (lun, found)
-      if (.not. found) exit
-    end do
-
-    ! Make sure one body namelist has been read
-    if (nbody == 0) call TLS_fatal ('no BODY namelists found')
+    call read_body_namelists(lun)
 
   END SUBROUTINE INTERFACES_INPUT
 
 
-  ! Read BODY namelist, put read data into place. If a namelist is found, then
-  ! it is read and data is put into body data arrays. On succesful read, then
-  ! nbody -> nbody + 1.
-  SUBROUTINE BODY_INPUT (lun, body_namelist)
+  subroutine read_body_namelists(lun)
 
-    use input_utilities,        only: seek_to_namelist, NULL_I, NULL_R, NULL_C
-    use parallel_info_module,   only: p_info
-    use parameter_module,       only: mbody, mphi
-    use legacy_mesh_api,        only: ndim
-    use pgslib_module,          only: PGSLIB_BCAST
-    use scalar_func_factories,  only: alloc_const_scalar_func
-    use scalar_func_table,      only: lookup_func
+    use parallel_communication, only: is_IOP, broadcast
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
+    use parameter_module, only: mbody, mphi
+    use legacy_mesh_api, only: ndim
+    use scalar_func_factories, only: alloc_const_scalar_func
+    use scalar_func_table, only: lookup_func
+    use string_utilities, only: i_to_c
 
-    ! Argument List
     integer, intent(in) :: lun
-    logical :: body_namelist
 
-    ! Local Variables
-    logical :: fatal
-    integer :: ioerror, is, n, material_number
+    !! Namelist variables used here
+    integer :: material_number
     real(r8) :: phi(mphi), temperature, velocity(ndim)
     character(31) :: temperature_function
-    character(128) :: message, fatal_error_string
-
-    ! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
+    !! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
     character(64) :: surface_name, axis, fill, material_name
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
     integer :: mesh_material_number(16)
-
-    ! Define BODY Namelist
     namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
         material_name, phi, temperature, temperature_function, velocity, mesh_material_number
 
-    ! Initialize for error checking
-    fatal = .false.
-    fatal_error_string = 'BODY namelist input error!'
+    integer :: ios
+    logical :: found
+    character(:), allocatable :: label
+    character(128) :: iom
 
-    ! Initialize the surface input
-    material_name        = NULL_C
-    temperature          = NULL_R
-    temperature_function = NULL_C
-    phi                  = 0
-    Velocity             = 0
+    call TLS_info('Reading BODY namelists (first pass) ...')
 
-    ! Set error detection stuff
-    IO_PE_ONLY: if (p_info%IOP) then
-       ! Find namelist
-       call seek_to_namelist (lun, 'BODY', found=body_namelist)
+    if (is_IOP) rewind(lun)
 
-       ! Read namelist if found one
-       if (body_namelist) then
-          read (lun, NML = body, IOSTAT = ioerror)
-          if (ioerror /= 0) then ! If read error, then didn't read namelist
-             body_namelist = .false.
-             fatal         = .true.
+    nbody = 0 ! namelist counter
+    do ! until all BODY namelists have been read or an error occurs
+
+      if (is_IOP) call seek_to_namelist(lun, 'body', found, iostat=ios)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
+      call broadcast(found)
+      if (.not.found) exit
+
+      nbody = nbody + 1
+      if (nbody > mbody) call TLS_fatal('too many BODY namelists')
+      label = 'BODY[' // i_to_c(nbody) // ']'
+
+      material_name = NULL_C
+      temperature = NULL_R
+      temperature_function = NULL_C
+      phi = 0
+      velocity = 0
+
+      if (is_IOP) read(lun,nml=body,iostat=ios,iomsg=iom)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading ' // label // ' namelist: ' // trim(iom))
+
+      call broadcast(material_name)
+      call broadcast(temperature)
+      call broadcast(temperature_function)
+      call broadcast(phi)
+      call broadcast(velocity)
+
+      if (temperature == NULL_R .eqv. temperature_function == NULL_C) &
+          call TLS_fatal(label // ': either TEMPERATURE or TEMPERATURE_FUNCTION must be specified')
+
+      if (material_name == NULL_C) then
+        call TLS_fatal(label // ': MATERIAL_NAME not specified')
+      else
+        matnum(nbody) = matl_model%phase_index(material_name) ! yes, really a phase name
+        if (matnum(nbody) <= 0) then
+          if (matl_model%has_matl(material_name)) then
+            call TLS_fatal(label // ': must specify the phase of MATERIAL_NAME: ' // trim(material_name))
+          else
+            call TLS_fatal(label // ': unknown MATERIAL_NAME: ' // trim(material_name))
           end if
-       end if
-    end if IO_PE_ONLY
+        end if
+      end if
 
-    ! Broadcast data just read in to all PE's.
-    if (.not.p_info%UseGlobalServices) then
-       call PGSLIB_BCAST (body_namelist)
-       call PGSLIB_BCAST (phi)
-       call PGSLIB_BCAST (temperature)
-       call PGSLIB_BCAST (temperature_function)
-       call PGSLIB_BCAST (Velocity)
-       call PGSLIB_BCAST (material_name)
-    end if
+      body_phi(nbody,:) = phi
+      body_vel(:,nbody) = velocity
 
-    ! Continue only if we found the namelist and read it without error.
-    BODY_NML: if (body_namelist) then
-       nbody = nbody + 1
+      ! Generate and store the body temperature function.
+      if (temperature /= NULL_R) then
+        call alloc_const_scalar_func(body_temp(nbody)%f, temperature)
+      else
+        call lookup_func(temperature_function, body_temp(nbody)%f)
+        if (.not.allocated(body_temp(nbody)%f)) &
+            call TLS_fatal(label // ': unknown function name: ' // trim(temperature_function))
+      end if
+    end do
 
-       ! Read notice
-       write (message, 15) nbody
-15     format (' Reading BODY Namelist #',i2,' ...')
-       call TLS_info ('')
-       call TLS_info (message)
+    select case (nbody)
+    case (0)
+      call TLS_fatal('no BODY namelist found')
+    case (1)
+      call TLS_info('  read 1 BODY namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(nbody) // ' BODY namelists')
+    end select
 
-       ! Too many bodies is a fatal error
-       if (nbody > mbody) then
-          fatal = .true.
-          write (fatal_error_string, 20) mbody
-20        format('exceeded maximum number: mbody = ',i5)
-       end if
+  end subroutine read_body_namelists
 
-       ! Check that either the temperature or a function name was read, and not both.
-       if (temperature == NULL_R .eqv. temperature_function == NULL_C) then
-          fatal_error_string = 'either TEMPERATURE or TEMPERATURE_FUNCTION must be specified'
-          fatal = .true.
-       end if
-
-       ! Save body data if we still don't have any error
-       if (.not.fatal) then
-         if (material_name == NULL_C) then
-            fatal_error_string = 'MATERIAL_NAME not specified'
-            fatal = .true.
-         else
-            Matnum(nbody) = matl_model%phase_index(material_name) ! yes, really a phase name
-            if (Matnum(nbody) <= 0) then
-              fatal = .true.
-              if (matl_model%has_matl(material_name)) then
-                fatal_error_string = 'must specify the phase of MATERIAL_NAME: ' // trim(material_name)
-              else
-                fatal_error_string = 'unknown MATERIAL_NAME: ' // trim(material_name)
-              end if
-            end if
-         end if
-         Body_Phi(nbody,:) = phi
-         Body_Vel(:,nbody) = Velocity
-         
-         ! Generate and store the body temperature function.
-         if (temperature /= NULL_R) then
-           call alloc_const_scalar_func (body_temp(nbody)%f, temperature)
-         else
-           call lookup_func (temperature_function, body_temp(nbody)%f)
-           if (.not.allocated(body_temp(nbody)%f)) then
-             fatal_error_string =  'unknown function name: ' // trim(temperature_function)
-             fatal = .true.
-           end if
-         end if
-       end if
-    end if BODY_NML
-
-    call TLS_fatal_if_any (fatal, fatal_error_string)
-
-  END SUBROUTINE BODY_INPUT
-
-END MODULE BODY_INPUT_MODULE
+end module body_input_module

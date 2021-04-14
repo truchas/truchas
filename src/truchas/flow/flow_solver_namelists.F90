@@ -119,11 +119,10 @@ contains
       call seek_to_namelist(lun, name, found, iostat=ios)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+    if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
 
     call broadcast(found)
     if (found) then
-      call TLS_info('')
       call TLS_info('Reading ' // name // ' namelist ...')
       !! Read the namelist.
       if (is_IOP) then

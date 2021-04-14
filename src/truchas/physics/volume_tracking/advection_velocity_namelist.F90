@@ -36,7 +36,6 @@ contains
     real(r8) :: velocity_constant(3)
     namelist /advection_velocity/ velocity_constant
 
-    call TLS_info('')
     call TLS_info('Reading ADVECTION_VELOCITY namelist ...')
 
     if (is_IOP) then

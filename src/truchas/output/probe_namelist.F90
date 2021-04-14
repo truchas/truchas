@@ -48,7 +48,6 @@ contains
     integer  :: digits
     namelist /probe/ data_file, description, coord, coord_scale_factor, data, digits
 
-    call TLS_info ('')
     call TLS_info ('Reading PROBE namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -58,7 +57,7 @@ contains
 
       if (is_IOP) call seek_to_namelist(lun, 'PROBE', found, iostat=ios)
       call broadcast(ios)
-      if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+      if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
       call broadcast(found)
       if (.not.found) exit
 
@@ -134,11 +133,14 @@ contains
 
     end do
 
-    if (n == 0) then
-      call TLS_info('  no PROBE namelists found')
-    else
+    select case (n)
+    case (0)
+      call TLS_info('  none found')
+    case (1)
+      call TLS_info('  read 1 PROBE namelist')
+    case default
       call TLS_info('  read ' // i_to_c(n) // ' PROBE namelists')
-    end if
+    end select
 
   end subroutine read_probe_namelists
 

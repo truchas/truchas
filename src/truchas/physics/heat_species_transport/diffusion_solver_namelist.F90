@@ -81,7 +81,6 @@ contains
     integer, parameter :: DS_TEMP_SYS = 2
     integer, parameter :: DS_TEMP_SPEC_SYS = 3
 
-    call TLS_info('')
     call TLS_info('Reading DIFFUSION_SOLVER namelist ...')
 
     if (is_IOP) rewind(lun)

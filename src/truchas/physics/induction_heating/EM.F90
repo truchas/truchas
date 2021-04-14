@@ -43,7 +43,8 @@ contains
     character(len=10) :: ss
 
     if (EM_is_on()) then
-      call TLS_info (' Initializing electromagnetics ...')
+      call TLS_info ('')
+      call TLS_info ('Initializing electromagnetics ...')
       call init_EM_data_proxy ()
     end if
 
@@ -105,7 +106,7 @@ contains
     !! Write the initial Joule heat to the xml output file.
     call danu_write_joule (t)
 
-    call TLS_info (' Electromagnetics initialized.')
+    call TLS_info ('  electromagnetics initialized')
 
   end subroutine initialize_EM
 

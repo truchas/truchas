@@ -49,7 +49,6 @@ contains
         void_collapse_relaxation, wisp_redistribution, wisp_cutoff, &
         wisp_absorption_fraction, wisp_neighbor_cutoff
 
-    call TLS_info('')
     call TLS_info('Reading FLOW namelist ...')
 
     !! Locate the FLOW namelist (required)

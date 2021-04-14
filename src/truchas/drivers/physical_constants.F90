@@ -64,6 +64,7 @@ contains
 
     integer :: ios
     logical :: found
+    character(128) :: iom
 
     namelist /physical_constants/ stefan_boltzmann, absolute_zero, &
                                   vacuum_permittivity, vacuum_permeability
@@ -81,11 +82,10 @@ contains
     if (.not.found) return
 
     !! Read the namelist; variables not read retain their default value.
-    call TLS_info ('')
-    call TLS_info (' Reading PHYSICAL_CONSTANTS namelist ...')
-    if (is_IOP) read(lun,nml=physical_constants,iostat=ios)
+    call TLS_info ('Reading PHYSICAL_CONSTANTS namelist ...')
+    if (is_IOP) read(lun,nml=physical_constants,iostat=ios,iomsg=iom)
     call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('error reading PHYSICAL_CONSTANTS namelist')
+    if (ios /= 0) call TLS_fatal ('error reading PHYSICAL_CONSTANTS namelist: ' // trim(iom))
 
     !! Replicate the values on all processes.
     call broadcast (Stefan_Boltzmann)

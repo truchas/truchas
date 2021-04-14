@@ -399,13 +399,16 @@ CONTAINS
     use input_utilities,        only: seek_to_namelist, NULL_I, NULL_C
     use parallel_info_module,   only: P_Info
     use parameter_module,       only: string_dim, mbc_surfaces
+    use string_utilities, only: i_to_c
 
     integer, intent(in) :: lun
 
     ! Local Variables
-    logical :: fatal, no_bc_namelist, found
-    integer :: ioerror, bcs
+    logical :: fatal, found
+    integer :: ios, bcs
+    character(128) :: iom
     character(128) :: errmsg
+    character(:), allocatable :: label
     real(r8) :: BC_Table(size(BC_Table_Array,1),size(BC_Table_Array,2))
 
     ! Define BC Namelist
@@ -420,11 +423,9 @@ CONTAINS
 
     ! Error Fatal Flag
     fatal = .false.
-    no_bc_namelist = .false.
 
     ! Read Notice
-    call TLS_info ('')
-    call TLS_info (' Reading BC Namelists ...')
+    call TLS_info ('Reading BC namelists ...')
 
     ! Rewind the input deck unit number.
     if (P_Info%IOP) rewind lun
@@ -466,17 +467,10 @@ CONTAINS
 
           ! Find the next BC namelist.
           call seek_to_namelist (lun, 'BC', found)
-          no_bc_namelist = .not.found
-
-          ! Read namelist or set defaults.
-          if (no_bc_namelist) then
-             if (nbc_surfaces == 0) then
-                call TLS_info ('BC namelists not found; using defaults.')
-             end if
-             exit BC_NAMELIST_LOOP
-          end if   
+          if (.not.found) exit
 
           nbc_surfaces = nbc_surfaces + 1
+          label = 'BC[' // i_to_c(nbc_surfaces) // ']'
           
           ! Check that we aren't about to overflow the BC arrays.
           if (nbc_surfaces > mbc_surfaces) then
@@ -488,21 +482,12 @@ CONTAINS
           end if
           
           ! Read the Namelist.
-          read (lun, NML = BC, IOSTAT = ioerror)
+          read(lun,nml=BC,iostat=ios,iomsg=iom)
 
-          if (ioerror /= 0) then
-             ! Error found; punt.
-             write (errmsg, 20) nbc_surfaces,TRIM(bc_name(0))
-20           format ('Error found in reading BC #', i3,' named: ', a)
-             call TLS_error (errmsg)
+          if (ios /= 0) then
+             call TLS_error ('error reading ' // label // ' namelist: ' // trim(iom))
              fatal= .true.
              exit BC_NAMELIST_LOOP
-          else   
-             ! Inform user of successful read.
-             write (errmsg, 25) nbc_surfaces,TRIM(bc_name(0))
-25           format (9x,'Reading BC namelist #', i3,': ',a)
-             call TLS_info ('')
-             call TLS_info (errmsg)
           end if   
 
           ! Copy zeroth element to actual position.
@@ -545,6 +530,15 @@ CONTAINS
 
     ! Error Check
     call TLS_fatal_if_any (fatal, 'terminating execution due to previous input errors')
+
+    select case (nbc_surfaces)
+    case (0)
+      call TLS_info('  none found; using defaults')
+    case (1)
+      call TLS_info('  read 1 BC namelist')
+    case default
+      call TLS_info('  read ' // i_to_c(nbc_surfaces) // ' BC namelists')
+    end select
 
   END SUBROUTINE BC_INPUT
 

@@ -100,7 +100,7 @@ contains
     !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
       call params%get('mesh-file', mesh_file)
-      call TLS_info ('  Reading ExodusII mesh file "' // mesh_file // '"')
+      call TLS_info ('  reading ExodusII mesh file "' // mesh_file // '"')
       call read_exodus_mesh (mesh_file, mesh, stat, errmsg)
       if (stat /= 0) errmsg = 'error reading mesh file: ' // errmsg
     end if

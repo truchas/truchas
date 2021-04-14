@@ -162,6 +162,7 @@ contains
 
     integer :: ios
     logical :: found
+    character(128) :: iom
     real(r8), allocatable :: array(:)
 
     integer :: event_lookahead
@@ -175,12 +176,11 @@ contains
       call seek_to_namelist(lun, 'SIMULATION_CONTROL', found, iostat=ios)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('Error reading input file: iostat=' // i_to_c(ios))
+    if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
 
     call broadcast(found)
     if (.not.found) return
 
-    call TLS_info('')
     call TLS_info('Reading SIMULATION_CONTROL namelist ...')
 
     !! Read the namelist.
@@ -189,10 +189,10 @@ contains
       phase_init_dt_factor = NULL_R
       phase_start_times = NULL_R
       event_lookahead = NULL_I
-      read(lun,nml=simulation_control,iostat=ios)
+      read(lun,nml=simulation_control,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading SIMULATION_CONTROL namelist')
+    if (ios /= 0) call TLS_fatal('error reading SIMULATION_CONTROL namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables.
     call broadcast(phase_init_dt)

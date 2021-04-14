@@ -127,8 +127,6 @@ CONTAINS
       ! Initialize Matl%Cell and Zone%Vc.
       call MATL_INIT (Hits_Vol)
 
-      call TLS_info ('  Initial volume fractions computed.')
-
     end if
 
     ! Initialize Zone%Rho and Zone%Temp
@@ -191,7 +189,7 @@ CONTAINS
 
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
-    call restart_ustruc
+    if (restart) call restart_ustruc
 
     ! Initialize probes.
     call probes_init
@@ -329,11 +327,8 @@ CONTAINS
     ! Thermo-mechanics bcs are handled differently using the "new" bc stuff
     ! We still use the face and bc surface loops to get the masks for each surface
     ! specified in the bc namelists
-    ! Always initialize displacement BCs so that the code does not crash if
-    ! displacement BCs are defined but solid mechanics is not active.  A warning will
-    ! displayed.
-!    if (solid_mechanics) call Initialize_Displacement_BC
-    call Initialize_Displacement_BC
+    ! NB: Code will crash if displacement BCs are defined but solid mechanics is not active.
+    if (solid_mechanics) call Initialize_Displacement_BC
 
     ! Initialize relevant quantities
     Found_Faces = .true.

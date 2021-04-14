@@ -34,7 +34,6 @@ contains
     logical :: found
     character(80) :: iom
 
-    call TLS_info('')
     call TLS_info('Reading SOLID_MECHANICS namelist ...')
 
     !! Locate the SOLID_MECHANICS namelist (required)

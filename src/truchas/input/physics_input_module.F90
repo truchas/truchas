@@ -33,7 +33,7 @@ contains
       end if
     end if
 
-    if (fatal) call TLS_fatal('Errors found with PHYSICS namelists variables')
+    if (fatal) call TLS_fatal('errors found with PHYSICS namelists variables')
 
   end subroutine physics_check
 
@@ -58,7 +58,6 @@ contains
                        body_force_density, prescribed_flow, &
                        electromagnetics, solid_mechanics, materials
 
-    call TLS_info ('')
     call TLS_info ('Reading PHYSICS namelist ...')
 
     !! Locate the PHYSICS namelist (required)

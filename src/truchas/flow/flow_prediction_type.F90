@@ -495,7 +495,7 @@ contains
 
     integer :: i, j, ierr
     real(r8) :: coeff, mass
-    character(18), parameter :: slabel(3) = 'predictor' // ['1', '2', '3'] // ' solve: '
+    character(20), parameter :: slabel(3) = '  predictor' // ['1', '2', '3'] // ' solve: '
 
     call start_timer("solve")
     ! The accumulate routines may add contributions to non-regular cells.  These

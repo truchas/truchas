@@ -55,7 +55,6 @@ contains
                                    precon_method, precon_iter, precon_coupling_method, &
                                    toolpath
 
-    call TLS_info('')
     call TLS_info('Reading ENCLOSURE_RADIATION namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -194,9 +193,14 @@ contains
         call plist%set('precon-coupling-method', precon_coupling_method)
       end if
 
+      call TLS_info ('  read namelist "' // trim(name) // '"')
     end do
 
-    call read_enclosure_surface_namelists(lun)
+    if (n > 0) then
+      call read_enclosure_surface_namelists(lun)
+    else
+      call TLS_info('  none found')
+    end if
 
   end subroutine read_enclosure_radiation_namelists
 
@@ -218,7 +222,6 @@ contains
     namelist /enclosure_surface/ name, enclosure_name, face_block_ids, &
                                  emissivity_constant, emissivity_function
 
-    call TLS_info('')
     call TLS_info('Reading ENCLOSURE_SURFACE namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -295,9 +298,11 @@ contains
         call TLS_fatal(label // ': neither EMISSIVITY_CONSTANT nor EMISSIVITY_FUNCTION specified')
       end if
 
-      call TLS_info (trim(label) // ' read ENCLOSURE_SURFACE namelist "' // trim(name) // '"')
+      call TLS_info ('  read namelist "' // trim(name) // '"')
 
     end do
+
+    if (n == 0) call TLS_info('  none found')
 
   end subroutine read_enclosure_surface_namelists
 

@@ -41,6 +41,7 @@ contains
 
     mesh => unstr_mesh_ptr('MAIN')
 
+    call TLS_info('')
     call TLS_info('Initializing solution probes ...')
     call p%init(mesh, pf_fac, trim(output_dir), params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('error initializing probes: ' // errmsg)

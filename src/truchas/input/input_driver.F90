@@ -70,18 +70,20 @@ contains
     character(*), intent(out) :: title
 
     integer :: ios, lun
+    character(128) :: iom
 
     call start_timer ('Input')
-    call TLS_info ('Opening input file ' // trim(infile) // ' ...')
+    call TLS_info ('')
+    call TLS_info ('Opening input file "' // trim(infile) // '"')
 
     ! open input file
     if (p_info%IOP) then
-      open(newunit=lun,file=trim(infile),status='old',position='rewind',action='read',iostat=ios)
+      open(newunit=lun,file=trim(infile),status='old',position='rewind',action='read',iostat=ios,iomsg=iom)
     else
       lun = -1
     end if
     call pgslib_bcast (ios)
-    if (ios /= 0) call TLS_fatal ('error opening input file: iostat=' // i_to_c(ios))
+    if (ios /= 0) call TLS_fatal ('error opening input file: ' // trim(iom))
 
     ! read first line as title information
     if (p_info%IOP) read(lun,'(a)',iostat=ios) title
@@ -128,8 +130,8 @@ contains
       call read_viscoplastic_model_namelists (lun)
     end if
 
-    ! read bc specifications
-    call bc_input (lun)
+    ! read bc specifications (only relevant now to solid mechanics)
+    if (solid_mechanics) call bc_input (lun)
 
     ! Read Electromagnetics
     if (em_is_on()) call read_em_input (lun)
@@ -149,8 +151,7 @@ contains
 
     if (p_info%IOP) close(lun)
 
-    call TLS_info ('')
-    call TLS_info ('Input file ' // trim(infile) // ' closed.')
+    call TLS_info ('Input file "' // trim(infile) // '" closed')
     call stop_timer('Input')
 
   end subroutine read_input

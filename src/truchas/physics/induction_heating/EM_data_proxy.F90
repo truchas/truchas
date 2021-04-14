@@ -656,7 +656,7 @@ CONTAINS
 
     if (max(dmu, dsigma) > Material_Change_Threshold) material_has_changed = .true.
 
-    write(string,fmt='(3x,2(a,es10.3))') 'Maximum relative change: sigma=', dsigma, ', mu=', dmu
+    write(string,fmt='(3x,2(a,es10.3))') 'maximum relative change: sigma=', dsigma, ', mu=', dmu
     call TLS_info(string)
 
   end function material_has_changed
@@ -911,7 +911,7 @@ CONTAINS
     
     integer :: n
 
-    call TLS_info ('  Reading the Joule heat data from the restart file.')
+    call TLS_info ('  reading the Joule heat data from the restart file')
 
     call read_var (unit, freq_q, 'READ_JOULE_DATA: error reading FREQ record')
     call read_var (unit, uhfs_q, 'READ_JOULE_DATA: error reading UHFS record')
@@ -1023,10 +1023,9 @@ CONTAINS
     !! Write the data.
     sim_num = sim_num + 1
     write(sim_name,'(a,i3.3)') 'EM', sim_num
-    call TLS_info ('Adding EM simulation ' // trim(sim_name))
     call outfile%add_sim_group(trim(sim_name), sim)
     call sim%write_attr ('TIME', t)
-    call TLS_info ('Writing EM restart data for ' // trim(sim_name))
+    call TLS_info ('  writing EM restart data for ' // trim(sim_name))
     call sim%write_repl_data('FREQ', freq_q)
     call sim%write_repl_data('UHFS', uhfs_q)
     call sim%write_repl_data('COILS', solenoid_serialize(coil_q))

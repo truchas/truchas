@@ -65,7 +65,6 @@ CONTAINS
     !   (iteration counts) to stdout and various output files
     !=======================================================================
     use kinds
-    use debug_control_data
     use process_info_module,    only: get_process_size
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
     use parallel_communication
@@ -110,12 +109,12 @@ CONTAINS
     endif
 
     ! If debug, write out additional memory usage info.
-    if (debug >= DEBUG_NOISY) then
+    if (TLS_verbosity >= TLS_VERB_NOISY) then
       call get_process_size (vmsize, rssize, dsize)
       if (vmsize /= -1) Then
         write (string, 20) PGSLIB_GLOBAL_MAXVAL(vmsize), PGSLIB_GLOBAL_SUM(vmsize)
 20      format (8x,'vmsize, largest, total: ',i12,', ',i12,' kb')
-        call TLS_info (string)
+        call TLS_info (string, TLS_VERB_NOISY)
       end if
     end if
 
