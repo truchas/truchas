@@ -8,6 +8,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake"
 include(NoInSourceBuild)
 
 project(Truchas LANGUAGES C CXX Fortran)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Fix a few things that cmake gets wrong for the NAG compiler.
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
@@ -156,8 +158,8 @@ endif()
 # Portage library
 option(USE_PORTAGE "Build with support for the Portage data mapping tool" OFF)
 if (USE_PORTAGE)
-  find_package(Portage)
-  if(NOT PORTAGE_FOUND)
+  find_package(portage)
+  if(NOT portage_FOUND)
     message(FATAL_ERROR "Could NOT find a suitable Portage installation")
   endif()
 endif()

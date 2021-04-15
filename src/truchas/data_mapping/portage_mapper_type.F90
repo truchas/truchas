@@ -28,10 +28,11 @@ module portage_mapper_type
 
   !! This holds an internal serialized copy of a parallel Truchas mesh
   type :: serial_mesh
-    integer(c_int) :: ncell, nface, nnode
+    integer(c_int) :: num_cell, num_face, num_node
     integer(c_int), allocatable :: xcnode(:), cnode(:)
     integer(c_int), allocatable :: xcface(:), cface(:)
     integer(c_int), allocatable :: xfnode(:), fnode(:)
+    integer(c_int), allocatable :: xncell(:), ncell(:)
     real(c_double), allocatable :: coord(:,:)
     integer(c_int), allocatable :: cfdir(:)
     integer(c_int), allocatable :: blockid(:)
@@ -39,10 +40,11 @@ module portage_mapper_type
 
   !! Mesh data needed by Portage
   type, bind(c) :: unstr_mesh_data
-    integer(c_int) :: ncell, nface, nnode
+    integer(c_int) :: num_cell, num_face, num_node
     type(c_ptr) :: xcnode, cnode   ! int arrays
     type(c_ptr) :: xcface, cface   ! int arrays
     type(c_ptr) :: xfnode, fnode   ! int arrays
+    type(c_ptr) :: xncell, ncell   ! int arrays
     type(c_ptr) :: coord           ! double array
     type(c_ptr) :: cfdir           ! int array
     type(c_ptr) :: blockid         ! int array
@@ -196,6 +198,8 @@ contains
       INSIST(.false.)
     end select
 
+    call add_node_to_cell(outmesh)
+
   end subroutine base_to_serial
 
   !! This auxiliary subroutine creates on the IOP a SERIAL_MESH copy of the
@@ -210,9 +214,9 @@ contains
     type(serial_mesh), intent(out) :: outmesh
 
     if (is_IOP) then
-      outmesh%ncell = inmesh%cell_ip%global_size()
-      outmesh%nface = inmesh%face_ip%global_size()
-      outmesh%nnode = inmesh%node_ip%global_size()
+      outmesh%num_cell = inmesh%cell_ip%global_size()
+      outmesh%num_face = inmesh%face_ip%global_size()
+      outmesh%num_node = inmesh%node_ip%global_size()
     end if
 
     call inmesh%get_global_cnode_array(outmesh%xcnode, outmesh%cnode)
@@ -249,7 +253,7 @@ contains
           blockid(j) = inmesh%cell_set_id(trailz(bitmask))
         end associate
       end do
-      allocate(outmesh%blockid(merge(outmesh%ncell,0,is_IOP)))
+      allocate(outmesh%blockid(merge(outmesh%num_cell,0,is_IOP)))
       call collate(outmesh%blockid, blockid)
     end block
 
@@ -270,9 +274,9 @@ contains
     integer, pointer :: array(:)
 
     if (is_IOP) then
-      outmesh%ncell = inmesh%cell_ip%global_size()
-      outmesh%nface = inmesh%face_ip%global_size()
-      outmesh%nnode = inmesh%node_ip%global_size()
+      outmesh%num_cell = inmesh%cell_ip%global_size()
+      outmesh%num_face = inmesh%face_ip%global_size()
+      outmesh%num_node = inmesh%node_ip%global_size()
     end if
 
     !! CNODE -- need to reorient for positive volume
@@ -288,44 +292,44 @@ contains
         end if
       end do
       array(1:size(cnode)) => cnode
-      allocate(outmesh%cnode(merge(4*outmesh%ncell,0,is_IOP)))
+      allocate(outmesh%cnode(merge(4*outmesh%num_cell,0,is_IOP)))
       call collate(outmesh%cnode, inmesh%node_ip%global_index(array))
     end block
 
     !! XCNODE
-    allocate(outmesh%xcnode(merge(outmesh%ncell+1,0,is_IOP)))
+    allocate(outmesh%xcnode(merge(outmesh%num_cell+1,0,is_IOP)))
     if (is_IOP) then
-      do concurrent (j = 0:outmesh%ncell)
+      do concurrent (j = 0:outmesh%num_cell)
         outmesh%xcnode(j+1) = 1 + 4*j
       end do
     end if
 
     !! CFACE -- NB: faces no longer opposite corresponding vertex
-    allocate(outmesh%cface(merge(4*outmesh%ncell,0,is_IOP)))
+    allocate(outmesh%cface(merge(4*outmesh%num_cell,0,is_IOP)))
     associate (cface => inmesh%cface(:,:inmesh%ncell_onP))
       array(1:size(cface)) => cface
       call collate(outmesh%cface, inmesh%face_ip%global_index(array))
     end associate
 
     !! XCFACE
-    allocate(outmesh%xcface(merge(outmesh%ncell+1,0,is_IOP)))
+    allocate(outmesh%xcface(merge(outmesh%num_cell+1,0,is_IOP)))
     if (is_IOP) then
-      do concurrent (j = 0:outmesh%ncell)
+      do concurrent (j = 0:outmesh%num_cell)
         outmesh%xcface(j+1) = 1 + 4*j
       end do
     end if
 
     !! FNODE
-    allocate(outmesh%fnode(merge(3*outmesh%nface,0,is_IOP)))
+    allocate(outmesh%fnode(merge(3*outmesh%num_face,0,is_IOP)))
     associate (fnode => inmesh%fnode(:,:inmesh%nface_onP))
       array(1:size(fnode)) => fnode
       call collate(outmesh%fnode, inmesh%node_ip%global_index(array))
     end associate
 
     !! XFNODE
-    allocate(outmesh%xfnode(merge(outmesh%nface+1,0,is_IOP)))
+    allocate(outmesh%xfnode(merge(outmesh%num_face+1,0,is_IOP)))
     if (is_IOP) then
-      do concurrent (j = 0:outmesh%nface)
+      do concurrent (j = 0:outmesh%num_face)
         outmesh%xfnode(j+1) = 1 + 3*j
       end do
     end if
@@ -348,10 +352,29 @@ contains
       call collate(outmesh%cfdir, array)
     end block
 
-    allocate(outmesh%blockid(merge(outmesh%ncell,0,is_IOP)))
+    allocate(outmesh%blockid(merge(outmesh%num_cell,0,is_IOP)))
     call collate(outmesh%blockid, inmesh%cblock(:inmesh%ncell_onP))
 
   end subroutine simpl_to_serial
+
+  !! This auxiliary subroutine adds the node-to-cell connectivity data
+  !! structure to the passed (and initialized) serial mesh object.
+
+  subroutine add_node_to_cell(smesh)
+    use graph_type
+    type(serial_mesh), intent(inout) :: smesh
+    integer :: i, j
+    type(graph) :: g
+    call g%init(smesh%num_node, directed=.true.)
+    do j = 1, smesh%num_cell
+      associate (cnode => smesh%cnode(smesh%xcnode(j):smesh%xcnode(j+1)-1))
+        do i = 1, size(cnode)
+          call g%add_edge(cnode(i), j)
+        end do
+      end associate
+    end do
+    call g%get_adjacency(smesh%xncell, smesh%ncell)
+  end subroutine
 
   !! This auxiliary subroutine converts a serial unstructured mesh stored as
   !! an UNSTR_MESH object to an UNSTR_MESH_DATA object on the IO processor.
@@ -363,15 +386,17 @@ contains
     type(serial_mesh), intent(in), target :: smesh
     type(unstr_mesh_data), intent(out) :: pmesh
 
-    pmesh%ncell = smesh%ncell
-    pmesh%nface = smesh%nface
-    pmesh%nnode = smesh%nnode
+    pmesh%num_cell = smesh%num_cell
+    pmesh%num_face = smesh%num_face
+    pmesh%num_node = smesh%num_node
     pmesh%xcnode = c_loc(smesh%xcnode)
     pmesh%cnode  = c_loc(smesh%cnode)
     pmesh%xcface = c_loc(smesh%xcface)
     pmesh%cface  = c_loc(smesh%cface)
     pmesh%xfnode = c_loc(smesh%xfnode)
     pmesh%fnode  = c_loc(smesh%fnode)
+    pmesh%xncell = c_loc(smesh%xncell)
+    pmesh%ncell  = c_loc(smesh%ncell)
     pmesh%coord  = c_loc(smesh%coord)
     pmesh%cfdir  = c_loc(smesh%cfdir)
     pmesh%blockid = c_loc(smesh%blockid)

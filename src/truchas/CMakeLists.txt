@@ -62,7 +62,7 @@ target_link_libraries(truchas PUBLIC
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)
-  target_link_libraries(truchas PUBLIC portage)
+  target_link_libraries(truchas PUBLIC portage::portage)
 endif()
 if(USE_METIS)
   target_link_libraries(truchas PUBLIC metis)
