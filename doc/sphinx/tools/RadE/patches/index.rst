@@ -7,26 +7,17 @@ Enclosure Patches
 
 Patch Algorithms
 ----------------
-:program:`genre` includes four patching algorithms.
+The :program:`genre` program supports the following patching algorithms.
 
 .. toctree::
    :titlesonly:
 
    pave
-   vac
    vsa
    metis
-
-.. TODO:: necessary warning?
-.. warning::
-   The :doc:`VAC <vac>`, :doc:`VSA <vsa>`, and :doc:`METIS <metis>` algorithms are experimental and
-   not recommended for regular users. For best results, use the :doc:`PAVE <pave>` algorithm.
+   vac
 
 .. |pave_patches| image:: images/basic_hemi_pave_1.png
-   :width: 100%
-   :align: middle
-
-.. |vac_patches| image:: images/basic_hemi_vac_1.png
    :width: 100%
    :align: middle
 
@@ -40,18 +31,63 @@ Patch Algorithms
 
 .. table::
    :align: center
-   :width: 75%
+   :width: 100%
    :class: fig-table
 
-   +------------------------------+------------------------------+
-   | |pave_patches|               | |vac_patches|                |
-   +------------------------------+------------------------------+
-   | |vsa_patches|                | |metis_patches|              |
-   +------------------------------+------------------------------+
-   | Result of running **PAVE** (top left), **VAC** (top right), |
-   | and **VSA** (bottom left) and **METIS** (bottom right) on   |
-   | the 'basic hemi' enclosure.                                 |
-   +-------------------------------------------------------------+
+   +-----------------+-----------------+-----------------+
+   | |pave_patches|  | |vsa_patches|   | |metis_patches| |
+   +-----------------+-----------------+-----------------+
+   | Result of running **PAVE** (left), **VSA**          |
+   | (middle), and **METIS** (right) on                  |
+   | the 'basic hemi' enclosure.                         |
+   +-----------------------------------------------------+
+
+General guidance
+++++++++++++++++
+We provide general guidance for choosing an algorithm given performance constraints and desired
+properties for the resulting patches.
+
+- PAVE
+
+  - **Pros:** produces neat tilings that account for patch planarity and irregularity. The algorithm
+    is fast (linear in the number of faces).
+
+  - **Cons:** uniform coarsening of the mesh. Only supports faces-per-patch ratios of roughly 4 or
+    6, depending on whether the mesh is hexahedral or tetrahedral.
+
+- VSA
+
+  - **Pros:** works well for arbitrary faces-per-patch ratios. Provides flexible control of the
+    geometric patch diameters. Maximizes patch planarity. Provides choice between patches with
+    roughly the same number of faces, or roughly the same surface area.
+
+  - **Cons:** can be extremely slow for large meshes (scales badly), due to a quadratic dependence on
+    the number of faces. However, once computed, the result can be reused with the :ref:`FILE method
+    <tools/RadE/patches/patches_namelist:PATCH_ALGORITHM>` allowing experimentation with Chaparral
+    parameters without rerunning the algorithm.
+
+
+- METIS
+
+  - **Pros:** works well for arbitrary faces-per-patch ratios. The algorithm is fast by leveraging
+    the METIS library :cite:`patches-index-Karypis:1998:METIS`. Provides choice between patches with
+    roughly the same number of faces, or roughly the same surface area. In the second case, the
+    constraint is tight, so the faces-per-patch ratio is largely ignored and need only be
+    approximate.
+
+  - **Cons:** New and not extensively tested. Patch planarity is not explicitly maximized, but at
+    least patches will not straddle "sharp edges" (see :ref:`here <tools/RadE/patches/metis:Dual
+    Graph>` for more details). Note that it is not clear whether patch planarity, or lack thereof,
+    affects the quality of the thermal radiation model.
+
+- VAC
+
+  - Retained for developer use and not recommended for regular users. It has similar limitations to
+    PAVE, but produces lower quality patches.
+
+Refer to each algorithm's documentation for extensive details on its properties, limitations, and
+supported inputs.
+
 
 PATCHES Namelist
 ----------------
@@ -78,3 +114,10 @@ particular algorithm are prefixed with the algorithm's name.
 
 Refer to the :doc:`PATCES namelist documentation <patches_namelist>` for detailed information on
 these parameters.
+
+
+References
+----------
+.. bibliography:: references.bib
+   :style: unsrt
+   :keyprefix: patches-index-

@@ -30,7 +30,7 @@ General Parameters
 
 PATCH_ALGORITHM
 +++++++++++++++
-Selects one of the three available algorithms, or disables patching.
+Selects one of the available algorithms, or disables patching.
 
 .. namelist_parameter::
    :type: STRING

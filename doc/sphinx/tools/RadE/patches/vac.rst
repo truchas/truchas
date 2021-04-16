@@ -8,8 +8,8 @@
 Vertex Anchor Cluster (VAC)
 ===========================
 .. warning::
-   The VAC algorithm is experimental and not recommended for regular users. For best results, use
-   the :doc:`PAVE patching algorithm <pave>`.
+   The VAC algorithm is intended for development and not recommended for regular users. For best
+   results, use one of the :ref:`other algorithms <tools/RadE/patches/index:Patch Algorithms>`.
 
 .. figure:: images/basic_hemi_vac_2.png
    :figwidth: 35%

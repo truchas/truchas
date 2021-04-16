@@ -4,11 +4,6 @@
 
 METIS patching (METIS)
 ======================
-.. TODO:: necessary warning?
-.. warning::
-   The METIS algorithm is experimental and not recommended for regular users. For best results, use
-   the :doc:`PAVE patching algorithm <pave>`.
-
 .. figure:: images/basic_hemi_metis_2.png
    :figwidth: 30%
    :width: 100%

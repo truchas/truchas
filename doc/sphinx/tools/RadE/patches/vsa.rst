@@ -7,10 +7,6 @@
 
 Variational Shape Approximation (VSA)
 =====================================
-.. warning::
-   The VSA algorithm is experimental and not recommended for regular users. For best results, use
-   the :doc:`PAVE patching algorithm <pave>`.
-
 .. figure:: images/basic_hemi_vsa_2.png
    :figwidth: 28%
    :width: 100%
