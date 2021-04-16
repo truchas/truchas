@@ -8,8 +8,8 @@
 Vertex Anchor Cluster (VAC)
 ===========================
 .. warning::
-   The VAC algorithm is experimental and not recommended for regular users. For best results, use
-   the :doc:`PAVE patching algorithm <pave>`.
+   The VAC algorithm is intended for development and not recommended for regular users. For best
+   results, use one of the :ref:`other algorithms <tools/RadE/patches/index:Patch Algorithms>`.
 
 .. figure:: images/basic_hemi_vac_2.png
    :figwidth: 35%
@@ -399,16 +399,15 @@ before all other candidates.
 Namelist Parameters
 -------------------
 The :doc:`PATCHES namelist <patches_namelist>` allows a user to configure the VAC algorithm
-parameters. Although the PATCHES namelist supports nine parameters, only four are used by VAC, and
+parameters. Although the PATCHES namelist supports many parameters, only four are used by VAC, and
 only two of those are unique to VAC.
 
 The general parameters used by VAC are VERBOSITY_LEVEL and MAX_ANGLE. Refer to the :ref:`PATCHES
 namelist documentation <tools/RadE/patches/patches_namelist:General Parameters>` for more
 information on those parameters.
 
-The two parameters unique to VAC are aptly named VAC_MERGE_LEVEL and VAC_SPLIT_PATCH_SIZE. These
-have already been discussed, so we'll only touch on them briefly here and link to the previous
-discussion.
+The four parameters unique to VAC are all prefixed with *VAC*. These have already been discussed, so
+we'll only touch on them briefly here and link to the previous discussion.
 
 VAC_MERGE_LEVEL
 +++++++++++++++

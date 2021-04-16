@@ -337,16 +337,15 @@ level.
 Namelist Parameters
 -------------------
 The :doc:`PATCHES namelist <patches_namelist>` allows a user to configure the PAVE algorithm
-parameters. Although the PATCHES namelist supports nine parameters, only four are used by PAVE, and
-only two of those are unique to PAVE.
+parameters. Although the PATCHES namelist supports many parameters, only five are used by PAVE, and
+only three of those are unique to PAVE.
 
 The general parameters used by PAVE are VERBOSITY_LEVEL and MAX_ANGLE. Refer to the :ref:`PATCHES
 namelist documentation <tools/RadE/patches/patches_namelist:General Parameters>` for more
 information on those parameters.
 
-The two parameters unique to PAVE are aptly named PAVE_MERGE_LEVEL and PAVE_SPLIT_PATCH_SIZE. These
-have already been discussed, so we'll only touch on them briefly here and link to the previous
-discussion.
+The three parameters unique to PAVE are all prefixed with *PAVE*. These have already been discussed,
+so we'll only touch on them briefly here and link to the previous discussion.
 
 
 PAVE_MERGE_LEVEL

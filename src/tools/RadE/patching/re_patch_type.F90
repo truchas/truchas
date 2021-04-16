@@ -559,7 +559,7 @@ contains
       write (*,'(a)') 'Generating patches using the VAC algorithm'
       allocate(vac_patching :: patch)
     case (PATCH_ALG_PAVE)
-      write (*,'(a)') 'Generating patches using the VAC PAVE algorithm'
+      write (*,'(a)') 'Generating patches using the PAVE algorithm'
       allocate(pave_patching :: patch)
     case (PATCH_ALG_METIS)
 #ifdef USE_METIS

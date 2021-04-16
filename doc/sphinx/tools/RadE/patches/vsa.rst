@@ -7,10 +7,6 @@
 
 Variational Shape Approximation (VSA)
 =====================================
-.. warning::
-   The VSA algorithm is experimental and not recommended for regular users. For best results, use
-   the :doc:`PAVE patching algorithm <pave>`.
-
 .. figure:: images/basic_hemi_vsa_2.png
    :figwidth: 28%
    :width: 100%
@@ -31,7 +27,6 @@ convergence criterion is met.
 .. contents:: Contents
    :local:
    :backlinks: none
-
 
 
 Algorithm
@@ -352,15 +347,15 @@ By choosing proxies that minimize the distortion error of each patch, VSA reduce
 Namelist Parameters
 -------------------
 The :doc:`PATCHES namelist <patches_namelist>` allows a user to configure the VSA algorithm
-parameters. Although the PATCHES namelist supports nine parameters, only five are used by VSA, and
-only three of those are unique to VSA.
+parameters. Although the PATCHES namelist supports many parameters, only eight are used by VSA, and
+only six of those are unique to VSA.
 
 The general parameters used by VSA are VERBOSITY_LEVEL and MAX_ANGLE. Refer to the :ref:`PATCHES
 namelist documentation <tools/RadE/patches/patches_namelist:General Parameters>` for more
 information on those parameters.
 
-The three parameters unique to VSA are aptly named VSA_MAX_ITER, VSA_MIN_DELTA, and
-VSA_FACE_PATCH_RATIO. We discuss these parameters briefly below.
+The six parameters unique to VSA are all prefixed with *VSA*. We discuss these parameters
+briefly below.
 
 
 VSA_MAX_ITER

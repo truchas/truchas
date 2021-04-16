@@ -128,6 +128,7 @@ module vac_patching_type
       procedure, public  :: init => init_vac
       procedure, public  :: run => run_vac
       procedure, public  :: output
+      procedure, private :: name => name_vac
       procedure, private :: print_stats
       procedure, private :: set_patches
       procedure, private :: split_patches
@@ -145,11 +146,24 @@ module vac_patching_type
     contains
       procedure, public  :: init => init_pave
       procedure, public :: run => run_pave
+      procedure, private :: name => name_pave
       procedure, private :: pick_seeds
       procedure, private :: queue_vertex_neighbors
   end type
 
 contains
+
+  function name_vac(this)
+    class(vac_patching), intent(in) :: this
+    character(:), allocatable :: name_vac
+    name_vac = "VAC"
+  end function name_vac
+
+  function name_pave(this)
+    class(pave_patching), intent(in) :: this
+    character(:), allocatable :: name_pave
+    name_pave = "PAVE"
+  end function name_pave
 
   !! Allocate and initialize VAC_PATCHING data
   subroutine init_vac(this, e, params, stat, errmsg)
@@ -257,7 +271,7 @@ contains
     end do
 
     if (this%verbosity > 1) then
-      print '("INITIALIZING VAC:")'
+      print '("INITIALIZING ", a, ":")', this%name()
       print '("  MAX ANGLE:", f6.2)', max_angle
       print '("  MERGE LEVEL:", i3)', this%merge_level
       print '("  SPLIT PATCH SIZE:", i3)', this%split_patch_size
@@ -280,7 +294,7 @@ contains
     character(:), allocatable :: context
     integer :: seed
 
-    call this%vac_patching%init(e, params, stat, errmsg)
+    call init_vac(this, e, params, stat, errmsg)
     if (stat/=0) return
 
     !! Process the parameters.
@@ -330,7 +344,7 @@ contains
 
     !! Statistics after VAC
     if (this%verbosity > 1) then
-      print '("AFER VAC")'
+      print '("AFTER ", a)', this%name()
       call this%print_stats()
     end if
 
@@ -383,7 +397,7 @@ contains
 
     !! Statistics after paving
     if (this%verbosity > 1) then
-      print '("AFTER PAVE")'
+      print '("AFTER ", a)', this%name()
       call this%print_stats()
     end if
 
@@ -460,7 +474,7 @@ contains
     std_nfp = sqrt(std_nfp/this%npatch)
 
     print '("------------------------------------------------------------")'
-    print '("VAC STATS:")'
+    print '(a, " STATS:")', this%name()
     print '("  NFACE:  ", i8)', this%e%nface
     print '("  NPATCH: ", i8)', this%npatch
     print '("  AVG. FACES PER PATCH: ", es11.4)', avg_nfp
