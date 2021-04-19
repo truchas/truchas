@@ -4,14 +4,15 @@ Building Truchas
 
 ### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
-and testing is done on 64-bit Linux and Cray CLE platforms with both Intel and
-NAG compilers and on MacOS with NAG Fortran (experimental).
+and testing is done on 64-bit Linux with both Intel, NAG, and GNU compilers,
+and macOS with GNU and NAG compilers.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
         - version 18.0.5 (anything 18.0.2 or later should be okay)
         - version 19.1.0
-        - Many versions are known to **not work** due to compiler bugs. These
+        - version 20.2.1 (Intel oneAPI compilers version 2021.1)
+        - Many versions are known **not to work** due to compiler bugs. These
           include 19.0.x (any x), and 19.1.1 through at least 19.1.3
     - NAG Fortran (with GNU C/C++):
         - version 6.2 (build 6252 or later preferred)
@@ -20,8 +21,7 @@ NAG compilers and on MacOS with NAG Fortran (experimental).
     - NAG Fortran on MacOS (with Apple Clang C/C++):
 	    - NAG version 6.2 and 7.0 (build 7028 or later required)
 		- Likely any version of Apple Clang should be fine
-    - GNU Fortran and C/C++. Versions 9.x and 10.x appear to be mostly working
-      now. You may find a couple failing tests, which are being investigated.
+    - GNU Fortran and C/C++. Versions 9.x and 10.x appear to be working now.
 * Cmake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
@@ -38,8 +38,8 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A cmake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v15" bundle of TPLs;
-do a `git checkout v15` after cloning the TPL repository. See its README file
+on GitLab. This version of Truchas is tested against the "v18" bundle of TPLs;
+do a `git checkout v18` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
