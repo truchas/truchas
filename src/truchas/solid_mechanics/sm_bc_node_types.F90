@@ -20,21 +20,13 @@ module sm_bc_node_types
   use parallel_communication, only: global_sum
   use truchas_logging_services
   use unstr_mesh_type
-  use scalar_func_class
+  use scalar_func_containers, only: scalar_func_ptr
   use sm_bc_node_list_type
   use sm_bc_list_type
   !use sm_bc_face_type
   !use scalar_func_containers, only: scalar_func_box
   implicit none
   private
-
-  !! Private types
-  type :: scalar_func_ptr
-    class(scalar_func), pointer :: f => null() ! unowned reference
-  contains
-    procedure :: eval => scalar_func_ptr_eval
-  end type scalar_func_ptr
-
 
   !! Public types
   type, public :: sm_bc_d1
@@ -504,13 +496,5 @@ contains
     end do
 
   end subroutine sm_bc_d3_compute
-
-
-  !! Private methods
-  real(r8) function scalar_func_ptr_eval(this, x)
-    class(scalar_func_ptr), intent(in) :: this
-    real(r8), intent(in) :: x(:)
-    scalar_func_ptr_eval = this%f%eval(x)
-  end function scalar_func_ptr_eval
 
 end module sm_bc_node_types

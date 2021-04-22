@@ -19,12 +19,15 @@ module sm_bc_node_contact_types
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication, only: global_sum
   use truchas_logging_services
+  use scalar_func_containers, only: scalar_func_ptr
   use unstr_mesh_type
   use sm_bc_list_type
   use sm_bc_node_list_type
+  use sm_bc_utilities, only: contact_factor, derivative_contact_factor
   implicit none
   private
 
+  !! One contact
   type, public :: sm_bc_c1
     private
     integer, allocatable, public :: index(:,:)
@@ -39,6 +42,23 @@ module sm_bc_node_contact_types
     procedure :: compute => c1_compute
     procedure :: compute_deriv => c1_compute_deriv
   end type sm_bc_c1
+
+  !! One contact and one displacement
+  type, public :: sm_bc_c1d1
+    private
+    integer, allocatable, public :: index(:,:)
+    real(r8), allocatable, public :: value(:,:,:), dvalue(:,:,:)
+    logical, public :: enabled
+
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
+    real(r8) :: penalty, distance, normal_traction
+    real(r8), allocatable :: area(:), normal(:,:), normal_gap(:,:), align(:,:), alpha(:)
+    type(scalar_func_ptr), allocatable :: displf(:)
+  contains
+    procedure :: init => c1d1_init
+    procedure :: compute => c1d1_compute
+    procedure :: compute_deriv => c1d1_compute_deriv
+  end type sm_bc_c1d1
 
 contains
 
@@ -169,7 +189,7 @@ contains
     real(r8), intent(in) :: displ(:,:), ftot(:,:), stress_factor(:), diag(:,:)
 
     integer :: i, n1, n2
-    real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3), diag2(3)
+    real(r8) :: stress1, stress2, x1, x2, dldu1(3), dldu2(3), diag1(3) !, diag2(3)
     real(r8) :: s, tn, l, dl(2), v(2)
 
     do i = 1, size(this%index, dim=2)
@@ -199,75 +219,198 @@ contains
   end subroutine c1_compute_deriv
 
 
-  !! PRIVATE ROUTINES
+  subroutine c1d1_init(this, mesh, nodebc, bc, penalty, distance, traction)
 
-  ! Given the difference in normal displacements s, and the tensile force normal
-  ! to the surface tn, compute the contact factor.
-  !
-  ! If s <= 0, then the nodes are in contact or inside one another.
-  ! If tn <= 0, the normal traction is compressive
-  real(r8) function contact_factor(s, tn, distance, traction)
+    use cell_geometry, only: cross_product, normalized
 
-    real(r8), intent(in) :: s, tn, distance, traction
+    class(sm_bc_c1d1), intent(out) :: this
+    type(unstr_mesh), intent(in), target :: mesh
+    type(sm_bc_node_list), intent(in) :: nodebc
+    type(sm_bc_list), intent(in), target :: bc
+    real(r8), intent(in) :: penalty, distance, traction
 
-    real(r8) :: ls, lt, x
+    character(32) :: msg
+    integer :: nnode, li, idispl, icontact
+    logical :: matching_link
 
-    if (s <= 0) then
-      ls = 1
-    else if (s >= distance) then
-      ls = 0
-    else
-      x = s / distance - 1
-      ls = x**2 * (2*x + 3)
+    this%mesh => mesh
+    this%penalty = penalty
+    this%distance = distance
+    this%normal_traction = traction
+
+    nnode = 0
+    do li = 1, size(nodebc%link, dim=2)
+      call check_if_c1d1_link(li, idispl, icontact, matching_link)
+      if (matching_link) nnode = nnode + 1
+    end do
+    allocate(this%index(2,nnode), this%value(3,2,nnode), this%dvalue(3,2,nnode))
+    allocate(this%normal(3,nnode), this%normal_gap(3,nnode), this%align(3,nnode))
+    allocate(this%area(nnode), this%displf(nnode), this%alpha(nnode))
+
+    nnode = 0
+    do li = 1, size(nodebc%link, dim=2)
+      call check_if_c1d1_link(li, idispl, icontact, matching_link)
+      if (.not.matching_link) cycle
+      nnode = nnode + 1
+      this%index(:,nnode) = nodebc%node(nodebc%link(:,li))
+
+      this%displf(nnode)%f => bc%displacement(nodebc%bcid(idispl))%f
+      this%area(nnode) = norm2(nodebc%normal(:,idispl))
+      this%normal(:,nnode) = nodebc%normal(:,idispl) / norm2(nodebc%normal(:,idispl))
+      this%normal_gap(:,nnode) = nodebc%normal(:,icontact) / norm2(nodebc%normal(:,icontact))
+
+      this%align(:,nnode) = normalized(cross_product(this%normal(:,nnode), this%normal_gap(:,nnode)))
+      this%align(:,nnode) = cross_product(this%align(:,nnode), this%normal(:,nnode))
+      this%alpha(nnode) = dot_product(this%align(:,nnode), this%normal_gap(:,nnode))**2
+    end do
+
+    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = global_sum(nnode)
+    this%enabled = nnode > 0
+    if (this%enabled) then
+      write(msg,"('SM-C1D1 nodes: ',i6)") nnode
+      call TLS_info(trim(msg))
     end if
 
-    if (tn <= 0) then
-      lt = 1
-    else if (tn >= traction) then
-      lt = 0
-    else
-      x = tn / traction - 1
-      lt = x**2 * (2*x + 3)
-    end if
+  contains
 
-    contact_factor = ls * lt
-    ASSERT(contact_factor >= 0 .and. contact_factor <= 1)
+    !! Check if the given link index refers to a one contact + one displacement
+    !! link pair. Here both sides of the link will have some
+    subroutine check_if_c1d1_link(li, idispl, icontact, matching_link)
 
-  end function contact_factor
+      integer, intent(in) :: li
+      integer, intent(out) :: idispl, icontact
+      logical, intent(out) :: matching_link
 
+      integer :: nbc, bcid, xbcid, ni, bc1, bc2
 
-  pure function derivative_contact_factor(s, tn, distance, traction) result(dl)
+      matching_link = .false.
+      idispl = 0
+      icontact = 0
 
-    real(r8), intent(in) :: s, tn, distance, traction
-    real(r8) :: dl(2)
+      ! Count the BCs applied to the two nodes on either side of the link.
+      ! One must have 2 BCs, the other must have
+      ni = nodebc%link(1,li)
+      nbc = nodebc%xbcid(ni+1) - nodebc%xbcid(ni)
+      if (nbc < 1 .or. nbc > 2) return ! if either node has >2 or <1 BCs, the link is disqualified
+      do xbcid = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        bcid = nodebc%bcid(xbcid)
+        if (bcid > bc%dsz) then
+          icontact = xbcid
+        else
+          idispl = xbcid
+        end if
+      end do
 
-    real(r8) :: ls, lt, x
+      ! If one side has two BCs, and they aren't exactly one contact
+      ! and one displacement, then this is not a qualifying link.
+      if (nbc == 2 .and. idispl == 0) return
 
-    dl = 0
+      ! If a contact BC wasn't identified on the first node (this
+      ! shouldn't happen) trigger a failure.
+      ASSERT(icontact /= 0)
 
-    if (s <= 0) then
-      ls = 1
-    else if (s >= distance) then
-      ls = 0
-    else
-      x = s / distance - 1
-      ls = x**2 * (2*x + 3)
-      dl(1) = 6 * x * (x + 1) / distance
-    end if
+      ! Next check the second node in the link. If the displacement condition
+      ! hasn't been found yet, it must be found here. We also check that the
+      ! contact condition on this node matches the contact condition on the
+      ! other. Same for any displacement condition found.
+      ni = nodebc%link(2,li)
+      nbc = nodebc%xbcid(ni+1) - nodebc%xbcid(ni)
+      if (nbc < 1 .or. nbc > 2) return ! if either node has >2 or <1 BCs, the link is disqualified
+      do xbcid = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        bcid = nodebc%bcid(xbcid)
+        if (bcid > bc%dsz) then
+          bc1 = nodebc%bcid(xbcid)
+          bc2 = nodebc%bcid(icontact)
+          if (bc1 /= bc2) return
+        else
+          if (idispl == 0) then
+            idispl = xbcid
+          else
+            bc1 = nodebc%bcid(xbcid)
+            bc2 = nodebc%bcid(idispl)
+            if (bc1 /= bc2) return
+          end if
+        end if
+      end do
+      if (idispl == 0) return ! Didn't find a displacement condition
 
-    if (tn <= 0) then
-      lt = 1
-    else if (tn >= traction) then
-      lt = 0
-    else
-      x = tn / traction - 1
-      lt = x**2 * (2*x + 3)
-      dl(2) = 6 * x * (x + 1) / traction
-    end if
+      ! If the link hasn't been disqualified, mark it as valid
+      matching_link = .true.
 
-    dl(1) = dl(1) * lt
-    dl(2) = dl(2) * ls
+    end subroutine check_if_c1d1_link
 
-  end function derivative_contact_factor
+  end subroutine c1d1_init
+
+  subroutine c1d1_compute(this, time, displ, ftot, stress_factor)
+
+    class(sm_bc_c1d1), intent(inout) :: this
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+
+    integer :: i, n1, n2, k
+    real(r8) :: stress1, stress2, x1, x2, s, tn, l, v(2), a(3), b(3), args(0:3)
+
+    args(0) = time
+    do i = 1, size(this%index, dim=2)
+      n1 = this%index(1,i)
+      n2 = this%index(2,i)
+
+      ! displacement part
+      k = n1
+      args(1:) = this%mesh%x(:,k)
+      s = this%penalty * stress_factor(k)
+      a = this%normal(:,i) * this%displf(i)%eval(args)
+      b = dot_product(displ(:,k), this%normal(:,i)) * this%normal(:,i)
+      this%value(:,1,i) = -dot_product(ftot(:,k), this%normal(:,i)) * this%normal(:,i)
+      this%value(:,1,i) = this%value(:,1,i) - s * (b - a)
+      this%value(:,2,i) = 0
+
+      ! contact part
+      stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
+      stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
+      x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
+      x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
+      s = x2 - x1
+      tn = - stress1 / this%area(i) ! TODO-WARN: is the sign right?
+      l = contact_factor(s, tn, this%distance, this%normal_traction)
+
+      stress1 = dot_product(this%align(:,i), ftot(:,n1))
+      stress2 = dot_product(this%align(:,i), ftot(:,n2))
+      x1 = dot_product(this%align(:,i), displ(:,n1))
+      x2 = dot_product(this%align(:,i), displ(:,n2))
+      v(1) = stress2 + this%penalty*this%alpha(i)*(x2 - x1) * stress_factor(n1)
+      v(2) = stress1 + this%penalty*this%alpha(i)*(x1 - x2) * stress_factor(n2)
+
+      this%value(:,1,i) = this%value(:,1,i) + this%align(:,i) * l * v(1)
+      this%value(:,2,i) = this%value(:,2,i) + this%align(:,i) * l * v(2)
+    end do
+
+  end subroutine c1d1_compute
+
+  !! Only the displacement part is currently implemented in the preconditioner.
+  subroutine c1d1_compute_deriv(this, time, displ, ftot, stress_factor, diag, F)
+
+    class(sm_bc_c1d1), intent(inout) :: this
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), diag(:,:), F(:,:,:)
+
+    integer :: i, nl, n, d
+    real(r8) :: x(3)
+
+    do i = 1, size(this%index, dim=2)
+      do nl = 1, 2
+        n = this%index(nl,i)
+        if (n > this%mesh%nnode_onP) cycle
+        do d = 1,3
+          x(d) = dot_product(this%normal(:,i), F(:,d,n))
+        end do
+        this%dvalue(:,nl,i) = - this%normal(:,i) * x &
+            - this%penalty * stress_factor(n) * this%normal(:,i)**2
+        ! diag(:,n) = diag(:,n) - this%normal(:,i) * x
+        ! !diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
+        ! diag(:,n) = diag(:,n) - this%penalty * stress_factor(n) * this%normal(:,i)**2
+      end do
+    end do
+
+  end subroutine c1d1_compute_deriv
 
 end module sm_bc_node_contact_types

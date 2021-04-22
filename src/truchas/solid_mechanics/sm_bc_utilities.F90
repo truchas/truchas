@@ -27,6 +27,7 @@ module sm_bc_utilities
   public :: compute_ip_normals
   public :: compute_node_normals
   public :: rotation_matrix
+  public :: contact_factor, derivative_contact_factor
 
 contains
 
@@ -458,5 +459,104 @@ contains
     end if
 
   end function rotation_matrix
+
+
+  !! Contact helper functions
+  ! !! Compute the contact residual term
+  ! pure subroutine compute_contact(penalty, distance, traction, &
+  !     displ, ftot, stress_factor, residual)
+
+  !   real(r8), intent(in) :: penalty, distance, traction
+  !   real(r8), intent(in) :: displ(:,:), ftot(:,:), stress_factor(:), normal(:)
+  !   real(r8), intent(out) :: residual(:,:)
+
+  !   real(r8) :: stress1, stress2, x1, x2, s, tn, l, v(2)
+
+  !   stress1 = dot_product(normal, ftot(:,1))
+  !   stress2 = dot_product(normal, ftot(:,2))
+  !   x1 = dot_product(normal, displ(:,1))
+  !   x2 = dot_product(normal, displ(:,2))
+
+  !   s = x2 - x1
+  !   tn = - stress1 / this%area(i) ! TODO-WARN: is the sign right?
+  !   l = contact_factor(s, tn, distance, traction)
+
+  !   v(1) = stress2 + penalty*(x2 - x1) * stress_factor(1)
+  !   v(2) = stress1 + penalty*(x1 - x2) * stress_factor(2)
+
+  !   residual(:,1) = normal * l * v(1)
+  !   residual(:,2) = normal * l * v(2)
+
+  ! end subroutine compute_contact
+
+
+  !! Given the difference in normal displacements s, and the tensile force normal
+  !! to the surface tn, compute the contact factor.
+  !!
+  !! If s <= 0, then the nodes are in contact or inside one another.
+  !! If tn <= 0, the normal traction is compressive
+  real(r8) function contact_factor(s, tn, distance, traction)
+
+    real(r8), intent(in) :: s, tn, distance, traction
+
+    real(r8) :: ls, lt, x
+
+    if (s <= 0) then
+      ls = 1
+    else if (s >= distance) then
+      ls = 0
+    else
+      x = s / distance - 1
+      ls = x**2 * (2*x + 3)
+    end if
+
+    if (tn <= 0) then
+      lt = 1
+    else if (tn >= traction) then
+      lt = 0
+    else
+      x = tn / traction - 1
+      lt = x**2 * (2*x + 3)
+    end if
+
+    contact_factor = ls * lt
+    ASSERT(contact_factor >= 0 .and. contact_factor <= 1)
+
+  end function contact_factor
+
+
+  pure function derivative_contact_factor(s, tn, distance, traction) result(dl)
+
+    real(r8), intent(in) :: s, tn, distance, traction
+    real(r8) :: dl(2)
+
+    real(r8) :: ls, lt, x
+
+    dl = 0
+
+    if (s <= 0) then
+      ls = 1
+    else if (s >= distance) then
+      ls = 0
+    else
+      x = s / distance - 1
+      ls = x**2 * (2*x + 3)
+      dl(1) = 6 * x * (x + 1) / distance
+    end if
+
+    if (tn <= 0) then
+      lt = 1
+    else if (tn >= traction) then
+      lt = 0
+    else
+      x = tn / traction - 1
+      lt = x**2 * (2*x + 3)
+      dl(2) = 6 * x * (x + 1) / traction
+    end if
+
+    dl(1) = dl(1) * lt
+    dl(2) = dl(2) * ls
+
+  end function derivative_contact_factor
 
 end module sm_bc_utilities

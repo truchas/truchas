@@ -23,12 +23,12 @@ module sm_bc_type
   use bndry_face_func_type
   use bndry_ip_func_type
   use sm_normal_traction_bc_type
-  !use sm_gap_contact_bc_type
   use sm_bc_list_type
   use sm_bc_face_list_type
   use sm_bc_node_list_type
   use sm_bc_node_types
   use sm_bc_node_contact_types
+  use sm_bc_c1d2_type
   implicit none
   private
 
@@ -49,6 +49,8 @@ module sm_bc_type
     type(sm_bc_d2) :: displacement2n
     type(sm_bc_d3) :: displacement3n
     type(sm_bc_c1) :: contact1
+    type(sm_bc_c1d1) :: contact1_displacement1
+    type(sm_bc_c1d2) :: contact1_displacement2
     !type(sm_gap_contact_bc) :: gap_contact
   contains
     procedure :: init
@@ -99,15 +101,17 @@ contains
     call this%displacement3n%init(mesh, this%node_list, this%list)
     call this%contact1%init(mesh, this%node_list, this%list, &
         contact_penalty, contact_distance, contact_traction)
+    call this%contact1_displacement1%init(mesh, this%node_list, this%list, &
+        contact_penalty, contact_distance, contact_traction)
+    call this%contact1_displacement2%init(mesh, this%node_list, this%list, &
+        contact_penalty, contact_distance, contact_traction)
+    this%contact_active = this%contact1%enabled .or. this%contact1_displacement1%enabled &
+        .or. this%contact1_displacement2%enabled
 
     call alloc_bc('traction', this%traction)
     if (stat /= 0) return
     call alloc_tractionn_bc
     if (stat /= 0) return
-    ! call alloc_gap_contact_bc
-    ! if (stat /= 0) return
-
-    this%contact_active = this%contact1%enabled ! TODO clean this up
 
     ! sanity check
     block
@@ -120,12 +124,12 @@ contains
       n2 = n2 + count(this%displacement2n%index <= mesh%nnode_onP)
       n2 = n2 + count(this%displacement3n%index <= mesh%nnode_onP)
       n2 = n2 + count(this%contact1%index <= mesh%nnode_onP)
+      n2 = n2 + count(this%contact1_displacement1%index <= mesh%nnode_onP)
+      n2 = n2 + count(this%contact1_displacement2%index <= mesh%nnode_onP)
       n2 = global_sum(n2)
       write(msg,'("Nodes with requested BCs: ",i6,"    Nodes with applied BCs: ",i6)') n1, n2
       call TLS_info(trim(msg))
-      if (n1 /= n2) then
-        call TLS_fatal("ERROR mismatching node BCs")
-      end if
+      if (n1 /= n2) call TLS_fatal("ERROR mismatching node BCs")
     end block
 
   contains
@@ -244,6 +248,28 @@ contains
           n2 = link(2,i)
           if (n1 <= this%mesh%nnode_onP) r(:,n1) = r(:,n1) + values(:,1,i)
           if (n2 <= this%mesh%nnode_onP) r(:,n2) = r(:,n2) + values(:,2,i)
+        end do
+      end associate
+
+      call this%contact1_displacement1%compute(t, displ, r, scaling_factor)
+      associate (link => this%contact1_displacement1%index, &
+          values => this%contact1_displacement1%value)
+        do i = 1, size(link, dim=2)
+          n1 = link(1,i)
+          n2 = link(2,i)
+          if (n1 <= this%mesh%nnode_onP) r(:,n1) = r(:,n1) + values(:,1,i)
+          if (n2 <= this%mesh%nnode_onP) r(:,n2) = r(:,n2) + values(:,2,i)
+        end do
+      end associate
+
+      call this%contact1_displacement2%compute(t, displ, r, scaling_factor)
+      associate (nodes => this%contact1_displacement2%index, &
+          values => this%contact1_displacement2%value, &
+          tangent => this%contact1_displacement2%tangent)
+        do i = 1, size(nodes)
+          n1 = nodes(i)
+          if (n1 > this%mesh%nnode_onP) cycle
+          r(:,n1) = dot_product(r(:,n1), tangent(:,i)) * tangent(:,i) + values(:,i)
         end do
       end associate
 
@@ -378,6 +404,30 @@ contains
           n2 = link(2,i)
           if (n1 <= this%mesh%nnode_onP) diag(:,n1) = diag(:,n1) + dvalues(:,1,i)
           if (n2 <= this%mesh%nnode_onP) diag(:,n2) = diag(:,n2) + dvalues(:,2,i)
+        end do
+      end associate
+
+      !! NB: Multi-contact and contact + displacement combo-BCs haven't yet had
+      !! their contact-part preconditioner contributions implemented. These are
+      !! only applying the displacement-part of the term.
+      call this%contact1_displacement1%compute_deriv(t, displ, force, scaling_factor, diag, F)
+      associate (link => this%contact1_displacement1%index, &
+          dvalues => this%contact1_displacement1%dvalue)
+        do i = 1, size(link, dim=2)
+          n1 = link(1,i)
+          n2 = link(2,i)
+          if (n1 <= this%mesh%nnode_onP) diag(:,n1) = diag(:,n1) + dvalues(:,1,i)
+          if (n2 <= this%mesh%nnode_onP) diag(:,n2) = diag(:,n2) + dvalues(:,2,i)
+        end do
+      end associate
+
+      call this%contact1_displacement2%compute_deriv(t, displ, force, scaling_factor, diag, F)
+      associate (nodes => this%contact1_displacement2%index, &
+          dvalues => this%contact1_displacement2%dvalue)
+        do i = 1, size(nodes)
+          n1 = nodes(i)
+          if (n1 > this%mesh%nnode_onP) cycle
+          diag(:,n1) = dvalues(:,i)
         end do
       end associate
 
