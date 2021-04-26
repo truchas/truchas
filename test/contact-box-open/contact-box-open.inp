@@ -92,9 +92,6 @@
   name = 'gap interface'
   face_set_ids = 10
   type = 'gap-contact'
-  ! displacement = 1.0e-7
-  ! traction = 1.0e4
-  !contact_penalty = 1.0e3
 /
 
 define the material properties (aluminum, SI units)

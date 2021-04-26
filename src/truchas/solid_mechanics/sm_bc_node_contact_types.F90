@@ -255,9 +255,9 @@ contains
       this%index(:,nnode) = nodebc%node(nodebc%link(:,li))
 
       this%displf(nnode)%f => bc%displacement(nodebc%bcid(idispl))%f
-      this%area(nnode) = norm2(nodebc%normal(:,idispl))
       this%normal(:,nnode) = nodebc%normal(:,idispl) / norm2(nodebc%normal(:,idispl))
       this%normal_gap(:,nnode) = nodebc%normal(:,icontact) / norm2(nodebc%normal(:,icontact))
+      this%area(nnode) = norm2(nodebc%normal(:,icontact))
 
       this%align(:,nnode) = normalized(cross_product(this%normal(:,nnode), this%normal_gap(:,nnode)))
       this%align(:,nnode) = cross_product(this%align(:,nnode), this%normal(:,nnode))
@@ -306,9 +306,9 @@ contains
       ! and one displacement, then this is not a qualifying link.
       if (nbc == 2 .and. idispl == 0) return
 
-      ! If a contact BC wasn't identified on the first node (this
-      ! shouldn't happen) trigger a failure.
-      ASSERT(icontact /= 0)
+      ! If a contact BC wasn't identified on the first node, this mesh
+      ! gap doesn't have any contact BC.
+      if (icontact == 0) return
 
       ! Next check the second node in the link. If the displacement condition
       ! hasn't been found yet, it must be found here. We also check that the
@@ -357,13 +357,17 @@ contains
 
       ! displacement part
       k = n1
+      this%value(:,1,i) = -dot_product(ftot(:,k), this%normal(:,i)) * this%normal(:,i)
+      this%value(:,2,i) = -dot_product(ftot(:,n2), this%normal(:,i)) * this%normal(:,i)
+
       args(1:) = this%mesh%x(:,k)
       s = this%penalty * stress_factor(k)
       a = this%normal(:,i) * this%displf(i)%eval(args)
       b = dot_product(displ(:,k), this%normal(:,i)) * this%normal(:,i)
-      this%value(:,1,i) = -dot_product(ftot(:,k), this%normal(:,i)) * this%normal(:,i)
       this%value(:,1,i) = this%value(:,1,i) - s * (b - a)
-      this%value(:,2,i) = 0
+      s = this%penalty * stress_factor(n2)
+      b = dot_product(displ(:,n2), this%normal(:,i)) * this%normal(:,i)
+      this%value(:,2,i) = this%value(:,2,i) - s * (b - a)
 
       ! contact part
       stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))

@@ -1,7 +1,8 @@
 !!
-!! SM_BC_NODE_CONTACT_TYPES
+!! SM_BC_C1D1_TYPE
 !!
-!! TODO
+!! This module implements a type for applying boundary conditions with one
+!! gap-contact and two Dirichlet displacements.
 !!
 !! Zach Jibben <zjibben@lanl.gov>
 !! April 2021
