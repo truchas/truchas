@@ -33,7 +33,7 @@ module sm_model_type
     real(r8), allocatable, public :: lame1_n(:), lame2_n(:), scaling_factor(:)
 
     integer :: nmat
-    real(r8) :: max_cell_halfwidth
+    real(r8) :: max_cell_halfwidth, penalty
     real(r8), allocatable :: density_c(:), density_n(:), reference_density(:)
     real(r8), allocatable :: delta_temperature(:), lame1(:), lame2(:)
     type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
@@ -68,7 +68,7 @@ contains
     real(r8), intent(in) :: reference_density(:)
 
     integer :: stat
-    real(r8) :: penalty, traction, distance
+    real(r8) :: traction, distance
     character(:), allocatable :: errmsg
     type(parameter_list), pointer :: plist => null()
 
@@ -103,9 +103,9 @@ contains
 
     call params%get('contact-distance', distance, default=1e-7_r8)
     call params%get('contact-normal-traction', traction, default=1e4_r8)
-    call params%get('contact-penalty', penalty, default=1e3_r8)
+    call params%get('contact-penalty', this%penalty, default=1e3_r8)
     plist => params%sublist('bc')
-    call this%bc%init(plist, mesh, this%ig, penalty, distance, traction, stat, errmsg)
+    call this%bc%init(plist, mesh, this%ig, this%penalty, distance, traction, stat, errmsg)
     if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
 
   contains
@@ -195,8 +195,9 @@ contains
       if (this%lame2_n(n) /= 0) then
         !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
         !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) / this%ig%volume(n)
-        this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
+        !this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
         !this%scaling_factor(n) = 2e3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
+        this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth / this%penalty
       else
         this%scaling_factor(n) = 1
       end if
