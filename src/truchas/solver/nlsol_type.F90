@@ -224,7 +224,7 @@ contains
   !!     Sci. Comput;, 19 (1998), pp. 728-765..
   subroutine solve(this, t, h, u0, u, errc)
 
-    use parallel_communication, only: global_maxval
+    use parallel_communication, only: global_maxval, is_IOP
 
     class(nlsol), intent(inout) :: this
     real(r8), intent(in)    :: t, h, u0(:)
@@ -255,12 +255,12 @@ contains
 
       !! Error estimate.
       error = this%model%du_norm(t, u, du)
-      if (this%verbose >= 2) write(this%unit,fmt=3) itr, error
+      if (this%verbose >= 2 .and. is_IOP) write(this%unit,fmt=3) itr, error
 
       !! Check for convergence.
       converged = this%model%is_converged(itr, t, u, du, lnormi, this%ntol)
       if (converged) then
-        if (this%verbose >= 1) write(this%unit,fmt=2) itr, error, lnormi(3)
+        if (this%verbose >= 1 .and. is_IOP) write(this%unit,fmt=2) itr, error, lnormi(3)
         errc = 0
         exit
       end if
@@ -270,7 +270,7 @@ contains
     this%itr = itr ! expose the number of iterations performed
 
     if (itr > this%mitr) then ! too many nonlinear iterations
-      if (this%verbose >= 1) write(this%unit,fmt=1) itr, error, lnormi(3)
+      if (this%verbose >= 1 .and. is_IOP) write(this%unit,fmt=1) itr, error, lnormi(3)
       errc = 1
     end if
 
