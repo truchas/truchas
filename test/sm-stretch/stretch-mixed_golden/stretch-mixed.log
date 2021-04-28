@@ -1,0 +1,122 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 21.07-33-gae5ff235-dirty
+   build architecture:  x86_64
+   build date/time:     2021-08-13 14:14:24
+   build flags:          -fimplicit-none -ffree-line-length-none -g -O0 -fcheck=bits,bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647
+   build host:          theseus
+   run architecture:    Linux theseus 5.10.55-1-lts #1 SMP Sat, 31 Jul
+   run host:            theseus
+   run date/time:       13 Aug 21 15:13:14
+   processors:          1
+
+================================================================================
+
+INPUT
+
+Opening input file "stretch-mixed.inp"
+Reading FUNCTION namelists ...
+  none found
+Reading VFUNCTION namelists ...
+  none found
+Reading TOOLPATH namelists ...
+  none found
+Reading PHYSICS namelist ...
+Reading MATERIAL namelists ...
+  read namelist "stuff"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+Reading BODY namelists (first pass) ...
+  read 1 BODY namelist
+Reading BODY namelists (second pass) ...
+  read 1 BODY namelist
+Reading NUMERICS namelist ...
+
+Reading SOLID_MECHANICS namelist ...
+
+Reading SM_BC namelists ...
+Reading PROBE namelists ...
+  none found
+Input file "stretch-mixed.inp" closed
+
+================================================================================
+
+INITIALIZATION
+
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./brick-mixed.gen"
+  element block 10001 merged with block 1
+  element block 200001 merged with block 1
+  element block 100001 merged with block 1
+
+Computing initial volume fractions ...
+  using SM_BC[displn]
+  using SM_BC[displx]
+  using SM_BC[disply]
+  using SM_BC[displz]
+SM BC faces:    316
+SM BC nodes/links:    250     0
+SM-C0D1 nodes:    121
+SM-C0D3 nodes:    129
+Nodes with requested BCs:    250    Nodes with applied BCs:    250
+SM: Computing initial state...
+
+
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+
+================================================================================
+
+TERMINATION
+                 Final Time:  1.0000E+00 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  1.023E+01 --- Total
+    9.432E-04 --- Input
+    1.004E+01 --- Initialization
+      1.425E-01 --- mesh-MAIN
+        1.062E-02 --- ghost-cells
+          1.061E-02 --- cell-ghosts
+            7.618E-03 --- node-neighbors
+            8.529E-04 --- ghost-cells
+          4.290E-06 --- link-ghosts
+          7.040E-06 --- assemble-ghosts
+      2.840E-05 --- VOF Initialize
+      9.474E+00 --- solid mechanics
+        2.077E-02 --- properties
+        8.449E-04 --- precon-compute
+        8.661E+00 --- residual
+          3.618E+00 --- strain
+          5.012E+00 --- stress
+          1.966E-02 --- BCs
+        2.615E-02 --- precon-apply
+    2.850E-06 --- electromagnetics
+    1.900E-01 --- Main Cycle
+      7.966E-04 --- Time Step
+      6.418E-02 --- solid mechanics
+        2.064E-02 --- properties
+        7.637E-04 --- precon-compute
+        4.101E-02 --- residual
+          1.670E-02 --- strain
+          2.416E-02 --- stress
+          9.771E-05 --- BCs
+        1.234E-04 --- precon-apply
+
+                  Process virtual memory used: 7.21E+02 mB
+                                   words/cell: 4045
+
+truchas terminated normally on 13 Aug 21 at 15:13:24

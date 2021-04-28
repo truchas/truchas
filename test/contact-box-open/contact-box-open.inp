@@ -8,9 +8,9 @@
 /
 
 &MESH
-  mesh_file = 'split-rotated-cube.exo'
+  mesh_file = 'rotated-cube.exo'
   coordinate_scale_factor = 0.01
-  gap_element_blocks = 3
+  interface_side_sets = 10
 /
 
 &PHYSICS
@@ -31,12 +31,9 @@
 /
 
 &SOLID_MECHANICS
-  contact_distance = 1.0e-7
-  contact_norm_trac = 1.0e4
-  contact_penalty = 1.0e3
-  convergence_criterion = 1.0e-12
-  NLK_max_vectors = 20
-  NLK_vector_tolerance = 0.01
+  abs_stress_tol = 1e-14
+  nlk_max_vectors = 20
+  nlk_vector_tolerance = 1e-2
   maximum_iterations = 500
 /
 
@@ -47,29 +44,9 @@
   dt_min = 1.0e-3
 /
 
-&LINEAR_SOLVER
-  name = 'displacement precon'
-  method = 'none'
-  preconditioning_method = 'tm_diag'
-  preconditioning_scope = 'local'
-/
-
-&NONLINEAR_SOLVER 
-  name = 'displacement solve'
-  method = 'nlk'
-  linear_solver_name = 'displacement precon'
-/
-
 &BODY
   surface_name = 'from mesh file'
-  mesh_material_number = 1
-  material_name = 'aluminum'
-  temperature = 308.0
-/
-
-&BODY
-  surface_name = 'from mesh file'
-  mesh_material_number = 2
+  mesh_material_number = 1, 2
   material_name = 'aluminum'
   temperature = 308.0
 /
@@ -100,66 +77,25 @@
 &THERMAL_BC
   name = 'gap interface'
   type = 'interface-htc'
-  face_set_ids = 3
+  face_set_ids = 10
   htc = 1.0e4
 /
 
-&BC
-  bc_name = 'left end -- no normal displacement'
-  surface_name = 'from mesh file'
-  mesh_surface = 1
-  bc_variable = 'displacement'
-  bc_type = 'normal-displacement' 
-  bc_value = 0.0
+&SOLID_MECHANICS_BC
+  name = 'left/right/front/bottom/top ends -- no normal displacement'
+  face_set_ids = 1, 2, 3, 5, 6
+  type = 'displacement-n'
+  displacement = 0
 /
 
-&BC
-  bc_name = 'gap interface'
-  surface_name = 'from mesh file'
-  mesh_surface = 10
-  bc_variable = 'displacement'
-  bc_type = 'contact'
-  bc_value = 0.0
-/
-
-&BC
-  bc_name = 'right end -- no normal displacement'
-  surface_name = 'from mesh file'
-  mesh_surface = 2
-  bc_variable = 'displacement'
-  bc_type = 'normal-displacement'
-  bc_value = 0.0
-/
-
-&BC
-  bc_name = 'front side'
-  surface_name = 'from mesh file'
-  mesh_surface = 3
-  bc_variable = 'displacement'
-  bc_type = 'normal-displacement'
-  bc_value = 0.0
-/
-
-&BC
-  bc_name = 'bottom side'
-  surface_name = 'from mesh file'
-  mesh_surface = 5
-  bc_variable = 'displacement'
-  bc_type = 'normal-displacement'
-  bc_value = 0.0
-/
-
-&BC
-  bc_name = 'top side'
-  surface_name = 'from mesh file'
-  mesh_surface = 6
-  bc_variable = 'displacement'
-  bc_type = 'normal-displacement'
-  bc_value = 0.0
+&SOLID_MECHANICS_BC
+  name = 'gap interface'
+  face_set_ids = 10
+  type = 'gap-contact'
 /
 
 define the material properties (aluminum, SI units)
-Elastic constants (stresses) in MPa to make test checking easier 
+Elastic constants (stresses) in MPa to make test checking easier
 
 &MATERIAL
   name = 'aluminum'

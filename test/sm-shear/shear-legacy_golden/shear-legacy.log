@@ -1,0 +1,181 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 20.09-53-ga08a4c2f-dirty
+   build architecture:  x86_64
+   build date/time:     2020-10-07 18:03:27
+   build flags:          -u -C -C=dangling -gline -nan
+   build host:          orion
+   run architecture:    Linux orion 5.4.67-1-lts #1 SMP Thu, 24 Sep 202
+   run host:            orion
+   run date/time:       07 Oct 20 18:22:02
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007-2020.  Triad National Security, LLC.  All rights reserved.
+
+   This program was produced under U.S. Government contract 89233218CNA000001
+   for Los Alamos National Laboratory (LANL), which is operated by Triad
+   National Security, LLC for the U.S. Department of Energy/National Nuclear
+   Security Administration.
+
+   Truchas is open source software distributed under the 3-Clause BSD License.
+
+================================================================================
+
+INPUT
+
+Opening input file shear-legacy.inp ...
+
+Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
+
+Reading PHYSICS namelist ...
+
+Reading MATERIAL namelists ...
+
+Reading PHASE namelists ...
+
+Reading PHASE_CHANGE namelists ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
+
+ Reading BODY Namelist # 1 ...
+
+Reading BODY namelists ...
+
+Reading NUMERICS namelist ...
+
+Reading LEGACY_SOLID_MECHANICS namelist ...
+
+Reading VISCOPLASTIC_MODEL namelists ...
+
+ Reading BC Namelists ...
+
+         Reading BC namelist #  1: displx
+
+         Reading BC namelist #  2: disply
+
+         Reading BC namelist #  3: displz
+
+         Reading BC namelist #  4: tracy
+
+Reading PROBE namelists ...
+  no PROBE namelists found
+
+Input file shear-legacy.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+
+Initializing mesh "MAIN" ...
+  generating an internal ExodusII mesh
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|       84      101       20
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0       84      0      101      0       20
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
+
+Computing initial volume fractions ...
+  Initial volume fractions computed.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+
+
+
+
+
+    Boundary conditions in BC namelist  1 will be applied on an area of   1.00000E+00 (     1 faces)
+    Boundary conditions in BC namelist  2 will be applied on an area of   1.00000E+00 (     1 faces)
+    Boundary conditions in BC namelist  3 will be applied on an area of   1.00000E+00 (     1 faces)
+    Boundary conditions in BC namelist  4 will be applied on an area of   1.00000E+00 (     1 faces)
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 82 boundary points
+   EXTERIOR: 82 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 82 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+
+ Finding control volume faces internal to cells ...
+
+ Finding jacobians ...
+
+ Inverting jacobians ...
+done.
+
+ Finding control volume faces on external boundaries ...
+
+done.
+
+ Calculating initial thermo-elastic state. Done.
+
+     0 Thermo-elastic iterations (linear)
+     85 Thermo-elastic iterations (nonlinear)
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+            0 Solid mechanics iterations (linear)
+            2 Solid mechanics iterations (nonlinear)
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0000E+00 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  1.345E-01 --- Total
+    3.008E-03 --- Input
+    1.197E-01 --- Initialization
+      8.793E-02 --- Solid Mechanics
+        2.610E-04 --- Precondition
+      2.100E-05 --- VOF Initialize
+      4.601E-03 --- Initialization
+        4.601E-03 --- Solid Mech Init
+    9.367E-03 --- Main Cycle
+      4.000E-06 --- Time Step
+      1.669E-03 --- Solid Mechanics
+        2.220E-04 --- Precondition
+
+                  Process virtual memory used: 3.73E+02 mB
+                                   words/cell: 2446438
+
+truchas terminated normally on 07 Oct 20 at 18:22:02

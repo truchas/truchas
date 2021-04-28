@@ -71,7 +71,6 @@ module solid_mechanics_input
   implicit none
   public
 
-  logical :: solid_mechanics
   logical :: solid_mechanics_body_force
   logical :: stress_reduced_integration
 

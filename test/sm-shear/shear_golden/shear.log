@@ -1,0 +1,151 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 20.09-53-ga08a4c2f-dirty
+   build architecture:  x86_64
+   build date/time:     2020-10-07 13:20:00
+   build flags:          -u -C -C=dangling -gline -nan
+   build host:          orion
+   run architecture:    Linux orion 5.4.67-1-lts #1 SMP Thu, 24 Sep 202
+   run host:            orion
+   run date/time:       07 Oct 20 17:59:38
+   processors:          1
+
+================================================================================
+
+COPYRIGHT
+
+   Copyright 2007-2020.  Triad National Security, LLC.  All rights reserved.
+
+   This program was produced under U.S. Government contract 89233218CNA000001
+   for Los Alamos National Laboratory (LANL), which is operated by Triad
+   National Security, LLC for the U.S. Department of Energy/National Nuclear
+   Security Administration.
+
+   Truchas is open source software distributed under the 3-Clause BSD License.
+
+================================================================================
+
+INPUT
+
+Opening input file shear.inp ...
+
+Reading FUNCTION namelists ...
+
+Reading VFUNCTION namelists ...
+
+Reading TOOLPATH namelists ...
+
+Reading PHYSICS namelist ...
+
+Reading MATERIAL namelists ...
+
+Reading PHASE namelists ...
+
+Reading PHASE_CHANGE namelists ...
+
+ Reading OUTPUTS Namelist ...
+
+Reading MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
+
+ Reading BODY Namelist # 1 ...
+
+Reading BODY namelists ...
+
+Reading NUMERICS namelist ...
+
+Reading SOLID_MECHANICS namelist ...
+
+Reading SM_BC namelists ...
+
+ Reading BC Namelists ...
+BC namelists not found; using defaults.
+
+Reading PROBE namelists ...
+  no PROBE namelists found
+
+Input file shear.inp closed.
+
+================================================================================
+
+INITIALIZATION
+
+
+Initializing mesh "MAIN" ...
+  generating an internal ExodusII mesh
+  finding cell neighbors
+  partitioning the mesh cells
+  partitioning the mesh nodes
+  numbering the mesh faces
+  partitioning the mesh faces
+  identifying off-process ghost cells
+  generating parallel mesh structure
+  UNSTR_MESH Profile:
+     PE|    nnode    nface    ncell
+    ---+---------------------------
+      1|       84      101       20
+  Mesh Communication Profile:
+              Nodes           Faces           Cells
+     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
+    ---+------------------------------------------------
+      1|      0       84      0      101      0       20
+  Mesh "MAIN" initialized
+
+Allocating base derived types A ...done.
+
+Computing initial volume fractions ...
+  Initial volume fractions computed.
+ Initializing Displacement Boundary Conditions
+
+ Locating cell faces for which BCs are to be applied ...
+ Initializing Pressure Boundary Conditions
+   DIRICHLET: 0 boundary points
+   REFLECTIVE: 82 boundary points
+   EXTERIOR: 82 boundary points
+   NEUMANN: 0 boundary points
+   HNEUMANN: 82 boundary points
+ Pressure BCs initialized.
+
+ Finished BC initialization.
+  using SM_BC[displx]
+  using SM_BC[disply]
+  using SM_BC[displz]
+  using SM_BC[tracy]
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+
+================================================================================
+
+TERMINATION
+
+                 Final Time:  1.0000E+00 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  9.172E-02 --- Total
+    2.427E-03 --- Input
+    2.011E-02 --- Initialization
+      2.300E-05 --- VOF Initialize
+      3.484E-03 --- solid mechanics
+    6.672E-02 --- Main Cycle
+      4.000E-06 --- Time Step
+      6.542E-02 --- solid mechanics
+        9.500E-05 --- properties
+        2.100E-05 --- precon-compute
+        2.442E-02 --- residual
+        2.940E-04 --- precon-apply
+
+                  Process virtual memory used: 5.01E+02 mB
+                                   words/cell: 3280332
+
+truchas terminated normally on 07 Oct 20 at 17:59:38

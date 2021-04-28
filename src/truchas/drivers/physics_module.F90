@@ -27,5 +27,7 @@ module physics_module
   logical, public, save :: flow = .false.
   logical, public, save :: prescribed_flow = .false.
   real(r8), public,save :: body_force_density(3)
+  logical, public, save :: solid_mechanics = .false.
+  logical, public, save :: legacy_solid_mechanics = .false.
 
 end module physics_module

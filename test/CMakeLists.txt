@@ -71,58 +71,58 @@ add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4)
 #		   LABELS DEMO ELECTROMAGNETIC)
 
 add_pytruchas_test(em1 em1/testEM1.py
-		   PROCESSORS 4
-		   LABELS ELECTROMAGNETICS)
+                   PROCESSORS 4
+                   LABELS ELECTROMAGNETICS)
 
 add_pytruchas_test(em2 em2/testEM2.py
-		   PROCESSORS 4
-		   LABELS ELECTROMAGNETICS)
+                   PROCESSORS 4
+                   LABELS ELECTROMAGNETICS)
 
 add_pytruchas_test(em3 em3/testEM3.py
-		   PROCESSORS 4
-		   LABELS ELECTROMAGNETICS)
+                   PROCESSORS 4
+                   LABELS ELECTROMAGNETICS)
 
 add_pytruchas_test(ds1 ds1/testDS1.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION)
+                   PROCESSORS 4
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds2 ds2/testDS2.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION)
+                   PROCESSORS 4
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds3 ds3/testDS3.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION)
+                   PROCESSORS 4
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds4 ds4/testDS4.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION PHASE_CHANGE)
+                   PROCESSORS 4
+                   LABELS DIFFUSION PHASE_CHANGE)
 
 add_pytruchas_test(ds5 ds5/testDS5.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION)
+                   PROCESSORS 4
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds6 ds6/testDS6.py
                    PROCESSORS 4
-		   LABELS DIFFUSION)
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds7 ds7/testDS7.py
                    PROCESSORS 4
-		   LABELS DIFFUSION)
+                   LABELS DIFFUSION)
 
 #add_pytruchas_test(ds8 ds8/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(ds9 ds9/testDS9.py
                    PROCESSORS 4
-		   LABELS DIFFUSION)
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds10 ds10/testDS10.py
                    PROCESSORS 4
-		   LABELS DIFFUSION)
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(ds11 ds11/testDS11.py
                    PROCESSORS 4
-		   LABELS DIFFUSION PHASE_CHANGE)
+                   LABELS DIFFUSION PHASE_CHANGE)
 
 add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
@@ -133,8 +133,8 @@ add_pytruchas_test(broken-dam broken-dam/test.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(evap
                    evap/test.py
-		   PROCESSORS 4
-		   LABELS CONDUCTION)
+                   PROCESSORS 4
+                   LABELS CONDUCTION)
 
 add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX)
 
@@ -142,88 +142,188 @@ add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(gap-rad
                    gap-rad/testGapRad.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION)
+                   PROCESSORS 4
+                   LABELS DIFFUSION)
 
 add_pytruchas_test(gap-rad-flow gap-rad-flow/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py
-		   PROCESSORS 4
-		   LABELS RADIATION CONDUCTION HEX)
+                   PROCESSORS 4
+                   LABELS RADIATION CONDUCTION HEX)
 
 add_pytruchas_test(vfrad1-tet
                    vfrad1-tet/testVFRad1Tet.py
-		   PROCESSORS 4
-		   LABELS RADIATION CONDUCTION TET)
+                   PROCESSORS 4
+                   LABELS RADIATION CONDUCTION TET)
 
 add_pytruchas_test(vfrad1-patch
                    vfrad1-patch/testVFRad1Patch.py
-		   PROCESSORS 4
+                   PROCESSORS 4
            LABELS RADIATION CONDUCTION HEX)
 
 add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
-		   PROCESSORS 4
-		   LABELS RADIATION CONDUCTION)
+                   PROCESSORS 4
+                   LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(vfrad-moving vfrad-moving/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
 add_pytruchas_test(vfrad-heater vfrad-heater/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
 
 add_pytruchas_test(vfrad3
                    vfrad3/testVFRad3.py
-		   PROCESSORS 4
-		   LABELS RADIATION CONDUCTION)
+                   PROCESSORS 4
+                   LABELS RADIATION CONDUCTION)
+
+add_pytruchas_test(shear
+                   sm-shear/test-shear.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-x
+                   sm-stretch/test-stretch-x.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-y
+                   sm-stretch/test-stretch-y.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-z
+                   sm-stretch/test-stretch-z.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-rotated
+                   sm-stretch/test-stretch-rotated.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-hex
+                   sm-stretch/test-stretch-hex.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-tet
+                   sm-stretch/test-stretch-tet.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-wed
+                   sm-stretch/test-stretch-wed.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-mixed
+                   sm-stretch/test-stretch-mixed.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(stretch-contact
+                   sm-stretch/test-stretch-contact.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(thermoelastic
+                   sm-thermoelastic/test-thermoelastic.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(contact-0
+                   sm-contact/test0.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(contact-1
+                   sm-contact/test1.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(contact-2
+                   sm-contact/test2.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(contact-box-close
-                   contact-box-close/testContactBoxClose.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+                   contact-box-close/test.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(contact-box-open
-                   contact-box-open/testContactBoxOpen.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+                   contact-box-open/test.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(contact-box-close-legacy
+                   contact-box-close-legacy/testContactBoxClose.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(contact-box-open-legacy
+                   contact-box-open-legacy/testContactBoxOpen.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(viscoplastic-ring
                    viscoplastic-ring/testViscoplasticRing.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(shear-constr-heat
                    shear-constr-heat/testShearConstrHeat.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS)
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(stretch-consistency
+                   sm-consistency/test-stretch-consistency.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(thermoelastic-consistency
+                   sm-consistency/test-thermoelastic-consistency.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(traction-consistency
+                   sm-consistency/test-traction-consistency.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(shear-legacy
+                   sm-shear/test-shear-legacy.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(simple-gap
                    simple-gap/testSimpleGap.py
-		   PROCESSORS 4
-		   LABELS OLD_FLOW SOLID_MECHANICS)
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY)
 
 add_pytruchas_test(tm-pc
                    tm-pc/testTMPC.py
-		   PROCESSORS 4
-		   LABELS SOLID_MECHANICS PHASE_CHANGE)
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS_LEGACY PHASE_CHANGE)
 
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION FLOW)
+                   PROCESSORS 4
+                   LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(tangential-surface-tension-couette
                    tangential-surface-tension/test_tst_couette.py
-		   PROCESSORS 4
-		   LABELS DIFFUSION FLOW)
+                   PROCESSORS 4
+                   LABELS DIFFUSION FLOW)
 
 add_pytruchas_test(ustruc1
                    ustruc1/test.py
-		   PROCESSORS 4
-		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
+                   PROCESSORS 4
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
 
 add_pytruchas_test(ustruc2
                    ustruc2/test.py
-		   PROCESSORS 4
-		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+                   PROCESSORS 4
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)

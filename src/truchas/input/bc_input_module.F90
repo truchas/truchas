@@ -53,9 +53,9 @@ CONTAINS
     use parameter_module, only: bc_forms, maxmat, nvar, mbc_surfaces, mbcsrf
     use legacy_mesh_api, only: ndim
     use utilities_module, only: STRING_COMPARE
-    use solid_mechanics_input, only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use material_model_driver, only: matl_model
-    
+
     ! Argument List
     logical, intent(INOUT) :: fatal
 

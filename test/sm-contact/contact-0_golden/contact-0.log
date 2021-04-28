@@ -1,0 +1,143 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 21.07-27-g5f2d3243-dirty
+   build architecture:  x86_64
+   build date/time:     2021-08-10 17:23:26
+   build flags:          -fimplicit-none -ffree-line-length-none -O3 -DNDEBUG
+   build host:          theseus
+   run architecture:    Linux theseus 5.10.55-1-lts #1 SMP Sat, 31 Jul
+   run host:            theseus
+   run date/time:       12 Aug 21 12:04:45
+   processors:          1
+
+================================================================================
+
+INPUT
+
+Opening input file "contact-0.inp"
+Reading FUNCTION namelists ...
+  none found
+Reading VFUNCTION namelists ...
+  none found
+Reading TOOLPATH namelists ...
+  none found
+Reading PHYSICS namelist ...
+Reading MATERIAL namelists ...
+  read namelist "stuff"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+Reading BODY namelists (first pass) ...
+  read 1 BODY namelist
+Reading BODY namelists (second pass) ...
+  read 1 BODY namelist
+Reading NUMERICS namelist ...
+
+Reading SOLID_MECHANICS namelist ...
+
+Reading SM_BC namelists ...
+Reading PROBE namelists ...
+  none found
+Input file "contact-0.inp" closed
+
+================================================================================
+
+INITIALIZATION
+
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./rot-gap-xyz.gen"
+*******************************************************************************
+Warning: 64 boundary faces do not belong to any face set or interface.
+         This may make it impossible to specify a complete set of BC.
+         Some of the face centroids are
+         (  6.32583E-04,  7.58252E-06, -7.76650E-05 )
+         (  5.80806E-04, -2.94194E-04, -3.27665E-04 )
+         (  6.69194E-04, -2.05806E-04, -2.02665E-04 )
+         (  5.07583E-04, -1.17417E-04,  9.91117E-05 )
+         (  4.55806E-04, -4.19194E-04, -1.50888E-04 )
+         (  5.44194E-04, -3.30806E-04, -2.58883E-05 )
+         (  3.67417E-04, -2.57583E-04, -4.52665E-04 )
+         (  2.42417E-04, -3.82583E-04, -2.75888E-04 )
+         (  2.57583E-04, -3.67417E-04,  4.52665E-04 )
+         ( -7.58252E-06, -6.32583E-04,  7.76650E-05 )
+*******************************************************************************
+
+Computing initial volume fractions ...
+  using SM_BC[displx]
+  using SM_BC[disply]
+  using SM_BC[displz]
+  using SM_BC[contact]
+SM BC faces:     48
+SM BC nodes/links:     70    25
+SM-C0D3 nodes:     30
+SM-C1D0 nodes:     40
+  using SM_BC[tracn]
+Nodes with requested BCs:     70    Nodes with applied BCs:     70
+SM: Computing initial state...
+
+
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+
+================================================================================
+
+TERMINATION
+                 Final Time:  1.0000E+00 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  3.225E-02 --- Total
+    2.340E-03 --- Input
+    2.140E-02 --- Initialization
+      1.554E-03 --- mesh-MAIN
+        5.971E-05 --- ghost-cells
+          5.134E-05 --- cell-ghosts
+            3.141E-05 --- node-neighbors
+            5.690E-06 --- ghost-cells
+          2.100E-07 --- link-ghosts
+          7.060E-06 --- assemble-ghosts
+      9.690E-06 --- VOF Initialize
+      1.793E-02 --- solid mechanics
+        5.574E-05 --- properties
+        2.569E-04 --- precon-compute
+          2.386E-04 --- residual
+            1.706E-04 --- strain
+            6.081E-05 --- stress
+            4.490E-06 --- BCs
+        1.296E-02 --- residual
+          7.953E-03 --- strain
+          2.810E-03 --- stress
+          2.095E-03 --- BCs
+        4.120E-05 --- precon-apply
+    2.310E-06 --- electromagnetics
+    3.867E-03 --- Main Cycle
+      1.580E-06 --- Time Step
+      4.096E-04 --- solid mechanics
+        3.572E-05 --- properties
+        1.788E-04 --- precon-compute
+          1.683E-04 --- residual
+            1.268E-04 --- strain
+            3.938E-05 --- stress
+            1.210E-06 --- BCs
+        1.774E-04 --- residual
+          1.135E-04 --- strain
+          3.683E-05 --- stress
+          2.534E-05 --- BCs
+        7.800E-07 --- precon-apply
+
+                  Process virtual memory used: 6.05E+02 mB
+                                   words/cell: 1238208
+
+truchas terminated normally on 12 Aug 21 at 12:04:45

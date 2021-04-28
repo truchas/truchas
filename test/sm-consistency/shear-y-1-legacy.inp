@@ -1,0 +1,95 @@
+Shear problem. Applies a shear traction BC on opposite faces. This
+forms a set of problems, alternating direction and using either normal
+or hardwired BCs. The variants applying the BCs in specified directions
+should produce exactly the same result as the version applying the
+displacement in the normal direction.
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  y_axis%coarse_grid = 0.0, 1.0
+  z_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals   = 10
+  y_axis%intervals   = 10
+  z_axis%intervals   = 10
+  rotation_angles = 0., 45., 0.
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0
+  output_dt = 1.0
+/
+
+&NUMERICS
+  dt_init = 1.0
+  dt_max  = 1.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+  legacy_solid_mechanics = .true.
+  heat_transport = .false.
+/
+
+&LEGACY_SOLID_MECHANICS
+  nlk_max_vectors = 200
+  nlk_vector_tolerance = 1e-2
+  maximum_iterations = 500
+/
+&DIFFUSION_SOLVER /
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  tm_lame1 = 1
+  tm_lame2 = 1
+  tm_ref_density = 1.0
+  tm_ref_temp = 1.0
+  tm_linear_cte = 0.0
+  ref_temp = 1.0
+  ref_enthalpy = 0.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  material_name = 'stuff'
+  mesh_material_number = 1
+  temperature = 1.0
+/
+
+&BC
+  bc_name = 'displx'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'x-displacement'
+  bc_value = 0
+/
+
+&BC
+  bc_name = 'disply'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'y-displacement'
+  bc_value = 0
+/
+
+&BC
+  bc_name = 'displz'
+  surface_name = 'from mesh file'
+  mesh_surface = 1
+  bc_variable = 'displacement'
+  bc_type = 'z-displacement'
+  bc_value = 0
+/
+
+&BC
+  bc_name = 'shear'
+  surface_name = 'from mesh file'
+  mesh_surface = 2
+  bc_variable = 'displacement'
+  bc_type = 'y-traction'
+  bc_value = 1
+/

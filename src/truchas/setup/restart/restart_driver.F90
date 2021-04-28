@@ -133,6 +133,8 @@ contains
       case ('joule_heat')
         have_joule_heat_data = .true.
       case ('solid_mechanics')
+        ! not yet implemented
+      case ('legacy_solid_mechanics')
         have_solid_mechanics_data = .true.
       case ('temperature')
         !! NNC, 18 Jan 2006.
@@ -222,7 +224,7 @@ contains
 
   subroutine restart_solid_mechanics ()
     use solid_mechanics_output, only: read_SM_data, skip_SM_data
-    use solid_mechanics_input, only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     if (have_solid_mechanics_data) then
       if (solid_mechanics .and. .not.ignore_solid_mechanics) then
         call read_SM_data (unit, version)

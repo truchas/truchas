@@ -327,8 +327,8 @@ class TruchasData:
             fw.write_i4x0(1)
             fw.write_r8x1(np.ones(self.ncell))
 
-        # SOLID MECHANICS SEGMENT
-        if "solid_mechanics" in features:
+        # LEGACY SOLID MECHANICS SEGMENT
+        if "legacy_solid_mechanics" in features:
             for n in range(12):
                 for field in ("TOTAL_STRAIN_", "ELASTIC_STRESS_", "PLASTIC_STRAIN_"):
                     name = field + "{:02d}".format(n+1)
@@ -441,7 +441,13 @@ class TruchasData:
         # Only species is supported for mapped restarts.
         features = []
         if "Z_VC" in fields and not self.mapped: features.append("fluid_flow")
-        if "epsilon" in fields and not self.mapped: features.append("solid_mechanics")
+
+        if "TOTAL_STRAIN_01" in fields and not self.mapped:
+            features.append("legacy_solid_mechanics")
+        elif "epsilon" in fields and not self.mapped:
+            # new solid mechanics doesn't yet contribute to the restart file
+            features.append("solid_mechanics")
+
         if "phi1" in fields: features.append("species")
         if "Joule_P" in fields and not self.mapped: features.append("joule_heat")
         if "CP-USTRUC-MAP" in fields and not self.mapped: features.append("microstructure")

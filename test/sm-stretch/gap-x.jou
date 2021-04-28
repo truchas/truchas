@@ -1,0 +1,20 @@
+# Cubit 15.7.0
+brick x 1 y 1 z 1
+webcut volume 1 with plane xplane
+imprint volume all
+merge volume all
+
+curve 14 15  interval 4
+curve 28 17  interval 10
+mesh curve 14 15 28 17
+volume 1 2  scheme map
+mesh volume 1 2
+
+block 1 add volume all
+sideset 1 add surface 4
+sideset 2 add surface 6
+sideset 10 surface 7
+
+set exodus netcdf4 off
+set large exodus file off
+export genesis "gap-x.gen" overwrite
