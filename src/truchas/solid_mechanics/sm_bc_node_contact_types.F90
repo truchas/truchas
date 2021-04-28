@@ -193,27 +193,32 @@ contains
     real(r8) :: s, tn, l, dl(2), v(2)
 
     do i = 1, size(this%index, dim=2)
-      n1 = this%index(1,i)
-      n2 = this%index(2,i)
-      stress1 = dot_product(this%normal(:,i), ftot(:,n1))
-      stress2 = dot_product(this%normal(:,i), ftot(:,n2))
-      x1 = dot_product(this%normal(:,i), displ(:,n1))
-      x2 = dot_product(this%normal(:,i), displ(:,n2))
-      diag1 = diag(:,n1) * this%normal(:,i) !* stress_factor(n1)
-      !diag2 = diag(:,n2) * this%normal(:,i) !* stress_factor(n2)
+      ! n1 = this%index(1,i)
+      ! n2 = this%index(2,i)
+      ! stress1 = dot_product(this%normal(:,i), ftot(:,n1))
+      ! stress2 = dot_product(this%normal(:,i), ftot(:,n2))
+      ! x1 = dot_product(this%normal(:,i), displ(:,n1))
+      ! x2 = dot_product(this%normal(:,i), displ(:,n2))
+      ! diag1 = diag(:,n1) * this%normal(:,i) !* stress_factor(n1)
+      ! !diag2 = diag(:,n2) * this%normal(:,i) !* stress_factor(n2)
 
-      s = x2 - x1
-      tn = - stress1 / this%area(i)
-      l = contact_factor(s, tn, this%distance, this%normal_traction)
-      dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
-      dldu1 = -dl(1)*this%normal(:,i) - dl(2)*diag1 / this%area(i)
-      dldu2 =  dl(1)*this%normal(:,i)
+      ! s = x2 - x1
+      ! tn = - stress1 / this%area(i)
+      ! l = contact_factor(s, tn, this%distance, this%normal_traction)
+      ! dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
+      ! dldu1 = -dl(1)*this%normal(:,i) - dl(2)*diag1 / this%area(i)
+      ! dldu2 =  dl(1)*this%normal(:,i)
 
-      v(1) = stress2 + this%penalty*(x2 - x1) * stress_factor(n1)
-      v(2) = stress1 + this%penalty*(x1 - x2) * stress_factor(n2)
+      ! v(1) = stress2 + this%penalty*(x2 - x1) * stress_factor(n1)
+      ! v(2) = stress1 + this%penalty*(x1 - x2) * stress_factor(n2)
 
-      this%dvalue(:,1,i) = this%normal(:,i) * (-l*this%penalty*this%normal(:,i) * stress_factor(n1) + dldu1*v(1))
-      this%dvalue(:,2,i) = this%normal(:,i) * (-l*this%penalty*this%normal(:,i) * stress_factor(n2) + dldu2*v(2))
+      ! this%dvalue(:,1,i) = this%normal(:,i) * (-l*this%penalty*this%normal(:,i) * stress_factor(n1) + dldu1*v(1))
+      ! this%dvalue(:,2,i) = this%normal(:,i) * (-l*this%penalty*this%normal(:,i) * stress_factor(n2) + dldu2*v(2))
+
+      ! ! this%dvalue(:,1,i) = - this%normal(:,i)**2 * this%penalty * stress_factor(n1)
+      ! ! this%dvalue(:,2,i) = - this%normal(:,i)**2 * this%penalty * stress_factor(n2)
+
+      this%dvalue(:,:,i) = 0
     end do
 
   end subroutine c1_compute_deriv
@@ -404,14 +409,16 @@ contains
       do nl = 1, 2
         n = this%index(nl,i)
         if (n > this%mesh%nnode_onP) cycle
+
+        this%dvalue(:,nl,i) = 0
+        !this%dvalue(:,nl,i) = - this%align(:,i)**2 * this%penalty * stress_factor(n)
+
         do d = 1,3
           x(d) = dot_product(this%normal(:,i), F(:,d,n))
         end do
-        this%dvalue(:,nl,i) = - this%normal(:,i) * x &
+        this%dvalue(:,nl,i) = this%dvalue(:,nl,i) &
+            - this%normal(:,i) * x &
             - this%penalty * stress_factor(n) * this%normal(:,i)**2
-        ! diag(:,n) = diag(:,n) - this%normal(:,i) * x
-        ! !diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
-        ! diag(:,n) = diag(:,n) - this%penalty * stress_factor(n) * this%normal(:,i)**2
       end do
     end do
 

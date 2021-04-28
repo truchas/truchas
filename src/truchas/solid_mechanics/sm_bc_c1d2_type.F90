@@ -125,6 +125,8 @@ contains
       idispl1 = 0
       idispl2 = 0
 
+      if (nodebc%node(ni) > mesh%nnode_onP) return
+
       ! Count the BCs applied to the two nodes on either side of the link.
       ! One must have 2 BCs, the other must have
       nbc = nodebc%xbcid(ni+1) - nodebc%xbcid(ni)
@@ -175,11 +177,11 @@ contains
 
       ! displacement part
       args(1:) = this%mesh%x(:,n1)
-      displbc(1) = this%displf(1,i)%eval(args) ! associated with this%normal(:,1,i)
-      displbc(2) = this%displf(2,i)%eval(args) ! associated with this%normal(:,2,i)
+      displbc(1) = this%displf(1,i)%eval(args) ! associated with this%normal_d(:,1,i)
+      displbc(2) = this%displf(2,i)%eval(args) ! associated with this%normal_d(:,2,i)
       x = displ(:,n1) - displacement_vector(this%normal_d(:,:,i), displbc)
       x = x - dot_product(x, this%tangent(:,i)) * this%tangent(:,i)
-      this%value(:,i) = this%penalty * stress_factor(n1) * x
+      this%value(:,i) = - this%penalty * stress_factor(n1) * x
 
       ! contact part
       stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
@@ -259,15 +261,16 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
+
+      this%dvalue(:,i) = 0
+      !this%dvalue(:,i) = - this%tangent(:,i)**2 * this%penalty * stress_factor(n)
+
       do d = 1,3
         x(d) = dot_product(this%tangent(:,i), F(:,d,n))
       end do
-      this%dvalue(:,i) = this%tangent(:,i) * x &
+      this%dvalue(:,i) = this%dvalue(:,i) &
+          + this%tangent(:,i) * x &
           - this%penalty * stress_factor(n) * (1 - this%tangent(:,i)**2)
-      ! diag(:,n) = diag(:,n) - this%normal(:,i) * x
-      ! !diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
-      ! diag(:,n) = diag(:,n) - this%penalty * stress_factor(n) * this%normal(:,i)**2
     end do
 
   end subroutine compute_deriv
