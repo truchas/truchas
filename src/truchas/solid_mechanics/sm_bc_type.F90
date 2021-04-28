@@ -240,8 +240,15 @@ contains
     subroutine contact_bcs()
 
       integer :: i, n1, n2
+      real(r8), allocatable :: ftot(:,:)
 
-      call this%contact1%compute(displ, r, scaling_factor)
+      ! Make a copy of the sum of forces (residual without displacement BCs
+      ! applied). This is needed to essentially avoid a race condition. Nodes in
+      ! linked pairs need the forces on their sibling node, and they need to
+      ! update their own residuals to account for gap forces.
+      ftot = r
+
+      call this%contact1%compute(displ, ftot, scaling_factor)
       associate (link => this%contact1%index, values => this%contact1%value)
         do i = 1, size(link, dim=2)
           n1 = link(1,i)
@@ -251,7 +258,7 @@ contains
         end do
       end associate
 
-      call this%contact1_displacement1%compute(t, displ, r, scaling_factor)
+      call this%contact1_displacement1%compute(t, displ, ftot, scaling_factor)
       associate (link => this%contact1_displacement1%index, &
           values => this%contact1_displacement1%value)
         do i = 1, size(link, dim=2)
@@ -262,7 +269,7 @@ contains
         end do
       end associate
 
-      call this%contact1_displacement2%compute(t, displ, r, scaling_factor)
+      call this%contact1_displacement2%compute(t, displ, ftot, scaling_factor)
       associate (nodes => this%contact1_displacement2%index, &
           values => this%contact1_displacement2%value, &
           tangent => this%contact1_displacement2%tangent)
