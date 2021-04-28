@@ -297,7 +297,7 @@ contains
           if (n > this%mesh%nnode_onP) cycle
           x = dot_product(displ(:,n), normal(:,i)) * normal(:,i)
           r(:,n) = r(:,n) - dot_product(r(:,n), normal(:,i)) * normal(:,i)
-          r(:,n) = r(:,n) - this%contact_penalty * (x - values(:,i)) * scaling_factor(n)
+          r(:,n) = r(:,n) - this%contact_penalty * scaling_factor(n) * (x - values(:,i))
         end do
       end associate
 
@@ -315,7 +315,7 @@ contains
           x = displ(:,n) - values(:,i)
           x = x - dot_product(x, tangent(:,i)) * tangent(:,i)
           r(:,n) = dot_product(r(:,n), tangent(:,i)) * tangent(:,i)
-          r(:,n) = r(:,n) - this%contact_penalty * x * scaling_factor(n)
+          r(:,n) = r(:,n) - this%contact_penalty * scaling_factor(n) * x
         end do
       end associate
 
@@ -325,7 +325,7 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          r(:,n) = - this%contact_penalty * (displ(:,n) - values(:,i)) * scaling_factor(n)
+          r(:,n) = - this%contact_penalty * scaling_factor(n) * (displ(:,n) - values(:,i))
         end do
       end associate
 
@@ -445,12 +445,11 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          do d = 1,3
+          do d = 1, 3
             x(d) = dot_product(normal(:,i), F(:,d,n))
           end do
           diag(:,n) = diag(:,n) - normal(:,i) * x
-          !diag(:,n) = diag(:,n) - diag(:,n) * normal(:,i)**2
-          diag(:,n) = diag(:,n) - this%contact_penalty * normal(:,i)**2 * scaling_factor(n)
+          diag(:,n) = diag(:,n) - this%contact_penalty * scaling_factor(n) * normal(:,i)**2
         end do
       end associate
 
@@ -459,12 +458,11 @@ contains
         do i = 1, size(nodes)
           n = nodes(i)
           if (n > this%mesh%nnode_onP) cycle
-          do d = 1,3
+          do d = 1, 3
             x(d) = dot_product(tangent(:,i), F(:,d,n))
           end do
           diag(:,n) = tangent(:,i) * x
-          !diag(:,n) = diag(:,n) * tangent(:,i)**2
-          diag(:,n) = diag(:,n) - this%contact_penalty * (1-tangent(:,i)**2) * scaling_factor(n)
+          diag(:,n) = diag(:,n) - this%contact_penalty * scaling_factor(n) * (1-tangent(:,i)**2)
         end do
       end associate
 

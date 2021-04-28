@@ -28,7 +28,7 @@ module sm_ds_precon_type
     type(sm_bc), pointer, public :: bc => null() ! unowned reference
 
     real(r8), allocatable :: diag(:,:), F(:,:,:), d1(:,:,:), d2(:,:,:)
-    real(r8) :: omega
+    real(r8) :: omega, gamma
     integer :: niter
   contains
     procedure :: init
@@ -51,6 +51,7 @@ contains
     allocate(this%diag(3,model%mesh%nnode))
     call params%get('num-iter', this%niter, default=1)
     call params%get('precon-relaxation-parameter', this%omega, default=1.0_r8)
+    call params%get('precon-under-relaxation-parameter', this%gamma, default=16.0_r8/9.0_r8)
 
     this%diag = 0
 
@@ -162,6 +163,10 @@ contains
         this%diag(1,n) = this%F(1,1,n)
         this%diag(2,n) = this%F(2,2,n)
         this%diag(3,n) = this%F(3,3,n)
+
+        ! under-relaxation
+        this%F(:,:,n) = this%gamma * this%F(:,:,n)
+        this%diag(:,n) = this%gamma * this%diag(:,n)
       end if
       ASSERT(all(this%diag(:,n) /= 0))
     end do
@@ -200,7 +205,7 @@ contains
       !f(:,j) = f(:,j) / this%diag(:,j)
       x = f(:,j) / this%diag(:,j)
       do i = 1, this%niter
-        f(:,j) = f(:,j) + this%omega*(x-f(:,j))
+        f(:,j) = f(:,j) + this%omega * (x - f(:,j))
         !f(:,j) = (f(:,j) - this%omega*f(:,j)) + this%omega*x
       end do
     end do

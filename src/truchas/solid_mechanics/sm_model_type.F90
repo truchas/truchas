@@ -286,9 +286,8 @@ contains
     call gather_boundary(this%mesh%node_ip, r_)
     call this%bc%apply_nontraction(t, this%scaling_factor, displ_, r_)
     do n = 1, this%mesh%nnode_onP
-      r_(:,n) = r_(:,n) / this%scaling_factor(n)
+      r(:,n) = r_(:,n) / this%scaling_factor(n)
     end do
-    r = r_(:,:this%mesh%nnode_onP)
     call stop_timer("residual")
 
   end subroutine compute_residual
