@@ -56,6 +56,60 @@ test truchas intel (Debug):
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
     - ctest --repeat until-pass:2 --output-on-failure
 
+test truchas GFortran (Debug):
+  stage: build
+  needs: []
+  tags: []
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.7.1
+  script:
+      # Add openmpi executables into path
+    - export PATH=$HOME/ext/bin/:$PATH
+    - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+      # Prepend our `python` executable into path
+    - export PATH="${HOME}/ext/python-install/bin:$PATH"
+      # Make all tests run in serial
+    - patch -p1 < ci/tests_serial.patch
+      # Install Truchas
+    - mkdir build
+    - cd build
+    - cmake
+        -C ../config/linux-gcc.cmake
+        -DCMAKE_BUILD_TYPE=Debug
+        -DTRUCHAS_TPL_DIR=$HOME/ext
+        -DCMAKE_INSTALL_PREFIX=inst
+        -DUSE_PORTAGE=Yes
+        ..
+    - make
+    - make install
+    - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+
+test truchas GFortran (Release):
+  stage: build
+  needs: []
+  tags: []
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.7.1
+  script:
+      # Add openmpi executables into path
+    - export PATH=$HOME/ext/bin/:$PATH
+    - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+      # Prepend our `python` executable into path
+    - export PATH="${HOME}/ext/python-install/bin:$PATH"
+      # Make all tests run in serial
+    - patch -p1 < ci/tests_serial.patch
+      # Install Truchas
+    - mkdir build
+    - cd build
+    - cmake
+        -C ../config/linux-gcc.cmake
+        -DCMAKE_BUILD_TYPE=Release
+        -DTRUCHAS_TPL_DIR=$HOME/ext
+        -DCMAKE_INSTALL_PREFIX=inst
+        -DUSE_PORTAGE=Yes
+        ..
+    - make
+    - make install
+    - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+
 test truchas binary (Ubuntu 18.04):
   stage: test
   needs: ["build truchas binary"]
