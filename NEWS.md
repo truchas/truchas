@@ -1,5 +1,38 @@
 # NEWS
 
+This is a summary of noteworthy changes of particular interest to users.
+
+## 2021-05-03 Version 21.05
+
+## 2021-04-14 (47a212aa)
+
+The log file and terminal output has been tidied with some additional
+diagnostic messages added in places and less useful diagnostic messages
+removed in others. The previously ignored verbosity command line argument
+`-v` has been enabled with `-v:1` being the default; `-v:2` writes some
+additional information, and `-v:0` will silence the output entirely.
+
+Input errors due to misnamed namelist variables or other invalid input
+should now return more helpful error messages that point to the source
+of the error.
+
+## 2021-02-27 (67bebdf9)
+
+A new algorithm option was added to `genre` for generating surface patches
+for enclosure radiation view factors. The new algorithm uses the METIS
+graph partitioner and is very fast, producing patches of comparable quality
+to the much more expensive VSA algorithm. See its online
+[documentation](https://www.truchas.org/docs/sphinx/tools/RadE/index.html)
+for details.
+
+The `vsa_avg_faces_per_patch` was renamed `vsa_face_patch_ratio`.
+
+## 2021-02-24 (7f80d8bb)
+
+A long-standing [issue](https://gitlab.com/truchas/truchas/-/issues/5)
+concerning retried time steps in certain use cases was resolved. Users
+are very unlikely to have encountered this issue in practice.
+
 ## 2021-02-04 Version 21.02
 
 ## 2021-01-07 (77d200c2)
