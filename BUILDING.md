@@ -76,10 +76,69 @@ not included by default, add `-D USE_PORTAGE=ON` to the cmake command line.
 This requires that the portage library has been compiled and installed. See
 the TPL superbuild project referenced above.
 
-### Compiling on a Mac
-The test suite is currently failing so mac support is still considered
-experimental.  So far, this has only been tested using the NAG Fortran
-compiler and the Apple Clang compilers.  This is a 3 step process
+
+### Compiling on a Mac with GNU Compilers
+To build Truchas on MacOS via GCC provided by [Homebrew](https://brew.sh/),
+first install GCC:
+
+```sh
+$ brew install gcc
+```
+
+MacOS provides the binary `gcc`, however this is Apple Clang and not the GNU
+compiler. Brew installs the GNU GCC with the version number baked into the
+binaries, e.g. `gcc-10`, `g++-10`, and `gfortran-10`. These are what we will
+use.
+
+Brew's OpenMPI formula is built over Apple Clang rather than true GCC, so
+OpenMPI must be built manually. Download and unpack the latest supported OpenMPI
+tarball, then configure and build using the following:
+
+```sh
+$ mkdir build
+$ cd build
+$ ../configure CC=gcc-10 CXX=g++-10 FC=gfortran-10 --prefix=<mpi_install_dir>
+$ make all
+$ make install
+```
+
+Now build the Truchas TPLs and Truchas with this newly-built OpenMPI in your
+`PATH`. Note CMake must be configured to use the GCC compilers rather than Apple
+Clang. This is done with the `CMAKE_*_COMPILER` variables, shown below.
+
+For the Truchas TPLs with GCC, the `linux-gcc.cmake` configuration will do just
+fine:
+
+```sh
+$ mkdir build
+$ cd build
+$ cmake -C ../config/linux-gcc.cmake \
+        -D CMAKE_C_COMPILER=gcc-10 \
+        -D CMAKE_CXX_COMPILER=g++-10 \
+        -D CMAKE_Fortran_COMPILER=gfortran-10 \
+        -D CMAKE_INSTALL_PREFIX=<truchas_tpl_dir> \
+        ..
+$ make
+```
+
+Then build Truchas:
+
+```sh
+$ mkdir build
+$ cd build
+$ cmake -C ../config/mac-gcc.cmake \
+        -D CMAKE_C_COMPILER=gcc-10 \
+        -D CMAKE_CXX_COMPILER=g++-10 \
+        -D CMAKE_Fortran_COMPILER=gfortran-10 \
+        -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> \
+        -D CMAKE_BUILD_TYPE=Release \
+        ..
+$ make
+```
+
+
+### Compiling on a Mac with NAG Fortran and Apple Clang
+This is a 3 step process
 
 1. OpenMPI
 2. TPL
