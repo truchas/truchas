@@ -1,0 +1,2133 @@
+diff --git a/test/1d-ss-hc-xlinear-hex/test.py b/test/1d-ss-hc-xlinear-hex/test.py
+index bef85de8..0ed7c53a 100755
+--- a/test/1d-ss-hc-xlinear-hex/test.py
++++ b/test/1d-ss-hc-xlinear-hex/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-xlinear-hex.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-xlinear-hex.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-xlinear-tet/test.py b/test/1d-ss-hc-xlinear-tet/test.py
+index 4a30db31..91b6cbca 100755
+--- a/test/1d-ss-hc-xlinear-tet/test.py
++++ b/test/1d-ss-hc-xlinear-tet/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-xlinear-tet.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-xlinear-tet.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-xlinear-wedge/test.py b/test/1d-ss-hc-xlinear-wedge/test.py
+index 50099dd6..a753b2eb 100755
+--- a/test/1d-ss-hc-xlinear-wedge/test.py
++++ b/test/1d-ss-hc-xlinear-wedge/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-xlinear-wedge.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-xlinear-wedge.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-ylinear-hex/test.py b/test/1d-ss-hc-ylinear-hex/test.py
+index 44c61743..97586829 100755
+--- a/test/1d-ss-hc-ylinear-hex/test.py
++++ b/test/1d-ss-hc-ylinear-hex/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-ylinear-hex.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-ylinear-hex.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-ylinear-tet/test.py b/test/1d-ss-hc-ylinear-tet/test.py
+index 2c58c9b6..8381293d 100755
+--- a/test/1d-ss-hc-ylinear-tet/test.py
++++ b/test/1d-ss-hc-ylinear-tet/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-ylinear-tet.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-ylinear-tet.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-zlinear-hex/test.py b/test/1d-ss-hc-zlinear-hex/test.py
+index daa74322..5a09e2f3 100755
+--- a/test/1d-ss-hc-zlinear-hex/test.py
++++ b/test/1d-ss-hc-zlinear-hex/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-zlinear-hex.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-zlinear-hex.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/1d-ss-hc-zlinear-tet/test.py b/test/1d-ss-hc-zlinear-tet/test.py
+index 351b8438..75879134 100755
+--- a/test/1d-ss-hc-zlinear-tet/test.py
++++ b/test/1d-ss-hc-zlinear-tet/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "1d-ss-hc-zlinear-tet.inp")
++    stdout, output = tenv.truchas(1, "1d-ss-hc-zlinear-tet.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/3d-ss-hc-linear-hex/test.py b/test/3d-ss-hc-linear-hex/test.py
+index 17a7089b..f36649f6 100755
+--- a/test/3d-ss-hc-linear-hex/test.py
++++ b/test/3d-ss-hc-linear-hex/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "3d-ss-hc-linear-hex.inp")
++    stdout, output = tenv.truchas(1, "3d-ss-hc-linear-hex.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/3d-ss-hc-linear-mixed/test.py b/test/3d-ss-hc-linear-mixed/test.py
+index f032a623..69ef0bb8 100755
+--- a/test/3d-ss-hc-linear-mixed/test.py
++++ b/test/3d-ss-hc-linear-mixed/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "3d-ss-hc-linear-mixed.inp")
++    stdout, output = tenv.truchas(1, "3d-ss-hc-linear-mixed.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/3d-ss-hc-linear-tet/test.py b/test/3d-ss-hc-linear-tet/test.py
+index ee03086f..a803663a 100755
+--- a/test/3d-ss-hc-linear-tet/test.py
++++ b/test/3d-ss-hc-linear-tet/test.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "3d-ss-hc-linear-tet.inp")
++    stdout, output = tenv.truchas(1, "3d-ss-hc-linear-tet.inp")
+ 
+     xc = output.centroids()
+     sid = output.num_series()
+diff --git a/test/advection/test0.py b/test/advection/test0.py
+index b25644af..953b0ff5 100755
+--- a/test/advection/test0.py
++++ b/test/advection/test0.py
+@@ -5,4 +5,4 @@ import truchas
+ # Really nothing we can test here, other than it ran successfully
+ if __name__ == "__main__":
+     tenv = truchas.TruchasEnvironment.default()
+-    stdout, output = tenv.truchas(4, "advection-0.inp")
++    stdout, output = tenv.truchas(1, "advection-0.inp")
+diff --git a/test/advection/test1a.py b/test/advection/test1a.py
+index ce44c846..39c4cb80 100755
+--- a/test/advection/test1a.py
++++ b/test/advection/test1a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-1a.inp")
++    stdout, output = tenv.truchas(1, "advection-1a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/advection/test1b.py b/test/advection/test1b.py
+index ef80fc3e..56874076 100755
+--- a/test/advection/test1b.py
++++ b/test/advection/test1b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-1b.inp")
++    stdout, output = tenv.truchas(1, "advection-1b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/advection/test1c.py b/test/advection/test1c.py
+index 566bfd47..f43a33fd 100755
+--- a/test/advection/test1c.py
++++ b/test/advection/test1c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-1c.inp")
++    stdout, output = tenv.truchas(1, "advection-1c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/advection/test1d.py b/test/advection/test1d.py
+index ce236ce9..bac87bfc 100755
+--- a/test/advection/test1d.py
++++ b/test/advection/test1d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-1d.inp")
++    stdout, output = tenv.truchas(1, "advection-1d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/advection/test2a.py b/test/advection/test2a.py
+index 4d17e447..cabdb922 100755
+--- a/test/advection/test2a.py
++++ b/test/advection/test2a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-2a.inp")
++    stdout, output = tenv.truchas(1, "advection-2a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/advection/test2b.py b/test/advection/test2b.py
+index dc35a63b..3dc3cd7d 100755
+--- a/test/advection/test2b.py
++++ b/test/advection/test2b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-2b.inp")
++    stdout, output = tenv.truchas(1, "advection-2b.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("advection-2b_golden/advection-2b.h5")
+diff --git a/test/advection/test2c.py b/test/advection/test2c.py
+index be2d0ca9..c9afa32f 100755
+--- a/test/advection/test2c.py
++++ b/test/advection/test2c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-2c.inp")
++    stdout, output = tenv.truchas(1, "advection-2c.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("advection-2c_golden/advection-2c.h5")
+diff --git a/test/advection/test3a.py b/test/advection/test3a.py
+index b877269e..10b0616f 100755
+--- a/test/advection/test3a.py
++++ b/test/advection/test3a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3a.inp")
++    stdout, output = tenv.truchas(1, "advection-3a.inp")
+     gold = tenv.output("advection-3a_pgolden/advection-3a.h5")
+     vof_gold = gold.field(2, "VOF")
+ 
+diff --git a/test/advection/test3aex.py b/test/advection/test3aex.py
+index 356108db..443fa42d 100755
+--- a/test/advection/test3aex.py
++++ b/test/advection/test3aex.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3a-exact.inp")
++    stdout, output = tenv.truchas(1, "advection-3a-exact.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("advection-3a-exact_pgolden/advection-3a-exact.h5")
+diff --git a/test/advection/test3b.py b/test/advection/test3b.py
+index 3534c8bf..c3fe23d9 100755
+--- a/test/advection/test3b.py
++++ b/test/advection/test3b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3b.inp")
++    stdout, output = tenv.truchas(1, "advection-3b.inp")
+     gold = tenv.output("advection-3b_pgolden/advection-3b.h5")
+     vof_gold = gold.field(2, "VOF")
+ 
+diff --git a/test/advection/test3bex.py b/test/advection/test3bex.py
+index 71127caf..e21336b7 100755
+--- a/test/advection/test3bex.py
++++ b/test/advection/test3bex.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3b-exact.inp")
++    stdout, output = tenv.truchas(1, "advection-3b-exact.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("advection-3b-exact_pgolden/advection-3b-exact.h5")
+diff --git a/test/advection/test3c.py b/test/advection/test3c.py
+index 6b77fa26..1328ea7e 100755
+--- a/test/advection/test3c.py
++++ b/test/advection/test3c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3c.inp")
++    stdout, output = tenv.truchas(1, "advection-3c.inp")
+     gold = tenv.output("advection-3c_pgolden/advection-3c.h5")
+     vof_gold = gold.field(2, "VOF")
+ 
+diff --git a/test/advection/test3cex.py b/test/advection/test3cex.py
+index 03f03541..7ca15e1a 100755
+--- a/test/advection/test3cex.py
++++ b/test/advection/test3cex.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "advection-3c-exact.inp")
++    stdout, output = tenv.truchas(1, "advection-3c-exact.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("advection-3c-exact_pgolden/advection-3c-exact.h5")
+diff --git a/test/broken-dam/test.py b/test/broken-dam/test.py
+index 5ecdf607..41ffc8d9 100755
+--- a/test/broken-dam/test.py
++++ b/test/broken-dam/test.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "broken-dam.inp")
++    stdout, output = tenv.truchas(1, "broken-dam.inp")
+     gold = tenv.output("broken-dam_golden/broken-dam.h5")
+     time = output.time(2)
+ 
+diff --git a/test/contact-box-close/testContactBoxClose.py b/test/contact-box-close/testContactBoxClose.py
+index 2fe38f1c..603b481c 100755
+--- a/test/contact-box-close/testContactBoxClose.py
++++ b/test/contact-box-close/testContactBoxClose.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "contact-box-close.inp")
++    stdout, output = tenv.truchas(1, "contact-box-close.inp")
+     golden = tenv.output("contact-box-close_golden/contact-box-close.h5")
+     true_region = output.region(1, 2)
+     gap_region_node = output.region_node(3)
+diff --git a/test/contact-box-open/testContactBoxOpen.py b/test/contact-box-open/testContactBoxOpen.py
+index f79c7854..10b45776 100755
+--- a/test/contact-box-open/testContactBoxOpen.py
++++ b/test/contact-box-open/testContactBoxOpen.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "contact-box-open.inp")
++    stdout, output = tenv.truchas(1, "contact-box-open.inp")
+     golden = tenv.output("contact-box-open_pgolden/contact-box-open.h5")
+     true_region = output.region(1, 2)
+     gap_region_node = output.region_node(3)
+diff --git a/test/diverging-duct/test0.py b/test/diverging-duct/test0.py
+index defe0aad..e1015a2f 100755
+--- a/test/diverging-duct/test0.py
++++ b/test/diverging-duct/test0.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "diverging-duct-0.inp")
++    stdout, output = tenv.truchas(1, "diverging-duct-0.inp")
+     xc = output.centroids()
+ 
+     # pressure
+diff --git a/test/diverging-duct/test1a.py b/test/diverging-duct/test1a.py
+index e37c8841..adfdd957 100755
+--- a/test/diverging-duct/test1a.py
++++ b/test/diverging-duct/test1a.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "diverging-duct-1a.inp")
++    stdout, output = tenv.truchas(1, "diverging-duct-1a.inp")
+     xc = output.centroids()
+     time = output.time(2)
+ 
+diff --git a/test/diverging-duct/test1b.py b/test/diverging-duct/test1b.py
+index 23c851ed..b7a6b19d 100755
+--- a/test/diverging-duct/test1b.py
++++ b/test/diverging-duct/test1b.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "diverging-duct-1b.inp")
++    stdout, output = tenv.truchas(1, "diverging-duct-1b.inp")
+     xc = output.centroids()
+     time = output.time(2)
+ 
+diff --git a/test/diverging-duct/test1c.py b/test/diverging-duct/test1c.py
+index c4186d03..c5bfde44 100755
+--- a/test/diverging-duct/test1c.py
++++ b/test/diverging-duct/test1c.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "diverging-duct-1c.inp")
++    stdout, output = tenv.truchas(1, "diverging-duct-1c.inp")
+     xc = output.centroids()
+     time = output.time(2)
+ 
+diff --git a/test/diverging-duct/test1d.py b/test/diverging-duct/test1d.py
+index 5024c44e..f6e1b87d 100755
+--- a/test/diverging-duct/test1d.py
++++ b/test/diverging-duct/test1d.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "diverging-duct-1d.inp")
++    stdout, output = tenv.truchas(1, "diverging-duct-1d.inp")
+     xc = output.centroids()
+     time = output.time(2)
+ 
+diff --git a/test/ds1/testDS1.py b/test/ds1/testDS1.py
+index dbe7fd34..0e5ff4dd 100755
+--- a/test/ds1/testDS1.py
++++ b/test/ds1/testDS1.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds1.inp")
++    stdout, output = tenv.truchas(1, "ds1.inp")
+     golden = tenv.output("ds1_golden/ds1.h5")
+ 
+     # test final cycle number
+diff --git a/test/ds10/testDS10.py b/test/ds10/testDS10.py
+index 550cc64a..331ad53f 100755
+--- a/test/ds10/testDS10.py
++++ b/test/ds10/testDS10.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds10.inp")
++    stdout, output = tenv.truchas(1, "ds10.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/ds11/testDS11.py b/test/ds11/testDS11.py
+index 637ae993..6e7be1aa 100755
+--- a/test/ds11/testDS11.py
++++ b/test/ds11/testDS11.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds11.inp")
++    stdout, output = tenv.truchas(1, "ds11.inp")
+     golden = tenv.output("ds11_golden/ds11.h5")
+ 
+     test_region = output.region(1, 2)
+diff --git a/test/ds2/testDS2.py b/test/ds2/testDS2.py
+index 1a762543..c0b4bf2f 100755
+--- a/test/ds2/testDS2.py
++++ b/test/ds2/testDS2.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds2.inp")
++    stdout, output = tenv.truchas(1, "ds2.inp")
+     golden = tenv.output("ds2_pgolden/ds2.h5")
+ 
+     # test final cycle number
+diff --git a/test/ds3/testDS3.py b/test/ds3/testDS3.py
+index a3aee688..5949474e 100755
+--- a/test/ds3/testDS3.py
++++ b/test/ds3/testDS3.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds3.inp")
++    stdout, output = tenv.truchas(1, "ds3.inp")
+     golden = tenv.output("ds3_golden/ds3.h5")
+ 
+     # test final cycle number
+diff --git a/test/ds4/testDS4.py b/test/ds4/testDS4.py
+index 3d69269d..37d839b0 100755
+--- a/test/ds4/testDS4.py
++++ b/test/ds4/testDS4.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds4.inp")
++    stdout, output = tenv.truchas(1, "ds4.inp")
+     golden = tenv.output("ds4_golden/ds4.h5")
+ 
+     # test final cycle number
+diff --git a/test/ds5/testDS5.py b/test/ds5/testDS5.py
+index 606e53ca..ede51038 100755
+--- a/test/ds5/testDS5.py
++++ b/test/ds5/testDS5.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds5.inp")
++    stdout, output = tenv.truchas(1, "ds5.inp")
+     golden = tenv.output("ds5_pgolden/ds5.h5")
+ 
+     for sid in (2, 3):
+diff --git a/test/ds6/testDS6.py b/test/ds6/testDS6.py
+index 3ac16a4c..3e0c7101 100755
+--- a/test/ds6/testDS6.py
++++ b/test/ds6/testDS6.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds6.inp")
++    stdout, output = tenv.truchas(1, "ds6.inp")
+     golden = tenv.output("ds6_golden/ds6.h5")
+ 
+     for sid in (2, 3):
+diff --git a/test/ds7/testDS7.py b/test/ds7/testDS7.py
+index 8b167827..eff27b84 100755
+--- a/test/ds7/testDS7.py
++++ b/test/ds7/testDS7.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds7.inp")
++    stdout, output = tenv.truchas(1, "ds7.inp")
+     golden = tenv.output("ds7_golden/ds7.h5")
+ 
+     for sid in (2, 3):
+diff --git a/test/ds8/test.py b/test/ds8/test.py
+index d0fcee8d..023fb4e1 100755
+--- a/test/ds8/test.py
++++ b/test/ds8/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds8.inp")
++    stdout, output = tenv.truchas(1, "ds8.inp")
+     golden = tenv.output("ds8_pgolden/ds8.h5")
+ 
+     for sid in (2, 4):
+diff --git a/test/ds9/testDS9.py b/test/ds9/testDS9.py
+index 4d169105..3dc263e3 100755
+--- a/test/ds9/testDS9.py
++++ b/test/ds9/testDS9.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ds9.inp")
++    stdout, output = tenv.truchas(1, "ds9.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/em1/testEM1.py b/test/em1/testEM1.py
+index 86390702..7fca3da2 100755
+--- a/test/em1/testEM1.py
++++ b/test/em1/testEM1.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "em1.inp")
++    stdout, output = tenv.truchas(1, "em1.inp")
+     golden = tenv.output("em1_pgolden/em1.h5")
+ 
+     conducting_region = output.region(11, 12)
+diff --git a/test/em2/testEM2.py b/test/em2/testEM2.py
+index ce12f240..a829ba72 100755
+--- a/test/em2/testEM2.py
++++ b/test/em2/testEM2.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "em2.inp")
++    stdout, output = tenv.truchas(1, "em2.inp")
+     golden = tenv.output("em2_golden/em2.h5")
+ 
+     # Three Joule heat calculations, used for the following cycle groups.
+diff --git a/test/em3/testEM3.py b/test/em3/testEM3.py
+index 29e0e9c2..c2667df8 100755
+--- a/test/em3/testEM3.py
++++ b/test/em3/testEM3.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "em3.inp")
++    stdout, output = tenv.truchas(1, "em3.inp")
+     golden = tenv.output("em3_pgolden/em3.h5")
+ 
+     # joule heat
+diff --git a/test/evap/test.py b/test/evap/test.py
+index bc365a3d..9b57f089 100755
+--- a/test/evap/test.py
++++ b/test/evap/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "evap.inp")
++    stdout, output = tenv.truchas(1, "evap.inp")
+     golden = tenv.output("evap_golden/evap.h5")
+ 
+     for sid in (1, 2, 3):
+diff --git a/test/free-surf-flow/test1.py b/test/free-surf-flow/test1.py
+index 5567d232..79516b80 100755
+--- a/test/free-surf-flow/test1.py
++++ b/test/free-surf-flow/test1.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-1.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-1.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/free-surf-flow/test2.py b/test/free-surf-flow/test2.py
+index 5754bc10..51b70cbc 100755
+--- a/test/free-surf-flow/test2.py
++++ b/test/free-surf-flow/test2.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-2.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-2.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/free-surf-flow/test3.py b/test/free-surf-flow/test3.py
+index b97c6b53..3b5aa8b3 100755
+--- a/test/free-surf-flow/test3.py
++++ b/test/free-surf-flow/test3.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-3.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-3.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/free-surf-flow/test4.py b/test/free-surf-flow/test4.py
+index eac25a23..6130fe56 100755
+--- a/test/free-surf-flow/test4.py
++++ b/test/free-surf-flow/test4.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-4.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-4.inp")
+     golden = tenv.output("free-surf-flow-4_golden/free-surf-flow-4.h5")
+ 
+     # initial
+diff --git a/test/free-surf-flow/test5.py b/test/free-surf-flow/test5.py
+index 541b5f9d..889e1906 100755
+--- a/test/free-surf-flow/test5.py
++++ b/test/free-surf-flow/test5.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-5.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-5.inp")
+     golden = tenv.output("free-surf-flow-5_golden/free-surf-flow-5.h5")
+ 
+     # final time
+diff --git a/test/free-surf-flow/test6.py b/test/free-surf-flow/test6.py
+index 5dd56188..8fd479b7 100755
+--- a/test/free-surf-flow/test6.py
++++ b/test/free-surf-flow/test6.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-6.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-6.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/free-surf-flow/test7.py b/test/free-surf-flow/test7.py
+index 62d6084f..fb5ac29f 100755
+--- a/test/free-surf-flow/test7.py
++++ b/test/free-surf-flow/test7.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-7.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-7.inp")
+     golden = tenv.output("free-surf-flow-7_golden/free-surf-flow-7.h5")
+ 
+     # final time
+diff --git a/test/free-surf-flow/test8.py b/test/free-surf-flow/test8.py
+index 5dcc4b72..9dc47e6e 100755
+--- a/test/free-surf-flow/test8.py
++++ b/test/free-surf-flow/test8.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "free-surf-flow-8.inp")
++    stdout, output = tenv.truchas(1, "free-surf-flow-8.inp")
+     golden = tenv.output("free-surf-flow-8_golden/free-surf-flow-8.h5")
+ 
+     for sid in (1, 2):
+diff --git a/test/freezing-flow/test1.py b/test/freezing-flow/test1.py
+index 7458d498..ed5c8273 100755
+--- a/test/freezing-flow/test1.py
++++ b/test/freezing-flow/test1.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "freezing-flow-1.inp")
++    stdout, output = tenv.truchas(1, "freezing-flow-1.inp")
+     golden = tenv.output("freezing-flow-1_pgolden/freezing-flow-1.h5")
+ 
+     # early time
+diff --git a/test/freezing-flow/test2.py b/test/freezing-flow/test2.py
+index 67864c85..f311f1cb 100755
+--- a/test/freezing-flow/test2.py
++++ b/test/freezing-flow/test2.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "freezing-flow-2.inp")
++    stdout, output = tenv.truchas(1, "freezing-flow-2.inp")
+     golden = tenv.output("freezing-flow-2_pgolden/freezing-flow-2.h5")
+ 
+     # early time
+diff --git a/test/freezing-flow/test3.py b/test/freezing-flow/test3.py
+index 5229781c..68deaa4e 100755
+--- a/test/freezing-flow/test3.py
++++ b/test/freezing-flow/test3.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "freezing-flow-3.inp")
++    stdout, output = tenv.truchas(1, "freezing-flow-3.inp")
+     golden = tenv.output("freezing-flow-3_pgolden/freezing-flow-3.h5")
+ 
+     # early time
+diff --git a/test/gap-rad-flow/test.py b/test/gap-rad-flow/test.py
+index fe50fe43..64b55ec3 100755
+--- a/test/gap-rad-flow/test.py
++++ b/test/gap-rad-flow/test.py
+@@ -7,7 +7,7 @@ import numpy
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "gap-rad-flow.inp")
++    stdout, output = tenv.truchas(1, "gap-rad-flow.inp")
+ 
+     probe_names = ["left_end", "right_end", "gap_left", "gap_right"]
+     probe_golden = {"left_end":  [1.499998474,  1.371828885],
+diff --git a/test/gap-rad/testGapRad.py b/test/gap-rad/testGapRad.py
+index d8cfca1f..3be462ea 100755
+--- a/test/gap-rad/testGapRad.py
++++ b/test/gap-rad/testGapRad.py
+@@ -7,7 +7,7 @@ import numpy
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "gap-rad.inp")
++    stdout, output = tenv.truchas(1, "gap-rad.inp")
+ 
+     probe_names = ["left_end", "right_end", "gap_left", "gap_right"]
+     probe_golden = {"left_end":  [1.499998474,  1.371828885],
+diff --git a/test/htvoid1/test.py b/test/htvoid1/test.py
+index 0a1dd025..8d27bcda 100755
+--- a/test/htvoid1/test.py
++++ b/test/htvoid1/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "htvoid1.inp")
++    stdout, output = tenv.truchas(1, "htvoid1.inp")
+     golden = tenv.output("htvoid1_pgolden/htvoid1.h5")
+ 
+     # checking final values
+diff --git a/test/htvoid2/test.py b/test/htvoid2/test.py
+index 3acf9886..c69a0f41 100755
+--- a/test/htvoid2/test.py
++++ b/test/htvoid2/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "htvoid2.inp")
++    stdout, output = tenv.truchas(1, "htvoid2.inp")
+     golden = tenv.output("htvoid2_pgolden/htvoid2.h5")
+ 
+     # checking final values
+diff --git a/test/htvoid3/test-broken.py b/test/htvoid3/test-broken.py
+index 11fdb719..1823dc59 100755
+--- a/test/htvoid3/test-broken.py
++++ b/test/htvoid3/test-broken.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "htvoid3-old.inp")
++    stdout, output = tenv.truchas(1, "htvoid3-old.inp")
+     golden = tenv.output("htvoid3-old_pgolden/htvoid3-old.h5")
+ 
+     # checking final values
+diff --git a/test/htvoid4/test.py b/test/htvoid4/test.py
+index 8b908a19..53ee2502 100755
+--- a/test/htvoid4/test.py
++++ b/test/htvoid4/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "htvoid4.inp")
++    stdout, output = tenv.truchas(1, "htvoid4.inp")
+     golden = tenv.output("htvoid4_pgolden/htvoid4.h5")
+ 
+     # checking final values
+diff --git a/test/hydrostatic/test10.py b/test/hydrostatic/test10.py
+index 3a490d99..f217de09 100755
+--- a/test/hydrostatic/test10.py
++++ b/test/hydrostatic/test10.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-10.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-10.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test1a.py b/test/hydrostatic/test1a.py
+index 68752b8e..2a6d95df 100755
+--- a/test/hydrostatic/test1a.py
++++ b/test/hydrostatic/test1a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-1a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-1a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test1b.py b/test/hydrostatic/test1b.py
+index 1ae55111..8b1c1aca 100755
+--- a/test/hydrostatic/test1b.py
++++ b/test/hydrostatic/test1b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-1b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-1b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test1c.py b/test/hydrostatic/test1c.py
+index 01eae9f8..6643e7bb 100755
+--- a/test/hydrostatic/test1c.py
++++ b/test/hydrostatic/test1c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-1c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-1c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test1d.py b/test/hydrostatic/test1d.py
+index ecf6a1e5..b1882443 100755
+--- a/test/hydrostatic/test1d.py
++++ b/test/hydrostatic/test1d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-1d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-1d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test2a.py b/test/hydrostatic/test2a.py
+index 22f13979..5a81a1ba 100755
+--- a/test/hydrostatic/test2a.py
++++ b/test/hydrostatic/test2a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-2a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-2a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test2b.py b/test/hydrostatic/test2b.py
+index 4cf5d746..039d1090 100755
+--- a/test/hydrostatic/test2b.py
++++ b/test/hydrostatic/test2b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-2b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-2b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test2c.py b/test/hydrostatic/test2c.py
+index 62b191e3..45bc34ab 100755
+--- a/test/hydrostatic/test2c.py
++++ b/test/hydrostatic/test2c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-2c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-2c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test2d.py b/test/hydrostatic/test2d.py
+index ad956074..f194b71d 100755
+--- a/test/hydrostatic/test2d.py
++++ b/test/hydrostatic/test2d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-2d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-2d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test3a.py b/test/hydrostatic/test3a.py
+index 0e0eb736..b15cef5e 100755
+--- a/test/hydrostatic/test3a.py
++++ b/test/hydrostatic/test3a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-3a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-3a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test3b.py b/test/hydrostatic/test3b.py
+index ddff8514..167bf570 100755
+--- a/test/hydrostatic/test3b.py
++++ b/test/hydrostatic/test3b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-3b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-3b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test3c.py b/test/hydrostatic/test3c.py
+index bd1d77ee..fcd6fb77 100755
+--- a/test/hydrostatic/test3c.py
++++ b/test/hydrostatic/test3c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-3c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-3c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test3d.py b/test/hydrostatic/test3d.py
+index 6bf339a6..98f63af2 100755
+--- a/test/hydrostatic/test3d.py
++++ b/test/hydrostatic/test3d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-3d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-3d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test4a.py b/test/hydrostatic/test4a.py
+index 8e266562..bcb8a925 100755
+--- a/test/hydrostatic/test4a.py
++++ b/test/hydrostatic/test4a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-4a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-4a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test4b.py b/test/hydrostatic/test4b.py
+index 86d7b16a..669f0714 100755
+--- a/test/hydrostatic/test4b.py
++++ b/test/hydrostatic/test4b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-4b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-4b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test4c.py b/test/hydrostatic/test4c.py
+index 8dfdb334..085f8324 100755
+--- a/test/hydrostatic/test4c.py
++++ b/test/hydrostatic/test4c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-4c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-4c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test4d.py b/test/hydrostatic/test4d.py
+index 9d4f194b..16aa45ed 100755
+--- a/test/hydrostatic/test4d.py
++++ b/test/hydrostatic/test4d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-4d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-4d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test5a.py b/test/hydrostatic/test5a.py
+index 5e7e86f1..790772fc 100755
+--- a/test/hydrostatic/test5a.py
++++ b/test/hydrostatic/test5a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-5a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-5a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test5b.py b/test/hydrostatic/test5b.py
+index 36ddf701..c902daf5 100755
+--- a/test/hydrostatic/test5b.py
++++ b/test/hydrostatic/test5b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-5b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-5b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test5c.py b/test/hydrostatic/test5c.py
+index 65f51e3c..89e15282 100755
+--- a/test/hydrostatic/test5c.py
++++ b/test/hydrostatic/test5c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-5c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-5c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test5d.py b/test/hydrostatic/test5d.py
+index 40a5aa12..86373825 100755
+--- a/test/hydrostatic/test5d.py
++++ b/test/hydrostatic/test5d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-5d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-5d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test6a.py b/test/hydrostatic/test6a.py
+index b86b5895..e684a9df 100755
+--- a/test/hydrostatic/test6a.py
++++ b/test/hydrostatic/test6a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-6a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-6a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test6b.py b/test/hydrostatic/test6b.py
+index 3abd401d..63050949 100755
+--- a/test/hydrostatic/test6b.py
++++ b/test/hydrostatic/test6b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-6b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-6b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test6c.py b/test/hydrostatic/test6c.py
+index efcac5eb..c92552ab 100755
+--- a/test/hydrostatic/test6c.py
++++ b/test/hydrostatic/test6c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-6c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-6c.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test6d.py b/test/hydrostatic/test6d.py
+index dea13e7c..000199fd 100755
+--- a/test/hydrostatic/test6d.py
++++ b/test/hydrostatic/test6d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-6d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-6d.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test7a.py b/test/hydrostatic/test7a.py
+index 5b5938ef..1b7fe515 100755
+--- a/test/hydrostatic/test7a.py
++++ b/test/hydrostatic/test7a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-7a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-7a.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test7b.py b/test/hydrostatic/test7b.py
+index 4539b4ef..de710b5a 100755
+--- a/test/hydrostatic/test7b.py
++++ b/test/hydrostatic/test7b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-7b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-7b.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/hydrostatic/test8a.py b/test/hydrostatic/test8a.py
+index 6e8ea517..3cdaa3b9 100755
+--- a/test/hydrostatic/test8a.py
++++ b/test/hydrostatic/test8a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-8a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-8a.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test8b.py b/test/hydrostatic/test8b.py
+index e2209bb4..64973a6f 100755
+--- a/test/hydrostatic/test8b.py
++++ b/test/hydrostatic/test8b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-8b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-8b.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test8c.py b/test/hydrostatic/test8c.py
+index 08d4ca93..dc4fdbe3 100755
+--- a/test/hydrostatic/test8c.py
++++ b/test/hydrostatic/test8c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-8c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-8c.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test8d.py b/test/hydrostatic/test8d.py
+index 7d340109..1e4ca334 100755
+--- a/test/hydrostatic/test8d.py
++++ b/test/hydrostatic/test8d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-8d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-8d.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test9a.py b/test/hydrostatic/test9a.py
+index a97d756c..8b98be32 100755
+--- a/test/hydrostatic/test9a.py
++++ b/test/hydrostatic/test9a.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-9a.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-9a.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test9b.py b/test/hydrostatic/test9b.py
+index 19bbb757..993ef4dd 100755
+--- a/test/hydrostatic/test9b.py
++++ b/test/hydrostatic/test9b.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-9b.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-9b.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test9c.py b/test/hydrostatic/test9c.py
+index a9f77f21..fdd8a82b 100755
+--- a/test/hydrostatic/test9c.py
++++ b/test/hydrostatic/test9c.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-9c.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-9c.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/hydrostatic/test9d.py b/test/hydrostatic/test9d.py
+index 4151e63b..a5697e00 100755
+--- a/test/hydrostatic/test9d.py
++++ b/test/hydrostatic/test9d.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "hydrostatic-9d.inp")
++    stdout, output = tenv.truchas(1, "hydrostatic-9d.inp")
+ 
+     fluid_region = output.region(2)
+     xc = output.centroids()[fluid_region]
+diff --git a/test/inflow-bc/test1.py b/test/inflow-bc/test1.py
+index cb893e1e..6219715b 100755
+--- a/test/inflow-bc/test1.py
++++ b/test/inflow-bc/test1.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inflow-bc-1.inp")
++    stdout, output = tenv.truchas(1, "inflow-bc-1.inp")
+ 
+     xc = output.centroids()
+     time = output.time(2)
+diff --git a/test/inflow-bc/test2.py b/test/inflow-bc/test2.py
+index d9df209f..91d25a43 100755
+--- a/test/inflow-bc/test2.py
++++ b/test/inflow-bc/test2.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inflow-bc-2.inp")
++    stdout, output = tenv.truchas(1, "inflow-bc-2.inp")
+ 
+     xc = output.centroids()
+     time = output.time(2)
+diff --git a/test/inflow-bc/test3.py b/test/inflow-bc/test3.py
+index 12e3d070..c667a0c6 100755
+--- a/test/inflow-bc/test3.py
++++ b/test/inflow-bc/test3.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inflow-bc-3.inp")
++    stdout, output = tenv.truchas(1, "inflow-bc-3.inp")
+ 
+     xc = output.centroids()
+     time = output.time(2)
+diff --git a/test/inviscid-pipe-flow/test1a.py b/test/inviscid-pipe-flow/test1a.py
+index ff8f0f02..7aafd955 100755
+--- a/test/inviscid-pipe-flow/test1a.py
++++ b/test/inviscid-pipe-flow/test1a.py
+@@ -5,7 +5,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-1a.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-1a.inp")
+ 
+     # early velocity
+     time = output.time(2)
+diff --git a/test/inviscid-pipe-flow/test1b.py b/test/inviscid-pipe-flow/test1b.py
+index f69768ee..c750aa40 100755
+--- a/test/inviscid-pipe-flow/test1b.py
++++ b/test/inviscid-pipe-flow/test1b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-1b.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-1b.inp")
+ 
+     # early velocity
+     time = output.time(2)
+diff --git a/test/inviscid-pipe-flow/test1c.py b/test/inviscid-pipe-flow/test1c.py
+index 55cade2c..19704987 100755
+--- a/test/inviscid-pipe-flow/test1c.py
++++ b/test/inviscid-pipe-flow/test1c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-1c.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-1c.inp")
+ 
+     # early velocity
+     time = output.time(2)
+diff --git a/test/inviscid-pipe-flow/test1d.py b/test/inviscid-pipe-flow/test1d.py
+index 34846038..573f4ccd 100755
+--- a/test/inviscid-pipe-flow/test1d.py
++++ b/test/inviscid-pipe-flow/test1d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-1d.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-1d.inp")
+ 
+     # early velocity
+     time = output.time(2)
+diff --git a/test/inviscid-pipe-flow/test2a.py b/test/inviscid-pipe-flow/test2a.py
+index 25d07e9f..80d47a03 100755
+--- a/test/inviscid-pipe-flow/test2a.py
++++ b/test/inviscid-pipe-flow/test2a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-2a.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-2a.inp")
+ 
+     # mask everything for flow region
+     flow_region = output.region(1)
+diff --git a/test/inviscid-pipe-flow/test2b.py b/test/inviscid-pipe-flow/test2b.py
+index ca02eede..f853a29a 100755
+--- a/test/inviscid-pipe-flow/test2b.py
++++ b/test/inviscid-pipe-flow/test2b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-2b.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-2b.inp")
+ 
+     # mask everything for flow region
+     flow_region = output.region(1)
+diff --git a/test/inviscid-pipe-flow/test2c.py b/test/inviscid-pipe-flow/test2c.py
+index 06dc5b75..9e82fde1 100755
+--- a/test/inviscid-pipe-flow/test2c.py
++++ b/test/inviscid-pipe-flow/test2c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-2c.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-2c.inp")
+ 
+     # mask everything for flow region
+     flow_region = output.region(1)
+diff --git a/test/inviscid-pipe-flow/test2d.py b/test/inviscid-pipe-flow/test2d.py
+index eafd4b61..e6fd8413 100755
+--- a/test/inviscid-pipe-flow/test2d.py
++++ b/test/inviscid-pipe-flow/test2d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "inviscid-pipe-flow-2d.inp")
++    stdout, output = tenv.truchas(1, "inviscid-pipe-flow-2d.inp")
+ 
+     # mask everything for flow region
+     flow_region = output.region(1)
+diff --git a/test/nat-conv/test.py b/test/nat-conv/test.py
+index e5e69395..0b8091aa 100755
+--- a/test/nat-conv/test.py
++++ b/test/nat-conv/test.py
+@@ -7,7 +7,7 @@ import numpy
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "nat-conv.inp", restart_file="restart.bin")
++    stdout, output = tenv.truchas(1, "nat-conv.inp", restart_file="restart.bin")
+ 
+     tol = 0.015
+     report = "{:s}: max {:s} velocity rel error = {:8.2e} (tol={:8.2e})"
+diff --git a/test/pipe-flow/test1a.py b/test/pipe-flow/test1a.py
+index 9891bba1..5b03c3a0 100755
+--- a/test/pipe-flow/test1a.py
++++ b/test/pipe-flow/test1a.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-1a.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-1a.inp")
+ 
+     xc = output.centroids()
+     uex = (1 - xc[:,1]**2) / 2
+diff --git a/test/pipe-flow/test1b.py b/test/pipe-flow/test1b.py
+index b1dc0f53..31f78984 100755
+--- a/test/pipe-flow/test1b.py
++++ b/test/pipe-flow/test1b.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-1b.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-1b.inp")
+ 
+     xc = output.centroids()
+     uex = (2 - (xc[:,1] + xc[:,2])**2) / 4
+diff --git a/test/pipe-flow/test1c.py b/test/pipe-flow/test1c.py
+index 01079964..b398cdf2 100755
+--- a/test/pipe-flow/test1c.py
++++ b/test/pipe-flow/test1c.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-1c.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-1c.inp")
+ 
+     xc = output.centroids()
+     uex = (1 - xc[:,1]**2) / (2*np.sqrt(2))
+diff --git a/test/pipe-flow/test1d.py b/test/pipe-flow/test1d.py
+index 6e42234c..49a6fd70 100755
+--- a/test/pipe-flow/test1d.py
++++ b/test/pipe-flow/test1d.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-1d.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-1d.inp")
+ 
+     xc = output.centroids()
+     uex = (2 - (xc[:,0]-xc[:,1])**2) / (4*np.sqrt(2))
+diff --git a/test/pipe-flow/test2a.py b/test/pipe-flow/test2a.py
+index 000b017f..2637c839 100755
+--- a/test/pipe-flow/test2a.py
++++ b/test/pipe-flow/test2a.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-2a.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-2a.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test2b.py b/test/pipe-flow/test2b.py
+index 33607ed3..dce3a6c8 100755
+--- a/test/pipe-flow/test2b.py
++++ b/test/pipe-flow/test2b.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-2b.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-2b.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test2c.py b/test/pipe-flow/test2c.py
+index ad2f78e4..e51dc305 100755
+--- a/test/pipe-flow/test2c.py
++++ b/test/pipe-flow/test2c.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-2c.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-2c.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test2d.py b/test/pipe-flow/test2d.py
+index d115d80e..f202957b 100755
+--- a/test/pipe-flow/test2d.py
++++ b/test/pipe-flow/test2d.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-2d.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-2d.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test3a.py b/test/pipe-flow/test3a.py
+index 6b1e4260..9e29cf24 100755
+--- a/test/pipe-flow/test3a.py
++++ b/test/pipe-flow/test3a.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-3a.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-3a.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test3b.py b/test/pipe-flow/test3b.py
+index 272dfc20..e723c19e 100755
+--- a/test/pipe-flow/test3b.py
++++ b/test/pipe-flow/test3b.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-3b.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-3b.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test3c.py b/test/pipe-flow/test3c.py
+index d612fdfb..d647369b 100755
+--- a/test/pipe-flow/test3c.py
++++ b/test/pipe-flow/test3c.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-3c.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-3c.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/pipe-flow/test3d.py b/test/pipe-flow/test3d.py
+index a5a57fe8..afbe5d56 100755
+--- a/test/pipe-flow/test3d.py
++++ b/test/pipe-flow/test3d.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "pipe-flow-3d.inp")
++    stdout, output = tenv.truchas(1, "pipe-flow-3d.inp")
+ 
+     flow_region = output.region(1)
+     xc = output.centroids()[flow_region]
+diff --git a/test/restart/testRemap.py b/test/restart/testRemap.py
+index f78d9a4d..9c6bdfa3 100755
+--- a/test/restart/testRemap.py
++++ b/test/restart/testRemap.py
+@@ -11,7 +11,7 @@ def test_remap(tenv):
+ 
+     # run with 2, then 4 processors
+     stdout, output2 = tenv.truchas(2, "ds11.inp", output_dir="remap_out2pe")
+-    stdout, output4 = tenv.truchas(4, "ds11.inp", output_dir="remap_out4pe")
++    stdout, output4 = tenv.truchas(1, "ds11.inp", output_dir="remap_out4pe")
+ 
+     tol = 1e-2
+     sid2 = output2.num_series()
+diff --git a/test/restart/testRestartSuite.py b/test/restart/testRestartSuite.py
+index 0c0a949d..86ade4cc 100755
+--- a/test/restart/testRestartSuite.py
++++ b/test/restart/testRestartSuite.py
+@@ -5,12 +5,12 @@ import truchas
+ def test_read_restart(tenv):
+     """Test creating and reading a restart file"""
+     # run truchas & write restart
+-    stdout, output = tenv.truchas(4, "ds11.inp", output_dir="read_test")
++    stdout, output = tenv.truchas(1, "ds11.inp", output_dir="read_test")
+     restart_filename = tenv._working_dir + "/read_test_restart/restart.79"
+     tenv.write_restart(output.filename, 79, restart_filename)
+ 
+     # run from restart
+-    stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \
++    stdout, output = tenv.truchas(1, "ds11.inp", restart_file=restart_filename, \
+                                   output_dir="read_test_restart")
+ 
+     print("PASS: creating and reading a restart file")
+@@ -48,7 +48,7 @@ def test_repartition(tenv):
+     tenv.write_restart(output.filename, 79, restart_filename)
+ 
+     # run from restart with 4 processors
+-    stdout, output = tenv.truchas(4, "ds11.inp", restart_file=restart_filename, \
++    stdout, output = tenv.truchas(1, "ds11.inp", restart_file=restart_filename, \
+                                   output_dir="repartition_restart_np4")
+     print("PASS: restarting on a different number of processors")
+     return 0
+diff --git a/test/shear-constr-heat/testShearConstrHeat.py b/test/shear-constr-heat/testShearConstrHeat.py
+index 3cda7651..57c9ff40 100755
+--- a/test/shear-constr-heat/testShearConstrHeat.py
++++ b/test/shear-constr-heat/testShearConstrHeat.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "shear-constr-heat.inp")
++    stdout, output = tenv.truchas(1, "shear-constr-heat.inp")
+ 
+     # verify fields at initial time
+     sid = 1
+diff --git a/test/simple-gap/testSimpleGap.py b/test/simple-gap/testSimpleGap.py
+index fc7e98e1..1e14f157 100755
+--- a/test/simple-gap/testSimpleGap.py
++++ b/test/simple-gap/testSimpleGap.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "simple-gap.inp")
++    stdout, output = tenv.truchas(1, "simple-gap.inp")
+     golden = tenv.output("simple-gap_golden/simple-gap.h5")
+     true_region = output.region(1, 2)
+     #gap_region_node = output.region_node(3, 4)
+diff --git a/test/sloshing-flow/test.py b/test/sloshing-flow/test.py
+index bdbf9925..5df333e5 100755
+--- a/test/sloshing-flow/test.py
++++ b/test/sloshing-flow/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "sloshing-flow.inp")
++    stdout, output = tenv.truchas(1, "sloshing-flow.inp")
+     golden = tenv.output("sloshing-flow_golden/sloshing-flow.h5")
+ 
+     sid = 2
+diff --git a/test/steady-flow/test1a.py b/test/steady-flow/test1a.py
+index b9dd9b53..66daaf6c 100755
+--- a/test/steady-flow/test1a.py
++++ b/test/steady-flow/test1a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-1a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-1a.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test1b.py b/test/steady-flow/test1b.py
+index 7eb9f36c..1c2fc539 100755
+--- a/test/steady-flow/test1b.py
++++ b/test/steady-flow/test1b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-1b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-1b.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test1c.py b/test/steady-flow/test1c.py
+index 37f35351..eec21d3d 100755
+--- a/test/steady-flow/test1c.py
++++ b/test/steady-flow/test1c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-1c.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-1c.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test1d.py b/test/steady-flow/test1d.py
+index dbb1aedf..e63f2fd0 100755
+--- a/test/steady-flow/test1d.py
++++ b/test/steady-flow/test1d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-1d.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-1d.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test2a.py b/test/steady-flow/test2a.py
+index 577854e4..379a53ee 100755
+--- a/test/steady-flow/test2a.py
++++ b/test/steady-flow/test2a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-2a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-2a.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test2b.py b/test/steady-flow/test2b.py
+index d47102e7..9bdecde8 100755
+--- a/test/steady-flow/test2b.py
++++ b/test/steady-flow/test2b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-2b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-2b.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test2c.py b/test/steady-flow/test2c.py
+index 973f6241..734cff3a 100755
+--- a/test/steady-flow/test2c.py
++++ b/test/steady-flow/test2c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-2c.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-2c.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test2d.py b/test/steady-flow/test2d.py
+index 42ad9fab..2f7d20ca 100755
+--- a/test/steady-flow/test2d.py
++++ b/test/steady-flow/test2d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-2d.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-2d.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test3a.py b/test/steady-flow/test3a.py
+index 96fba9f1..a961b183 100755
+--- a/test/steady-flow/test3a.py
++++ b/test/steady-flow/test3a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-3a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-3a.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test3b.py b/test/steady-flow/test3b.py
+index 5ded7031..efd9e8ab 100755
+--- a/test/steady-flow/test3b.py
++++ b/test/steady-flow/test3b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-3b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-3b.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test3c.py b/test/steady-flow/test3c.py
+index a800bd4d..185d8833 100755
+--- a/test/steady-flow/test3c.py
++++ b/test/steady-flow/test3c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-3c.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-3c.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test3d.py b/test/steady-flow/test3d.py
+index e908045e..b7aa9388 100755
+--- a/test/steady-flow/test3d.py
++++ b/test/steady-flow/test3d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-3d.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-3d.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test4a.py b/test/steady-flow/test4a.py
+index 2094499d..c70bca3e 100755
+--- a/test/steady-flow/test4a.py
++++ b/test/steady-flow/test4a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-4a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-4a.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test4b.py b/test/steady-flow/test4b.py
+index 9f1a8b0c..907f584f 100755
+--- a/test/steady-flow/test4b.py
++++ b/test/steady-flow/test4b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-4b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-4b.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test4c.py b/test/steady-flow/test4c.py
+index 6d45c6cc..d4cd21b6 100755
+--- a/test/steady-flow/test4c.py
++++ b/test/steady-flow/test4c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-4c.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-4c.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test4d.py b/test/steady-flow/test4d.py
+index 9c9f50b9..305eda00 100755
+--- a/test/steady-flow/test4d.py
++++ b/test/steady-flow/test4d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-4d.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-4d.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test5a.py b/test/steady-flow/test5a.py
+index 93e9b2bf..dae51318 100755
+--- a/test/steady-flow/test5a.py
++++ b/test/steady-flow/test5a.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-5a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-5a.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test5b.py b/test/steady-flow/test5b.py
+index edbbf123..62110c61 100755
+--- a/test/steady-flow/test5b.py
++++ b/test/steady-flow/test5b.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-5b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-5b.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test5c.py b/test/steady-flow/test5c.py
+index cb3773d2..106c8e5c 100755
+--- a/test/steady-flow/test5c.py
++++ b/test/steady-flow/test5c.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-5c.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-5c.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test5d.py b/test/steady-flow/test5d.py
+index 4e255de5..f2807c2d 100755
+--- a/test/steady-flow/test5d.py
++++ b/test/steady-flow/test5d.py
+@@ -7,7 +7,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-5d.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-5d.inp")
+ 
+     # Test VOFs against exact
+     xc = output.centroids()
+diff --git a/test/steady-flow/test6a.py b/test/steady-flow/test6a.py
+index 6788054a..ae8b9bd7 100755
+--- a/test/steady-flow/test6a.py
++++ b/test/steady-flow/test6a.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-6a.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-6a.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("steady-flow-6a_golden/steady-flow-6a.h5")
+diff --git a/test/steady-flow/test6b.py b/test/steady-flow/test6b.py
+index 716daadf..e1d8262a 100755
+--- a/test/steady-flow/test6b.py
++++ b/test/steady-flow/test6b.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "steady-flow-6b.inp")
++    stdout, output = tenv.truchas(1, "steady-flow-6b.inp")
+ 
+     # From a special run to compute vof for final exact configuration
+     gold = tenv.output("steady-flow-6b_golden/steady-flow-6b.h5")
+diff --git a/test/tangential-surface-tension/test_tst.py b/test/tangential-surface-tension/test_tst.py
+index ecdd803f..d71c5983 100755
+--- a/test/tangential-surface-tension/test_tst.py
++++ b/test/tangential-surface-tension/test_tst.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "tangential-surface-tension.inp")
++    stdout, output = tenv.truchas(1, "tangential-surface-tension.inp")
+     golden = tenv.output("tangential-surface-tension_pgolden/tangential-surface-tension.h5")
+ 
+     # cycle numbers
+diff --git a/test/tangential-surface-tension/test_tst_couette.py b/test/tangential-surface-tension/test_tst_couette.py
+index 4651aa4e..d213ed01 100755
+--- a/test/tangential-surface-tension/test_tst_couette.py
++++ b/test/tangential-surface-tension/test_tst_couette.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "tangential-surface-tension-couette.inp")
++    stdout, output = tenv.truchas(1, "tangential-surface-tension-couette.inp")
+ 
+     xc = output.centroids()
+ 
+diff --git a/test/tm-pc/testTMPC.py b/test/tm-pc/testTMPC.py
+index 63d16e28..c64c7505 100755
+--- a/test/tm-pc/testTMPC.py
++++ b/test/tm-pc/testTMPC.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "tm-pc.inp")
++    stdout, output = tenv.truchas(1, "tm-pc.inp")
+     golden = tenv.output("tm-pc_pgolden/tm-pc.h5")
+ 
+     # test final fields
+diff --git a/test/ustruc1/test.py b/test/ustruc1/test.py
+index e3352fe1..5cc3aeef 100755
+--- a/test/ustruc1/test.py
++++ b/test/ustruc1/test.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ustruc1.inp")
++    stdout, output = tenv.truchas(1, "ustruc1.inp")
+     golden = tenv.output("ustruc1_golden/ustruc1.h5")
+ 
+     # final time
+diff --git a/test/ustruc2/test.py b/test/ustruc2/test.py
+index ac5bca6f..fa3acd95 100755
+--- a/test/ustruc2/test.py
++++ b/test/ustruc2/test.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "ustruc2.inp", restart_file="ustruc1.restart.142")
++    stdout, output = tenv.truchas(1, "ustruc2.inp", restart_file="ustruc1.restart.142")
+     golden = tenv.output("ustruc2_golden/ustruc2.h5")
+ 
+     time = output.time(2) # final time
+diff --git a/test/vfrad-heater/test.py b/test/vfrad-heater/test.py
+index 698ac37b..d1db1f59 100755
+--- a/test/vfrad-heater/test.py
++++ b/test/vfrad-heater/test.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "vfrad-heater.inp")
++    stdout, output = tenv.truchas(1, "vfrad-heater.inp")
+     golden = tenv.output("vfrad-heater_golden/vfrad-heater.h5")
+ 
+     # cycle number
+diff --git a/test/vfrad-moving/test.py b/test/vfrad-moving/test.py
+index 517baf4c..27ce055d 100755
+--- a/test/vfrad-moving/test.py
++++ b/test/vfrad-moving/test.py
+@@ -6,7 +6,7 @@ import numpy
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "test.inp")
++    stdout, output = tenv.truchas(1, "test.inp")
+     filename = os.path.join(output.directory, "probe.dat")
+     dataA = numpy.loadtxt(filename)
+     filename = os.path.join(tenv._input_dir, "golden.dat")
+diff --git a/test/vfrad1-patch/testVFRad1Patch.py b/test/vfrad1-patch/testVFRad1Patch.py
+index 23e1ed4b..454f7d50 100755
+--- a/test/vfrad1-patch/testVFRad1Patch.py
++++ b/test/vfrad1-patch/testVFRad1Patch.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "vfrad1-patch.inp")
++    stdout, output = tenv.truchas(1, "vfrad1-patch.inp")
+     golden = tenv.output("vfrad1-patch_golden/vfrad1-patch.h5")
+ 
+     # cycle number
+diff --git a/test/vfrad1-tet/testVFRad1Tet.py b/test/vfrad1-tet/testVFRad1Tet.py
+index 5f4ac093..042993b9 100755
+--- a/test/vfrad1-tet/testVFRad1Tet.py
++++ b/test/vfrad1-tet/testVFRad1Tet.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "vfrad1-tet.inp")
++    stdout, output = tenv.truchas(1, "vfrad1-tet.inp")
+     golden = tenv.output("vfrad1-tet_pgolden/vfrad1-tet.h5")
+ 
+     # cycle number
+diff --git a/test/vfrad1/testVFRad1.py b/test/vfrad1/testVFRad1.py
+index 79a3368c..d6d5807c 100755
+--- a/test/vfrad1/testVFRad1.py
++++ b/test/vfrad1/testVFRad1.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "vfrad1.inp")
++    stdout, output = tenv.truchas(1, "vfrad1.inp")
+     golden = tenv.output("vfrad1_pgolden/vfrad1.h5")
+ 
+     # cycle number
+diff --git a/test/vfrad2/testVFRad2.py b/test/vfrad2/testVFRad2.py
+index 870cd2e5..853ebd97 100755
+--- a/test/vfrad2/testVFRad2.py
++++ b/test/vfrad2/testVFRad2.py
+@@ -6,8 +6,8 @@ def run_test(tenv):
+     nfail = 0
+ 
+     # run with centered and shifted and compare
+-    stdout, output_c = tenv.truchas(4, "run-centered.inp")
+-    stdout, output_s = tenv.truchas(4, "run-shifted.inp")
++    stdout, output_c = tenv.truchas(1, "run-centered.inp")
++    stdout, output_s = tenv.truchas(1, "run-shifted.inp")
+ 
+     # temperature
+     Tcent = output_c.field(6, "Z_TEMP")
+diff --git a/test/vfrad3/testVFRad3.py b/test/vfrad3/testVFRad3.py
+index 12ac579d..659f2367 100755
+--- a/test/vfrad3/testVFRad3.py
++++ b/test/vfrad3/testVFRad3.py
+@@ -4,7 +4,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "vfrad3.inp")
++    stdout, output = tenv.truchas(1, "vfrad3.inp")
+     golden = tenv.output("vfrad3_pgolden/vfrad3.h5")
+ 
+     # cycle number
+diff --git a/test/viscoplastic-ring/testViscoplasticRing.py b/test/viscoplastic-ring/testViscoplasticRing.py
+index 0460c227..3c88cdd6 100755
+--- a/test/viscoplastic-ring/testViscoplasticRing.py
++++ b/test/viscoplastic-ring/testViscoplasticRing.py
+@@ -6,7 +6,7 @@ import truchas
+ 
+ def run_test(tenv):
+     nfail = 0
+-    stdout, output = tenv.truchas(4, "viscoplastic-ring.inp")
++    stdout, output = tenv.truchas(1, "viscoplastic-ring.inp")
+     golden = tenv.output("viscoplastic-ring_pgolden/viscoplastic-ring.h5")
+     true_region = output.region(1, 2)
+     gap_region_node = output.region_node(3)
