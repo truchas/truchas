@@ -198,7 +198,7 @@ contains
       INSIST(.false.)
     end select
 
-    call add_node_to_cell(outmesh)
+    if (is_IOP) call add_node_to_cell(outmesh)
 
   end subroutine base_to_serial
 
