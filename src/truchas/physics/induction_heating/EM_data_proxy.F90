@@ -198,6 +198,7 @@ module EM_data_proxy
   use kinds, only : rk => r8
   use data_mapper_class
   use truchas_logging_services
+  use truchas_timers
   
   implicit none
   private
@@ -333,14 +334,17 @@ CONTAINS
     select case (data_mapper_kind)
     case ('portage')
 #ifdef USE_PORTAGE
+      call TLS_info('  Creating Portage mesh-to-mesh mapper ...')
       allocate(portage_mapper :: ht2em)
 #else
       INSIST(.false.)
 #endif
     case default
+      call TLS_info('  Creating Kuprat mesh-to-mesh mapper ...')
       allocate(kuprat_mapper :: ht2em)
     end select
     call ht2em%init(ht_mesh, em_mesh)
+    call TLS_info('    mesh-to-mesh mapper created')
     
     !! Allocate the module's tet-mesh data store arrays.
     if (allocated(eps)) deallocate(eps)
@@ -394,8 +398,10 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(eps) )
     mesh => EM_mesh()
+    call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, eps(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, eps)
+    call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permittivity
 
   subroutine set_permeability (values)
@@ -405,8 +411,10 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(mu) )
     mesh => EM_mesh()
+    call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, mu(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, mu)
+    call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permeability
 
   subroutine set_conductivity (values)
@@ -416,8 +424,10 @@ CONTAINS
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(sigma) )
     mesh => EM_mesh()
+    call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, sigma(:mesh%ncell_onP), defval=0.0_rk, map_type=LOCALLY_BOUNDED)
     call gather_boundary (mesh%cell_ip, sigma)
+    call stop_timer('mesh-to-mesh mapping')
   end subroutine set_conductivity
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -466,8 +476,10 @@ CONTAINS
     ASSERT( allocated(joule) )
     
     mesh => EM_mesh()
+    call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values(:mesh%ncell_onP), joule, defval=0.0_rk, &
                          map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
+    call stop_timer('mesh-to-mesh mapping')
     
     !! Record the data that gave rise to this Joule heat field.
     uhfs_q  = uhfs

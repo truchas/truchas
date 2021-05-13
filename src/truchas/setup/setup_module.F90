@@ -106,7 +106,11 @@ CONTAINS
     end if
 
     ! Initialize electromagnetics.
+    call stop_timer("Initialization")
+    call start_timer("electromagnetics")
     call initialize_EM (t)
+    call stop_timer("electromagnetics")
+    call start_timer("Initialization")
 
     if (restart) call close_restart_file ()
 

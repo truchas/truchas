@@ -12,6 +12,7 @@ module EM
   use parallel_communication
   use EM_data_proxy
   use truchas_logging_services
+  use truchas_timers
   implicit none
   private
 
@@ -45,7 +46,9 @@ contains
     if (EM_is_on()) then
       call TLS_info ('')
       call TLS_info ('Initializing electromagnetics ...')
+      call start_timer('initialization')
       call init_EM_data_proxy ()
+      call stop_timer('initialization')
     end if
 
     !! Process the EM data segment of the restart file if necessary.
@@ -53,6 +56,8 @@ contains
     if (restart) call restart_joule_heat (jh_defined)
 
     if (EM_is_off()) return
+
+    call start_timer('joule heat')
 
     !! Push the initial source and EM material parameters into the EM data proxy.
     call set_source_properties (t)
@@ -106,6 +111,7 @@ contains
     !! Write the initial Joule heat to the xml output file.
     call danu_write_joule (t)
 
+    call stop_timer('joule heat')
     call TLS_info ('  electromagnetics initialized')
 
   end subroutine initialize_EM
@@ -146,6 +152,7 @@ contains
     character(len=10) :: ss
 
     if (EM_is_off()) return
+    call start_timer('joule heat')
 
     !! Push the source and EM material parameters at time T1 into the EM data proxy.
     call set_source_properties (t1)
@@ -175,6 +182,8 @@ contains
       call danu_write_joule (t1)
     end if
 
+    call stop_timer('joule heat')
+
   end subroutine induction_heating
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -202,6 +211,8 @@ contains
     real(kind=rk) :: eps_min, eps_max, mu_min, mu_max, sigma_min, sigma_max
 
     !call TLS_info (' Beginning Joule Heat Simulation...')
+
+    call start_timer('simulation')
 
     !! Get the mesh from the EM data proxy and create the discretization.
     mesh => EM_mesh()
@@ -359,13 +370,15 @@ contains
 !NNC!      call write_probes (em_output)
     end if
 
-    !! Store the the computed Joule heat in the EM data proxy for later retrieval.
-    call set_joule_power_density (q_avg)
-
     !! Check for convergence to steady state.  We continue in any case.
     if (.not.converged) then
       call TLS_warn ('COMPUTE_JOULE_HEAT: Not converged to steady-state; proceding anyway.')
     end if
+
+    call stop_timer('simulation')
+
+    !! Store the the computed Joule heat in the EM data proxy for later retrieval.
+    call set_joule_power_density (q_avg)
 
     !! Clean-up.
     deallocate(efield, bfield, q, q_avg, q_avg_last)
