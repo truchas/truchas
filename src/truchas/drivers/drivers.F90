@@ -224,7 +224,11 @@ call hijack_truchas ()
 
         ! Evaluate the Joule heat source for the enthalpy calculation.
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
+        call stop_timer('Main Cycle')
+        call start_timer('electromagnetics')
         call induction_heating(t1, t2)
+        call stop_timer('electromagnetics')
+        call start_timer('Main Cycle')
 
         do num_try = 1, MAX_TRY
 
