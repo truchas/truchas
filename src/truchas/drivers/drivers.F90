@@ -142,7 +142,7 @@ call hijack_truchas ()
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
-        TIME_STEP, constant_dt, dt_constraint
+        TIME_STEP, constant_dt, dt_constraint, dt_min
     use diffusion_solver,         only: ds_step, ds_accept, ds_restart, ds_get_face_temp_view, update_moving_vf
     use diffusion_solver_data,    only: ds_enabled
     use ustruc_driver,            only: ustruc_update
@@ -181,7 +181,7 @@ call hijack_truchas ()
 
     if (mem_on) call mem_diag_open
 
-    call init_sim_event_queue
+    call init_sim_event_queue(dt_min)
     call params%get('event-lookahead', lookahead, default=5)
     ts_sync = time_step_sync(lookahead)
 
