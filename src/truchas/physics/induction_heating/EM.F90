@@ -18,6 +18,8 @@ module EM
 
   public :: initialize_EM, induction_heating
 
+  logical :: const_prop = .false.
+
 contains
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -65,6 +67,7 @@ contains
     call set_permittivity (EM_permittivity())
     call set_permeability (EM_permeability())
     call set_conductivity (EM_conductivity())
+    const_prop = have_constant_EM_properties()
 
     if (jh_defined) then
 
@@ -156,9 +159,11 @@ contains
 
     !! Push the source and EM material parameters at time T1 into the EM data proxy.
     call set_source_properties (t1)
-    call set_permittivity (EM_permittivity())
-    call set_permeability (EM_permeability())
-    call set_conductivity (EM_conductivity())
+    if (.not.const_prop) then
+      call set_permittivity (EM_permittivity())
+      call set_permeability (EM_permeability())
+      call set_conductivity (EM_conductivity())
+    end if
 
     if (no_source_field()) then ! there is no joule heat ...
       if (source_has_changed()) then
@@ -166,7 +171,7 @@ contains
         call zero_joule_power_density ()
         call danu_write_joule (t1)
       end if
-    else if (material_has_changed()) then
+    else if (matl_has_changed()) then
       call TLS_info (' EM material parameters have changed; computing the Joule heat ...')
       call compute_joule_heat ()
       call danu_write_joule (t1)
@@ -183,6 +188,19 @@ contains
     end if
 
     call stop_timer('joule heat')
+
+  contains
+
+    !! A short-circuit version of .not.const_prop .and. material_has_changed()
+    !! The latter is not trivial and we do not want the expense if not needed.
+
+    logical function matl_has_changed()
+      if (const_prop) then
+        matl_has_changed = .false.
+      else
+        matl_has_changed = material_has_changed()
+      end if
+    end function
 
   end subroutine induction_heating
 

@@ -21,9 +21,24 @@ module EM_properties
   implicit none
   private
 
+  public :: have_constant_EM_properties
   public :: EM_permittivity, EM_permeability, EM_conductivity
 
 contains
+
+  logical function have_constant_EM_properties()
+    use material_utilities, only: constant_property_check
+    integer :: stat
+    character(:), allocatable :: errmsg
+    have_constant_EM_properties = .false.
+    call constant_property_check(matl_model, 'electrical-conductivity', stat, errmsg)
+    if (stat /= 0) return
+    call constant_property_check(matl_model, 'electric-susceptibility', stat, errmsg)
+    if (stat /= 0) return
+    call constant_property_check(matl_model, 'magnetic-susceptibility', stat, errmsg)
+    if (stat /= 0) return
+    have_constant_EM_properties = .true.
+  end function
 
   function EM_permittivity () result (value)
     use legacy_mesh_api, only: ncells
