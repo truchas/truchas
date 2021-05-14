@@ -66,7 +66,7 @@ module simulation_event_queue
 
 contains
 
-  subroutine init_sim_event_queue
+  subroutine init_sim_event_queue(dt_min)
 
     use ded_head_driver, only: ded_head_path_events
     use diffusion_solver_data, only: ds_enabled
@@ -74,9 +74,13 @@ contains
     use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
+    real(r8), intent(in) :: dt_min
+
     integer :: j, dt_policy
     real(r8) :: c
     real(r8), allocatable :: array(:)
+
+    call event_queue%set_time_resolution(dt_min)
 
     if (ds_enabled) call add_moving_vf_events(event_queue)
 
