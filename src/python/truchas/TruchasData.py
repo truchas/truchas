@@ -10,6 +10,7 @@ import sys
 
 import h5py
 import numpy as np
+import numpy.linalg as npla
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory, set by CMake at configure-time.
@@ -38,6 +39,7 @@ class TruchasData:
         self.directory = os.path.dirname(filename)
         self._root = h5py.File(filename, 'r')
         self._centroid = None
+        self._volume = None
         self._blockid = None
         self._node_coordinates = None
         self._cnode = None
@@ -183,19 +185,19 @@ class TruchasData:
     def centroids(self):
         """Return a list of cell centroids"""
         if self._centroid is None:
-            node = self.node_coordinates()
+            x = self.node_coordinates()
             cnode = self.cell_node_map()
-            self._centroid = np.zeros((cnode.shape[0],3))
-            for i, cn in enumerate(cnode):
-                if cn[0] == cn[1]: # TET
-                    self._centroid[i,:] = np.sum(node[cn[1:5]], axis=0) / 4
-                elif cn[4] == cn[5]: # PYR
-                    self._centroid[i,:] = np.sum(node[cn[:5]], axis=0) / 5
-                elif cn[4] == cn[7]: # WED
-                    self._centroid[i,:] = np.sum(node[cn[:6]], axis=0) / 6
-                else: # HEX
-                    self._centroid[i,:] = np.sum(node[cn], axis=0) / 8
+            self._centroid = np.array([np.average(x[_cell_nodes(cn),:], axis=0) for cn in cnode])
         return self._centroid
+
+
+    def volumes(self):
+        """Return a list of cell volumes."""
+        if self._volume is None:
+            x = self.node_coordinates()
+            cnode = self.cell_node_map()
+            self._volume = np.array([_cell_volume(x[_cell_nodes(cn),:]) for cn in cnode])
+        return self._volume
 
 
     def node_coordinates(self):
@@ -262,59 +264,59 @@ class TruchasData:
 
         fw = fortran_write.FortranWrite(outfile)
         fields = self.field_names(series_id)
-    
+
         # HEADER SEGMENT
         # file format magic number
         fw.write_str("{:8s}".format("TRF-3"))
-    
+
         # feature list
         features = self._feature_list(fields)
         fw.write_i4x0(len(features))
         for f in features:
             fw.write_str("{:32s}".format(f))
-    
+
         # simulation specification (free use -- not using any now)
         fw.write_i4x0(0)
-    
+
         # global data
         fw.write_r8x0(self.time(series_id))
         fw.write_r8x0(self.time_step(series_id))
         fw.write_i4x0(self.cycle(series_id))
         fw.write_i4x0(self.ncell)
         fw.write_i4x0(self.nnode)
-    
+
         # MESH SEGMENT
         for cn in self.cell_node_map().transpose():
             fw.write_i4x1(cn+1)
-    
+
         bid = self.blockid()
         if len(bid) > 0:
             fw.write_i4x0(1)
             fw.write_i4x1(bid)
         else:
             fw.write_i4x0(0)
-    
+
         for x in self.node_coordinates().transpose():
             fw.write_r8x1(x)
-    
+
         # CORE DATA SEGMENT
         fw.write_r8x1(self.field(series_id, "Z_RHO"))
         fw.write_r8x1(self.field(series_id, "Z_TEMP"))
         fw.write_r8x1(self.field(series_id, "Z_ENTHALPY"))
-    
+
         if "fluid_flow" in features:
             fw.write_r8x1(self.field(series_id, "Z_P"))
-    
+
             for v in self.field(series_id, "Z_VC").transpose():
                 fw.write_r8x1(v)
-    
+
             for v in self.field(series_id, "Face_Vel").transpose():
                 fw.write_r8x1(v)
         else:
             dummy = np.zeros(self.ncell)
             for i in range(10):
                 fw.write_r8x1(dummy)
-    
+
         if "VOF" in fields:
             vof = self.field(series_id, "VOF").transpose()
             fw.write_i4x0(vof.shape[0])
@@ -324,7 +326,7 @@ class TruchasData:
             # single phase problem
             fw.write_i4x0(1)
             fw.write_r8x1(np.ones(self.ncell))
-    
+
         # SOLID MECHANICS SEGMENT
         if "solid_mechanics" in features:
             for n in range(12):
@@ -332,39 +334,39 @@ class TruchasData:
                     name = field + "{:02d}".format(n+1)
                     for t in self.field(series_id, name).transpose():
                         fw.write_r8x1(t)
-    
+
                 name = "PLASTIC_STRAIN_RATE_{:02d}".format(n+1)
                 fw.write_r8x1(self.field(series_id, name))
-    
+
             for t in self.field(series_id, "epsilon").transpose():
                 fw.write_r8x1(t)
-    
+
             for t in self.field(series_id, "sigma").transpose():
                 fw.write_r8x1(t)
-    
+
             for t in self.field(series_id, "e_plastic").transpose():
                 fw.write_r8x1(t)
-    
+
             fw.write_r8x1(self.field(series_id, "epsdot"))
-    
+
             for t in self.field(series_id, "RHS").transpose():
                 fw.write_r8x1(t)
-    
+
             for t in self.field(series_id, "epstherm").transpose():
                 fw.write_r8x1(t)
-    
+
             for t in self.field(series_id, "epspc").transpose():
                 fw.write_r8x1(t)
-    
+
             for t in self.field(series_id, "Displacement").transpose():
                 fw.write_r8x1(t)
-    
+
         # SPECIES SEGMENT
         if "species" in features:
             nspecies = self.num_species()
             assert nspecies > 0
             fw.write_i4x0(nspecies)
-    
+
             for n in range(nspecies):
                 fw.write_r8x1(self.field(series_id, "phi" + str(n+1)))
 
@@ -373,25 +375,25 @@ class TruchasData:
             ustruc_map = self._series(series_id)["CP-USTRUC-MAP"][:]
             fw.write_i4x0(ustruc_map.size)
             fw.write_i4x1(ustruc_map)
-    
+
             # get the number of components
             ncomp = 0
             while "CP-USTRUC-COMP-" + str(ncomp+1) in fields: ncomp += 1
             fw.write_i4x0(ncomp)
-    
+
             for n in range(ncomp):
                 name = "CP-USTRUC-COMP-" + str(n+1)
                 ustruc_comp = self._series(series_id)[name][:]
                 cid = self._series(series_id)[name].attrs["COMP-ID"]
-    
+
                 fw.write_i4x0(cid)
                 fw.write_i4x0(ustruc_comp.shape[1])
                 fw.write_i8x2(ustruc_comp)
-    
+
         # JOULE HEAT SEGMENT
         if "joule_heat" in features:
             t = self.time(series_id)
-    
+
             # scan through the EM simulations, in order, looking for
             # the last one whose TIME attribute value is <= the time
             # attribute for the requested series sequence number.
@@ -400,7 +402,7 @@ class TruchasData:
             while t_em_next <= t:
                 t_em = t_em_next
                 name = name_next
-    
+
                 n += 1
                 name_next = "EM{:03d}".format(n)
                 if name_next not in em_fields: break
@@ -408,10 +410,10 @@ class TruchasData:
                                         .attrs["TIME"]
             em_sim = self._root["Simulations/" + name + "/Non-series Data"]
             print("Using EM simulation {:s} (t = {:f})".format(name, t_em))
-    
+
             fw.write_r8x0(em_sim["FREQ"][0])
             fw.write_r8x0(em_sim["UHFS"][0])
-    
+
             coils = em_sim["COILS"][:]
             fw.write_i4x0(coils.shape[0])
             for c in coils:
@@ -420,20 +422,20 @@ class TruchasData:
                 fw.write_r8x0(c[4])
                 fw.write_r8x0(c[5])
                 fw.write_i4x0(int(round(c[6])))
-    
+
             array = em_sim["MU"][:]
             fw.write_i4x0(array.size)
             fw.write_r8x1(array)
-    
+
             array = em_sim["SIGMA"][:]
             fw.write_i4x0(array.size)
             fw.write_r8x1(array)
-    
+
             array = em_sim["JOULE"][:][self._cellmap]
             fw.write_i4x0(self.ncell)
             fw.write_r8x1(array)
-    
-    
+
+
     def _feature_list(self, fields):
         """Returns a list of features present based on fields in the output."""
         # Only species is supported for mapped restarts.
@@ -445,4 +447,56 @@ class TruchasData:
         if "CP-USTRUC-MAP" in fields and not self.mapped: features.append("microstructure")
         return features
 
-        
+
+def _cell_nodes(cn):
+    """Map node IDs from degenerate hex to tet, pyramid, wedge, or hex."""
+    cn2 = (   cn[1:5] if cn[0] == cn[1] # TET
+        else  cn[:5]  if cn[4] == cn[5] # PYR
+        else  cn[:6]  if cn[4] == cn[7] # PYR
+        else  cn)                       # HEX
+    return cn2
+
+
+def _cell_volume(x):
+    """Return the volume for a cell, given its node coordinates."""
+    vol = (  _tet_volume(x) if 4 == x.shape[0]
+        else _pyr_volume(x) if 5 == x.shape[0]
+        else _wed_volume(x) if 6 == x.shape[0]
+        else _hex_volume(x))
+    return vol
+
+
+def _tet_volume(x):
+    return npla.det([x[1,:]-x[0,:], x[2,:]-x[0,:], x[3,:]-x[0,:]]) / 6
+
+
+def _pyr_volume(x):
+    vol = (_tet_volume(x[[0,1,3,4],:])
+        +  _tet_volume(x[[1,2,0,4],:])
+        +  _tet_volume(x[[2,3,1,4],:])
+        +  _tet_volume(x[[3,0,2,4],:])) / 2
+    return vol
+
+
+def _wed_volume(x):
+    vol = (_tet_volume(x[[0,1,2,3],:])
+        +  _tet_volume(x[[4,3,5,1],:])
+        +  _tet_volume(x[[1,2,3,5],:])
+        +  _tet_volume(x[[1,2,0,4],:])
+        +  _tet_volume(x[[3,5,4,0],:])
+        +  _tet_volume(x[[0,2,5,4],:])) / 2
+    return vol
+
+
+def _hex_volume(x):
+    vol = (_tet_volume(x[[0,1,3,4],:])
+        +  _tet_volume(x[[1,2,0,5],:])
+        +  _tet_volume(x[[2,3,1,6],:])
+        +  _tet_volume(x[[3,0,2,7],:])
+        +  _tet_volume(x[[4,7,5,0],:])
+        +  _tet_volume(x[[5,4,6,1],:])
+        +  _tet_volume(x[[6,5,7,2],:])
+        +  _tet_volume(x[[7,6,4,3],:])
+        +  _tet_volume(x[[0,2,7,5],:])
+        +  _tet_volume(x[[1,3,4,6],:])) / 2
+    return vol
