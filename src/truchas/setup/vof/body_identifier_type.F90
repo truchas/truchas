@@ -83,12 +83,14 @@ contains
       stat = 1
       errmsg = "No bodies may be listed after a background body namelist."
     end if
-    
+
   end subroutine init
 
 
   ! Return the ID of the body which contains the given point x.
   integer function body_at_point(this, x, cellid, stat, errmsg)
+
+    use string_utilities, only: i_to_c
 
     class(body_identifier), intent(in) :: this
     real(r8), intent(in) :: x(:)
@@ -96,13 +98,16 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    integer :: blockid
+
     stat = 0
     do body_at_point = 1, this%nbody
       if (this%body(body_at_point)%eval(x, cellid)) return
     end do
 
     stat = 1
-    errmsg = "Input bodies do not cover the entire domain."
+    blockid = this%mesh%cell_set_id(trailz(this%mesh%cell_set_mask(cellid)))
+    errmsg = i_to_c(blockid)
 
   end function body_at_point
 
