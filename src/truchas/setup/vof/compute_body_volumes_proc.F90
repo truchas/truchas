@@ -153,18 +153,22 @@ contains
     integer :: i
     integer, allocatable :: rstat(:)
     character(:), allocatable :: tmp, rerrmsg(:)
-    
+
     fatal = global_any(stat /= 0)
     if (.not.fatal) return
-    stat = 1
 
     allocate(rstat(merge(nPE, 0, is_IOP)))
     call collate(rstat, stat)
+    stat = 1
 
     i = global_maxval(len(errmsg))
     if (this_PE == IO_PE) allocate(character(i) :: rerrmsg(nPE))
     allocate(character(i) :: tmp)
-    tmp(:) = errmsg
+    if (allocated(errmsg)) then
+      tmp(:) = errmsg
+    else
+      tmp(:) = ''
+    end if
     call collate(rerrmsg, tmp)
 
     errmsg = ''
