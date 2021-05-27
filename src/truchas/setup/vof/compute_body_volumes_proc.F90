@@ -144,13 +144,12 @@ contains
   subroutine error_consolidate(stat, errmsg)
 
     use parallel_communication
-    use string_utilities, only: i_to_c
 
     integer, intent(inout) :: stat
     character(:), allocatable, intent(inout) :: errmsg
 
     logical :: fatal
-    integer :: i
+    integer :: i, j
     integer, allocatable :: rstat(:)
     character(:), allocatable :: tmp, rerrmsg(:)
 
@@ -164,19 +163,21 @@ contains
     i = global_maxval(len(errmsg))
     if (this_PE == IO_PE) allocate(character(i) :: rerrmsg(nPE))
     allocate(character(i) :: tmp)
-    if (allocated(errmsg)) then
-      tmp(:) = errmsg
-    else
-      tmp(:) = ''
-    end if
+    if (.not.allocated(errmsg)) errmsg = ''
+    tmp(:) = errmsg
     call collate(rerrmsg, tmp)
 
-    errmsg = ''
     if (this_PE == IO_PE) then
-      do i = 1, nPE
-        if (rstat(i) /= 0) &
-            errmsg = errmsg // 'Rank ' // i_to_c(i) // ' error: ' // trim(rerrmsg(i)) // new_line(errmsg)
-      end do
+      errmsg = 'Incomplete body specification. Body missing in element blocks'
+      msgs: do i = 1, nPE
+        if (rstat(i) /= 0) then
+          ! Only print each unique error message once
+          do j = 1, i-1
+            if (rerrmsg(i) == rerrmsg(j)) cycle msgs
+          end do
+          errmsg = errmsg // ' ' // trim(rerrmsg(i))
+        end if
+      end do msgs
     end if
 
   end subroutine error_consolidate
