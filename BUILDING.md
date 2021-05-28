@@ -22,6 +22,8 @@ and macOS with GNU and NAG compilers.
 	    - NAG version 6.2 and 7.0 (build 7028 or later required)
 		- Likely any version of Apple Clang should be fine
     - GNU Fortran and C/C++. Versions 9.x and 10.x appear to be working now.
+      Version 11.1.0 is not working, but 11.1.1 versions dated after 5/27/2021
+      are working.
 * Cmake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
