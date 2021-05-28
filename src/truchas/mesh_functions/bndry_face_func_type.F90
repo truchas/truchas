@@ -185,15 +185,18 @@ contains
     deallocate(tmp)
 
     !! Update the function list
-    call move_alloc(this%farray, ftmp)
-    allocate(this%farray(size(ftmp)+1))
-    this%farray(:size(ftmp)) = ftmp
+    if (allocated(this%farray)) then
+      call move_alloc(this%farray, ftmp)
+      allocate(this%farray(size(ftmp)+1))
+      this%farray(:size(ftmp)) = ftmp
+    else
+      allocate(this%farray(1))
+    end if
 #ifdef NO_2008_LHS_POLY_REALLOC
-    allocate(this%farray(size(ftmp)+1)%f, source=f)
+    allocate(this%farray(size(this%farray))%f, source=f)
 #else
-    this%farray(size(ftmp)+1)%f = f
+    this%farray(size(this%farray))%f = f
 #endif
-    deallocate(ftmp)
 
   end subroutine add_face_list
 
