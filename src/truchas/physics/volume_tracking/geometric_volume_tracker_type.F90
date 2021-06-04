@@ -287,14 +287,15 @@ contains
 
   end subroutine normals
 
-  subroutine donor_fluxes_os_cell(this, i, vel, vof, dt, locator_error_message)
+  subroutine donor_fluxes_os_cell(this, i, vel, vof, dt, stat, errmsg)
 
     use cell_geom_type
 
     class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
-    character(:), allocatable, intent(inout) :: locator_error_message
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(inout) :: errmsg
 
     real(r8) :: face_normal(3,6)
     integer :: j,k,ierr
@@ -302,7 +303,6 @@ contains
 
     associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
         fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-
       do j = 1, size(fi)
         k = fi(j)
         if (btest(this%mesh%cfpar(i),pos=j)) then
@@ -318,14 +318,14 @@ contains
       call cell_volume_flux(dt, cell, vof(:,i), this%normal(:,:,i), &
           vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1), this%cutoff, &
           this%priority, this%nmat, this%location_iter_max, &
-          this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1), locator_error_message)
+          this%flux_vol_sub(:,this%mesh%xcface(i):this%mesh%xcface(i+1)-1), stat, errmsg)
     end associate
 
   end subroutine donor_fluxes_os_cell
 
   ! get the volume flux for every material in the given cell
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
-      flux_volume, locator_error_message)
+      flux_volume, stat, errmsg)
 
 #ifdef NO_2008_FINDLOC
     use f08_intrinsics, only: findloc
@@ -338,7 +338,8 @@ contains
     integer, intent(in) :: priority(:), nmat, maxiter
     type(cell_geom), intent(in) :: cell
     real(r8), intent(out) :: flux_volume(:,:)
-    character(:), allocatable, intent(inout) :: locator_error_message
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(inout) :: errmsg
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
@@ -346,6 +347,7 @@ contains
     logical :: is_mixed_donor_cell
     type(plane) :: P
 
+    stat = 0
     flux_volume = 0.0_r8
     flux_vol_sum = 0.0_r8
     nmat_in_cell = count(vof > 0.0_r8)
@@ -363,12 +365,13 @@ contains
       ! locate each interface plane by computing the plane constant
       if (is_mixed_donor_cell) &
           P = locate_plane_os(int_norm(:,priority(ni)), vofint, cell%volume, cell%node, &
-          cutoff, maxiter, locator_error_message)
+          cutoff, maxiter, errmsg)
 
       ! calculate delta advection volumes for this material at each donor face and accumulate the sum
       ASSERT(priority(ni) <= size(flux_volume, dim=1))
       call compute_material_volume_flux(flux_volume(priority(ni),:), flux_vol_sum, P, cell, &
-          is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff)
+          is_mixed_donor_cell, vel, dt, vof(priority(ni)), cutoff, stat, errmsg)
+      if (stat /= 0) return
     end do
 
     ! Compute the advection volume for the last material.
@@ -379,7 +382,9 @@ contains
       flux_vol = dt*vel(f)*cell%face_area(f)
       if (abs(flux_vol) > 0.5_r8 * cell%volume) then
         write(*,*) dt,flux_vol,cell%volume,flux_vol/cell%volume
-        call TLS_fatal('advection timestep too large')
+        stat = 1
+        errmsg = 'advection timestep too large'
+        return
       end if
       if (flux_vol <= cutoff*cell%volume) cycle
 
@@ -400,7 +405,7 @@ contains
 
   ! calculate the flux of one material in a cell
   subroutine compute_material_volume_flux(material_volume_flux, flux_vol_sum, P, cell, &
-      is_mixed_donor_cell, vel, dt, vof, cutoff)
+      is_mixed_donor_cell, vel, dt, vof, cutoff, stat, errmsg)
 
     use cell_geom_type
     use truncation_volume_type
@@ -412,11 +417,14 @@ contains
     type(cell_geom), intent(in) :: cell
     logical, intent(in) :: is_mixed_donor_cell
     real(r8), intent(in) :: vel(:), dt, vof, cutoff
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: f
     real(r8) :: vp, flux_vol, flux_vol_node(3,8)
     type(truncation_volume) :: trunc_vol
 
+    stat = 0
     material_volume_flux = 0
     do f = 1,cell%nfc
       ! Flux volumes
@@ -425,7 +433,8 @@ contains
 
       if (is_mixed_donor_cell) then
         ! calculate the vertices describing the volume being truncated through the face
-        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node)
+        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node, stat, errmsg)
+        if (stat /= 0) return
 
         ! compute the volume truncated by interface planes in each flux volumes
         call trunc_vol%init(flux_vol_node, P%normal)
@@ -461,7 +470,7 @@ contains
   ! face.  The value used is varied from "DIST" such that the vertices
   ! describe a hexagonal volume that matches the value of Flux_Vol.
 
-  subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node)
+  subroutine flux_vol_nodes(face, cell, dist, Flux_Vol, cutvof, flux_vol_node, stat, errmsg)
 
     use cell_geometry, only: hex_volume
     use cell_geom_type
@@ -470,6 +479,8 @@ contains
     type(cell_geom), intent(in) :: cell
     real(r8), intent(in) :: dist, cutvof, flux_vol
     real(r8), intent(out) :: flux_vol_node(:,:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer, parameter :: flux_vol_iter_max = 10
 
@@ -563,6 +574,7 @@ contains
     real(r8) :: percnt(4), Uedge(3,4), volume, mult, ndotuedge
 
     ASSERT(cell%cell_type > 0 .and. cell%cell_type <= 4)
+    stat = 0
 
     ! initialize flux volume as entire given cell
     flux_vol_node = 0
@@ -580,8 +592,11 @@ contains
       Percnt(e) = -Dist/(ndotuedge+epsilon(1.0_r8))
     end do
 
-    if (any(percnt < 0) .or. any(percnt > 1)) &
-        call TLS_fatal('FLUX_VOL_NODE: invalid flux volume or inverted element')
+    if (any(percnt < 0) .or. any(percnt > 1)) then
+      stat = 1
+      errmsg = 'FLUX_VOL_NODE: invalid flux volume or inverted element'
+      return
+    end if
 
     ! iterate to find the four vertices at the back end of the flux volume
     mult = 1
@@ -600,12 +615,15 @@ contains
       if (abs(flux_vol - volume) < cutvof*cell%volume) exit
     end do
 
-    if (iter > flux_vol_iter_max) &
-        call TLS_fatal('Flux volume vertex iteration did not converge')
+    if (iter > flux_vol_iter_max) then
+      stat = 1
+      errmsg = 'Flux volume vertex iteration did not converge'
+      return
+    end if
 
   end subroutine flux_vol_nodes
 
-  subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt, locator_error_message)
+  subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt, stat, errmsg)
 
     use cell_topology
     use multimat_cell_type
@@ -613,15 +631,15 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
-    character(:), allocatable, intent(inout) :: locator_error_message
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     real(r8) :: face_normal(3,6)
-    integer :: j,k,ierr, face_vid(4,6)
+    integer :: j,k,face_vid(4,6)
     type(multimat_cell) :: cell
 
     associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
         fi => this%mesh%cface(this%mesh%xcface(i):this%mesh%xcface(i+1)-1))
-
       do j = 1, size(fi)
         k = fi(j)
         if (btest(this%mesh%cfpar(i),pos=j)) then
@@ -633,7 +651,8 @@ contains
 
       select case (size(cn))
       case (4)
-        call cell%init(ierr, this%mesh%x(:,cn), face_normal(:,1:size(fi)), this%mesh%volume(i))
+        call cell%init(stat, this%mesh%x(:,cn), face_normal(:,1:size(fi)), this%mesh%volume(i))
+        if (stat /= 0) errmsg = 'cell_outward_volflux failed: could not initialize cell'
 
       case (5)
         ! zero treated as sentinel value in multimat_cell procedures
@@ -641,8 +660,9 @@ contains
         do j = 1, size(fi)
           face_vid(1:PYR5_FSIZE(j),j) = PYR5_FACES(PYR5_XFACE(j):PYR5_XFACE(j+1)-1)
         end do
-        call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+        call cell%init(stat, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
             PYR5_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
+        if (stat /= 0) errmsg = 'cell_outward_volflux failed: could not initialize cell'
 
       case (6)
         ! zero treated as sentinel value in multimat_cell procedures
@@ -650,72 +670,60 @@ contains
         do j = 1, size(fi)
           face_vid(1:WED6_FSIZE(j),j) = WED6_FACES(WED6_XFACE(j):WED6_XFACE(j+1)-1)
         end do
-        call cell%init(ierr, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
+        call cell%init(stat, this%mesh%x(:,cn), face_vid(:,1:size(fi)), &
             WED6_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
+        if (stat /= 0) errmsg = 'cell_outward_volflux failed: could not initialize cell'
 
       case (8)
-        call cell%init(ierr, this%mesh%x(:,cn), reshape(source=HEX8_FACES,shape=[4,6]), &
+        call cell%init(stat, this%mesh%x(:,cn), reshape(source=HEX8_FACES,shape=[4,6]), &
             HEX8_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
-
+        if (stat /= 0) errmsg = 'cell_outward_volflux failed: could not initialize cell'
       case default
-        call TLS_fatal('unaccounted topology in donor_fluxes_nd')
+        stat = 1
+        errmsg = 'unaccounted topology in donor_fluxes_nd'
       end select
-
-      if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed: could not initialize cell')
+      if (stat /= 0) return
 
       call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
-          this%location_iter_max, locator_error_message)
+          this%location_iter_max, errmsg)
 
       this%flux_vol_sub(:this%nfluid,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
           cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
-          this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
-      if (ierr /= 0) call TLS_fatal('cell_outward_volflux failed')
+          this%mesh%area(fi), this%cutoff, this%nfluid, stat)
+      if (stat /= 0) errmsg = 'cell_outward_volflux failed'
     end associate
 
   end subroutine donor_fluxes_nd_cell
 
   subroutine donor_fluxes(this, vel, vof, dt)
 
-    use parallel_communication
     use truchas_logging_services
 
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
-    integer :: i, nmat, l
-    character(:), allocatable :: locator_error_message, tmp, global_message(:)
+    integer :: i, nmat, l, stat
+    character(:), allocatable :: errmsg, tmp, global_message(:)
 
-    locator_error_message = ""
 
     ! calculate the flux volumes for each face
     call start_timer('reconstruct/advect')
 
+    stat = 0
     do i = 1, this%mesh%ncell
       nmat = count(vof(:,i) > this%cutoff)
 
       if (nmat > 2 .and. this%nested_dissection) then
-        call this%donor_fluxes_nd_cell(i, vel, vof, dt, locator_error_message)
+        call this%donor_fluxes_nd_cell(i, vel, vof, dt, stat, errmsg)
       else
-        call this%donor_fluxes_os_cell(i, vel, vof, dt, locator_error_message)
+        call this%donor_fluxes_os_cell(i, vel, vof, dt, stat, errmsg)
       end if
+      if (stat /= 0) exit
     end do
 
     ! concatenate error strings into IO_PE and print if necessary
-    l = global_maxval(len(locator_error_message))
-    if (l > 0) then
-      ! all strings passed to collate must be the same length
-      if (this_PE == IO_PE) allocate(character(l) :: global_message(nPE))
-      allocate(character(l) :: tmp)
-      tmp(:) = locator_error_message
-      call collate(global_message, tmp)
-      if (this_PE == IO_PE) then
-        locator_error_message = "Did not converge plane locators in required iterations."
-        do i = 1, nPE
-          locator_error_message = locator_error_message // trim(global_message(i))
-        end do
-        call TLS_warn(locator_error_message)
-      end if
-    end if
+    call TLS_collate_if_any(stat, errmsg)
+    call TLS_collate_if_any(stat, errmsg, warn=.true., prefix="Did not converge plane locators in required iterations.")
 
     call stop_timer('reconstruct/advect')
 
@@ -816,7 +824,6 @@ contains
         end do
       end do
     end do
-
 
     call TLS_fatal_if_any (ierr /= 0, 'FLUX_RENORM: cannot reassign face flux to any other material')
 
@@ -1063,5 +1070,58 @@ contains
     end if
 
   end subroutine adjust_flux_all
+
+
+  subroutine TLS_collate_if_any(stat, errmsg, prefix, warn)
+
+    use parallel_communication
+
+    integer, intent(in) :: stat
+    character(:), allocatable, intent(in) :: errmsg
+    character(*), optional, intent(in) :: prefix
+    logical, optional, intent(in) :: warn
+
+    logical :: warn_
+    integer :: pe_stat(nPE), i, j, l, lmax
+    character(:), allocatable :: tmp, prefix_, errmsg_, global_message(:)
+
+    warn_ = .false.
+    if (present(warn)) warn_ = warn
+    if (.not.warn_ .and. global_all(stat == 0)) return
+
+    prefix_ = ''
+    if (present(prefix)) prefix_ = prefix
+
+    errmsg_ = ''
+    if (allocated(errmsg)) errmsg_ = errmsg
+
+    l = len(errmsg_)
+    lmax = global_maxval(l)
+    if (warn_ .and. lmax == 0) return
+
+    ! all strings passed to collate must be the same length
+    if (is_IOP) allocate(character(lmax) :: global_message(nPE))
+    allocate(character(lmax) :: tmp)
+    tmp(:) = errmsg_
+    call collate(global_message, tmp)
+    call collate(pe_stat, stat)
+    if (is_IOP) then
+      errmsg_ = prefix_
+      msgs: do i = 1, nPE
+        if (.not.warn_ .and. pe_stat(i) == 0) cycle
+        do j = 1, i-1
+          if (global_message(i) == global_message(j)) cycle msgs
+        end do
+        errmsg_ = errmsg_ // trim(global_message(i))
+      end do msgs
+    end if
+
+    if (warn_) then
+      call TLS_warn(errmsg_)
+    else
+      call TLS_fatal(errmsg_)
+    end if
+
+  end subroutine TLS_collate_if_any
 
 end module geometric_volume_tracker_type
