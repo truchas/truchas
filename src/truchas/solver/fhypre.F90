@@ -68,7 +68,7 @@ module fhypre
   use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
   use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
   use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr
-#ifndef INTEL_SRN04330341
+#ifndef INTEL_BUG20190903
   use,intrinsic :: iso_c_binding, only: hypre_associated => c_associated
 #endif
   implicit none
@@ -167,7 +167,7 @@ module fhypre
 
 contains
 
-#ifdef INTEL_SRN04330341
+#ifdef INTEL_BUG20190903
   ! this only covers the present use case of c_associated in the hypre context
   logical function hypre_associated(c_ptr1)
     use,intrinsic :: iso_c_binding, only: c_associated

@@ -92,7 +92,7 @@ module ustruc_core_type
     procedure :: deserialize
   end type ustruc_core
 
-#ifndef INTEL_COMPILER_WORKAROUND
+#ifndef INTEL_BUG20200721
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_core), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%speed)/8 + &
@@ -327,7 +327,7 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20200721
     integer :: NBYTES
     NBYTES = storage_size(this%speed)/8 + &
            3*storage_size(this%velocity)/8 + &
@@ -356,7 +356,7 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20200721
     integer :: NBYTES
     NBYTES = storage_size(this%speed)/8 + &
            3*storage_size(this%velocity)/8 + &

@@ -99,15 +99,7 @@ contains
         dt_policy = DT_POLICY_FACTOR
       end if
       do j = 1, size(array)
-#ifdef INTEL_COMPILER_WORKAROUND
-        block
-          type(phase_event) :: event
-          event = phase_event(dt_policy, c)
-          call event_queue%add_event(array(j), event)
-        end block
-#else
         call event_queue%add_event(array(j), phase_event(dt_policy, c))
-#endif
       end do
     end if
 

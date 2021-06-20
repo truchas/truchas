@@ -120,7 +120,7 @@ module ustruc_gv1_type
   integer, parameter :: STATE_MUSHY     = 3
   integer, parameter :: STATE_SOLID     = 4
   
-#ifndef INTEL_COMPILER_WORKAROUND
+#ifndef INTEL_BUG20210619
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_gv1), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%ustruc_state%G)/8 + &
@@ -533,7 +533,7 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: NBYTES
     NBYTES = storage_size(this%ustruc_state%G)/8 + &
              storage_size(this%ustruc_state%V)/8 + &
@@ -574,7 +574,7 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: NBYTES
     NBYTES = storage_size(this%ustruc_state%G)/8 + &
              storage_size(this%ustruc_state%V)/8 + &

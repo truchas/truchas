@@ -68,9 +68,6 @@ contains
     integer  :: exodus_block_modulus
     real(r8) :: coord_scale_factor
     character(:), allocatable :: mesh_file
-#ifdef INTEL_COMPILER_WORKAROUND
-    character(:), allocatable :: name
-#endif
     integer, allocatable :: side_sets(:)
 
     !! Copy the input parameter list to the modules private parameter list.
@@ -80,14 +77,7 @@ contains
     piter = parameter_list_iterator(params, sublists_only=.true.)
     do while (.not.piter%at_end())
       plist1 => piter%sublist()
-#ifdef INTEL_COMPILER_WORKAROUND
-      !Intel tracking ID: DPD200357444
-      name = piter%name()
-      name = raise_case(name)
-      plist2 => meshes%sublist(name)
-#else
       plist2 => meshes%sublist(raise_case(piter%name()))
-#endif
       call plist1%get ('mesh-file', mesh_file)
       call plist2%set ('mesh-file', mesh_file)
       call plist2%set ('enabled', .true.)

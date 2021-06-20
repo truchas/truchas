@@ -199,24 +199,24 @@ endif()
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
 add_compile_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
 
-# Specific compiler bug workarounds and defines. These are used by
-# the custom Fortran preprocessing step (that need to be eliminated).
+# Compiler-specific bug workarounds and defines.
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "18.0")
-    add_compile_definitions(NO_2008_FINDLOC)
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "19.0.4")
+    # Needed by any version earlier than 19.0.4
+    add_compile_definitions(INTEL_BUG20180115)
   endif()
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "20.0")
+    # Needed by any version earlier than oneAPI 2021.1
+    add_compile_definitions(INTEL_BUG20191229)
+    add_compile_definitions(INTEL_BUG20190903)
+    add_compile_definitions(INTEL_BUG20200721)
+  endif()
+  # Needed by any version through at least 2021.2
   add_compile_definitions(NO_2008_LHS_POLY_REALLOC)
-  add_compile_definitions(INTEL_DPD200237439)
+  add_compile_definitions(INTEL_BUG20121013A)
   add_compile_definitions(INTEL_BUG20180222)
   add_compile_definitions(INTEL_BUG20191228)
-  add_compile_definitions(INTEL_BUG20191229)
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "18.0.0")
-    # This applies to 18.0.0 because of the version tweak number
-    add_compile_definitions(INTEL18_WORKAROUND)
-  endif()
-  if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "19.0.0")
-    add_compile_definitions(INTEL_SRN04330341)
-  endif()
+  add_compile_definitions(INTEL_BUG20210619)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)

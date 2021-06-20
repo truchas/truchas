@@ -76,7 +76,7 @@ module ustruc_gv0_type
   integer, parameter :: GV_UNDEFINED = 1
   integer, parameter :: GV_DEFINED   = 2
 
-#ifndef INTEL_COMPILER_WORKAROUND
+#ifndef INTEL_BUG20200721
   !! Number of bytes (per cell) of internal state for serialization/deserialization
   type(ustruc_gv0), allocatable :: dummy  ! only use is in the following parameter declaration
   integer, parameter :: NBYTES = storage_size(dummy%dt)/8 + storage_size(dummy%g)/8 + &
@@ -383,7 +383,7 @@ contains
     integer(int8), allocatable, intent(out) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20200721
     integer :: NBYTES
     NBYTES = storage_size(this%dt)/8 + storage_size(this%g)/8 + &
              storage_size(this%v)/8 +  storage_size(this%state)/8 + &
@@ -417,7 +417,7 @@ contains
     integer(int8), intent(in) :: array(:,:)
 
     integer :: j, offset
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20200721
     integer :: NBYTES
     NBYTES = storage_size(this%dt)/8 + storage_size(this%g)/8 + &
              storage_size(this%v)/8 +  storage_size(this%state)/8 + &
