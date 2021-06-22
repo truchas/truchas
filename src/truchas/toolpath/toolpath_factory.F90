@@ -184,7 +184,7 @@ contains
       allocate(buffer(1000))
       inquire(lun,pos=last_pos)  ! starting position in stream
       do
-#ifdef INTEL_DPD200237439
+#ifdef INTEL_BUG20121013A
         !! Fill buffer a character at a time
         do buflen = 1, size(buffer)
           read(lun,iostat=ios) buffer(buflen)

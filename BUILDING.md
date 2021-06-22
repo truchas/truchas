@@ -9,11 +9,9 @@ and macOS with GNU and NAG compilers.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   We use and test with the following compilers.
     - Intel Fortran and C/C++:
-        - version 18.0.5 (anything 18.0.2 or later should be okay)
-        - version 19.1.0
-        - version 20.2.1 (Intel oneAPI compilers version 2021.1)
-        - Many versions are known **not to work** due to compiler bugs. These
-          include 19.0.x (any x), and 19.1.1 through at least 19.1.3
+        - versions 18.0.x, x >= 5; 19.1.0; oneAPI 2021.1 and 2021.2
+        - Many versions will **not work** because of compiler bugs.
+          These include 19.0.x (any x); 19.1.x, x > 0; and oneAPI 2021.0
     - NAG Fortran (with GNU C/C++):
         - version 6.2 (build 6252 or later preferred)
         - version 7.0 (build 7026 or later required)

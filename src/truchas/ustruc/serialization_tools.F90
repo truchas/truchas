@@ -72,7 +72,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -88,7 +88,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -104,7 +104,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -120,7 +120,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -136,7 +136,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -152,7 +152,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -169,7 +169,7 @@ contains
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
     integer :: len
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -186,7 +186,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -202,7 +202,7 @@ contains
     integer, intent(inout) :: offset
     integer(int8), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -218,7 +218,7 @@ contains
     integer, intent(inout) :: offset
     integer(int16), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -234,7 +234,7 @@ contains
     integer, intent(inout) :: offset
     integer(int32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -250,7 +250,7 @@ contains
     integer, intent(inout) :: offset
     integer(int64), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -266,7 +266,7 @@ contains
     integer, intent(inout) :: offset
     real(real32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -282,7 +282,7 @@ contains
     integer, intent(inout) :: offset
     real(real64), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -299,7 +299,7 @@ contains
     real(real64), intent(out), contiguous, target :: var(:)
     integer(int8), pointer :: ptr(:)
     integer :: len
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else
@@ -316,7 +316,7 @@ contains
     integer, intent(inout) :: offset
     logical(int32), intent(out), target :: var
     integer(int8), pointer :: ptr(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20210619
     integer :: n
     n = storage_size(var)/storage_size(buffer)
 #else

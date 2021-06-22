@@ -208,7 +208,7 @@ contains
     character(:), allocatable :: bc_type, pname
     logical :: found_inflow
     integer, allocatable :: setids(:)
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20180115
     class(*), pointer :: pval
 #endif
 
@@ -230,7 +230,7 @@ contains
               call obc%set('face-set-ids', setids)
             end if
             if (ibc_piter%is_scalar()) then
-#ifdef INTEL_COMPILER_WORKAROUND
+#ifdef INTEL_BUG20180115
               pval => ibc_piter%scalar()
               select type (pval)
 #else
