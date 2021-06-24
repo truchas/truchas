@@ -57,6 +57,26 @@ contains
         errmsg = 'attempt to overwrite existing material: ' // piter%name()
         return
       end if
+      !! Write a solid fraction plot file for each phase change
+      block
+        use multi_phase_matl_type
+        use parallel_communication, only: is_IOP
+        use truchas_env, only: output_dir
+        integer :: n, i, ios
+        character(:), allocatable :: filename
+        select type (matl)
+        class is (multi_phase_matl)
+          do n = 1, matl%num_phase() - 1
+            filename = trim(output_dir) // matl%phi(n)%name // '-frac.dat'
+            do ! until all blanks replaced with underscores
+              i = scan(filename, ' ')
+              if (i == 0) exit
+              filename(i:i) = '_'
+            end do
+            if (is_IOP) call matl%write_solid_frac_plotfile(n, filename, digits=6, npoints=100, iostat=ios)
+          end do
+        end select
+      end block
       call matl_db%add_matl(matl)
       call piter%next
     end do
