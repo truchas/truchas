@@ -44,6 +44,7 @@ module multi_phase_matl_type
     procedure :: phase_ref
     procedure :: get_phase_frac
     procedure :: add_enthalpy_prop
+    procedure :: write_solid_frac_plotfile
   end type
 
   type :: scalar_func_box
@@ -372,5 +373,14 @@ contains
     end do
     value = this%farray(n)%func%eval(state)
   end subroutine compute_value
+
+  subroutine write_solid_frac_plotfile(this, n, filename, digits, npoints, iostat)
+    class(multi_phase_matl), intent(in) :: this
+    character(*), intent(in) :: filename
+    integer, intent(in) :: n, digits, npoints
+    integer, intent(out) :: iostat
+    ASSERT(n > 0 .and. n <= size(this%pc_seq))
+    call this%pc_seq(n)%pc%write_solid_frac_plotfile(filename, digits, npoints, iostat)
+  end subroutine
 
 end module multi_phase_matl_type

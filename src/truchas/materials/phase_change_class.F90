@@ -10,6 +10,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 module phase_change_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -23,6 +25,7 @@ module phase_change_class
     procedure(solidus_temp), deferred :: solidus_temp
     procedure(liquidus_temp), deferred :: liquidus_temp
     procedure :: ref_liquidus_temp
+    procedure :: write_solid_frac_plotfile
   end type
 
   abstract interface
@@ -59,6 +62,38 @@ contains
     real(r8) :: ref_liquidus_temp
     ref_liquidus_temp = this%liquidus_temp()
   end function
+
+  subroutine write_solid_frac_plotfile(this, filename, digits, npoints, iostat)
+
+    class(phase_change), intent(in) :: this
+    character(*), intent(in) :: filename
+    integer, intent(in) :: digits, npoints
+    integer, intent(out) :: iostat
+
+    integer :: lun, j
+    character(12) :: fmt
+    real(r8) :: Tsol, Tliq, dT, T
+
+    ASSERT(npoints > 0)
+    ASSERT(digits > 1)
+
+    Tsol = this%solidus_temp()
+    Tliq = this%liquidus_temp()
+
+    open(newunit=lun,file=filename,status='replace',action='write',iostat=iostat)
+    if (iostat /= 0) return
+    write(fmt,'("(*(es",i0,".",i0,"))")') digits+7, digits-1
+
+    dT = (Tliq - Tsol) / npoints
+
+    do j = 0, npoints
+      T = Tsol + j*dT
+      write(lun,fmt) T, this%solid_frac(T)
+    end do
+
+    close(lun)
+
+  end subroutine write_solid_frac_plotfile
 
 end module phase_change_class
 
