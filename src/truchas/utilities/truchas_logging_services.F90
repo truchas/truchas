@@ -397,10 +397,20 @@ contains
 
   subroutine labeled_message_scalar (label, message)
     character(*), intent(in) :: label, message
-    integer :: n
+    integer :: n, i1, i2
+    character(:), allocatable :: prefix
     if (is_IOP) then
-      do n = 1, size(log_unit)
-        write(log_unit(n),'(2a)') label, message(:len_trim(message))
+      prefix = label
+      i2 = 0
+      do ! split message at new line characters
+        i1 = i2 + 1
+        i2 = i2 + scan(message(i1:), new_line(message))
+        if (i2 < i1) i2 = len_trim(message)+1
+        do n = 1, size(log_unit)
+          write(log_unit(n),'(2a)') prefix, message(i1:i2-1)
+        end do
+        if (i2 >= len_trim(message)) exit
+        prefix(1:) = ''
       end do
     end if
   end subroutine labeled_message_scalar

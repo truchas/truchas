@@ -358,8 +358,13 @@ contains
       else
         vtk_file = trim(output_dir) // 'em_no_bc.vtk'
         call mesh%write_faces_vtk(mask, vtk_file, 'Boundary faces without BC')
-        call TLS_fatal('GENERATE_BFACE: no BC for some EM mesh boundary faces;&
-            & problem faces written to ' // vtk_file)
+        call TLS_fatal('found unexpected EM mesh boundary faces; possible causes:' &
+            // new_line('a') &
+            // '* invalid EM domain or specification; check EM_domain_type and symmetry_axis' &
+            // new_line('a') &
+            // '* volumes were not imprinted and merged in Cubit before meshing' &
+            // new_line('a') &
+            // 'Faces written to the Paraview input file "' // vtk_file // '" for visualization')
       end if
     end if
     
