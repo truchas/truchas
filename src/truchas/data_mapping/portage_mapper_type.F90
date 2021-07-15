@@ -122,6 +122,8 @@ contains
 
   subroutine map_field(this, src, dest, defval, map_type, pullback)
 
+    use,intrinsic :: ieee_exceptions
+
     class(portage_mapper), intent(in) :: this
     real(r8), intent(in)  :: src(:)
     real(r8), intent(out) :: dest(:)
@@ -130,7 +132,7 @@ contains
     logical,  intent(in), optional :: pullback
 
     integer :: method, n
-    logical :: reverse_order
+    logical :: reverse_order, ieee_invalid_mode
     real(r8), allocatable :: col_src(:), col_dest(:)
 
     select case (map_type)
@@ -164,6 +166,10 @@ contains
 
     if (is_IOP) then
       col_dest = defval
+      ! Portage currently performs operations which trip floating
+      ! exception handling. Disable while in Portage.
+      call ieee_get_halting_mode(ieee_invalid, ieee_invalid_mode)
+      call ieee_set_halting_mode(ieee_invalid, .false.)
       if (reverse_order) then
         call portage_map_field(this%mapper_pullback, &
             size(col_src), col_src, size(col_dest), col_dest, method)
@@ -171,6 +177,7 @@ contains
         call portage_map_field(this%mapper, &
             size(col_src), col_src, size(col_dest), col_dest, method)
       end if
+      call ieee_set_halting_mode(ieee_invalid, ieee_invalid_mode)
     end if
 
     call distribute(dest, col_dest)
