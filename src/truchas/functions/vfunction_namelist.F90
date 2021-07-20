@@ -35,6 +35,7 @@ module vfunction_namelist
   use input_utilities, only: seek_to_namelist
   use vector_func_factories
   use vector_func_table, only: known_func, insert_func
+  use ded_head_driver, only: alloc_ded_head_laser_func
   use truchas_logging_services
   implicit none
   private
@@ -115,6 +116,7 @@ contains
       select case (raise_case(type))
       case ('TABULAR')
       case ('DIV-RADIAL-CYL-FLOW')
+      case ('DED-HEAD-LASER')
       case default
         call TLS_fatal(label // ': unknown value for TYPE: ' // trim(type))
       end select
@@ -153,6 +155,11 @@ contains
         if (any(axis == NULL_R)) call TLS_fatal(label // ': AXIS requires a 3-vector value')
         call alloc_div_radial_cyl_flow_func(f, axis)
         call insert_func(name, f)
+
+      case ('DED-HEAD-LASER')
+
+        call alloc_ded_head_laser_func (f)
+        call insert_func (name, f)
 
       end select
       call TLS_info ('  read namelist "' // trim(name) // '"')

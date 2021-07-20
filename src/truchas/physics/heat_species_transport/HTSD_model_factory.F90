@@ -235,6 +235,18 @@ contains
         fmask(model%bc_flux%index) = .true. ! mark the simple flux faces
       end if
 
+      !! Define the oriented flux boundary conditions.
+      call bc_fac%alloc_vflux_bc(model%bc_vflux, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(model%bc_vflux)) then
+        if (global_any(mask(model%bc_vflux%index))) then
+          stat = -1
+          errmsg = 'temperature flux boundary condition overlaps with interface conditions'
+          return
+        end if
+        fmask(model%bc_vflux%index) = .true. ! mark the oriented flux faces
+      end if
+
       !! Define the external HTC boundary conditions.
       call bc_fac%alloc_htc_bc(model%bc_htc, stat, errmsg)
       if (stat /= 0) return

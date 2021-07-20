@@ -42,12 +42,12 @@ contains
 
     !! Namelist variables
     integer :: face_set_ids(100)
-    real(r8) :: htc, ambient_temp, emissivity, temp, flux
+    real(r8) :: htc, ambient_temp, emissivity, temp, flux, vflux(3)
     character(32) :: name, type, htc_func, ambient_temp_func, &
-        emissivity_func, temp_func, flux_func
+        emissivity_func, temp_func, flux_func, vflux_func
     namelist /thermal_bc/ name, type, face_set_ids, &
         temp, temp_func, flux, flux_func, htc, htc_func, ambient_temp, ambient_temp_func, &
-        emissivity, emissivity_func
+        emissivity, emissivity_func, vflux, vflux_func
 
     call TLS_info('Reading THERMAL_BC namelists ...')
 
@@ -78,6 +78,8 @@ contains
       temp_func = NULL_C
       flux = NULL_R
       flux_func = NULL_C
+      vflux = NULL_R
+      vflux_func = NULL_C
 
       if (is_IOP) read(lun,nml=thermal_bc,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -96,6 +98,8 @@ contains
       call broadcast(temp_func)
       call broadcast(flux)
       call broadcast(flux_func)
+      call broadcast(vflux)
+      call broadcast(vflux_func)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -115,7 +119,7 @@ contains
 
       !! Check the required TYPE value.
       select case (lower_case(type))
-      case ('temperature', 'flux', 'htc', 'radiation')
+      case ('temperature', 'flux', 'oriented-flux', 'htc', 'radiation')
       case ('interface-htc', 'gap-radiation')
       case (NULL_C)
         call TLS_fatal(label // ': TYPE not specified')
@@ -147,6 +151,22 @@ contains
           call plist%set('flux', flux_func)
         else
           call TLS_fatal(label // ': neither FLUX or FLUX_FUNC specified')
+        end if
+
+      case ('oriented-flux')
+
+        if (any(vflux /= NULL_R) .and. vflux_func /= NULL_C) then
+          call TLS_fatal(label // ': both VFLUX and VFLUX_FUNC specified')
+        else if (any(vflux /= NULL_R)) then
+          if (any(vflux == NULL_R)) then
+            call TLS_fatal(label // ': VFLUX only partially specified')
+          else
+            call plist%set('flux', vflux)
+          end if
+        else if (vflux_func /= NULL_C) then
+          call plist%set('flux', vflux_func)
+        else
+          call TLS_fatal(label // ': neither VFLUX or VFLUX_FUNC specified')
         end if
 
       case ('htc')
