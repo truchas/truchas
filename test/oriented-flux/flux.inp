@@ -1,0 +1,75 @@
+#### SIMULATION CONTROL
+
+&MESH
+  x_axis%coarse_grid = -1.0, 1.0
+  y_axis%coarse_grid = -1.0, 1.0
+  z_axis%coarse_grid = -1.0, 1.0
+  x_axis%intervals   = 10
+  y_axis%intervals   = 10
+  z_axis%intervals   = 10
+  rotation_angles = 45., 0., 0.
+/
+
+&OUTPUTS
+  Output_T  = 0.0, 1.0
+  Output_Dt = 100.0
+/
+
+&NUMERICS
+  dt_init = 1.0e-3
+  dt_grow = 1.05
+  dt_min  = 1.0e-6
+/
+
+&PHYSICS
+  materials = 'stuff'
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0.0
+  rel_temp_tol = 1.0e-2
+  abs_enthalpy_tol = 0.0
+  rel_enthalpy_tol = 1.0e-2
+  nlk_tol = 0.01
+  max_nlk_itr = 5
+  pc_amg_cycles = 2
+  nlk_preconditioner = 'hypre_amg'
+/
+
+
+#### INITIAL CONDITIONS
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 1.0
+/
+
+
+#### BOUNDARY CONDITIONS & SOURCES
+
+&THERMAL_BC
+  name = 'laser'
+  face_set_ids = 6
+  type = 'flux'
+  flux = -0.7071067811865476
+/
+
+&THERMAL_BC
+  name = 'adiabatic-sides'
+  face_set_ids = 1, 2, 3, 4, 5
+  type = 'flux'
+  flux = 0.0
+/
+
+
+#### MATERIALS
+
+&MATERIAL
+  name = 'stuff'
+  density = 1. ! [kg / m^3]
+  specific_heat = 1. ! [J / kg * C]
+  conductivity = 1. ! [W / m * C]
+/

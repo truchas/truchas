@@ -55,6 +55,10 @@ add_pytruchas_test(3d-ss-hc-linear-mixed
                    PROCESSORS 4
                    LABELS CONDUCTION MIXED)
 
+add_pytruchas_test(oriented-flux-1 oriented-flux/test1.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(oriented-flux-2 oriented-flux/test2.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(oriented-flux-3 oriented-flux/test3.py PROCESSORS 4 LABELS CONDUCTION)
+
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4
                    LABELS PHASE_CHANGE)
