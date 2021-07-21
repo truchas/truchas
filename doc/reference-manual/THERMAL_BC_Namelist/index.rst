@@ -22,8 +22,10 @@ The following types of external boundary conditions can be defined. The outward 
    :widths: 1 3 4
 
    "Temperature", ":math:`T = T_b` on :math:`\Gamma`", "A temperature Dirichlet condition is defined by setting :ref:`type<TB_Type>` to **temperature**. The boundary value :math:`T_b` is specified using either :ref:`temp<TB_Temp>` for a constant value, or :ref:`temp_func<TB_TempFunc>` for a function."
-   "Total Flux", "| :math:`\kappa \Delta T.\hat{n}`
+   "Total Flux", "| :math:`-\kappa \Delta T.\hat{n}`
    | :math:`= q_b` on :math:`\Gamma`","A heat flux condition is defined by setting :ref:`type<TB_Type>` to **flux**. The heat flux :math:`{q_b}` is specified using either :ref:`flux<TB_Flux>` for a constant value, or :ref:`flux_func<TB_FluxFunc>` for a function."
+   "Total Oriented Flux", "| :math:`-\kappa \Delta T.\hat{n}`
+   | :math:`= \vec{q_b}.\hat{n}` on :math:`\Gamma`","A heat flux condition is defined by setting :ref:`type<TB_Type>` to **oriented-flux**. The 3-vector heat flux :math:`{\vec{q_b}}` is specified using either :ref:`vflux<TB_VFlux>` for a constant value, or :ref:`vflux_func<TB_VFluxFunc>` for a function."
    "Heat Transfer","| :math:`-\kappa\Delta T.\hat{n}`
    | :math:`= \alpha(T - T_{\infty})` on :math:`\Gamma`","An external heat transfer flux condition is defined by setting :ref:`type<TB_Type>` to **htc**. The heat transfer coefficient :math:`\alpha` is specified using either :ref:`htc<TB_htc>` for a constant value, or :ref:`htc_func<TB_htcFunc>` for a function, and the ambient temperature :math:`T_{\infty}` is specified using either :ref:`ambient_temp<TB_AT>` for a constant value, or :ref:`ambient_temp_func<TB_ATF>` for a function."
    "Ambient Radiation", "| :math:`-\kappa\Delta T.\hat{n}` :math:`= \epsilon\sigma((T-T_o)^4 - (T_{\infty} - T_o)^4)` on :math:`\Gamma`", "A simple ambient thermal radiation condition is defined by setting :ref:`type<TB_Type>` to **radiation**. The emissivityis specified using either :ref:`emissivity<TB_emis>` for a constant value or :ref:`emissivity_func<TB_emisFunc>` for a function, and the temperature of the ambient environment :math:`T_{\infty}` is specified using either :ref:`ambient_temp<TB_AT>` for a constant value, or :ref:`ambient_temp_func<TB_ATF>` for a function. Here :math:`\sigma` is the Stefan-Boltzmann constant and :math:`T_0` is the absolute-zero temperature, both of which can be redefined if the problem units differ from the default SI units using the :ref:`Stefan_Boltzmann<PhyCo_SB>` and :ref:`Absolute_Zero<PhyCo_AZ>` components of the :ref:`PHYSICAL_CONSTANTS<PHYSICAL_CONSTANTS_Namelist>` namelist."
@@ -66,6 +68,8 @@ Components
 * :ref:`temp_func<TB_tempFunc>`
 * :ref:`flux<TB_flux>`
 * :ref:`flux_func<TB_fluxFunc>`
+* :ref:`vflux<TB_vflux>`
+* :ref:`vflux_func<TB_vfluxFunc>`
 * :ref:`htc<TB_htc>`
 * :ref:`htc_func<TB_htcFunc>`
 * :ref:`ambient_temp<TB_AT>`
@@ -102,6 +106,7 @@ type
 
    "**temperature**", "Temperature is prescribed on the boundary. Use :ref:`temp<TB_temp>` or :ref:`temp_func<TB_tempFunc>` to specify its value."
    "**flux**", "Outward heat flux is prescribed on the boundary. Use :ref:`flux<TB_flux>` or :ref:`flux_func<TB_fluxFunc>` to set its value."
+   "**oriented-flux**", "Outward heat flux is prescribed on the boundary. Use :ref:`vflux<TB_vflux>` or :ref:`vflux_func<TB_vfluxFunc>` to set its value."
    "**htc**","External heat transfer condition. Use :ref:`htc<TB_htc>` or :ref:`htc_func<TB_htcFunc>` to set the heat transfer coefficient, and :ref:`ambient_temp<TB_AT>` or :ref:`ambient_temp_func<TB_ATF>` to set the ambient temperature."
    "**radiation**","A simple ambient thermal radiation condition. Use :ref:`emissivity<TB_emis>` or :ref:`emissivity_func<TB_emisFunc>` to set the emissivity, and :ref:`ambient_temp<TB_AT>` or :ref:`ambient_temp_func<TB_ATF>` to set the temperature of the ambient environment."
    "**interface-htc**", "An internal interface heat transfer condition. Use :ref:`htc<TB_htc>` or :ref:`htc_func<TB_htcFunc>` to set the heat transfer coefficient."
@@ -139,6 +144,22 @@ flux
 flux_func
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the outward boundary heatflux for a flux-type boundary condition. The function is expected to be a function of (t,x,y,z).
+| **Type**        : string
+| **Default**     : none
+
+.. _TB_vflux:
+
+vflux
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The constant value of the outward boundary heat flux for a flux-type boundary condition. To specify a function, use :ref:`flux_func<TB_vfluxFunc>` instead.
+| **Type**        : real 3-vector
+| **Default**     : none
+
+.. _TB_vfluxFunc:
+
+vflux_func
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The name of a :ref:`VFUNCTION<VFUNCTION_Namelist>` namelist defining a function that gives the oriented boundary heatflux for an oriented-flux-type boundary condition. The function is expected to be a vector function of (t,x,y,z).
 | **Type**        : string
 | **Default**     : none
 
