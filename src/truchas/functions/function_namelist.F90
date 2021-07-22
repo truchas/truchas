@@ -35,7 +35,6 @@ module function_namelist
   use input_utilities, only: seek_to_namelist
   use scalar_func_factories
   use scalar_func_table, only: known_func, insert_func
-  use ded_head_driver, only: alloc_ded_head_laser_func
   use truchas_logging_services
   implicit none
   private
@@ -156,7 +155,6 @@ contains
 #endif
       case ('TABULAR')
       case ('SMOOTH STEP')
-      case ('DED HEAD LASER')
       case (NULL_C)
         call TLS_fatal (label // ': TYPE must be assigned a value')
       case default
@@ -320,11 +318,6 @@ contains
         if (smooth_step_x0 >= smooth_step_x1) call TLS_fatal (label // ': require SMOOTH_STEP_X0 < SMOOTH_STEP_X1')
 
         call alloc_sstep_scalar_func (f, smooth_step_x0, smooth_step_y0, smooth_step_x1, smooth_step_y1)
-        call insert_func (name, f)
-
-      case ('DED HEAD LASER')
-
-        call alloc_ded_head_laser_func (f)
         call insert_func (name, f)
 
       end select

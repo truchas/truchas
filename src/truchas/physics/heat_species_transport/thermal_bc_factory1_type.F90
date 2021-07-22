@@ -41,6 +41,10 @@
 !!      flux -- the (real) constant value of the heat flux, or the name of a
 !!        defined function of (t,x,y,z).
 !!
+!!    "oriented-flux"
+!!      flux -- the (real) constant vector value of the heat flux, or the name
+!!        of a defined vector function of (t,x,y,z).
+!!
 !!    "htc"
 !!      htc -- the (real) constant heat transfer coefficient, or the name of
 !!        a defined function that evaluates to the coefficient.
@@ -74,6 +78,10 @@
 !!  ALLOC_FLUX_BC(BC, STAT, ERRMSG) allocates the BNDRY_FUNC1 class object BC
 !!    that describes the heat flux boundary condition. Sublists with 'type'
 !!    equal to 'flux' are used to define this object.
+!!
+!!  ALLOC_VFLUX_BC(BC, STAT, ERRMSG) allocates the BNDRY_VFUNC class object BC
+!!    that describes the heat flux boundary condition. Sublists with 'type'
+!!    equal to 'oriented-flux' are used to define this object.
 !!
 !!  ALLOC_HTC_BC(BC, STAT, ERRMSG) allocates the BNDRY_FUNC2 class object BC
 !!    that describes the HTC boundary condition. Sublists with 'type' equal
@@ -113,6 +121,7 @@ module thermal_bc_factory1_type
     procedure :: init
     procedure :: alloc_dir_bc
     procedure :: alloc_flux_bc
+    procedure :: alloc_vflux_bc
     procedure :: alloc_htc_bc
     procedure :: alloc_rad_bc
     procedure :: alloc_htc_ic
@@ -241,6 +250,55 @@ contains
     end subroutine proc
 
   end subroutine alloc_flux_bc
+
+
+  subroutine alloc_vflux_bc(this, bc, stat, errmsg)
+
+    use vector_func_class
+    use vector_func_factories, only: alloc_vector_func
+    use bndry_vfunc_class
+    use bndry_face_vfunc_type
+
+    class(thermal_bc_factory1), intent(inout) :: this
+    class(bndry_vfunc), allocatable, intent(out) :: bc
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(bndry_face_vfunc), allocatable :: bff
+
+    call TLS_info('  generating "oriented-flux" thermal boundary condition')
+    call this%iterate_list('oriented-flux', proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.allocated(bff)) call TLS_info('    none specified')
+
+    if (allocated(bff)) then
+      call bff%add_complete
+      call move_alloc(bff, bc)
+    end if
+
+  contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to a flux BC specification and incrementally builds the BC object
+    !! accordingly. NB: The BFF and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine proc(plist, setids, stat, errmsg)
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(vector_func), allocatable :: f
+      call alloc_vector_func(plist, 'flux', f, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(bff)) then
+        allocate(bff)
+        call bff%init(this%mesh)
+      end if
+      call bff%add(f, setids, stat, errmsg)
+    end subroutine proc
+
+  end subroutine alloc_vflux_bc
 
 
   subroutine alloc_htc_bc(this, bc, stat, errmsg)
