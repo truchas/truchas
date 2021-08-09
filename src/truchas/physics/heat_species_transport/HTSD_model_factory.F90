@@ -35,6 +35,7 @@ module HTSD_model_factory
   use thermal_bc_factory_class
   use species_bc_factory_class
   use thermal_source_factory_type
+  use truchas_logging_services
   implicit none
   private
 
@@ -227,11 +228,8 @@ contains
       call bc_fac%alloc_flux_bc(model%bc_flux, stat, errmsg)
       if (stat /= 0) return
       if (allocated(model%bc_flux)) then
-        if (global_any(mask(model%bc_flux%index))) then
-          stat = -1
-          errmsg = 'temperature flux boundary condition overlaps with interface conditions'
-          return
-        end if
+        if (global_any(mask(model%bc_flux%index))) &
+            call TLS_info('    NOTE: flux condition is superimposed with interface conditions')
         fmask(model%bc_flux%index) = .true. ! mark the simple flux faces
       end if
 
@@ -239,11 +237,8 @@ contains
       call bc_fac%alloc_vflux_bc(model%bc_vflux, stat, errmsg)
       if (stat /= 0) return
       if (allocated(model%bc_vflux)) then
-        if (global_any(mask(model%bc_vflux%index))) then
-          stat = -1
-          errmsg = 'temperature flux boundary condition overlaps with interface conditions'
-          return
-        end if
+        if (global_any(mask(model%bc_vflux%index))) &
+            call TLS_info('    NOTE: oriented-flux condition is superimposed with interface conditions')
         fmask(model%bc_vflux%index) = .true. ! mark the oriented flux faces
       end if
 
@@ -251,11 +246,8 @@ contains
       call bc_fac%alloc_htc_bc(model%bc_htc, stat, errmsg)
       if (stat /= 0) return
       if (allocated(model%bc_htc)) then
-        if (global_any(mask(model%bc_htc%index))) then
-          stat = -1
-          errmsg = 'temperature HTC boundary condition overlaps with interface conditions'
-          return
-        end if
+        if (global_any(mask(model%bc_htc%index))) &
+            call TLS_info('    NOTE: htc condition is superimposed with interface conditions')
         fmask(model%bc_htc%index) = .true. ! mark the HTC faces
       end if
 
