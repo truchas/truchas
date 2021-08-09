@@ -33,7 +33,7 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer  :: vol_track_subcycles, fischer_dim
+    integer  :: vol_track_subcycles, location_iter_max, fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection, void_collapse
     logical  :: wisp_redistribution
     real(r8) :: viscous_implicitness, viscous_number, courant_number
@@ -44,7 +44,7 @@ contains
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
         fluid_frac_threshold, min_face_fraction, &
-        track_interfaces, nested_dissection, vol_track_subcycles, &
+        track_interfaces, nested_dissection, vol_track_subcycles, location_iter_max, &
         vol_frac_cutoff, material_priority, fischer_dim, void_collapse, &
         void_collapse_relaxation, wisp_redistribution, wisp_cutoff, &
         wisp_absorption_fraction, wisp_neighbor_cutoff
@@ -65,6 +65,7 @@ contains
     track_interfaces = (matl_model%nphase > 1)
     nested_dissection = .true.
     vol_track_subcycles = NULL_I
+    location_iter_max = NULL_I
     vol_frac_cutoff = NULL_R
     material_priority = NULL_C
     wisp_redistribution = .false.
@@ -93,6 +94,7 @@ contains
     call broadcast(track_interfaces)
     call broadcast(nested_dissection)
     call broadcast(vol_track_subcycles)
+    call broadcast(location_iter_max)
     call broadcast(vol_frac_cutoff)
     call broadcast(material_priority)
 
@@ -132,6 +134,11 @@ contains
     if (vol_track_subcycles /= NULL_I) then
       if (vol_track_subcycles < 1) call TLS_fatal('SUBCYCLES must be > 0')
       call plist%set('subcycles', vol_track_subcycles)
+    end if
+
+    if (location_iter_max /= NULL_I) then
+      if (location_iter_max < 1) call TLS_fatal('LOCATION_ITER_MAX must be > 0')
+      call plist%set('location_iter_max', location_iter_max)
     end if
 
     if (vol_frac_cutoff /= NULL_R) then
