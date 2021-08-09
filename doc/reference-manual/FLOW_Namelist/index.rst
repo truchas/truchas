@@ -30,6 +30,7 @@ Numerical Parameters
 * :ref:`material_priority<FLOW_MP>`
 * :ref:`vol_track_subcycles<FLOW_VTS>`
 * :ref:`nested_dissection<FLOW_ND>` (expert)
+* :ref:`location_iter_max<FLOW_LIM>` (expert)
 * :ref:`vol_frac_cutoff<FLOW_VFC>` (expert)
 * :ref:`fischer_dim<FLOW_FD>` (expert)
 * :ref:`fluid_frac_threshold<FLOW_FFT>` (expert)
@@ -115,6 +116,16 @@ nested_dissection (Expert Parameter)
 | **Description** : This option enables use of the nested dissection algorithm to reconstruct material interfaces in cells containing 3 or more materials. If set false the less accurate and less expensive onion skin algorithm will be used.
 | **Type**   : logical
 | **Default**: True
+
+.. _FLOW_LIM:
+
+location_iter_max (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+| **Description** : The number of iterations allowed to locate the interface.
+| **Type**   : integer
+| **Default**: 40
+| **Valid Values**  : :math:`\geq 1`
 
 .. _FLOW_VFC:
 

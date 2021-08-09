@@ -53,6 +53,7 @@ contains
     call vof_error%find_root(rho_min, rho_max, locate_plane_os%rho, ierr)
 
     if (ierr /= 0) then
+      if (.not.allocated(error_message)) error_message = ""
       write (my_error_message, '(a,2es13.3)') &
           "  Error, tolerance: ", vof_error%f(locate_plane_os%rho), vof_error%feps
       error_message = error_message // new_line(my_error_message) // trim(my_error_message)
