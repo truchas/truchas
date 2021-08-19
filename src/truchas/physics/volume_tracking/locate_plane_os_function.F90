@@ -45,6 +45,8 @@ contains
     integer :: ierr
     character(192) :: my_error_message
 
+    INSIST(abs(norm2(norm) - 1) < 1e-8)
+
     call vof_error%init(node, norm, vof, volume)
     call rho_bracket(rho_min, rho_max, norm, node, vof_error)
 
@@ -98,10 +100,11 @@ contains
 
       err = vof_error%f(rho)
 
-      if (0 < err .and. err < err_max) then
+      if (0 <= err .and. err < err_max) then
         err_max = err
         rho_max = rho
-      else if (err_min < err .and. err < 0) then
+      end if
+      if (err_min < err .and. err <= 0) then
         err_min = err
         rho_min = rho
       end if

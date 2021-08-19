@@ -276,7 +276,7 @@ contains
         if (mag > epsilon(1.0_r8)) then
           this%normal(:,j,i) = this%normal(:,j,i)/mag
         else
-          this%normal(:,j,i) = 1.0_r8
+          this%normal(:,j,i) = 1.0_r8 / sqrt(3.0_r8)
         end if
       end do
     end do
