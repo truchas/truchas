@@ -4,36 +4,21 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
-include_directories(readinput)
 
-add_executable(vof_advection read_inputfile.F90 vof_2d_test_driver.F90
-               gaussian_quadrature_vofinit.F90 geom_axisymmetric.F90
-               volume_tracker_2d_class.F90 simple_volume_tracker_type.F90
-               gradient_2d_cc_function.F90 cell_geom_2d_vof_type.F90 plane_2d_type.F90
-               locate_plane_os_2d_function.F90 truncation_volume_2d_type.F90
-               geometric_volume_tracker_type.F90 vof_advection.F90)
-add_executable(vof_vortex read_inputfile.F90 vof_2d_test_driver.F90
-               gaussian_quadrature_vofinit.F90 geom_axisymmetric.F90
-               volume_tracker_2d_class.F90 simple_volume_tracker_type.F90
-               gradient_2d_cc_function.F90 cell_geom_2d_vof_type.F90 plane_2d_type.F90
-               locate_plane_os_2d_function.F90 truncation_volume_2d_type.F90
-               geometric_volume_tracker_type.F90 vof_vortex.F90)
-add_executable(vof_axisymmetric read_inputfile.F90 vof_2d_test_driver.F90
-               gaussian_quadrature_vofinit.F90 geom_axisymmetric.F90
-               volume_tracker_2d_class.F90 simple_volume_tracker_type.F90
-               gradient_2d_cc_function.F90 cell_geom_2d_vof_type.F90 plane_2d_type.F90
-               locate_plane_os_2d_function.F90 truncation_volume_2d_type.F90
-               geometric_volume_tracker_type.F90 vof_axisymmetric.F90)
-add_executable(vof_axialflow read_inputfile.F90 vof_2d_test_driver.F90
-               gaussian_quadrature_vofinit.F90 geom_axisymmetric.F90
-               volume_tracker_2d_class.F90 simple_volume_tracker_type.F90
-               gradient_2d_cc_function.F90 cell_geom_2d_vof_type.F90 plane_2d_type.F90
-               locate_plane_os_2d_function.F90 truncation_volume_2d_type.F90
-               geometric_volume_tracker_type.F90 vof_axialflow.F90)
-add_executable(trunc_vol plane_2d_type.F90 truncation_volume_2d_type.F90
-               geom_axisymmetric.F90
-               truncvolume_2dtest_driver.F90)
+add_library(test_vof_2d OBJECT read_inputfile.F90 vof_2d_test_driver.F90
+            gaussian_quadrature_vofinit.F90 geom_axisymmetric.F90
+            volume_tracker_2d_class.F90 simple_volume_tracker_type.F90
+            gradient_2d_cc_function.F90 cell_geom_2d_vof_type.F90 plane_2d_type.F90
+            locate_plane_os_2d_function.F90 truncation_volume_2d_type.F90
+            geometric_volume_tracker_type.F90)
 
+add_executable(vof_advection vof_advection.F90 $<TARGET_OBJECTS:test_vof_2d>)
+add_executable(vof_vortex vof_vortex.F90 $<TARGET_OBJECTS:test_vof_2d>)
+add_executable(vof_axisymmetric vof_axisymmetric.F90 $<TARGET_OBJECTS:test_vof_2d>)
+add_executable(vof_axialflow vof_axialflow.F90 $<TARGET_OBJECTS:test_vof_2d>)
+add_executable(trunc_vol truncvolume_2dtest_driver.F90 $<TARGET_OBJECTS:test_vof_2d>)
+
+target_link_libraries(test_vof_2d truchas ${TRUCHAS_LINK_LIBS})
 target_link_libraries(vof_advection truchas ${TRUCHAS_LINK_LIBS})
 target_link_libraries(vof_vortex truchas ${TRUCHAS_LINK_LIBS})
 target_link_libraries(vof_axisymmetric truchas ${TRUCHAS_LINK_LIBS})
