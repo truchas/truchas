@@ -327,9 +327,15 @@ contains
     mesh%sset(3)%face = 1
     mesh%sset(4)%face = 3
 
-    !! No node sets
-    mesh%num_nset = 0
-    allocate(mesh%nset(0))
+    !! The node at each corner of the rectangle domain is its own node set
+    mesh%num_nset = 4
+    allocate(mesh%nset(4))
+    mesh%nset%num_node = 1
+    mesh%nset%id = [(i,i=1,4)]
+    mesh%nset(1)%node = [node_index(0,0)]
+    mesh%nset(2)%node = [node_index(nzone(1),0)]
+    mesh%nset(3)%node = [node_index(nzone(1),nzone(2))]
+    mesh%nset(4)%node = [node_index(0,nzone(2))]
 
   contains
 
@@ -507,9 +513,19 @@ contains
     mesh%sset(5)%face = 5
     mesh%sset(6)%face = 6
 
-    !! No node sets
-    mesh%num_nset = 0
-    allocate(mesh%nset(0))
+    !! The node at each corner of the brick is its own node set.
+    mesh%num_nset = 8
+    allocate(mesh%nset(8))
+    mesh%nset%num_node = 1
+    mesh%nset%id = [(i,i=1,8)]
+    mesh%nset(1)%node = [node_index(0,0,0)]
+    mesh%nset(2)%node = [node_index(nzone(1),0,0)]
+    mesh%nset(3)%node = [node_index(nzone(1),nzone(2),0)]
+    mesh%nset(4)%node = [node_index(0,nzone(2),0)]
+    mesh%nset(5)%node = [node_index(0,0,nzone(3))]
+    mesh%nset(6)%node = [node_index(nzone(1),0,nzone(3))]
+    mesh%nset(7)%node = [node_index(nzone(1),nzone(2),nzone(3))]
+    mesh%nset(8)%node = [node_index(0,nzone(2),nzone(3))]
 
   contains
 
