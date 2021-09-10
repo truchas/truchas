@@ -1,0 +1,57 @@
+# Cubit 15.7.0
+brick x 4 y 1 z 1
+
+block 1 add volume all
+sideset 1 add surface 4  # x-
+sideset 2 add surface 6  # x+
+sideset 3 add surface 3  # y-
+sideset 4 add surface 5  # y+
+sideset 5 add surface 2  # z-
+sideset 6 add surface 1  # z+
+
+webcut volume all with plane xplane offset 1 
+webcut volume all with plane xplane offset 0 
+webcut volume all with plane xplane offset -1
+imprint volume all
+merge volume all
+
+volume all size 0.1
+
+volume 1 scheme map
+mesh volume 1
+
+volume 4 scheme tetmesh
+mesh volume 4
+
+surface 21 scheme trimesh
+mesh surface 21
+volume 2  scheme Sweep sweep transform least squares
+mesh volume 2
+
+surface 30 scheme trimesh
+surface 31 scheme map
+mesh surface 30 31
+volume 3 scheme tetmesh
+mesh volume 3
+
+# webcut volume all with plane xplane
+# webcut volume all with plane yplane
+# webcut volume all with plane zplane
+
+# volume all size 0.1
+
+# volume 1 scheme map
+# mesh volume 1
+
+# surface 25 scheme trimesh
+# mesh surface 25
+# volume 3 scheme Sweep sweep transform least squares 
+# mesh volume 3
+
+# volume 8 scheme tetmesh
+# mesh volume 8
+
+# volume all size 0.2
+# mesh volume 1
+
+export genesis "brick-mixed.gen" overwrite

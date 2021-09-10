@@ -200,7 +200,7 @@ solid mechanics and heat transfer
   materials = 'graphite', '5754 aluminum'
 
     heat_transport  = .true., 
-    solid_mechanics  = .true., 
+    legacy_solid_mechanics  = .true.,
 
 /
 
@@ -216,7 +216,7 @@ solid mechanics and heat transfer
 
 /
 
-&SOLID_MECHANICS
+&LEGACY_SOLID_MECHANICS
   strain_limit = 1.0e-10
   convergence_criterion   = 1e-13,
   nlk_max_vectors         = 60

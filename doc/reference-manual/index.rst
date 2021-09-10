@@ -22,6 +22,7 @@ Reference Manual
    FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists/index
    FUNCTION_Namelist/index
    INDUCTION_COIL_Namelist/index
+   LEGACY_SOLID_MECHANICS_Namelist/index
    MATERIAL_and_PHASE_Namelists/index
    MESH_Namelist/index
    NUMERICS_Namelist/index
@@ -33,6 +34,7 @@ Reference Manual
    RESTART_Namelist/index
    SIMULATION_CONTROL_Namelist/index
    SOLID_MECHANICS_Namelist/index
+   SOLID_MECHANICS_BC_Namelist/index
    SPECIES_BC_Namelist/index
    THERMAL_BC_Namelist/index
    THERMAL_SOURCE_Namelist/index

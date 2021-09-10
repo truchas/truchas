@@ -1,0 +1,24 @@
+# Cubit 15.7.0
+brick x 1 y 1 z 1
+webcut volume all with plane xplane
+webcut volume all with plane yplane
+webcut volume all with plane zplane
+imprint volume all
+merge volume all
+rotate volume all angle 45  about X include_merged
+rotate volume all angle 45  about Y include_merged
+rotate volume all angle 45  about Z include_merged
+
+curve 90 82 50 58 28 17  interval 2
+mesh curve 90 82 50 58 28 17 
+volume all scheme map
+mesh volume all
+
+block 1 add volume all
+sideset 1 add surface 76 69 51 53  # x-
+sideset 2 add surface 61 63 39 45  # x+
+sideset 10 add surface 65 59 41 43  # gap-x
+sideset 11 add surface 54 44 50 40  # gap-y
+sideset 12 add surface 67 57 47 37  # gap-z
+
+export genesis "rot-gap-xyz.gen" overwrite

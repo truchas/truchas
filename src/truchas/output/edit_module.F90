@@ -65,7 +65,7 @@ CONTAINS
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
     use solid_mechanics_output, only: Cell_Mech_Invariant, &
                                       STRESS_STRAIN_INVARIANTS
-    use solid_mechanics_input,  only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
 
     ! Local Variables

@@ -1,0 +1,20 @@
+# Cubit 15.7.0
+brick x 4 y 1 z 1
+
+block 1 add volume all
+sideset 1 add surface 4  # x-
+sideset 2 add surface 6  # x+
+sideset 3 add surface 3  # y-
+sideset 4 add surface 5  # y+
+sideset 5 add surface 2  # z-
+sideset 6 add surface 1  # z+
+
+volume all size 0.1
+
+surface 1 scheme trimesh
+mesh surface 1
+
+volume 1  scheme Sweep sweep transform least squares
+mesh volume 1
+
+export genesis "brick-wed.gen" overwrite

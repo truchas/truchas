@@ -1,0 +1,80 @@
+Stretch problem. Applies a linear displacement BC on opposite faces. This forms
+a set of problems, alternating direction and using either normal or hardwired
+BCs. The variants applying the BCs in specified directions should produce
+exactly the same result as the version applying the displacement in the normal
+direction.
+
+&MESH
+  mesh_file = 'brick-tet.gen'
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0
+  output_dt = 1.0
+/
+
+&NUMERICS
+  dt_init = 1.0
+  dt_max  = 1.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+  solid_mechanics = .true.
+/
+
+&SOLID_MECHANICS
+  nlk_max_vectors = 10
+  nlk_vector_tolerance = 1e-2
+  maximum_iterations = 500
+/
+&DIFFUSION_SOLVER /
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  tm_lame1 = 2e10
+  tm_lame2 = 1e10
+  tm_ref_density = 1.0
+  tm_ref_temp = 1.0
+  tm_linear_cte = 0.0
+  ref_temp = 1.0
+  ref_enthalpy = 0.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  material_name = 'stuff'
+  mesh_material_number = 1
+  temperature = 1.0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displx'
+  face_set_ids = 1
+  type = 'displacement-x'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'disply'
+  face_set_ids = 1
+  type = 'displacement-y'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displz'
+  face_set_ids = 1
+  type = 'displacement-z'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displn'
+  face_set_ids = 2
+  type = 'displacement-n'
+  displacement = 1e-8
+/

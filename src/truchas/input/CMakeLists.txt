@@ -6,5 +6,5 @@ target_sources(truchas PRIVATE
   numerics_input_module.F90
   outputs_input_module.F90
   physics_input_module.F90
-  solid_mechanics_namelist.F90
+  legacy_solid_mechanics_namelist.F90
 )

@@ -73,7 +73,6 @@ contains
     call params%get('subcycles', this%subcycles, default=2)
     call params%get('nested_dissection', this%nested_dissection, default=.true.)
 
-
     ! convert user material ids to array index
     if (params%is_vector('material_priority')) then
       call params%get('material_priority', priority)

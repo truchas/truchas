@@ -1,0 +1,120 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 21.07-33-gae5ff235-dirty
+   build architecture:  x86_64
+   build date/time:     2021-08-13 14:14:24
+   build flags:          -fimplicit-none -ffree-line-length-none -g -O0 -fcheck=bits,bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647
+   build host:          theseus
+   run architecture:    Linux theseus 5.10.55-1-lts #1 SMP Sat, 31 Jul
+   run host:            theseus
+   run date/time:       13 Aug 21 15:12:54
+   processors:          1
+
+================================================================================
+
+INPUT
+
+Opening input file "stretch-hex.inp"
+Reading FUNCTION namelists ...
+  none found
+Reading VFUNCTION namelists ...
+  none found
+Reading TOOLPATH namelists ...
+  none found
+Reading PHYSICS namelist ...
+Reading MATERIAL namelists ...
+  read namelist "stuff"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
+Reading BODY namelists (first pass) ...
+  read 1 BODY namelist
+Reading BODY namelists (second pass) ...
+  read 1 BODY namelist
+Reading NUMERICS namelist ...
+
+Reading SOLID_MECHANICS namelist ...
+
+Reading SM_BC namelists ...
+Reading PROBE namelists ...
+  none found
+Input file "stretch-hex.inp" closed
+
+================================================================================
+
+INITIALIZATION
+
+Initializing mesh "MAIN" ...
+  generating an internal ExodusII mesh
+
+Computing initial volume fractions ...
+  using SM_BC[displn]
+  using SM_BC[displx]
+  using SM_BC[disply]
+  using SM_BC[displz]
+SM BC faces:    200
+SM BC nodes/links:    242     0
+SM-C0D1 nodes:    121
+SM-C0D3 nodes:    121
+Nodes with requested BCs:    242    Nodes with applied BCs:    242
+SM: Computing initial state...
+
+
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+
+          1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+
+================================================================================
+
+TERMINATION
+                 Final Time:  1.0000E+00 after     1 steps
+
+
+TIMING SUMMARY
+--------------
+  2.671E+00 --- Total
+    7.223E-04 --- Input
+    2.618E+00 --- Initialization
+      5.412E-02 --- mesh-MAIN
+        1.404E-03 --- ghost-cells
+          1.398E-03 --- cell-ghosts
+            7.584E-04 --- node-neighbors
+            1.559E-04 --- ghost-cells
+          7.300E-07 --- link-ghosts
+          4.940E-06 --- assemble-ghosts
+      1.358E-05 --- VOF Initialize
+      2.506E+00 --- solid mechanics
+        5.968E-03 --- properties
+        6.412E-04 --- precon-compute
+        2.205E+00 --- residual
+          1.086E+00 --- strain
+          1.101E+00 --- stress
+          1.179E-02 --- BCs
+        1.455E-02 --- precon-apply
+    5.330E-06 --- electromagnetics
+    5.091E-02 --- Main Cycle
+      9.811E-05 --- Time Step
+      2.117E-02 --- solid mechanics
+        5.888E-03 --- properties
+        5.874E-04 --- precon-compute
+        1.403E-02 --- residual
+          6.916E-03 --- strain
+          6.984E-03 --- stress
+          8.675E-05 --- BCs
+        9.383E-05 --- precon-apply
+
+                  Process virtual memory used: 6.48E+02 mB
+                                   words/cell: 21225
+
+truchas terminated normally on 13 Aug 21 at 15:12:57

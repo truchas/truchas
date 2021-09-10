@@ -69,7 +69,7 @@ module scalar_func_containers
   private
 
   public :: scalar_func ! re-export (necessary?)
-  public :: scalar_func_box, scalar_func_list, scalar_func_vlist ! types
+  public :: scalar_func_box, scalar_func_ptr, scalar_func_list, scalar_func_vlist ! types
   public :: scalar_func_list_to_box_array, scalar_func_vlist_to_box_array ! procedures
 
   type :: scalar_func_box
@@ -77,6 +77,12 @@ module scalar_func_containers
   contains
     procedure :: eval => scalar_func_box_eval
   end type scalar_func_box
+
+  type :: scalar_func_ptr
+    class(scalar_func), pointer :: f => null() ! unowned reference
+  contains
+    procedure :: eval => scalar_func_ptr_eval
+  end type
 
   type :: scalar_func_list
     private
@@ -115,6 +121,14 @@ contains
     real(r8) :: fx
     fx = this%f%eval(x)
   end function scalar_func_box_eval
+
+  function scalar_func_ptr_eval(this, x) result(fx)
+    use kinds, only: r8
+    class(scalar_func_ptr), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    real(r8) :: fx
+    fx = this%f%eval(x)
+  end function scalar_func_ptr_eval
 
   !! Final subroutine for SCALAR_FUNC_LIST objects.
   subroutine scalar_func_list_delete(this)

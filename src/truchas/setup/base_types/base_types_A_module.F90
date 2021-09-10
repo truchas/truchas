@@ -57,7 +57,6 @@ CONTAINS
     use parameter_module,    only: mat_slot, mat_slot_new, nmat
     use zone_module,            only: Zone
     use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
-    use solid_mechanics_input,  only: solid_mechanics
     use EM_data_proxy,          only: EM_is_on
 
     ! Arguments

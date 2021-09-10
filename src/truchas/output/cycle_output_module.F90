@@ -69,7 +69,7 @@ CONTAINS
     use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
     use parallel_communication
     use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
-    use solid_mechanics_input,  only: solid_mechanics
+    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use time_step_module,       only: cycle_number
     use flow_driver, only: flow_enabled, flow_vel_cc_view
 

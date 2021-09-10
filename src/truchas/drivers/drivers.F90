@@ -150,6 +150,7 @@ call hijack_truchas ()
         flow_set_pre_solidification_density
     use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
         get_vof_from_matl
+    use solid_mechanics_driver, only: solid_mechanics_enabled, solid_mechanics_step
     use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -283,7 +284,11 @@ call hijack_truchas ()
         end if
 
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
-        call thermo_mechanics
+        if (solid_mechanics_enabled()) then
+          call solid_mechanics_step(t, dt)
+        else
+          call thermo_mechanics
+        end if
 
         ! output iteration information
         call cycle_output_post

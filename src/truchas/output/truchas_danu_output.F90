@@ -124,12 +124,12 @@ contains
   subroutine TDO_write_timestep
 
     use time_step_module, only: t, dt, cycle_number
-    use physics_module, only: heat_transport, species_transport
+    use physics_module, only: heat_transport, species_transport, legacy_solid_mechanics
     use EM_data_proxy, only: EM_is_on
-    use solid_mechanics_input, only: solid_mechanics
     use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
+    use solid_mechanics_driver, only: solid_mechanics_enabled
     use output_control, only: part_path, write_mesh_partition
 
     integer :: stat
@@ -164,7 +164,8 @@ contains
     if (EM_is_on()) call write_EM_data
 
     !! Solid mechanics fields.
-    if (solid_mechanics) call write_solid_mech_data
+    if (legacy_solid_mechanics) call write_legacy_solid_mech_data
+    if (solid_mechanics_enabled()) call write_solid_mechanics_data
 
     !! Species fields.
     if (species_transport) call write_species_data
@@ -294,7 +295,50 @@ contains
 
     end subroutine write_EM_data
 
-    subroutine write_solid_mech_data
+    subroutine write_solid_mechanics_data
+
+      use solid_mechanics_driver
+
+      real(r8), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
+        elastic_stress(:,:), rotation(:), gap_displacement(:), gap_normal_traction(:)
+
+      call solid_mechanics_compute_viz_fields(displ, thermal_strain, total_strain, &
+          elastic_stress, rotation, gap_displacement, gap_normal_traction)
+
+      call write_seq_node_field(seq, displ, 'Displacement', for_viz=.true., &
+          viz_name=['Dx', 'Dy', 'Dz'])
+      call write_seq_cell_field(seq, total_strain, 'epsilon', for_viz=.true., &
+          viz_name=['epsxx', 'epsyy', 'epszz', 'epsxy', 'epsxz', 'epsyz'])
+      call write_seq_cell_field(seq, thermal_strain, 'epstherm', for_viz=.true., &
+          viz_name=['epsthxx', 'epsthyy', 'epsthzz', 'epsthxy', 'epsthxz', 'epsthyz'])
+      call write_seq_cell_field (seq, elastic_stress, 'sigma', for_viz=.true., &
+          viz_name=['sigxx', 'sigyy', 'sigzz', 'sigxy', 'sigxz', 'sigyz'])
+      call write_seq_cell_field(seq, rotation, 'Rotation', for_viz=.true.)
+
+      !! NB: These gap fields are nonzero only where there is a gap BC.
+      !! They hold data at nodes, but only for one gap condition. At
+      !! nodes where more than one gap intersect, each node only holds
+      !! one value; i.e., there is only one displacement vizualised even
+      !! though there are multiple displacements across multiple gaps at
+      !! that node. This could be addressed by dumping separate
+      !! displacement and traction fields for every gap BC (wasteful),
+      !! or a new output type which associates a small field with given
+      !! sidesets.
+      call write_seq_node_field(seq, gap_displacement, 'Gap Displacement', for_viz=.true.)
+      call write_seq_node_field(seq, gap_normal_traction, 'Gap Normal Traction', for_viz=.true.)
+
+      !! TODO: Phase change strain (cells)
+      !! TODO: Plastic strain (cells)
+      !! TODO: Plastic strain rate (cells)
+      !! TODO: Restart-only data. For the current thermoelastic-only
+      !!       solver, no data is needed for restarts. Once plasticity
+      !!       is implemented, some data may be needed. Will need to
+      !!       assess what can and can't be computed from other restart
+      !!       data.
+
+    end subroutine write_solid_mechanics_data
+
+    subroutine write_legacy_solid_mech_data
 
       use parameter_module, only: ncomps
       use legacy_mesh_api, only: ndim, nnodes, ncells
@@ -397,7 +441,7 @@ contains
       deallocate(node_gap)
       deallocate(node_norm_trac)
 
-    end subroutine write_solid_mech_data
+    end subroutine write_legacy_solid_mech_data
 
     subroutine write_species_data
 
