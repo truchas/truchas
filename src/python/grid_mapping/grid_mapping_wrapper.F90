@@ -24,7 +24,7 @@ module grid_mapping_wrapper
   implicit none
   private
 
-  public :: mapper_init, map_field
+  public :: mapper_init, map_field, mapper_finalize
 
   type, public, bind(c) :: map_data
     integer(c_int) :: ncell, nnode
@@ -167,6 +167,8 @@ contains
           this%connect(:,j) = cnode
         case default
           this%connect(:,j) = -1
+          write(error_unit,"(a)") "ERROR: Invalid mesh element."
+          error stop
           !INSIST(.false.)
         end select
       end associate
@@ -204,8 +206,6 @@ contains
 
     use parameter_list_type
     use unstr_mesh_factory
-    use ext_exodus_mesh_type
-    use exodus_mesh_io, only: read_exodus_mesh
 
     character(*), intent(in) :: exodus_filename
     real(r8), intent(in) :: scale_factor
@@ -214,18 +214,11 @@ contains
     integer :: stat
     character(:), allocatable :: errmsg
     type(parameter_list) :: params
-    type(ext_exodus_mesh) :: exomesh
 
-    !! Read and scale the exodus mesh.
-    call read_exodus_mesh(exodus_filename, exomesh, stat, errmsg)
-    if (stat /= 0) then
-      write(error_unit,'(3a)') 'Error reading ', exodus_filename, ': ' // errmsg
-      error stop
-    end if
-    if (scale_factor /= 1) exomesh%coord = scale_factor * exomesh%coord
-    call exomesh%set_no_links
-
-    mesh => new_unstr_mesh_aux(exomesh, params, stat, errmsg)
+    call params%set("mesh-file", exodus_filename)
+    call params%set("coord-scale-factor", scale_factor)
+    call params%set("exodus-block-modulus", 10000)
+    mesh => new_unstr_mesh(params, stat, errmsg)
     if (stat /= 0) then
       write(error_unit,'(a)') errmsg
       error stop
@@ -240,11 +233,15 @@ contains
     integer, intent(in) :: connect(:,:), blockid(:)
     type(ext_exodus_mesh), intent(out) :: mesh
 
+    integer, parameter :: exodus_block_modulus = 10000
+
     mesh%num_dim = 3
     mesh%num_node = size(coord, dim=2)
     mesh%num_elem = size(connect, dim=2)
     mesh%coord = coord
-    allocate(mesh%nset(0), mesh%sset(0))
+    mesh%num_nset = 0
+    mesh%num_sset = 0
+    allocate(mesh%nset(mesh%num_nset), mesh%sset(mesh%num_sset))
     call identify_blocks
     call mesh%set_no_links
 
@@ -256,16 +253,17 @@ contains
       integer, parameter :: PYR_NODE_MAP(5) = [1,2,3,4,5]
       integer, parameter :: PRI_NODE_MAP(6) = [1,4,5,2,3,6]
 
-      integer :: j, n, k, eblk_id(100), eblk_n(100)
+      integer :: j, n, k, eblk_id(100), eblk_n(100), eblkid
 
       k = 1
-      eblk_id(1) = blockid(1)
       eblk_n(1) = nnode(connect(:,1))
+      eblk_id(1) = exodus_blockid(blockid(1), eblk_n(1))
       do j = 2, mesh%num_elem
         n = nnode(connect(:,j))
-        if (all(eblk_id(:k) /= blockid(j)) .and. all(eblk_n(:k) /= n)) then
+        eblkid = exodus_blockid(blockid(j), n)
+        if (all(eblk_id(:k) /= eblkid)) then
           k = k + 1
-          eblk_id(k) = blockid(j)
+          eblk_id(k) = eblkid
           eblk_n(k) = n
         end if
       end do
@@ -274,7 +272,8 @@ contains
       allocate(mesh%eblk(mesh%num_eblk))
       do k = 1, mesh%num_eblk
         associate (eblk => mesh%eblk(k))
-          eblk%id = eblk_id(k)
+          ! Merge exodus blocks, as done in new_unstr_mesh_file
+          eblk%id = modulo(eblk_id(k), exodus_block_modulus)
           eblk%num_nodes_per_elem = eblk_n(k)
 
           n = 0
@@ -300,12 +299,19 @@ contains
                 eblk%connect(:,n) = connect(:,j)
               case default
                 eblk%connect(:,n) = -1
-                !INSIST(.false.)
+                write(error_unit,"(a)") "ERROR: Invalid mesh element."
+                error stop
               end select
             end if
           end do
         end associate
       end do
+
+      ! Ensure all cells were identified
+      if (mesh%num_elem /= sum(mesh%eblk(:)%num_elem)) then
+        write(error_unit,"(a)") "ERROR: Mismatch during block binning."
+        error stop
+      end if
 
     end subroutine identify_blocks
 
@@ -322,6 +328,23 @@ contains
       end if
     end function nnode
 
+    integer function exodus_blockid(blockid, nnode)
+      integer, intent(in) :: blockid, nnode
+      select case (nnode)
+      case (4) ! TET4
+        exodus_blockid = 1*exodus_block_modulus + blockid
+      case (5) ! PYR5
+        exodus_blockid = 2*exodus_block_modulus + blockid
+      case (6) ! WED6
+        exodus_blockid = 3*exodus_block_modulus + blockid
+      case (8) ! HEX8
+        exodus_blockid = 0*exodus_block_modulus + blockid
+      case default
+        write(error_unit,"(a)") "ERROR: Invalid mesh element."
+        error stop
+      end select
+    end function exodus_blockid
+
   end subroutine init_exodus_mesh
 
 
@@ -337,5 +360,26 @@ contains
     allocate(character(len=i) :: fstr)
     fstr = transfer(cstr(:i), fstr)
   end function c_to_f_str
+
+
+  subroutine mapper_finalize(mapper) bind(c)
+
+    use parallel_communication
+    use truchas_logging_services
+
+    type(c_ptr), intent(in), value :: mapper
+
+    type(mapper_switch), pointer :: this => null()
+
+    call c_f_pointer(mapper, this)
+    deallocate(this)
+
+    if (mpi_initialized) then
+      call TLS_finalize
+      call halt_parallel_communication
+      mpi_initialized = .false.
+    end if
+
+  end subroutine mapper_finalize
 
 end module grid_mapping_wrapper

@@ -19,6 +19,9 @@ libfwrite = ctypes.CDLL(truchas.TruchasConfig.libfwrite,
 libfwrite.fopen.argtypes = [ctypes.c_char_p]
 libfwrite.fopen.restype = ctypes.c_int
 
+libfwrite.fclose.argtypes = [ctypes.c_int]
+libfwrite.fclose.restype = None
+
 libfwrite.fwrite_int.argtypes = [ctypes.c_int, ctypes.c_int]
 libfwrite.fwrite_int.restype = None
 
@@ -41,6 +44,10 @@ libfwrite.fwrite_i8x1.restype = None
 class FortranWrite:
     def __init__(self, filename):
         self._unit = libfwrite.fopen(bytes(filename, "utf-8"))
+
+    def close(self):
+        libfwrite.fclose(self._unit)
+        self._unit = None
 
     def write_i4x0(self, x):
         libfwrite.fwrite_int(self._unit, x)

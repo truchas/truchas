@@ -63,3 +63,7 @@ class TruchasMappedData(TruchasData):
                                        "are not yet supported for mesh mapping."))
 
         return mapped_field
+
+
+    def finalize(self):
+        grid_mapping.mapper_finalize(self._mapper)

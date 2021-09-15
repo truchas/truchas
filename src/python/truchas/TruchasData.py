@@ -435,6 +435,8 @@ class TruchasData:
             fw.write_i4x0(self.ncell)
             fw.write_r8x1(array)
 
+        fw.close()
+
 
     def _feature_list(self, fields):
         """Returns a list of features present based on fields in the output."""
