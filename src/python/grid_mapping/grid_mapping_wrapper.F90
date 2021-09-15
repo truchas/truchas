@@ -24,7 +24,7 @@ module grid_mapping_wrapper
   implicit none
   private
 
-  public :: mapper_init, map_field
+  public :: mapper_init, map_field, mapper_finalize
 
   type, public, bind(c) :: map_data
     integer(c_int) :: ncell, nnode
@@ -360,5 +360,26 @@ contains
     allocate(character(len=i) :: fstr)
     fstr = transfer(cstr(:i), fstr)
   end function c_to_f_str
+
+
+  subroutine mapper_finalize(mapper) bind(c)
+
+    use parallel_communication
+    use truchas_logging_services
+
+    type(c_ptr), intent(in), value :: mapper
+
+    type(mapper_switch), pointer :: this => null()
+
+    call c_f_pointer(mapper, this)
+    deallocate(this)
+
+    if (mpi_initialized) then
+      call TLS_finalize
+      call halt_parallel_communication
+      mpi_initialized = .false.
+    end if
+
+  end subroutine mapper_finalize
 
 end module grid_mapping_wrapper

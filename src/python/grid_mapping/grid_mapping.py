@@ -43,6 +43,9 @@ libgridmap.map_field.argtypes = [ctypes.c_void_p, ctypes.c_int,
                                  ctypes.POINTER(ctypes.c_double)]
 libgridmap.map_field.restype = None
 
+libgridmap.mapper_finalize.argtypes = [ctypes.c_void_p]
+libgridmap.mapper_finalize.restype = None
+
 
 # Python interfaces
 MapData = collections.namedtuple("MapData", ("ncell",
@@ -89,3 +92,7 @@ def map_field(src, mapper, dest_ncell):
                          srcc.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                          dest.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
     return dest
+
+
+def mapper_finalize(mapper):
+    libgridmap.mapper_finalize(mapper)
