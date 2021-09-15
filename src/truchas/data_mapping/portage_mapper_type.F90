@@ -372,7 +372,7 @@ contains
     type(serial_mesh), intent(inout) :: smesh
     integer :: i, j
     type(graph) :: g
-    call g%init(smesh%num_node, directed=.true.)
+    call g%init(smesh%num_node, smesh%num_cell)
     do j = 1, smesh%num_cell
       associate (cnode => smesh%cnode(smesh%xcnode(j):smesh%xcnode(j+1)-1))
         do i = 1, size(cnode)

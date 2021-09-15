@@ -31,11 +31,17 @@
 !!    edge from one node to another is added, the oppositely directed edge is
 !!    automatically added.
 !!
-!!  ADD_EDGE (FROM, TO) adds the edge from node FROM to node TO.  TO may be
-!!    a scalar or rank-1 array, and in the latter case a sequence of edges is
-!!    added.  Edges that are not consistent with the type of graph (SELF_EDGE)
-!!    are silently ignored.  In the case of an undirected graph, the edge or
-!!    edges from TO to FROM are also added.
+!!  INIT (N, M) initializes the object to describe a bipartite graph where
+!!    N is the number of nodes in the domain set and M the number of nodes
+!!    in the range set, with directed edges from domain nodes to range nodes.
+!!    Only the methods ADD_EDGE and GET_ADJACENCY are applicable to a bipartite
+!!    graph.
+!!
+!!  ADD_EDGE (FROM, TO) adds the edge from node FROM to node TO. TO may be a
+!!    scalar or rank-1 array, and in the latter case a sequence of edges is
+!!    added. When the graph is not a bipartite graph, edges that are not
+!!    consistent with the type of graph (SELF_EDGE) are silently ignored, and
+!!    for undirected graph, the edge or edges from TO to FROM are also added.
 !!
 !!  ADD_CLIQUE (CLIQUE) adds a clique of edges.  CLIQUE is a rank-1 array, and
 !!    an edge from CLIQUE(j) to CLIQUE(k) is added for all pairs (j,k).  Edges
@@ -70,12 +76,15 @@ module graph_type
 
   type, public :: graph
     private
-    integer :: n = 0
+    integer :: n = 0, m = 0
     logical :: directed = .false.
     logical :: self_edge = .false.
+    logical :: bigraph = .false.
     type(integer_set), allocatable :: nbrs(:)
   contains
-    procedure :: init => graph_init
+    procedure, private :: graph_init
+    procedure, private :: bigraph_init
+    generic :: init => graph_init, bigraph_init
     procedure, private :: graph_add_edge_one
     procedure, private :: graph_add_edge_many
     generic :: add_edge => graph_add_edge_one, graph_add_edge_many
@@ -96,17 +105,32 @@ contains
     logical, intent(in), optional :: directed, self_edge
     ASSERT(n >= 0)
     this%n = n
+    this%m = n
     allocate(this%nbrs(n))
     if (present(directed))  this%directed  = directed
     if (present(self_edge)) this%self_edge = self_edge
   end subroutine graph_init
+
+  !! Initialize the bipartite graph object
+  subroutine bigraph_init (this, n, m)
+    class(graph), intent(out) :: this
+    integer, intent(in) :: n, m
+    ASSERT(n >= 0)
+    ASSERT(m >= 0)
+    this%n = n
+    this%m = m
+    allocate(this%nbrs(n))
+    this%bigraph   = .true.
+    this%directed  = .true.
+    this%self_edge = .true.
+  end subroutine bigraph_init
 
   !! Add the specified edge to the graph.
   subroutine graph_add_edge_one (this, from, to)
     class(graph), intent(inout) :: this
     integer, intent(in) :: from, to
     ASSERT(from >= 1 .and. from <= this%n)
-    ASSERT(to >= 1 .and. to <= this%n)
+    ASSERT(to >= 1 .and. to <= this%m)
     if (.not.this%self_edge .and. from == to) return
     call this%nbrs(from)%add (to)
     if (.not.this%directed) call this%nbrs(to)%add (from)
@@ -119,7 +143,7 @@ contains
     integer :: j
     ASSERT(from >= 1 .and. from <= this%n)
     do j = 1, size(to)
-      ASSERT(to(j) >= 1 .and. to(j) <= this%n)
+      ASSERT(to(j) >= 1 .and. to(j) <= this%m)
       if (.not.this%self_edge .and. from == to(j)) cycle
       call this%nbrs(from)%add (to(j))
       if (.not.this%directed) call this%nbrs(to(j))%add (from)
@@ -131,6 +155,7 @@ contains
     class(graph), intent(inout) :: this
     integer, intent(in) :: clique(:)
     integer :: j, k, from, to
+    INSIST(.not.this%bigraph)
     do j = 1, size(clique)
       from = clique(j)
       ASSERT(from >= 1 .and. from <= this%n)
@@ -166,6 +191,7 @@ contains
     integer, allocatable, intent(out) :: xcomp(:), comp(:)
     integer :: j
     integer :: tag(this%n)
+    INSIST(.not.this%bigraph)
     if (this%directed) return
     ncomp = 0
     tag = 0
@@ -216,6 +242,7 @@ contains
     integer, allocatable, intent(out) :: xcomp(:), comp(:)
     integer :: j
     integer :: tag(this%n)
+    INSIST(.not.this%bigraph)
     ASSERT(size(mask) == this%n)
     if (this%directed) return
     ncomp = 0
@@ -275,6 +302,7 @@ contains
     logical, allocatable :: avail(:)  ! whether a color is available to a vertex
     type(integer_set_iterator) :: iter
     integer :: i, v, n, c, max_ncolor
+    INSIST(.not.this%bigraph)
     if (this%self_edge) return
     allocate(vcolor(this%n))
     vcolor = -1
