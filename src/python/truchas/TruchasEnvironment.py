@@ -180,3 +180,15 @@ class TruchasEnvironment:
         """Return an object for the output indicated by output_file, relative
         to the input directory. Primarily used for reading golden output."""
         return TruchasData(os.path.join(self._input_dir, output_file))
+
+    def generate_input_deck(self, replacements, template_filename, output_filename):
+        """Expects a dictionary of replacements, e.g. {"sigma": 1.2e-3}.
+        Will replace Python format-strings in the input template file,
+        e.g. {sigma} is then replaced with 1.2. Formatting can be
+        specified in the input template in the typical Python way, such
+        as {sigma:.2e}."""
+        template_filename_abs = os.path.join(self._input_dir, template_filename)
+        output_filename_abs = os.path.join(self._input_dir, output_filename)
+        with open(template_filename_abs, "r") as ifh, open(output_filename_abs, "w") as ofh:
+            for line in ifh:
+                ofh.write(line.format(**replacements))
