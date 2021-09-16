@@ -8,9 +8,8 @@
 Variational Shape Approximation (VSA)
 =====================================
 .. figure:: images/basic_hemi_vsa_2.png
-   :figwidth: 28%
-   :width: 100%
-   :align: right
+   :figwidth: 50%
+   :align: center
 
    Result of VSA on a quarter cylinder.
 

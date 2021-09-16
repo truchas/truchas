@@ -16,9 +16,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import sphinx_bootstrap_theme
 import os
 import sys
+import sphinx_rtd_theme
 
 # Include custom extensions
 sys.path.append(os.path.abspath("./_extensions"))
@@ -41,10 +41,9 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx-jsonschema',
     'sphinxcontrib.bibtex',
+    'sphinx_rtd_theme',
     'namelist',
-    ]
-
-bibtex_bibfiles = ['tools/RadE/patches/references.bib']
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -60,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Truchas'
-copyright = u'2019, Los Alamos National Laboratory'
+copyright = u'2021, Los Alamos National Laboratory'
 author = u'Los Alamos National Laboratory'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -98,8 +97,8 @@ rst_prolog = open('global.rst', 'r').read()
 # The theme to use for HTML and HTML Help pages. See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'bootstrap'
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme = 'sphinx_rtd_theme'
+html_logo = '_static/logo.svg'
 html_favicon = '_static/favicon.ico'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -107,43 +106,9 @@ html_favicon = '_static/favicon.ico'
 # documentation.
 #
 html_theme_options = {
-    # Render the current pages TOC in the navbar.
-    'navbar_pagenav': False,
-
-    # HTML navbar class to attach to <div> element.
-    # For black navbar, do "navbar navbar-inverse"
-    'navbar_class': "navbar",
-
-    # Global TOC depth for "site" navbar tab.
-    # Switching to -1 shows all levels.
-    'globaltoc_depth': 3,
-
-    # Choose Bootstrap version.
-    # Values: "3" (default) or "2" (in quotes)
-    'bootstrap_version': "3",
-
-    # Bootswatch (http://bootswatch.com/) theme.
-    'bootswatch_theme': "flatly",
-
-    # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": 3,
-}
-
-# Add a sidebar
-html_sidebars = {
-   '**': ['sidebar_globaltoc.html', 'sidebar_localtoc.html'],
-}
-
-# Sidebar configuration variables
-html_context = {
-    # Visible levels of the global TOC in the sidebar; -1 means unlimited
-    'globaltoc_depth': 3,
-
-    # If False, expand all TOC entries
-    "globaltoc_collapse": True,
-
-    # If True, show hidden TOC entries
-    "globaltoc_includehidden": True,
+    'includehidden': False,
+    'display_version': False,
+    'navigation_depth': -1,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -153,8 +118,10 @@ html_static_path = ['_static']
 
 html_css_files = [
     'css/sphinxdoc.css',
-    'css/theme.css',
+    'css/custom.css',
 ]
+
+bibtex_bibfiles = ['tools/RadE/patches/references.bib']
 
 # -- Options for HTMLHelp output ------------------------------------------
 

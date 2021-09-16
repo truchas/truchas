@@ -4,9 +4,6 @@
 Sphinx Documentation Style Guide
 ================================
 
-.. warning::
-   This is a work in progress.
-
 This style guide provides best-practices for writing the Truchas Sphinx documentation. We encourage
 documentation authors to follow this guide to ensure the quality and consistency of all Truchas
 documentation.
@@ -89,10 +86,6 @@ Placing figures side-by-side in reStructuredText can be tricky. The best method 
 is to put the figures in a table. We use the :rst:`list-table` directive when each figure has its
 own caption, and the generic :rst:`table` directive when a caption is shared between figures.
 
-.. important::
-   All figure tables **must** be of the :rst:`fig-table` class. This makes sure that all figure
-   tables are styled consistently, and that styling changes apply across the entire documentation.
-
 Individual Captions
 ^^^^^^^^^^^^^^^^^^^
 The :rst:`list-table` directive is useful when each figure has its own caption. For example, the
@@ -102,7 +95,6 @@ following code produces the figures below it.
 
    .. list-table::
       :align: center
-      :class: fig-table
 
       * - .. figure:: https://via.placeholder.com/400x300
              :width: 100%
@@ -111,14 +103,13 @@ following code produces the figures below it.
              This is the caption.
 
         - .. figure:: https://via.placeholder.com/400x300
-             :figwidth: 100%
+             :width: 100%
              :align: center
 
              This is the caption.
 
 .. list-table::
    :align: center
-   :class: fig-table
 
    * - .. figure:: https://via.placeholder.com/400x300
           :width: 100%
@@ -127,7 +118,7 @@ following code produces the figures below it.
           This is the caption.
 
      - .. figure:: https://via.placeholder.com/400x300
-          :figwidth: 100%
+          :width: 100%
           :align: center
 
           This is the caption.
@@ -156,7 +147,6 @@ The following code block shows how to implement a caption spanning multiple imag
 
    .. table::
       :align: center
-      :class: fig-table
 
       +------------+------------+------------+
       |  |image1|  |  |image2|  |  |image3|  |
@@ -181,7 +171,6 @@ The following code block shows how to implement a caption spanning multiple imag
 
 .. table::
    :align: center
-   :class: fig-table
 
    +------------+------------+------------+
    |  |image1|  |  |image2|  |  |image3|  |

@@ -1,0 +1,39 @@
+/*
+ * This file contains CSS styling specific to the Sphinx RTD theme.
+ */
+
+/* Namelist parameters */
+blockquote.nml-param {
+  background-color: #f0f4f5;
+  padding: 12px;
+  margin: 0;
+  margin-bottom: 24px;
+}
+
+blockquote.nml-param p {
+  margin-bottom:12px
+}
+
+blockquote.nml-param p:last-child {
+  margin-bottom:0
+}
+
+/* Side-by-side figures */
+.wy-table-responsive table p {
+  white-space: normal;
+}
+
+.wy-table-responsive table .figure {
+  margin:0;
+}
+
+
+/* Figure captions */
+.figure p.caption:first-of-type {
+  margin-top: 0.5em;
+}
+
+.figure p.caption {
+  text-align: left;
+  font-size: 0.9em;
+}

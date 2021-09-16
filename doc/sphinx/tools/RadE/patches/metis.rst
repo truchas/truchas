@@ -5,9 +5,8 @@
 METIS patching (METIS)
 ======================
 .. figure:: images/basic_hemi_metis_2.png
-   :figwidth: 30%
-   :width: 100%
-   :align: right
+   :figwidth: 50%
+   :align: center
 
    Result of METIS on a quarter cyclinder.
 
