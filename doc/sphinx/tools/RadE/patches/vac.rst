@@ -12,9 +12,8 @@ Vertex Anchor Cluster (VAC)
    results, use one of the :ref:`other algorithms <tools/RadE/patches/index:Patch Algorithms>`.
 
 .. figure:: images/basic_hemi_vac_2.png
-   :figwidth: 35%
-   :width: 100%
-   :align: right
+   :figwidth: 50%
+   :align: center
 
    Result of VAC on a quarter cyclinder.
 

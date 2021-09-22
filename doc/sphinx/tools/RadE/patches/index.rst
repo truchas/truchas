@@ -32,7 +32,6 @@ The :program:`genre` program supports the following patching algorithms.
 .. table::
    :align: center
    :width: 100%
-   :class: fig-table
 
    +-----------------+-----------------+-----------------+
    | |pave_patches|  | |vsa_patches|   | |metis_patches| |

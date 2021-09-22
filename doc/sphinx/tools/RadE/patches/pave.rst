@@ -5,10 +5,8 @@
 Vertex Anchor Cluster Paving (PAVE)
 ===================================
 .. figure:: images/basic_hemi_pave_2.png
-   :name: inline-fig
-   :figwidth: 32%
-   :width: 100%
-   :align: right
+   :figwidth: 50%
+   :align: center
 
    Result of PAVE on a quarter cyclinder.
 
@@ -216,25 +214,24 @@ component has no boundary, there is no evidently good choice, so we select a ver
 
 .. list-table::
    :align: center
-   :class: fig-table
 
    * - .. figure:: images/seed_patch_tri.svg
           :width: 100%
           :align: center
 
-          Effect of seed patch placement on a *triangular* mesh. The seed patch is highlighted in
-          red. Full patches are blue. Partial patches are gray.
-          A seed on the corner produces six full patches, while a seed 'one face from the corner'
-          only produces five full patches.
-
      - .. figure:: images/seed_patch_quad.svg
           :width: 100%
           :align: center
 
-          Effect of seed patch placement on a *quadrilateral* mesh. The seed patch is highlighted in
-          red. Full patches are blue. Partial patches are gray.
-          A seed on the corner produces nine full patches, while a seed 'one face from the corner'
-          only creates six full patches.
+   * - Effect of seed patch placement on a *triangular* mesh. The seed patch is highlighted in
+       red. Full patches are blue. Partial patches are gray.
+       A seed on the corner produces six full patches, while a seed 'one face from the corner'
+       only produces five full patches.
+
+     - Effect of seed patch placement on a *quadrilateral* mesh. The seed patch is highlighted in
+       red. Full patches are blue. Partial patches are gray.
+       A seed on the corner produces nine full patches, while a seed 'one face from the corner'
+       only creates six full patches.
 
 Notice that for quadrilateral meshes, interior (non-boundary) vertices neighboring only one
 :term:`boundary vertex` form patches along the edge of the component, while interior vertices
