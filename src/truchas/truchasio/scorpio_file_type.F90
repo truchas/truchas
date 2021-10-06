@@ -29,6 +29,7 @@ module scorpio_file_type
     type(c_ptr) :: myIOgroup = c_null_ptr
   contains
     procedure :: open_file
+    procedure :: reopen_file
     procedure :: close_file
 
     procedure :: create_group
@@ -63,6 +64,13 @@ contains
     integer, intent(in) :: io_group_size
     call scorpio_open_file_ext(filename//c_null_char, io_group_size, this%fhandle, this%myIOgroup)
   end subroutine open_file
+
+  subroutine reopen_file(this, filename, io_group_size)
+    class(scorpio_file), intent(out) :: this
+    character(*), intent(in) :: filename
+    integer, intent(in) :: io_group_size
+    call scorpio_reopen_file_ext(filename//c_null_char, io_group_size, this%fhandle, this%myIOgroup)
+  end subroutine reopen_file
 
   subroutine close_file(this)
     class(scorpio_file), intent(inout) :: this

@@ -21,6 +21,7 @@ module scorpio_c_binding
 
   public :: scorpio_open_file_ext
   public :: scorpio_close_file_ext
+  public :: scorpio_reopen_file_ext
   public :: scorpio_create_dataset_group
   public :: scorpio_close_dataset_group
   public :: scorpio_create_link
@@ -60,6 +61,13 @@ module scorpio_c_binding
   !! SCORPIO_EXT -- our custom extensions to Scorpio
   interface
     subroutine scorpio_open_file_ext(filename, groupSize, fhandle, myIOgroup) bind(c)
+      import c_char, c_int, c_ptr
+      character(kind=c_char), intent(in) :: filename(*)
+      integer(c_int), value :: groupSize
+      integer(c_int), intent(out) :: fhandle
+      type(c_ptr), intent(out) :: myIOgroup
+    end subroutine
+    subroutine scorpio_reopen_file_ext(filename, groupSize, fhandle, myIOgroup) bind(c)
       import c_char, c_int, c_ptr
       character(kind=c_char), intent(in) :: filename(*)
       integer(c_int), value :: groupSize

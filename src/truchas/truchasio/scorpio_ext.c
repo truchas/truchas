@@ -28,6 +28,25 @@ void scorpio_open_file_ext(const char *filename, int groupSize,
   }
 }
 
+void scorpio_reopen_file_ext(const char *filename, int groupSize,
+    int *fhandle, iogroup_t **myIOgroup)
+{
+  iogroup_conf_t myIOconfig;
+
+  myIOconfig.numIOgroups = 0;
+  myIOconfig.preferredGroupSize = groupSize;
+  myIOconfig.commIncoming = MPI_COMM_WORLD;
+
+  *myIOgroup = malloc(sizeof(iogroup_t));
+  scorpio_IOgroup_init(&myIOconfig, *myIOgroup);
+
+  *fhandle = scorpio_open_file(filename, *myIOgroup, SCORPIO_FILE_READWRITE);
+  if (*fhandle == FAILURE) {
+    fprintf(stderr, "Opening file for writing failed.\n");
+    exit(-1);
+  }
+}
+
 /* Wraps closing of open objects with file closing */
 
 void scorpio_close_file_ext(int fhandle, iogroup_t *myIOgroup)
@@ -61,6 +80,7 @@ void scorpio_close_file_ext(int fhandle, iogroup_t *myIOgroup)
   }
   scorpio_close_file(fhandle, myIOgroup);
   scorpio_IOgroup_cleanup(myIOgroup);
+  free(myIOgroup);
 }
 
 void scorpio_write_simple_attr_int(char *attr_name, int *attr_data,

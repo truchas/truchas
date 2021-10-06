@@ -78,6 +78,7 @@ module truchas_h5_outfile
     logical :: is_IOP
   contains
     procedure :: open  => th5_file_open
+    procedure :: reopen => th5_file_reopen
     procedure :: close => th5_file_close
     procedure :: add_unstr_mesh_group
     procedure :: add_sim_group
@@ -161,6 +162,15 @@ contains
     this%is_IOP = is_IOP
     call this%file%open_file(filename, io_group_size)
   end subroutine th5_file_open
+
+  subroutine th5_file_reopen(this, filename, io_group_size, is_IOP)
+    class(th5_file), intent(out) :: this
+    character(*), intent(in) :: filename
+    integer, intent(in) :: io_group_size
+    logical, intent(in) :: is_IOP
+    this%is_IOP = is_IOP
+    call this%file%reopen_file(filename, io_group_size)
+  end subroutine th5_file_reopen
 
   subroutine th5_file_close(this)
     class(th5_file), intent(inout) :: this
