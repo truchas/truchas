@@ -80,6 +80,7 @@ void scorpio_close_file_ext(int fhandle, iogroup_t *myIOgroup)
   }
   scorpio_close_file(fhandle, myIOgroup);
   scorpio_IOgroup_cleanup(myIOgroup);
+  free(myIOgroup);
 }
 
 void scorpio_write_simple_attr_int(char *attr_name, int *attr_data,
