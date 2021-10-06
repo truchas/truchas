@@ -28,9 +28,7 @@ module truchas_danu_output
   implicit none
   private
 
-  public :: TDO_open, TDO_close
   public :: TDO_write_default_mesh
-  public :: TDO_start_simulation
   public :: TDO_write_timestep
 
   type(th5_mesh_group), save :: out_mesh
@@ -40,15 +38,6 @@ module truchas_danu_output
 
 contains
 
-  subroutine TDO_open ()
-    use truchas_env, only: output_file_name
-    call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
-  end subroutine TDO_open
-
-  subroutine TDO_close ()
-    call outfile%close()
-  end subroutine TDO_close
-
   subroutine TDO_write_default_mesh
 
     use kinds, only: r8
@@ -56,10 +45,13 @@ contains
     use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
     use output_control,  only: part
     use truchas_logging_services
+    use truchas_env, only: output_file_name
 
     integer :: k
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:,:)
+
+    call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
 
     !! Create the mesh entry.
     call outfile%add_unstr_mesh_group('DEFAULT', nvc, ndim, out_mesh)
@@ -104,6 +96,8 @@ contains
     !! Parts for movement
     if (size(part) > 0) call sim%write_repl_data('part1', part)
 
+    call outfile%close()
+
   end subroutine TDO_write_default_mesh
 
   subroutine TDO_start_simulation
@@ -131,9 +125,12 @@ contains
     use flow_driver, only: flow_enabled
     use solid_mechanics_driver, only: solid_mechanics_enabled
     use output_control, only: part_path, write_mesh_partition
+    use truchas_env, only: output_file_name
 
     integer :: stat
     real(r8) :: r(3)
+
+    call outfile%reopen (output_file_name('h5'), io_group_size, is_IOP)
 
     call sim%next_seq_group(cycle_number, t, seq)
     call seq%write_attr('time step', dt)
@@ -172,6 +169,8 @@ contains
 
     !! Microstructure analysis data (if enabled)
     call ustruc_output (seq)
+
+    call outfile%close()
 
   contains
 

@@ -989,7 +989,8 @@ CONTAINS
     use permutations
     use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
     use truchas_h5_outfile, only: th5_sim_group
-    use truchas_danu_output_data, only: outfile
+    use truchas_danu_output_data, only: outfile, io_group_size
+    use truchas_env, only: output_file_name
     
     real(rk), intent(in) :: t
 
@@ -1008,6 +1009,8 @@ CONTAINS
     ASSERT( size(mu_q) == size(sigma_q) )
     ASSERT( allocated(joule) )
     ASSERT( associated(coil_q) )
+
+    call outfile%reopen (output_file_name('h5'), io_group_size, is_IOP)
     
     mesh => simpl_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
@@ -1044,6 +1047,8 @@ CONTAINS
     call sim%write_repl_data('MU', col_mu)
     call sim%write_repl_data('SIGMA', col_sigma)
     call sim%write_dist_array('JOULE', joule, global_sum(size(joule)))
+
+    call outfile%close()
 
     deallocate(cell_perm, col_mu, col_sigma)
 

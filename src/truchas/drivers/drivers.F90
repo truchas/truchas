@@ -54,7 +54,6 @@ CONTAINS
     use signal_handler
     use pgslib_module,          only: PGSLib_CL_MAX_TOKEN_LENGTH
     use output_utilities,       only: announce
-    use truchas_danu_output, only: TDO_open, TDO_close
     use truchas_logging_services
     use truchas_timers
 
@@ -86,9 +85,6 @@ CONTAINS
     call ANNOUNCE ('PROGRAM INFORMATION')
     call PROGRAM_SPECIFICATIONS ()
 
-    ! open the danu output file
-    call TDO_open
-
     ! initialize the random number generator
     call INITIALIZE_RANDOM()
 
@@ -117,8 +113,6 @@ call hijack_truchas ()
     !Stop main timer
     call stop_timer("Total")
 
-    ! close the danu output file
-    call TDO_close
 
     ! Clean up
     call CLEANUP ()
