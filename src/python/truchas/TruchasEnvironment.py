@@ -149,6 +149,7 @@ class TruchasEnvironment:
         output = TruchasData(os.path.join(output_dir_abs, input_name + ".h5"))
         return process.stdout + process.stderr, output
 
+
     def write_restart(self, h5file, cycle_number, restart_file):
         """Write a restart file from the given H5 dump and cycle number to
         the given output file. Files expected to be relative to working directory."""
@@ -171,20 +172,23 @@ class TruchasEnvironment:
             print(process.stderr)
             raise
 
+
     def open_data(self, h5file):
         """Returns an output data object from an h5file, expected to be
         relative to the working directory."""
         return TruchasData(os.path.join(self._working_dir, h5file))
+
 
     def output(self, output_file):
         """Return an object for the output indicated by output_file, relative
         to the input directory. Primarily used for reading golden output."""
         return TruchasData(os.path.join(self._input_dir, output_file))
 
+
     def generate_input_deck(self, replacements, template_filename, output_filename):
         """Expects a dictionary of replacements, e.g. {"sigma": 1.2e-3}.
         Will replace Python format-strings in the input template file,
-        e.g. {sigma} is then replaced with 1.2. Formatting can be
+        e.g. {sigma} is then replaced with .0012. Formatting can be
         specified in the input template in the typical Python way, such
         as {sigma:.2e}."""
         template_filename_abs = os.path.join(self._input_dir, template_filename)
