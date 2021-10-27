@@ -143,8 +143,7 @@ contains
     call seq%write_attr('time step', dt)
 
     !! Part movement
-    if (associated(part_path)) then
-      call part_path%set_segment(t)
+    if (allocated(part_path)) then
       call part_path%get_position(t, r)
       call seq%write_attr('translate_part1', r)
     end if

@@ -98,13 +98,13 @@ module bndry_face_vfunc_type
 
 contains
 
-  subroutine init(this, mesh, bndry_only)
+  subroutine init(this, mesh, bndry_only, omit_offp)
     class(bndry_face_vfunc), intent(out) :: this
     class(unstr_base_mesh), intent(in), target :: mesh
-    logical, intent(in), optional :: bndry_only
+    logical, intent(in), optional :: bndry_only, omit_offp
     this%mesh => mesh
     allocate(this%builder)
-    call this%builder%init(mesh, bndry_only)
+    call this%builder%init(mesh, bndry_only, omit_offp, no_overlap=.false.)
   end subroutine init
 
   subroutine add(this, f, setids, stat, errmsg)
@@ -118,13 +118,12 @@ contains
     call this%flist%append(f)
   end subroutine add
 
-  subroutine add_complete(this, omit_offp)
+  subroutine add_complete(this)
     use const_vector_func_type
     class(bndry_face_vfunc), intent(inout) :: this
-    logical, intent(in), optional :: omit_offp
     integer :: n
     ASSERT(allocated(this%builder))
-    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index, omit_offp)
+    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
     deallocate(this%builder)
     call vector_func_list_to_box_array(this%flist, this%farray)
     !! For now we don't expose optimization hinting to the user,

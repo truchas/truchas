@@ -5,7 +5,7 @@ Reference Manual
 
 .. toctree::
    :maxdepth: 1
-   :numbered: 3
+   :numbered: 2
 
    introduction/index
    ALTMESH_Namelist/index
@@ -38,6 +38,7 @@ Reference Manual
    SPECIES_BC_Namelist/index
    THERMAL_BC_Namelist/index
    THERMAL_SOURCE_Namelist/index
+   TOOLHEAD_Namelist/index
    TOOLPATH_Namelist/index
    TURBULENCE_Namelist/index
    VFUNCTION_Namelist/index

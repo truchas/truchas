@@ -34,8 +34,6 @@ contains
 
   subroutine read_enclosure_radiation_namelists(lun)
 
-    use toolpath_table, only: known_toolpath
-
     integer, intent(in) :: lun
 
     integer :: n, ios
@@ -110,12 +108,8 @@ contains
         plist => params%sublist(trim(name))
       end if
 
-      !! Check optional TOOLPATH
-      if (toolpath /= NULL_C) then
-        if (.not.known_toolpath(toolpath)) &
-            call TLS_fatal(label // ': unknown TOOLPATH: ' // trim(toolpath))
-        call plist%set('toolpath', toolpath)
-      end if
+      !! Optional TOOLPATH; value checked later.
+      if (toolpath /= NULL_C) call plist%set('toolpath', trim(toolpath))
 
       !! Verify ENCLOSURE_FILE was assigned a value
       if (enclosure_file == NULL_C) then

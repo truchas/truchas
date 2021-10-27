@@ -238,7 +238,9 @@ contains
       if (allocated(model%bc_vflux)) then
         if (global_any(mask(model%bc_vflux%index))) &
             call TLS_info('    NOTE: oriented-flux condition is superimposed with interface conditions')
-        fmask(model%bc_vflux%index) = .true. ! mark the oriented flux faces
+        do j = 1, size(model%bc_vflux%index)  ! index not necessarily 1-1
+          fmask(model%bc_vflux%index(j)) = .true. ! mark the oriented flux faces
+        end do
       end if
 
       !! Define the external HTC boundary conditions.

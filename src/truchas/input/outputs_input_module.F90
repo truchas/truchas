@@ -48,7 +48,6 @@ CONTAINS
     use parallel_communication,  only: is_IOP, broadcast
     use output_control,          only: Output_Dt_Multiplier
     use output_control,          only: part, part_path, write_mesh_partition
-    use toolpath_table,          only: toolpath_ptr
          
     integer, intent(in) :: lun
 
@@ -121,9 +120,13 @@ CONTAINS
     allocate(part(count(move_block_ids/=NULL_I)))
     part = pack(move_block_ids,mask=move_block_ids/=NULL_I)
     if (move_toolpath_name /= NULL_C) then
-      part_path => toolpath_ptr(move_toolpath_name)
-      if (.not.associated(part_path)) &
-          call TLS_fatal('no such toolpath: ' // trim(move_toolpath_name))
+      block
+        use toolpath_driver, only: alloc_toolpath
+        integer :: stat
+        character(:), allocatable :: errmsg
+        call alloc_toolpath(part_path, move_toolpath_name, stat, errmsg)
+        if (stat /= 0) call TLS_fatal('unable to create toolpath: ' // errmsg)
+      end block
     end if
 
   END SUBROUTINE OUTPUTS_INPUT
@@ -135,7 +138,6 @@ CONTAINS
     !   Default OUTPUTS namelist.
     !
     !=======================================================================
-    use kinds, only: r8
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T
     use output_control,          only: Output_Dt_Multiplier
@@ -188,14 +190,13 @@ CONTAINS
     use output_control,          only: nops, Output_Dt, Output_T
     use parameter_module,        only: mops
     use time_step_module,        only: t
-    use utilities_module,        only: STRING_COMPARE
 
     ! Arguments
     logical, intent(INOUT) :: fatal
 
     ! Local Variables
     integer :: n
-    logical :: dt_okay, strings_match
+    logical :: dt_okay
     character(128) :: message
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>

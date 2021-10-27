@@ -44,8 +44,11 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['global.rst']
 
+
+# reStructuredText to be included at the beginning of each file
+rst_prolog = open('global.rst', 'r').read()
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -80,8 +83,10 @@ imgmath_latex_preamble = r'\usepackage{array}'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-def setup(app):
-   app.add_css_file('css/custom.css')
+html_css_files = ['css/custom.css']
+
+#def setup(app):
+#   app.add_css_file('css/custom.css')
 
 bibtex_bibfiles = ['refs.bib']
 

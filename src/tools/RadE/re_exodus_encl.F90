@@ -97,7 +97,7 @@ contains
 
     use string_utilities, only: raise_case, i_to_c
     use input_utilities
-    use toolpath_table, only: known_toolpath
+    use re_toolpath, only: tp_fac
 
     integer, intent(in) :: lun
     type(parameter_list), intent(out) :: params
@@ -113,7 +113,7 @@ contains
         side_set_ids, ignore_block_ids, symmetries, &
         displace_block_ids, displacements, displacement_toolpath
 
-    integer :: j, n, ios, stat, rot_axis, num_rot, ndispl
+    integer :: j, n, ios, rot_axis, num_rot, ndispl
     logical :: is_IOP, found, mirror(3)
     character(len=len(symmetries)) :: sym
     character(255) :: iom
@@ -232,7 +232,7 @@ contains
             call re_halt('DISPLACEMENTS not fully specified')
         call params%set('displacements', displacements(:,:ndispl))
       else
-        if (.not.known_toolpath(displacement_toolpath)) &
+        if (.not.tp_fac%known_toolpath(displacement_toolpath)) &
             call re_halt('unknown toolpath: ' // trim(displacement_toolpath))
         call params%set('displacement-toolpath', trim(displacement_toolpath))
       end if
@@ -246,8 +246,8 @@ contains
     use exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
     use re_encl_type
+    use re_toolpath, only: tp_fac
     use toolpath_type
-    use toolpath_table
 
     type(encl_list), intent(out) :: this
     type(parameter_list), intent(inout) :: params
@@ -258,7 +258,7 @@ contains
     type(exodus_mesh) :: mesh
     character(:), allocatable :: mesh_file, name
     logical, allocatable :: mask(:)
-    type(toolpath), pointer :: tp => null()
+    type(toolpath), allocatable :: tp
 
     !! Initialize the base enclosure held by the parent ENCL type.
     if (scl_rank() == 1) then
@@ -314,7 +314,11 @@ contains
         else
           !! Extract displacements and labels from a partitioned toolpath.
           call params%get('displacement-toolpath', name)
-          tp => toolpath_ptr(name)
+          call tp_fac%alloc_toolpath(tp, name, stat, errmsg)
+          if (stat /= 0) then
+            errmsg = 'error creating toolpath: ' // errmsg
+            return
+          end if
           if (tp%has_partition()) then
             call tp%get_partition(coord=this%dx, hash=this%label)
             !! Cull any duplicates (possible)
@@ -375,8 +379,6 @@ contains
 
     type(exodus_mesh) :: mesh
     character(:), allocatable :: mesh_file
-    logical,  allocatable :: mask(:)
-    real(r8), allocatable :: disp(:)
 
     if (scl_rank() == 1) then
       call params%get('mesh-file', mesh_file)
@@ -410,7 +412,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
 
-    integer, allocatable :: ssid(:), ebid(:), disp_ssid(:)
+    integer, allocatable :: ssid(:), ebid(:)
     logical, allocatable :: mirror(:)
     real(r8) :: scale
 

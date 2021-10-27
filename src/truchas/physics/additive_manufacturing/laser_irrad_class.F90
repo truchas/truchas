@@ -2,7 +2,10 @@
 !! LASER_IRRAD_CLASS
 !!
 !! This module provides the abstract base class LASER_IRRAD that defines a
-!! common interface to models of laser irradiance.
+!! common interface to models of laser irradiance. The models define the
+!! flux density of the irradiation on planes orthogonal to the beam axis in
+!! a reference configuration where the axis coincides with the z axis and
+!! the origin is the beam focal point (if any).
 !!
 !! Neil Carlson <nnc@lanl.gov>
 !! March 2017

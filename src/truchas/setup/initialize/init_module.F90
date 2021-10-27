@@ -78,12 +78,13 @@ CONTAINS
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use solid_mechanics_driver, only: solid_mechanics_init
     use physics_module,         only: heat_transport, flow, solid_mechanics, legacy_solid_mechanics
-    use ded_head_driver,        only: ded_head_init
+    use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
     use compute_body_volumes_proc
     use material_model_driver,  only: init_material_model
     use unstr_mesh_type
+    use output_control, only: output_init
 
     real(r8), intent(in) :: t, dt
 
@@ -149,7 +150,8 @@ CONTAINS
       Call SOLID_MECH_INIT
     end if
 
-    call ded_head_init(t)
+    call toolhead_init(t)
+    call output_init(t)
 
     ! Get the initial species concentration fields.
     if (ds_enabled .and. num_species > 0) then

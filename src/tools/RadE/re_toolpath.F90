@@ -34,11 +34,14 @@ module re_toolpath
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use re_utilities
+  use toolpath_factory_type
   use scl
   implicit none
   private
 
   public :: read_toolpath_namelists
+
+  type(toolpath_factory), public :: tp_fac
 
 contains
 
@@ -46,7 +49,6 @@ contains
 
     use string_utilities, only: i_to_c
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_C
-    use toolpath_table, only: known_toolpath
 
     integer, intent(in) :: lun
 
@@ -112,7 +114,7 @@ contains
       !! Check the name.
       if (name == NULL_C .or. name == '') &
           call re_halt('NAME must be assigned a nonempty value')
-      if (known_toolpath(name)) &
+      if (tp_fac%known_toolpath(name)) &
           call re_halt('already read a TOOLPATH namelist with this name: ' // trim(name))
 
       !! Check that we got either COMMAND_STRING or COMMAND_FILE, but not both.
@@ -153,58 +155,39 @@ contains
         if (coord_scale_factor /= NULL_R) partition_ds = coord_scale_factor * partition_ds
       end if
 
-      call make_toolpath
+      call make_toolpath_plist
 
     end do
 
   contains
 
-    subroutine make_toolpath
+    subroutine make_toolpath_plist
 
       use parameter_list_type
-      use toolpath_factory
-      use toolpath_table, only: insert_toolpath
 
-      type(parameter_list) :: params
-      type(toolpath), allocatable :: path
-      integer :: stat, lun, ios
-      character(:), allocatable :: errmsg, plotfile
+      type(parameter_list), pointer :: plist
+      character(:), allocatable :: plotfile
+
+      plist => tp_fac%toolpath_plist(trim(name))
 
       !! Form the input parameter list for the toolpath factory.
-      if (start_time /= NULL_R) call params%set('start-time', start_time)
-      if (any(start_coord /= NULL_R)) call params%set('start-coord', start_coord)
-      if (time_scale_factor /= NULL_R) call params%set('time-scale-factor', time_scale_factor)
-      if (coord_scale_factor /= NULL_R) call params%set('coord-scale-factor', coord_scale_factor)
+      if (start_time /= NULL_R) call plist%set('start-time', start_time)
+      if (any(start_coord /= NULL_R)) call plist%set('start-coord', start_coord)
+      if (time_scale_factor /= NULL_R) call plist%set('time-scale-factor', time_scale_factor)
+      if (coord_scale_factor /= NULL_R) call plist%set('coord-scale-factor', coord_scale_factor)
       if (command_string /= NULL_C) then
-        call params%set('command-string', trim(command_string))
+        call plist%set('command-string', trim(command_string))
       else
-        call params%set('command-file', trim(command_file))
+        call plist%set('command-file', trim(command_file))
       end if
-
-      !! Instantiate the toolpath.
-      call alloc_toolpath(path, params, stat, errmsg)
-      if (stat /= 0) call re_halt('error creating toolpath: ' // errmsg)
-
-      !! Write the toolpath if requested.
-      if (write_plotfile) then
-        plotfile = trim('toolpath-' // trim(name) // '.dat')
-        if (is_IOP) then
-          open(newunit=lun,file=plotfile,action='write',status='replace',iostat=ios)
-          if (ios == 0) then
-            call path%write_plotfile(lun, plotfile_dt)
-            close(lun)
-          end if
-        end if
-        call scl_bcast(ios)
-        if (ios /= 0) call re_halt('error opening ' // plotfile // ': iostat=' // i_to_c(ios))
+      if (is_IOP .and. write_plotfile) then
+        plotfile = 'toolpath-' // trim(name) // '.dat'
+        call plist%set('plotfile', plotfile)
+        call plist%set('plotfile-dt', plotfile_dt)
       end if
+      if (partition_ds /= NULL_R) call plist%set('partition-ds', partition_ds)
 
-      !! Add path partition data if requested.
-      if (partition_ds /= NULL_R) call path%set_partition(partition_ds)
-
-      call insert_toolpath(trim(name), path)
-
-    end subroutine make_toolpath
+    end subroutine
 
   end subroutine read_toolpath_namelists
 

@@ -46,13 +46,17 @@ module bndry_face_group_builder_type
   implicit none
   private
 
+  type :: array_box
+    integer, allocatable :: array(:)
+  end type
+
   type, public :: bndry_face_group_builder
     private
     class(base_mesh), pointer :: mesh => null() ! reference only -- not owned
-    logical :: bndry_only = .true.
-    integer :: ngroup = 0
-    integer, allocatable :: tag(:)
+    logical :: bndry_only = .true., omit_offp = .false., no_overlap = .true.
+    logical, allocatable :: tag(:)
     logical, allocatable :: mask(:) ! work space for add_group
+    type(array_box), allocatable :: glist(:)
   contains
     procedure :: init
     procedure :: add_face_group
@@ -61,21 +65,23 @@ module bndry_face_group_builder_type
 
 contains
 
-  subroutine init(this, mesh, bndry_only)
+  subroutine init(this, mesh, bndry_only, omit_offp, no_overlap)
     class(bndry_face_group_builder), intent(out) :: this
     class(base_mesh), target :: mesh
-    logical, intent(in), optional :: bndry_only
+    logical, intent(in), optional :: bndry_only, omit_offp, no_overlap
     this%mesh => mesh
     if (present(bndry_only)) this%bndry_only = bndry_only
-    this%ngroup = 0
-    allocate(this%tag(mesh%nface), this%mask(mesh%nface))
-    this%tag = 0
-  end subroutine init
+    if (present(omit_offp))  this%omit_offp  = omit_offp
+    if (present(no_overlap)) this%no_overlap = no_overlap
+    allocate(this%mask(merge(mesh%nface_onP, mesh%nface, this%omit_offp)))
+    if (this%no_overlap) allocate(this%tag(mesh%nface_onP), source=.false.)
+    allocate(this%glist(0))
+  end subroutine
 
   subroutine add_face_group(this, setids, stat, errmsg)
 
     use bitfield_type
-    use parallel_communication, only: global_count
+    use parallel_communication, only: global_sum
     use string_utilities, only: i_to_c
 
     class(bndry_face_group_builder), intent(inout) :: this
@@ -83,25 +89,41 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: n
+    integer :: j, n, ngface, nbndry, novrlp
     type(bitfield) :: bitmask
 
     !! Identify the faces specified by SETIDS.
     call this%mesh%get_face_set_bitmask(setids, bitmask, stat, errmsg)
     if (stat /= 0) return
-    this%mask = (popcnt(iand(bitmask, this%mesh%face_set_mask)) /= 0)
+    ngface = 0  ! count of faces in this group
+    nbndry = 0  ! count of non-boundary faces (on-process)
+    novrlp = 0  ! count of overlapping faces (on-process)
+    do j = 1, size(this%mask)
+      this%mask(j) = (popcnt(iand(bitmask, this%mesh%face_set_mask(j))) /= 0)
+      if (.not.this%mask(j)) cycle
+      if (j <= this%mesh%nface_onP) then
+        if (.not.btest(this%mesh%face_set_mask(j),0)) nbndry = nbndry + 1
+        if (allocated(this%tag)) then
+          if (this%tag(j)) novrlp = novrlp + 1
+          this%tag(j) = .true.
+        end if
+      end if
+      ngface = ngface + 1
+    end do
 
-    !! Check that these faces don't overlap those from preceding calls.
-    n = global_count(this%mask .and. this%tag /= 0)
-    if (n /= 0) then
-      stat = 1
-      errmsg = i_to_c(n) // ' faces belong to an existing group'
-      return
+    !! If requested, verify these faces do not overlap a previous group.
+    if (this%no_overlap) then
+      n = global_sum(novrlp)
+      if (n /= 0) then
+        stat = 1
+        errmsg = i_to_c(n) // ' faces belong to an existing group'
+        return
+      end if
     end if
 
-    !! Verify that these faces are boundary faces if required.
+    !! If requested, verify that these faces are boundary faces.
     if (this%bndry_only) then
-      n = global_count(this%mask .and. .not.btest(this%mesh%face_set_mask,0))
+      n = global_sum(nbndry)
       if (n /= 0) then
         stat = 2
         errmsg = i_to_c(n) // ' faces not on boundary'
@@ -109,49 +131,52 @@ contains
       end if
     end if
 
-    !! Set the tag array.
-    this%ngroup = 1 + this%ngroup
-    where (this%mask) this%tag = this%ngroup
+    !! Make space to store the list of faces for this group.
+    block ! resize glist
+      type(array_box), allocatable :: tmp(:)
+      call move_alloc(this%glist, tmp)
+      allocate(this%glist(size(tmp)+1))
+      do j = 1, size(tmp)
+        call move_alloc(tmp(j)%array, this%glist(j)%array)
+      end do
+      deallocate(tmp)
+    end block
+
+    !! Store the list of faces for this group.
+    allocate(this%glist(size(this%glist))%array(ngface))
+    associate (array => this%glist(size(this%glist))%array)
+      n = 0
+      do j = 1, size(this%mask)
+        if (this%mask(j)) then
+          n = n + 1
+          array(n) = j
+        end if
+      end do
+    end associate
 
   end subroutine add_face_group
 
-  subroutine get_face_groups(this, ngroup, xgroup, index, omit_offp)
+  subroutine get_face_groups(this, ngroup, xgroup, index)
 
     class(bndry_face_group_builder), intent(in) :: this
     integer, intent(out) :: ngroup
     integer, allocatable, intent(out) :: xgroup(:), index(:)
-    logical, intent(in), optional :: omit_offp
 
-    integer :: n, j, nface
+    integer :: n, j
 
-    nface = size(this%tag)
-    if (present(omit_offp)) then
-      if (omit_offp) nface = this%mesh%nface_onP
-    end if
-
-    ngroup = this%ngroup
-    n = count(this%tag(:nface) > 0)
+    ngroup = size(this%glist)
+    n = 0
+    do j = 1, ngroup
+      n = n + size(this%glist(j)%array)
+    end do
     allocate(index(n), xgroup(ngroup+1))
 
-    !! Prepare XGROUP: indices in group N will be INDEX(XGROUP(N):XGROUP(N+1)-1).
+    !! Face indices in group N are INDEX(XGROUP(N):XGROUP(N+1)-1).
     xgroup(1) = 1
     do n = 1, ngroup
-      xgroup(n+1) = xgroup(n) + count(this%tag(:nface) == n)
+      xgroup(n+1) = xgroup(n) + size(this%glist(n)%array)
+      index(xgroup(n):xgroup(n+1)-1) = this%glist(n)%array
     end do
-
-    !! Fill the INDEX array; XGROUP(N) stores the next free location for group N.
-    do j = 1, nface
-      n = this%tag(j)
-      if (n == 0) cycle
-      index(xgroup(n)) = j
-      xgroup(n) = 1 + xgroup(n)
-    end do
-
-    !! Restore XGROUP; XGROUP(N) is now the start of group N+1 instead of N.
-    do n = ngroup, 1, -1
-      xgroup(n+1) = xgroup(n)
-    end do
-    xgroup(1) = 1
 
   end subroutine get_face_groups
 
