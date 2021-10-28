@@ -38,7 +38,9 @@ class TruchasStudy:
 
 
     def do_1d_parameter_study(self, initial_parameters, variable, points,
-                              output_metrics, output_filename):
+                              output_metrics, output_filename,
+                              replacement_parameters=None,
+                              extra_outputs=None):
         """Do a 1D parameter study of the given variable, across the given
         points. Output metrics are recorded to a text file. Input arguments are:
 
@@ -62,6 +64,24 @@ class TruchasStudy:
         **output_filename**: A string with a filename, where a table of inputs
         and outputs will be written.
 
+        **replacement_parameters** (optional): A function of one argument, the
+        parameter dictionary at a given instance of the parameter study. If
+        provided, it can be used to generate a completely new set of template
+        replacements from the given dictionary of parameters.
+
+        **extra_outputs** (optional): A function of four arguments, the
+        parameter dictionary, the Truchas output, the study filename (intended
+        for generating new filenames), and the parameters study iteration index.
+        This is for generating new files out of each run, for instance recording
+        the entire maximum temperature evolution of each run.
+
+        NOTES:
+            - Toolpath filename should be specified in the template.inp file
+              with the parameter toolpath_file. This parameter is skipped when
+              generating the instance unique identifier, so both the Truchas
+              input file and toolpath file are renamed to a unique identifier
+              independent of the toolpath filename.
+
         TODO: Some current hardwired shortcomings...
             - Templates are hardcoded to be template.inp and template.json.
             - Only a single json toolpath file is permitted, or none. The
@@ -69,34 +89,33 @@ class TruchasStudy:
               input deck's unique identifier for the TruchasDatabase. This is
               because the toolpath file ought to be named with the same hash as
               the input file.
+
         """
         print(f"Performing a parameter study on {variable}...")
-        parameters = initial_parameters.copy()
 
         # write the header from the input parameter names and output names
-        line = "\t".join(parameters) + "\t"
+        line = "\t".join(initial_parameters) + "\t"
         line += "\t".join(output_metrics)
         with open(output_filename, "w") as fh: fh.write("# " + line + "\n")
 
         for i, p in enumerate(points):
-            parameters[variable] = p
-            print(f"Running with {variable} = {parameters[variable]:.2e}")
-
             # Parameters may be functions of other non-function parameters. If
             # a function which depends on other data is needed, it should be
             # constructed with that data hardcoded, or via a lambda.
-            for key, val in initial_parameters.items():
-                if key != variable and callable(val):
-                    parameters[key] = val(parameters)
-            toolpath_file = "{}.json".format(TruchasDatabase.identifier(parameters))
-            parameters["toolpath_file"] = toolpath_file
+            parameters = initial_parameters.copy()
+            parameters[variable] = p
+            print(f"Running with {variable} = {parameters[variable]:.2e}")
+            parameters = self._eval_parameter_functions(parameters)
+            replacements = self._replacements(parameters, replacement_parameters)
 
-            if not self._tdb.exists(parameters):
-                print("Generating input deck ... ", end="")
-                input_file = "{}-{}.inp".format(os.path.splitext(output_filename)[0], i)
-                self._tenv.generate_input_deck(parameters, "template.inp", input_file)
+            if not self._tdb.exists(replacements):
+                print("Generating input deck ... ", end="", flush=True)
+                identifier = TruchasDatabase.identifier(replacements)
+                input_file = f"{identifier}.inp"
+                toolpath_file = f"{identifier}.json"
+                self._tenv.generate_input_deck(replacements, "template.inp", input_file)
                 if os.path.isfile("template.json"):
-                    self._tenv.generate_input_deck(parameters, "template.json", toolpath_file)
+                    self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
                 print("done.")
 
                 print("Running Truchas ... ")
@@ -106,10 +125,10 @@ class TruchasStudy:
                 print("done.")
                 print("Elapsed {:.0f} seconds.".format(elapsed))
 
-                self._tdb.donate(parameters, input_file, output.directory)
+                self._tdb.donate(replacements, input_file, output.directory)
 
-            print("Grabbing from database ... ", end="")
-            output = self._tdb.truchas_output(parameters)
+            print("Grabbing from database ... ", end="", flush=True)
+            output = self._tdb.truchas_output(replacements)
             print("done.")
 
             # construct the output line and write it
@@ -118,65 +137,80 @@ class TruchasStudy:
             line += "\t".join([f(parameters, output) for f in output_metrics.values()]) # outputs
             with open(output_filename, "a") as fh: fh.write(line + "\n")
 
-            # print("Fetching max temperature history ... ", end="")
-            # temp_fname = "{}-temperature-{}.txt".format(os.path.splitext(output_filename)[0], i)
-            # with open(temp_fname, "w") as fh:
-            #     fh.write("time\tmax_temperature\n")
-            #     for sid in range(1,output.num_series()+1):
-            #         t = output.time(sid)
-            #         max_temperature = max(output.field(sid, "Z_TEMP"))
-            #         fh.write(f"{t:.2f}\t{max_temperature:.2f}\n")
-            # print("done.")
+            if callable(extra_outputs): extra_outputs(parameters, output, output_filename, i)
             print()
 
 
-    def generate_1d_parameter_study_inputs(self, initial_parameters, variable, points):
+    def generate_1d_parameter_study_inputs(self, initial_parameters, variable, points,
+                                           replacement_parameters=None):
         """Generate input decks across a given span of data points. This is
         intended for generating inputs to then be simulated on a cluster.
         """
-        parameters = initial_parameters.copy()
         os.makedirs(self._working_dir, exist_ok=True)
 
         for p in points:
-            parameters[variable] = p
             # Parameters may be functions of other non-function parameters. If
             # a function which depends on other data is needed, it should be
             # constructed with that data hardcoded, or via a lambda.
-            for key, val in initial_parameters.items():
-                if key != variable and callable(val):
-                    parameters[key] = val(parameters)
-            identifier = TruchasDatabase.identifier(parameters)
-            parameters["toolpath_file"] = f"{identifier}.json"
+            parameters = initial_parameters.copy()
+            parameters[variable] = p
+            parameters = self._eval_parameter_functions(parameters)
+            replacements = self._replacements(parameters, replacement_parameters)
 
+            identifier = TruchasDatabase.identifier(replacements)
             input_file = os.path.join(self._working_dir, f"{identifier}.inp")
             toolpath_file = os.path.join(self._working_dir, f"{identifier}.json")
-            print(identifier, os.path.isfile(input_file), parameters)
+            print(identifier, os.path.isfile(input_file), replacements)
 
             if not os.path.isfile(input_file):
-                self._tenv.generate_input_deck(parameters, "template.inp", input_file)
+                self._tenv.generate_input_deck(replacements, "template.inp", input_file)
                 if os.path.isfile("template.json"):
-                    self._tenv.generate_input_deck(parameters, "template.json", toolpath_file)
+                    self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
         print()
 
 
-    def register_1d_parameter_study_outputs(self, initial_parameters, variable, points):
+    def register_1d_parameter_study_outputs(self, initial_parameters, variable, points,
+                                            replacement_parameters=None):
         """Register Truchas simulation outputs and input decks to a database."""
-        parameters = initial_parameters.copy()
 
         for p in points:
-            parameters[variable] = p
             # Parameters may be functions of other non-function parameters. If
             # a function which depends on other data is needed, it should be
             # constructed with that data hardcoded, or via a lambda.
-            for key, val in initial_parameters.items():
-                if key != variable and callable(val):
-                    parameters[key] = val(parameters)
-            identifier = TruchasDatabase.identifier(parameters)
-            parameters["toolpath_file"] = f"{identifier}.json"
+            parameters = initial_parameters.copy()
+            parameters[variable] = p
+            parameters = self._eval_parameter_functions(parameters)
+            replacements = self._replacements(parameters, replacement_parameters)
 
+            identifier = TruchasDatabase.identifier(replacements)
             input_file = os.path.join(self._working_dir, f"{identifier}.inp")
             toolpath_file = os.path.join(self._working_dir, f"{identifier}.json")
             output_directory = os.path.join(self._working_dir, f"{identifier}_output")
 
             if os.path.isfile(input_file):
-                self._tdb.donate(parameters, input_file, output_directory)
+                self._tdb.donate(replacements, input_file, output_directory)
+
+
+    @staticmethod
+    def _eval_parameter_functions(input_parameters):
+        """Convert from a dictionary of input parameters, and the optional extra
+        conversion function, to the dictionary of template replacements.
+        """
+        parameters = input_parameters.copy()
+        for key, val in input_parameters.items():
+            if callable(val):
+                parameters[key] = val(input_parameters)
+        return parameters
+
+
+    @staticmethod
+    def _replacements(input_parameters, replacement_parameters):
+        """Convert from a dictionary of input parameters, and the optional extra
+        conversion function, to the dictionary of template replacements.
+        """
+        replacements = input_parameters.copy()
+        if callable(replacement_parameters):
+            replacements = replacement_parameters(replacements)
+        identifier = TruchasDatabase.identifier(replacements)
+        replacements["toolpath_file"] = f"{identifier}.json"
+        return replacements
