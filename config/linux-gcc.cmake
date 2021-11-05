@@ -8,8 +8,9 @@ set(Truchas_Fortran_FLAGS "-fimplicit-none -ffree-line-length-none"
     CACHE STRING "Fortran compile flags")
 set(CMAKE_Fortran_FLAGS_RELEASE "${Truchas_Fortran_FLAGS} -O3 -DNDEBUG"
     CACHE STRING "Fortran compile flags")
+# -fcheck=bits is excluded here since it is not supported on GCC 9.3.0
 set(CMAKE_Fortran_FLAGS_DEBUG "${Truchas_Fortran_FLAGS} \
--g -O0 -fcheck=bits,bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647"
+-g -O0 -fcheck=bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647"
     CACHE STRING "Fortran compile flags")
 set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-g ${CMAKE_Fortran_FLAGS_RELEASE}"
     CACHE STRING "Fortran compile flags")
