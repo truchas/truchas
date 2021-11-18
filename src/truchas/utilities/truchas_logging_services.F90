@@ -263,12 +263,22 @@ module truchas_logging_services
 contains
 
   subroutine TLS_initialize
-    use truchas_env, only: output_file_name
+    use truchas_env, only: output_file_name, overwrite_output
     use,intrinsic :: iso_fortran_env, only: output_unit
+
+    logical :: exists
     !! Initialize the devices the log messages will be written to.
     if (is_IOP) then
       allocate(log_unit(2))
       log_unit(1) = output_unit ! pre-connected output unit (stdout)
+
+      if (.not.overwrite_output) then
+        inquire(file=output_file_name('log'), exist=exists)
+        if (exists) then
+          log_unit(2) = log_unit(1)
+          call TLS_panic("must specify `-f` flag to overwrite `" // output_file_name('log')//"`")
+        end if
+      end if
       open(newunit=log_unit(2), file=output_file_name('log'))
     end if
   end subroutine TLS_initialize

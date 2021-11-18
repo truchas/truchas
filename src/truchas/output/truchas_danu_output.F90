@@ -45,12 +45,19 @@ contains
     use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
     use output_control,  only: part
     use truchas_logging_services
-    use truchas_env, only: output_file_name
+    use truchas_env, only: output_file_name, overwrite_output
 
     integer :: k
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:,:)
+    logical :: exists
 
+    if (is_IOP .and. .not. overwrite_output) then
+      inquire(file=output_file_name('h5'), exist=exists)
+        if (exists) then
+          call TLS_panic("must specify `-f` flag to overwrite `" // output_file_name('h5')//"`")
+        end if
+    endif
     call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
 
     !! Create the mesh entry.

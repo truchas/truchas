@@ -19,4 +19,4 @@ cd examples/broken-dam
 ../../bin/truchas broken-dam.inp
 ../../bin/python ../../bin/write-restart.py broken-dam_output/broken-dam.h5
 sed -i s/0.075/0.005/ broken-dam.inp
-../../bin/mpiexec -n 2 ../../bin/truchas broken-dam.inp
+../../bin/mpiexec -n 2 ../../bin/truchas -f broken-dam.inp

@@ -123,9 +123,9 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
 
   # Add to ENVIRONMENT arg and set the property
   if (MY_ARG_ENVIRONMENT)
-    list(APPEND MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}")
+    list(APPEND MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}" "TRUCHAS_OVERWRITE_OUTPUT=1")
   else()
-    set(MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}")
+    set(MY_ARG_ENVIRONMENT "PYTHONPATH=${env_pypaths}" "TRUCHAS_OVERWRITE_OUTPUT=1")
   endif()
   set_property(TEST ${test_name} PROPERTY ENVIRONMENT ${MY_ARG_ENVIRONMENT})
 

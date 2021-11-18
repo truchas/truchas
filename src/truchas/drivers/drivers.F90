@@ -484,7 +484,8 @@ call hijack_truchas ()
 
     use parallel_info_module, only: p_info
     use pgslib_module,        only: PGSLib_BCAST
-    use truchas_env,          only: input_dir, output_dir, prefix, input_file
+    use truchas_env,          only: input_dir, output_dir, prefix, &
+                                    input_file, overwrite_output
     !use truchas_logging_services
     use utilities_module,     only: MAKE_DIRECTORY_HIERARCHY
     use parameter_module,     only: string_len
@@ -514,19 +515,20 @@ call hijack_truchas ()
     logical :: h
     logical :: f
     logical :: g
-    character (LEN=string_len), dimension(9) :: usage = (/                       &
-       'usage: truchas [options] infile                                       ', &
-       '                                                                      ', &
-       'options:                                                              ', &
-       '  -v:n          verbose level (0, 1, 2)                               ', &
-       '  -o:filename   output filename root                                  ', &
-       '  -r:filename   restart path/filename                                 ', &
-       '  -m            turn on memory diagnostics                            ', &
-       '  -g:n          output group size                                     ', &
-       '  -h            help                                                  ' /)
-
+    character (LEN=string_len), dimension(10) :: usage = (/                       &
+    'usage: truchas [options] infile                                       ', &
+    '                                                                      ', &
+    'options:                                                              ', &
+    '  -v:n          verbose level (0, 1, 2)                               ', &
+    '  -o:filename   output filename root                                  ', &
+    '  -r:filename   restart path/filename                                 ', &
+    '  -m            turn on memory diagnostics                            ', &
+    '  -g:n          output group size                                     ', &
+    '  -f            force overwrite of output directory contents          ', &
+    '  -h            help                                                  ' /)
+    
     !---------------------------------------------------------------------------
-
+    
     ! mark each flag as "unset"
     v = .false.                         ! verbose
     o = .false.                         ! output path
@@ -534,6 +536,7 @@ call hijack_truchas ()
     h = .false.                         ! help
     f = .false.                         ! input file
     g = .false.                         ! h5 output group size
+    overwrite_output = .false.
     ! there must be at least one argument
     if (SIZE(argv) < 2) then
        call TLS_error ('insufficient arguments')
@@ -694,6 +697,8 @@ call hijack_truchas ()
              else
                 call GET_TOKEN(restart_file,2,string,':')
              end if
+          case ('f')
+             overwrite_output = .true.
           case default
              call TLS_error ('invalid argument ' // trim(string))
              call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
