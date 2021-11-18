@@ -6,7 +6,7 @@ program test_pressure_poisson
   use parallel_util_module, only: parallel_init
   use parallel_communication
   use pgslib_module
-  use truchas_env, only: prefix
+  use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
   use flow_operators
@@ -24,6 +24,7 @@ program test_pressure_poisson
 
   call parallel_init(argv)
   call init_parallel_communication
+  overwrite_output = .true.
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize()
   call TLS_set_verbosity(TLS_VERB_NOISY)

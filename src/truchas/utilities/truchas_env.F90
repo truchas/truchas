@@ -26,6 +26,8 @@ module truchas_env
   ! Stuff formerly in output_data_dir
   character(256), public :: prefix, input_dir, output_dir, title, input_file
 
+  logical, public :: overwrite_output
+
 contains
 
   !! A simplified replacement for make_file_name.  Given a string EXT, it

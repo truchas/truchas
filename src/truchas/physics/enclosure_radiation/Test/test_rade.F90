@@ -12,7 +12,7 @@ program test_rade
   use pgslib_module
   use parallel_util_module, only: parallel_init
   use parallel_communication
-  use truchas_env, only: prefix, input_dir
+  use truchas_env, only: prefix, input_dir, overwrite_output
   use truchas_logging_services
   use unstr_mesh_type
   use rad_problem_type
@@ -33,6 +33,7 @@ program test_rade
   call init_parallel_communication ()
 
   !! Initialize Logging
+  overwrite_output = .true.
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize ()
   call TLS_set_verbosity (TLS_VERB_NOISY)
