@@ -31,6 +31,7 @@ program vizre
   real, allocatable :: patch_var(:)
   real, allocatable :: face_var(:)
 
+  stat = 0
   call scl_init()
   is_IOP = (scl_rank()==1)
   nvar = 0
