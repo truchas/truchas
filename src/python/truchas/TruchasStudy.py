@@ -37,7 +37,7 @@ class TruchasStudy:
         self._working_dir = "parameter_study_inputs"
 
 
-    def do_1d_parameter_study(self, initial_parameters, variable, points,
+    def do_1d_parameter_study(self, template_input_file, initial_parameters, variable, points,
                               output_metrics, output_filename,
                               replacement_parameters=None,
                               extra_outputs=None):
@@ -113,7 +113,7 @@ class TruchasStudy:
                 identifier = TruchasDatabase.identifier(replacements)
                 input_file = f"{identifier}.inp"
                 toolpath_file = f"{identifier}.json"
-                self._tenv.generate_input_deck(replacements, "template.inp", input_file)
+                self._tenv.generate_input_deck(replacements, template_input_file, input_file)
                 if os.path.isfile("template.json"):
                     self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
                 print("done.")
@@ -141,7 +141,8 @@ class TruchasStudy:
             print()
 
 
-    def generate_1d_parameter_study_inputs(self, initial_parameters, variable, points,
+    def generate_1d_parameter_study_inputs(self, template_input_file,
+                                           initial_parameters, variable, points,
                                            replacement_parameters=None):
         """Generate input decks across a given span of data points. This is
         intended for generating inputs to then be simulated on a cluster.
@@ -163,7 +164,7 @@ class TruchasStudy:
             print(identifier, os.path.isfile(input_file), replacements)
 
             if not os.path.isfile(input_file):
-                self._tenv.generate_input_deck(replacements, "template.inp", input_file)
+                self._tenv.generate_input_deck(replacements, template_input_file, input_file)
                 if os.path.isfile("template.json"):
                     self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
         print()
