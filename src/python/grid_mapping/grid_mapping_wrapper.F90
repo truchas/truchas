@@ -128,7 +128,7 @@ contains
     use parallel_util_module, only: parallel_init
     use parallel_communication
     use pgslib_module
-    use truchas_env, only: prefix
+    use truchas_env, only: prefix, overwrite_output
     use truchas_logging_services
 
     character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
@@ -136,6 +136,7 @@ contains
     call parallel_init(argv)
     call init_parallel_communication
     prefix = 'grid-mapper' ! TLS will write to 'grid-mapper.log'
+    overwrite_output = .true.
     call TLS_initialize
 
     mpi_initialized = .true.
