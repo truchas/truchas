@@ -32,14 +32,14 @@ specific heat.
   high_temp_phase = 'liquid'
   solidus_temp = 9.0
   liquidus_temp = 10.0
-  latent_heat = 0
+  latent_heat = 0.0
 /
 
 &BODY
   surface_name = 'from mesh file'
   mesh_material_number = 1
   material_name = 'liquid'
-  temperature = 12.0
+  temperature = 12
 /
 
 &MESH
@@ -61,7 +61,7 @@ specific heat.
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 0.02
+  nlk_tol            = 2.0e-4
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /

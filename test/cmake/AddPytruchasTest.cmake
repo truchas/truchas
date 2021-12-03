@@ -64,6 +64,8 @@ FUNCTION(ADD_PYTRUCHAS_TEST test_name test_script)
 
   if ( MY_ARG_TIMEOUT )
     list(APPEND test_properties TIMEOUT ${MY_ARG_TIMEOUT})
+  else()
+    list(APPEND test_properties TIMEOUT "120")
   endif()
 
   if (test_properties)
