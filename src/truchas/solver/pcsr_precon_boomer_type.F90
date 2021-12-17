@@ -57,13 +57,12 @@ module pcsr_precon_boomer_type
     integer  :: print_level       ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
     integer  :: debug_level       ! OFF=0, ON=1
     integer  :: logging_level     ! OFF=0, ON=1, >1=residual available from hypre
-    !! BoomerAMG parameters -- these are currently hardwired
-    integer  :: coarsen_type = 6  ! Falgout coarsening
-    integer  :: relax_type = 3    ! hybrid Gauss-Seidel smoothing
+    !! BoomerAMG parameters
+    integer  :: coarsen_type, interp_type, relax_down_type, relax_up_type
     integer  :: num_sweeps = 1    ! number of smoother sweeps
     integer  :: max_levels = 25   ! max number of multigrid levels
     real(r8) :: tol = 0.0d0       ! no tolerance -- using as a preconditioner
-    real(r8) :: strong_threshold = 0.5_r8 ! should be 0.5 for 3D problems and 0.25 for 2D
+    real(r8) :: strong_threshold
   contains
     procedure :: init
     procedure :: compute
@@ -159,6 +158,41 @@ contains
       return
     end if
 
+    !! Hypre's default coarsening technique is type 10 (v2.23)
+    call params%get('coarsen-type', this%coarsen_type, default=10, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+
+    !! Default is 0.5, Hypre's recommendation for 3D (heat transfer?)
+    call params%get('strong-threshold', this%strong_threshold, default=0.5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+
+    !! Hypre's default interpolation technique is type 6 (v2.23)
+    call params%get('interp-type', this%interp_type, default=6, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+
+    !! Hypre's default relaxation technique on down cycles is type 13 (v2.23)
+    call params%get('relax-down-type', this%relax_down_type, default=13, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+
+    !! Hypre's default relaxation technique on up cycles is type 14 (v2.23)
+    call params%get('relax-up-type', this%relax_up_type, default=14, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+
   end subroutine init
 
   subroutine compute(this)
@@ -187,7 +221,9 @@ contains
     !! Set the Boomer AMG parameters.
     call fHYPRE_BoomerAMGSetPrintLevel  (this%solver, this%print_level, ierr)
     call fHYPRE_BoomerAMGSetCoarsenType (this%solver, this%coarsen_type, ierr)
-    call fHYPRE_BoomerAMGSetRelaxType   (this%solver, this%relax_type, ierr)
+    call fHYPRE_BoomerAMGSetInterpType  (this%solver, this%interp_type, ierr)
+    call fHYPRE_BoomerAMGSetCycleRelaxType (this%solver, this%relax_down_type, 1, ierr)
+    call fHYPRE_BoomerAMGSetCycleRelaxType (this%solver, this%relax_up_type, 2, ierr)
     call fHYPRE_BoomerAMGSetNumSweeps   (this%solver, this%num_sweeps, ierr)
     call fHYPRE_BoomerAMGSetMaxLevels   (this%solver, this%max_levels, ierr)
     call fHYPRE_BoomerAMGSetMaxIter     (this%solver, this%max_iter, ierr)
