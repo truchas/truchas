@@ -78,9 +78,11 @@ will still be very small.
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 0.02
+  nlk_tol            = 0.001
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  hypre_amg_relax_down_type = 18
+  hypre_amg_relax_up_type = 18
 /
 
 &NUMERICS

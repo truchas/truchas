@@ -40,12 +40,12 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-5
+  rel_temp_tol       = 1.0e-4
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-5
+  rel_enthalpy_tol   = 1.0e-4
   abs_conc_tol       = 0.0
-  rel_conc_tol       = 1.0e-5
-  nlk_tol            = 1e-5
+  rel_conc_tol       = 1.0e-4
+  nlk_tol            = 1e-4
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
 /

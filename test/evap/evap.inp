@@ -36,7 +36,7 @@ Parameters conspire to yield a flux of 1.0 at temperature 3.0
   rel_temp_tol       = 1.0e-4
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-4
-  nlk_tol            = 0.01
+  nlk_tol            = 0.001
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /

@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 21.06-10-geff71803-dirty
+   code:                Truchas 21.11-4-g37dae232
    build architecture:  x86_64
-   build date/time:     2021-07-29 16:44:12
-   build flags:          -fimplicit-none -ffree-line-length-none -O3 -DNDEBUG
-   build host:          theseus
-   run architecture:    Linux theseus 5.10.52-1-lts #1 SMP Tue, 20 Jul
-   run host:            theseus
-   run date/time:       30 Jul 21 15:16:24
+   build date/time:     2021-12-17 07:53:53
+   build flags:          -u -O0 -C -C=dangling -gline -nan
+   build host:          thelio.indiana
+   run architecture:    Linux thelio.indiana 5.14.18-100.fc33.x86_64 #1
+   run host:            thelio.indiana
+   run date/time:       17 Dec 21 21:20:09
    processors:          1
 
 ================================================================================
@@ -41,7 +41,7 @@ Reading NUMERICS namelist ...
 
 Reading SOLID_MECHANICS namelist ...
 
-Reading SM_BC namelists ...
+Reading SOLID_MECHANICS_BC namelists ...
 Reading DIFFUSION_SOLVER namelist ...
   using default STEPPING_METHOD value: "Adaptive BDF2"
   using default MAX_NLK_ITR value: 5
@@ -79,14 +79,15 @@ Computing initial volume fractions ...
   using SM_BC[gap interface]
 SM BC faces:    112
 SM BC nodes/links:    126    25
-SM-D1 nodes:     46
-SM-D2 nodes:     26
-SM-D3 nodes:      4
-SM-C1 nodes:     24
+SM-C0D1 nodes:     46
+SM-C0D2 nodes:     26
+SM-C0D3 nodes:      4
+SM-C1D0 nodes:     24
 SM-C1D1 nodes:     22
 SM-C1D2 nodes:      4
 Nodes with requested BCs:    126    Nodes with applied BCs:    126
 SM: Computing initial state...
+  NLK BCE solve succeeded:     90 iterations, error=    1.605E-08    7.854E-15
 
 
 Initializing diffusion solver ...
@@ -99,6 +100,8 @@ Initializing diffusion solver ...
     none specified
   generating "flux" thermal boundary condition
     using THERMAL_BC[lateral sides]
+  generating "oriented-flux" thermal boundary condition
+    none specified
   generating "htc" thermal boundary condition
     none specified
   generating "radiation" thermal boundary condition
@@ -112,7 +115,7 @@ Computing consistent initial state for HT/SD solver ...
 
 Computing consistent initial state derivative for HT/SD solver ...
   computing consistent face temperatures and radiosities ...
-  ||Rface(2)||= 5.54E-05, ||Rface(0)||= 5.27E-02, ||ΔTface||_max= 3.17E-05
+  ||Rface(3)||= 4.87E-07, ||Rface(0)||= 5.27E-02, ||ΔTface||_max= 3.37E-06
 
 Initializing solution probes ...
 
@@ -122,230 +125,455 @@ EXECUTION
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E+00
 
-DS: dt=1.000E+00, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.000E+00, NFUN:NPC=0000003:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     63 iterations, error=    3.434E-08    9.734E-15
 
           2: t =   1.00000E+00, dt(diffusion solver) =   1.00000E+00
 
-DS: dt=1.000E+00, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.000E+00, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     69 iterations, error=    2.647E-08    8.405E-15
 
           3: t =   2.00000E+00, dt(diffusion solver) =   1.00000E+00
 
-DS: dt=1.000E+00, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.000E+00, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     71 iterations, error=    2.905E-08    8.603E-15
 
           4: t =   3.00000E+00, dt(diffusion solver) =   1.00000E+00
 
-DS: dt=1.000E+00, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.000E+00, NFUN:NPC=0000012:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     71 iterations, error=    2.829E-08    8.422E-15
 
-          5: t =   4.00000E+00, dt(diffusion solver) =   2.67971E+00
+          5: t =   4.00000E+00, dt(diffusion solver) =   8.64208E-01
 
-DS: dt=2.680E+00, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=8.642E-01, NFUN:NPC=0000015:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     71 iterations, error=    2.242E-08    6.988E-15
 
-          6: t =   6.67971E+00, dt(diffusion solver) =   2.48307E+00
+          6: t =   4.86421E+00, dt(diffusion solver) =   1.16186E+00
 
-DS: dt=2.483E+00, NFUN:NPC=0000017:00001, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.162E+00, NFUN:NPC=0000018:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     72 iterations, error=    1.826E-08    7.458E-15
 
-          7: t =   9.16278E+00, dt(diffusion solver) =   4.87834E+00
+          7: t =   6.02606E+00, dt(diffusion solver) =   1.31786E+00
 
-DS: dt=4.878E+00, NFUN:NPC=0000020:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.318E+00, NFUN:NPC=0000021:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     73 iterations, error=    2.989E-08    9.607E-15
 
-          8: t =   1.40411E+01, dt(diffusion solver) =   3.76068E+00
+          8: t =   7.34393E+00, dt(diffusion solver) =   2.05255E+00
 
-DS: dt=3.761E+00, NFUN:NPC=0000023:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=2.053E+00, NFUN:NPC=0000025:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     76 iterations, error=    2.431E-08    7.592E-15
 
-          9: t =   1.78018E+01, dt(diffusion solver) =   3.82762E+00
+          9: t =   9.39648E+00, dt(diffusion solver) =   1.80572E+00
 
-DS: dt=3.828E+00, NFUN:NPC=0000026:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.806E+00, NFUN:NPC=0000029:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     76 iterations, error=    3.146E-08    9.227E-15
 
-         10: t =   2.16294E+01, dt(diffusion solver) =   4.00100E+00
+         10: t =   1.12022E+01, dt(diffusion solver) =   1.78274E+00
 
-DS: dt=4.001E+00, NFUN:NPC=0000029:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.783E+00, NFUN:NPC=0000033:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     77 iterations, error=    2.443E-08    8.883E-15
 
-         11: t =   2.56304E+01, dt(diffusion solver) =   3.81369E+00
+         11: t =   1.29849E+01, dt(diffusion solver) =   1.83808E+00
 
-DS: dt=3.814E+00, NFUN:NPC=0000032:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.838E+00, NFUN:NPC=0000037:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     78 iterations, error=    2.154E-08    8.193E-15
 
-         12: t =   2.94441E+01, dt(diffusion solver) =   3.97628E+00
+         12: t =   1.48230E+01, dt(diffusion solver) =   1.81795E+00
 
-DS: dt=3.976E+00, NFUN:NPC=0000035:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.818E+00, NFUN:NPC=0000041:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     78 iterations, error=    2.338E-08    9.164E-15
 
-         13: t =   3.34204E+01, dt(time) =   3.73795E+00
+         13: t =   1.66410E+01, dt(diffusion solver) =   1.81801E+00
 
-DS: dt=3.738E+00, NFUN:NPC=0000038:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.818E+00, NFUN:NPC=0000045:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     79 iterations, error=    2.129E-08    7.874E-15
 
-         14: t =   3.71583E+01, dt(time) =   3.51391E+00
+         14: t =   1.84590E+01, dt(diffusion solver) =   1.82049E+00
 
-DS: dt=3.514E+00, NFUN:NPC=0000041:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.820E+00, NFUN:NPC=0000049:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     79 iterations, error=    2.015E-08    8.558E-15
 
-         15: t =   4.06722E+01, dt(time) =   3.30329E+00
+         15: t =   2.02795E+01, dt(diffusion solver) =   1.81523E+00
 
-DS: dt=3.303E+00, NFUN:NPC=0000044:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.815E+00, NFUN:NPC=0000053:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     79 iterations, error=    1.928E-08    9.007E-15
 
-         16: t =   4.39755E+01, dt(time) =   3.10530E+00
+         16: t =   2.20947E+01, dt(diffusion solver) =   1.82148E+00
 
-DS: dt=3.105E+00, NFUN:NPC=0000047:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.821E+00, NFUN:NPC=0000057:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     79 iterations, error=    1.897E-08    9.428E-15
 
-         17: t =   4.70808E+01, dt(time) =   2.91918E+00
+         17: t =   2.39162E+01, dt(diffusion solver) =   1.82068E+00
 
-DS: dt=2.919E+00, NFUN:NPC=0000050:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.821E+00, NFUN:NPC=0000061:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.035E-08    7.949E-15
 
-         18: t =   5.00000E+01, dt(time) =   1.84010E+00
+         18: t =   2.57369E+01, dt(diffusion solver) =   1.82381E+00
 
-DS: dt=1.840E+00, NFUN:NPC=0000053:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.824E+00, NFUN:NPC=0000065:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.106E-08    8.343E-15
 
-         19: t =   5.18401E+01, dt(time) =   1.15990E+00
+         19: t =   2.75607E+01, dt(diffusion solver) =   1.82408E+00
 
-DS: dt=1.160E+00, NFUN:NPC=0000056:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.824E+00, NFUN:NPC=0000069:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.162E-08    8.658E-15
 
-         20: t =   5.30000E+01, dt(diffusion solver) =   4.63961E+00
+         20: t =   2.93848E+01, dt(diffusion solver) =   1.82537E+00
 
-DS: dt=4.640E+00, NFUN:NPC=0000059:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.825E+00, NFUN:NPC=0000073:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.209E-08    8.923E-15
 
-         21: t =   5.76396E+01, dt(diffusion solver) =   3.62487E+00
+         21: t =   3.12101E+01, dt(diffusion solver) =   1.82608E+00
 
-DS: dt=3.625E+00, NFUN:NPC=0000062:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.826E+00, NFUN:NPC=0000077:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.250E-08    9.147E-15
 
-         22: t =   6.12645E+01, dt(diffusion solver) =   4.01495E+00
+         22: t =   3.30362E+01, dt(diffusion solver) =   1.82706E+00
 
-DS: dt=4.015E+00, NFUN:NPC=0000065:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.827E+00, NFUN:NPC=0000081:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.294E-08    9.332E-15
 
-         23: t =   6.52794E+01, dt(diffusion solver) =   4.02828E+00
+         23: t =   3.48633E+01, dt(diffusion solver) =   1.82804E+00
 
-DS: dt=4.028E+00, NFUN:NPC=0000068:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.828E+00, NFUN:NPC=0000085:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.334E-08    9.484E-15
 
-         24: t =   6.93077E+01, dt(diffusion solver) =   3.92933E+00
+         24: t =   3.66913E+01, dt(diffusion solver) =   1.82907E+00
 
-DS: dt=3.929E+00, NFUN:NPC=0000071:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.829E+00, NFUN:NPC=0000089:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.371E-08    9.612E-15
 
-         25: t =   7.32370E+01, dt(diffusion solver) =   4.00323E+00
+         25: t =   3.85204E+01, dt(diffusion solver) =   1.83014E+00
 
-DS: dt=4.003E+00, NFUN:NPC=0000074:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.830E+00, NFUN:NPC=0000093:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.408E-08    9.722E-15
 
-         26: t =   7.72403E+01, dt(diffusion solver) =   3.96598E+00
+         26: t =   4.03505E+01, dt(diffusion solver) =   1.83121E+00
 
-DS: dt=3.966E+00, NFUN:NPC=0000077:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.831E+00, NFUN:NPC=0000097:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.439E-08    9.798E-15
 
-         27: t =   8.12063E+01, dt(diffusion solver) =   4.00371E+00
+         27: t =   4.21817E+01, dt(time) =   1.73563E+00
 
-DS: dt=4.004E+00, NFUN:NPC=0000080:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.736E+00, NFUN:NPC=0000101:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.336E-08    9.328E-15
 
-         28: t =   8.52100E+01, dt(diffusion solver) =   3.99528E+00
+         28: t =   4.39174E+01, dt(time) =   1.64503E+00
 
-DS: dt=3.995E+00, NFUN:NPC=0000083:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.645E+00, NFUN:NPC=0000105:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.233E-08    8.873E-15
 
-         29: t =   8.92053E+01, dt(diffusion solver) =   4.00254E+00
+         29: t =   4.55624E+01, dt(time) =   1.55917E+00
 
-DS: dt=4.003E+00, NFUN:NPC=0000086:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.559E+00, NFUN:NPC=0000109:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.126E-08    8.419E-15
 
-         30: t =   9.32078E+01, dt(diffusion solver) =   4.00237E+00
+         30: t =   4.71216E+01, dt(time) =   1.47779E+00
 
-DS: dt=4.002E+00, NFUN:NPC=0000089:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.478E+00, NFUN:NPC=0000113:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.021E-08    7.974E-15
 
-         31: t =   9.72102E+01, dt(diffusion solver) =   4.00292E+00
+         31: t =   4.85994E+01, dt(time) =   1.40065E+00
 
-DS: dt=4.003E+00, NFUN:NPC=0000092:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.401E+00, NFUN:NPC=0000116:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    1.916E-08    7.540E-15
 
-         32: t =   1.01213E+02, dt(diffusion solver) =   4.84526E+00
-Diffusion solver step failed; retrying with reduced step size
+         32: t =   5.00000E+01, dt(time) =   1.17758E+00
 
-DS: dt=2.423E+00, NFUN:NPC=0000099:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.178E+00, NFUN:NPC=0000119:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.673E-08    9.291E-15
 
-         33: t =   1.03636E+02, dt(diffusion solver) =   1.45661E+00
+         33: t =   5.11776E+01, dt(time) =   9.90044E-01
 
-DS: dt=1.457E+00, NFUN:NPC=0000103:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=9.900E-01, NFUN:NPC=0000122:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     82 iterations, error=    2.472E-08    9.596E-15
 
-         34: t =   1.05092E+02, dt(diffusion solver) =   2.47921E+00
+         34: t =   5.21676E+01, dt(time) =   8.32371E-01
 
-DS: dt=2.479E+00, NFUN:NPC=0000106:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=8.324E-01, NFUN:NPC=0000124:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    2.398E-08    8.694E-15
 
-         35: t =   1.07572E+02, dt(diffusion solver) =   2.14246E+00
+         35: t =   5.30000E+01, dt(diffusion solver) =   2.51575E+00
 
-DS: dt=2.142E+00, NFUN:NPC=0000109:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=2.516E+00, NFUN:NPC=0000128:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     87 iterations, error=    2.737E-08    8.787E-15
 
-         36: t =   1.09714E+02, dt(diffusion solver) =   3.95678E+00
+         36: t =   5.55157E+01, dt(diffusion solver) =   1.52968E+00
 
-DS: dt=3.957E+00, NFUN:NPC=0000112:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.530E+00, NFUN:NPC=0000132:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     85 iterations, error=    3.128E-08    9.772E-15
 
-         37: t =   1.13671E+02, dt(maximum) =   5.00000E+00
+         37: t =   5.70454E+01, dt(diffusion solver) =   1.86749E+00
 
-DS: dt=5.000E+00, NFUN:NPC=0000114:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.867E+00, NFUN:NPC=0000136:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     85 iterations, error=    2.974E-08    7.342E-15
 
-         38: t =   1.18671E+02, dt(maximum) =   5.00000E+00
+         38: t =   5.89129E+01, dt(diffusion solver) =   1.86864E+00
 
-DS: dt=5.000E+00, NFUN:NPC=0000116:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.869E+00, NFUN:NPC=0000140:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     82 iterations, error=    4.609E-08    8.905E-15
 
-         39: t =   1.23671E+02, dt(maximum) =   5.00000E+00
+         39: t =   6.07816E+01, dt(diffusion solver) =   1.80656E+00
 
-DS: dt=5.000E+00, NFUN:NPC=0000118:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.807E+00, NFUN:NPC=0000144:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     82 iterations, error=    1.815E-08    5.680E-15
 
-         40: t =   1.28671E+02, dt(time) =   4.73763E+00
+         40: t =   6.25881E+01, dt(diffusion solver) =   1.85901E+00
 
-DS: dt=4.738E+00, NFUN:NPC=0000120:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.859E+00, NFUN:NPC=0000148:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     83 iterations, error=    3.770E-08    9.547E-15
 
-         41: t =   1.33408E+02, dt(time) =   4.48903E+00
+         41: t =   6.44471E+01, dt(diffusion solver) =   1.83121E+00
 
-DS: dt=4.489E+00, NFUN:NPC=0000121:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.831E+00, NFUN:NPC=0000152:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     83 iterations, error=    3.644E-08    8.929E-15
 
-         42: t =   1.37897E+02, dt(time) =   4.25348E+00
+         42: t =   6.62783E+01, dt(diffusion solver) =   1.85114E+00
 
-DS: dt=4.253E+00, NFUN:NPC=0000123:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.851E+00, NFUN:NPC=0000156:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     85 iterations, error=    1.506E-08    7.347E-15
 
-         43: t =   1.42151E+02, dt(time) =   4.03028E+00
+         43: t =   6.81295E+01, dt(diffusion solver) =   1.84440E+00
 
-DS: dt=4.030E+00, NFUN:NPC=0000125:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.844E+00, NFUN:NPC=0000160:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     86 iterations, error=    2.409E-08    9.989E-15
 
-         44: t =   1.46181E+02, dt(time) =   3.81880E+00
+         44: t =   6.99739E+01, dt(diffusion solver) =   1.84986E+00
 
-DS: dt=3.819E+00, NFUN:NPC=0000126:00002, NNR:NNF:NSR=0000:0000:0001
+DS: dt=1.850E+00, NFUN:NPC=0000164:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     84 iterations, error=    1.468E-08    7.054E-15
+
+         45: t =   7.18237E+01, dt(diffusion solver) =   1.84934E+00
+
+DS: dt=1.849E+00, NFUN:NPC=0000168:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     85 iterations, error=    3.505E-08    8.757E-15
+
+         46: t =   7.36731E+01, dt(diffusion solver) =   1.85075E+00
+
+DS: dt=1.851E+00, NFUN:NPC=0000172:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     88 iterations, error=    3.938E-08    6.641E-15
+
+         47: t =   7.55238E+01, dt(diffusion solver) =   1.85155E+00
+
+DS: dt=1.852E+00, NFUN:NPC=0000176:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     85 iterations, error=    3.924E-08    9.820E-15
+
+         48: t =   7.73754E+01, dt(diffusion solver) =   1.85231E+00
+
+DS: dt=1.852E+00, NFUN:NPC=0000180:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     87 iterations, error=    2.594E-08    8.968E-15
+
+         49: t =   7.92277E+01, dt(diffusion solver) =   1.85320E+00
+
+DS: dt=1.853E+00, NFUN:NPC=0000184:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     86 iterations, error=    2.565E-08    7.608E-15
+
+         50: t =   8.10809E+01, dt(diffusion solver) =   1.85389E+00
+
+DS: dt=1.854E+00, NFUN:NPC=0000188:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     88 iterations, error=    3.416E-08    7.852E-15
+
+         51: t =   8.29348E+01, dt(diffusion solver) =   1.85465E+00
+
+DS: dt=1.855E+00, NFUN:NPC=0000192:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     86 iterations, error=    1.822E-08    8.098E-15
+
+         52: t =   8.47894E+01, dt(diffusion solver) =   1.85527E+00
+
+DS: dt=1.855E+00, NFUN:NPC=0000196:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     84 iterations, error=    3.247E-08    8.708E-15
+
+         53: t =   8.66447E+01, dt(diffusion solver) =   1.85587E+00
+
+DS: dt=1.856E+00, NFUN:NPC=0000200:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     86 iterations, error=    2.781E-08    7.266E-15
+
+         54: t =   8.85006E+01, dt(diffusion solver) =   1.85640E+00
+
+DS: dt=1.856E+00, NFUN:NPC=0000204:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     82 iterations, error=    4.877E-08    8.597E-15
+
+         55: t =   9.03570E+01, dt(diffusion solver) =   1.85687E+00
+
+DS: dt=1.857E+00, NFUN:NPC=0000208:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     78 iterations, error=    1.532E-08    9.292E-15
+
+         56: t =   9.22138E+01, dt(diffusion solver) =   1.85727E+00
+
+DS: dt=1.857E+00, NFUN:NPC=0000212:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     80 iterations, error=    9.512E-09    8.269E-15
+
+         57: t =   9.40711E+01, dt(diffusion solver) =   1.85761E+00
+
+DS: dt=1.858E+00, NFUN:NPC=0000216:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     79 iterations, error=    3.033E-08    8.622E-15
+
+         58: t =   9.59287E+01, dt(diffusion solver) =   1.85788E+00
+
+DS: dt=1.858E+00, NFUN:NPC=0000220:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     77 iterations, error=    1.604E-08    6.223E-15
+
+         59: t =   9.77866E+01, dt(diffusion solver) =   1.85807E+00
+
+DS: dt=1.858E+00, NFUN:NPC=0000224:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     76 iterations, error=    3.485E-08    9.750E-15
+
+         60: t =   9.96447E+01, dt(diffusion solver) =   1.85818E+00
+
+DS: dt=1.858E+00, NFUN:NPC=0000228:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     75 iterations, error=    2.741E-08    6.754E-15
+
+         61: t =   1.01503E+02, dt(diffusion solver) =   4.93063E-01
+
+DS: dt=4.931E-01, NFUN:NPC=0000231:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     68 iterations, error=    2.471E-08    8.614E-15
+
+         62: t =   1.01996E+02, dt(diffusion solver) =   5.57731E-01
+
+DS: dt=5.577E-01, NFUN:NPC=0000234:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     69 iterations, error=    2.157E-08    9.100E-15
+
+         63: t =   1.02554E+02, dt(diffusion solver) =   8.25593E-01
+
+DS: dt=8.256E-01, NFUN:NPC=0000237:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     69 iterations, error=    2.167E-08    8.936E-15
+
+         64: t =   1.03379E+02, dt(diffusion solver) =   7.93464E-01
+
+DS: dt=7.935E-01, NFUN:NPC=0000240:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     67 iterations, error=    1.891E-08    7.174E-15
+
+         65: t =   1.04173E+02, dt(diffusion solver) =   1.07543E+00
+
+DS: dt=1.075E+00, NFUN:NPC=0000243:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     65 iterations, error=    2.174E-08    7.514E-15
+
+         66: t =   1.05248E+02, dt(diffusion solver) =   1.16796E+00
+
+DS: dt=1.168E+00, NFUN:NPC=0000246:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     64 iterations, error=    2.736E-08    5.172E-15
+
+         67: t =   1.06416E+02, dt(diffusion solver) =   1.49066E+00
+
+DS: dt=1.491E+00, NFUN:NPC=0000249:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     63 iterations, error=    2.772E-08    7.950E-15
+
+         68: t =   1.07907E+02, dt(diffusion solver) =   1.78474E+00
+
+DS: dt=1.785E+00, NFUN:NPC=0000252:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     60 iterations, error=    2.553E-08    8.310E-15
+
+         69: t =   1.09691E+02, dt(diffusion solver) =   2.32552E+00
+
+DS: dt=2.326E+00, NFUN:NPC=0000255:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     56 iterations, error=    2.845E-08    8.889E-15
+
+         70: t =   1.12017E+02, dt(diffusion solver) =   3.09363E+00
+
+DS: dt=3.094E+00, NFUN:NPC=0000258:00001, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     45 iterations, error=    1.510E-08    7.691E-15
+
+         71: t =   1.15111E+02, dt(diffusion solver) =   4.55108E+00
+
+DS: dt=4.551E+00, NFUN:NPC=0000260:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     53 iterations, error=    1.170E-08    9.484E-15
+
+         72: t =   1.19662E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000262:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     52 iterations, error=    1.225E-08    6.698E-15
+
+         73: t =   1.24662E+02, dt(maximum) =   5.00000E+00
+
+DS: dt=5.000E+00, NFUN:NPC=0000264:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     48 iterations, error=    3.047E-08    8.479E-15
+
+         74: t =   1.29662E+02, dt(time) =   4.65991E+00
+
+DS: dt=4.660E+00, NFUN:NPC=0000266:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     33 iterations, error=    2.696E-08    9.565E-15
+
+         75: t =   1.34322E+02, dt(time) =   4.34295E+00
+
+DS: dt=4.343E+00, NFUN:NPC=0000268:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     40 iterations, error=    2.584E-08    6.255E-15
+
+         76: t =   1.38665E+02, dt(time) =   4.04755E+00
+
+DS: dt=4.048E+00, NFUN:NPC=0000270:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     38 iterations, error=    3.651E-08    9.126E-15
+
+         77: t =   1.42712E+02, dt(time) =   3.77224E+00
+
+DS: dt=3.772E+00, NFUN:NPC=0000271:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     34 iterations, error=    1.183E-08    9.332E-15
+
+         78: t =   1.46484E+02, dt(time) =   3.51565E+00
+
+DS: dt=3.516E+00, NFUN:NPC=0000272:00002, NNR:NNF:NSR=0000:0000:0000
+  NLK BCE solve succeeded:     30 iterations, error=    1.874E-08    9.072E-15
 
 ================================================================================
 
 TERMINATION
-                 Final Time:  1.5000E+02 after    44 steps
+                 Final Time:  1.5000E+02 after    78 steps
 
 
 TIMING SUMMARY
 --------------
-  3.158E-01 --- Total
-    3.027E-03 --- Input
-    2.536E-02 --- Initialization
-      1.113E-03 --- mesh-MAIN
-        4.888E-05 --- ghost-cells
-          4.019E-05 --- cell-ghosts
-            2.484E-05 --- node-neighbors
-            4.810E-06 --- ghost-cells
-          2.200E-07 --- link-ghosts
-          7.460E-06 --- assemble-ghosts
-      9.700E-06 --- VOF Initialize
-      2.069E-02 --- solid mechanics
-        4.944E-05 --- properties
-        2.359E-04 --- precon-compute
-          2.040E-04 --- residual
-        1.453E-02 --- residual
-        6.588E-05 --- precon-apply
-      8.884E-05 --- HTSD function
-        8.651E-05 --- HT function
-      3.020E-06 --- ssor-setup
-      1.619E-05 --- ssor-solve
-    5.900E-06 --- electromagnetics
-    2.834E-01 --- Main Cycle
-      1.614E-05 --- Time Step
-      7.046E-03 --- Diffusion Solver
-        1.092E-03 --- HTSD precon compute
-          1.063E-04 --- hypre-matrix-copy
-          8.598E-04 --- boomer-setup
-        9.743E-04 --- HTSD function
-          9.445E-04 --- HT function
-        3.777E-03 --- HTSD precon apply
-          3.767E-03 --- HT precon apply
-            3.571E-03 --- boomer-solve
-      2.677E-01 --- solid mechanics
-        9.764E-04 --- properties
-        4.584E-03 --- precon-compute
-          4.184E-03 --- residual
-        2.199E-01 --- residual
-        1.067E-03 --- precon-apply
+  7.330E+00 --- Total
+    5.013E-03 --- Input
+    1.662E-01 --- Initialization
+      8.542E-03 --- mesh-MAIN
+        1.575E-03 --- ghost-cells
+          1.539E-03 --- cell-ghosts
+            7.940E-04 --- node-neighbors
+            1.860E-04 --- ghost-cells
+          6.000E-06 --- link-ghosts
+          2.600E-05 --- assemble-ghosts
+      4.700E-05 --- VOF Initialize
+      1.261E-01 --- solid mechanics
+        3.640E-04 --- properties
+        1.091E-03 --- precon-compute
+          9.780E-04 --- residual
+            5.060E-04 --- strain
+            4.450E-04 --- stress
+            7.000E-06 --- BCs
+        9.201E-02 --- residual
+          4.456E-02 --- strain
+          3.943E-02 --- stress
+          5.555E-03 --- BCs
+        7.550E-04 --- precon-apply
+      8.340E-04 --- HTSD function
+        8.040E-04 --- HT function
+      1.800E-05 --- ssor-setup
+      2.720E-04 --- ssor-solve
+    8.900E-05 --- electromagnetics
+    7.158E+00 --- Main Cycle
+      1.720E-04 --- Time Step
+      7.966E-02 --- Diffusion Solver
+        2.876E-03 --- HTSD precon compute
+          2.540E-04 --- hypre-matrix-copy
+          8.150E-04 --- boomer-setup
+        3.991E-02 --- HTSD function
+          3.815E-02 --- HT function
+        2.396E-02 --- HTSD precon apply
+          2.391E-02 --- HT precon apply
+            1.167E-02 --- boomer-solve
+      7.055E+00 --- solid mechanics
+        2.960E-02 --- properties
+        8.553E-02 --- precon-compute
+          7.854E-02 --- residual
+            4.063E-02 --- strain
+            3.631E-02 --- stress
+            1.550E-04 --- BCs
+        6.036E+00 --- residual
+          2.908E+00 --- strain
+          2.615E+00 --- stress
+          3.554E-01 --- BCs
+        4.757E-02 --- precon-apply
 
-                  Process virtual memory used: 6.05E+02 mB
-                                   words/cell: 1239528
+                  Process virtual memory used: 2.53E+02 mB
+                                   words/cell: 518408
 
-truchas terminated normally on 30 Jul 21 at 15:16:25
+truchas terminated normally on 17 Dec 21 at 21:20:16

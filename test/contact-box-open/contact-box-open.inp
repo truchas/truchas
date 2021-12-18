@@ -21,10 +21,10 @@
 
 &DIFFUSION_SOLVER
   abs_temp_tol = 0.0
-  rel_temp_tol = 5.0e-5
+  rel_temp_tol = 1.0e-5
   abs_enthalpy_tol = 0.0
-  rel_enthalpy_tol = 5.0e-5
-  nlk_tol = 0.05
+  rel_enthalpy_tol = 1.0e-5
+  nlk_tol = 0.01
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles = 2
   verbose_stepping = .true.

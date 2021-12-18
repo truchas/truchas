@@ -33,10 +33,10 @@ Should give the same results
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-3
+  rel_temp_tol       = 1.0e-5
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 1.0e-3
+  rel_enthalpy_tol   = 1.0e-5
+  nlk_tol            = 1.0e-2
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
 /

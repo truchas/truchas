@@ -45,11 +45,11 @@ solid with no fluid present.
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-5
+  rel_temp_tol       = 1.0e-4
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-5
+  rel_enthalpy_tol   = 1.0e-4
   max_nlk_itr        = 5
-  nlk_tol            = 0.05
+  nlk_tol            = 0.005
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /

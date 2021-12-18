@@ -17,12 +17,12 @@ def run_test(tenv):
     # test final temperature
     test = output.field(2, "Z_TEMP")
     gold = golden.field(2, "Z_TEMP")
-    nfail += truchas.compare_max_rel(test, gold, 2e-10, "temp", output.time(2))
+    nfail += truchas.compare_max_rel(test, gold, 1e-8, "temp", output.time(2))
 
     # test final concentration
     test = output.field(2, "phi1")
     gold = golden.field(2, "phi1")
-    nfail += truchas.compare_max_rel(test, gold, 2e-10, "temp", output.time(2))
+    nfail += truchas.compare_max_rel(test, gold, 1e-8, "phi1", output.time(2))
 
     truchas.report_summary(nfail)
     return nfail

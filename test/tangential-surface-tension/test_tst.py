@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "tangential-surface-tension.inp")
-    golden = tenv.output("tangential-surface-tension_pgolden/tangential-surface-tension.h5")
+    golden = tenv.output("tangential-surface-tension_golden/tangential-surface-tension.h5")
 
     # cycle numbers
     for sid in (1, 2, 3):

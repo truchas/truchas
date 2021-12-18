@@ -20,7 +20,7 @@ def run_test(tenv):
         # temperature
         test = output.field(sid, "Z_TEMP")
         gold = golden.field(sid, "Z_TEMP")
-        nfail += truchas.compare_max_rel(test, gold, 1e-10, "temp", time)
+        nfail += truchas.compare_max_rel(test, gold, 1e-8, "temp", time)
 
     truchas.report_summary(nfail)
     return nfail
