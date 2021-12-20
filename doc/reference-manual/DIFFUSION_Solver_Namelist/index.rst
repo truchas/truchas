@@ -210,11 +210,21 @@ Max_Step_Tries
 
 NLK_Preconditioner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : The choice of preconditioner for the NLK iteration. There are currently two preconditioners to choose from: **SSOR** and **HYPRE_AMG**. The former is symmetric over relaxation, and the later is an algebraic multigrid preconditioner from the **hypre** library
+| **Description** : The choice of preconditioner for the NLK iteration. There are currently two preconditioners to choose from: symmetric successive over-relaxation (SSOR) and the BoomerAMG implementation of algebraic multigrid (AMG) from the HYPRE library. AMG is the default preconditioning method and should normally be used; SSOR is intended mainly for developer use.
 | **Type**        : string
-| **Default**     : `SSOR`
-| **Valid Values**: `SSOR` or `Hypre_AMG`
-| **Notes** : If **SSOR** is the chosen as the preconditioner, the user can set :ref:`PC_SSOR_Relax<DIFF_SOL_PSR>` to the overrelaxation parameter and :ref:`PC_SSOR_Sweeps<DIFF_SOL_PSS>` to the number of SSOR sweeps. If Hypre_AMG is chosen as the preconditioner, the user can set :ref:`PC_AMG_Cycles<DIFF_SOL_PAC>` to the number of AMG cycles per preconditioning step.
+| **Default**     : `"hypre_amg"`
+| **Valid Values**: `"ssor"` or `"hypre_amg"`
+| **Notes** : When `"hypre_amg"` is selected, use the variable :ref:`PC_AMG_Cycles<DIFF_SOL_PAC>` to specify the number of AMG V-cycles per preconditioning step. The BoomerAMG implementation supports a great many configuration options, some which may be set using this namelist. The default configuration is generally suitable, but may be modified using the following variables. Refer to the `HYPRE documentation <https://hypre.readthedocs.io/en/latest/solvers-boomeramg.html>`_ on BoomerAMG for details.
+
+* **hypre_amg_strong_threshold** (real, default 0.5)
+* **hypre_amg_coarsen_type** (integer, default 10)
+* **hypre_amg_interp_type** (integer, default 6)
+* **hypre_amg_relax_down_type** (integer, default 13)
+* **hypre_amg_relax_up_type** (integer, default 14)
+
+Note that the variables correspond to similarly named `HYPRE library functions <https://hypre.readthedocs.io/en/latest/api-sol-parcsr.html#>`_ and not actual HYPRE variables.
+
+When `"ssor"` is selected, use the variable :ref:`PC_SSOR_Relax<DIFF_SOL_PSR>` to specify the overrelaxation parameter and :ref:`PC_SSOR_Sweeps<DIFF_SOL_PSS>` to specify the number of SSOR sweeps per preconditioning step.
 
 
 .. _DIFF_SOL_NT:
