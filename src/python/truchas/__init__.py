@@ -23,3 +23,5 @@ from .TruchasMappedData import *
 from .TruchasData import *
 from .TruchasEnvironment import *
 from .TruchasTest import *
+from .TruchasStudy import *
+from .TruchasDatabase import *

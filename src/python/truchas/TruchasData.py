@@ -126,26 +126,15 @@ class TruchasData:
         return np.array(self._series(series_id)[field_name])[self._nodemap]
 
 
-    def probes(self):
-        """Return a list of available probes."""
-        return list(self._root["Simulations/MAIN/Probes"].keys())
-
-
-    def probe_view(self, name):
-        """Return a probe H5 view from it's identifier."""
-        return self._root["Simulations/MAIN/Probes/" + name]
+    def probe_data(self, probe_filename):
+        """Return data from a probe file. Filename is expected to be
+        relative to the directory holding the h5 file."""
+        abs_filename = os.path.join(self.directory, probe_filename)
+        return np.loadtxt(abs_filename)
 
 
     def non_series_data_view(self):
         return self._root["Simulations/MAIN/Non-series Data"]
-
-
-    def probe(self, name, field):
-        """Return probe data that matches the given name and field."""
-        field_regex = r"P\d+:" + field
-        probe = next(probe for probe_name, probe in self._root["Simulations/MAIN/Probes"].items() \
-                     if re.match(field_regex, probe_name) and name == probe.attrs["NAME"].decode())
-        return probe[:]
 
 
     def cell_node_map(self):

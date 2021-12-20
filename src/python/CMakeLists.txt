@@ -20,6 +20,8 @@ set(PYTHON_SCRIPT_FILES
   truchas/TruchasData.py
   truchas/TruchasEnvironment.py
   truchas/TruchasTest.py
+  truchas/TruchasDatabase.py
+  truchas/TruchasStudy.py
   )
 
 set(PYTHON_BIN_FILES
