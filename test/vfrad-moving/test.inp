@@ -12,9 +12,9 @@
 
 &DIFFUSION_SOLVER
   abs_enthalpy_tol = 0.0
-  rel_enthalpy_tol = 1e-3
+  rel_enthalpy_tol = 1e-4
   abs_temp_tol     = 0.0
-  rel_temp_tol     = 1e-3
+  rel_temp_tol     = 1e-2
   nlk_preconditioner = "Hypre_AMG"
   max_nlk_itr = 5
   nlk_tol = 0.001

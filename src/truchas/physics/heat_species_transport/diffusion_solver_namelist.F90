@@ -53,8 +53,10 @@ contains
 
     !! Preconditioner parameters
     integer  :: pc_ssor_sweeps, pc_amg_cycles
-    real(r8) :: pc_ssor_relax
+    real(r8) :: pc_ssor_relax, hypre_amg_strong_threshold
     integer  :: hypre_amg_print_level, hypre_amg_debug_level, hypre_amg_logging_level
+    integer  :: hypre_amg_coarsen_type, hypre_amg_interp_type
+    integer  :: hypre_amg_relax_down_type, hypre_amg_relax_up_type
 
     !! Error tolerances
     real(r8) :: abs_conc_tol, abs_temp_tol, abs_enthalpy_tol
@@ -69,13 +71,15 @@ contains
     real(r8) :: void_temperature
 
     namelist /diffusion_solver/ max_step_tries, abs_conc_tol, rel_conc_tol, &
-                                abs_temp_tol, rel_temp_tol, abs_enthalpy_tol, rel_enthalpy_tol, &
-                                max_nlk_itr, nlk_tol, max_nlk_vec, nlk_vec_tol, pc_freq, &
-                                pc_ssor_sweeps, pc_ssor_relax, verbose_stepping, stepping_method, &
-                                nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
-                                hypre_amg_debug, hypre_amg_logging_level, &
-                                cond_vfrac_threshold, residual_atol, residual_rtol, &
-                                use_new_mfd, void_temperature
+        abs_temp_tol, rel_temp_tol, abs_enthalpy_tol, rel_enthalpy_tol, &
+        max_nlk_itr, nlk_tol, max_nlk_vec, nlk_vec_tol, pc_freq, &
+        pc_ssor_sweeps, pc_ssor_relax, verbose_stepping, stepping_method, &
+        nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
+        hypre_amg_debug, hypre_amg_logging_level, &
+        hypre_amg_coarsen_type, hypre_amg_interp_type, hypre_amg_strong_threshold, &
+        hypre_amg_relax_down_type, hypre_amg_relax_up_type, &
+        cond_vfrac_threshold, residual_atol, residual_rtol, &
+        use_new_mfd, void_temperature
 
     integer, parameter :: DS_SPEC_SYS = 1
     integer, parameter :: DS_TEMP_SYS = 2
@@ -111,6 +115,11 @@ contains
     hypre_amg_print_level = NULL_I
     hypre_amg_logging_level = NULL_I
     hypre_amg_debug = .false.
+    hypre_amg_coarsen_type = NULL_I
+    hypre_amg_interp_type = NULL_I
+    hypre_amg_strong_threshold = NULL_R
+    hypre_amg_relax_down_type = NULL_I
+    hypre_amg_relax_up_type = NULL_I
     verbose_stepping = .false.
     stepping_method = NULL_C
     cond_vfrac_threshold = NULL_R
@@ -143,6 +152,11 @@ contains
     call broadcast(hypre_amg_print_level)
     call broadcast(hypre_amg_logging_level)
     call broadcast(hypre_amg_debug)
+    call broadcast(hypre_amg_coarsen_type)
+    call broadcast(hypre_amg_interp_type)
+    call broadcast(hypre_amg_strong_threshold)
+    call broadcast(hypre_amg_relax_down_type)
+    call broadcast(hypre_amg_relax_up_type)
     call broadcast(verbose_stepping)
     call broadcast(stepping_method)
     call broadcast(cond_vfrac_threshold)
@@ -390,7 +404,7 @@ contains
       ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
       call plist%set('method', 'BoomerAMG')
     case (NULL_C)
-      ds_nlk_pc = DS_NLK_PC_SSOR
+      ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
     case default
       call TLS_fatal ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
     end select
@@ -437,6 +451,21 @@ contains
         call TLS_fatal ('PC_AMG_CYCLES must be > 0')
       endif
       call plist%set('num-cycles', pc_amg_cycles)
+
+      if (hypre_amg_coarsen_type /= NULL_I) &
+        call plist%set('coarsen-type', hypre_amg_coarsen_type)
+
+      if (hypre_amg_interp_type /= NULL_I) &
+        call plist%set('interp-type', hypre_amg_interp_type)
+
+      if (hypre_amg_relax_down_type /= NULL_I) &
+        call plist%set('relax-down-type', hypre_amg_relax_down_type)
+
+      if (hypre_amg_relax_up_type /= NULL_I) &
+        call plist%set('relax-up-type', hypre_amg_relax_up_type)
+
+      if (hypre_amg_strong_threshold /= NULL_R) &
+        call plist%set('strong_threshold', hypre_amg_strong_threshold)
 
       if (hypre_amg_print_level == NULL_I) then
         hypre_amg_print_level = 0

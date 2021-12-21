@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "freezing-flow-3.inp")
-    golden = tenv.output("freezing-flow-3_pgolden/freezing-flow-3.h5")
+    golden = tenv.output("freezing-flow-3_golden/freezing-flow-3.h5")
 
     # early time
     time = output.time(2)
@@ -14,7 +14,7 @@ def run_test(tenv):
                                  1e-7, "temp", time)
     nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-10, "pressure", time)
     nfail += compare_velocity(output.field(2, "Z_VC"), vof, 1e-10, time)
-    nfail += truchas.compare_max(vof, golden.field(2, "VOF")[:,0], 5e-9, "vof", time)
+    nfail += truchas.compare_max(vof, golden.field(2, "VOF")[:,0], 6e-9, "vof", time)
 
     # final time
     time = output.time(3)

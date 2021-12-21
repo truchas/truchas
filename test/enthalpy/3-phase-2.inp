@@ -93,6 +93,8 @@ h(T) = 1 + (T - 2)/2
   nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  hypre_amg_relax_down_type = 18
+  hypre_amg_relax_up_type = 18
 /
 
 &NUMERICS

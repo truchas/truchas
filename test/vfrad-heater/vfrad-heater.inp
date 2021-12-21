@@ -31,7 +31,7 @@
   nlk_preconditioner        = "Hypre_AMG"
   max_nlk_itr               = 5
   max_nlk_vec               = 4
-  nlk_tol                   = 0.05
+  nlk_tol                   = 0.01
   pc_amg_cycles             = 2
   verbose_stepping          = T
 /

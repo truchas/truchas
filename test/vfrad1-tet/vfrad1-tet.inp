@@ -37,10 +37,10 @@ an internal HTC condition.
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 5.0e-4
+  rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 5.0e-4
-  nlk_tol            = 0.05
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.01
   max_nlk_itr        = 10
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.

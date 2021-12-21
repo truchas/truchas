@@ -3,100 +3,47 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas
-   version:             3.1.0-alpha
+   code:                Truchas 21.11-4-g37dae232
    build architecture:  x86_64
-   build date/time:     2019-04-16 15:55:40
-   build flags:         -u -C -C=dangling -gline -nan
-   build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 4.13.16-1
-   run host:            noether.lanl.gov1 SMP Mon Nov 27
-   run date/time:       19 Apr 19 15:53:31
+   build date/time:     2021-12-17 07:53:53
+   build flags:          -u -O0 -C -C=dangling -gline -nan
+   build host:          thelio.indiana
+   run architecture:    Linux thelio.indiana 5.14.18-100.fc33.x86_64 #1
+   run host:            thelio.indiana
+   run date/time:       17 Dec 21 21:50:53
    processors:          1
-
-================================================================================
-
-COPYRIGHT
-
-   Copyright 2007-2019.  Triad National Security, LLC.  All rights reserved.
-
-   This program was produced under U.S. Government contract 89233218CNA000001
-   for Los Alamos National Laboratory (LANL), which is operated by Triad
-   National Security, LLC for the U.S. Department of Energy/National Nuclear
-   Security Administration.
-
-   Truchas is open source software distributed under the 3-Clause BSD License.
 
 ================================================================================
 
 INPUT
 
-Opening input file tangential-surface-tension.inp ...
-
+Opening input file "tangential-surface-tension.inp"
 Reading FUNCTION namelists ...
-
+  none found
 Reading VFUNCTION namelists ...
-
+  none found
 Reading TOOLPATH namelists ...
-
-Reading PHASE namelists ...
-  Reading PHASE namelist #1
-
-Reading MATERIAL_SYSTEM namelists ...
-  Reading MATERIAL_SYSTEM namelist #1
-    using default REFERENCE_TEMP =  0.000E+00
-    using default REFERENCE_ENTHALPY =  0.000E+00
-
+  none found
 Reading PHYSICS namelist ...
-
- Reading OUTPUTS Namelist ...
-
-Reading MESH Namelist ...
-
- Reading MATERIAL Namelist # 1 ...
-This is the last MATERIAL Namelist.
-Identified 1 material(s)
-
-               Material Priorities
-
-         Material     Name     Priority
-         --------     ----     --------
-             1       liquid        1
-
- Reading LINEAR_SOLVER Namelist(s) ...
-Warning: LINEAR_SOLVER namelist not found! Using defaults.
-
-Reading NONLINEAR_SOLVER Namelists ...
-  NONLINEAR_SOLVER namelist not found; using defaults.
-
-Reading INTERFACES namelist ...
-  INTERFACES namelist not found; using defaults
-
- Reading BODY Namelist # 1 ...
-
-                                   Geometry Data
-
-          Body  Material  Surface  Translation  Rotation  Rotation  Surface
-                 Number     Type      Point       Point     Angle  Parameters
-          ----  --------  -------  -----------  --------  -------- ----------
-            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
-                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
-                                    0.000E+00   0.000E+00    0.0    0.000E+00
-         BODY Namelist number  1 will be used for background material ( 1)
-
+Reading MATERIAL namelists ...
+  read namelist "liquid"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+Reading BODY namelists (first pass) ...
+  read 1 BODY namelist
+Reading BODY namelists (second pass) ...
+  read 1 BODY namelist
 Reading NUMERICS namelist ...
-
 Reading FLOW namelist ...
-
 Reading FLOW_BC namelists ...
-
+  read namelist "surface tension"
+  read namelist "walls"
 Reading FLOW_VISCOUS_SOLVER namelist ...
-
 Reading FLOW_PRESSURE_SOLVER namelist ...
-
- Reading BC Namelists ...
-BC namelists not found; using defaults.
-
 Reading DIFFUSION_SOLVER namelist ...
   using default STEPPING_METHOD value: "Adaptive BDF2"
   using default MAX_NLK_ITR value: 5
@@ -105,767 +52,749 @@ Reading DIFFUSION_SOLVER namelist ...
   using default NLK_VEC_TOL value: 1.00E-03
   WARNING: using a pure relative error norm; temp must be bounded away from 0
   WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
-
-Reading DS_BOUNDARY_CONDITION namelists ...
-  [cold surface] "dirichlet" condition for "temperature" variable
-  [hot top] "dirichlet" condition for "temperature" variable
-  [x-z symmetry] "flux" condition for "temperature" variable
-
-Reading DS_INTERFACE_CONDITION namelists ...
-
+Reading THERMAL_BC namelists ...
+  read namelist "cold surface"
+  read namelist "hot top"
+  read namelist "x-z symmetry"
+Reading THERMAL_SOURCE namelists ...
+  none found
+Reading SPECIES_BC namelists ...
+  none found
 Reading DS_SOURCE namelists ...
-  No DS_SOURCE namelists found.
-
+  none found
 Reading ENCLOSURE_RADIATION namelists ...
-
-Reading ENCLOSURE_SURFACE namelists ...
-
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
-
-Input file tangential-surface-tension.inp closed.
+  none found
+Reading PROBE namelists ...
+  none found
+Input file "tangential-surface-tension.inp" closed
 
 ================================================================================
 
 INITIALIZATION
 
-
 Initializing mesh "MAIN" ...
   reading ExodusII mesh file "./tangential-surface-tension.gen"
-  finding cell neighbors
-  partitioning the mesh cells
-  partitioning the mesh nodes
-  numbering the mesh faces
-  partitioning the mesh faces
-  identifying off-process ghost cells
-  generating parallel mesh structure
-  UNSTR_MESH Profile:
-     PE|    nnode    nface    ncell
-    ---+---------------------------
-      1|      234      404       96
-  Mesh Communication Profile:
-              Nodes           Faces           Cells
-     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
-    ---+------------------------------------------------
-      1|      0      234      0      404      0       96
-  Mesh "MAIN" initialized
-
-Allocating base derived types A ...done.
 
 Computing initial volume fractions ...
-  Initial volume fractions computed.
- Initializing Displacement Boundary Conditions
 
- Locating cell faces for which BCs are to be applied ...
- Initializing Pressure Boundary Conditions
-   DIRICHLET: 0 boundary points
-   REFLECTIVE: 232 boundary points
-   EXTERIOR: 232 boundary points
-   NEUMANN: 0 boundary points
-   HNEUMANN: 232 boundary points
- Pressure BCs initialized.
+Initializing volume tracker ...
 
- Finished BC initialization.
-
-Configuring volume tracking ...
-Generating velocity boundary condition for "velocity" type
-Generating velocity boundary condition for "no-slip" type
-Generating pressure boundary condition for "pressure" type
-Generating pressure boundary condition for "pressure" type
-Generating pressure boundary condition for "velocity" type
-Generating pressure boundary condition for "no-slip" type
-Generating pressure boundary condition for "free-slip" type
-  using FLOW_BC[walls]
-Generating pressure boundary condition for "marangoni" type
-  using FLOW_BC[surface tension]
-Generating velocity boundary condition for "free-slip" type
-  using FLOW_BC[walls]
-Generating velocity boundary condition for "marangoni" type
-  using FLOW_BC[surface tension]
+Initializing fluid flow solver ...
+  generating velocity boundary condition for "velocity" type
+  generating velocity boundary condition for "no-slip" type
+  generating pressure boundary condition for "pressure" type
+  generating pressure boundary condition for "pressure" type
+  generating pressure boundary condition for "velocity" type
+  generating pressure boundary condition for "no-slip" type
+  generating pressure boundary condition for "free-slip" type
+    using FLOW_BC[walls]
+  generating pressure boundary condition for "marangoni" type
+    using FLOW_BC[surface tension]
+  generating velocity boundary condition for "free-slip" type
+    using FLOW_BC[walls]
+  generating velocity boundary condition for "marangoni" type
+    using FLOW_BC[surface tension]
 
 Initializing diffusion solver ...
-  Generating external source for "temperature" equation
-  Generating "HTC" interface condition for "temperature" variable
-  Generating "radiation" interface condition for "temperature" variable
-  Generating "flux" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[3]: x-z symmetry
-  Generating "HTC" boundary condition for "temperature" variable
-  Generating "radiation" boundary condition for "temperature" variable
-  Generating "dirichlet" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[1]: cold surface
-    using DS_BOUNDARY_CONDITION[2]: hot top
-  Diffusion solver initialized.
+  generating external source for "temperature" equation
+  generating "scalar_cell_func1" thermal source
+    none specified
+  generating "interface-htc" thermal interface condition
+    none specified
+  generating "gap-radiation" thermal interface condition
+    none specified
+  generating "flux" thermal boundary condition
+    using THERMAL_BC[x-z symmetry]
+  generating "oriented-flux" thermal boundary condition
+    none specified
+  generating "htc" thermal boundary condition
+    none specified
+  generating "radiation" thermal boundary condition
+    none specified
+  generating "temperature" thermal boundary condition
+    using THERMAL_BC[cold surface]
+    using THERMAL_BC[hot top]
+  diffusion solver initialized
 
 Computing consistent initial state for HT/SD solver ...
-  Computing consistent face temperatures and radiosities ...
-    ||Rface(4)||= 6.27E-09, ||Rface(0)||= 1.73E+00, ||ΔTface||_max= 1.09E-07
+  computing consistent face temperatures and radiosities ...
+  ||Rface(4)||= 6.27E-09, ||Rface(0)||= 1.73E+00, ||ΔTface||_max= 1.09E-07
 
 Computing consistent initial state derivative for HT/SD solver ...
-  Computing consistent face temperatures and radiosities ...
-    ||Rface(3)||= 6.54E-07, ||Rface(0)||= 1.09E-02, ||ΔTface||_max= 7.83E-06
-predictor1 solve:    1 (DS),    0 (AMG), 6.6525E-04 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 7.0429E-04 (|r|/|b|)
-predictor3 solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
-projection solve:    1 (DS),    0 (AMG), 4.2384E-01 (|r|/|b|)
+  computing consistent face temperatures and radiosities ...
+  ||Rface(3)||= 6.54E-07, ||Rface(0)||= 1.09E-02, ||ΔTface||_max= 7.83E-06
+
+Computing initial flow pressures and fluxing velocities ...
+  predictor1 solve:    1 (DS),    0 (AMG), 6.6525E-04 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 7.0429E-04 (|r|/|b|)
+  predictor3 solve:    0 (DS),    0 (AMG), 0.0000E+00 (|r|/|b|)
+  projection solve:    1 (DS),    0 (AMG), 4.2384E-01 (|r|/|b|)
+
+Initializing solution probes ...
 
 ================================================================================
 
 EXECUTION
 
-
           1: t =   0.00000E+00, dt(initial) =   1.00000E-03
 
 DS: dt=1.000E-03, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 6.0552E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 9.9016E-04 (|r|/|b|)
-predictor3 solve:    1 (DS),    0 (AMG), 6.9115E-04 (|r|/|b|)
-projection solve:   25 (DS),    6 (AMG), 6.1455E-09 (|r|/|b|)
+  predictor1 solve:    2 (DS),    0 (AMG), 6.0552E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 8.9455E-04 (|r|/|b|)
+  predictor3 solve:    1 (DS),    0 (AMG), 6.9115E-04 (|r|/|b|)
+  projection solve:   25 (DS),    6 (AMG), 6.1455E-09 (|r|/|b|)
 
-            Min Velocity: (-5.8249E-07, -2.2153E-19, -1.8208E-07)
-            Max Velocity: ( 5.8249E-07,  1.7699E-18,  8.7584E-08)
+            Min Velocity: (-5.8249E-07, -4.4291E-19, -1.8208E-07)
+            Max Velocity: ( 5.8249E-07,  0.0000E+00,  8.7584E-08)
 
           2: t =   1.00000E-03, dt(diffusion solver) =   1.00000E-03
 
 DS: dt=1.000E-03, NFUN:NPC=0000004:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 4.1348E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.2913E-03 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 2.5098E-07 (|r|/|b|)
-projection solve:   27 (DS),    5 (AMG), 7.4022E-09 (|r|/|b|)
+  predictor1 solve:    2 (DS),    0 (AMG), 4.1348E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 8.1073E-04 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 2.5098E-07 (|r|/|b|)
+  projection solve:   27 (DS),    5 (AMG), 7.4022E-09 (|r|/|b|)
 
-            Min Velocity: (-1.6541E-06, -1.1053E-18, -5.7912E-07)
-            Max Velocity: ( 1.6541E-06,  6.5093E-19,  3.0586E-07)
+            Min Velocity: (-1.6541E-06, -4.4177E-19, -5.7912E-07)
+            Max Velocity: ( 1.6541E-06,  2.2009E-19,  3.0586E-07)
 
           3: t =   2.00000E-03, dt(diffusion solver) =   1.00000E-03
 
 DS: dt=1.000E-03, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 3.0495E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 9.8047E-04 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 2.0328E-07 (|r|/|b|)
-projection solve:   26 (DS),    4 (AMG), 5.9191E-08 (|r|/|b|)
+  predictor1 solve:    2 (DS),    0 (AMG), 3.0495E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.0466E-03 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 2.0328E-07 (|r|/|b|)
+  projection solve:   26 (DS),    4 (AMG), 5.9191E-08 (|r|/|b|)
 
-            Min Velocity: (-3.1740E-06, -6.8532E-18, -1.2019E-06)
-            Max Velocity: ( 3.1740E-06,  2.3975E-21,  6.7441E-07)
+            Min Velocity: (-3.1740E-06, -4.3912E-19, -1.2019E-06)
+            Max Velocity: ( 3.1740E-06,  8.8848E-19,  6.7441E-07)
 
           4: t =   3.00000E-03, dt(diffusion solver) =   1.00000E-03
 
 DS: dt=1.000E-03, NFUN:NPC=0000006:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 2.4019E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 5.7925E-04 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 1.7070E-07 (|r|/|b|)
-projection solve:   25 (DS),    4 (AMG), 2.0980E-08 (|r|/|b|)
+  predictor1 solve:    2 (DS),    0 (AMG), 2.4019E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 5.5392E-04 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 1.7070E-07 (|r|/|b|)
+  projection solve:   25 (DS),    4 (AMG), 2.0980E-08 (|r|/|b|)
 
-            Min Velocity: (-5.1192E-06, -1.4333E-17, -2.0547E-06)
-            Max Velocity: ( 5.1192E-06,  4.4248E-19,  1.2029E-06)
+            Min Velocity: (-5.1192E-06, -6.6207E-19, -2.0547E-06)
+            Max Velocity: ( 5.1192E-06,  2.2140E-18,  1.2029E-06)
 
           5: t =   4.00000E-03, dt(growth) =   1.50000E-03
 
-DS: dt=1.500E-03, NFUN:NPC=0000007:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 6.1812E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 9.1118E-04 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 4.3151E-07 (|r|/|b|)
-projection solve:   43 (DS),    0 (AMG), 3.6326E-08 (|r|/|b|)
+DS: dt=1.500E-03, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    2 (DS),    0 (AMG), 6.1812E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.4905E-04 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 4.3151E-07 (|r|/|b|)
+  projection solve:   43 (DS),    0 (AMG), 3.6322E-08 (|r|/|b|)
 
-            Min Velocity: (-9.3423E-06, -3.2749E-17, -3.7219E-06)
-            Max Velocity: ( 9.3423E-06,  2.0792E-18,  2.1728E-06)
+            Min Velocity: (-9.3423E-06, -6.5549E-19, -3.7219E-06)
+            Max Velocity: ( 9.3423E-06,  2.1935E-18,  2.1728E-06)
 
           6: t =   5.50000E-03, dt(growth) =   2.25000E-03
 
-DS: dt=2.250E-03, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    2 (DS),    0 (AMG), 1.5064E-06 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.5876E-03 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 1.0209E-06 (|r|/|b|)
-projection solve:   41 (DS),    0 (AMG), 3.3088E-08 (|r|/|b|)
+DS: dt=2.250E-03, NFUN:NPC=0000010:00001, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    2 (DS),    0 (AMG), 1.5064E-06 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.9498E-04 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 1.0209E-06 (|r|/|b|)
+  projection solve:   41 (DS),    0 (AMG), 3.3079E-08 (|r|/|b|)
 
-            Min Velocity: (-1.8335E-05, -9.8701E-17, -7.1858E-06)
-            Max Velocity: ( 1.8335E-05,  7.9435E-18,  4.1377E-06)
+            Min Velocity: (-1.8335E-05, -9.2240E-19, -7.1858E-06)
+            Max Velocity: ( 1.8335E-05,  2.6595E-18,  4.1377E-06)
 
           7: t =   7.75000E-03, dt(growth) =   3.37500E-03
 
-DS: dt=3.375E-03, NFUN:NPC=0000010:00002, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    3 (DS),    0 (AMG), 1.0413E-08 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 5.9886E-05 (|r|/|b|)
-predictor3 solve:    2 (DS),    0 (AMG), 2.3760E-06 (|r|/|b|)
-projection solve:   50 (DS),    0 (AMG), 2.3176E-08 (|r|/|b|)
+DS: dt=3.375E-03, NFUN:NPC=0000012:00002, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    3 (DS),    0 (AMG), 1.0413E-08 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 6.3451E-04 (|r|/|b|)
+  predictor3 solve:    2 (DS),    0 (AMG), 2.3760E-06 (|r|/|b|)
+  projection solve:   50 (DS),    0 (AMG), 2.3174E-08 (|r|/|b|)
 
-            Min Velocity: (-3.7613E-05, -9.6489E-17, -1.4549E-05)
-            Max Velocity: ( 3.7613E-05,  7.4843E-18,  8.2567E-06)
+            Min Velocity: (-3.7613E-05, -8.9562E-19, -1.4549E-05)
+            Max Velocity: ( 3.7613E-05,  2.6066E-18,  8.2567E-06)
 
           8: t =   1.11250E-02, dt(growth) =   5.06250E-03
 
-DS: dt=5.062E-03, NFUN:NPC=0000012:00002, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    3 (DS),    0 (AMG), 3.5712E-08 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 4.0305E-04 (|r|/|b|)
-predictor3 solve:    3 (DS),    0 (AMG), 2.5554E-08 (|r|/|b|)
-projection solve:   25 (DS),    6 (AMG), 5.8880E-09 (|r|/|b|)
+DS: dt=5.062E-03, NFUN:NPC=0000014:00002, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    3 (DS),    0 (AMG), 3.5712E-08 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.7862E-03 (|r|/|b|)
+  predictor3 solve:    3 (DS),    0 (AMG), 2.5554E-08 (|r|/|b|)
+  projection solve:   25 (DS),    6 (AMG), 5.8880E-09 (|r|/|b|)
 
-            Min Velocity: (-7.9190E-05, -1.0448E-16, -3.0374E-05)
-            Max Velocity: ( 7.9190E-05,  7.9161E-18,  1.7002E-05)
+            Min Velocity: (-7.9190E-05, -8.5671E-19, -3.0374E-05)
+            Max Velocity: ( 7.9190E-05,  8.0680E-18,  1.7002E-05)
 
           9: t =   1.61875E-02, dt(growth) =   7.59375E-03
 
-DS: dt=7.594E-03, NFUN:NPC=0000014:00002, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    3 (DS),    0 (AMG), 1.2042E-07 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 3.2681E-03 (|r|/|b|)
-predictor3 solve:    3 (DS),    0 (AMG), 8.5626E-08 (|r|/|b|)
-projection solve:   27 (DS),    5 (AMG), 4.6053E-09 (|r|/|b|)
+DS: dt=7.594E-03, NFUN:NPC=0000017:00002, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    3 (DS),    0 (AMG), 1.2042E-07 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.4489E-02 (|r|/|b|)
+  predictor3 solve:    3 (DS),    0 (AMG), 8.5626E-08 (|r|/|b|)
+  projection solve:   27 (DS),    5 (AMG), 4.6054E-09 (|r|/|b|)
 
-            Min Velocity: (-1.6897E-04, -1.9130E-16, -6.4520E-05)
-            Max Velocity: ( 1.6897E-04,  1.5064E-17,  3.5598E-05)
+            Min Velocity: (-1.6897E-04, -1.8065E-18, -6.4520E-05)
+            Max Velocity: ( 1.6897E-04,  4.4074E-18,  3.5599E-05)
 
          10: t =   2.37812E-02, dt(growth) =   1.13906E-02
 
-DS: dt=1.139E-02, NFUN:NPC=0000016:00002, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    4 (DS),    0 (AMG), 4.0668E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 8.3180E-03 (|r|/|b|)
-predictor3 solve:    3 (DS),    0 (AMG), 2.8166E-07 (|r|/|b|)
-projection solve:   27 (DS),    5 (AMG), 9.5822E-10 (|r|/|b|)
+DS: dt=1.139E-02, NFUN:NPC=0000020:00002, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    4 (DS),    0 (AMG), 4.0668E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.0672E-02 (|r|/|b|)
+  predictor3 solve:    3 (DS),    0 (AMG), 2.8166E-07 (|r|/|b|)
+  projection solve:   27 (DS),    5 (AMG), 9.5802E-10 (|r|/|b|)
 
-            Min Velocity: (-3.6191E-04, -7.1995E-16, -1.3800E-04)
-            Max Velocity: ( 3.6191E-04,  6.3442E-17,  7.4823E-05)
+            Min Velocity: (-3.6192E-04, -6.7332E-17, -1.3800E-04)
+            Max Velocity: ( 3.6192E-04,  2.4839E-17,  7.4824E-05)
 
          11: t =   3.51719E-02, dt(growth) =   1.70859E-02
 
-DS: dt=1.709E-02, NFUN:NPC=0000018:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    4 (DS),    0 (AMG), 1.9678E-08 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4558E-02 (|r|/|b|)
-predictor3 solve:    4 (DS),    0 (AMG), 1.3888E-08 (|r|/|b|)
-projection solve:   26 (DS),    4 (AMG), 4.3320E-09 (|r|/|b|)
+DS: dt=1.709E-02, NFUN:NPC=0000022:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    4 (DS),    0 (AMG), 1.9678E-08 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.6300E-02 (|r|/|b|)
+  predictor3 solve:    4 (DS),    0 (AMG), 1.3888E-08 (|r|/|b|)
+  projection solve:   26 (DS),    4 (AMG), 4.3271E-09 (|r|/|b|)
 
-            Min Velocity: (-7.7171E-04, -6.7507E-15, -2.9463E-04)
-            Max Velocity: ( 7.7171E-04,  7.6815E-16,  1.5602E-04)
+            Min Velocity: (-7.7172E-04, -1.3183E-16, -2.9463E-04)
+            Max Velocity: ( 7.7172E-04,  1.6414E-15,  1.5602E-04)
 
          12: t =   5.22578E-02, dt(growth) =   2.56289E-02
 
-DS: dt=2.563E-02, NFUN:NPC=0000021:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    5 (DS),    0 (AMG), 2.0826E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 4.6786E-02 (|r|/|b|)
-predictor3 solve:    4 (DS),    0 (AMG), 6.3758E-08 (|r|/|b|)
-projection solve:   50 (DS),    0 (AMG), 3.4691E-09 (|r|/|b|)
+DS: dt=2.563E-02, NFUN:NPC=0000025:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    5 (DS),    0 (AMG), 2.0826E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.2308E-02 (|r|/|b|)
+  predictor3 solve:    4 (DS),    0 (AMG), 6.3758E-08 (|r|/|b|)
+  projection solve:   50 (DS),    0 (AMG), 3.4695E-09 (|r|/|b|)
 
-            Min Velocity: (-1.6243E-03, -1.2973E-15, -6.2253E-04)
-            Max Velocity: ( 1.6243E-03,  6.9844E-15,  3.1871E-04)
+            Min Velocity: (-1.6243E-03, -1.9724E-15, -6.2253E-04)
+            Max Velocity: ( 1.6243E-03,  4.1766E-16,  3.1871E-04)
 
          13: t =   7.78867E-02, dt(growth) =   3.84434E-02
 
-DS: dt=3.844E-02, NFUN:NPC=0000024:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    5 (DS),    0 (AMG), 1.3822E-08 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 3.2702E-02 (|r|/|b|)
-predictor3 solve:    5 (DS),    0 (AMG), 8.9172E-09 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 1.4719E-09 (|r|/|b|)
+DS: dt=3.844E-02, NFUN:NPC=0000029:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    5 (DS),    0 (AMG), 1.3822E-08 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.4594E-02 (|r|/|b|)
+  predictor3 solve:    5 (DS),    0 (AMG), 8.9172E-09 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 1.4696E-09 (|r|/|b|)
 
-            Min Velocity: (-3.3416E-03, -1.8450E-14, -1.2895E-03)
-            Max Velocity: ( 3.3416E-03,  1.4807E-13,  6.2801E-04)
+            Min Velocity: (-3.3416E-03, -2.2073E-15, -1.2895E-03)
+            Max Velocity: ( 3.3416E-03,  1.7448E-15,  6.2801E-04)
 
-         14: t =   1.16330E-01, dt(diffusion solver) =   4.54446E-02
+         14: t =   1.16330E-01, dt(diffusion solver) =   4.54453E-02
 
-DS: dt=4.544E-02, NFUN:NPC=0000027:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 9.7580E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.8527E-02 (|r|/|b|)
-predictor3 solve:    5 (DS),    0 (AMG), 1.5081E-08 (|r|/|b|)
-projection solve:   54 (DS),    0 (AMG), 1.4235E-09 (|r|/|b|)
+DS: dt=4.545E-02, NFUN:NPC=0000033:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 9.7589E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.4797E-02 (|r|/|b|)
+  predictor3 solve:    5 (DS),    0 (AMG), 1.5083E-08 (|r|/|b|)
+  projection solve:   54 (DS),    0 (AMG), 1.4226E-09 (|r|/|b|)
 
-            Min Velocity: (-5.7092E-03, -6.1414E-14, -2.2942E-03)
-            Max Velocity: ( 5.7092E-03,  5.2801E-13,  1.0850E-03)
+            Min Velocity: (-5.7092E-03, -4.1119E-15, -2.2942E-03)
+            Max Velocity: ( 5.7092E-03,  7.5310E-15,  1.0850E-03)
 
-         15: t =   1.61775E-01, dt(diffusion solver) =   4.44609E-02
+         15: t =   1.61775E-01, dt(diffusion solver) =   4.44607E-02
 
-DS: dt=4.446E-02, NFUN:NPC=0000030:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 6.8189E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4401E-02 (|r|/|b|)
-predictor3 solve:    5 (DS),    0 (AMG), 9.9666E-09 (|r|/|b|)
-projection solve:   25 (DS),    7 (AMG), 2.8077E-10 (|r|/|b|)
+DS: dt=4.446E-02, NFUN:NPC=0000037:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 6.8185E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1918E-02 (|r|/|b|)
+  predictor3 solve:    5 (DS),    0 (AMG), 9.9661E-09 (|r|/|b|)
+  projection solve:   25 (DS),    7 (AMG), 2.8077E-10 (|r|/|b|)
 
-            Min Velocity: (-8.1020E-03, -8.5482E-14, -3.4553E-03)
-            Max Velocity: ( 8.1020E-03,  8.4665E-13,  1.6212E-03)
+            Min Velocity: (-8.1020E-03, -5.5862E-15, -3.4554E-03)
+            Max Velocity: ( 8.1020E-03,  1.2385E-14,  1.6212E-03)
 
-         16: t =   2.06236E-01, dt(diffusion solver) =   4.85251E-02
+         16: t =   2.06236E-01, dt(diffusion solver) =   4.85256E-02
 
-DS: dt=4.853E-02, NFUN:NPC=0000033:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 9.7430E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.3800E-02 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 5.2004E-10 (|r|/|b|)
-projection solve:   27 (DS),    6 (AMG), 4.8606E-10 (|r|/|b|)
+DS: dt=4.853E-02, NFUN:NPC=0000041:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 9.7436E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1707E-02 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 5.2007E-10 (|r|/|b|)
+  projection solve:   27 (DS),    6 (AMG), 4.8595E-10 (|r|/|b|)
 
-            Min Velocity: (-1.0910E-02, -1.1430E-13, -4.8274E-03)
-            Max Velocity: ( 1.0910E-02,  1.2733E-12,  2.2000E-03)
+            Min Velocity: (-1.0910E-02, -7.8891E-15, -4.8275E-03)
+            Max Velocity: ( 1.0910E-02,  1.9343E-14,  2.2000E-03)
 
-         17: t =   2.54761E-01, dt(diffusion solver) =   4.90137E-02
+         17: t =   2.54762E-01, dt(diffusion solver) =   4.90135E-02
 
-DS: dt=4.901E-02, NFUN:NPC=0000036:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 8.7080E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 8.3826E-03 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 4.5241E-10 (|r|/|b|)
-projection solve:   27 (DS),    6 (AMG), 3.3245E-10 (|r|/|b|)
+DS: dt=4.901E-02, NFUN:NPC=0000045:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 8.7077E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 7.1031E-03 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 4.5240E-10 (|r|/|b|)
+  projection solve:   27 (DS),    6 (AMG), 3.3238E-10 (|r|/|b|)
 
-            Min Velocity: (-1.3719E-02, -1.2252E-13, -6.3190E-03)
-            Max Velocity: ( 1.3719E-02,  1.6102E-12,  2.8066E-03)
+            Min Velocity: (-1.3719E-02, -9.5323E-15, -6.3190E-03)
+            Max Velocity: ( 1.3719E-02,  2.4751E-14,  2.8066E-03)
 
-         18: t =   3.03774E-01, dt(diffusion solver) =   5.25650E-02
+         18: t =   3.03775E-01, dt(diffusion solver) =   5.25654E-02
 
-DS: dt=5.257E-02, NFUN:NPC=0000039:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 1.1391E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 8.8560E-03 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 6.1723E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 1.6069E-09 (|r|/|b|)
+DS: dt=5.257E-02, NFUN:NPC=0000049:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 1.1391E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 7.5601E-03 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 6.1726E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 1.6093E-09 (|r|/|b|)
 
-            Min Velocity: (-1.6793E-02, -1.3461E-13, -7.9548E-03)
-            Max Velocity: ( 1.6793E-02,  2.0273E-12,  3.3986E-03)
+            Min Velocity: (-1.6793E-02, -1.1835E-14, -7.9549E-03)
+            Max Velocity: ( 1.6793E-02,  3.1680E-14,  3.3986E-03)
 
-         19: t =   3.56339E-01, dt(diffusion solver) =   5.49918E-02
+         19: t =   3.56340E-01, dt(diffusion solver) =   5.49917E-02
 
-DS: dt=5.499E-02, NFUN:NPC=0000042:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 1.2816E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 7.6883E-03 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 7.2481E-10 (|r|/|b|)
-projection solve:   52 (DS),    0 (AMG), 2.5644E-09 (|r|/|b|)
+DS: dt=5.499E-02, NFUN:NPC=0000053:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 1.2816E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 6.5872E-03 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 7.2480E-10 (|r|/|b|)
+  projection solve:   52 (DS),    0 (AMG), 2.5651E-09 (|r|/|b|)
 
-            Min Velocity: (-1.9930E-02, -1.5555E-13, -9.7004E-03)
-            Max Velocity: ( 1.9930E-02,  2.4534E-12,  3.9762E-03)
+            Min Velocity: (-1.9930E-02, -1.4225E-14, -9.7005E-03)
+            Max Velocity: ( 1.9930E-02,  3.8773E-14,  3.9762E-03)
 
-         20: t =   4.11331E-01, dt(diffusion solver) =   5.86431E-02
+         20: t =   4.11332E-01, dt(diffusion solver) =   5.86433E-02
 
-DS: dt=5.864E-02, NFUN:NPC=0000045:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 1.6243E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 8.3050E-03 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 9.7305E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 2.2340E-09 (|r|/|b|)
+DS: dt=5.864E-02, NFUN:NPC=0000057:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 1.6243E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 6.9774E-03 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 9.7307E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 2.2307E-09 (|r|/|b|)
 
-            Min Velocity: (-2.3207E-02, -1.8212E-13, -1.1549E-02)
-            Max Velocity: ( 2.3207E-02,  2.9758E-12,  4.5073E-03)
+            Min Velocity: (-2.3207E-02, -1.7355E-14, -1.1549E-02)
+            Max Velocity: ( 2.3207E-02,  4.7533E-14,  4.5073E-03)
 
-         21: t =   4.69974E-01, dt(diffusion solver) =   6.21786E-02
+         21: t =   4.69975E-01, dt(diffusion solver) =   6.21786E-02
 
-DS: dt=6.218E-02, NFUN:NPC=0000048:00003, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    6 (DS),    0 (AMG), 1.9849E-09 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 8.3606E-03 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 1.2431E-09 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 2.4861E-09 (|r|/|b|)
+DS: dt=6.218E-02, NFUN:NPC=0000061:00003, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    6 (DS),    0 (AMG), 1.9849E-09 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 6.8741E-03 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 1.2431E-09 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 2.4805E-09 (|r|/|b|)
 
-            Min Velocity: (-2.6535E-02, -2.1119E-13, -1.3480E-02)
-            Max Velocity: ( 2.6535E-02,  3.5771E-12,  4.9865E-03)
+            Min Velocity: (-2.6535E-02, -2.1012E-14, -1.3480E-02)
+            Max Velocity: ( 2.6535E-02,  5.9320E-14,  4.9866E-03)
 
-         22: t =   5.32153E-01, dt(diffusion solver) =   6.63125E-02
+         22: t =   5.32154E-01, dt(diffusion solver) =   6.63127E-02
 
-DS: dt=6.631E-02, NFUN:NPC=0000050:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 1.3950E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.3660E-01 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 1.6313E-09 (|r|/|b|)
-projection solve:   25 (DS),    7 (AMG), 3.2841E-10 (|r|/|b|)
+DS: dt=6.631E-02, NFUN:NPC=0000063:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 1.3950E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.6011E-02 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 1.6314E-09 (|r|/|b|)
+  projection solve:   25 (DS),    7 (AMG), 3.2840E-10 (|r|/|b|)
 
-            Min Velocity: (-2.9917E-02, -1.7270E-12, -1.5475E-02)
-            Max Velocity: ( 2.9917E-02,  9.6841E-13,  5.3936E-03)
+            Min Velocity: (-2.9917E-02, -1.8496E-15, -1.5475E-02)
+            Max Velocity: ( 2.9917E-02,  2.0965E-12,  5.3936E-03)
 
-         23: t =   5.98465E-01, dt(diffusion solver) =   7.07793E-02
+         23: t =   5.98467E-01, dt(diffusion solver) =   7.07798E-02
 
-DS: dt=7.078E-02, NFUN:NPC=0000053:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 1.8630E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 4.8477E-02 (|r|/|b|)
-predictor3 solve:    6 (DS),    0 (AMG), 2.1309E-09 (|r|/|b|)
-projection solve:   26 (DS),    6 (AMG), 4.3248E-10 (|r|/|b|)
+DS: dt=7.078E-02, NFUN:NPC=0000066:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 1.8631E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 3.3121E-02 (|r|/|b|)
+  predictor3 solve:    6 (DS),    0 (AMG), 2.1310E-09 (|r|/|b|)
+  projection solve:   26 (DS),    6 (AMG), 4.3249E-10 (|r|/|b|)
 
-            Min Velocity: (-3.3316E-02, -7.4820E-13, -1.7518E-02)
-            Max Velocity: ( 3.3316E-02,  4.0921E-13,  5.7195E-03)
+            Min Velocity: (-3.3316E-02, -1.5973E-16, -1.7518E-02)
+            Max Velocity: ( 3.3316E-02,  1.2822E-12,  5.7195E-03)
 
-         24: t =   6.69245E-01, dt(diffusion solver) =   7.58144E-02
+         24: t =   6.69246E-01, dt(diffusion solver) =   7.58140E-02
 
-DS: dt=7.581E-02, NFUN:NPC=0000056:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 2.5357E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.9170E-01 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 1.8695E-10 (|r|/|b|)
-projection solve:   26 (DS),    5 (AMG), 3.8012E-09 (|r|/|b|)
+DS: dt=7.581E-02, NFUN:NPC=0000069:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 2.5356E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 5.6541E-02 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 1.8694E-10 (|r|/|b|)
+  projection solve:   26 (DS),    5 (AMG), 3.8031E-09 (|r|/|b|)
 
-            Min Velocity: (-3.6722E-02, -1.6299E-13, -1.9590E-02)
-            Max Velocity: ( 3.6722E-02,  1.8293E-13,  6.3623E-03)
+            Min Velocity: (-3.6722E-02, -1.3747E-17, -1.9590E-02)
+            Max Velocity: ( 3.6722E-02,  5.2590E-13,  6.3623E-03)
 
-         25: t =   7.45059E-01, dt(diffusion solver) =   8.14313E-02
+         25: t =   7.45060E-01, dt(diffusion solver) =   8.14317E-02
 
-DS: dt=8.143E-02, NFUN:NPC=0000059:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 3.4920E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 5.5399E-02 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 2.7142E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 2.3895E-09 (|r|/|b|)
+DS: dt=8.143E-02, NFUN:NPC=0000072:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 3.4921E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.3841E-01 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 2.7143E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 2.4002E-09 (|r|/|b|)
 
-            Min Velocity: (-4.0117E-02, -1.5588E-13, -2.1674E-02)
-            Max Velocity: ( 4.0117E-02,  1.2214E-12,  7.1341E-03)
+            Min Velocity: (-4.0117E-02, -2.4356E-13, -2.1675E-02)
+            Max Velocity: ( 4.0117E-02,  1.7049E-13,  7.1342E-03)
 
-         26: t =   8.26490E-01, dt(diffusion solver) =   8.77852E-02
+         26: t =   8.26492E-01, dt(diffusion solver) =   8.77851E-02
 
-DS: dt=8.779E-02, NFUN:NPC=0000062:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 4.8863E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 3.5239E-02 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 4.0154E-10 (|r|/|b|)
-projection solve:   52 (DS),    0 (AMG), 4.7352E-09 (|r|/|b|)
+DS: dt=8.779E-02, NFUN:NPC=0000075:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 4.8863E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.8382E-02 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 4.0154E-10 (|r|/|b|)
+  projection solve:   52 (DS),    0 (AMG), 4.7378E-09 (|r|/|b|)
 
-            Min Velocity: (-4.3493E-02, -3.7385E-13, -2.3755E-02)
-            Max Velocity: ( 4.3493E-02,  2.5019E-12,  7.9108E-03)
+            Min Velocity: (-4.3494E-02, -1.0965E-12, -2.3755E-02)
+            Max Velocity: ( 4.3494E-02,  6.0740E-14,  7.9108E-03)
 
-         27: t =   9.14276E-01, dt(diffusion solver) =   9.49978E-02
+         27: t =   9.14277E-01, dt(diffusion solver) =   9.49980E-02
 
-DS: dt=9.500E-02, NFUN:NPC=0000065:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    7 (DS),    0 (AMG), 6.9381E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.9194E-02 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 6.0171E-10 (|r|/|b|)
-projection solve:   52 (DS),    0 (AMG), 3.9587E-09 (|r|/|b|)
+DS: dt=9.500E-02, NFUN:NPC=0000079:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    7 (DS),    0 (AMG), 6.9381E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1229E-01 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 6.0172E-10 (|r|/|b|)
+  projection solve:   52 (DS),    0 (AMG), 3.9686E-09 (|r|/|b|)
 
-            Min Velocity: (-4.6844E-02, -6.1109E-13, -2.5958E-02)
-            Max Velocity: ( 4.6844E-02,  4.1588E-12,  8.6815E-03)
+            Min Velocity: (-4.6844E-02, -4.9811E-13, -2.5959E-02)
+            Max Velocity: ( 4.6844E-02,  4.0888E-14,  8.6815E-03)
 
-         28: t =   1.00927E+00, dt(diffusion solver) =   1.03243E-01
+         28: t =   1.00928E+00, dt(diffusion solver) =   1.03241E-01
 
-DS: dt=1.032E-01, NFUN:NPC=0000068:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 8.1234E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.7055E-02 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 9.1353E-10 (|r|/|b|)
-projection solve:   49 (DS),    0 (AMG), 6.0809E-09 (|r|/|b|)
+DS: dt=1.032E-01, NFUN:NPC=0000083:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 8.1222E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 8.8318E-02 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 9.1341E-10 (|r|/|b|)
+  projection solve:   49 (DS),    0 (AMG), 6.1341E-09 (|r|/|b|)
 
-            Min Velocity: (-5.0166E-02, -8.8664E-13, -2.8711E-02)
-            Max Velocity: ( 5.0166E-02,  6.3453E-12,  9.4350E-03)
+            Min Velocity: (-5.0166E-02, -6.0061E-14, -2.8711E-02)
+            Max Velocity: ( 5.0166E-02,  2.2989E-13,  9.4350E-03)
 
-         29: t =   1.11252E+00, dt(diffusion solver) =   1.09960E-01
+         29: t =   1.11252E+00, dt(diffusion solver) =   1.09961E-01
 
-DS: dt=1.100E-01, NFUN:NPC=0000071:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 1.0520E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.1453E-02 (|r|/|b|)
-predictor3 solve:    7 (DS),    0 (AMG), 1.1859E-09 (|r|/|b|)
-projection solve:   26 (DS),    7 (AMG), 3.0537E-10 (|r|/|b|)
+DS: dt=1.100E-01, NFUN:NPC=0000087:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 1.0522E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 3.1945E-02 (|r|/|b|)
+  predictor3 solve:    7 (DS),    0 (AMG), 1.1860E-09 (|r|/|b|)
+  projection solve:   26 (DS),    7 (AMG), 3.0533E-10 (|r|/|b|)
 
-            Min Velocity: (-5.3252E-02, -1.0815E-12, -3.1484E-02)
-            Max Velocity: ( 5.3252E-02,  8.6008E-12,  1.0139E-02)
+            Min Velocity: (-5.3252E-02, -2.5064E-14, -3.1484E-02)
+            Max Velocity: ( 5.3252E-02,  5.2418E-13,  1.0139E-02)
 
-         30: t =   1.22248E+00, dt(diffusion solver) =   1.17952E-01
+         30: t =   1.22248E+00, dt(diffusion solver) =   1.17951E-01
 
-DS: dt=1.180E-01, NFUN:NPC=0000074:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 1.4278E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.9519E-02 (|r|/|b|)
-predictor3 solve:    8 (DS),    0 (AMG), 1.3677E-10 (|r|/|b|)
-projection solve:   26 (DS),    6 (AMG), 3.8633E-09 (|r|/|b|)
+DS: dt=1.180E-01, NFUN:NPC=0000091:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 1.4278E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.0245E-02 (|r|/|b|)
+  predictor3 solve:    8 (DS),    0 (AMG), 1.3676E-10 (|r|/|b|)
+  projection solve:   26 (DS),    6 (AMG), 3.8590E-09 (|r|/|b|)
 
-            Min Velocity: (-5.6234E-02, -1.2445E-12, -3.4256E-02)
-            Max Velocity: ( 5.6234E-02,  1.1083E-11,  1.0875E-02)
+            Min Velocity: (-5.6234E-02, -3.1953E-15, -3.4257E-02)
+            Max Velocity: ( 5.6234E-02,  8.4626E-13,  1.0875E-02)
 
-         31: t =   1.34043E+00, dt(diffusion solver) =   1.26785E-01
+         31: t =   1.34043E+00, dt(diffusion solver) =   1.26786E-01
 
-DS: dt=1.268E-01, NFUN:NPC=0000077:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 1.9303E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.8146E-02 (|r|/|b|)
-predictor3 solve:    8 (DS),    0 (AMG), 2.0020E-10 (|r|/|b|)
-projection solve:   50 (DS),    0 (AMG), 8.5567E-09 (|r|/|b|)
+DS: dt=1.268E-01, NFUN:NPC=0000095:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 1.9303E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.6070E-02 (|r|/|b|)
+  predictor3 solve:    8 (DS),    0 (AMG), 2.0021E-10 (|r|/|b|)
+  projection solve:   50 (DS),    0 (AMG), 8.7972E-09 (|r|/|b|)
 
-            Min Velocity: (-5.9105E-02, -1.6537E-12, -3.7009E-02)
-            Max Velocity: ( 5.9105E-02,  1.3780E-11,  1.1649E-02)
+            Min Velocity: (-5.9105E-02, -1.2431E-16, -3.7009E-02)
+            Max Velocity: ( 5.9105E-02,  1.2034E-12,  1.1649E-02)
 
          32: t =   1.46721E+00, dt(diffusion solver) =   1.36817E-01
 
-DS: dt=1.368E-01, NFUN:NPC=0000080:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 2.6744E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.7429E-02 (|r|/|b|)
-predictor3 solve:    8 (DS),    0 (AMG), 2.9704E-10 (|r|/|b|)
-projection solve:   25 (DS),    5 (AMG), 5.6710E-09 (|r|/|b|)
+DS: dt=1.368E-01, NFUN:NPC=0000099:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 2.6745E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.3710E-02 (|r|/|b|)
+  predictor3 solve:    8 (DS),    0 (AMG), 2.9704E-10 (|r|/|b|)
+  projection solve:   25 (DS),    5 (AMG), 5.6863E-09 (|r|/|b|)
 
-            Min Velocity: (-6.1890E-02, -2.1928E-12, -3.9726E-02)
-            Max Velocity: ( 6.1890E-02,  1.6734E-11,  1.2361E-02)
+            Min Velocity: (-6.1890E-02,  2.0805E-19, -3.9727E-02)
+            Max Velocity: ( 6.1890E-02,  1.5877E-12,  1.2361E-02)
 
          33: t =   1.60403E+00, dt(diffusion solver) =   1.46965E-01
 
-DS: dt=1.470E-01, NFUN:NPC=0000083:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    8 (DS),    0 (AMG), 3.9468E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4858E-02 (|r|/|b|)
-predictor3 solve:    8 (DS),    0 (AMG), 4.1528E-10 (|r|/|b|)
-projection solve:   28 (DS),    5 (AMG), 5.5629E-09 (|r|/|b|)
+DS: dt=1.470E-01, NFUN:NPC=0000103:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    8 (DS),    0 (AMG), 3.9467E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1217E-02 (|r|/|b|)
+  predictor3 solve:    8 (DS),    0 (AMG), 4.1528E-10 (|r|/|b|)
+  projection solve:   28 (DS),    5 (AMG), 5.5692E-09 (|r|/|b|)
 
-            Min Velocity: (-6.4521E-02, -2.7513E-12, -4.2380E-02)
-            Max Velocity: ( 6.4521E-02,  1.9521E-11,  1.2993E-02)
+            Min Velocity: (-6.4521E-02,  3.3409E-19, -4.2381E-02)
+            Max Velocity: ( 6.4521E-02,  1.9443E-12,  1.2993E-02)
 
          34: t =   1.75100E+00, dt(diffusion solver) =   1.59505E-01
 
-DS: dt=1.595E-01, NFUN:NPC=0000086:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    9 (DS),    0 (AMG), 7.3233E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.5300E-02 (|r|/|b|)
-predictor3 solve:    8 (DS),    0 (AMG), 6.2419E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 8.4547E-09 (|r|/|b|)
+DS: dt=1.595E-01, NFUN:NPC=0000107:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    9 (DS),    0 (AMG), 7.3235E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1085E-02 (|r|/|b|)
+  predictor3 solve:    8 (DS),    0 (AMG), 6.2421E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 8.4349E-09 (|r|/|b|)
 
-            Min Velocity: (-6.7129E-02, -3.4043E-12, -4.4962E-02)
-            Max Velocity: ( 6.7129E-02,  2.2539E-11,  1.3548E-02)
+            Min Velocity: (-6.7129E-02,  3.9089E-19, -4.4962E-02)
+            Max Velocity: ( 6.7129E-02,  2.3331E-12,  1.3548E-02)
 
-         35: t =   1.91050E+00, dt(diffusion solver) =   1.73315E-01
+         35: t =   1.91050E+00, dt(diffusion solver) =   1.73314E-01
 
-DS: dt=1.733E-01, NFUN:NPC=0000089:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    9 (DS),    0 (AMG), 1.2625E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4404E-02 (|r|/|b|)
-predictor3 solve:    9 (DS),    0 (AMG), 1.0574E-10 (|r|/|b|)
-projection solve:   54 (DS),    0 (AMG), 5.8716E-09 (|r|/|b|)
+DS: dt=1.733E-01, NFUN:NPC=0000111:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    9 (DS),    0 (AMG), 1.2625E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1057E-02 (|r|/|b|)
+  predictor3 solve:    9 (DS),    0 (AMG), 1.0574E-10 (|r|/|b|)
+  projection solve:   54 (DS),    0 (AMG), 5.9444E-09 (|r|/|b|)
 
-            Min Velocity: (-6.9660E-02, -4.3322E-12, -4.7458E-02)
-            Max Velocity: ( 6.9660E-02,  2.5505E-11,  1.4542E-02)
+            Min Velocity: (-6.9660E-02,  3.8596E-19, -4.7458E-02)
+            Max Velocity: ( 6.9660E-02,  2.7483E-12,  1.4542E-02)
 
-         36: t =   2.08381E+00, dt(diffusion solver) =   1.89096E-01
+         36: t =   2.08382E+00, dt(diffusion solver) =   1.89096E-01
 
-DS: dt=1.891E-01, NFUN:NPC=0000092:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    9 (DS),    0 (AMG), 2.2935E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4046E-02 (|r|/|b|)
-predictor3 solve:    9 (DS),    0 (AMG), 1.3975E-10 (|r|/|b|)
-projection solve:   26 (DS),    6 (AMG), 6.7161E-10 (|r|/|b|)
+DS: dt=1.891E-01, NFUN:NPC=0000115:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    9 (DS),    0 (AMG), 2.2935E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.1352E-02 (|r|/|b|)
+  predictor3 solve:    9 (DS),    0 (AMG), 1.3977E-10 (|r|/|b|)
+  projection solve:   26 (DS),    6 (AMG), 6.6747E-10 (|r|/|b|)
 
-            Min Velocity: (-7.2149E-02, -6.2397E-12, -4.9856E-02)
-            Max Velocity: ( 7.2149E-02,  2.8367E-11,  1.5566E-02)
+            Min Velocity: (-7.2149E-02,  3.7157E-19, -4.9856E-02)
+            Max Velocity: ( 7.2149E-02,  3.2497E-12,  1.5566E-02)
 
          37: t =   2.27291E+00, dt(diffusion solver) =   2.07484E-01
 
-DS: dt=2.075E-01, NFUN:NPC=0000095:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:    9 (DS),    0 (AMG), 4.1194E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.4333E-02 (|r|/|b|)
-predictor3 solve:    9 (DS),    0 (AMG), 2.7383E-10 (|r|/|b|)
-projection solve:   26 (DS),    6 (AMG), 6.8495E-09 (|r|/|b|)
+DS: dt=2.075E-01, NFUN:NPC=0000119:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:    9 (DS),    0 (AMG), 4.1195E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.2212E-02 (|r|/|b|)
+  predictor3 solve:    9 (DS),    0 (AMG), 2.7384E-10 (|r|/|b|)
+  projection solve:   26 (DS),    6 (AMG), 6.8642E-09 (|r|/|b|)
 
-            Min Velocity: (-7.4626E-02, -8.6887E-12, -5.2144E-02)
-            Max Velocity: ( 7.4626E-02,  3.2017E-11,  1.6564E-02)
+            Min Velocity: (-7.4626E-02,  4.5356E-19, -5.2144E-02)
+            Max Velocity: ( 7.4626E-02,  3.8900E-12,  1.6564E-02)
 
-         38: t =   2.48039E+00, dt(diffusion solver) =   2.28798E-01
+         38: t =   2.48040E+00, dt(diffusion solver) =   2.28798E-01
 
-DS: dt=2.288E-01, NFUN:NPC=0000099:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 9.3009E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 4.9061E-01 (|r|/|b|)
-predictor3 solve:    9 (DS),    0 (AMG), 5.6439E-10 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 5.8479E-09 (|r|/|b|)
+DS: dt=2.288E-01, NFUN:NPC=0000123:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 9.3014E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.8387E-02 (|r|/|b|)
+  predictor3 solve:    9 (DS),    0 (AMG), 5.6438E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 5.8766E-09 (|r|/|b|)
 
-            Min Velocity: (-7.7100E-02, -6.6730E-12, -5.4312E-02)
-            Max Velocity: ( 7.7100E-02,  6.8872E-12,  1.7530E-02)
+            Min Velocity: (-7.7100E-02,  7.6100E-19, -5.4312E-02)
+            Max Velocity: ( 7.7100E-02,  4.8132E-12,  1.7530E-02)
 
-         39: t =   2.70919E+00, dt(diffusion solver) =   2.53715E-01
+         39: t =   2.70919E+00, dt(diffusion solver) =   2.53806E-01
 
-DS: dt=2.537E-01, NFUN:NPC=0000103:00004, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 1.8778E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.0966E-01 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 1.6792E-10 (|r|/|b|)
-projection solve:   27 (DS),    5 (AMG), 3.2762E-09 (|r|/|b|)
+DS: dt=2.538E-01, NFUN:NPC=0000127:00004, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 1.8835E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.4908E-02 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 1.6841E-10 (|r|/|b|)
+  projection solve:   27 (DS),    5 (AMG), 3.2853E-09 (|r|/|b|)
 
-            Min Velocity: (-7.9591E-02, -1.4247E-11, -5.6349E-02)
-            Max Velocity: ( 7.9591E-02,  2.0190E-12,  1.8458E-02)
+            Min Velocity: (-7.9596E-02,  1.3344E-18, -5.6349E-02)
+            Max Velocity: ( 7.9596E-02,  5.5092E-12,  1.8459E-02)
 
-         40: t =   2.96291E+00, dt(diffusion solver) =   2.83409E-01
+         40: t =   2.96300E+00, dt(diffusion solver) =   2.83270E-01
 
-DS: dt=2.834E-01, NFUN:NPC=0000105:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 3.8573E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.3932E-01 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 4.0760E-10 (|r|/|b|)
-projection solve:   26 (DS),    5 (AMG), 1.1020E-09 (|r|/|b|)
+DS: dt=2.833E-01, NFUN:NPC=0000130:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 3.8462E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 5.1007E-01 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 4.0700E-10 (|r|/|b|)
+  projection solve:   26 (DS),    5 (AMG), 1.1447E-09 (|r|/|b|)
 
-            Min Velocity: (-8.2138E-02, -1.8952E-10, -5.8244E-02)
-            Max Velocity: ( 8.2138E-02,  4.9985E-11,  1.9348E-02)
+            Min Velocity: (-8.2131E-02, -1.1272E-13, -5.8245E-02)
+            Max Velocity: ( 8.2131E-02,  1.4089E-12,  1.9348E-02)
 
-         41: t =   3.24632E+00, dt(diffusion solver) =   3.18464E-01
+         41: t =   3.24627E+00, dt(diffusion solver) =   3.18519E-01
 
-DS: dt=3.185E-01, NFUN:NPC=0000108:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   11 (DS),    0 (AMG), 1.0440E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 7.1735E-01 (|r|/|b|)
-predictor3 solve:   11 (DS),    0 (AMG), 1.6196E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 5.4889E-09 (|r|/|b|)
+DS: dt=3.185E-01, NFUN:NPC=0000133:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   11 (DS),    0 (AMG), 1.0422E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.0114E-01 (|r|/|b|)
+  predictor3 solve:   11 (DS),    0 (AMG), 1.6134E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 5.7534E-09 (|r|/|b|)
 
-            Min Velocity: (-8.4737E-02, -5.3171E-11, -5.9989E-02)
-            Max Velocity: ( 8.4737E-02,  1.7128E-11,  2.0195E-02)
+            Min Velocity: (-8.4740E-02, -3.9456E-11, -5.9988E-02)
+            Max Velocity: ( 8.4740E-02,  3.5972E-13,  2.0195E-02)
 
-         42: t =   3.56478E+00, dt(time) =   3.07500E-01
+         42: t =   3.56479E+00, dt(time) =   3.07534E-01
 
-DS: dt=3.075E-01, NFUN:NPC=0000111:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   11 (DS),    0 (AMG), 7.2271E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.0126E+00 (|r|/|b|)
-predictor3 solve:   11 (DS),    0 (AMG), 1.1998E-10 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 6.0472E-09 (|r|/|b|)
+DS: dt=3.075E-01, NFUN:NPC=0000136:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   11 (DS),    0 (AMG), 7.2642E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 3.3857E-02 (|r|/|b|)
+  predictor3 solve:   11 (DS),    0 (AMG), 1.2060E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 5.9165E-09 (|r|/|b|)
 
-            Min Velocity: (-8.5034E-02, -1.2412E-11, -6.1733E-02)
-            Max Velocity: ( 8.5034E-02,  2.5197E-12,  2.0794E-02)
+            Min Velocity: (-8.5036E-02, -3.1463E-11, -6.1733E-02)
+            Max Velocity: ( 8.5036E-02,  8.2142E-14,  2.0794E-02)
 
-         43: t =   3.87228E+00, dt(time) =   2.96914E-01
+         43: t =   3.87232E+00, dt(time) =   2.96929E-01
 
-DS: dt=2.969E-01, NFUN:NPC=0000114:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 2.8962E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 4.3489E-01 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 4.5971E-10 (|r|/|b|)
-projection solve:   27 (DS),    6 (AMG), 4.9478E-09 (|r|/|b|)
+DS: dt=2.969E-01, NFUN:NPC=0000139:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 2.8983E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 7.0058E-02 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 4.6000E-10 (|r|/|b|)
+  projection solve:   27 (DS),    6 (AMG), 4.7281E-09 (|r|/|b|)
 
-            Min Velocity: (-8.5327E-02, -3.6703E-12, -6.3236E-02)
-            Max Velocity: ( 8.5327E-02,  5.6291E-12,  2.1255E-02)
+            Min Velocity: (-8.5327E-02, -1.7510E-11, -6.3236E-02)
+            Max Velocity: ( 8.5327E-02,  1.7112E-14,  2.1255E-02)
 
-         44: t =   4.16919E+00, dt(time) =   2.86692E-01
+         44: t =   4.16925E+00, dt(time) =   2.86689E-01
 
-DS: dt=2.867E-01, NFUN:NPC=0000116:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 1.8829E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.3982E-01 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 3.0418E-10 (|r|/|b|)
-projection solve:   27 (DS),    6 (AMG), 1.5439E-09 (|r|/|b|)
+DS: dt=2.867E-01, NFUN:NPC=0000142:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 1.8837E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.5814E-01 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 3.0425E-10 (|r|/|b|)
+  projection solve:   27 (DS),    6 (AMG), 1.5543E-09 (|r|/|b|)
 
-            Min Velocity: (-8.5520E-02, -8.6036E-11, -6.4510E-02)
-            Max Velocity: ( 8.5520E-02,  2.0102E-11,  2.1622E-02)
+            Min Velocity: (-8.5520E-02, -6.4403E-12, -6.4510E-02)
+            Max Velocity: ( 8.5520E-02,  3.4308E-15,  2.1622E-02)
 
-         45: t =   4.45589E+00, dt(time) =   2.76822E-01
+         45: t =   4.45594E+00, dt(time) =   2.76802E-01
 
-DS: dt=2.768E-01, NFUN:NPC=0000118:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 1.2619E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 5.4543E-02 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 2.0188E-10 (|r|/|b|)
-projection solve:   51 (DS),    0 (AMG), 8.8292E-09 (|r|/|b|)
+DS: dt=2.768E-01, NFUN:NPC=0000144:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 1.2619E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.0270E-01 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 2.0184E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 1.2216E-08 (|r|/|b|)
 
-            Min Velocity: (-8.5623E-02, -8.4871E-11, -6.5599E-02)
-            Max Velocity: ( 8.5623E-02,  1.8536E-11,  2.2156E-02)
+            Min Velocity: (-8.5622E-02, -1.4837E-12, -6.5599E-02)
+            Max Velocity: ( 8.5622E-02,  1.3940E-10,  2.2156E-02)
 
-         46: t =   4.73271E+00, dt(time) =   2.67292E-01
+         46: t =   4.73274E+00, dt(time) =   2.67257E-01
 
-DS: dt=2.673E-01, NFUN:NPC=0000120:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   10 (DS),    0 (AMG), 8.5103E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.9931E-02 (|r|/|b|)
-predictor3 solve:   10 (DS),    0 (AMG), 1.3370E-10 (|r|/|b|)
-projection solve:   49 (DS),    0 (AMG), 1.1402E-08 (|r|/|b|)
+DS: dt=2.673E-01, NFUN:NPC=0000147:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   10 (DS),    0 (AMG), 8.5059E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.4230E-01 (|r|/|b|)
+  predictor3 solve:   10 (DS),    0 (AMG), 1.3361E-10 (|r|/|b|)
+  projection solve:   49 (DS),    0 (AMG), 7.9306E-09 (|r|/|b|)
 
-            Min Velocity: (-8.5651E-02, -8.1414E-11, -6.6541E-02)
-            Max Velocity: ( 8.5651E-02,  2.0526E-11,  2.2943E-02)
+            Min Velocity: (-8.5649E-02, -3.4501E-13, -6.6542E-02)
+            Max Velocity: ( 8.5649E-02,  3.6528E-11,  2.2943E-02)
 
-         47: t =   5.00000E+00, dt(growth) =   4.00938E-01
+         47: t =   5.00000E+00, dt(growth) =   4.00885E-01
 
-DS: dt=4.009E-01, NFUN:NPC=0000123:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   11 (DS),    0 (AMG), 2.8274E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 5.1561E-01 (|r|/|b|)
-predictor3 solve:   12 (DS),    0 (AMG), 7.5677E-11 (|r|/|b|)
-projection solve:   25 (DS),    6 (AMG), 1.6201E-09 (|r|/|b|)
+DS: dt=4.009E-01, NFUN:NPC=0000150:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   11 (DS),    0 (AMG), 2.8265E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.6815E-01 (|r|/|b|)
+  predictor3 solve:   12 (DS),    0 (AMG), 7.5625E-11 (|r|/|b|)
+  projection solve:   25 (DS),    7 (AMG), 1.4178E-10 (|r|/|b|)
 
-            Min Velocity: (-9.2399E-02, -1.5248E-11, -6.6500E-02)
-            Max Velocity: ( 9.2399E-02,  3.7759E-11,  2.4165E-02)
+            Min Velocity: (-9.2397E-02, -5.7010E-11, -6.6500E-02)
+            Max Velocity: ( 9.2397E-02,  6.8765E-12,  2.4165E-02)
 
-         48: t =   5.40094E+00, dt(diffusion solver) =   5.53698E-01
+         48: t =   5.40089E+00, dt(diffusion solver) =   5.53743E-01
 
-DS: dt=5.537E-01, NFUN:NPC=0000126:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   14 (DS),    0 (AMG), 9.2672E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.2952E-01 (|r|/|b|)
-predictor3 solve:   13 (DS),    0 (AMG), 3.8274E-10 (|r|/|b|)
-projection solve:   26 (DS),    6 (AMG), 4.5216E-10 (|r|/|b|)
+DS: dt=5.537E-01, NFUN:NPC=0000154:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   14 (DS),    0 (AMG), 9.2734E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.0450E-01 (|r|/|b|)
+  predictor3 solve:   13 (DS),    0 (AMG), 3.8294E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 7.8738E-10 (|r|/|b|)
 
-            Min Velocity: (-9.8109E-02, -6.1822E-11, -6.6356E-02)
-            Max Velocity: ( 9.8109E-02,  1.7190E-10,  2.5621E-02)
+            Min Velocity: (-9.8112E-02, -1.4528E-11, -6.6355E-02)
+            Max Velocity: ( 9.8112E-02,  7.4745E-11,  2.5621E-02)
 
-         49: t =   5.95464E+00, dt(diffusion solver) =   5.77310E-01
+         49: t =   5.95463E+00, dt(diffusion solver) =   5.77090E-01
 
-DS: dt=5.773E-01, NFUN:NPC=0000129:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   14 (DS),    0 (AMG), 1.2811E-10 (|r|/|b|)
-predictor2 solve:    2 (DS),    0 (AMG), 2.2262E-02 (|r|/|b|)
-predictor3 solve:   14 (DS),    0 (AMG), 1.1020E-10 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 4.2753E-09 (|r|/|b|)
+DS: dt=5.771E-01, NFUN:NPC=0000158:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   14 (DS),    0 (AMG), 1.2777E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 1.3507E-01 (|r|/|b|)
+  predictor3 solve:   14 (DS),    0 (AMG), 1.0992E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 4.7737E-09 (|r|/|b|)
 
-            Min Velocity: (-9.7944E-02, -1.1499E-10, -6.7208E-02)
-            Max Velocity: ( 9.7944E-02,  1.6764E-10,  2.6775E-02)
+            Min Velocity: (-9.7936E-02, -3.7144E-12, -6.7209E-02)
+            Max Velocity: ( 9.7936E-02,  9.2300E-11,  2.6774E-02)
 
-         50: t =   6.53194E+00, dt(diffusion solver) =   6.64968E-01
+         50: t =   6.53172E+00, dt(diffusion solver) =   6.65253E-01
 
-DS: dt=6.650E-01, NFUN:NPC=0000133:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   14 (DS),    0 (AMG), 1.7264E-10 (|r|/|b|)
-predictor2 solve:    2 (DS),    0 (AMG), 6.4602E-02 (|r|/|b|)
-predictor3 solve:   14 (DS),    0 (AMG), 1.4382E-10 (|r|/|b|)
-projection solve:   25 (DS),    7 (AMG), 3.0050E-10 (|r|/|b|)
+DS: dt=6.653E-01, NFUN:NPC=0000163:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   14 (DS),    0 (AMG), 1.7305E-10 (|r|/|b|)
+  predictor2 solve:    2 (DS),    0 (AMG), 1.7060E-01 (|r|/|b|)
+  predictor3 solve:   14 (DS),    0 (AMG), 1.4430E-10 (|r|/|b|)
+  projection solve:   25 (DS),    7 (AMG), 3.0251E-10 (|r|/|b|)
 
-            Min Velocity: (-1.0105E-01, -2.4797E-10, -6.7593E-02)
-            Max Velocity: ( 1.0105E-01,  2.6429E-11,  2.7926E-02)
+            Min Velocity: (-1.0107E-01, -2.2906E-11, -6.7591E-02)
+            Max Velocity: ( 1.0107E-01,  7.7578E-12,  2.7926E-02)
 
-         51: t =   7.19691E+00, dt(time) =   6.27483E-01
+         51: t =   7.19697E+00, dt(time) =   6.27654E-01
 
-DS: dt=6.275E-01, NFUN:NPC=0000136:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   14 (DS),    0 (AMG), 1.2261E-10 (|r|/|b|)
-predictor2 solve:    3 (DS),    0 (AMG), 1.1117E-02 (|r|/|b|)
-predictor3 solve:   14 (DS),    0 (AMG), 1.5762E-10 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 1.4078E-08 (|r|/|b|)
+DS: dt=6.277E-01, NFUN:NPC=0000167:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   14 (DS),    0 (AMG), 1.2327E-10 (|r|/|b|)
+  predictor2 solve:    2 (DS),    0 (AMG), 3.4403E-02 (|r|/|b|)
+  predictor3 solve:   14 (DS),    0 (AMG), 1.5864E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 1.1131E-08 (|r|/|b|)
 
-            Min Velocity: (-9.9315E-02, -1.6971E-11, -6.8586E-02)
-            Max Velocity: ( 9.9315E-02,  3.5626E-10,  2.8692E-02)
+            Min Velocity: (-9.9319E-02, -2.9507E-12, -6.8585E-02)
+            Max Velocity: ( 9.9319E-02,  9.9731E-11,  2.8693E-02)
 
-         52: t =   7.82440E+00, dt(time) =   5.92112E-01
+         52: t =   7.82463E+00, dt(time) =   5.92181E-01
 
-DS: dt=5.921E-01, NFUN:NPC=0000139:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   13 (DS),    0 (AMG), 1.5280E-10 (|r|/|b|)
-predictor2 solve:    2 (DS),    0 (AMG), 7.0287E-02 (|r|/|b|)
-predictor3 solve:   13 (DS),    0 (AMG), 1.5700E-10 (|r|/|b|)
-projection solve:   53 (DS),    0 (AMG), 8.6115E-09 (|r|/|b|)
+DS: dt=5.922E-01, NFUN:NPC=0000171:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   13 (DS),    0 (AMG), 1.5316E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 4.6803E-01 (|r|/|b|)
+  predictor3 solve:   13 (DS),    0 (AMG), 1.5744E-10 (|r|/|b|)
+  projection solve:   53 (DS),    0 (AMG), 8.1587E-09 (|r|/|b|)
 
-            Min Velocity: (-9.8638E-02, -3.8344E-11, -6.9490E-02)
-            Max Velocity: ( 9.8638E-02,  1.0861E-10,  2.9264E-02)
+            Min Velocity: (-9.8639E-02, -2.7846E-11, -6.9490E-02)
+            Max Velocity: ( 9.8639E-02,  4.0681E-11,  2.9264E-02)
 
-         53: t =   8.41651E+00, dt(time) =   5.58735E-01
+         53: t =   8.41681E+00, dt(time) =   5.58713E-01
 
-DS: dt=5.587E-01, NFUN:NPC=0000142:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   13 (DS),    0 (AMG), 8.3530E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 1.1996E-01 (|r|/|b|)
-predictor3 solve:   12 (DS),    0 (AMG), 3.2727E-10 (|r|/|b|)
-projection solve:   50 (DS),    0 (AMG), 8.4904E-09 (|r|/|b|)
+DS: dt=5.587E-01, NFUN:NPC=0000175:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   13 (DS),    0 (AMG), 8.3659E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 3.4381E-01 (|r|/|b|)
+  predictor3 solve:   12 (DS),    0 (AMG), 3.1936E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 8.7282E-09 (|r|/|b|)
 
-            Min Velocity: (-9.8019E-02, -6.7301E-12, -7.0186E-02)
-            Max Velocity: ( 9.8019E-02,  1.3532E-10,  2.9692E-02)
+            Min Velocity: (-9.8018E-02, -1.6731E-11, -7.0186E-02)
+            Max Velocity: ( 9.8018E-02,  3.8189E-11,  2.9693E-02)
 
-         54: t =   8.97524E+00, dt(time) =   5.27239E-01
+         54: t =   8.97552E+00, dt(time) =   5.27136E-01
 
-DS: dt=5.272E-01, NFUN:NPC=0000145:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   13 (DS),    0 (AMG), 5.5192E-11 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.0658E-01 (|r|/|b|)
-predictor3 solve:   13 (DS),    0 (AMG), 6.4930E-11 (|r|/|b|)
-projection solve:   25 (DS),    6 (AMG), 1.3214E-09 (|r|/|b|)
+DS: dt=5.271E-01, NFUN:NPC=0000179:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   13 (DS),    0 (AMG), 5.5233E-11 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 6.2722E-01 (|r|/|b|)
+  predictor3 solve:   13 (DS),    0 (AMG), 6.4933E-11 (|r|/|b|)
+  projection solve:   25 (DS),    6 (AMG), 1.6143E-09 (|r|/|b|)
 
-            Min Velocity: (-9.7409E-02, -1.5735E-12, -7.0784E-02)
-            Max Velocity: ( 9.7409E-02,  6.7468E-11,  3.0019E-02)
+            Min Velocity: (-9.7406E-02, -4.6223E-12, -7.0785E-02)
+            Max Velocity: ( 9.7406E-02,  1.2201E-11,  3.0019E-02)
 
-         55: t =   9.50248E+00, dt(time) =   4.97518E-01
+         55: t =   9.50266E+00, dt(time) =   4.97344E-01
 
-DS: dt=4.975E-01, NFUN:NPC=0000148:00005, NNR:NNF:NSR=0000:0000:0000
-predictor1 solve:   12 (DS),    0 (AMG), 1.5650E-10 (|r|/|b|)
-predictor2 solve:    1 (DS),    0 (AMG), 2.3811E-01 (|r|/|b|)
-predictor3 solve:   12 (DS),    0 (AMG), 2.4594E-10 (|r|/|b|)
-projection solve:   28 (DS),    5 (AMG), 4.1431E-09 (|r|/|b|)
+DS: dt=4.973E-01, NFUN:NPC=0000182:00005, NNR:NNF:NSR=0000:0000:0000
+  predictor1 solve:   12 (DS),    0 (AMG), 1.5631E-10 (|r|/|b|)
+  predictor2 solve:    1 (DS),    0 (AMG), 2.0870E-01 (|r|/|b|)
+  predictor3 solve:   12 (DS),    0 (AMG), 2.4551E-10 (|r|/|b|)
+  projection solve:   51 (DS),    0 (AMG), 7.9303E-09 (|r|/|b|)
 
-            Min Velocity: (-9.6780E-02, -1.5627E-12, -7.1300E-02)
-            Max Velocity: ( 9.6780E-02,  5.1598E-11,  3.0270E-02)
+            Min Velocity: (-9.6775E-02, -4.6115E-11, -7.1301E-02)
+            Max Velocity: ( 9.6775E-02,  5.9540E-12,  3.0270E-02)
 
 ================================================================================
 
 TERMINATION
-
                  Final Time:  1.0000E+01 after    55 steps
 
 
 TIMING SUMMARY
 --------------
-  3.231E-01 --- Total
-    6.689E-03 --- Input
-    1.019E-01 --- Initialization
-      1.400E-05 --- Vof Initialization
-      1.489E-03 --- HTSD function
-        1.424E-03 --- HT function
-      3.800E-05 --- ssor-setup
-      8.730E-04 --- ssor-solve
-      2.497E-03 --- Flow
-        4.500E-05 --- update properties
-        1.263E-03 --- setup
-        8.490E-04 --- solve
-          1.850E-04 --- hypre solve
-    2.104E-01 --- Main Cycle
-      1.569E-03 --- Time Step
-      7.080E-03 --- Volumetracking
-      6.414E-02 --- Diffusion Solver
-        7.717E-03 --- HTSD precon compute
-          7.110E-04 --- hypre-matrix-copy
-          1.079E-03 --- boomer-setup
-        2.219E-02 --- HTSD function
-          2.114E-02 --- HT function
-        1.785E-02 --- HTSD precon apply
-          1.782E-02 --- HT precon apply
-            7.086E-03 --- boomer-solve
-      1.211E-01 --- Flow
-        1.743E-03 --- update properties
-        5.020E-02 --- prediction
-          3.435E-02 --- setup
-          1.567E-02 --- solve
-            2.620E-03 --- hypre solve
-        6.374E-02 --- projection
-          2.870E-02 --- setup
-          3.486E-02 --- solve
-            9.892E-03 --- hypre solve
+  3.013E-01 --- Total
+    5.059E-03 --- Input
+    7.692E-02 --- Initialization
+      1.190E-02 --- mesh-MAIN
+        2.235E-03 --- ghost-cells
+          2.197E-03 --- cell-ghosts
+            1.129E-03 --- node-neighbors
+            2.870E-04 --- ghost-cells
+          6.000E-06 --- link-ghosts
+          2.800E-05 --- assemble-ghosts
+      4.500E-05 --- VOF Initialize
+      3.100E-05 --- Vof Initialization
+      1.743E-03 --- HTSD function
+        1.680E-03 --- HT function
+      5.100E-05 --- ssor-setup
+      9.590E-04 --- ssor-solve
+      2.699E-03 --- Flow
+        4.700E-05 --- update properties
+        1.379E-03 --- setup
+        8.950E-04 --- solve
+          2.000E-04 --- hypre solve
+    5.100E-05 --- electromagnetics
+    2.189E-01 --- Main Cycle
+      1.170E-03 --- Time Step
+      6.000E-03 --- Volumetracking
+      7.627E-02 --- Diffusion Solver
+        7.730E-03 --- HTSD precon compute
+          5.830E-04 --- hypre-matrix-copy
+          9.090E-04 --- boomer-setup
+        3.346E-02 --- HTSD function
+          3.238E-02 --- HT function
+        1.748E-02 --- HTSD precon apply
+          1.745E-02 --- HT precon apply
+            7.312E-03 --- boomer-solve
+      1.200E-01 --- Flow
+        1.985E-03 --- update properties
+        5.336E-02 --- prediction
+          3.565E-02 --- setup
+          1.754E-02 --- solve
+            1.990E-03 --- hypre solve
+        5.704E-02 --- projection
+          2.746E-02 --- setup
+          2.942E-02 --- solve
+            7.684E-03 --- hypre solve
 
-                  Process virtual memory used: 4.23E+02 mB
-                                   words/cell: 578005
+                  Process virtual memory used: 2.53E+02 mB
+                                   words/cell: 345946
 
-truchas terminated normally on 19 Apr 19 at 15:53:31
+truchas terminated normally on 17 Dec 21 at 21:50:53

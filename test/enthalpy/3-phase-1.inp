@@ -76,6 +76,8 @@ the latent heat.
   nlk_tol            = 0.02
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  hypre_amg_relax_down_type = 18
+  hypre_amg_relax_up_type = 18
 /
 
 &NUMERICS

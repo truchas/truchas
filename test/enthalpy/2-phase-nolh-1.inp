@@ -58,12 +58,14 @@ specific heat.
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0
-  rel_temp_tol       = 1.0e-3
+  rel_temp_tol       = 1.0e-4
   abs_enthalpy_tol   = 0.0
-  rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 2.0e-4
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
+  hypre_amg_relax_down_type = 18
+  hypre_amg_relax_up_type = 18
 /
 
 &NUMERICS
