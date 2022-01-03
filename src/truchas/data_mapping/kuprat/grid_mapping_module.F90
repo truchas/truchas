@@ -194,7 +194,7 @@ CONTAINS
 ! Compute mesh checksums
     call get_checksum(mesh_a,int_vols%checksum_Amesh)
     call get_checksum(mesh_b,int_vols%checksum_Bmesh)
-    
+
     allocate (iprmeltb(mesh_b%nelt))
     allocate (volint(mesh_b%nelt))
     allocate (eltb_found(mesh_b%nelt))
@@ -206,7 +206,7 @@ CONTAINS
     allocate(int_vols%VolBlockinBmesh_eltA(mesh_a%nelt))
     allocate(int_vols%VolBlockinAmesh_eltB(mesh_b%nelt))
 
-! Initialize mesh-element overlap volumes to zero.    
+! Initialize mesh-element overlap volumes to zero.
     int_vols%VolinBmesh_eltA=0.d0
     int_vols%VolinAmesh_eltB=0.d0
     int_vols%VolBlockinBmesh_eltA=0.d0
@@ -308,7 +308,7 @@ CONTAINS
                 call get_nextelt(currelta,adjelt_elta,mesh_a%nelt, &
                      nextelt_logical,nextelt_integer)
                 cycle
-             else        
+             else
                 write(message,'(a/a/)') &
                      'FATAL: MAXWARN exceeded.', &
                      'Abort from routine COMPUTE_INT_VOLUMES.'
@@ -354,7 +354,7 @@ CONTAINS
                    call get_nextelt(currelta,adjelt_elta,mesh_a%nelt, &
                         nextelt_logical,nextelt_integer)
                    cycle
-                else        
+                else
                    write(message,'(a/a/)') &
                         'FATAL: MAXWARN exceeded.', &
                         'Abort from routine COMPUTE_INT_VOLUMES.'
@@ -443,14 +443,14 @@ CONTAINS
           endif
        enddo
     enddo
-    int_vols%BA%irowst(int_vols%BA%nrows+1)=matind          
+    int_vols%BA%irowst(int_vols%BA%nrows+1)=matind
 
     call cleanup
 
   contains
 
     subroutine cleanup
-      
+
       if (associated(adjelt_elta)) deallocate(adjelt_elta)
       if (associated(adjface_elta)) deallocate(adjface_elta)
       if (associated(adjelt_eltb)) deallocate(adjelt_eltb)
@@ -468,11 +468,11 @@ CONTAINS
       if (associated(nextelt_logical)) deallocate(nextelt_logical)
       if (associated(nextelt_integer)) deallocate(nextelt_integer)
       if (associated(walk_logical)) deallocate(walk_logical)
-      if (associated(walk_integer1)) deallocate(walk_integer1)      
-      if (associated(walk_integer2)) deallocate(walk_integer2)      
+      if (associated(walk_integer1)) deallocate(walk_integer1)
+      if (associated(walk_integer2)) deallocate(walk_integer2)
       if (associated(getvols_logical)) deallocate(getvols_logical)
-      if (associated(getvols_integer1)) deallocate(getvols_integer1)      
-      if (associated(getvols_integer2)) deallocate(getvols_integer2)      
+      if (associated(getvols_integer1)) deallocate(getvols_integer1)
+      if (associated(getvols_integer2)) deallocate(getvols_integer2)
 
     end subroutine cleanup
 
@@ -508,150 +508,213 @@ CONTAINS
 
   end subroutine get_adjelt_relation
 
-  subroutine get_adjtet_relation(ntet,node_tet,adjtet_tet,adjface_tet)
+  ! NNC, 12/29/2021. This is a new implementation of the original subroutine
+  ! that employs the same hash table algorithm as the new get_adjhex_relation.
+  ! The original subroutine worked fine, and has only been updated to maintain
+  ! consistency with get_adjhex_relation. Like the original, this implicitly
+  ! assumes that the mesh topology is valid; results will be unreliable if
+  ! this is not the case.
+
+  subroutine get_adjtet_relation(ntet, node_tet, adjtet_tet, adjface_tet)
+
+    use facet_hash_type
 
     integer, intent(in) :: ntet
-    integer, dimension(:,:), intent(in) :: node_tet
-    integer, dimension(:,:), intent(out) :: adjtet_tet
-    integer, dimension(:,:), intent(out) :: adjface_tet
-    integer :: i,j,k,nkey,facei,teti,faceip1,tetip1
-    integer :: temp(3)
-    integer, dimension(:,:), pointer :: ikey => null()
+    integer, intent(in) :: node_tet(:,:)
+    integer, intent(out) :: adjtet_tet(:,:)
+    integer, intent(out) :: adjface_tet(:,:)
 
-    allocate(ikey(5,ntet*4))
-    nkey=0
-    do i=1,ntet
-       do j=1,4
-          do k=1,3
-             temp(k)=node_tet(node_tetface(k,j),i)
-          enddo
-          nkey=nkey+1
-          ikey(1,nkey)=minval(temp)
-          ikey(3,nkey)=maxval(temp)
-          ikey(2,nkey)=sum(temp)-ikey(1,nkey)-ikey(3,nkey)
-          ikey(4,nkey)=i
-          ikey(5,nkey)=j
-       enddo
-    enddo
+    integer :: j, k, jj, kk, p1, p2, tsize, nface, facet(3)
+    type(facet_hash) :: fhash
 
-    call hpsortim(nkey,3,5,ikey)
+    type :: table_record
+      integer, allocatable :: facet(:)
+      integer :: j, k
+    end type
+    type(table_record), allocatable :: table(:)
 
-    i=1
-    do while(i.le.nkey)
-       if (i.eq.nkey) then
-          teti=ikey(4,i)
-          facei=ikey(5,i)
-          adjtet_tet(facei,teti)=BOUNDARY
-          adjface_tet(facei,teti)=BOUNDARY
-          exit
-       endif
-       if (count(ikey(1:3,i)==ikey(1:3,i+1))==3) then
-          teti=ikey(4,i)
-          facei=ikey(5,i)
-          tetip1=ikey(4,i+1)
-          faceip1=ikey(5,i+1)
-          adjtet_tet(facei,teti)=tetip1
-          adjface_tet(facei,teti)=faceip1
-          adjtet_tet(faceip1,tetip1)=teti
-          adjface_tet(faceip1,tetip1)=facei
-          i=i+2
-       else
-          teti=ikey(4,i)
-          facei=ikey(5,i)
-          adjtet_tet(facei,teti)=BOUNDARY
-          adjface_tet(facei,teti)=BOUNDARY
-          i=i+1
-       endif
-    enddo
+    ! hash table of faces
+    tsize = 4*ntet  ! min value; overwritten by next call
+    call fhash%init(tsize, maxval(node_tet))
+    allocate(table(0:tsize-1))
 
-    deallocate (ikey)
+    nface = 0
+    do j = 1, ntet
+      FOO: do k = 1, 4
+
+        ! sorted list of face nodes
+        facet = node_tet(node_tetface(:,k),j)
+        call isort(facet)
+
+        ! search the hash table for the facet
+        call fhash%hash(facet, p1, p2)
+        do while (allocated(table(p1)%facet))
+          associate (nhbr => table(p1))
+            if (all(nhbr%facet == facet)) then  ! a match
+              associate (jj => nhbr%j, kk => nhbr%k)
+                adjtet_tet(k,j) = jj
+                adjface_tet(k,j) = kk
+                adjtet_tet(kk,jj) = j
+                adjface_tet(kk,jj) = k
+              end associate
+              cycle FOO
+            end if
+          end associate
+          ! next probe address
+          p1 = p1 - p2
+          if (p1 < 0) p1 = p1 + tsize
+        end do
+
+        ! face not found; insert it at this location
+        nface = nface + 1
+        if (nface >= tsize) then
+          write(message,'(a/a/)') &
+              'FATAL: Hash table overflow.', &
+              'Abort from routine GET_ADJTET_RELATION in GRID_MAPPING_MODULE.'
+          call write_msg(message(:3))
+          stop 1
+        end if
+        table(p1)%facet = facet
+        table(p1)%j = j
+        table(p1)%k = k
+
+        ! mark face provisionally as a boundary; this will be overwritten
+        ! later if a neighbor is found.
+        adjtet_tet(k,j) = BOUNDARY
+        adjface_tet(k,j) = BOUNDARY
+
+      end do FOO
+    end do
+
+  contains
+
+    ! Insertion sort of array A.
+    pure subroutine isort(a)
+      integer, intent(inout) :: a(:)
+      integer :: i, j, ai
+      do i = 2, size(a)
+        ai = a(i)
+        do j = i, 2, -1
+          if (a(j-1) <= ai) exit
+          a(j) = a(j-1)
+        end do
+        a(j) = ai
+      end do
+    end subroutine
 
   end subroutine get_adjtet_relation
 
-  subroutine get_adjhex_relation(nhex,node_hex,adjhex_hex,adjface_hex)
+  ! NNC, 12/29/2021. This is a new implementation of the original subroutine,
+  ! which sometimes returned bogus results for degenerate hexes. Like the
+  ! original, this implicitly assumes that the mesh topology is valid;
+  ! results will be unreliable if this is not the case. Instead of using a
+  ! multi-key sorted table of faces to identify adjacent cells, this
+  ! implementation uses a hash table and is significantly faster as a bonus.
+
+  subroutine get_adjhex_relation(nhex, node_hex, adjhex_hex, adjface_hex)
+
+    use facet_hash_type
 
     integer, intent(in) :: nhex
-    integer, dimension(:,:), intent(in) :: node_hex
-    integer, dimension(:,:), intent(out) :: adjhex_hex
-    integer, dimension(:,:), intent(out) :: adjface_hex
-    integer :: nkey,i,j,k,facei,hexi,faceip1,hexip1
-    integer :: minvl, maxvl
-    integer, dimension(1):: minpos
-    integer, dimension(1):: maxpos
-    integer, dimension(4):: temp
-    logical, dimension(4):: mask
-    integer, dimension(:,:), pointer :: ikey => null()
+    integer, intent(in) :: node_hex(:,:)
+    integer, intent(out) :: adjhex_hex(:,:)
+    integer, intent(out) :: adjface_hex(:,:)
 
-    allocate(ikey(6,nhex*6))
+    integer :: j, k, jj, kk, n, p1, p2, tsize, nface, temp(4)
+    type(facet_hash) :: fhash
 
-    adjhex_hex=BOUNDARY
-    adjface_hex=BOUNDARY
+    type :: table_record
+      integer, allocatable :: facet(:)
+      integer :: j, k
+    end type
+    type(table_record), allocatable :: table(:)
 
-    nkey=0
-    do i=1,nhex
-       do j=1,6
-          do k=1,4
-             temp(k)=node_hex(node_hexface(k,j),i)
-          enddo
-          nkey=nkey+1
-          minpos=minloc(temp)
-          minvl=minval(temp)
-          maxpos=maxloc(temp)
-          maxvl=maxval(temp)
+    ! hash table of faces
+    tsize = 6*nhex  ! min value; overwritten by next call
+    call fhash%init(tsize, maxval(node_hex))
+    allocate(table(0:tsize-1))
 
-! Put IKEY(1:4,nkey) in ascending order
-          ikey(1,nkey)=minvl
-          ikey(4,nkey)=maxvl
-          mask=.true.
-          mask(minpos)=.false.
-          mask(maxpos)=.false.
-          ikey(2,nkey)=minval(temp,mask=mask)
-          ikey(3,nkey)=maxval(temp,mask=mask)
-          ikey(5,nkey)=i
-          ikey(6,nkey)=j
+    nface = 0
+    do j = 1, nhex
+      FOO: do k = 1, 6
 
-!   Check for degenerate face which is when there are topologically less
-!   than 3 distinct vertices on a face.  If there are three distinct
-!   vertices, this is not a degenerate face.
-          if (ikey(1,nkey).eq.ikey(2,nkey)) then
-             if (ikey(2,nkey).eq.ikey(3,nkey)) then
-                adjhex_hex(j,i)=DEGENERATE_FACE
-                adjface_hex(j,i)=DEGENERATE_FACE
-             elseif (ikey(3,nkey).eq.ikey(4,nkey)) then
-                adjhex_hex(j,i)=DEGENERATE_FACE
-                adjface_hex(j,i)=DEGENERATE_FACE
-             endif
-          elseif ((ikey(2,nkey).eq.ikey(3,nkey)).and. &
-             (ikey(3,nkey).eq.ikey(4,nkey))) then
-                adjhex_hex(j,i)=DEGENERATE_FACE
-                adjface_hex(j,i)=DEGENERATE_FACE
-          endif
-       enddo
-    enddo
+        ! check for degenerate face / sorted list of (unique) face nodes
+        temp = node_hex(node_hexface(:,k),j)
+        call isort(temp, n) ! temp(n:) is sorted list with duplicates removed
+        if (n > 2) then ! this is a degenerate face
+          adjhex_hex(k,j) = DEGENERATE_FACE
+          adjface_hex(k,j) = DEGENERATE_FACE
+          cycle FOO
+        end if
 
-! Multikey sort puts IKEY(*,1:NKEY) in lexicographic ascending order based
-! on the multikeys IKEY(1:4,*).
-    call hpsortim(nkey,4,6,ikey)
+        associate (facet => temp(n:))
 
-! Match up pairs of faces
-    i=1
-    do while(i.lt.nkey)
-       if (count(ikey(1:4,i)==ikey(1:4,i+1))==4) then
-          hexi=ikey(5,i)
-          facei=ikey(6,i)
-          hexip1=ikey(5,i+1)
-          faceip1=ikey(6,i+1)
-          adjhex_hex(facei,hexi)=hexip1
-          adjface_hex(facei,hexi)=faceip1
-          adjhex_hex(faceip1,hexip1)=hexi
-          adjface_hex(faceip1,hexip1)=facei
-          i=i+2
-       else
-          i=i+1
-       endif
-    enddo
+          ! search the hash table for the facet
+          call fhash%hash(facet, p1, p2)
+          do while (allocated(table(p1)%facet))
+            associate (nhbr => table(p1))
+              if (size(nhbr%facet) == size(facet)) then ! possible match
+                if (all(nhbr%facet == facet)) then  ! a match
+                  associate (jj => nhbr%j, kk => nhbr%k)
+                    adjhex_hex(k,j) = jj
+                    adjface_hex(k,j) = kk
+                    adjhex_hex(kk,jj) = j
+                    adjface_hex(kk,jj) = k
+                  end associate
+                  cycle FOO
+                end if
+              end if
+            end associate
+            ! next probe address
+            p1 = p1 - p2
+            if (p1 < 0) p1 = p1 + tsize
+          end do
 
-    deallocate(ikey)
+          ! face not found; insert it at this location
+          nface = nface + 1
+          if (nface >= tsize) then
+            write(message,'(a/a/)') &
+                'FATAL: Hash table overflow.', &
+                'Abort from routine GET_ADJHEX_RELATION in GRID_MAPPING_MODULE.'
+            call write_msg(message(:3))
+            stop 1
+          end if
+          table(p1)%facet = facet
+          table(p1)%j = j
+          table(p1)%k = k
+
+          ! mark face provisionally as a boundary; this will be overwritten
+          ! later if a neighbor is found.
+          adjhex_hex(k,j) = BOUNDARY
+          adjface_hex(k,j) = BOUNDARY
+
+        end associate
+
+      end do FOO
+    end do
+
+  contains
+
+    ! Insertion sort of array A of positive integers that removes duplicates.
+    ! The sorted array is A(N:); A(:N-1) are all 0.
+
+    pure subroutine isort(a, n)
+      integer, intent(inout) :: a(:)
+      integer, intent(out) :: n
+      integer :: i, j, ai
+      do i = 2, size(a)
+        ai = a(i)
+        do j = i, 2, -1
+          if (a(j-1) == ai) ai = 0
+          if (a(j-1) <= ai) exit
+          a(j) = a(j-1)
+        end do
+        a(j) = ai
+      end do
+      do n = 1, size(a)
+        if (a(n) > 0) return
+      end do
+    end subroutine
 
   end subroutine get_adjhex_relation
 
@@ -660,7 +723,7 @@ CONTAINS
 
     integer, intent(in) :: nelt
     integer, dimension(:,:), intent(in) :: node_elt
-    real(dp), dimension(:,:), intent(in) :: pos_mesh 
+    real(dp), dimension(:,:), intent(in) :: pos_mesh
     logical, dimension(:), intent(in) :: isgap
     integer, dimension(:,:), intent(in) :: adjface_elt
     real(dp), intent(in) :: eps_dist_frac
@@ -685,7 +748,7 @@ CONTAINS
              enddo
              call get_centroid_and_distance(pos_elt,xq,maxdist)
              eps_dist=eps_dist_frac*maxdist
-             
+
              do j=1,4
                 x1= pos_elt(:,node_tetface(1,j))
                 x2= pos_elt(:,node_tetface(2,j))
@@ -724,7 +787,7 @@ CONTAINS
                    x12=(x1+x2)*0.5d0
                    x23=(x2+x3)*0.5d0
                    x34=(x3+x4)*0.5d0
-                   
+
                    areavec=areavector_tri(x12,x23,x34)
                    norm=sqrt(areavec(1)**2+areavec(2)**2+areavec(3)**2)
                    normvec=areavec/norm
@@ -793,7 +856,7 @@ CONTAINS
     integer, intent(in) :: nelt
     integer, dimension(:,:), intent(in) :: node_elt
     integer, dimension(:,:), intent(in) :: adjface_elt
-    real(dp), dimension(:,:), intent(in) :: pos_mesh 
+    real(dp), dimension(:,:), intent(in) :: pos_mesh
     real(dp), dimension(:), intent(out) :: vols
 
     real(dp), dimension(3) :: x1,x2,x3,x4,xref,x12,x23,x34,areavec
@@ -837,7 +900,7 @@ CONTAINS
 
     integer, intent(in) :: nelt
     integer, dimension(:,:), intent(in) :: node_elt
-    real(dp), dimension(:,:), intent(in) :: pos_mesh 
+    real(dp), dimension(:,:), intent(in) :: pos_mesh
     real(dp), dimension(:), intent(in) :: vols
     real(dp), intent(in) :: eps_vol_frac
     logical, dimension(:), intent(out) :: isgap
@@ -856,7 +919,7 @@ CONTAINS
        enddo
 
        call get_centroid_and_distance(pos_elt,xq,maxdist)
- 
+
        ref_vol=4.d0/3.d0*pi*(maxdist**3)
        eps_vol=eps_vol_frac*ref_vol
        if (vols(i).le.eps_vol) then
@@ -866,7 +929,7 @@ CONTAINS
        endif
     enddo
     deallocate(pos_elt)
-    
+
   end subroutine get_isgap
 
   function areavector_tri(x1,x2,x3)
@@ -961,7 +1024,7 @@ CONTAINS
        adjelt_elt,nelt,isgap,dist_out,onstack,onstacklist,eltstack)
 
     integer, intent(inout) :: currelt
-    integer, intent(in) :: nelt 
+    integer, intent(in) :: nelt
     real(dp), dimension(3), intent(in) :: x
     real(dp), dimension(:,:,:), intent(in) :: inplane_eltface
     integer, dimension(:,:), intent(in) :: adjelt_elt
@@ -975,23 +1038,23 @@ CONTAINS
     integer :: best_choice
     real(dp) :: dist_out_elt, dist_out_i, dist_out_htop
 !
-!  This algorithm differs somewhat from Algorithm 2 in the 
+!  This algorithm differs somewhat from Algorithm 2 in the
 !  Physics_Algorithms manual (which
 !  refers to the previous version of this algorithm).  Now when we
-!  walk from element to element on the mesh, we keep track of 
+!  walk from element to element on the mesh, we keep track of
 !  DIST_OUT which is a measure of how much the best-element-so-far
 !  failed in containing the query point X.  If no elements
 !  in the mesh contain X, we return the one with lowest DIST_OUT value.
 !  Although this causes the whole mesh to be searched, this is hopefully
 !  rare, and often it will lead to a good intersection calculation
 !  for mesh elements near a boundary where the meshes do not match up well.
-!  That is, the element returned, although not containing X, 
+!  That is, the element returned, although not containing X,
 !  will provide an adequate seed for subroutine GET_VOLS_AROUND_ELTA
 !  and good intersection volumes will be generated.
 !
     best_choice=0
 
-    ! If CURRELT is zero, allocate work arrays and use '1' as the 
+    ! If CURRELT is zero, allocate work arrays and use '1' as the
     ! first elt for starting the search for the elt containing the
     ! point X.
     if (currelt.eq.0) then
@@ -1043,13 +1106,13 @@ CONTAINS
 ! When we look at each face, we put the opposite element on the stack
 ! (if that element exists and if it has not been put on the stack
 ! before).  However, as we go through the faces, if X is currently
-! outside of face I by a distance DIST_OUT_I and that distance is 
+! outside of face I by a distance DIST_OUT_I and that distance is
 ! greater than DIST_OUT_HTOP, and the opposite element
 ! has not been put on the stack before, we call that element H_TOP.
 ! (In this case, DIST_OUT_I becomes the new DIST_OUT_HTOP.)
 ! We will delay putting H_TOP on the stack until the end, so that
 ! H_TOP is popped off first and we proceed immediately in a favorable
-! direction in the mesh.  In the case that a better candidate for 
+! direction in the mesh.  In the case that a better candidate for
 ! H_TOP is encountered, we place the previous H_TOP candidate onto
 ! the stack.
           h_top=0
@@ -1115,7 +1178,7 @@ CONTAINS
              enddo
              return
           else
-             ! Current elt not viable.  Put the adjacent elt H_TOP onto the stack, so 
+             ! Current elt not viable.  Put the adjacent elt H_TOP onto the stack, so
              ! that it will be processed next.  H_TOP is our candidate for the best
              ! element to walk to now.
              if (h_top.ne.0) then
@@ -1264,7 +1327,7 @@ CONTAINS
           h8%x=(/min_x,max_y,max_z/)
           poly_elta=Load_Hex(h1,h2,h3,h4,h5,h6,h7,h8)
 
-! Intersect the bigger hex with the averaged face planes of ELT_A to 
+! Intersect the bigger hex with the averaged face planes of ELT_A to
 ! get a 'planarized' version of ELT_A.
           do i=1,6
              if (adjface_elta(i).ne.DEGENERATE_FACE) then
@@ -1274,7 +1337,7 @@ CONTAINS
                 call plane_poly_int3d(plane,poly_elta,tmp)
                 poly_elta=tmp
                 if (poly_elta%numCrnr<4) then
-                   write(outstring,*) 
+                   write(outstring,*)
                    write(message,'(a,i10,a/a/)') &
                         'Warning: planarization of hex ',elta,' annihilates it!', &
                         'Warning from routine GET_VOLS_AROUND_ELTA.'
@@ -1302,7 +1365,7 @@ CONTAINS
           enddo
        endif
     enddo CHKINSIDE
-    
+
     if (elta_inside_seedelt) then
        num_int=1
        elt(num_int)=currelt
@@ -1383,7 +1446,7 @@ CONTAINS
        enddo
        if (lint_nonempty) then
           volint_poly=volm_Poly3D(int_poly)
-!  The following two lines of code impose the most basic restriction on the 
+!  The following two lines of code impose the most basic restriction on the
 !  intersection volume:  The intersection cannot have a negative volume,
 !  and cannot exceed the volume of either element.
           volint_poly=max(volint_poly,0.d0)
@@ -1460,7 +1523,7 @@ CONTAINS
 
   subroutine MAP_CELL_FIELD(src,dest,int_vols, &                ! necessary
        reverse_order,exactly_conservative,preserve_constants, & ! optional
-       strict,defval,ier)                                       ! optional 
+       strict,defval,ier)                                       ! optional
 
     real(dp), dimension(:), intent(in) :: src
     real(dp), dimension(:), intent(out) :: dest
@@ -1651,7 +1714,7 @@ CONTAINS
 
     if (present(ier)) ier=0
 
-    if (size(vf_a).ne.int_vols%BA%ncols) then 
+    if (size(vf_a).ne.int_vols%BA%ncols) then
        write(message,'(a/a/)') 'FATAL:  Volume fraction array VF_A has incorrect length.', &
             'Abort from routine GRID_VOL_FRACS'
        call write_msg(message(:3))
@@ -1659,7 +1722,7 @@ CONTAINS
        ier=-1
        return
     endif
-    if (size(vf_b).ne.int_vols%BA%nrows) then 
+    if (size(vf_b).ne.int_vols%BA%nrows) then
        write(message,'(a/a/)') 'FATAL:  Volume fraction array VF_B has incorrect length.', &
             'Abort from routine GRID_VOL_FRACS'
        call write_msg(message(:3))
@@ -1685,7 +1748,7 @@ CONTAINS
           return
        endif
 
-       where (int_vols%Vol_eltA > 0.d0) 
+       where (int_vols%Vol_eltA > 0.d0)
           vf_a=int_vols%VolBlockinBmesh_eltA/int_vols%Vol_eltA
        elsewhere
           vf_a=0.d0
@@ -1707,8 +1770,8 @@ CONTAINS
           ier=-1
           return
        endif
-       
-       where (int_vols%Vol_eltA > 0.d0) 
+
+       where (int_vols%Vol_eltA > 0.d0)
           vf_a=int_vols%VolinBmesh_eltA/int_vols%Vol_eltA
        elsewhere
           vf_a=0.d0
@@ -1732,7 +1795,7 @@ CONTAINS
 
     if (present(ier)) ier=0
 
-    if (size(vol_a).ne.int_vols%BA%ncols) then 
+    if (size(vol_a).ne.int_vols%BA%ncols) then
        write(message,'(a/a/)') 'FATAL:  Element volume array VOL_A has incorrect length.', &
             'Abort from routine GRID_VOLS'
        call write_msg(message(:3))
@@ -1740,7 +1803,7 @@ CONTAINS
        ier=-1
        return
     endif
-    if (size(vol_b).ne.int_vols%BA%nrows) then 
+    if (size(vol_b).ne.int_vols%BA%nrows) then
        write(message,'(a/a/)') 'FATAL:  Element volume array VOL_B has incorrect length.', &
             'Abort from routine GRID_VOLS'
        call write_msg(message(:3))
@@ -1829,18 +1892,18 @@ CONTAINS
        if (.not.present(ier)) stop
        ier=-1
        return
-    endif       
+    endif
 
   end subroutine read_int_volumes
 
   function right_int_volumes(mesh_a, mesh_b, int_vols)
 
     logical :: right_int_volumes
-    type(gm_mesh), intent(in) :: mesh_a, mesh_b 
+    type(gm_mesh), intent(in) :: mesh_a, mesh_b
     type(grid_int_vols), intent(in) :: int_vols
 
     type(gm_mesh_checksum) :: checksum
-    
+
     right_int_volumes=.false.
 
     call get_checksum(mesh_a,checksum)
@@ -1853,7 +1916,7 @@ CONTAINS
   end function right_int_volumes
 
   subroutine get_checksum(mesh,checksum)
-  
+
     type(gm_mesh), intent(in) :: mesh
     type(gm_mesh_checksum), intent(out) :: checksum
 
