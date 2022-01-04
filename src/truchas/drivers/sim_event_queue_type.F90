@@ -121,7 +121,7 @@ contains
     next_time = this%top%time
   end function next_time
 
-  pure subroutine add_event(this, time, action, rank)
+  subroutine add_event(this, time, action, rank)
     class(sim_event_queue), intent(inout) :: this
     real(r8), intent(in) :: time
     class(event_action), intent(in) :: action
@@ -264,7 +264,7 @@ contains
     end if
   end subroutine get_next_action
 
-  pure subroutine add_action(this, action, rank)
+  subroutine add_action(this, action, rank)
     class(action_list), intent(inout) :: this
     class(event_action), intent(in) :: action
     integer, intent(in), optional :: rank
@@ -302,7 +302,7 @@ contains
   !! The insertion point is the last item having equal or lower RANK. A null
   !! pointer is returned if the insertion point is at the head of the list.
 
-  pure subroutine find_list_item(this, rank, item)
+  subroutine find_list_item(this, rank, item)
     class(action_list), intent(inout) :: this
     integer, intent(in) :: rank
     type(list_item), intent(out), pointer :: item
