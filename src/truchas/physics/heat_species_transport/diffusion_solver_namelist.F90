@@ -400,11 +400,9 @@ contains
     case ('SSOR')
       ds_nlk_pc = DS_NLK_PC_SSOR
       call plist%set('method', 'SSOR')
-    case ('HYPRE_AMG')
+    case ('HYPRE_AMG', NULL_C)
       ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
       call plist%set('method', 'BoomerAMG')
-    case (NULL_C)
-      ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
     case default
       call TLS_fatal ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
     end select

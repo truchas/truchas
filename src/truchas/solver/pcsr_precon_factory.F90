@@ -33,7 +33,7 @@ contains
 
     context = 'processing ' // params%name() // ': '
 
-    call params%get('method', method, stat=stat, errmsg=errmsg)
+    call params%get('method', method, default='BOOMERAMG', stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
