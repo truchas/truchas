@@ -10,7 +10,6 @@ program test_hypre_hybrid_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use pgslib_module
   use parallel_communication
   use index_partitioning
   use pcsr_matrix_type
@@ -33,7 +32,7 @@ program test_hypre_hybrid_type
   call gmres_test_1
   call gmres_test_2
 
-  call pgslib_finalize
+  call halt_parallel_communication
   
   call exit (status)
 

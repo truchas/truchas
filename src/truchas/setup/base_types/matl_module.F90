@@ -381,7 +381,7 @@ CONTAINS
     !   Collate a distributed matl into a single large matl on IO PE
     !==================================================================
     use parameter_module,     only: mat_slot, max_slots
-    use pgslib_module,        only: PGSLib_COLLATE
+    use parallel_communication, only: collate
 
     ! Arguments
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: Collated_Matl
@@ -393,9 +393,9 @@ CONTAINS
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     do s = 1, mat_slot
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Id,      Local_Matl(s)%Cell%Id )
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof,     Local_Matl(s)%Cell%Vof )
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof_Old, Local_Matl(s)%Cell%Vof_Old )
+       call collate(Collated_Matl(s)%Cell%Id,      Local_Matl(s)%Cell%Id )
+       call collate(Collated_Matl(s)%Cell%Vof,     Local_Matl(s)%Cell%Vof )
+       call collate(Collated_Matl(s)%Cell%Vof_Old, Local_Matl(s)%Cell%Vof_Old )
     end do
 
   END SUBROUTINE COLLATE_MATL

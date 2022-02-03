@@ -479,8 +479,7 @@ CONTAINS
     ! Collated  Local_Atlas into Collated_Atlas.
     ! This routine assumes that some fields of Collated_Atlas have
     ! already been setup, so Collated_Atlas is an INOUT argument.
-    use parallel_communication, only: is_IOP
-    use pgslib_module,        ONLY: PGSLib_Global_SUM, PGSlib_Collate
+    use parallel_communication, only: is_IOP, global_sum, collate
     type(BC_Atlas), intent(INOUT) :: collated_atlas
     type(BC_Atlas), intent(IN) :: local_atlas
 
@@ -502,7 +501,7 @@ CONTAINS
 
     !!! THIS CODE IS BROKEN.  I ASSUME ONE CELL PER CHART WHICH IS BOGUS!!!!
 
-    Collated_Size = PGSLib_Global_SUM(SIZE(Local_Atlas))
+    Collated_Size = global_sum(SIZE(Local_Atlas))
     if (.NOT. is_IOP) then
        Collated_Size = 0
     end if
@@ -516,25 +515,25 @@ CONTAINS
 
     ! Collate the data onto the IO processor
     Local_Cells    => BC_Get_Cell(Local_Atlas)
-    call pgslib_collate(Collated_Cells, Local_Cells)
+    call collate(Collated_Cells, Local_Cells)
 
     Local_Faces    => BC_Get_Face(Local_Atlas)
-    call pgslib_collate(Collated_Faces, Local_Faces)
+    call collate(Collated_Faces, Local_Faces)
 
     Local_ValueIndex    => BC_Get_ValueIndex(Local_Atlas)
-    call pgslib_collate(Collated_ValueIndex, Local_ValueIndex)
+    call collate(Collated_ValueIndex, Local_ValueIndex)
 
     Local_UseFunction    => BC_Get_UseFunction(Local_Atlas)
-    call pgslib_collate(Collated_UseFunction, Local_UseFunction)
+    call collate(Collated_UseFunction, Local_UseFunction)
 
     Local_Values    => BC_Get_Values(Local_Atlas)
     do d = 1, BC_Get_DOF(Local_Atlas)
-       call pgslib_collate(Collated_Values(d,:), Local_Values(d,:))
+       call collate(Collated_Values(d,:), Local_Values(d,:))
     end do
 
     Local_Positions    => BC_Get_Positions(Local_Atlas)
     do d = 1, SIZE(Local_Positions, 1)
-       call pgslib_collate(Collated_Positions(d,:), Local_Positions(d,:))
+       call collate(Collated_Positions(d,:), Local_Positions(d,:))
     end do
 
     ! Now append it into the collated atlas

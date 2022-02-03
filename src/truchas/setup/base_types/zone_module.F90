@@ -77,7 +77,7 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed zone into a single large zone on IO PE
     !==================================================================
-    use pgslib_module,        only: PGSLib_COLLATE
+    use parallel_communication,        only: collate
 
     ! Arguments
     type(CELL_AVG), dimension(:), intent(IN    ) :: Local_Zone
@@ -88,17 +88,17 @@ CONTAINS
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    call PGSLib_COLLATE (Collated_Zone%Rho,          Local_Zone%Rho)
-    call PGSLib_COLLATE (Collated_Zone%Rho_Old,      Local_Zone%Rho_Old)
-    call PGSLib_COLLATE (Collated_Zone%Temp,         Local_Zone%Temp)
-    call PGSLib_COLLATE (Collated_Zone%Temp_Old,     Local_Zone%Temp_Old)
-    call PGSLib_COLLATE (Collated_Zone%Enthalpy,     Local_Zone%Enthalpy)
-    call PGSLib_COLLATE (Collated_Zone%Enthalpy_Old, Local_Zone%Enthalpy_Old)
-    call PGSLib_COLLATE (Collated_Zone%P,            Local_Zone%P)
+    call collate (Collated_Zone%Rho,          Local_Zone%Rho)
+    call collate (Collated_Zone%Rho_Old,      Local_Zone%Rho_Old)
+    call collate (Collated_Zone%Temp,         Local_Zone%Temp)
+    call collate (Collated_Zone%Temp_Old,     Local_Zone%Temp_Old)
+    call collate (Collated_Zone%Enthalpy,     Local_Zone%Enthalpy)
+    call collate (Collated_Zone%Enthalpy_Old, Local_Zone%Enthalpy_Old)
+    call collate (Collated_Zone%P,            Local_Zone%P)
 
     do n = 1,ndim
-       call PGSLib_COLLATE (Collated_Zone%Vc(n),      Local_Zone%Vc(n))
-       call PGSLib_COLLATE (Collated_Zone%Vc_Old(n),  Local_Zone%Vc_Old(n))
+       call collate (Collated_Zone%Vc(n),      Local_Zone%Vc(n))
+       call collate (Collated_Zone%Vc_Old(n),  Local_Zone%Vc_Old(n))
     end do
 
   END SUBROUTINE COLLATE_ZONE

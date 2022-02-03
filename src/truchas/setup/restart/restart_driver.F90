@@ -96,8 +96,7 @@ contains
 
   subroutine open_restart_file ()
 
-    use parallel_communication, only: is_IOP
-    use pgslib_module, only: pgslib_bcast
+    use parallel_communication, only: is_IOP, broadcast
     use restart_utilities, only: read_var, info, halt
     use string_utilities, only: i_to_c
 
@@ -111,7 +110,7 @@ contains
     !! Open the restart file.
     unit = -1
     if (is_IOP) open(newunit=unit,file=restart_file,form='unformatted',action='read',status='old',position='rewind',iostat=ios)
-    call pgslib_bcast (ios)
+    call broadcast (ios)
     if (ios /= 0) call halt ('Unable to open restart file ' // trim(restart_file) // &
                              ' for unformatted reading: iostat=' // i_to_c(ios))
 

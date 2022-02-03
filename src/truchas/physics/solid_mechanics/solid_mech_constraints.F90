@@ -1122,7 +1122,7 @@ Contains
     use mech_bc_data_module
     use bc_operations
     use solid_mechanics_mesh, only: nvf
-    use pgslib_module, only: PGSLib_GLOBAL_ANY
+    use parallel_communication, only: global_any
 
     TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
     TYPE(BC_Atlas),    POINTER :: HTC_GAP_Atlas
@@ -1144,7 +1144,7 @@ Contains
     HTC_GAP_Atlas => BC_OP_Get_Atlas(HTC_GAP_Operator)
 
     numfaces = DATA_SIZE(HTC_GAP_Atlas)
-    IF (PGSLib_Global_ANY(numfaces > 0)) THEN
+    IF (global_any(numfaces > 0)) THEN
 
        ! We are using whole arrays, so faster to point at them than get a private copy.
        FaceList     => BC_Get_Face(HTC_GAP_Atlas)
@@ -1209,7 +1209,7 @@ Contains
     use bc_operations
     use mech_bc_data_module
     use legacy_mesh_api, only: ncells, EN_Gather
-    use pgslib_module, only: PGSLib_GLOBAL_ANY
+    use parallel_communication, only: global_any
     use solid_mechanics_mesh, only: nvf, nvc
 
     TYPE(BC_Operator), POINTER :: HTC_GAP_Operator
@@ -1235,7 +1235,7 @@ Contains
     HTC_GAP_Atlas => BC_OP_Get_Atlas(HTC_GAP_Operator)
 
     numfaces = DATA_SIZE(HTC_GAP_Atlas)
-    IF (PGSLib_Global_ANY(numfaces > 0)) THEN
+    IF (global_any(numfaces > 0)) THEN
 
        ! Gather gap displacements of off-processor neighboring nodes
        allocate(ENtemp(nvc, ncells),stat = status)

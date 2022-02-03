@@ -45,8 +45,7 @@ CONTAINS
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use output_control,          only: Output_Dt, Output_T
-    use parallel_communication,  only: is_IOP
-    use pgslib_module,           only: PGSLIB_BCAST
+    use parallel_communication,  only: is_IOP, broadcast
     use output_control,          only: Output_Dt_Multiplier
     use output_control,          only: part, part_path, write_mesh_partition
     use toolpath_table,          only: toolpath_ptr
@@ -105,9 +104,9 @@ CONTAINS
 
     ! Broadcast data if no errors so far
     call OUTPUTS_INPUT_PARALLEL ()
-    call PGSLIB_BCAST (move_block_ids)
-    call PGSLIB_BCAST (move_toolpath_name)
-    call PGSLIB_BCAST (write_mesh_partition)
+    call broadcast (move_block_ids)
+    call broadcast (move_toolpath_name)
+    call broadcast (write_mesh_partition)
 
     ! Check namelist
     call OUTPUTS_CHECK (fatal)
@@ -165,16 +164,16 @@ CONTAINS
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T
-    use pgslib_module,           only: PGSLIB_BCAST
+    use parallel_communication,  only: broadcast
     use output_control,          only: Output_Dt_Multiplier
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
-    call PGSLIB_BCAST (Output_Dt)
-    call PGSLIB_BCAST (Output_T)
-    call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
-    call PGSLIB_BCAST (Output_Dt_Multiplier)
+    call broadcast (Output_Dt)
+    call broadcast (Output_T)
+    call broadcast (Short_Output_Dt_Multiplier)
+    call broadcast (Output_Dt_Multiplier)
 
   END SUBROUTINE OUTPUTS_INPUT_PARALLEL
 

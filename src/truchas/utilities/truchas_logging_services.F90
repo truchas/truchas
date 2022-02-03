@@ -446,7 +446,7 @@ contains
     use,intrinsic :: f90_unix, only: exit
 #endif
     use truchas_danu_output_data, only: outfile
-    use pgslib_module, only: pgslib_finalize
+    use parallel_communication, only: halt_parallel_communication
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
     character(32) :: date_time
@@ -455,7 +455,7 @@ contains
     call timestamp (date_time)
     call TLS_info ('truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize
-    call pgslib_finalize
+    call halt_parallel_communication
     call exit (1)
   end subroutine TLS_fatal
 
@@ -480,14 +480,14 @@ contains
 #ifdef NAG_COMPILER
     use,intrinsic :: f90_unix, only: exit
 #endif
-    use pgslib_module, only: pgslib_finalize
+    use parallel_communication, only: halt_parallel_communication
     use utilities_module, only: timestamp
     character(32) :: date_time
     call timestamp (date_time)
     call TLS_info ('')
     call TLS_info ('truchas terminated normally on '//date_time(5:13)//' at '//date_time(15:22))
     call TLS_finalize
-    call pgslib_finalize
+    call halt_parallel_communication
     call exit (0)
   end subroutine TLS_exit
 
@@ -511,15 +511,14 @@ contains
     use,intrinsic :: f90_unix, only: exit
 #endif
     use,intrinsic :: iso_fortran_env, only: output_unit
-    use parallel_communication, only: this_PE
-    use pgslib_module, only: pgslib_abort
+    use parallel_communication, only: this_PE, abort_parallel_communication
     use utilities_module, only: timestamp
     character(*), intent(in) :: message
     character(32) :: date_time
     write(output_unit,'(a,i0,a)') 'PANIC[', this_PE, ']: ' // message(:len_trim(message))
     call timestamp (date_time)
     write(output_unit,'(a)') 'Truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22)
-    call pgslib_abort
+    call abort_parallel_communication
     call exit (1)
   end subroutine TLS_panic
 

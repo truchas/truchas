@@ -34,7 +34,7 @@ CONTAINS
     ! Purpose(s):
     !   Compute the l(1) norm of an (nx1) vector; xn=sum(abs(X)).
     !=======================================================================
-    use pgslib_module, only: PGSLib_Global_SUM
+    use parallel_communication, only: global_sum
 
     ! Argument List
     real(r8), dimension(:), intent(IN)  :: X
@@ -48,7 +48,7 @@ CONTAINS
     L1NORM = 0.0_r8
 
     ! Compute vector norm
-    L1NORM = PGSLib_Global_SUM(ABS(X))
+    L1NORM = global_sum(ABS(X))
 
   END FUNCTION L1NORM
 
@@ -59,7 +59,7 @@ CONTAINS
     ! Purpose(s):
     !   Compute the l(2) norm of an (nx1) vector; xn=sqrt(sum(X*X)).
     !=======================================================================
-    use pgslib_module, only: PGSLib_Global_DOT_PRODUCT
+    use parallel_communication, only: global_dot_product
 
     ! Argument List
     real(r8), dimension(:), intent(IN)  :: X
@@ -73,7 +73,7 @@ CONTAINS
     L2NORM = 0.0_r8
 
     ! Compute vector norm
-    L2NORM = SQRT(PGSLib_Global_DOT_PRODUCT(X,X))
+    L2NORM = SQRT(global_dot_product(X,X))
 
   END FUNCTION L2NORM
 
@@ -84,7 +84,7 @@ CONTAINS
     ! Purpose(s):
     !   Compute the l(infinity) norm of a (nx1) vector; xn=max(abs(X)).
     !=======================================================================
-    use pgslib_module, only: PGSLib_Global_MAXVAL
+    use parallel_communication, only: global_maxval
 
     ! Argument List
     real(r8), dimension(:), intent(IN)  :: X
@@ -98,7 +98,7 @@ CONTAINS
     LINORM = 0.0_r8
 
     ! Compute vector norm
-    LINORM = PGSLib_Global_MAXVAL(ABS(X))
+    LINORM = global_maxval(ABS(X))
 
   END FUNCTION LINORM
 

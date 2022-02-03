@@ -10,7 +10,6 @@ program test_hypre_pcg_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use pgslib_module
   use parallel_communication
   use index_partitioning
   use pcsr_matrix_type
@@ -79,7 +78,7 @@ program test_hypre_pcg_type
     if (is_IOP) print '(a,es10.3)', 'FAIL: expected l2 error <=', maxerr
   end if
 
-  call pgslib_finalize
+  call halt_parallel_communication
 
   call exit(stat)
 

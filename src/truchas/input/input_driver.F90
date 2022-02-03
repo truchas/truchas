@@ -35,8 +35,7 @@ contains
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
-    use parallel_communication,    only: is_IOP
-    use pgslib_module,             only: pgslib_bcast
+    use parallel_communication,    only: is_IOP, broadcast
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
@@ -83,14 +82,14 @@ contains
     else
       lun = -1
     end if
-    call pgslib_bcast (ios)
+    call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error opening input file: ' // trim(iom))
 
     ! read first line as title information
     if (is_IOP) read(lun,'(a)',iostat=ios) title
-    call pgslib_bcast (ios)
+    call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error reading initial title line: iostat=' // i_to_c(ios))
-    call pgslib_bcast (title)
+    call broadcast (title)
 
     call read_physical_constants (lun)
     call read_function_namelists (lun)

@@ -10,7 +10,6 @@ program test_scalar_func_copy
   use scalar_func_class
   use scalar_func_factories
   use parallel_communication
-  use pgslib_module
   use parameter_list_type
   implicit none
 

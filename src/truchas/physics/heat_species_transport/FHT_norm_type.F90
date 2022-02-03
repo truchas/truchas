@@ -217,12 +217,12 @@ contains
 
     !! Heat equation residual norm.
     call FHT_model_get_cell_temp_view (this%model, f, fseg)
-    call global_maxloc (abs(fseg), pid1, loc1, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
+    call global_maxloc_sub (abs(fseg), pid1, loc1, mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
     err1 = global_maxval(abs(fseg), mask=.not.this%model%void_cell(:this%model%mesh%ncell_onP))
 
     !! Flux matching residual norm.
     call FHT_model_get_face_temp_view (this%model, f, fseg)
-    call global_maxloc (abs(fseg), pid2, loc2, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
+    call global_maxloc_sub (abs(fseg), pid2, loc2, mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
     err2 = global_maxval(abs(fseg), mask=.not.this%model%void_face(:this%model%mesh%nface_onP))
 
     if (present(error)) then

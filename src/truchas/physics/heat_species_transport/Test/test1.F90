@@ -10,7 +10,6 @@ program main
   use mesh_manager
   use spec_diff
   use bdf2_dae
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
   implicit none
   
   integer :: n, stat, status

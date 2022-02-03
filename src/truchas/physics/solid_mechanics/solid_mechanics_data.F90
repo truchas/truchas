@@ -159,7 +159,7 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed mech data type into a single large mech on IO PE
     !==================================================================
-    use pgslib_module, only: PGSLib_COLLATE
+    use parallel_communication, only: collate
 
     ! Arguments
     type(MECH_DATA), intent(IN)  :: Local_Mech
@@ -169,11 +169,11 @@ CONTAINS
     integer :: n
 
     do n = 1,ncomps
-       call PGSLib_COLLATE (Collated_Mech%Total_Strain(n,:),     Local_Mech%Total_Strain(n,:))
-       call PGSLib_COLLATE (Collated_Mech%Elastic_Stress(n,:),   Local_Mech%Elastic_Stress(n,:))
-       call PGSLib_COLLATE (Collated_Mech%Plastic_Strain(n,:),   Local_Mech%Plastic_Strain(n,:))
+       call collate (Collated_Mech%Total_Strain(n,:),     Local_Mech%Total_Strain(n,:))
+       call collate (Collated_Mech%Elastic_Stress(n,:),   Local_Mech%Elastic_Stress(n,:))
+       call collate (Collated_Mech%Plastic_Strain(n,:),   Local_Mech%Plastic_Strain(n,:))
     end do
-    call PGSLib_COLLATE (Collated_Mech%Plastic_Strain_Rate,      Local_Mech%Plastic_Strain_Rate)
+    call collate (Collated_Mech%Plastic_Strain_Rate,      Local_Mech%Plastic_Strain_Rate)
 
   END SUBROUTINE COLLATE_MECH
 

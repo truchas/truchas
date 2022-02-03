@@ -353,8 +353,7 @@ CONTAINS
     use mech_bc_data_module,  only: Node_Disp_BC_Temp, X_DISPLACEMENT, Y_DISPLACEMENT, Z_DISPLACEMENT, &
                                     NORMAL_DISPLACEMENT
     use parameter_module,     only: mbc_nodes
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_COLLATE
-    use parallel_communication, only: is_IOP, nPE
+    use parallel_communication, only: is_IOP, nPE, global_any, collate
     !
     ! Arguments
     integer, intent(IN) :: m, n
@@ -404,8 +403,8 @@ CONTAINS
              end if
           end do NODE_LOOP
           ! Check to see if a node was found.
-          if (PGSLib_GLOBAL_ANY(node_found)) then
-             call PGSLib_COLLATE (Collated_Nodes, bc_gnode)
+          if (global_any(node_found)) then
+             call collate (Collated_Nodes, bc_gnode)
 !             node_found = .false.
              do j = 1, SIZE(Collated_Nodes)
                 if (Collated_Nodes(j) /= 0) then

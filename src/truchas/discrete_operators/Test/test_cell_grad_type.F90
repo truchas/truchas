@@ -86,7 +86,6 @@ program test_cell_grad_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds, only: r8
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH, pgslib_finalize
   use parallel_communication
   use truchas_env, only: prefix
   use mesh_manager
@@ -124,7 +123,7 @@ program test_cell_grad_type
   ! See issue #211
   !call test4_mixed
 
-  call pgslib_finalize
+  call halt_parallel_communication
   call exit (status)
 
 contains

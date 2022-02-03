@@ -44,7 +44,7 @@ contains
                                            get_smech_cell_plastic_strain_rate, &
                                            set_smech_cell_plastic_strain_rate
     use zone_module,                 only: Zone 
-    use pgslib_module,               only: PGSLib_GLOBAL_ANY 
+    use parallel_communication
     use physics_module, only: heat_transport
 
     integer :: icomp 
@@ -55,7 +55,7 @@ contains
     real(r8), dimension(:,:), allocatable :: total_strain, plastic_strain,     &
                                              elastic_stress
     !--------------------------------------------------------------------------- 
-    if (.not. PGSLib_GLOBAL_ANY(Mesh%Cell_Shape >= GAP_ELEMENT_1)) return 
+    if (.not. global_any(Mesh%Cell_Shape >= GAP_ELEMENT_1)) return 
     SOLID_MECH: if (solid_mechanics) then 
        allocate(rotation_magnitude(ncells))
        call get_sm_rotation_magnitude(rotation_magnitude)

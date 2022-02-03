@@ -9,7 +9,6 @@
 program test_rade
 
   use kinds, only: r8
-  use pgslib_module
   use parallel_communication
   use truchas_env, only: prefix, input_dir, overwrite_output
   use truchas_logging_services

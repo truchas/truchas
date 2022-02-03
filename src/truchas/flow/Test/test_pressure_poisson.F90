@@ -4,7 +4,6 @@ program test_pressure_poisson
 #endif
   use kinds
   use parallel_communication
-  use pgslib_module
   use truchas_env, only: prefix
   use truchas_logging_services
   use parameter_list_type

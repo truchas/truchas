@@ -56,9 +56,7 @@ CONTAINS
     use legacy_mesh_api,        only: ncells, ndim, Cell
     use truchas_env,            only: output_file_name
     use parameter_module,       only: nmat
-    use pgslib_module,          only: PGSLIB_GLOBAL_MAXLOC, PGSLIB_GLOBAL_MAXVAL, &
-                                      PGSLIB_GLOBAL_MINLOC, PGSLIB_GLOBAL_MINVAL, &
-                                      PGSLIB_GLOBAL_SUM
+    use parallel_communication
     use material_model_driver,  only: matl_model
     use time_step_module,       only: cycle_number, t
     use zone_module,            only: Zone
@@ -118,12 +116,12 @@ CONTAINS
 
        ! Sum material volume.
        Matl_Vol = Cell%Volume * Tmp
-       Material_Volume(m) = PGSLIB_GLOBAL_SUM(Matl_Vol)
+       Material_Volume(m) = global_sum(Matl_Vol)
        if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
        ! Sum material mass.
        Matl_Mass = Matl_Vol*matl_model%const_phase_prop(m, 'density')
-       Material_Mass(m) = PGSLIB_GLOBAL_SUM(Matl_Mass)
+       Material_Mass(m) = global_sum(Matl_Mass)
        if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
 
        ! Accumulate the total mass.
@@ -132,13 +130,13 @@ CONTAINS
 
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
-          Material_Momentum(n,m) = PGSLIB_GLOBAL_SUM(Matl_Mass*Zone%Vc(n))
+          Material_Momentum(n,m) = global_sum(Matl_Mass*Zone%Vc(n))
           if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
 
        ! Compute material kinetic energy.
-       Material_KE(m) = PGSLIB_GLOBAL_SUM(Matl_Mass*KE)
+       Material_KE(m) = global_sum(Matl_Mass*KE)
        if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
        total_KE = total_KE + Material_KE(m)
 
@@ -149,7 +147,7 @@ CONTAINS
        end do ENTHALPY_LOOP
 
        ! Accumulate the material enthalpy.
-       Material_Enthalpy(m) = PGSLIB_GLOBAL_SUM(Tmp)
+       Material_Enthalpy(m) = global_sum(Tmp)
        if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
 
        ! Accumulate the total enthalpy.
@@ -166,7 +164,7 @@ CONTAINS
 
     end do MATERIAL_SUMS
 
-    total_volume = PGSLib_Global_SUM(Cell%Volume)
+    total_volume = global_sum(Cell%Volume)
 
     ! Write out the totals.
     write (string,30) total_volume, total_mass, (Total_Momentum(n),n=1,ndim), total_KE, total_enthalpy
@@ -234,13 +232,13 @@ CONTAINS
        end select
 
        ! Find the extrema location
-       MinLoc_L = PGSLIB_GLOBAL_MINLOC(Tmp)
-       MaxLoc_L = PGSLIB_GLOBAL_MAXLOC(Tmp)
+       MinLoc_L = global_minloc(Tmp)
+       MaxLoc_L = global_maxloc(Tmp)
 
        ! Write out the extrema location and values
        write (string2, 40) string, &
-                                 PGSLIB_GLOBAL_MINVAL(Tmp), MinLoc_L, &
-                                 PGSLIB_GLOBAL_MAXVAL(Tmp), MaxLoc_L
+                                 global_minval(Tmp), MinLoc_L, &
+                                 global_maxval(Tmp), MaxLoc_L
 40     format (23x,a11,2x,1pe11.4,1x,i8,2x,1pe11.4,1x,i8)
        call TLS_info (string2)
 
@@ -274,13 +272,13 @@ CONTAINS
           end select
           
           ! Find the extrema location
-          MinLoc_L = PGSLIB_GLOBAL_MINLOC(Tmp)
-          MaxLoc_L = PGSLIB_GLOBAL_MAXLOC(Tmp)
+          MinLoc_L = global_minloc(Tmp)
+          MaxLoc_L = global_maxloc(Tmp)
           
           ! Write out the extrema location and values
           write (string2, 40) string, &
-                                 PGSLIB_GLOBAL_MINVAL(Tmp), MinLoc_L, &
-                                 PGSLIB_GLOBAL_MAXVAL(Tmp), MaxLoc_L
+                                 global_minval(Tmp), MinLoc_L, &
+                                 global_maxval(Tmp), MaxLoc_L
           call TLS_info (string2)
 
        end do

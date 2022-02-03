@@ -22,7 +22,9 @@
 module parallel_communication
 
   use,intrinsic :: iso_fortran_env, only: int8
+  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
   use pgslib_module, halt_parallel_communication => PGSLib_Finalize, &
+                     abort_parallel_communication => PGSLib_Abort, &
                      broadcast  => PGSLib_BCast, &
                      distribute => PGSLIB_Dist,  &
                      collate    => PGSLib_Collate, &
@@ -31,17 +33,20 @@ module parallel_communication
                      global_count => PGSLib_Global_Count, &
                      global_sum => PGSLib_Global_Sum, &
                      global_minval => PGSLib_Global_Minval, &
+                     global_minloc => PGSLib_Global_Minloc, &
                      global_maxval => PGSLib_Global_Maxval, &
+                     global_maxloc => PGSLib_Global_Maxloc, &
                      global_dot_product => PGSLib_Global_Dot_Product
   
   implicit none
   private
   
-  public :: init_parallel_communication, halt_parallel_communication
+  public :: PGSLib_CL_MAX_TOKEN_LENGTH
+  public :: init_parallel_communication, halt_parallel_communication, abort_parallel_communication
   public :: broadcast, distribute, collate
   public :: global_any, global_all, global_count, global_sum, global_minval, global_maxval, global_dot_product
   public :: allocate_collated_array
-  public :: global_maxloc, get_value
+  public :: global_minloc, global_maxloc, global_maxloc_sub, get_value
   
   !! Public 
   integer, public, save :: nPE = 1          ! total number of processing entities (PE)
@@ -68,7 +73,7 @@ module parallel_communication
   interface get_value
     module procedure get_value_i, get_value_r
   end interface
-  
+
 contains
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -177,7 +182,7 @@ contains
 #define _DOUBLE_DATA_
 #include "allocate_collated_array.fpp"
 
-  subroutine global_maxloc (array, pid, lindex, mask)
+  subroutine global_maxloc_sub (array, pid, lindex, mask)
   
     double precision, intent(in) :: array(:)
     integer, intent(out) :: pid, lindex
@@ -207,7 +212,7 @@ contains
     call broadcast (pid)
     call broadcast (lindex)
     
-  end subroutine global_maxloc
+  end subroutine global_maxloc_sub
   
   subroutine get_value_i (array, pid, lindex, value)
   
