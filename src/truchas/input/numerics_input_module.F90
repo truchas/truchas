@@ -21,7 +21,6 @@ contains
     use string_utilities,       only: i_to_c
     use input_utilities,        only: seek_to_namelist
     use cutoffs_module,         only: alittle, cutvof
-    use discrete_ops_data,      only: discrete_ops_type
     use time_step_module,       only: t, dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                       cycle_max, cycle_number
 
@@ -31,7 +30,7 @@ contains
     logical :: found
     character(80) :: iom
 
-    namelist /numerics/ alittle, cutvof, cycle_number, cycle_max, discrete_ops_type, &
+    namelist /numerics/ alittle, cutvof, cycle_number, cycle_max, &
         t, dt_constant, dt_init, dt_grow, dt_min, dt_max
 
     call TLS_info('Reading NUMERICS namelist ...')
@@ -68,7 +67,6 @@ contains
     use input_utilities,   only: NULL_R
     use string_utilities,  only: lower_case
     use cutoffs_module,    only: cutvof
-    use discrete_ops_data, only: use_ortho_face_gradient, discrete_ops_type
     use time_step_module,  only: t, dt, constant_dt, dt_constraint, &
                                  dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                  cycle_max, cycle_number
@@ -93,18 +91,6 @@ contains
       dt_constraint = 'initial'
     end if
 
-    ! Set discrete ops
-    select case (lower_case(adjustl(discrete_ops_type)))
-    case ('default')
-      discrete_ops_type  = 'default'
-    case ('ortho')
-      use_ortho_face_gradient = .true.
-    case ('nonortho')
-      use_ortho_face_gradient = .false.
-    case default
-      call TLS_fatal('unknown DISCRETE_OPS_TYPE: ' // trim(discrete_ops_type))
-    end select
-
   end subroutine numerics_check
 
 
@@ -112,7 +98,6 @@ contains
 
     use input_utilities, only: NULL_R
     use cutoffs_module, only: cutvof
-    use discrete_ops_data, only: discrete_ops_type
     use time_step_module, only: t, constant_dt, dt_constant, dt_grow, dt_init, dt_max, dt_min, &
         cycle_max, cycle_number, cycle_number_restart
 
@@ -130,15 +115,12 @@ contains
     constant_dt = .false.
     cutvof  = 1.0d-8 ! volume fraction cutoff
 
-    discrete_ops_type = 'default'
-
   end subroutine numerics_default
 
 
   subroutine numerics_input_parallel
 
     use cutoffs_module,         only: alittle, cutvof
-    use discrete_ops_data,      only: discrete_ops_type
     use parallel_communication, only: broadcast
     use time_step_module,       only: t, constant_dt, cycle_max, &
                                       cycle_number, cycle_number_restart,     &
@@ -156,8 +138,6 @@ contains
     call broadcast(dt_max)
     call broadcast(cycle_number)
     call broadcast(cycle_max)
-
-    call broadcast(discrete_ops_type)
 
     ! Non-namelist variables.
     call broadcast(constant_dt)

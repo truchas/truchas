@@ -54,7 +54,6 @@
   dt_min  = 1.0d-10
   dt_grow = 1.5
   dt_max  = 1.0
-  discrete_ops_type = 'ortho'
 /
 
 ##### BOUNDARY CONDITIONS ######################################################

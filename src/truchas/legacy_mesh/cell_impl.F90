@@ -48,8 +48,6 @@ module cell_impl
   !! Replacement for the CELL structure array from MESH_MODULE
   type(cell_geometry), allocatable, target, public :: cell(:)
 
-  logical, protected, public :: orthogonal_mesh
-
   interface linear_prop
     module procedure linear_prop_face
   end interface
@@ -57,8 +55,6 @@ module cell_impl
 contains
 
   subroutine init_cell_impl
-
-    use discrete_ops_data, only: use_ortho_face_gradient, discrete_ops_type
 
     integer :: j
     real(r8), allocatable :: centroid(:,:), face_area(:,:), face_normal(:,:,:)
@@ -109,16 +105,6 @@ contains
       cell(j)%halfwidth = halfwidth(:,j)
     end do
     deallocate(halfwidth)
-
-    !! ORTHOGONAL_MESH
-    call init_orthogonal_mesh (orthogonal_mesh)
-
-    !! The original cell_geometry_module::jacobian procedure included the
-    !! following as a side effect of computing the orthogonal_mesh flag.
-    !! This is an instance of "mesh" using "client" (not supposed to happen)
-    !! which was not indentified during the initial code analysis.
-    !! TODO: MOVE THIS OUTSIDE OF OLD_MESH_API -- IT DOES NOT BELONG HERE.
-    if (discrete_ops_type == 'default') use_ortho_face_gradient = orthogonal_mesh
 
   end subroutine init_cell_impl
 
@@ -221,21 +207,6 @@ contains
       end do
     end do
   end subroutine init_halfwidth
-
-  !! Essentially cribbed from cell_geometry_module::jacobian.
-
-  subroutine init_orthogonal_mesh (orthogonal_mesh)
-    use legacy_geometry, only: is_cell_orthog
-    use parallel_communication, only: global_all
-    logical, intent(out) :: orthogonal_mesh
-    integer :: j
-    orthogonal_mesh = .true.
-    do j = 1, ncells
-      orthogonal_mesh = is_cell_orthog(cell(j)%face_centroid)
-      if (.not.orthogonal_mesh) exit
-    end do
-    orthogonal_mesh = global_all(orthogonal_mesh)
-  end subroutine init_orthogonal_mesh
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!! LINEAR_PROP CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

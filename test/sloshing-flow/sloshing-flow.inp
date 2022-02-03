@@ -42,7 +42,6 @@
   dt_grow = 1.05
   dt_min  = 1.0e-6
   cutvof                     = 1.0e-8
-  discrete_ops_type          = 'ortho' 
 /
 
 &FLOW
