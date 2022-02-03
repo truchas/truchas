@@ -10,7 +10,7 @@ module legacy_geometry
   implicit none
   private
 
-  public :: cell_centroid, face_area, face_centroid_logical, is_cell_orthog
+  public :: cell_centroid, face_area, face_centroid_logical
 
 contains
 
@@ -219,45 +219,5 @@ contains
     end do
 
   end subroutine face_centroid_logical
-
-  !! This is derived from the original cell_geometry_module::jacobian procedure
-  !! for deciding whether or not a cell is orthogonal.  It was stripped down to
-  !! operate on a single cell, and code to handle the 2D case removed, but the
-  !! algorithm itself is unchanged.  The test examines the 3 vectors between
-  !! centroids of opposite pairs of faces.  If they are orthogonal, the cell is
-  !! deemed to be orthogonal.  This needs to be replaced eventually.  Besides
-  !! the careless and inappropriate use of ALITTLE, this test is insufficient;
-  !! there are non-orthogonal cells for which these vectors are orthogonal.
-  !! However, when considering the mesh as a whole, it is very unlikely that
-  !! none of its non-orthogonal cells are recognized as such by this test, and
-  !! the current use of this function is to determine whether the whole mesh is
-  !! orthogonal or not.  Nevertheless it is possible to have a mesh containing
-  !! non-orthogonal cells, all of which are considered orthogonal by this test.
-  !! For example, consider a small cube centered in a larger cube, and connect
-  !! each face of the small cube to the corresponding face of the large cube
-  !! with a hexehedron.
-
-  logical function is_cell_orthog (face_centroid)
-
-    use cutoffs_module, only: alittle
-
-    real(r8), intent(in) :: face_centroid(:,:)
-
-    integer :: i, ip1
-    real(r8) :: dx(3,3)
-
-    dx(:,1) = face_centroid(:,2) - face_centroid(:,1)
-    dx(:,2) = face_centroid(:,4) - face_centroid(:,3)
-    dx(:,3) = face_centroid(:,6) - face_centroid(:,5)
-    where (abs(dx) <= alittle) dx = 0.0_r8
-
-    is_cell_orthog = .false.
-    do i = 1, 3
-      ip1 = modulo(i,3) + 1
-      if (abs(dot_product(dx(:,i),dx(:,ip1))) > alittle) return
-    end do
-    is_cell_orthog = .true.
-
-  end function is_cell_orthog
 
 end module legacy_geometry

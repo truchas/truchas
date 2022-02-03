@@ -72,7 +72,6 @@ test exercises the implementation in the normal 'HTSD' solver.
 
 &NUMERICS
   dt_constant = 9.765625e-4 ! = 1/1024
-  discrete_ops_type = 'ortho' 
 /
 
 &FLOW

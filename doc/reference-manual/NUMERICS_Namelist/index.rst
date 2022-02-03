@@ -22,7 +22,6 @@ Components
 * :ref:`Cutvof<NUMERICS_C>`
 * :ref:`Cycle_Max<NUMERICS_CM>`
 * :ref:`Cycle_Number<NUMERICS_CN>`
-* :ref:`Discrete_Ops_Type<NUMERICS_DOT>`
 * :ref:`Dt_Constant<NUMERICS_DTC>`
 * :ref:`Dt_Grow<NUMERICS_DTG>`
 * :ref:`Dt_Init<NUMERICS_DTI>`
@@ -70,18 +69,6 @@ Cycle_Number
 | **Default**           : 0
 | **Valid Values**      : [1, :math:`\infty`)
 | **Notes**             : The default value of 0 results in the first computational cycle taken to be 1. This input variable is most useful when starting simulations from a restart file that already contains a restart cycle number > 0.
-
-.. _NUMERICS_DOT:
-
-Discrete_Ops_Type
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description**       : Flag for choosing the numerical reconstruction method used in estimating face-centered (located at cell face centroids) spatial gradients and values of discrete cell-centered data. Specifically, face pressure gradients, face velocity values, and face velocity gradients are all controlled by this flag.
-| **Type**              : string
-| **Default**           : "default"
-| **Valid Values**      : "default", "ortho", "nonortho"
-| **Notes**             : Face-centered pressure gradients are needed for cell-centered estimates of the pressure Laplacian (used in the pressure Poisson solve) and for enforcement of solenoidal face-centered velocities. Face-centered velocity gradients are needed for cell-centered estimates of the stress tensor, and face-centered velocity values are needed for estimation of fluxing velocities. If this variable does not appear in the :ref:`NUMERICS<NUMERICS_Namelist>` namelist, or if it appears and is set to’default’, the type of discrete operators to use is chosen by testing the orthogonality of the mesh cells. When all mesh cells are found to be orthogonal (to roundoff error) and thus hexahedral, then :ref:`Discrete_Ops_Type<NUMERICS_DOT>` defaults to an **'ortho'** method. Otherwise, :ref:`Discrete_Ops_Type<NUMERICS_DOT>` defaults to a **'nonortho'** method, namely the Least Squares Linear Reconstruction (LSLR) method. For a detailed discussion of discrete operators in Truchas, consult the Truchas Physics and Algorithms. If **’ortho’** or **’nonortho’** is set,the chosen operator type is used, whatever the mesh.
-
-The user can set an overall discrete operator type as above and choose an alternative discrete operator type for the projection step in fluid flow (FF). To override the overall default or explicit overall setting, set the variable ``FF_Discrete_Ops_Type link broken - needs to be checked`` to the desired value. Setting this variable leaves the overall setting :ref:`Discrete_Ops_Type<NUMERICS_DOT>` unmodified for all remaining parts of the code.
 
 .. _NUMERICS_DTC:
 

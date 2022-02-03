@@ -21,7 +21,7 @@ module legacy_mesh_api
   use en_gather_impl, only: en_sum_scatter, en_or_scatter, en_min_scatter, en_max_scatter
   use mesh_impl, only: mesh, DEGENERATE_FACE
   use mesh_impl, only: is_face_ngbr, mesh_collate_vertex
-  use cell_impl, only: cell, orthogonal_mesh
+  use cell_impl, only: cell
   use nn_gather_impl, only: vertex_ngbr_all, vertex_ngbr_all_orig, nn_gather_boundarydata
   use vertex_impl, only: vertex_data, vertex, vertex_collate
   use mesh_face_set_impl, only: mesh_face_set
