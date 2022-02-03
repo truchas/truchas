@@ -10,7 +10,6 @@ program test_hypre_hybrid_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
   use pgslib_module
   use parallel_communication
   use index_partitioning
@@ -27,8 +26,7 @@ program test_hypre_hybrid_type
   real(r8) :: a ! set by the tests
   integer :: nx, ny, nz ! set by the tests
   
-  call parallel_init (argv)
-  call init_parallel_communication
+  call init_parallel_communication(argv)
 
   call cg_test_1
   call cg_test_2

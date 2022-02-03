@@ -87,7 +87,6 @@ program test_linear_consistency
 #endif
   use kinds, only: r8
   use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH, pgslib_finalize
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use truchas_env, only: prefix
   use mesh_manager
@@ -104,8 +103,7 @@ program test_linear_consistency
 
   character(:), allocatable :: indir
 
-  call parallel_init (argv)
-  call init_parallel_communication
+  call init_parallel_communication(argv)
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize
   call TLS_set_verbosity (TLS_VERB_NOISY)

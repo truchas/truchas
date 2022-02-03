@@ -47,7 +47,6 @@ CONTAINS
     !---------------------------------------------------------------------------
     use input_driver,           only: READ_INPUT
     use truchas_env,            only: input_file, title
-    use parallel_util_module,   only: PARALLEL_INIT
     use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
     use random_module,          only: INITIALIZE_RANDOM
@@ -61,9 +60,7 @@ CONTAINS
 
     !---------------------------------------------------------------------------
 
-    ! initialize parallelism
-    call PARALLEL_INIT (argv)
-    call init_parallel_communication ()
+    call init_parallel_communication(argv)
 
 !   you can use this to debug in parallel under Linux with LAM and Totalview
 !   see the comments in src/utility/wait_for_debugger.tv

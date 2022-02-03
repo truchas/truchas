@@ -9,7 +9,6 @@ program test_scalar_func_copy
   use scalar_func_containers
   use scalar_func_class
   use scalar_func_factories
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use pgslib_module
   use parameter_list_type
@@ -21,8 +20,7 @@ program test_scalar_func_copy
   real(r8) :: results(4), in(4)
   integer :: i
 
-  call parallel_init(argv)
-  !call init_parallel_communication()
+  call init_parallel_communication(argv)
 
   call sf_const%set("type", "constant")
   call sf_const%set("value", -1.0_r8)

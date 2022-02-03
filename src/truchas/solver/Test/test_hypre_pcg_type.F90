@@ -10,7 +10,6 @@ program test_hypre_pcg_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
   use pgslib_module
   use parallel_communication
   use index_partitioning
@@ -32,8 +31,7 @@ program test_hypre_pcg_type
   real(r8) :: a, maxerr, l2err, rtol
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
-  call parallel_init (argv)
-  call init_parallel_communication
+  call init_parallel_communication(argv)
   
   a = 1.0e-6_r8
   call create_matrix (a, matrix)

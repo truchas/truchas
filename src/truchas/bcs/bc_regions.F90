@@ -537,7 +537,8 @@ CONTAINS
     ! This routine assumes that Collated_Region has been appropriately allocated,
     ! so Collated_Region is an INOUT argument.
 
-    use parallel_util_module
+    !use parallel_util_module
+    use parallel_communication, only: is_IOP
     use pgslib_module,       ONLY: PGSLib_Global_SUM, PGSlib_Collate
     type(BC_Region), intent(INOUT) :: Collated_Region
     type(BC_Region), intent(IN   ) :: Local_Region
@@ -551,7 +552,7 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: CollatedPosition, LocalPosition
 
     Collated_Size = PGSLib_Global_SUM(SIZE(Local_Region))
-    if (.NOT. Is_IO_PE()) Collated_Size = 0
+    if (.NOT. is_IOP) Collated_Size = 0
     DOF = BC_Get_DOF(Local_Region)
 
     ALLOCATE(CollatedCell(Collated_Size))
@@ -577,7 +578,7 @@ CONTAINS
     end do
 
     ! Now insert the collated lists into the collated region
-    if (Is_IO_PE()) then
+    if (is_IOP) then
        call INSERT(Collated_Region, CellList        = CollatedCell, &
                                     FaceList        = CollatedFace, &
                                     ValueList       = CollatedValue, &

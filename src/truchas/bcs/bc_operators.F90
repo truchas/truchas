@@ -390,7 +390,6 @@ CONTAINS
     ! Collate all the components of Local_Op into Collated_Op.
     ! This routine assumes that Collated_Op has been appropriately allocated,
     ! so Collated_Op is an INOUT argument.
-    use parallel_util_module
     type (BC_Operator), target, intent(INOUT) :: Collated_Op
     type (BC_Operator), target, intent(IN   ) :: Local_Op
 

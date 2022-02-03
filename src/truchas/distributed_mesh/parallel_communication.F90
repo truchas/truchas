@@ -17,8 +17,6 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-!#define _STANDALONE_
 #include "f90_assert.fpp"
 
 module parallel_communication
@@ -82,12 +80,13 @@ contains
  !! PGSLib.
  !!
  
-#ifdef _STANDALONE_
-  subroutine init_parallel_communication ()
+  subroutine init_parallel_communication (argv)
   
     use pgslib_module
+
+    character(PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
     
-    call PGSLib_Initialize(1)
+    call PGSLib_INITIALIZE (0, argv=argv)
     nPE     = PGSLib_Inquire_NPE()
     this_PE = PGSLib_Inquire_ThisPE_Actual()
     IO_PE   = PGSLib_Inquire_IO_Root_PE()
@@ -96,20 +95,6 @@ contains
     if (is_IOP) delta_IOP = 1
 
   end subroutine init_parallel_communication
-#else
-  subroutine init_parallel_communication ()
-  
-    use parallel_info_module, only: p_info
-    
-    nPE     = p_info%nPE
-    this_PE = p_info%thisPE
-    IO_PE   = p_info%IO_ROOT_PE
-    is_IOP  = p_info%IOP
-    delta_IOP = 0
-    if (is_IOP) delta_IOP = 1
-
-  end subroutine init_parallel_communication
-#endif
   
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!

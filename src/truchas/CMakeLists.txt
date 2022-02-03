@@ -33,7 +33,6 @@ add_library(truchas ${ver_info})
 
 # Library sources (and unit tests)
 add_subdirectory(bcs)
-add_subdirectory(communication)
 add_subdirectory(discrete_operators)
 add_subdirectory(distributed_mesh)
 add_subdirectory(drivers)

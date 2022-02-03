@@ -479,7 +479,7 @@ CONTAINS
     ! Collated  Local_Atlas into Collated_Atlas.
     ! This routine assumes that some fields of Collated_Atlas have
     ! already been setup, so Collated_Atlas is an INOUT argument.
-    use parallel_util_module, only: Is_IO_PE
+    use parallel_communication, only: is_IOP
     use pgslib_module,        ONLY: PGSLib_Global_SUM, PGSlib_Collate
     type(BC_Atlas), intent(INOUT) :: collated_atlas
     type(BC_Atlas), intent(IN) :: local_atlas
@@ -503,7 +503,7 @@ CONTAINS
     !!! THIS CODE IS BROKEN.  I ASSUME ONE CELL PER CHART WHICH IS BOGUS!!!!
 
     Collated_Size = PGSLib_Global_SUM(SIZE(Local_Atlas))
-    if (.NOT. Is_IO_PE()) then
+    if (.NOT. is_IOP) then
        Collated_Size = 0
     end if
 
@@ -538,7 +538,7 @@ CONTAINS
     end do
 
     ! Now append it into the collated atlas
-    if (Is_IO_PE()) then
+    if (is_IOP) then
        do p = 1, Collated_Size
           call APPEND(ATLAS      = Collated_Atlas,             &
                       VALUES     = Collated_Values(:,p:p), &

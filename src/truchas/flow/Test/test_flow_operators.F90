@@ -3,7 +3,6 @@ program test_pressure_poisson
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use pgslib_module
   use truchas_env, only: prefix, overwrite_output
@@ -22,8 +21,7 @@ program test_pressure_poisson
   type(unstr_mesh), pointer :: mesh
   integer :: i, in
 
-  call parallel_init(argv)
-  call init_parallel_communication
+  call init_parallel_communication(argv)
   overwrite_output = .true.
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize()
