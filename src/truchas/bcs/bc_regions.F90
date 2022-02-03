@@ -29,8 +29,7 @@ Module BC_Regions
             INSERT,        &
             REALLOC,       &
             SIZE,          &
-            DIMENSIONALITY,&
-            COLLATE
+            DIMENSIONALITY
 
   PUBLIC :: ORDER
   PUBLIC :: PERMUTE
@@ -113,10 +112,6 @@ Module BC_Regions
 
   INTERFACE ORDER
      MODULE PROCEDURE BC_Region_Order
-  END INTERFACE
-
-  INTERFACE COLLATE
-     MODULE PROCEDURE BC_Region_Collate
   END INTERFACE
 
   INTERFACE PERMUTE
@@ -531,69 +526,6 @@ CONTAINS
     DEALLOCATE(Segment, Mask, Rank)
 
   end subroutine BC_Region_Order
-
-  subroutine BC_Region_Collate(Collated_Region, Local_Region)
-    ! Collate Local_Region into Collated_Region.
-    ! This routine assumes that Collated_Region has been appropriately allocated,
-    ! so Collated_Region is an INOUT argument.
-
-    !use parallel_util_module
-    use parallel_communication, only: is_IOP, global_sum, collate
-    type(BC_Region), intent(INOUT) :: Collated_Region
-    type(BC_Region), intent(IN   ) :: Local_Region
-
-    ! Local variables
-    integer :: Collated_Size, d, DOF
-    integer,  pointer, dimension(:)   :: CollatedCell, LocalCell
-    integer,  pointer, dimension(:)   :: CollatedFace, LocalFace
-    real(r8), pointer, dimension(:,:) :: CollatedValue, LocalValue
-    logical,  pointer, dimension(:)   :: CollatedUseF, LocalUseF
-    real(r8), pointer, dimension(:,:) :: CollatedPosition, LocalPosition
-
-    Collated_Size = global_sum(SIZE(Local_Region))
-    if (.NOT. is_IOP) Collated_Size = 0
-    DOF = BC_Get_DOF(Local_Region)
-
-    ALLOCATE(CollatedCell(Collated_Size))
-    ALLOCATE(CollatedFace(Collated_Size))
-    ALLOCATE(CollatedValue(DOF,Collated_Size))
-    ALLOCATE(CollatedUseF(Collated_Size))
-    ALLOCATE(CollatedPosition(DIMENSIONALITY(Local_Region), Collated_Size))
-
-    ! Collate the lists
-    LocalCell => BC_Region_OwnerCells(Local_Region)
-    call collate(CollatedCell, LocalCell)
-    LocalFace => BC_Region_Faces(Local_Region)
-    call collate(CollatedFace, LocalFace)
-    LocalValue => BC_Region_Values(Local_Region)
-    do d = 1, DOF
-       call collate(CollatedValue(d,:), LocalValue(d,:))
-    end do
-    LocalUseF => BC_Region_UseFunction(Local_Region)
-    call collate(CollatedUseF, LocalUseF)
-    LocalPosition => BC_Region_Positions(Local_Region)
-    do d = 1, DIMENSIONALITY(Local_Region)
-       call collate(CollatedPosition(d,:), LocalPosition(d,:))
-    end do
-
-    ! Now insert the collated lists into the collated region
-    if (is_IOP) then
-       call INSERT(Collated_Region, CellList        = CollatedCell, &
-                                    FaceList        = CollatedFace, &
-                                    ValueList       = CollatedValue, &
-                                    UseFunctionList = CollatedUseF, &
-                                    PositionList    = CollatedPosition)
-    end if
-
-    call BC_Set_Name(Collated_Region, BC_Get_Name(Local_Region))
-    ! Clean up 
-    DEALLOCATE(CollatedPosition)
-    DEALLOCATE(CollatedValue)
-    DEALLOCATE(CollatedUseF)
-    DEALLOCATE(CollatedFace)
-    DEALLOCATE(CollatedCell)
-
-  END subroutine BC_Region_Collate    
 
   subroutine RegionPermute(Region, Rank)
     ! Permute a region by permute vector rank.  By default permuting means

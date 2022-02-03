@@ -18,7 +18,6 @@ Module BC_ATLASES
   !-----------------------------------------------------------------------------
 
   use bc_atlases_util,       only: CANONICALIZE,  &
-                                   COLLATE,       &
                                    ORDER,         &
                                    PERMUTE,       &
                                    RENUMBER_CELLS
