@@ -281,7 +281,6 @@ CONTAINS
                                       Conic_YZ, Conic_X, Conic_Y, Conic_Z, Conic_Constant,  &
                                       Conic_Tolerance, Bounding_Box, Surface_Name,          &
                                       Conic_Relation, Surfaces_In_This_BC, Mesh_Surface
-    use bc_operations
     use bc_displacement_init,   only: Initialize_Displacement_BC, Node_Set_BC_Init,         &
                                       append_to_displacement_bc,                            &
                                       Make_Displacement_BC_Atlases, Interface_Surface_Id

@@ -1,5 +1,4 @@
 target_sources(truchas PRIVATE
-    Update_BCS.F90
     bc_atlases.F90
     bc_atlases_data_types.F90
     bc_atlases_internal.F90
@@ -12,7 +11,6 @@ target_sources(truchas PRIVATE
     bc_initialize.F90
     bc_operations.F90
     bc_operators.F90
-    bc_pressure_init.F90
     bc_regions.F90
     bc_specifications.F90
 )
