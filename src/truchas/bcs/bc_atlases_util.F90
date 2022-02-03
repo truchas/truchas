@@ -109,7 +109,7 @@ CONTAINS
     ! to the processor which owns that chart.  Chart ownership
     ! is determined by the cell identifier for that chart.
     use legacy_mesh_api, only: ncells
-    use parallel_info_module
+    use parallel_communication, only: this_PE
     use pgslib_module, ONLY: PGSLib_Gather, PGSLib_GRADE_UP, PGSLib_Scatter_SUM                                  
     type(BC_Atlas), intent(INOUT), target :: Atlas
 
@@ -142,7 +142,7 @@ CONTAINS
     ! not yet canonical.
     Cells => BC_Get_Cell(Atlas)
     ! Find the processor number for each cell.
-    CellProcNum = P_Info%thisPE
+    CellProcNum = this_PE
     ! Gather that processor number to the charts
     call PGSLib_GATHER(DEST   = ChartProcNum, &
                        SOURCE = CellProcNum,  &
@@ -215,7 +215,6 @@ CONTAINS
   subroutine AtlasOrder(Atlas)
     ! Sort an atlas so that it is in canonical order.  That means
     ! ordered by cells, and then for each cell by face number.
-    use parallel_info_module
     use PGSLib_module, ONLY: PGSLib_GRADE_UP, PGSLib_Global_EOSHIFT, PGSLib_PARITY_PREFIX
     type(BC_Atlas), intent(INOUT), target :: Atlas
 

@@ -410,7 +410,7 @@ call hijack_truchas ()
     !
     !   print build time and run time information
     !---------------------------------------------------------------------------
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: nPE, IO_PE
     use utilities_module,     only: TIMESTAMP
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -443,11 +443,11 @@ call hijack_truchas ()
     call TLS_info ('   run architecture:    ' // run_architecture)
     call TLS_info ('   run host:            ' // run_host)
     call TLS_info ('   run date/time:       ' // run_date(5:22))
-    if (p_info%nPE > 1) then
-      call TLS_info ('   processors:          ' // i_to_c(p_info%nPE) // &
-                     ' (processor ' // i_to_c(p_info%IO_ROOT_PE) // ' is performing I/O)')
+    if (nPE > 1) then
+      call TLS_info ('   processors:          ' // i_to_c(nPE) // &
+                     ' (processor ' // i_to_c(IO_PE) // ' is performing I/O)')
     else
-      call TLS_info ('   processors:          ' // i_to_c(p_info%nPE))
+      call TLS_info ('   processors:          ' // i_to_c(nPE))
     end if
 
   END SUBROUTINE PROGRAM_SPECIFICATIONS
@@ -482,7 +482,7 @@ call hijack_truchas ()
     !
     !---------------------------------------------------------------------------
 
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module,        only: PGSLib_BCAST
     use truchas_env,          only: input_dir, output_dir, prefix, &
                                     input_file, overwrite_output
@@ -566,7 +566,7 @@ call hijack_truchas ()
              use pgslib_module
              use,intrinsic :: iso_fortran_env, only: output_unit
              character(:), allocatable :: string
-             if (p_info%IOP) then
+             if (is_IOP) then
                 call version(string)
                 write(output_unit,'(a)') string
              end if
@@ -732,7 +732,7 @@ call hijack_truchas ()
     end if
 
     ! check input_file for existence
-    if (p_info%IOP) then
+    if (is_IOP) then
        inquire (FILE=Trim(input_file) , EXIST=file_exist)
     end if
     call PGSLib_BCAST (file_exist)
@@ -742,7 +742,7 @@ call hijack_truchas ()
     end if
 
     ! check input_file for readability
-    if (p_info%IOP) then
+    if (is_IOP) then
        Inquire (FILE=TRIM(input_file) , READ=file_read)
     end if
     call PGSLib_BCAST (file_read)
@@ -757,7 +757,7 @@ call hijack_truchas ()
        restart = .true.
 
        ! check restart_file for existence
-       if (p_info%IOP) then
+       if (is_IOP) then
           inquire (FILE=Trim(restart_file) , EXIST=file_exist)
        end if
        call PGSLib_BCAST (file_exist)
@@ -767,7 +767,7 @@ call hijack_truchas ()
        end if
 
        ! check restart_file for readability
-       if (p_info%IOP) then
+       if (is_IOP) then
           Inquire (FILE=TRIM(restart_file) , READ=file_read)
        end if
        call PGSLib_BCAST (file_read)
@@ -821,13 +821,13 @@ call hijack_truchas ()
 
     subroutine ERROR_CHECK (flag, message, name)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: is_IOP
       use pgslib_module, only: pgslib_finalize
       logical, intent(in) :: flag ! ignored
       integer :: n
       character(*), intent(in) :: message(:)
       character(*), intent(in) :: name  ! ignored
-      if (p_info%IOP) then
+      if (is_IOP) then
         do n = 1, size(message)
           write(error_unit,'(a)') message(n)(:len_trim(message(n)))
         end do
@@ -838,16 +838,16 @@ call hijack_truchas ()
 
     subroutine TLS_error (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: is_IOP
       character(*), intent(in) :: message
-      if (p_info%IOP) write(error_unit,'(a)') 'ERROR: ' // message(:len_trim(message))
+      if (is_IOP) write(error_unit,'(a)') 'ERROR: ' // message(:len_trim(message))
     end subroutine TLS_error
 
     subroutine TLS_warn (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: is_IOP
       character(*), intent(in) :: message
-      if (p_info%IOP) write(error_unit,'(a)') 'Warning: ' // message(:len_trim(message))
+      if (is_IOP) write(error_unit,'(a)') 'Warning: ' // message(:len_trim(message))
     end subroutine TLS_warn
 
   END SUBROUTINE PROCESS_COMMAND_LINE

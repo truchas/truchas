@@ -53,7 +53,7 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed zone into a single large zone on IO PE
     !==================================================================
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use legacy_mesh_api, only: ncells_tot, ncells
 
     ! Arguments
@@ -62,7 +62,7 @@ CONTAINS
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    if (p_info%IOP) then
+    if (is_IOP) then
        ALLOCATE(Zone_Collate(ncells_tot))
     else
        ALLOCATE(Zone_Collate(0))

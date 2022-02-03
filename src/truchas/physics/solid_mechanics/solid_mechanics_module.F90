@@ -1051,7 +1051,7 @@ Contains
     use legacy_mesh_api, only: MESH_COLLATE_VERTEX, VERTEX_COLLATE, VERTEX_DATA
     use legacy_mesh_api, only: Vertex_Ngbr_All_Orig, GAP_ELEMENT_1, GAP_ELEMENT_3
     use node_operator_module, only: CV_Internal, nipc
-    use parallel_info_module
+    use parallel_communication, only: is_IOP
     use pgslib_module, only: PGSLib_DIST, PGSLib_COLLATE, PGSLib_Global_Sum
     use solid_mechanics_mesh, only: ndim, nvc
 
@@ -1106,7 +1106,7 @@ Contains
 
     Mesh_Tot_Vertex => MESH_COLLATE_VERTEX (Mesh)
     Vertex_Tot => VERTEX_COLLATE(Vertex)
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(Cell_Shape_Tot(ncells_tot), stat = status)
     else
        allocate(Cell_Shape_Tot(0), stat = status)
@@ -1115,13 +1115,13 @@ Contains
     call PGSLib_COLLATE (Cell_Shape_Tot,Mesh%Cell_Shape)
 
     ! Collate control volume face areas and normals
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(CV_Area_Tot(nipc,ncells_tot), stat = status)
     else
        allocate(CV_Area_Tot(nipc,0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: CV_Area_Tot')
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(CV_Normal_Tot(ndim,nipc,ncells_tot), stat = status)
     else
        allocate(CV_Normal_Tot(ndim,nipc,0), stat = status)
@@ -1138,7 +1138,7 @@ Contains
 
     ! Get collated sizes
     NN_Sizes = SIZES(Vertex_Ngbr_All_Orig)
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(NN_Sizes_Tot(nnodes_tot), stat = status)
     else
        allocate(NN_Sizes_Tot(0), stat = status)
@@ -1150,14 +1150,14 @@ Contains
 
     Node_Ngbr => FLATTEN(Vertex_Ngbr_All_Orig)
     flat_size = PGSLib_Global_Sum(SIZE(Node_Ngbr))
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(Node_Ngbr_Tot(flat_size), stat = status)
     else
        allocate(Node_Ngbr_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: Node_Ngbr_Tot')
     call PGSLib_COLLATE (Node_Ngbr_Tot, Node_Ngbr)
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(Vertex_Ngbr_Tot(nnodes_tot), stat = status)
     else
        allocate(Vertex_Ngbr_Tot(0), stat = status)
@@ -1168,7 +1168,7 @@ Contains
 
     ! Create var vector to hold static geometry data for constructing the preconditioning
     ! matrix (also a var_vector)
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(M_Sizes_Tot(nnodes_tot * ndim), stat=status)
     else
        allocate(M_Sizes_Tot(0), stat=status)
@@ -1177,19 +1177,19 @@ Contains
 
     ! Each node has ndim displacement components
 
-    if (p_info%IOP) then
+    if (is_IOP) then
        do idim = 1,ndim
           M_Sizes_Tot(idim:(ndim*(nnodes_tot-1)+idim):ndim) = (NN_Sizes_Tot(:) + 1) * ndim
        end do
     end if
 
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(M1_Tot(nnodes_tot * ndim), stat = status)
     else
        allocate(M1_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: M1_Tot')
-    if (p_info%IOP) then
+    if (is_IOP) then
        allocate(M2_Tot(nnodes_tot * ndim), stat = status)
     else
        allocate(M2_Tot(0), stat = status)

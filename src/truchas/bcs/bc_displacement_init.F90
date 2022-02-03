@@ -354,7 +354,7 @@ CONTAINS
                                     NORMAL_DISPLACEMENT
     use parameter_module,     only: mbc_nodes
     use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_COLLATE
-    use parallel_info_module
+    use parallel_communication, only: is_IOP, nPE
     !
     ! Arguments
     integer, intent(IN) :: m, n
@@ -365,8 +365,8 @@ CONTAINS
     logical :: node_found
     character(128) :: message
     !
-    if (p_info%IOP) then
-       ALLOCATE(Collated_Nodes(p_info%nPE))
+    if (is_IOP) then
+       ALLOCATE(Collated_Nodes(nPE))
     else
        ALLOCATE(Collated_Nodes(0))
     end if
@@ -446,7 +446,6 @@ CONTAINS
     !-----------------------------------------------------------------------------
     use mech_bc_data_module,  only: Interface_ID, Interface_List
     use legacy_mesh_api, only: ncells, nfc
-    use parallel_info_module
 !    use legacy_mesh_api,          only: Mesh, GAP_ELEMENT_1
     !
     ! Arguments

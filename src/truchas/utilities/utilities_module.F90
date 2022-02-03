@@ -182,7 +182,7 @@ CONTAINS
 
   function MAKE_DIRECTORY (path)
 
-     use parallel_info_module, only: p_info
+     use parallel_communication, only: is_IOP
 
      character(*) :: path
      integer :: status
@@ -199,7 +199,7 @@ CONTAINS
      ! null terminate the temporary string
      path2(LEN_TRIM(path2)+1:) = ACHAR(0)
 
-     if (p_info%iop) then
+     if (is_IOP) then
         call MAKE_DIRECTORY_C (path2, status)
      else
         status = 0
@@ -212,7 +212,7 @@ CONTAINS
 
   function MAKE_DIRECTORY_HIERARCHY (path)
 
-     use parallel_info_module, only: p_info
+     use parallel_communication, only: is_IOP
 
      character(*) :: path
      integer :: status
@@ -229,7 +229,7 @@ CONTAINS
      ! null terminate the temporary string
      path2(LEN_TRIM(path2)+1:) = ACHAR(0)
 
-     if (p_info%iop) then
+     if (is_IOP) then
         call MAKE_DIRECTORY_HIER_C (path2, status)
      else
         status = 0

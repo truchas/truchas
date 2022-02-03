@@ -45,7 +45,7 @@ CONTAINS
     use edit_module,             only: Short_Output_Dt_Multiplier
     use input_utilities,         only: seek_to_namelist, NULL_I, NULL_C
     use output_control,          only: Output_Dt, Output_T
-    use parallel_info_module,    only: p_info
+    use parallel_communication,  only: is_IOP
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier
     use output_control,          only: part, part_path, write_mesh_partition
@@ -80,7 +80,7 @@ CONTAINS
     call OUTPUTS_DEFAULT ()
 
     ! Read on IO PE only
-    IO_PE_ONLY: if (p_info%IOP) then
+    IO_PE_ONLY: if (is_IOP) then
        ! Find namelist
        rewind lun
        call seek_to_namelist (lun, 'OUTPUTS', found)
@@ -165,19 +165,16 @@ CONTAINS
     !======================================================================
     use edit_module,             only: Short_Output_Dt_Multiplier
     use output_control,          only: Output_Dt, Output_T
-    use parallel_info_module,    only: p_info
     use pgslib_module,           only: PGSLIB_BCAST
     use output_control,          only: Output_Dt_Multiplier
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast Data
-    if (.NOT. p_info%UseGlobalServices) then
-       call PGSLIB_BCAST (Output_Dt)
-       call PGSLIB_BCAST (Output_T)
-       call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
-       call PGSLIB_BCAST (Output_Dt_Multiplier)
-    end if
+    call PGSLIB_BCAST (Output_Dt)
+    call PGSLIB_BCAST (Output_T)
+    call PGSLIB_BCAST (Short_Output_Dt_Multiplier)
+    call PGSLIB_BCAST (Output_Dt_Multiplier)
 
   END SUBROUTINE OUTPUTS_INPUT_PARALLEL
 

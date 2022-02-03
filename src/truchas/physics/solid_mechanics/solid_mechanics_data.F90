@@ -127,7 +127,7 @@ CONTAINS
     ! Purpose(s):
     !   Collate a distributed mech data type into a single large mech data on IO PE
     !==================================================================
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use legacy_mesh_api, only: ncells_tot
 
     ! Arguments
@@ -136,7 +136,7 @@ CONTAINS
     
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-    if (p_info%IOP) then
+    if (is_IOP) then
        ALLOCATE(Mech_Collate)
        ALLOCATE(Mech_Collate%Total_Strain(ncomps,ncells_tot))
        ALLOCATE(Mech_Collate%Elastic_Stress(ncomps,ncells_tot))

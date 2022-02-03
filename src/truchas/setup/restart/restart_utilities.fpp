@@ -72,12 +72,12 @@
 #endif
 
   subroutine _READ_VAR0_STAT_ (unit, var, stat)
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only:  pgslib_bcast
     integer, intent(in) :: unit
     _TYPE_, intent(out) :: var
     integer, intent(out) :: stat
-    if (p_info%IOP) read(unit,iostat=stat) var
+    if (is_IOP) read(unit,iostat=stat) var
     call pgslib_bcast (stat)
     if (stat /= 0) return
     call pgslib_bcast (var)
@@ -93,12 +93,12 @@
   end subroutine _READ_VAR0_HALT_
 
   subroutine _READ_VAR1_STAT_ (unit, var, stat)
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only:  pgslib_bcast
     integer, intent(in) :: unit
     _TYPE_, intent(out) :: var(:)
     integer, intent(out) :: stat
-    if (p_info%IOP) read(unit,iostat=stat) var
+    if (is_IOP) read(unit,iostat=stat) var
     call pgslib_bcast (stat)
     if (stat /= 0) return
     call pgslib_bcast (var)
@@ -117,7 +117,7 @@
 #undef _ARRAY_PROCS_
   subroutine _READ_ARRAY1_STAT_ (unit, array, perm, stat)
 
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only:  pgslib_bcast, pgslib_dist, pgslib_collate, pgslib_global_sum, pgslib_global_all
     use permutations
 
@@ -132,11 +132,11 @@
     _TYPE_, allocatable :: g_sect(:)
 
     n = pgslib_global_sum(size(array,1))
-    if (.not.p_info%IOP) n = 0
+    if (.not.is_IOP) n = 0
     allocate(g_sect(n))
 
     if (present(perm)) then
-      coll_perm = pgslib_global_all(p_info%IOP .or. size(perm) == 0)
+      coll_perm = pgslib_global_all(is_IOP .or. size(perm) == 0)
       if (coll_perm) then ! passed a collated permutation; use it.
         ASSERT( size(perm) == n )
         ASSERT( is_perm(perm) .or. n == 0 )
@@ -150,10 +150,10 @@
       end if
     end if
 
-    if (p_info%IOP) read(unit,iostat=stat) g_sect
+    if (is_IOP) read(unit,iostat=stat) g_sect
     call pgslib_bcast (stat)
     if (stat == 0) then
-      if (p_info%IOP .and. present(perm)) then
+      if (is_IOP .and. present(perm)) then
         if (coll_perm) then
           call reorder (g_sect, perm)
         else
@@ -182,7 +182,7 @@
 
   subroutine _READ_ARRAY2_STAT_ (unit, array, perm, stat)
 
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only:  pgslib_bcast, pgslib_dist, pgslib_collate, pgslib_global_sum, pgslib_global_all
     use permutations
 
@@ -197,11 +197,11 @@
     _TYPE_, allocatable :: g_sect(:)
 
     n = pgslib_global_sum(size(array,2))
-    if (.not.p_info%IOP) n = 0
+    if (.not.is_IOP) n = 0
     allocate(g_sect(n))
 
     if (present(perm)) then
-      coll_perm = pgslib_global_all(p_info%IOP .or. size(perm) == 0)
+      coll_perm = pgslib_global_all(is_IOP .or. size(perm) == 0)
       if (coll_perm) then ! passed a collated permutation; use it.
         ASSERT( size(perm) == n )
         ASSERT( is_perm(perm) .or. n == 0 )
@@ -216,10 +216,10 @@
     end if
 
     INPUT: do i = 1, size(array,1)
-      if (p_info%IOP) read(unit,iostat=stat) g_sect
+      if (is_IOP) read(unit,iostat=stat) g_sect
       call pgslib_bcast (stat)
       if (stat /= 0) exit INPUT
-      if (p_info%IOP .and. present(perm)) then
+      if (is_IOP .and. present(perm)) then
         if (coll_perm) then
           call reorder (g_sect, perm)
         else
@@ -248,7 +248,7 @@
 
   subroutine _READ_ARRAY3_STAT_ (unit, array, perm, stat)
 
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only:  pgslib_bcast, pgslib_dist, pgslib_collate, pgslib_global_sum, pgslib_global_all
     use permutations
 
@@ -263,11 +263,11 @@
     _TYPE_, allocatable :: g_sect(:)
 
     n = pgslib_global_sum(size(array,3))
-    if (.not.p_info%IOP) n = 0
+    if (.not.is_IOP) n = 0
     allocate(g_sect(n))
 
     if (present(perm)) then
-      coll_perm = pgslib_global_all(p_info%IOP .or. size(perm) == 0)
+      coll_perm = pgslib_global_all(is_IOP .or. size(perm) == 0)
       if (coll_perm) then ! passed a collated permutation; use it.
         ASSERT( size(perm) == n )
         ASSERT( is_perm(perm) .or. n == 0 )
@@ -283,10 +283,10 @@
 
     INPUT: do j = 1, size(array,2)
       do i = 1, size(array,1)
-        if (p_info%IOP) read(unit,iostat=stat) g_sect
+        if (is_IOP) read(unit,iostat=stat) g_sect
         call pgslib_bcast (stat)
         if (stat /= 0) exit INPUT
-        if (p_info%IOP .and. present(perm)) then
+        if (is_IOP .and. present(perm)) then
           if (coll_perm) then
             call reorder (g_sect, perm)
           else

@@ -51,7 +51,7 @@ contains
   subroutine read_restart_namelist (lun)
 
     use input_utilities, only: seek_to_namelist
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: is_IOP
     use pgslib_module, only: pgslib_bcast
     
     integer, intent(in) :: lun
@@ -63,7 +63,7 @@ contains
     character(128) :: iom
 
     !! Locate the restart namelist (it's optional).
-    if (p_info%IOP) then
+    if (is_IOP) then
       rewind lun
       call seek_to_namelist (lun, 'RESTART', found)
     end if
@@ -73,7 +73,7 @@ contains
 
     !! Read the namelist.
     call input_info ('Reading RESTART namelist ...')
-    if (p_info%IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
+    if (is_IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
     call pgslib_bcast (ios)
     if (ios /= 0) call input_error ('error reading the RESTART namelist: ' // trim(iom))
 

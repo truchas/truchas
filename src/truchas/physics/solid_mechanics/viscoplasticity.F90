@@ -299,17 +299,17 @@ Contains
     subroutine create_bdf2_diagnostics_file (unit)
 
       use string_utilities, only: i_to_c
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: this_PE
       use legacy_mesh_api, only: unpermute_mesh_vector
       use truchas_env, only: output_dir
 
       integer, intent(out) :: unit
 
-      open(newunit=unit,file=trim(output_dir)//'bdf2-'//i_to_c(p_info%thisPE)//'.'// & 
+      open(newunit=unit,file=trim(output_dir)//'bdf2-'//i_to_c(this_PE)//'.'// & 
            i_to_c(unpermute_mesh_vector(cell_no))//'.'//i_to_c(bdf2_seq)//'.err', &
            status='replace', position='rewind', action='write')
 
-      write(unit,fmt='(a,i4)') 'PE=', p_info%thisPE
+      write(unit,fmt='(a,i4)') 'PE=', this_PE
       write(unit,fmt='(a,i7)') 'LOC_CELL=', cell_no
       write(unit,fmt='(a,i7)') 'USR_CELL=', unpermute_mesh_vector(cell_no)
       write(unit,fmt='(a,i3)') 'BDF2_STAT=', stat
