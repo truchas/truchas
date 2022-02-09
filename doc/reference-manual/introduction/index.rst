@@ -18,7 +18,7 @@ assuming ``truchas`` is the name of the executable. The brackets denote optional
 .. csv-table:: Truchas Command Line Options
    :header: "Option", "Description"
    :class: tight-table
-   :widths: 1 1
+   :widths: 1 3
 
    "-h", "Print a usage summary of the command line options and exit."
    "-d[:n]", "Sets the debug output level **n**. The default level is 0, which produces no debug output, with levels 1 and 2 producing progressively more debug output. **-d** is equivalent to **-d:1**."
@@ -97,51 +97,28 @@ There are a few physical constants, like the **Stefan-Boltzmann** constant, that
 
 Working With Output Files
 --------------------------
-As described earlier, Truchas writes its output files to the directory named in the **-o** option, or if omitted, to a directory whose name is generated from the base name of the input file: **myprob_output** if **myprob.inp** is the input file, for example. Two primary files are written, a ``.log`` file that is a copy of the terminal output, and a ``.h5`` HDF5 file that contains all the simulation results. HDF5 is a widely-used format for storing and managing data, and thereare a great many freely-available tools for working with these files. In this release, which is the first to feature HDF5 output, we provide only a few essential tools, described below, for processing the ``.h5`` file. We expect to provide additional tools in future releases.
+As described earlier, Truchas writes its output files to the directory named in the **-o** option, or if omitted, to a directory whose name is generated from the base name of the input file: **myprob_output** if **myprob.inp** is the input file, for example. Two primary files are written, a ``.log`` file that is a copy of the terminal output, and a ``.h5`` HDF5 file that contains all the simulation results. HDF5 is a widely-used format for storing and managing data, and thereare a great many freely-available tools for working with these files. In this release, which is the first to feature HDF5 output, we provide only a few essential tools, described below, for processing the ``.h5`` file. We expect to provide additional tools in future releases. Probe data is written to multi-column text files in the output directory.
 
-write_restart
+write-restart.py
 ^^^^^^^^^^^^^^
-The program ``write_restart`` is used to create Truchas restart files using data from an ``.h5`` output file. The command syntax is
+The program ``write-restart.py`` is used to create Truchas restart files using data from an ``.h5`` output file. The command syntax is
 
-``write_restart [options] H5FILE``
+``write-restart.py [options] H5FILE``
 
-where **H5FILE** is the **.h5** output file and the possible options are
+where **H5FILE** is the **.h5** output file and the possible options are:
 
-.. _write_restart_options:
-.. csv-table:: write_restart Options
-   :header: "Option", "Description"
-   :widths: 1 1
-   :class: tight-table
+-h, --help     Display usage help and exit.
+-l             Print a list of the available cycles from which the restart file can be created. No restart file is written.
+-n N           Data from cycle *N* is used to create the restart file; if not specified, the last cycle is used.
+-o FILE        Write restart data to *FILE*. If not specified, *FILE* is taken to be the *H5FILE* name with the .h5 suffix replaced by .restart.N where N is the cycle number.
+-m FILE        Create a mapped restart file using the specified ExodusII mesh *FILE* as the target mesh.
+-s FLOAT       Scale the mapped restart mesh by the factor *FLOAT*.
+--use-portage  Use the Portage grid mapper backend. Truchas must be built with Portage support. The default is Truchas's built-in Kuprat mapper.
 
-   "**-h** ", "Display usage help and exit."
-   "**-l** ", "Print a list of the available cycles from which the restart file can becreated. No restart file is written."
-   "**-n N**", "Data from cycle **N** is used to create the restart file; if not specified, the last cycle is used."
-   "**-o FILE**", "Write restart data to **FILE**. If not specified, **FILE** is taken to be the H5FILE name with the.h5 suffix replaced by .restart.N where N is the cycle number."
-   "**-m FILE**", "Create a mapped restart file using the specified ExodusII mesh **FILE** as the target mesh."
-   "**-s FLOAT**", "Scale the mapped restart mesh by the factor FLOAT."
-
-write_probes
-^^^^^^^^^^^^^^
-The ``write_probes`` utility extracts probe data (see the :ref:`PROBE <PROBE_Namelist>` namelist) from an **.h5** output file and writes it to the terminal (where it can be redirected as needed) in a multicolumn format suitable for many line plotting programs. The command syntax is
-
-``write_probes { -h | -l | -n N} H5FILE``
-
-where **H5FILE** is the **.h5** output file and the available options are
-
-.. _write_probes_options:
-.. csv-table:: write_probes Options
-   :header: "Option", "Description"
-   :class: longtable
-   :widths: 1 1
-
-   "**-h**", "Display usage help and exit."
-   "**-l**", "Print a list of the available probes."
-   "**-n N**", "Data for probe index N is written."
-
-truchas-gmv-parser.py
+write-gmv.py
 ^^^^^^^^^^^^^^^^^^^^^^^
-The python scriptt ``ruchas-gmv-parser.py`` is used to create input files for the GMV visualization tool. Formerly distributed gratis, GMV has been commercialized (http://www.generalmeshviewer.com). Earlier free versions of the tool can still be found on the internet, however, and it remains available within LANL. The command syntax is
+The python script ``write-gmv.py`` is used to create input files for the GMV visualization tool. Formerly distributed gratis, GMV has been commercialized (http://www.generalmeshviewer.com). Earlier free versions of the tool can still be found on the internet, however, and it remains available within LANL. The command syntax is
 
-``python truchas-gmv-parser.py [options] H5FILE``
+``write-gmv.py [options] H5FILE``
 
 where **H5FILE** is the **.h5** output file. Use the option **-h** to get a full list of the available options.
