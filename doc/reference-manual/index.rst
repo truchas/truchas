@@ -5,7 +5,7 @@ Reference Manual
 
 .. toctree::
    :maxdepth: 1
-   :numbered:
+   :numbered: 3
 
    introduction/index 
    ALTMESH_Namelist/index
@@ -42,6 +42,7 @@ Reference Manual
    TURBULENCE_Namelist/index
    VFUNCTION_Namelist/index
    VISCOPLASTIC_MODEL_Namelist/index
+   rade/index
 
 
 

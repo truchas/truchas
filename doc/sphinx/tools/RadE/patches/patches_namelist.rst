@@ -3,7 +3,7 @@
 PATCHES Namelist
 ================
 
-.. code-block:: console
+.. code-block::
 
   &PATCHES
     patch_algorithm = 'PAVE'

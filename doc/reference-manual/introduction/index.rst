@@ -65,6 +65,8 @@ There are occasions where one would like to gracefully terminate a running Truch
 ``kill -s SIGURG pid``
 where **pid** is the process id. When Truchas receives this signal, it continues until it reaches the end of the current time step, where it writes the final solution and then exits normally.
 
+.. _input_file_format:
+
 Input File Format
 ------------------
 The Truchas input file is composed of a sequence of Fortran namelist inputs. Each namelist input has the form
