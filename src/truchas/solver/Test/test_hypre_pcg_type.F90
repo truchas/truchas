@@ -21,7 +21,6 @@ program test_hypre_pcg_type
   integer, parameter :: NX = 19, NY = 13, NZ = 17
   !integer, parameter :: NX = 7, NY = 5, NZ = 3
   
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(pcsr_matrix), target :: matrix
   type(hypre_pcg) :: solver
   type(parameter_list), pointer :: params
@@ -30,7 +29,7 @@ program test_hypre_pcg_type
   real(r8) :: a, maxerr, l2err, rtol
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
-  call init_parallel_communication(argv)
+  call init_parallel_communication
   
   a = 1.0e-6_r8
   call create_matrix (a, matrix)

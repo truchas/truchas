@@ -110,13 +110,13 @@ contains
     end if
 
     !! Write external mesh node numbers as the nodeids -- GMV uses these for display.
-    call allocate_collated_array (map, size(x,dim=2))
+    allocate(map(merge(size(x,dim=2),0,is_iop)))
     call collate (map, mesh%xnode(:mesh%nnode_onP))
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write external mesh cell numbers as the cellids -- GMV uses these for display.
-    call allocate_collated_array (map, size(cnode,dim=2))
+    allocate(map(merge(size(cnode,dim=2),0,is_iop)))
     call collate (map, mesh%xcell(:mesh%ncell_onP))
     if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
@@ -140,7 +140,7 @@ contains
       if (is_IOP) call gmvwrite_flag_header_f ()
 
       !! Cell partitioning info ...
-      call allocate_collated_array (pdata, mesh%cell_ip%global_size())
+      allocate(pdata(merge(mesh%cell_ip%global_size(),0,is_iop)))
       call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
@@ -152,7 +152,7 @@ contains
       deallocate(pdata)
 
       !! Node partitioning info ...
-      call allocate_collated_array (pdata, mesh%node_ip%global_size())
+      allocate(pdata(merge(mesh%node_ip%global_size(),0,is_iop)))
       call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%node_ip%onP_size()))
       if (is_IOP) then
         call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
@@ -197,7 +197,7 @@ contains
     ASSERT( mesh%cell_ip%defined() )
     ASSERT( size(u) == mesh%cell_ip%onP_size() )
 
-    call allocate_collated_array (u_global, mesh%cell_ip%global_size())
+    allocate(u_global(merge(mesh%cell_ip%global_size(),0,is_iop)))
     call collate (u_global, u)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)

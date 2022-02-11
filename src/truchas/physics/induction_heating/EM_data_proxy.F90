@@ -1022,16 +1022,16 @@ CONTAINS
     !! parallel.  FIXME
 
     !! Collate the cell permutation array.
-    call allocate_collated_array (cell_perm, n)
+    allocate(cell_perm(merge(n,0,is_IOP)))
     call collate (cell_perm, mesh%xcell(:mesh%ncell_onP))
 
     !! Collate the cell-based MU array on the tet mesh, and restore it to the external order.
-    call allocate_collated_array (col_mu, n)
+    allocate(col_mu(merge(n,0,is_IOP)))
     call collate (col_mu, mu_q(:mesh%ncell_onP))
     if (is_IOP) call reorder (col_mu, cell_perm, forward=.true.)
 
     !! Collate the cell-based SIGMA array on the tet mesh, and restore it to the external order.
-    call allocate_collated_array (col_sigma, n)
+    allocate(col_sigma(merge(n,0,is_IOP)))
     call collate (col_sigma, sigma_q(:mesh%ncell_onP))
     if (is_IOP) call reorder (col_sigma, cell_perm, forward=.true.)
 

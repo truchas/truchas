@@ -33,7 +33,7 @@ module bitfield_type
 
   !! Generics from PARALLEL_COMMUNICATION extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
-  public :: distribute, allocate_collated_array
+  public :: distribute
 
   !! Generics from INDEX_PARTITIONING extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
@@ -105,10 +105,6 @@ module bitfield_type
 
   interface distribute
     module procedure distribute_bitfield
-  end interface
-
-  interface allocate_collated_array
-    module procedure alloc_coll_array_bitfield
   end interface
 
   interface gather_boundary
@@ -208,41 +204,20 @@ contains
     ne_bitfield = any(bf1%chunk /= bf2%chunk)
   end function ne_bitfield
 
-  subroutine distribute_bitfield (vout, vin, bsize)
+  subroutine distribute_bitfield (vout, vin)
 
     use parallel_communication, only: distribute
 
     type(bitfield), intent(out) :: vout(:)
     type(bitfield), intent(in)  :: vin(:)
-    integer, intent(in), optional :: bsize(:)
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call distribute (vout%chunk(n), vin%chunk(n), bsize)
+      call distribute (vout%chunk(n), vin%chunk(n))
     end do
 
   end subroutine distribute_bitfield
-
-  subroutine alloc_coll_array_bitfield (array, size1, stat)
-
-    use parallel_communication, only: is_IOP
-
-    type(bitfield), pointer :: array(:)
-    integer, intent(in) :: size1
-    integer, intent(out), optional :: stat
-
-    if (is_IOP) then
-      if (present(stat)) then
-        allocate(array(size1), stat=stat)
-      else
-        allocate(array(size1))
-      end if
-    else
-      allocate(array(0))
-    end if
-
-  end subroutine alloc_coll_array_bitfield
 
   subroutine gather_boundary_bitfield1 (this, local_data)
 

@@ -165,11 +165,11 @@ contains
     ASSERT( n == global_sum(size(dp2)) )
 
     !! Assemble the 1-labeling-to-external permutation vector.
-    call allocate_collated_array (p1, n)
+    allocate(p1(merge(n,0,is_iop)))
     call collate (p1, dp1)
 
     !! Assemble the 2-labeling-to-external permutation vector.
-    call allocate_collated_array (p2, n)
+    allocate(p2(merge(n,0,is_iop)))
     call collate (p2, dp2)
 
     !! Construct the permutation from the 1-to-2 labeling.
@@ -213,12 +213,12 @@ contains
 
     !! Assemble the 1-labeling-to-external mapping vector M1.
     n = global_sum(size(dm1))
-    call allocate_collated_array (m1, n)
+    allocate(m1(merge(n,0,is_iop)))
     call collate (m1, dm1)
 
     !! Assemble the 2-labeling-to-external mapping vector M2.
     n = global_sum(size(dm2))
-    call allocate_collated_array (m2, n)
+    allocate(m2(merge(n,0,is_iop)))
     call collate (m2, dm2)
 
     !! Overwrite M1 with the 1-to-2-labeling mapping.

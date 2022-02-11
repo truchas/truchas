@@ -14,13 +14,12 @@ program test_pressure_poisson
   use bndry_func1_class
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(parameter_list), pointer :: p, pp
   !type(flow_bc), pointer :: bc
   type(unstr_mesh), pointer :: mesh
   integer :: i, in
 
-  call init_parallel_communication(argv)
+  call init_parallel_communication
   overwrite_output = .true.
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize()

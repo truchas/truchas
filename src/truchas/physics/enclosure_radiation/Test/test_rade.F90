@@ -17,7 +17,6 @@ program test_rade
   implicit none
 
   type(unstr_mesh), pointer :: mesh
-  character(len=PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:)
   real(r8), allocatable :: hc_temp(:)
 
   !! Enclosures to be tested
@@ -27,7 +26,7 @@ program test_rade
   character(len=31), parameter :: ENCL_INT_PATCH = "interior_patch"
 
   !! Essential Truchas initialization.
-  call init_parallel_communication(argv)
+  call init_parallel_communication
 
   !! Initialize Logging
   overwrite_output = .true.

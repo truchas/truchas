@@ -38,7 +38,7 @@ contains
       write(unit=lun) vec
     else
       if (is_IOP) read(unit=lun) n
-      call allocate_collated_array (g_ref, n)
+      allocate(g_ref(merge(n,0,is_iop)))
       if (is_IOP) read(unit=lun) g_ref
       allocate(ref(size(vec)))
       call distribute (ref, g_ref)

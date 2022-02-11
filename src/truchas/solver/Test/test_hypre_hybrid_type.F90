@@ -17,7 +17,6 @@ program test_hypre_hybrid_type
   use parameter_list_type
   implicit none
   
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   real(r8), parameter :: PI = 3.1415926535897931_r8
   real(r8), parameter :: TWOPI = 6.2831853071795862_r8
   integer :: status = 0
@@ -25,7 +24,7 @@ program test_hypre_hybrid_type
   real(r8) :: a ! set by the tests
   integer :: nx, ny, nz ! set by the tests
   
-  call init_parallel_communication(argv)
+  call init_parallel_communication
 
   call cg_test_1
   call cg_test_2

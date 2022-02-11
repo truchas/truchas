@@ -869,14 +869,14 @@ CONTAINS
     end function
 
     subroutine report_errors (message, list)
-      use parallel_communication, only: is_IOP, allocate_collated_array, collate, global_sum
+      use parallel_communication, only: is_IOP, collate, global_sum
       character(*), intent(inout) :: message(:)
       type(vector), intent(in) :: list
       integer :: n, m
       integer, pointer :: glist(:)
       n = global_sum(list%n)
       m = global_sum(list%m)
-      call allocate_collated_array (glist, n)
+      allocate(glist(merge(n,0,is_iop)))
       call collate (glist, list%array(:list%n))
       !if (is_IOP) message(1) = trim(message(1)) // list_to_string(glist,m)
       if (is_IOP) call append_list_to_string (glist, m, message(1))

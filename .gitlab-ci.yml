@@ -73,6 +73,7 @@ test truchas GFortran (Debug):
       # Install Truchas
     - mkdir build
     - cd build
+    - cmake --version
     - cmake
         -C ../config/linux-gcc.cmake
         -DCMAKE_BUILD_TYPE=Debug
@@ -101,6 +102,7 @@ test truchas GFortran (Release):
       # Install Truchas
     - mkdir build
     - cd build
+    - cmake --version
     - cmake
         -C ../config/linux-gcc.cmake
         -DCMAKE_BUILD_TYPE=Release

@@ -217,6 +217,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   add_compile_definitions(INTEL_BUG20180222)
   add_compile_definitions(INTEL_BUG20191228)
   add_compile_definitions(INTEL_BUG20210619)
+  add_compile_definitions(INTEL_BUG20220211)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)

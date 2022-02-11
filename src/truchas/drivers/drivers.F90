@@ -47,7 +47,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     use input_driver,           only: READ_INPUT
     use truchas_env,            only: input_file, title
-    use parallel_communication, only: init_parallel_communication, PGSLib_CL_MAX_TOKEN_LENGTH
+    use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
     use random_module,          only: INITIALIZE_RANDOM
     use signal_handler
@@ -55,18 +55,16 @@ CONTAINS
     use truchas_logging_services
     use truchas_timers
 
-    character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
-
     !---------------------------------------------------------------------------
 
-    call init_parallel_communication(argv)
+    call init_parallel_communication
 
 !   you can use this to debug in parallel under Linux with LAM and Totalview
 !   see the comments in src/utility/wait_for_debugger.tv
 !   call wait_for_debugger ()
 
     ! parse the command line
-    call PROCESS_COMMAND_LINE (argv)
+    call PROCESS_COMMAND_LINE
 
     ! arrange to catch signals
     call init_signal_handler(SIGUSR2)
@@ -448,7 +446,7 @@ call hijack_truchas ()
 
   END SUBROUTINE PROGRAM_SPECIFICATIONS
 
-  SUBROUTINE PROCESS_COMMAND_LINE (argv)
+  SUBROUTINE PROCESS_COMMAND_LINE
     !---------------------------------------------------------------------------
     ! Purpose:
     !
@@ -491,16 +489,13 @@ call hijack_truchas ()
     use truchas_logging_services, only: TLS_set_verbosity, TLS_VERB_SILENT, &
                                         TLS_VERB_NORMAL, TLS_VERB_NOISY
 
-    ! arguments
-    character(*), dimension(:), pointer :: argv
-
     ! local variables
     integer :: status, ios
     logical :: file_exist
     character (LEN=1024) :: string
     character (LEN=1024) :: token
     character (LEN=8)   :: file_read
-    integer :: n_tokens
+    integer :: n_arg, n_tokens
     integer :: i
     integer :: indx
     integer :: j
@@ -523,7 +518,7 @@ call hijack_truchas ()
     '  -h            help                                                  ' /)
     
     !---------------------------------------------------------------------------
-    
+
     ! mark each flag as "unset"
     v = .false.                         ! verbose
     o = .false.                         ! output path
@@ -533,20 +528,21 @@ call hijack_truchas ()
     g = .false.                         ! h5 output group size
     overwrite_output = .false.
     ! there must be at least one argument
-    if (SIZE(argv) < 2) then
+    n_arg = command_argument_count()
+    if (n_arg < 1) then
        call TLS_error ('insufficient arguments')
        call error_check (.true., usage, 'PROCESS_COMMAND_LINE')
     end if
 
     ! process the arguments
-    do i = LBOUND(argv,1)+1, UBOUND(argv,1)
+    do i = 1, n_arg
 
        ! get the next argument
-       string = TRIM(argv(i))
+       call get_command_argument(i, string)
 
        ! arguments must start with '-', or be a filename (last argument)
        if (string(1:1) /= '-') then
-          if (i /= UBOUND(argv,1)) then
+          if (i /= n_arg) then
              call TLS_error ('filename must be last argument or argument must start with "-": ' // trim(string))
              call error_check (.true., usage, 'PROCESS_COMMAND_LINE')
           else

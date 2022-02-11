@@ -27,6 +27,7 @@ export PATH="${HOME}/ext/python-install/bin:$PATH"
 # Install Truchas
 mkdir build
 cd build
+cmake --version
 cmake \
     -C ../config/linux-intel.cmake \
     -DCMAKE_BUILD_TYPE=${build_type} \

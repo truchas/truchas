@@ -71,7 +71,7 @@ contains
     call mesh%get_global_x_array (x)
     call mesh%get_global_cblock_array (cblock)
     
-    call allocate_collated_array (pdata, mesh%cell_ip%global_size())
+    allocate(pdata(merge(mesh%cell_ip%global_size(),0,is_iop)))
     call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
     
     if (is_IOP) then
@@ -138,8 +138,8 @@ contains
     real, pointer :: g_v(:,:), g_q(:)
     type(dx_object) :: dxfld
     
-    call allocate_collated_array (g_v, 3, mesh%cell_ip%global_size())
-    call allocate_collated_array (g_q, mesh%cell_ip%global_size())
+    allocate(g_v(3,merge(mesh%cell_ip%global_size(),0,is_iop)))
+    allocate(g_q(merge(mesh%cell_ip%global_size(),0,is_iop)))
     
     v = w1_vector_on_cells(mesh, efield)
     call collate (g_v, v(:,:mesh%ncell_onP))
@@ -197,7 +197,7 @@ contains
     character(len=*), intent(in) :: name
     type(dx_object) :: dxfld
     real, pointer :: g_field(:)
-    call allocate_collated_array (g_field, global_sum(size(field)))
+    allocate(g_field(merge(global_sum(size(field)),0,is_iop)))
     call collate (g_field, real(field))
     if (is_IOP) then
       call dx_export_field (dxf, dxfld, dxcon, dxpos, g_field, cc=.true., name=trim(name))

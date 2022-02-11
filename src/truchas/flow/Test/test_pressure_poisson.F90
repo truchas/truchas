@@ -14,7 +14,6 @@ program test_pressure_poisson
   use flow_type
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(parameter_list), pointer :: p, pp
   type(flow_props) :: props
   type(flow_bc), pointer :: bc
@@ -23,7 +22,7 @@ program test_pressure_poisson
   integer :: i, in
   real(r8), allocatable :: flux_volumes(:,:)
 
-  call init_parallel_communication(argv)
+  call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize()
   call TLS_set_verbosity(TLS_VERB_NOISY)
