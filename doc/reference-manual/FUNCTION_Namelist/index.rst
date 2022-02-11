@@ -168,16 +168,19 @@ Tabular_Data
 | **Default**     : None
 | **Notes**       : This is a :math:`2 × n` array with :math:`n \leq 100`. Namelist array input is very flexible and the values can be specified in several ways. For example, the syntax
 
-``Tabular_Data(1,:) = x_1, x_2, ......., x_n``
+.. code-block::
 
-``Tabular_Data(2,:) = y_1, y_2, ......., y_n``
+  Tabular_Data(1,:) = x_1, x_2, ......., x_n
+  Tabular_Data(2,:) = y_1, y_2, ......., y_n
 
 specifies the :math:`x_i` and :math:`y_i` values as separate lists. Or the values can be input naturally as a table
 
-Tabular_Data = :math:`x_1, y_1`
-               :math:`x_2, y_2`
-                      ...
-               :math:`x_n, y_n`
+.. code-block::
+
+  Tabular_Data = x_1, y_1
+                 x_2, y_2
+                 ...
+                 x_n, y_n
 
 The line breaks are unnecessary, of course, and are there only for readability as a table.
 

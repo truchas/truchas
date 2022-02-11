@@ -20,7 +20,7 @@ FLOW_VISCOUS_SOLVER Namelist Features
 | **Required/Optional        :** Required only for viscous flow with :ref:`viscous_implicitness<FLOW_VI>` > 0.
 | **Single/Multiple Instances:** Single
 
-FLOW_VISCOUS_SOLVER Namelist Features
+FLOW_PRESSURE_SOLVER Namelist Features
 ---------------------------------------
 | **Required/Optional        :** Required 
 | **Single/Multiple Instances:** Single

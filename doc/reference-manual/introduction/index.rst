@@ -32,17 +32,17 @@ The precise manner of executing Truchas in parallel depends on the MPI implement
 
 .. _example_input:
 
-::
-   
+.. code-block::
+
    This is a comment.  Anything outside a namelist input is ignored.
 
-   &MESH 
+   &MESH
       ! Within a namelist input "!" introduces a comment.
       mesh_file = "my-big-mesh.exo" ! character string value
    /
-   
+
    Another comment.
-   
+
    &PHYSICS
       heat_conduction = .true.     ! logical values are .true./.false.
       body_force = 0.0, 0.0, -9.8  ! assigning values to an array
@@ -51,12 +51,14 @@ The precise manner of executing Truchas in parallel depends on the MPI implement
       !body_force(2) =  0.0
       !body_force(3) = -9.8
    /
-   
+
    Newlines in a namelist are optional.
-   
-   &PHYSICAL_CONSTANTS 
-      stefan_boltzmann=0.1, absolute_zero=0.0 
+
+   &PHYSICAL_CONSTANTS
+      stefan_boltzmann=0.1, absolute_zero=0.0
    /
+
+:superscript:`Example input file`
 
 Stopping Truchas
 -----------------
@@ -65,20 +67,18 @@ There are occasions where one would like to gracefully terminate a running Truch
 ``kill -s SIGURG pid``
 where **pid** is the process id. When Truchas receives this signal, it continues until it reaches the end of the current time step, where it writes the final solution and then exits normally.
 
-.. _input_file_format:
-
 Input File Format
 ------------------
 The Truchas input file is composed of a sequence of Fortran namelist inputs. Each namelist input has the form
 
 ::
-   
+
    &namelist-group-name
       namelist-input-body
    /
 
 The input begins with a line where the first nonblank is the character ``&`` immediately followed by the name of the namelist group. The input continues until the ``/`` character. The body of the namelist input consists of a sequence of ``name = value`` pairs, separated by
-commas or newlines, that assign values to namelist variables. Namelist input is a feature of Fortran and a complete description of the syntax can be found in any Fortran reference, however the basic syntax is very intuitive and a few examples like those in :ref:`the example <example_input>` should suffice to explain its essentials. 
+commas or newlines, that assign values to namelist variables. Namelist input is a feature of Fortran and a complete description of the syntax can be found in any Fortran reference, however the basic syntax is very intuitive and a few examples like those in :ref:`the example <example_input>` should suffice to explain its essentials.
 
 The namelists and the variables they contain are described in the following chapters. A particular namelist will be required or optional, and it may appear only once or multiple times. Not all variables of a namelist need to be specified. Some may not be relevant in agiven context, and others may have acceptable default values; only those that are used andneed to be assigned a value need to be specified.
 
@@ -102,7 +102,7 @@ Working With Output Files
 As described earlier, Truchas writes its output files to the directory named in the **-o** option, or if omitted, to a directory whose name is generated from the base name of the input file: **myprob_output** if **myprob.inp** is the input file, for example. Two primary files are written, a ``.log`` file that is a copy of the terminal output, and a ``.h5`` HDF5 file that contains all the simulation results. HDF5 is a widely-used format for storing and managing data, and thereare a great many freely-available tools for working with these files. In this release, which is the first to feature HDF5 output, we provide only a few essential tools, described below, for processing the ``.h5`` file. We expect to provide additional tools in future releases. Probe data is written to multi-column text files in the output directory.
 
 write-restart.py
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 The program ``write-restart.py`` is used to create Truchas restart files using data from an ``.h5`` output file. The command syntax is
 
 ``write-restart.py [options] H5FILE``
