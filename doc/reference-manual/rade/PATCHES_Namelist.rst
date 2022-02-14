@@ -3,26 +3,127 @@
 PATCHES Namelist
 ==================
 
-The `PATCHES` namelist defines the parameters used by the patching algorithms.
+The **PATCHES** namelist defines the parameters used by the patching algorithms.
 The namelist supports many parameters, but not all parameters are used by all
 algorithms. Parameters only used by a particular algorithm are prefixed with the
-algorithm's name.
-
-These parameters are described in detail below.
+algorithm's name. These parameters are described in detail below.
 
 :Required/Optional: Optional
 :Single/Multiple Instances: Single
+
+General Guidance
+----------------
+
+Genre's patching allows the Chaparral library to group faces together into
+patches. This has two main purposes, both especially useful in large problems:
+
+1. To reduce the output file size. In many scenarios, the radiation enclosure
+   output produced by Genre is prohibitively large (on the order of 100s of GB).
+   It can take a very long time to write these files to disk, or impossible for
+   Truchas to fit into memory.
+
+2. To reduce the need for very high :ref:`hemicube_resolution
+   <rade/CHAPARRAL_Namelist:hemicube_resolution>` on fine meshes. As face mesh
+   resolution increases, increasingly fine ``hemicube_resolution`` is needed to
+   resolve view factors. This quadratically increases the genre runtime. By
+   grouping faces into patches, the need for high ``hemicube_resolution`` is
+   less.
+
+Genre offers several patching algorithms, but for most situations, the `'METIS'`
+algorithm is the best choice for speed, accuracy, and simplicity. The
+`patch_algorithm_` parameter should be set to `'METIS'`, and the
+`metis_face_patch_ratio`_ can be tuned as needed. A sample input is given below,
+and is considered a good starting point for most problems. One should always
+view the patches using :ref:`Vizre <rade/index:Invoking Vizre>` to assess their
+quality.
 
 .. code-block::
 
   &PATCHES
     patch_algorithm = 'METIS'
-    metis_face_patch_ratio = 2
-    metis_face_weight = F
-    metis_edge_weight = T
+    metis_face_patch_ratio = 4
   /
 
 :superscript:`Example PATCHES namelist`
+
+
+Introduction
+------------
+
+.. |pave_patches| image:: images/basic_hemi_pave_1.png
+   :width: 100%
+   :align: middle
+
+.. |vsa_patches| image:: images/basic_hemi_vsa_1.png
+   :width: 100%
+   :align: middle
+
+.. |metis_patches| image:: images/basic_hemi_metis_1.png
+   :width: 100%
+   :align: middle
+
+.. table::
+   :align: center
+   :width: 100%
+
+   +-----------------+-----------------+-----------------+
+   | |pave_patches|  | |vsa_patches|   | |metis_patches| |
+   +-----------------+-----------------+-----------------+
+   | Result of running **PAVE** (left), **VSA**          |
+   | (middle), and **METIS** (right) on                  |
+   | the 'basic hemi' enclosure.                         |
+   +-----------------------------------------------------+
+
+Genre supports patching, which groups adjacent faces into *patches* prior to the
+view factor calculation. This results in significantly reduced radiation
+enclosure file sizes and reduced runtime, at the cost of accuracy due to the
+effectively coarsened surface mesh.
+
+- `PAVE <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_
+
+  - **Pros:** produces neat tilings that account for patch planarity and
+    irregularity. The algorithm is fast (linear in the number of faces).
+
+  - **Cons:** uniform coarsening of the mesh. Only supports faces-per-patch
+    ratios of roughly 4 or 6, depending on whether the mesh is hexahedral or
+    tetrahedral.
+
+- `VSA <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_
+  :footcite:`Cohen-Steiner:2004:VSA`
+
+  - **Pros:** works well for arbitrary faces-per-patch ratios. Provides flexible
+    control of the geometric patch diameters. Maximizes patch planarity.
+    Provides choice between patches with roughly the same number of faces, or
+    roughly the same surface area.
+
+  - **Cons:** can be extremely slow for large meshes (scales badly), due to a
+    quadratic dependence on the number of faces. However, once computed, the
+    result can be reused with the :ref:`FILE method
+    <rade/PATCHES_Namelist:patch_algorithm>` allowing experimentation with
+    Chaparral parameters without rerunning the algorithm.
+
+- `METIS <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_
+  :footcite:`Karypis:1998:METIS`
+
+  - **Pros:** works well for arbitrary faces-per-patch ratios. The algorithm is
+    fast by leveraging the METIS library. Provides choice between patches with
+    roughly the same number of faces, or roughly the same surface area. In the
+    second case, the constraint is tight, so the faces-per-patch ratio is
+    largely ignored and need only be approximate.
+
+  - **Cons:** New and not extensively tested. Patch planarity is not explicitly
+    maximized, but at least patches will not straddle "sharp edges" (see `here
+    <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html#dual-graph>`_
+    for more details). Note that it is not clear whether patch planarity, or
+    lack thereof, affects the quality of the thermal radiation model.
+
+- `VAC <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_
+
+  - Retained for developer use and not recommended for regular users. It has
+    similar limitations to PAVE, but produces lower quality patches.
+
+Refer to each algorithm's documentation for extensive details on its properties,
+limitations, and supported inputs.
 
 .. contents:: Components
    :local:
@@ -36,12 +137,21 @@ Selects one of the available algorithms, or disables patching.
 
 :Type: string
 :Default: ``'PAVE'``
-:Valid Values: - ``'NONE'``: No patches will be generated. All other parameters are ignored. This is equivalent to an absent `PATCHES` namelist.
-               - ``'PAVE'``: Generate patches with the `PAVE algorithm <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_.
-               - ``'VAC'``: Generate patches with the `VAC algorithm <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_.
-               - ``'VSA'``: Generate patches with the `VSA algorithm <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_.
-               - ``'METIS'``: Generate patches with the `METIS algorithm <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_.
-               - ``'FILE'``: Patches will be read from a file. Because the cost of computing patches can be quite substantial for very large enclosure meshes, this pseudo-algorithm is provided to enable the use of previously computed patches.
+:Valid Values:
+   - ``'NONE'``: No patches will be generated. All other parameters are ignored.
+     This is equivalent to an absent **PATCHES** namelist.
+   - ``'PAVE'``: Generate patches with the `PAVE algorithm
+     <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_.
+   - ``'VAC'``: Generate patches with the `VAC algorithm
+     <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_.
+   - ``'VSA'``: Generate patches with the `VSA algorithm
+     <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_.
+   - ``'METIS'``: Generate patches with the `METIS algorithm
+     <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_.
+   - ``'FILE'``: Patches will be read from a file. Because the cost of computing
+     patches can be quite substantial for very large enclosure meshes, this
+     pseudo-algorithm is provided to enable the use of previously computed
+     patches.
 
 
 verbosity_level
@@ -90,7 +200,10 @@ Patches will never span more than one component.
 
 .. seealso::
    The effects of ``max_angle`` vary by algorithm. Refer to the documentation of
-   the `PAVE <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_, `VAC <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_, and `VSA <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_
+   the `PAVE
+   <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_, `VAC
+   <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_, and `VSA
+   <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_
    algorithms for more details.
 
 
@@ -105,14 +218,15 @@ The enclosure defined by the file must be identical to the current enclosure.
 This may be an absolute path or a relative path.
 
 :Type: case-sensitive string
-:Default: ``''``
 :Valid Values: must be a valid path
 
 
 PAVE Parameters
 ---------------
+
 The following namelist parameters apply only to the PAVE algorithm. For more
-information, refer to the `PAVE algorithm documentation <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_.
+information, refer to the `PAVE algorithm documentation
+<https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_.
 
 
 pave_merge_level
@@ -125,8 +239,15 @@ patches in order to reduce the patch count.
 :Default: 3
 :Valid Values: - 0: No merging.
                - 1: Merge patches that are within the faces of a vertex.
-               - 2: Same as 1. Additionally, merge patches that are within the faces of pairs of adjacent vertices. The old patches are requeued with their original weight so that a merge is only performed if the merge candidate has a lower weight than any of its consituent patches.
-               - :math:`\geq 3`: Same as 2. Additionally, merge patches within the faces of pairs of adjacent vertices, but add a large weight to the requeued old patches. This ensures that the merge is always performed.
+               - 2: Same as 1. Additionally, merge patches that are within the
+                 faces of pairs of adjacent vertices. The old patches are
+                 requeued with their original weight so that a merge is only
+                 performed if the merge candidate has a lower weight than any of
+                 its consituent patches.
+               - :math:`\geq 3`: Same as 2. Additionally, merge patches within
+                 the faces of pairs of adjacent vertices, but add a large weight
+                 to the requeued old patches. This ensures that the merge is
+                 always performed.
 
 
 pave_split_patch_size
@@ -159,7 +280,7 @@ Defines the seed for the random number generator used to pick the initial seed
 patches.
 
 :Type: integer
-:Default: ``NONE``, the seed is taken from the system clock.
+:Default: The seed is taken from the system clock.
 :Valid Values: :math:`\gt 0`
 
 The PAVE algorithm begins by creating a 'seed patch' in each connected component
@@ -179,8 +300,10 @@ taken from the system clock and results will likely vary from run to run.
 
 VAC Parameters
 --------------
+
 The following namelist parameters apply only to the VAC algorithm. For more
-information, refer to the `VAC algorithm documentation <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_.
+information, refer to the `VAC algorithm documentation
+<https://www.truchas.org/docs/sphinx/tools/RadE/patches/vac.html>`_.
 
 
 vac_merge_level
@@ -193,7 +316,11 @@ attempts to merge patches in order to reduce the patch count.
 :Default: 3
 :Valid Values: - 0: No merging.
                - 1: Merge patches that are within the faces of a vertex.
-               - 2: Same as 1. Additionally, merge patches that are within the faces of pairs of adjacent vertices. The old patches are requeued with their original weight so that a merge is only performed if the merge candidate has a lower weight than any of its consituent patches.
+               - 2: Same as 1. Additionally, merge patches that are within the
+                 faces of pairs of adjacent vertices. The old patches are
+                 requeued with their original weight so that a merge is only
+                 performed if the merge candidate has a lower weight than any of
+                 its consituent patches.
                - :math:`\geq 3`: Same as 2. Additionally, merge patches within
                  the faces of pairs of adjacent vertices, but add a large weight
                  to the requeued old patches. This ensures that the merge is
@@ -227,8 +354,10 @@ patches as before the split, unless this is not possible due to a merge.
 
 VSA Parameters
 --------------
+
 The following namelist parameters apply only to the VSA algorithm. For more
-information, refer to the `VSA algorithm documentation <https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_.
+information, refer to the `VSA algorithm documentation
+<https://www.truchas.org/docs/sphinx/tools/RadE/patches/vsa.html>`_.
 
 
 vsa_max_iter
@@ -326,7 +455,7 @@ Defines the seed for the random number generator used to pick the initial seed
 patches.
 
 :Type: integer
-:Default: ``NONE``, the seed is taken from the system clock.
+:Default: The seed is taken from the system clock.
 :Valid Values: :math:`\gt 0`
 
 The VSA algorithm uses a 'farthest-point' initialization method to choose the
@@ -346,8 +475,10 @@ likely vary from run to run.
 
 METIS Parameters
 ----------------
+
 The following namelist parameters apply only to the METIS algorithm. For more
-information, refer to the `METIS algorithm documentation <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_.
+information, refer to the `METIS algorithm documentation
+<https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_.
 
 The METIS algorithm constructs the weighted dual graph of the enclosure and
 passes it to the METIS library :footcite:`Karypis:1998:METIS` to
@@ -377,9 +508,10 @@ graph partitioner:
 .. math::
    N_p = \frac{N_f}{R}
 
-where :math:`N_f` is the total number of faces. Since the METIS library is free to
-produce less partitions than requested, :math:`N_p` is not necessarily the final
-number of patches.
+where :math:`N_f` is the total number of faces and :math:`R` is the
+``metis_face_patch_ratio``. Since the METIS library is free to produce less
+partitions than requested, :math:`N_p` is not necessarily the final number of
+patches.
 
 The METIS library must ensure that the constraints on the objective function are
 satisfied (see `partitioning objective
@@ -455,7 +587,7 @@ metis_objtype
 Specifies the type of objective.
 
 :Type: integer
-:Default: metis_objtype = 0
+:Default: 0
 :Valid Values: - 0: Edge-cut minimization.
                - 1: Total communication volume minimization.
 
@@ -476,7 +608,7 @@ Specifies the algorithm used during initial partitioning (recursive bisection
 only).
 
 :Type: integer
-:Default: metis_iptype = 0
+:Default: 0
 :Valid Values: - 0: Grows a bisection using a greedy strategy
                - 1: Computes a bisection at random followed by a refinement
                - 2: Derives a separator from an edge cut.
@@ -535,7 +667,8 @@ standard matching approach fails to sufficiently coarsen the graph.
                - 1: Does not perform a 2–hop matching.
 
 .. note::
-   The 2–hop matching is very effective for graphs with power-law degree distributions.               
+   The 2–hop matching is very effective for graphs with power-law degree
+   distributions.
 
 
 metis_contig
