@@ -221,9 +221,9 @@ contains
     type(serial_mesh), intent(out) :: outmesh
 
     if (is_IOP) then
-      outmesh%num_cell = inmesh%cell_ip%global_size()
-      outmesh%num_face = inmesh%face_ip%global_size()
-      outmesh%num_node = inmesh%node_ip%global_size()
+      outmesh%num_cell = inmesh%cell_ip%global_size
+      outmesh%num_face = inmesh%face_ip%global_size
+      outmesh%num_node = inmesh%node_ip%global_size
     end if
 
     call inmesh%get_global_cnode_array(outmesh%xcnode, outmesh%cnode)
@@ -281,9 +281,9 @@ contains
     integer, pointer :: array(:)
 
     if (is_IOP) then
-      outmesh%num_cell = inmesh%cell_ip%global_size()
-      outmesh%num_face = inmesh%face_ip%global_size()
-      outmesh%num_node = inmesh%node_ip%global_size()
+      outmesh%num_cell = inmesh%cell_ip%global_size
+      outmesh%num_face = inmesh%face_ip%global_size
+      outmesh%num_node = inmesh%node_ip%global_size
     end if
 
     !! CNODE -- need to reorient for positive volume

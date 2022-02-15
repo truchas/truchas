@@ -23,7 +23,7 @@ module cell_grad_type
   use mfd_disc_type
   use hypre_hybrid_type
   use parameter_list_type
-  use index_partitioning
+  use index_map_type
   use truchas_logging_services
   implicit none
   private
@@ -63,7 +63,7 @@ contains
     integer :: j, l, ic, ir
     logical, allocatable :: face_mask(:)
     type(pcsr_graph), pointer :: g
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_ip
     real(r8) :: c, rpar
     
     ASSERT(size(mask) == disc%mesh%ncell)
@@ -231,7 +231,7 @@ contains
       errmsg = trim(string)
     endif
     
-    call gather_boundary (this%mesh%face_ip, uface)
+    call this%mesh%face_ip%gather_offp(uface)
     call this%disc%compute_cell_grad (uface, this%cell_mask(:size(gradu,2)), gradu)
 
   end subroutine compute
@@ -272,7 +272,7 @@ contains
         end associate
       end if
     end do
-    call gather_boundary (mesh%face_ip, bc_mask)
+    call mesh%face_ip%gather_offp(bc_mask)
     
     if (size(setids) > 0) then
       !! Create the bitmask corresponding to SETIDS.

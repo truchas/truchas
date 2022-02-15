@@ -35,7 +35,7 @@ module bitfield_type
   !! Implementations for rank-1 BITFIELD arrays only.
   public :: distribute
 
-  !! Generics from INDEX_PARTITIONING extended to the BITFIELD type.
+  !! Generics from index_map_type extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
   public :: gather_boundary
   
@@ -221,31 +221,31 @@ contains
 
   subroutine gather_boundary_bitfield1 (this, local_data)
 
-    use index_partitioning, only: ip_desc, gather_boundary
+    use index_map_type, only: index_map
 
-    type(ip_desc),  intent(in)    :: this   ! partition descriptor
+    type(index_map),  intent(in)    :: this   ! partition descriptor
     type(bitfield), intent(inout) :: local_data(:)  ! local data array
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call gather_boundary (this, local_data%chunk(n))
+      call this%gather_offp(local_data%chunk(n))
     end do
 
   end subroutine gather_boundary_bitfield1
 
   subroutine gather_boundary_bitfield2 (this, onP_data, offP_data)
 
-    use index_partitioning, only: ip_desc, gather_boundary
+    use index_map_type, only: index_map
 
-    type(ip_desc),  intent(in)  :: this         ! partition descriptor
+    type(index_map),  intent(in)  :: this         ! partition descriptor
     type(bitfield), intent(in)  :: onP_data(:)  ! on-process data array
     type(bitfield), intent(out) :: offP_data(:) ! off-process data array
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call gather_boundary (this, onP_data%chunk(n), offP_data%chunk(n))
+      call this%gather_offp(onP_data%chunk(n), offP_data%chunk(n))
     end do
 
   end subroutine gather_boundary_bitfield2

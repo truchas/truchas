@@ -48,7 +48,7 @@ module flow_prediction_type
   use truchas_logging_services
   use truchas_timers
   use parameter_list_type
-  use index_partitioning
+  use index_map_type
   use flow_domain_types
   use flow_operators
   use unstr_mesh_type
@@ -105,7 +105,7 @@ contains
 
     type(graph_container) :: g(size(this%solver))
     type(matrix_container) :: A(size(this%solver))
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_ip
     type(parameter_list), pointer :: plist
     integer :: i, j, k
 
@@ -354,7 +354,7 @@ contains
       ! g(:,2,j) = grad_at_face_j(u_2)
       ! g(:,3,j) = grad_at_face_j(u_3)
       call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
-      call gather_boundary(this%mesh%face_ip, g)
+      call this%mesh%face_ip%gather_offp(g)
 
       do j = 1, this%mesh%nface
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
@@ -552,12 +552,12 @@ contains
           call stop_timer("hypre solve")
           call tls_info(slabel(i) // this%solver(i)%metrics_string())
           if (ierr /= 0) call tls_error("prediction solve unsuccessful")
-          call gather_boundary(this%mesh%cell_ip, sol)
+          call this%mesh%cell_ip%gather_offp(sol)
           do j = 1, this%mesh%ncell
             vel_cc(i,j) = sol(j)
           end do
         else
-          call gather_boundary(this%mesh%cell_ip, rhs1d)
+          call this%mesh%cell_ip%gather_offp(rhs1d)
           do j = 1, this%mesh%ncell
             coeff = props%rho_cc(j)
             if (props%vof(j) > 0) &

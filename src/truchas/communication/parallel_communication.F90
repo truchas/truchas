@@ -569,27 +569,11 @@ contains
       n = size(array)
     end if
 
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      local_max = maxval(array, mask)
-    else
-      local_max = maxval(array)
-    end if
-#else
     local_max = maxval(array, mask)
-#endif
     call MPI_Allreduce(local_max, global_max, 1, MPI_REAL8, MPI_MAX, comm, ierr)
 
     local_pair(1) = merge(this_pe, npe+1, (n > 0 .and. local_max == global_max))
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      local_pair(2) = maxloc(array, dim=1, mask=mask) ! 0 if array is 0-sized
-    else
-      local_pair(2) = maxloc(array, dim=1 ) ! 0 if array is 0-sized
-    end if
-#else
     local_pair(2) = maxloc(array, dim=1, mask=mask) ! 0 if array is 0-sized
-#endif
     call MPI_Allreduce(local_pair, global_pair, 1, MPI_2INTEGER, MPI_MINLOC, comm, ierr)
 
     pid = global_pair(1)

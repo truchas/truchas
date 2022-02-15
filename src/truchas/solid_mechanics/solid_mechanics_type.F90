@@ -185,7 +185,6 @@ contains
       rotation_magnitude, gap_displacement, gap_normal_traction)
 
     use sm_bc_utilities, only: compute_gradient_node_to_cell
-    use index_partitioning, only: gather_boundary
 
     class(solid_mechanics), intent(in) :: this
     real(r8), intent(out), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
@@ -199,7 +198,7 @@ contains
           rotation_magnitude(mesh%ncell_onP))
       thermal_strain = this%model%thermal_strain(:,:mesh%ncell_onP)
       displ = this%displacement
-      call gather_boundary(mesh%node_ip, displ)
+      call mesh%node_ip%gather_offp(displ)
 
       do j = 1, mesh%ncell_onP
         associate (cn => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))

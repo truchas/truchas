@@ -10,7 +10,7 @@ module mesh_impl
 
   use common_impl, only: ncells, nnodes, new_mesh
   use var_vector_types, only: int_var_vector
-  use index_partitioning, only: ip_desc
+  use index_map_type, only: index_map
   implicit none
   private
 
@@ -19,7 +19,7 @@ module mesh_impl
 
   integer, parameter, public :: DEGENERATE_FACE = -huge(1)
 
-  type(ip_desc), public :: legacy_cell_ip
+  type(index_map), public :: legacy_cell_ip
 
   !! Copy of the MESH_CONNECTIVITY type from MESH_MODULE (used components only)
   type, public :: mesh_connectivity
@@ -203,21 +203,19 @@ contains
   subroutine init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_ip)
 
     use common_impl, only: OLD_TET_SIDE_MAP, OLD_PYR_SIDE_MAP, OLD_PRI_SIDE_MAP, OLD_HEX_SIDE_MAP
-    use index_partitioning, only: localize_index_array, gather_boundary
 
     integer, intent(out) :: ngbr_cell_orig(:,:), ngbr_cell(:,:)
-    type(ip_desc), intent(out) :: cell_ip
+    type(index_map), intent(out) :: cell_ip
 
     integer :: i, j, jj, k, n
     integer :: gid(new_mesh%ncell), link_gid(new_mesh%nlink)
-    integer, allocatable :: offP_index(:)
 
     !! Legacy global cell IDs on the mesh.
     call cell_ip%init (ncells)
     do j = 1, new_mesh%ncell_onP
       gid(j) = cell_ip%global_index(j)
     end do
-    call gather_boundary (new_mesh%cell_ip, gid)
+    call new_mesh%cell_ip%gather_offp(gid)
 
     !! Generate the cell neighbor array (legacy global IDs)
     do j = 1, new_mesh%ncell_onP
@@ -243,7 +241,7 @@ contains
         link_gid(j) = 0
       end if
     end do
-    call gather_boundary (new_mesh%link_ip, link_gid)
+    call new_mesh%link_ip%gather_offp(link_gid)
 
     !! Fill in neighbor data from gap cells.
     do n = 1, new_mesh%nlink
@@ -285,11 +283,8 @@ contains
     !! Localize the ngbr_cell_orig array.
     ngbr_cell = ngbr_cell_orig
     where (ngbr_cell < 0) ngbr_cell = 0 ! temp convert degen side tags to ignored bndry sides
-    call localize_index_array (cell_ip, ngbr_cell, offP_index)
+    call cell_ip%localize_index_array (ngbr_cell)
     where (ngbr_cell_orig < 0) ngbr_cell = ngbr_cell_orig ! restore degen side tags
-
-    call cell_ip%add_offP_index (offP_index)
-    deallocate(offP_index)
 
     !! Convert off-process references to look-aside boundary array references.
     where (ngbr_cell > ncells) ngbr_cell = ncells - ngbr_cell

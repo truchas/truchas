@@ -17,7 +17,7 @@ module unstr_base_mesh_class
   use kinds, only: r8
   use base_mesh_class
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   use bitfield_type
   implicit none
   private
@@ -28,7 +28,7 @@ module unstr_base_mesh_class
     integer, allocatable :: lface(:,:)      ! pointer due to localize_index_array
     integer, allocatable :: link_set_id(:)  ! user-assigned ID for each link block
     type(bitfield), allocatable :: link_set_mask(:)  ! link block index
-    type(ip_desc) :: link_ip
+    type(index_map) :: link_ip
   contains
     procedure :: get_link_set_bitmask
     procedure :: get_link_set_ids

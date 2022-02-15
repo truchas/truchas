@@ -218,13 +218,12 @@ contains
 
 
   subroutine apply(this, t, scaling_factor, displ, r)
-    use index_partitioning, only: gather_boundary
     class(sm_bc_manager), intent(inout) :: this
     real(r8), intent(in) :: t, scaling_factor(:), displ(:,:)
     real(r8), intent(inout) :: r(:,:)
     ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
     call this%apply_traction(t, r)
-    call gather_boundary(this%mesh%node_ip, r)
+    call this%mesh%node_ip%gather_offp(r)
     call this%apply_nontraction(t, scaling_factor, displ, r)
   end subroutine apply
 

@@ -40,6 +40,13 @@ program maxloc_test
 
 contains
 
+  subroutine write_fail (errmsg)
+    use,intrinsic :: iso_fortran_env, only: error_unit
+    character(*), intent(in) :: errmsg
+    status = 1
+    write(error_unit,'(a)') 'Failed: ' // errmsg
+  end subroutine
+
   ! Corner case: 0-sized array on every process should return 0
   subroutine test_a0
     real(real64), allocatable :: a(:)
@@ -173,13 +180,6 @@ contains
     mask = .false.
     call global_maxloc_sub(a, pid, lindex, mask)
     if (pid /= 0 .or. lindex /= 0) call write_fail('test_b4')
-  end subroutine
-
-  subroutine write_fail (errmsg)
-    use,intrinsic :: iso_fortran_env, only: error_unit
-    character(*), intent(in) :: errmsg
-    status = 1
-    write(error_unit,'(a)') 'Failed: ' // errmsg
   end subroutine
 
 end program

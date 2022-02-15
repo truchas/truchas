@@ -22,7 +22,6 @@ module EM_graphics_output
   use kinds, only: rk => r8
   use string_utilities, only: i_to_c
   use parallel_communication
-  use index_partitioning
   use simpl_mesh_type
   use mimetic_discretization
   use data_explorer
@@ -71,8 +70,8 @@ contains
     call mesh%get_global_x_array (x)
     call mesh%get_global_cblock_array (cblock)
     
-    allocate(pdata(merge(mesh%cell_ip%global_size(),0,is_iop)))
-    call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
+    allocate(pdata(merge(mesh%cell_ip%global_size,0,is_iop)))
+    call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onp_size))
     
     if (is_IOP) then
       !! Open the DX output file.
@@ -138,8 +137,8 @@ contains
     real, pointer :: g_v(:,:), g_q(:)
     type(dx_object) :: dxfld
     
-    allocate(g_v(3,merge(mesh%cell_ip%global_size(),0,is_iop)))
-    allocate(g_q(merge(mesh%cell_ip%global_size(),0,is_iop)))
+    allocate(g_v(3,merge(mesh%cell_ip%global_size,0,is_iop)))
+    allocate(g_q(merge(mesh%cell_ip%global_size,0,is_iop)))
     
     v = w1_vector_on_cells(mesh, efield)
     call collate (g_v, v(:,:mesh%ncell_onP))
@@ -196,8 +195,10 @@ contains
     real(kind=rk), intent(in) :: field(:)
     character(len=*), intent(in) :: name
     type(dx_object) :: dxfld
+    integer :: n
     real, pointer :: g_field(:)
-    allocate(g_field(merge(global_sum(size(field)),0,is_iop)))
+    n = global_sum(size(field))
+    allocate(g_field(merge(n,0,is_iop)))
     call collate (g_field, real(field))
     if (is_IOP) then
       call dx_export_field (dxf, dxfld, dxcon, dxpos, g_field, cc=.true., name=trim(name))

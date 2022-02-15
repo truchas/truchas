@@ -53,7 +53,7 @@ module flow_projection_type
   use flow_bc_type
   use flow_operators
   use fischer_guess_type
-  use index_partitioning
+  use index_map_type
   use parallel_communication
   use hypre_hybrid_type
   use pcsr_matrix_type
@@ -106,7 +106,7 @@ contains
     integer :: j, i
     type(pcsr_graph), pointer :: g
     type(pcsr_matrix), pointer :: A
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_ip
     type(parameter_list), pointer :: plist
     real(r8) :: q
 
@@ -375,8 +375,7 @@ contains
         end do
       end do
 
-      call gather_boundary(this%mesh%face_ip, g(1,:))
-      call gather_boundary(this%mesh%face_ip, g(2,:))
+      call this%mesh%face_ip%gather_offp(g)
     end associate
     ! Truchas has a gravity_limiter... Do we need this?
 
@@ -400,7 +399,7 @@ contains
       do i = 1, m%ncell_onP
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
-      call gather_boundary(m%cell_ip, v)
+      call m%cell_ip%gather_offp(v)
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, this%bc%v_zero_normal, props%face_t, 0.0_r8)
 
       ! regular_void faces use only the regular cell velocity.  We could directly enforce this
@@ -440,7 +439,7 @@ contains
           vel_fn(j) = 0
         end do
       end associate
-      call gather_boundary(m%face_ip, vel_fn)
+      call m%face_ip%gather_offp(vel_fn)
 
     end associate
 
@@ -470,7 +469,7 @@ contains
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
 
     ! not sure if this call is necesary
-    call gather_boundary(this%mesh%cell_ip, this%delta_p_cc)
+    call this%mesh%cell_ip%gather_offp(this%delta_p_cc)
 
     ! correct face and cell centered quantities
     call this%velocity_fc_correct(dt, props, vel_fc)
@@ -522,7 +521,7 @@ contains
       end do
     end associate
 
-    call gather_boundary(this%mesh%face_ip, vel_fc)
+    call this%mesh%face_ip%gather_offp(vel_fc)
 
     ! there may be some magic here about setting fluxing velocities on void cells.
     ! not sure if it's applicable when using face based (as opposed to side based) indexing
@@ -537,7 +536,7 @@ contains
     integer :: i
     associate (p => props, dp => this%delta_p_cc)
       p_cc = p_cc + dp
-      call gather_boundary(this%mesh%cell_ip, p_cc)
+      call this%mesh%cell_ip%gather_offp(p_cc)
     end associate
   end subroutine pressure_cc_correct
 
@@ -560,7 +559,7 @@ contains
           gp_fc(:,j) = 0.0_r8
         end if
       end do
-      call gather_boundary(this%mesh%face_ip, gp_fc)
+      call this%mesh%face_ip%gather_offp(gp_fc)
       call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
 
       ! zero pressure gradient on void cells
@@ -600,7 +599,7 @@ contains
         vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
       end if
     end do
-    call gather_boundary(this%mesh%cell_ip, vel_cc)
+    call this%mesh%cell_ip%gather_offp(vel_cc)
   end subroutine velocity_cc_correct
 
 end module flow_projection_type

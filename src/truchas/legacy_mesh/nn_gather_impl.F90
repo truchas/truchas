@@ -36,13 +36,12 @@ contains
 
   subroutine nn_gather_boundarydata (boundary, source)
     use common_impl, only: mesh => new_mesh
-    use index_partitioning, only: gather_boundary
     real(r8), intent(in) :: source(:)
     real(r8), pointer :: boundary(:)
-    ASSERT(size(source) == mesh%node_ip%onP_size())
+    ASSERT(size(source) == mesh%node_ip%onp_size)
     if (associated(boundary)) return  ! signal to do nothing
-    allocate(boundary(mesh%node_ip%offP_size()))
-    call gather_boundary (mesh%node_ip, source, boundary)
+    allocate(boundary(mesh%node_ip%offp_size))
+    call mesh%node_ip%gather_offp(source, boundary)
   end subroutine nn_gather_boundarydata
 
   subroutine init_vertex_ngbr_all (vertex_ngbr_all_orig, vertex_ngbr_all)

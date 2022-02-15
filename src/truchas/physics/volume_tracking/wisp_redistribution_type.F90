@@ -16,7 +16,6 @@ module wisp_redistribution_type
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
-  use index_partitioning
   use parallel_communication
   implicit none
   private
@@ -120,7 +119,7 @@ contains
 
     ! communicate results... I don't think we need to communicate flux_vol changes since
     ! they are strictly local.  May need to be revistied if odd bugs show up
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_ip%gather_offp(vof)
 
     call this%statistics()
 

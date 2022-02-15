@@ -8,7 +8,7 @@ module debug_EM
 
   use kinds, only: r8
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   
   implicit none
   private
@@ -22,7 +22,7 @@ contains
   subroutine verify_vector (vec, gsd, label)
   
     real(kind=r8), intent(in) :: vec(:)
-    type(ip_desc), intent(in) :: gsd
+    type(index_map), intent(in) :: gsd
     character(len=*), intent(in) :: label
     
     integer :: n
@@ -42,7 +42,7 @@ contains
       if (is_IOP) read(unit=lun) g_ref
       allocate(ref(size(vec)))
       call distribute (ref, g_ref)
-      call gather_boundary (gsd, ref)
+      call gsd%gather_offp(ref)
       err1 = global_maxval(abs(ref))
       err2 = global_maxval(abs(vec-ref))
       err3 = global_maxval(abs(vec-ref)/abs(ref),(abs(ref)>0.0_r8))

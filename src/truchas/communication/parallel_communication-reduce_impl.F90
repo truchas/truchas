@@ -183,15 +183,7 @@ contains
     logical, intent(in), optional :: mask(:)
     integer(int32) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(minval(a,mask), s, 1, MPI_INTEGER4, MPI_MIN, comm, ierr)
-    else
-      call MPI_Allreduce(minval(a), s, 1, MPI_INTEGER4, MPI_MIN, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(minval(a,mask), s, 1, MPI_INTEGER4, MPI_MIN, comm, ierr)
-#endif
   end function
 
   module function minval_i8_1(a, mask) result(s)
@@ -199,15 +191,7 @@ contains
     logical, intent(in), optional :: mask(:)
     integer(int64) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(minval(a,mask), s, 1, MPI_INTEGER8, MPI_MIN, comm, ierr)
-    else
-      call MPI_Allreduce(minval(a), s, 1, MPI_INTEGER8, MPI_MIN, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(minval(a,mask), s, 1, MPI_INTEGER8, MPI_MIN, comm, ierr)
-#endif
   end function
 
   module function minval_r4_1(a, mask) result(s)
@@ -215,15 +199,7 @@ contains
     logical, intent(in), optional :: mask(:)
     real(real32) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(minval(a,mask), s, 1, MPI_REAL4, MPI_MIN, comm, ierr)
-    else
-      call MPI_Allreduce(minval(a), s, 1, MPI_REAL4, MPI_MIN, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(minval(a,mask), s, 1, MPI_REAL4, MPI_MIN, comm, ierr)
-#endif
   end function
 
   module function minval_r8_1(a, mask) result(s)
@@ -231,15 +207,7 @@ contains
     logical, intent(in), optional :: mask(:)
     real(real64) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(minval(a,mask), s, 1, MPI_REAL8, MPI_MIN, comm, ierr)
-    else
-      call MPI_Allreduce(minval(a), s, 1, MPI_REAL8, MPI_MIN, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(minval(a,mask), s, 1, MPI_REAL8, MPI_MIN, comm, ierr)
-#endif
   end function
 
 !!!! GLOBAL MAXVAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -277,15 +245,7 @@ contains
     logical, intent(in), optional :: mask(:)
     integer(int32) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(maxval(a,mask), s, 1, MPI_INTEGER4, MPI_MAX, comm, ierr)
-    else
-      call MPI_Allreduce(maxval(a), s, 1, MPI_INTEGER4, MPI_MAX, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(maxval(a,mask), s, 1, MPI_INTEGER4, MPI_MAX, comm, ierr)
-#endif
   end function
 
   module function maxval_i8_1(a, mask) result(s)
@@ -293,15 +253,7 @@ contains
     logical, intent(in), optional :: mask(:)
     integer(int64) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(maxval(a,mask), s, 1, MPI_INTEGER8, MPI_MAX, comm, ierr)
-    else
-      call MPI_Allreduce(maxval(a), s, 1, MPI_INTEGER8, MPI_MAX, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(maxval(a,mask), s, 1, MPI_INTEGER8, MPI_MAX, comm, ierr)
-#endif
   end function
 
   module function maxval_r4_1(a, mask) result(s)
@@ -309,15 +261,7 @@ contains
     logical, intent(in), optional :: mask(:)
     real(real32) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(maxval(a,mask), s, 1, MPI_REAL4, MPI_MAX, comm, ierr)
-    else
-      call MPI_Allreduce(maxval(a), s, 1, MPI_REAL4, MPI_MAX, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(maxval(a,mask), s, 1, MPI_REAL4, MPI_MAX, comm, ierr)
-#endif
   end function
 
   module function maxval_r8_1(a, mask) result(s)
@@ -325,15 +269,7 @@ contains
     logical, intent(in), optional :: mask(:)
     real(real64) :: s
     integer :: ierr
-#ifdef INTEL_BUG20220211
-    if (present(mask)) then
-      call MPI_Allreduce(maxval(a,mask), s, 1, MPI_REAL8, MPI_MAX, comm, ierr)
-    else
-      call MPI_Allreduce(maxval(a), s, 1, MPI_REAL8, MPI_MAX, comm, ierr)
-    end if
-#else
     call MPI_Allreduce(maxval(a,mask), s, 1, MPI_REAL8, MPI_MAX, comm, ierr)
-#endif
   end function
 
 !!!! GLOBAL DOT PRODUCT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

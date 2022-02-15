@@ -129,7 +129,7 @@ module unstr_mesh_type
 
   use kinds, only: r8
   use unstr_base_mesh_class
-  use index_partitioning
+  use index_map_type
   use parallel_communication
   use bitfield_type
   use cell_topology
@@ -385,16 +385,16 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (nvec(1,:), this%node_ip%offP_size())
-    call collate (nvec(2,:), this%node_ip%onP_size())
+    call collate (nvec(1,:), this%node_ip%offp_size)
+    call collate (nvec(2,:), this%node_ip%onp_size)
     call broadcast (nvec)
 
-    call collate (fvec(1,:), this%face_ip%offP_size())
-    call collate (fvec(2,:), this%face_ip%onP_size())
+    call collate (fvec(1,:), this%face_ip%offp_size)
+    call collate (fvec(2,:), this%face_ip%onp_size)
     call broadcast (fvec)
 
-    call collate (cvec(1,:), this%cell_ip%offP_size())
-    call collate (cvec(2,:), this%cell_ip%onP_size())
+    call collate (cvec(1,:), this%cell_ip%offp_size)
+    call collate (cvec(2,:), this%cell_ip%onp_size)
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')

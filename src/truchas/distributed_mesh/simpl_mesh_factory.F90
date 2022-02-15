@@ -76,7 +76,7 @@ contains
     use exodus_mesh_type
     use exodus_mesh_io
     use simpl_mesh_tools
-    use index_partitioning
+    use index_map_type
     use parallel_communication
     use permutations
     use truchas_logging_services
@@ -222,50 +222,45 @@ contains
     call this%cell_ip%init (cell_bsize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
-    this%ncell = this%cell_ip%local_size()
-    this%ncell_onP = this%cell_ip%onP_size()
+    this%ncell = this%cell_ip%local_size
+    this%ncell_onP = this%cell_ip%onp_size
 
     !! Distribute the cell permutation array; gives mapping to the external cell number.
     allocate(this%xcell(this%ncell))
-    call distribute (this%xcell(:this%ncell_onP), cell_perm)
-    call gather_boundary (this%cell_ip, this%xcell)
+    call this%cell_ip%distribute(cell_perm, this%xcell)
+    call this%cell_ip%gather_offp(this%xcell)
     deallocate(cell_perm)
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
     call this%node_ip%init (node_bsize)
-    call localize_index_array (cnode, this%cell_ip, this%node_ip, this%cnode, offP_index)
-    call this%node_ip%add_offP_index (offP_index)
-    deallocate(offP_index)
+    call this%cell_ip%localize_index_array (cnode, this%node_ip, this%cnode)
 
-    this%nnode = this%node_ip%local_size()
-    this%nnode_onP = this%node_ip%onP_size()
+    this%nnode = this%node_ip%local_size
+    this%nnode_onP = this%node_ip%onp_size
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
-    call distribute (this%xnode(:this%nnode_onP), node_perm)
-    call gather_boundary (this%node_ip, this%xnode)
+    call this%node_ip%distribute(node_perm, this%xnode)
+    call this%node_ip%gather_offp(this%xnode)
     deallocate(node_perm)
 
     !! Create the edge index partition and localize the global CEDGE array,
     !! which identifies off-process edges to augment the partition with.
     call this%edge_ip%init (edge_bsize)
-    call localize_index_array (cedge, this%cell_ip, this%edge_ip, this%cedge, offP_index)
-    call this%edge_ip%add_offP_index (offP_index)
-    deallocate(cedge, offP_index)
+    call this%cell_ip%localize_index_array(cedge, this%edge_ip, this%cedge)
+    deallocate(cedge)
 
-    this%nedge = this%edge_ip%local_size()
-    this%nedge_onP = this%edge_ip%onP_size()
+    this%nedge = this%edge_ip%local_size
+    this%nedge_onP = this%edge_ip%onp_size
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
     call this%face_ip%init (face_bsize)
-    call localize_index_array (cface, this%cell_ip, this%face_ip, this%cface, offP_index)
-    call this%face_ip%add_offP_index (offP_index)
-    deallocate(offP_index)
+    call this%cell_ip%localize_index_array(cface, this%face_ip, this%cface)
 
-    this%nface = this%face_ip%local_size()
-    this%nface_onP = this%face_ip%onP_size()
+    this%nface = this%face_ip%local_size
+    this%nface_onP = this%face_ip%onp_size
 
     !! Distribute the element block data
     if (is_IOP) n = mesh%num_eblk
@@ -275,8 +270,8 @@ contains
     call broadcast (this%block_id)
 
     allocate(this%cblock(this%ncell))
-    call distribute (this%cblock(:this%ncell_onP), cblock)
-    call gather_boundary (this%cell_ip, this%cblock)
+    call this%cell_ip%distribute(cblock, this%cblock)
+    call this%cell_ip%gather_offp(this%cblock)
     deallocate(cblock)
 
     !! Initialize the secondary indexing arrays.
@@ -309,8 +304,8 @@ contains
     call broadcast_status(stat, errmsg)
     if (stat /= 0) return
     allocate(this%x(3,this%nnode))
-    call distribute (this%x(:,:this%nnode_onP), mesh%coord)
-    call gather_boundary (this%node_ip, this%x)
+    call this%node_ip%distribute(mesh%coord, this%x)
+    call this%node_ip%gather_offp(this%x)
 
     !! Initialize the mesh geometry data components.
     allocate(this%length(this%nedge), this%area(this%nface), this%volume(this%ncell))
@@ -741,8 +736,7 @@ contains
 
     use exodus_mesh_type
     use bitfield_type
-    use parallel_communication, only: is_IOP, distribute, broadcast
-    use index_partitioning, only: gather_boundary, scatter_boundary_or
+    use parallel_communication, only: is_IOP, broadcast
 
     type(simpl_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
@@ -754,7 +748,7 @@ contains
     ASSERT(allocated(this%fnode))
     ASSERT(allocated(this%face_set_mask))
 
-    nnode_tot = this%node_ip%global_size()
+    nnode_tot = this%node_ip%global_size
 
     !! Initialize the node set data, %NODE_SET_MASK
     allocate(node_set_mask(merge(nnode_tot,0,is_IOP)))
@@ -773,8 +767,8 @@ contains
 
     !! Initialize the distributed node set mask (%NODE_SET_MASK)
     allocate(this%node_set_mask(this%nnode))
-    call distribute (this%node_set_mask(:this%nnode_onP), node_set_mask)
-    call gather_boundary (this%node_ip, this%node_set_mask)
+    call this%node_ip%distribute(node_set_mask, this%node_set_mask)
+    call this%node_ip%gather_offp(this%node_set_mask)
     deallocate(node_set_mask)
 
     !! Initialize the list of node set IDs (%NODE_SET_ID)
@@ -790,7 +784,7 @@ contains
     do j = 1, this%nface
       if (btest(this%face_set_mask(j),pos=0)) bnode(this%fnode(:,j)) = .true.
     end do
-    call scatter_boundary_or (this%node_ip, bnode)
+    call this%node_ip%scatter_offp_or(bnode)
     where (bnode) this%node_set_mask = ibset(this%node_set_mask, pos=0)
     deallocate(bnode)
 
@@ -807,8 +801,7 @@ contains
 
     use exodus_mesh_type
     use permutations, only: reorder
-    use parallel_communication, only: is_IOP, distribute, broadcast, collate
-    use index_partitioning, only: gather_boundary
+    use parallel_communication, only: is_IOP, broadcast, collate
 
     type(simpl_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
@@ -816,7 +809,7 @@ contains
     integer :: i, n, offset, ncell_tot
     integer, allocatable :: cell_set_mask(:), cell_perm(:)
 
-    ncell_tot = this%cell_ip%global_size()
+    ncell_tot = this%cell_ip%global_size
 
     !! Generate the global cell_set mask array (original cell ordering)
     allocate(cell_set_mask(merge(ncell_tot,0,is_IOP)))
@@ -839,8 +832,8 @@ contains
 
     !! Initialize the distributed cell set mask (%CELL_SET_MASK)
     allocate(this%cell_set_mask(this%ncell))
-    call distribute (this%cell_set_mask(:this%ncell_onP), cell_set_mask)
-    call gather_boundary (this%cell_ip, this%cell_set_mask)
+    call this%cell_ip%distribute(cell_set_mask, this%cell_set_mask)
+    call this%cell_ip%gather_offp(this%cell_set_mask)
     deallocate(cell_set_mask)
 
     !! Initialize the list of cell set IDs (%CELL_SET_ID)
@@ -865,8 +858,7 @@ contains
 
     use bitfield_type
     use exodus_mesh_type
-    use parallel_communication, only: is_IOP, distribute, broadcast
-    use index_partitioning, only: gather_boundary
+    use parallel_communication, only: is_IOP, broadcast
 
     type(simpl_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh
@@ -876,7 +868,7 @@ contains
     type(bitfield), allocatable :: face_set_mask(:)
     integer, allocatable :: tag(:)
 
-    nface_tot = this%face_ip%global_size()
+    nface_tot = this%face_ip%global_size
 
     !! Generate the global face set mask array.
     allocate(face_set_mask(merge(nface_tot,0,is_IOP)))
@@ -917,7 +909,7 @@ contains
     !! Initialize the distributed face set mask (%FACE_SET_MASK)
     allocate(this%face_set_mask(this%nface))
     call distribute (this%face_set_mask(:this%nface_onP), face_set_mask)
-    call gather_boundary (this%face_ip, this%face_set_mask)
+    call gather_boundary(this%face_ip, this%face_set_mask)
     deallocate(face_set_mask)
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)

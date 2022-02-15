@@ -53,8 +53,6 @@ contains
   !! Input/output arrays are on-process cells only
   subroutine get_advected_enthalpy1(this, tcell, dq)
 
-    use index_partitioning, only: gather_boundary
-
     class(enthalpy_advector1), intent(in) :: this
     real(r8), intent(in) :: tcell(:)
     real(r8), intent(out) :: dq(:)
@@ -69,7 +67,7 @@ contains
 
     allocate(tcellx(this%mesh%ncell))
     tcellx(:this%mesh%ncell_onP) = tcell
-    call gather_boundary(this%mesh%cell_ip, tcellx)
+    call this%mesh%cell_ip%gather_offp(tcellx)
 
     do j = 1, this%mesh%ncell_onP
       i1 = this%mesh%xcface(j)
@@ -100,8 +98,6 @@ contains
   !! Input/output arrays are on-process cells only
   subroutine get_advected_enthalpy2(this, tcell, dq, tmin, tmax)
 
-    use index_partitioning, only: gather_boundary
-
     class(enthalpy_advector1), intent(in) :: this
     real(r8), intent(in) :: tcell(:)
     real(r8), intent(out) :: dq(:), tmin(:), tmax(:)
@@ -118,7 +114,7 @@ contains
 
     allocate(tcellx(this%mesh%ncell))
     tcellx(:this%mesh%ncell_onP) = tcell
-    call gather_boundary(this%mesh%cell_ip, tcellx)
+    call this%mesh%cell_ip%gather_offp(tcellx)
 
     do j = 1, this%mesh%ncell_onP
       tmin(j) = tcellx(j)

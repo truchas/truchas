@@ -38,7 +38,6 @@ module pcsr_precon_boomer_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fhypre
-  use index_partitioning
   use pcsr_matrix_type
   use pcsr_precon_class
   use parameter_list_type
@@ -99,9 +98,9 @@ contains
 
     this%A => A
 
-    this%nrows  = A%graph%row_ip%onP_size()
-    this%ilower = A%graph%row_ip%first_index()
-    this%iupper = A%graph%row_ip%last_index()
+    this%nrows  = A%graph%row_ip%onp_size
+    this%ilower = A%graph%row_ip%first_gid
+    this%iupper = A%graph%row_ip%last_gid
 
     call fHYPRE_ClearAllErrors
 
@@ -301,9 +300,9 @@ contains
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
 
-    nrows  = src%graph%row_ip%onP_size()
-    ilower = src%graph%row_ip%first_index()
-    iupper = src%graph%row_ip%last_index()
+    nrows  = src%graph%row_ip%onp_size
+    ilower = src%graph%row_ip%first_gid
+    iupper = src%graph%row_ip%last_gid
 
     call fHYPRE_ClearAllErrors
 

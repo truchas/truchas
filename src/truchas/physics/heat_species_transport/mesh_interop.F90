@@ -171,7 +171,6 @@ contains
 !    use material_class
     use matl_module, only: gather_vof
     use legacy_mesh_api, only: ncells
-    use index_partitioning, only: gather_boundary
     !use material_interop, only: material_to_system
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
@@ -218,7 +217,7 @@ contains
     do m = 1, matl_model%nphase
       call gather_vof (m, vofm)
       vf(:mesh%ncell_onP) = vofm(:mesh%ncell_onP)
-      call gather_boundary (mesh%cell_ip, vf)
+      call mesh%cell_ip%gather_offp(vf)
       do i = size(material_id), 1, -1 ! find the destination dim
         if (material_id(i) == material_to_system(m)) exit
       end do

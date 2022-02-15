@@ -360,7 +360,6 @@ contains
   subroutine connect_to_mesh (mesh, path, lm_faces, ge_faces, stat)
 
     use unstr_mesh_type
-    use index_partitioning
     use permutations
     use rad_encl_file_type
 
@@ -387,7 +386,7 @@ contains
     end if
 
     !! Mapping from external cell numbers to internal (global) cell numbers.
-    allocate(map(merge(mesh%cell_ip%global_size(), 0, is_IOP)))
+    allocate(map(merge(mesh%cell_ip%global_size, 0, is_IOP)))
     call collate (map, mesh%xcell(:mesh%ncell_onP))
     if (is_IOP) then
       ASSERT(is_perm(map))
@@ -409,7 +408,7 @@ contains
     end if
 
     !! Sort the cell/side pairs so that they are ordered by cell process rank.
-    call collate (last, mesh%cell_ip%last_index()) ! last global cell index on the processes
+    call collate (last, mesh%cell_ip%last_gid) ! last global cell index on the processes
     if (is_IOP) then
       allocate(perm(nface))
       call partition_sort (last, fcell, bsize, perm)
@@ -423,7 +422,7 @@ contains
     call distribute (fcell_l, fcell)
     call distribute (fside_l, fside)
     deallocate(fcell, fside)
-    offset = mesh%cell_ip%first_index() - 1
+    offset = mesh%cell_ip%first_gid - 1
     fcell_l = fcell_l - offset ! local cell index
     ASSERT(all(fcell_l >= 1))
     ASSERT(all(fcell_l <= mesh%ncell_onP))
@@ -446,12 +445,12 @@ contains
     if (is_IOP) then  ! undo the partition sort
       call reorder (map, perm, forward=.true.)
       ASSERT(all(map >= 1))
-      ASSERT(all(map <= mesh%face_ip%global_size()))
+      ASSERT(all(map <= mesh%face_ip%global_size))
     end if
     deallocate(fcell_l, fside_l)
 
     !! Sort the mesh face list MAP so that it is ordered by face process rank.
-    call collate (last, mesh%face_ip%last_index())
+    call collate (last, mesh%face_ip%last_gid)
     if (is_IOP) then
       call partition_sort (last, map, bsize, perm)
       call reorder (map, perm)
@@ -462,12 +461,12 @@ contains
     call distribute (n, bsize)
     allocate(lm_faces(n), perm2(n))
     call distribute (lm_faces, map)
-    offset = mesh%face_ip%first_index() - 1
+    offset = mesh%face_ip%first_gid - 1
     lm_faces = lm_faces - offset  ! local face index
     call heapsort (lm_faces, perm2)
     call reorder (lm_faces, perm2)
     ASSERT(all(lm_faces >= 1))
-    ASSERT(all(lm_faces <= mesh%face_ip%onP_size()))
+    ASSERT(all(lm_faces <= mesh%face_ip%onp_size))
 
     !! Generate the mapping from mesh enclosure faces to enclosure faces:
     !! it is the composition of the partition sort and the heap sort.
@@ -999,7 +998,6 @@ contains
 !
 !    use gmvwrite_c_binding
 !    use parallel_communication
-!    use index_partitioning
 !    use unstr_mesh_type
 !
 !    character(len=*), intent(in) :: file
@@ -1016,7 +1014,7 @@ contains
 !
 !    ASSERT(size(faces) == size(efaces))
 !    ASSERT(global_all(faces >= 1))
-!    ASSERT(global_all(faces <= mesh%face_ip%onP_size()))
+!    ASSERT(global_all(faces <= mesh%face_ip%onp_size))
 !
 !    !if (is_IOP) call gmvwrite_openfile_ir_f (file, 4, 8) ! bug with node ids
 !    if (is_IOP) call gmvwrite_openfile_ir_ascii_f (file, 4, 8)
@@ -1027,7 +1025,7 @@ contains
 !    do j = 1, size(faces)
 !      tag(mesh%fnode(:,faces(j))) = .true.
 !    end do
-!    call scatter_boundary_or (mesh%node_ip, tag)
+!    call mesh%node_ip%scatter_offp_or(tag)
 !
 !    !! Count the on-process surface nodes per process (BSIZE).
 !    call collate (bsize, count(tag(:mesh%nnode_onP)))
@@ -1051,7 +1049,7 @@ contains
 !    deallocate(tag)
 !
 !    !! Global mapping array.
-!    call allocate_collated_array (map, mesh%node_ip%global_size())
+!    call allocate_collated_array (map, mesh%node_ip%global_size)
 !    call collate (map, map_l)
 !    deallocate(map_l)
 !

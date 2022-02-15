@@ -66,7 +66,6 @@ contains
   end subroutine gmv_write_encl
 
   subroutine gmv_write_var (this, u, name)
-    use index_partitioning
     type(rad_solver), intent(in) :: this
     real(r8), intent(in) :: u(:)
     character(*), intent(in) :: name

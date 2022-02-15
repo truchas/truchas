@@ -19,7 +19,6 @@ module hypre_pcg_type
   use kinds, only: r8
   use fhypre
   use pcsr_matrix_type
-  use index_partitioning
   use parameter_list_type
   implicit none
   private
@@ -71,9 +70,9 @@ contains
     this%A => A
     this%params => params
 
-    this%nrows  = A%graph%row_ip%onP_size()
-    this%ilower = A%graph%row_ip%first_index()
-    this%iupper = A%graph%row_ip%last_index()
+    this%nrows  = A%graph%row_ip%onp_size
+    this%ilower = A%graph%row_ip%first_gid
+    this%iupper = A%graph%row_ip%last_gid
     allocate(this%rows(this%nrows))
     this%rows = [(i, i = this%ilower, this%iupper)]
 
@@ -309,9 +308,9 @@ contains
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
 
-    nrows  = src%graph%row_ip%onP_size()
-    ilower = src%graph%row_ip%first_index()
-    iupper = src%graph%row_ip%last_index()
+    nrows  = src%graph%row_ip%onp_size
+    ilower = src%graph%row_ip%first_gid
+    iupper = src%graph%row_ip%last_gid
 
     call fHYPRE_ClearAllErrors
 

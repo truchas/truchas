@@ -60,7 +60,7 @@ module mfd_diff_matrix_type
   use mfd_disc_type
   use pcsr_matrix_type
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   implicit none
   private
 
@@ -97,7 +97,7 @@ contains
 
     integer :: j
     type(pcsr_graph), pointer :: g
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_ip
 
     this%disc => disc
     this%mesh => disc%mesh

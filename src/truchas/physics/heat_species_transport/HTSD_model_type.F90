@@ -20,7 +20,6 @@ module HTSD_model_type
   use bndry_func2_class
   use intfc_func2_class
   use rad_problem_type
-  use index_partitioning
   use truchas_timers
   implicit none
   private
@@ -184,12 +183,12 @@ contains
     allocate(state(this%mesh%ncell,n:this%num_comp))
     if (associated(this%ht)) then
       call HTSD_model_get_cell_temp_copy (this, u, state(:,0))
-      call gather_boundary (this%mesh%cell_ip, state(:,0))
+      call this%mesh%cell_ip%gather_offp(state(:,0))
     end if
     if (associated(this%sd)) then
       do n = 1, this%num_comp
         call HTSD_model_get_cell_conc_copy (this, n, u, state(:,n))
-        call gather_boundary (this%mesh%cell_ip, state(:,n))
+        call this%mesh%cell_ip%gather_offp(state(:,n))
       end do
     end if
   end function HTSD_model_new_state_array
@@ -258,13 +257,13 @@ contains
 
       !! Off-process-extended cell and face temperatures.
       call HTSD_model_get_cell_temp_copy (this, u, Tcell)
-      call gather_boundary (this%mesh%cell_ip, Tcell)
+      call this%mesh%cell_ip%gather_offp(Tcell)
       call HTSD_model_get_face_temp_copy (this, u, Tface)
-      call gather_boundary (this%mesh%face_ip, Tface)
+      call this%mesh%face_ip%gather_offp(Tface)
 
       !! Off-process-extended cell enthalpy time derivative.
       call HTSD_model_get_cell_heat_copy (this, udot, Hdot)
-      call gather_boundary (this%mesh%cell_ip, Hdot)
+      call this%mesh%cell_ip%gather_offp(Hdot)
 
       !! Pre-compute the Dirichlet condition residual and
       !! impose the Dirichlet data on the face temperature.
@@ -430,9 +429,9 @@ contains
 
       !! Off-process extended cell and face concentrations.
       call HTSD_model_get_cell_conc_copy (this, index, u, Ccell)
-      call gather_boundary (this%mesh%cell_ip, Ccell)
+      call this%mesh%cell_ip%gather_offp(Ccell)
       call HTSD_model_get_face_conc_copy (this, index, u, Cface)
-      call gather_boundary (this%mesh%face_ip, Cface)
+      call this%mesh%face_ip%gather_offp(Cface)
 
       !! Pre-compute the Dirichlet condition constraint and
       !! impose the Dirichlet data on the face concentrations.
@@ -452,7 +451,7 @@ contains
 
       !! Time derivative and source contribution.
       call HTSD_model_get_cell_conc_copy (this, index, udot, Cdot)
-      call gather_boundary (this%mesh%cell_ip, Cdot)
+      call this%mesh%cell_ip%gather_offp(Cdot)
       call smf_eval (this%sd(index)%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Cdot - value)
 
@@ -487,7 +486,7 @@ contains
         !! Get face temperatures overwritten with Dirichlet values.
         allocate(Tface(this%mesh%nface))
         call HTSD_model_get_face_temp_copy (this, u, Tface)
-        call gather_boundary (this%mesh%face_ip, Tface)
+        call this%mesh%face_ip%gather_offp(Tface)
         if (allocated(this%ht%bc_dir)) then
           call this%ht%bc_dir%compute(t)
           Tface(this%ht%bc_dir%index) = this%ht%bc_dir%value

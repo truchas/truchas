@@ -59,6 +59,17 @@ program reduce_test
 
 contains
 
+  subroutine write_result(pass, name)
+    logical, intent(in) :: pass
+    character(*), intent(in) :: name
+    if (global_all(pass)) then
+      if (is_IOP) write(output_unit,'(a)') 'Passed: ' // name
+    else
+      status = 1
+      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' // name
+    end if
+  end subroutine
+
   ! scalar argument
   subroutine all_scalar
     logical :: pass
@@ -386,18 +397,6 @@ contains
   subroutine dot_prod_all_zero
     call write_result((global_dot_product([real(real32)::],[real(real32)::]) == 0), 'dot_prod_all_zero_real32')
     call write_result((global_dot_product([real(real64)::],[real(real64)::]) == 0), 'dot_prod_all_zero_real64')
-  end subroutine
-
-  subroutine write_result(pass, name)
-    use,intrinsic :: iso_fortran_env, only: error_unit
-    logical, intent(in) :: pass
-    character(*), intent(in) :: name
-    if (global_all(pass)) then
-      if (is_IOP) write(output_unit,'(a)') 'Passed: ' // name
-    else
-      status = 1
-      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' // name
-    end if
   end subroutine
 
 end program

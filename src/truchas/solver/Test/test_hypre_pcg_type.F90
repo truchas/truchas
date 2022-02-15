@@ -11,7 +11,7 @@ program test_hypre_pcg_type
 #endif
   use kinds
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   use pcsr_matrix_type
   use hypre_pcg_type
   use parameter_list_type
@@ -42,7 +42,7 @@ program test_hypre_pcg_type
   call solver%init (matrix, params)
   call solver%setup ()
   
-  nrow = matrix%graph%row_ip%onP_size()
+  nrow = matrix%graph%row_ip%onp_size
   allocate(x(nrow), b(nrow), u(nrow))
   
   kx = 1; ky = 1; kz = 1
@@ -57,7 +57,7 @@ program test_hypre_pcg_type
   call solver%get_metrics (num_itr)
 
   maxerr = global_maxval(abs(u-x))
-  l2err = sqrt(global_sum((u-x)**2) / matrix%graph%row_ip%global_size())
+  l2err = sqrt(global_sum((u-x)**2) / matrix%graph%row_ip%global_size)
   if (is_IOP) print '(a,i2,2(a,es9.2),/)', 'itr=', num_itr, ', maxerr=', maxerr, ', l2err=', l2err
 
   stat = 0
@@ -89,8 +89,8 @@ contains
     type(pcsr_matrix), intent(out) :: matrix
     
     integer :: ix, iy, iz, n, j, k, ntot, nloc
-    integer, allocatable :: nnbr_g(:,:), nnbr(:,:), offP_index(:)
-    type(ip_desc), pointer :: row_ip
+    integer, allocatable :: nnbr_g(:,:), nnbr(:,:)
+    type(index_map), pointer :: row_ip
     type(pcsr_graph), pointer :: graph
     
     !! Stencil neighbors of each grid point (GLOBAL).
@@ -123,9 +123,8 @@ contains
     !! Setup the index partition for the grid points.
     allocate(row_ip)
     call row_ip%init (nloc)
-    call localize_index_array (nnbr_g, row_ip, row_ip, nnbr, offP_index)
-    call row_ip%add_offP_index (offP_index)
-    deallocate(offP_index, nnbr_g)
+    call row_ip%localize_index_array (nnbr_g, row_ip, nnbr)
+    deallocate(nnbr_g)
     
     !! Create the parallel CSR matrix.
     allocate(graph)

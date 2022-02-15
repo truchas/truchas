@@ -10,7 +10,6 @@ module mimetic_discretization
 
   use kinds, only: r8
   use simpl_mesh_type
-  use index_partitioning
   implicit none
   private
   
@@ -101,7 +100,7 @@ contains
       if (local) return
     end if
     
-    call gather_boundary (mesh%node_ip, v)
+    call mesh%node_ip%gather_offp(v)
     
   end function grad_t
 
@@ -140,7 +139,7 @@ contains
       v(mesh%fedge(3,j)) = v(mesh%fedge(3,j)) + u(j)
     end do
     
-    call gather_boundary (mesh%edge_ip, v)
+    call mesh%edge_ip%gather_offp(v)
   
   end function curl_t
   
@@ -180,7 +179,7 @@ contains
       v(mesh%cface(4,j)) = v(mesh%cface(4,j)) - u(j)
     end do
     
-    call gather_boundary (mesh%face_ip, v)
+    call mesh%face_ip%gather_offp(v)
     
   end function div_t
   

@@ -5,6 +5,7 @@ target_sources(truchas PRIVATE
   input_utilities.F90
   integer_set_type.F90
   integer_set_type_wavl.F90
+  integer_map_type.F90
   string_set_type.F90
   kinds.F90
   lnorm_module.F90

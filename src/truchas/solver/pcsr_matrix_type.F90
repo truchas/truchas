@@ -116,13 +116,13 @@
 module pcsr_matrix_type
 
   use kinds, only: r8
-  use index_partitioning
+  use index_map_type
   use graph_type
   implicit none
   private
 
   type, public :: pcsr_graph
-    type(ip_desc), pointer :: row_ip => null()  ! reference only -- do not own
+    type(index_map), pointer :: row_ip => null()  ! reference only -- do not own
     integer, allocatable :: xadj(:), adjncy(:)  ! static graph
     type(graph), allocatable, private :: g      ! dynamic graph -- temporary
   contains
@@ -158,10 +158,10 @@ contains
 
   subroutine pcsr_graph_init (this, row_ip)
     class(pcsr_graph), intent(out) :: this
-    type(ip_desc), intent(in), target :: row_ip
+    type(index_map), intent(in), target :: row_ip
     this%row_ip => row_ip
     allocate(this%g)
-    call this%g%init (row_ip%local_size(), self_edge=.true.)
+    call this%g%init (row_ip%local_size, self_edge=.true.)
   end subroutine pcsr_graph_init
 
   subroutine pcsr_graph_add_clique (this, indices)
@@ -215,8 +215,8 @@ contains
     this%graph => graph
     if (present(take_graph)) this%graph_dealloc = take_graph
     allocate(this%values(size(graph%adjncy)))
-    this%nrow = graph%row_ip%local_size()
-    this%nrow_onP = graph%row_ip%onP_size()
+    this%nrow = graph%row_ip%local_size
+    this%nrow_onP = graph%row_ip%onP_size
   end subroutine pcsr_matrix_init
 
   !! Initialize the sparse matrix using the non-zero structure from MOLD.

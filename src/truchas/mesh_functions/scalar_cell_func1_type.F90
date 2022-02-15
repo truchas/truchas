@@ -63,8 +63,7 @@ contains
 
   subroutine add(this, file, f, stat, errmsg)
 
-    use parallel_communication, only: is_IOP, broadcast, distribute
-    use index_partitioning, only: gather_boundary
+    use parallel_communication, only: is_IOP, broadcast
     use permutations, only: reorder
 
     class(scalar_cell_func1), intent(inout) :: this
@@ -101,8 +100,8 @@ contains
     !! Permute data to internal cell ordering, distribute, and sync ghosts
     if (is_IOP) call reorder(this%global_array, this%perm)
     allocate(array(this%mesh%ncell))
-    call distribute(array(:this%mesh%ncell_onP), this%global_array)
-    call gather_boundary(this%mesh%cell_ip, array)
+    call this%mesh%cell_ip%distribute(this%global_array, array)
+    call this%mesh%cell_ip%gather_offp(array)
 
     call this%flist%append(f)
     call this%alist%append(array)

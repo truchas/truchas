@@ -40,6 +40,17 @@ program main
 
 contains
 
+  subroutine write_result(pass, name)
+    logical, intent(in) :: pass
+    character(*), intent(in) :: name
+    if (global_all(pass)) then
+      if (is_IOP) write(output_unit,'(a)') 'Passed: ' // name
+    else
+      status = 1
+      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' // name
+    end if
+  end subroutine
+
   ! scalar argument case
   subroutine bcast_scalar
     integer :: a
@@ -331,18 +342,6 @@ contains
     call broadcast(x)
     pass = all(x == a)
     call write_result(pass, 'bcast_char_rank3')
-  end subroutine
-
-  subroutine write_result(pass, name)
-    use,intrinsic :: iso_fortran_env, only: error_unit
-    logical, intent(in) :: pass
-    character(*), intent(in) :: name
-    if (global_all(pass)) then
-      if (is_IOP) write(output_unit,'(a)') 'Passed: ' // name
-    else
-      status = 1
-      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' // name
-    end if
   end subroutine
 
 end program

@@ -123,7 +123,7 @@ module simpl_mesh_type
 
   use kinds, only: r8
   use base_mesh_class
-  use index_partitioning
+  use index_map_type
   implicit none
   private
 
@@ -139,7 +139,7 @@ module simpl_mesh_type
     integer, allocatable :: cblock(:)   ! cell block index
     real(r8), allocatable :: length(:)
     !! Partitioning and inter-process communication data.
-    type(ip_desc) :: edge_ip
+    type(index_map) :: edge_ip
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cedge_array
@@ -177,7 +177,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cnode(:,:)
-    allocate(cnode(size(this%cnode,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    allocate(cnode(size(this%cnode,1),merge(this%cell_ip%global_size,0,is_IOP)))
     call collate (cnode, this%node_ip%global_index(this%cnode(:,:this%ncell_onP)))
   end subroutine get_global_cnode_array
 
@@ -186,7 +186,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cedge(:,:)
-    allocate(cedge(size(this%cedge,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    allocate(cedge(size(this%cedge,1),merge(this%cell_ip%global_size,0,is_IOP)))
     call collate (cedge, this%edge_ip%global_index(this%cedge(:,:this%ncell_onP)))
   end subroutine get_global_cedge_array
 
@@ -195,7 +195,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cface(:,:)
-    allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size(),0,is_IOP)))
+    allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size,0,is_IOP)))
     call collate (cface, this%face_ip%global_index(this%cface(:,:this%ncell_onP)))
   end subroutine get_global_cface_array
 
@@ -204,7 +204,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: fnode(:,:)
-    allocate(fnode(size(this%fnode,1),merge(this%face_ip%global_size(),0,is_IOP)))
+    allocate(fnode(size(this%fnode,1),merge(this%face_ip%global_size,0,is_IOP)))
     call collate (fnode, this%node_ip%global_index(this%fnode(:,:this%ncell_onP)))
   end subroutine get_global_fnode_array
 
@@ -213,7 +213,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cblock(:)
-    allocate(cblock(merge(this%cell_ip%global_size(),0,is_IOP)))
+    allocate(cblock(merge(this%cell_ip%global_size,0,is_IOP)))
     call collate (cblock, this%cblock(:this%ncell_onP))
   end subroutine get_global_cblock_array
 
@@ -252,20 +252,20 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (nvec(1,:), this%node_ip%offP_size())
-    call collate (nvec(2,:), this%node_ip%onP_size())
+    call collate (nvec(1,:), this%node_ip%offp_size)
+    call collate (nvec(2,:), this%node_ip%onp_size)
     call broadcast (nvec)
 
-    call collate (evec(1,:), this%edge_ip%offP_size())
-    call collate (evec(2,:), this%edge_ip%onP_size())
+    call collate (evec(1,:), this%edge_ip%offp_size)
+    call collate (evec(2,:), this%edge_ip%onp_size)
     call broadcast (evec)
 
-    call collate (fvec(1,:), this%face_ip%offP_size())
-    call collate (fvec(2,:), this%face_ip%onP_size())
+    call collate (fvec(1,:), this%face_ip%offp_size)
+    call collate (fvec(2,:), this%face_ip%onp_size)
     call broadcast (fvec)
 
-    call collate (cvec(1,:), this%cell_ip%offP_size())
-    call collate (cvec(2,:), this%cell_ip%onP_size())
+    call collate (cvec(1,:), this%cell_ip%offp_size)
+    call collate (cvec(2,:), this%cell_ip%onp_size)
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')
@@ -308,7 +308,7 @@ contains
     do j = 1, this%nface_onP
       if (mask(j)) map(this%fnode(:,j)) = 1
     end do
-    call scatter_boundary_max(this%node_ip, map)
+    call this%node_ip%scatter_offp_max(map)
 
     n = sum(map(:this%nnode_onP))
     call collate(sizes, n)
@@ -327,7 +327,7 @@ contains
         map(j) = n + offset
       end if
     end do
-    call gather_boundary(this%node_ip, map)
+    call this%node_ip%gather_offp(map)
     allocate(x_all(3,merge(ntot,0,is_IOP)))
     call collate(x_all, x_loc)
 

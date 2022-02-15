@@ -58,7 +58,6 @@ module rad_encl_gmv
   use kinds, only: r8
   use gmvwrite_c_binding
   use rad_encl_type
-  use index_partitioning
   use parallel_communication
   implicit none
   private
@@ -112,8 +111,8 @@ contains
     character(8) :: name
 
     dimen = size(this%coord,dim=1)
-    nnode = this%node_ip%global_size()
-    nface = this%face_ip%global_size()
+    nnode = this%node_ip%global_size
+    nface = this%face_ip%global_size
 
     !! Write the node coordinate data.
     n = merge(nnode, 0, is_IOP)
@@ -198,7 +197,7 @@ contains
     character(*), intent(in) :: name
     real(r8), allocatable :: u_global(:)
     ASSERT(size(u) >= this%nface_onP)
-    allocate(u_global(merge(this%face_ip%global_size(),0,is_IOP)))
+    allocate(u_global(merge(this%face_ip%global_size,0,is_IOP)))
     call collate (u_global, u(:this%nface_onP))
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
   end subroutine gmv_write_var

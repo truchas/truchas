@@ -19,7 +19,6 @@ module hypre_hybrid_type
   use kinds, only: r8
   use fhypre
   use pcsr_matrix_type
-  use index_partitioning
   use parameter_list_type
   implicit none
   private
@@ -70,9 +69,9 @@ contains
     this%A => A
     this%params => params
 
-    this%nrows  = A%graph%row_ip%onP_size()    ! number of on-process rows (if parallel)
-    this%ilower = A%graph%row_ip%first_index() ! global index of first on-process row (if parallel)
-    this%iupper = A%graph%row_ip%last_index()  ! global index of last on-process row (if parallel)
+    this%nrows  = A%graph%row_ip%onp_size   ! number of on-process rows (if parallel)
+    this%ilower = A%graph%row_ip%first_gid ! global index of first on-process row (if parallel)
+    this%iupper = A%graph%row_ip%last_gid  ! global index of last on-process row (if parallel)
 
     call fHYPRE_ClearAllErrors
 
@@ -357,9 +356,9 @@ contains
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
 
-    nrows  = src%graph%row_ip%onP_size()
-    ilower = src%graph%row_ip%first_index()
-    iupper = src%graph%row_ip%last_index()
+    nrows  = src%graph%row_ip%onp_size
+    ilower = src%graph%row_ip%first_gid
+    iupper = src%graph%row_ip%last_gid
 
     call fHYPRE_ClearAllErrors
 
