@@ -141,11 +141,11 @@ contains
 
     !! Heat equation cell residual.
     call FHT_model_get_cell_temp_copy (this%model, f, f1x)
-    call this%mesh%cell_ip%gather_offp(f1x)
+    call this%mesh%cell_imap%gather_offp(f1x)
 
     !! Heat equation face residual (with radiosity residuals optionally eliminated).
     call FHT_model_get_face_temp_copy (this%model, f, f2x)
-    call this%mesh%face_ip%gather_offp(f2x)
+    call this%mesh%face_imap%gather_offp(f2x)
 
     !! Precondition the heat equation.
     call this%precon%apply(f1x, f2x)
@@ -201,10 +201,10 @@ contains
     
     !! Initialize the STATE array.
     call FHT_model_get_cell_temp_copy (this%model, u, state(:,1))
-    call this%mesh%cell_ip%gather_offp(state(:,1))
+    call this%mesh%cell_imap%gather_offp(state(:,1))
     
     call FHT_model_get_face_temp_copy (this%model, u, Tface)
-    call this%mesh%face_ip%gather_offp(Tface)
+    call this%mesh%face_imap%gather_offp(Tface)
 
     !! Finite difference approximant to dH/dT.
     fdinc = sqrt(epsilon(1.0d0)) !TODO! fix this naive choice of FD increment.

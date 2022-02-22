@@ -139,7 +139,7 @@ contains
 
     !! Approximately solve the Schur complement system for the face unknowns.
     call this%Sff_precon%apply(f2x)
-    call this%dm%mesh%face_ip%gather_offp(f2x)
+    call this%dm%mesh%face_imap%gather_offp(f2x)
 
     !! Solve for the cell unknowns by back substitution.
     call backward_substitution(this%dm, f1x, f2x)
@@ -177,7 +177,7 @@ contains
       deallocate(b2x_dir)
     end if
 
-    call this%mesh%face_ip%gather_offp(b2x)
+    call this%mesh%face_imap%gather_offp(b2x)
 
   end subroutine forward_elimination
 
@@ -208,7 +208,7 @@ contains
       deallocate(u2x_dir)
     end if
 
-    call this%mesh%cell_ip%gather_offp(b1x)
+    call this%mesh%cell_imap%gather_offp(b1x)
 
   end subroutine backward_substitution
 

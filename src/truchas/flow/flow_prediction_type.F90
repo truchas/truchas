@@ -105,7 +105,7 @@ contains
 
     type(graph_container) :: g(size(this%solver))
     type(matrix_container) :: A(size(this%solver))
-    type(index_map), pointer :: row_ip
+    type(index_map), pointer :: row_imap
     type(parameter_list), pointer :: plist
     integer :: i, j, k
 
@@ -125,10 +125,10 @@ contains
     if (this%viscous_implicitness > 0.0_r8 .and. .not.this%inviscid) then
       ! build csr matrix graph for momentum solve, all components can reuse
       ! the same graph/matrix.
-      row_ip => mesh%cell_ip
+      row_imap => mesh%cell_imap
       do k = 1, size(g)
         allocate(g(k)%g)
-        call g(k)%g%init(row_ip)
+        call g(k)%g%init(row_imap)
       end do
 
       do j = 1, mesh%ncell_onP
@@ -354,7 +354,7 @@ contains
       ! g(:,2,j) = grad_at_face_j(u_2)
       ! g(:,3,j) = grad_at_face_j(u_3)
       call gradient_cf(g, vel_cc, this%bc%v_zero_normal, this%bc%v_dirichlet)
-      call this%mesh%face_ip%gather_offp(g)
+      call this%mesh%face_imap%gather_offp(g)
 
       do j = 1, this%mesh%nface
         associate (n1 => this%mesh%fcell(1,j), n2 => this%mesh%fcell(2,j), rhs => this%rhs)
@@ -552,12 +552,12 @@ contains
           call stop_timer("hypre solve")
           call tls_info(slabel(i) // this%solver(i)%metrics_string())
           if (ierr /= 0) call tls_error("prediction solve unsuccessful")
-          call this%mesh%cell_ip%gather_offp(sol)
+          call this%mesh%cell_imap%gather_offp(sol)
           do j = 1, this%mesh%ncell
             vel_cc(i,j) = sol(j)
           end do
         else
-          call this%mesh%cell_ip%gather_offp(rhs1d)
+          call this%mesh%cell_imap%gather_offp(rhs1d)
           do j = 1, this%mesh%ncell
             coeff = props%rho_cc(j)
             if (props%vof(j) > 0) &

@@ -172,8 +172,8 @@ contains
     end do
 
     ! get off-rank halo
-    call this%model%mesh%node_ip%gather_offp(displ)
-    call this%model%mesh%node_ip%gather_offp(this%diag)
+    call this%model%mesh%node_imap%gather_offp(displ)
+    call this%model%mesh%node_imap%gather_offp(this%diag)
     if (this%bc%contact_active) call this%model%compute_forces(t, displ, force)
     call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag, this%F)
 

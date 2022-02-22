@@ -65,7 +65,7 @@
 !!    nnode_onP, nface_onP, ncell_onP - the number of local nodes, faces, and
 !!        cells that that are uniquely owned (on-process).
 !!
-!!    node_ip, face_ip, cell_ip - derived types that describe the partitioning
+!!    node_imap, face_imap, cell_imap - derived types that describe the partitioning
 !!        and overlap of nodes, edges, faces, and cells, including information
 !!        necessary to communicate off-process data between processes.
 !!
@@ -118,7 +118,7 @@
 !!    link_set_mask - a rank-1 bitmask array: btest(link_set_mask(j),k)
 !!        returns true if link j belongs to the link set with ID link_set_id(k).
 !!
-!!    link_ip - derived type that describes the partitioning and overlap of
+!!    link_imap - derived type that describes the partitioning and overlap of
 !!        links, including information necessary to comminicate off-process
 !!        data between processes.
 !!
@@ -286,7 +286,7 @@ contains
     integer, allocatable, intent(out) :: xcnode(:), cnode(:)
     associate (xcnode_onP => this%xcnode(:this%ncell_onP+1), &
                 cnode_onP => this%cnode(:this%xcnode(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcnode_onP, this%node_ip%global_index(cnode_onP), xcnode, cnode)
+      call get_global_ragged_array (xcnode_onP, this%node_imap%global_index(cnode_onP), xcnode, cnode)
     end associate
   end subroutine get_global_cnode_array
 
@@ -296,7 +296,7 @@ contains
     integer, allocatable, intent(out) :: xcface(:), cface(:)
     associate (xcface_onP => this%xcface(:this%ncell_onP+1), &
                 cface_onP => this%cface(:this%xcface(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcface_onP, this%face_ip%global_index(cface_onP), xcface, cface)
+      call get_global_ragged_array (xcface_onP, this%face_imap%global_index(cface_onP), xcface, cface)
     end associate
   end subroutine get_global_cface_array
 
@@ -306,7 +306,7 @@ contains
     integer, allocatable, intent(out) :: xfnode(:), fnode(:)
     associate (xfnode_onP => this%xfnode(:this%nface_onP+1), &
                 fnode_onP => this%fnode(:this%xfnode(this%nface_onP+1)-1))
-      call get_global_ragged_array (xfnode_onP, this%node_ip%global_index(fnode_onP), xfnode, fnode)
+      call get_global_ragged_array (xfnode_onP, this%node_imap%global_index(fnode_onP), xfnode, fnode)
     end associate
   end subroutine get_global_fnode_array
 
@@ -385,16 +385,16 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (this%node_ip%offp_size, nvec(1,:))
-    call collate (this%node_ip%onp_size, nvec(2,:))
+    call collate (this%node_imap%offp_size, nvec(1,:))
+    call collate (this%node_imap%onp_size, nvec(2,:))
     call broadcast (nvec)
 
-    call collate (this%face_ip%offp_size, fvec(1,:))
-    call collate (this%face_ip%onp_size, fvec(2,:))
+    call collate (this%face_imap%offp_size, fvec(1,:))
+    call collate (this%face_imap%onp_size, fvec(2,:))
     call broadcast (fvec)
 
-    call collate (this%cell_ip%offp_size, cvec(1,:))
-    call collate (this%cell_ip%onp_size, cvec(2,:))
+    call collate (this%cell_imap%offp_size, cvec(1,:))
+    call collate (this%cell_imap%onp_size, cvec(2,:))
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')

@@ -223,7 +223,7 @@ contains
     real(r8), intent(inout) :: r(:,:)
     ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
     call this%apply_traction(t, r)
-    call this%mesh%node_ip%gather_offp(r)
+    call this%mesh%node_imap%gather_offp(r)
     call this%apply_nontraction(t, scaling_factor, displ, r)
   end subroutine apply
 

@@ -399,7 +399,7 @@ CONTAINS
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, eps(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
-    call mesh%cell_ip%gather_offp(eps)
+    call mesh%cell_imap%gather_offp(eps)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permittivity
 
@@ -411,7 +411,7 @@ CONTAINS
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, mu(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
-    call mesh%cell_ip%gather_offp(mu)
+    call mesh%cell_imap%gather_offp(mu)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permeability
 
@@ -423,7 +423,7 @@ CONTAINS
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
     call ht2em%map_field(values, sigma(:mesh%ncell_onP), defval=0.0_rk, map_type=LOCALLY_BOUNDED)
-    call mesh%cell_ip%gather_offp(sigma)
+    call mesh%cell_imap%gather_offp(sigma)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_conductivity
   
@@ -937,14 +937,14 @@ CONTAINS
     mesh => simpl_mesh_ptr('alt')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
-    if (n /= mesh%cell_ip%global_size) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
+    if (n /= mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
     call read_dist_array (unit, mu_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading MU record')
-    call mesh%cell_ip%gather_offp(mu_q)
+    call mesh%cell_imap%gather_offp(mu_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NSIGMA record')
-    if (n /= mesh%cell_ip%global_size) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
+    if (n /= mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
     call read_dist_array (unit, sigma_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading SIGMA record')
-    call mesh%cell_ip%gather_offp(sigma_q)
+    call mesh%cell_imap%gather_offp(sigma_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NJOULE record')
     if (n /= global_sum(size(joule))) call halt ('READ_JOULE_DATA: incompatible NJOULE value: ' // i_to_c(n))

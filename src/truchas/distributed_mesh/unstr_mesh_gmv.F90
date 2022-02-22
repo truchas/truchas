@@ -161,7 +161,7 @@ contains
 
       !! Cell partitioning info ...
       allocate(map(merge(ncell,0,is_iop)))
-      call collate (spread(this_PE, dim=1, ncopies=mesh%cell_ip%onp_size), map)
+      call collate (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), map)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
@@ -179,7 +179,7 @@ contains
         else
           iflag = 2
         end if
-        call mesh%cell_ip%scatter_offp_sum(iflag)
+        call mesh%cell_imap%scatter_offp_sum(iflag)
         call collate(iflag(:mesh%ncell_onP), map)
         if (is_IOP) then
           call gmvwrite_flag_name_f('P'//i_to_c(j)//'cells', 3, CELLDATA)
@@ -193,7 +193,7 @@ contains
       !! Node partitioning info ...
       deallocate(map)
       allocate(map(merge(nnode,0,is_iop)))
-      call collate (spread(this_PE, dim=1, ncopies=mesh%node_ip%onp_size), map)
+      call collate (spread(this_PE, dim=1, ncopies=mesh%node_imap%onp_size), map)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
         do j = 1, nPE
@@ -233,10 +233,10 @@ contains
 
     real(r8), pointer :: u_global(:)
 
-    ASSERT(mesh%cell_ip%defined())
-    ASSERT(size(u) == mesh%cell_ip%onp_size)
+    ASSERT(mesh%cell_imap%defined())
+    ASSERT(size(u) == mesh%cell_imap%onp_size)
 
-    allocate(u_global(merge(mesh%cell_ip%global_size,0,is_IOP)))
+    allocate(u_global(merge(mesh%cell_imap%global_size,0,is_IOP)))
     call collate (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)
@@ -253,10 +253,10 @@ contains
 
     real(r8), pointer :: u_global(:)
 
-    ASSERT(mesh%node_ip%defined())
-    ASSERT(size(u) == mesh%node_ip%onp_size)
+    ASSERT(mesh%node_imap%defined())
+    ASSERT(size(u) == mesh%node_imap%onp_size)
 
-    allocate(u_global(merge(mesh%node_ip%global_size,0,is_IOP)))
+    allocate(u_global(merge(mesh%node_imap%global_size,0,is_IOP)))
     call collate (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (NODEDATA, name, u_global)
     deallocate(u_global)

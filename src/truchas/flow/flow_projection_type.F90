@@ -106,7 +106,7 @@ contains
     integer :: j, i
     type(pcsr_graph), pointer :: g
     type(pcsr_matrix), pointer :: A
-    type(index_map), pointer :: row_ip
+    type(index_map), pointer :: row_imap
     type(parameter_list), pointer :: plist
     real(r8) :: q
 
@@ -150,8 +150,8 @@ contains
 
     !! Create a CSR matrix graph for the pressure poisson system.
     allocate(g)
-    row_ip => mesh%cell_ip
-    call g%init (row_ip)
+    row_imap => mesh%cell_imap
+    call g%init (row_imap)
     do j = 1, mesh%ncell_onP
       call g%add_edge(j,j)
       associate (cn => mesh%cnhbr(mesh%xcnhbr(j):mesh%xcnhbr(j+1)-1))
@@ -375,7 +375,7 @@ contains
         end do
       end do
 
-      call this%mesh%face_ip%gather_offp(g)
+      call this%mesh%face_imap%gather_offp(g)
     end associate
     ! Truchas has a gravity_limiter... Do we need this?
 
@@ -399,7 +399,7 @@ contains
       do i = 1, m%ncell_onP
         v(:,i) = vel_cc(:,i) + dt*gpn(:,i)
       end do
-      call m%cell_ip%gather_offp(v)
+      call m%cell_imap%gather_offp(v)
       call interpolate_cf(vel_fn, v, w, this%bc%v_dirichlet, this%bc%v_zero_normal, props%face_t, 0.0_r8)
 
       ! regular_void faces use only the regular cell velocity.  We could directly enforce this
@@ -439,7 +439,7 @@ contains
           vel_fn(j) = 0
         end do
       end associate
-      call m%face_ip%gather_offp(vel_fn)
+      call m%face_imap%gather_offp(vel_fn)
 
     end associate
 
@@ -469,7 +469,7 @@ contains
     call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
 
     ! not sure if this call is necesary
-    call this%mesh%cell_ip%gather_offp(this%delta_p_cc)
+    call this%mesh%cell_imap%gather_offp(this%delta_p_cc)
 
     ! correct face and cell centered quantities
     call this%velocity_fc_correct(dt, props, vel_fc)
@@ -521,7 +521,7 @@ contains
       end do
     end associate
 
-    call this%mesh%face_ip%gather_offp(vel_fc)
+    call this%mesh%face_imap%gather_offp(vel_fc)
 
     ! there may be some magic here about setting fluxing velocities on void cells.
     ! not sure if it's applicable when using face based (as opposed to side based) indexing
@@ -536,7 +536,7 @@ contains
     integer :: i
     associate (p => props, dp => this%delta_p_cc)
       p_cc = p_cc + dp
-      call this%mesh%cell_ip%gather_offp(p_cc)
+      call this%mesh%cell_imap%gather_offp(p_cc)
     end associate
   end subroutine pressure_cc_correct
 
@@ -559,7 +559,7 @@ contains
           gp_fc(:,j) = 0.0_r8
         end if
       end do
-      call this%mesh%face_ip%gather_offp(gp_fc)
+      call this%mesh%face_imap%gather_offp(gp_fc)
       call interpolate_fc(gp_cc, gp_fc, props%face_t, this%bc%p_neumann%index)
 
       ! zero pressure gradient on void cells
@@ -599,7 +599,7 @@ contains
         vel_cc(:,i) = vel_cc(:,i) - dt*(this%grad_p_rho_cc(:,i)-grad_p_rho_cc_n(:,i))
       end if
     end do
-    call this%mesh%cell_ip%gather_offp(vel_cc)
+    call this%mesh%cell_imap%gather_offp(vel_cc)
   end subroutine velocity_cc_correct
 
 end module flow_projection_type

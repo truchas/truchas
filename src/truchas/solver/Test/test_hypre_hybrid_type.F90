@@ -65,7 +65,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onp_size
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -132,7 +132,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onp_size
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -200,7 +200,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onp_size
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -268,7 +268,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onp_size
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -313,7 +313,7 @@ contains
     
     integer :: ix, iy, iz, n, j, k, ntot, nloc
     integer, allocatable :: nnbr_g(:,:), nnbr(:,:)
-    type(index_map), pointer :: row_ip
+    type(index_map), pointer :: row_imap
     type(pcsr_graph), pointer :: graph
     
     !! Stencil neighbors of each grid point (GLOBAL).
@@ -344,14 +344,14 @@ contains
     !print *, 'RANK=', this_PE, ', NLOC=', nloc
     
     !! Setup the index partition for the grid points.
-    allocate(row_ip)
-    call row_ip%init (nloc)
-    call row_ip%localize_index_array(nnbr_g, row_ip, nnbr)
+    allocate(row_imap)
+    call row_imap%init (nloc)
+    call row_imap%localize_index_array(nnbr_g, row_imap, nnbr)
     deallocate(nnbr_g)
     
     !! Create the parallel CSR matrix.
     allocate(graph)
-    call graph%init (row_ip)
+    call graph%init (row_imap)
     do j = 1, size(nnbr,2)
       call graph%add_edge (j, j)
       call graph%add_edge (j, nnbr(:,j))

@@ -46,7 +46,7 @@ module base_mesh_class
 
     !! Partitioning and inter-process communication data.
     integer :: nnode_onP=0, nface_onP=0, ncell_onP=0
-    type(index_map) :: node_ip, face_ip, cell_ip
+    type(index_map) :: node_imap, face_imap, cell_imap
   contains
     procedure :: get_face_set_ids
     procedure :: get_cell_set_bitmask
@@ -166,7 +166,7 @@ contains
   subroutine get_global_x_array (this, x)
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: x(:,:)
-    allocate(x(size(this%x,1),merge(this%node_ip%global_size,0,is_IOP)))
+    allocate(x(size(this%x,1),merge(this%node_imap%global_size,0,is_IOP)))
     call collate (this%x(:,:this%nnode_onP), x)
   end subroutine get_global_x_array
 
@@ -176,7 +176,7 @@ contains
   subroutine get_global_volume_array (this, volume)
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: volume(:)
-    allocate(volume(merge(this%cell_ip%global_size,0,is_IOP)))
+    allocate(volume(merge(this%cell_imap%global_size,0,is_IOP)))
     call collate (this%volume(:this%ncell_onP), volume)
   end subroutine get_global_volume_array
 

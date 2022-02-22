@@ -304,7 +304,7 @@ contains
       ! This will be needed by timestep
       this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
       vof => vtrack_vof_view()
-      call this%mesh%cell_ip%gather_offp(this%temperature_cc)
+      call this%mesh%cell_imap%gather_offp(this%temperature_cc)
       call this%props%set_initial_state(vof, this%temperature_cc)
       call stop_timer('Flow')
       return
@@ -315,11 +315,11 @@ contains
     end do
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_ip%gather_offp(this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
 
     if (associated(temperature_fc)) then
       this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
-      call this%mesh%face_ip%gather_offp(this%temperature_fc)
+      call this%mesh%face_imap%gather_offp(this%temperature_fc)
     end if
 
     vof => vtrack_vof_view()
@@ -348,7 +348,7 @@ contains
     call start_timer('Flow')
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_ip%gather_offp(this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
 
     if (prescribed_flow) then
       call this%props%update_cc(vof, this%temperature_cc)
@@ -369,7 +369,7 @@ contains
     else
       if (associated(temperature_fc)) then
         this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
-        call this%mesh%face_ip%gather_offp(this%temperature_fc)
+        call this%mesh%face_imap%gather_offp(this%temperature_fc)
       end if
       call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
     end if
@@ -414,7 +414,7 @@ contains
 
     allocate(old_flux_vel(nfc,mesh%ncell))
     call read_dist_array(unit, old_flux_vel(:,:ncells), pcell, 'READ_FLUXING_VELOCITY: error reading Fluxing_Velocity records')
-    call mesh%cell_ip%gather_offp(old_flux_vel)
+    call mesh%cell_imap%gather_offp(old_flux_vel)
 
     allocate(vel_fn(mesh%nface_onP))
     vel_fn = 0

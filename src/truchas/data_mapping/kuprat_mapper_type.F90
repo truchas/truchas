@@ -151,8 +151,8 @@ contains
     integer :: j, ncell, nnode
     integer, allocatable :: xcnode(:), cnode(:), blockid(:), tmp(:)
 
-    ncell = inmesh%cell_ip%global_size
-    nnode = inmesh%node_ip%global_size
+    ncell = inmesh%cell_imap%global_size
+    nnode = inmesh%node_imap%global_size
 
     call inmesh%get_global_cnode_array(xcnode, cnode)
 

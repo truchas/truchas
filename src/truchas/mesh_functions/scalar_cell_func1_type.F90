@@ -100,8 +100,8 @@ contains
     !! Permute data to internal cell ordering, distribute, and sync ghosts
     if (is_IOP) call reorder(this%global_array, this%perm)
     allocate(array(this%mesh%ncell))
-    call this%mesh%cell_ip%distribute(this%global_array, array)
-    call this%mesh%cell_ip%gather_offp(array)
+    call this%mesh%cell_imap%distribute(this%global_array, array)
+    call this%mesh%cell_imap%gather_offp(array)
 
     call this%flist%append(f)
     call this%alist%append(array)

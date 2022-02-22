@@ -77,7 +77,7 @@ contains
       end do
     end associate
 
-    call this%mesh%cell_ip%gather_offp(vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine flux_volumes
 

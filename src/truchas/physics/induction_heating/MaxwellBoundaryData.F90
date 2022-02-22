@@ -76,7 +76,7 @@ contains
     end do
     
     !! Ensure consistency of values for edges on the partition boundary.
-    call mesh%edge_ip%gather_offp(self%ebedge)
+    call mesh%edge_imap%gather_offp(self%ebedge)
     
     if (present(hbgroup)) then
       ASSERT( all(hbgroup > 0) )

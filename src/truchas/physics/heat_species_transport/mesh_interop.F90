@@ -217,7 +217,7 @@ contains
     do m = 1, matl_model%nphase
       call gather_vof (m, vofm)
       vf(:mesh%ncell_onP) = vofm(:mesh%ncell_onP)
-      call mesh%cell_ip%gather_offp(vf)
+      call mesh%cell_imap%gather_offp(vf)
       do i = size(material_id), 1, -1 ! find the destination dim
         if (material_id(i) == material_to_system(m)) exit
       end do

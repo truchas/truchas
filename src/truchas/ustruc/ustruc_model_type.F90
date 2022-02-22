@@ -265,7 +265,7 @@ contains
 
     !! Compute gradients mesh-wide (under control of mask); see NB above.
     xtface(:this%mesh%nface_onP) = tface  ! off-process extended face temperatures
-    call this%mesh%face_ip%gather_offp(xtface)
+    call this%mesh%face_imap%gather_offp(xtface)
     call this%disc%compute_cell_grad (xtface, this%mask, grad)
 
     !! Now extract the relevant gradients.
@@ -301,8 +301,8 @@ contains
         if (mask(j)) sfrac(j) = sol_vf(j) / (liq_vf(j) + sol_vf(j))
       end if
     end do
-    call this%mesh%cell_ip%gather_offp(sfrac)
-    call this%mesh%cell_ip%gather_offp(mask)
+    call this%mesh%cell_imap%gather_offp(sfrac)
+    call this%mesh%cell_imap%gather_offp(mask)
 
     !! Extract the relevant solid fraction and invalid mask data.
     sol_frac = sfrac(this%map)

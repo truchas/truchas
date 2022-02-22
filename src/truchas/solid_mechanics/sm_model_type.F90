@@ -226,7 +226,7 @@ contains
       end associate
     end do
 
-    call this%mesh%node_ip%gather_offp(this%scaling_factor)
+    call this%mesh%node_imap%gather_offp(this%scaling_factor)
 
     !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
     !this%contact_penalty = global_maxval(this%rhs)
@@ -289,7 +289,7 @@ contains
 
     ! get off-rank halo
     call start_timer("residual")
-    call this%mesh%node_ip%gather_offp(displ)
+    call this%mesh%node_imap%gather_offp(displ)
     call stop_timer("residual")
 
     call compute_forces(this, t, displ, r)
@@ -341,7 +341,7 @@ contains
     call stop_timer("stress")
 
     call this%bc%apply_traction(t, r)
-    call this%mesh%node_ip%gather_offp(r)
+    call this%mesh%node_imap%gather_offp(r)
 
     call stop_timer("residual")
 

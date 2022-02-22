@@ -198,7 +198,7 @@ contains
           rotation_magnitude(mesh%ncell_onP))
       thermal_strain = this%model%thermal_strain(:,:mesh%ncell_onP)
       displ = this%displacement
-      call mesh%node_ip%gather_offp(displ)
+      call mesh%node_imap%gather_offp(displ)
 
       do j = 1, mesh%ncell_onP
         associate (cn => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))

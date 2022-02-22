@@ -70,8 +70,8 @@ contains
     call mesh%get_global_x_array (x)
     call mesh%get_global_cblock_array (cblock)
     
-    allocate(pdata(merge(mesh%cell_ip%global_size,0,is_iop)))
-    call collate (spread(this_PE, dim=1, ncopies=mesh%cell_ip%onp_size), pdata)
+    allocate(pdata(merge(mesh%cell_imap%global_size,0,is_iop)))
+    call collate (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), pdata)
     
     if (is_IOP) then
       !! Open the DX output file.
@@ -137,8 +137,8 @@ contains
     real, pointer :: g_v(:,:), g_q(:)
     type(dx_object) :: dxfld
     
-    allocate(g_v(3,merge(mesh%cell_ip%global_size,0,is_iop)))
-    allocate(g_q(merge(mesh%cell_ip%global_size,0,is_iop)))
+    allocate(g_v(3,merge(mesh%cell_imap%global_size,0,is_iop)))
+    allocate(g_q(merge(mesh%cell_imap%global_size,0,is_iop)))
     
     v = w1_vector_on_cells(mesh, efield)
     call collate (v(:,:mesh%ncell_onP), g_v)

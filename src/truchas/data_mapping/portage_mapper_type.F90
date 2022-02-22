@@ -221,9 +221,9 @@ contains
     type(serial_mesh), intent(out) :: outmesh
 
     if (is_IOP) then
-      outmesh%num_cell = inmesh%cell_ip%global_size
-      outmesh%num_face = inmesh%face_ip%global_size
-      outmesh%num_node = inmesh%node_ip%global_size
+      outmesh%num_cell = inmesh%cell_imap%global_size
+      outmesh%num_face = inmesh%face_imap%global_size
+      outmesh%num_node = inmesh%node_imap%global_size
     end if
 
     call inmesh%get_global_cnode_array(outmesh%xcnode, outmesh%cnode)
@@ -281,9 +281,9 @@ contains
     integer, pointer :: array(:)
 
     if (is_IOP) then
-      outmesh%num_cell = inmesh%cell_ip%global_size
-      outmesh%num_face = inmesh%face_ip%global_size
-      outmesh%num_node = inmesh%node_ip%global_size
+      outmesh%num_cell = inmesh%cell_imap%global_size
+      outmesh%num_face = inmesh%face_imap%global_size
+      outmesh%num_node = inmesh%node_imap%global_size
     end if
 
     !! CNODE -- need to reorient for positive volume
@@ -300,7 +300,7 @@ contains
       end do
       array(1:size(cnode)) => cnode
       allocate(outmesh%cnode(merge(4*outmesh%num_cell,0,is_IOP)))
-      call collate(inmesh%node_ip%global_index(array), outmesh%cnode)
+      call collate(inmesh%node_imap%global_index(array), outmesh%cnode)
     end block
 
     !! XCNODE
@@ -315,7 +315,7 @@ contains
     allocate(outmesh%cface(merge(4*outmesh%num_cell,0,is_IOP)))
     associate (cface => inmesh%cface(:,:inmesh%ncell_onP))
       array(1:size(cface)) => cface
-      call collate(inmesh%face_ip%global_index(array), outmesh%cface)
+      call collate(inmesh%face_imap%global_index(array), outmesh%cface)
     end associate
 
     !! XCFACE
@@ -330,7 +330,7 @@ contains
     allocate(outmesh%fnode(merge(3*outmesh%num_face,0,is_IOP)))
     associate (fnode => inmesh%fnode(:,:inmesh%nface_onP))
       array(1:size(fnode)) => fnode
-      call collate(inmesh%node_ip%global_index(array), outmesh%fnode)
+      call collate(inmesh%node_imap%global_index(array), outmesh%fnode)
     end associate
 
     !! XFNODE

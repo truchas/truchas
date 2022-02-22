@@ -121,7 +121,7 @@ contains
     character(:), allocatable :: errmsg
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_ip%gather_offp(this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
     call get_vof(this%vof)
 
     call this%sm%step(t, dt, this%vof, this%temperature_cc, stat, errmsg)
@@ -154,7 +154,7 @@ contains
     character(:), allocatable :: errmsg
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_ip%gather_offp(this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
     call get_vof(this%vof)
     call this%sm%compute_initial_state(this%vof, this%temperature_cc, stat, errmsg)
     if (stat /= 0) call tls_fatal(errmsg)
@@ -206,7 +206,7 @@ contains
     do p = 1, this%nphase
       call gather_vof(this%matl_phase(p), this%vof(p,:this%mesh%ncell_onP))
     end do
-    call this%mesh%cell_ip%gather_offp(vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine get_vof
 

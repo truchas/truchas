@@ -100,7 +100,7 @@ contains
       if (local) return
     end if
     
-    call mesh%node_ip%gather_offp(v)
+    call mesh%node_imap%gather_offp(v)
     
   end function grad_t
 
@@ -139,7 +139,7 @@ contains
       v(mesh%fedge(3,j)) = v(mesh%fedge(3,j)) + u(j)
     end do
     
-    call mesh%edge_ip%gather_offp(v)
+    call mesh%edge_imap%gather_offp(v)
   
   end function curl_t
   
@@ -179,7 +179,7 @@ contains
       v(mesh%cface(4,j)) = v(mesh%cface(4,j)) - u(j)
     end do
     
-    call mesh%face_ip%gather_offp(v)
+    call mesh%face_imap%gather_offp(v)
     
   end function div_t
   

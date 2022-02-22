@@ -119,7 +119,7 @@ contains
 
     ! communicate results... I don't think we need to communicate flux_vol changes since
     ! they are strictly local.  May need to be revistied if odd bugs show up
-    call this%mesh%cell_ip%gather_offp(vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
     call this%statistics()
 

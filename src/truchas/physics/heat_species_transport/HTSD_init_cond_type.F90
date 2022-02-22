@@ -182,7 +182,7 @@ contains
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
-      call this%mesh%cell_ip%gather_offp(Tdot)
+      call this%mesh%cell_imap%gather_offp(Tdot)
       call HTSD_model_set_cell_temp (this%model, Tdot, udot)
       deallocate(Tdot,dHdT)
     end if
@@ -237,7 +237,7 @@ contains
       allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
       do n = 1, this%model%num_comp
         call HTSD_model_get_cell_conc_copy (this%model, n, udot, Ccell)
-        call this%mesh%cell_ip%gather_offp(Ccell)
+        call this%mesh%cell_imap%gather_offp(Ccell)
         call average_to_faces (this%mesh, Ccell, Cface, this%model%void_cell)
         call HTSD_model_set_face_conc (this%model, n, Cface, udot)
       end do
@@ -306,7 +306,7 @@ contains
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
-      call this%mesh%cell_ip%gather_offp(Tdot)
+      call this%mesh%cell_imap%gather_offp(Tdot)
       call HTSD_model_set_cell_temp (this%model, Tdot, udot)
       deallocate(Tdot,dHdT)
     end if
@@ -361,7 +361,7 @@ contains
       allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
       do n = 1, this%model%num_comp
         call HTSD_model_get_cell_conc_copy (this%model, n, udot, Ccell)
-        call this%mesh%cell_ip%gather_offp(Ccell)
+        call this%mesh%cell_imap%gather_offp(Ccell)
         call average_to_faces (this%mesh, Ccell, Cface, this%model%void_cell)
         call HTSD_model_set_face_conc (this%model, n, Cface, udot)
       end do
@@ -404,8 +404,8 @@ contains
         scale(cface) = scale(cface) + 1
       end associate
     end do
-    call mesh%face_ip%gather_offp(uface)
-    call mesh%face_ip%gather_offp(scale)
+    call mesh%face_imap%gather_offp(uface)
+    call mesh%face_imap%gather_offp(scale)
 
     where (scale == 0)
       uface = 0.0_r8
@@ -597,7 +597,7 @@ contains
       end if
 
       call HTSD_model_get_face_temp_copy (this, u, Tface)
-      call this%mesh%face_ip%gather_offp(Tface)
+      call this%mesh%face_imap%gather_offp(Tface)
 
       !! External HTC boundary condition contribution.
       if (allocated(this%ht%bc_htc)) then

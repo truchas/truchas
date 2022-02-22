@@ -38,10 +38,10 @@ contains
     use common_impl, only: mesh => new_mesh
     real(r8), intent(in) :: source(:)
     real(r8), pointer :: boundary(:)
-    ASSERT(size(source) == mesh%node_ip%onp_size)
+    ASSERT(size(source) == mesh%node_imap%onp_size)
     if (associated(boundary)) return  ! signal to do nothing
-    allocate(boundary(mesh%node_ip%offp_size))
-    call mesh%node_ip%gather_offp(source, boundary)
+    allocate(boundary(mesh%node_imap%offp_size))
+    call mesh%node_imap%gather_offp(source, boundary)
   end subroutine nn_gather_boundarydata
 
   subroutine init_vertex_ngbr_all (vertex_ngbr_all_orig, vertex_ngbr_all)
@@ -61,7 +61,7 @@ contains
     !! Generate VERTEX_NGBR_ALL_ORIG from VERTEX_NGBR_ALL
     call create (vertex_ngbr_all_orig, sizes(vertex_ngbr_all))
     container => flatten(vertex_ngbr_all_orig)
-    container = mesh%node_ip%global_index(flatten(vertex_ngbr_all))
+    container = mesh%node_imap%global_index(flatten(vertex_ngbr_all))
 
     !! Translate off-process node references to boundary buffer references.
     container => flatten(vertex_ngbr_all)

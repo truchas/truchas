@@ -30,7 +30,7 @@ module rad_encl_type
     integer, allocatable :: face_block_id(:), face_block(:)
     !! Partitioning and inter-process communication data.
     integer :: nnode_onP = 0, nface_onP = 0
-    type(index_map) :: node_ip, face_ip
+    type(index_map) :: node_imap, face_imap
   contains
     procedure :: init
   end type rad_encl
@@ -85,14 +85,14 @@ contains
     end if
 
     !! Create the face index partition; no off-process (ghost) faces.
-    call this%face_ip%init (face_bsize)
+    call this%face_imap%init (face_bsize)
 
     !! Create the node index partition; no off-process (ghost) nodes yet.
-    call this%node_ip%init (node_bsize)
+    call this%node_imap%init (node_bsize)
 
     !! Localize the global face connectivity structure arrays.  This identifies
     !! off-process nodes that need to be added as ghost nodes on this process.
-    call this%face_ip%localize_index_array(fsize, fnode, this%node_ip, fsize_l, this%fnode)
+    call this%face_imap%localize_index_array(fsize, fnode, this%node_imap, fsize_l, this%fnode)
     deallocate(fsize, fnode)
 
     !! Generate the local face indexing array from the local face sizes.
@@ -104,29 +104,29 @@ contains
     deallocate(fsize_l)
 
     !! Local surface mesh sizes: on-process plus off-process.
-    this%nnode = this%node_ip%local_size
-    this%nface = this%face_ip%local_size
+    this%nnode = this%node_imap%local_size
+    this%nface = this%face_imap%local_size
 
     !! On-process surface mesh sizes
-    this%nnode_onP = this%node_ip%onp_size
-    this%nface_onP = this%face_ip%onp_size
+    this%nnode_onP = this%node_imap%onp_size
+    this%nface_onP = this%face_imap%onp_size
 
     !! Distribute the node coordinate array.
     allocate(this%coord(3,this%nnode))
-    call this%node_ip%distribute(coord, this%coord)
-    call this%node_ip%gather_offp(this%coord)
+    call this%node_imap%distribute(coord, this%coord)
+    call this%node_imap%gather_offp(this%coord)
     deallocate(coord)
 
     !! Distribute the node map array.
     allocate(this%node_map(this%nnode))
-    call this%node_ip%distribute(node_map, this%node_map)
-    call this%node_ip%gather_offp(this%node_map)
+    call this%node_imap%distribute(node_map, this%node_map)
+    call this%node_imap%gather_offp(this%node_map)
     deallocate(node_map)
 
     !! Distribute the face map array.
     allocate(this%face_map(this%nface))
-    call this%face_ip%distribute(face_map, this%face_map)
-    !call this%face_ip%gather_offp(this%face_map)
+    call this%face_imap%distribute(face_map, this%face_map)
+    !call this%face_imap%gather_offp(this%face_map)
     deallocate(face_map)
 
     !! Replicate the face block ID array.
@@ -139,8 +139,8 @@ contains
 
     !! Distribute the face block index array.
     allocate(this%face_block(this%nface))
-    call this%face_ip%distribute(gnum, this%face_block)
-    !call this%face_ip%gather_offp(this%face_block)
+    call this%face_imap%distribute(gnum, this%face_block)
+    !call this%face_imap%gather_offp(this%face_block)
     deallocate(gnum)
 
     !! Scale coordinates

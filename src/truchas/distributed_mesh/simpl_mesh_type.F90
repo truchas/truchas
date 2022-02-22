@@ -68,7 +68,7 @@
 !!    nnode_onP, nedge_onP, nface_onP, ncell_onP - the number of local nodes,
 !!        edges, faces, and cells that that are uniquely owned (on-process).
 !!
-!!    node_ip, edge_ip, face_ip, cell_ip - derived types that describe the
+!!    node_imap, edge_imap, face_imap, cell_imap - derived types that describe the
 !!        partitioning and overlap of nodes, edges, faces, and cells, including
 !!        info necessary to communicate off-process data between processes.
 !!
@@ -139,7 +139,7 @@ module simpl_mesh_type
     integer, allocatable :: cblock(:)   ! cell block index
     real(r8), allocatable :: length(:)
     !! Partitioning and inter-process communication data.
-    type(index_map) :: edge_ip
+    type(index_map) :: edge_imap
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cedge_array
@@ -177,8 +177,8 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cnode(:,:)
-    allocate(cnode(size(this%cnode,1),merge(this%cell_ip%global_size,0,is_IOP)))
-    call collate (this%node_ip%global_index(this%cnode(:,:this%ncell_onP)), cnode)
+    allocate(cnode(size(this%cnode,1),merge(this%cell_imap%global_size,0,is_IOP)))
+    call collate (this%node_imap%global_index(this%cnode(:,:this%ncell_onP)), cnode)
   end subroutine get_global_cnode_array
 
   !! Creates the global CEDGE array on the IO process, 0-sized array on others.
@@ -186,8 +186,8 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cedge(:,:)
-    allocate(cedge(size(this%cedge,1),merge(this%cell_ip%global_size,0,is_IOP)))
-    call collate (this%edge_ip%global_index(this%cedge(:,:this%ncell_onP)), cedge)
+    allocate(cedge(size(this%cedge,1),merge(this%cell_imap%global_size,0,is_IOP)))
+    call collate (this%edge_imap%global_index(this%cedge(:,:this%ncell_onP)), cedge)
   end subroutine get_global_cedge_array
 
   !! Creates the global CFACE array on the IO process, 0-sized array on others.
@@ -195,8 +195,8 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cface(:,:)
-    allocate(cface(size(this%cface,1),merge(this%cell_ip%global_size,0,is_IOP)))
-    call collate (this%face_ip%global_index(this%cface(:,:this%ncell_onP)), cface)
+    allocate(cface(size(this%cface,1),merge(this%cell_imap%global_size,0,is_IOP)))
+    call collate (this%face_imap%global_index(this%cface(:,:this%ncell_onP)), cface)
   end subroutine get_global_cface_array
 
   !! Creates the global FNODE array on the IO process, 0-sized array on others.
@@ -204,8 +204,8 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: fnode(:,:)
-    allocate(fnode(size(this%fnode,1),merge(this%face_ip%global_size,0,is_IOP)))
-    call collate (this%node_ip%global_index(this%fnode(:,:this%ncell_onP)), fnode)
+    allocate(fnode(size(this%fnode,1),merge(this%face_imap%global_size,0,is_IOP)))
+    call collate (this%node_imap%global_index(this%fnode(:,:this%ncell_onP)), fnode)
   end subroutine get_global_fnode_array
 
   !! Creates the global CBLOCK array on the IO process; 0-sized array on others.
@@ -213,7 +213,7 @@ contains
     use parallel_communication, only: is_IOP, collate
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cblock(:)
-    allocate(cblock(merge(this%cell_ip%global_size,0,is_IOP)))
+    allocate(cblock(merge(this%cell_imap%global_size,0,is_IOP)))
     call collate (this%cblock(:this%ncell_onP), cblock)
   end subroutine get_global_cblock_array
 
@@ -252,20 +252,20 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (this%node_ip%offp_size, nvec(1,:))
-    call collate (this%node_ip%onp_size, nvec(2,:))
+    call collate (this%node_imap%offp_size, nvec(1,:))
+    call collate (this%node_imap%onp_size, nvec(2,:))
     call broadcast (nvec)
 
-    call collate (this%edge_ip%offp_size, evec(1,:))
-    call collate (this%edge_ip%onp_size, evec(2,:))
+    call collate (this%edge_imap%offp_size, evec(1,:))
+    call collate (this%edge_imap%onp_size, evec(2,:))
     call broadcast (evec)
 
-    call collate (this%face_ip%offp_size, fvec(1,:))
-    call collate (this%face_ip%onp_size, fvec(2,:))
+    call collate (this%face_imap%offp_size, fvec(1,:))
+    call collate (this%face_imap%onp_size, fvec(2,:))
     call broadcast (fvec)
 
-    call collate (this%cell_ip%offp_size, cvec(1,:))
-    call collate (this%cell_ip%onp_size, cvec(2,:))
+    call collate (this%cell_imap%offp_size, cvec(1,:))
+    call collate (this%cell_imap%onp_size, cvec(2,:))
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')
@@ -308,7 +308,7 @@ contains
     do j = 1, this%nface_onP
       if (mask(j)) map(this%fnode(:,j)) = 1
     end do
-    call this%node_ip%scatter_offp_max(map)
+    call this%node_imap%scatter_offp_max(map)
 
     n = sum(map(:this%nnode_onP))
     call collate(n, sizes)
@@ -327,7 +327,7 @@ contains
         map(j) = n + offset
       end if
     end do
-    call this%node_ip%gather_offp(map)
+    call this%node_imap%gather_offp(map)
     allocate(x_all(3,merge(ntot,0,is_IOP)))
     call collate(x_loc, x_all)
 

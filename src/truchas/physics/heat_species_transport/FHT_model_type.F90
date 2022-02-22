@@ -148,14 +148,14 @@ contains
 
     !! Initialize the STATE array.
     call FHT_model_get_cell_temp_copy (this, u, state(:,1))
-    call this%mesh%cell_ip%gather_offp(state(:,1))
+    call this%mesh%cell_imap%gather_offp(state(:,1))
 
   !!!! RESIDUAL OF THE HEAT EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !! Off-process-extended cell and face temperatures.
     Tcell => state(:,1)
     call FHT_model_get_face_temp_copy (this, u, Tface)
-    call this%mesh%face_ip%gather_offp(Tface)
+    call this%mesh%face_imap%gather_offp(Tface)
 
     !! Pre-compute the Dirichlet condition residual and
     !! impose the Dirichlet data on the face temperature.
@@ -180,7 +180,7 @@ contains
     do j = 1, this%mesh%ncell_onP
       Fcell(j) = Fcell(j) + this%mesh%volume(j)*(hdot(j) - value(j))
     end do
-    !call this%mesh%cell_ip%gather_offp(Fcell) ! off-process not used below
+    !call this%mesh%cell_imap%gather_offp(Fcell) ! off-process not used below
 
     !! Additional heat source
     if (allocated(this%src)) then
@@ -374,7 +374,7 @@ contains
 
     allocate(Tcell(this%mesh%ncell), Tface(this%mesh%nface))
     call FHT_model_get_cell_temp_copy (this, u, Tcell)
-    call this%mesh%cell_ip%gather_offp(Tcell)
+    call this%mesh%cell_imap%gather_offp(Tcell)
     call eval_face_averages (Tcell, Tface)
     call FHT_model_set_face_temp(this, Tface, u)
 
@@ -419,7 +419,7 @@ contains
     call FHT_model_set_cell_temp (this, Tcell, udot)
 
     !! Approximate face derivative by average of adjacent cell derivatives.
-    call this%mesh%cell_ip%gather_offp(Tcell)
+    call this%mesh%cell_imap%gather_offp(Tcell)
     call eval_face_averages (Tcell, Tface)
     call FHT_model_set_face_temp (this, Tface, udot)
 
@@ -444,8 +444,8 @@ contains
           scale(cface) = scale(cface) + 1
         end associate
       end do
-      call this%mesh%face_ip%gather_offp(uface)
-      call this%mesh%face_ip%gather_offp(scale)
+      call this%mesh%face_imap%gather_offp(uface)
+      call this%mesh%face_imap%gather_offp(scale)
       do j = 1, this%mesh%nface
         if (scale(j) == 0) then
           uface(j) = 0.0_r8

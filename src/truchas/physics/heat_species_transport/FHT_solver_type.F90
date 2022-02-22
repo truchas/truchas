@@ -273,13 +273,13 @@ contains
     
     !! Void face mask; correct for all faces.
     this%void_face = (fnbr(1,:) == 0)
-    call this%mesh%face_ip%gather_offp(this%void_face)
+    call this%mesh%face_imap%gather_offp(this%void_face)
     
     !! Set the predicted temperature at faces that have switched type.
     call FHT_model_get_face_temp_view (this%model, this%u, Tface)
     allocate(Tcell(this%mesh%ncell))
     call FHT_model_get_cell_temp_copy (this%model, this%u, Tcell)
-    call this%mesh%cell_ip%gather_offp(Tcell)
+    call this%mesh%cell_imap%gather_offp(Tcell)
     do j = 1, this%mesh%nface_onP
       if (this%void_face(j)) then
         Tface(j) = this%model%void_temp ! dummy value
@@ -567,7 +567,7 @@ contains
         end associate
       end if
     end do
-    call this%mesh%face_ip%gather_offp(this%void_face)
+    call this%mesh%face_imap%gather_offp(this%void_face)
     
     !! Set the current void context for the heat transfer model.
     this%model%void_cell => this%void_cell
@@ -791,7 +791,7 @@ contains
     INSIST(size(tgrad,1) == 3)
     INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
     call FHT_model_get_face_temp_copy (this%model, this%u, tface)
-    call this%model%mesh%face_ip%gather_offp(tface)
+    call this%model%mesh%face_imap%gather_offp(tface)
     call this%model%disc%compute_cell_grad (tface, tgrad)
   end subroutine FHT_solver_get_cell_temp_grad
 

@@ -186,7 +186,7 @@ contains
       integer, pointer :: faces(:) => null()
 
       call HTSD_model_get_face_temp_copy (this%model, u, Tface)
-      call this%mesh%face_ip%gather_offp(Tface)
+      call this%mesh%face_imap%gather_offp(Tface)
 
       !! The time step size.
       this%dt = dt
@@ -357,9 +357,9 @@ contains
         !! Off-process-extended copies of the preconditioned HT components.
         allocate(FTcell(this%mesh%ncell), FTface(this%mesh%nface))
         call HTSD_model_get_cell_temp_copy (this%model, f, FTcell)
-        call this%mesh%cell_ip%gather_offp(FTcell)
+        call this%mesh%cell_imap%gather_offp(FTcell)
         call HTSD_model_get_face_temp_copy (this%model, f, FTface)
-        call this%mesh%face_ip%gather_offp(FTface)
+        call this%mesh%face_imap%gather_offp(FTface)
         if (allocated(this%model%ht%bc_dir)) then
           FTface(this%model%ht%bc_dir%index) = 0.0_r8 ! temperature Dirichlet projection
         end if
@@ -430,11 +430,11 @@ contains
           if (this%model%void_cell(j)) f1x(j) = f1(j)
         end do
       end if
-      call this%mesh%cell_ip%gather_offp(f1x)
+      call this%mesh%cell_imap%gather_offp(f1x)
 
       !! Heat equation face residual (with radiosity residuals optionally eliminated).
       call HTSD_model_get_face_temp_copy (this%model, f, f2x)
-      call this%mesh%face_ip%gather_offp(f2x)
+      call this%mesh%face_imap%gather_offp(f2x)
 
       !! Precondition the heat equation.
       call this%hcprecon%apply(f1x, f2x)
@@ -499,10 +499,10 @@ contains
 
       !! Off-process extended cell concentration components of F.
       call HTSD_model_get_cell_conc_copy (this%model, index, f, Fcell)
-      call this%mesh%cell_ip%gather_offp(Fcell)
+      call this%mesh%cell_imap%gather_offp(Fcell)
       !! Off-process extended face concentration components of F.
       call HTSD_model_get_face_conc_copy (this%model, index, f, Fface)
-      call this%mesh%face_ip%gather_offp(Fface)
+      call this%mesh%face_imap%gather_offp(Fface)
       !! Precondition the diffusion equation for this component.
       call this%sdprecon(index)%apply(Fcell, Fface)
       !! Return the on-process components of the result.

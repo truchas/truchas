@@ -70,9 +70,9 @@ contains
   subroutine init_en_gather_impl
     use vertex_impl, only: vertex
     integer :: n
-    allocate(coord_boundary(3,new_mesh%node_ip%offp_size))
+    allocate(coord_boundary(3,new_mesh%node_imap%offp_size))
     do n = 1, 3
-      call new_mesh%node_ip%gather_offp(vertex%coord(n), coord_boundary(n,:))
+      call new_mesh%node_imap%gather_offp(vertex%coord(n), coord_boundary(n,:))
     end do
   end subroutine init_en_gather_impl
 
@@ -143,9 +143,9 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k, n
-    real(r8) :: boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: boundary(new_mesh%node_imap%offp_size)
 
-    call new_mesh%node_ip%gather_offp(src, boundary)
+    call new_mesh%node_imap%gather_offp(src, boundary)
 
     do j = 1, ncells
       do k = 1, 8
@@ -172,9 +172,9 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k, n
-    real(r8) :: tmp, boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: tmp, boundary(new_mesh%node_imap%offp_size)
 
-    call new_mesh%node_ip%gather_offp(src, boundary)
+    call new_mesh%node_imap%gather_offp(src, boundary)
 
     do j = 1, ncells
       tmp = huge(tmp)
@@ -201,9 +201,9 @@ contains
     logical, intent(in)  :: src(:)
 
     integer :: j, k, n
-    logical :: tmp, boundary(new_mesh%node_ip%offp_size)
+    logical :: tmp, boundary(new_mesh%node_imap%offp_size)
 
-    call new_mesh%node_ip%gather_offp(src, boundary)
+    call new_mesh%node_imap%gather_offp(src, boundary)
 
     do j = 1, ncells
       tmp = .false.
@@ -230,7 +230,7 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -249,7 +249,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_sum(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_sum(dest, boundary)
 
   end subroutine en_sum_scatter_real64
 
@@ -262,7 +262,7 @@ contains
     real(r8), intent(in)  :: src(:,:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -282,7 +282,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_sum(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_sum(dest, boundary)
 
   end subroutine cn_sum_scatter_real64
 
@@ -295,7 +295,7 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -314,7 +314,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_min(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_min(dest, boundary)
 
   end subroutine en_min_scatter_real64
 
@@ -327,7 +327,7 @@ contains
     real(r8), intent(in)  :: src(:,:)
 
     integer  :: j, k, n
-    real(r8) :: boundary(new_mesh%node_ip%offp_size)
+    real(r8) :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -347,7 +347,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_max(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_max(dest, boundary)
 
   end subroutine cn_max_scatter_real64
 
@@ -360,7 +360,7 @@ contains
     logical, intent(in)  :: src(:)
 
     integer :: j, k, n
-    logical :: boundary(new_mesh%node_ip%offp_size)
+    logical :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src) == ncells)
     ASSERT(size(dest) == nnodes)
@@ -379,7 +379,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_or(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_or(dest, boundary)
 
   end subroutine en_or_scatter_log
 
@@ -392,7 +392,7 @@ contains
     logical, intent(in)  :: src(:,:)
 
     integer :: j, k, n
-    logical :: boundary(new_mesh%node_ip%offp_size)
+    logical :: boundary(new_mesh%node_imap%offp_size)
 
     ASSERT(size(src,1) == 8)
     ASSERT(size(src,2) == ncells)
@@ -412,7 +412,7 @@ contains
       end do
     end do
 
-    call new_mesh%node_ip%scatter_offp_or(dest, boundary)
+    call new_mesh%node_imap%scatter_offp_or(dest, boundary)
 
   end subroutine cn_or_scatter_log
 

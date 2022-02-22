@@ -32,7 +32,7 @@ contains
 
   subroutine ee_gather_real64 (dest, src, boundary)
 
-    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_imap, DEGENERATE_FACE
 
     real(r8), intent(inout) :: dest(:,:)
     real(r8), intent(in) :: src(:)
@@ -43,13 +43,13 @@ contains
 
     if (present(boundary)) then
       if (.not.associated(boundary)) then
-        allocate(boundary(legacy_cell_ip%offp_size))
-        call legacy_cell_ip%gather_offp(src, boundary)
+        allocate(boundary(legacy_cell_imap%offp_size))
+        call legacy_cell_imap%gather_offp(src, boundary)
       end if
       buffer => boundary
     else
-      allocate(buffer(legacy_cell_ip%offp_size))
-      call legacy_cell_ip%gather_offp(src, buffer)
+      allocate(buffer(legacy_cell_imap%offp_size))
+      call legacy_cell_imap%gather_offp(src, buffer)
     end if
 
     do j = 1, ncells
@@ -73,15 +73,15 @@ contains
 
   subroutine ee_gather_int32 (dest, src)
 
-    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_imap, DEGENERATE_FACE
 
     integer, intent(inout) :: dest(:,:)
     integer, intent(in) :: src(:)
 
     integer :: j, k, n
-    integer :: buffer(legacy_cell_ip%offp_size)
+    integer :: buffer(legacy_cell_imap%offp_size)
 
-    call legacy_cell_ip%gather_offp(src, buffer)
+    call legacy_cell_imap%gather_offp(src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -102,15 +102,15 @@ contains
 
   subroutine ee_gather_log (dest, src)
 
-    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_imap, DEGENERATE_FACE
 
     logical, intent(inout) :: dest(:,:)
     logical, intent(in) :: src(:)
 
     integer :: j, k, n
-    logical :: buffer(legacy_cell_ip%offp_size)
+    logical :: buffer(legacy_cell_imap%offp_size)
 
-    call legacy_cell_ip%gather_offp(src, buffer)
+    call legacy_cell_imap%gather_offp(src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -131,20 +131,20 @@ contains
 
   subroutine ss_gather_real64 (dest, src)
 
-    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_imap, DEGENERATE_FACE
 
     real(r8), intent(inout) :: dest(:,:)
     real(r8), intent(in) :: src(:,:)
 
     integer :: j, jj, k, kk
-    real(r8) :: buffer(6,legacy_cell_ip%offp_size)
+    real(r8) :: buffer(6,legacy_cell_imap%offp_size)
 
     ASSERT(size(dest,1) == 6)
     ASSERT(size(dest,2) == ncells)
     ASSERT(size(src,1) == 6)
     ASSERT(size(src,2) == ncells)
 
-    call legacy_cell_ip%gather_offp(src, buffer)
+    call legacy_cell_imap%gather_offp(src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -166,20 +166,20 @@ contains
 
   subroutine ss_gather_log (dest, src)
 
-    use mesh_impl, only: mesh, legacy_cell_ip, DEGENERATE_FACE
+    use mesh_impl, only: mesh, legacy_cell_imap, DEGENERATE_FACE
 
     logical, intent(inout) :: dest(:,:)
     logical, intent(in) :: src(:,:)
 
     integer :: j, jj, k, kk
-    logical :: buffer(6,legacy_cell_ip%offp_size)
+    logical :: buffer(6,legacy_cell_imap%offp_size)
 
     ASSERT(size(dest,1) == 6)
     ASSERT(size(dest,2) == ncells)
     ASSERT(size(src,1) == 6)
     ASSERT(size(src,2) == ncells)
 
-    call legacy_cell_ip%gather_offp(src, buffer)
+    call legacy_cell_imap%gather_offp(src, buffer)
 
     do j = 1, ncells
       do k = 1, 6
@@ -214,13 +214,13 @@ contains
 
     if (present(boundary)) buffer => boundary
     if (.not.associated(buffer)) then
-      allocate(buffer(new_mesh%cell_ip%offp_size))
-      call new_mesh%cell_ip%gather_offp(source, buffer)
+      allocate(buffer(new_mesh%cell_imap%offp_size))
+      call new_mesh%cell_imap%gather_offp(source, buffer)
       if (present(boundary)) boundary => buffer
     end if
 
-    ASSERT(size(source) == new_mesh%cell_ip%onp_size)
-    ASSERT(size(buffer) == new_mesh%cell_ip%offp_size)
+    ASSERT(size(source) == new_mesh%cell_imap%onp_size)
+    ASSERT(size(buffer) == new_mesh%cell_imap%offp_size)
     ASSERT(size(dest) <= size(mesh))
 
     !! Will assume this actual usage when RANGE is specified.
@@ -249,13 +249,13 @@ contains
 
 
   subroutine gather_boundarydata_real64 (boundary, source)
-    use mesh_impl, only: legacy_cell_ip
+    use mesh_impl, only: legacy_cell_imap
     real(r8), pointer :: boundary(:)
     real(r8), intent(in) :: source(:)
-    ASSERT(size(source) == legacy_cell_ip%onp_size)
+    ASSERT(size(source) == legacy_cell_imap%onp_size)
     if (associated(boundary)) return  ! signal to do nothing
-    allocate(boundary(legacy_cell_ip%offp_size))
-    call legacy_cell_ip%gather_offp(source, boundary)
+    allocate(boundary(legacy_cell_imap%offp_size))
+    call legacy_cell_imap%gather_offp(source, boundary)
   end subroutine gather_boundarydata_real64
 
 end module

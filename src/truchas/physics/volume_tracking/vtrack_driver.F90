@@ -207,7 +207,7 @@ contains
       end do
     end if
 
-    call this%mesh%cell_ip%gather_offp(vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine get_vof_from_matl
 

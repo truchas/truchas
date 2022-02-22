@@ -197,7 +197,7 @@ contains
     INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
     INSIST(associated(this%model%ht))
     call HTSD_model_get_face_temp_copy (this%model, this%u, tface)
-    call this%model%mesh%face_ip%gather_offp(tface)
+    call this%model%mesh%face_imap%gather_offp(tface)
     call this%model%disc%compute_cell_grad (tface, tgrad)
   end subroutine HTSD_solver_get_cell_temp_grad
     
@@ -274,7 +274,7 @@ contains
           end associate
         end if
       end do
-      call this%mesh%face_ip%gather_offp(this%model%void_face)
+      call this%mesh%face_imap%gather_offp(this%model%void_face)
     else
       deallocate(this%model%void_cell)
       this%model%void_face => null()

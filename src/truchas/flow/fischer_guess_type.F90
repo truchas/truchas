@@ -139,7 +139,7 @@ contains
     idx = this%size+1
 
     this%x_tilde(1:nop,idx) = x_soln(1:nop) - this%x_guess(1:nop)
-    call this%mesh%cell_ip%gather_offp(this%x_tilde(:,idx))
+    call this%mesh%cell_imap%gather_offp(this%x_tilde(:,idx))
 
     do i = 1, nop
       call lhs%get_row_view(i, mval, midx)

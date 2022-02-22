@@ -135,7 +135,7 @@ contains
         end do
         u(j) = u(j) + this%omega * (s / this%diag(j))
       end do
-      call this%A%graph%row_ip%gather_offp(u)
+      call this%A%graph%row_imap%gather_offp(u)
       !! Backward sweep.
       do j = this%A%nrow_onP, 1, -1
         s = x(j)
@@ -144,7 +144,7 @@ contains
         end do
         u(j) = u(j) + this%omega * (s / this%diag(j))
       end do
-      call this%A%graph%row_ip%gather_offp(u)
+      call this%A%graph%row_imap%gather_offp(u)
     end do
 
     !! Copy solution to return array.

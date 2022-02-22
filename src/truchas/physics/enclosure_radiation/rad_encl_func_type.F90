@@ -226,7 +226,7 @@ contains
 
     !! Verify that every face has been associated with a function.
     n = global_count(this%tag > 0)
-    if (n /= this%encl%face_ip%global_size) then
+    if (n /= this%encl%face_imap%global_size) then
       stat = 1
       errmsg = 'no emissivity for ' // i_to_c(n) // ' enclosure faces'
       return

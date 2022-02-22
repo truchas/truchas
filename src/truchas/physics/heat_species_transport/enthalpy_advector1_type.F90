@@ -67,7 +67,7 @@ contains
 
     allocate(tcellx(this%mesh%ncell))
     tcellx(:this%mesh%ncell_onP) = tcell
-    call this%mesh%cell_ip%gather_offp(tcellx)
+    call this%mesh%cell_imap%gather_offp(tcellx)
 
     do j = 1, this%mesh%ncell_onP
       i1 = this%mesh%xcface(j)
@@ -114,7 +114,7 @@ contains
 
     allocate(tcellx(this%mesh%ncell))
     tcellx(:this%mesh%ncell_onP) = tcell
-    call this%mesh%cell_ip%gather_offp(tcellx)
+    call this%mesh%cell_imap%gather_offp(tcellx)
 
     do j = 1, this%mesh%ncell_onP
       tmin(j) = tcellx(j)

@@ -63,7 +63,7 @@ contains
     integer :: j, l, ic, ir
     logical, allocatable :: face_mask(:)
     type(pcsr_graph), pointer :: g
-    type(index_map), pointer :: row_ip
+    type(index_map), pointer :: row_imap
     real(r8) :: c, rpar
     
     ASSERT(size(mask) == disc%mesh%ncell)
@@ -80,8 +80,8 @@ contains
     !! Create the CSR matrix graph for the matrix.
     allocate(g, face_mask(this%mesh%nface))
     face_mask = .true.  ! will tag inactive faces
-    row_ip => this%mesh%face_ip
-    call g%init (row_ip)
+    row_imap => this%mesh%face_imap
+    call g%init (row_imap)
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
         associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
@@ -231,7 +231,7 @@ contains
       errmsg = trim(string)
     endif
     
-    call this%mesh%face_ip%gather_offp(uface)
+    call this%mesh%face_imap%gather_offp(uface)
     call this%disc%compute_cell_grad (uface, this%cell_mask(:size(gradu,2)), gradu)
 
   end subroutine compute
@@ -272,7 +272,7 @@ contains
         end associate
       end if
     end do
-    call mesh%face_ip%gather_offp(bc_mask)
+    call mesh%face_imap%gather_offp(bc_mask)
     
     if (size(setids) > 0) then
       !! Create the bitmask corresponding to SETIDS.

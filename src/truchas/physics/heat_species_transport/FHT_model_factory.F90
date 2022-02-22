@@ -236,7 +236,7 @@ contains
     if (allocated(model%ic_htc)) then
       mask(model%ic_htc%index(1,:)) = .true.
       mask(model%ic_htc%index(2,:)) = .true.
-      call mesh%face_ip%gather_offp(mask)
+      call mesh%face_imap%gather_offp(mask)
     end if
 
     !! Define the gap radiation interface conditions;
@@ -246,7 +246,7 @@ contains
     if (allocated(model%ic_rad)) then
       mask(model%ic_rad%index(1,:)) = .true.
       mask(model%ic_rad%index(2,:)) = .true.
-      call mesh%face_ip%gather_offp(mask)
+      call mesh%face_imap%gather_offp(mask)
     end if
 
     !! Flux type boundary conditions can be superimposed.
@@ -298,8 +298,8 @@ contains
         rmask(model%vf_rad_prob(j)%faces) = .true.
         !fmask(model%vf_rad_prob(j)%faces) = .true.
       end do
-      call mesh%face_ip%gather_offp(rmask)
-      !call mesh%face_ip%gather_offp(fmask)
+      call mesh%face_imap%gather_offp(rmask)
+      !call mesh%face_imap%gather_offp(fmask)
     end if
 
     !! Define the (simple) radiation boundary conditions.
