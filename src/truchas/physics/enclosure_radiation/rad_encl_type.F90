@@ -73,8 +73,8 @@ contains
 
     !! Reorder and block partition the global surface mesh.
     allocate(node_map(nnode), face_map(nface))
-    call collate(face_map, fmap)
-    call collate(face_bsize, size(fmap))
+    call collate(fmap, face_map)
+    call collate(size(fmap), face_bsize)
     if (is_IOP) then
       !! Reorder the faces; reorder the face block index array.
       call organize_faces (face_map, fsize, fnode)

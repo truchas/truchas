@@ -41,7 +41,7 @@ contains
       allocate(g_ref(merge(n,0,is_iop)))
       if (is_IOP) read(unit=lun) g_ref
       allocate(ref(size(vec)))
-      call distribute (ref, g_ref)
+      call distribute (g_ref, ref)
       call gsd%gather_offp(ref)
       err1 = global_maxval(abs(ref))
       err2 = global_maxval(abs(vec-ref))

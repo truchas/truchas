@@ -64,7 +64,7 @@ contains
       integer(int8) :: dest(size(adest)), src
       src = asrc
       dest = 0
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_scalar_int8')
     end block
@@ -72,7 +72,7 @@ contains
       integer(int32) :: dest(size(adest)), src
       src = asrc
       dest = 0
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_scalar_int32')
     end block
@@ -80,7 +80,7 @@ contains
       integer(int64) :: dest(size(adest)), src
       src = asrc
       dest = 0
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_scalar_int64')
     end block
@@ -88,7 +88,7 @@ contains
       real(real32) :: dest(size(adest)), src
       src = asrc
       dest = 0
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_scalar_real32')
     end block
@@ -96,7 +96,7 @@ contains
       real(real64) :: dest(size(adest)), src
       src = asrc
       dest = 0
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_scalar_real64')
     end block
@@ -117,7 +117,7 @@ contains
       integer(int8), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_int8')
     end block
@@ -125,7 +125,7 @@ contains
       integer(int32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_int32')
     end block
@@ -133,7 +133,7 @@ contains
       integer(int64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_int64')
     end block
@@ -141,7 +141,7 @@ contains
       real(real32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_real32')
     end block
@@ -149,7 +149,7 @@ contains
       real(real64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_real64')
     end block
@@ -170,7 +170,7 @@ contains
       integer(int8), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_zero_int8')
     end block
@@ -178,7 +178,7 @@ contains
       integer(int32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_zero_int32')
     end block
@@ -186,7 +186,7 @@ contains
       integer(int64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_zero_int64')
     end block
@@ -194,7 +194,7 @@ contains
       real(real32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_zero_real32')
     end block
@@ -202,7 +202,7 @@ contains
       real(real64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank1_zero_real64')
     end block
@@ -227,7 +227,7 @@ contains
       integer(int8), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_int8')
     end block
@@ -235,7 +235,7 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_int32')
     end block
@@ -243,7 +243,7 @@ contains
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_int64')
     end block
@@ -251,7 +251,7 @@ contains
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_real32')
     end block
@@ -259,7 +259,7 @@ contains
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_real64')
     end block
@@ -285,7 +285,7 @@ contains
       integer(int8), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_zero_int8')
     end block
@@ -293,7 +293,7 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_zero_int32')
     end block
@@ -301,7 +301,7 @@ contains
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_zero_int64')
     end block
@@ -309,7 +309,7 @@ contains
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_zero_real32')
     end block
@@ -317,7 +317,7 @@ contains
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call collate(dest, src)
+      call collate(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'coll_rank2_zero_real64')
     end block
@@ -343,7 +343,7 @@ contains
       integer(int8), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0_int8)
-      call collate(dest(1::2,1::2), src(1::2,1::2))
+      call collate(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'coll_array_section_int8')
     end block
@@ -351,7 +351,7 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0_int32)
-      call collate(dest(1::2,1::2), src(1::2,1::2))
+      call collate(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'coll_array_section_int32')
     end block
@@ -359,7 +359,7 @@ contains
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0_int64)
-      call collate(dest(1::2,1::2), src(1::2,1::2))
+      call collate(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'coll_array_section_int64')
     end block
@@ -367,7 +367,7 @@ contains
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0.0_real32)
-      call collate(dest(1::2,1::2), src(1::2,1::2))
+      call collate(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'coll_array_section_real32')
     end block
@@ -375,7 +375,7 @@ contains
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0.0_real64)
-      call collate(dest(1::2,1::2), src(1::2,1::2))
+      call collate(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'coll_array_section_real64')
     end block
@@ -390,7 +390,7 @@ contains
     else
       allocate(dest(0))
     end if
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest)
     call write_result(pass, 'coll_log_scalar')
   end subroutine
@@ -405,7 +405,7 @@ contains
     else
       allocate(dest(0))
     end if
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest)
     call write_result(pass, 'coll_log_rank1')
   end subroutine
@@ -424,7 +424,7 @@ contains
     else
       allocate(dest(2,0))
     end if
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest(1,:)) .and. all(.not.dest(2,:))
     call write_result(pass, 'coll_log_rank2')
   end subroutine
@@ -443,7 +443,7 @@ contains
       allocate(dest(0), adest(0))
     end if
     dest = ''
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest == adest)
     call write_result(pass, 'coll_char_scalar')
   end subroutine
@@ -466,7 +466,7 @@ contains
       allocate(dest(0), adest(0))
     end if
     dest = ''
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest == adest)
     call write_result(pass, 'coll_char_rank1')
   end subroutine
@@ -491,7 +491,7 @@ contains
       allocate(dest(2,0), adest(2,0))
     end if
     dest = ''
-    call collate(dest, src)
+    call collate(src, dest)
     pass = all(dest == adest)
     call write_result(pass, 'coll_char_rank2')
   end subroutine

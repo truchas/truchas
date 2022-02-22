@@ -178,7 +178,7 @@ contains
       allocate(u_g(0))
     end if
     
-    call distribute (u, u_g)
+    call distribute (u_g, u)
     
   end subroutine solution
 

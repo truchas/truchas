@@ -387,7 +387,7 @@ contains
 
     !! Mapping from external cell numbers to internal (global) cell numbers.
     allocate(map(merge(mesh%cell_ip%global_size, 0, is_IOP)))
-    call collate (map, mesh%xcell(:mesh%ncell_onP))
+    call collate (mesh%xcell(:mesh%ncell_onP), map)
     if (is_IOP) then
       ASSERT(is_perm(map))
       call invert_perm (map)
@@ -408,7 +408,7 @@ contains
     end if
 
     !! Sort the cell/side pairs so that they are ordered by cell process rank.
-    call collate (last, mesh%cell_ip%last_gid) ! last global cell index on the processes
+    call collate (mesh%cell_ip%last_gid, last) ! last global cell index on the processes
     if (is_IOP) then
       allocate(perm(nface))
       call partition_sort (last, fcell, bsize, perm)
@@ -417,10 +417,10 @@ contains
     end if
 
     !! Distribute the cell/side pairs to the processes owning the cell.
-    call distribute (n, bsize)
+    call distribute (bsize, n)
     allocate(fcell_l(n), fside_l(n))
-    call distribute (fcell_l, fcell)
-    call distribute (fside_l, fside)
+    call distribute (fcell, fcell_l)
+    call distribute (fside, fside_l)
     deallocate(fcell, fside)
     offset = mesh%cell_ip%first_gid - 1
     fcell_l = fcell_l - offset ! local cell index
@@ -441,7 +441,7 @@ contains
 
     !! Generate the global mapping MAP of enclosure faces to mesh faces.
     allocate(map(merge(nface, 0, is_IOP)))
-    call collate (map, fcell_l)
+    call collate (fcell_l, map)
     if (is_IOP) then  ! undo the partition sort
       call reorder (map, perm, forward=.true.)
       ASSERT(all(map >= 1))
@@ -450,7 +450,7 @@ contains
     deallocate(fcell_l, fside_l)
 
     !! Sort the mesh face list MAP so that it is ordered by face process rank.
-    call collate (last, mesh%face_ip%last_gid)
+    call collate (mesh%face_ip%last_gid, last)
     if (is_IOP) then
       call partition_sort (last, map, bsize, perm)
       call reorder (map, perm)
@@ -458,9 +458,9 @@ contains
 
     !! Distribute the face list MAP, apply local index offset, and sort; this
     !! gives a per-process list LM_FACES of mesh faces that are enclosure faces.
-    call distribute (n, bsize)
+    call distribute (bsize, n)
     allocate(lm_faces(n), perm2(n))
-    call distribute (lm_faces, map)
+    call distribute (map, lm_faces)
     offset = mesh%face_ip%first_gid - 1
     lm_faces = lm_faces - offset  ! local face index
     call heapsort (lm_faces, perm2)
@@ -472,7 +472,7 @@ contains
     !! it is the composition of the partition sort and the heap sort.
     call broadcast (bsize)
     offset = sum(bsize(:this_PE-1))
-    call collate (map, perm2+offset)  ! the global heapsort permutation
+    call collate (perm2+offset, map)  ! the global heapsort permutation
     if (is_IOP) then
       ASSERT(is_perm(map))
       do j = 1, size(map)
@@ -486,7 +486,7 @@ contains
     !! Distribute the mapping from mesh enclosure faces to enclosure faces; this
     !! gives a per-process list GE_FACES of enclosure faces corresponding to LM_FACES.
     allocate(ge_faces(n))
-    call distribute (ge_faces, map)
+    call distribute (map, ge_faces)
     deallocate(map)
 
     stat = 0  ! success
@@ -1028,7 +1028,7 @@ contains
 !    call mesh%node_ip%scatter_offp_or(tag)
 !
 !    !! Count the on-process surface nodes per process (BSIZE).
-!    call collate (bsize, count(tag(:mesh%nnode_onP)))
+!    call collate (count(tag(:mesh%nnode_onP)), bsize)
 !    call broadcast (bsize)
 !
 !    !! Create the local list of on-process surface node indices, and create
@@ -1050,7 +1050,7 @@ contains
 !
 !    !! Global mapping array.
 !    call allocate_collated_array (map, mesh%node_ip%global_size)
-!    call collate (map, map_l)
+!    call collate (map_l, map)
 !    deallocate(map_l)
 !
 !    !! Write the node coordinate data.
@@ -1058,16 +1058,16 @@ contains
 !    call allocate_collated_array (x, num_nodes)
 !    call allocate_collated_array (y, num_nodes)
 !    call allocate_collated_array (z, num_nodes)
-!    call collate (x, mesh%x(1,nodes))
-!    call collate (y, mesh%x(2,nodes))
-!    call collate (z, mesh%x(3,nodes))
+!    call collate (mesh%x(1,nodes), x)
+!    call collate (mesh%x(2,nodes), y)
+!    call collate (mesh%x(3,nodes), z)
 !    if (is_IOP) call gmvwrite_node_data_f (num_nodes, x, y, z)
 !    deallocate(x, y, z)
 !
 !    !! Collate the surface face node array, ...
 !    num_faces = global_sum(size(faces))
 !    allocate(fnode(size(mesh%fnode,dim=1),num_faces))
-!    call collate (fnode, mesh%node_ip%global_index(mesh%fnode(:,faces)))
+!    call collate (mesh%node_ip%global_index(mesh%fnode(:,faces)), fnode)
 !    !! and remap mesh node numbers to surface node numbers.
 !    if (is_IOP) then
 !      do j = 1, size(fnode,dim=2)
@@ -1098,21 +1098,21 @@ contains
 !
 !    !! Write mesh node numbers as the nodeids -- GMV uses these for display.
 !    call allocate_collated_array (map, num_nodes)
-!    !call collate (map, mesh%node_ip%global_index(nodes))  ! internal mesh node numbers
-!    call collate (map, mesh%xnode(nodes)) ! external mesh node numbers
+!    !call collate (mesh%node_ip%global_index(nodes), map)  ! internal mesh node numbers
+!    call collate (mesh%xnode(nodes), map) ! external mesh node numbers
 !    if (is_IOP) call gmvwrite_nodeids_f (map)
 !    deallocate (map, nodes)
 !
 !    !! Write the enclosure face indices as the cellids -- GMV uses these for display.
 !    call allocate_collated_array (map, num_faces)
-!    call collate (map, efaces)
+!    call collate (efaces, map)
 !    if (is_IOP) call gmvwrite_cellids_f (map)
 !    deallocate (map)
 !
 !    if (nPE > 1) then
 !      !! Write the face partitioning info.
 !      call allocate_collated_array (map, num_faces)
-!      call collate (map, spread(this_PE, dim=1, ncopies=size(faces)))
+!      call collate (spread(this_PE, dim=1, ncopies=size(faces)), map)
 !      if (is_IOP) then
 !        call gmvwrite_flag_header_f ()
 !        call gmvwrite_flag_name_f ('facepart', nPE, CELLDATA)

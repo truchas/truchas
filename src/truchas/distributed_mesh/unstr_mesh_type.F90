@@ -325,10 +325,10 @@ contains
     allocate(xarray(1+merge(offset,0,is_IOP)))
     offset = excl_prefix_sum(size(array_l))
     xarray(1) = 1
-    call collate (xarray(2:), xarray_l(2:)+offset)
+    call collate (xarray_l(2:)+offset, xarray(2:))
     offset = global_sum(size(array_l))  !! same comments as above
     allocate(array(merge(offset,0,is_IOP)))
-    call collate (array, array_l)
+    call collate (array_l, array)
     if (is_IOP) then
       ASSERT(size(xarray) >= 1)
       ASSERT(xarray(1) == 1)
@@ -341,13 +341,13 @@ contains
       integer :: j
       integer, allocatable :: array(:)
       allocate(array(merge(nPE,0,is_IOP)))
-      call collate (array, n)
+      call collate (n, array)
       if (is_IOP) then
         do j = 2, nPE
           array(j) = array(j) + array(j-1)
         end do
       end if
-      call distribute (psum, array)
+      call distribute (array, psum)
       psum = psum - n
     end function
   end subroutine get_global_ragged_array
@@ -368,9 +368,9 @@ contains
     integer, dimension(nPE) :: nnode_vec, nface_vec, ncell_vec
     integer, dimension(2,nPE) :: nvec, fvec, cvec
 
-    call collate (nnode_vec, this%nnode)
-    call collate (nface_vec, this%nface)
-    call collate (ncell_vec, this%ncell)
+    call collate (this%nnode, nnode_vec)
+    call collate (this%nface, nface_vec)
+    call collate (this%ncell, ncell_vec)
 
     call broadcast (nnode_vec)
     call broadcast (nface_vec)
@@ -385,16 +385,16 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (nvec(1,:), this%node_ip%offp_size)
-    call collate (nvec(2,:), this%node_ip%onp_size)
+    call collate (this%node_ip%offp_size, nvec(1,:))
+    call collate (this%node_ip%onp_size, nvec(2,:))
     call broadcast (nvec)
 
-    call collate (fvec(1,:), this%face_ip%offp_size)
-    call collate (fvec(2,:), this%face_ip%onp_size)
+    call collate (this%face_ip%offp_size, fvec(1,:))
+    call collate (this%face_ip%onp_size, fvec(2,:))
     call broadcast (fvec)
 
-    call collate (cvec(1,:), this%cell_ip%offp_size)
-    call collate (cvec(2,:), this%cell_ip%onp_size)
+    call collate (this%cell_ip%offp_size, cvec(1,:))
+    call collate (this%cell_ip%onp_size, cvec(2,:))
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')
@@ -438,7 +438,7 @@ contains
 
     !! Count the number of questionable boundary faces (on-process).
     nqf = count(mask(:this%nface_onP))
-    call collate(array, nqf)
+    call collate(nqf, array)
     if (is_IOP) nqf = sum(array)
     call broadcast(nqf)
 
@@ -455,7 +455,7 @@ contains
     else
       allocate(xc(3,0))
     end if
-    call distribute(n, array)
+    call distribute(array, n)
     allocate(xc_l(3,n))
 
     !! Collect the face centroid data.
@@ -468,7 +468,7 @@ contains
         xc_l(:,n) = sum(this%x(:,fnode),dim=2) / size(fnode)
       end associate
     end do
-    call collate(xc, xc_l)
+    call collate(xc_l, xc)
 
     !! Write the warning message.
     allocate(msg(3+size(xc,dim=2)))
@@ -517,7 +517,7 @@ contains
     end do
 
     !! Determine the nearest cell and its owner globally
-    call collate(array, min_dist)
+    call collate(min_dist, array)
     if (is_IOP) min_PE = minloc(array,dim=1)
     call broadcast(min_PE)
     nearest_cell = merge(min_cell, 0, (this_PE == min_PE))
@@ -552,7 +552,7 @@ contains
     end do
 
     !! Determine the nearest node and its owner globally.
-    call collate(array, min_dist)
+    call collate(min_dist, array)
     if (is_IOP) min_PE = minloc(array,dim=1)
     call broadcast(min_PE)
     nearest_node = merge(min_node, 0, (this_PE == min_PE))

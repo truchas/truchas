@@ -141,7 +141,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,1) == size(perm) )
         allocate(g_perm(n))
-        call collate (g_perm, perm)
+        call collate (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -157,7 +157,7 @@
           call reorder (g_sect, g_perm)
         end if
       end if
-      call distribute (array, g_sect)
+      call distribute (g_sect, array)
     end if
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
@@ -205,7 +205,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,2) == size(perm) )
         allocate(g_perm(n))
-        call collate (g_perm, perm)
+        call collate (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -222,7 +222,7 @@
           call reorder (g_sect, g_perm)
         end if
       end if
-      call distribute (array(i,:), g_sect)
+      call distribute (g_sect, array(i,:))
     end do INPUT
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
@@ -270,7 +270,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,3) == size(perm) )
         allocate(g_perm(n))
-        call collate (g_perm, perm)
+        call collate (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -288,7 +288,7 @@
             call reorder (g_sect, g_perm)
           end if
         end if
-        call distribute (array(i,j,:), g_sect)
+        call distribute (g_sect, array(i,j,:))
       end do
     end do INPUT
     deallocate(g_sect)

@@ -57,7 +57,7 @@ contains
     this%mesh => mesh
     n = global_sum(mesh%ncell_onP)
     allocate(this%perm(merge(n,0,is_IOP)))
-    call collate(this%perm, mesh%xcell(:mesh%ncell_onP))
+    call collate(mesh%xcell(:mesh%ncell_onP), this%perm)
     allocate(this%global_array(size(this%perm)))
   end subroutine
 

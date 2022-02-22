@@ -140,9 +140,9 @@ Contains
     if (mem_on) then
       !! Gather memory usage from each process.
       call get_process_size (vsize, rsize, dsize)
-      call collate (vsize_all, real(vsize)/1024)
-      call collate (rsize_all, real(rsize)/1024)
-      call collate (dsize_all, real(dsize)/1024)
+      call collate (real(vsize)/1024, vsize_all)
+      call collate (real(rsize)/1024, rsize_all)
+      call collate (real(dsize)/1024, dsize_all)
       !! Write it from the I/O process.
       If (is_IOP) then
         write(mem_lun,'(/,a)') comment

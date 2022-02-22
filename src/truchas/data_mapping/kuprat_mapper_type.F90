@@ -100,14 +100,14 @@ contains
     n = global_sum(size(dest))
     allocate(col_dest(merge(n,0,is_IOP)))
 
-    call collate(col_src, src)
+    call collate(src, col_src)
 
     if (is_IOP) call map_cell_field(col_src, col_dest, this%gmd, defval=defval, &
                                     reverse_order=reverse_order, &
                                     preserve_constants=preserve_constants, &
                                     exactly_conservative=exactly_conservative)
 
-    call distribute(dest, col_dest)
+    call distribute(col_dest, dest)
 
   end subroutine map_field
 
@@ -204,7 +204,7 @@ contains
       end associate
     end do
     allocate(tmp(merge(ncell,0,is_IOP)))
-    call collate(tmp, blockid)
+    call collate(blockid, tmp)
     call move_alloc(tmp, outmesh%block_elt)
 
   end subroutine unstr_to_gm_mesh

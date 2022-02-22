@@ -62,7 +62,7 @@ contains
     integer :: k
     allocate(mesh_collate_vertex(8,merge(ncells_tot,0,is_IOP)))
     do k = 1, 8
-      call collate (mesh_collate_vertex(k,:), mesh%ngbr_vrtx_orig(k))
+      call collate (mesh%ngbr_vrtx_orig(k), mesh_collate_vertex(k,:))
     end do
   end function mesh_collate_vertex
 

@@ -167,7 +167,7 @@ contains
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: x(:,:)
     allocate(x(size(this%x,1),merge(this%node_ip%global_size,0,is_IOP)))
-    call collate (x, this%x(:,:this%nnode_onP))
+    call collate (this%x(:,:this%nnode_onP), x)
   end subroutine get_global_x_array
 
   !! Returns the global cell volume array for the mesh.  The collated volume
@@ -177,7 +177,7 @@ contains
     class(base_mesh), intent(in) :: this
     real(r8), allocatable, intent(out) :: volume(:)
     allocate(volume(merge(this%cell_ip%global_size,0,is_IOP)))
-    call collate (volume, this%volume(:this%ncell_onP))
+    call collate (this%volume(:this%ncell_onP), volume)
   end subroutine get_global_volume_array
 
 end module base_mesh_class

@@ -157,7 +157,7 @@ contains
     if (.not.fatal) return
 
     allocate(rstat(merge(nPE, 0, is_IOP)))
-    call collate(rstat, stat)
+    call collate(stat, rstat)
     stat = 1
 
     i = global_maxval(len(errmsg))
@@ -165,7 +165,7 @@ contains
     allocate(character(i) :: tmp)
     if (.not.allocated(errmsg)) errmsg = ''
     tmp(:) = errmsg
-    call collate(rerrmsg, tmp)
+    call collate(tmp, rerrmsg)
 
     if (this_PE == IO_PE) then
       errmsg = 'Incomplete body specification. Body missing in element blocks'

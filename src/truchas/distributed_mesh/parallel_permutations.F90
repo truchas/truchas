@@ -164,11 +164,11 @@ contains
 
     !! Assemble the 1-labeling-to-external permutation vector.
     allocate(p1(merge(n,0,is_iop)))
-    call collate (p1, dp1)
+    call collate (dp1, p1)
 
     !! Assemble the 2-labeling-to-external permutation vector.
     allocate(p2(merge(n,0,is_iop)))
-    call collate (p2, dp2)
+    call collate (dp2, p2)
 
     !! Construct the permutation from the 1-to-2 labeling.
     if (is_IOP) then
@@ -180,8 +180,8 @@ contains
     end if
 
     !! Form the partition block-size arrays inferred from the two labelings.
-    call collate (bsize1, size(dp1))
-    call collate (bsize2, size(dp2))
+    call collate (size(dp1), bsize1)
+    call collate (size(dp2), bsize2)
 
     !! Create the 1-to-2 parallel permutation structure.
     call create_par_perm (pp12, p2, bsize1, bsize2)
@@ -212,12 +212,12 @@ contains
     !! Assemble the 1-labeling-to-external mapping vector M1.
     n = global_sum(size(dm1))
     allocate(m1(merge(n,0,is_iop)))
-    call collate (m1, dm1)
+    call collate (dm1, m1)
 
     !! Assemble the 2-labeling-to-external mapping vector M2.
     n = global_sum(size(dm2))
     allocate(m2(merge(n,0,is_iop)))
-    call collate (m2, dm2)
+    call collate (dm2, m2)
 
     !! Overwrite M1 with the 1-to-2-labeling mapping.
     !! Zero values in M1 mark 1-labels without a corresponding 2-label.
@@ -239,8 +239,8 @@ contains
     end if
 
     !! Form the partition block-size arrays inferred from the two labelings.
-    call collate (bsize1, size(dm1))
-    call collate (bsize2, size(dm2))
+    call collate (size(dm1), bsize1)
+    call collate (size(dm2), bsize2)
 
     !! Create the 1-to-2 parallel permutation structure.
     call create_par_perm_var (pp12, m1, bsize1, bsize2)

@@ -65,7 +65,7 @@ contains
 
     !! Coloring of the enclosure patches from the block-row matrix partitioning
     allocate(color_p(merge(this%vf%npatch_tot,0,is_IOP)))
-    call collate(bsize, this%vf%npatch)
+    call collate(this%vf%npatch, bsize)
     if (is_IOP) then
       offset = 0
       do n = 1, nPE
@@ -81,18 +81,18 @@ contains
     !! Subordinate face renumbering (new-to-old face map)
     allocate(face_map(merge(this%nface_tot,0,is_IOP)))
     if (is_IOP) call blocked_coloring_map(color, bsize, face_map)
-    call distribute(this%nface, bsize)
+    call distribute(bsize, this%nface)
     allocate(this%face_map(this%nface))
-    call distribute(this%face_map, face_map)
+    call distribute(face_map, this%face_map)
 
     !! Face-to-patch map (reorder, distribute)
     if (is_IOP) call reorder(f2p_map, face_map)
     allocate(this%f2p_map(this%nface))
-    call distribute(this%f2p_map, f2p_map)
+    call distribute(f2p_map, this%f2p_map)
     deallocate(f2p_map)
 
     !! Convert global patch indices to local
-    call collate(bsize, this%vf%npatch)
+    call collate(this%vf%npatch, bsize)
     call broadcast(bsize)
     offset = sum(bsize(1:this_PE-1))
     this%f2p_map = this%f2p_map - offset
@@ -106,7 +106,7 @@ contains
       call reorder(w, face_map)
     end if
     allocate(this%w(this%nface))
-    call distribute(this%w, w)
+    call distribute(w, this%w)
     deallocate(w)
 
     !! Expand the patch-based ambient view factors into the face-based version

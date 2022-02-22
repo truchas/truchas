@@ -877,7 +877,7 @@ CONTAINS
       n = global_sum(list%n)
       m = global_sum(list%m)
       allocate(glist(merge(n,0,is_iop)))
-      call collate (glist, list%array(:list%n))
+      call collate (list%array(:list%n), glist)
       !if (is_IOP) message(1) = trim(message(1)) // list_to_string(glist,m)
       if (is_IOP) call append_list_to_string (glist, m, message(1))
       call TLS_error (message)

@@ -125,188 +125,188 @@ module parallel_communication
   end interface
 
   interface distribute
-    module subroutine dist_i1_0(scalar_out, scalarv_in)
-      integer(int8), intent(out) :: scalar_out
-      integer(int8), intent(in)  :: scalarv_in(:)
+    module subroutine dist_i1_0(src, dest)
+      integer(int8), intent(in)  :: src(:)
+      integer(int8), intent(out) :: dest
     end subroutine
-    module subroutine dist_i4_0(scalar_out, scalarv_in)
-      integer(int32), intent(out) :: scalar_out
-      integer(int32), intent(in)  :: scalarv_in(:)
+    module subroutine dist_i4_0(src, dest)
+      integer(int32), intent(in)  :: src(:)
+      integer(int32), intent(out) :: dest
     end subroutine
-    module subroutine dist_i8_0(scalar_out, scalarv_in)
-      integer(int64), intent(out) :: scalar_out
-      integer(int64), intent(in)  :: scalarv_in(:)
+    module subroutine dist_i8_0(src, dest)
+      integer(int64), intent(in)  :: src(:)
+      integer(int64), intent(out) :: dest
     end subroutine
-    module subroutine dist_r4_0(scalar_out, scalarv_in)
-      real(real32), intent(out) :: scalar_out
-      real(real32), intent(in)  :: scalarv_in(:)
+    module subroutine dist_r4_0(src, dest)
+      real(real32), intent(in)  :: src(:)
+      real(real32), intent(out) :: dest
     end subroutine
-    module subroutine dist_r8_0(scalar_out, scalarv_in)
-      real(real64), intent(out) :: scalar_out
-      real(real64), intent(in)  :: scalarv_in(:)
+    module subroutine dist_r8_0(src, dest)
+      real(real64), intent(in)  :: src(:)
+      real(real64), intent(out) :: dest
     end subroutine
-    module subroutine dist_log_0(scalar_out, scalarv_in)
-      logical, intent(out) :: scalar_out
-      logical, intent(in)  :: scalarv_in(:)
+    module subroutine dist_log_0(src, dest)
+      logical, intent(in)  :: src(:)
+      logical, intent(out) :: dest
     end subroutine
-    module subroutine dist_i1_1(vector_out, vector_in)
-      integer(int8), intent(out) :: vector_out(:)
-      integer(int8), intent(in)  :: vector_in(:)
+    module subroutine dist_i1_1(src, dest)
+      integer(int8), intent(in)  :: src(:)
+      integer(int8), intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_i4_1(vector_out, vector_in)
-      integer(int32), intent(out) :: vector_out(:)
-      integer(int32), intent(in)  :: vector_in(:)
+    module subroutine dist_i4_1(src, dest)
+      integer(int32), intent(in)  :: src(:)
+      integer(int32), intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_i8_1(vector_out, vector_in)
-      integer(int64), intent(out) :: vector_out(:)
-      integer(int64), intent(in)  :: vector_in(:)
+    module subroutine dist_i8_1(src, dest)
+      integer(int64), intent(in)  :: src(:)
+      integer(int64), intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_r4_1(vector_out, vector_in)
-      real(real32), intent(out) :: vector_out(:)
-      real(real32), intent(in)  :: vector_in(:)
+    module subroutine dist_r4_1(src, dest)
+      real(real32), intent(in)  :: src(:)
+      real(real32), intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_r8_1(vector_out, vector_in)
-      real(real64), intent(out) :: vector_out(:)
-      real(real64), intent(in)  :: vector_in(:)
+    module subroutine dist_r8_1(src, dest)
+      real(real64), intent(in)  :: src(:)
+      real(real64), intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_log_1(vector_out, vector_in)
-      logical, intent(out) :: vector_out(:)
-      logical, intent(in)  :: vector_in(:)
+    module subroutine dist_log_1(src, dest)
+      logical, intent(in)  :: src(:)
+      logical, intent(out) :: dest(:)
     end subroutine
-    module subroutine dist_i1_2(vector_out, vector_in)
-      integer(int8), intent(out) :: vector_out(:,:)
-      integer(int8), intent(in)  :: vector_in(:,:)
+    module subroutine dist_i1_2(src, dest)
+      integer(int8), intent(in)  :: src(:,:)
+      integer(int8), intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_i4_2(vector_out, vector_in)
-      integer(int32), intent(out) :: vector_out(:,:)
-      integer(int32), intent(in)  :: vector_in(:,:)
+    module subroutine dist_i4_2(src, dest)
+      integer(int32), intent(in)  :: src(:,:)
+      integer(int32), intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_i8_2(vector_out, vector_in)
-      integer(int64), intent(out) :: vector_out(:,:)
-      integer(int64), intent(in)  :: vector_in(:,:)
+    module subroutine dist_i8_2(src, dest)
+      integer(int64), intent(in)  :: src(:,:)
+      integer(int64), intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_r4_2(vector_out, vector_in)
-      real(real32), intent(out) :: vector_out(:,:)
-      real(real32), intent(in)  :: vector_in(:,:)
+    module subroutine dist_r4_2(src, dest)
+      real(real32), intent(in)  :: src(:,:)
+      real(real32), intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_r8_2(vector_out, vector_in)
-      real(real64), intent(out) :: vector_out(:,:)
-      real(real64), intent(in)  :: vector_in(:,:)
+    module subroutine dist_r8_2(src, dest)
+      real(real64), intent(in)  :: src(:,:)
+      real(real64), intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_log_2(vector_out, vector_in)
-      logical, intent(out) :: vector_out(:,:)
-      logical, intent(in)  :: vector_in(:,:)
+    module subroutine dist_log_2(src, dest)
+      logical, intent(in)  :: src(:,:)
+      logical, intent(out) :: dest(:,:)
     end subroutine
-    module subroutine dist_i1_3(vector_out, vector_in)
-      integer(int8), intent(out) :: vector_out(:,:,:)
-      integer(int8), intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_i1_3(src, dest)
+      integer(int8), intent(in)  :: src(:,:,:)
+      integer(int8), intent(out) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_i4_3(vector_out, vector_in)
-      integer(int32), intent(out) :: vector_out(:,:,:)
-      integer(int32), intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_i4_3(src, dest)
+      integer(int32), intent(in)  :: src(:,:,:)
+      integer(int32), intent(out) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_i8_3(vector_out, vector_in)
-      integer(int64), intent(out) :: vector_out(:,:,:)
-      integer(int64), intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_i8_3(src, dest)
+      integer(int64), intent(in)  :: src(:,:,:)
+      integer(int64), intent(out) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_r4_3(vector_out, vector_in)
-      real(real32), intent(out) :: vector_out(:,:,:)
-      real(real32), intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_r4_3(src, dest)
+      real(real32), intent(in)  :: src(:,:,:)
+      real(real32), intent(out) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_r8_3(vector_out, vector_in)
-      real(real64), intent(out) :: vector_out(:,:,:)
-      real(real64), intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_r8_3(src, dest)
+      real(real64), intent(in)  :: src(:,:,:)
+      real(real64), intent(out) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_log_3(vector_out, vector_in)
-      logical, intent(out) :: vector_out(:,:,:)
-      logical, intent(in)  :: vector_in(:,:,:)
+    module subroutine dist_log_3(src, dest)
+      logical, intent(in)  :: src(:,:,:)
+      logical, intent(out) :: dest(:,:,:)
     end subroutine
   end interface
 
   interface collate
-    module subroutine coll_i1_0(scalarv_out, scalar_in)
-      integer(int8), intent(inout) :: scalarv_out(:)
-      integer(int8), intent(in)  :: scalar_in
+    module subroutine coll_i1_0(src, dest)
+      integer(int8), intent(in)  :: src
+      integer(int8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i4_0(scalarv_out, scalar_in)
-      integer(int32), intent(inout) :: scalarv_out(:)
-      integer(int32), intent(in)  :: scalar_in
+    module subroutine coll_i4_0(src, dest)
+      integer(int32), intent(in)  :: src
+      integer(int32), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i8_0(scalarv_out, scalar_in)
-      integer(int64), intent(inout) :: scalarv_out(:)
-      integer(int64), intent(in)  :: scalar_in
+    module subroutine coll_i8_0(src, dest)
+      integer(int64), intent(in)  :: src
+      integer(int64), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r4_0(scalarv_out, scalar_in)
-      real(real32), intent(inout) :: scalarv_out(:)
-      real(real32), intent(in)  :: scalar_in
+    module subroutine coll_r4_0(src, dest)
+      real(real32), intent(in)  :: src
+      real(real32), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r8_0(scalarv_out, scalar_in)
-      real(real64), intent(inout) :: scalarv_out(:)
-      real(real64), intent(in)  :: scalar_in
+    module subroutine coll_r8_0(src, dest)
+      real(real64), intent(in)  :: src
+      real(real64), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_log_0(scalarv_out, scalar_in)
-      logical, intent(inout) :: scalarv_out(:)
-      logical, intent(in)  :: scalar_in
+    module subroutine coll_log_0(src, dest)
+      logical, intent(in)  :: src
+      logical, intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_char_0(scalarv_out, scalar_in)
-      character(*), intent(inout) :: scalarv_out(:)
-      character(*), intent(in)  :: scalar_in
+    module subroutine coll_char_0(src, dest)
+      character(*), intent(in)  :: src
+      character(*), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i1_1(vector_out, vector_in)
-      integer(int8), intent(inout) :: vector_out(:)
-      integer(int8), intent(in)  :: vector_in(:)
+    module subroutine coll_i1_1(src, dest)
+      integer(int8), intent(in)  :: src(:)
+      integer(int8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i4_1(vector_out, vector_in)
-      integer(int32), intent(inout) :: vector_out(:)
-      integer(int32), intent(in)  :: vector_in(:)
+    module subroutine coll_i4_1(src, dest)
+      integer(int32), intent(in)  :: src(:)
+      integer(int32), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i8_1(vector_out, vector_in)
-      integer(int64), intent(inout) :: vector_out(:)
-      integer(int64), intent(in)  :: vector_in(:)
+    module subroutine coll_i8_1(src, dest)
+      integer(int64), intent(in)  :: src(:)
+      integer(int64), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r4_1(vector_out, vector_in)
-      real(real32), intent(inout) :: vector_out(:)
-      real(real32), intent(in)  :: vector_in(:)
+    module subroutine coll_r4_1(src, dest)
+      real(real32), intent(in)  :: src(:)
+      real(real32), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r8_1(vector_out, vector_in)
-      real(real64), intent(inout) :: vector_out(:)
-      real(real64), intent(in)  :: vector_in(:)
+    module subroutine coll_r8_1(src, dest)
+      real(real64), intent(in)  :: src(:)
+      real(real64), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_log_1(vector_out, vector_in)
-      logical, intent(inout) :: vector_out(:)
-      logical, intent(in)  :: vector_in(:)
+    module subroutine coll_log_1(src, dest)
+      logical, intent(in)  :: src(:)
+      logical, intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_char_1(vector_out, vector_in)
-      character(*), intent(inout) :: vector_out(:)
-      character(*), intent(in)  :: vector_in(:)
+    module subroutine coll_char_1(src, dest)
+      character(*), intent(in)  :: src(:)
+      character(*), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i1_2(vector_out, vector_in)
-      integer(int8), intent(inout) :: vector_out(:,:)
-      integer(int8), intent(in)  :: vector_in(:,:)
+    module subroutine coll_i1_2(src, dest)
+      integer(int8), intent(in)  :: src(:,:)
+      integer(int8), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_i4_2(vector_out, vector_in)
-      integer(int32), intent(inout) :: vector_out(:,:)
-      integer(int32), intent(in)  :: vector_in(:,:)
+    module subroutine coll_i4_2(src, dest)
+      integer(int32), intent(in)  :: src(:,:)
+      integer(int32), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_i8_2(vector_out, vector_in)
-      integer(int64), intent(inout) :: vector_out(:,:)
-      integer(int64), intent(in)  :: vector_in(:,:)
+    module subroutine coll_i8_2(src, dest)
+      integer(int64), intent(in)  :: src(:,:)
+      integer(int64), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_r4_2(vector_out, vector_in)
-      real(real32), intent(inout) :: vector_out(:,:)
-      real(real32), intent(in)  :: vector_in(:,:)
+    module subroutine coll_r4_2(src, dest)
+      real(real32), intent(in)  :: src(:,:)
+      real(real32), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_r8_2(vector_out, vector_in)
-      real(real64), intent(inout) :: vector_out(:,:)
-      real(real64), intent(in)  :: vector_in(:,:)
+    module subroutine coll_r8_2(src, dest)
+      real(real64), intent(in)  :: src(:,:)
+      real(real64), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_log_2(vector_out, vector_in)
-      logical, intent(inout) :: vector_out(:,:)
-      logical, intent(in)  :: vector_in(:,:)
+    module subroutine coll_log_2(src, dest)
+      logical, intent(in)  :: src(:,:)
+      logical, intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_char_2(vector_out, vector_in)
-      character(*), intent(inout) :: vector_out(:,:)
-      character(*), intent(in)  :: vector_in(:,:)
+    module subroutine coll_char_2(src, dest)
+      character(*), intent(in)  :: src(:,:)
+      character(*), intent(inout) :: dest(:,:)
     end subroutine
   end interface
 

@@ -162,7 +162,7 @@ contains
     n = global_sum(size(dest))
     allocate(col_dest(merge(n,0,is_IOP)))
 
-    call collate(col_src, src)
+    call collate(src, col_src)
 
     if (is_IOP) then
       col_dest = defval
@@ -180,7 +180,7 @@ contains
       call ieee_set_halting_mode(ieee_invalid, ieee_invalid_mode)
     end if
 
-    call distribute(dest, col_dest)
+    call distribute(col_dest, dest)
 
   end subroutine map_field
 
@@ -247,7 +247,7 @@ contains
         end associate
       end do
       allocate(outmesh%cfdir, mold=outmesh%cface)
-      call collate(outmesh%cfdir, cfdir)
+      call collate(cfdir, outmesh%cfdir)
     end block
 
     block !! Convert CELLS_SET_MASK info to the BLOCKID array.
@@ -261,7 +261,7 @@ contains
         end associate
       end do
       allocate(outmesh%blockid(merge(outmesh%num_cell,0,is_IOP)))
-      call collate(outmesh%blockid, blockid)
+      call collate(blockid, outmesh%blockid)
     end block
 
   end subroutine unstr_to_serial
@@ -300,7 +300,7 @@ contains
       end do
       array(1:size(cnode)) => cnode
       allocate(outmesh%cnode(merge(4*outmesh%num_cell,0,is_IOP)))
-      call collate(outmesh%cnode, inmesh%node_ip%global_index(array))
+      call collate(inmesh%node_ip%global_index(array), outmesh%cnode)
     end block
 
     !! XCNODE
@@ -315,7 +315,7 @@ contains
     allocate(outmesh%cface(merge(4*outmesh%num_cell,0,is_IOP)))
     associate (cface => inmesh%cface(:,:inmesh%ncell_onP))
       array(1:size(cface)) => cface
-      call collate(outmesh%cface, inmesh%face_ip%global_index(array))
+      call collate(inmesh%face_ip%global_index(array), outmesh%cface)
     end associate
 
     !! XCFACE
@@ -330,7 +330,7 @@ contains
     allocate(outmesh%fnode(merge(3*outmesh%num_face,0,is_IOP)))
     associate (fnode => inmesh%fnode(:,:inmesh%nface_onP))
       array(1:size(fnode)) => fnode
-      call collate(outmesh%fnode, inmesh%node_ip%global_index(array))
+      call collate(inmesh%node_ip%global_index(array), outmesh%fnode)
     end associate
 
     !! XFNODE
@@ -356,11 +356,11 @@ contains
       end do
       allocate(outmesh%cfdir, mold=outmesh%cface)
       array(1:size(cfdir)) => cfdir
-      call collate(outmesh%cfdir, array)
+      call collate(array, outmesh%cfdir)
     end block
 
     allocate(outmesh%blockid(merge(outmesh%num_cell,0,is_IOP)))
-    call collate(outmesh%blockid, inmesh%cblock(:inmesh%ncell_onP))
+    call collate(inmesh%cblock(:inmesh%ncell_onP), outmesh%blockid)
 
   end subroutine simpl_to_serial
 

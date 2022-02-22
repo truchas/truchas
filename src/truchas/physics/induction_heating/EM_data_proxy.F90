@@ -1019,16 +1019,16 @@ CONTAINS
 
     !! Collate the cell permutation array.
     allocate(cell_perm(merge(n,0,is_IOP)))
-    call collate (cell_perm, mesh%xcell(:mesh%ncell_onP))
+    call collate (mesh%xcell(:mesh%ncell_onP), cell_perm)
 
     !! Collate the cell-based MU array on the tet mesh, and restore it to the external order.
     allocate(col_mu(merge(n,0,is_IOP)))
-    call collate (col_mu, mu_q(:mesh%ncell_onP))
+    call collate (mu_q(:mesh%ncell_onP), col_mu)
     if (is_IOP) call reorder (col_mu, cell_perm, forward=.true.)
 
     !! Collate the cell-based SIGMA array on the tet mesh, and restore it to the external order.
     allocate(col_sigma(merge(n,0,is_IOP)))
-    call collate (col_sigma, sigma_q(:mesh%ncell_onP))
+    call collate (sigma_q(:mesh%ncell_onP), col_sigma)
     if (is_IOP) call reorder (col_sigma, cell_perm, forward=.true.)
 
     !! Write the data.

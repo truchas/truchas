@@ -204,17 +204,17 @@ contains
     ne_bitfield = any(bf1%chunk /= bf2%chunk)
   end function ne_bitfield
 
-  subroutine distribute_bitfield (vout, vin)
+  subroutine distribute_bitfield (vin, vout)
 
     use parallel_communication, only: distribute
 
-    type(bitfield), intent(out) :: vout(:)
     type(bitfield), intent(in)  :: vin(:)
+    type(bitfield), intent(out) :: vout(:)
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call distribute (vout%chunk(n), vin%chunk(n))
+      call distribute (vin%chunk(n), vout%chunk(n))
     end do
 
   end subroutine distribute_bitfield
@@ -260,7 +260,7 @@ contains
     integer :: n, p, tmp, array(nPE)
 
     do n = 0, NUM_CHUNK-1
-      call collate (array, bf%chunk(n))
+      call collate (bf%chunk(n), array)
       if (is_IOP) then
         tmp = array(1)
         do p = 2, nPE

@@ -117,17 +117,17 @@ contains
     !! Write the node coordinate data.
     n = merge(nnode, 0, is_IOP)
     allocate(x(n), y(n), z(n))
-    call collate (x, this%coord(1,:this%nnode_onP))
-    call collate (y, this%coord(2,:this%nnode_onP))
-    call collate (z, this%coord(3,:this%nnode_onP))
+    call collate (this%coord(1,:this%nnode_onP), x)
+    call collate (this%coord(2,:this%nnode_onP), y)
+    call collate (this%coord(3,:this%nnode_onP), z)
     if (is_IOP) call gmvwrite_node_data_f (nnode, x, y, z)
     deallocate(x, y, z)
 
     !! Write the cell data.
     allocate(fsize(merge(nface, 0, is_IOP)))
-    call collate (fsize, this%xface(2:this%nface+1)-this%xface(1:this%nface))
+    call collate (this%xface(2:this%nface+1)-this%xface(1:this%nface), fsize)
     allocate(fnode(merge(sum(fsize), 0, is_IOP)))
-    call collate (fnode, this%node_ip%global_index(this%fnode))
+    call collate (this%node_ip%global_index(this%fnode), fnode)
     if (is_IOP) then
       call gmvwrite_cell_header_f (nface)
       offset = 0
@@ -149,19 +149,19 @@ contains
 
     !! Write the node map as the nodeids -- GMV uses these for display.
     allocate(map(merge(nnode, 0, is_IOP)))
-    call collate (map, this%node_map(:this%nnode_onP))
+    call collate (this%node_map(:this%nnode_onP), map)
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write the face map as the cellids -- GMV uses these for display.
     allocate(map(merge(nface, 0, is_IOP)))
-    call collate (map, this%face_map)
+    call collate (this%face_map, map)
     if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
     !! Write the face block IDs as the cell material.
     allocate(map(merge(nface, 0, is_IOP)))
-    call collate (map, this%face_block)
+    call collate (this%face_block, map)
     if (is_IOP) then
       call gmvwrite_material_header_f (size(this%face_block_id), CELLDATA)
       do j = 1, size(this%face_block_id)
@@ -175,7 +175,7 @@ contains
     if (nPE > 1) then
       !! Write the face partitioning info.
       allocate(map(merge(nface, 0, is_IOP)))
-      call collate (map, spread(this_PE, dim=1, ncopies=this%nface))
+      call collate (spread(this_PE, dim=1, ncopies=this%nface), map)
       if (is_IOP) then
         call gmvwrite_flag_header_f ()
         call gmvwrite_flag_name_f ('par-part', nPE, CELLDATA)
@@ -198,7 +198,7 @@ contains
     real(r8), allocatable :: u_global(:)
     ASSERT(size(u) >= this%nface_onP)
     allocate(u_global(merge(this%face_ip%global_size,0,is_IOP)))
-    call collate (u_global, u(:this%nface_onP))
+    call collate (u(:this%nface_onP), u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
   end subroutine gmv_write_var
 

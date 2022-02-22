@@ -1101,8 +1101,8 @@ contains
     if (is_IOP) allocate(character(lmax) :: global_message(nPE))
     allocate(character(lmax) :: tmp)
     tmp(:) = errmsg_
-    call collate(global_message, tmp)
-    call collate(pe_stat, stat)
+    call collate(tmp, global_message)
+    call collate(stat, pe_stat)
     if (is_IOP) then
       errmsg_ = prefix_
       msgs: do i = 1, nPE

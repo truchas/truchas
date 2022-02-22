@@ -515,25 +515,25 @@ CONTAINS
 
     ! Collate the data onto the IO processor
     Local_Cells    => BC_Get_Cell(Local_Atlas)
-    call collate(Collated_Cells, Local_Cells)
+    call collate(Local_Cells, Collated_Cells)
 
     Local_Faces    => BC_Get_Face(Local_Atlas)
-    call collate(Collated_Faces, Local_Faces)
+    call collate(Local_Faces, Collated_Faces)
 
     Local_ValueIndex    => BC_Get_ValueIndex(Local_Atlas)
-    call collate(Collated_ValueIndex, Local_ValueIndex)
+    call collate(Local_ValueIndex, Collated_ValueIndex)
 
     Local_UseFunction    => BC_Get_UseFunction(Local_Atlas)
-    call collate(Collated_UseFunction, Local_UseFunction)
+    call collate(Local_UseFunction, Collated_UseFunction)
 
     Local_Values    => BC_Get_Values(Local_Atlas)
     do d = 1, BC_Get_DOF(Local_Atlas)
-       call collate(Collated_Values(d,:), Local_Values(d,:))
+       call collate(Local_Values(d,:), Collated_Values(d,:))
     end do
 
     Local_Positions    => BC_Get_Positions(Local_Atlas)
     do d = 1, SIZE(Local_Positions, 1)
-       call collate(Collated_Positions(d,:), Local_Positions(d,:))
+       call collate(Local_Positions(d,:), Collated_Positions(d,:))
     end do
 
     ! Now append it into the collated atlas

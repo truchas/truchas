@@ -404,7 +404,7 @@ CONTAINS
           end do NODE_LOOP
           ! Check to see if a node was found.
           if (global_any(node_found)) then
-             call collate (Collated_Nodes, bc_gnode)
+             call collate (bc_gnode, Collated_Nodes)
 !             node_found = .false.
              do j = 1, SIZE(Collated_Nodes)
                 if (Collated_Nodes(j) /= 0) then

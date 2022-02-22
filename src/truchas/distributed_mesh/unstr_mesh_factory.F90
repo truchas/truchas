@@ -1238,8 +1238,8 @@ contains
 
     !! Partition the links
     allocate(cell_psize(merge(nPE,0,is_IOP)), node_psize(merge(nPE,0,is_IOP)))
-    call collate(cell_psize, this%cell_ip%onp_size)
-    call collate(node_psize, this%node_ip%onp_size)
+    call collate(this%cell_ip%onp_size, cell_psize)
+    call collate(this%node_ip%onp_size, node_psize)
     if (is_IOP) then
       allocate(psize(nPE), perm(mesh%nlink), offP_size(nPE))
       call partition_links(lnhbr, cell_psize, mesh%xlnode, mesh%lnode, node_psize, psize, perm, offP_size, offP_index)
@@ -1309,7 +1309,7 @@ contains
 
     !! THIS%LINK_SET_MASK
     allocate(this%link_set_mask(this%nlink))
-    call distribute(this%link_set_mask(:this%nlink_onP), link_set_mask)
+    call distribute(link_set_mask, this%link_set_mask(:this%nlink_onP))
     call gather_boundary(this%link_ip, this%link_set_mask)
 
     !! THIS%LINK_CELL_ID
@@ -1449,7 +1449,7 @@ contains
 
     !! Reorder the global cell_set_mask to the internal cell ordering.
     allocate(cell_perm(merge(ncell_tot,0,is_IOP)))
-    call collate(cell_perm, this%xcell(:this%ncell_onP))
+    call collate(this%xcell(:this%ncell_onP), cell_perm)
     if (is_IOP) call reorder(cell_set_mask, cell_perm)
     deallocate(cell_perm)
 
@@ -1522,7 +1522,7 @@ contains
 
     !! Initialize the distributed face set mask (%FACE_SET_MASK)
     allocate(this%face_set_mask(this%nface))
-    call distribute(this%face_set_mask(:this%nface_onP), face_set_mask)
+    call distribute(face_set_mask, this%face_set_mask(:this%nface_onP))
     call gather_boundary(this%face_ip, this%face_set_mask)
     deallocate(face_set_mask)
 
