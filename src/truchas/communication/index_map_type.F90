@@ -337,77 +337,77 @@ module index_map_type
 
   interface
     module subroutine dist_i4_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:)
       integer(i4), intent(inout) :: dest(:)
     end subroutine
     module subroutine dist_i8_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:)
       integer(i8), intent(inout) :: dest(:)
     end subroutine
     module subroutine dist_r4_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:)
       real(r4), intent(inout) :: dest(:)
     end subroutine
     module subroutine dist_r8_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:)
       real(r8), intent(inout) :: dest(:)
     end subroutine
     module subroutine dist_dl_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:)
       logical, intent(inout) :: dest(:)
     end subroutine
     module subroutine dist_i4_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:)
       integer(i4), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine dist_i8_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:)
       integer(i8), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine dist_r4_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:)
       real(r4), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine dist_r8_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:)
       real(r8), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine dist_dl_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:)
       logical, intent(inout) :: dest(:,:)
     end subroutine
     module subroutine dist_i4_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:,:)
       integer(i4), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine dist_i8_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:,:)
       integer(i8), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine dist_r4_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:,:)
       real(r4), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine dist_r8_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:,:)
       real(r8), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine dist_dl_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:,:)
       logical, intent(inout) :: dest(:,:,:)
     end subroutine
@@ -415,77 +415,77 @@ module index_map_type
 
   interface
     module subroutine coll_i4_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:)
       integer(i4), intent(inout) :: dest(:)
     end subroutine
     module subroutine coll_i8_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:)
       integer(i8), intent(inout) :: dest(:)
     end subroutine
     module subroutine coll_r4_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:)
       real(r4), intent(inout) :: dest(:)
     end subroutine
     module subroutine coll_r8_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:)
       real(r8), intent(inout) :: dest(:)
     end subroutine
     module subroutine coll_dl_1(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:)
       logical, intent(inout) :: dest(:)
     end subroutine
     module subroutine coll_i4_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:)
       integer(i4), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine coll_i8_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:)
       integer(i8), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine coll_r4_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:)
       real(r4), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine coll_r8_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:)
       real(r8), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine coll_dl_2(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:)
       logical, intent(inout) :: dest(:,:)
     end subroutine
     module subroutine coll_i4_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:,:)
       integer(i4), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine coll_i8_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:,:)
       integer(i8), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine coll_r4_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:,:)
       real(r4), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine coll_r8_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:,:)
       real(r8), intent(inout) :: dest(:,:,:)
     end subroutine
     module subroutine coll_dl_3(this, src, dest)
-      class(index_map), intent(inout) :: this
+      class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:,:)
       logical, intent(inout) :: dest(:,:,:)
     end subroutine
@@ -493,13 +493,15 @@ module index_map_type
 
   interface
     module subroutine localize_index_array_serial_1(domain, g_index, range, l_index, stat)
-      class(index_map), intent(inout) :: domain, range
+      class(index_map), intent(in) :: domain
+      class(index_map), intent(inout) :: range
       integer, intent(in) :: g_index(:)
       integer, allocatable, intent(out) :: l_index(:)
       integer, intent(out), optional :: stat
     end subroutine
     module subroutine localize_index_array_serial_2(domain, g_index, range, l_index, stat)
-      class(index_map), intent(inout) :: domain, range
+      class(index_map), intent(in) :: domain
+      class(index_map), intent(inout) :: range
       integer, intent(in) :: g_index(:,:)
       integer, allocatable, intent(out) :: l_index(:,:)
       integer, intent(out), optional :: stat
@@ -515,7 +517,8 @@ module index_map_type
       integer, intent(out), optional :: stat
     end subroutine
     module subroutine localize_index_struct_serial(domain, g_count, g_index, range, l_count, l_index, stat)
-      class(index_map), intent(inout) :: domain, range
+      class(index_map), intent(in) :: domain
+      class(index_map), intent(inout) :: range
       integer, intent(in) :: g_index(:), g_count(:)
       integer, allocatable, intent(out) :: l_index(:), l_count(:)
       integer, intent(out), optional :: stat
@@ -545,6 +548,8 @@ contains
     this%first_gid = this%last_gid - this%onp_size + 1
     this%global_size = this%last_gid
     call MPI_Bcast(this%global_size, 1, MPI_INTEGER, this%nproc-1, this%comm, ierr)
+
+    call add_dist_coll_info(this)
 
   end subroutine
 
@@ -594,7 +599,7 @@ contains
   subroutine init_ragged(this, domain, g_count)
 
     class(index_map), intent(out) :: this
-    type(index_map), intent(inout) :: domain
+    type(index_map), intent(in) :: domain
     integer, intent(in) :: g_count(:)
 
     integer :: n, i, j, ierr, nmax
