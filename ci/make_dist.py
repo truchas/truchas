@@ -86,12 +86,12 @@ run("cp %s/ci/README-binary-Linux.md %s/README.md" % \
 
 # Copy Python
 run("cp /home/swuser/ext/python-install/bin/python %s/bin/" % (dist))
-run("cp -r /home/swuser/ext/python-install/lib/python3.6 %s/lib/" % (dist))
+run("cp -r /home/swuser/ext/python-install/lib/python3.9 %s/lib/" % (dist))
 run("cp write-restart.py %s/bin" % (dist))
-run("cp -r ../lib/python3.6/site-packages/truchas %s/lib/python3.6/site-packages/" % (dist))
-run("cp %s/ci/TruchasConfigInstall-binary-Linux.py %s/lib/python3.6/site-packages/truchas/TruchasConfigInstall.py" % (root_dir, dist))
-run("cp -r ../lib/python3.6/site-packages/fortran_write %s/lib/python3.6/site-packages/" % (dist))
-run("cp -r ../lib/python3.6/site-packages/grid_mapping %s/lib/python3.6/site-packages/" % (dist))
+run("cp -r ../lib/python3.9/site-packages/truchas %s/lib/python3.9/site-packages/" % (dist))
+run("cp %s/ci/TruchasConfigInstall-binary-Linux.py %s/lib/python3.9/site-packages/truchas/TruchasConfigInstall.py" % (root_dir, dist))
+run("cp -r ../lib/python3.9/site-packages/fortran_write %s/lib/python3.9/site-packages/" % (dist))
+run("cp -r ../lib/python3.9/site-packages/grid_mapping %s/lib/python3.9/site-packages/" % (dist))
 run("cp -r ../lib/libfwrite.so %s/lib/" % (dist))
 run("cp -r ../lib/libgridmap.so %s/lib/" % (dist))
 for lib in ["libfwrite.so", "libgridmap.so"]:

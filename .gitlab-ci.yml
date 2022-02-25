@@ -8,7 +8,7 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.2
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
@@ -33,7 +33,7 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.2
   script:
     - source /opt/rh/devtoolset-9/enable
     - bash ci/build.sh
@@ -46,7 +46,7 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-centos7-1.8.2
   script:
   script:
     - source /opt/rh/devtoolset-9/enable
@@ -60,8 +60,9 @@ test truchas GFortran (Debug):
   stage: build
   needs: []
   tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.8.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.8.1
   script:
+    - source /opt/rh/devtoolset-11/enable
       # Add openmpi executables into path
     - export PATH=$HOME/ext/bin/:$PATH
     - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
@@ -87,8 +88,9 @@ test truchas GFortran (Release):
   stage: build
   needs: []
   tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.8.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.8.1
   script:
+    - source /opt/rh/devtoolset-11/enable
       # Add openmpi executables into path
     - export PATH=$HOME/ext/bin/:$PATH
     - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
