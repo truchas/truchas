@@ -24,13 +24,13 @@
 #unset(_find_netcdf_arg)
 
 find_path(EXODUS_INCLUDE_DIR exodusII.h)
-find_library(EXODUS_LIBRARY exoIIv2c)
+find_library(EXODUS_LIBRARY exodus)
 
 # Identify the ExodusII API version (not exactly the library version)
 if(EXODUS_INCLUDE_DIR)
   set(exodusii_h ${EXODUS_INCLUDE_DIR}/exodusII.h)
   include(SearchHeaderFile)
-  search_header_file(${exodusii_h} "EX_API_VERS_NODOT" EXODUS_VERSION)
+  search_header_file(${exodusii_h} "EX_API_VERS" EXODUS_VERSION)
 endif()
 
 # Set EXODUS_FOUND to TRUE of the REQUIRED variables have been set.
