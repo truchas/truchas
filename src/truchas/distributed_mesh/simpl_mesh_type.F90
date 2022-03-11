@@ -174,47 +174,47 @@ contains
 
   !! Creates the global CNODE array on the IO process, 0-sized array on others.
   subroutine get_global_cnode_array (this, cnode)
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cnode(:,:)
     allocate(cnode(size(this%cnode,1),merge(this%cell_imap%global_size,0,is_IOP)))
-    call collate (this%node_imap%global_index(this%cnode(:,:this%ncell_onP)), cnode)
+    call gather (this%node_imap%global_index(this%cnode(:,:this%ncell_onP)), cnode)
   end subroutine get_global_cnode_array
 
   !! Creates the global CEDGE array on the IO process, 0-sized array on others.
   subroutine get_global_cedge_array (this, cedge)
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cedge(:,:)
     allocate(cedge(size(this%cedge,1),merge(this%cell_imap%global_size,0,is_IOP)))
-    call collate (this%edge_imap%global_index(this%cedge(:,:this%ncell_onP)), cedge)
+    call gather (this%edge_imap%global_index(this%cedge(:,:this%ncell_onP)), cedge)
   end subroutine get_global_cedge_array
 
   !! Creates the global CFACE array on the IO process, 0-sized array on others.
   subroutine get_global_cface_array (this, cface)
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cface(:,:)
     allocate(cface(size(this%cface,1),merge(this%cell_imap%global_size,0,is_IOP)))
-    call collate (this%face_imap%global_index(this%cface(:,:this%ncell_onP)), cface)
+    call gather (this%face_imap%global_index(this%cface(:,:this%ncell_onP)), cface)
   end subroutine get_global_cface_array
 
   !! Creates the global FNODE array on the IO process, 0-sized array on others.
   subroutine get_global_fnode_array (this, fnode)
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: fnode(:,:)
     allocate(fnode(size(this%fnode,1),merge(this%face_imap%global_size,0,is_IOP)))
-    call collate (this%node_imap%global_index(this%fnode(:,:this%ncell_onP)), fnode)
+    call gather (this%node_imap%global_index(this%fnode(:,:this%ncell_onP)), fnode)
   end subroutine get_global_fnode_array
 
   !! Creates the global CBLOCK array on the IO process; 0-sized array on others.
   subroutine get_global_cblock_array (this, cblock)
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     class(simpl_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cblock(:)
     allocate(cblock(merge(this%cell_imap%global_size,0,is_IOP)))
-    call collate (this%cblock(:this%ncell_onP), cblock)
+    call gather (this%cblock(:this%ncell_onP), cblock)
   end subroutine get_global_cblock_array
 
   !! Writes to the tty and output file a profile of the distributed mesh:
@@ -223,7 +223,7 @@ contains
 
   subroutine write_profile (this)
 
-    use parallel_communication, only: nPE, broadcast, collate
+    use parallel_communication, only: nPE, broadcast, gather
     use truchas_logging_services
 
     class(simpl_mesh), intent(in) :: this
@@ -233,10 +233,10 @@ contains
     integer, dimension(nPE) :: nnode_vec, nedge_vec, nface_vec, ncell_vec
     integer, dimension(2,nPE) :: nvec, evec, fvec, cvec
 
-    call collate (this%nnode, nnode_vec)
-    call collate (this%nedge, nedge_vec)
-    call collate (this%nface, nface_vec)
-    call collate (this%ncell, ncell_vec)
+    call gather (this%nnode, nnode_vec)
+    call gather (this%nedge, nedge_vec)
+    call gather (this%nface, nface_vec)
+    call gather (this%ncell, ncell_vec)
 
     call broadcast (nnode_vec)
     call broadcast (nedge_vec)
@@ -252,20 +252,20 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (this%node_imap%offp_size, nvec(1,:))
-    call collate (this%node_imap%onp_size, nvec(2,:))
+    call gather (this%node_imap%offp_size, nvec(1,:))
+    call gather (this%node_imap%onp_size, nvec(2,:))
     call broadcast (nvec)
 
-    call collate (this%edge_imap%offp_size, evec(1,:))
-    call collate (this%edge_imap%onp_size, evec(2,:))
+    call gather (this%edge_imap%offp_size, evec(1,:))
+    call gather (this%edge_imap%onp_size, evec(2,:))
     call broadcast (evec)
 
-    call collate (this%face_imap%offp_size, fvec(1,:))
-    call collate (this%face_imap%onp_size, fvec(2,:))
+    call gather (this%face_imap%offp_size, fvec(1,:))
+    call gather (this%face_imap%onp_size, fvec(2,:))
     call broadcast (fvec)
 
-    call collate (this%cell_imap%offp_size, cvec(1,:))
-    call collate (this%cell_imap%onp_size, cvec(2,:))
+    call gather (this%cell_imap%offp_size, cvec(1,:))
+    call gather (this%cell_imap%onp_size, cvec(2,:))
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')
@@ -283,7 +283,7 @@ contains
 
   subroutine write_faces_vtk(this, mask, file, comment)
 
-    use parallel_communication, only: nPE, is_IOP, this_PE, broadcast, collate, global_sum
+    use parallel_communication, only: nPE, is_IOP, this_PE, broadcast, gather, global_sum
 
     class(simpl_mesh), intent(in) :: this
     logical,      intent(in) :: mask(:) ! faces to be written
@@ -311,7 +311,7 @@ contains
     call this%node_imap%scatter_offp_max(map)
 
     n = sum(map(:this%nnode_onP))
-    call collate(n, sizes)
+    call gather(n, sizes)
     call broadcast(sizes)
     ntot = sum(sizes)
     offset = sum(sizes(:this_PE-1)) ! node numbering offset
@@ -329,7 +329,7 @@ contains
     end do
     call this%node_imap%gather_offp(map)
     allocate(x_all(3,merge(ntot,0,is_IOP)))
-    call collate(x_loc, x_all)
+    call gather(x_loc, x_all)
 
     !! Write the node coordinate data.
     if (is_IOP) then
@@ -351,7 +351,7 @@ contains
       end if
     end do
     allocate(fnode_all(3,merge(ntot,0,is_IOP)))
-    call collate(fnode_loc, fnode_all)
+    call gather(fnode_loc, fnode_all)
 
     !! Write the face connectivity data.
     if (is_IOP) then

@@ -56,13 +56,13 @@ contains
   !! Copy of function from MESH_MODULE
   function mesh_collate_vertex (mesh)
     use common_impl, only: ncells_tot
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     type(mesh_connectivity), intent(in) :: mesh(:)
     integer, pointer :: mesh_collate_vertex(:,:)
     integer :: k
     allocate(mesh_collate_vertex(8,merge(ncells_tot,0,is_IOP)))
     do k = 1, 8
-      call collate (mesh%ngbr_vrtx_orig(k), mesh_collate_vertex(k,:))
+      call gather (mesh%ngbr_vrtx_orig(k), mesh_collate_vertex(k,:))
     end do
   end function mesh_collate_vertex
 

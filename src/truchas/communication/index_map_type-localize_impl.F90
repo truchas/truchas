@@ -29,7 +29,7 @@ contains
     end if
     ASSERT(size(g_index) >= merge(domain%global_size,0,domain%is_root))
     allocate(l_index(domain%local_size))
-    call domain%distribute(g_index, l_index)
+    call domain%scatter(g_index, l_index)
     if (allocated(domain%offp_index)) call domain%gather_offp(l_index)
     call range%localize_index_array(l_index, stat)
   end subroutine
@@ -51,7 +51,7 @@ contains
       return
     end if
     allocate(l_index(size(g_index,1),domain%local_size))
-    call domain%distribute(g_index, l_index)
+    call domain%scatter(g_index, l_index)
     if (allocated(domain%offp_index)) call domain%gather_offp(l_index)
     call range%localize_index_array(l_index, stat)
   end subroutine
@@ -173,7 +173,7 @@ contains
     end if
 
     allocate(l_count(domain%local_size))
-    call domain%distribute(g_count, l_count)
+    call domain%scatter(g_count, l_count)
     if (allocated(domain%offp_index)) call domain%gather_offp(l_count)
 
     call flat_map%init(domain, g_count)
@@ -182,7 +182,7 @@ contains
     !! The end result is a ragged g_index distributed according to the domain
     !! index map, including ragged off-process indices, if any.
     allocate(l_index(flat_map%local_size))
-    call flat_map%distribute(g_index, l_index)
+    call flat_map%scatter(g_index, l_index)
     if (allocated(flat_map%offp_index)) call flat_map%gather_offp(l_index)
 
     call range%localize_index_array(l_index, stat)

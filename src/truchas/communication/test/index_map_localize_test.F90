@@ -62,11 +62,11 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
 
     g_output = g_input(g_index)
     allocate(l_output(domain%local_size))
-    call domain%distribute(g_output, l_output)
+    call domain%scatter(g_output, l_output)
 
     call write_result(all(l_output == l_input(l_index)), 'test_basic')
 
@@ -91,12 +91,12 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
     call range%gather_offp(l_input)
 
     g_output = g_input(g_index)
     allocate(l_output(domain%local_size))
-    call domain%distribute(g_output, l_output)
+    call domain%scatter(g_output, l_output)
 
     call write_result(all(l_output == l_input(l_index)), 'test_rank1')
 
@@ -123,14 +123,14 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
     call range%gather_offp(l_input)
 
     allocate(g_output, mold=g_index)
     g_output(1,:) = g_input(g_index(1,:))
     g_output(2,:) = g_input(g_index(2,:))
     allocate(l_output, mold=l_index)
-    call domain%distribute(g_output, l_output)
+    call domain%scatter(g_output, l_output)
 
     call write_result(all(l_output(1,:) == l_input(l_index(1,:)) .and. &
                           l_output(2,:) == l_input(l_index(2,:))), 'test_rank2')
@@ -159,12 +159,12 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
     call range%gather_offp(l_input)
 
     g_output = g_input(g_index)
     allocate(l_output(domain%local_size))
-    call domain%distribute(g_output, l_output)
+    call domain%scatter(g_output, l_output)
 
     call write_result(all(l_output == l_input(l_index)), 'test_rank1_offp')
 
@@ -200,12 +200,12 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
     call range%gather_offp(l_input)
 
     g_output = g_input(g_index)
     allocate(l_output(domain%local_size))
-    call domain%distribute(g_output, l_output)
+    call domain%scatter(g_output, l_output)
     call domain%gather_offp(l_output)
 
     call write_result(all(l_output == l_input(l_index)), 'test_rank1_domain_offp')
@@ -234,13 +234,13 @@ contains
 
     g_input = [(j, j=1,merge(range%global_size,0,is_root))]
     allocate(l_input(range%local_size))
-    call range%distribute(g_input, l_input)
+    call range%scatter(g_input, l_input)
     call range%gather_offp(l_input)
 
     g_output = g_input(g_index)
     call temp%init(domain, g_count)
     allocate(l_output(temp%local_size))
-    call temp%distribute(g_output, l_output)
+    call temp%scatter(g_output, l_output)
     call temp%gather_offp(l_output)
 
     call write_result(all(l_output == l_input(l_index)), 'test_struct')

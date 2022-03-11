@@ -90,7 +90,7 @@ contains
     ASSERT(size(x) == this%npatch)
     ASSERT(size(y) == this%npatch)
 
-    call collate(x, global_x)
+    call gather(x, global_x)
     call broadcast(global_x)
 
     do i = 1, this%npatch
@@ -132,7 +132,7 @@ contains
       allocate(rbuf(merge(nrows_tot, 0, is_IOP)))
       if (is_IOP) call file%get_ambient(rbuf)
       allocate(this%amb_vf(nrows))
-      call distribute(rbuf, this%amb_vf)
+      call scatter(rbuf, this%amb_vf)
       deallocate(rbuf)
     end if
 
@@ -140,7 +140,7 @@ contains
     allocate(ibuf(merge(nrows_tot, 0, is_IOP)))
     if (is_IOP) call file%get_vf_rowcount(ibuf)
     allocate(this%ia(nrows+1))
-    call distribute(ibuf, this%ia(2:))
+    call scatter(ibuf, this%ia(2:))
     deallocate(ibuf)
 
     !! Convert the row counts into the local IA indexing array.
@@ -152,11 +152,11 @@ contains
     !! Determine the sizes of the distributed VF matrix.
     n = this%ia(nrows+1) - this%ia(1)
     allocate(this%vf(n), this%ja(n))
-    call collate(n, vf_bsize)
+    call gather(n, vf_bsize)
 
     !! Read the VF matrix in process-sized blocks, sending them to the owning
-    !! processes as we go.  PGSLib only provides the distribute collective to
-    !! do this, and so we distribute with 0-sized destination arrays for all
+    !! processes as we go.  PGSLib only provides the scatter collective to
+    !! do this, and so we scattter with 0-sized destination arrays for all
     !! processes but the receiving one. The code is structured for possible
     !! future use of MPI_Isend/Irecv.
 
@@ -168,20 +168,20 @@ contains
         start = 1 + vf_bsize(1)
         do n = 2, nPE
           call file%get_vf_rows(rbuf(:vf_bsize(n)), ibuf(:vf_bsize(n)), start)
-          call distribute(rbuf, rdum0)
-          call distribute(ibuf, idum0)
+          call scatter(rbuf, rdum0)
+          call scatter(ibuf, idum0)
           start = start + vf_bsize(n)
         end do
         deallocate(ibuf, rbuf)
       end if
-    else  ! everybody else just participates in the distribute calls.
+    else  ! everybody else just participates in the scatter calls.
       do n = 2, nPE
         if (n == this_PE) then
-          call distribute(rdum0, this%vf)
-          call distribute(idum0, this%ja)
+          call scatter(rdum0, this%vf)
+          call scatter(idum0, this%ja)
         else
-          call distribute(rdum0, rdum0)
-          call distribute(idum0, idum0)
+          call scatter(rdum0, rdum0)
+          call scatter(idum0, idum0)
         end if
       end do
     end if

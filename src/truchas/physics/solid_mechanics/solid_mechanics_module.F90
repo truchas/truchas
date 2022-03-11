@@ -1051,7 +1051,7 @@ Contains
     use legacy_mesh_api, only: MESH_COLLATE_VERTEX, VERTEX_COLLATE, VERTEX_DATA
     use legacy_mesh_api, only: Vertex_Ngbr_All_Orig, GAP_ELEMENT_1, GAP_ELEMENT_3
     use node_operator_module, only: CV_Internal, nipc
-    use parallel_communication, only: is_IOP, global_sum, collate, distribute
+    use parallel_communication, only: is_IOP, global_sum, gather, scatter
     use solid_mechanics_mesh, only: ndim, nvc
 
     integer, parameter :: nnt = ndim + 1
@@ -1111,7 +1111,7 @@ Contains
        allocate(Cell_Shape_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: Cell_Shape_Tot')
-    call collate (Mesh%Cell_Shape,Cell_Shape_Tot)
+    call gather (Mesh%Cell_Shape,Cell_Shape_Tot)
 
     ! Collate control volume face areas and normals
     if (is_IOP) then
@@ -1128,9 +1128,9 @@ Contains
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: CV_Normal_Tot')
 
     do ip = 1,nipc
-       call collate (CV_Internal%Face_Area(ip,:),CV_Area_Tot(ip,:))
+       call gather (CV_Internal%Face_Area(ip,:),CV_Area_Tot(ip,:))
        do idim=1,ndim
-          call collate (CV_Internal%Face_Normal(idim,ip,:),CV_Normal_Tot(idim,ip,:))
+          call gather (CV_Internal%Face_Normal(idim,ip,:),CV_Normal_Tot(idim,ip,:))
        end do
     end do
     ! Collate the node neighbors
@@ -1143,7 +1143,7 @@ Contains
        allocate(NN_Sizes_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: NN_Sizes_Tot')
-    call collate (NN_Sizes, NN_Sizes_Tot)
+    call gather (NN_Sizes, NN_Sizes_Tot)
 
     ! Get collated node neighbors
 
@@ -1155,7 +1155,7 @@ Contains
        allocate(Node_Ngbr_Tot(0), stat = status)
     end if
     if (status /= 0) call TLS_panic ( 'PRECON_DISPLACEMENT_GRADIENT: allocation error: Node_Ngbr_Tot')
-    call collate (Node_Ngbr, Node_Ngbr_Tot)
+    call gather (Node_Ngbr, Node_Ngbr_Tot)
     if (is_IOP) then
        allocate(Vertex_Ngbr_Tot(nnodes_tot), stat = status)
     else
@@ -1394,10 +1394,10 @@ Contains
     call CREATE(M1, M_Sizes)
     call CREATE(M2, M_Sizes)
     M_Data_Tot => Flatten(M1_Tot)
-    call distribute(M_Data_Tot,M_Data)
+    call scatter(M_Data_Tot,M_Data)
     call STUFF(M1,M_Data)
     M_Data_Tot => Flatten(M2_Tot)
-    call distribute(M_Data_Tot,M_Data)
+    call scatter(M_Data_Tot,M_Data)
     call STUFF(M2,M_Data)
 
     ! Clean up...

@@ -64,28 +64,28 @@ contains
       integer(int32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_int32')
     end block
     block
       integer(int64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_int64')
     end block
     block
       real(real32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_real32')
     end block
     block
       real(real64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_real64')
     end block
   end subroutine
@@ -106,28 +106,28 @@ contains
       integer(int32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_zero_int32')
     end block
     block
       integer(int64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_zero_int64')
     end block
     block
       real(real32), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_zero_real32')
     end block
     block
       real(real64), allocatable :: src(:), dest(:)
       src = asrc
       allocate(dest(size(adest)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank1_zero_real64')
     end block
   end subroutine
@@ -152,28 +152,28 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_int32')
     end block
     block
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_int64')
     end block
     block
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_real32')
     end block
     block
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_real64')
     end block
   end subroutine
@@ -198,28 +198,28 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_zero_int32')
     end block
     block
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_zero_int64')
     end block
     block
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_zero_real32')
     end block
     block
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(2,size(adest,2)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank2_zero_real64')
     end block
   end subroutine
@@ -244,28 +244,28 @@ contains
       integer(int32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0_int32)
-      call imap%distribute(src(1::2,1::2), dest(1::2,1::2))
+      call imap%scatter(src(1::2,1::2), dest(1::2,1::2))
       call write_result(all(dest == adest), 'dist_array_section_int32')
     end block
     block
       integer(int64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0_int64)
-      call imap%distribute(src(1::2,1::2), dest(1::2,1::2))
+      call imap%scatter(src(1::2,1::2), dest(1::2,1::2))
       call write_result(all(dest == adest), 'dist_array_section_int64')
     end block
     block
       real(real32), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0.0_real32)
-      call imap%distribute(src(1::2,1::2), dest(1::2,1::2))
+      call imap%scatter(src(1::2,1::2), dest(1::2,1::2))
       call write_result(all(dest == adest), 'dist_array_section_real32')
     end block
     block
       real(real64), allocatable :: src(:,:), dest(:,:)
       src = asrc
       allocate(dest(3,size(adest,2)), source=0.0_real64)
-      call imap%distribute(src(1::2,1::2), dest(1::2,1::2))
+      call imap%scatter(src(1::2,1::2), dest(1::2,1::2))
       call write_result(all(dest == adest), 'dist_array_section_real64')
     end block
   end subroutine
@@ -292,28 +292,28 @@ contains
       integer(int32), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_int32')
     end block
     block
       integer(int64), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_int64')
     end block
     block
       real(real32), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_real32')
     end block
     block
       real(real64), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_real64')
     end block
   end subroutine
@@ -340,28 +340,28 @@ contains
       integer(int32), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_zero_int32')
     end block
     block
       integer(int64), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_zero_int64')
     end block
     block
       real(real32), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_zero_real32')
     end block
     block
       real(real64), allocatable :: src(:,:,:), dest(:,:,:)
       src = asrc
       allocate(dest(2,2,size(adest,3)))
-      call imap%distribute(src, dest)
+      call imap%scatter(src, dest)
       call write_result(all(dest == adest), 'dist_rank3_zero_real64')
     end block
   end subroutine
@@ -376,7 +376,7 @@ contains
       allocate(src(0))
     end if
     allocate(dest(imap%onp_size), source=.false.)
-    call imap%distribute(src, dest)
+    call imap%scatter(src, dest)
     call write_result(all(dest), 'dist_log_rank1')
   end subroutine
 
@@ -394,7 +394,7 @@ contains
     allocate(dest(2,imap%onp_size))
     dest(1,:) = .false.
     dest(2,:) = .true.
-    call imap%distribute(src, dest)
+    call imap%scatter(src, dest)
     call write_result(all(dest(1,:) .and. .not.dest(2,:)), 'dist_log_rank2')
   end subroutine
 
@@ -414,7 +414,7 @@ contains
     dest(1,1,:) = .false.
     dest(2,1,:) = .true.
     dest(:,2,:) = .not.dest(:,1,:)
-    call imap%distribute(src, dest)
+    call imap%scatter(src, dest)
     call write_result(all(dest(1,1,:) .and. .not.dest(2,1,:) .and. .not.dest(1,2,:) .and. dest(2,2,:)), 'dist_log_rank3')
   end subroutine
 

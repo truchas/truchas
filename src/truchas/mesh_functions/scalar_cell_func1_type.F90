@@ -50,14 +50,14 @@ module scalar_cell_func1_type
 contains
 
   subroutine init(this, mesh)
-    use parallel_communication, only: is_IOP, global_sum, collate
+    use parallel_communication, only: is_IOP, global_sum, gather
     class(scalar_cell_func1), intent(out) :: this
     class(base_mesh), intent(in), target :: mesh
     integer :: n
     this%mesh => mesh
     n = global_sum(mesh%ncell_onP)
     allocate(this%perm(merge(n,0,is_IOP)))
-    call collate(mesh%xcell(:mesh%ncell_onP), this%perm)
+    call gather(mesh%xcell(:mesh%ncell_onP), this%perm)
     allocate(this%global_array(size(this%perm)))
   end subroutine
 
@@ -100,7 +100,7 @@ contains
     !! Permute data to internal cell ordering, distribute, and sync ghosts
     if (is_IOP) call reorder(this%global_array, this%perm)
     allocate(array(this%mesh%ncell))
-    call this%mesh%cell_imap%distribute(this%global_array, array)
+    call this%mesh%cell_imap%scatter(this%global_array, array)
     call this%mesh%cell_imap%gather_offp(array)
 
     call this%flist%append(f)

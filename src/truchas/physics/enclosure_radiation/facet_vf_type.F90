@@ -55,7 +55,7 @@ contains
     !! block-row partitioning of the view factor matrix. This is the identity!
     this%nface = this%vf%npatch
     allocate(this%face_map(this%nface))
-    call collate(this%nface, bsize)
+    call gather(this%nface, bsize)
     call broadcast(bsize)
     offset = sum(bsize(:this_PE-1))
     do j = 1, this%nface

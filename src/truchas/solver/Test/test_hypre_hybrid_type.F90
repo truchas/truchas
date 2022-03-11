@@ -407,7 +407,7 @@ contains
       allocate(u_g(0))
     end if
     
-    call distribute (u_g, u)
+    call scatter (u_g, u)
     
   end subroutine eigenvector
 

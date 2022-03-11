@@ -1,4 +1,4 @@
-!! Unit Tests for INDEX_MAP Off-Process Scatter Procedures
+!! Unit Tests for PARALLEL_COMMUNICATION Scatter Procedures
 !!
 !! Copyright 2022 Neil N. Carlson <neil.n.carlson@gmail.com>
 !! Use subject to the MIT license: https://opensource.org/licenses/MIT
@@ -6,234 +6,561 @@
 
 program main
 
-  use,intrinsic :: iso_fortran_env, only: int32, real32, real64, output_unit
-  use index_map_type
   use mpi
+  use parallel_communication
+  use,intrinsic :: iso_fortran_env
   implicit none
 
-  logical :: is_root
-  integer :: my_rank, nproc, bsize, ierr, status
-  integer, allocatable :: offp_index(:)
-  type(index_map) :: imap
+  integer :: ierr, status, global_status
+  logical :: pass ! local to tests
 
   call MPI_Init(ierr)
-  call MPI_Comm_size(MPI_COMM_WORLD, nproc, ierr)
-  call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
-  is_root = (my_rank == 0)
-
-  if (nproc /= 4) then
-    call MPI_Finalize(ierr)
-    if (is_root) write(output_unit,'(a)') 'Test must be run using 4 MPI ranks'
-    error stop 1
-  end if
-
-  bsize = 3
-  select case (my_rank)
-  case (0)
-    offp_index = [4,7]
-  case (1)
-    offp_index = [7,10,11]
-  case (2)
-    offp_index = [4,5,11,12]
-  case (3)
-    offp_index = [integer::]
-  end select
-
-  call imap%init(bsize, offP_index)
+  call init_parallel_communication
 
   status = 0
-  call test_imap
-  call test_sum_rank1
-  call test_min_rank1
-  call test_max_rank1
-  call test_or
-  call test_and
+  call scat_scalar
+  call scat_rank1
+  call scat_rank1_zero
+  call scat_rank2
+  call scat_rank2_zero
+  call scat_array_section
+  call scat_rank3
+  call scat_rank3_zero
+  call scat_log_scalar
+  call scat_log_rank1
+  call scat_log_rank2
+  call scat_log_rank3
+
+  call MPI_Allreduce(status, global_status, 1, MPI_INTEGER, MPI_MAX, comm, ierr)
 
   call MPI_Finalize(ierr)
-  if (status /= 0) error stop 1
+
+  if (global_status /= 0) stop 1
 
 contains
 
   subroutine write_result(pass, name)
-    logical, value :: pass
+    logical, intent(in) :: pass
     character(*), intent(in) :: name
-    call MPI_Allreduce(MPI_IN_PLACE, pass, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierr)
-    if (pass) then
-      if (is_root) write(output_unit,'(a)') 'Passed:' //  name
+    if (global_all(pass)) then
+      if (is_IOP) write(output_unit,'(a)') 'Passed: ' //  name
     else
       status = 1
-      if (is_root) write(output_unit,'(a)') 'FAILED:' //  name
+      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' //  name
     end if
   end subroutine
 
-  subroutine test_imap
-    integer :: j
-    logical :: pass
-    select case (my_rank)
-    case (0)
-      pass = (imap%onp_size==3) .and. (imap%local_size==5)
-      pass = pass .and. all(imap%global_index([(j,j=1,5)]) == [1,2,3,4,7])
-      call write_result(pass, 'test_imap')
-    case (1)
-      pass = (imap%onp_size==3) .and. (imap%local_size==6)
-      pass = pass .and. all(imap%global_index([(j,j=1,6)]) == [4,5,6,7,10,11])
-      call write_result(pass, 'test_imap')
-    case (2)
-      pass = (imap%onp_size==3) .and. (imap%local_size==7)
-      pass = pass .and. all(imap%global_index([(j,j=1,7)]) == [7,8,9,4,5,11,12])
-      call write_result(pass, 'test_imap')
-    case (3)
-      pass = (imap%onp_size==3) .and. (imap%local_size==3)
-      pass = pass .and. all(imap%global_index([(j,j=1,3)]) == [10,11,12])
-      call write_result(pass, 'test_imap')
-    end select
-  end subroutine
-
-  subroutine test_sum_rank1
-    integer :: j, input(imap%local_size), output(imap%local_size)
-    do j = 1, imap%local_size
-      input(j) = imap%global_index(j)
-    end do
-    select case (my_rank)
-    case (0)
-      output = [1, 2, 3, 4, 7]
-    case (1)
-      output = [12, 10, 6, 7, 10, 11]
-    case (2)
-      output = [21, 8, 9, 4, 5, 11, 12]
-    case (3)
-      output = [20, 33, 24]
-    end select
+  ! scatter a scalar value to each process
+  subroutine scat_scalar
+    integer, allocatable :: asrc(:)
+    integer :: n, adest
+    asrc = [(n, n=1,npe)]
+    adest = this_pe
     block
-      integer(int32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_sum(array)
-      call write_result(all(array == output), 'test_sum_rank1_int32')
+      integer(int32) :: src(npe), dest
+      src = asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == adest)
+      call write_result(pass, 'scat_scalar_int32')
     end block
     block
-      real(real32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_sum(array)
-      call write_result(all(array == output), 'test_sum_rank1_real32')
+      integer(int64) :: src(npe), dest
+      src = asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == adest)
+      call write_result(pass, 'scat_scalar_int64')
     end block
     block
-      real(real64), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_sum(array)
-      call write_result(all(array == output), 'test_sum_rank1_real64')
+      real(real32) :: src(npe), dest
+      src = asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == adest)
+      call write_result(pass, 'scat_scalar_real32')
+    end block
+    block
+      real(real64) :: src(npe), dest
+      src = asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == adest)
+      call write_result(pass, 'scat_scalar_real64')
     end block
   end subroutine
 
-  subroutine test_min_rank1
-    integer :: j, input(imap%local_size), output(imap%local_size)
-    input = [((my_rank+1)*imap%global_index(j), j=1,imap%local_size)]
-    select case (my_rank)
-    case (0)
-      output = [1, 2, 3, 4, 7]
-    case (1)
-      output = [4, 10, 12, 14, 20, 22]
-    case (2)
-      output = [7, 24, 27, 12, 15, 33, 36]
-    case (3)
-      output = [20, 22, 36]
-    end select
+  ! generic rank-1 array case
+  subroutine scat_rank1
+    integer, allocatable :: asrc(:), adest(:)
+    integer :: j, n
+    if (is_IOP) then
+      asrc = [(j, j=1, (npe*(npe+1))/2)]
+    else
+      allocate(asrc(0))
+    end if
+    n = (this_pe*(this_pe-1))/2
+    adest = [(n+j, j=1,this_pe)]
     block
-      integer(int32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_min(array)
-      call write_result(all(array == output), 'test_min_rank1_int32')
+      integer(int8), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_int8')
     end block
     block
-      real(real32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_min(array)
-      call write_result(all(array == output), 'test_min_rank1_real32')
+      integer(int32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_int32')
     end block
     block
-      real(real64), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_min(array)
-      call write_result(all(array == output), 'test_min_rank1_real64')
-    end block
-  end subroutine
-
-  subroutine test_max_rank1
-    integer :: j, input(imap%local_size), output(imap%local_size)
-    input = [(-(my_rank+1)*imap%global_index(j), j=1,imap%local_size)]
-    select case (my_rank)
-    case (0)
-      output = -[1, 2, 3, 4, 7]
-    case (1)
-      output = -[4, 10, 12, 14, 20, 22]
-    case (2)
-      output = -[7, 24, 27, 12, 15, 33, 36]
-    case (3)
-      output = -[20, 22, 36]
-    end select
-    block
-      integer(int32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_max(array)
-      call write_result(all(array == output), 'test_max_rank1_int32')
+      integer(int64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_int64')
     end block
     block
-      real(real32), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_max(array)
-      call write_result(all(array == output), 'test_max_rank1_real32')
+      real(real32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_real32')
     end block
     block
-      real(real64), allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_max(array)
-      call write_result(all(array == output), 'test_max_rank1_real64')
+      real(real64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_real64')
     end block
   end subroutine
 
-  subroutine test_or
-    logical :: input(imap%local_size), output(imap%local_size)
-    logical, parameter :: T = .true., F = .false.
-    input(:imap%onp_size) = F
-    input(imap%onp_size+1:) = T
-    select case (my_rank)
-    case (0)
-      output = [F, F, F, T, T]
-    case (1)
-      output = [T, T, F, T, T, T]
-    case (2)
-      output = [T, F, F, T, T, T, T]
-    case (3)
-      output = [T, T, T]
-    end select
+  ! Rank-1 array case with a 0-sized vector
+  subroutine scat_rank1_zero
+    integer, allocatable :: asrc(:), adest(:)
+    integer :: j, n
+    if (is_IOP) then
+      asrc = [(j, j=1, (npe*(npe-1))/2)]
+    else
+      allocate(asrc(0))
+    end if
+    n = ((this_pe-1)*(this_pe-2))/2
+    adest = [(n+j, j=1,this_pe-1)]
     block
-      logical, allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_or(array)
-      call write_result(all(array .eqv. output), 'test_or_rank1')
+      integer(int8), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_zero_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_zero_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_zero_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_zero_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank1_zero_real64')
     end block
   end subroutine
 
-  subroutine test_and
-    logical :: input(imap%local_size), output(imap%local_size)
-    logical, parameter :: T = .true., F = .false.
-    input(:imap%onp_size) = T
-    input(imap%onp_size+1:) = F
-    select case (my_rank)
-    case (0)
-      output = [T, T, T, F, F]
-    case (1)
-      output = [F, F, T, F, F, F]
-    case (2)
-      output = [F, T, T, F, F, F, F]
-    case (3)
-      output = [F, F, F]
-    end select
+  ! generic rank-2 array case
+  subroutine scat_rank2
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    if (is_IOP) then
+      allocate(asrc(2,(npe*(npe+1))/2))
+      asrc(1,:) = [(j, j=1, (npe*(npe+1))/2)]
+      asrc(2,:) = -asrc(1,:)
+    else
+      allocate(asrc(2,0))
+    end if
+    n = (this_pe*(this_pe-1))/2
+    allocate(adest(2,this_pe))
+    adest(1,:) = [(n+j, j=1,this_pe)]
+    adest(2,:) = -adest(1,:)
     block
-      logical, allocatable :: array(:)
-      array = input
-      call imap%scatter_offp_and(array)
-      call write_result(all(array .eqv. output), 'test_and_rank1')
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_int8')
     end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_real64')
+    end block
+  end subroutine
+
+  ! Rank-2 array case with a 0-sized vector
+  subroutine scat_rank2_zero
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    if (is_IOP) then
+      n = (npe*(npe-1))/2
+      allocate(asrc(2,n))
+      asrc(1,:) = [(j, j=1,n)]
+      asrc(2,:) = -asrc(1,:)
+    else
+      allocate(asrc(2,0))
+    end if
+    n = ((this_pe-1)*(this_pe-2))/2
+    allocate(adest(2,this_pe-1))
+    adest(1,:) = [(n+j, j=1,this_pe-1)]
+    adest(2,:) = -adest(1,:)
+    block
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_zero_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_zero_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_zero_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_zero_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank2_zero_real64')
+    end block
+  end subroutine
+
+  ! rank-2 array section case
+  subroutine scat_array_section
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(asrc(3,2*n), source=-1)
+      asrc(1,1::2) = [(j, j=1,n)]
+      asrc(3,1::2) = -asrc(1,1::2)
+    else
+      allocate(asrc(3,0))
+    end if
+    n = (this_pe*(this_pe-1))/2
+    allocate(adest(3,2*this_pe), source=0)
+    adest(1,1::2) = [(n+j, j=1,this_pe)]
+    adest(3,1::2) = -adest(1,1::2)
+    block
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int8)
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_array_section_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int32)
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_array_section_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int64)
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_array_section_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0.0_real32)
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_array_section_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0.0_real64)
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_array_section_real64')
+    end block
+  end subroutine
+
+  ! generic rank-3 array case
+  subroutine scat_rank3
+    integer, allocatable :: asrc(:,:,:), adest(:,:,:)
+    integer :: j, n
+    if (is_IOP) then
+      allocate(asrc(2,2,(npe*(npe+1))/2))
+      asrc(1,1,:) = [(j, j=1, (npe*(npe+1))/2)]
+      asrc(2,1,:) = -asrc(1,1,:)
+      asrc(1,2,:) = 2*asrc(1,1,:)
+      asrc(2,2,:) = 2*asrc(2,1,:)
+    else
+      allocate(asrc(2,2,0))
+    end if
+    n = (this_pe*(this_pe-1))/2
+    allocate(adest(2,2,this_pe))
+    adest(1,1,:) = [(n+j, j=1,this_pe)]
+    adest(2,1,:) = -adest(1,1,:)
+    adest(1,2,:) = 2*adest(1,1,:)
+    adest(2,2,:) = 2*adest(2,1,:)
+    block
+      integer(int8), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_real64')
+    end block
+  end subroutine
+
+  ! Rank-3 array case with a 0-sized vector
+  subroutine scat_rank3_zero
+    integer, allocatable :: asrc(:,:,:), adest(:,:,:)
+    integer :: j, n
+    if (is_IOP) then
+      n = (npe*(npe-1))/2
+      allocate(asrc(2,2,n))
+      asrc(1,1,:) = [(j, j=1,n)]
+      asrc(2,1,:) = -asrc(1,1,:)
+      asrc(1,2,:) = 2*asrc(1,1,:)
+      asrc(2,2,:) = 2*asrc(2,1,:)
+    else
+      allocate(asrc(2,2,0))
+    end if
+    n = ((this_pe-1)*(this_pe-2))/2
+    allocate(adest(2,2,this_pe-1))
+    adest(1,1,:) = [(n+j, j=1,this_pe-1)]
+    adest(2,1,:) = -adest(1,1,:)
+    adest(1,2,:) = 2*adest(1,1,:)
+    adest(2,2,:) = 2*adest(2,1,:)
+    block
+      integer(int8), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_zero_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_zero_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_zero_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_zero_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'scat_rank3_zero_real64')
+    end block
+  end subroutine
+
+  subroutine scat_log_scalar
+    logical, allocatable :: src(:)
+    logical :: dest
+    if (is_IOP) then
+      allocate(src(npe), source=.true.)
+    else
+      allocate(src(0))
+    end if
+    dest = .false.
+    call scatter(src, dest)
+    pass = dest
+    call write_result(pass, 'scat_log_scalar')
+  end subroutine
+
+  subroutine scat_log_rank1
+    logical, allocatable :: src(:), dest(:)
+    integer :: n
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(src(n), source=.true.)
+    else
+      allocate(src(0))
+    end if
+    allocate(dest(this_pe), source=.false.)
+    call scatter(src, dest)
+    pass = all(dest)
+    call write_result(pass, 'scat_log_rank1')
+  end subroutine
+
+  subroutine scat_log_rank2
+    logical, allocatable :: src(:,:), dest(:,:)
+    integer :: n
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(src(2,n))
+      src(1,:) = .true.
+      src(2,:) = .false.
+    else
+      allocate(src(2,0))
+    end if
+    allocate(dest(2,this_pe))
+    dest(1,:) = .false.
+    dest(2,:) = .true.
+    call scatter(src, dest)
+    pass = all(dest(1,:) .and. .not.dest(2,:))
+    call write_result(pass, 'scat_log_rank2')
+  end subroutine
+
+  subroutine scat_log_rank3
+    logical, allocatable :: src(:,:,:), dest(:,:,:)
+    integer :: n
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(src(2,2,n))
+      src(1,1,:) = .true.
+      src(2,1,:) = .false.
+      src(1,2,:) = .false.
+      src(2,2,:) = .true.
+    else
+      allocate(src(2,2,0))
+    end if
+    allocate(dest(2,2,this_pe))
+    dest(1,1,:) = .false.
+    dest(2,1,:) = .true.
+    dest(1,2,:) = .true.
+    dest(2,2,:) = .false.
+    call scatter(src, dest)
+    pass = all(dest(1,1,:) .and. .not.dest(2,1,:) .and. .not.dest(1,2,:) .and. dest(2,2,:))
+    call write_result(pass, 'scat_log_rank3')
   end subroutine
 
 end program

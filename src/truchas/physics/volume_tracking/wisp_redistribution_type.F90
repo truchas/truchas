@@ -289,8 +289,8 @@ contains
       ! there is not enough acceptor fluid so first we communicate our means and donor_volumes
       ! After sorting the volumes based on the means
       sorted_ranks = [(i, i=1, nPE)]
-      call collate(mean_donor_volumes(m), collated_mean)
-      call collate(this%local_wisp_donor_v(m), donor_volumes)
+      call gather(mean_donor_volumes(m), collated_mean)
+      call gather(this%local_wisp_donor_v(m), donor_volumes)
 
       call broadcast(collated_mean)
       call broadcast(donor_volumes)

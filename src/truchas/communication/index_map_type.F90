@@ -35,7 +35,7 @@ module index_map_type
     integer, allocatable :: offp_index(:)  ! int64 option? !TODO: private?
     integer, allocatable, private :: offp_counts(:), offp_displs(:)
     integer, allocatable, private :: onp_index(:), onp_counts(:), onp_displs(:)
-    ! distribute/collate communication data
+    ! gather/scatter communication data
     integer, allocatable, private :: counts(:), displs(:)
   contains
     generic   :: init => init_dist, init_root, init_dist_offp, init_root_offp, init_ragged
@@ -61,14 +61,14 @@ module index_map_type
         scat1_max_r8_1, scat2_max_r8_1
     generic :: scatter_offp_or => scat1_or_dl_1, scat2_or_dl_1
     generic :: scatter_offp_and => scat1_and_dl_1, scat2_and_dl_1
-    generic :: distribute => &
-        dist_i4_1, dist_i8_1, dist_r4_1, dist_r8_1, dist_dl_1, &
-        dist_i4_2, dist_i8_2, dist_r4_2, dist_r8_2, dist_dl_2, &
-        dist_i4_3, dist_i8_3, dist_r4_3, dist_r8_3, dist_dl_3
-    generic :: collate => &
-        coll_i4_1, coll_i8_1, coll_r4_1, coll_r8_1, coll_dl_1, &
-        coll_i4_2, coll_i8_2, coll_r4_2, coll_r8_2, coll_dl_2, &
-        coll_i4_3, coll_i8_3, coll_r4_3, coll_r8_3, coll_dl_3
+    generic :: scatter => &
+        scat_i4_1, scat_i8_1, scat_r4_1, scat_r8_1, scat_dl_1, &
+        scat_i4_2, scat_i8_2, scat_r4_2, scat_r8_2, scat_dl_2, &
+        scat_i4_3, scat_i8_3, scat_r4_3, scat_r8_3, scat_dl_3
+    generic :: gather => &
+        gath_i4_1, gath_i8_1, gath_r4_1, gath_r8_1, gath_dl_1, &
+        gath_i4_2, gath_i8_2, gath_r4_2, gath_r8_2, gath_dl_2, &
+        gath_i4_3, gath_i8_3, gath_r4_3, gath_r8_3, gath_dl_3
     generic :: localize_index_array => localize_index_array_serial_1, localize_index_array_serial_2, &
         localize_index_array_dist_1, localize_index_array_dist_2, localize_index_struct_serial
     procedure, private :: init_dist, init_root, init_dist_offp, init_root_offp, init_ragged
@@ -92,17 +92,16 @@ module index_map_type
     procedure, private :: scat1_or_dl_1, scat2_or_dl_1
     procedure, private :: scat1_and_dl_1, scat2_and_dl_1
     procedure, private :: &
-        dist_i4_1, dist_i8_1, dist_r4_1, dist_r8_1, dist_dl_1, &
-        dist_i4_2, dist_i8_2, dist_r4_2, dist_r8_2, dist_dl_2, &
-        dist_i4_3, dist_i8_3, dist_r4_3, dist_r8_3, dist_dl_3
+        scat_i4_1, scat_i8_1, scat_r4_1, scat_r8_1, scat_dl_1, &
+        scat_i4_2, scat_i8_2, scat_r4_2, scat_r8_2, scat_dl_2, &
+        scat_i4_3, scat_i8_3, scat_r4_3, scat_r8_3, scat_dl_3
     procedure, private :: &
-        coll_i4_1, coll_i8_1, coll_r4_1, coll_r8_1, coll_dl_1, &
-        coll_i4_2, coll_i8_2, coll_r4_2, coll_r8_2, coll_dl_2, &
-        coll_i4_3, coll_i8_3, coll_r4_3, coll_r8_3, coll_dl_3
+        gath_i4_1, gath_i8_1, gath_r4_1, gath_r8_1, gath_dl_1, &
+        gath_i4_2, gath_i8_2, gath_r4_2, gath_r8_2, gath_dl_2, &
+        gath_i4_3, gath_i8_3, gath_r4_3, gath_r8_3, gath_dl_3
     procedure, private :: localize_index_array_serial_1, localize_index_array_serial_2, &
         localize_index_array_dist_1, localize_index_array_dist_2, localize_index_struct_serial
-    ! Type bound to workaound gfortran bug
-    procedure, private :: add_offp_index_set, add_dist_coll_info
+    procedure, private :: add_offp_index_set ! Type bound to workaound gfortran bug
   end type
 
   interface
@@ -336,77 +335,77 @@ module index_map_type
   end interface
 
   interface
-    module subroutine dist_i4_1(this, src, dest)
+    module subroutine scat_i4_1(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:)
       integer(i4), intent(inout) :: dest(:)
     end subroutine
-    module subroutine dist_i8_1(this, src, dest)
+    module subroutine scat_i8_1(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:)
       integer(i8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine dist_r4_1(this, src, dest)
+    module subroutine scat_r4_1(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:)
       real(r4), intent(inout) :: dest(:)
     end subroutine
-    module subroutine dist_r8_1(this, src, dest)
+    module subroutine scat_r8_1(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:)
       real(r8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine dist_dl_1(this, src, dest)
+    module subroutine scat_dl_1(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:)
       logical, intent(inout) :: dest(:)
     end subroutine
-    module subroutine dist_i4_2(this, src, dest)
+    module subroutine scat_i4_2(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:)
       integer(i4), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine dist_i8_2(this, src, dest)
+    module subroutine scat_i8_2(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:)
       integer(i8), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine dist_r4_2(this, src, dest)
+    module subroutine scat_r4_2(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:)
       real(r4), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine dist_r8_2(this, src, dest)
+    module subroutine scat_r8_2(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:)
       real(r8), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine dist_dl_2(this, src, dest)
+    module subroutine scat_dl_2(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:)
       logical, intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine dist_i4_3(this, src, dest)
+    module subroutine scat_i4_3(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:,:)
       integer(i4), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_i8_3(this, src, dest)
+    module subroutine scat_i8_3(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:,:)
       integer(i8), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_r4_3(this, src, dest)
+    module subroutine scat_r4_3(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:,:)
       real(r4), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_r8_3(this, src, dest)
+    module subroutine scat_r8_3(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:,:)
       real(r8), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine dist_dl_3(this, src, dest)
+    module subroutine scat_dl_3(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:,:)
       logical, intent(inout) :: dest(:,:,:)
@@ -414,77 +413,77 @@ module index_map_type
   end interface
 
   interface
-    module subroutine coll_i4_1(this, src, dest)
+    module subroutine gath_i4_1(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:)
       integer(i4), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i8_1(this, src, dest)
+    module subroutine gath_i8_1(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:)
       integer(i8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r4_1(this, src, dest)
+    module subroutine gath_r4_1(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:)
       real(r4), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_r8_1(this, src, dest)
+    module subroutine gath_r8_1(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:)
       real(r8), intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_dl_1(this, src, dest)
+    module subroutine gath_dl_1(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:)
       logical, intent(inout) :: dest(:)
     end subroutine
-    module subroutine coll_i4_2(this, src, dest)
+    module subroutine gath_i4_2(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:)
       integer(i4), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_i8_2(this, src, dest)
+    module subroutine gath_i8_2(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:)
       integer(i8), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_r4_2(this, src, dest)
+    module subroutine gath_r4_2(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:)
       real(r4), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_r8_2(this, src, dest)
+    module subroutine gath_r8_2(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:)
       real(r8), intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_dl_2(this, src, dest)
+    module subroutine gath_dl_2(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:)
       logical, intent(inout) :: dest(:,:)
     end subroutine
-    module subroutine coll_i4_3(this, src, dest)
+    module subroutine gath_i4_3(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i4), intent(in) :: src(:,:,:)
       integer(i4), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine coll_i8_3(this, src, dest)
+    module subroutine gath_i8_3(this, src, dest)
       class(index_map), intent(in) :: this
       integer(i8), intent(in) :: src(:,:,:)
       integer(i8), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine coll_r4_3(this, src, dest)
+    module subroutine gath_r4_3(this, src, dest)
       class(index_map), intent(in) :: this
       real(r4), intent(in) :: src(:,:,:)
       real(r4), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine coll_r8_3(this, src, dest)
+    module subroutine gath_r8_3(this, src, dest)
       class(index_map), intent(in) :: this
       real(r8), intent(in) :: src(:,:,:)
       real(r8), intent(inout) :: dest(:,:,:)
     end subroutine
-    module subroutine coll_dl_3(this, src, dest)
+    module subroutine gath_dl_3(this, src, dest)
       class(index_map), intent(in) :: this
       logical, intent(in) :: src(:,:,:)
       logical, intent(inout) :: dest(:,:,:)
@@ -591,7 +590,7 @@ contains
     call init_root(this, bsizes, root)
     call init_root(temp, offp_counts, root)
     allocate(offp_index(temp%onp_size))
-    call temp%distribute(offp_indices, offp_index)
+    call temp%scatter(offp_indices, offp_index)
     call add_offp_index(this, offp_index)
   end subroutine
 
@@ -608,7 +607,7 @@ contains
     ASSERT(size(g_count) >= merge(domain%global_size,0,domain%is_root))
 
     allocate(l_count(domain%local_size))
-    call domain%distribute(g_count, l_count)
+    call domain%scatter(g_count, l_count)
     if (allocated(domain%offp_index)) call domain%gather_offp(l_count)
 
     call this%init(sum(l_count(1:domain%onp_size)))
@@ -655,13 +654,14 @@ contains
 
   !! Add off-process indices to an already initialized index map.
   !! This is a public interface with untrusted OFFP_INDEX input.
+
   subroutine add_offp_index(this, offp_index)
     use integer_set_type_wavl
     class(index_map), intent(inout) :: this
     integer, intent(in) :: offp_index(:)
     type(integer_set) :: offp_set
-    ASSERT(minval(offP_index) >= 1)
-    ASSERT(maxval(offP_index) <= this%global_size)
+    ASSERT(minval(offp_index) >= 1)
+    ASSERT(maxval(offp_index) <= this%global_size)
     ASSERT(all((offp_index < this%first_gid) .or. (offp_index > this%last_gid)))
     call offp_set%add(offp_index) ! sort and remove duplicates
     call add_offp_index_set(this, offp_set)
@@ -669,6 +669,7 @@ contains
 
   !! Add off-process indices to an already initialized index map.
   !! This is an internal interface with trusted OFFP_SET input.
+
   subroutine add_offp_index_set(this, offp_set)
 
     use integer_set_type_wavl
@@ -813,6 +814,7 @@ contains
 
   end subroutine add_offp_index_set
 
+  !! Add %COUNTS and %DISPLS data used by gather/scatter methods.
   subroutine add_dist_coll_info(this)
     class(index_map), intent(inout) :: this
     integer :: n, ierr
@@ -828,6 +830,10 @@ contains
       end do
     end if
   end subroutine
+
+  !! This function returns true if the gather_offp operation returns the
+  !! expected result for integer data, and otherwise it returns false.
+  !! Useful for testing with live index_map data.
 
   logical function gather_offp_verified(this) result(pass)
     type(index_map), intent(in) :: this

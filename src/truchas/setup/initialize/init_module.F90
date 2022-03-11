@@ -869,7 +869,7 @@ CONTAINS
     end function
 
     subroutine report_errors (message, list)
-      use parallel_communication, only: is_IOP, collate, global_sum
+      use parallel_communication, only: is_IOP, gather, global_sum
       character(*), intent(inout) :: message(:)
       type(vector), intent(in) :: list
       integer :: n, m
@@ -877,7 +877,7 @@ CONTAINS
       n = global_sum(list%n)
       m = global_sum(list%m)
       allocate(glist(merge(n,0,is_iop)))
-      call collate (list%array(:list%n), glist)
+      call gather (list%array(:list%n), glist)
       !if (is_IOP) message(1) = trim(message(1)) // list_to_string(glist,m)
       if (is_IOP) call append_list_to_string (glist, m, message(1))
       call TLS_error (message)

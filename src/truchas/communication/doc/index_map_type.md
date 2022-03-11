@@ -9,8 +9,8 @@ suggests, the `index_map_type` module defines the `index_map` derived
 type which describes the mapping of a contiguous index set to one or more
 parallel processes. The mapping allows for overlap between processes, and
 provides array data gather and scatter procedures that are associated with
-that overlap. The derived type also provides procedures for distributing
-and collating array data based on the index set, and procedures for
+that overlap. The derived type also provides procedures for scattering
+and gathering array data based on the index set, and procedures for
 localizing serial indirect indexing arrays.
 
 ### Concepts
@@ -152,9 +152,9 @@ collective procedure. It is not currently possible to add new off-process
 indices to an `index_map` object that already includes some. Thus it is an
 error to call this procedure if `imap` already includes off-process indices.
 
-#### Distribute and Collate Subroutines
-These type-bound generic subroutines distribute data from the root process
-to all processes and the reverse operation of collating data from all
+#### Scatter and Gather Subroutines
+These type-bound generic subroutines scatter data from the root process
+to all processes and the reverse operation of collecting data from all
 processes onto the root process. These are collective procedures that must
 be called from all processes. Both arguments must have the same type, kind
 parameters, and rank. Currently there are specific procedures for `real`
@@ -163,45 +163,45 @@ arguments of `real32` and `real64` kinds, `integer` arguments of `int32` and
 
 ```Fortran
 type(index_map) :: imap
-call imap%distribute(src, dest)
+call imap%scatter(src, dest)
 ```
-This distributes the elements of a global array `src` on the `imap` root
+This scatters the elements of a global array `src` on the `imap` root
 process to the local array `dest` on all processes according to `imap`.
 Both arguments must have the same rank, and must have the same extent in all
 but the last dimension. In the multi-rank case `imap` describes the indexing
-of the last dimension, and the "elements" of `src` being distributed to
+of the last dimension, and the "elements" of `src` being scattered to
 corresponding "elements" of `dest` are rank-(*n-1*) sections `src(:,...,j)`
 for global `imap` indices `j`. `src` is only referenced on the `imap` root
 process, where its extent in the last dimension must be at least
 `imap%global_size`; other processes can pass a 0-sized array. The extent
 of `dest` in its last dimension must be at least `imap%onp_size`. It is
 `intent(inout)` so that the value of any trailing elements is unchanged.
-This subroutine is analogous to MPI's `MPI_Scatterv`.
+This subroutine wraps `MPI_Scatterv`.
 
 If `imap` includes off-process indices it often desired that the distributed
 array `dest` also include elements for these indices. To accomplish this the
 `dest` array needs to be properly sized (extent in its last dimension at
 least `imap%local_size`) and then simply make a subsequent call to gather
-these values:
+these off-process values:
 ``call imap%gather_offp(dest)``
 
 ```Fortran
 type(index_map) :: imap
-call imap%collate(src, dest)
+call imap%gather(src, dest)
 ```
-This is the reverse of `distribute`. This collates the on-process elements of
+This is the reverse of `scatter`. This gathers the on-process elements of
 the local `src` array on each process into the global array `dest` on the
 `imap` root process according to `imap`. Both arguments must have the same
 rank, and must have the same extent in all but the last dimension. In the
 multi-rank case `imap` describes the indexing of the last dimension, and the
-"elements" of `src` that are being collated into corresponding "elements" of
+"elements" of `src` that are being gathered into corresponding "elements" of
 `dest` are rank-(*n-1*) sections `src(:,...,j)` for global `imap` indices `j`.
 The extent of `src` in its last dimension must be at least `imap%onp_size`;
 any trailing elements are ignored. The `dest`array is only referenced on the
 `imap` root process, where its extent in the last dimension must be at least
 `imap%global_size`; other processes can pass a 0-sized array. It is
 `intent(inout)` so that the value of any trailing elements is unchanged.
-This is analogous to MPI's `MPI_Gatherv`.
+This subroutine wraps `MPI_Gatherv`.
 
 #### Off-Process Gather Subroutines
 

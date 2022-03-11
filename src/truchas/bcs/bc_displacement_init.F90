@@ -353,7 +353,7 @@ CONTAINS
     use mech_bc_data_module,  only: Node_Disp_BC_Temp, X_DISPLACEMENT, Y_DISPLACEMENT, Z_DISPLACEMENT, &
                                     NORMAL_DISPLACEMENT
     use parameter_module,     only: mbc_nodes
-    use parallel_communication, only: is_IOP, nPE, global_any, collate
+    use parallel_communication, only: is_IOP, nPE, global_any, gather
     !
     ! Arguments
     integer, intent(IN) :: m, n
@@ -404,7 +404,7 @@ CONTAINS
           end do NODE_LOOP
           ! Check to see if a node was found.
           if (global_any(node_found)) then
-             call collate (bc_gnode, Collated_Nodes)
+             call gather (bc_gnode, Collated_Nodes)
 !             node_found = .false.
              do j = 1, SIZE(Collated_Nodes)
                 if (Collated_Nodes(j) /= 0) then

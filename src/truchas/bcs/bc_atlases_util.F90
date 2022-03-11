@@ -479,7 +479,7 @@ CONTAINS
     ! Collated  Local_Atlas into Collated_Atlas.
     ! This routine assumes that some fields of Collated_Atlas have
     ! already been setup, so Collated_Atlas is an INOUT argument.
-    use parallel_communication, only: is_IOP, global_sum, collate
+    use parallel_communication, only: is_IOP, global_sum, gather
     type(BC_Atlas), intent(INOUT) :: collated_atlas
     type(BC_Atlas), intent(IN) :: local_atlas
 
@@ -515,25 +515,25 @@ CONTAINS
 
     ! Collate the data onto the IO processor
     Local_Cells    => BC_Get_Cell(Local_Atlas)
-    call collate(Local_Cells, Collated_Cells)
+    call gather(Local_Cells, Collated_Cells)
 
     Local_Faces    => BC_Get_Face(Local_Atlas)
-    call collate(Local_Faces, Collated_Faces)
+    call gather(Local_Faces, Collated_Faces)
 
     Local_ValueIndex    => BC_Get_ValueIndex(Local_Atlas)
-    call collate(Local_ValueIndex, Collated_ValueIndex)
+    call gather(Local_ValueIndex, Collated_ValueIndex)
 
     Local_UseFunction    => BC_Get_UseFunction(Local_Atlas)
-    call collate(Local_UseFunction, Collated_UseFunction)
+    call gather(Local_UseFunction, Collated_UseFunction)
 
     Local_Values    => BC_Get_Values(Local_Atlas)
     do d = 1, BC_Get_DOF(Local_Atlas)
-       call collate(Local_Values(d,:), Collated_Values(d,:))
+       call gather(Local_Values(d,:), Collated_Values(d,:))
     end do
 
     Local_Positions    => BC_Get_Positions(Local_Atlas)
     do d = 1, SIZE(Local_Positions, 1)
-       call collate(Local_Positions(d,:), Collated_Positions(d,:))
+       call gather(Local_Positions(d,:), Collated_Positions(d,:))
     end do
 
     ! Now append it into the collated atlas

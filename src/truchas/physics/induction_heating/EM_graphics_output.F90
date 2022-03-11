@@ -71,7 +71,7 @@ contains
     call mesh%get_global_cblock_array (cblock)
     
     allocate(pdata(merge(mesh%cell_imap%global_size,0,is_iop)))
-    call collate (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), pdata)
+    call gather (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), pdata)
     
     if (is_IOP) then
       !! Open the DX output file.
@@ -141,20 +141,20 @@ contains
     allocate(g_q(merge(mesh%cell_imap%global_size,0,is_iop)))
     
     v = w1_vector_on_cells(mesh, efield)
-    call collate (v(:,:mesh%ncell_onP), g_v)
+    call gather (v(:,:mesh%ncell_onP), g_v)
     if (is_IOP) then
       call dx_export_field (dxf_e, dxfld, dxcon, dxpos, g_v, cc=.true.)
       call dx_append_to_series (eseries, real(t), dxfld)
     end if
     
     v = w2_vector_on_cells(mesh, bfield)
-    call collate (v(:,:mesh%ncell_onP), g_v)
+    call gather (v(:,:mesh%ncell_onP), g_v)
     if (is_IOP) then
       call dx_export_field (dxf_b, dxfld, dxcon, dxpos, g_v, cc=.true.)
       call dx_append_to_series (bseries, real(t), dxfld)
     end if
     
-    call collate (real(qfield(:mesh%ncell_onP)), g_q)
+    call gather (real(qfield(:mesh%ncell_onP)), g_q)
     if (is_IOP) then
       call dx_export_field (dxf_q, dxfld, dxcon, dxpos, g_q, cc=.true.)
       call dx_append_to_series (qseries, real(t), dxfld)
@@ -199,7 +199,7 @@ contains
     real, pointer :: g_field(:)
     n = global_sum(size(field))
     allocate(g_field(merge(n,0,is_iop)))
-    call collate (real(field), g_field)
+    call gather (real(field), g_field)
     if (is_IOP) then
       call dx_export_field (dxf, dxfld, dxcon, dxpos, g_field, cc=.true., name=trim(name))
     end if

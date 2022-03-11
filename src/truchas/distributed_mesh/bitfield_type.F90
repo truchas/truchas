@@ -33,11 +33,11 @@ module bitfield_type
 
   !! Generics from PARALLEL_COMMUNICATION extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
-  public :: distribute
+  public :: scatter
 
   !! Generics from index_map_type extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
-  public :: gather_boundary
+  public :: gather_offp
   
   !! Parallel extensions of some intrinsic bit manipulation procedures.
   public :: global_ior
@@ -103,12 +103,12 @@ module bitfield_type
     module procedure ne_bitfield
   end interface
 
-  interface distribute
-    module procedure distribute_bitfield
+  interface scatter
+    module procedure scatter_bitfield
   end interface
 
-  interface gather_boundary
-    module procedure gather_boundary_bitfield1, gather_boundary_bitfield2
+  interface gather_offp
+    module procedure gather_offp_bitfield1, gather_offp_bitfield2
   end interface
 
 contains
@@ -204,9 +204,9 @@ contains
     ne_bitfield = any(bf1%chunk /= bf2%chunk)
   end function ne_bitfield
 
-  subroutine distribute_bitfield (vin, vout)
+  subroutine scatter_bitfield (vin, vout)
 
-    use parallel_communication, only: distribute
+    use parallel_communication, only: scatter
 
     type(bitfield), intent(in)  :: vin(:)
     type(bitfield), intent(out) :: vout(:)
@@ -214,12 +214,12 @@ contains
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call distribute (vin%chunk(n), vout%chunk(n))
+      call scatter (vin%chunk(n), vout%chunk(n))
     end do
 
-  end subroutine distribute_bitfield
+  end subroutine scatter_bitfield
 
-  subroutine gather_boundary_bitfield1 (this, local_data)
+  subroutine gather_offp_bitfield1 (this, local_data)
 
     use index_map_type, only: index_map
 
@@ -232,9 +232,9 @@ contains
       call this%gather_offp(local_data%chunk(n))
     end do
 
-  end subroutine gather_boundary_bitfield1
+  end subroutine gather_offp_bitfield1
 
-  subroutine gather_boundary_bitfield2 (this, onP_data, offP_data)
+  subroutine gather_offp_bitfield2 (this, onP_data, offP_data)
 
     use index_map_type, only: index_map
 
@@ -248,11 +248,11 @@ contains
       call this%gather_offp(onP_data%chunk(n), offP_data%chunk(n))
     end do
 
-  end subroutine gather_boundary_bitfield2
+  end subroutine gather_offp_bitfield2
 
   function global_ior (bf) result (bf_out)
 
-    use parallel_communication, only: nPE, is_IOP, collate, broadcast
+    use parallel_communication, only: nPE, is_IOP, gather, broadcast
 
     type(bitfield), intent(in) :: bf
     type(bitfield) :: bf_out
@@ -260,7 +260,7 @@ contains
     integer :: n, p, tmp, array(nPE)
 
     do n = 0, NUM_CHUNK-1
-      call collate (bf%chunk(n), array)
+      call gather (bf%chunk(n), array)
       if (is_IOP) then
         tmp = array(1)
         do p = 2, nPE

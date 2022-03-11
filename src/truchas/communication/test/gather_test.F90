@@ -1,4 +1,4 @@
-!! Unit Tests for INDEX_MAP Off-Process Gather Procedures
+!! Unit Tests for PARALLEL_COMMUNICATION Gather Procedures
 !!
 !! Copyright 2022 Neil N. Carlson <neil.n.carlson@gmail.com>
 !! Use subject to the MIT license: https://opensource.org/licenses/MIT
@@ -6,225 +6,494 @@
 
 program main
 
-  use,intrinsic :: iso_fortran_env, only: int32, real32, real64, output_unit
-  use index_map_type
   use mpi
+  use parallel_communication
+  use,intrinsic :: iso_fortran_env
   implicit none
 
-  logical :: is_root
-  integer :: my_rank, nproc, bsize, ierr, status
-  integer, allocatable :: offp_index(:)
-  type(index_map) :: imap
+  integer :: ierr, status, global_status
+  logical :: pass ! local to tests
 
   call MPI_Init(ierr)
-  call MPI_Comm_size(MPI_COMM_WORLD, nproc, ierr)
-  call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
-  is_root = (my_rank == 0)
-
-  if (nproc /= 4) then
-    call MPI_Finalize(ierr)
-    if (is_root) write(output_unit,'(a)') 'Test must be run using 4 MPI ranks'
-    error stop 1
-  end if
-
-  bsize = 3
-  select case (my_rank)
-  case (0)
-    offp_index = [4,7]
-  case (1)
-    offp_index = [7,10,11]
-  case (2)
-    offp_index = [4,5,11,12]
-  case (3)
-    offp_index = [integer::]
-  end select
-
-  call imap%init(bsize, offP_index)
+  call init_parallel_communication
 
   status = 0
-  call test_imap
-  call test_rank1
-  call test_rank2
-  call test_rank3
-  call test_log
+  call gath_scalar
+  call gath_rank1
+  call gath_rank1_zero
+  call gath_rank2
+  call gath_rank2_zero
+  call gath_array_section
+  call gath_log_scalar
+  call gath_log_rank1
+  call gath_log_rank2
+  call gath_char_scalar
+  call gath_char_rank1
+  call gath_char_rank2
+
+  call MPI_Allreduce(status, global_status, 1, MPI_INTEGER, MPI_MAX, comm, ierr)
 
   call MPI_Finalize(ierr)
-  if (status /= 0) error stop 1
+
+  if (global_status /= 0) stop 1
 
 contains
 
   subroutine write_result(pass, name)
-    logical, value :: pass
+    logical, intent(in) :: pass
     character(*), intent(in) :: name
-    call MPI_Allreduce(MPI_IN_PLACE, pass, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierr)
-    if (pass) then
-      if (is_root) write(output_unit,'(a)') 'Passed:' //  name
+    if (global_all(pass)) then
+      if (is_IOP) write(output_unit,'(a)') 'Passed: ' // name
     else
       status = 1
-      if (is_root) write(output_unit,'(a)') 'FAILED:' //  name
+      if (is_IOP) write(output_unit,'(a)') 'FAILED: ' // name
     end if
   end subroutine
 
-  subroutine test_imap
-    integer :: j
-    logical :: pass
-    select case (my_rank)
-    case (0)
-      pass = (imap%onp_size==3) .and. (imap%local_size==5)
-      pass = pass .and. all(imap%global_index([(j,j=1,5)]) == [1,2,3,4,7])
-      call write_result(pass, 'test_imap')
-    case (1)
-      pass = (imap%onp_size==3) .and. (imap%local_size==6)
-      pass = pass .and. all(imap%global_index([(j,j=1,6)]) == [4,5,6,7,10,11])
-      call write_result(pass, 'test_imap')
-    case (2)
-      pass = (imap%onp_size==3) .and. (imap%local_size==7)
-      pass = pass .and. all(imap%global_index([(j,j=1,7)]) == [7,8,9,4,5,11,12])
-      call write_result(pass, 'test_imap')
-    case (3)
-      pass = (imap%onp_size==3) .and. (imap%local_size==3)
-      pass = pass .and. all(imap%global_index([(j,j=1,3)]) == [10,11,12])
-      call write_result(pass, 'test_imap')
-    end select
-  end subroutine
-
-  ! We pad the array with an extra element to verify that its value is
-  ! preserved by the gather operation. The wrong intent on the on-process
-  ! array will result in it being overwritten when using NAG's -nan option.
-
-  subroutine test_rank1
-    integer ::j, input(imap%local_size+1), output(imap%local_size+1)
-    input = 99
-    do j = 1, imap%onp_size
-      input(j) = imap%global_index(j)
-    end do
-    output = 99
-    do j = 1, imap%local_size
-      output(j) = imap%global_index(j)
-    end do
+  ! Distribute a scalar value to each process
+  subroutine gath_scalar
+    integer, allocatable :: adest(:)
+    integer :: n, asrc
+    asrc = this_pe
+    if (is_IOP) then
+      adest = [(n, n=1,npe)]
+    else
+      allocate(adest(0))
+    end if
     block
-      integer(int32), allocatable :: array(:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank1_int32')
+      integer(int8) :: dest(size(adest)), src
+      src = asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_scalar_int8')
     end block
     block
-      real(real32), allocatable :: array(:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank1_real32')
+      integer(int32) :: dest(size(adest)), src
+      src = asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_scalar_int32')
     end block
     block
-      real(real64), allocatable :: array(:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank1_real64')
+      integer(int64) :: dest(size(adest)), src
+      src = asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_scalar_int64')
+    end block
+    block
+      real(real32) :: dest(size(adest)), src
+      src = asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_scalar_real32')
+    end block
+    block
+      real(real64) :: dest(size(adest)), src
+      src = asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_scalar_real64')
     end block
   end subroutine
 
-  subroutine test_rank2
-    integer :: j, input(2,imap%local_size+1), output(2,imap%local_size+1)
-    input = 99
-    do j = 1, imap%onp_size
-      input(1,j) = imap%global_index(j)
-    end do
-    input(2,:) = -input(1,:)
-    output = 99
-    do j = 1, imap%local_size
-      output(1,j) = imap%global_index(j)
-    end do
-    output(2,:) = -output(1,:)
+  ! generic rank-1 vector case
+  subroutine gath_rank1
+    integer, allocatable :: asrc(:), adest(:)
+    integer :: j, n
+    n = (this_pe*(this_pe-1))/2
+    asrc = [(n+j, j=1,this_pe)]
+    if (is_IOP) then
+      adest = [(j, j=1, (npe*(npe+1))/2)]
+    else
+      allocate(adest(0))
+    end if
     block
-      integer(int32), allocatable :: array(:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank2_int32')
+      integer(int8), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_int8')
     end block
     block
-      real(real32), allocatable :: array(:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank2_real32')
+      integer(int32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_int32')
     end block
     block
-      real(real64), allocatable :: array(:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank2_real64')
-    end block
-  end subroutine
-
-  subroutine test_rank3
-    integer :: j, input(2,2,imap%local_size+1), output(2,2,imap%local_size+1)
-    input = 99
-    do j = 1, imap%onp_size
-      input(1,1,j) = imap%global_index(j)
-    end do
-    input(2,1,:) = -input(1,1,:)
-    input(:,2,:) = 2*input(:,1,:)
-    output = 99
-    do j = 1, imap%local_size
-      output(1,1,j) = imap%global_index(j)
-    end do
-    output(2,1,:) = -output(1,1,:)
-    output(:,2,:) = 2*output(:,1,:)
-    block
-      integer(int32), allocatable :: array(:,:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank3_int32')
+      integer(int64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_int64')
     end block
     block
-      real(real32), allocatable :: array(:,:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank3_real32')
+      real(real32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_real32')
     end block
     block
-      real(real64), allocatable :: array(:,:,:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array == output), 'test_rank3_real64')
+      real(real64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_real64')
     end block
   end subroutine
 
-  subroutine test_log
-    integer :: j
-    logical :: input(imap%local_size+1), output(imap%local_size+1)
-    input = .true.
-    do j = 1, imap%local_size
-      input(j) = (modulo(imap%global_index(j),2) == 0)
-    end do
-    do j = imap%onp_size+1, imap%local_size
-      input(j) = .not.input(j)
-    end do
-    output = .true.
-    do j = 1, imap%local_size
-      output(j) = (modulo(imap%global_index(j),2) == 0)
-    end do
+  ! Rank-1 vector case with a 0-sized vector
+  subroutine gath_rank1_zero
+    integer, allocatable :: asrc(:), adest(:)
+    integer :: j, n
+    n = ((this_pe-1)*(this_pe-2))/2
+    asrc = [(n+j, j=1,this_pe-1)]
+    if (is_IOP) then
+      adest = [(j, j=1, (npe*(npe-1))/2)]
+    else
+      allocate(adest(0))
+    end if
     block
-      logical, allocatable :: array(:)
-      array = input
-      call imap%gather_offp(array)
-      call write_result(all(array .eqv. output), 'test_log_rank1')
+      integer(int8), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_zero_int8')
     end block
     block
-      logical :: array(2,imap%local_size+1)
-      array(1,:) = input
-      array(2,:) = .not.input
-      call imap%gather_offp(array)
-      call write_result(all((array(1,:) .eqv. output) .and. (array(2,:) .neqv. output)), 'test_log_rank2')
+      integer(int32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_zero_int32')
     end block
     block
-      logical :: array(2,2,imap%local_size+1)
-      array(1,1,:) = input
-      array(2,1,:) = .not.input
-      array(:,2,:) = .not.array(:,1,:)
-      call imap%gather_offp(array)
-      call write_result( &
-          all((array(1,1,:) .eqv. output) .and. (array(2,1,:) .neqv. output) .and. &
-              (array(1,2,:) .neqv. output) .and. (array(2,2,:) .eqv. output)), 'test_log_rank3')
+      integer(int64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_zero_int64')
     end block
+    block
+      real(real32), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_zero_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:), dest(:)
+      src = asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank1_zero_real64')
+    end block
+  end subroutine
+
+  ! generic rank-2 vector case
+  subroutine gath_rank2
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    n = (this_pe*(this_pe-1))/2
+    allocate(asrc(2,this_pe))
+    asrc(1,:) = [(n+j, j=1,this_pe)]
+    asrc(2,:) = -asrc(1,:)
+    if (is_IOP) then
+      allocate(adest(2,(npe*(npe+1))/2))
+      adest(1,:) = [(j, j=1, (npe*(npe+1))/2)]
+      adest(2,:) = -adest(1,:)
+    else
+      allocate(adest(2,0))
+    end if
+    block
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_real64')
+    end block
+  end subroutine
+
+  ! Rank-1 vector case with a 0-sized vector
+  subroutine gath_rank2_zero
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    n = ((this_pe-1)*(this_pe-2))/2
+    allocate(asrc(2,this_pe-1))
+    asrc(1,:) = [(n+j, j=1,this_pe-1)]
+    asrc(2,:) = -asrc(1,:)
+    if (is_IOP) then
+      n = (npe*(npe-1))/2
+      allocate(adest(2,n))
+      adest(1,:) = [(j, j=1,n)]
+      adest(2,:) = -adest(1,:)
+    else
+      allocate(adest(2,0))
+    end if
+    block
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_zero_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_zero_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_zero_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_zero_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_rank2_zero_real64')
+    end block
+  end subroutine
+
+  ! generic rank-2 vector case
+  subroutine gath_array_section
+    integer, allocatable :: asrc(:,:), adest(:,:)
+    integer :: j, n
+    n = (this_pe*(this_pe-1))/2
+    allocate(asrc(3,2*this_pe), source=-1)
+    asrc(1,1::2) = [(n+j, j=1,this_pe)]
+    asrc(3,1::2) = -asrc(1,1::2)
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(adest(3,2*n), source=0)
+      adest(1,1::2) = [(j, j=1,n)]
+      adest(3,1::2) = -adest(1,1::2)
+    else
+      allocate(adest(3,0))
+    end if
+    block
+      integer(int8), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int8)
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_array_section_int8')
+    end block
+    block
+      integer(int32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int32)
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_array_section_int32')
+    end block
+    block
+      integer(int64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0_int64)
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_array_section_int64')
+    end block
+    block
+      real(real32), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0.0_real32)
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_array_section_real32')
+    end block
+    block
+      real(real64), allocatable :: src(:,:), dest(:,:)
+      src = asrc
+      allocate(dest(3,size(adest,2)), source=0.0_real64)
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == adest)
+      call write_result(pass, 'gath_array_section_real64')
+    end block
+  end subroutine
+
+  subroutine gath_log_scalar
+    logical, allocatable :: dest(:)
+    logical :: src
+    src = .true.
+    if (is_IOP) then
+      allocate(dest(npe), source=.false.)
+    else
+      allocate(dest(0))
+    end if
+    call gather(src, dest)
+    pass = all(dest)
+    call write_result(pass, 'gath_log_scalar')
+  end subroutine
+
+  subroutine gath_log_rank1
+    logical, allocatable :: src(:), dest(:)
+    integer :: n
+    allocate(src(this_pe), source=.true.)
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(dest(n), source=.false.)
+    else
+      allocate(dest(0))
+    end if
+    call gather(src, dest)
+    pass = all(dest)
+    call write_result(pass, 'gath_log_rank1')
+  end subroutine
+
+  subroutine gath_log_rank2
+    logical, allocatable :: src(:,:), dest(:,:)
+    integer :: n
+    allocate(src(2,this_pe))
+    src(1,:) = .true.
+    src(2,:) = .false.
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(dest(2,n))
+      dest(1,:) = .false.
+      dest(2,:) = .true.
+    else
+      allocate(dest(2,0))
+    end if
+    call gather(src, dest)
+    pass = all(dest(1,:)) .and. all(.not.dest(2,:))
+    call write_result(pass, 'gath_log_rank2')
+  end subroutine
+
+  subroutine gath_char_scalar
+    character(3), allocatable :: adest(:), dest(:)
+    character(3) :: src
+    integer :: n
+    write(src,'(i3)') this_pe
+    if (is_IOP) then
+      allocate(dest(npe), adest(npe))
+      do n = 1, npe
+        write(adest(n),'(i3)') n
+      end do
+    else
+      allocate(dest(0), adest(0))
+    end if
+    dest = ''
+    call gather(src, dest)
+    pass = all(dest == adest)
+    call write_result(pass, 'gath_char_scalar')
+  end subroutine
+
+  subroutine gath_char_rank1
+    character(3), allocatable :: src(:), adest(:), dest(:)
+    integer :: j, n
+    n = (this_pe*(this_pe-1))/2
+    allocate(src(this_pe))
+    do j = 1, this_pe
+      write(src(j),'(i3)') n+j
+    end do
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(dest(n), adest(n))
+      do j = 1, n
+        write(adest(j),'(i3)') j
+      end do
+    else
+      allocate(dest(0), adest(0))
+    end if
+    dest = ''
+    call gather(src, dest)
+    pass = all(dest == adest)
+    call write_result(pass, 'gath_char_rank1')
+  end subroutine
+
+  subroutine gath_char_rank2
+    character(3), allocatable :: src(:,:), adest(:,:), dest(:,:)
+    integer :: j, n
+    n = (this_pe*(this_pe-1))/2
+    allocate(src(2,this_pe))
+    do j = 1, this_pe
+      write(src(1,j),'(i3)') n+j
+      write(src(2,j),'(i3.3)') n+j
+    end do
+    if (is_IOP) then
+      n = (npe*(npe+1))/2
+      allocate(dest(2,n), adest(2,n))
+      do j = 1, n
+        write(adest(1,j),'(i3)') j
+        write(adest(2,j),'(i3.3)') j
+      end do
+    else
+      allocate(dest(2,0), adest(2,0))
+    end if
+    dest = ''
+    call gather(src, dest)
+    pass = all(dest == adest)
+    call write_result(pass, 'gath_char_rank2')
   end subroutine
 
 end program

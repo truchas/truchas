@@ -530,7 +530,7 @@ contains
     nedge_onP = sys%mesh%nedge_onP
     cg_sys => sys
     
-    call collate (sys%mesh%edge_imap%onp_size, bsize_vector)
+    call gather (sys%mesh%edge_imap%onp_size, bsize_vector)
     
     !! Mark the on-PE edges as partition boundary, partition interior, or ignored
     tmp(1:nedge_onP)  = 0.0_r8
@@ -542,7 +542,7 @@ contains
       edge_type = 'I'
     end where
     where (sys%emask /= 0) edge_type = '*'
-    call collate (edge_type(:nedge_onP), etype)
+    call gather (edge_type(:nedge_onP), etype)
     
     if (is_IOP) then
       open(newunit=lun,file='hiptmair.dat',status='replace',action='write')
@@ -614,7 +614,7 @@ contains
       character(len=*), intent(inout) :: value
       integer, intent(in) :: pe
       character(len(value)) :: tmp(nPE)
-      call collate ([value], tmp)
+      call gather ([value], tmp)
       if (is_IOP) value = tmp(pe)
       call broadcast (value)
     end subroutine broadcast_from_PE

@@ -115,7 +115,7 @@
 #undef _ARRAY_PROCS_
   subroutine _READ_ARRAY1_STAT_ (unit, array, perm, stat)
 
-    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, collate, distribute
+    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, gather, scatter
     use permutations
 
     integer, intent(in) :: unit
@@ -141,7 +141,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,1) == size(perm) )
         allocate(g_perm(n))
-        call collate (perm, g_perm)
+        call gather (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -157,7 +157,7 @@
           call reorder (g_sect, g_perm)
         end if
       end if
-      call distribute (g_sect, array)
+      call scatter (g_sect, array)
     end if
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
@@ -179,7 +179,7 @@
 
   subroutine _READ_ARRAY2_STAT_ (unit, array, perm, stat)
 
-    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, collate, distribute
+    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, gather, scatter
     use permutations
 
     integer, intent(in) :: unit
@@ -205,7 +205,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,2) == size(perm) )
         allocate(g_perm(n))
-        call collate (perm, g_perm)
+        call gather (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -222,7 +222,7 @@
           call reorder (g_sect, g_perm)
         end if
       end if
-      call distribute (g_sect, array(i,:))
+      call scatter (g_sect, array(i,:))
     end do INPUT
     deallocate(g_sect)
     if (allocated(g_perm)) deallocate(g_perm)
@@ -244,7 +244,7 @@
 
   subroutine _READ_ARRAY3_STAT_ (unit, array, perm, stat)
 
-    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, collate, distribute
+    use parallel_communication, only: is_IOP, global_sum, global_all, broadcast, gather, scatter
     use permutations
 
     integer, intent(in) :: unit
@@ -270,7 +270,7 @@
       else  ! passed a distributed permutation; collate it.
         ASSERT( size(array,3) == size(perm) )
         allocate(g_perm(n))
-        call collate (perm, g_perm)
+        call gather (perm, g_perm)
         ASSERT( is_perm(g_perm) .or. n == 0 )
         coll_perm = .false.
       end if
@@ -288,7 +288,7 @@
             call reorder (g_sect, g_perm)
           end if
         end if
-        call distribute (g_sect, array(i,j,:))
+        call scatter (g_sect, array(i,j,:))
       end do
     end do INPUT
     deallocate(g_sect)

@@ -367,7 +367,7 @@ contains
 
     !! Distribute the cell permutation array; gives mapping to the external cell number.
     allocate(this%xcell(this%ncell))
-    call this%cell_imap%distribute(cell_perm, this%xcell)
+    call this%cell_imap%scatter(cell_perm, this%xcell)
     call this%cell_imap%gather_offp(this%xcell)
     deallocate(cell_perm)
 
@@ -377,7 +377,7 @@ contains
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
-    call this%node_imap%distribute(node_perm, this%xnode)
+    call this%node_imap%scatter(node_perm, this%xnode)
     call this%node_imap%gather_offp(this%xnode)
     deallocate(node_perm)
 
@@ -387,7 +387,7 @@ contains
     if (have_parent_node) then
       allocate(this%parent_node(this%nnode))
       if (.not.is_IOP) allocate(mesh%parent_node(0))
-      call this%node_imap%distribute(mesh%parent_node, this%parent_node)
+      call this%node_imap%scatter(mesh%parent_node, this%parent_node)
       call this%node_imap%gather_offp(this%parent_node)
     end if
 
@@ -433,7 +433,7 @@ contains
     call broadcast_status(stat, errmsg)
     if (stat /= 0) return
     allocate(this%x(3,this%nnode))
-    call this%node_imap%distribute(mesh%coord, this%x)
+    call this%node_imap%scatter(mesh%coord, this%x)
     call this%node_imap%gather_offp(this%x)
 
     !! Initialize the mesh geometry data components.
@@ -1120,7 +1120,7 @@ contains
 
     !! Distribute the CFPAR mask array.
     allocate(this%cfpar(this%ncell))
-    call this%cell_imap%distribute(cfpar, this%cfpar)
+    call this%cell_imap%scatter(cfpar, this%cfpar)
     call this%cell_imap%gather_offp(this%cfpar)
 
     this%nface = this%face_imap%local_size
@@ -1221,7 +1221,7 @@ contains
 
   subroutine init_link_data(this, mesh, lnhbr, lface)
 
-    use parallel_communication, only: is_IOP, nPE, collate, broadcast
+    use parallel_communication, only: is_IOP, nPE, gather, broadcast
     use permutations, only: reorder, invert_perm
     use bitfield_type
     use ext_exodus_mesh_type
@@ -1238,8 +1238,8 @@ contains
 
     !! Partition the links
     allocate(cell_psize(merge(nPE,0,is_IOP)), node_psize(merge(nPE,0,is_IOP)))
-    call collate(this%cell_imap%onp_size, cell_psize)
-    call collate(this%node_imap%onp_size, node_psize)
+    call gather(this%cell_imap%onp_size, cell_psize)
+    call gather(this%node_imap%onp_size, node_psize)
     if (is_IOP) then
       allocate(psize(nPE), perm(mesh%nlink), offP_size(nPE))
       call partition_links(lnhbr, cell_psize, mesh%xlnode, mesh%lnode, node_psize, psize, perm, offP_size, offP_index)
@@ -1309,13 +1309,13 @@ contains
 
     !! THIS%LINK_SET_MASK
     allocate(this%link_set_mask(this%nlink))
-    call distribute(link_set_mask, this%link_set_mask(:this%nlink_onP))
-    call gather_boundary(this%link_imap, this%link_set_mask)
+    call scatter(link_set_mask, this%link_set_mask(:this%nlink_onP))
+    call gather_offp(this%link_imap, this%link_set_mask)
 
     !! THIS%LINK_CELL_ID
     allocate(this%link_cell_id(this%nlink))
     if (.not.is_IOP) allocate(mesh%link_cell_id(0))
-    call this%link_imap%distribute(mesh%link_cell_id, this%link_cell_id)
+    call this%link_imap%scatter(mesh%link_cell_id, this%link_cell_id)
     call this%link_imap%gather_offp(this%link_cell_id)
 
   end subroutine init_link_data
@@ -1362,7 +1362,7 @@ contains
 
     !! Initialize the distributed node set mask (%NODE_SET_MASK)
     allocate(this%node_set_mask(this%nnode))
-    call this%node_imap%distribute(node_set_mask, this%node_set_mask)
+    call this%node_imap%scatter(node_set_mask, this%node_set_mask)
     call this%node_imap%gather_offp(this%node_set_mask)
     deallocate(node_set_mask)
 
@@ -1407,7 +1407,7 @@ contains
     use exodus_mesh_type
     use integer_set_type
     use permutations, only: reorder
-    use parallel_communication, only: is_IOP, broadcast, collate
+    use parallel_communication, only: is_IOP, broadcast, gather
 
     type(unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
@@ -1449,13 +1449,13 @@ contains
 
     !! Reorder the global cell_set_mask to the internal cell ordering.
     allocate(cell_perm(merge(ncell_tot,0,is_IOP)))
-    call collate(this%xcell(:this%ncell_onP), cell_perm)
+    call gather(this%xcell(:this%ncell_onP), cell_perm)
     if (is_IOP) call reorder(cell_set_mask, cell_perm)
     deallocate(cell_perm)
 
     !! Initialize the distributed cell set mask (%CELL_SET_MASK)
     allocate(this%cell_set_mask(this%ncell))
-    call this%cell_imap%distribute(cell_set_mask, this%cell_set_mask)
+    call this%cell_imap%scatter(cell_set_mask, this%cell_set_mask)
     call this%cell_imap%gather_offp(this%cell_set_mask)
     deallocate(cell_set_mask)
 
@@ -1522,8 +1522,8 @@ contains
 
     !! Initialize the distributed face set mask (%FACE_SET_MASK)
     allocate(this%face_set_mask(this%nface))
-    call distribute(face_set_mask, this%face_set_mask(:this%nface_onP))
-    call gather_boundary(this%face_imap, this%face_set_mask)
+    call scatter(face_set_mask, this%face_set_mask(:this%nface_onP))
+    call gather_offp(this%face_imap, this%face_set_mask)
     deallocate(face_set_mask)
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)

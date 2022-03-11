@@ -12,7 +12,7 @@ The goal is to encapsulate all direct MPI use within as few modules as
 possible.
 
 The module provides a few read-only module variables, and a few generic
-collective procedures: broadcast, distribute, collate, and a selection
+collective procedures: broadcast, gather, scatter, and a selection
 of global reductions. These are described in the following.
 
 ### Preliminary Notions
@@ -40,7 +40,7 @@ performed in serial by this distinguished process, it has been called the
 All procedures are collective and must be called by all processes in the
 communicator.
 
-The distribute and collate subroutines have an array argument that is only
+The gather and scatter subroutines have an array argument that is only
 referenced on the IO process with an expected size of `N` say. Other
 processes, which still must pass an array to the argument, may pass a
 0-sized array. The following idiom is a compact but still readable way
@@ -111,43 +111,43 @@ for `int8`, `int32`, and `int64` integers; `real32` and `real64` reals;
 default logical; and default character. A character argument must have the
 same length on all processes.
 
-### Generic Distribute and Collate Subroutines
+### Generic Scatter and Gather Subroutines
 These subroutines distribute data from the IO process to all processes
-and the reverse operation of collating data from all processes onto the
+and the reverse operation of collecting data from all processes onto the
 IO process. Both arguments must have the same type and kind across all
 processes. The following argument types and kinds are currently supported:
 * `integer`: kinds `int8`, `int32`, and `int64`
 * `real`: kinds `real32` and `real64`
 * default `logical`
-* default `character` (for `collate` only)
+* default `character` (for `gather` only)
 
 Character arguments must have the same length across all processes.
 
 #### Scalar Data
 ```Fortran
-call distribute(src, dest)
+call scatter(src, dest)
 ```
 copies element *n* of the rank-1 array `src` on the IO process to the scalar
 argument `dest` on process *n*. The `src` array is only accessed on the IO
 process, where its size must be at least `npe`. `src` may be a 0-sized array
-on other processes. This subroutine is analogous to MPI's `MPI_Scatter`.
+on other processes. This subroutine wraps `MPI_Scatter`.
 
 ```fortran
-call collate(src, dest)
+call gather(src, dest)
 ```
 copies the value of the scalar argument `src` on process *n* to element *n*
 of the rank-1 array `dest` on the IO process. `dest` is only referenced on
 the IO process, where its size must be at least `npe` and only its first
 `npe` elements are modified. `dest` may be a 0-sized array on other processes.
-This subroutine is analogous to MPI's `MPI_Gather`.
+This subroutine wraps `MPI_Gather`.
 
 #### Array Data
-The generic `distribute` subroutine supports arrays of rank not greater
-than 3, and the `collate` subroutine supports arrays of rank not greater
+The generic `scatter` subroutine supports arrays of rank not greater
+than 3, and the `gather` subroutine supports arrays of rank not greater
 than 2.
 
 ```Fortran
-call distribute(src, dest)
+call scatter(src, dest)
 ```
 distributes elements of the rank-*n* array `src` on the IO process to the
 `dest` array on all processes. Both arguments must have the same rank, and
@@ -159,13 +159,13 @@ extent in the last dimension must be at least the sum over all processes
 of these `dest` extents. The elements of `src` on the IO process are copied
 in order, first to `dest` on process 1, then to `dest` on process 2, and so
 forth. `src` may be 0-sized on other processes.
-This subroutine is analagous to MPI's `MPI_Scatterv`.
+This subroutine wraps `MPI_Scatterv`.
 
 
 ```Fortran
-call collate(src, dest)
+call gather(src, dest)
 ```
-collates the elements of the rank-*n* array `src` on each process into the
+collects the elements of the rank-*n* array `src` on each process into the
 array `dest` on the IO process. Both arguments must have the same rank, and
 must have the same extent in all but the last dimension. In the multi-rank
 case, the copied "elements" are entire rank-(*n-1*) sections `src(:,...,j)`
@@ -176,7 +176,7 @@ of these `src` extents in order to receive all the elements of the `src`
 arrays. The elements of `dest` on the IO process are assigned in order,
 first from the elements of `src` on process 1, then those from `src` on
 process 2, and so forth. `dest` may be 0-sized on other processes.
-This subroutine is analogous to MPI's `MPI_Gatherv`
+This subroutine wraps `MPI_Gatherv`.
 
 ### Generic Global Reduction Functions
 These reduction operations are the straightforward extensions of
@@ -263,14 +263,14 @@ There are several ad hoc procedures for some specific one-off needs.
   returns the global index of the first element of a distributed rank-1
   `real(real64)` array that equals `global_minval(a)`. The global index
   is the index of that element in the array `b` were `b` the result of
-  `call collate(a, b)`.
+  `call gather(a, b)`.
 
 * `global_maxloc(a)`
 
   returns the global index of the first element of a distributed rank-1
   `real(real64)` array that equals `global_maxval(a)`. The global index
   is the index of that element in the array `b` were `b` the result of
-  `call collate(a, b)`.
+  `call gather(a, b)`.
 
 * `call global_maxloc_sub(array, pid, lindex [,mask])`
 

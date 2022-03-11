@@ -73,8 +73,8 @@ contains
 
     !! Reorder and block partition the global surface mesh.
     allocate(node_map(nnode), face_map(nface))
-    call collate(fmap, face_map)
-    call collate(size(fmap), face_bsize)
+    call gather(fmap, face_map)
+    call gather(size(fmap), face_bsize)
     if (is_IOP) then
       !! Reorder the faces; reorder the face block index array.
       call organize_faces (face_map, fsize, fnode)
@@ -113,19 +113,19 @@ contains
 
     !! Distribute the node coordinate array.
     allocate(this%coord(3,this%nnode))
-    call this%node_imap%distribute(coord, this%coord)
+    call this%node_imap%scatter(coord, this%coord)
     call this%node_imap%gather_offp(this%coord)
     deallocate(coord)
 
     !! Distribute the node map array.
     allocate(this%node_map(this%nnode))
-    call this%node_imap%distribute(node_map, this%node_map)
+    call this%node_imap%scatter(node_map, this%node_map)
     call this%node_imap%gather_offp(this%node_map)
     deallocate(node_map)
 
     !! Distribute the face map array.
     allocate(this%face_map(this%nface))
-    call this%face_imap%distribute(face_map, this%face_map)
+    call this%face_imap%scatter(face_map, this%face_map)
     !call this%face_imap%gather_offp(this%face_map)
     deallocate(face_map)
 
@@ -139,7 +139,7 @@ contains
 
     !! Distribute the face block index array.
     allocate(this%face_block(this%nface))
-    call this%face_imap%distribute(gnum, this%face_block)
+    call this%face_imap%scatter(gnum, this%face_block)
     !call this%face_imap%gather_offp(this%face_block)
     deallocate(gnum)
 
