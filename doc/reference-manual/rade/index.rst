@@ -16,10 +16,10 @@ Invoking GENRE
 
 Genre generates a radiation enclosure dataset.
 
-:Serial: ``genre input_file encl_file``
-:Parallel: ``mpirun -np N genre input_file encl_file``
+:Serial: ``genre [-f] input_file encl_file``
+:Parallel: ``mpirun -np N genre [-f] input_file encl_file``
 
-The input file is a :ref:`Fortran namelist file <introduction/index:Input File Format>` containing the following namelists:
+``encl_file`` is the name of the output view factor radiation enclosure file to be written. If a file with this name already exists, it will not be overwritten unless the ``-f`` flag is provided. The input file is a :ref:`Fortran namelist file <introduction/index:Input File Format>` containing the following namelists:
 
 .. toctree::
    :maxdepth: 1

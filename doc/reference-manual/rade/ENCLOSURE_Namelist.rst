@@ -22,7 +22,7 @@ A user-supplied name for the enclosure.
 mesh_file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-path to the Exodus/Genesis mesh file
+Path to the Exodus/Genesis mesh file.
 
 :Type: case-sensitive string
 :Default: none
@@ -31,7 +31,7 @@ path to the Exodus/Genesis mesh file
 ignore_block_IDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-list of element blocks to mask-off from the mesh
+List of element blocks to mask-off from the mesh.
 
 :Type: integer list
 :Default: none
@@ -40,7 +40,7 @@ list of element blocks to mask-off from the mesh
 side_set_ids
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-list of element blocks to mask-off from the mesh
+List of side sets specifying the surface.
 
 :Type: integer list
 :Default: none
@@ -70,7 +70,7 @@ List of side sets whose surfaces will be displaced.
 displacement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-(x,y,z) displacement vector
+(x,y,z) displacement vector.
 
 :Type: real 3-vector
 :Default: none
