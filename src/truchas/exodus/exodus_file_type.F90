@@ -173,8 +173,8 @@ contains
       return
     end if
     do n = 1, this%num_elem_blk
-      error = ex_get_elem_block (this%exoid, this%elem_blk(n)%ID, elem_type, &
-          this%elem_blk(n)%num_elem, this%elem_blk(n)%num_nodes_per_elem, idummy)
+       error = ex_get_elem_block (this%exoid, this%elem_blk(n)%ID, elem_type, &
+           this%elem_blk(n)%num_elem, this%elem_blk(n)%num_nodes_per_elem, idummy)
       if (error /= 0) then
         call exo_error_handler ('EXODUS_FILE:OPEN', &
             'ex_get_elem_block returned an error', error, stat, errmsg)
@@ -193,7 +193,8 @@ contains
         return
       end if
       do n = 1, this%num_node_sets
-        error = ex_get_node_set_param(this%exoid, this%node_set(n)%ID, &
+
+         error = ex_get_node_set_param(this%exoid, this%node_set(n)%ID, &
             this%node_set(n)%num_node_in_set, idummy)
         if (error /= 0) then
           call exo_error_handler ('EXODUS_FILE:OPEN', &
@@ -213,7 +214,7 @@ contains
         return
       end if
       do n = 1, this%num_side_sets
-        error = ex_get_side_set_param(this%exoid, this%side_set(n)%ID, &
+         error = ex_get_side_set_param(this%exoid, this%side_set(n)%ID, &
             this%side_set(n)%num_side_in_set, idummy)
         if (error /= 0) then
           call exo_error_handler ('EXODUS_FILE:OPEN', &
@@ -277,6 +278,7 @@ contains
       integer(c_int), intent(in) :: exoid, elem_blk_id
       integer(c_int), intent(out), target :: connect(*)
       integer, intent(out) :: ierr
+
       ierr = ex_get_elem_conn (exoid, elem_blk_id, c_loc(connect))
     end subroutine
 
@@ -389,6 +391,7 @@ contains
       integer(c_int), intent(in) :: exoid, node_set_id
       integer(c_int), intent(out), target :: node_list(*)
       integer, intent(out) :: ierr
+
       ierr = ex_get_node_set (exoid, node_set_id, c_loc(node_list))
     end subroutine
 
@@ -455,6 +458,8 @@ contains
   end subroutine exodus_file_get_side_set
 
 !!!! AUXILLARY PROCEDURES FOLLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 
   !! Exodus returns strings in user-allocated storage.  Although the API
   !! specifies a maximum length for these strings, they appear to be null
