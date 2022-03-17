@@ -1,7 +1,8 @@
 ENCLOSURE Namelist
 ==================
 
-The **ENCLOSURE** namelist specifies the mesh used by genre, along with the side sets where view factors are to be computed.
+The **ENCLOSURE** namelist specifies the mesh used by genre, along with the side
+sets where view factors are to be computed.
 
 :Required/Optional: Required
 :Single/Multiple Instances: Single
@@ -61,10 +62,20 @@ List of up to 3 symmetry operations
 displace_side_set_ids
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-List of side sets whose surfaces will be displaced.
+List of side sets whose surfaces will be displaced by the vector specified by
+`displacement`_.
 
 :Type: integer list
 :Default: none
+
+.. note::
+   Displacing surfaces is optional. Any displaced surfaces must be totally
+   disconnected from the remaining enclosure surfaces (this is checked). The
+   constant displacement must be compatibile with the specified symmetries (this
+   is not checked). This is useful when the mesh consists of disconnected parts
+   that will be shifted relative to one another. Instead of generating multiple
+   3D meshes, a single 3D mesh plus use of this displacement option is all that
+   is needed.
 
 
 displacement

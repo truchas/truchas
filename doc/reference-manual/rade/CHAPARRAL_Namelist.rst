@@ -35,7 +35,7 @@ General Guidance
     <rade/CHAPARRAL_Namelist:max_subdivisions (expert)>`, or address a problem
     in the mesh.
   - The number of "Nonzero lower/upper triangular entries" changes by a few % at
-    most during the smoothing step. If the change is excessive, e.g. 30%,
+    most during the smoothing step. If the change is excessive, e.g. 10%,
     consider the tip in the `hemicube_resolution`_ section.
   - The message "WARNING!! Solution is not converged!" should not appear in the
     smoothing stage. If it does, follow the suggestions in the
@@ -69,7 +69,7 @@ output:
 
 The number of nonzero entries changed from ~14.7m to ~14.9m, roughly a 1%
 increase. Furthermore, only 9 iterations were performed. If a smoothing step
-increases the number of nonzero entries significantly (e.g. by 30%), or takes
+increases the number of nonzero entries significantly (e.g. by 10%), or takes
 closer to the 50-iteration limit, then something is likely wrong and the results
 should not be trusted. Steps to improve the simulation should be:
 
@@ -92,10 +92,10 @@ should not be trusted. Steps to improve the simulation should be:
 blocking_enclosure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Defines whether this is a blocking problem; i.e., whether the path between two
-surfaces might be blocked by a third surface. If the shape produced by the
-enabled radiating surfaces is *entirely convex*, this parameter may be set to
-false.
+Defines whether this is a blocking problem; i.e., whether the line segment
+connecting two enclosure surface points may intersect the surface at an
+intermediate point. If the shape produced by the enabled radiating surfaces is
+convex, this parameter may be set to false.
 
 :Type: logical
 :Default: true
@@ -103,8 +103,8 @@ false.
 .. warning::
    If ``blocking_enclosure = F`` is provided to a blocking problem, the view
    factors will be incorrect. If ``blocking_enclosure = T`` is provided to a
-   non-blocking problem, the view factor calculation will run slower than
-   necessary.
+   non-blocking problem, the view factor calculation will be correct, but will
+   run slower than necessary.
 
 
 partial_enclosure
@@ -179,11 +179,11 @@ subdivisions per hemicube.
 
 .. note::
    This is one of the most significant solver factors. Increasing
-   ``hemicube_resolution`` will both increase runtime and improve result
-   quality. The given default is a good starting point. This tends to be more
-   important than ``min_separation`` on *fine meshes*. This is because on fine
-   meshes, faces are less likely to need subdivision, while higher resolution
-   hemicubes are needed to accurately hit faces.
+   ``hemicube_resolution`` will both increase runtime and improve the accuracy
+   of the computed view factors. The given default is a good starting point.
+   This tends to be more important than ``min_separation`` on *fine meshes*.
+   This is because on fine meshes, faces are less likely to need subdivision,
+   while higher resolution hemicubes are needed to accurately hit faces.
 
 .. tip::
    Read the `General Guidance`_ section for tips on how to decide whether
@@ -211,11 +211,11 @@ the minimum distance between face :math:`j` and all other faces.
 
 .. note::
    This is one of the most significant solver factors. Increasing
-   ``min_separation`` will both increase runtime and improve result quality. The
-   given default is a good starting point. This tends to be more important than
-   ``hemicube_resolution`` on *coarse meshes*. This is because on coarse meshes,
-   low-resolution hemicubes tend to hit most faces, while coarse faces are more
-   likely to need subdivision.
+   ``min_separation`` will both increase runtime and improve the accuracy of the
+   computed view factors. The given default is a good starting point. This tends
+   to be more important than ``hemicube_resolution`` on *coarse meshes*. This is
+   because on coarse meshes, low-resolution hemicubes tend to hit most faces,
+   while coarse faces are more likely to need subdivision.
 
 .. tip::
    A range of 10 - 40 is most useful for most problems.
@@ -238,16 +238,15 @@ Determines the detail and frequency of terminal output.
 max_subdivisions (expert)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The maximum face subdivisions in 1D. Given a ``max_subdivisions`` of :math:`n`,
-a total of :math:`n^2` subdivisions per face will be allowed.
+The maximum face subdivisions allowed to satisfy `min_separation`_.
 
 :Type: integer
 :Default: 100
 :Valid Values: :math:`\geq 0`
 
 .. note::
-   The default is set such that, in most scenarios, the minimum separation will
-   be reached.
+   The default is set such that, in most scenarios, the specified
+   `min_separation`_ will be reached.
 
 
 .. warning::
