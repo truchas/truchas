@@ -41,7 +41,7 @@ General Guidance
     smoothing stage. If it does, follow the suggestions in the
     `hemicube_resolution`_ tip. Increasing the maximum smoothing iterations is
     not advised, this failure generally indicates an underlying issue.
-       
+
 The best way to tell if your view factor calculation is trustworthy is by
 looking at the output for the smoothing stage. A well-resolved simulation does
 not require significantly changing the number of non-zero entries, and should
@@ -73,8 +73,9 @@ increases the number of nonzero entries significantly (e.g. by 10%), or takes
 closer to the 50-iteration limit, then something is likely wrong and the results
 should not be trusted. Steps to improve the simulation should be:
 
-1. Ensure the mesh does not have fundamental issues, such as poorly shaped
-   elements or vanishingly tiny elements.
+1. Ensure the mesh does not have fundamental issues, such as vanishingly tiny
+   elements, overlapping surfaces, improper orientation, improper symmetries,
+   unaccounted holes, etc.
 
 2. Ensure the problem is set up correctly, with appropriate values for
    `blocking_enclosure`_, `partial_enclosure`_, and `partial_area`_.
@@ -150,7 +151,7 @@ applied. Required when ``partial_enclosure`` is true.
    view factors (for example, see below). It may be necessary to run genre
    twice; once to compute the minimum partial enclosure area, and a second time
    with that value provided as the ``partial_area`` value.
-   
+
 
    .. code-block::
 
@@ -221,7 +222,7 @@ the minimum distance between face :math:`j` and all other faces.
 .. tip::
    A range of 10 - 40 is most useful for most problems.
 
-.. warning:: 
+.. warning::
    The number of subdivisions is limited by :ref:`max_subdivisions
    <rade/CHAPARRAL_Namelist:max_subdivisions (expert)>`.
 

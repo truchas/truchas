@@ -475,7 +475,7 @@ only).
                - 1: Computes a bisection at random followed by a refinement
                - 2: Derives a separator from an edge cut.
                - 3: Grow a bisection using a greedy node-based strategy
-                   
+
 
 metis_ncuts
 ^^^^^^^^^^^

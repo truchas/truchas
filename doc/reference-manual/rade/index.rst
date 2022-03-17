@@ -47,6 +47,10 @@ file <introduction/index:Input File Format>` containing the following namelists:
      view factor calculation.
 
 .. tip::
+   See the :ref:`General Guidance section <rade/CHAPARRAL_Namelist:General
+   Guidance>` for help setting namelist parameters.
+
+.. tip::
    Namelists may be easily disabled by placing a character before the ``&``. For
    example, the following namelist is ignored by Genre due to the leading ``x``:
 
