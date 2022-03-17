@@ -27,10 +27,10 @@ PATCHES Namelist (Expert Options)
    | the 'basic hemi' enclosure.                         |
    +-----------------------------------------------------+
 
-Genre supports patching, which groups adjacent faces into *patches* prior to the
-view factor calculation. This results in significantly reduced radiation
-enclosure file sizes and reduced runtime, at the cost of accuracy due to the
-effectively coarsened surface mesh.
+Genre supports multiple algorithms for patching, with different tradeoffs for
+performance and quality. **These are expert parameters. Most users should not
+need more than the** :ref:`standard parameters <rade/PATCHES_Namelist:PATCHES
+Namelist>`.
 
 - `PAVE <https://www.truchas.org/docs/sphinx/tools/RadE/patches/pave.html>`_
 
@@ -52,8 +52,8 @@ effectively coarsened surface mesh.
   - **Cons:** can be extremely slow for large meshes (scales badly), due to a
     quadratic dependence on the number of faces. However, once computed, the
     result can be reused with the :ref:`FILE method
-    <rade/PATCHES_Namelist:patch_algorithm>` allowing experimentation with
-    Chaparral parameters without rerunning the algorithm.
+    <rade/PATCHES_Namelist_Expert_Options:patch_algorithm>` allowing
+    experimentation with Chaparral parameters without rerunning the algorithm.
 
 - `METIS <https://www.truchas.org/docs/sphinx/tools/RadE/patches/metis.html>`_
   :footcite:`Karypis:1998:METIS`
@@ -213,8 +213,8 @@ Defines the maximum size of patches to be split during patch merging.
 :Valid Values: :math:`\gt 1`
 
 Before merging patches, all :ref:`merge methods
-<rade/PATCHES_Namelist:pave_merge_level>` find patches with less than
-``pave_split_patch_size`` faces and 'split' them into 1-face patches. The
+<rade/PATCHES_Namelist_Expert_Options:pave_merge_level>` find patches with less
+than ``pave_split_patch_size`` faces and 'split' them into 1-face patches. The
 original patches aren't actually modified, rather they are re-queued along with
 their constituent faces. This allows the algorithm to find more merge candidates
 and then 'fill in the gaps' with the 1-face patches.
@@ -290,8 +290,8 @@ Defines the maximum size of patches to be split during patch merging.
 :Valid Values: :math:`\gt 1`
 
 Before merging patches, all :ref:`merge methods
-<rade/PATCHES_Namelist:vac_merge_level>` find patches with less than
-``vac_split_patch_size`` faces and 'split' them into 1-face patches. The
+<rade/PATCHES_Namelist_Expert_Options:vac_merge_level>` find patches with less
+than ``vac_split_patch_size`` faces and 'split' them into 1-face patches. The
 original patches aren't actually modified, rather they are re-queued along with
 their constituent faces. This allows the algorithm to find more merge candidates
 and then 'fill in the gaps' with the 1-face patches.
@@ -477,17 +477,6 @@ only).
                - 3: Grow a bisection using a greedy node-based strategy
 
 
-metis_ncuts
-^^^^^^^^^^^
-Specifies the number of different partitionings that will be computed. The final
-partitioning will be the one that achieves the best edge-cut or communication
-volume.
-
-:Type: integer
-:Default: 1
-:Valid Values: :math:`\geq 1`
-
-
 metis_niter
 ^^^^^^^^^^^
 Specifies the number of iterations of the refinement algorithm at each stage of
@@ -496,14 +485,6 @@ the uncoarsening process.
 :Type: integer
 :Default: 10
 :Valid Values: :math:`\geq 1`
-
-
-metis_seed
-^^^^^^^^^^
-Specifies the seed for the random number generator.
-
-:Type: integer
-:Default: -1
 
 
 metis_minconn
@@ -543,17 +524,6 @@ ignored.
 :Default: 0
 :Valid Values: - 0: Does not force contiguous partitions.
                - 1: Forces contiguous partitions.
-
-
-metis_ufactor
-^^^^^^^^^^^^^
-Specifies the maximum allowed load imbalance among the partitions. A value of
-:math:`n` indicates that the allowed load imbalance is :math:`(1+n)/1000`.
-
-:Type: integer
-:Default: 1 for recursive bisection (i.e., an imbalance of 1.001); 30 for
-          :math:`k`-way partitioning (i.e., an imbalance of 1.03).
-:Valid Values: :math:`\geq 1`
 
 
 metis_dbglvl

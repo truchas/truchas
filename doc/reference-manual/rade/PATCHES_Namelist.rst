@@ -30,12 +30,12 @@ patches. This has two main purposes, both especially useful in large problems:
    grouping faces into patches, the need for high ``hemicube_resolution`` is
    less.
 
-Genre offers several patching algorithms, but for most situations, the `'METIS'`
-algorithm (default) is the best choice for speed, accuracy, and simplicity. The
-`metis_face_patch_ratio`_ can be tuned as needed. A sample input is given below,
-and is considered a good starting point for most problems. One should always
-view the patches using :ref:`Vizre <rade/index:Invoking Vizre>` to assess their
-quality.
+Genre offers several patching algorithms, but for most situations, the
+``'METIS'`` algorithm (default) is the best choice for speed, accuracy, and
+simplicity. The `metis_face_patch_ratio`_ can be tuned as needed. A sample input
+is given below, and is considered a good starting point for most problems. One
+should always view the patches using :ref:`Vizre <rade/index:Invoking Vizre>` to
+assess their quality.
 
 .. code-block::
 
@@ -151,5 +151,43 @@ Refer to the `face weight section
 of the METIS algorithm documentation for more information on how the parameter
 affects the final patch configuration.
 
+
+metis_ncuts
+'''''''''''
+Specifies the number of different partitionings that will be computed. The final
+partitioning will be the one that achieves the best edge-cut or communication
+volume.
+
+:Type: integer
+:Default: 1
+:Valid Values: :math:`\geq 1`
+
+
+metis_seed
+''''''''''
+Specifies the seed for the random number generator.
+
+:Type: integer
+:Default: -1
+
+.. note::
+   With the default option, patches are not deterministic (depending on the
+   platform). If it is necessary for two runs with identical input to produce
+   identical output, set this parameter.
+
+
+metis_ufactor
+'''''''''''''
+Specifies the maximum allowed load imbalance among the partitions. A value of
+:math:`n` indicates that the allowed load imbalance is :math:`(1+n)/1000`.
+
+:Type: integer
+:Default: 1 for recursive bisection (i.e., an imbalance of 1.001); 30 for
+          :math:`k`-way partitioning (i.e., an imbalance of 1.03).
+:Valid Values: :math:`\geq 1`
+
+.. note::
+   For large enclosures, this parameter can be useful to give METIS more leeway
+   in optimizing the patches.
 
 .. footbibliography::
