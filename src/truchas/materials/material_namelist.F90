@@ -551,6 +551,9 @@ contains
     end select
 
     block
+#ifdef NAG_BUG20220103
+      use parameter_list_type ! to get the parameter_list_iterator constructor
+#endif
       type(parameter_list_iterator) :: piter
       character(:), allocatable :: name
       piter = parameter_list_iterator(pc_list, sublists_only=.true.)

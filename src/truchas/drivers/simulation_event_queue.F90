@@ -76,8 +76,8 @@ contains
 
     real(r8), intent(in) :: dt_min
 
-    integer :: j, dt_policy
-    real(r8) :: c
+    integer :: i, j, n, dt_policy
+    real(r8) :: c, t
     real(r8), allocatable :: array(:)
 
     call event_queue%set_time_resolution(dt_min)
@@ -104,27 +104,23 @@ contains
     end if
 
     !! Add output times
-    block
-      integer :: i, j, n
-      real(r8) :: t
-      do j = 1, nops
-        n = (output_t(j+1) - output_t(j) + 0.9*output_dt(j)) / output_dt(j)
-        do i = 0, max(0, n-1)
-          t = output_t(j) + i*output_dt(j)
-          if (modulo(i,output_dt_multiplier(j)) == 0) then
-            call event_queue%add_event(t, output_event())
-          end if
-          if (short_output_dt_multiplier(j) > 0) then
-            if (modulo(i,short_output_dt_multiplier(j)) == 0) &
-                call event_queue%add_event(t, short_edit_event())
-          end if
-        end do
+    do j = 1, nops
+      n = (output_t(j+1) - output_t(j) + 0.9*output_dt(j)) / output_dt(j)
+      do i = 0, max(0, n-1)
+        t = output_t(j) + i*output_dt(j)
+        if (modulo(i,output_dt_multiplier(j)) == 0) then
+          call event_queue%add_event(t, output_event())
+        end if
+        if (short_output_dt_multiplier(j) > 0) then
+          if (modulo(i,short_output_dt_multiplier(j)) == 0) &
+              call event_queue%add_event(t, short_edit_event())
+        end if
       end do
-      t = output_t(nops+1)
-      call event_queue%add_event(t, output_event())
-      if (short_edit) call event_queue%add_event(t, short_edit_event())
-      call event_queue%add_event(t, stop_event(), rank=99)
-    end block
+    end do
+    t = output_t(nops+1)
+    call event_queue%add_event(t, output_event())
+    if (short_edit) call event_queue%add_event(t, short_edit_event())
+    call event_queue%add_event(t, stop_event(), rank=99)
 
   end subroutine init_sim_event_queue
 
