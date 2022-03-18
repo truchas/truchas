@@ -9,8 +9,6 @@
 program test_rade
 
   use kinds, only: r8
-  use pgslib_module
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use truchas_env, only: prefix, input_dir, overwrite_output
   use truchas_logging_services
@@ -19,7 +17,6 @@ program test_rade
   implicit none
 
   type(unstr_mesh), pointer :: mesh
-  character(len=PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:)
   real(r8), allocatable :: hc_temp(:)
 
   !! Enclosures to be tested
@@ -29,8 +26,7 @@ program test_rade
   character(len=31), parameter :: ENCL_INT_PATCH = "interior_patch"
 
   !! Essential Truchas initialization.
-  call parallel_init (argv)
-  call init_parallel_communication ()
+  call init_parallel_communication
 
   !! Initialize Logging
   overwrite_output = .true.

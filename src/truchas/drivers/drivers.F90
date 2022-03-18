@@ -47,30 +47,24 @@ CONTAINS
     !---------------------------------------------------------------------------
     use input_driver,           only: READ_INPUT
     use truchas_env,            only: input_file, title
-    use parallel_util_module,   only: PARALLEL_INIT
     use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
     use random_module,          only: INITIALIZE_RANDOM
     use signal_handler
-    use pgslib_module,          only: PGSLib_CL_MAX_TOKEN_LENGTH
     use output_utilities,       only: announce
     use truchas_logging_services
     use truchas_timers
 
-    character(len=PGSLib_CL_MAX_TOKEN_LENGTH), dimension(:), pointer :: argv
-
     !---------------------------------------------------------------------------
 
-    ! initialize parallelism
-    call PARALLEL_INIT (argv)
-    call init_parallel_communication ()
+    call init_parallel_communication
 
 !   you can use this to debug in parallel under Linux with LAM and Totalview
 !   see the comments in src/utility/wait_for_debugger.tv
 !   call wait_for_debugger ()
 
     ! parse the command line
-    call PROCESS_COMMAND_LINE (argv)
+    call PROCESS_COMMAND_LINE
 
     ! arrange to catch signals
     call init_signal_handler(SIGUSR2)
@@ -132,7 +126,7 @@ call hijack_truchas ()
     use edit_module,              only: edit_short
     use EM,                       only: INDUCTION_HEATING
     use solid_mechanics_module,   only: THERMO_MECHANICS
-    use pgslib_module,            only: PGSLib_GLOBAL_ANY
+    use parallel_communication,   only: global_any
     use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
@@ -303,7 +297,7 @@ call hijack_truchas ()
 
         ! See if a signal was caught.
         call read_signal(SIGUSR2, sig_rcvd)
-        if (PGSLib_Global_Any(sig_rcvd)) then
+        if (global_any(sig_rcvd)) then
           call TLS_info('')
           call TLS_info('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
@@ -410,7 +404,7 @@ call hijack_truchas ()
     !
     !   print build time and run time information
     !---------------------------------------------------------------------------
-    use parallel_info_module, only: p_info
+    use parallel_communication, only: nPE, IO_PE
     use utilities_module,     only: TIMESTAMP
     use truchas_logging_services
     use string_utilities, only: i_to_c
@@ -443,16 +437,16 @@ call hijack_truchas ()
     call TLS_info ('   run architecture:    ' // run_architecture)
     call TLS_info ('   run host:            ' // run_host)
     call TLS_info ('   run date/time:       ' // run_date(5:22))
-    if (p_info%nPE > 1) then
-      call TLS_info ('   processors:          ' // i_to_c(p_info%nPE) // &
-                     ' (processor ' // i_to_c(p_info%IO_ROOT_PE) // ' is performing I/O)')
+    if (nPE > 1) then
+      call TLS_info ('   processors:          ' // i_to_c(nPE) // &
+                     ' (processor ' // i_to_c(IO_PE) // ' is performing I/O)')
     else
-      call TLS_info ('   processors:          ' // i_to_c(p_info%nPE))
+      call TLS_info ('   processors:          ' // i_to_c(nPE))
     end if
 
   END SUBROUTINE PROGRAM_SPECIFICATIONS
 
-  SUBROUTINE PROCESS_COMMAND_LINE (argv)
+  SUBROUTINE PROCESS_COMMAND_LINE
     !---------------------------------------------------------------------------
     ! Purpose:
     !
@@ -482,8 +476,7 @@ call hijack_truchas ()
     !
     !---------------------------------------------------------------------------
 
-    use parallel_info_module, only: p_info
-    use pgslib_module,        only: PGSLib_BCAST
+    use parallel_communication, only: is_IOP, halt_parallel_communication, broadcast
     use truchas_env,          only: input_dir, output_dir, prefix, &
                                     input_file, overwrite_output
     !use truchas_logging_services
@@ -496,16 +489,13 @@ call hijack_truchas ()
     use truchas_logging_services, only: TLS_set_verbosity, TLS_VERB_SILENT, &
                                         TLS_VERB_NORMAL, TLS_VERB_NOISY
 
-    ! arguments
-    character(*), dimension(:), pointer :: argv
-
     ! local variables
     integer :: status, ios
     logical :: file_exist
     character (LEN=1024) :: string
     character (LEN=1024) :: token
     character (LEN=8)   :: file_read
-    integer :: n_tokens
+    integer :: n_arg, n_tokens
     integer :: i
     integer :: indx
     integer :: j
@@ -528,7 +518,7 @@ call hijack_truchas ()
     '  -h            help                                                  ' /)
     
     !---------------------------------------------------------------------------
-    
+
     ! mark each flag as "unset"
     v = .false.                         ! verbose
     o = .false.                         ! output path
@@ -538,20 +528,21 @@ call hijack_truchas ()
     g = .false.                         ! h5 output group size
     overwrite_output = .false.
     ! there must be at least one argument
-    if (SIZE(argv) < 2) then
+    n_arg = command_argument_count()
+    if (n_arg < 1) then
        call TLS_error ('insufficient arguments')
        call error_check (.true., usage, 'PROCESS_COMMAND_LINE')
     end if
 
     ! process the arguments
-    do i = LBOUND(argv,1)+1, UBOUND(argv,1)
+    do i = 1, n_arg
 
        ! get the next argument
-       string = TRIM(argv(i))
+       call get_command_argument(i, string)
 
        ! arguments must start with '-', or be a filename (last argument)
        if (string(1:1) /= '-') then
-          if (i /= UBOUND(argv,1)) then
+          if (i /= n_arg) then
              call TLS_error ('filename must be last argument or argument must start with "-": ' // trim(string))
              call error_check (.true., usage, 'PROCESS_COMMAND_LINE')
           else
@@ -563,14 +554,13 @@ call hijack_truchas ()
 
           block
              use version_info
-             use pgslib_module
              use,intrinsic :: iso_fortran_env, only: output_unit
              character(:), allocatable :: string
-             if (p_info%IOP) then
+             if (is_IOP) then
                 call version(string)
                 write(output_unit,'(a)') string
              end if
-             call pgslib_finalize
+             call halt_parallel_communication
              stop
           end block
 
@@ -732,20 +722,20 @@ call hijack_truchas ()
     end if
 
     ! check input_file for existence
-    if (p_info%IOP) then
+    if (is_IOP) then
        inquire (FILE=Trim(input_file) , EXIST=file_exist)
     end if
-    call PGSLib_BCAST (file_exist)
+    call broadcast (file_exist)
     if (.not. file_exist) then
        call TLS_error ('input file ' // trim(input_file) // ' does not exist')
        call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
     end if
 
     ! check input_file for readability
-    if (p_info%IOP) then
+    if (is_IOP) then
        Inquire (FILE=TRIM(input_file) , READ=file_read)
     end if
-    call PGSLib_BCAST (file_read)
+    call broadcast (file_read)
     if (Trim(file_read) == 'NO') then
        call TLS_error ('input file ' // trim(input_file) // ' cannot be read')
        call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
@@ -757,20 +747,20 @@ call hijack_truchas ()
        restart = .true.
 
        ! check restart_file for existence
-       if (p_info%IOP) then
+       if (is_IOP) then
           inquire (FILE=Trim(restart_file) , EXIST=file_exist)
        end if
-       call PGSLib_BCAST (file_exist)
+       call broadcast (file_exist)
        if (.not. file_exist) then
           call TLS_error ('restart file ' // trim(restart_file) // ' does not exist')
           call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
        end if
 
        ! check restart_file for readability
-       if (p_info%IOP) then
+       if (is_IOP) then
           Inquire (FILE=TRIM(restart_file) , READ=file_read)
        end if
-       call PGSLib_BCAST (file_read)
+       call broadcast (file_read)
        if (Trim(file_read) == 'NO') then
           call TLS_error ('restart file ' // trim(restart_file) // ' cannot be read')
           call ERROR_CHECK (.true., usage, 'PROCESS_COMMAND_LINE')
@@ -821,33 +811,32 @@ call hijack_truchas ()
 
     subroutine ERROR_CHECK (flag, message, name)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
-      use pgslib_module, only: pgslib_finalize
+      use parallel_communication, only: is_IOP, halt_parallel_communication
       logical, intent(in) :: flag ! ignored
       integer :: n
       character(*), intent(in) :: message(:)
       character(*), intent(in) :: name  ! ignored
-      if (p_info%IOP) then
+      if (is_IOP) then
         do n = 1, size(message)
           write(error_unit,'(a)') message(n)(:len_trim(message(n)))
         end do
       end if
-      call pgslib_finalize
+      call halt_parallel_communication
       stop
     end subroutine ERROR_CHECK
 
     subroutine TLS_error (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: is_IOP
       character(*), intent(in) :: message
-      if (p_info%IOP) write(error_unit,'(a)') 'ERROR: ' // message(:len_trim(message))
+      if (is_IOP) write(error_unit,'(a)') 'ERROR: ' // message(:len_trim(message))
     end subroutine TLS_error
 
     subroutine TLS_warn (message)
       use,intrinsic :: iso_fortran_env, only: error_unit
-      use parallel_info_module, only: p_info
+      use parallel_communication, only: is_IOP
       character(*), intent(in) :: message
-      if (p_info%IOP) write(error_unit,'(a)') 'Warning: ' // message(:len_trim(message))
+      if (is_IOP) write(error_unit,'(a)') 'Warning: ' // message(:len_trim(message))
     end subroutine TLS_warn
 
   END SUBROUTINE PROCESS_COMMAND_LINE

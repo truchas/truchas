@@ -397,7 +397,7 @@ CONTAINS
                                       Conic_Relation, Node_Disp_Coords, Mesh_Surface
     use input_utilities,        only: NULL_R
     use input_utilities,        only: seek_to_namelist, NULL_I, NULL_C
-    use parallel_info_module,   only: P_Info
+    use parallel_communication, only: is_IOP
     use parameter_module,       only: string_dim, mbc_surfaces
     use string_utilities, only: i_to_c
 
@@ -428,7 +428,7 @@ CONTAINS
     call TLS_info ('Reading BC namelists ...')
 
     ! Rewind the input deck unit number.
-    if (P_Info%IOP) rewind lun
+    if (is_IOP) rewind lun
 
     ! Set BC defaults.
     call BC_DEFAULT ()
@@ -463,7 +463,7 @@ CONTAINS
        Mesh_Surface(:,0)        = 0
 
        ! Search for and read this BC namelist only on IO PE.
-       IO_PE_ONLY: if (P_Info%IOP) then
+       IO_PE_ONLY: if (is_IOP) then
 
           ! Find the next BC namelist.
           call seek_to_namelist (lun, 'BC', found)
@@ -560,43 +560,38 @@ CONTAINS
                                     Conic_Relation,                           &
                                     Surfaces_In_This_BC, Node_Disp_Coords,    &
                                     Mesh_Surface
-    use parallel_info_module, only: P_Info
-    use pgslib_module,        only: PGSLib_BCAST
+    use parallel_communication, only: broadcast
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
     ! Broadcast BC Namelist.
-    if (.not. P_Info%UseGlobalServices) then
+      call broadcast (BC_name)
+      call broadcast (BC_Type)
+      call broadcast (BC_Value)
+      call broadcast (BC_Table)
+      call broadcast (BC_Variable)
 
-       call PGSLib_BCAST (BC_name)
-       call PGSLib_BCAST (BC_Type)
-       call PGSLib_BCAST (BC_Value)
-       call PGSLib_BCAST (BC_Table)
-       call PGSLib_BCAST (BC_Variable)
+      call broadcast (Inflow_Material)
+      call broadcast (Inflow_Temperature)
 
-       call PGSLib_BCAST (Inflow_Material)
-       call PGSLib_BCAST (Inflow_Temperature)
-
-       call PGSLib_BCAST (Conic_XX)
-       call PGSLib_BCAST (Conic_YY)
-       call PGSLib_BCAST (Conic_ZZ)
-       call PGSLib_BCAST (Conic_XY)
-       call PGSLib_BCAST (Conic_XZ)
-       call PGSLib_BCAST (Conic_YZ)
-       call PGSLib_BCAST (Conic_X)
-       call PGSLib_BCAST (Conic_Y)
-       call PGSLib_BCAST (Conic_Z)
-       call PGSLib_BCAST (Conic_Constant)
-       call PGSLib_BCAST (Conic_Tolerance)
-       call PGSLib_BCAST (Conic_Relation)
-       call PGSLib_BCAST (Surface_Name)
-       call PGSLib_BCAST (Bounding_Box)
-       call PGSLib_BCAST (nbc_surfaces)
-       call PGSLib_BCAST (Surfaces_In_This_BC)
-       call PGSLib_BCAST (Node_Disp_Coords)
-       call PGSLib_BCAST (Mesh_Surface)
-
-    end if
+      call broadcast (Conic_XX)
+      call broadcast (Conic_YY)
+      call broadcast (Conic_ZZ)
+      call broadcast (Conic_XY)
+      call broadcast (Conic_XZ)
+      call broadcast (Conic_YZ)
+      call broadcast (Conic_X)
+      call broadcast (Conic_Y)
+      call broadcast (Conic_Z)
+      call broadcast (Conic_Constant)
+      call broadcast (Conic_Tolerance)
+      call broadcast (Conic_Relation)
+      call broadcast (Surface_Name)
+      call broadcast (Bounding_Box)
+      call broadcast (nbc_surfaces)
+      call broadcast (Surfaces_In_This_BC)
+      call broadcast (Node_Disp_Coords)
+      call broadcast (Mesh_Surface)
 
   END SUBROUTINE BC_INPUT_PARALLEL
 

@@ -5,9 +5,7 @@ target_sources(truchas PRIVATE
   facet_hash_type.F90
   facet_table_type.F90
   face_neighbor_table_type.F90
-  index_partitioning.F90
   mesh_manager.F90
-  parallel_communication.F90
   parallel_permutations.F90
   cell_topology.F90
   cell_geometry.F90

@@ -454,7 +454,7 @@ CONTAINS
           CV_Internal%Face_Area(edge,:) = CV_Internal%Face_Area(edge,:) + CV_Internal%Face_Normal(i,edge,:)**2
        end do
        ! Compute areas.
-!       if (PGSLib_GLOBAL_ANY(CV_Internal%Face_Area(edge,:) == 0.0)) &
+!       if (global_any(CV_Internal%Face_Area(edge,:) == 0.0)) &
 !            call PUNT((/'FATAL: Internal control volume faces with zero area found'/), 'CELL_CV_FACES')
 
        CV_Internal%Face_Area(edge,:) = SQRT(CV_Internal%Face_Area(edge,:))
@@ -608,7 +608,7 @@ CONTAINS
     !=============================================================================
     use legacy_mesh_api,      only: Cell, ncells, nnodes, gather_vertex_coord
     use cutoffs_module,       only: alittle
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY
+    use parallel_communication, only: global_any
     use node_operator_module, only: CV_Boundary, nbnode, nbface
     use solid_mechanics_mesh, only: ndim, nvc, nvf
     use bc_data_types
@@ -654,7 +654,7 @@ CONTAINS
     ! Loop over all mech bc operators
     BOUNDARY_LOOP: do ibcop = 1, BC_MAX_OPERATORS
        ! Transfer node displacement BCs to control volume data 
-       if(PGSLib_GLOBAL_ANY(nbnode(ibcop) /= 0)) then
+       if(global_any(nbnode(ibcop) /= 0)) then
           ! Displacement BCs
           nodecount = 0
           do inode = 1, nnodes
@@ -1243,7 +1243,7 @@ CONTAINS
     use legacy_mesh_api,      only: ncells, nnodes, Cell, Mesh, GAP_ELEMENT_1
     use legacy_mesh_api,      only: EN_SUM_SCATTER, NN_Gather_BoundaryData
     use legacy_mesh_api,      only: Vertex, Vertex_Ngbr_All
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_Global_MAXVAL
+    use parallel_communication, only: global_any, global_maxval
     use solid_mechanics_mesh, only: ndim, nvc, nvf, nfc
     use var_vector_module
 
@@ -1267,7 +1267,7 @@ CONTAINS
     real(r8) :: dotprod
     real(r8), dimension(nfc) :: htemp
 
-    if (PGSLib_GLOBAL_ANY(ibcnodes /= 0)) then
+    if (global_any(ibcnodes /= 0)) then
        allocate(Fnorm(nvc, ncells), stat= status)
        if (status /= 0) call TLS_panic ('NODE_BC_DATA: allocation error: Fnorm')
        allocate(Farea(nvc, ncells), stat= status)
@@ -1611,7 +1611,7 @@ CONTAINS
                 do i = 1, nfc
                    htemp(i) = MAXVAL(Cell%Halfwidth(i),(Mesh%Cell_Shape >= GAP_ELEMENT_1))
                 end do
-                mindist = PGSLib_Global_MAXVAL(htemp)
+                mindist = global_maxval(htemp)
                 GAP_NODE: do inode = 1,ibcnodes
                    ! Is the node on this interface?
                    if (Ncount(CV_Boundary(ibcop)%Node(inode,1)) > 0) then

@@ -13,7 +13,6 @@ module geometric_volume_tracker_type
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
-  use index_partitioning
   use wisp_redistribution_type
   implicit none
   private
@@ -280,7 +279,7 @@ contains
       end do
     end do
     ! will need normals for vof reconstruction in ghost cells
-    call gather_boundary(this%mesh%cell_ip, this%normal)
+    call this%mesh%cell_imap%gather_offp(this%normal)
 
     call stop_timer('normals')
 
@@ -834,7 +833,7 @@ contains
         this%w_cell(1:f1-f0+1,m,i) = this%flux_vol_sub(m,f0:f1)
       end do
     end do
-    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    call this%mesh%cell_imap%gather_offp(this%w_cell)
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
@@ -963,7 +962,7 @@ contains
       call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
     end do
 
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
     ! Is there really not a better way?
     do i = 1, this%mesh%ncell_onP
@@ -973,7 +972,7 @@ contains
         this%w_cell(1:f1-f0+1,m,i) = flux_vol(m,f0:f1)
       end do
     end do
-    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    call this%mesh%cell_imap%gather_offp(this%w_cell)
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
@@ -1102,8 +1101,8 @@ contains
     if (is_IOP) allocate(character(lmax) :: global_message(nPE))
     allocate(character(lmax) :: tmp)
     tmp(:) = errmsg_
-    call collate(global_message, tmp)
-    call collate(pe_stat, stat)
+    call gather(tmp, global_message)
+    call gather(stat, pe_stat)
     if (is_IOP) then
       errmsg_ = prefix_
       msgs: do i = 1, nPE

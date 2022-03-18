@@ -82,7 +82,7 @@ contains
 
     allocate(x(3,merge(nnodes_tot,0,is_IOP)))
     do k = 1, size(x,dim=1)
-      call collate (x(k,:), vertex%coord(k))
+      call gather (vertex%coord(k), x(k,:))
     end do
     if (is_IOP) then
       call gmvwrite_node_data_f (size(x,dim=2), x(1,:), x(2,:), x(3,:))
@@ -91,7 +91,7 @@ contains
 
     allocate(cnode(8,merge(ncells_tot,0,is_IOP)))
     do k = 1, size(cnode,dim=1)
-      call collate (cnode(k,:), mesh%ngbr_vrtx_orig(k))
+      call gather (mesh%ngbr_vrtx_orig(k), cnode(k,:))
     end do
     if (is_IOP) then
       call gmvwrite_cell_header_f (size(cnode,dim=2))
@@ -114,7 +114,7 @@ contains
       if (is_IOP) call gmvwrite_flag_header_f ()
       !! Cell partitioning info ...
       allocate(pdata(merge(ncells_tot,0,is_IOP)))
-      call collate (pdata, spread(this_PE, dim=1, ncopies=ncells))
+      call gather (spread(this_PE, dim=1, ncopies=ncells), pdata)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
@@ -152,7 +152,7 @@ contains
     real(r8), allocatable :: u_global(:)
 
     allocate(u_global(merge(ncells_tot,0,is_IOP)))
-    call collate (u_global, u)
+    call gather (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)
 

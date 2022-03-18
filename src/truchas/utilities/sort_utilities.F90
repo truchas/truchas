@@ -16,6 +16,7 @@ module sort_utilities
 
   interface insertion_sort
     module procedure insertion_sort_3r8r8, insertion_sort_ir8, insertion_sort_r8
+    module procedure insertion_sort_i4
   end interface insertion_sort
 
   interface quick_sort
@@ -130,6 +131,26 @@ contains
     end do
 
   end subroutine insertion_sort_r8
+
+  subroutine insertion_sort_i4 (key)
+    integer(int32), intent(inout) :: key(:)
+
+    integer(int32) :: tmp
+    integer  :: i,j
+
+    do i = 2,size(key)
+      tmp = key(i)
+      j = i
+      do while (j>1)
+        ! fortran doesn't guarantee short-circuiting, so we segfault if the two checks are together
+        if (key(j-1) <= tmp) exit
+        key(j) = key(j-1)
+        j = j-1
+      end do
+      key(j) = tmp
+    end do
+
+  end subroutine
 
 
   subroutine quick_sort_r8(arr, perm, n)

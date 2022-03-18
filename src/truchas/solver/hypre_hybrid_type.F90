@@ -19,7 +19,6 @@ module hypre_hybrid_type
   use kinds, only: r8
   use fhypre
   use pcsr_matrix_type
-  use index_partitioning
   use parameter_list_type
   implicit none
   private
@@ -70,9 +69,9 @@ contains
     this%A => A
     this%params => params
 
-    this%nrows  = A%graph%row_ip%onP_size()    ! number of on-process rows (if parallel)
-    this%ilower = A%graph%row_ip%first_index() ! global index of first on-process row (if parallel)
-    this%iupper = A%graph%row_ip%last_index()  ! global index of last on-process row (if parallel)
+    this%nrows  = A%graph%row_imap%onp_size   ! number of on-process rows (if parallel)
+    this%ilower = A%graph%row_imap%first_gid ! global index of first on-process row (if parallel)
+    this%iupper = A%graph%row_imap%last_gid  ! global index of last on-process row (if parallel)
 
     call fHYPRE_ClearAllErrors
 
@@ -357,9 +356,9 @@ contains
     integer :: j, ierr, ilower, iupper, nrows, nnz
     integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
 
-    nrows  = src%graph%row_ip%onP_size()
-    ilower = src%graph%row_ip%first_index()
-    iupper = src%graph%row_ip%last_index()
+    nrows  = src%graph%row_imap%onp_size
+    ilower = src%graph%row_imap%first_gid
+    iupper = src%graph%row_imap%last_gid
 
     call fHYPRE_ClearAllErrors
 
@@ -391,7 +390,7 @@ contains
     allocate(ncols(nrows), rows(nrows), cols(nnz))
     rows = [ (j, j = ilower, iupper) ]
     ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
-    cols = src%graph%row_ip%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
+    cols = src%graph%row_imap%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
     call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
     deallocate(ncols, rows, cols)
     INSIST(ierr == 0)

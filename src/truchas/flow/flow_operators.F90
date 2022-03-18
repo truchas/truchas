@@ -14,7 +14,6 @@ module flow_operators
   use flow_domain_types
   use bndry_func1_class
   use bndry_vfunc_class
-  use index_partitioning
   implicit none
   private
 
@@ -64,9 +63,7 @@ contains
       end if
     end do
 
-    do j = 1, 3
-      call gather_boundary(mesh%face_ip, this%ds(j,:))
-    end do
+    call mesh%face_imap%gather_offp(this%ds)
   end subroutine flow_operators_init
 
   function flow_gradient_coefficients() result(p)
@@ -88,7 +85,7 @@ contains
     associate (w_face => this%work)
       ! node average data stored in w_node0 workspace array
       call node_avg(x, w_node0, w_node1)
-      call gather_boundary(this%mesh%node_ip, w_node0)
+      call this%mesh%node_imap%gather_offp(w_node0)
 
       do i = 1, this%mesh%nface
         associate (fn => this%mesh%fnode(this%mesh%xfnode(i):this%mesh%xfnode(i+1)-1))

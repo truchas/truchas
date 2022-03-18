@@ -141,8 +141,6 @@ contains
 
   subroutine compute(this, t, dt, displ)
 
-    use index_partitioning, only: gather_boundary
-
     class(sm_ds_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
     real(r8), intent(inout) :: displ(:,:) ! need to update halo
@@ -174,8 +172,8 @@ contains
     end do
 
     ! get off-rank halo
-    call gather_boundary(this%model%mesh%node_ip, displ)
-    call gather_boundary(this%model%mesh%node_ip, this%diag)
+    call this%model%mesh%node_imap%gather_offp(displ)
+    call this%model%mesh%node_imap%gather_offp(this%diag)
     if (this%bc%contact_active) call this%model%compute_forces(t, displ, force)
     call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag, this%F)
 

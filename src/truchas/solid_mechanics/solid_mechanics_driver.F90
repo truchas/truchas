@@ -114,7 +114,6 @@ contains
   subroutine solid_mechanics_step(t, dt)
 
     use zone_module, only: zone
-    use index_partitioning, only: gather_boundary
 
     real(r8), intent(in) :: t, dt
 
@@ -122,7 +121,7 @@ contains
     character(:), allocatable :: errmsg
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
     call get_vof(this%vof)
 
     call this%sm%step(t, dt, this%vof, this%temperature_cc, stat, errmsg)
@@ -150,13 +149,12 @@ contains
   subroutine compute_initial_state()
 
     use zone_module, only: zone
-    use index_partitioning, only: gather_boundary
 
     integer :: stat
     character(:), allocatable :: errmsg
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call gather_boundary(this%mesh%cell_ip, this%temperature_cc)
+    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
     call get_vof(this%vof)
     call this%sm%compute_initial_state(this%vof, this%temperature_cc, stat, errmsg)
     if (stat /= 0) call tls_fatal(errmsg)
@@ -199,7 +197,6 @@ contains
   subroutine get_vof(vof)
 
     use matl_module, only: gather_vof
-    use index_partitioning, only: gather_boundary
 
     real(r8), intent(out) :: vof(:,:)
     integer :: p
@@ -209,7 +206,7 @@ contains
     do p = 1, this%nphase
       call gather_vof(this%matl_phase(p), this%vof(p,:this%mesh%ncell_onP))
     end do
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine get_vof
 

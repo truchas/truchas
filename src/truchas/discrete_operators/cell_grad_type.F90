@@ -23,7 +23,7 @@ module cell_grad_type
   use mfd_disc_type
   use hypre_hybrid_type
   use parameter_list_type
-  use index_partitioning
+  use index_map_type
   use truchas_logging_services
   implicit none
   private
@@ -63,7 +63,7 @@ contains
     integer :: j, l, ic, ir
     logical, allocatable :: face_mask(:)
     type(pcsr_graph), pointer :: g
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_imap
     real(r8) :: c, rpar
     
     ASSERT(size(mask) == disc%mesh%ncell)
@@ -80,8 +80,8 @@ contains
     !! Create the CSR matrix graph for the matrix.
     allocate(g, face_mask(this%mesh%nface))
     face_mask = .true.  ! will tag inactive faces
-    row_ip => this%mesh%face_ip
-    call g%init (row_ip)
+    row_imap => this%mesh%face_imap
+    call g%init (row_imap)
     do j = 1, this%mesh%ncell
       if (this%cell_mask(j)) then
         associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
@@ -231,7 +231,7 @@ contains
       errmsg = trim(string)
     endif
     
-    call gather_boundary (this%mesh%face_ip, uface)
+    call this%mesh%face_imap%gather_offp(uface)
     call this%disc%compute_cell_grad (uface, this%cell_mask(:size(gradu,2)), gradu)
 
   end subroutine compute
@@ -272,7 +272,7 @@ contains
         end associate
       end if
     end do
-    call gather_boundary (mesh%face_ip, bc_mask)
+    call mesh%face_imap%gather_offp(bc_mask)
     
     if (size(setids) > 0) then
       !! Create the bitmask corresponding to SETIDS.

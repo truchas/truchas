@@ -33,11 +33,11 @@ module bitfield_type
 
   !! Generics from PARALLEL_COMMUNICATION extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
-  public :: distribute, allocate_collated_array
+  public :: scatter
 
-  !! Generics from INDEX_PARTITIONING extended to the BITFIELD type.
+  !! Generics from index_map_type extended to the BITFIELD type.
   !! Implementations for rank-1 BITFIELD arrays only.
-  public :: gather_boundary
+  public :: gather_offp
   
   !! Parallel extensions of some intrinsic bit manipulation procedures.
   public :: global_ior
@@ -103,16 +103,12 @@ module bitfield_type
     module procedure ne_bitfield
   end interface
 
-  interface distribute
-    module procedure distribute_bitfield
+  interface scatter
+    module procedure scatter_bitfield
   end interface
 
-  interface allocate_collated_array
-    module procedure alloc_coll_array_bitfield
-  end interface
-
-  interface gather_boundary
-    module procedure gather_boundary_bitfield1, gather_boundary_bitfield2
+  interface gather_offp
+    module procedure gather_offp_bitfield1, gather_offp_bitfield2
   end interface
 
 contains
@@ -208,76 +204,55 @@ contains
     ne_bitfield = any(bf1%chunk /= bf2%chunk)
   end function ne_bitfield
 
-  subroutine distribute_bitfield (vout, vin, bsize)
+  subroutine scatter_bitfield (vin, vout)
 
-    use parallel_communication, only: distribute
+    use parallel_communication, only: scatter
 
-    type(bitfield), intent(out) :: vout(:)
     type(bitfield), intent(in)  :: vin(:)
-    integer, intent(in), optional :: bsize(:)
+    type(bitfield), intent(out) :: vout(:)
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call distribute (vout%chunk(n), vin%chunk(n), bsize)
+      call scatter (vin%chunk(n), vout%chunk(n))
     end do
 
-  end subroutine distribute_bitfield
+  end subroutine scatter_bitfield
 
-  subroutine alloc_coll_array_bitfield (array, size1, stat)
+  subroutine gather_offp_bitfield1 (this, local_data)
 
-    use parallel_communication, only: is_IOP
+    use index_map_type, only: index_map
 
-    type(bitfield), pointer :: array(:)
-    integer, intent(in) :: size1
-    integer, intent(out), optional :: stat
-
-    if (is_IOP) then
-      if (present(stat)) then
-        allocate(array(size1), stat=stat)
-      else
-        allocate(array(size1))
-      end if
-    else
-      allocate(array(0))
-    end if
-
-  end subroutine alloc_coll_array_bitfield
-
-  subroutine gather_boundary_bitfield1 (this, local_data)
-
-    use index_partitioning, only: ip_desc, gather_boundary
-
-    type(ip_desc),  intent(in)    :: this   ! partition descriptor
+    type(index_map),  intent(in)    :: this   ! partition descriptor
     type(bitfield), intent(inout) :: local_data(:)  ! local data array
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call gather_boundary (this, local_data%chunk(n))
+      call this%gather_offp(local_data%chunk(n))
     end do
 
-  end subroutine gather_boundary_bitfield1
+  end subroutine gather_offp_bitfield1
 
-  subroutine gather_boundary_bitfield2 (this, onP_data, offP_data)
+  subroutine gather_offp_bitfield2 (this, onP_data, offP_data)
 
-    use index_partitioning, only: ip_desc, gather_boundary
+    use index_map_type, only: index_map
 
-    type(ip_desc),  intent(in)  :: this         ! partition descriptor
+    type(index_map),  intent(in)  :: this         ! partition descriptor
     type(bitfield), intent(in)  :: onP_data(:)  ! on-process data array
     type(bitfield), intent(out) :: offP_data(:) ! off-process data array
 
     integer :: n
 
     do n = 0, NUM_CHUNK-1
-      call gather_boundary (this, onP_data%chunk(n), offP_data%chunk(n))
+      call this%gather_offp(onP_data%chunk(n), offP_data%chunk(n))
     end do
 
-  end subroutine gather_boundary_bitfield2
+  end subroutine gather_offp_bitfield2
 
   function global_ior (bf) result (bf_out)
 
-    use parallel_communication, only: nPE, is_IOP, collate, broadcast
+    use parallel_communication, only: nPE, is_IOP, gather, broadcast
 
     type(bitfield), intent(in) :: bf
     type(bitfield) :: bf_out
@@ -285,7 +260,7 @@ contains
     integer :: n, p, tmp, array(nPE)
 
     do n = 0, NUM_CHUNK-1
-      call collate (array, bf%chunk(n))
+      call gather (bf%chunk(n), array)
       if (is_IOP) then
         tmp = array(1)
         do p = 2, nPE

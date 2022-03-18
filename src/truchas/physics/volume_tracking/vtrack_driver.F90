@@ -60,7 +60,6 @@ module vtrack_driver
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
-  use index_partitioning
   use material_model_driver, only: matl_model
   implicit none
   private
@@ -208,7 +207,7 @@ contains
       end do
     end if
 
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine get_vof_from_matl
 

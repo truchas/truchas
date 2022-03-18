@@ -90,7 +90,7 @@ contains
     ASSERT(size(x) == this%npatch)
     ASSERT(size(y) == this%npatch)
 
-    call collate(global_x, x)
+    call gather(x, global_x)
     call broadcast(global_x)
 
     do i = 1, this%npatch
@@ -119,7 +119,7 @@ contains
 
     integer(i8) :: start
     integer :: j, n
-    integer :: vf_bsize(nPE), lengths(nPE), idum0(0)
+    integer :: vf_bsize(nPE), idum0(0)
     real :: rdum0(0)
     integer, allocatable :: ibuf(:)
     real, allocatable :: rbuf(:)
@@ -132,7 +132,7 @@ contains
       allocate(rbuf(merge(nrows_tot, 0, is_IOP)))
       if (is_IOP) call file%get_ambient(rbuf)
       allocate(this%amb_vf(nrows))
-      call distribute(this%amb_vf, rbuf)
+      call scatter(rbuf, this%amb_vf)
       deallocate(rbuf)
     end if
 
@@ -140,7 +140,7 @@ contains
     allocate(ibuf(merge(nrows_tot, 0, is_IOP)))
     if (is_IOP) call file%get_vf_rowcount(ibuf)
     allocate(this%ia(nrows+1))
-    call distribute(this%ia(2:), ibuf)
+    call scatter(ibuf, this%ia(2:))
     deallocate(ibuf)
 
     !! Convert the row counts into the local IA indexing array.
@@ -152,44 +152,36 @@ contains
     !! Determine the sizes of the distributed VF matrix.
     n = this%ia(nrows+1) - this%ia(1)
     allocate(this%vf(n), this%ja(n))
-    call collate(vf_bsize, n)
+    call gather(n, vf_bsize)
 
     !! Read the VF matrix in process-sized blocks, sending them to the owning
-    !! processes as we go.  PGSLib only provides the distribute collective to
-    !! do this, and so we distribute with 0-sized destination arrays for all
-    !! processes but the receiving one.  We also use the optional LENGTHS
-    !! argument to distribute (only referenced on the IO process) that gives
-    !! the number of items to distribute to each process, resulting in the
-    !! actual sizes of the array arguments being ignored except to check that
-    !! they are sufficiently large.  This allows us to simplify the calls.
-    !! The code is structured for future use of MPI_Isend/Irecv, abandoning
-    !! the usual 'single code path' pattern.
+    !! processes as we go.  PGSLib only provides the scatter collective to
+    !! do this, and so we scattter with 0-sized destination arrays for all
+    !! processes but the receiving one. The code is structured for possible
+    !! future use of MPI_Isend/Irecv.
 
     if (is_IOP) then
       call file%get_vf_rows(this%vf, this%ja, start=1_i8)
       if (nPE > 1) then
         n = maxval(vf_bsize(2:))
         allocate(ibuf(n), rbuf(n))
-        lengths = 0
         start = 1 + vf_bsize(1)
         do n = 2, nPE
           call file%get_vf_rows(rbuf(:vf_bsize(n)), ibuf(:vf_bsize(n)), start)
-          lengths(n) = vf_bsize(n)
-          call distribute(rdum0, rbuf, lengths)
-          call distribute(idum0, ibuf, lengths)
-          lengths(n) = 0
+          call scatter(rbuf, rdum0)
+          call scatter(ibuf, idum0)
           start = start + vf_bsize(n)
         end do
         deallocate(ibuf, rbuf)
       end if
-    else  ! everybody else just participates in the distribute calls.
+    else  ! everybody else just participates in the scatter calls.
       do n = 2, nPE
         if (n == this_PE) then
-          call distribute(this%vf, rdum0, lengths)
-          call distribute(this%ja, idum0, lengths)
+          call scatter(rdum0, this%vf)
+          call scatter(idum0, this%ja)
         else
-          call distribute(rdum0, rdum0, lengths)
-          call distribute(idum0, idum0, lengths)
+          call scatter(rdum0, rdum0)
+          call scatter(idum0, idum0)
         end if
       end do
     end if

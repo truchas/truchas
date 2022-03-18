@@ -9,20 +9,16 @@ program test_scalar_func_copy
   use scalar_func_containers
   use scalar_func_class
   use scalar_func_factories
-  use parallel_util_module, only: parallel_init
   use parallel_communication
-  use pgslib_module
   use parameter_list_type
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(scalar_func_box) :: sf_box(4)
   type(parameter_list) :: sf_const, sf_poly, sf_tab, sf_ramp
   real(r8) :: results(4), in(4)
   integer :: i
 
-  call parallel_init(argv)
-  !call init_parallel_communication()
+  call init_parallel_communication
 
   call sf_const%set("type", "constant")
   call sf_const%set("value", -1.0_r8)

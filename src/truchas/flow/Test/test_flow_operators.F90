@@ -3,9 +3,7 @@ program test_pressure_poisson
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
   use parallel_communication
-  use pgslib_module
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
@@ -16,13 +14,11 @@ program test_pressure_poisson
   use bndry_func1_class
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(parameter_list), pointer :: p, pp
   !type(flow_bc), pointer :: bc
   type(unstr_mesh), pointer :: mesh
   integer :: i, in
 
-  call parallel_init(argv)
   call init_parallel_communication
   overwrite_output = .true.
   prefix='run'  ! TLS will write to 'run.log'

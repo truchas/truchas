@@ -20,7 +20,6 @@ module FHT_model_type
   use bndry_func2_class
   use intfc_func2_class
   use rad_problem_type
-  use index_partitioning
   use truchas_timers
   implicit none
   private
@@ -149,14 +148,14 @@ contains
 
     !! Initialize the STATE array.
     call FHT_model_get_cell_temp_copy (this, u, state(:,1))
-    call gather_boundary (this%mesh%cell_ip, state(:,1))
+    call this%mesh%cell_imap%gather_offp(state(:,1))
 
   !!!! RESIDUAL OF THE HEAT EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !! Off-process-extended cell and face temperatures.
     Tcell => state(:,1)
     call FHT_model_get_face_temp_copy (this, u, Tface)
-    call gather_boundary (this%mesh%face_ip, Tface)
+    call this%mesh%face_imap%gather_offp(Tface)
 
     !! Pre-compute the Dirichlet condition residual and
     !! impose the Dirichlet data on the face temperature.
@@ -181,7 +180,7 @@ contains
     do j = 1, this%mesh%ncell_onP
       Fcell(j) = Fcell(j) + this%mesh%volume(j)*(hdot(j) - value(j))
     end do
-    !call gather_boundary (this%mesh%cell_ip, Fcell) ! off-process not used below
+    !call this%mesh%cell_imap%gather_offp(Fcell) ! off-process not used below
 
     !! Additional heat source
     if (allocated(this%src)) then
@@ -344,8 +343,6 @@ contains
 
   subroutine FHT_model_compute_udot (this, t, temp, u, udot)
 
-    use index_partitioning
-
     type(FHT_model), intent(inout) :: this
     real(r8), intent(in)  :: t, temp(:)
     real(r8), intent(out) :: u(:), udot(:)
@@ -377,7 +374,7 @@ contains
 
     allocate(Tcell(this%mesh%ncell), Tface(this%mesh%nface))
     call FHT_model_get_cell_temp_copy (this, u, Tcell)
-    call gather_boundary (this%mesh%cell_ip, Tcell)
+    call this%mesh%cell_imap%gather_offp(Tcell)
     call eval_face_averages (Tcell, Tface)
     call FHT_model_set_face_temp(this, Tface, u)
 
@@ -422,7 +419,7 @@ contains
     call FHT_model_set_cell_temp (this, Tcell, udot)
 
     !! Approximate face derivative by average of adjacent cell derivatives.
-    call gather_boundary (this%mesh%cell_ip, Tcell)
+    call this%mesh%cell_imap%gather_offp(Tcell)
     call eval_face_averages (Tcell, Tface)
     call FHT_model_set_face_temp (this, Tface, udot)
 
@@ -447,8 +444,8 @@ contains
           scale(cface) = scale(cface) + 1
         end associate
       end do
-      call gather_boundary (this%mesh%face_ip, uface)
-      call gather_boundary (this%mesh%face_ip, scale)
+      call this%mesh%face_imap%gather_offp(uface)
+      call this%mesh%face_imap%gather_offp(scale)
       do j = 1, this%mesh%nface
         if (scale(j) == 0) then
           uface(j) = 0.0_r8

@@ -51,8 +51,7 @@ contains
   subroutine read_restart_namelist (lun)
 
     use input_utilities, only: seek_to_namelist
-    use parallel_info_module, only: p_info
-    use pgslib_module, only: pgslib_bcast
+    use parallel_communication, only: is_IOP, broadcast
     
     integer, intent(in) :: lun
 
@@ -63,25 +62,25 @@ contains
     character(128) :: iom
 
     !! Locate the restart namelist (it's optional).
-    if (p_info%IOP) then
+    if (is_IOP) then
       rewind lun
       call seek_to_namelist (lun, 'RESTART', found)
     end if
-    call pgslib_bcast (found)
+    call broadcast (found)
 
     if (.not.found) return  ! fine, we'll just use the default values.
 
     !! Read the namelist.
     call input_info ('Reading RESTART namelist ...')
-    if (p_info%IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
-    call pgslib_bcast (ios)
+    if (is_IOP) read(lun,nml=restart,iostat=ios,iomsg=iom)
+    call broadcast (ios)
     if (ios /= 0) call input_error ('error reading the RESTART namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables to the other processors.
-    call pgslib_bcast (ignore_t)
-    call pgslib_bcast (ignore_dt)
-    call pgslib_bcast (ignore_solid_mechanics)
-    call pgslib_bcast (ignore_joule_heat)
+    call broadcast (ignore_t)
+    call broadcast (ignore_dt)
+    call broadcast (ignore_solid_mechanics)
+    call broadcast (ignore_joule_heat)
 
   contains
 

@@ -20,7 +20,7 @@ module kuprat_mapper_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use data_mapper_class
   use grid_mapping_module
-  use parallel_communication, only: is_IOP, collate, distribute, global_sum
+  use parallel_communication, only: is_IOP, gather, scatter, global_sum
   implicit none
   private
 
@@ -100,14 +100,14 @@ contains
     n = global_sum(size(dest))
     allocate(col_dest(merge(n,0,is_IOP)))
 
-    call collate(col_src, src)
+    call gather(src, col_src)
 
     if (is_IOP) call map_cell_field(col_src, col_dest, this%gmd, defval=defval, &
                                     reverse_order=reverse_order, &
                                     preserve_constants=preserve_constants, &
                                     exactly_conservative=exactly_conservative)
 
-    call distribute(dest, col_dest)
+    call scatter(col_dest, dest)
 
   end subroutine map_field
 
@@ -151,8 +151,8 @@ contains
     integer :: j, ncell, nnode
     integer, allocatable :: xcnode(:), cnode(:), blockid(:), tmp(:)
 
-    ncell = inmesh%cell_ip%global_size()
-    nnode = inmesh%node_ip%global_size()
+    ncell = inmesh%cell_imap%global_size
+    nnode = inmesh%node_imap%global_size
 
     call inmesh%get_global_cnode_array(xcnode, cnode)
 
@@ -204,7 +204,7 @@ contains
       end associate
     end do
     allocate(tmp(merge(ncell,0,is_IOP)))
-    call collate(tmp, blockid)
+    call gather(blockid, tmp)
     call move_alloc(tmp, outmesh%block_elt)
 
   end subroutine unstr_to_gm_mesh

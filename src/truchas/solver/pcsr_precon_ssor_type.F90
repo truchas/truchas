@@ -115,8 +115,6 @@ contains
 
   subroutine apply(this, x)
 
-    use index_partitioning, only: gather_boundary
-
     class(pcsr_precon_ssor), intent(in) :: this
     real(r8), intent(inout) :: x(:)
 
@@ -137,7 +135,7 @@ contains
         end do
         u(j) = u(j) + this%omega * (s / this%diag(j))
       end do
-      call gather_boundary(this%A%graph%row_ip, u)
+      call this%A%graph%row_imap%gather_offp(u)
       !! Backward sweep.
       do j = this%A%nrow_onP, 1, -1
         s = x(j)
@@ -146,7 +144,7 @@ contains
         end do
         u(j) = u(j) + this%omega * (s / this%diag(j))
       end do
-      call gather_boundary(this%A%graph%row_ip, u)
+      call this%A%graph%row_imap%gather_offp(u)
     end do
 
     !! Copy solution to return array.

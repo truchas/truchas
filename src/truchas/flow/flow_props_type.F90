@@ -82,7 +82,6 @@ module flow_props_type
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
-  use index_partitioning
   use parallel_communication
   use scalar_func_containers
   implicit none
@@ -271,7 +270,7 @@ contains
       end block
     end do
 
-    call gather_boundary(this%mesh%cell_ip, this%cell_t)
+    call this%mesh%cell_imap%gather_offp(this%cell_t)
 
     this%minrho = global_minval(minrho)
     this%any_void = global_any(this%cell_t == void_t) ! needed for dirichlet boundary conditions
@@ -322,7 +321,7 @@ contains
         end if
       end associate
     end do
-    call gather_boundary(this%mesh%face_ip, this%face_t)
+    call this%mesh%face_imap%gather_offp(this%face_t)
 
     ! linear averaged face-centered density
     ! 1) If the face has only one cell neighbor (i.e. a boundary cell)
@@ -343,7 +342,7 @@ contains
         end if
       end associate
     end do
-    call gather_boundary(this%mesh%face_ip, this%rho_fc)
+    call this%mesh%face_imap%gather_offp(this%rho_fc)
 
     ! harmonic averaged face viscosity
     ! special cases:
@@ -367,7 +366,7 @@ contains
         end if
       end associate
     end do
-    call gather_boundary(this%mesh%face_ip, this%mu_fc)
+    call this%mesh%face_imap%gather_offp(this%mu_fc)
 
   end subroutine update_fc
 

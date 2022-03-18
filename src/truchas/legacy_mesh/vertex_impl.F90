@@ -58,15 +58,15 @@ contains
   !! Copy of function from MESH_MODULE
   function vertex_collate (vertex)
     use common_impl, only: nnodes_tot
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     type(vertex_data), intent(in) :: vertex(:)
     type(vertex_data), pointer :: vertex_collate(:)
     integer :: n
     allocate(vertex_collate(merge(nnodes_tot,0,is_IOP)))
     do n = 1, 3
-      call collate (vertex_collate%coord(n), vertex%coord(n))
+      call gather (vertex%coord(n), vertex_collate%coord(n))
     end do
-    call collate (vertex_collate%rsum_rvol, vertex%rsum_rvol)
+    call gather (vertex%rsum_rvol, vertex_collate%rsum_rvol)
   end function vertex_collate
 
 end module vertex_impl

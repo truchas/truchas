@@ -96,8 +96,7 @@ contains
 
   subroutine open_restart_file ()
 
-    use parallel_info_module, only: p_info
-    use pgslib_module, only: pgslib_bcast
+    use parallel_communication, only: is_IOP, broadcast
     use restart_utilities, only: read_var, info, halt
     use string_utilities, only: i_to_c
 
@@ -110,8 +109,8 @@ contains
 
     !! Open the restart file.
     unit = -1
-    if (p_info%IOP) open(newunit=unit,file=restart_file,form='unformatted',action='read',status='old',position='rewind',iostat=ios)
-    call pgslib_bcast (ios)
+    if (is_IOP) open(newunit=unit,file=restart_file,form='unformatted',action='read',status='old',position='rewind',iostat=ios)
+    call broadcast (ios)
     if (ios /= 0) call halt ('Unable to open restart file ' // trim(restart_file) // &
                              ' for unformatted reading: iostat=' // i_to_c(ios))
 
@@ -311,8 +310,8 @@ contains
 
   subroutine close_restart_file ()
     use restart_utilities, only: info
-    use parallel_info_module, only: p_info
-    if (p_info%IOP) close(unit)
+    use parallel_communication, only: is_IOP
+    if (is_IOP) close(unit)
     call info ('')
     call info ('Closing restart file ' // trim(restart_file))
   end subroutine close_restart_file

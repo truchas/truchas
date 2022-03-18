@@ -48,15 +48,11 @@ MODULE MATL_MODULE
   private
 
   ! Public Variables
-  public :: MATERIAL, MATL_SLOT, MATL, COLLATE
+  public :: MATERIAL, MATL_SLOT, MATL
   ! Public Procedures
   public :: GATHER_VOF, SCATTER_VOF, &
             SLOT_DECREASE, SLOT_INCREASE, SLOT_COMPRESS,      &
             SLOT_SET, GATHER_VOF_OLD, SLOT_RESIZE
-
-  INTERFACE COLLATE
-     MODULE PROCEDURE COLLATE_MATL
-  END INTERFACE
 
   interface ASSIGNMENT(=)
      module procedure MATL_ASSIGN
@@ -372,33 +368,6 @@ CONTAINS
     ABC(s)%Cell%Vof_Old = Vof_def
 
   END SUBROUTINE SLOT_SET
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE COLLATE_MATL (Collated_Matl, Local_Matl)
-    !==================================================================
-    ! Purpose(s):
-    !   Collate a distributed matl into a single large matl on IO PE
-    !==================================================================
-    use parameter_module,     only: mat_slot, max_slots
-    use pgslib_module,        only: PGSLib_COLLATE
-
-    ! Arguments
-    type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: Collated_Matl
-    type(MATL_SLOT), dimension(max_slots), intent(IN   ) :: Local_Matl
-    
-    ! Local variables
-    integer :: s
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    do s = 1, mat_slot
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Id,      Local_Matl(s)%Cell%Id )
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof,     Local_Matl(s)%Cell%Vof )
-       call PGSLib_COLLATE(Collated_Matl(s)%Cell%Vof_Old, Local_Matl(s)%Cell%Vof_Old )
-    end do
-
-  END SUBROUTINE COLLATE_MATL
   
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 

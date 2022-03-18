@@ -10,7 +10,7 @@ module mesh_impl
 
   use common_impl, only: ncells, nnodes, new_mesh
   use var_vector_types, only: int_var_vector
-  use index_partitioning, only: ip_desc
+  use index_map_type, only: index_map
   implicit none
   private
 
@@ -19,7 +19,7 @@ module mesh_impl
 
   integer, parameter, public :: DEGENERATE_FACE = -huge(1)
 
-  type(ip_desc), public :: legacy_cell_ip
+  type(index_map), public :: legacy_cell_imap
 
   !! Copy of the MESH_CONNECTIVITY type from MESH_MODULE (used components only)
   type, public :: mesh_connectivity
@@ -56,13 +56,13 @@ contains
   !! Copy of function from MESH_MODULE
   function mesh_collate_vertex (mesh)
     use common_impl, only: ncells_tot
-    use parallel_communication, only: is_IOP, collate
+    use parallel_communication, only: is_IOP, gather
     type(mesh_connectivity), intent(in) :: mesh(:)
     integer, pointer :: mesh_collate_vertex(:,:)
     integer :: k
     allocate(mesh_collate_vertex(8,merge(ncells_tot,0,is_IOP)))
     do k = 1, 8
-      call collate (mesh_collate_vertex(k,:), mesh%ngbr_vrtx_orig(k))
+      call gather (mesh%ngbr_vrtx_orig(k), mesh_collate_vertex(k,:))
     end do
   end function mesh_collate_vertex
 
@@ -84,7 +84,7 @@ contains
 
     !! MESH%NGBR_CELL, MESH%NGBR_CELL_ORIG
     allocate(ngbr_cell_orig(6,ncells), ngbr_cell(6,ncells))
-    call init_ngbr_cell (ngbr_cell_orig, ngbr_cell, legacy_cell_ip)
+    call init_ngbr_cell (ngbr_cell_orig, ngbr_cell, legacy_cell_imap)
     do j = 1, ncells
       mesh(j)%ngbr_cell      = ngbr_cell(:,j)
       mesh(j)%ngbr_cell_orig = ngbr_cell_orig(:,j)
@@ -177,7 +177,7 @@ contains
   end subroutine init_cblockid
 
   !! Initialize the passed NGBR_CELL and NGBR_CELL_ORIG arrays, and return the
-  !! associated cell index partition object CELL_IP which must be used by most
+  !! associated cell index partition object CELL_IMAP which must be used by most
   !! of the EE_GATHER_* procedures that operate with the returned arguments.
   !! The legacy mesh API handles certain mesh links as cells, namely those that
   !! originally came from special gap cells in the Exodus mesh. Because of this
@@ -200,24 +200,22 @@ contains
   !! essence giving the neighbor information for the stitched up mesh where
   !! the internal interface has been removed.
 
-  subroutine init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_ip)
+  subroutine init_ngbr_cell (ngbr_cell_orig, ngbr_cell, cell_imap)
 
     use common_impl, only: OLD_TET_SIDE_MAP, OLD_PYR_SIDE_MAP, OLD_PRI_SIDE_MAP, OLD_HEX_SIDE_MAP
-    use index_partitioning, only: localize_index_array, gather_boundary
 
     integer, intent(out) :: ngbr_cell_orig(:,:), ngbr_cell(:,:)
-    type(ip_desc), intent(out) :: cell_ip
+    type(index_map), intent(out) :: cell_imap
 
     integer :: i, j, jj, k, n
     integer :: gid(new_mesh%ncell), link_gid(new_mesh%nlink)
-    integer, allocatable :: offP_index(:)
 
     !! Legacy global cell IDs on the mesh.
-    call cell_ip%init (ncells)
+    call cell_imap%init (ncells)
     do j = 1, new_mesh%ncell_onP
-      gid(j) = cell_ip%global_index(j)
+      gid(j) = cell_imap%global_index(j)
     end do
-    call gather_boundary (new_mesh%cell_ip, gid)
+    call new_mesh%cell_imap%gather_offp(gid)
 
     !! Generate the cell neighbor array (legacy global IDs)
     do j = 1, new_mesh%ncell_onP
@@ -238,12 +236,12 @@ contains
     do j = 1, new_mesh%nlink_onP
       if (new_mesh%link_cell_id(j) > 0) then
         n = n + 1
-        link_gid(j) = cell_ip%global_index(n)
+        link_gid(j) = cell_imap%global_index(n)
       else
         link_gid(j) = 0
       end if
     end do
-    call gather_boundary (new_mesh%link_ip, link_gid)
+    call new_mesh%link_imap%gather_offp(link_gid)
 
     !! Fill in neighbor data from gap cells.
     do n = 1, new_mesh%nlink
@@ -285,11 +283,8 @@ contains
     !! Localize the ngbr_cell_orig array.
     ngbr_cell = ngbr_cell_orig
     where (ngbr_cell < 0) ngbr_cell = 0 ! temp convert degen side tags to ignored bndry sides
-    call localize_index_array (cell_ip, ngbr_cell, offP_index)
+    call cell_imap%localize_index_array (ngbr_cell)
     where (ngbr_cell_orig < 0) ngbr_cell = ngbr_cell_orig ! restore degen side tags
-
-    call cell_ip%add_offP_index (offP_index)
-    deallocate(offP_index)
 
     !! Convert off-process references to look-aside boundary array references.
     where (ngbr_cell > ncells) ngbr_cell = ncells - ngbr_cell
@@ -483,7 +478,7 @@ contains
     end do
 
     !! Map to global node IDs.
-    ngbr_vrtx_orig = new_mesh%node_ip%global_index(ngbr_vrtx)
+    ngbr_vrtx_orig = new_mesh%node_imap%global_index(ngbr_vrtx)
 
     !! Convert off-process references to look-aside boundary array references.
     where (ngbr_vrtx > nnodes) ngbr_vrtx = nnodes - ngbr_vrtx
@@ -493,7 +488,7 @@ contains
   !! Initialize the passed NGBR_CELLS_ALL and NGBR_CELLS_FACE structure arrays.
   !! The EE_GATHER_ALL_V_S_* procedures that operate with the returned arguments
   !! should use the cell index partition from the mesh object and NOT the legacy
-  !! cell index partition LEGACY_CELL_IP from this module.  The reason is that
+  !! cell index partition LEGACY_CELL_IMAP from this module.  The reason is that
   !! these structure arrays ignore gap cells, and therefore have precisely the
   !  same cells as the mesh.  Neighbor lists will not include any neighbors that
   !! are gap cells, and while the arrays are sized to include neighbor lists for

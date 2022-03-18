@@ -65,7 +65,7 @@
 !!    nnode_onP, nface_onP, ncell_onP - the number of local nodes, faces, and
 !!        cells that that are uniquely owned (on-process).
 !!
-!!    node_ip, face_ip, cell_ip - derived types that describe the partitioning
+!!    node_imap, face_imap, cell_imap - derived types that describe the partitioning
 !!        and overlap of nodes, edges, faces, and cells, including information
 !!        necessary to communicate off-process data between processes.
 !!
@@ -118,7 +118,7 @@
 !!    link_set_mask - a rank-1 bitmask array: btest(link_set_mask(j),k)
 !!        returns true if link j belongs to the link set with ID link_set_id(k).
 !!
-!!    link_ip - derived type that describes the partitioning and overlap of
+!!    link_imap - derived type that describes the partitioning and overlap of
 !!        links, including information necessary to comminicate off-process
 !!        data between processes.
 !!
@@ -129,7 +129,7 @@ module unstr_mesh_type
 
   use kinds, only: r8
   use unstr_base_mesh_class
-  use index_partitioning
+  use index_map_type
   use parallel_communication
   use bitfield_type
   use cell_topology
@@ -286,7 +286,7 @@ contains
     integer, allocatable, intent(out) :: xcnode(:), cnode(:)
     associate (xcnode_onP => this%xcnode(:this%ncell_onP+1), &
                 cnode_onP => this%cnode(:this%xcnode(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcnode_onP, this%node_ip%global_index(cnode_onP), xcnode, cnode)
+      call get_global_ragged_array (xcnode_onP, this%node_imap%global_index(cnode_onP), xcnode, cnode)
     end associate
   end subroutine get_global_cnode_array
 
@@ -296,7 +296,7 @@ contains
     integer, allocatable, intent(out) :: xcface(:), cface(:)
     associate (xcface_onP => this%xcface(:this%ncell_onP+1), &
                 cface_onP => this%cface(:this%xcface(this%ncell_onP+1)-1))
-      call get_global_ragged_array (xcface_onP, this%face_ip%global_index(cface_onP), xcface, cface)
+      call get_global_ragged_array (xcface_onP, this%face_imap%global_index(cface_onP), xcface, cface)
     end associate
   end subroutine get_global_cface_array
 
@@ -306,14 +306,14 @@ contains
     integer, allocatable, intent(out) :: xfnode(:), fnode(:)
     associate (xfnode_onP => this%xfnode(:this%nface_onP+1), &
                 fnode_onP => this%fnode(:this%xfnode(this%nface_onP+1)-1))
-      call get_global_ragged_array (xfnode_onP, this%node_ip%global_index(fnode_onP), xfnode, fnode)
+      call get_global_ragged_array (xfnode_onP, this%node_imap%global_index(fnode_onP), xfnode, fnode)
     end associate
   end subroutine get_global_fnode_array
 
   !! Auxiliary subroutine creates a global ragged array on the IO process,
   !! 0-sized on others, given a distributed ragged array.
   subroutine get_global_ragged_array (xarray_l, array_l, xarray, array)
-    use parallel_communication, only: nPE, is_IOP, global_sum, collate, distribute
+    use parallel_communication, only: nPE, is_IOP, global_sum, gather, scatter
     integer, intent(in) :: xarray_l(:), array_l(:)
     integer, allocatable, intent(out) :: xarray(:), array(:)
     integer :: offset
@@ -325,10 +325,10 @@ contains
     allocate(xarray(1+merge(offset,0,is_IOP)))
     offset = excl_prefix_sum(size(array_l))
     xarray(1) = 1
-    call collate (xarray(2:), xarray_l(2:)+offset)
+    call gather (xarray_l(2:)+offset, xarray(2:))
     offset = global_sum(size(array_l))  !! same comments as above
     allocate(array(merge(offset,0,is_IOP)))
-    call collate (array, array_l)
+    call gather (array_l, array)
     if (is_IOP) then
       ASSERT(size(xarray) >= 1)
       ASSERT(xarray(1) == 1)
@@ -341,13 +341,13 @@ contains
       integer :: j
       integer, allocatable :: array(:)
       allocate(array(merge(nPE,0,is_IOP)))
-      call collate (array, n)
+      call gather (n, array)
       if (is_IOP) then
         do j = 2, nPE
           array(j) = array(j) + array(j-1)
         end do
       end if
-      call distribute (psum, array)
+      call scatter (array, psum)
       psum = psum - n
     end function
   end subroutine get_global_ragged_array
@@ -358,7 +358,7 @@ contains
 
   subroutine write_profile (this)
 
-    use parallel_communication, only: nPE, broadcast, collate
+    use parallel_communication, only: nPE, broadcast, gather
     use truchas_logging_services
 
     class(unstr_mesh), intent(in) :: this
@@ -368,9 +368,9 @@ contains
     integer, dimension(nPE) :: nnode_vec, nface_vec, ncell_vec
     integer, dimension(2,nPE) :: nvec, fvec, cvec
 
-    call collate (nnode_vec, this%nnode)
-    call collate (nface_vec, this%nface)
-    call collate (ncell_vec, this%ncell)
+    call gather (this%nnode, nnode_vec)
+    call gather (this%nface, nface_vec)
+    call gather (this%ncell, ncell_vec)
 
     call broadcast (nnode_vec)
     call broadcast (nface_vec)
@@ -385,16 +385,16 @@ contains
       call TLS_info (line)
     end do
 
-    call collate (nvec(1,:), this%node_ip%offP_size())
-    call collate (nvec(2,:), this%node_ip%onP_size())
+    call gather (this%node_imap%offp_size, nvec(1,:))
+    call gather (this%node_imap%onp_size, nvec(2,:))
     call broadcast (nvec)
 
-    call collate (fvec(1,:), this%face_ip%offP_size())
-    call collate (fvec(2,:), this%face_ip%onP_size())
+    call gather (this%face_imap%offp_size, fvec(1,:))
+    call gather (this%face_imap%onp_size, fvec(2,:))
     call broadcast (fvec)
 
-    call collate (cvec(1,:), this%cell_ip%offP_size())
-    call collate (cvec(2,:), this%cell_ip%onP_size())
+    call gather (this%cell_imap%offp_size, cvec(1,:))
+    call gather (this%cell_imap%onp_size, cvec(2,:))
     call broadcast (cvec)
 
     call TLS_info ('  Mesh Communication Profile:')
@@ -438,7 +438,7 @@ contains
 
     !! Count the number of questionable boundary faces (on-process).
     nqf = count(mask(:this%nface_onP))
-    call collate(array, nqf)
+    call gather(nqf, array)
     if (is_IOP) nqf = sum(array)
     call broadcast(nqf)
 
@@ -455,7 +455,7 @@ contains
     else
       allocate(xc(3,0))
     end if
-    call distribute(n, array)
+    call scatter(array, n)
     allocate(xc_l(3,n))
 
     !! Collect the face centroid data.
@@ -468,7 +468,7 @@ contains
         xc_l(:,n) = sum(this%x(:,fnode),dim=2) / size(fnode)
       end associate
     end do
-    call collate(xc, xc_l)
+    call gather(xc_l, xc)
 
     !! Write the warning message.
     allocate(msg(3+size(xc,dim=2)))
@@ -517,7 +517,7 @@ contains
     end do
 
     !! Determine the nearest cell and its owner globally
-    call collate(array, min_dist)
+    call gather(min_dist, array)
     if (is_IOP) min_PE = minloc(array,dim=1)
     call broadcast(min_PE)
     nearest_cell = merge(min_cell, 0, (this_PE == min_PE))
@@ -552,7 +552,7 @@ contains
     end do
 
     !! Determine the nearest node and its owner globally.
-    call collate(array, min_dist)
+    call gather(min_dist, array)
     if (is_IOP) min_PE = minloc(array,dim=1)
     call broadcast(min_PE)
     nearest_node = merge(min_node, 0, (this_PE == min_PE))

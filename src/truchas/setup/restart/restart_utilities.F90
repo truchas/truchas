@@ -156,18 +156,17 @@ contains
   !!
 
   subroutine skip_records_stat (unit, n, stat)
-    use parallel_info_module, only: p_info
-    use pgslib_module, only:  pgslib_bcast
+    use parallel_communication, only: is_IOP, broadcast
     integer, intent(in)  :: unit, n
     integer, intent(out) :: stat
     integer :: j
-    if (p_info%IOP) then
+    if (is_IOP) then
       do j = 1, n
         read(unit,iostat=stat)
         if (stat /= 0) exit
       end do
     end if
-    call pgslib_bcast (stat)
+    call broadcast (stat)
   end subroutine skip_records_stat
 
   subroutine skip_records_halt (unit, n, errmsg)

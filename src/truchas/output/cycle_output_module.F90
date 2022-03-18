@@ -66,7 +66,6 @@ CONTAINS
     !=======================================================================
     use kinds
     use process_info_module,    only: get_process_size
-    use pgslib_module,          only: PGSLIB_GLOBAL_MAXVAL, PGSLIB_GLOBAL_SUM
     use parallel_communication
     use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
     use physics_module, only: solid_mechanics => legacy_solid_mechanics
@@ -112,7 +111,7 @@ CONTAINS
     if (TLS_verbosity >= TLS_VERB_NOISY) then
       call get_process_size (vmsize, rssize, dsize)
       if (vmsize /= -1) Then
-        write (string, 20) PGSLIB_GLOBAL_MAXVAL(vmsize), PGSLIB_GLOBAL_SUM(vmsize)
+        write (string, 20) global_maxval(vmsize), global_sum(vmsize)
 20      format (8x,'vmsize, largest, total: ',i12,', ',i12,' kb')
         call TLS_info (string, TLS_VERB_NOISY)
       end if

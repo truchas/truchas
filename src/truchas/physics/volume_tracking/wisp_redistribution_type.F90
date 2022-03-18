@@ -16,7 +16,6 @@ module wisp_redistribution_type
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
-  use index_partitioning
   use parallel_communication
   implicit none
   private
@@ -120,7 +119,7 @@ contains
 
     ! communicate results... I don't think we need to communicate flux_vol changes since
     ! they are strictly local.  May need to be revistied if odd bugs show up
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
     call this%statistics()
 
@@ -290,8 +289,8 @@ contains
       ! there is not enough acceptor fluid so first we communicate our means and donor_volumes
       ! After sorting the volumes based on the means
       sorted_ranks = [(i, i=1, nPE)]
-      call collate(collated_mean, mean_donor_volumes(m))
-      call collate(donor_volumes, this%local_wisp_donor_v(m))
+      call gather(mean_donor_volumes(m), collated_mean)
+      call gather(this%local_wisp_donor_v(m), donor_volumes)
 
       call broadcast(collated_mean)
       call broadcast(donor_volumes)

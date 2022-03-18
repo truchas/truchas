@@ -11,7 +11,6 @@ module HTSD_init_cond_type
   use kinds, only: r8
   use unstr_mesh_type
   use data_layout_type
-  use index_partitioning
   use HTSD_model_type
   use truchas_logging_services
   use parallel_communication
@@ -183,7 +182,7 @@ contains
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
-      call gather_boundary (this%mesh%cell_ip, Tdot)
+      call this%mesh%cell_imap%gather_offp(Tdot)
       call HTSD_model_set_cell_temp (this%model, Tdot, udot)
       deallocate(Tdot,dHdT)
     end if
@@ -238,7 +237,7 @@ contains
       allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
       do n = 1, this%model%num_comp
         call HTSD_model_get_cell_conc_copy (this%model, n, udot, Ccell)
-        call gather_boundary (this%mesh%cell_ip, Ccell)
+        call this%mesh%cell_imap%gather_offp(Ccell)
         call average_to_faces (this%mesh, Ccell, Cface, this%model%void_cell)
         call HTSD_model_set_face_conc (this%model, n, Cface, udot)
       end do
@@ -307,7 +306,7 @@ contains
       if (associated(this%model%void_cell)) &
           where (this%model%void_cell) dHdT = 1.0_r8
       Tdot(:size(Hdot)) = Hdot / dHdT(:size(Hdot))
-      call gather_boundary (this%mesh%cell_ip, Tdot)
+      call this%mesh%cell_imap%gather_offp(Tdot)
       call HTSD_model_set_cell_temp (this%model, Tdot, udot)
       deallocate(Tdot,dHdT)
     end if
@@ -362,7 +361,7 @@ contains
       allocate(Ccell(this%mesh%ncell), Cface(this%mesh%nface))
       do n = 1, this%model%num_comp
         call HTSD_model_get_cell_conc_copy (this%model, n, udot, Ccell)
-        call gather_boundary (this%mesh%cell_ip, Ccell)
+        call this%mesh%cell_imap%gather_offp(Ccell)
         call average_to_faces (this%mesh, Ccell, Cface, this%model%void_cell)
         call HTSD_model_set_face_conc (this%model, n, Cface, udot)
       end do
@@ -381,7 +380,6 @@ contains
   subroutine average_to_faces (mesh, ucell, uface, skip)
 
     use bitfield_type
-    use index_partitioning
 
     type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in)  :: ucell(:)
@@ -406,8 +404,8 @@ contains
         scale(cface) = scale(cface) + 1
       end associate
     end do
-    call gather_boundary (mesh%face_ip, uface)
-    call gather_boundary (mesh%face_ip, scale)
+    call mesh%face_imap%gather_offp(uface)
+    call mesh%face_imap%gather_offp(scale)
 
     where (scale == 0)
       uface = 0.0_r8
@@ -599,7 +597,7 @@ contains
       end if
 
       call HTSD_model_get_face_temp_copy (this, u, Tface)
-      call gather_boundary (this%mesh%face_ip, Tface)
+      call this%mesh%face_imap%gather_offp(Tface)
 
       !! External HTC boundary condition contribution.
       if (allocated(this%ht%bc_htc)) then

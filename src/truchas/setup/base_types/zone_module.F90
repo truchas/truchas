@@ -23,11 +23,7 @@ MODULE ZONE_MODULE
   private
 
   ! public variables and types
-  public :: CELL_AVG, Zone, COLLATE, PERMUTE_ZONE, read_zone_data
-
-  INTERFACE COLLATE
-     MODULE PROCEDURE COLLATE_ZONE
-  END INTERFACE
+  public :: CELL_AVG, Zone, read_zone_data
 
   !-----------------------------------------------------------------------------
 
@@ -47,61 +43,6 @@ MODULE ZONE_MODULE
   type(CELL_AVG), dimension(:), pointer :: Zone
 
 CONTAINS
-
-  FUNCTION ZONE_COLLATE (Zone)
-    !==================================================================
-    ! Purpose(s):
-    !   Collate a distributed zone into a single large zone on IO PE
-    !==================================================================
-    use parallel_info_module, only: p_info
-    use legacy_mesh_api, only: ncells_tot, ncells
-
-    ! Arguments
-    type(CELL_AVG),          dimension(ncells), intent(IN) :: Zone
-    type(CELL_AVG), pointer, dimension(:)                  :: ZONE_COLLATE
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    if (p_info%IOP) then
-       ALLOCATE(Zone_Collate(ncells_tot))
-    else
-       ALLOCATE(Zone_Collate(0))
-    end if
-
-    call COLLATE(Zone_Collate, Zone)
-
-  END FUNCTION ZONE_COLLATE
-
-  SUBROUTINE COLLATE_ZONE (Collated_Zone, Local_Zone)
-    !==================================================================
-    ! Purpose(s):
-    !   Collate a distributed zone into a single large zone on IO PE
-    !==================================================================
-    use pgslib_module,        only: PGSLib_COLLATE
-
-    ! Arguments
-    type(CELL_AVG), dimension(:), intent(IN    ) :: Local_Zone
-    type(CELL_AVG), dimension(:), intent(   OUT) :: Collated_Zone
-
-    ! Local variables
-    integer :: n
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    call PGSLib_COLLATE (Collated_Zone%Rho,          Local_Zone%Rho)
-    call PGSLib_COLLATE (Collated_Zone%Rho_Old,      Local_Zone%Rho_Old)
-    call PGSLib_COLLATE (Collated_Zone%Temp,         Local_Zone%Temp)
-    call PGSLib_COLLATE (Collated_Zone%Temp_Old,     Local_Zone%Temp_Old)
-    call PGSLib_COLLATE (Collated_Zone%Enthalpy,     Local_Zone%Enthalpy)
-    call PGSLib_COLLATE (Collated_Zone%Enthalpy_Old, Local_Zone%Enthalpy_Old)
-    call PGSLib_COLLATE (Collated_Zone%P,            Local_Zone%P)
-
-    do n = 1,ndim
-       call PGSLib_COLLATE (Collated_Zone%Vc(n),      Local_Zone%Vc(n))
-       call PGSLib_COLLATE (Collated_Zone%Vc_Old(n),  Local_Zone%Vc_Old(n))
-    end do
-
-  END SUBROUTINE COLLATE_ZONE
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -145,131 +86,5 @@ CONTAINS
     end do
 
   end subroutine read_zone_data
-
-  SUBROUTINE PERMUTE_ZONE (Permuted_Zone, Orig_Zone, Permuter, SCOPE)
-    !==================================================================
-    ! Purpose(s):
-    !   Permute zone according the Permuter vector
-    !==================================================================
-    use parallel_scope
-
-    ! Arguments
-    type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
-    type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer, dimension(:), intent(IN) :: Permuter
-    type (PL_SCOPE), OPTIONAL,    intent(IN   ) :: SCOPE
-
-    ! Local variables
-    type (PL_SCOPE) :: Desired_Scope
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Default scope is global
-    if (PRESENT(SCOPE)) then
-       Desired_Scope = SCOPE
-    else
-       Desired_Scope = GLOBAL_SCOPE
-    end if
-
-    if (DESIRED_SCOPE == GLOBAL_SCOPE) then
-       call PERMUTE_ZONE_GLOBAL(Permuted_Zone, Orig_Zone, Permuter)
-    end if
-
-    if (DESIRED_SCOPE == LOCAL_SCOPE) then
-       call PERMUTE_ZONE_LOCAL (Permuted_Zone, Orig_Zone, Permuter)
-    end if
-
-  end SUBROUTINE PERMUTE_ZONE
-
-  SUBROUTINE PERMUTE_ZONE_GLOBAL (Permuted_Zone, Orig_Zone, Permuter)
-    !==================================================================
-    ! Purpose(s):
-    !   Permute zone according the Permuter vector, global version
-    !==================================================================
-    use pgslib_module,    only: PGSLib_Permute,    &
-                                PGSLIB_Deallocate_Trace, &
-                                PGSLib_GS_Trace
-
-    ! Arguments
-    type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
-    type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer, dimension(:), intent(IN) :: Permuter
-
-    ! Local variables
-    integer :: n
-    type (PGSLib_GS_Trace), POINTER :: Zone_Trace
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    NULLIFY(Zone_Trace)
-
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Rho,          &
-                         SOURCE = Orig_Zone%Rho,              &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Rho_Old,      &
-                         SOURCE = Orig_Zone%Rho_Old,              &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Temp,         &
-                         SOURCE = Orig_Zone%Temp,                 &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Temp_Old,     &
-                         SOURCE = Orig_Zone%Temp_Old,             &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Enthalpy,     &
-                         SOURCE = Orig_Zone%Enthalpy,             &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%Enthalpy_Old, &
-                         SOURCE = Orig_Zone%Enthalpy_Old,         &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-    call PGSLib_PERMUTE (DEST   = Permuted_Zone%P,            &
-                         SOURCE = Orig_Zone%P,                    &
-                         INDEX  = Permuter,       &
-                         TRACE  = Zone_Trace)
-
-    do n = 1,ndim
-       call PGSLib_PERMUTE (DEST   = Permuted_Zone%Vc(n),   &
-                            SOURCE = Orig_Zone%Vc(n),           &
-                            INDEX  = Permuter,  &
-                            TRACE  = Zone_Trace)
-       call PGSLib_PERMUTE (DEST   = Permuted_Zone%Vc_Old(n),   &
-                            SOURCE = Orig_Zone%Vc_Old(n),       &
-                            INDEX  = Permuter,  &
-                            TRACE  = Zone_Trace)
-    end do
-
-    ! Done with the trace
-    call PGSLib_DEALLOCATE_TRACE (Zone_Trace)
-
-  END SUBROUTINE PERMUTE_ZONE_GLOBAL
-
-  SUBROUTINE PERMUTE_ZONE_LOCAL (Permuted_Zone, Orig_Zone, Permuter)
-    !==================================================================
-    ! Purpose(s):
-    !   Permute zone according the Permuter vector, local version
-    !   The Permuter vector refers to local indices.
-    !   The input and output vectors must have the same size.
-    !==================================================================
-
-    ! Arguments
-    type(CELL_AVG), dimension(:), intent(IN   ) :: Orig_Zone
-    type(CELL_AVG), dimension(:), intent(  OUT) :: Permuted_Zone
-    integer, dimension(:), intent(IN) :: Permuter
-
-    ! Local variables
-    integer :: cell
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    do cell = 1, SIZE(Permuter)
-       Permuted_Zone(Permuter(cell)) = Orig_Zone(Cell)
-    end do
-
-  END SUBROUTINE PERMUTE_ZONE_LOCAL
 
 END MODULE ZONE_MODULE

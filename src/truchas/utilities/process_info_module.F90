@@ -129,7 +129,7 @@ Contains
   subroutine mem_diag_write (comment)
 
     use,intrinsic :: iso_c_binding, only: c_int
-    use parallel_communication, only: nPE, is_IOP, collate
+    use parallel_communication, only: nPE, is_IOP, gather
 
     character(*), intent(in) :: comment
 
@@ -140,9 +140,9 @@ Contains
     if (mem_on) then
       !! Gather memory usage from each process.
       call get_process_size (vsize, rsize, dsize)
-      call collate (vsize_all, real(vsize)/1024)
-      call collate (rsize_all, real(rsize)/1024)
-      call collate (dsize_all, real(dsize)/1024)
+      call gather (real(vsize)/1024, vsize_all)
+      call gather (real(rsize)/1024, rsize_all)
+      call gather (real(dsize)/1024, dsize_all)
       !! Write it from the I/O process.
       If (is_IOP) then
         write(mem_lun,'(/,a)') comment

@@ -353,8 +353,7 @@ CONTAINS
     use mech_bc_data_module,  only: Node_Disp_BC_Temp, X_DISPLACEMENT, Y_DISPLACEMENT, Z_DISPLACEMENT, &
                                     NORMAL_DISPLACEMENT
     use parameter_module,     only: mbc_nodes
-    use pgslib_module,        only: PGSLib_GLOBAL_ANY, PGSLib_COLLATE
-    use parallel_info_module
+    use parallel_communication, only: is_IOP, nPE, global_any, gather
     !
     ! Arguments
     integer, intent(IN) :: m, n
@@ -365,8 +364,8 @@ CONTAINS
     logical :: node_found
     character(128) :: message
     !
-    if (p_info%IOP) then
-       ALLOCATE(Collated_Nodes(p_info%nPE))
+    if (is_IOP) then
+       ALLOCATE(Collated_Nodes(nPE))
     else
        ALLOCATE(Collated_Nodes(0))
     end if
@@ -404,8 +403,8 @@ CONTAINS
              end if
           end do NODE_LOOP
           ! Check to see if a node was found.
-          if (PGSLib_GLOBAL_ANY(node_found)) then
-             call PGSLib_COLLATE (Collated_Nodes, bc_gnode)
+          if (global_any(node_found)) then
+             call gather (bc_gnode, Collated_Nodes)
 !             node_found = .false.
              do j = 1, SIZE(Collated_Nodes)
                 if (Collated_Nodes(j) /= 0) then
@@ -446,7 +445,6 @@ CONTAINS
     !-----------------------------------------------------------------------------
     use mech_bc_data_module,  only: Interface_ID, Interface_List
     use legacy_mesh_api, only: ncells, nfc
-    use parallel_info_module
 !    use legacy_mesh_api,          only: Mesh, GAP_ELEMENT_1
     !
     ! Arguments

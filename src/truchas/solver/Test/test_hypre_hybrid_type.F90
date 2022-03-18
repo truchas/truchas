@@ -10,16 +10,13 @@ program test_hypre_hybrid_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
-  use pgslib_module
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   use pcsr_matrix_type
   use hypre_hybrid_type
   use parameter_list_type
   implicit none
   
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   real(r8), parameter :: PI = 3.1415926535897931_r8
   real(r8), parameter :: TWOPI = 6.2831853071795862_r8
   integer :: status = 0
@@ -27,7 +24,6 @@ program test_hypre_hybrid_type
   real(r8) :: a ! set by the tests
   integer :: nx, ny, nz ! set by the tests
   
-  call parallel_init (argv)
   call init_parallel_communication
 
   call cg_test_1
@@ -35,7 +31,7 @@ program test_hypre_hybrid_type
   call gmres_test_1
   call gmres_test_2
 
-  call pgslib_finalize
+  call halt_parallel_communication
   
   call exit (status)
 
@@ -69,7 +65,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onP_size()
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -136,7 +132,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onP_size()
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -204,7 +200,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onP_size()
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -272,7 +268,7 @@ contains
     call solver%init (matrix, params)
     call solver%setup
 
-    nrow = matrix%graph%row_ip%onP_size()
+    nrow = matrix%graph%row_imap%onp_size
     allocate(u(nrow), b(nrow), x(nrow))
 
     call eigenvector (1, 1, 1, u)
@@ -316,8 +312,8 @@ contains
     type(pcsr_matrix), intent(out) :: matrix
     
     integer :: ix, iy, iz, n, j, k, ntot, nloc
-    integer, allocatable :: nnbr_g(:,:), nnbr(:,:), offP_index(:)
-    type(ip_desc), pointer :: row_ip
+    integer, allocatable :: nnbr_g(:,:), nnbr(:,:)
+    type(index_map), pointer :: row_imap
     type(pcsr_graph), pointer :: graph
     
     !! Stencil neighbors of each grid point (GLOBAL).
@@ -348,15 +344,14 @@ contains
     !print *, 'RANK=', this_PE, ', NLOC=', nloc
     
     !! Setup the index partition for the grid points.
-    allocate(row_ip)
-    call row_ip%init (nloc)
-    call localize_index_array (nnbr_g, row_ip, row_ip, nnbr, offP_index)
-    call row_ip%add_offP_index (offP_index)
-    deallocate(offP_index, nnbr_g)
+    allocate(row_imap)
+    call row_imap%init (nloc)
+    call row_imap%localize_index_array(nnbr_g, row_imap, nnbr)
+    deallocate(nnbr_g)
     
     !! Create the parallel CSR matrix.
     allocate(graph)
-    call graph%init (row_ip)
+    call graph%init (row_imap)
     do j = 1, size(nnbr,2)
       call graph%add_edge (j, j)
       call graph%add_edge (j, nnbr(:,j))
@@ -412,7 +407,7 @@ contains
       allocate(u_g(0))
     end if
     
-    call distribute (u, u_g)
+    call scatter (u_g, u)
     
   end subroutine eigenvector
 

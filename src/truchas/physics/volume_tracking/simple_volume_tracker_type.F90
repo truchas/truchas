@@ -47,8 +47,6 @@ contains
 
   subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
 
-    use index_partitioning, only: gather_boundary
-
     class(simple_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
@@ -79,7 +77,7 @@ contains
       end do
     end associate
 
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine flux_volumes
 

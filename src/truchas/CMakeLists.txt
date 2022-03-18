@@ -59,7 +59,7 @@ add_subdirectory(toolpath)
 add_subdirectory(truchasio)
 
 target_link_libraries(truchas PUBLIC
-    blas lapack exodus hypre petaca hdf5 chaco truchas::pgslib_fe scorpio
+    blas lapack exodus hypre petaca hdf5 chaco truchas::pgslib_fe scorpio MPI::MPI_Fortran
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)

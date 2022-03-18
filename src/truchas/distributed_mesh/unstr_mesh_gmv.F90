@@ -89,7 +89,6 @@ contains
   subroutine gmv_write_unstr_mesh (mesh)
 
     use unstr_mesh_type
-    use index_partitioning
     use string_utilities, only: i_to_c
 
     type(unstr_mesh), intent(in) :: mesh
@@ -131,20 +130,20 @@ contains
     deallocate(xcnode, cnode)
 
     !! Write external mesh node numbers as the nodeids -- GMV uses these for display.
-    allocate(map(nnode))
-    call collate (map, mesh%xnode(:mesh%nnode_onP))
+    allocate(map(merge(nnode,0,is_iop)))
+    call gather (mesh%xnode(:mesh%nnode_onP), map)
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write external mesh cell numbers as the cellids -- GMV uses these for display.
-    allocate(map(ncell))
-    call collate (map, mesh%xcell(:mesh%ncell_onP))
+    allocate(map(merge(ncell,0,is_iop)))
+    call gather (mesh%xcell(:mesh%ncell_onP), map)
     if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
     !! Write cell materials.  NB: See Note 1
     allocate(cell_set_mask(ncell))
-    call collate (cell_set_mask, mesh%cell_set_mask(:mesh%ncell_onP))
+    call gather (mesh%cell_set_mask(:mesh%ncell_onP), cell_set_mask)
     if (is_IOP) then
       call gmvwrite_material_header_f (size(mesh%cell_set_id), CELLDATA)
       do j = 1, size(mesh%cell_set_id)
@@ -161,8 +160,8 @@ contains
       if (is_IOP) call gmvwrite_flag_header_f ()
 
       !! Cell partitioning info ...
-      allocate(map(ncell))
-      call collate (map, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
+      allocate(map(merge(ncell,0,is_iop)))
+      call gather (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), map)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
@@ -180,8 +179,8 @@ contains
         else
           iflag = 2
         end if
-        call scatter_boundary_sum(mesh%cell_ip, iflag)
-        call collate(map, iflag(:mesh%ncell_onP))
+        call mesh%cell_imap%scatter_offp_sum(iflag)
+        call gather(iflag(:mesh%ncell_onP), map)
         if (is_IOP) then
           call gmvwrite_flag_name_f('P'//i_to_c(j)//'cells', 3, CELLDATA)
           call gmvwrite_flag_subname_f('other') ! for iflag==1
@@ -193,8 +192,8 @@ contains
 
       !! Node partitioning info ...
       deallocate(map)
-      allocate(map(nnode))
-      call collate (map, spread(this_PE, dim=1, ncopies=mesh%node_ip%onP_size()))
+      allocate(map(merge(nnode,0,is_iop)))
+      call gather (spread(this_PE, dim=1, ncopies=mesh%node_imap%onp_size), map)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
         do j = 1, nPE
@@ -227,7 +226,6 @@ contains
   subroutine gmv_write_dist_cell_var (mesh, u, name)
 
     use unstr_mesh_type
-    use index_partitioning
 
     type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: u(:)
@@ -235,11 +233,11 @@ contains
 
     real(r8), pointer :: u_global(:)
 
-    ASSERT(mesh%cell_ip%defined())
-    ASSERT(size(u) == mesh%cell_ip%onP_size())
+    ASSERT(mesh%cell_imap%defined())
+    ASSERT(size(u) == mesh%cell_imap%onp_size)
 
-    allocate(u_global(merge(mesh%cell_ip%global_size(),0,is_IOP)))
-    call collate (u_global, u)
+    allocate(u_global(merge(mesh%cell_imap%global_size,0,is_IOP)))
+    call gather (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)
 
@@ -248,7 +246,6 @@ contains
   subroutine gmv_write_dist_node_var (mesh, u, name)
 
     use unstr_mesh_type
-    use index_partitioning
 
     type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: u(:)
@@ -256,11 +253,11 @@ contains
 
     real(r8), pointer :: u_global(:)
 
-    ASSERT(mesh%node_ip%defined())
-    ASSERT(size(u) == mesh%node_ip%onP_size())
+    ASSERT(mesh%node_imap%defined())
+    ASSERT(size(u) == mesh%node_imap%onp_size)
 
-    allocate(u_global(merge(mesh%node_ip%global_size(),0,is_IOP)))
-    call collate (u_global, u)
+    allocate(u_global(merge(mesh%node_imap%global_size,0,is_IOP)))
+    call gather (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (NODEDATA, name, u_global)
     deallocate(u_global)
 

@@ -151,7 +151,6 @@ contains
 
       use legacy_mesh_api, only: ncells
       use EM_data_proxy,      only: joule_power_density
-      use index_partitioning, only: gather_boundary
 
       real(r8), allocatable :: q_t(:), q_ds(:)
 
@@ -162,7 +161,7 @@ contains
           allocate(q_t(ncells))
           q_t = joule_power_density()
           q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
-          call gather_boundary (this%mesh%cell_ip, q_ds)
+          call this%mesh%cell_imap%gather_offp(q_ds)
           deallocate(q_t)
         else
           q_ds = 0.0_r8
@@ -173,7 +172,7 @@ contains
             real(r8) :: tcell(this%mesh%ncell_onP), dQ(this%mesh%ncell)
             call ds_get_temp(tcell) !TODO: can be a view rather than a copy
             call this%hadv%get_advected_enthalpy(tcell, dQ(:this%mesh%ncell_onP))
-            call gather_boundary(this%mesh%cell_ip, dQ)
+            call this%mesh%cell_imap%gather_offp(dQ)
             q_ds = q_ds + (dQ / (h * this%mesh%volume))
           end block
         end if
@@ -187,7 +186,6 @@ contains
 !
 !      use legacy_mesh_api, only: ncells
 !      use advection_module,   only: advected_phi
-!      use index_partitioning, only: gather_boundary
 !
 !      integer :: i
 !      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
@@ -198,7 +196,7 @@ contains
 !          call ds_get_phi (i, phi_t)
 !          call advected_phi(phi_t, q_t)    ! species deltas for the time step
 !          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
-!          call gather_boundary (this%mesh%cell_ip, q_ds)
+!          call this%mesh%cell_imap%gather_offp(q_ds)
 !          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
 !          call smf_set_extra_source (this%sd_source(i), q_ds)
 !        end do

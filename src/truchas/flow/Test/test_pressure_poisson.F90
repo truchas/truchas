@@ -3,9 +3,7 @@ program test_pressure_poisson
   use,intrinsic :: f90_unix, only: exit
 #endif
   use kinds
-  use parallel_util_module, only: parallel_init
   use parallel_communication
-  use pgslib_module
   use truchas_env, only: prefix
   use truchas_logging_services
   use parameter_list_type
@@ -16,7 +14,6 @@ program test_pressure_poisson
   use flow_type
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   type(parameter_list), pointer :: p, pp
   type(flow_props) :: props
   type(flow_bc), pointer :: bc
@@ -25,7 +22,6 @@ program test_pressure_poisson
   integer :: i, in
   real(r8), allocatable :: flux_volumes(:,:)
 
-  call parallel_init(argv)
   call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize()

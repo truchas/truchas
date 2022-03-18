@@ -74,7 +74,6 @@ contains
   subroutine gmv_write_simpl_mesh (mesh)
 
     use simpl_mesh_type
-    use index_partitioning
     use string_utilities, only: i_to_c
 
     type(simpl_mesh), intent(in) :: mesh
@@ -110,14 +109,14 @@ contains
     end if
 
     !! Write external mesh node numbers as the nodeids -- GMV uses these for display.
-    call allocate_collated_array (map, size(x,dim=2))
-    call collate (map, mesh%xnode(:mesh%nnode_onP))
+    allocate(map(merge(size(x,dim=2),0,is_iop)))
+    call gather (mesh%xnode(:mesh%nnode_onP), map)
     if (is_IOP) call gmvwrite_nodeids_f (map)
     deallocate (map)
 
     !! Write external mesh cell numbers as the cellids -- GMV uses these for display.
-    call allocate_collated_array (map, size(cnode,dim=2))
-    call collate (map, mesh%xcell(:mesh%ncell_onP))
+    allocate(map(merge(size(cnode,dim=2),0,is_iop)))
+    call gather (mesh%xcell(:mesh%ncell_onP), map)
     if (is_IOP) call gmvwrite_cellids_f (map)
     deallocate (map)
 
@@ -140,8 +139,8 @@ contains
       if (is_IOP) call gmvwrite_flag_header_f ()
 
       !! Cell partitioning info ...
-      call allocate_collated_array (pdata, mesh%cell_ip%global_size())
-      call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%cell_ip%onP_size()))
+      allocate(pdata(merge(mesh%cell_imap%global_size,0,is_iop)))
+      call gather (spread(this_PE, dim=1, ncopies=mesh%cell_imap%onp_size), pdata)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('cellpart', nPE, CELLDATA)
         do j = 1, nPE
@@ -152,8 +151,8 @@ contains
       deallocate(pdata)
 
       !! Node partitioning info ...
-      call allocate_collated_array (pdata, mesh%node_ip%global_size())
-      call collate (pdata, spread(this_PE, dim=1, ncopies=mesh%node_ip%onP_size()))
+      allocate(pdata(merge(mesh%node_imap%global_size,0,is_iop)))
+      call gather (spread(this_PE, dim=1, ncopies=mesh%node_imap%onp_size), pdata)
       if (is_IOP) then
         call gmvwrite_flag_name_f ('nodepart', nPE, NODEDATA)
         do j = 1, nPE
@@ -186,7 +185,6 @@ contains
   subroutine gmv_write_dist_cell_var (mesh, u, name)
 
     use simpl_mesh_type
-    use index_partitioning
 
     type(simpl_mesh), intent(in) :: mesh
     real(kind=r8),   intent(in) :: u(:)
@@ -194,11 +192,11 @@ contains
 
     real(kind=r8), pointer :: u_global(:)
 
-    ASSERT( mesh%cell_ip%defined() )
-    ASSERT( size(u) == mesh%cell_ip%onP_size() )
+    ASSERT( mesh%cell_imap%defined() )
+    ASSERT( size(u) == mesh%cell_imap%onp_size )
 
-    call allocate_collated_array (u_global, mesh%cell_ip%global_size())
-    call collate (u_global, u)
+    allocate(u_global(merge(mesh%cell_imap%global_size,0,is_iop)))
+    call gather (u, u_global)
     if (is_IOP) call gmvwrite_variable_name_data_f (CELLDATA, name, u_global)
     deallocate(u_global)
 

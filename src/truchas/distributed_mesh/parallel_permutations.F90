@@ -89,7 +89,7 @@ module parallel_permutations
 
   use kinds
   use permutations
-  use index_partitioning
+  use index_map_type
   use parallel_communication
   implicit none
   private
@@ -99,7 +99,7 @@ module parallel_permutations
   type, public :: par_perm
     private
     integer, allocatable :: perm(:) ! dest-to-src mapping (local indices)
-    type(ip_desc) :: src_ip ! partition descriptor for the src index set
+    type(index_map) :: src_imap ! partition descriptor for the src index set
   end type par_perm
 
   interface defined
@@ -128,8 +128,7 @@ contains
     integer, intent(in) :: dest_bsize(:)  ! dest index partition block sizes
     integer, intent(in) :: src_bsize(:)   ! src index partition block sizes
 
-    integer, allocatable :: offP_index(:)
-    type(ip_desc) :: dest_ip
+    type(index_map) :: dest_imap
 
     if (is_IOP) then
       ASSERT( size(dest_bsize) == nPE )
@@ -141,14 +140,13 @@ contains
       ASSERT( is_perm(perm) )
     end if
 
-    call dest_ip%init (dest_bsize)
-    call this%src_ip%init (src_bsize)
+    call dest_imap%init (dest_bsize)
+    call this%src_imap%init (src_bsize)
 
-    call localize_index_array (perm, dest_ip, this%src_ip, this%perm, offP_index)
-    call this%src_ip%add_offP_index (offP_index)
+    call dest_imap%localize_index_array (perm, this%src_imap, this%perm)
 
     ASSERT( minval(this%perm) > 0 )
-    ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
+    ASSERT( maxval(this%perm) <= this%src_imap%local_size )
 
   end subroutine create_par_perm_1
 
@@ -165,12 +163,12 @@ contains
     ASSERT( n == global_sum(size(dp2)) )
 
     !! Assemble the 1-labeling-to-external permutation vector.
-    call allocate_collated_array (p1, n)
-    call collate (p1, dp1)
+    allocate(p1(merge(n,0,is_iop)))
+    call gather (dp1, p1)
 
     !! Assemble the 2-labeling-to-external permutation vector.
-    call allocate_collated_array (p2, n)
-    call collate (p2, dp2)
+    allocate(p2(merge(n,0,is_iop)))
+    call gather (dp2, p2)
 
     !! Construct the permutation from the 1-to-2 labeling.
     if (is_IOP) then
@@ -182,8 +180,8 @@ contains
     end if
 
     !! Form the partition block-size arrays inferred from the two labelings.
-    call collate (bsize1, size(dp1))
-    call collate (bsize2, size(dp2))
+    call gather (size(dp1), bsize1)
+    call gather (size(dp2), bsize2)
 
     !! Create the 1-to-2 parallel permutation structure.
     call create_par_perm (pp12, p2, bsize1, bsize2)
@@ -213,13 +211,13 @@ contains
 
     !! Assemble the 1-labeling-to-external mapping vector M1.
     n = global_sum(size(dm1))
-    call allocate_collated_array (m1, n)
-    call collate (m1, dm1)
+    allocate(m1(merge(n,0,is_iop)))
+    call gather (dm1, m1)
 
     !! Assemble the 2-labeling-to-external mapping vector M2.
     n = global_sum(size(dm2))
-    call allocate_collated_array (m2, n)
-    call collate (m2, dm2)
+    allocate(m2(merge(n,0,is_iop)))
+    call gather (dm2, m2)
 
     !! Overwrite M1 with the 1-to-2-labeling mapping.
     !! Zero values in M1 mark 1-labels without a corresponding 2-label.
@@ -241,8 +239,8 @@ contains
     end if
 
     !! Form the partition block-size arrays inferred from the two labelings.
-    call collate (bsize1, size(dm1))
-    call collate (bsize2, size(dm2))
+    call gather (size(dm1), bsize1)
+    call gather (size(dm2), bsize2)
 
     !! Create the 1-to-2 parallel permutation structure.
     call create_par_perm_var (pp12, m1, bsize1, bsize2)
@@ -307,17 +305,15 @@ contains
     integer, intent(in) :: dest_bsize(:)  ! dest index partition block sizes
     integer, intent(in) :: src_bsize(:)   ! src index partition block sizes
 
-    integer, allocatable :: offP_index(:)
-    type(ip_desc) :: dest_ip
+    type(index_map) :: dest_imap
 
-    call dest_ip%init (dest_bsize)
-    call this%src_ip%init (src_bsize)
+    call dest_imap%init (dest_bsize)
+    call this%src_imap%init (src_bsize)
 
-    call localize_index_array (perm, dest_ip, this%src_ip, this%perm, offP_index)
-    call this%src_ip%add_offP_index (offP_index)
+    call dest_imap%localize_index_array (perm, this%src_imap, this%perm)
 
     ASSERT( minval(this%perm) >= 0 )
-    ASSERT( maxval(this%perm) <= this%src_ip%local_size() )
+    ASSERT( maxval(this%perm) <= this%src_imap%local_size )
 
   end subroutine create_par_perm_var
 
@@ -326,7 +322,7 @@ contains
     defined_par_perm = .false.
     CHECKLIST: do
       if (.not.allocated(this%perm)) exit
-      if (.not.this%src_ip%defined()) exit
+!      if (.not.this%src_imap%defined()) exit
       defined_par_perm = .true.
       exit
     end do CHECKLIST
@@ -340,17 +336,17 @@ contains
     real(r8), intent(in)  :: src(:)
 
     integer :: j, k
-    real(r8) :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+    real(r8) :: src_offP(this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == this%src_ip%onP_size() )
+    ASSERT( size(src) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(j) = src_offP(k)
       else
         dest(j) = src(k)
@@ -366,17 +362,17 @@ contains
     integer, intent(in)  :: src(:)
 
     integer :: j, k
-    integer :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+    integer :: src_offP(this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == this%src_ip%onP_size() )
+    ASSERT( size(src) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(j) = src_offP(k)
       else
         dest(j) = src(k)
@@ -393,17 +389,17 @@ contains
     real(r8), intent(in), optional :: default
 
     integer :: j, k
-    real(r8) :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+    real(r8) :: src_offP(this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == this%src_ip%onP_size() )
+    ASSERT( size(src) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
@@ -422,18 +418,18 @@ contains
     real(r8), intent(in), optional :: default
 
     integer :: j, k
-    real(r8) :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
+    real(r8) :: src_offP(size(src,1),this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest,1) == size(src,1) )
     ASSERT( size(dest,2) == size(this%perm) )
-    ASSERT( size(src,2) == this%src_ip%onP_size() )
+    ASSERT( size(src,2) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest,2)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(:,j) = src_offP(:,k)
       else if (k > 0) then
         dest(:,j) = src(:,k)
@@ -452,17 +448,17 @@ contains
     integer, intent(in), optional :: default
 
     integer :: j, k
-    integer :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+    integer :: src_offP(this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == this%src_ip%onP_size() )
+    ASSERT( size(src) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
@@ -481,18 +477,18 @@ contains
     integer, intent(in), optional :: default
 
     integer :: j, k
-    integer :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
+    integer :: src_offP(size(src,1),this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest,1) == size(src,1) )
     ASSERT( size(dest,2) == size(this%perm) )
-    ASSERT( size(src,2) == this%src_ip%onP_size() )
+    ASSERT( size(src,2) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest,2)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(:,j) = src_offP(:,k)
       else if (k > 0) then
         dest(:,j) = src(:,k)
@@ -511,17 +507,17 @@ contains
     logical, intent(in), optional :: default
 
     integer :: j, k
-    logical :: src_offP(this%src_ip%onP_size()+1:this%src_ip%local_size())
+    logical :: src_offP(this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest) == size(this%perm) )
-    ASSERT( size(src) == this%src_ip%onP_size() )
+    ASSERT( size(src) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(j) = src_offP(k)
       else if (k > 0) then
         dest(j) = src(k)
@@ -540,18 +536,18 @@ contains
     logical, intent(in), optional :: default
 
     integer :: j, k
-    logical :: src_offP(size(src,1),this%src_ip%onP_size()+1:this%src_ip%local_size())
+    logical :: src_offP(size(src,1),this%src_imap%onp_size+1:this%src_imap%local_size)
 
     ASSERT( defined(this) )
     ASSERT( size(dest,1) == size(src,1) )
     ASSERT( size(dest,2) == size(this%perm) )
-    ASSERT( size(src,2) == this%src_ip%onP_size() )
+    ASSERT( size(src,2) == this%src_imap%onp_size )
 
-    call gather_boundary (this%src_ip, src, src_offP)
+    call this%src_imap%gather_offp(src, src_offP)
 
     do j = 1, size(dest,2)
       k = this%perm(j)
-      if (k > this%src_ip%onP_size()) then
+      if (k > this%src_imap%onp_size) then
         dest(:,j) = src_offP(:,k)
       else if (k > 0) then
         dest(:,j) = src(:,k)

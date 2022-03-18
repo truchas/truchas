@@ -35,8 +35,7 @@ contains
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
-    use parallel_info_module,      only: p_info
-    use pgslib_module,             only: pgslib_bcast
+    use parallel_communication,    only: is_IOP, broadcast
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
@@ -78,19 +77,19 @@ contains
     call TLS_info ('Opening input file "' // trim(infile) // '"')
 
     ! open input file
-    if (p_info%IOP) then
+    if (is_IOP) then
       open(newunit=lun,file=trim(infile),status='old',position='rewind',action='read',iostat=ios,iomsg=iom)
     else
       lun = -1
     end if
-    call pgslib_bcast (ios)
+    call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error opening input file: ' // trim(iom))
 
     ! read first line as title information
-    if (p_info%IOP) read(lun,'(a)',iostat=ios) title
-    call pgslib_bcast (ios)
+    if (is_IOP) read(lun,'(a)',iostat=ios) title
+    call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error reading initial title line: iostat=' // i_to_c(ios))
-    call pgslib_bcast (title)
+    call broadcast (title)
 
     call read_physical_constants (lun)
     call read_function_namelists (lun)
@@ -150,7 +149,7 @@ contains
     ! Read probe information.
     call read_probe_namelists(lun)
 
-    if (p_info%IOP) close(lun)
+    if (is_IOP) close(lun)
 
     call TLS_info ('Input file "' // trim(infile) // '" closed')
     call stop_timer('Input')

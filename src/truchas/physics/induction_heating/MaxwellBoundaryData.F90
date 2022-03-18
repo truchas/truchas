@@ -46,8 +46,6 @@ contains
 
   subroutine create_boundary_data (self, mesh, bface, ebgroup, hbgroup)
   
-    use index_partitioning, only: gather_boundary
-  
     type(BoundaryData), intent(out) :: self
     type(simpl_mesh), intent(in), target :: mesh
     integer, intent(in) :: bface(:)
@@ -78,7 +76,7 @@ contains
     end do
     
     !! Ensure consistency of values for edges on the partition boundary.
-    call gather_boundary (mesh%edge_ip, self%ebedge)
+    call mesh%edge_imap%gather_offp(self%ebedge)
     
     if (present(hbgroup)) then
       ASSERT( all(hbgroup > 0) )

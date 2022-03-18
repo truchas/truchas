@@ -469,7 +469,7 @@ contains
   subroutine ustruc_read_checkpoint (lun)
 
     use,intrinsic :: iso_fortran_env, only: int8
-    use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, collate, distribute
+    use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, gather, scatter
     use sort_utilities, only: heap_sort
     use permutations, only: reorder, invert_perm
     use restart_utilities, only: read_var
@@ -491,7 +491,7 @@ contains
     end do
     n = global_sum(size(lmap))
     allocate(gmap(merge(n,0,is_IOP)))
-    call collate (gmap, lmap)
+    call gather (lmap, gmap)
 
     !! Read the number of microstructure cells and verify the value.
     call read_var (lun, ncell_tot, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCELL record')
@@ -540,7 +540,7 @@ contains
       if (is_IOP) call reorder (garray, perm)
       !! Distribute the checkpoint data and push it into the analysis component to consume.
       allocate(larray(nbyte,ncell))
-      call distribute (larray, garray)
+      call scatter (garray, larray)
       call this%model%deserialize (cid, larray)
       deallocate(garray,larray)
     end do

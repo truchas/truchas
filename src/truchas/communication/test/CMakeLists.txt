@@ -1,0 +1,62 @@
+# Want test modules in the build directory.
+unset(CMAKE_Fortran_MODULE_DIRECTORY)
+
+add_executable(index_map_gather_offp_test index_map_gather_offp_test.F90)
+target_link_libraries(index_map_gather_offp_test truchas MPI::MPI_Fortran)
+add_test(index_map_gather_offp ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./index_map_gather_offp_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(index_map_gather_offp PROPERTIES PROCESSORS 4)
+set_property(TEST index_map_gather_offp PROPERTY LABELS UNIT PCOMM)
+
+add_executable(index_map_scatter_offp_test index_map_scatter_offp_test.F90)
+target_link_libraries(index_map_scatter_offp_test truchas MPI::MPI_Fortran)
+add_test(index_map_scatter_offp ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./index_map_scatter_offp_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(index_map_scatter_offp PROPERTIES PROCESSORS 4)
+set_property(TEST index_map_scatter_offp PROPERTY LABELS UNIT PCOMM)
+
+add_executable(index_map_gather_test index_map_gather_test.F90)
+target_link_libraries(index_map_gather_test truchas MPI::MPI_Fortran)
+add_test(index_map_gather ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./index_map_gather_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(index_map_gather PROPERTIES PROCESSORS 4)
+set_property(TEST index_map_gather PROPERTY LABELS UNIT PCOMM)
+
+add_executable(index_map_scatter_test index_map_scatter_test.F90)
+target_link_libraries(index_map_scatter_test truchas MPI::MPI_Fortran)
+add_test(index_map_scatter ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./index_map_scatter_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(index_map_scatter PROPERTIES PROCESSORS 4)
+set_property(TEST index_map_scatter PROPERTY LABELS UNIT PCOMM)
+
+add_executable(index_map_localize_test index_map_localize_test.F90)
+target_link_libraries(index_map_localize_test truchas MPI::MPI_Fortran)
+add_test(index_map_localize ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./index_map_localize_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(index_map_localize PROPERTIES PROCESSORS 4)
+set_property(TEST index_map_localize PROPERTY LABELS UNIT PCOMM)
+
+add_executable(reduce_test reduce_test.F90)
+target_link_libraries(reduce_test truchas MPI::MPI_Fortran)
+add_test(reduce ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./reduce_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(reduce PROPERTIES PROCESSORS 4)
+set_property(TEST reduce PROPERTY LABELS UNIT PCOMM)
+
+add_executable(test-broadcast broadcast_test.F90)
+target_link_libraries(test-broadcast truchas MPI::MPI_Fortran)
+add_test(broadcast ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./test-broadcast ${MPIEXEC_POSTFLAGS})
+set_tests_properties(broadcast PROPERTIES PROCESSORS 4)
+set_property(TEST broadcast PROPERTY LABELS UNIT PCOMM)
+
+add_executable(scatter_test scatter_test.F90)
+target_link_libraries(scatter_test truchas MPI::MPI_Fortran)
+add_test(scatter ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./scatter_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(scatter PROPERTIES PROCESSORS 4)
+set_property(TEST scatter PROPERTY LABELS UNIT PCOMM)
+
+add_executable(gather_test gather_test.F90)
+target_link_libraries(gather_test truchas MPI::MPI_Fortran)
+add_test(gather ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./gather_test ${MPIEXEC_POSTFLAGS})
+set_tests_properties(gather PROPERTIES PROCESSORS 4)
+set_property(TEST gather PROPERTY LABELS UNIT PCOMM)
+
+add_executable(test-maxloc maxloc_test.F90)
+target_link_libraries(test-maxloc truchas MPI::MPI_Fortran)
+add_test(maxloc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ./test-maxloc ${MPIEXEC_POSTFLAGS})
+set_tests_properties(maxloc PROPERTIES PROCESSORS 3)
+set_property(TEST maxloc PROPERTY LABELS UNIT PCOMM)

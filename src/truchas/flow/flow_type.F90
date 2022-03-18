@@ -18,7 +18,6 @@ module flow_type
   use flow_props_type
   use flow_bc_type
   use unstr_mesh_type
-  use index_partitioning
   use parallel_communication
   implicit none
   private
@@ -179,8 +178,6 @@ contains
 
   subroutine set_initial_state_start(this, t, dt, vcell, vof, tcell)
 
-    use index_partitioning, only: gather_boundary
-
     class(flow), intent(inout) :: this
 
     real(r8), intent(in) :: t, dt
@@ -198,7 +195,7 @@ contains
     call this%props%set_initial_state(vof, tcell)
 
     this%vel_cc(:,:this%mesh%ncell_onP) = vcell(:,:this%mesh%ncell_onP)
-    call gather_boundary(this%mesh%cell_ip, this%vel_cc)
+    call this%mesh%cell_imap%gather_offp(this%vel_cc)
 
     !! NB: The face velocities should be discretely solenoidal. So the following
     !! naive averaging is only valid for a uniform velocity field. For anything
@@ -209,7 +206,7 @@ contains
       if (this%mesh%fcell(2,j) /= 0) vel = (vel + this%vel_cc(:,this%mesh%fcell(2,j))) / 2
       this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel) / this%mesh%area(j)
     end do
-    call gather_boundary(this%mesh%face_ip, this%vel_fn)
+    call this%mesh%face_imap%gather_offp(this%vel_fn)
 
     call this%bc%compute_initial(t)
     associate (faces => this%bc%v_dirichlet%index, vel => this%bc%v_dirichlet%value)
@@ -239,8 +236,6 @@ contains
 
   subroutine set_initial_state_restart(this, t, pcell, vcell, vface, vof, tcell)
 
-    use index_partitioning, only: gather_boundary
-
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, pcell(:), vcell(:,:), vface(:), tcell(:), vof(:,:)
 
@@ -249,14 +244,14 @@ contains
     ASSERT(size(vface)>=this%mesh%nface_onP)
 
     this%p_cc(:this%mesh%ncell_onP) = pcell(:this%mesh%ncell_onP)
-    call gather_boundary(this%mesh%cell_ip, this%p_cc)
+    call this%mesh%cell_imap%gather_offp(this%p_cc)
 
     this%vel_cc(:,:this%mesh%ncell_onP) = vcell(:,:this%mesh%ncell_onP)
-    call gather_boundary(this%mesh%cell_ip, this%vel_cc)
+    call this%mesh%cell_imap%gather_offp(this%vel_cc)
     this%vel_cc_n = this%vel_cc
 
     this%vel_fn(:this%mesh%nface_onP) = vface(:this%mesh%nface_onP)
-    call gather_boundary(this%mesh%face_ip, this%vel_fn)
+    call this%mesh%face_imap%gather_offp(this%vel_fn)
     !FIXME? Impose Dirichlet velocity conditions on vel_fn?
     this%vel_fn_n = this%vel_fn
 

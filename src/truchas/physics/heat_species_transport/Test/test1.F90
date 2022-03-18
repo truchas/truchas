@@ -1,7 +1,6 @@
 program main
 
   use kinds
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use functions
   use face_boundary_values
@@ -11,7 +10,6 @@ program main
   use mesh_manager
   use spec_diff
   use bdf2_dae
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
   implicit none
   
   integer :: n, stat, status
@@ -25,8 +23,7 @@ program main
   real :: cpu0, cpu1
   character(len=PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
   
-  call parallel_init (argv)
-  call init_parallel_communication ()
+  call init_parallel_communication(argv)
   
   if (is_IOP) call cpu_time (cpu0)
 

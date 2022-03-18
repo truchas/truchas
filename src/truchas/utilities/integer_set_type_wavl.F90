@@ -36,7 +36,10 @@ module integer_set_type_wavl
     procedure :: size => set_size
     procedure, private :: set_add, set_add_set, set_add_array
     generic   :: add => set_add, set_add_set, set_add_array
-    procedure :: remove => set_remove
+    generic   :: remove => set_remove, set_remove_array
+    procedure, private :: set_remove, set_remove_array
+    procedure :: contains => set_contains
+    procedure :: clear => set_clear
     procedure :: copy_to_array
     procedure, private, pass(rhs) :: set_to_array
     generic :: assignment(=) => set_to_array
@@ -208,6 +211,12 @@ contains
     end subroutine
   end subroutine
 
+  !! Remove all elements from the set
+  elemental subroutine set_clear(this)
+    class(integer_set), intent(inout) :: this
+    call integer_set_delete(this)
+  end subroutine
+
 !  !! Returns the number of elements in the set.
 !  integer function set_size(this)
 !    class(integer_set), intent(in) :: this
@@ -244,6 +253,25 @@ contains
   elemental logical function set_is_empty(this)
     class(integer_set), intent(in) :: this
     set_is_empty = .not.associated(this%root)
+  end function
+
+  !! Returns true if the set contains val
+  logical function set_contains(this, val)
+    class(integer_set), intent(in) :: this
+    integer, intent(in) :: val
+    type(rbt_node), pointer :: r
+    r => this%root
+    set_contains = .true.
+    do while (associated(r))
+      if (val < r%val) then
+        r => r%left
+      else if (val > r%val) then
+        r => r%right
+      else
+        return
+      end if
+    end do
+    set_contains = .false.
   end function
 
   !! Copy the ordered set values to ARRAY. Its size must be sufficiently
@@ -381,10 +409,19 @@ contains
   end subroutine
 
   !! Remove VAL from the set
-  elemental subroutine set_remove(this, val)
+  pure subroutine set_remove(this, val)
     class(integer_set), intent(inout) :: this
     integer, intent(in) :: val
     call rbt_remove(this%root, val)
+  end subroutine
+
+  pure subroutine set_remove_array(this, val)
+    class(integer_set), intent(inout) :: this
+    integer, intent(in) :: val(:)
+    integer :: j
+    do j = 1, size(val)
+      call rbt_remove(this%root, val(j))
+    end do
   end subroutine
 
   !! Remove VAL from the subtree at ROOT. The ROOT pointer may be modified

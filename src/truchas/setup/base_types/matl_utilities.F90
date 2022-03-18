@@ -97,7 +97,7 @@ CONTAINS
     use matl_module,       only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE
     use parameter_module,  only: nmat, mat_slot
     use legacy_mesh_api,   only: ncells
-    use pgslib_module,     only: PGSLib_Global_MAXVAL
+    use parallel_communication, only: global_maxval
 
     ! Arguments
     real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
@@ -114,7 +114,7 @@ CONTAINS
     do m = 1,nmat
        where (Vof(m,:) > 0.0_r8) mat = mat + 1
     end do
-    max_mat = PGSLIB_Global_MAXVAL(mat)
+    max_mat = global_maxval(mat)
 
     if (max_mat < mat_slot) then
        CALL SLOT_DECREASE (Matl, mat_slot, max_mat)
@@ -179,7 +179,7 @@ CONTAINS
     use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE
     use parameter_module, only: mat_slot, mat_slot_new, nmat
     use legacy_mesh_api, only: ncells
-    use pgslib_module, only: PGSLIB_GLOBAL_MAXVAL
+    use parallel_communication, only: global_maxval
 
     ! Arguments
     real(r8), dimension(0:nmat, 1:ncells), intent(IN) :: VF_New
@@ -199,7 +199,7 @@ CONTAINS
     do m = 1,nmat
        where (VF_New(m,:) > 0.0_r8) nslots_cell = nslots_cell + 1
     end do
-    slots_needed = PGSLib_Global_MAXVAL(nslots_cell)
+    slots_needed = global_maxval(nslots_cell)
     if (slots_needed > mat_slot) then
        mat_slot_new = slots_needed
        call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
@@ -233,7 +233,7 @@ CONTAINS
     end do
 
     ! Check the number of slots and DECREASE if needed
-    slots_needed = PGSLib_GLOBAL_MAXVAL(nslots_cell)
+    slots_needed = global_maxval(nslots_cell)
     if (slots_needed < mat_slot) then
        mat_slot_new = slots_needed
        call SLOT_DECREASE(Matl, mat_slot, mat_slot_new)
@@ -263,7 +263,7 @@ CONTAINS
     use parameter_module, only: nmat, mat_slot
     use legacy_mesh_api, only: ncells
     use matl_module, only: material, matl_slot, slot_resize
-    use pgslib_module, only: pgslib_global_maxval
+    use parallel_communication, only: global_maxval
 
     real(r8), intent(in)    :: vf(:,:)
     type(matl_slot), intent(inout) :: matl(:)
@@ -276,7 +276,7 @@ CONTAINS
     ASSERT( size(vf,2) == ncells )
 
     !! Find the max number of materials in any one cell and resize MATL accordingly.
-    m = pgslib_global_maxval(count(vf > 0.0_r8, dim=1))
+    m = global_maxval(count(vf > 0.0_r8, dim=1))
     call slot_resize (matl, mat_slot, m)
 
     !! Set up the material list; only the VOF values change from cell to cell.

@@ -42,7 +42,6 @@ module fischer_guess_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
-  use index_partitioning
   use parallel_communication
   use pcsr_matrix_type
   use parameter_list_type
@@ -140,7 +139,7 @@ contains
     idx = this%size+1
 
     this%x_tilde(1:nop,idx) = x_soln(1:nop) - this%x_guess(1:nop)
-    call gather_boundary(this%mesh%cell_ip, this%x_tilde(:,idx))
+    call this%mesh%cell_imap%gather_offp(this%x_tilde(:,idx))
 
     do i = 1, nop
       call lhs%get_row_view(i, mval, midx)

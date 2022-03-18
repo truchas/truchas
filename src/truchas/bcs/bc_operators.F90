@@ -16,11 +16,11 @@ Module BC_OPERATORS
   ! Author: Robert Ferrell (ferrell@cpca.com)
   !-----------------------------------------------------------------------------
   use bc_enum_types
-  use bc_atlases,         only: DIMENSIONALITY, BC_NumberOfCharts, COLLATE, BC_Get_DOF
+  use bc_atlases,         only: DIMENSIONALITY, BC_NumberOfCharts, BC_Get_DOF
   use bc_charts_atlases,  only: BC_Chart_ID, BC_Chart_Set_Chart, &
                                 BC_Chart_Next_Chart, BC_Atlas,   &
                                 BC_Invalid_Chart_ID, INITIALIZE, FREE
-  use bc_regions, only: BC_Region, INITIALIZE, FREE, DIMENSIONALITY, COLLATE
+  use bc_regions, only: BC_Region, INITIALIZE, FREE, DIMENSIONALITY
   Implicit None
   Private
 
@@ -35,7 +35,6 @@ Module BC_OPERATORS
   PUBLIC :: BC_Get_Region
   PUBLIC :: BC_Get_Atlas
   PUBLIC :: DIMENSIONALITY
-  PUBLIC :: COLLATE
   PUBLIC :: BC_Op_Set_State
   PUBLIC :: BC_Op_Is_Active
   PUBLIC :: BC_Get_Name
@@ -139,10 +138,6 @@ Module BC_OPERATORS
      MODULE PROCEDURE GetOpDimensionality
   END INTERFACE
 
-  INTERFACE COLLATE
-     MODULE PROCEDURE OpCollate
-  END INTERFACE
-  
   INTERFACE BC_Get_Name
      MODULE PROCEDURE OpGetName
   END INTERFACE
@@ -386,24 +381,6 @@ CONTAINS
 
   end function GetBCChartID
 
-  subroutine OpCollate(Collated_Op, Local_Op)
-    ! Collate all the components of Local_Op into Collated_Op.
-    ! This routine assumes that Collated_Op has been appropriately allocated,
-    ! so Collated_Op is an INOUT argument.
-    use parallel_util_module
-    type (BC_Operator), target, intent(INOUT) :: Collated_Op
-    type (BC_Operator), target, intent(IN   ) :: Local_Op
-
-    ! Local variables
-    Collated_Op%OP_ID = Local_Op%Op_ID
-
-    call COLLATE(Collated_Op%Region, Local_Op%Region)
-
-    call COLLATE(Collated_Op%Atlas,  Local_Op%Atlas )
-
-    call BC_Set_Name(Collated_Op, BC_Get_NAME(Local_Op))
-  end subroutine OpCollate
-    
   subroutine OpSetName(BC_Op, NAME)
     type (BC_Operator), target, intent(INOUT) :: BC_Op
     character(LEN=*), intent(IN) :: NAME

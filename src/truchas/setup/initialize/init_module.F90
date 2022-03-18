@@ -286,7 +286,7 @@ CONTAINS
                                       Make_Displacement_BC_Atlases, Interface_Surface_Id
     use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
     use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
-    use pgslib_module,          only: PGSLIB_GLOBAL_COUNT, PGSLIB_GLOBAL_SUM
+    use parallel_communication, only: global_count, global_sum
     use physics_module,         only: legacy_solid_mechanics
 
     ! Local Variables
@@ -440,13 +440,13 @@ CONTAINS
                 end select
 
           ! Print out how many cells were affected by this BC
-          n = PGSLib_Global_COUNT(Mask1)
+          n = global_count(Mask1)
           if (n > 0) then
 
              Faces(p) = Faces(p) + n
              Tmp2     = MERGE (Cell%Face_Area(f), 0.0_r8, Mask1)
-             Area(p)  = Area(p) + PGSLib_Global_SUM(Tmp2)
-             n = PGSLib_Global_COUNT(Mask1 .and. Mesh%Ngbr_cell(f) /= 0)
+             Area(p)  = Area(p) + global_sum(Tmp2)
+             n = global_count(Mask1 .and. Mesh%Ngbr_cell(f) /= 0)
 
              ! If the BC is internal, warn the user and
              ! set the internal BC flag (BC%Internal)
@@ -552,7 +552,7 @@ CONTAINS
     use matl_module,          only: matl, slot_increase, slot_set
     use legacy_mesh_api,      only: ncells, Cell, ncells_real
     use parameter_module,     only: mat_slot, mat_slot_new, nmat
-    use pgslib_module,        only: PGSLib_GLOBAL_MAXVAL
+    use parallel_communication, only: global_maxval
     use restart_variables,    only: restart
 
     real(r8), intent(inout) :: Hits_Vol(:,:)
@@ -577,7 +577,7 @@ CONTAINS
         if (any(hits_vol(:,j) > 0 .and. bm_mask(:,m))) mcount(j) = mcount(j) + 1
       end do
     end do
-    mat_slot_new = PGSLib_GLOBAL_MAXVAL(mcount)
+    mat_slot_new = global_maxval(mcount)
     if (mat_slot_new > mat_slot) call slot_increase(matl, mat_slot, mat_slot_new)
 
     !! Zero out MATL
@@ -869,15 +869,15 @@ CONTAINS
     end function
 
     subroutine report_errors (message, list)
-      use parallel_communication, only: is_IOP, allocate_collated_array, collate, global_sum
+      use parallel_communication, only: is_IOP, gather, global_sum
       character(*), intent(inout) :: message(:)
       type(vector), intent(in) :: list
       integer :: n, m
       integer, pointer :: glist(:)
       n = global_sum(list%n)
       m = global_sum(list%m)
-      call allocate_collated_array (glist, n)
-      call collate (glist, list%array(:list%n))
+      allocate(glist(merge(n,0,is_iop)))
+      call gather (list%array(:list%n), glist)
       !if (is_IOP) message(1) = trim(message(1)) // list_to_string(glist,m)
       if (is_IOP) call append_list_to_string (glist, m, message(1))
       call TLS_error (message)

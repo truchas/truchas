@@ -268,7 +268,7 @@ Contains
     use bc_type_module,       only: BC_STRUCTURE
     use legacy_mesh_api,      only: ncells, nfc, Mesh
     use kinds, only: r8
-    use pgslib_module,        only: PGSLIB_GLOBAL_COUNT
+    use parallel_communication, only: global_count
 
     ! Argument List
     integer,                                     intent(in)           :: BCID
@@ -340,7 +340,7 @@ Contains
               tmpOp = BC_NEUMANN_OP
             case (BC_T_HTC)
               bits = BC_T_HTC
-              n_interior_faces = PGSLib_Global_COUNT(Mask .and. Mesh%Ngbr_cell(face) /= 0)
+              n_interior_faces = global_count(Mask .and. Mesh%Ngbr_cell(face) /= 0)
               if (n_interior_faces == 0) then
                  tmpOp = BC_HTC_EXTERNAL_OP 
               else

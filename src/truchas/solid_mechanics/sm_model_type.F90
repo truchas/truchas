@@ -156,7 +156,6 @@ contains
   subroutine update_properties(this, vof, temperature_cc)
 
     use parallel_communication, only: global_maxval, global_minval
-    use index_partitioning, only: gather_boundary
 
     class(sm_model), intent(inout) :: this
     real(r8), intent(in) :: temperature_cc(:), vof(:,:)
@@ -227,7 +226,7 @@ contains
       end associate
     end do
 
-    call gather_boundary(this%mesh%node_ip, this%scaling_factor)
+    call this%mesh%node_imap%gather_offp(this%scaling_factor)
 
     !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
     !this%contact_penalty = global_maxval(this%rhs)
@@ -278,8 +277,6 @@ contains
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_residual(this, t, displ, r)
 
-    use index_partitioning, only: gather_boundary
-
     class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t
     real(r8), intent(inout) :: displ(:,:) ! need to update halo
@@ -292,7 +289,7 @@ contains
 
     ! get off-rank halo
     call start_timer("residual")
-    call gather_boundary(this%mesh%node_ip, displ)
+    call this%mesh%node_imap%gather_offp(displ)
     call stop_timer("residual")
 
     call compute_forces(this, t, displ, r)
@@ -310,8 +307,6 @@ contains
 
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_forces(this, t, displ, r)
-
-    use index_partitioning, only: gather_boundary
 
     class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t, displ(:,:)
@@ -346,7 +341,7 @@ contains
     call stop_timer("stress")
 
     call this%bc%apply_traction(t, r)
-    call gather_boundary(this%mesh%node_ip, r)
+    call this%mesh%node_imap%gather_offp(r)
 
     call stop_timer("residual")
 

@@ -15,7 +15,6 @@ module MaxwellEddy
   use kinds
   use parallel_communication
   use simpl_mesh_type
-  use index_partitioning
   use mimetic_discretization
   use solution_history
   use sparse_matrix
@@ -159,16 +158,16 @@ contains
     
     call interpolate_solution (sys%ehist, t, e)  ! Initial guess: quadratic extrapolation
     call set_bv (t, e)                  ! Set boundary values in the initial guess
-    call gather_boundary (sys%mesh%edge_ip, e)
+    call sys%mesh%edge_imap%gather_offp(e)
     call tr_res (sys, e0, b0, e, r)     ! Compute the residual
     
     if (present(bndry_src)) r = r + (0.5_r8*sys%dt)*(sys%g0 + g)
-    call gather_boundary (sys%mesh%edge_ip, r)
+    call sys%mesh%edge_imap%gather_offp(r)
     !call verify_vector (r, sys%mesh%edge_gs, 'R:')
 
     de = 0.0_r8 ! initial guess for the correction
     call SolveCG (sys%cg, cg_ax, cg_pc, r, de, sys%mesh%nedge_onP, status)!, sys%mesh%edge_gs)
-    call gather_boundary (sys%mesh%edge_ip, de)
+    call sys%mesh%edge_imap%gather_offp(de)
     !call verify_vector (de, sys%mesh%edge_gs, 'DE:')
     !stop
     if (status /= 0) return
@@ -275,7 +274,7 @@ contains
     do j = 1, mesh%nedge
       if (.not.sys%w1mask(j)) sys%w0mask(mesh%enode(:,j)) = .false.
     end do
-    call gather_boundary (sys%mesh%node_ip, sys%w0mask)
+    call sys%mesh%node_imap%gather_offp(sys%w0mask)
     
     !! Assemble the edge-based coefficient matrix A1
     call create_msr_matrix (mesh%nedge, mesh%cedge, sys%a1)
@@ -444,8 +443,8 @@ contains
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
     call gs_relaxation (sys%a1, f(:nedge_onP), u, pattern='b')
 
-    call scatter_boundary_sum (sys%mesh%edge_ip, u)
-    call gather_boundary (sys%mesh%edge_ip, u)
+    call sys%mesh%edge_imap%scatter_offp_sum(u)
+    call sys%mesh%edge_imap%gather_offp(u)
     
     ASSERT( all(sys%w1mask .or. (u == 0.0_r8)) )
     
@@ -468,7 +467,7 @@ contains
     y = matmul_msr(cg_sys%a1, x)
     ASSERT( all(cg_sys%w1mask .or. (y == 0.0_r8)) )
     
-    call gather_boundary (cg_sys%mesh%edge_ip, y)
+    call cg_sys%mesh%edge_imap%gather_offp(y)
     
   end subroutine cg_ax
   
@@ -524,26 +523,26 @@ contains
     
     integer :: j, jproc, k, kproc, kstart, lun, nedge_onP, n, m, bsize_vector(nPE)
     real(kind=r8), dimension(sys%mesh%nedge) :: ej, ek, tmp
-    real(kind=r8) :: pe(sys%mesh%nedge,sys%mesh%edge_ip%global_size())
-    character(len=1) :: edge_type(sys%mesh%nedge), etype(sys%mesh%edge_ip%global_size())
+    real(kind=r8) :: pe(sys%mesh%nedge,sys%mesh%edge_imap%global_size)
+    character(len=1) :: edge_type(sys%mesh%nedge), etype(sys%mesh%edge_imap%global_size)
     real(kind=r8) :: ej_dot_pek, ek_dot_pej, ej_dot_pej
     
     nedge_onP = sys%mesh%nedge_onP
     cg_sys => sys
     
-    call collate (bsize_vector, sys%mesh%edge_ip%onP_size())
+    call gather (sys%mesh%edge_imap%onp_size, bsize_vector)
     
     !! Mark the on-PE edges as partition boundary, partition interior, or ignored
     tmp(1:nedge_onP)  = 0.0_r8
     tmp(nedge_onP+1:) = 1.0_r8
-    call scatter_boundary_max (sys%mesh%edge_ip, tmp)
+    call sys%mesh%edge_imap%scatter_offp_max(tmp)
     where (tmp > 0.0_r8)
       edge_type = 'B'
     elsewhere
       edge_type = 'I'
     end where
     where (sys%emask /= 0) edge_type = '*'
-    call collate (etype, edge_type(:nedge_onP))
+    call gather (edge_type(:nedge_onP), etype)
     
     if (is_IOP) then
       open(newunit=lun,file='hiptmair.dat',status='replace',action='write')
@@ -560,7 +559,7 @@ contains
         !! Initialize the (jproc, j) unit vector
         ej = 0.0_r8
         if (this_PE == jproc) ej(j) = 1.0_r8
-        call gather_boundary (sys%mesh%edge_ip, ej)
+        call sys%mesh%edge_imap%gather_offp(ej)
         
         call hiptmair (sys, ej, pe(:,n))
         ej_dot_pej = global_dot_product(ej(:nedge_onP), pe(:nedge_onP,n))
@@ -580,7 +579,7 @@ contains
         !! Initialize the (jproc, j) unit vector
         ej = 0.0_r8
         if (this_PE == jproc) ej(j) = 1.0_r8
-        call gather_boundary (sys%mesh%edge_ip, ej)
+        call sys%mesh%edge_imap%gather_offp(ej)
         
         m = n
         do kproc = jproc, nPE
@@ -592,7 +591,7 @@ contains
             !! Initialize the (kproc, k) unit vector
             ek = 0.0_r8
             if (this_PE == kproc) ek(k) = 1.0_r8
-            call gather_boundary (sys%mesh%edge_ip, ek)
+            call sys%mesh%edge_imap%gather_offp(ek)
 
             ej_dot_pek = global_dot_product(ej(:nedge_onP), pe(:nedge_onP,m))
             ek_dot_pej = global_dot_product(ek(:nedge_onP), pe(:nedge_onP,n))
@@ -615,7 +614,7 @@ contains
       character(len=*), intent(inout) :: value
       integer, intent(in) :: pe
       character(len(value)) :: tmp(nPE)
-      call collate (tmp, (/ value /))
+      call gather ([value], tmp)
       if (is_IOP) value = tmp(pe)
       call broadcast (value)
     end subroutine broadcast_from_PE

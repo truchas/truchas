@@ -67,7 +67,7 @@
 module truchas_h5_outfile
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, real64
-  use pgslib_module, only: broadcast  => PGSLib_BCast
+  use parallel_communication, only: broadcast
   use scorpio_file_type
   implicit none
   private

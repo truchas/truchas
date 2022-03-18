@@ -251,8 +251,6 @@ contains
 
   subroutine get_temp_state (this, tcell, tface, temp, temp_grad)
 
-    use index_partitioning, only: gather_boundary
-
     class(ustruc_model), intent(in) :: this
     real(r8), intent(in)  :: tcell(:), tface(:)
     real(r8), allocatable, intent(out) :: temp(:), temp_grad(:,:)
@@ -267,7 +265,7 @@ contains
 
     !! Compute gradients mesh-wide (under control of mask); see NB above.
     xtface(:this%mesh%nface_onP) = tface  ! off-process extended face temperatures
-    call gather_boundary (this%mesh%face_ip, xtface)
+    call this%mesh%face_imap%gather_offp(xtface)
     call this%disc%compute_cell_grad (xtface, this%mask, grad)
 
     !! Now extract the relevant gradients.
@@ -281,8 +279,6 @@ contains
   !! state only on active cells.
 
   subroutine get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
-
-    use index_partitioning, only: gather_boundary
 
     class(ustruc_model), intent(inout), target :: this
     real(r8), intent(in)  :: liq_vf(:), sol_vf(:)
@@ -305,8 +301,8 @@ contains
         if (mask(j)) sfrac(j) = sol_vf(j) / (liq_vf(j) + sol_vf(j))
       end if
     end do
-    call gather_boundary (this%mesh%cell_ip, sfrac)
-    call gather_boundary (this%mesh%cell_ip, mask)
+    call this%mesh%cell_imap%gather_offp(sfrac)
+    call this%mesh%cell_imap%gather_offp(mask)
 
     !! Extract the relevant solid fraction and invalid mask data.
     sol_frac = sfrac(this%map)

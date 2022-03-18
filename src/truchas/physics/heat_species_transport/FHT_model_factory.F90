@@ -209,7 +209,6 @@ contains
 
   subroutine define_system_bc(mesh, bc_fac, model, stat, errmsg)
 
-    use index_partitioning, only: gather_boundary
     use bitfield_type
     use parallel_communication, only: global_any, global_count
     use string_utilities, only: i_to_c
@@ -237,7 +236,7 @@ contains
     if (allocated(model%ic_htc)) then
       mask(model%ic_htc%index(1,:)) = .true.
       mask(model%ic_htc%index(2,:)) = .true.
-      call gather_boundary(mesh%face_ip, mask)
+      call mesh%face_imap%gather_offp(mask)
     end if
 
     !! Define the gap radiation interface conditions;
@@ -247,7 +246,7 @@ contains
     if (allocated(model%ic_rad)) then
       mask(model%ic_rad%index(1,:)) = .true.
       mask(model%ic_rad%index(2,:)) = .true.
-      call gather_boundary(mesh%face_ip, mask)
+      call mesh%face_imap%gather_offp(mask)
     end if
 
     !! Flux type boundary conditions can be superimposed.
@@ -299,8 +298,8 @@ contains
         rmask(model%vf_rad_prob(j)%faces) = .true.
         !fmask(model%vf_rad_prob(j)%faces) = .true.
       end do
-      call gather_boundary (mesh%face_ip, rmask)
-      !call gather_boundary (mesh%face_ip, fmask)
+      call mesh%face_imap%gather_offp(rmask)
+      !call mesh%face_imap%gather_offp(fmask)
     end if
 
     !! Define the (simple) radiation boundary conditions.

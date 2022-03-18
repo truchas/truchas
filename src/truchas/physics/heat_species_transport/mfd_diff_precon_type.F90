@@ -71,7 +71,6 @@ module mfd_diff_precon_type
   use mfd_diff_matrix_type
   use pcsr_matrix_type
   use pcsr_precon_class
-  use index_partitioning
   implicit none
   private
 
@@ -140,7 +139,7 @@ contains
 
     !! Approximately solve the Schur complement system for the face unknowns.
     call this%Sff_precon%apply(f2x)
-    call gather_boundary(this%dm%mesh%face_ip, f2x)
+    call this%dm%mesh%face_imap%gather_offp(f2x)
 
     !! Solve for the cell unknowns by back substitution.
     call backward_substitution(this%dm, f1x, f2x)
@@ -178,7 +177,7 @@ contains
       deallocate(b2x_dir)
     end if
 
-    call gather_boundary(this%mesh%face_ip, b2x)
+    call this%mesh%face_imap%gather_offp(b2x)
 
   end subroutine forward_elimination
 
@@ -209,7 +208,7 @@ contains
       deallocate(u2x_dir)
     end if
 
-    call gather_boundary(this%mesh%cell_ip, b1x)
+    call this%mesh%cell_imap%gather_offp(b1x)
 
   end subroutine backward_substitution
 
