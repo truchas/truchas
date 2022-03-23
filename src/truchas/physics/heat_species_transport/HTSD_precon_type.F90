@@ -297,7 +297,7 @@ contains
 
       integer, intent(in) :: index
 
-      real(r8) :: values(this%mesh%ncell)
+      real(r8) :: values(this%mesh%ncell), Cface(this%mesh%nface)
       type(mfd_diff_matrix), pointer :: matrix
 
       matrix => this%sdprecon(index)%matrix_ref()
@@ -315,6 +315,17 @@ contains
         call matrix%set_dir_faces(this%model%sd(index)%bc_dir%index)
       end if
       call matrix%set_dir_faces (more_dir_faces)
+
+      !! External MTC boundary condition contribution.
+      call HTSD_model_get_face_conc_copy (this%model, index, u, Cface)
+      if (allocated(this%model%sd(index)%bc_mtc)) then
+        call this%model%sd(index)%bc_mtc%compute_deriv(t, Cface)
+        associate (bcindex => this%model%sd(index)%bc_mtc%index, &
+                   deriv   => this%model%sd(index)%bc_mtc%deriv)
+          call matrix%incr_face_diag(bcindex, deriv)
+        end associate
+      end if
+
       !! The matrix is now complete; re-compute the preconditioner.
       call this%sdprecon(index)%compute
 
