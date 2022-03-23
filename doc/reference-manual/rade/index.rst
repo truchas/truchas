@@ -53,7 +53,6 @@ file <introduction/index:Input File Format>` containing the following namelists:
    .. code-block::
 
     x&PATCHES
-      patch_algorithm = 'METIS'
       metis_face_patch_ratio = 4
     /
 
