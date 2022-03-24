@@ -164,7 +164,7 @@ contains
     end if
 
     if (BSP_max_tree_depth == NULL_I) then
-      BSP_max_tree_depth = 15
+      BSP_max_tree_depth = 50
       call re_info('  using default BSP_MAX_TREE_DEPTH='//i_to_c(BSP_max_tree_depth))
     else if (BSP_max_tree_depth < 1) then
       call data_err('BSP_MAX_TREE_DEPTH must be >= 1')
@@ -178,25 +178,31 @@ contains
     end if
 
     if (spatial_tolerance == NULL_R) then
-      call data_err('SPATIAL_TOLERANCE must be assigned a value')
+      spatial_tolerance = 1e-8_r8
+      write(string,fmt='(es9.2)') spatial_tolerance
+      call re_info('  using default SPATIAL_TOLERANCE='//string)
     else if (spatial_tolerance <= 0.0) then
       call data_err('SPATIAL_TOLERANCE must be > 0.0')
     end if
 
     if (hemicube_resolution == NULL_I) then
-      call data_err('HEMICUBE_RESOLUTION must be assigned a value')
+      hemicube_resolution = 500
+      call re_info('  using default HEMICUBE_RESOLUTION='//i_to_c(hemicube_resolution))
     else if (hemicube_resolution < 4) then
       call data_err('HEMICUBE_RESOLUTION must be >= 4')
     end if
 
     if (max_subdivisions == NULL_I) then
-      call data_err('MAX_SUBDIVISIONS must be assigned a value')
+      max_subdivisions = 100
+      call re_info('  using default MAX_SUBDIVISIONS='//i_to_c(max_subdivisions))
     else if (max_subdivisions < 0) then
       call data_err('MAXSUBDIVISIONS must be >= 0')
     end if
 
     if (min_separation == NULL_R) then
-      call data_err('MIN_SEPARATION must be assigned a value')
+      min_separation = 20
+      write(string,fmt='(es9.2)') min_separation
+      call re_info('  using default MIN_SEPARATION='//string)
     else if (min_separation < 0.0) then
       call data_err('MIN_SEPARATION must be >= 0.0')
     end if
@@ -210,13 +216,16 @@ contains
     end if
 
     if (smoothing_tolerance == NULL_R) then
-      call data_err('SMOOTHING_TOLERANCE must be assigned a value')
+      smoothing_tolerance = 1e-8_r8
+      write(string,fmt='(es9.2)') smoothing_tolerance
+      call re_info('  using default SMOOTHING_TOLERANCE='//string)
     else if (smoothing_tolerance <= 0.0) then
       call data_err('SMOOTHING_TOLERANCE must be > 0.0')
     end if
 
     if (smoothing_max_iter == NULL_I) then
-      call data_err('SMOOTHING_MAX_ITER must be assigned a value')
+      smoothing_max_iter = 50
+      call re_info('  using default SMOOTHING_MAX_ITER='//i_to_c(smoothing_max_iter))
     else if (smoothing_max_iter < 0) then
       call data_err('SMOOTHING_MAX_ITER must be >= 0')
     end if

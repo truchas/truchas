@@ -25,7 +25,7 @@ Internal interfaces are merely coincident pairs of conforming external mesh boun
 * **Gap Contact**. A gap contact condition models no-penetration sliding contact along internal surfaces :math:`\Gamma`. It is defined by setting :ref:`type<SM_BC_Type>` to **gap-contact**.
 
 SOLID_MECHANICS_BC Namelist Features
----------------------------
+------------------------------------
 | **Required/Optional        :** Optional
 | **Single/Multiple Instances:** Multiple
 
@@ -94,7 +94,7 @@ type
 .. _SM_BC_D:
 
 displacement
-^^^^^^^^^
+^^^^^^^^^^^^^^^^
 | **Description** : The constant value of boundary displacement for a displacement-type boundary condition. To specify a function, use :ref:`displacement_func<SM_BC_DF>` instead.
 | **Default**     : none
 | **Type**        : real
@@ -102,7 +102,7 @@ displacement
 .. _SM_BC_DF:
 
 displacement_func
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the boundary displacement for a displacement-type boundary condition. The function is expected to be a function of :math:`(t,x,y,z)`.
 | **Default**     : none
 | **Type**        : string

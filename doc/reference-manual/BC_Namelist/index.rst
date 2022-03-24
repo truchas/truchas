@@ -26,7 +26,7 @@ BC Namelist Features
 Components
 ------------
 * :ref:`BC_Name<BC_BCN>`
-* :ref:`BC_Table<BC_BCT>` missing link in the latex manual
+* :ref:`BC_Table<BC_BCT>`
 * :ref:`BC_Type<BC_BCType>`
 * :ref:`BC_Value<BC_BCV>`
 * :ref:`BC_Variable<BC_BCVar>`
@@ -96,6 +96,24 @@ BC_Value
    "displacement", "normal-constraint", "not used", "-", "0"
    "displacement", "contact", "not used", "-", "0"
    
+.. _BC_BCT:
+
+BC_Table
+^^^^^^^^^^^^^
+| **Description** : Table of values that describes time-dependent velocity boundary data. This is an alternative to :REF:`BC_Value<BC_BCV>`, but it can only be used for Dirichlet velocity boundary conditions at present.
+| **Type**        : list of real values
+| **Default**     : none
+| **Valid Values**: The list of values assigned to ``BC_Table`` take the form:
+
+.. code-block::
+
+   BC_Table = t_1, u_1, v_1, w_1,
+              t_2, u_2, v_2, w_2,
+              ...,
+              t_n, u_n, v_n, w_n,
+
+which specifies the velocity :math:`(u_j,v_j,w_j)` at time :math:`t_j, j = 1,2,...,n`. The times must be in ascending order, and linear interpolation is used between points. For :math:`t < t_1`, :math:`(u, v, w)` is taken equal to :math:`(u_1, v_1, w_1)`, and for :math:`t > t_n`, :math:`(u, v, w)` is taken equal to :math:`(u_n, v_n, w_n)`; that is, the velocity is continued as a constant outside the interval :math:`[t_1,t_n]`. As many as 16 points may be specified. Note that it is not necessary to arrange the values one point per line, as illustrated.
+
 .. _BC_BCVar:
 
 BC_Variable

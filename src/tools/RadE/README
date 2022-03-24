@@ -15,7 +15,6 @@ The input file has the following format:
     symmetries =        ! list of up to 3 symmetry operations:
                         ! Mirror<a>, a = X, Y, Z; e.g. MirrorZ
                         ! Rot<a><n>, a = X, Y, Z; n integer; e.g., RotZ3, RotX16
-    partial_enclosure = ! is the enclosure partial? T/F
     displace_side_set_ids = ! list of side sets whose surfaces will be displaced
     displacement          = ! (x,y,z) displacement vector.
   /

@@ -7,7 +7,7 @@ MESH Namelist
 ===============
 
 Overview
----------------
+++++++++
 The :ref:`MESH<MESH_Namelist>` namelist specifies the common mesh used by all physics models other than the induction heating model, which uses a separate tetrahedral mesh specified by the :ref:`ALTMESH<ALTMESH_Namelist>` namelist. For simple demonstration problems, a rectilinear hexahedral mesh of a brick domain can be defined, but for most applications the mesh will need to be generated beforehand by some third party tool or tools and saved asa file that Truchas will read. At this time Exodus II :footcite:`sjaardema2006exodus` is the only supported mesh format (also sometimes known as Genesis). This well-known format is used by some mesh generation tools (`Cubit <https://cubit.sandia.gov/>`_, for example) and utilities exist for translating from other formats to Exodus II. The unstructured 3D mesh may be a general mixed-element mesh consisting of non-degenerate hexehedral, tetrahedral, pyramid, and wedge/prism elements. The Exodus II format supports a partitioning of the elements into element blocks. It also supports the definition of side sets, which are collections of oriented element faces that describe mesh surfaces, either internal or boundary, and node sets which are collections of mesh nodes. Extensive use is made of this additional mesh metadata in assigning materials, initial conditions, boundary conditions, etc., to the mesh.
 
 MESH Namelist Features
@@ -15,30 +15,13 @@ MESH Namelist Features
 | **Required/Optional        :** Required
 | **Single/Multiple Instances:** Single
 
+
 Components
-------------
+++++++++++
 
-External mesh file
-^^^^^^^^^^^^^^^^^^^^
-* :ref:`mesh_file<M_MF>`
-* :ref:`Interface_Side_Sets<M_ISS>`
-* :ref:`gap_element_blocks<M_GEB>`
-* :ref:`exodus_block_modulus<M_EBM>`
+.. contents::
+   :local:
 
-Internally generated mesh
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-* :ref:`x_axis<M_XYZA>`
-* :ref:`y_axis<M_XYZA>`
-* :ref:`z_axis<M_XYZA>`
-* :ref:`noise_factor<M_NF>`
-
-Common Parameters
-^^^^^^^^^^^^^^^^^^^^
-* :ref:`coordinate_scale_factor<M_CSF>`
-* :ref:`rotation_angles<M_RA>`
-* :ref:`partitioner<M_P>`
-* :ref:`partition_file<M_PF>`
-* :ref:`first_partition<M_FP>`
 
 External Mesh file
 ----------------------
@@ -74,7 +57,7 @@ gap_element_blocks (deprecated)
 
 .. _M_EBM:
 
-gap_element_blocks (deprecated)
+exodus_block_modulus
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : When importing an Exodus II mesh, the element block IDs are replaced by their value modulo this parameter. Set the parameter to 0 to disable this procedure.
 | **Type**        : integer 

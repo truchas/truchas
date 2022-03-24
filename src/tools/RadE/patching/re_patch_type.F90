@@ -92,7 +92,7 @@ module re_patch_type
   integer, parameter :: PATCH_ALG_FILE = 6
 
   !! Parameter defaults
-  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_PAVE
+  integer, parameter :: PATCH_ALGORITHM_DEFAULT = PATCH_ALG_METIS
   integer, parameter :: VERBOSITY_LEVEL_DEFAULT = 1
   real(r8), parameter :: MAX_ANGLE_DEFAULT = 20.0
 

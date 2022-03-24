@@ -266,7 +266,7 @@ preconditioning_steps (expert)
 .. _SM_CP:
 
 contact_penalty (expert)
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 | **Description** : A penalty factor for the penetration constraint in the contact algorithm. Changing this is probably not a good idea in the current version.
 | **Physical Dimension**: dimensionless

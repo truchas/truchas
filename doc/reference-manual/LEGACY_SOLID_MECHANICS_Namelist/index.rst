@@ -17,19 +17,19 @@ LEGACY_SOLID_MECHANICS Namelist Features
 
 Components
 ------------
-* :ref:`Contact_Distance <SM_CD>`
-* :ref:`Contact_Norm_Trac <SM_CNT>`
-* :ref:`Contact_Penalty <SM_CP>`
-* :ref:`Displacement_Nonlinear_Solution <SM_DNS>`
-* :ref:`Solid_Mechanics_Body_Force <SM_SMBF>`
-* :ref:`Stress_Reduced_Integration <SM_SRI>`
-* :ref:`Strain_Limit <SM_SL>`
-* :ref:`Convergence_Criterion <SM_CC>`
-* :ref:`Maximum_Iteration <SM_MI>`
-* :ref:`NLK_Vector_Tolerance <SM_NVT>`
-* :ref:`NLK_Max_Vectors <SM_NMV>`
+* :ref:`Contact_Distance <LSM_CD>`
+* :ref:`Contact_Norm_Trac <LSM_CNT>`
+* :ref:`Contact_Penalty <LSM_CP>`
+* :ref:`Displacement_Nonlinear_Solution <LSM_DNS>`
+* :ref:`Solid_Mechanics_Body_Force <LSM_SMBF>`
+* :ref:`Stress_Reduced_Integration <LSM_SRI>`
+* :ref:`Strain_Limit <LSM_SL>`
+* :ref:`Convergence_Criterion <LSM_CC>`
+* :ref:`Maximum_Iteration <LSM_MI>`
+* :ref:`NLK_Vector_Tolerance <LSM_NVT>`
+* :ref:`NLK_Max_Vectors <LSM_NMV>`
 
-.. _SM_CD:
+.. _LSM_CD:
 
 Contact_Distance
 ^^^^^^^^^^^^^^^^^^^
@@ -88,7 +88,7 @@ and
 | **Valid Values**: (0, :math:`\infty`]
 | **Notes**       : The default value is usually a good value for mesh cell sizes in the 1 - 10 mm size range. 
 
-.. _SM_CNT:
+.. _LSM_CNT:
 
 Contact_Norm_Trac
 ^^^^^^^^^^^^^^^^^^^
@@ -151,7 +151,7 @@ and
 | **Valid Values**: [0, :math:`\infty`]
 | **Notes**       : The default value is probably appropriate for materials with elastic constants in the range :math:`10^9 - 10^{11}`. This parameter should probably be scaled proportionately for elastic constants that differ from this range. 
 
-.. _SM_CP:
+.. _LSM_CP:
 
 Contact_Penalty
 ^^^^^^^^^^^^^^^^^^^
@@ -162,7 +162,7 @@ Contact_Penalty
 | **Default**      : :math:`1.0e3`
 | **Valid Values** : [0, :math:`\infty`]
 
-.. _SM_DNS:
+.. _LSM_DNS:
 
 Displacement_Nonlinear_Solution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -173,7 +173,7 @@ Displacement_Nonlinear_Solution
 | **Valid Values** : arbitrary string
 | **Notes**        : If this string does not match a :ref:`Name<NL_Name>` input variable string specified in a :ref:`NONLINEAR_SOLVER<<NONLINEAR_SOLVER_Namelist>` namelist, then the default set of nonlinear solution algorithm parameters is used for the thermo-elastic viscoplastic equations.
 
-.. _SM_SMBF:
+.. _LSM_SMBF:
 
 Solid_Mechanics_Body_Force
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -182,7 +182,7 @@ Solid_Mechanics_Body_Force
 | **Type**         : logical
 | **Default**      : .false.
 
-.. _SM_SL:
+.. _LSM_SL:
 
 Strain_Limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -193,7 +193,7 @@ Strain_Limit
 | **Valid Values** : :math:`\geq 0`
 | **Notes**        : This parameter can not be currently used to control the time step. It may be used for such purposes in future releases.
 
-.. _SM_CC:
+.. _LSM_CC:
 
 Convergence_Criterion
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -224,7 +224,7 @@ and:
 
 This is an attempt to prevent false convergence if the solution stagnates, but allow iteration to stop if the solution is acceptable.
 
-.. _SM_MI:
+.. _LSM_MI:
 
 Maximum_Iteration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -234,7 +234,7 @@ Maximum_Iteration
 | **Default**      : :math:`100`
 | **Valid Values** : :math:`[0,\infty)`
 
-.. _SM_NVT:
+.. _LSM_NVT:
 
 NLK_Vector_Tolerance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -244,7 +244,7 @@ NLK_Vector_Tolerance
 | **Default**      : :math:`0.01`
 | **Valid Values** : :math:`(0,1)`
 
-.. _SM_NMV:
+.. _LSM_NMV:
 
 NLK_Max_Vectors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
