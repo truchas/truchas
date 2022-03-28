@@ -318,6 +318,7 @@ contains
 
       !! External MTC boundary condition contribution.
       call HTSD_model_get_face_conc_copy (this%model, index, u, Cface)
+      call this%mesh%face_imap%gather_offp(Cface)
       if (allocated(this%model%sd(index)%bc_mtc)) then
         call this%model%sd(index)%bc_mtc%compute_deriv(t, Cface)
         associate (bcindex => this%model%sd(index)%bc_mtc%index, &
