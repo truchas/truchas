@@ -158,7 +158,7 @@ mtc_func
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the mass transfer coefficient for a mass
               transfer-type boundary condition. The function is expected to be a
-              function of :math:`(\phi_j,t,x,y,z)`.
+              function of :math:`(t,x,y,z)`.
 :Type: string
 :Default: none
 
