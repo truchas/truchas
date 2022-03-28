@@ -179,6 +179,6 @@ ambient_conc_func
               function that gives the ambient concentration for species
               component :math:`j` for a mass transfer-type boundary condition.
               The function is expected to be a function of
-              :math:`(\phi_j,t,x,y,z)`.
+              :math:`(t,x,y,z)`.
 :Type: string
 :Default: none
