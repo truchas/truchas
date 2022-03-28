@@ -18,7 +18,9 @@ variable.
 :Single/Multiple Instances: Multiple
 
 The following types of boundary conditions can be defined. The outward unit
-normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`.
+normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`. The mass flux
+is defined as :math:`\vec{f}_\mathrm{mass} \equiv -D_j(\nabla\phi_j + S_j\nabla
+T)\cdot\hat{n}`.
 
 - **Concentration**. A concentration Dirichlet condition for species component
   :math:`j`
@@ -31,18 +33,16 @@ normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`.
 
 - **Flux**. A total concentration flux condition for species component :math:`j`
 
-  :math:`-D_j\nabla\phi_j.\hat{n} = q` on :math:`\Gamma`,
+  :math:`\vec{f}_\mathrm{mass} = q` on :math:`\Gamma`,
 
-  when the system does not include temperature as a dependent variable, or
-  :math:`-D_j(\nabla\phi_j + S_j\nabla T).\hat{n} = q` on :math:`\Gamma` when it
-  does, is defined by setting `type`_ to ``'flux'``. The concentration flux q is
-  specified using either `flux`_ for a constant value, or `flux_func`_ for a
+  is defined by setting `type`_ to ``'flux'``. The concentration flux :math:`q`
+  is specified using either `flux`_ for a constant value, or `flux_func`_ for a
   function.
 
 - **Mass Transfer**: An external mass transfer flux condition on species
   component :math:`j`
 
-  :math:`-D_j\nabla\phi_j.\hat{n} = k_j(\phi_j - \phi_{\infty,j})` on
+  :math:`\vec{f}_\mathrm{mass} = k_j(\phi_j - \phi_{\infty,j})` on
   :math:`\Gamma`
 
   is defined by setting type to ``'mtc'``. The mass transfer coefficient
