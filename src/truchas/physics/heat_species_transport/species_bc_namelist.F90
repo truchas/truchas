@@ -42,9 +42,11 @@ contains
 
     !! Namelist variables
     integer :: face_set_ids(100), comp
-    real(r8) :: conc, flux
-    character(32) :: name, type, conc_func, flux_func
-    namelist /species_bc/ name, face_set_ids, comp, type, conc, conc_func, flux, flux_func
+    real(r8) :: conc, flux, mtc, ambient_conc
+    character(32) :: name, type, conc_func, flux_func, mtc_func, ambient_conc_func
+    namelist /species_bc/ name, face_set_ids, comp, type, conc, conc_func, flux, flux_func, &
+        mtc, mtc_func, ambient_conc, ambient_conc_func
+
 
     call TLS_info('Reading SPECIES_BC namelists ...')
 
@@ -70,6 +72,10 @@ contains
       conc_func = NULL_C
       flux = NULL_R
       flux_func = NULL_C
+      mtc = NULL_R
+      mtc_func = NULL_C
+      ambient_conc = NULL_R
+      ambient_conc_func = NULL_C
 
       if (is_IOP) read(lun,nml=species_bc,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -83,6 +89,10 @@ contains
       call broadcast(conc_func)
       call broadcast(flux)
       call broadcast(flux_func)
+      call broadcast(mtc)
+      call broadcast(mtc_func)
+      call broadcast(ambient_conc)
+      call broadcast(ambient_conc_func)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -111,7 +121,7 @@ contains
 
       !! Check the required TYPE value.
       select case (lower_case(type))
-      case ('concentration', 'flux')
+      case ('concentration', 'flux', 'mtc')
       case (NULL_C)
         call TLS_fatal(label // ': TYPE not specified')
       case default
@@ -144,6 +154,30 @@ contains
           call plist%set('flux', trim(flux_func))
         else
           call TLS_fatal(label // ': neither FLUX or FLUX_FUNC specified')
+        end if
+
+        !! NB: any other specified variables are silently ignored
+
+      case ('mtc')
+
+        if (mtc /= NULL_R .and. mtc_func /= NULL_C) then
+          call TLS_fatal(label // ': both MTC and MTC_FUNC specified')
+        else if (mtc /= NULL_R) then
+          call plist%set('mtc', mtc)
+        else if (mtc_func /= NULL_C) then
+          call plist%set('mtc', trim(mtc_func))
+        else
+          call TLS_fatal(label // ': neither MTC or MTC_FUNC specified')
+        end if
+
+        if (ambient_conc /= NULL_R .and. ambient_conc_func /= NULL_C) then
+          call TLS_fatal(label // ': both AMBIENT_CONC and AMBIENT_CONC_FUNC specified')
+        else if (ambient_conc /= NULL_R) then
+          call plist%set('ambient-conc', ambient_conc)
+        else if (ambient_conc_func /= NULL_C) then
+          call plist%set('ambient-conc', trim(ambient_conc_func))
+        else
+          call TLS_fatal(label // ': neither AMBIENT_CONC or AMBIENT_CONC_FUNC specified')
         end if
 
         !! NB: any other specified variables are silently ignored

@@ -76,6 +76,7 @@ module species_bc_factory1_type
     procedure :: init
     procedure :: alloc_dir_bc
     procedure :: alloc_flux_bc
+    procedure :: alloc_mtc_bc
     procedure, private :: iterate_list
   end type
 
@@ -199,6 +200,56 @@ contains
     end subroutine proc
 
   end subroutine alloc_flux_bc
+
+
+  subroutine alloc_mtc_bc(this, comp, bc, stat, errmsg)
+
+    use bndry_func2_class
+    use htc_bndry_func_type
+
+    class(species_bc_factory1), intent(inout) :: this
+    integer, intent(in) :: comp
+    class(bndry_func2), allocatable, intent(out) :: bc
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(htc_bndry_func), allocatable :: htc
+
+    call TLS_info('  generating "MTC" species-'//i_to_c(comp)//' boundary condition')
+    call this%iterate_list('mtc', comp, proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.allocated(htc)) call TLS_info('    none specified')
+
+    if (allocated(htc)) then
+      call htc%add_complete
+      call move_alloc(htc, bc)
+    end if
+
+  contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to a flux BC specification and incrementally builds the BC object
+    !! accordingly. NB: The HTC and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine proc(plist, setids, stat, errmsg)
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f1, f2
+      call alloc_scalar_func(plist, 'mtc', f1, stat, errmsg)
+      if (stat /= 0) return
+      call alloc_scalar_func(plist, 'ambient-conc', f2, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(htc)) then
+        allocate(htc)
+        call htc%init(this%mesh)
+      end if
+      call htc%add(f1, f2, setids, stat, errmsg)
+    end subroutine proc
+
+  end subroutine alloc_mtc_bc
 
   !! This auxiliary subroutine iterates over the parameter list and for each BC
   !! sublist that matches the given TYPE, it calls the supplied subroutine

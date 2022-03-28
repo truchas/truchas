@@ -501,6 +501,20 @@ contains
         end if
         mask(model(n)%bc_flux%index) = .true.  ! tag the flux BC faces
       end if
+      !! Define the MTC BC object for this species component.
+      call bc_fac%alloc_mtc_bc(n, model(n)%bc_mtc, stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
+      if (allocated(model(n)%bc_mtc)) then
+        if (global_any(mask(model(n)%bc_mtc%index))) then
+          stat = -1
+          errmsg = trim(variable) // ': MTC BC overlaps with other BC!'
+          return
+        end if
+        mask(model(n)%bc_mtc%index) = .true.  ! tag the flux BC faces
+      end if
 
       !! Finally verify that a BC has been applied to every boundary face.
       if (global_any(mask.neqv.btest(mesh%face_set_mask,0))) then

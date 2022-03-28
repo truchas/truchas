@@ -51,6 +51,7 @@ module HTSD_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! simple flux
+    class(bndry_func2), allocatable :: bc_mtc   ! mass-transfer-coefficient
   end type SD_model
 
   type, public :: HTSD_model
@@ -469,6 +470,15 @@ contains
         do j = 1, size(this%sd(index)%bc_flux%index)
           n = this%sd(index)%bc_flux%index(j)
           Fface(n) = Fface(n) + this%mesh%area(n) * this%sd(index)%bc_flux%value(j)
+        end do
+      end if
+
+      !! Mass-transfer-coefficient (MTC) BC flux contribution.
+      if (allocated(this%sd(index)%bc_mtc)) then
+        call this%sd(index)%bc_mtc%compute(t, Cface)
+        do j = 1, size(this%sd(index)%bc_mtc%index)
+          n = this%sd(index)%bc_mtc%index(j)
+          Fface(n) = Fface(n) + this%sd(index)%bc_mtc%value(j)
         end do
       end if
 
