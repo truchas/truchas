@@ -169,7 +169,14 @@ contains
       func_params => plist%sublist(param)
       call alloc_vector_func(f, func_params)  !TODO: should return stat, errmsg
     else if (plist%is_scalar(param)) then
+#ifdef GNU_PR93762
+      block
+        character(:), allocatable :: dummy
+        call plist%get(param, fname, stat=stat, errmsg=dummy)
+      end block
+#else
       call plist%get(param, fname, stat=stat)
+#endif
       if (stat == 0) then ! name of a function
         call lookup_func(fname, f)
         if (.not.allocated(f)) then

@@ -54,7 +54,14 @@ contains
 
     pp => params%sublist("turbulence model")
 
+#ifdef GNU_PR93762
+    block
+      character(:), allocatable :: dummy
+      call pp%get('type', model, stat=stat, errmsg=dummy)
+    end block
+#else
     call pp%get('type', model, stat=stat)
+#endif
 
     if (stat /= 0 .or. off_) then
       call alloc_default_turb_model(turb)
