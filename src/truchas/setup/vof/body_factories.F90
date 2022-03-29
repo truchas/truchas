@@ -157,7 +157,14 @@ contains
       ASSERT(size(coeffs)==3)
       ASSERT(any(coeffs /= 0))
       coeffs = normalized(coeffs) ! normalize the user provided normal direction
+#ifdef GNU_PR93762
+      block
+        character(:), allocatable :: dummy
+        call params%get('point-on-plane', x, stat=stat, errmsg=dummy)
+      end block
+#else
       call params%get('point-on-plane', x, stat=stat)
+#endif
       call params%get('plane-const', p, stat=i, errmsg=errmsg)
       if (stat == 0) then
         if (i == 0) then

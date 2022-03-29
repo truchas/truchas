@@ -346,7 +346,14 @@ contains
     piter = parameter_list_iterator(params)
     do while (.not.piter%at_end())
       pname = piter%name()
+#ifdef GNU_PR93762
+      block
+        character(:), allocatable :: dummy
+        call params%get(pname, flag, stat=stat, errmsg=dummy)
+      end block
+#else
       call params%get(pname, flag, stat=stat)
+#endif
       if (stat == 0) then ! this is an attribute
         if (flag) call this%add_attr(pname)
       else  ! this is a property

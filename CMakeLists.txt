@@ -55,6 +55,8 @@ endif()
 # Strip RPATH from installed binaries/libraries
 option(ENABLE_INSTALL_RPATH "Use RPATH in installed binaries and libraries" True)
 
+option(ENABLE_STD_MOD_PROC_NAME "Build with -assume std_mod_proc_name when using Intel" OFF)
+
 # ---------------------------------------------------------------------------- #
 # External Dependencies
 # ---------------------------------------------------------------------------- #
@@ -195,6 +197,16 @@ endif()
 # Preprocessor definitions
 # ----------------------------------------------------------------------------
 
+
+add_compile_options(
+  "$<$<COMPILE_LANG_AND_ID:Fortran,Intel>:-standard-semantics>"
+  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel>>:SHELL:-assume nostd_mod_proc_name>")
+
+add_compile_options(
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-fimplicit-none>
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
+
+
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
 add_compile_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
@@ -233,6 +245,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   add_compile_definitions(GNU_PR49213)
   add_compile_definitions(GNU_PR69563)
   add_compile_definitions(GNU_PR86277)
+  add_compile_definitions(GNU_PR93762)
   add_compile_definitions(GNU_PR98141)
   add_compile_definitions(GNU_ISSUE437)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.3.0")
