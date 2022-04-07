@@ -6,7 +6,7 @@
 #
 #===============================================================================
 
-import scipy as sp
+import numpy as np
 
 import truchas
 
@@ -27,7 +27,7 @@ tdata.assign_value_block(sid, "Z_RHO", 1, xc[:,0])
 # do something more complicated?
 xc = tdata.centroids()
 rho = tdata.field(sid, "Z_RHO")
-rho = sp.where(tdata.blockid() == 1, xc[:,0], rho)
+rho = np.where(tdata.blockid() == 1, xc[:,0], rho)
 tdata.assign_field(sid, "Z_RHO", rho)
 
 tdata.write_restart("preheat.restart", sid)

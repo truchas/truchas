@@ -7,7 +7,7 @@ Reference Manual
    :maxdepth: 1
    :numbered: 3
 
-   introduction/index 
+   introduction/index
    ALTMESH_Namelist/index
    BC_Namelist/index
    BODY_Namelist/index
@@ -43,6 +43,4 @@ Reference Manual
    VFUNCTION_Namelist/index
    VISCOPLASTIC_MODEL_Namelist/index
    rade/index
-
-
-
+   python/index

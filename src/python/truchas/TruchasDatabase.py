@@ -14,7 +14,7 @@ import hashlib
 
 import truchas
 
-TruchasRun = collections.namedtuple("TruchasRun", ("parameters",
+_TruchasRun = collections.namedtuple("_TruchasRun", ("parameters",
                                                    "input_file",
                                                    "dump_dir",
                                                    "dump_file",
@@ -22,6 +22,8 @@ TruchasRun = collections.namedtuple("TruchasRun", ("parameters",
 
 
 class TruchasDatabase:
+    """TODO"""
+
     def __init__(self, directory):
         self._directory = os.path.abspath(os.path.normpath(directory))
         self._database_filename = os.path.join(self._directory, "database.json")
@@ -37,7 +39,7 @@ class TruchasDatabase:
         else:
             with open(self._database_filename, "r") as fh:
                 database = json.load(fh)
-            database = {k: TruchasRun(*v) for k, v in database.items()}
+            database = {k: _TruchasRun(*v) for k, v in database.items()}
         return database
 
 
@@ -108,7 +110,7 @@ class TruchasDatabase:
         os.rename(dump_dir, abs_dump_dir)
         os.rename(infile, abs_infile)
 
-        database[identifier] = TruchasRun(parameters, my_infile, my_dump_dir, my_dump_file)
+        database[identifier] = _TruchasRun(parameters, my_infile, my_dump_dir, my_dump_file)
         self._write_database(database)
 
 
@@ -137,8 +139,8 @@ class TruchasDatabase:
             new_input_file = os.path.join(self._directory, f"{new_id}.inp")
             new_dump_dir = os.path.join(self._directory, f"{new_id}_output")
             new_dump_file = os.path.join(new_dump_dir, os.path.basename(old_values.dump_file))
-            new_database[new_id] = TruchasRun(new_parameters, new_input_file,
-                                              new_dump_dir, new_dump_file)
+            new_database[new_id] = _TruchasRun(new_parameters, new_input_file,
+                                               new_dump_dir, new_dump_file)
 
             old_abs_input_file = os.path.join(self._directory, old_values.input_file)
             new_abs_input_file = os.path.join(self._directory, new_input_file)
