@@ -86,7 +86,7 @@ contains
     real(r8) :: irrad, dr(3)
     call this%tp%get_position(t, dr)
     dr = r - dr
-    irrad = this%absorp * this%fade_factor(t) * this%laser%irrad(dr(1), dr(2), dr(3))
+    irrad = this%absorp * this%fade_factor(t) * this%laser%irrad(t, dr(1), dr(2), dr(3))
   end function irrad
 
 end module ded_head_type
