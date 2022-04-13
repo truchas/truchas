@@ -114,7 +114,7 @@ contains
     call ded_params%set('laser-time-constant', laser_time_const)
     plist => ded_params%sublist('laser')
     !call plist%set('power', laser_power)
-    call process2(plist, laser_power, laser_power_func, 'LASER_POWER', 'laser-power', label)
+    call process2(plist, laser_power, laser_power_func, 'LASER_POWER', 'power', label)
     call plist%set('type', laser_type)
     select case (laser_type)
     case ('gaussian')

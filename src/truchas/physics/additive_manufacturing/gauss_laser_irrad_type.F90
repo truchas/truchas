@@ -32,16 +32,16 @@ module gauss_laser_irrad_type
 
 contains
 
-  subroutine init(this, params, stat)
+  subroutine init(this, params)
     use parameter_list_type
     class(gauss_laser_irrad), intent(out) :: this
     type(parameter_list) :: params
     real(r8) :: sigma
-    integer, intent(out) :: stat
+    integer  :: stat
     character(:), allocatable :: errmsg
 
     call params%get('sigma', sigma)
-    call alloc_scalar_func(params, 'laser-power', this%power, stat, errmsg)
+    call alloc_scalar_func(params, 'power', this%power, stat, errmsg)
     INSIST(stat == 0)
     this%c1 = 2.0_r8 * sigma**2   ! length^2
   end subroutine init

@@ -45,7 +45,7 @@ contains
     case default
       INSIST(.false.)
     end select
-    call this%init(params, stat)
+    call this%init(params)
 
   end subroutine alloc_laser_irrad
 

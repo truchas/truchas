@@ -29,13 +29,12 @@ module beam_laser_irrad_type
 
 contains
 
-  subroutine init(this, params, stat)
+  subroutine init(this, params)
     use parameter_list_type
     class(beam_laser_irrad), intent(out) :: this
     type(parameter_list) :: params
     real(r8) :: lambda, w0r, msq, p
     real(r8), parameter :: PI = 3.141592653589793_r8
-    integer, intent(out) :: stat
     call params%get('wave-length', lambda)
     call params%get('waist-radius', w0r)
     call params%get('beam-param', msq)
