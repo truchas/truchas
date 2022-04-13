@@ -128,7 +128,7 @@ if(NOT NETCDF_FOUND)
 endif()
 
 # ExodusII library
-find_package(Exodus "8.11")
+find_package(Exodus "8")
 if(NOT EXODUS_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Exodus installation")
 endif()
