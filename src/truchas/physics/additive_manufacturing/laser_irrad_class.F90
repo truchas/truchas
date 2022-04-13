@@ -27,10 +27,11 @@ module laser_irrad_class
   end type laser_irrad
 
   abstract interface
-    subroutine init(this, params)
+    subroutine init(this, params, stat)
       import laser_irrad, parameter_list
       class(laser_irrad), intent(out) :: this
       type(parameter_list) :: params
+      integer, intent(out) :: stat
     end subroutine
     function irrad(this, t, dx, dy, dz)
       import laser_irrad, r8
