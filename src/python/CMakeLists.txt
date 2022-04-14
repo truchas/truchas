@@ -1,4 +1,8 @@
+cmake_minimum_required(VERSION 3.16)
+
 project(TruchasPython NONE)
+
+option(DOCUMENTATION_ONLY "Build stripped-down Python packages for documentation only" OFF)
 
 # ZJJ 03-29-19
 # We need to copy scripts from truchas/ and fortran_write/
@@ -39,11 +43,18 @@ set(PYTHON_CONFIG_FILES
   )
 
 set(TruchasPython_BINARY_DIR ${CMAKE_CURRENT_BUILD_DIR})
-set(TruchasPython_INSTALL_PREFIX
-  ${Truchas_LIBRARY_INSTALL_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
+
+if(DOCUMENTATION_ONLY)
+  set(TruchasPython_INSTALL_PREFIX
+    ${Truchas_LIBRARY_INSTALL_DIR}/python/site-packages)
+  set(Truchas_EXECUTABLE "truchas")
+else()
+  set(TruchasPython_INSTALL_PREFIX
+    ${Truchas_LIBRARY_INSTALL_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages)
+  get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
+endif()
 
 # preprocess the bin and configuration files
-get_target_property(Truchas_EXECUTABLE truchas_exe OUTPUT_NAME)
 foreach(f ${PYTHON_BIN_FILES} ${PYTHON_CONFIG_FILES} truchas/TruchasConfigBuild.py)
   configure_file(${f}.in ${f} @ONLY)
 endforeach(f)

@@ -14,10 +14,12 @@ foreach(f ${PYTHON_SCRIPT_FILES})
 endforeach(f)
 add_custom_target(GridMappingPython ALL DEPENDS ${PYTHON_SCRIPT_FILES})
 
-include_directories(${Truchas_MODULE_DIR})
-add_library(gridmap grid_mapping_wrapper.F90)
-add_dependencies(gridmap truchas ${Truchas_DEPENDS})
-target_link_libraries(gridmap truchas)
+if(NOT DOCUMENTATION_ONLY)
+  include_directories(${Truchas_MODULE_DIR})
+  add_library(gridmap grid_mapping_wrapper.F90)
+  add_dependencies(gridmap truchas ${Truchas_DEPENDS})
+  target_link_libraries(gridmap truchas)
+endif()
 
 # install rules
 foreach(f ${PYTHON_SCRIPT_FILES})
@@ -25,6 +27,8 @@ foreach(f ${PYTHON_SCRIPT_FILES})
     DESTINATION ${TruchasPython_INSTALL_PREFIX}/grid_mapping)
 endforeach(f)
 
-install(TARGETS gridmap
-        LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
-        ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+if(NOT DOCUMENTATION_ONLY)
+  install(TARGETS gridmap
+    LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
+    ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+endif()
