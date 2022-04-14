@@ -93,7 +93,7 @@ endif()
 
 # HDF5 library
 set(HDF5_PREFER_PARALLEL True)
-find_package(HDF5 "1.10.6" COMPONENTS C HL)
+find_package(HDF5 COMPONENTS C HL)
 if(HDF5_FOUND)
   if(NOT HDF5_IS_PARALLEL)
     set(HDF5_FOUND False)
