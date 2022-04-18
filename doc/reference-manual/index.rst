@@ -11,6 +11,7 @@ Reference Manual
    ALTMESH_Namelist/index
    BC_Namelist/index
    BODY_Namelist/index
+   DED_HEAD_Namelist/index
    DIFFUSION_Solver_Namelist/index
    DS_SOURCE_Namelist/index
    ELECTROMAGNETICS_Namelist/index
