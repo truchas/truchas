@@ -22,7 +22,15 @@ _TruchasRun = collections.namedtuple("_TruchasRun", ("parameters",
 
 
 class TruchasDatabase:
-    """TODO"""
+    """Records Truchas outputs into a database for easy lookup. This class is
+    used by :class:`TruchasStudy`, and for most user code will not need to be
+    used directly except for initialization.
+
+    :param directory: A directory where the database will be stored. Should be
+        either an empty directory, nonexistent directory, or the path of an
+        already-existing database.
+    :type directory: str
+    """
 
     def __init__(self, directory):
         self._directory = os.path.abspath(os.path.normpath(directory))
@@ -50,11 +58,22 @@ class TruchasDatabase:
 
     @staticmethod
     def identifier(parameters):
-        """Generates a unique identifier for the given parameter dictionary. This
-        is done by formatting the dictionary as a sorted JSON string, and hashing
-        the result by SHA1. A direct hash() call won't work, since this seems to
-        be seeded differently every time Python is started.
+        """Generates a unique identifier for the given parameter dictionary.
+
+        :param parameters: A dictionary of template replacements. Unlike
+            :func:`TruchasStudy.do_1d_parameter_study`, this cannot contain
+            functions (rather, it expects the functions have already been
+            evaluated). This is so that a unique identifier can be produced.
+
+        :type parameters: a dict with str keys and non-function values
+
+        :return: Unique identifier hash
+        :rtype: str
         """
+
+        # Hashing is done by formatting the dictionary as a sorted JSON string,
+        # and hashing the result by SHA1. A direct hash() call won't work, since
+        # this seems to be seeded differently every time Python is started.
 
         # The toolpath_file parameter is special, and not used to create
         # the unique identifier. This is because we typically want to
@@ -70,6 +89,19 @@ class TruchasDatabase:
 
 
     def exists(self, parameters):
+        """Checks if the given parameter combination is present in the database.
+
+        :param parameters: A dictionary of template replacements. Unlike
+            :func:`TruchasStudy.do_1d_parameter_study`, this cannot contain
+            functions (rather, it expects the functions have already been
+            evaluated). This is so that a unique identifier can be produced.
+
+        :type parameters: a dict with str keys and non-function values
+
+        :return: True if the Truchas results associated with ``parameters`` is
+            already present in the database, False otherwise.
+        :rtype: bool
+        """
         database = self._read_database()
         identifier = self.identifier(parameters)
         return identifier in database
@@ -77,7 +109,18 @@ class TruchasDatabase:
 
     def truchas_output(self, parameters):
         """Return the Truchas output corresponding to the given parameters. If
-        such an output does not exist, return None."""
+        such an output does not exist, return None.
+
+        :param parameters: A dictionary of template replacements. Unlike
+            :func:`TruchasStudy.do_1d_parameter_study`, this cannot contain
+            functions (rather, it expects the functions have already been
+            evaluated). This is so that a unique identifier can be produced.
+
+        :type parameters: a dict with str keys and non-function values
+
+        :return: Truchas output associated with ``parameters``
+        :rtype: :class:`TruchasData`
+        """
         database = self._read_database()
         identifier = self.identifier(parameters)
         if identifier in database:
@@ -89,7 +132,23 @@ class TruchasDatabase:
 
 
     def donate(self, parameters, infile, dump_dir):
-        """Note this will overwrite any existing item in the database."""
+        """Add the input file and Truchas output directory associated with a set
+        of parameters to the database. Note this will overwrite any existing
+        item associated with the parameter set in the database.
+
+        :param parameters: A dictionary of template replacements. Unlike
+            :func:`TruchasStudy.do_1d_parameter_study`, this cannot contain
+            functions (rather, it expects the functions have already been
+            evaluated). This is so that a unique identifier can be produced.
+
+        :type parameters: a dict with str keys and non-function values
+
+        :param infile: A Truchas input file
+        :type infile: str
+
+        :parameter dump_dir: A Truchas output dir associated with infile
+        :type dump_dir: str
+        """
         database = self._read_database()
         identifier = self.identifier(parameters)
 
@@ -115,6 +174,16 @@ class TruchasDatabase:
 
 
     def delete(self, parameters):
+        """Delete the data associated with the given parameter set from the
+        database. Note this will delete all associated data from disk.
+
+        :param parameters: A dictionary of template replacements. Unlike
+            :func:`TruchasStudy.do_1d_parameter_study`, this cannot contain
+            functions (rather, it expects the functions have already been
+            evaluated). This is so that a unique identifier can be produced.
+
+        :type parameters: a dict with str keys and non-function values
+        """
         database = self._read_database()
         identifier = self.identifier(parameters)
         if identifier in database:
@@ -127,6 +196,17 @@ class TruchasDatabase:
 
 
     def append_new_parameters(self, parameters):
+        """Append a new set of parameters to the database. This requires
+        rehashing all identifiers.
+
+        :param parameters: A dictionary of template replacements, including any
+            new keys that were not present in previous database entries. For
+            accuracy, any new keys must contain the value that was used in old
+            runs (where presumably they were hardcoded in the input file).
+
+        :type parameters: a dict with str keys and non-function values
+
+        """
         old_database = self._read_database()
         new_database = {}
         for old_id, old_values in old_database.items():
@@ -153,5 +233,9 @@ class TruchasDatabase:
 
 
     def backup_database(self):
+        """Create a backup file ``database-backup.json`` in the database
+        directory. This backs up the database structure, not the Truchas inputs
+        nor output data.
+        """
         backup_filename = os.path.join(self._directory, "database-backup.json")
         shutil.copy2(self._database_filename, backup_filename)

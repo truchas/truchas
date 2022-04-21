@@ -19,8 +19,24 @@ from .TruchasData import TruchasData
 
 
 class TruchasMappedData(TruchasData):
-    """
-    Wrapper for mapping Truchas Data to new exodus mesh.
+    """Interface for mapping Truchas Data to new exodus mesh. This class
+    inherits all of the methods from the :class:`TruchasData` class, and
+    invisibly maps fields to the new mesh prior to returning them.
+    Initialization takes extra parameters for mapping.
+
+    :param filename: Filename of the Truchas h5 output file.
+    :type filename: str
+
+    :param exodus_filename: Filename of the exodus mesh file to which the data
+        shall be mapped
+    :type exodus_filename: str
+
+    :param scale_factor: Scaling factor for the target exodus mesh.
+    :type scale_factor: number
+
+    :param use_portage: Flag to use the Portage backend rather than the Truchas
+        built-in mapper. Defaults to False, using the Truchas built-in mapper.
+    :type use_portage: bool
     """
 
     def __init__(self, output_filename, exodus_filename, scale_factor=1, use_portage=False):
@@ -41,6 +57,10 @@ class TruchasMappedData(TruchasData):
         self._blockid = map_data.blockid
         self._mapper = map_data.mapper
         self._centroid = None
+
+
+    def __del__(self):
+        self.finalize()
 
 
     def _field(self, series_id, field_name):
@@ -66,4 +86,10 @@ class TruchasMappedData(TruchasData):
 
 
     def finalize(self):
-        grid_mapping.mapper_finalize(self._mapper)
+        """Free the memory used by the grid mapper. If mapping between multiple
+        different mesh combinations, it's best to call this directly rather than
+        wait for Python garbage collection to clean it up.
+        """
+        if self._mapper:
+            grid_mapping.mapper_finalize(self._mapper)
+            self._mapper = None

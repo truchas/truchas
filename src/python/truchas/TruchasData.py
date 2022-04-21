@@ -22,20 +22,27 @@ except ImportError:
 
 
 class TruchasData:
-    """
-    A class for reading and interacting with Truchas output data. It provides
+    """A class for reading and interacting with Truchas output data. It provides
     access to fields, and allows users to manipulate them.
 
-    Field manipulation is in-memory, not saved to the H5 file. The Truchas output
-    is read-only. Modifying data is intended for modified restarts, and is done
-    through the assign_field and assign_value functions. The field routine will
-    return a user-modified field, if one has been assigned via one of those two
-    methods.
+    Field manipulation is in-memory, not saved to the H5 file. The Truchas
+    output is read-only. Modifying data is intended for modified restarts, and
+    is done through the assign_field and assign_value functions. The field
+    routine will return a user-modified field, if one has been assigned via one
+    of those two methods.
+
+    TruchasData objects may be directly initialized by its initializer.
+    TruchasData objects are also provided by :func:`TruchasEnvironment.truchas`
+    and :func:`TruchasEnvironment.output`.
+
+    :param filename: Filename of the Truchas h5 output file.
+    :type filename: str
     """
 
     def __init__(self, filename):
         self.mapped = False
         self.filename = filename
+        """The filename of the HDF5 Truchas output."""
         self.directory = os.path.dirname(filename)
         self._root = h5py.File(filename, 'r')
         self._centroid = None
@@ -67,19 +74,102 @@ class TruchasData:
     def field(self, series_id, field_name):
         """Return the requested field of the requested series as a ndarray.
         This will read the entire field from disk. If the field has been
-        reassigned, returns the user-defined copy."""
+        reassigned, returns the user-defined copy.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+        :type series_id: int
+
+        :param field_name: The name of a field in the Truchas output file. Valid
+            values include ``"Z_TEMP"``, ``"Z_RHO"`` (density),
+            ``"Z_ENTHALPY"``, ``"phi1"`` (species 1 concentration), ``"sigma"``
+            (stress tensor), ``"epsilon"`` (strain tensor), ``"epstherm"``
+            (thermal strain), ``"Rotation"``, ``"Displacement"``, ``"Gap
+            Displacement"``, ``"Gap Normal Traction"``, ``"VOF"``, ``"Z_P"``
+            (pressure), and ``"Z_VC"`` (velocity). Valid values for the active
+            h5 file can be found with the :func:`TruchasData.field_names()`
+            function.
+        :type field_name: str
+
+        :return: The requested field from the H5 file. If the field has been
+            reassigned, returns the user-defined copy.
+        :rtype: :class:`numpy.ndarray`
+        """
         return self._modified_fields[(series_id, field_name)] \
             if (series_id, field_name) in self._modified_fields \
             else self._field(series_id, field_name)
 
 
     def assign_field(self, series_id, field_name, field):
-        """Reassign a field with a user-defined copy."""
-        self._modified_fields[(series_id, field_name)] = field
+        """Reassign a field with a user-defined copy. Future calls to
+        :func:`TruchasData.field` will return this copy, and this copy will
+        be used in any restarts.
+
+        Note: VOF is a 2D array. The order of the elements is the same as listed
+        in the ``PHYSICS`` namelist ``materials`` parameter and ``MATERIAL``
+        namelists ``phases`` parameter.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :param field_name: The name of a field in the Truchas output file. Valid
+            values include ``"Z_TEMP"``, ``"Z_RHO"`` (density),
+            ``"Z_ENTHALPY"``, ``"phi1"`` (species 1 concentration), ``"sigma"``
+            (stress tensor), ``"epsilon"`` (strain tensor), ``"epstherm"``
+            (thermal strain), ``"Rotation"``, ``"Displacement"``, ``"Gap
+            Displacement"``, ``"Gap Normal Traction"``, ``"VOF"``, ``"Z_P"``
+            (pressure), and ``"Z_VC"`` (velocity). Valid values for the active
+            h5 file can be found with the :func:`TruchasData.field_names()`
+            function.
+        :type field_name: str
+
+        :param field: When assigning to a scalar field (.e.g ``"Z_TEMP"``,
+            ``"Z_RHO"``), expected is either a 1D Numpy array with the same
+            length as the field being overwritten (``ncell`` or ``nnode``), or a
+            number. When assigning to a 2D array (e.g. ``"VOF"`` or
+            ``"sigma"``), expected is either a 2D Numpy array with the same
+            shape as the field being written, or a 1D Numpy array with the same
+            length as the second dimension of the field being overwritten
+            (``field.shape[1]``).
+        :type field: :class:`numpy.ndarray` or number
+        """
+        self._modified_fields[(series_id, field_name)] = np.full(original_shape, field)
 
 
     def assign_value_block(self, series_id, field_name, blockid, value):
-        """Within an element block, assign a value to a field."""
+        """Assign a value to a field within an element block.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :param blockid: The ID of cell block in the Truchas output file.
+        :type blockid: int
+
+        :param field_name: The name of a field in the Truchas output file. Valid
+            values include ``"Z_TEMP"``, ``"Z_RHO"`` (density),
+            ``"Z_ENTHALPY"``, ``"phi1"`` (species 1 concentration), ``"sigma"``
+            (stress tensor), ``"epsilon"`` (strain tensor), ``"epstherm"``
+            (thermal strain), ``"Rotation"``, ``"Displacement"``, ``"Gap
+            Displacement"``, ``"Gap Normal Traction"``, ``"VOF"``, ``"Z_P"``
+            (pressure), and ``"Z_VC"`` (velocity). Valid values for the active
+            h5 file can be found with the :func:`TruchasData.field_names()`
+            function.
+        :type field_name: str
+
+        :param field: When assigning to a scalar field (.e.g ``"Z_TEMP"``,
+            ``"Z_RHO"``), expected is either a 1D Numpy array with the same
+            length as the field being overwritten (``ncell`` or ``nnode``), or a
+            number. When assigning to a 2D array (e.g. ``"VOF"`` or
+            ``"sigma"``), expected is either a 2D Numpy array with the same
+            shape as the field being written, or a 1D Numpy array with the same
+            length as the second dimension of the field being overwritten
+            (``field.shape[1]``).
+        :type field: :class:`numpy.ndarray` or number
+        """
         field = self.field(series_id, field_name)
         blockids = self.blockid()
         if ((type(value) == list or type(value) == np.array)
@@ -96,7 +186,40 @@ class TruchasData:
 
 
     def assign_value_cell(self, series_id, field_name, cellid, value):
-        """Within an element block, assign a value to a field."""
+        """Assign a value to a field at a given cell. This is equivalent to::
+
+            f = TruchasData.output(sid, "xxx")
+            f[cellid] = x
+            TruchasData.assign_field(sid, "xxx", f)
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :param blockid: The ID of cell block in the Truchas output file.
+        :type blockid: int
+
+        :param field_name: The name of a field in the Truchas output file. Valid
+            values include ``"Z_TEMP"``, ``"Z_RHO"`` (density),
+            ``"Z_ENTHALPY"``, ``"phi1"`` (species 1 concentration), ``"sigma"``
+            (stress tensor), ``"epsilon"`` (strain tensor), ``"epstherm"``
+            (thermal strain), ``"Rotation"``, ``"Displacement"``, ``"Gap
+            Displacement"``, ``"Gap Normal Traction"``, ``"VOF"``, ``"Z_P"``
+            (pressure), and ``"Z_VC"`` (velocity). Valid values for the active
+            h5 file can be found with the :func:`TruchasData.field_names()`
+            function.
+        :type field_name: str
+
+        :param field: When assigning to a scalar field (.e.g ``"Z_TEMP"``,
+            ``"Z_RHO"``), expected is a scalar number. When assigning to a 2D
+            array (e.g. ``"VOF"`` or ``"sigma"``), expected is a 1D Numpy array
+            with the same length as the second dimension of the field being
+            overwritten (``field.shape[1]``).
+
+        :type field: :class:`numpy.ndarray` or number
+
+        """
         # WARN: Need to confirm this is assigns to the same cell ID
         #       shown in Paraview, and do a mapping if not.
         field = self.field(series_id, field_name)
@@ -119,16 +242,16 @@ class TruchasData:
         return field
 
 
-    def field_node(self, series_id, field_name):
-        """Return the requested field of the requested series as a ndarray.
-        Assumed to be node-centered. This will read the entire field from
-        disk."""
-        return np.array(self._series(series_id)[field_name])[self._nodemap]
-
-
     def probe_data(self, probe_filename):
-        """Return data from a probe file. Filename is expected to be
-        relative to the directory holding the h5 file."""
+        """Read data from a probe file.
+
+        :param probe_filename: Name of a probe file. Expected to be
+            relative to the directory holding the h5 file.
+        :type probe_filename: str
+
+        :return: 2D array containing the text file data.
+        :rtype: :class:`numpy.ndarray`
+        """
         abs_filename = os.path.join(self.directory, probe_filename)
         return np.loadtxt(abs_filename)
 
@@ -137,7 +260,7 @@ class TruchasData:
         return self._root["Simulations/MAIN/Non-series Data"]
 
 
-    def cell_node_map(self):
+    def _cell_node_map(self):
         """Load the cnode map, convert to 0-based indexing,
         then reorder for cell and node ordering."""
         if self._cnode is None:
@@ -148,22 +271,58 @@ class TruchasData:
 
 
     def time(self, series_id):
-        """Return the time at a given series number."""
+        """Return the time at a given series number.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :return: The time at the given series_id
+        :rtype: number
+        """
         return self._series(series_id).attrs["time"]
 
 
     def time_step(self, series_id):
-        """Return the time at a given series number."""
+        """Return the time step size at a given series number.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :return: The time step size at the given series_id
+        :rtype: number
+        """
         return self._series(series_id).attrs["time step"]
 
 
     def cycle(self, series_id):
-        """Return the cycle id of a given series."""
+        """Return the cycle number of a given series.
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+
+        :return: The cycle number at the given series_id
+        :rtype: int
+        """
         return self._series(series_id).attrs["cycle"]
 
 
     def series_id(self, cycle):
-        """Return the series id of a given cycle. If not found, returns None."""
+        """Return the series id of a given cycle. If not found, returns None.
+
+        :param cycle: The number of a Truchas cycle.
+        :type cycle: int
+
+        :return: The series ID matching a given cycle. If there is no series
+            exactly matching the cycle, returns None.
+
+        :rtype: int or None
+        """
         nseries = self.num_series()
         for sid in range(1,nseries+1):
             if cycle == self.cycle(sid):
@@ -172,25 +331,34 @@ class TruchasData:
 
 
     def centroids(self):
-        """Return a list of cell centroids"""
+        """
+        :return: A ``[ncell,3]`` field of cell centroids.
+        :rtype: :class:`numpy.ndarray`
+        """
         if self._centroid is None:
             x = self.node_coordinates()
-            cnode = self.cell_node_map()
+            cnode = self._cell_node_map()
             self._centroid = np.array([np.average(x[_cell_nodes(cn),:], axis=0) for cn in cnode])
         return self._centroid
 
 
     def volumes(self):
-        """Return a list of cell volumes."""
+        """
+        :return: A length ``ncell`` field of cell volumes.
+        :rtype: :class:`numpy.ndarray`
+        """
         if self._volume is None:
             x = self.node_coordinates()
-            cnode = self.cell_node_map()
+            cnode = self._cell_node_map()
             self._volume = np.array([_cell_volume(x[_cell_nodes(cn),:]) for cn in cnode])
         return self._volume
 
 
     def node_coordinates(self):
-        """Return a list of node coordinates."""
+        """
+        :return: A ``[nnode,3]`` field of node coordinates.
+        :rtype: :class:`numpy.ndarray`
+        """
         if self._node_coordinates is None:
             self._node_coordinates = \
                 self._root["Meshes/DEFAULT/Nodal Coordinates"][:][self._nodemap]
@@ -199,7 +367,30 @@ class TruchasData:
 
     def region(self, *region_blockids):
         """Return a list of bools indicating which cells are part of a given
-        set of block ids. Input is an arbitrary number of block id integers."""
+        set of block ids. Input is an arbitrary number of block id integers.
+
+        :param region_blockids: An arbitrary number of block id integers. This
+            function takes an arbitrary number of arguments, not a list. E.g.,
+
+            .. code-block:: python
+
+                TruchasData.region(1)
+                TruchasData.region(1, 2, 3)
+
+        :type region_blockids: int
+
+        :return: A list of bools indicating which cells are part of a given
+            set of block ids. E.g., ``[True, False, False, True, ...]``. This is
+            useful for masking off operations, for example:
+
+            .. code-block:: python
+
+                mask = TruchasData.region(1, 2)
+                f1[mask] = f2[mask]
+                f1[mask] = 0
+
+        :rtype: :class:`numpy.ndarray` of bools
+        """
         cell_in_region = np.array([bid in region_blockids
                                    for bid in self.blockid()])
         # for c,cn in zip(cell_in_region,cnode):
@@ -209,9 +400,34 @@ class TruchasData:
 
     def region_node(self, *region_blockids):
         """Return a list of bools indicating which nodes are part of a given
-        set of block ids. Input is an arbitrary number of block id integers."""
+        set of block ids. Input is an arbitrary number of block id integers.
+        A node is considered part of the given block set if any one of the cells
+        adjacent to it is part of one block in that set.
+
+        :param region_blockids: An arbitrary number of block id integers. This
+            function takes an arbitrary number of arguments, not a list. E.g.,
+
+            .. code-block:: python
+
+                TruchasData.region(1)
+                TruchasData.region(1, 2, 3)
+
+        :type region_blockids: int
+
+        :return: A list of bools indicating which nodes are part of a given
+            set of block ids. E.g., ``[True, False, False, True, ...]``. This is
+            useful for masking off operations, for example:
+
+            .. code-block:: python
+
+                mask = TruchasData.region(1, 2)
+                f1[mask] = f2[mask]
+                f1[mask] = 0
+
+        :rtype: :class:`numpy.ndarray` of bools
+        """
         region_cell = self.region(*region_blockids)
-        cnode = self.cell_node_map()
+        cnode = self._cell_node_map()
 
         region_node = np.zeros(self.nnode, dtype=bool)
         for cn, rc in zip(cnode, region_cell):
@@ -222,6 +438,11 @@ class TruchasData:
 
 
     def blockid(self):
+        """
+        :return: A ncell length field of integers, holding the Exodus block ID
+            at for each cell.
+        :rtype: :class:`numpy.ndarray`
+        """
         if self._blockid is None:
             self._blockid = self._root["Simulations/MAIN/Non-series Data/BLOCKID"][:][self._cellmap] \
                 if "BLOCKID" in self._root["Simulations/MAIN/Non-series Data/"] \
@@ -230,16 +451,34 @@ class TruchasData:
 
 
     def field_names(self, series_id=1):
-        """Return a list of field names present in the first series."""
+        """Return a list of field names present in the first series.
+
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``. Defaults
+            to 1. Usually the fields present does not change over the course
+            of a simulation.
+        :type series_id: int, optional
+
+        :result: A list of field names present in the requested series.
+        :rtype: list of strings
+        """
         return list(self._series(series_id).keys())
 
 
     def num_species(self):
+        """
+        :return: The number of species in this file.
+        :rtype: int
+        """
         return self._root["Simulations/MAIN"].attrs["NUM_SPECIES"]
 
 
     def num_series(self):
-        """Return the number of series in this file."""
+        """
+        :return: The number of series in this file.
+        :rtype: int
+        """
         return len(self._root["Simulations/MAIN/Series Data/"])
 
 
@@ -249,7 +488,16 @@ class TruchasData:
 
 
     def write_restart(self, outfile, series_id):
-        """Write a restart file from given Truchas data object and series ID."""
+        """Write a restart file from given Truchas data object and series ID.
+
+        :param outfile: The name of the restart file to be generated.
+        :type outfile: str
+
+        :param series_id: The ID of a series in the Truchas output file. Valid
+            values are in the range ``[1, TruchasData.num_series()]``.
+
+        :type series_id: int
+        """
 
         fw = fortran_write.FortranWrite(outfile)
         fields = self.field_names(series_id)
@@ -275,7 +523,7 @@ class TruchasData:
         fw.write_i4x0(self.nnode)
 
         # MESH SEGMENT
-        for cn in self.cell_node_map().transpose():
+        for cn in self._cell_node_map().transpose():
             fw.write_i4x1(cn+1)
 
         bid = self.blockid()

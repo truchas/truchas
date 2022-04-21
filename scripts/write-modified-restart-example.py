@@ -10,24 +10,35 @@ import numpy as np
 
 import truchas
 
+# Load truchas data from the preheat run, map it to a new mesh, and scale that mesh.
+tdata = truchas.TruchasMappedData("preheat_output/preheat.h5", "mesh2.gen", 0.001)
 
-# map then modify Truchas data
-#tdata = truchas.TruchasMappedData("preheat_output/preheat.h5", "mesh2.gen", 0.001)
-tdata = truchas.TruchasMappedData("advection-2b_pgolden/advection-2b.h5", "mesh2a.gen")
+# Select the last cycle in the preheat output. Further calls will read data from
+# this cycle, overwrite data at this cycle, and generate a restart with our
+# modifications.
 sid = tdata.num_series()
 
-# assign values in certain blocks
-tdata.assign_value_block(sid, "VOF", 1, [0,1])
-tdata.assign_value_block(sid, "Z_TEMP", 1, 0)
+# Set the VOF to [0, 1] (purely the final material in the input) in block 2
+tdata.assign_value_block(sid, "VOF", 2, [0, 1])
 
-# in block 1, overwrite rho with x
+# Compute the function f = 1 + 2*x at cell centers across the mesh.
 xc = tdata.centroids()
-tdata.assign_value_block(sid, "Z_RHO", 1, xc[:,0])
+f = 1 + 2 * xc[0]
 
-# do something more complicated?
-xc = tdata.centroids()
-rho = tdata.field(sid, "Z_RHO")
-rho = np.where(tdata.blockid() == 1, xc[:,0], rho)
-tdata.assign_field(sid, "Z_RHO", rho)
+# Reassign the temperature to the function f, but only in blocks 1 and 3.
+tdata.assign_value_block(sid, "Z_TEMP", 1, f)
+tdata.assign_value_block(sid, "Z_TEMP", 3, f)
 
+# Alternatively, we could read the whole field and modify it before reassigning.
+temp = tdata.field(sid, "Z_TEMP")
+graphite_region = tdata.region(1, 3)
+temp[graphite_region] = f[graphite_region]
+tdata.assign_field(sid, "Z_TEMP", temp)
+
+# Alternatively, we could use Numpy functions
+temp = tdata.field(sid, "Z_TEMP")
+temp = np.where(tdata.blockid() == 1 or tdata.blockid() == 3, f, temp)
+tdata.assign_field(sid, "Z_TEMP", temp)
+
+# Write the custom restart file
 tdata.write_restart("preheat.restart", sid)
