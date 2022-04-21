@@ -32,7 +32,7 @@ module restart_variables
   !! The namelist variables.
   logical, public :: ignore_t  = .false.
   logical, public :: ignore_dt = .false.
-  logical, public :: ignore_solid_mechanics = .false.
+  logical, public :: ignore_legacy_solid_mechanics = .false.
   logical, public :: ignore_joule_heat = .false.
 
   !! Common data read by OPEN_RESTART_FILE.
@@ -43,6 +43,7 @@ module restart_variables
   logical, public :: have_fluid_flow_data = .false.
   logical, public :: have_joule_heat_data = .false.
   logical, public :: have_solid_mechanics_data = .false.
+  logical, public :: have_legacy_solid_mechanics_data = .false.
   logical, public :: have_species_data = .false.
   logical, public :: have_microstructure_data = .false.
 
@@ -52,10 +53,10 @@ contains
 
     use input_utilities, only: seek_to_namelist
     use parallel_communication, only: is_IOP, broadcast
-    
+
     integer, intent(in) :: lun
 
-    namelist /restart/ ignore_t, ignore_dt, ignore_solid_mechanics, ignore_joule_heat
+    namelist /restart/ ignore_t, ignore_dt, ignore_legacy_solid_mechanics, ignore_joule_heat
 
     logical :: found
     integer :: ios
@@ -79,7 +80,7 @@ contains
     !! Broadcast the namelist variables to the other processors.
     call broadcast (ignore_t)
     call broadcast (ignore_dt)
-    call broadcast (ignore_solid_mechanics)
+    call broadcast (ignore_legacy_solid_mechanics)
     call broadcast (ignore_joule_heat)
 
   contains

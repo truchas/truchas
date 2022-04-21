@@ -207,7 +207,7 @@ Contains
     use node_operator_module, only: cv_init, CV_Internal, nipc, LINEAR_GRAD
     use node_op_setup_module, only: ALLOCATE_CONTROL_VOLUME, CELL_CV_FACE, BOUNDARY_CV_FACE
     use viscoplasticity,      only: VISCOPLASTICITY_INIT, MATERIAL_STRESSES, MATERIAL_STRAINS, VISCOPLASTIC_STRAIN_RATE
-    use restart_variables,    only: restart, have_solid_mechanics_data, ignore_solid_mechanics
+    use restart_variables,    only: restart, have_solid_mechanics_data => have_legacy_solid_mechanics_data, ignore_solid_mechanics => ignore_legacy_solid_mechanics
     use truchas_logging_services
     use matl_module,          only: Matl
     use solid_mech_constraints, only: FACE_GAP_INITIALIZE, FACE_GAP_UPDATE

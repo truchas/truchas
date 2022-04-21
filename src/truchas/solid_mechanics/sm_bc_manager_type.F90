@@ -48,7 +48,6 @@ module sm_bc_manager_type
     type(sm_bc_box), allocatable :: bcs(:)
   contains
     procedure :: init
-    procedure :: apply
     procedure :: apply_traction
     procedure :: apply_nontraction
     procedure :: apply_deriv_diagonal
@@ -217,18 +216,12 @@ contains
   end subroutine iterate_list
 
 
-  subroutine apply(this, t, scaling_factor, displ, r)
-    class(sm_bc_manager), intent(inout) :: this
-    real(r8), intent(in) :: t, scaling_factor(:), displ(:,:)
-    real(r8), intent(inout) :: r(:,:)
-    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
-    call this%apply_traction(t, r)
-    call this%mesh%node_imap%gather_offp(r)
-    call this%apply_nontraction(t, scaling_factor, displ, r)
-  end subroutine apply
-
-
   !! Compute & apply boundary conditions to the residual.
+  !!
+  !! NB: When viscoplasticity is enabled, the timer here might show very large
+  !! times. Upon inspection, the delay is at the gather call. This is an
+  !! indication of load imbalance, where some ranks are waiting around at this
+  !! gather for other ranks which are still computing viscoplasticity.
   subroutine apply_nontraction(this, t, scaling_factor, displ, r)
 
     class(sm_bc_manager), intent(inout) :: this
@@ -236,17 +229,20 @@ contains
     real(r8), intent(inout) :: r(:,:)
 
     integer :: b
-    real(r8), allocatable :: ftot(:,:)
+    real(r8) :: ftot(3,this%mesh%nnode)
 
     call start_timer("BCs")
 
-    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) == this%mesh%nnode)
+    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(r,dim=2) >= this%mesh%nnode_onP)
 
     ! Make a copy of the sum of forces (residual without displacement BCs
-    ! applied). This is needed to essentially avoid a race condition. Nodes in
-    ! linked pairs need the forces on their sibling node, and they need to
-    ! update their own residuals to account for gap forces.
-    ftot = r
+    ! applied). This is needed to avoid a race condition. Nodes in linked pairs
+    ! need the forces on their sibling node, and they need to update their own
+    ! residuals to account for gap forces.
+    if (this%contact_active) then
+      ftot(:,:this%mesh%nnode_onP) = r(:,:this%mesh%nnode_onP)
+      call this%mesh%node_imap%gather_offp(ftot)
+    end if
 
     do b = 1, size(this%bcs)
       call this%bcs(b)%p%apply(t, displ, ftot, scaling_factor, r)
@@ -319,7 +315,9 @@ contains
     integer :: b
     integer :: i, n
 
-    ASSERT(size(displ,dim=2) == this%mesh%nnode .and. size(force,dim=2) == this%mesh%nnode)
+    ASSERT(size(displ,dim=2) == this%mesh%nnode)
+    ASSERT(size(force,dim=2) == this%mesh%nnode)
+
     do b = 1, size(this%bcs)
       call this%bcs(b)%p%apply_deriv(t, displ, force, scaling_factor, F, diag)
     end do

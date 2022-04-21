@@ -599,6 +599,13 @@ class TruchasData:
             for t in self.field(series_id, "Displacement").transpose():
                 fw.write_r8x1(t)
 
+        # SOLID MECHANICS SEGMENT
+        if "solid_mechanics" in features:
+            for t in self.field(series_id, "strain_total").transpose(): fw.write_r8x1(t)
+            for t in self.field(series_id, "epstherm").transpose(): fw.write_r8x1(t)
+            for t in self.field(series_id, "strain_plastic").transpose(): fw.write_r8x1(t)
+            for t in self.field(series_id, "dstrain_plastic_dt").transpose(): fw.write_r8x1(t)
+
         # SPECIES SEGMENT
         if "species" in features:
             nspecies = self.num_species()

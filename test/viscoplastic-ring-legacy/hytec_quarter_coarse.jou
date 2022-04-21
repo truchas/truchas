@@ -1,5 +1,11 @@
-# Cubit Version 16.04
-
+## /opt/cubit/13.1-47471/bin/clarox
+## Cubit Version 13.1
+## Cubit Build 47471
+## Revised 2012-01-25 09:56:34 -0700 (Wed, 25 Jan 2012)
+## Running 05/18/2012 07:43:35 PM
+## Command Options:
+## -warning = On
+## -information = On
 create cylinder height 0.0127 radius 0.0508
 volume 1 move z 0.00635
 webcut volume 1 with plane xplane offset 0 noimprint nomerge
@@ -36,4 +42,4 @@ sideset 5 surface 15 8
 sideset 6 surface 12 10
 
 set large exodus file off
-export genesis "hytec_quarter_coarse.gen" overwrite
+export genesis "hytec_quarter_coarse.exo" overwrite

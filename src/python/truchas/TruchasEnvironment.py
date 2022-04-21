@@ -45,6 +45,17 @@ class TruchasEnvironment:
         assert os.path.isfile(self._truchas_executable)
         assert os.path.isdir(self._input_dir)
 
+
+    def working_directory(self):
+        """Return the working directory"""
+        return self._working_dir
+
+
+    def input_directory(self):
+        """Return the input directory"""
+        return self._input_dir
+
+
     @classmethod
     def default(cls, input_dir=None, overwrite_output=None):
         """

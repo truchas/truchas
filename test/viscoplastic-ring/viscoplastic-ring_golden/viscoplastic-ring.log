@@ -3,144 +3,48 @@
 
 PROGRAM INFORMATION
 
-   code:                DUMMY
-   version:             2.9.dev
-   libraries:           UbikSolve, PGSLib, Chaco
+   code:                Truchas 22.04.1-26-g3ed76cf1-dirty
    build architecture:  x86_64
-   build date/time:     27 Jun 2015 00:59:08
-   build flags:         -O -u -fPIC-O3
-   build host:          noether.lanl.gov
-   run architecture:    Linux noether.lanl.gov 3.15.10-201.fc20.x86_64 #1 SMP Wed Aug 27 21:10:06 UTC 2014 x86_64
-   run host:            noether.lanl.gov
-   run date/time:       27 Jun 15 22:41:44
+   build date/time:     2022-05-31 16:44:16
+   build flags:          -g -O2 -DNDEBUG
+   build host:          pn2200021.lanl.gov
+   run architecture:    Darwin pn2200021.lanl.gov 20.6.0 Darwin Kernel
+   run host:            pn2200021.lanl.gov
+   run date/time:       01 Jun 22 14:50:15
    processors:          1
-
-================================================================================
-
-COPYRIGHT
-
-   Copyright 2007-2013. Los Alamos National Security, LLC.
-
-   This material was produced under U.S. Government contract DE-AC52-06NA25396
-   for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-   National Security, LLC for the U.S. Department of Energy. The U.S. Government
-   has rights to use, reproduce, and distribute this software.  NEITHER THE
-   GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-   OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-   is modified to produce derivative works, such modified software should be
-   clearly marked, so as not to confuse it with the version available from LANL.
-
-   Additionally, this program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or (at your
-   option) any later version. Accordingly, this program is distributed in the
-   hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-   See the GNU General Public License for more details.
-
-================================================================================
-
-DISCLAIMER
-
-   This Truchas release is registered with the Los Alamos National
-   Laboratory (LANL) as Los Alamos Computer Code LA-CC-07-031.
-DANU: Opening h5 output file
 
 ================================================================================
 
 INPUT
 
-Opening input file viscoplastic-ring.inp ...
- Reading PARALLEL_PARAMETERS Namelist ...
-
+Opening input file "viscoplastic-ring.inp"
 Reading FUNCTION namelists ...
-
-Reading PHASE namelists ...
-  Reading PHASE namelist #1
-  Reading PHASE namelist #2
-
-Reading MATERIAL_SYSTEM namelists ...
-  Reading MATERIAL_SYSTEM namelist #1
-    using default REFERENCE_TEMP =  0.000E+00
-    using default REFERENCE_ENTHALPY =  0.000E+00
-  Reading MATERIAL_SYSTEM namelist #2
-    using default REFERENCE_TEMP =  0.000E+00
-    using default REFERENCE_ENTHALPY =  0.000E+00
-
+  none found
+Reading VFUNCTION namelists ...
+  none found
+Reading TOOLPATH namelists ...
+  none found
 Reading PHYSICS namelist ...
+Reading MATERIAL namelists ...
+  read namelist "graphite"
+  read namelist "5754 aluminum"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+Reading BODY namelists (first pass) ...
+  read 2 BODY namelists
+Reading BODY namelists (second pass) ...
+  read 2 BODY namelists
+Reading NUMERICS namelist ...
 
- Reading OUTPUTS Namelist ...
+Reading SOLID_MECHANICS namelist ...
 
-Reading MESH Namelist ...
-         Opened mesh file ./hytec_quarter_coarse_g.exo
-           containing 496 nodes and 315 cells
-
- Reading MATERIAL Namelist # 1 ...
-
- Reading MATERIAL Namelist # 2 ...
-
- Reading MATERIAL Namelist # 3 ...
-This is the last MATERIAL Namelist.
-Identified 3 material(s)
-
-               Material Priorities
-
-         Material     Name     Priority
-         --------     ----     --------
-             1     graphite        1
-             2     5754 alu        2
-             3          gap        3
+Reading SOLID_MECHANICS_BC namelists ...
 
 Reading VISCOPLASTIC_MODEL namelists ...
-  Reading VISCOPLASTIC_MODEL namelist #1
-
-Reading INTERFACES namelist ...
-  INTERFACES namelist not found; using defaults
-
- Reading BODY Namelist # 1 ...
-
-                                   Geometry Data
-
-          Body  Material  Surface  Translation  Rotation  Rotation  Surface
-                 Number     Type      Point       Point     Angle  Parameters
-          ----  --------  -------  -----------  --------  -------- ----------
-            1       1    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
-                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
-                                    0.000E+00   0.000E+00    0.0    0.000E+00
-
- Reading BODY Namelist # 2 ...
-            2       2    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
-                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
-                                    0.000E+00   0.000E+00    0.0    0.000E+00
-
- Reading BODY Namelist # 3 ...
-            3       3    from mes   0.000E+00   0.000E+00    0.0    0.000E+00
-                         (none   )  0.000E+00   0.000E+00    0.0    0.000E+00
-                                    0.000E+00   0.000E+00    0.0    0.000E+00
-         BODY Namelist number  1 will be used for background material ( 1)
-
- Reading LINEAR_SOLVER Namelist(s) ...
-
-         Reading LINEAR_SOLVER Namelist # 1 ...
-
-Reading NONLINEAR_SOLVER Namelists ...
-  Reading NONLINEAR_SOLVER Namelist #1
-
- Reading NUMERICS Namelist ...
-Using default linear solver parameters for displacement linear solution.
-Using nonlinear solver "displacement nonlin" for displacement nonlinear solution.
-Using linear solver "displacement precon" for nonlinear solver "displacement nonlin".
-
- Reading BC Namelists ...
-
-         Reading BC namelist #  1: Unnamed
-
-         Reading BC namelist #  2: Unnamed
-
-         Reading BC namelist #  3: Unnamed
-
-         Reading BC namelist #  4: Unnamed
-
 Reading DIFFUSION_SOLVER namelist ...
   using default STEPPING_METHOD value: "Adaptive BDF2"
   using default MAX_NLK_ITR value: 5
@@ -149,287 +53,171 @@ Reading DIFFUSION_SOLVER namelist ...
   using default NLK_VEC_TOL value: 1.00E-03
   WARNING: using a pure relative error norm; temp must be bounded away from 0
   WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
-  using default PC_AMG_CYCLES value: 1
-
-Reading DS_BOUNDARY_CONDITION namelists ...
-  [bottom surface] "flux" condition for "temperature" variable
-  [top surface] "HTC" condition for "temperature" variable
-  [x=0 symmetry plane] "flux" condition for "temperature" variable
-  [y=0 symmetry plane] "flux" condition for "temperature" variable
-  [outer radius] "HTC" condition for "temperature" variable
-
-Reading DS_INTERFACE_CONDITION namelists ...
-  [plug/ring interface] read "HTC" condition for "temperature" variable
-
+  using default PC_AMG_CYCLES value: 2
+Reading THERMAL_BC namelists ...
+  read namelist "symmetry"
+  read namelist "top surface"
+  read namelist "outer radius"
+  read namelist "plug/ring interface"
+Reading THERMAL_SOURCE namelists ...
+  none found
+Reading SPECIES_BC namelists ...
+  none found
 Reading DS_SOURCE namelists ...
-  No DS_SOURCE namelists found.
-
+  none found
 Reading ENCLOSURE_RADIATION namelists ...
-
-Reading ENCLOSURE_SURFACE namelists ...
-
- Reading PROBE namelists ...
-         This is the last PROBE Namelist.
-
-         Identified 0 probe(s)
-
-Input file viscoplastic-ring.inp closed.
+  none found
+Reading PROBE namelists ...
+  none found
+Input file "viscoplastic-ring.inp" closed
 
 ================================================================================
 
 INITIALIZATION
 
-Allocating mesh derived types ... done.
- Automatic partitioner selection: None
-
-Reading ExodusII mesh file ./hytec_quarter_coarse_g.exo ...
- Closed ExodusII mesh file ./hytec_quarter_coarse_g.exo
-
- Determining mesh partitions and permutation vectors.
-
- Permuting mesh ... done.
- Permuting vertices ... done.
- Renumbering vertices ... done.
-
- Establishing mesh connectivity for      1890 faces ...
-
-   Sorting face vertex 1 ...
-   Sorting face vertex 2 ...
-   Sorting face vertex 3 ...
-   Sorting face vertex 4 ...
-   There are        318 external boundary faces.
- Mesh connectivity established.
-
- Finding all cell neighbors ... done.
-
-Allocating base derived types ...done.
-
-                               Mesh Diagnostics
-                               ----------------
-
-                   Element Type   Number     Face Type   Number
-                   ------------   ------     ---------   ------
-                      Hex           315       Point           0
-                      Prism           0       Line            0
-                      Pyramid         0       Triangle        0
-                      Tet             0       Quad         1890
-
-                            Nodes               Cells
-                            -----               -----
-                                6 are shared by   1
-                               72 are shared by   2
-                                2 are shared by   3
-                              240 are shared by   4
-                                2 are shared by   6
-                              174 are shared by   8
-
-Computing cell geometry ... 
-                    Min        Cell       Max        Cell       Total
-                    ---        ----       ---        ----       -----
-       Volumes   4.4409E-16       286   1.3648E-07       119    2.5635E-05
-
-
-              210 out of      315 total cells are orthogonal
-
-    use_ortho_face_gradient = F
-
-    Using full pivoting for LSLR_ operators
-
-done.
-
-                    Min Coord        Max Coord
-                    ---------        ---------
-                   0.0000E+00       5.0800E-02
-                   0.0000E+00       5.0800E-02
-                   0.0000E+00       1.2700E-02
-
- Finding face neighbors ... done.
-
-Initializing distributed mesh MAIN ...
-  Reading ExodusII mesh file ./hytec_quarter_coarse_g.exo
-  UNSTR_MESH Profile:
-     PE|    nnode    nface    ncell
-    ---+---------------------------
-      1|      496     1031      285
-  Mesh Communication Profile:
-              Nodes           Faces           Cells
-     PE|  off-PE   on-PE  off-PE   on-PE  off-PE   on-PE
-    ---+------------------------------------------------
-      1|      0      496      0     1031      0      285
-  Distributed mesh MAIN initialized.
-DANU: adding default mesh entry
-DANU: writing mesh node coordinates
-DANU: adding main simulation entry
+Initializing mesh "MAIN" ...
+  reading ExodusII mesh file "./hytec_quarter_coarse.gen"
 
 Computing initial volume fractions ...
+  using SM_BC[symmetry]
+  using SM_BC[plug/ring interface]
+SM BC faces:    227
+SM BC nodes/links:    259    44
+SM-C0D1 nodes:    145
+SM-C0D2 nodes:     25
+SM-C0D3 nodes:      1
+SM-C1D0 nodes:     54
+SM-C1D1 nodes:     30
+SM-C1D2 nodes:      4
+Nodes with requested BCs:    259    Nodes with applied BCs:    259
+SM: Computing initial state...
+  NLK BCE solve succeeded:    180 iterations, error,lnorm_inf =     5.096E-04    7.938E-11
 
-    Volume fractions will be computed in        315 total cells with   5**3 particles/cell
-
-    Tallying        5**3 =    125 interface particles
-
-    Tallied   1 x   5**2 =     25 interface particles
-    Tallied   2 x   5**2 =     50 interface particles
-    Tallied   3 x   5**2 =     75 interface particles
-    Tallied   4 x   5**2 =    100 interface particles
-    Tallied   5 x   5**2 =    125 interface particles
-ERROR: volume fraction sum < 1 in cells: 1 2 6 8 9 [119 more items omitted]
-       minimum volume fraction sum less 1: -3.44169E-15
-  Computed volume fractions are invalid; attempting to normalize.
-  Normalization was successful.
-  Initial volume fractions computed.
- Initializing Displacement Boundary Conditions
-
- Locating cell faces for which BCs are to be applied ...
-
-
-
-
-Warning:     15 interior #2 faces are affected by BC namelist  4!
-Warning:     15 interior #4 faces are affected by BC namelist  4!
-Warning:     30 interior #5 faces are affected by BC namelist  4!
-Warning:     60 interior #6 faces are affected by BC namelist  4!
-
-    Boundary conditions in BC namelist  1 will be applied on an area of   2.01851E-03 (    95 faces)
-    Boundary conditions in BC namelist  2 will be applied on an area of   6.45160E-04 (    36 faces)
-    Boundary conditions in BC namelist  3 will be applied on an area of   6.45160E-04 (    36 faces)
-    Boundary conditions in BC namelist  4 will be applied on an area of   2.02475E-03 (   120 faces)
- Initializing Pressure Boundary Conditions
-   DIRICHLET: 0 boundary points
-   REFLECTIVE: 318 boundary points
-   EXTERIOR: 318 boundary points
-   NEUMANN: 0 boundary points
-   HNEUMANN: 318 boundary points
- Pressure BCs initialized.
-
- Finished BC initialization.
-
- Finding control volume faces internal to cells ...
-
- Finding jacobians ...
-
- Inverting jacobians ...
-done.
-
- Finding control volume faces on external boundaries ...
-
-done.
-
- Calculating initial thermo-elastic state. Done.
-
-     0 Thermo-elastic iterations (linear)
-     124 Thermo-elastic iterations (nonlinear)
 
 Initializing diffusion solver ...
-  Generating external source for "temperature" equation
-  Generating "HTC" interface condition for "temperature" variable
-    using DS_INTERFACE_CONDITION[1]: plug/ring interface
-  Generating "radiation" interface condition for "temperature" variable
-  Generating "HTC" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[2]: top surface
-    using DS_BOUNDARY_CONDITION[5]: outer radius
-  Generating "radiation" boundary condition for "temperature" variable
-  Generating "dirichlet" boundary condition for "temperature" variable
-  Generating "flux" boundary condition for "temperature" variable
-    using DS_BOUNDARY_CONDITION[1]: bottom surface
-    using DS_BOUNDARY_CONDITION[3]: x=0 symmetry plane
-    using DS_BOUNDARY_CONDITION[4]: y=0 symmetry plane
-  Diffusion solver initialized.
+  generating external source for "temperature" equation
+  generating "scalar_cell_func1" thermal source
+    none specified
+  generating "interface-htc" thermal interface condition
+    using THERMAL_BC[plug/ring interface]
+  generating "gap-radiation" thermal interface condition
+    none specified
+  generating "flux" thermal boundary condition
+    using THERMAL_BC[symmetry]
+  generating "oriented-flux" thermal boundary condition
+    none specified
+  generating "htc" thermal boundary condition
+    using THERMAL_BC[top surface]
+    using THERMAL_BC[outer radius]
+  generating "radiation" thermal boundary condition
+    none specified
+  generating "temperature" thermal boundary condition
+    none specified
+  diffusion solver initialized
 
 Computing consistent initial state for HT/SD solver ...
-  Computing consistent face temperatures and radiosities ...
-    ||Rface(4)||= 6.16E-06, ||Rface(0)||= 7.18E+00, ||ΔTface||_max= 1.89E-05
+  computing consistent face temperatures and radiosities ...
+  ||Rface(4)||= 4.60E-06, ||Rface(0)||= 7.18E+00, ||ΔTface||_max= 1.82E-05
 
 Computing consistent initial state derivative for HT/SD solver ...
-  Computing consistent face temperatures and radiosities ...
-    ||Rface(4)||= 1.82E-05, ||Rface(0)||= 1.05E+01, ||ΔTface||_max= 7.72E-05
+  computing consistent face temperatures and radiosities ...
+  ||Rface(4)||= 3.47E-05, ||Rface(0)||= 1.05E+01, ||ΔTface||_max= 1.61E-04
+
+Initializing solution probes ...
 
 ================================================================================
 
 EXECUTION
 
-
           1: t =   0.00000E+00, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-          106 Solid mechanics iterations (nonlinear)
+  NLK BCE solve succeeded:    110 iterations, error,lnorm_inf =     2.773E-04    7.102E-11
 
           2: t =   1.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-          102 Solid mechanics iterations (nonlinear)
+  NLK BCE solve succeeded:    109 iterations, error,lnorm_inf =     2.463E-04    8.336E-11
 
           3: t =   2.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-          104 Solid mechanics iterations (nonlinear)
+  NLK BCE solve succeeded:    109 iterations, error,lnorm_inf =     4.698E-04    6.463E-11
 
           4: t =   3.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-          104 Solid mechanics iterations (nonlinear)
+  NLK BCE solve succeeded:    107 iterations, error,lnorm_inf =     2.911E-04    9.773E-11
 
           5: t =   4.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
-            0 Solid mechanics iterations (linear)
-          105 Solid mechanics iterations (nonlinear)
+  NLK BCE solve succeeded:    108 iterations, error,lnorm_inf =     2.973E-04    8.429E-11
 
 ================================================================================
 
 TERMINATION
-
-DANU: Closing h5 output file
-Warning: DANU: Danu fid is still associated
                  Final Time:  5.0000E-01 after     5 steps
 
 
-  TIMING SUMMARY                       AVERAGE        MIN          MAX
-  --------------                      ---------    ---------    ---------
-  Total                               3.236E+00    3.236E+00    3.236E+00
-    Input                               9.000E-03    9.000E-03    9.000E-03
-    Initialization                      3.020E-01    3.020E-01    3.020E-01
-      Solid Mechanics                     2.570E-01    2.570E-01    2.570E-01
-        Precondition                        0.000E+00    0.000E+00    0.000E+00
-        NK                                  2.550E-01    2.550E-01    2.550E-01
-          NK Residual                         1.000E-03    1.000E-03    1.000E-03
-          Newton Loop                         2.540E-01    2.540E-01    2.540E-01
-            NK LS                               8.400E-02    8.400E-02    8.400E-02
-              Solver TMP1                         8.300E-02    8.300E-02    8.300E-02
-                Precondition                        8.300E-02    8.300E-02    8.300E-02
-            NK Residual                         1.590E-01    1.590E-01    1.590E-01
-      Initialization                      6.000E-03    6.000E-03    6.000E-03
-        Solid Mech Init                     6.000E-03    6.000E-03    6.000E-03
-      HTSD function                       0.000E+00    0.000E+00    0.000E+00
-        HT function                         0.000E+00    0.000E+00    0.000E+00
-      ssor-setup                          0.000E+00    0.000E+00    0.000E+00
-      ssor-solve                          0.000E+00    0.000E+00    0.000E+00
-    Main Cycle                          2.923E+00    2.923E+00    2.923E+00
-      Output                              8.000E-03    8.000E-03    8.000E-03
-      Time Step                           0.000E+00    0.000E+00    0.000E+00
-      Diffusion Solver                    4.000E-03    4.000E-03    4.000E-03
-        HTSD precon compute                 2.000E-03    2.000E-03    2.000E-03
-          hypre-matrix-copy                   0.000E+00    0.000E+00    0.000E+00
-          boomer-setup                        1.000E-03    1.000E-03    1.000E-03
-        HTSD function                       2.000E-03    2.000E-03    2.000E-03
-          HT function                         2.000E-03    2.000E-03    2.000E-03
-        HTSD precon apply                   0.000E+00    0.000E+00    0.000E+00
-          HT precon apply                     0.000E+00    0.000E+00    0.000E+00
-            boomer-solve                        0.000E+00    0.000E+00    0.000E+00
-      Solid Mechanics                     2.910E+00    2.910E+00    2.910E+00
-        Precondition                        0.000E+00    0.000E+00    0.000E+00
-        NK                                  2.902E+00    2.902E+00    2.902E+00
-          NK Residual                         2.200E-02    2.200E-02    2.200E-02
-          Newton Loop                         2.880E+00    2.880E+00    2.880E+00
-            NK LS                               3.770E-01    3.770E-01    3.770E-01
-              Solver TMP1                         3.770E-01    3.770E-01    3.770E-01
-                Precondition                        3.770E-01    3.770E-01    3.770E-01
-            NK Residual                         2.445E+00    2.445E+00    2.445E+00
+TIMING SUMMARY
+--------------
+  5.323E+00 --- Total
+    5.438E-03 --- Input
+    3.505E-01 --- Initialization
+      9.882E-03 --- mesh-MAIN
+        3.340E-04 --- ghost-cells
+          3.190E-04 --- cell-ghosts
+            1.580E-04 --- node-neighbors
+            1.000E-05 --- ghost-cells
+          0.000E+00 --- link-ghosts
+          1.300E-05 --- assemble-ghosts
+      4.470E-04 --- VOF Initialize
+      3.038E-01 --- solid mechanics
+        1.540E-04 --- properties
+        1.337E-03 --- precon-compute
+          1.291E-03 --- residual
+            1.112E-03 --- strain
+            1.690E-04 --- stress
+            5.000E-06 --- BCs
+        2.241E-01 --- residual
+          1.902E-01 --- strain
+          3.105E-02 --- stress
+          2.338E-03 --- BCs
+        4.670E-04 --- precon-apply
+      1.635E-03 --- viscoplasticity
+      6.890E-04 --- HTSD function
+        6.780E-04 --- HT function
+      1.400E-05 --- ssor-setup
+      2.020E-04 --- ssor-solve
+    9.000E-06 --- electromagnetics
+    4.966E+00 --- Main Cycle
+      2.800E-05 --- Time Step
+      8.145E-03 --- Diffusion Solver
+        2.287E-03 --- HTSD precon compute
+          2.550E-04 --- hypre-matrix-copy
+          1.748E-03 --- boomer-setup
+        1.030E-03 --- HTSD function
+          1.002E-03 --- HT function
+        3.878E-03 --- HTSD precon apply
+          3.875E-03 --- HT precon apply
+            3.704E-03 --- boomer-solve
+      4.935E+00 --- solid mechanics
+        5.780E-04 --- properties
+        4.276E-02 --- precon-compute
+          4.263E-02 --- residual
+            5.294E-03 --- strain
+            3.620E-02 --- viscoplasticity
+              2.445E-02 --- integrate
+            1.107E-03 --- stress
+            1.200E-05 --- BCs
+        4.734E+00 --- residual
+          5.473E-01 --- strain
+          4.060E+00 --- viscoplasticity
+            2.852E+00 --- integrate
+          1.152E-01 --- stress
+          9.170E-03 --- BCs
+        1.375E-03 --- precon-apply
 
-                  Process virtual memory used: 8.46E+01 mB
-                                   words/cell: 35191
 
-truchas terminated normally on 27 Jun 15 at 22:41:47
+truchas terminated normally on 01 Jun 22 at 14:50:20

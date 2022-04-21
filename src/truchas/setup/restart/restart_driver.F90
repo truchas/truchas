@@ -23,7 +23,7 @@
 !!    logical variables indicate whether the data segments are present:
 !!
 !!      HAVE_ALLOY_DATA, HAVE_FLUID_FLOW_DATA, HAVE_JOULE_HEAT_DATA,
-!!      HAVE_SOLID_MECHANICS_DATA.
+!!      HAVE_SOLID_MECHANICS_DATA, HAVE_LEGACY_SOLID_MECHANICS_DATA.
 !!
 !!    These variables are defined by OPEN_RESTART_MESH.
 !!
@@ -58,6 +58,9 @@
 !!    CALL RESTART_SOLID_MECHANICS () reads (or skips) the solid mechanics
 !!      data, if any.  Called from INITIAL.
 !!
+!!    CALL RESTART_LEGACY_SOLID_MECHANICS () reads (or skips) the legacy solid
+!!      mechanics data, if any. Called from INITIAL.
+!!
 !!    CALL RESTART_SPECIES ([PHI]) reads the species data and returns the
 !!      data in PHI if PHI is present.  Otherwise if PHI is not present it
 !!      skips the species data, if any.  PHI is a rank-2 real array whose
@@ -86,8 +89,8 @@ module restart_driver
   private
 
   public :: open_restart_file, skip_restart_mesh, skip_restart_side_sets, restart_matlzone, &
-            restart_solid_mechanics, restart_species, restart_joule_heat, restart_ustruc, &
-            close_restart_file
+            restart_solid_mechanics, restart_legacy_solid_mechanics, restart_species, &
+            restart_joule_heat, restart_ustruc, close_restart_file
 
   !! Private data; defined by OPEN_RESTART_FILE.
   integer, save :: unit, version
@@ -132,9 +135,9 @@ contains
       case ('joule_heat')
         have_joule_heat_data = .true.
       case ('solid_mechanics')
-        ! not yet implemented
-      case ('legacy_solid_mechanics')
         have_solid_mechanics_data = .true.
+      case ('legacy_solid_mechanics')
+        have_legacy_solid_mechanics_data = .true.
       case ('temperature')
         !! NNC, 18 Jan 2006.
         !have_temperature_data = .true.
@@ -216,22 +219,37 @@ contains
   end subroutine restart_matlzone
 
   !!
-  !! Read the optional solid mechanics data segment: initializes the module
-  !! structures SMECH_IP, SMECH_CELL, RHS, THERMAL_STRAIN, PC_STRAIN, and
-  !! DISPLACEMENT defined in SOLID_MECHANICS_DATA.
+  !! Read the optional solid mechanics data segment: initializes the model
+  !! fields strain_total, strain_thermal, strain_plastic, and dstrain_plastic_dt
   !!
 
   subroutine restart_solid_mechanics ()
+    use solid_mechanics_driver
+    use restart_utilities, only: skip_records
+    if (have_solid_mechanics_data .and. solid_mechanics_enabled()) then
+      call solid_mechanics_read_checkpoint(unit, version)
+    else
+      call skip_records(unit, 6*12*3+6, 'RESTART_SOLID_MECHANICS: error skipping the strain data')
+    end if
+  end subroutine restart_solid_mechanics
+
+  !!
+  !! Read the optional legacy solid mechanics data segment: initializes the module
+  !! structures SMECH_IP, SMECH_CELL, RHS, THERMAL_STRAIN, PC_STRAIN, and
+  !! DISPLACEMENT defined in LEGACY_SOLID_MECHANICS_DATA.
+  !!
+
+  subroutine restart_legacy_solid_mechanics ()
     use solid_mechanics_output, only: read_SM_data, skip_SM_data
     use physics_module, only: solid_mechanics => legacy_solid_mechanics
-    if (have_solid_mechanics_data) then
-      if (solid_mechanics .and. .not.ignore_solid_mechanics) then
+    if (have_legacy_solid_mechanics_data) then
+      if (solid_mechanics .and. .not.ignore_legacy_solid_mechanics) then
         call read_SM_data (unit, version)
       else
         call skip_SM_data (unit, version)
       end if
     end if
-  end subroutine restart_solid_mechanics
+  end subroutine restart_legacy_solid_mechanics
 
   !!
   !! Read (or skip) the species concentration data.
@@ -242,7 +260,7 @@ contains
     use kinds, only: r8
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
     use legacy_mesh_api, only: pcell => unpermute_mesh_vector
-    
+
     real(r8), intent(out), optional :: phi(:,:)
     logical,  intent(out), optional :: found
 

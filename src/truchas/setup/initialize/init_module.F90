@@ -65,7 +65,7 @@ CONTAINS
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
-    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
+    use restart_driver,         only: restart_matlzone, restart_legacy_solid_mechanics, restart_solid_mechanics, restart_species, restart_ustruc
     use zone_module,            only: Zone
     use solid_mechanics_module, only: SOLID_MECH_INIT
     use diffusion_solver_data,  only: ds_enabled, num_species, &
@@ -121,7 +121,7 @@ CONTAINS
     if (restart) then
 
       call restart_matlzone(vel_fn)
-      call restart_solid_mechanics
+      call restart_legacy_solid_mechanics
 
     else
 
@@ -146,6 +146,7 @@ CONTAINS
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) then
       call solid_mechanics_init
+      if (restart) call restart_solid_mechanics
     else if (legacy_solid_mechanics) then
       Call SOLID_MECH_INIT
     end if

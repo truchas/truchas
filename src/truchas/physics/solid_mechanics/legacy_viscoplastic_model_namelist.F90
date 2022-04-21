@@ -25,15 +25,15 @@
 !! own data.
 !!
 
-module viscoplastic_model_namelist
+module legacy_viscoplastic_model_namelist
 
   use VP_model_class
   implicit none
   private
-  
+
   public :: read_viscoplastic_model_namelists
   public :: get_VP_model
-  
+
   !! The input file is read and closed as the first stage of initialization,
   !! and we need a place to hold the processed data until the solid mechanics
   !! kernel is ready to request it.  This is it; it is private data.
@@ -173,7 +173,6 @@ contains
         if (pwr_law_n == NULL_R) call TLS_fatal (label // ': PWR_LAW_N must be assigned a value')
         if (pwr_law_n <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_N must be > 0')
         if (pwr_law_q == NULL_R) call TLS_fatal (label // ': PWR_LAW_Q must be assigned a value')
-        if (pwr_law_q <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_Q must be > 0')
         if (pwr_law_r == NULL_R) call TLS_fatal (label // ': PWR_LAW_R must be assigned a value')
         if (pwr_law_r <= 0.0_r8) call TLS_fatal (label // ': PWR_LAW_R must be > 0')
         vpmodel => new_power_law_vp_model(pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r)
@@ -243,5 +242,5 @@ contains
     end function
 
   end subroutine read_viscoplastic_model_namelists
-  
-end module viscoplastic_model_namelist
+
+end module legacy_viscoplastic_model_namelist

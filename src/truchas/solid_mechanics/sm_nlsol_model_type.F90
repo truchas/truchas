@@ -21,9 +21,7 @@ module sm_nlsol_model_type
     type(sm_model), pointer :: model => null() ! unowned reference
     type(sm_ds_precon), pointer :: precon => null() ! unowned reference
     !type(sm_norm), pointer :: norm => null() ! unowned reference
-    integer :: model_size
 
-    real(r8) :: f_lnorm0(3), max_du_norm_old
     real(r8) :: atol, rtol, ftol
   contains
     procedure :: init
@@ -47,7 +45,6 @@ contains
     this%precon => precon
     !this%norm => norm
     ASSERT(associated(this%model, precon%model))
-    this%model_size = model%size()
     this%atol = this%model%atol
     this%rtol = this%model%rtol
     this%ftol = this%model%ftol
@@ -55,7 +52,7 @@ contains
 
   integer function model_size(this)
     class(sm_nlsol_model), intent(in) :: this
-    model_size = this%model_size
+    model_size = 3*this%model%mesh%nnode
   end function model_size
 
   subroutine compute_f(this, t, u, udot, f)
@@ -67,6 +64,7 @@ contains
     u2(1:3, 1:this%model%mesh%nnode) => u
     f2(1:3, 1:this%model%mesh%nnode) => f
     call this%model%compute_residual(t, u2, f2)
+    f2(:,this%model%mesh%nnode_onP+1:) = 0 ! clear out halo so it doesn't screw with norms
   end subroutine
 
   subroutine apply_precon(this, t, u, f)
@@ -78,6 +76,7 @@ contains
     u2(1:3, 1:this%model%mesh%nnode) => u
     f2(1:3, 1:this%model%mesh%nnode) => f
     call this%precon%apply(u2, f2)
+    f2(:,this%model%mesh%nnode_onP+1:) = 0 ! clear out halo so it doesn't screw with norms
   end subroutine
 
   subroutine compute_precon(this, t, u, dt)
@@ -90,7 +89,10 @@ contains
   end subroutine
 
   real(r8) function du_norm(this, t, u, du)
+
     use parallel_communication, only: global_maxval
+    use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:), du(:)
@@ -99,7 +101,7 @@ contains
 
     du_norm = 0
     do i = 1, size(u)
-      if (this%atol == 0 .and. abs(u(i)) == 0) then
+      if ((this%atol == 0 .and. abs(u(i)) == 0) .or. .not.ieee_is_finite(u(i))) then
         err = huge(1.0_r8)
       else
         err = abs(du(i)) / (this%atol + this%rtol*abs(u(i)))
@@ -117,6 +119,7 @@ contains
     ! du_norm = maxval(abs(du) / (this%atol + this%rtol*abs(u)))
     ! du_norm = global_maxval(du_norm)
     ! error = this%norm%compute(u, du)
+
   end function
 
 

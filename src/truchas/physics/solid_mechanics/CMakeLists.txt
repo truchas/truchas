@@ -12,7 +12,7 @@ target_sources(truchas PRIVATE
   VP_model_class.F90
   MTS_VP_model_type.F90
   power_law_VP_model_type.F90
-  viscoplastic_model_namelist.F90
+  legacy_viscoplastic_model_namelist.F90
   viscoplasticity.F90
   tm_density.F90
 )

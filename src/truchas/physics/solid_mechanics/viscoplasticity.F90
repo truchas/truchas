@@ -75,7 +75,7 @@ Contains
 
   subroutine viscoplasticity_init (plastic)
 
-    use viscoplastic_model_namelist
+    use legacy_viscoplastic_model_namelist
 
     logical, intent(out) :: plastic
 
