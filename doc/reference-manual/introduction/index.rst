@@ -10,7 +10,7 @@ Invoking TRUCHAS
 -----------------
 Truchas is executed in serial using a command of the form
 
-``truchas [-h] [-d[:n]] [-o:outdir] [-r:rstfile] infile``
+``truchas [-h] [-f] [-m] [-d[:n]] [-o:outdir] [-r:rstfile] infile``
 
 assuming ``truchas`` is the name of the executable. The brackets denote optional arguments that are described in :numref:`Table %s <truchas_command_line_option>`
 
@@ -21,6 +21,8 @@ assuming ``truchas`` is the name of the executable. The brackets denote optional
    :widths: 1 3
 
    "-h", "Print a usage summary of the command line options and exit."
+   "-f", "Force overwrite of output directory contents."
+   "-m", "Turn on memory diagnostics. Writes to a .mem file in the output directory."
    "-d[:n]", "Sets the debug output level **n**. The default level is 0, which produces no debug output, with levels 1 and 2 producing progressively more debug output. **-d** is equivalent to **-d:1**."
    "-o:outdir", "Causes all output files to be written to the directory **outdir** instead of the default directory. The directory is created if necessary."
    "-r:rstfile", "Executes in restart mode, restarting from the data in the file **rstfile**. This file is generated from the output of a previous Truchas simulation using post-processing utilities."

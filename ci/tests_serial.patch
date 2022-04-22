@@ -1,11 +1,11 @@
 diff --git a/src/python/truchas/TruchasEnvironment.py b/src/python/truchas/TruchasEnvironment.py
-index e3d40940..3357d0bd 100644
+index 8d4e2e90..626f53a1 100644
 --- a/src/python/truchas/TruchasEnvironment.py
 +++ b/src/python/truchas/TruchasEnvironment.py
-@@ -96,6 +96,7 @@ class TruchasEnvironment:
-         """Runs truchas with specified number of MPI ranks, and returns the
-         terminal output and the output data. Input name should not include
-         the .inp extension."""
+@@ -180,6 +180,7 @@ class TruchasEnvironment:
+         :return: stdout and Truchas output data.
+         :rtype: str, TruchasData
+         """
 +        nprocs = 1 # TEMPORARY OVERRIDE FOR PUBLIC SERVER TESTING
  
          # find the absolute path to the input file

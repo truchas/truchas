@@ -1,8 +1,8 @@
-# ===============================================================================
+#===============================================================================
 #
 # This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 #
-# ===============================================================================
+#===============================================================================
 
 import sys
 import os
@@ -19,7 +19,13 @@ except ImportError:
 
 class TruchasEnvironment:
     """
-    Contains a configuration to run Truchas.
+    This is the main interface for running Truchas via Python, grabbing outputs,
+    and writing restarts. It is usually recommended to initialize your
+    environment using the default initializer::
+
+        tenv = truchas.TruchasEnvironment.default()
+
+    See the ``default`` method for more parameters.
     """
 
     def __init__(self, mpiexec, truchas_executable, input_dir, write_restart_executable,
@@ -41,7 +47,22 @@ class TruchasEnvironment:
 
     @classmethod
     def default(cls, input_dir=None, overwrite_output=None):
-        """Initialize using the CMake-generated default configuration"""
+        """
+        Initialize using the CMake-generated default configuration. The working
+        directory is initialized to the ``input_dir``.
+
+        :param input_dir: The directory which contains the input file and where
+            the output directory should be created. May be an absolute path, or
+            relative to the current working directory. Defaults to the current
+            working directory.
+        :type input_dir: str, optional
+
+        :param overwrite_output: Choose whether or not to overwrite the
+            output by default on subsequent calls to .truchas(...). Defaults to
+            True if the ``TRUCHAS_OVERWRITE_OUTPUT`` environment variable is
+            defined to a nonzero value, and False otherwise.
+        :type overwrite_output: bool, optional
+        """
         if input_dir is None:
             # The input file is expected to be in the same folder as the test python script.
             input_dir = os.path.dirname(sys.argv[0])
@@ -49,6 +70,7 @@ class TruchasEnvironment:
         if overwrite_output is None:
             overwrite_output = os.getenv("TRUCHAS_OVERWRITE_OUTPUT")
             overwrite_output = overwrite_output is not None and int(overwrite_output)
+
         # Working directory is in the build path if the script is in the build path.
         # This is used for testing. Otherwise, the working directory is the current
         # directory.
@@ -63,8 +85,36 @@ class TruchasEnvironment:
 
     @classmethod
     def from_config_file(cls, config_file, input_dir, working_dir="."):
-        """Initialize from a configuration file, input directory,
-        and an optional working directory."""
+        """Initialize from a json configuration file, input directory, and an
+        optional working directory.
+
+        :param config_file: Filename of the input JSON file containing the
+            configuration parameters described below. May be relative to the
+            current working directory, or an absolute path.
+        :type config_file: str
+
+        :param input_dir: The directory which contains the input file. May be an
+            absolute path, or relative to the current working directory.
+        :type input_dir: str
+
+        :param working_dir: The directory where output directories should be
+            generated. May be an absolute path, or relative to the current
+            working directory. Defaults to the current working directory.
+        :type working_dir: str, optional
+
+        JSON configuration file parameters:
+
+        :param "mpiexec": Path to the ``mpiexec`` executable.
+        :type "mpiexec": str
+        :param "truchas_executable": Path to the ``truchas`` executable.
+        :type "truchas_executable": str
+        :param "write_restart_executable": Path to the ``write-restart.py``
+            executable.
+        :type "write_restart_executable": str
+        :param "overwrite_output": Chooses whether to overwrite the output by
+            default or not.
+        :type "overwrite_output": bool
+        """
         assert os.path.isfile(config_file)
 
         # Configuration file is json.
@@ -79,7 +129,17 @@ class TruchasEnvironment:
 
     @classmethod
     def from_argv(cls):
-        """Initialize from command line arguments."""
+        """Initialize from command line arguments.
+
+        usage: ``test.py [-h] -c CONFIG [-o OUTPUT]``
+
+        -h, --help    show this help message and exit
+        -c CONFIG, --config CONFIG
+                        CMake-generated configuration file
+        -o OUTPUT, --output OUTPUT
+                        Output directory
+        """
+
         # The input file is expected to be in the same folder
         # as the test python script.
         input_dir = os.path.dirname(sys.argv[0])
@@ -96,8 +156,30 @@ class TruchasEnvironment:
     def truchas(self, nprocs, input_file, restart_file=None, output_dir=None,
                 overwrite_output=None):
         """Runs truchas with specified number of MPI ranks, and returns the
-        terminal output and the output data. Input name should not include
-        the .inp extension."""
+        terminal output and the output data.
+
+            ``stdout, output = tenv.truchas(4, "cast.inp")``
+
+        :param nprocs: Number of MPI ranks.
+        :type nprocs: int
+
+        :param input_file: Filename of a Truchas input deck.
+        :type input_file: str
+
+        :param restart_file: Filename of a Truchas restart file.
+        :type restart_file: str, optional
+
+        :param output_dir: User-specified Truchas output directory.
+        :type output_dir: str, optional
+
+        :param overwrite_output: Overwrite the output directory if it already
+            exists. Defaults to the value provided to the TruchasEnvironment
+            initializer.
+        :type overwrite_output: bool, optional
+
+        :return: stdout and Truchas output data.
+        :rtype: str, TruchasData
+        """
 
         # find the absolute path to the input file
         input_name = os.path.splitext(input_file)[0]
@@ -155,7 +237,22 @@ class TruchasEnvironment:
 
     def write_restart(self, h5file, cycle_number, restart_file):
         """Write a restart file from the given H5 dump and cycle number to
-        the given output file. Files expected to be relative to working directory."""
+        the given file. Files expected to be relative to working directory.
+
+        WARNING: This calls the ``write-restart.py`` program, and is primarily
+        used for testing. Usually in Python scripts, it is better to use the
+        :func:`TruchasData.write_restart` method.
+
+        :param h5file: A Truchas output .h5 file. Expected to be relative to
+            the working directory.
+        :type h5file: str
+
+        :param cycle_number: The cycle used to generate the restart file.
+        :type cycle_number: int
+
+        :param restart_file: The name of the restart file to be generated.
+        :type restart_file: str
+        """
 
         command = "{:s} {:s} -n {:d} -o '{:s}' '{:s}'" \
             .format(TruchasConfig.python_executable,
@@ -178,22 +275,53 @@ class TruchasEnvironment:
 
     def open_data(self, h5file):
         """Returns an output data object from an h5file, expected to be
-        relative to the working directory."""
+        relative to the working directory.
+
+        :param h5file: A Truchas output .h5 file. Expected to be relative to
+            the working directory.
+        :type h5file: str
+
+        :rtype: TruchasData
+        """
         return TruchasData(os.path.join(self._working_dir, h5file))
 
 
     def output(self, output_file):
-        """Return an object for the output indicated by output_file, relative
-        to the input directory. Primarily used for reading golden output."""
+        """Returns an output data object from an h5file, expected to be
+        relative to the input directory.
+
+        :param h5file: A Truchas output .h5 file. Expected to be relative to
+            the input directory.
+        :type h5file: str
+
+        :rtype: TruchasData
+        """
         return TruchasData(os.path.join(self._input_dir, output_file))
 
 
     def generate_input_deck(self, replacements, template_filename, output_filename):
-        """Expects a dictionary of replacements, e.g. {"sigma": 1.2e-3}.
+        """Generates a truchas input file from a template and replacements.
+        Expects a dictionary of replacements, e.g. ``{"sigma": 1.2e-3}``.
         Will replace Python format-strings in the input template file,
-        e.g. {sigma} is then replaced with .0012. Formatting can be
+        e.g. ``{sigma}`` is then replaced with ``.0012``. Formatting can be
         specified in the input template in the typical Python way, such
-        as {sigma:.2e}."""
+        as ``{sigma:.2e}``.
+
+        :param replacements: A dictionary of replacements to be inserted into
+            the Truchas input deck according to the given template. Dictionary
+            keys are the strings to replace, e.g. ``"sigma"`` or ``"temp"``,
+            and the values are the items to insert.
+        :type replacements: dict
+
+        :param template_filename: Filename of the template for the Truchas input
+            deck. Should contain Python format-strings, such as ``{sigma}`` or
+            ``{sigma:.2e}`` where replacements from the dictionary (e.g.
+            ``{"sigma": 1.2e-3}``) will be inserted.
+        :type template_filename: str
+
+        :param output_filename: Filename of the generated Truchas input deck.
+        :type output_filename: str
+        """
         template_filename_abs = os.path.join(self._input_dir, template_filename)
         output_filename_abs = os.path.join(self._input_dir, output_filename)
         with open(template_filename_abs, "r") as ifh, open(output_filename_abs, "w") as ofh:

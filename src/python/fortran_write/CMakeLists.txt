@@ -14,7 +14,9 @@ foreach(f ${PYTHON_SCRIPT_FILES})
 endforeach(f)
 add_custom_target(FortranWritePython ALL DEPENDS ${PYTHON_SCRIPT_FILES})
 
-add_library(fwrite fortran_write.f90)
+if(NOT DOCUMENTATION_ONLY)
+  add_library(fwrite fortran_write.f90)
+endif()
 
 # install rules
 foreach(f ${PYTHON_SCRIPT_FILES})
@@ -22,6 +24,8 @@ foreach(f ${PYTHON_SCRIPT_FILES})
     DESTINATION ${TruchasPython_INSTALL_PREFIX}/fortran_write)
 endforeach(f)
 
-install(TARGETS fwrite
-        LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
-        ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+if(NOT DOCUMENTATION_ONLY)
+  install(TARGETS fwrite
+    LIBRARY DESTINATION ${Truchas_LIBRARY_INSTALL_DIR}
+    ARCHIVE DESTINATION ${Truchas_LIBRARY_INSTALL_DIR})
+endif()
