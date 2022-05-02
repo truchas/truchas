@@ -135,6 +135,7 @@ class TruchasData:
             (``field.shape[1]``).
         :type field: :class:`numpy.ndarray` or number
         """
+        original_shape = self.field(series_id, field_name).shape
         self._modified_fields[(series_id, field_name)] = np.full(original_shape, field)
 
 

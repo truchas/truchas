@@ -44,7 +44,7 @@ class TruchasMappedData(TruchasData):
         self.mapped = True
 
         map_data = grid_mapping.mapper_init(self.nnode, self.ncell,
-                                            self.cell_node_map()+1,
+                                            self._cell_node_map()+1,
                                             self.blockid(),
                                             self.node_coordinates(),
                                             exodus_filename, scale_factor, use_portage)
