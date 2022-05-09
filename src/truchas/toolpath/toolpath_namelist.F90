@@ -1,8 +1,7 @@
 !!
 !! TOOLPATH_NAMELIST
 !!
-!! This module provides a procedure for reading the TOOLPATH namelists and
-!! populating the toolpath table with the toolpaths they define.
+!! This module provides a procedure for reading the TOOLPATH namelists.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! November 2016
@@ -12,18 +11,12 @@
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! PROGRAMMING INTERFACE
-!!
-!!  CALL READ_TOOLPATH_NAMELISTS (LUN) reads all the so-named namelists,
-!!    creates the specified toolpath objects, and stores them in the global
-!!    toolpath table.  See the TOOLPATH_TABLE module for subsequent access.
-!!
 
 #include "f90_assert.fpp"
 
 module toolpath_namelist
 
+  use toolpath_factory_type
   implicit none
   private
 
@@ -31,17 +24,17 @@ module toolpath_namelist
 
 contains
 
-  subroutine read_toolpath_namelists(lun)
+  subroutine read_toolpath_namelists(lun, tp_fac)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_C
     use truchas_env, only: input_dir, output_dir
-    use toolpath_table, only: known_toolpath
     use truchas_logging_services
 
     integer, intent(in) :: lun
+    type(toolpath_factory), intent(inout) :: tp_fac
 
     logical :: found
     integer :: n, ios
@@ -108,7 +101,7 @@ contains
       !! Check the name.
       if (name == NULL_C .or. name == '') &
           call TLS_fatal(label // ': NAME must be assigned a nonempty value')
-      if (known_toolpath(name)) &
+      if (tp_fac%known_toolpath(trim(name))) &
           call TLS_fatal(label // ': another TOOLPATH namelist has this NAME: ' // trim(name))
 
       !! Check that we got either COMMAND_STRING or COMMAND_FILE, but not both.
@@ -153,7 +146,7 @@ contains
       end if
 
       call TLS_info('  read namelist "' // trim(name) // '"')
-      call make_toolpath
+      call make_toolpath_plist
 
     end do
 
@@ -161,52 +154,33 @@ contains
 
   contains
 
-    subroutine make_toolpath
+    subroutine make_toolpath_plist
 
       use parameter_list_type
-      use toolpath_factory
-      use toolpath_table, only: insert_toolpath
 
-      type(parameter_list) :: params
-      type(toolpath), allocatable :: path
-      integer :: stat, lun, ios
-      character(:), allocatable :: errmsg, plotfile
+      type(parameter_list), pointer :: plist
+      character(:), allocatable :: plotfile
+
+      plist => tp_fac%toolpath_plist(trim(name))
 
       !! Form the input parameter list for the toolpath factory.
-      if (start_time /= NULL_R) call params%set('start-time', start_time)
-      if (any(start_coord /= NULL_R)) call params%set('start-coord', start_coord)
-      if (time_scale_factor /= NULL_R) call params%set('time-scale-factor', time_scale_factor)
-      if (coord_scale_factor /= NULL_R) call params%set('coord-scale-factor', coord_scale_factor)
+      if (start_time /= NULL_R) call plist%set('start-time', start_time)
+      if (any(start_coord /= NULL_R)) call plist%set('start-coord', start_coord)
+      if (time_scale_factor /= NULL_R) call plist%set('time-scale-factor', time_scale_factor)
+      if (coord_scale_factor /= NULL_R) call plist%set('coord-scale-factor', coord_scale_factor)
       if (command_string /= NULL_C) then
-        call params%set('command-string', trim(command_string))
+        call plist%set('command-string', trim(command_string))
       else
-        call params%set('command-file', trim(command_file))
+        call plist%set('command-file', trim(command_file))
       end if
-
-      !! Instantiate the toolpath.
-      call alloc_toolpath(path, params, stat, errmsg)
-      if (stat /= 0) call TLS_fatal('error creating toolpath: ' // errmsg)
-
-      !! Write the toolpath if requested.
       if (write_plotfile) then
         plotfile = trim(output_dir) // 'toolpath-' // trim(name) // '.dat'
-        if (is_IOP) then
-          open(newunit=lun,file=plotfile,action='write',status='replace',iostat=ios)
-          if (ios == 0) then
-            call path%write_plotfile(lun, plotfile_dt)
-            close(lun)
-          end if
-        end if
-        call broadcast(ios)
-        if (ios /= 0) call TLS_fatal('error opening ' // plotfile // ': iostat=' // i_to_c(ios))
+        call plist%set('plotfile', plotfile)
+        call plist%set('plotfile-dt', plotfile_dt)
       end if
+      if (partition_ds /= NULL_R) call plist%set('partition-ds', partition_ds)
 
-      !! Add path partition data if requested.
-      if (partition_ds /= NULL_R) call path%set_partition(partition_ds)
-
-      call insert_toolpath(trim(name), path)
-
-    end subroutine make_toolpath
+    end subroutine
 
   end subroutine read_toolpath_namelists
 

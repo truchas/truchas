@@ -20,7 +20,8 @@ module simulation_event_queue
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use sim_event_queue_type
   use parameter_list_type
-  use ded_head_driver, only: path_event
+  use toolpath_event_type
+  use toolhead_event_type, only: toolhead_event
   use diffusion_solver, only: vf_event
   implicit none
   private
@@ -60,7 +61,7 @@ module simulation_event_queue
   end type
 
   type(sim_event_queue), public :: event_queue
-  public :: path_event, vf_event
+  public :: toolhead_event, vf_event, toolpath_event
 
   type(parameter_list), public :: params
 
@@ -68,7 +69,7 @@ contains
 
   subroutine init_sim_event_queue(dt_min)
 
-    use ded_head_driver, only: ded_head_path_events
+    use toolhead_driver, only: add_toolhead_events
     use diffusion_solver_data, only: ds_enabled
     use diffusion_solver, only: add_moving_vf_events
     use edit_module, only: short_edit, short_output_dt_multiplier
@@ -82,11 +83,14 @@ contains
 
     call event_queue%set_time_resolution(dt_min)
 
-    if (ds_enabled) call add_moving_vf_events(event_queue)
+    !! The order in which events are added can be significant when events
+    !! occur at distinct but nearly the same time (within resolution).
 
-    !! Add toolpath segment endpoints to the simulation event queue.
-    !! Do this first to avoid times being adjusted to avoid small spacings.
-    call ded_head_path_events(event_queue)
+    !! Events involving toolpaths are added first to avoid their times
+    !! being adjusted to avoid small spacings.
+    if (ds_enabled) call add_moving_vf_events(event_queue)
+    call add_toolhead_events(event_queue)
+    call add_output_events(event_queue) ! only for part_path right now
 
     !! Add user-specified phase start times
     if (params%is_parameter('phase-start-times')) then

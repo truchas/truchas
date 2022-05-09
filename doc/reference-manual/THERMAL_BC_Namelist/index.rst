@@ -16,7 +16,7 @@ External boundaries
 The following types of external boundary conditions can be defined. The outward unit normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`.
 
 .. _boundary_conditions_option:
-.. csv-table:: Boundary Conditions 
+.. csv-table:: Boundary Conditions
    :header: "Option", "Equation", "Description"
    :class: tight-table
    :widths: 1 3 4
@@ -99,10 +99,10 @@ type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The type of boundary condition. The available options are:
 
-.. csv-table:: Type of Boundary Conditions 
+.. csv-table:: Type of Boundary Conditions
    :header: "Option", "Description"
    :class: tight-table
-   :widths: 1 3 
+   :widths: 1 3
 
    "**temperature**", "Temperature is prescribed on the boundary. Use :ref:`temp<TB_temp>` or :ref:`temp_func<TB_tempFunc>` to specify its value."
    "**flux**", "Outward heat flux is prescribed on the boundary. Use :ref:`flux<TB_flux>` or :ref:`flux_func<TB_fluxFunc>` to set its value."

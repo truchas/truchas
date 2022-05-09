@@ -311,7 +311,7 @@ contains
     character(:), allocatable :: name
     integer :: j, n, ngroup
 
-    call builder%init(this%mesh)
+    call builder%init(this%mesh, omit_offp=.true.)
 
     piter = parameter_list_iterator(params, sublists_only=.true.)
     n = piter%count()
@@ -332,7 +332,7 @@ contains
       call piter%next
     end do
 
-    call builder%get_face_groups(n, xgroup, index, omit_offp=.true.)
+    call builder%get_face_groups(n, xgroup, index)
 
     do j = 1, n
       call vtrack_set_inflow_material(mlist(j), index(xgroup(j):xgroup(j+1)-1))

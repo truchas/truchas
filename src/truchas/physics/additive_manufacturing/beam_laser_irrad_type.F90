@@ -37,7 +37,7 @@ contains
     real(r8), parameter :: PI = 3.141592653589793_r8
     call params%get('wave-length', lambda)
     call params%get('waist-radius', w0r)
-    call params%get('beam-param', msq)
+    call params%get('beam-quality-factor', msq)
     call params%get('power', p, default=1.0_r8)
     this%c1 = 0.5_r8 * w0r**2   ! length^2
     this%c2 = (pi * w0r**2) / (lambda * msq)  ! length

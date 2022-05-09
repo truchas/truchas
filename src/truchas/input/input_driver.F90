@@ -54,8 +54,8 @@ contains
     use legacy_solid_mechanics_namelist, only: read_legacy_solid_mechanics_namelist
     use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
-    use toolpath_namelist,         only: read_toolpath_namelists
-    use ded_head_namelist,         only: read_ded_head_namelist
+    use toolpath_driver,           only: read_toolpath_namelists
+    use toolhead_namelist,         only: read_toolhead_namelists
     use physics_module,            only: heat_transport, flow, solid_mechanics, &
         legacy_flow, legacy_solid_mechanics
     use advection_velocity_namelist, only: read_advection_velocity_namelist
@@ -92,9 +92,10 @@ contains
     call broadcast (title)
 
     call read_physical_constants (lun)
+    call read_toolpath_namelists (lun)
+    call read_toolhead_namelists (lun)
     call read_function_namelists (lun)
     call read_vfunction_namelists (lun)
-    call read_toolpath_namelists (lun)
 
     ! read current physics data
     call physics_input (lun)
@@ -139,7 +140,6 @@ contains
     ! Read diffusion solver namelists
     if (ds_enabled) then
       if (heat_transport) then
-        call read_ded_head_namelist (lun)
         call read_evaporation_namelist (lun)
       end if
       call read_ds_namelists (lun)

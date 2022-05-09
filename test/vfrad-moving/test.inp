@@ -49,6 +49,8 @@
   start_coord = 0.0, 0.0, -1.0
   command_string = '[["dwell",10],["moverel",[0,0,2],0.02]]'
   partition_ds = 1.0
+  write_plotfile = T
+  plotfile_dt = 1.0
 /
 
 ### ENCLOSURE RADIATION ########################################################

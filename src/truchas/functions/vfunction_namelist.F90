@@ -35,7 +35,7 @@ module vfunction_namelist
   use input_utilities, only: seek_to_namelist
   use vector_func_factories
   use vector_func_table, only: known_func, insert_func
-  use ded_head_driver, only: alloc_ded_head_laser_func
+  use toolhead_driver, only: table
   use truchas_logging_services
   implicit none
   private
@@ -52,7 +52,7 @@ module vfunction_namelist
 
 contains
 
-  subroutine read_vfunction_namelists (lun)
+  subroutine read_vfunction_namelists(lun)
 
     integer, intent(in) :: lun
 
@@ -64,11 +64,11 @@ contains
     character(80) :: iom
 
     !! namelist variables
-    character(len=31)  :: name, type
+    character(len=31)  :: name, type, toolhead
     real(r8) :: tabular_data(10,100), axis(3)
     integer  :: tabular_dim
 
-    namelist /vfunction/ name, type, tabular_data, tabular_dim, axis
+    namelist /vfunction/ name, type, tabular_data, tabular_dim, axis, toolhead
 
     call TLS_info('Reading VFUNCTION namelists ...')
 
@@ -93,6 +93,7 @@ contains
       tabular_data = NULL_R
       tabular_dim = NULL_I
       axis = NULL_R
+      toolhead = NULL_C
 
       !! Read the VFUNCTION namelist
       if (is_IOP) read(lun,nml=vfunction,iostat=ios,iomsg=iom)
@@ -105,6 +106,7 @@ contains
       call broadcast(tabular_data)
       call broadcast(tabular_dim)
       call broadcast(axis)
+      call broadcast(toolhead)
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal(label // ': NAME must be assigned a nonempty value')
@@ -116,7 +118,7 @@ contains
       select case (raise_case(type))
       case ('TABULAR')
       case ('DIV-RADIAL-CYL-FLOW')
-      case ('DED-HEAD-LASER')
+      case ('TOOLHEAD-LASER')
       case default
         call TLS_fatal(label // ': unknown value for TYPE: ' // trim(type))
       end select
@@ -156,13 +158,26 @@ contains
         call alloc_div_radial_cyl_flow_func(f, axis)
         call insert_func(name, f)
 
-      case ('DED-HEAD-LASER')
+      case ('TOOLHEAD-LASER')
 
-        call alloc_ded_head_laser_func (f)
-        call insert_func (name, f)
+        ! hackery to workaround conflicting input variable with type
+        associate (thname => toolhead)
+          block
+            use toolhead_type
+            type(toolhead), pointer :: th
+            if (thname == NULL_C) call TLS_fatal(label // ': TOOLHEAD namelist name not specified')
+            th => table%toolhead_ptr(thname)
+            if (associated(th)) then
+              call th%alloc_laser_func(f)
+              call insert_func(name, f)
+            else
+              call TLS_fatal(label // ': unknown TOOLHEAD namelist: ' // trim(thname))
+            end if
+          end block
+        end associate
 
       end select
-      call TLS_info ('  read namelist "' // trim(name) // '"')
+      call TLS_info('  read namelist "' // trim(name) // '"')
     end do
 
     if (n == 0) call TLS_info('  none found')

@@ -139,7 +139,6 @@ call hijack_truchas ()
     use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
         get_vof_from_matl
     use solid_mechanics_driver, only: solid_mechanics_enabled, solid_mechanics_step
-    use ded_head_driver,          only: ded_head_start_sim_phase
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
     use sim_event_queue_type
@@ -159,7 +158,7 @@ call hijack_truchas ()
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
-    real(r8) :: tout, t_write
+    real(r8) :: tout, t_write, dt_new
     !---------------------------------------------------------------------------
 
     if (cycle_max == 0) then
@@ -312,6 +311,7 @@ call hijack_truchas ()
       if (t >= tout) then
         ! Handle the event actions
         call event_queue%pop_actions(actions)
+        dt_new = dt
         do
           call actions%get_next_action(action)
           if (.not.allocated(action)) exit
@@ -322,19 +322,23 @@ call hijack_truchas ()
           type is (short_edit_event)
             call edit_short
           type is (phase_event)
-            dt = action%init_dt(dt_old, dt)
+            dt_new = min(dt_new, action%init_dt(dt_old, dt))
             restart_ds = .true.
-          type is (path_event)
-            call ded_head_start_sim_phase(t1)
+          type is (toolpath_event)
+            call action%next_toolpath_segment
+          type is (toolhead_event)
+            call action%update_toolhead(t1)
+            dt_new = min(dt_new, action%init_dt(dt_old, dt))
           type is (vf_event)
             call update_moving_vf
-            dt = action%init_dt(dt_old, dt)
+            dt_new = min(dt_new, action%init_dt(dt_old, dt))
           type is (stop_event)
             exit MAIN_CYCLE
           class default
             INSIST(.false.)
           end select
         end do
+        dt = dt_new
       end if
 
       if (c >= cycle_max) then

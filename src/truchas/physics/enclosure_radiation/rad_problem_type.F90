@@ -285,21 +285,23 @@ contains
     use parameter_list_type
     use moving_vf_type
     use toolpath_type
-    use toolpath_table, only: toolpath_ptr
+    use toolpath_driver, only: alloc_toolpath
+    use truchas_logging_services
 
     real(r8), intent(in) :: tinit
     type(parameter_list), intent(inout) :: params
     class(encl_vf), allocatable, intent(out) :: vf
     character(:), allocatable, intent(out) :: filename
 
-    integer :: n, j
-    character(:), allocatable :: tpname, hash(:), ext, basename, filenames(:)
+    integer :: n, j, stat
+    character(:), allocatable :: tpname, hash(:), ext, basename, filenames(:), errmsg
     real(r8), allocatable :: times(:)
-    type(toolpath), pointer :: tp
+    type(toolpath), allocatable :: tp
     type(moving_vf), allocatable :: mvf
 
     call params%get('toolpath', tpname)
-    tp => toolpath_ptr(tpname)
+    call alloc_toolpath(tp, tpname, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('error creating toolpath: ' // errmsg)
     INSIST(tp%has_partition())
     call tp%get_partition(hash=hash, time=times)
 

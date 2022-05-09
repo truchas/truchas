@@ -8,7 +8,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_ded_head_type
+program test_toolhead_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: iso_fortran_env, only: output_unit
@@ -16,10 +16,7 @@ program test_ded_head_type
   use,intrinsic :: f90_unix, only: exit
 #endif
   use parameter_list_type
-  use toolpath_type
-  use toolpath_factory
-  use toolpath_table
-  use ded_head_type
+  use toolhead_type
   implicit none
 
   real(r8), parameter :: PI = 3.141592653589793_r8
@@ -36,19 +33,13 @@ contains
 
   subroutine make_test_toolpaths
 
-    type(parameter_list) :: params
-    type(toolpath), allocatable :: tp
-    integer :: stat
-    character(:), allocatable :: errmsg
+    use toolpath_driver, only: tp_fac
 
-    call params%set('command-string', &
+    type(parameter_list), pointer :: plist
+
+    plist => tp_fac%toolpath_plist('tp1')
+    call plist%set('command-string', &
         '[["setflag",0],["dwell",2],["clrflag",0],["dwell",2],["setflag",0],["dwell",2]]')
-    call alloc_toolpath(tp, params, stat, errmsg)
-    if (stat /= 0) then
-      call write_fail(errmsg)
-      call exit(status)
-    end if
-    call insert_toolpath('tp1', tp)
 
   end subroutine make_test_toolpaths
 
@@ -62,11 +53,12 @@ contains
     integer :: n, stat
     type(parameter_list) :: params
     type(parameter_list), pointer :: laser_params
-    type(ded_head) :: head
+    type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, ref(0:6), error
 
-    !! Parameters for DED_HEAD object initialization
+    !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
+    call params%set('laser-direction', [0.0_r8, 0.0_r8, -1.0_r8])
     call params%set('laser-absorp', 1.0_r8)
     call params%set('laser-time-constant', 0.5_r8)
     laser_params => params%sublist('laser')
@@ -90,7 +82,8 @@ contains
     end do
 
     t = 0.0_r8
-    call head%init(params, t)
+    call head%init(params)
+    call head%set_initial_state(t)
 
     stat = 0
     do n = 0, 2
@@ -134,11 +127,12 @@ contains
     integer :: n, stat
     type(parameter_list) :: params
     type(parameter_list), pointer :: laser_params
-    type(ded_head) :: head
+    type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, error
 
-    !! Parameters for DED_HEAD object initialization
+    !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
+    call params%set('laser-direction', [0.0_r8, 0.0_r8, -1.0_r8])
     call params%set('laser-absorp', 1.0_r8)
     call params%set('laser-time-constant', 0.0_r8)
     laser_params => params%sublist('laser')
@@ -147,7 +141,8 @@ contains
     call laser_params%set('sigma', 1.0_r8)
 
     t = 0.0_r8
-    call head%init(params, t)
+    call head%init(params)
+    call head%set_initial_state(t)
 
     stat = 0
     do n = 0, 2
@@ -191,12 +186,13 @@ contains
 
     type(parameter_list) :: params
     type(parameter_list), pointer :: laser_params
-    type(ded_head) :: head
+    type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, ref, error
     integer :: stat
 
-    !! Parameters for DED_HEAD object initialization
+    !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
+    call params%set('laser-direction', [0.0_r8, 0.0_r8, -1.0_r8])
     call params%set('laser-absorp', 1.0_r8)
     call params%set('laser-time-constant', 0.5_r8)
     laser_params => params%sublist('laser')
@@ -207,7 +203,8 @@ contains
     stat = 0
 
     !! Off-to-on at t=0
-    call head%init(params, t=1.0_r8)
+    call head%init(params)
+    call head%set_initial_state(t=1.0_r8)
     t = 1.0_r8
     ref = 1 - exp(-t/0.5_r8)
     error = abs(head%laser_irrad(t, r) - ref)
@@ -218,7 +215,7 @@ contains
     end if
 
     !! On-to-off at t=2
-    call head%init(params, t=3.0_r8)
+    call head%set_initial_state(t=3.0_r8)
     t = 3.0_r8
     ref = exp((2-t)/0.5_r8)
     error = abs(head%laser_irrad(t, r) - ref)
@@ -244,4 +241,4 @@ contains
     write(output_unit,'(a)') errmsg
   end subroutine
 
-end program test_ded_head_type
+end program test_toolhead_type

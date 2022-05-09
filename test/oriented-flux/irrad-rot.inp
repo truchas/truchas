@@ -48,13 +48,15 @@
 
 #### BOUNDARY CONDITIONS & SOURCES
 
-&DED_HEAD
+&TOOLHEAD
+  name = 'default'
   toolpath = 'laser'
   laser_type = 'gaussian'
   laser_time_const = 0.01e-3
   laser_absorp = 1.0
   laser_power = 1.0 ! [W]
   laser_sigma = 0.4
+  laser_direction = 0,0,-1
 /
 
 &TOOLPATH
@@ -65,7 +67,8 @@
 
 &VFUNCTION
   name = 'laser'
-  type = 'ded-head-laser'
+  type = 'toolhead-laser'
+  toolhead = 'default'
 /
 
 &THERMAL_BC
