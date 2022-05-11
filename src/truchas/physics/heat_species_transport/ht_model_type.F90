@@ -15,11 +15,12 @@ module ht_model_type
   use prop_mesh_func_type
   use source_mesh_function
   use scalar_mesh_func_class
+  use bndry_vfunc_class
   use bndry_func1_class
   use bndry_func2_class
   use intfc_func2_class
   use rad_problem_type
-  use index_partitioning
+!  use index_partitioning
   use TofH_type
   use truchas_timers
   use parameter_list_type
@@ -40,6 +41,7 @@ module ht_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
+    class(bndry_vfunc), allocatable :: bc_vflux ! oriented flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC
     class(bndry_func2), allocatable :: bc_rad  ! simple radiation
     class(intfc_func2), allocatable :: ic_htc  ! internal HTC
@@ -112,8 +114,8 @@ contains
 
     call start_timer('ht-function')
 
-    call gather_boundary(this%mesh%cell_ip, u%tc)
-    call gather_boundary(this%mesh%face_ip, u%tf)
+    call this%mesh%cell_imap%gather_offp(u%tc)
+    call this%mesh%face_imap%gather_offp(u%tf)
 
     !TODO: The existing prop_mesh_func%compute_value function expects a rank-2
     !      state array. This is a workaround until prop_mesh_func is redesigned.
@@ -147,7 +149,7 @@ contains
     if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
     call this%disc%apply_diff(value, u%tc, u%tf, f%tc, f%tf)
     call smf_eval(this%source, t, value)
-    call gather_boundary(this%mesh%cell_ip, udot%hc)
+    call this%mesh%cell_imap%gather_offp(udot%hc)
     f%tc = f%tc + this%mesh%volume*(udot%hc - value)
 
     !! Additional heat source
@@ -173,6 +175,15 @@ contains
       do j = 1, size(this%bc_flux%index)
         n = this%bc_flux%index(j)
         f%tf(n) = f%tf(n) + this%mesh%area(n) * this%bc_flux%value(j)
+      end do
+    end if
+
+    !! Oriented flux BC contribution.
+    if (allocated(this%bc_vflux)) then
+      call this%bc_vflux%compute(t)
+      do j = 1, size(this%bc_vflux%index)
+        n = this%bc_vflux%index(j)
+        f%tf(n) = f%tf(n) + dot_product(this%mesh%normal(:,n), this%bc_vflux%value(:,j))
       end do
     end if
 
@@ -269,7 +280,7 @@ contains
 
     !TODO: is this necessary? Off-process values are not needed, but may be
     !      used in dummy vector operations, and we don't want fp exceptions.
-    call f%gather_boundary()
+    call f%gather_offp
 
     call stop_timer('ht-function')
 

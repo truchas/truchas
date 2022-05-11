@@ -33,7 +33,7 @@ module ht_vector_type
     !! Additional procedures specific to this type
     generic :: init => init_mesh, init_mold
     procedure, private :: init_mesh, init_mold
-    procedure :: gather_boundary => ht_gather_boundary
+    procedure :: gather_offp
   end type
 
 contains
@@ -71,12 +71,11 @@ contains
     end if
   end subroutine
 
-  subroutine ht_gather_boundary(this)
-    use index_partitioning, only: gather_boundary
+  subroutine gather_offp(this)
     class(ht_vector), intent(inout) :: this
-    call gather_boundary(this%mesh%cell_ip, this%hc)
-    call gather_boundary(this%mesh%cell_ip, this%tc)
-    call gather_boundary(this%mesh%face_ip, this%tf)
+    call this%mesh%cell_imap%gather_offp(this%hc)
+    call this%mesh%cell_imap%gather_offp(this%tc)
+    call this%mesh%face_imap%gather_offp(this%tf)
   end subroutine
 
   subroutine clone1(this, clone)

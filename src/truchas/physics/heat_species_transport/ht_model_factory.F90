@@ -16,6 +16,7 @@ module ht_model_factory
   use thermal_bc_factory_class
   use thermal_source_factory_type
   use parameter_list_type
+  use truchas_logging_services
   implicit none
   private
 
@@ -115,7 +116,6 @@ contains
 
       use evaporation_namelist, only: evap_params => params
       use evap_heat_flux_type
-      use index_partitioning, only: gather_boundary
       use bitfield_type
       use parallel_communication, only: global_all, global_any, global_count
       use string_utilities, only: i_to_c
@@ -143,7 +143,7 @@ contains
       if (allocated(model%ic_htc)) then
         mask(model%ic_htc%index(1,:)) = .true.
         mask(model%ic_htc%index(2,:)) = .true.
-        call gather_boundary(mesh%face_ip, mask)
+        call mesh%face_imap%gather_offp(mask)
       end if
 
       !! Define the gap radiation interface conditions;
@@ -153,7 +153,7 @@ contains
       if (allocated(model%ic_rad)) then
         mask(model%ic_rad%index(1,:)) = .true.
         mask(model%ic_rad%index(2,:)) = .true.
-        call gather_boundary(mesh%face_ip, mask)
+        call mesh%face_imap%gather_offp(mask)
       end if
 
       !! Flux-type boundary conditions.  These may be superimposed.
@@ -170,6 +170,17 @@ contains
           return
         end if
         fmask(model%bc_flux%index) = .true. ! mark the simple flux faces
+      end if
+
+      !! Define the oriented flux boundary conditions.
+      call bc_fac%alloc_vflux_bc(model%bc_vflux, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(model%bc_vflux)) then
+        if (global_any(mask(model%bc_vflux%index))) &
+            call TLS_info('    NOTE: oriented-flux condition is superimposed with interface conditions')
+        do j = 1, size(model%bc_vflux%index)  ! index not necessarily 1-1
+          fmask(model%bc_vflux%index(j)) = .true. ! mark the oriented flux faces
+        end do
       end if
 
       !! Define the external HTC boundary conditions.
@@ -193,8 +204,8 @@ contains
           rmask(model%vf_rad_prob(j)%faces) = .true.
           !fmask(model%vf_rad_prob(j)%faces) = .true.
         end do
-        call gather_boundary (mesh%face_ip, rmask)
-        !call gather_boundary (mesh%face_ip, fmask)
+        call mesh%face_imap%gather_offp(rmask)
+        !call mesh%face_imap%gather_offp(fmask)
       end if
 
       !! Define the (simple) radiation boundary conditions.
