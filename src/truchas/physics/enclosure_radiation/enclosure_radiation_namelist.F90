@@ -190,7 +190,7 @@ contains
     end do
 
     if (n > 0) then
-      call read_enclosure_surface_namelists(lun)
+      call read_enclosure_surface_namelists(lun, params)
     else
       call TLS_info('  none found')
     end if

@@ -15,7 +15,6 @@ module ht_solver_type
   use ht_norm_type
   use matl_mesh_func_type
   use unstr_mesh_type
-  use index_partitioning
   use ht_idaesol_model_type
   use new_idaesol_type
   use parameter_list_type
@@ -193,7 +192,7 @@ contains
     real(r8), intent(out) :: tgrad(:,:)
     INSIST(size(tgrad,1) == 3)
     INSIST(size(tgrad,2) == this%model%mesh%ncell_onP)
-    call gather_boundary(this%model%mesh%face_ip, this%u%tf)
+    call this%model%mesh%face_imap%gather_offp(this%u%tf)
     call this%model%disc%compute_cell_grad(this%u%tf, tgrad)
   end subroutine
 
@@ -238,7 +237,7 @@ contains
     if (stat == 0) then
       this%t = t
       this%state_is_pending = .true.
-      call this%u%gather_boundary() !TODO: Can the be made unnecessary?
+      call this%u%gather_offp !TODO: Can the be made unnecessary?
     else
       call this%integ%get_last_state_copy(this%u)
       this%state_is_pending = .false.
@@ -286,7 +285,7 @@ contains
           end associate
         end if
       end do
-      call gather_boundary(this%mesh%face_ip, this%model%void_face)
+      call this%mesh%face_imap%gather_offp(this%model%void_face)
     else
       deallocate(this%model%void_cell)
       this%model%void_face => null()

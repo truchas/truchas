@@ -10,7 +10,6 @@ module ht_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
-  use index_partitioning
   use ht_vector_type
   use ht_model_type
   use truchas_logging_services
@@ -65,7 +64,7 @@ contains
     u%tc(:this%mesh%ncell_onP) = temp(:this%mesh%ncell_onP)
     if (associated(this%model%void_cell)) &
         where (this%model%void_cell) u%tc = this%model%void_temp
-    call gather_boundary(this%mesh%cell_ip, u%tc)
+    call this%mesh%cell_imap%gather_offp(u%tc)
 
     !! Solve for consistent face temperatures and radiosities.
     !! Averaging adjacent cell temps provides a cheap initial guess.
@@ -180,8 +179,8 @@ contains
         scale(cface) = scale(cface) + 1
       end associate
     end do
-    call gather_boundary(mesh%face_ip, uface)
-    call gather_boundary(mesh%face_ip, scale)
+    call mesh%face_imap%gather_offp(uface)
+    call mesh%face_imap%gather_offp(scale)
 
     where (scale == 0)
       uface = 0.0_r8

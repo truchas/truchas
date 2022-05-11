@@ -15,7 +15,6 @@ module ht_precon_type
   use unstr_mesh_type
   use mfd_diff_precon_type
   use mfd_diff_matrix_type
-  use index_partitioning
   use truchas_timers
   implicit none
   private
@@ -127,8 +126,8 @@ contains
     !      state array. This is a workaround until prop_mesh_func is redesigned.
     state(1:this%mesh%ncell,1:1) => u%tc
 
-    call gather_boundary(this%mesh%cell_ip, u%tc)
-    call gather_boundary(this%mesh%face_ip, u%tf)
+    call this%mesh%cell_imap%gather_offp(u%tc)
+    call this%mesh%face_imap%gather_offp(u%tf)
 
     this%dt = dt
 
@@ -286,12 +285,12 @@ contains
     else
       f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc
     end if
-    call gather_boundary(this%mesh%cell_ip, f%tc)
+    call this%mesh%cell_imap%gather_offp(f%tc)
 
     !! Heat equation face residual (with radiosity residuals optionally eliminated).
     !call HTSD_model_get_face_temp_copy (this%model, f, f2x)
-    !call gather_boundary (this%mesh%face_ip, f2x)
-    call gather_boundary(this%mesh%face_ip, f%tf)
+    !this%mesh%face_imap%gather_offp(f2x)
+    call this%mesh%face_imap%gather_offp(f%tf)
 
     !! Precondition the heat equation.
     !call diff_precon_apply (this%hcprecon, f1x, f2x)
