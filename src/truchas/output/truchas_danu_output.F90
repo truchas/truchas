@@ -186,10 +186,11 @@ contains
       use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
       use matl_module, only: gather_vof
+      use material_model_driver, only: matl_model
 
       integer :: j, m, stat
       real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)
-      character(8), allocatable :: name(:)
+      character(32), allocatable :: name(:)
 
       !! Average cell density
       !! In TBU_WriteTimeStepData, DAK switched (2/4/09) to using the value
@@ -211,7 +212,7 @@ contains
         allocate(vof(nmat,ncells), name(nmat))
         do m = 1, nmat
           call gather_vof (m, vof(m,:))
-          write(name(m),'(a,i4.4)') 'VOF', m  !TODO: incorporate material name
+          write(name(m),'(a)') matl_model%phase_name(m)
         end do
         call write_seq_cell_field (seq, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
