@@ -29,8 +29,8 @@ def run_test(tenv):
     minz = min(xc[:,2]) - 0.5
     nfail += truchas.compare_max(test[:,0], dsig_dx / viscosity * (xc[:,2] - minz),
                                  1e-7, "x-velocity", time)
-    nfail += truchas.compare_max(test[:,1], 0, 1e-10, "y-velocity", time)
-    nfail += truchas.compare_max(test[:,2], 0, 1e-10, "z-velocity", time)
+    nfail += truchas.compare_max(test[:,1], 0, 1e-9, "y-velocity", time)
+    nfail += truchas.compare_max(test[:,2], 0, 1e-9, "z-velocity", time)
 
     truchas.report_summary(nfail)
     return nfail

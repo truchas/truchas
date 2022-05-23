@@ -11,7 +11,7 @@ def run_test(tenv):
     time = output.time(sid)
     nfail += truchas.compare_max_rel(output.field(sid, "Z_TEMP"),
                                      golden.field(sid, "Z_TEMP"),
-                                     1e-8, "temp", time)
+                                     1e-7, "temp", time)
 
     truchas.report_summary(nfail)
     return nfail

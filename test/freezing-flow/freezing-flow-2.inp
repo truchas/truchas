@@ -48,6 +48,7 @@ solid/void with no fluid present (other than void).
   residual_atol = 1.0e-8
   residual_rtol = 1.0e-6
   nlk_tol            = 0.01
+  pc_amg_cycles      = 4
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /
