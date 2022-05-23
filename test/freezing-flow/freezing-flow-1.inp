@@ -50,6 +50,7 @@ solid with no fluid present.
   rel_enthalpy_tol   = 1.0e-4
   max_nlk_itr        = 5
   nlk_tol            = 0.005
+  pc_amg_cycles      = 4
   nlk_preconditioner = 'hypre_amg'
   verbose_stepping   = .true.
 /
