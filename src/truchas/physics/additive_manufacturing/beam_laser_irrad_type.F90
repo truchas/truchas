@@ -44,9 +44,9 @@ contains
     this%c3 = p / PI
   end subroutine init
 
-  pure function irrad(this, dx, dy, dz)
+  function irrad(this, t, dx, dy, dz)
     class(beam_laser_irrad), intent(in) :: this
-    real(r8), intent(in) :: dx, dy, dz
+    real(r8), intent(in) :: t, dx, dy, dz
     real(r8) :: irrad, c4
     c4 = this%c1 * (1.0_r8 + (dz/this%c2)**2)
     irrad = this%c3 * exp(-(dx**2 + dy**2)/c4) / c4
