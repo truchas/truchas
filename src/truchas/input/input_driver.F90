@@ -90,11 +90,11 @@ contains
     call broadcast (ios)
     if (ios /= 0) call TLS_fatal ('error reading initial title line: iostat=' // i_to_c(ios))
     call broadcast (title)
-
+     
+    call read_function_namelists (lun)
     call read_physical_constants (lun)
     call read_toolpath_namelists (lun)
     call read_toolhead_namelists (lun)
-    call read_function_namelists (lun)
     call read_vfunction_namelists (lun)
 
     ! read current physics data
