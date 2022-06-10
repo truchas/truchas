@@ -63,7 +63,7 @@ contains
       if (.not.found) exit
 
       n = n + 1
-      !label = 'TOOLHEAD[' // i_to_c(n) // ']'
+      label = 'TOOLHEAD[' // i_to_c(n) // ']'
 
       name = NULL_C
       toolpath = NULL_C
