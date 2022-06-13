@@ -60,7 +60,7 @@ add_pytruchas_test(oriented-flux-2 oriented-flux/test2.py PROCESSORS 4 LABELS CO
 add_pytruchas_test(oriented-flux-3 oriented-flux/test3.py PROCESSORS 4 LABELS CONDUCTION)
 
 add_pytruchas_test(two-toolheads toolhead/two-toolheads/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(power-function-time toolhead/power-function-time/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(laser-power-function-time toolhead/laser-power-function-time/test.py PROCESSORS 4 LABELS CONDUCTION)
 
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4
