@@ -297,13 +297,22 @@ viscoplastic_strain_limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This parameter controls the use of the ODE integrator in the plastic strain
-calculation. It should be set to the minimum significant value of the plastic
-strain increment for a time step. If convergence seems poor when a viscoplastic
-material model is used, it may help to reduce the value.
+calculation. When the plastic strain at an integration point is below this
+limit, a single Heun step is taken. When the plastic strain is at or above this
+limit, the solver requested by :ref:`viscoplastic_solver
+<SOLID_MECHANICS_Namelist/index:viscoplastic_solver (expert)>` is invoked with
+an initial step size such that the predicted plastic strain delta does not
+exceed the limit.
 
 :Type: real
 :Default: 1e-10
 :Valid Values: :math:`\geq 0`
+
+.. tip::
+
+   This should be set to the minimum significant value of the plastic strain
+   increment for a time step. If convergence seems poor when a viscoplastic
+   material model is used, it may help to reduce this value.
 
 
 nlk_tol (expert)

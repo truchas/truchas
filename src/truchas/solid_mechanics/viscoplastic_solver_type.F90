@@ -32,11 +32,11 @@ module viscoplastic_solver_type
     real(r8) :: strain_limit, atol, rtol, ntol
     logical :: use_bdf2
 
-    type(viscoplastic_model), public :: model
+    type(viscoplastic_model), public, pointer :: model => null()
     type(integration_geometry), pointer :: ig => null() ! unowned reference
 
     type(idaesol) :: integrator
-    class(idaesol_model), allocatable :: integ_model
+    class(idaesol_model), pointer :: integ_model => null()
 
     type(bdf2_control) :: bdf2control
     type(bdf2_state) :: bdf2state
@@ -45,9 +45,21 @@ module viscoplastic_solver_type
     procedure :: compute_plastic_strain
     procedure :: compute_precon
     procedure, private :: integrate
+    final :: viscoplastic_solver_finalize
   end type viscoplastic_solver
 
 contains
+
+  !! WARNING: Not pure, due to deallocation of polymorphic integ_model. Do not
+  !! make local variables of type viscoplastic_solver in pure subroutines, it
+  !! will leak memory. These variables must be pointers so they are valid
+  !! targets in idaesol, according to NAG.
+  impure elemental subroutine viscoplastic_solver_finalize(this)
+    type(viscoplastic_solver), intent(inout) :: this
+    if (associated(this%model)) deallocate(this%model)
+    if (associated(this%integ_model)) deallocate(this%integ_model)
+  end subroutine
+
 
   subroutine init(this, params, ig, matl_model)
 
@@ -66,6 +78,7 @@ contains
 
     this%ig => ig
 
+    allocate(this%model)
     call this%model%init(matl_model)
 
     if (.not.params%is_parameter("nlk-tol")) call params%set("nlk-tol", 1d-2) ! default, passed to idaesol
@@ -79,22 +92,25 @@ contains
     case ("bdf2")
       atol = this%atol
       call bdf2_create_state(this%bdf2state, 6)
-      call bdf2_set_param(this%bdf2control, atol=atol, rtol=this%rtol, mvec=1, ntol=this%ntol)
+      call bdf2_set_param(this%bdf2control, atol=atol, rtol=this%rtol, mvec=0, ntol=this%ntol)
       this%use_bdf2 = .true.
     case ("jacobian")
       this%use_bdf2 = .false.
+      call params%set('nlk-max-vec', 0)
+      call params%set('nlk-max-itr', 50)
+      call params%set('pc-freq', 1)
       allocate(viscoplastic_jacob_idaesol_model :: this%integ_model)
     case ("jfree")
       this%use_bdf2 = .false.
+      call params%set('nlk-max-vec', 0)
+      call params%set('nlk-max-itr', 10)
+      call params%set('pc-freq', 1)
       allocate(viscoplastic_jfree_idaesol_model :: this%integ_model)
     case default
       call TLS_fatal("Invalid selection for viscoplastic_solver")
     end select
 
     if (.not.this%use_bdf2) then
-      call params%set('nlk-max-vec', 0)
-      call params%set('nlk-max-itr', 1)
-      call params%set('pc-freq', 1)
       call init_integ_model(this%integ_model, this%model, this%atol, this%rtol)
       call this%integrator%init(this%integ_model, params, stat, errmsg)
       if (stat /= 0) call TLS_fatal('Failed to build viscoplastic integrator: '//errmsg)

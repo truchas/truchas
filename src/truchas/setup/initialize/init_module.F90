@@ -146,10 +146,10 @@ CONTAINS
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) then
       call solid_mechanics_init
-      if (restart) call restart_solid_mechanics
     else if (legacy_solid_mechanics) then
       Call SOLID_MECH_INIT
     end if
+    if (restart) call restart_solid_mechanics
 
     call toolhead_init(t)
     call output_init(t)

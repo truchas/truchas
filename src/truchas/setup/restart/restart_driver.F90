@@ -226,7 +226,8 @@ contains
   subroutine restart_solid_mechanics ()
     use solid_mechanics_driver
     use restart_utilities, only: skip_records
-    if (have_solid_mechanics_data .and. solid_mechanics_enabled()) then
+    if (.not.have_solid_mechanics_data) return
+    if (solid_mechanics_enabled()) then
       call solid_mechanics_read_checkpoint(unit, version)
     else
       call skip_records(unit, 6*12*3+6, 'RESTART_SOLID_MECHANICS: error skipping the strain data')

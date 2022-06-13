@@ -23,6 +23,7 @@ module viscoplastic_jacob_idaesol_model_type
     type(viscoplastic_model), pointer :: vp_model => null() ! unowned reference
     real(r8) :: atol, rtol
     real(r8) :: precon(6,6)
+    integer :: ipiv(6)
   contains
     procedure :: init
     procedure :: size => model_size
@@ -68,25 +69,28 @@ contains
 
 
   subroutine compute_precon(this, t, u, dt)
+    external dgetrf ! LAPACK
     class(viscoplastic_jacob_idaesol_model) :: this
     real(r8), intent(in) :: t, dt
     real(r8), intent(in), contiguous :: u(:)
-    integer :: j
+    integer :: j, stat
     call this%vp_model%compute_precon(t, u, this%precon)
     do j = 1, 6
       this%precon(j,j) = this%precon(j,j) - 1 / dt
     end do
+    call dgetrf(6, 6, this%precon, 6, this%ipiv, stat)
+    INSIST(stat == 0)
   end subroutine compute_precon
 
 
   subroutine apply_precon(this, t, u, f)
-    external dgesv ! LAPACK
+    external dgetrs ! LAPACK
     class(viscoplastic_jacob_idaesol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous :: u(:)
     real(r8), intent(inout), contiguous :: f(:)
-    integer :: stat, ipiv(6)
-    call dgesv(6, 1, this%precon, 6, ipiv, f, 6, stat)
+    integer :: stat
+    call dgetrs('N', 6, 1, this%precon, 6, this%ipiv, f, 6, stat)
     INSIST(stat == 0)
   end subroutine apply_precon
 

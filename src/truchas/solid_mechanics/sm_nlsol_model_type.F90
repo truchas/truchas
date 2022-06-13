@@ -101,7 +101,7 @@ contains
 
     du_norm = 0
     do i = 1, size(u)
-      if ((this%atol == 0 .and. abs(u(i)) == 0) .or. .not.ieee_is_finite(u(i))) then
+      if ((this%atol == 0 .and. abs(u(i)) == 0)) then
         err = huge(1.0_r8)
       else
         err = abs(du(i)) / (this%atol + this%rtol*abs(u(i)))
