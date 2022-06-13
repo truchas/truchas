@@ -236,6 +236,7 @@ contains
 
     !! Update Truchas data structures to reflect the new HT/SD solution.
     if (this%have_heat_transfer) then
+      zone%temp_old = zone%temp ! store for dT/dt output
       call ds_get_temp(zone%temp)
       call ds_get_enthalpy(zone%enthalpy)
     end if

@@ -94,11 +94,14 @@ CONTAINS
     call start_timer("Time Step")
 
     ! Initialize all old time data.
+    ! ZJIBBEN 5/16/22: This subroutine is called after fields have already been
+    !   updated. The temp_old field is needed for output during the current cycle,
+    !   so it is instead updated in ds_accept.
     do n = 1, ndim
        Zone%Vc_Old(n) = Zone%Vc(n)
     end do
     Zone%Rho_Old      = Zone%Rho
-    Zone%Temp_Old     = Zone%Temp
+    !Zone%Temp_Old     = Zone%Temp
     Zone%Enthalpy_Old = Zone%Enthalpy
     do s = 1,mat_slot
        Matl(s)%Cell%Vof_Old = Matl(s)%Cell%Vof
