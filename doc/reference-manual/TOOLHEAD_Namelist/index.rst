@@ -59,6 +59,12 @@ The total power of the laser.
 :Valid values: :math:`\ge0`
 :Default: none
 
+laser_power_func
+^^^^^^^^^^^^^^^^^^^^
+| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist that defines the laser power as a function of time. That function is expected to be a function of (t,x,y,z).
+| **Type**        : string
+| **Default**     : none
+
 
 laser_time_const
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -2,8 +2,8 @@ import truchas
 
 def run_test(tenv):
     nfail = 0
-    stdout, output = tenv.truchas(4, "time_power.inp")
-    golden = tenv.output("time_power_golden/time_power_golden.h5")
+    stdout, output = tenv.truchas(4, "time-power-function.inp")
+    golden = tenv.output("power-function_golden/power-function.h5")
 
     sid = output.num_series()
     time = output.time(sid)
