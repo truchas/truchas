@@ -35,10 +35,10 @@ module laser_irrad_class
       class(laser_irrad), intent(out) :: this
       type(parameter_list) :: params
     end subroutine
-    pure function irrad(this, dx, dy, dz)
+    function irrad(this, t, dx, dy, dz)
       import laser_irrad, r8
       class(laser_irrad), intent(in) :: this
-      real(r8), intent(in) :: dx, dy, dz
+      real(r8), intent(in) :: t, dx, dy, dz
       real(r8) :: irrad, c4
     end function
   end interface
