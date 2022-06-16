@@ -142,7 +142,7 @@ contains
     dr(1) = norm2(dr)
     dr(2) = 0
     dr(3) = 0
-    irrad = this%absorp * this%fade_factor(t) * this%laser%irrad(dr(1), dr(2), dr(3))
+    irrad = this%absorp * this%fade_factor(t) * this%laser%irrad(t, dr(1), dr(2), dr(3))
   end function irrad
 
   subroutine alloc_laser_func(this, f)

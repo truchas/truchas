@@ -16,6 +16,8 @@
 module toolhead_namelist
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use parameter_list_type
+  use truchas_logging_services
   implicit none
   private
 
@@ -38,13 +40,14 @@ contains
     logical :: found
     character(:), allocatable :: label
     character(128) :: iom
+    type(parameter_list), pointer :: plist
 
-    character(31) :: name, toolpath, laser_type
+    character(31) :: name, toolpath, laser_type, laser_power_func
     real(r8) :: laser_direction(3), laser_absorp, laser_time_const, laser_power
     real(r8) :: laser_sigma, laser_wave_length, laser_waist_radius, laser_beam_quality_factor
     namelist /toolhead/ name, toolpath, laser_direction, laser_absorp, laser_time_const, &
-        laser_power, laser_type, laser_sigma, laser_wave_length, laser_waist_radius, &
-        laser_beam_quality_factor
+        laser_power, laser_power_func, laser_type, laser_sigma, laser_wave_length, & 
+        laser_waist_radius, laser_beam_quality_factor
 
     call TLS_info('Reading TOOLHEAD namelists ...')
 
@@ -68,6 +71,7 @@ contains
       laser_absorp = NULL_R
       laser_time_const = NULL_R
       laser_power = NULL_R
+      laser_power_func = NULL_C
       laser_type = NULL_C
       laser_sigma = NULL_R
       laser_wave_length = NULL_R
@@ -84,6 +88,7 @@ contains
       call broadcast(laser_absorp)
       call broadcast(laser_time_const)
       call broadcast(laser_power)
+      call broadcast(laser_power_func)
       call broadcast(laser_type)
       call broadcast(laser_sigma)
       call broadcast(laser_wave_length)
@@ -104,7 +109,7 @@ contains
       if (any(laser_direction == NULL_R)) call TLS_fatal(label // ': LASER_DIRECTION not fully defined')
       if (laser_absorp == NULL_R) call TLS_fatal(label // ': LASER_ABSORP not defined')
       if (laser_time_const == NULL_R) call TLS_fatal(label // ': LASER_TIME_CONST not defined')
-      if (laser_power == NULL_R) call TLS_fatal(label // ': LASER_POWER not defined')
+      if (laser_power == NULL_R .and. laser_power_func == NULL_C) call TLS_fatal('LASER_POWER not defined')
       if (laser_type == NULL_C) call TLS_fatal(label // ': LASER_TYPE not defined')
       select case (laser_type)
       case ('gaussian')
@@ -141,7 +146,7 @@ contains
       call params%set('laser-absorp', laser_absorp)
       call params%set('laser-time-constant', laser_time_const)
       plist => params%sublist('laser')
-      call plist%set('power', laser_power)
+      call process2(plist, laser_power, laser_power_func, 'LASER_POWER', 'power', label)
       call plist%set('type', laser_type)
       select case (laser_type)
       case ('gaussian')
@@ -159,5 +164,28 @@ contains
     end subroutine
 
   end subroutine read_toolhead_namelists
+
+  subroutine process2(plist, const, fname, bname, pname, label)
+    use input_utilities, only: NULL_C, NULL_R
+    use scalar_func_table
+    type(parameter_list), intent(inout) :: plist
+    real(r8),     intent(in) :: const ! possible constant value
+    character(*), intent(in) :: fname ! possible function name value
+    character(*), intent(in) :: bname ! namelist variable base name
+    character(*), intent(in) :: pname ! parameter list variable name
+    character(*), intent(in) :: label
+    if (const /= NULL_R .and. fname /= NULL_C) then
+      call TLS_fatal(label // ': cannot specify both' // bname // ' and ' // bname // '_FUNC')
+    else if (const /= NULL_R) then
+      call plist%set(pname, const)
+    else if (fname /= NULL_C) then
+      if (known_func(fname)) then
+        call plist%set(pname, trim(fname))
+      else
+        call TLS_fatal(label // ': unknown function for ' // bname // '_FUNC: ' // trim(fname))
+      end if
+    end if
+  end subroutine
+
 
 end module toolhead_namelist
