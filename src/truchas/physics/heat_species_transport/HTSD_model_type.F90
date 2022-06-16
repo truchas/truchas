@@ -52,6 +52,7 @@ module HTSD_model_type
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! simple flux
     class(bndry_func2), allocatable :: bc_mtc   ! mass-transfer-coefficient
+    class(intfc_func2), allocatable :: ic_mtc   ! internal mass-transfer-coefficient
   end type SD_model
 
   type, public :: HTSD_model
@@ -421,12 +422,13 @@ contains
 
       integer, intent(in) :: index
 
-      integer :: j, n
+      integer :: j, n, n1, n2
       real(r8), dimension(this%mesh%ncell) :: Fcell, Ccell, Cdot, D, value
       real(r8), dimension(this%mesh%nface) :: Fface, Cface
       real(r8), allocatable :: Fdir(:)
       real(r8), pointer :: fview(:), Tcell(:)
       real(r8), allocatable :: Tface(:)
+      logical, allocatable :: void_link(:)
 
       !! Off-process extended cell and face concentrations.
       call HTSD_model_get_cell_conc_copy (this, index, u, Ccell)
@@ -480,6 +482,27 @@ contains
           n = this%sd(index)%bc_mtc%index(j)
           Fface(n) = Fface(n) + this%sd(index)%bc_mtc%value(j)
         end do
+      end if
+
+      !! Internal MTC flux contribution.
+      if (allocated(this%sd(index)%ic_mtc)) then
+        call this%sd(index)%ic_mtc%compute(t, Cface)
+        allocate(void_link(size(this%sd(index)%ic_mtc%index,2)))
+        if (associated(this%void_face)) then
+          do j = 1, size(void_link)
+            void_link(j) = any(this%void_face(this%sd(index)%ic_mtc%index(:,j)))
+          end do
+        else
+          void_link = .false.
+        end if
+        do j = 1, size(this%sd(index)%ic_mtc%index,2)
+          if (void_link(j)) cycle
+          n1 = this%sd(index)%ic_mtc%index(1,j)
+          n2 = this%sd(index)%ic_mtc%index(2,j)
+          Fface(n1) = Fface(n1) + this%sd(index)%ic_mtc%value(j)
+          Fface(n2) = Fface(n2) - this%sd(index)%ic_mtc%value(j)
+        end do
+        if (allocated(void_link)) deallocate(void_link)
       end if
 
       !! Overwrite function value on void cells and faces with dummy equation C=0.

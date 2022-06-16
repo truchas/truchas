@@ -480,6 +480,17 @@ contains
     do n = 1, num_species
       write(variable,'(a,i0)') 'species-', n
       mask = .false.  ! used to tag faces where a BC has been applied
+      !! Define the internal MTC interface conditions.
+      call bc_fac%alloc_mtc_ic(n, model(n)%ic_mtc, stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
+      if (allocated(model(n)%ic_mtc)) then
+        mask(model(n)%ic_mtc%index(1,:)) = .true.
+        mask(model(n)%ic_mtc%index(2,:)) = .true.
+        call mesh%face_imap%gather_offp(mask)
+      end if
       !! Define the Dirichlet BC object for this concentration component.
       call bc_fac%alloc_dir_bc(n, model(n)%bc_dir, stat, errmsg2)
       if (stat /= 0) then
@@ -487,6 +498,11 @@ contains
         return
       end if
       if (allocated(model(n)%bc_dir)) then
+        if (global_any(mask(model(n)%bc_dir%index))) then
+          stat = -1
+          errmsg = 'dirichlet BC overlaps with other BC'
+          return
+        end if
         mask(model(n)%bc_dir%index) = .true.  ! tag the Dirichlet BC faces
       end if
       !! Define the flux BC object for this species component.
