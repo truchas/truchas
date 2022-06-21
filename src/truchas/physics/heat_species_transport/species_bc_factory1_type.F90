@@ -77,6 +77,7 @@ module species_bc_factory1_type
     procedure :: alloc_dir_bc
     procedure :: alloc_flux_bc
     procedure :: alloc_mtc_bc
+    procedure :: alloc_mtc_ic
     procedure, private :: iterate_list
   end type
 
@@ -250,6 +251,54 @@ contains
     end subroutine proc
 
   end subroutine alloc_mtc_bc
+
+
+  subroutine alloc_mtc_ic(this, comp, ic, stat, errmsg)
+
+    use intfc_func2_class
+    use htc_intfc_func_type
+
+    class(species_bc_factory1), intent(inout) :: this
+    integer, intent(in) :: comp
+    class(intfc_func2), allocatable, intent(out) :: ic
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(htc_intfc_func), allocatable :: htc
+
+    call TLS_info('  generating "interface-mtc" species-'//i_to_c(comp)//' interface condition')
+    call this%iterate_list('interface-mtc', comp, proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.allocated(htc)) call TLS_info('    none specified')
+
+    if (allocated(htc)) then
+      call htc%add_complete
+      call move_alloc(htc, ic)
+    end if
+
+  contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to an interface MTC IC specification and incrementally builds the BC object
+    !! accordingly. NB: The HTC and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine proc(plist, setids, stat, errmsg)
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f
+      call alloc_scalar_func(plist, 'mtc', f, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(htc)) then
+        allocate(htc)
+        call htc%init(this%mesh)
+      end if
+      call htc%add(f, setids, stat, errmsg)
+    end subroutine proc
+
+  end subroutine alloc_mtc_ic
 
   !! This auxiliary subroutine iterates over the parameter list and for each BC
   !! sublist that matches the given TYPE, it calls the supplied subroutine

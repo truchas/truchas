@@ -309,6 +309,7 @@ contains
       values = this%mesh%volume / dt
       if (associated(this%model%void_cell)) where (this%model%void_cell) values = 1.0_r8
       call matrix%incr_cell_diag (values)
+
       !! Dirichlet BC fixups.
       if (allocated(this%model%sd(index)%bc_dir)) then
         call this%model%sd(index)%bc_dir%compute(t)
@@ -324,6 +325,20 @@ contains
         associate (bcindex => this%model%sd(index)%bc_mtc%index, &
                    deriv   => this%model%sd(index)%bc_mtc%deriv)
           call matrix%incr_face_diag(bcindex, deriv)
+        end associate
+      end if
+
+      !! Internal MTC interface condition contribution.
+      if (allocated(this%model%sd(index)%ic_mtc)) then
+        call this%model%sd(index)%ic_mtc%compute(t, Cface)
+        associate (icindex => this%model%sd(index)%ic_mtc%index, &
+                   deriv   => this%model%sd(index)%ic_mtc%deriv)
+          if (associated(this%model%void_face)) then
+            do j = 1, size(icindex,2) !FIXME? Bad form to modify deriv?
+              if (any(this%model%void_face(icindex(:,j)))) deriv(:,j) = 0.0_r8
+            end do
+          end if
+          call matrix%incr_interface_flux3(icindex, deriv) !TODO: rename these methods
         end associate
       end if
 

@@ -121,7 +121,7 @@ contains
 
       !! Check the required TYPE value.
       select case (lower_case(type))
-      case ('concentration', 'flux', 'mtc')
+      case ('concentration', 'flux', 'mtc', 'interface-mtc')
       case (NULL_C)
         call TLS_fatal(label // ': TYPE not specified')
       case default
@@ -178,6 +178,21 @@ contains
           call plist%set('ambient-conc', trim(ambient_conc_func))
         else
           call TLS_fatal(label // ': neither AMBIENT_CONC or AMBIENT_CONC_FUNC specified')
+        end if
+
+        !! NB: any other specified variables are silently ignored
+
+      case ('interface-mtc')
+
+        if (mtc /= NULL_R .and. mtc_func /= NULL_C) then
+          call TLS_fatal(label // ': both MTC and MTC_FUNC specified')
+        else if (mtc /= NULL_R) then
+          if (mtc < 0) call TLS_fatal(label // ': mtc < 0.0')
+          call plist%set('mtc', mtc)
+        else if (mtc_func /= NULL_C) then
+          call plist%set('mtc', mtc_func)
+        else
+          call TLS_fatal(label // ': neither MTC or MTC_FUNC specified')
         end if
 
         !! NB: any other specified variables are silently ignored

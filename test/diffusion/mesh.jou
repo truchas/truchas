@@ -1,0 +1,26 @@
+## /opt/cubit/15.9/bin/clarox
+## Cubit Version 15.9
+## Cubit Build 0f22630
+## Revised Sat Sep 25 12:11:57 2021 -0700
+## Running 06/14/2022 08:17:10 AM
+## Command Options:
+
+brick x 2 y 0.3 z 0.3
+webcut volume 1 with plane xplane offset 0
+imprint volume 1 2
+merge volume 1 2
+volume all size 0.1
+mesh volume 1 2
+block 1 add volume 2
+block 2 add volume 1
+sideset 1 add surface 15 8 13 11 16 9 14 10
+sideset 1 name "sides"
+sideset 2 add surface 4
+sideset 2 name "left_end"
+sideset 3 add surface 6
+sideset 3 name "right_end"
+sideset 10 add surface 7 both
+sideset 10 name "interface"
+
+set exodus netcdf4 on
+export mesh "mesh.gen" overwrite

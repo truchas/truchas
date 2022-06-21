@@ -127,6 +127,8 @@ add_pytruchas_test(ds11 ds11/testDS11.py
                    PROCESSORS 4
                    LABELS DIFFUSION PHASE_CHANGE)
 
+add_pytruchas_test(diffusion-mtc diffusion/test-mtc.py PROCESSORS 4 LABELS DIFFUSION)
+
 add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
 #add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)

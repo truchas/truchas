@@ -18,9 +18,12 @@ variable.
 :Single/Multiple Instances: Multiple
 
 The following types of boundary conditions can be defined. The outward unit
-normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`. The mass flux
-is defined as :math:`\vec{f}_\mathrm{mass} \equiv -D_j(\nabla\phi_j + S_j\nabla
-T)\cdot\hat{n}`.
+normal to the boundary :math:`\Gamma` is denoted :math:`\hat{n}`. The mass
+flux is defined as :math:`\vec{f}_\mathrm{mass} \equiv -D_j(\nabla\phi_j +
+S_j\nabla T)\cdot\hat{n}`.
+
+External boundaries
+^^^^^^^^^^^^^^^^^^^
 
 - **Concentration**. A concentration Dirichlet condition for species component
   :math:`j`
@@ -53,6 +56,27 @@ T)\cdot\hat{n}`.
 The specified species concentration boundary conditions are not allowed to
 overlap, and they must completely cover the computational boundary.
 
+Internal interfaces
+^^^^^^^^^^^^^^^^^^^
+Internal interfaces are merely coincident pairs of conforming external mesh
+boundaries. These are modifications to the mesh created by Truchas and are
+defined using the :ref:`Interface_Side_Sets<M_ISS>` parameter from the
+:ref:`MESH<MESH_Namelist>` namelist. Only the side set IDs referenced there
+can be used in the definition of the following interface condition.
+
+- **Interface Mass Transfer**: An interface mass transfer condition models
+  mass transfer across an imperfect contact between two bodies or across a
+  thin subscale material layer lying along an interface :math:`\Gamma`.
+  It imposes continuity of the mass flux :math:`\vec{f}_\mathrm{mass}`
+  across the interface :math:`\Gamma` and gives this flux as
+
+      :math:`\vec{f}_\mathrm{mass} = k_j[\phi_j]` on :math:`\Gamma`
+  
+  where :math:`[\phi_j]` is the jump in :math:`\phi_j` across :math:`\Gamma`
+  in the direction :math:`\hat{n}`. It is defined by setting `type`_ to
+  ``'interface-mtc'``. The mass transfer coefficient :math:`k_j` for species
+  :math:`j` is specified using either `mtc`_ for a constant value, or
+  `mtc_func`_ for a function.
 
 Components
 ------------
@@ -158,7 +182,10 @@ mtc_func
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the mass transfer coefficient for a mass
               transfer-type boundary condition. The function is expected to be a
-              function of :math:`(t,x,y,z)`.
+              function of :math:`(t,x,y,z)` for an external condition, and a
+              function of :math:`(\phi_j,t,x,y,z)` for an interface condition.
+              In the latter case :math:`\phi_j` is taken to be the maximum of
+              :math:`\phi_j` on either side of the interface.
 :Type: string
 :Default: none
 
