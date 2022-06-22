@@ -71,7 +71,7 @@ CONTAINS
     !   Compute the time step. The time step is limited by constraints for
     !   fluid-flow (advection and viscosity) and heat-transfer (conduction).
     !=======================================================================
-    use physics_module,           only: flow, legacy_flow
+    use physics_module,           only: flow
     use matl_module,              only: Matl
     use parameter_module,         only: mat_slot
     use legacy_mesh_api,          only: ndim

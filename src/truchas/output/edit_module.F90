@@ -61,9 +61,6 @@ CONTAINS
     use time_step_module,       only: cycle_number, t
     use zone_module,            only: Zone
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
-    use solid_mechanics_output, only: Cell_Mech_Invariant, &
-                                      STRESS_STRAIN_INVARIANTS
-    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
 
     ! Local Variables
@@ -72,7 +69,7 @@ CONTAINS
     integer, dimension(1) :: MaxLoc_L, MinLoc_L
     real(r8), dimension(ncells) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
     real(r8) :: Temperature
-    type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
+    !type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
 
     real(r8), dimension(nmat) :: Material_Enthalpy, Material_KE, Material_Volume, Material_Mass
     real(r8) :: Material_Momentum(ndim,nmat)
@@ -243,48 +240,6 @@ CONTAINS
        call TLS_info (string2)
 
     end do VARIABLE_EXTREMA
-
-    ! Write out solid mechanics extrema if appropriate
-    SOLID_MECHANICS_OUTPUT_LOOP: if(solid_mechanics) then
-       ! Put reasonable values in gap_elements
-       call SET_GAP_ELEMENT_OUTPUT()
-       ! Calculate data
-       mech_info => STRESS_STRAIN_INVARIANTS()
-       do i = 1,nmechvar
-          ! Select the appropriate variable
-          select case (i)
-             case (1)
-                ! Effective stress
-                Tmp = mech_info%mises_stress
-                string = 'Eff_Stress'
-             case (2)
-                ! Effective plastic strain
-                Tmp = mech_info%eff_plastic_strain
-                string = 'Plast_Strn'
-             case (3)
-                ! Hydrostatic stress
-                Tmp = mech_info%mean_stress
-                string = 'Mean_Stress'
-             case (4)
-                ! Volumetric strain
-                Tmp = mech_info%volumetric_strain
-                string = 'Vol_Strain'
-          end select
-          
-          ! Find the extrema location
-          MinLoc_L = global_minloc(Tmp)
-          MaxLoc_L = global_maxloc(Tmp)
-          
-          ! Write out the extrema location and values
-          write (string2, 40) string, &
-                                 global_minval(Tmp), MinLoc_L, &
-                                 global_maxval(Tmp), MaxLoc_L
-          call TLS_info (string2)
-
-       end do
-       DEALLOCATE(mech_info)
-
-    end if SOLID_MECHANICS_OUTPUT_LOOP
 
     ! Write out the trailing header.
     write (string, 10) t, cycle_number

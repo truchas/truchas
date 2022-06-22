@@ -33,11 +33,6 @@ contains
       end if
     end if
 
-    if (solid_mechanics .and. legacy_solid_mechanics) then
-      call TLS_error ('Cannot enable both solid_mechanics and legacy_solid_mechanics')
-      fatal = .true.
-    end if
-
     if (fatal) call TLS_fatal('Errors found with PHYSICS namelists variables')
 
   end subroutine physics_check
@@ -60,7 +55,7 @@ contains
 
     namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
                        body_force_density, prescribed_flow, &
-                       electromagnetics, solid_mechanics, legacy_solid_mechanics, materials
+                       electromagnetics, solid_mechanics, materials
 
     call TLS_info ('Reading PHYSICS namelist ...')
 
@@ -82,7 +77,6 @@ contains
       number_of_species = 0
       electromagnetics = .false.
       solid_mechanics = .false.
-      legacy_solid_mechanics = .false.
       body_force_density = 0.0_r8
       prescribed_flow = .false.
       materials = NULL_C
@@ -98,7 +92,6 @@ contains
     call broadcast(species_transport)
     call broadcast(number_of_species)
     call broadcast(solid_mechanics)
-    call broadcast(legacy_solid_mechanics)
     call broadcast(electromagnetics)
     call broadcast(prescribed_flow)
     call broadcast(materials)

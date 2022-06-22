@@ -23,7 +23,7 @@
 !!    logical variables indicate whether the data segments are present:
 !!
 !!      HAVE_ALLOY_DATA, HAVE_FLUID_FLOW_DATA, HAVE_JOULE_HEAT_DATA,
-!!      HAVE_SOLID_MECHANICS_DATA, HAVE_LEGACY_SOLID_MECHANICS_DATA.
+!!      HAVE_SOLID_MECHANICS_DATA.
 !!
 !!    These variables are defined by OPEN_RESTART_MESH.
 !!
@@ -58,9 +58,6 @@
 !!    CALL RESTART_SOLID_MECHANICS () reads (or skips) the solid mechanics
 !!      data, if any.  Called from INITIAL.
 !!
-!!    CALL RESTART_LEGACY_SOLID_MECHANICS () reads (or skips) the legacy solid
-!!      mechanics data, if any. Called from INITIAL.
-!!
 !!    CALL RESTART_SPECIES ([PHI]) reads the species data and returns the
 !!      data in PHI if PHI is present.  Otherwise if PHI is not present it
 !!      skips the species data, if any.  PHI is a rank-2 real array whose
@@ -88,8 +85,8 @@ module restart_driver
   implicit none
   private
 
-  public :: open_restart_file, skip_restart_mesh, skip_restart_side_sets, restart_matlzone, &
-            restart_solid_mechanics, restart_legacy_solid_mechanics, restart_species, &
+  public :: open_restart_file, skip_restart_mesh, restart_matlzone, &
+            restart_solid_mechanics, restart_species, &
             restart_joule_heat, restart_ustruc, close_restart_file
 
   !! Private data; defined by OPEN_RESTART_FILE.
@@ -136,8 +133,6 @@ contains
         have_joule_heat_data = .true.
       case ('solid_mechanics')
         have_solid_mechanics_data = .true.
-      case ('legacy_solid_mechanics')
-        have_legacy_solid_mechanics_data = .true.
       case ('temperature')
         !! NNC, 18 Jan 2006.
         !have_temperature_data = .true.
@@ -189,14 +184,6 @@ contains
     call skip_records (unit, 3, 'SKIP_RESTART_MESH: error skipping COORD records')
   end subroutine skip_restart_mesh
 
-  subroutine skip_restart_side_sets ()
-    use bc_data_module, only: skip_side_set_data
-    !! Starting with version 3, this info is no longer present.
-    !! call read_side_set_data (unit, version)
-    !! Skip this data in older version files.
-    call skip_side_set_data (unit, version)
-  end subroutine skip_restart_side_sets
-
   !!
   !! Read the core data segment: initializes the module structures ZONE and
   !! MATL defined in ZONE_MODULE and MATL_MODULE, respectively.
@@ -233,24 +220,6 @@ contains
       call skip_records(unit, 6*12*3+6, 'RESTART_SOLID_MECHANICS: error skipping the strain data')
     end if
   end subroutine restart_solid_mechanics
-
-  !!
-  !! Read the optional legacy solid mechanics data segment: initializes the module
-  !! structures SMECH_IP, SMECH_CELL, RHS, THERMAL_STRAIN, PC_STRAIN, and
-  !! DISPLACEMENT defined in LEGACY_SOLID_MECHANICS_DATA.
-  !!
-
-  subroutine restart_legacy_solid_mechanics ()
-    use solid_mechanics_output, only: read_SM_data, skip_SM_data
-    use physics_module, only: solid_mechanics => legacy_solid_mechanics
-    if (have_legacy_solid_mechanics_data) then
-      if (solid_mechanics .and. .not.ignore_legacy_solid_mechanics) then
-        call read_SM_data (unit, version)
-      else
-        call skip_SM_data (unit, version)
-      end if
-    end if
-  end subroutine restart_legacy_solid_mechanics
 
   !!
   !! Read (or skip) the species concentration data.

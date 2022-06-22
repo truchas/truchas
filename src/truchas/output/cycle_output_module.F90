@@ -67,8 +67,6 @@ CONTAINS
     use kinds
     use process_info_module,    only: get_process_size
     use parallel_communication
-    use solid_mechanics_module, only: thermo_elastic_iterations, viscoplastic_iterations
-    use physics_module, only: solid_mechanics => legacy_solid_mechanics
     use time_step_module,       only: cycle_number
     use flow_driver, only: flow_enabled, flow_vel_cc_view
 
@@ -80,14 +78,6 @@ CONTAINS
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 110 format ('SOLVER="',a,'" COUNT="',i10,'"')
-
-    if (solid_mechanics) then
-      write (string, 10) thermo_elastic_iterations,'Solid mechanics iterations (linear)'
-      call TLS_info (string)
-      write (string, 10) viscoplastic_iterations,'Solid mechanics iterations (nonlinear)'
-      call TLS_info (string)
-    end if
-10  format (8x,i5,1x,a)
 
     ! Output diagnostics by physics
     if (flow_enabled()) then

@@ -43,10 +43,10 @@ CONTAINS
     !=======================================================================
     use kinds, only: r8
     use base_types_A_module,    only: BASE_TYPES_A_ALLOCATE
-    use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
+    !use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
-    use restart_driver,         only: close_restart_file, skip_restart_mesh, skip_restart_side_sets
+    use restart_driver,         only: close_restart_file, skip_restart_mesh
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
     use init_module,            only: INITIAL
@@ -62,16 +62,12 @@ CONTAINS
     ! Start the initialization timer.
     call start_timer("Initialization")
 
-    ! Assign bc bits.
-    call ASSIGN_BC_BITS (Prs%Face_bit, Vel%Face_bit, Conc%Face_bit)
-
     ! Setup the tensor matrix.
     call TENSOR_MATRIX ()
     
     ! Skip over unused legacy mesh data in the restart file (TEMPORARY)
     if (restart) then
       call skip_restart_mesh
-      call skip_restart_side_sets
     end if
 
     ! Instantiate the new mesh objects.

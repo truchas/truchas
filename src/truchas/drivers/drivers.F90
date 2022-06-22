@@ -125,7 +125,6 @@ call hijack_truchas ()
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
     use EM,                       only: INDUCTION_HEATING
-    use solid_mechanics_module,   only: THERMO_MECHANICS
     use parallel_communication,   only: global_any
     use restart_variables,        only: restart
     use signal_handler
@@ -271,11 +270,7 @@ call hijack_truchas ()
         end if
 
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before thermomechanics:')
-        if (solid_mechanics_enabled()) then
-          call solid_mechanics_step(t, dt)
-        else
-          call thermo_mechanics
-        end if
+        if (solid_mechanics_enabled()) call solid_mechanics_step(t, dt)
 
         ! output iteration information
         call cycle_output_post
