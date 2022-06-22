@@ -22,11 +22,16 @@ module solid_mechanics_driver
   public :: read_solid_mechanics_namelists
   public :: solid_mechanics_enabled
   public :: solid_mechanics_init
+  public :: solid_mechanics_write_checkpoint
+  public :: solid_mechanics_read_checkpoint
   public :: solid_mechanics_step
   public :: solid_mechanics_strain_view
   public :: solid_mechanics_stress_view
   public :: solid_mechanics_displacement_view
   public :: solid_mechanics_compute_viz_fields
+  public :: solid_mechanics_viscoplasticity_enabled
+  public :: solid_mechanics_get_plastic_strain
+  public :: solid_mechanics_get_plastic_strain_rate
 
   !! Bundled up all the driver state
   type :: solid_mechanics_data
@@ -56,6 +61,7 @@ contains
   subroutine read_solid_mechanics_namelists(lun)
     use solid_mechanics_namelist
     use solid_mechanics_bc_namelist
+    use viscoplastic_model_namelist
     use parameter_list_type
     integer, intent(in) :: lun
     type(parameter_list), pointer :: plist
@@ -63,6 +69,8 @@ contains
     plist => params%sublist('model')
     plist => plist%sublist('bc')
     call read_solid_mechanics_bc_namelists(lun, plist)
+    plist => params%sublist('viscoplastic-material-models')
+    call read_viscoplastic_model_namelists(lun, plist)
   end subroutine read_solid_mechanics_namelists
 
 
@@ -71,24 +79,29 @@ contains
     use mesh_manager, only: unstr_mesh_ptr
     use material_model_driver, only: matl_model
     use solid_mechanics_namelist, only: params
+    use viscoplastic_material_model_types
     use scalar_func_class
     use scalar_func_containers
     use tm_density
+    use parameter_list_type
 
     integer :: p, m, stat
     real(r8) :: ref_temp
     real(r8), allocatable :: ref_dens(:)
-    character(:), allocatable :: errmsg
+    character(:), allocatable :: errmsg, phase_name
+    type(parameter_list), pointer :: vpm_plist => null()
+    type(viscoplastic_material_model_box), allocatable :: vp(:)
     type(scalar_func_box), allocatable :: lame1(:), lame2(:), density(:)
     class(scalar_func), allocatable :: cte
 
     this%mesh => unstr_mesh_ptr('MAIN')
+    vpm_plist => params%sublist('viscoplastic-material-models')
     call init_phase_table
 
     allocate(this%vof(this%nphase,this%mesh%ncell), this%temperature_cc(this%mesh%ncell))
 
     allocate(ref_dens(this%nphase))
-    allocate(lame1(this%nphase), lame2(this%nphase), density(this%nphase))
+    allocate(lame1(this%nphase), lame2(this%nphase), density(this%nphase), vp(this%nphase))
     do p = 1, this%nphase
       m = this%matl_phase(p)
       ref_dens(p) = matl_model%const_phase_prop(m, 'tm-ref-density')
@@ -102,9 +115,13 @@ contains
       call matl_model%alloc_phase_prop(m, 'tm-lame2', lame2(p)%f)
       ASSERT(allocated(lame1(p)%f))
       ASSERT(allocated(lame2(p)%f))
+
+      phase_name = matl_model%phase_name(m)
+      !if (vpm_plist%is_sublist(phase_name)) &
+      call alloc_viscoplastic_material_model(vpm_plist%sublist(phase_name), vp(p)%m)
     end do
 
-    call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density, ref_dens)
+    call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density, ref_dens, vp)
 
     call compute_initial_state()
 
@@ -163,11 +180,14 @@ contains
 
 
   subroutine solid_mechanics_compute_viz_fields(displ, thermal_strain, total_strain, &
-      elastic_stress, rotation_magnitude, gap_displacement, gap_normal_traction)
+      elastic_stress, rotation_magnitude, gap_displacement, gap_normal_traction, &
+      plastic_strain, plastic_strain_rate)
     real(r8), intent(out), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
-        elastic_stress(:,:), rotation_magnitude(:), gap_displacement(:), gap_normal_traction(:)
+        elastic_stress(:,:), rotation_magnitude(:), gap_displacement(:), gap_normal_traction(:), &
+        plastic_strain(:,:), plastic_strain_rate(:)
     call this%sm%compute_viz_fields(displ, thermal_strain, total_strain, elastic_stress, &
-        rotation_magnitude, gap_displacement, gap_normal_traction)
+        rotation_magnitude, gap_displacement, gap_normal_traction, &
+        plastic_strain, plastic_strain_rate)
   end subroutine
 
   !! PHASE_TABLE routines.
@@ -209,5 +229,31 @@ contains
     call this%mesh%cell_imap%gather_offp(vof)
 
   end subroutine get_vof
+
+
+  logical function solid_mechanics_viscoplasticity_enabled()
+    solid_mechanics_viscoplasticity_enabled = this%sm%viscoplasticity_enabled()
+  end function
+
+  subroutine solid_mechanics_get_plastic_strain(plastic_strain)
+    real(r8), intent(out), allocatable :: plastic_strain(:,:)
+    call this%sm%get_plastic_strain(plastic_strain)
+  end subroutine
+
+  subroutine solid_mechanics_get_plastic_strain_rate(plastic_strain_rate)
+    real(r8), intent(out), allocatable :: plastic_strain_rate(:,:)
+    call this%sm%get_plastic_strain_rate(plastic_strain_rate)
+  end subroutine
+
+  subroutine solid_mechanics_write_checkpoint(seq)
+    use truchas_h5_outfile, only: th5_seq_group
+    class(th5_seq_group), intent(in) :: seq
+    call this%sm%write_checkpoint(seq)
+  end subroutine
+
+  subroutine solid_mechanics_read_checkpoint(unit, version)
+    integer, intent(in) :: unit, version
+    call this%sm%read_checkpoint(unit)
+  end subroutine
 
 end module solid_mechanics_driver

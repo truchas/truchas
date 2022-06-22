@@ -14,32 +14,44 @@ module sm_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_timers
+  use truchas_logging_services
   use unstr_mesh_type
   use scalar_func_containers
   use sm_bc_manager_type
   use integration_geometry_type
+  use sm_material_model_type
+  use viscoplastic_solver_type
+  use ieee_arithmetic, only: ieee_is_normal
   implicit none
   private
 
   type, public :: sm_model
     private
-    ! expose these to precon type
+    !! expose these to precon type
     type(unstr_mesh), pointer, public :: mesh => null() ! unowned reference
-    type(integration_geometry), public :: ig
+    type(integration_geometry), pointer, public :: ig => null()
     type(sm_bc_manager), public :: bc
 
-    ! expose to the preconditioner
+    type(sm_material_model), pointer :: matl_model => null()
+    type(viscoplastic_solver) :: vp_solver
+
+    !! state variables -- expose to driver for checkpointing
+    real(r8), allocatable :: strain_plastic(:,:), strain_total(:,:)
+    real(r8), allocatable, public :: strain_plastic_old(:,:), strain_thermal_old(:,:), &
+        strain_total_old(:,:), strain_pc(:,:)
+    real(r8), allocatable :: dstrain_plastic_dt_old(:,:), dstrain_plastic_dt(:,:)
+
+    !! expose to the preconditioner
     real(r8), allocatable, public :: rhs(:,:)
     real(r8), allocatable, public :: lame1_n(:), lame2_n(:), scaling_factor(:)
 
-    ! expose for computing viz fields
-    real(r8), allocatable, public :: lame1(:), lame2(:), thermal_strain(:,:)
+    !! expose for computing viz fields
+    real(r8), allocatable, public :: lame1(:), lame2(:), strain_thermal(:,:)
 
-    integer :: nmat
-    real(r8) :: max_cell_halfwidth, penalty
-    real(r8), allocatable :: density_c(:), density_n(:), reference_density(:)
-    real(r8), allocatable :: delta_temperature(:)
-    type(scalar_func_box), allocatable :: lame1f(:), lame2f(:), densityf(:)
+    real(r8) :: max_cell_halfwidth, penalty, tlast, tcurrent
+    real(r8), allocatable :: density_c(:), density_n(:)
+    real(r8), pointer :: vof(:,:) => null() ! unowned reference
+    real(r8), pointer :: temperature(:) => null() ! unowned reference
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
@@ -49,22 +61,40 @@ module sm_model_type
     real(r8), public :: atol, rtol, ftol
   contains
     procedure :: init
-    procedure :: size => model_size
+    procedure :: init_viscoplastic_rate
+    procedure :: apply_state
+    procedure :: write_checkpoint
+    procedure :: read_checkpoint
     procedure :: update_properties
     procedure :: compute_residual
     procedure :: compute_forces
     procedure :: compute_reference_density
-    procedure, nopass :: compute_stress
+    procedure :: accept_state
+    procedure :: viscoplasticity_enabled
+    procedure :: compute_viscoplastic_precon
+    procedure :: get_plastic_strain
+    procedure :: get_plastic_strain_rate
+    procedure :: plastic_strain_cell
+    procedure :: plastic_strain_rate_cell
     procedure, nopass :: tensor_dot
+    procedure, nopass :: strain_tensor
     procedure, private :: compute_total_strain
+    final :: sm_model_finalize
   end type sm_model
 
 contains
 
-  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density)
+  elemental subroutine sm_model_finalize(this)
+    type(sm_model), intent(inout) :: this
+    if (associated(this%matl_model)) deallocate(this%matl_model)
+    if (associated(this%ig)) deallocate(this%ig)
+  end subroutine sm_model_finalize
+
+
+  subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     use parameter_list_type
-    use truchas_logging_services
+    use viscoplastic_material_model_types
 
     class(sm_model), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -72,20 +102,18 @@ contains
     integer, intent(in) :: nmat
     type(scalar_func_box), allocatable, intent(inout) :: lame1f(:), lame2f(:), densityf(:)
     real(r8), intent(in) :: reference_density(:)
+    type(viscoplastic_material_model_box), allocatable, intent(inout) :: vp(:)
 
     integer :: stat
     real(r8) :: traction, distance
     character(:), allocatable :: errmsg
     type(parameter_list), pointer :: plist => null()
 
-    ASSERT(nmat > 0)
-    ASSERT(size(lame1f) == nmat)
-    ASSERT(size(lame2f) == nmat)
-    ASSERT(size(densityf) == nmat)
-    ASSERT(size(reference_density) == nmat)
-
     this%mesh => mesh
+    allocate(this%ig)
     call this%ig%init(mesh)
+    allocate(this%matl_model)
+    call this%matl_model%init(params, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     call params%get('body-force-density', this%body_force_density, default=[0d0, 0d0, 0d0])
     call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
@@ -94,19 +122,13 @@ contains
     if (this%strain_limit < 0) call TLS_fatal('strain-limit must be >= 0')
 
     allocate(this%density_c(this%mesh%ncell), this%density_n(this%mesh%nnode_onP), &
-        this%delta_temperature(this%mesh%ncell), &
-        this%thermal_strain(6,this%mesh%ncell), &
+        this%strain_total(6,this%ig%npt), &
+        this%strain_thermal(6,this%mesh%ncell), this%strain_pc(6,this%mesh%ncell), &
         this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), &
         this%lame1_n(this%mesh%nnode_onP), this%lame2_n(this%mesh%nnode_onP), &
-        this%rhs(3,this%mesh%nnode_onP), &
-        this%scaling_factor(this%mesh%nnode))
+        this%rhs(3,this%mesh%nnode_onP), this%scaling_factor(this%mesh%nnode_onP))
 
     this%max_cell_halfwidth = max_cell_halfwidth()
-    this%nmat = nmat
-    this%reference_density = reference_density
-    call move_alloc(lame1f, this%lame1f)
-    call move_alloc(lame2f, this%lame2f)
-    call move_alloc(densityf, this%densityf)
 
     call params%get('contact-distance', distance, default=1e-7_r8)
     call params%get('contact-normal-traction', traction, default=1e4_r8)
@@ -117,6 +139,23 @@ contains
     plist => params%sublist('bc')
     call this%bc%init(plist, mesh, this%ig, this%penalty, distance, traction, stat, errmsg)
     if (stat /= 0) call TLS_fatal('Failed to build solid mechanics boundary conditions: '//errmsg)
+
+    !! viscoplasticity
+    if (this%matl_model%viscoplasticity_enabled) then
+      allocate(this%strain_thermal_old(6,this%mesh%ncell), this%strain_total_old(6,this%ig%npt), &
+          this%strain_plastic_old(6,this%ig%npt), this%strain_plastic(6,this%ig%npt), &
+          this%dstrain_plastic_dt_old(6,this%ig%npt), this%dstrain_plastic_dt(6,this%ig%npt))
+      this%strain_thermal_old = 0
+      this%strain_total_old = 0
+      this%strain_plastic_old = 0
+      this%dstrain_plastic_dt_old = 0
+      this%strain_pc = 0 ! phase-change strain is never used
+      this%strain_plastic = 0
+      this%dstrain_plastic_dt = 0
+      this%tlast = 0
+      this%tcurrent = 0
+      call this%vp_solver%init(params%sublist('viscoplastic-solver'), this%ig, this%matl_model)
+    end if
 
   contains
 
@@ -139,15 +178,9 @@ contains
     real(r8), intent(in) :: vof(:,:)
     integer :: j
     do j = 1, this%mesh%ncell
-      this%density_c(j) = sum(this%reference_density * vof(:,j))
+      this%density_c(j) = sum(this%matl_model%reference_density * vof(:,j))
     end do
   end subroutine compute_reference_density
-
-
-  integer function model_size(this)
-    class(sm_model), intent(in) :: this
-    model_size = 3*this%mesh%nnode
-  end function model_size
 
 
   !! Computes the Lame parameters, density, and RHS of the system. This routine
@@ -156,19 +189,22 @@ contains
   subroutine update_properties(this, vof, temperature_cc)
 
     use parallel_communication, only: global_maxval, global_minval
+    use sm_bc_utilities, only: compute_stress
 
     class(sm_model), intent(inout) :: this
-    real(r8), intent(in) :: temperature_cc(:), vof(:,:)
+    real(r8), intent(in), target :: vof(:,:), temperature_cc(:)
 
     integer :: j, n, m, xp, p
     real(r8) :: s, state(1), thermal_stress(6,this%mesh%ncell)
     real(r8) :: density_old, dstrain
 
-    ASSERT(size(vof, dim=1) == this%nmat)
+    ASSERT(size(vof, dim=1) == this%matl_model%nmat)
     ASSERT(size(vof, dim=2) == this%mesh%ncell)
     ASSERT(size(temperature_cc) == this%mesh%ncell)
 
     call start_timer("properties")
+    this%vof => vof
+    this%temperature => temperature_cc
 
     do j = 1, this%mesh%ncell
       density_old = this%density_c(j)
@@ -176,26 +212,28 @@ contains
       this%lame1(j) = 0
       this%lame2(j) = 0
       this%density_c(j) = 0
-      do m = 1, this%nmat
+      do m = 1, this%matl_model%nmat
         if (vof(m,j) == 0) cycle
-        this%lame1(j) = this%lame1(j) + vof(m,j) * this%lame1f(m)%f%eval(state)
-        this%lame2(j) = this%lame2(j) + vof(m,j) * this%lame2f(m)%f%eval(state)
-        this%density_c(j) = this%density_c(j) + vof(m,j) * this%densityf(m)%f%eval(state)
+        this%lame1(j) = this%lame1(j) + vof(m,j) * this%matl_model%lame1f(m)%f%eval(state)
+        this%lame2(j) = this%lame2(j) + vof(m,j) * this%matl_model%lame2f(m)%f%eval(state)
+        this%density_c(j) = this%density_c(j) + vof(m,j) * this%matl_model%densityf(m)%f%eval(state)
       end do
 
       if (this%density_c(j) /= 0) then
-        density_old = sum(this%reference_density * vof(:,j))
+        density_old = sum(this%matl_model%reference_density * vof(:,j))
         !dstrain = (density_old / this%density_c(j)) ** (1.0_r8 / 3) - 1
         dstrain = log(density_old / this%density_c(j)) / 3
-        this%thermal_strain(:3,j) = dstrain
-        this%thermal_strain(4:,j) = 0
-        call compute_stress(this%lame1(j), this%lame2(j), this%thermal_strain(:,j), &
+        this%strain_thermal(:3,j) = dstrain
+        this%strain_thermal(4:,j) = 0
+        call compute_stress(this%lame1(j), this%lame2(j), this%strain_thermal(:,j), &
             thermal_stress(:,j))
       else
         thermal_stress(:,j) = 0
-        this%density_c(j) = sum(this%reference_density * vof(:,j)) ! for the next iteration
-        this%thermal_strain(:,j) = 0
+        this%density_c(j) = sum(this%matl_model%reference_density * vof(:,j)) ! for the next iteration
+        this%strain_thermal(:,j) = 0
       end if
+
+      this%strain_pc(:,j) = 0 ! TODO: phase-chage strain
     end do
 
     call cell_to_node(this%mesh, this%density_c, this%density_n)
@@ -216,7 +254,7 @@ contains
       !this%scaling_factor(n) = 1 ! DEBUGGING
 
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
-        this%rhs(:,n) = this%body_force_density * this%density_n(n) * this%ig%volume(n)
+        this%rhs(:,n) = -this%body_force_density * this%density_n(n) * this%ig%volume(n)
         do xp = 1, size(np)
           p = np(xp)
           j = this%ig%pcell(p)
@@ -225,8 +263,6 @@ contains
         end do
       end associate
     end do
-
-    call this%mesh%node_imap%gather_offp(this%scaling_factor)
 
     !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
     !this%contact_penalty = global_maxval(this%rhs)
@@ -237,6 +273,32 @@ contains
     call stop_timer("properties")
 
   end subroutine update_properties
+
+
+  subroutine accept_state(this)
+    class(sm_model), intent(inout) :: this
+    if (this%matl_model%viscoplasticity_enabled) then
+      this%strain_total_old = this%strain_total
+      this%strain_plastic_old = this%strain_plastic
+      this%strain_thermal_old = this%strain_thermal
+      this%dstrain_plastic_dt_old = this%dstrain_plastic_dt
+      this%tlast = this%tcurrent
+    end if
+  end subroutine accept_state
+
+
+  !! Set a viscoplastic solver state, e.g. from a restart file.
+  subroutine apply_state(this, tlast, strain_total, strain_thermal, strain_plastic, &
+      dstrain_plastic_dt)
+    class(sm_model), intent(inout) :: this
+    real(r8), intent(in) :: tlast, strain_total(:,:), strain_thermal(:,:), strain_plastic(:,:), &
+        dstrain_plastic_dt(:,:)
+    this%tlast = tlast
+    this%strain_total_old = strain_total
+    this%strain_thermal_old = strain_thermal
+    this%strain_plastic_old = strain_plastic
+    this%dstrain_plastic_dt_old = dstrain_plastic_dt
+  end subroutine apply_state
 
 
   !! Computes a cell-to-node averaging, weighted by volume It assumes x_cell is
@@ -274,6 +336,18 @@ contains
   end subroutine cell_to_node
 
 
+  subroutine init_viscoplastic_rate(this)
+    class(sm_model), intent(inout) :: this
+    if (.not.this%matl_model%viscoplasticity_enabled) return
+    this%tcurrent = this%tlast
+    call this%vp_solver%compute_plastic_strain(0.0_r8, this%temperature, this%lame1, this%lame2, this%vof, this%strain_pc, &
+        this%strain_total_old, this%strain_thermal_old, this%strain_plastic_old, this%dstrain_plastic_dt_old, &
+        this%strain_total, this%strain_thermal, this%strain_plastic, this%dstrain_plastic_dt)
+    this%strain_plastic_old = 0 !this%strain_plastic
+    this%dstrain_plastic_dt_old = this%dstrain_plastic_dt
+  end subroutine init_viscoplastic_rate
+
+
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_residual(this, t, displ, r)
 
@@ -284,7 +358,7 @@ contains
 
     integer :: n
 
-    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode_onP)
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) >= this%mesh%nnode_onP)
 
     ! get off-rank halo
@@ -299,7 +373,6 @@ contains
     do n = 1, this%mesh%nnode_onP
       r(:,n) = r(:,n) / this%scaling_factor(n)
     end do
-    r(:,this%mesh%nnode_onP+1:) = 0 ! clear out halo so it doesn't screw with norms
     call stop_timer("residual")
 
   end subroutine compute_residual
@@ -308,19 +381,32 @@ contains
   !! This evaluates the equations on page 1765 of Bailey & Cross 1995.
   subroutine compute_forces(this, t, displ, r)
 
+    use sm_bc_utilities, only: compute_stress
+
     class(sm_model), intent(inout) :: this ! inout to update BCs
     real(r8), intent(in) :: t, displ(:,:)
     real(r8), intent(out) :: r(:,:)
 
     integer :: n, xp, p, j
-    real(r8) :: s, stress(6), total_strain(6,this%ig%npt), lhs(3)
+    real(r8) :: s, stress(6), lhs(3), lhs_strain(6), dt
 
-    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode_onP)
+    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) >= this%mesh%nnode_onP)
 
     call start_timer("residual")
 
-    call this%compute_total_strain(displ, total_strain)
+    call this%compute_total_strain(displ, this%strain_total)
+
+    ! viscoplasticity is updated outside the main stress loop so that we
+    ! calculate viscoplasticity at integration points associated with
+    ! off-process nodes *and* on-process cells. This is purely for visualization.
+    if (this%matl_model%viscoplasticity_enabled .and. t /= this%tlast) then
+      this%tcurrent = t ! to be read by accept_state
+      dt = t - this%tlast
+      call this%vp_solver%compute_plastic_strain(dt, this%temperature, this%lame1, this%lame2, this%vof, this%strain_pc, &
+        this%strain_total_old, this%strain_thermal_old, this%strain_plastic_old, this%dstrain_plastic_dt_old, &
+        this%strain_total, this%strain_thermal, this%strain_plastic, this%dstrain_plastic_dt)
+    end if
 
     call start_timer("stress")
     do n = 1, this%mesh%nnode_onP
@@ -330,7 +416,12 @@ contains
           p = np(xp)
           j = this%ig%pcell(p)
 
-          call compute_stress(this%lame1(j), this%lame2(j), total_strain(:,p), stress)
+          lhs_strain = this%strain_total(:,p) ! thermal strain is accounted in the RHS
+
+          if (this%matl_model%viscoplasticity_enabled .and. t /= this%tlast) &
+              lhs_strain = lhs_strain - this%strain_plastic(:,p)
+
+          call compute_stress(this%lame1(j), this%lame2(j), lhs_strain, stress)
           s = merge(-1, 1, this%ig%nppar(xp,n))
           lhs = lhs + s * tensor_dot(stress, this%ig%n(:,p))
         end do
@@ -341,7 +432,6 @@ contains
     call stop_timer("stress")
 
     call this%bc%apply_traction(t, r)
-    call this%mesh%node_imap%gather_offp(r)
 
     call stop_timer("residual")
 
@@ -372,13 +462,7 @@ contains
           do d = 1, 3
             grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
           end do
-
-          total_strain(1,p) = grad_displ(1,1) ! exx
-          total_strain(2,p) = grad_displ(2,2) ! eyy
-          total_strain(3,p) = grad_displ(3,3) ! ezz
-          total_strain(4,p) = (grad_displ(1,2) + grad_displ(2,1)) / 2 ! exy
-          total_strain(5,p) = (grad_displ(1,3) + grad_displ(3,1)) / 2 ! exz
-          total_strain(6,p) = (grad_displ(2,3) + grad_displ(3,2)) / 2 ! eyz
+          total_strain(:,p) = this%strain_tensor(grad_displ)
         end do
       end associate
     end do
@@ -386,17 +470,6 @@ contains
     call stop_timer("strain")
 
   end subroutine compute_total_strain
-
-
-  !! Computes the stress from the strain and Lame parameters.
-  subroutine compute_stress(lame1, lame2, strain, stress)
-    real(r8), intent(in) :: lame1, lame2, strain(:)
-    real(r8), intent(out) :: stress(:)
-    ASSERT(size(strain) == 6)
-    ASSERT(size(stress) == 6)
-    stress = 2 * lame2 * strain
-    stress(:3) = stress(:3) + lame1 * sum(strain(:3))
-  end subroutine compute_stress
 
 
   !! Computes the dot product t_i = a_ij * n_j, given a_ij like the
@@ -411,5 +484,187 @@ contains
     t(2) = a(4)*n(1) + a(2)*n(2) + a(6)*n(3)
     t(3) = a(5)*n(1) + a(6)*n(2) + a(3)*n(3)
   end function tensor_dot
+
+
+  function strain_tensor(grad_displ)
+    real(r8), intent(in) :: grad_displ(:,:)
+    real(r8) :: strain_tensor(6)
+    strain_tensor(1) = grad_displ(1,1) ! exx
+    strain_tensor(2) = grad_displ(2,2) ! eyy
+    strain_tensor(3) = grad_displ(3,3) ! ezz
+    strain_tensor(4) = (grad_displ(1,2) + grad_displ(2,1)) / 2 ! exy
+    strain_tensor(5) = (grad_displ(1,3) + grad_displ(3,1)) / 2 ! exz
+    strain_tensor(6) = (grad_displ(2,3) + grad_displ(3,2)) / 2 ! eyz
+  end function strain_tensor
+
+
+  pure logical function viscoplasticity_enabled(this)
+    class(sm_model), intent(in) :: this
+    viscoplasticity_enabled = this%matl_model%viscoplasticity_enabled
+  end function
+
+  pure subroutine get_plastic_strain(this, plastic_strain)
+    class(sm_model), intent(in) :: this
+    real(r8), intent(out), allocatable :: plastic_strain(:,:)
+    plastic_strain = this%strain_plastic
+  end subroutine
+
+  pure subroutine get_plastic_strain_rate(this, plastic_strain_rate)
+    class(sm_model), intent(in) :: this
+    real(r8), intent(out), allocatable :: plastic_strain_rate(:,:)
+    plastic_strain_rate = this%dstrain_plastic_dt
+  end subroutine
+
+  !! Currently just a dumb averaging from integration points to cell center,
+  !! purely for visualization.
+  !!
+  !! NOTE: This routine assumes that plastic strain has been calculated at all
+  !! integration points within cells owned by this rank. It is also true that
+  !! a rank does not necessarily own all the nodes associated with an owned
+  !! cell.
+  function plastic_strain_cell(this, j)
+
+    class(sm_model), intent(in) :: this
+    integer, intent(in) :: j
+    real(r8) :: plastic_strain_cell(6)
+
+    integer :: np, p0, p1
+
+    ASSERT(j <= this%mesh%ncell_onP)
+    !ASSERT(all(this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1) <= this%mesh%nnode_onP))
+
+    if (.not.this%viscoplasticity_enabled()) then
+      plastic_strain_cell = 0
+      return
+    end if
+
+    p0 = this%ig%xcpoint(j)
+    p1 = this%ig%xcpoint(j+1)-1
+    np = p1 - p0 + 1
+    plastic_strain_cell = sum(this%strain_plastic_old(:,p0:p1), dim=2) / np
+
+  end function plastic_strain_cell
+
+  function plastic_strain_rate_cell(this, j, stress) result(g)
+    class(sm_model), intent(inout) :: this
+    integer, intent(in) :: j
+    real(r8), intent(in) :: stress(:)
+    real(r8) :: g
+    if (this%viscoplasticity_enabled()) then
+      g = this%vp_solver%model%strain_rate2(&
+          this%temperature(j), this%lame1(j), this%lame2(j), this%vof(:,j), &
+          stress)
+    else
+      g = 0
+    end if
+  end function plastic_strain_rate_cell
+
+
+  subroutine compute_viscoplastic_precon(this, precon)
+    class(sm_model), intent(inout) :: this
+    real(r8), intent(out) :: precon(:,:,:)
+    call this%vp_solver%compute_precon(this%temperature, this%lame1, this%lame2, this%vof, &
+        this%strain_total_old, this%strain_thermal_old, this%strain_pc, this%strain_plastic_old, &
+        precon)
+  end subroutine compute_viscoplastic_precon
+
+
+  !! This is a custom integration-point writer used for restarts.
+  subroutine write_checkpoint(this, seq)
+
+    use truchas_h5_outfile, only: th5_seq_group
+    use truchas_danu_output_tools
+
+    class(sm_model), intent(in) :: this
+    class(th5_seq_group), intent(in) :: seq
+
+    ! NB: The thermal strain is a cell-center field and already output as part of visualization.
+    call write_seq_cell_field(seq, reshape(square_array(this%strain_total_old), [6*12, this%mesh%ncell_onP]), 'strain_total', for_viz=.false.)
+    call write_seq_cell_field(seq, reshape(square_array(this%strain_plastic_old), [6*12, this%mesh%ncell_onP]), 'strain_plastic', for_viz=.false.)
+    call write_seq_cell_field(seq, reshape(square_array(this%dstrain_plastic_dt_old), [6*12, this%mesh%ncell_onP]), 'dstrain_plastic_dt', for_viz=.false.)
+
+  contains
+
+    ! Convert a ragged-array with points for each cell-edge pair into a square array
+    function square_array(a) result(b)
+
+      use cell_topology, only: cell_edges
+
+      real(r8), intent(in) :: a(:,:)
+      !real(r8), intent(out) :: b(:,:,:)
+      real(r8) :: b(6, 12, this%mesh%ncell_onP)
+
+      integer :: j, p, e
+
+      ASSERT(size(a,dim=1) == size(b,dim=1))
+      ASSERT(size(a,dim=2) >= this%ig%xcpoint(this%mesh%ncell_onP+1)-1)
+
+      b = 0
+      do j = 1, this%mesh%ncell_onP
+        do p = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
+          e = p - this%ig%xcpoint(j) + 1
+          b(:,e,j) = a(:,p)
+        end do
+      end do
+
+    end function square_array
+
+  end subroutine write_checkpoint
+
+
+  subroutine read_checkpoint(this, unit)
+
+    use legacy_mesh_api, only: ncells, pcell => unpermute_mesh_vector
+    use restart_utilities, only: read_dist_array
+    use restart_variables, only: restart_t
+
+    class(sm_model), intent(inout) :: this
+    integer, intent(in) :: unit
+
+    real(r8) :: field(6*12,this%mesh%ncell)
+
+    this%tlast = restart_t
+
+    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_STRAIN_TOTAL: error reading strain_total records')
+    call this%mesh%cell_imap%gather_offp(field)
+    call generate_integrationpt_array(field, this%strain_total_old)
+
+    call read_dist_array(unit, this%strain_thermal_old(:,:ncells), pcell, 'READ_STRAIN_THERMAL: error reading strain_thermal records')
+    call this%mesh%cell_imap%gather_offp(this%strain_thermal_old)
+
+    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_STRAIN_PLASTIC: error reading strain_plastic records')
+    call this%mesh%cell_imap%gather_offp(field)
+    call generate_integrationpt_array(field, this%strain_plastic_old)
+
+    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_DSTRAIN_PLASTIC_DT: error reading dstrain_plastic_dt records')
+    call this%mesh%cell_imap%gather_offp(field)
+    call generate_integrationpt_array(field, this%dstrain_plastic_dt_old)
+
+  contains
+
+    subroutine generate_integrationpt_array(a, b)
+
+      real(r8), intent(in) :: a(:,:)
+      real(r8), intent(out) :: b(:,:)
+
+      integer :: j, p, e
+      real(r8), allocatable :: a2(:,:,:)
+
+      ASSERT(size(a,dim=2) >= this%mesh%ncell)
+      ASSERT(size(b,dim=2) >= this%ig%xcpoint(this%mesh%ncell+1)-1)
+
+      a2 = reshape(a, [6, 12, this%mesh%ncell])
+
+      b = 0
+      do j = 1, this%mesh%ncell
+        do p = this%ig%xcpoint(j), this%ig%xcpoint(j+1)-1
+          e = p - this%ig%xcpoint(j) + 1
+          b(:,p) = a2(:,e,j)
+        end do
+      end do
+
+    end subroutine generate_integrationpt_array
+
+  end subroutine read_checkpoint
 
 end module sm_model_type

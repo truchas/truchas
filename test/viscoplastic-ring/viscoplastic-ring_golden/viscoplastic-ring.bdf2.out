@@ -1,35 +1,35 @@
 
-TRAP step      1: T= 0.00000E+00, H= 1.00000E-01, ETAH= 5.00000E-02
-  Preconditioner updated at T= 1.00000E-01, ETAH= 5.00000E-02
-    1: error= 1.06390E+00
-    2: error= 3.35971E-02
-  AIN BCE solve succeeded:   2 iterations, error= 3.35971E-02
+TRAP step      1: T= 0.000000000000000E+00, H= 1.000000000000000E-01
+  Preconditioner updated at T= 1.000000000000000E-01
+    1: error= 1.055243896304403E+00
+    2: error= 3.280154471665410E-02
+  NLK BCE solve succeeded:   2 iterations, error= 3.280154471665410E-02
   Step accepted: no local error control
 
-BDF2 step      2: T= 1.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 4.87463E-01
-    2: error= 1.27901E-01
-    3: error= 2.36419E-03
-  AIN BCE solve succeeded:   3 iterations, error= 2.36419E-03
+BDF2 step      2: T= 1.000000000000000E-01, H= 1.000000000000000E-01
+    1: error= 4.832743526356981E-01
+    2: error= 1.256512175729717E-01
+    3: error= 2.427478087009694E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.427478087009694E-03
   Step accepted: no local error control
 
-BDF2 step      3: T= 2.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 4.46382E-01
-    2: error= 1.18673E-01
-    3: error= 1.98453E-03
-  AIN BCE solve succeeded:   3 iterations, error= 1.98453E-03
+BDF2 step      3: T= 2.000000000000000E-01, H= 1.000000000000000E-01
+    1: error= 4.434716546611284E-01
+    2: error= 1.170006387107457E-01
+    3: error= 2.051689692811121E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.051689692811121E-03
   Step accepted: no local error control
 
-BDF2 step      4: T= 3.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 3.02858E-01
-    2: error= 8.16585E-02
-    3: error= 1.27332E-03
-  AIN BCE solve succeeded:   3 iterations, error= 1.27332E-03
-  Step accepted: perr= 3.77117E-01
+BDF2 step      4: T= 3.000000000000000E-01, H= 9.999999999999998E-02
+    1: error= 3.003417478485519E-01
+    2: error= 8.111518239097146E-02
+    3: error= 1.364900706910008E-03
+  NLK BCE solve succeeded:   3 iterations, error= 1.364900706910008E-03
+  Step accepted: perr= 3.769577397251471E-01
 
-BDF2 step      5: T= 4.00000E-01, H= 1.00000E-01, ETAH= 6.66667E-02
-    1: error= 1.83364E-01
-    2: error= 5.03691E-02
-    3: error= 7.59995E-04
-  AIN BCE solve succeeded:   3 iterations, error= 7.59995E-04
-  Step accepted: perr= 2.29333E-01
+BDF2 step      5: T= 4.000000000000000E-01, H= 9.999999999999998E-02
+    1: error= 1.817957892045697E-01
+    2: error= 5.043350928078001E-02
+    3: error= 8.379024518662798E-04
+  NLK BCE solve succeeded:   3 iterations, error= 8.379024518662798E-04
+  Step accepted: perr= 2.293131021009367E-01

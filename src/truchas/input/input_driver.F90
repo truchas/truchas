@@ -52,7 +52,7 @@ contains
     use vfunction_namelist,        only: read_vfunction_namelists
     use material_namelist,         only: read_material_namelists
     use legacy_solid_mechanics_namelist, only: read_legacy_solid_mechanics_namelist
-    use viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
+    use legacy_viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists

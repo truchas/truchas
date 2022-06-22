@@ -231,7 +231,7 @@ contains
 
     character(256) :: msg
     integer :: itr
-    real(r8) :: error, lnormi(3), du(size(u))
+    real(r8) :: error, lnormi(3), du(size(u)), udot(size(u))
 
     errc = 0
 
@@ -241,7 +241,14 @@ contains
     do itr = 1, this%mitr
       !! Evaluate the nonlinear function and precondition it.
       this%pcfun_calls = this%pcfun_calls + 1
-      call this%model%compute_f(t, u, (u-u0)/h, du)
+      if (h /= 0) then
+        udot = (u-u0)/h
+      else
+        ! If passed zero step size, this is expected to be a system
+        ! independent of udot.
+        udot = 0
+      end if
+      call this%model%compute_f(t, u, udot, du)
       lnormi = lnorm(du)
       call this%model%apply_precon(t, u, du)
 
@@ -275,9 +282,9 @@ contains
       call tls_info(trim(msg))
     end if
 
-1   format(2x,'NLK BCE solve FAILED: ',i6,' iterations (max), error=',2es13.3)
-2   format(2x,'NLK BCE solve succeeded: ',i6,' iterations, error=',2es13.3)
-3   format(2x,i6,': error=',2es13.3)
+1   format(2x,'NLK BCE solve FAILED: ',i6,' iterations (max), error,lnorm_inf = ',2es13.3)
+2   format(2x,'NLK BCE solve succeeded: ',i6,' iterations, error,lnorm_inf = ',2es13.3)
+3   format(2x,i6,': error,lnorm_inf = ',2es13.3)
 
   end subroutine solve
 

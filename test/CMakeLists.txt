@@ -270,10 +270,25 @@ add_pytruchas_test(contact-box-open-legacy
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS_LEGACY)
 
-add_pytruchas_test(viscoplastic-ring
-                   viscoplastic-ring/testViscoplasticRing.py
+add_pytruchas_test(viscoplastic-ring-legacy
+                   viscoplastic-ring-legacy/testViscoplasticRing.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS_LEGACY)
+
+add_pytruchas_test(viscoplastic-ring
+                   viscoplastic-ring/test.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(viscoplastic-1d
+                   sm-viscoplastic/test.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
+
+add_pytruchas_test(sm-restart
+                   sm-viscoplastic/test-restart.py
+                   PROCESSORS 4
+                   LABELS SOLID_MECHANICS)
 
 add_pytruchas_test(shear-constr-heat
                    shear-constr-heat/testShearConstrHeat.py

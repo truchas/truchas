@@ -1,0 +1,89 @@
+################################################################################
+#
+# 1D Viscoplasticity verification
+#
+# This problem sets up a uniform stress field, and a viscoplastic model which
+# changes the plastic strain negligibly over time, for a predictable constant
+# plastic strain rate over time.
+#
+# The strain is a uniform 1e-3 in the xx component and 0 in other components.
+#
+# The stress is therefore [4e6, 2e6, 2e6, 0, 0, 0] everywhere.
+#
+# The Von Mises Stress is then 2e6.
+#
+# At this stress, the viscoplastic model produces a strain rate of 1.41e-9,
+# negligible on the order of the 1e-3 strain field, and thus linearly increases
+# the plastic strain over the curse of the simulation.
+#
+# Zach Jibben <zjibben@lanl.gov>
+# May 2022
+#
+################################################################################
+
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  y_axis%coarse_grid = 0.0, 0.05
+  z_axis%coarse_grid = 0.0, 0.05
+  x_axis%intervals   = 20
+  y_axis%intervals   = 1
+  z_axis%intervals   = 1
+  rotation_angles = 45, 45, 45
+/
+
+&OUTPUTS
+  output_t = 0.0, 0.5
+  output_dt = 0.1
+/
+
+&NUMERICS
+  dt_constant = 1e-1
+/
+
+&PHYSICS
+  materials = 'stuff'
+  solid_mechanics = .true.
+/
+
+&SOLID_MECHANICS /
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 100
+/
+
+&SOLID_MECHANICS_BC
+  name = 'symmetry'
+  face_set_ids = 1, 3, 4, 5, 6
+  type = 'displacement-n'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'traction'
+  face_set_ids = 2
+  type = 'traction-n'
+  traction = 4e6
+/
+
+&MATERIAL
+  name = 'stuff'
+  density = 1e3
+  tm_ref_density = 1e3
+  tm_ref_temp = 100.0
+  tm_linear_cte = 0
+  tm_lame1 = 2e9
+  tm_lame2 = 1e9
+/
+
+&VISCOPLASTIC_MODEL
+  phase = 'stuff'
+  model = 'power law'
+  pwr_law_a = 1e-12
+  pwr_law_n = 0.5
+  pwr_law_q = 0
+  pwr_law_r = 1
+/

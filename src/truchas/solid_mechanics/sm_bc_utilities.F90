@@ -30,6 +30,7 @@ module sm_bc_utilities
   public :: contact_factor, derivative_contact_factor
   public :: compute_gradient_node_to_cell
   public :: check_if_matching_node
+  public :: compute_stress, von_mises_stress, compute_deviatoric_stress
 
 contains
 
@@ -711,5 +712,38 @@ contains
     if (all(icontact /= 0) .and. all(idispl /= 0)) matching_node = .true.
 
   end subroutine check_if_matching_node
+
+
+  !! Computes the stress from the elastic strain and Lame parameters.
+  pure subroutine compute_stress(lame1, lame2, strain, stress)
+    real(r8), intent(in) :: lame1, lame2, strain(:)
+    real(r8), intent(out) :: stress(:)
+    ! ASSERT(size(strain) == 6)
+    ! ASSERT(size(stress) == 6)
+    stress = 2 * lame2 * strain
+    stress(:3) = stress(:3) + lame1 * sum(strain(:3))
+  end subroutine compute_stress
+
+
+  real(r8) pure function von_mises_stress(stress)
+    real(r8), intent(in) :: stress(:)
+    !ASSERT(size(stress) == 6)
+    von_mises_stress = sqrt(((stress(1) - stress(2))**2 &
+        &                  + (stress(2) - stress(3))**2 &
+        &                  + (stress(3) - stress(1))**2 &
+        &                  + 6 * sum(stress(4:6)**2)) / 2)
+  end function von_mises_stress
+
+
+  pure subroutine compute_deviatoric_stress(stress, deviatoric_stress)
+    real(r8), intent(in) :: stress(:)
+    real(r8), intent(out) :: deviatoric_stress(:)
+    real(r8) :: mean_stress
+    ! ASSERT(size(stress) == 6)
+    ! ASSERT(size(deviatoric_stress) == 6)
+    mean_stress = sum(stress(1:3)) / 3
+    deviatoric_stress = stress
+    deviatoric_stress(1:3) = deviatoric_stress(1:3) - mean_stress
+  end subroutine compute_deviatoric_stress
 
 end module sm_bc_utilities
