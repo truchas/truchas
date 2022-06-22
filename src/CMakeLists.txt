@@ -1,5 +1,3 @@
-add_subdirectory(packages)
-
 message(STATUS "Configuring src/truchas")
 add_subdirectory(truchas)
 

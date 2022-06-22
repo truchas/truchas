@@ -491,13 +491,11 @@ module parallel_communication
 contains
 
   subroutine init_parallel_communication
-    use pgslib_module
     integer :: ierr
     if (initialized) return ! should only be called once
     initialized = .true.
     call MPI_Initialized(flag, ierr)
     if (.not.flag) call MPI_Init(ierr)
-    call PGSLib_INITIALIZE()
     call MPI_Comm_size(comm, npe, ierr)
     call MPI_Comm_rank(comm, this_pe, ierr)
     this_pe = this_pe + 1 ! start numbering at 1
@@ -505,9 +503,7 @@ contains
   end subroutine
 
   subroutine halt_parallel_communication
-    use pgslib_module
     integer :: ierr
-    call PGSLib_finalize
     if (.not.flag) call MPI_Finalize(ierr)
   end subroutine
 
