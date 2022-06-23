@@ -41,7 +41,7 @@ MODULE MATL_MODULE
   ! Author(s): Douglas B. Kothe, LANL T-3 (dbk@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_module, only: max_relation_forms, max_slots
   use truchas_logging_services
   implicit none
@@ -52,7 +52,8 @@ MODULE MATL_MODULE
   ! Public Procedures
   public :: GATHER_VOF, SCATTER_VOF, &
             SLOT_DECREASE, SLOT_INCREASE, SLOT_COMPRESS,      &
-            SLOT_SET, GATHER_VOF_OLD, SLOT_RESIZE
+            SLOT_SET, GATHER_VOF_OLD, SLOT_RESIZE, &
+            matl_init, matl_free
 
   interface ASSIGNMENT(=)
      module procedure MATL_ASSIGN
@@ -87,6 +88,20 @@ MODULE MATL_MODULE
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
+
+  ! From base_types_a_allocate
+  subroutine matl_init
+    use parameter_module, only: mat_slot, mat_slot_new, nmat
+    mat_slot_new = merge(1, 2, nmat <= 1)
+    call slot_increase(matl, mat_slot, mat_slot_new)
+  end subroutine
+
+  ! From base_types_a_deallocate
+  subroutine matl_free
+    use parameter_module, only: mat_slot, mat_slot_new
+    mat_slot_new = 0
+    call slot_decrease(matl, mat_slot, mat_slot_new)
+  end subroutine
 
   SUBROUTINE GATHER_VOF (m, Vof)
     !=======================================================================

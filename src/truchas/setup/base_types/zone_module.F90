@@ -4,45 +4,51 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-MODULE ZONE_MODULE
-  !=======================================================================
-  ! Purpose:
-  !    Define the CELL_AVG derived type
-  !
-  ! Contains:
-  !    STREAM_ZONE_OUT (Stream, Zone)
-  !    ZONE_COLLATE (Zone)
-  !    STREAM_ZONE_IN (Stream, Zone)
-  !    ZONE_DISTRIBUTE (Zone_Tot)
-  !
-  ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
-  !=======================================================================
-  use kinds, only: r8
-  use legacy_mesh_api, only: ndim
+module zone_module
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
-  ! public variables and types
-  public :: CELL_AVG, Zone, read_zone_data
+  public :: zone_init, zone_free, read_zone_data
 
-  !-----------------------------------------------------------------------------
+  ! physical state variables on a cell
+  type, public :: cell_avg
+     real(r8) :: rho       ! current cell average density
+     real(r8) :: rho_old   ! past cell average density
+     real(r8) :: temp      ! current temperature
+     real(r8) :: temp_old  ! past temperature
+     real(r8) :: enthalpy      ! current enthalpy
+     real(r8) :: enthalpy_old  ! past enthalpy
+     real(r8) :: p         ! current pressure
+     real(r8) :: vc(3)     ! current cell-centered velocity
+     real(r8) :: vc_old(3) ! past cell-centered velocity
+  end type cell_avg
 
-  ! CELL_AVG structure - hold physical state variables
-  type CELL_AVG
-     real(r8)                      :: Rho       ! current cell average density
-     real(r8)                      :: Rho_Old   ! past cell average density
-     real(r8)                      :: Temp      ! current temperature
-     real(r8)                      :: Temp_Old  ! past temperature
-     real(r8)                      :: Enthalpy      ! current enthalpy
-     real(r8)                      :: Enthalpy_Old  ! past enthalpy
-     real(r8)                      :: P         ! current pressure
-     real(r8), dimension(ndim)     :: Vc        ! current cell-centered velocity
-     real(r8), dimension(ndim)     :: Vc_old    ! past cell-centered velocity
-  end type CELL_AVG
-
-  type(CELL_AVG), dimension(:), pointer :: Zone
+  type(cell_avg), allocatable, target, public :: zone(:)
 
 CONTAINS
+
+  subroutine zone_init(ncell)
+    integer, intent(in) :: ncell
+    integer :: n
+    allocate(zone(ncell))
+    zone%rho          = 0.0_r8
+    zone%rho_old      = 0.0_r8
+    zone%temp         = 0.0_r8
+    zone%temp_old     = 0.0_r8
+    zone%enthalpy     = 0.0_r8
+    zone%enthalpy_old = 0.0_r8
+    zone%p            = 0.0_r8
+    do n = 1, 3
+      zone%vc(n)      = 0.0_r8
+      zone%vc_old(n)  = 0.0_r8
+    end do
+  end subroutine zone_init
+
+  subroutine zone_free
+    if (allocated(zone)) deallocate(zone)
+  end subroutine
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -80,11 +86,11 @@ CONTAINS
     zone%temp_old     = zone%temp
     zone%enthalpy_old = zone%enthalpy
 
-    do n = 1, ndim
+    do n = 1, 3
       call read_dist_array (unit, zone%vc(n), pcell, 'READ_ZONE_DATA: error reading VC records')
       zone%vc_old(n) = zone%vc(n)
     end do
 
   end subroutine read_zone_data
 
-END MODULE ZONE_MODULE
+end module zone_module

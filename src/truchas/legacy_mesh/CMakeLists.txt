@@ -9,4 +9,6 @@ target_sources(truchas PRIVATE
   nn_gather_impl.F90
   mesh_face_set_impl.F90
   legacy_geometry.F90
+  var_vector_types.F90
+  var_vector_module.F90
 )

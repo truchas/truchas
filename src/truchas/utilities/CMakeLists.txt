@@ -23,7 +23,6 @@ target_sources(truchas PRIVATE
   truchas_logging_services.F90
   truchas_timers.F90
   utilities_module.F90
-  var_vector_module.F90
   gmv/gmvwrite_c_binding.F90
   f08_intrinsics.F90
   get_process_size.c

@@ -360,7 +360,8 @@ call hijack_truchas ()
     !
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
-    use base_types_A_module,    only: BASE_TYPES_A_DEALLOCATE
+    use zone_module, only: zone_free
+    use matl_module, only: matl_free
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
@@ -375,7 +376,8 @@ call hijack_truchas ()
 !NNC    call flow_destroy()
 
     ! deallocate the base types
-    call BASE_TYPES_A_DEALLOCATE ()
+    call zone_free
+    call matl_free
 
     ! free the diffusion solver resources
     call ds_delete ()
