@@ -347,7 +347,7 @@ stress_relaxation_parameter (expert)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The relaxation parameter for the stress part of the diagonal scaling
-preconditioner. Legacy solid mechanics used a value of 16 / 9.
+preconditioner. For reference, the original solid mechanics solver used a value of 16 / 9.
 
 :Type: real
 :Default: 1.0

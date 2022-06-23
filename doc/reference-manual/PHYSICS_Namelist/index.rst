@@ -29,9 +29,17 @@ for species concentrations :math:`\phi_i`. The number of components :math:`n` is
 
 **Induction Heating**.  The induction heating physics kernel solves for the Joule heat that is used as a source in heat transport. It is enabled using the :ref:`Electromagnetics<PHYSICS_EM>` flag. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the electromagnetics solver. The :ref:`Electromagnetics<PHYSICS_EM>` namelist is used to describe the induction heating problem.
 
-**Solid Mechanics**.  The solid mechanics physics kernel models small strain elastic deformation of solid material phases, including deformations induced by temperature changes. It is enabled using the :ref:`Solid_Mechanics<PHYSICS_SM>` flag. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the solid mechanics kernel. Displacement and traction boundary conditions are defined using :ref:`SM_BC<SM_BC_Namelist>` namelists. A gravitational body force may be defined using the :ref:`Body_Force_Density<PHYSICS_BFD>` variable.
+**Solid Mechanics**.  The solid mechanics physics kernel models small strain
+elastic deformation of solid material phases, including deformations induced
+by temperature changes. It is enabled using the `Solid_Mechanics`_ flag. See
+the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description
+of the material properties required by the solid mechanics kernel.
+Displacement and traction boundary conditions are defined using
+:ref:`SM_BC<SM_BC_Namelist>` namelists. A gravitational body force may be
+defined using the `Body_Force_Density`_ variable. Parameters which define
+the plasticity model are defined using the
+:ref:`VISCOPLASTIC_MODEL<VISCOPLASTIC_MODEL_Namelist>` namelist.
 
-**Legacy Solid Mechanics**.  The solid mechanics physics kernel models small strain elastic and plastic deformation of solid material phases, including deformations induced by temperature changes and solid state phase changes. It is enabled using the :ref:`Legacy_Solid_Mechanics<PHYSICS_LSM>` flag. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the solid mechanics kernel. Parameters which define the plasticity model are defined using the :ref:`VISCOPLASTIC_MODEL<VISCOPLASTIC_MODEL_Namelist>` namelist. Displacement and traction boundary conditions are defined using the :ref:`BC<BC_Namelist>` namelist. The effect of the gravitational body force defined by :ref:`Body_Force_Density<PHYSICS_BFD>` can be included by enabling the :ref:`Solid_Mechanics_Body_Force<LSM_SMBF>` flag in the :ref:`LEGACY_SOLID_MECHANICS<LEGACY_SOLID_MECHANICS_Namelist>` namelist.
 
 PHYSICS Namelist Features
 ---------------------------
@@ -44,7 +52,6 @@ Components
 * :ref:`Electromagentics<PHYSICS_EM>`
 * :ref:`Flow<PHYSICS_F>`
 * :ref:`Heat_Transport<PHYSICS_HT>`
-* :ref:`Legacy_Solid_Mechanics<PHYSICS_LSM>`
 * :ref:`Materials<PHYSICS_M>`
 * :ref:`Number_of_Species<PHYSICS_NOS>`
 * :ref:`Solid_Mechanics<PHYSICS_SM>`
@@ -59,7 +66,7 @@ Body_Force_Density
 | **Physical dimension**: :math:`L/T^2`
 | **Type**        : real 3-vector
 | **Default**     : (0.0, 0.0, 0.0)
-| **Note**: The fluid flow and solid mechanics models always include this body force. The legacy solid mechanics model has the option of including this body force or not; see :ref:`Solid_Mechanics_Body_Force<LSM_SMBF>`.
+| **Note**: The fluid flow and solid mechanics models always include this body force.
 
 .. _PHYSICS_EM:
 
@@ -85,15 +92,6 @@ Flow
 ^^^^^^^^^^^^^^^^^^
 
 | **Description** : Enables the simulation of fluid flow.
-| **Type**        : logical
-| **Default**     : false
-
-.. _PHYSICS_LSM:
-
-Legacy_Solid_Mechanics
-^^^^^^^^^^^^^^^^^^^^^^^
-
-| **Description** : Enables the legacy package for calculation of solid material stresses and strains.
 | **Type**        : logical
 | **Default**     : false
 
