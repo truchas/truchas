@@ -62,17 +62,19 @@ contains
     nnodes_tot = global_sum(nnodes)
     unpermute_vertex_vector = new_mesh%xnode(:nnodes)
 
-    !! Mesh links generated from elements in the Exodus mesh are presented as
-    !! regular cells by the legacy API.  These are appended to the list of mesh
-    !! cells locally.
-    gap_links = pack(array=[(j, j=1, new_mesh%nlink_onP)], &
-                     mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP)>0))
+!NNC, 6/24/2022: dropping the inclusion of gap elements in the legacy structure
+!    !! Mesh links generated from elements in the Exodus mesh are presented as
+!    !! regular cells by the legacy API.  These are appended to the list of mesh
+!    !! cells locally.
+!    gap_links = pack(array=[(j, j=1, new_mesh%nlink_onP)], &
+!                     mask=(new_mesh%link_cell_id(:new_mesh%nlink_onP)>0))
     ncells_real = new_mesh%ncell_onP
-    ncells = new_mesh%ncell_onP + size(gap_links)
+    ncells = ncells_real
+!    ncells = new_mesh%ncell_onP + size(gap_links)
     ncells_tot = global_sum(ncells)
     allocate(unpermute_mesh_vector(ncells))
     unpermute_mesh_vector(:new_mesh%ncell_onP) = new_mesh%xcell(:new_mesh%ncell_onP)
-    unpermute_mesh_vector(new_mesh%ncell_onP+1:) = new_mesh%link_cell_id(gap_links)
+!    unpermute_mesh_vector(new_mesh%ncell_onP+1:) = new_mesh%link_cell_id(gap_links)
 
   end subroutine init_common_impl
 

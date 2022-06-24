@@ -163,16 +163,17 @@ contains
       end associate
     end do
 
-    !! Gap cells
-    n = new_mesh%ncell_onP
-    do j = 1, new_mesh%nlink_onP
-      if (new_mesh%link_cell_id(j) == 0) cycle ! not from gap cell
-      associate (bitmask => new_mesh%link_set_mask(j))
-        INSIST(popcnt(bitmask) == 1)
-        n = n + 1
-        cblockid(n) = new_mesh%link_set_id(trailz(bitmask))
-      end associate
-    end do
+!NNC, 6/24/2022: dropping the inclusion of gap elements in the legacy structure
+!    !! Gap cells
+!    n = new_mesh%ncell_onP
+!    do j = 1, new_mesh%nlink_onP
+!      if (new_mesh%link_cell_id(j) == 0) cycle ! not from gap cell
+!      associate (bitmask => new_mesh%link_set_mask(j))
+!        INSIST(popcnt(bitmask) == 1)
+!        n = n + 1
+!        cblockid(n) = new_mesh%link_set_id(trailz(bitmask))
+!      end associate
+!    end do
 
   end subroutine init_cblockid
 
@@ -453,17 +454,18 @@ contains
       end associate
     end do
 
-    !! Unpack the mesh link node structure into NGBR_VRTX (gap cells).
-    n = new_mesh%ncell_onP
-    do j = 1, new_mesh%nlink_onP
-      if (new_mesh%link_cell_id(j) == 0) cycle ! not from a gap cell
-      n = n + 1
-      associate (lnode => new_mesh%lnode(new_mesh%xlnode(j):new_mesh%xlnode(j+1)-1))
-        do k = 1, size(lnode)
-          ngbr_vrtx(k,n) = lnode(k)
-        end do
-      end associate
-    end do
+!NNC, 6/24/2022: dropping the inclusion of gap elements in the legacy structure
+!    !! Unpack the mesh link node structure into NGBR_VRTX (gap cells).
+!    n = new_mesh%ncell_onP
+!    do j = 1, new_mesh%nlink_onP
+!      if (new_mesh%link_cell_id(j) == 0) cycle ! not from a gap cell
+!      n = n + 1
+!      associate (lnode => new_mesh%lnode(new_mesh%xlnode(j):new_mesh%xlnode(j+1)-1))
+!        do k = 1, size(lnode)
+!          ngbr_vrtx(k,n) = lnode(k)
+!        end do
+!      end associate
+!    end do
 
     !! Convert to legacy API degenerate hexes.
     do j = 1, ncells

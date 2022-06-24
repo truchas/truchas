@@ -61,7 +61,6 @@ CONTAINS
     use time_step_module,       only: cycle_number, t
     use zone_module,            only: Zone
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
-    use gap_output,         only: SET_GAP_ELEMENT_OUTPUT
 
     ! Local Variables
     character(LEN = 128) :: string, string2
