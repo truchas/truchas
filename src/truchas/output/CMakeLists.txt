@@ -11,4 +11,5 @@ target_sources(truchas PRIVATE
   truchas_danu_output.F90
   truchas_danu_output_data.F90
   truchas_danu_output_tools.F90
+  degen_hex_topology.F90
 )

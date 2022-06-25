@@ -395,7 +395,7 @@ contains
 
   subroutine read_fluxing_velocity(unit, version, vel_fn)
 
-    use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
+    use degen_hex_topology, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
     use restart_utilities, only: read_dist_array
     use mesh_manager, only: unstr_mesh_ptr
 
@@ -448,7 +448,7 @@ contains
 
   subroutine get_legacy_flux_vel(fluxing_velocity)
 
-    use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
+    use degen_hex_topology, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
 
     real(r8), intent(out) :: fluxing_velocity(:,:)
 
