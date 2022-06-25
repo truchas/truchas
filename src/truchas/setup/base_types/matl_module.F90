@@ -15,11 +15,8 @@ MODULE MATL_MODULE
   !
   !   Public Interface(s):
   !
-  !     * call GATHER_VOF (m, Vof), GATHER_VOF_OLD (m, Vof_Old)
+  !     * call GATHER_VOF (m, Vof)
   !         Gather material m volume fractions from Matl; place them in Vof.
-  !
-  !     * call SCATTER_VOF (m, Vof)
-  !         Scatter material m volume fractions in Vof into Matl.
   !
   !     * call SLOT_DECREASE (ABC, slot, slot_new)
   !         Decrease the ABC size from slot to slot_new.
@@ -33,8 +30,7 @@ MODULE MATL_MODULE
   !     * call SLOT_SET (ABC, s)
   !         Initialize slot s of ABC.
   !
-  ! Contains: GATHER_VOF, GATHER_VOF_OLD
-  !           SCATTER_VOF
+  ! Contains: GATHER_VOF
   !           SLOT_DECREASE
   !           SLOT_INCREASE
   !           SLOT_COMPRESS
@@ -52,9 +48,9 @@ MODULE MATL_MODULE
   ! Public Variables
   public :: MATERIAL, MATL_SLOT, MATL
   ! Public Procedures
-  public :: GATHER_VOF, SCATTER_VOF, &
+  public :: GATHER_VOF, &
             SLOT_DECREASE, SLOT_INCREASE, SLOT_COMPRESS,      &
-            SLOT_SET, GATHER_VOF_OLD, SLOT_RESIZE, &
+            SLOT_SET, SLOT_RESIZE, &
             matl_init, matl_free
 
   interface ASSIGNMENT(=)
@@ -87,13 +83,20 @@ MODULE MATL_MODULE
 
   type(MATL_SLOT), dimension(max_slots), save, Target  :: Matl
 
+  ! The matl_init subroutine sets this value, which is intended for use
+  ! only by this module and matl_utilities. This is a temporary hack
+  ! until the matl structure can be redesigned.
+  integer, protected, public :: ncells = 0
+
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
   ! From base_types_a_allocate
-  subroutine matl_init
+  subroutine matl_init(n)
     use parameter_module, only: mat_slot, mat_slot_new, nmat
+    integer, intent(in) :: n
+    ncells = n
     mat_slot_new = merge(1, 2, nmat <= 1)
     call slot_increase(matl, mat_slot, mat_slot_new)
   end subroutine
@@ -133,63 +136,6 @@ CONTAINS
     end do
 
   END SUBROUTINE GATHER_VOF
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE GATHER_VOF_OLD (m, Vof_Old)
-    !=======================================================================
-    ! Purpose(s):
-    !   Gather material m volume fractions from the Matl derived
-    !   type and place them into array Vof.
-    !=======================================================================
-    use parameter_module, only: mat_slot
-    use legacy_mesh_api,  only: ncells
-
-    ! Argument List
-    integer, intent(IN) :: m
-    real(r8), dimension(ncells), intent(OUT) :: Vof_Old
-
-    ! Local Variables
-    integer :: s
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Initialize
-    Vof_Old = 0.0_r8
-
-    ! Loop over slots, gathering material m volume fractions
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == m) Vof_Old = Matl(s)%Cell%Vof_Old
-    end do
-
-  END SUBROUTINE GATHER_VOF_OLD
-
-  ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  SUBROUTINE SCATTER_VOF (m, Vof)
-    !=======================================================================
-    ! Purpose(s):
-    !   Scatter material m volume fractions in array Vof into the
-    !   appropriate slots of the Matl derived type.
-    !=======================================================================
-    use parameter_module, only: mat_slot
-    use legacy_mesh_api,  only: ncells
-
-    ! Argument List
-    integer, intent(IN) :: m
-    real(r8), dimension(ncells), intent(IN) :: Vof
-
-    ! Local Variables
-    integer :: s
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Loop over slots, scattering material m volume fractions
-    do s = 1,mat_slot
-       where (Matl(s)%Cell%Id == m) Matl(s)%Cell%Vof = Vof
-    end do
-
-  END SUBROUTINE SCATTER_VOF
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -236,7 +182,6 @@ CONTAINS
     !   Increase the ABC structure size from slot to slot_new.
     !=======================================================================
     use parameter_module, only: max_slots
-    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -277,8 +222,6 @@ CONTAINS
 
   subroutine slot_resize (abc, slot, slot_new)
 
-    use legacy_mesh_api, only: ncells
-
     type(matl_slot), intent(inout) :: abc(:)
     integer,         intent(inout) :: slot
     integer,         intent(in)    :: slot_new
@@ -318,7 +261,6 @@ CONTAINS
     !
     !=======================================================================
     use parameter_module, only: max_slots
-    use legacy_mesh_api,  only: ncells
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC

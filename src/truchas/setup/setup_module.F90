@@ -78,7 +78,7 @@ CONTAINS
 
     ! Allocate the base types and set them to their defaults.
     call zone_init(ncells)
-    call matl_init
+    call matl_init(ncells)
 
     ! Write the primary truchas mesh.
     call TDO_write_default_mesh
