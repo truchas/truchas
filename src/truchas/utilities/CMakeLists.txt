@@ -17,7 +17,6 @@ target_sources(truchas PRIVATE
   sort_utilities.F90
   string_utilities.F90
   tabular_utilities.F90
-  tensor_module.F90
   truchas_env.F90
   truchas_logging_services.F90
   truchas_timers.F90

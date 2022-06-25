@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 MODULE SETUP_MODULE
   !=======================================================================
   ! Purpose:
@@ -50,38 +52,33 @@ CONTAINS
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
     use init_module,            only: INITIAL
-    use tensor_module,          only: TENSOR_MATRIX
-    use mesh_manager,           only: init_mesh_manager
-    use legacy_mesh_api,        only: init_legacy_mesh_api, ncells
+    use unstr_mesh_type
+    use mesh_manager,           only: init_mesh_manager, unstr_mesh_ptr
     use EM,                     only: initialize_EM
-    use truchas_danu_output,    only: TDO_write_default_mesh
+    use truchas_danu_output,    only: TDO_write_mesh
     use truchas_timers
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
+    type(unstr_mesh), pointer :: mesh
+
     ! Start the initialization timer.
     call start_timer("Initialization")
 
-    ! Setup the tensor matrix.
-    call TENSOR_MATRIX ()
-    
     ! Skip over unused legacy mesh data in the restart file (TEMPORARY)
-    if (restart) then
-      call skip_restart_mesh
-    end if
+    if (restart) call skip_restart_mesh
 
-    ! Instantiate the new mesh objects.
+    ! Instantiate the mesh objects.
     call init_mesh_manager
 
-    ! Initialize old_mesh_api module
-    call init_legacy_mesh_api
-
     ! Allocate the base types and set them to their defaults.
-    call zone_init(ncells)
-    call matl_init(ncells)
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
+    call zone_init(mesh%ncell_onP)
+    call matl_init(mesh%ncell_onP)
 
     ! Write the primary truchas mesh.
-    call TDO_write_default_mesh
+    call TDO_write_mesh(mesh)
 
     ! NNC, Sep 2014.  This used to be done after the call to INITIAL, but is
     ! needed here because of time-dependent boundary conditions.  I left the

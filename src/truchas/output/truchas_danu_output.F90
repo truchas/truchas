@@ -28,7 +28,7 @@ module truchas_danu_output
   implicit none
   private
 
-  public :: TDO_write_default_mesh
+  public :: TDO_write_mesh
   public :: TDO_write_timestep
 
   type(th5_mesh_group), save :: out_mesh
@@ -38,21 +38,20 @@ module truchas_danu_output
 
 contains
 
-  subroutine TDO_write_default_mesh
+  subroutine TDO_write_mesh(mesh)
 
-    use kinds, only: r8
     use unstr_mesh_type
-    use mesh_manager, only: unstr_mesh_ptr
     use degen_hex_topology, only: OLD_TET_NODE_MAP, OLD_PYR_NODE_MAP, OLD_PRI_NODE_MAP
     use output_control,  only: part
     use truchas_logging_services
     use truchas_env, only: output_file_name, overwrite_output
 
+    type(unstr_mesh), intent(in) :: mesh
+
     integer :: j, k
     integer, allocatable :: hnode(:,:), cblockid(:)
     logical :: exists
     integer :: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
-    type(unstr_mesh), pointer :: mesh
 
     if (is_IOP .and. .not. overwrite_output) then
       inquire(file=output_file_name('h5'), exist=exists)
@@ -61,9 +60,6 @@ contains
         end if
     endif
     call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
-
-    mesh => unstr_mesh_ptr('MAIN')
-    INSIST(associated(mesh))
 
     ndim = 3
     nvc  = 8
@@ -136,7 +132,7 @@ contains
 
     call outfile%close()
 
-  end subroutine TDO_write_default_mesh
+  end subroutine TDO_write_mesh
 
   subroutine TDO_start_simulation
 
