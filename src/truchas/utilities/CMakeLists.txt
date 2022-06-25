@@ -10,7 +10,6 @@ target_sources(truchas PRIVATE
   kinds.F90
   lnorm_module.F90
   lu_solve_module.F90
-  old_mesh_gmv.F90
   permutations.F90
   process_info_module.F90
   signal_handler.F90

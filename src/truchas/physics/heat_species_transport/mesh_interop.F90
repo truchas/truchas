@@ -170,7 +170,6 @@ contains
 
 !    use material_class
     use matl_module, only: gather_vof
-    use legacy_mesh_api, only: ncells
     !use material_interop, only: material_to_system
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
@@ -212,7 +211,7 @@ contains
       material_to_system(p1:p2) = m
     end do
 
-    allocate(vofm(ncells), vf(mesh%ncell))
+    allocate(vofm(mesh%ncell_onP), vf(mesh%ncell))
     vfrac = 0.0_r8
     do m = 1, matl_model%nphase
       call gather_vof (m, vofm)
@@ -261,7 +260,6 @@ contains
   subroutine update_matl_from_mmf (mmf, state)
 
     use matl_utilities, only: update_matl, matl_get_cell_vof
-    use legacy_mesh_api, only: ncells
 #ifdef EXTRA_VOF_DIAGNOSTICS
     use parallel_communication, only: global_minval, global_maxval
 #endif
@@ -291,7 +289,7 @@ contains
     !! We assume an identity mapping from region cells to mesh cells.
     ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
-    allocate(vof(0:matl_model%nphase,ncells), vofm(ncells))
+    allocate(vof(0:matl_model%nphase,mesh%ncell_onP), vofm(mesh%ncell_onP))
     vof = 0.0_r8
 
     !! Copy void volume fraction, if any, into VOF
@@ -340,11 +338,6 @@ contains
         end if
 
       end select
-    end do
-
-    !! Copy the volume fraction data for gap elements from MATL into VOF.
-    do j = mesh%ncell_onP+1, ncells
-      call matl_get_cell_vof (j, vof(1:,j))
     end do
 
 #ifdef EXTRA_VOF_DIAGNOSTICS

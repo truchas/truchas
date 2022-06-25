@@ -395,7 +395,6 @@ contains
 
   subroutine read_fluxing_velocity(unit, version, vel_fn)
 
-    use legacy_mesh_api, only: ncells, nfc, pcell => unpermute_mesh_vector
     use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
     use restart_utilities, only: read_dist_array
     use mesh_manager, only: unstr_mesh_ptr
@@ -407,13 +406,11 @@ contains
     real(r8), allocatable :: old_flux_vel(:,:)
     type(unstr_mesh), pointer :: mesh
 
-    mesh => unstr_mesh_ptr('MAIN')
+    mesh => unstr_mesh_ptr('MAIN') !NB: cannot use this%mesh; it is not initialized when this subroutine is called!
     INSIST(associated(mesh))
 
-    INSIST(mesh%ncell_onP == ncells) ! may fail if gap elements are present
-
-    allocate(old_flux_vel(nfc,mesh%ncell))
-    call read_dist_array(unit, old_flux_vel(:,:ncells), pcell, 'READ_FLUXING_VELOCITY: error reading Fluxing_Velocity records')
+    allocate(old_flux_vel(6,mesh%ncell))
+    call read_dist_array(unit, old_flux_vel(:,:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_FLUXING_VELOCITY: error reading Fluxing_Velocity records')
     call mesh%cell_imap%gather_offp(old_flux_vel)
 
     allocate(vel_fn(mesh%nface_onP))
@@ -451,7 +448,6 @@ contains
 
   subroutine get_legacy_flux_vel(fluxing_velocity)
 
-    use legacy_mesh_api, only: ncells, nfc
     use common_impl, only: NEW_TET_SIDE_MAP, NEW_PYR_SIDE_MAP, NEW_PRI_SIDE_MAP, NEW_HEX_SIDE_MAP
 
     real(r8), intent(out) :: fluxing_velocity(:,:)
@@ -460,14 +456,13 @@ contains
     real(r8) :: tmp
     integer :: j, k
 
-    ASSERT(size(fluxing_velocity,dim=1) == nfc)
-    ASSERT(size(fluxing_velocity,dim=2) == ncells)
-    INSIST(ncells == this%mesh%ncell_onP) ! may fail if gap elements are present
+    ASSERT(size(fluxing_velocity,dim=1) == 6)
+    ASSERT(size(fluxing_velocity,dim=2) == this%mesh%ncell_onP)
 
     vel_fn => flow_vel_fn_view()
     ASSERT(size(vel_fn) == this%mesh%nface)  ! we assume off-process are up-to-date
     fluxing_velocity = 0.0_r8
-    do j = 1, ncells
+    do j = 1, this%mesh%ncell_onP
       associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1))
         select case (this%mesh%xcnode(j+1)-this%mesh%xcnode(j)) ! number of nodes for cell
         case (4)  ! tet cell

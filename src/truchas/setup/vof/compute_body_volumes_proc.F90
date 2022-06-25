@@ -85,7 +85,6 @@ contains
     use unstr_mesh_type
     use parameter_list_type
     use timer_tree_type
-    use legacy_mesh_api, only: ncells ! this can go away once init_module doesn't expect it
 
     type(unstr_mesh), intent(in) :: mesh
     integer, intent(in) :: recursion_limit
@@ -102,16 +101,9 @@ contains
 
     call start_timer("VOF Initialize")
 
-    ! TODO: change to modern mesh%ncell when init_module doesn't
-    !       expect an array with length ncells.
     call body_id%init(mesh, plist, stat, errmsg)
     if (stat /= 0) return
-    allocate(vof(max(body_id%nbody,1), ncells))
-    ASSERT(size(vof,dim=2) >= mesh%ncell_onP)
-
-    ! In some cases, ncell > mesh%ncell_onP. I don't know why that occurs, but
-    ! those extra cells must be initialized to avoid invalid floating operations.
-    if (size(vof,dim=2) > mesh%ncell_onP) vof(:,mesh%ncell_onP+1:) = 0
+    allocate(vof(max(body_id%nbody,1), mesh%ncell_onP))
 
     ! Here we divide by the cell%volume, rather than mesh%volume(i),
     ! to ensure consistency. This routine works by tallying up volumes

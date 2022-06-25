@@ -347,7 +347,6 @@ contains
 
   subroutine ustruc_output (seq)
 
-    use legacy_mesh_api, only: ncells
     use truchas_danu_output_tools
     use truchas_h5_outfile, only: th5_seq_group
 
@@ -358,7 +357,7 @@ contains
     if (.not.allocated(this)) return
     call start_timer ('Microstructure')
 
-    allocate(scalar_out(ncells), vector_out(3,ncells))
+    allocate(scalar_out(this%mesh%ncell_onP), vector_out(3,this%mesh%ncell_onP))
 
     !! Core module: temperature and gradient -- modeled cells only
     !call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
@@ -585,32 +584,28 @@ contains
   end subroutine ustruct_update_aux
 
   !! This routine returns the total volume fraction VF occupied by the phases
-  !! corresponding to the old material indices in the list MATID. The returned
-  !! cell-centered volume fractions are based on the new mesh.
+  !! corresponding to the old material indices in the list MATID.
 
   subroutine get_vol_frac (matid, vf)
 
     use matl_module, only: gather_vof
-    use legacy_mesh_api, only: ncells
 
     integer, intent(in) :: matid(:)
     real(r8), intent(out) :: vf(:)
 
     integer :: n
-    real(r8), allocatable :: vf1(:), vf2(:)
+    real(r8), allocatable :: vf1(:)
 
     ASSERT(size(vf) == this%mesh%ncell_onP)
 
-    allocate(vf1(ncells))
-    call gather_vof (matid(1), vf1)
+    call gather_vof (matid(1), vf)
     if (size(matid) > 1) then
-      allocate(vf2(ncells))
+      allocate(vf1, mold=vf)
       do n = 2, size(matid)
-        call gather_vof (matid(n), vf2)
-        vf1 = vf1 + vf2
+        call gather_vof (matid(n), vf1)
+        vf = vf + vf1
       end do
     end if
-    vf = vf1(:this%mesh%ncell_onP)
 
   end subroutine get_vol_frac
 

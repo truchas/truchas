@@ -61,8 +61,6 @@ CONTAINS
     !=======================================================================
     use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
         OVERWRITE_VEL, OVERWRITE_ZONE
-    use parameter_module,       only: nmat
-    use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use zone_module,            only: Zone
@@ -72,32 +70,26 @@ CONTAINS
                                       ds_get_temp
     use probes_driver,          only: probes_init
     use ustruc_driver,          only: ustruc_driver_init
-    use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
-    use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
+    use flow_driver, only: flow_driver_init, flow_driver_set_initial_state
     use solid_mechanics_driver, only: solid_mechanics_init
-    use physics_module,         only: heat_transport, flow, solid_mechanics
+    use physics_module,         only: flow, solid_mechanics
     use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
     use compute_body_volumes_proc
-    use material_model_driver,  only: init_material_model
     use unstr_mesh_type
     use output_control, only: output_init
 
     real(r8), intent(in) :: t, dt
 
     ! Local Variables
-    integer :: m, stat
-    real(r8) :: density
+    integer :: stat
     logical :: found
     type(unstr_mesh), pointer :: mesh
     real(r8), allocatable :: phi(:,:), vel_fn(:), hits_vol(:,:)
     real(r8), pointer :: temperature_fc(:) => null()
-    character(200) :: errmsg
     character(:), allocatable :: errmsg2
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    !call init_material_model
 
     mesh => unstr_mesh_ptr('MAIN')
 
@@ -123,7 +115,7 @@ CONTAINS
     else
 
       ! Initialize Matl%Cell and Zone%Vc.
-      call MATL_INIT (Hits_Vol)
+      call MATL_INIT (mesh, Hits_Vol)
 
     end if
 
@@ -147,9 +139,9 @@ CONTAINS
 
     ! Get the initial species concentration fields.
     if (ds_enabled .and. num_species > 0) then
-      allocate(phi(ncells,num_species))
+      allocate(phi(mesh%ncell_onP,num_species))
       if (restart) then
-        call restart_species (phi, found)
+        call restart_species (mesh%xcell(:mesh%ncell_onP), phi, found)
         if (.not.found) call init_conc (hits_vol, phi)
       else
         call init_conc (hits_vol, phi)
@@ -242,7 +234,6 @@ CONTAINS
 
   subroutine init_conc (hits_vol, phi)
 
-    use legacy_mesh_api, only: ncells, mesh, GAP_ELEMENT_1
     use interfaces_module, only: body_phi
 
     real(r8), intent(in) :: hits_vol(:,:)
@@ -252,19 +243,15 @@ CONTAINS
 
     nbody = size(hits_vol,dim=1)
     nconc = size(phi,dim=2)
-    do j = 1, ncells
-      if (mesh(j)%cell_shape < GAP_ELEMENT_1) then  ! valid HITS_VOL data
-        phi(j,:) = matmul(hits_vol(:,j), body_phi(:nbody,:nconc)) / sum(hits_vol(:,j))
-      else  ! a gap cell with bogus HITS_VOL data?
-        phi(j,:) = 0.0
-      end if
+    do j = 1, size(phi,dim=1)
+      phi(j,:) = matmul(hits_vol(:,j), body_phi(:nbody,:nconc)) / sum(hits_vol(:,j))
     end do
 
   end subroutine init_conc
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
 
-  SUBROUTINE MATL_INIT (Hits_Vol)
+  SUBROUTINE MATL_INIT (mesh, Hits_Vol)
     !=======================================================================
     ! Purpose(s):
     !
@@ -274,17 +261,18 @@ CONTAINS
     !=======================================================================
     use interfaces_module,    only: matnum, nbody
     use matl_module,          only: matl, slot_increase, slot_set
-    use legacy_mesh_api,      only: ncells, Cell, ncells_real
     use parameter_module,     only: mat_slot, mat_slot_new, nmat
     use parallel_communication, only: global_maxval
     use restart_variables,    only: restart
+    use unstr_mesh_type
 
+    type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(inout) :: Hits_Vol(:,:)
 
-    integer :: b, m, s, j, stat
-    integer :: mcount(ncells)
+    integer :: b, m, s, j
+    integer :: mcount(mesh%ncell_onP)
     logical :: bm_mask(nbody,nmat)
-    real(r8) :: vofm, total(ncells_real)
+    real(r8) :: vofm
 
     if (restart) return ! nothing to do
 
@@ -297,7 +285,7 @@ CONTAINS
     !! Count the number of materials in each cell and size MATL accordingly
     mcount = 0
     do m = 1, nmat
-      do j = 1, ncells
+      do j = 1, mesh%ncell_onP
         if (any(hits_vol(:,j) > 0 .and. bm_mask(:,m))) mcount(j) = mcount(j) + 1
       end do
     end do
@@ -312,8 +300,8 @@ CONTAINS
     !! Initialize MATL
     mcount = 0
     do m = 1, nmat
-      do j = 1, ncells
-        vofm = sum(hits_vol(:,j), mask=bm_mask(:,m)) / cell(j)%volume
+      do j = 1, mesh%ncell_onP
+        vofm = sum(hits_vol(:,j), mask=bm_mask(:,m)) / mesh%volume(j)
         if (vofm > 0) then
           mcount(j) = mcount(j) + 1
           s = mcount(j)
@@ -327,7 +315,7 @@ CONTAINS
     !! TODO? tweak the vofs to drop small values and adjust to sum exactly to 1
 
     ! Compute mesh Velocities from body velocities
-    call VELOCITY_INIT (Hits_Vol)
+    call VELOCITY_INIT (mesh, Hits_Vol)
 
   END SUBROUTINE MATL_INIT
 
@@ -456,20 +444,19 @@ CONTAINS
   !! thus can be directly tested.  The original code could not be tested,
   !! and obviously wasn't.
 
-  subroutine check_vof (stat)
+  subroutine check_vof (mesh, stat)
 
     use parameter_module, only: nmat
-    use legacy_mesh_api, only: ncells, unpermute_mesh_vector, ncells_real
     use matl_utilities, only: matl_get_vof
+    use unstr_mesh_type
 
+    type(unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
 
-    integer :: n
-    real(r8) :: vfrac(nmat,ncells)
+    real(r8) :: vfrac(nmat,mesh%ncell_onP)
 
     call matl_get_vof (vfrac) ! we don't want to deal directly with matl
-
-    call check_vof_aux (vfrac(:,:ncells_real), unpermute_mesh_vector(:ncells_real), stat)
+    call check_vof_aux (vfrac, mesh%xcell(:mesh%ncell_onP), stat)
 
   end subroutine check_vof
 
@@ -644,7 +631,7 @@ CONTAINS
 
   end subroutine check_vof_aux
 
-  SUBROUTINE VELOCITY_INIT (Hits_Vol)
+  SUBROUTINE VELOCITY_INIT (mesh, Hits_Vol)
     !=======================================================================
     ! Purpose(s):
     !
@@ -652,17 +639,18 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,    only: alittle
-    use interfaces_module, only: Body_Vel, nbody, Body_Temp, Matnum
-    use legacy_mesh_api,   only: ndim, ncells
+    use interfaces_module, only: Body_Vel, nbody, Matnum
     use zone_module,       only: Zone
+    use unstr_mesh_type
 
     ! Arguments
-    real(r8), dimension(nbody,ncells), intent(IN) :: Hits_Vol
+    type(unstr_mesh), intent(in) :: mesh
+    real(r8), intent(IN) :: Hits_Vol(:,:)
 
     ! Local Variables
     integer :: m, n
-    real(r8), dimension(ncells)      :: Mass, Massc
-    real(r8), dimension(ndim,ncells) :: Momentum
+    real(r8), dimension(mesh%ncell_onP) :: Mass, Massc
+    real(r8), dimension(3,mesh%ncell_onP) :: Momentum
     real(r8) :: rhomat
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -674,14 +662,14 @@ CONTAINS
     do m = 1,nbody
        if (Matnum(m) == matl_model%void_index) cycle
        rhomat = matl_model%const_phase_prop(Matnum(m), 'density')
-       do n = 1,ndim
+       do n = 1,3
           Momentum(n,:) = Momentum(n,:) + Hits_Vol(m,:)*rhomat*Body_Vel(n,m)
        end do
        Mass = Mass + Hits_Vol(m,:)*rhomat
     end do
 
     ! Now compute the initial cell-centered, center-of-mass velocities
-    do n = 1,ndim
+    do n = 1,3
 
        ! Get the momentum
        Massc = Momentum(n,:)
@@ -698,169 +686,6 @@ CONTAINS
     end do
 
   END SUBROUTINE VELOCITY_INIT
-
-
-  SUBROUTINE BOUNDARYBETWEENMATERIALS (face, material_1, material_2, Mask)
-    !=======================================================================
-    ! Purpose:
-    !
-    ! Find all faces that have a cell made of material_1 on one side
-    ! and material_2 on the other side.
-    !
-    !=======================================================================
-    use cutoffs_module,    only: cutvof
-    use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
-    use matl_module,       only: GATHER_VOF
-
-    ! Arguments
-    integer, intent(IN) :: face
-    integer, intent(IN) :: material_1
-    integer, intent(IN) :: material_2
-    logical, dimension(ncells), intent(INOUT) :: Mask
-
-    ! Local Variables
-    real(r8) :: threshold
-    integer  :: c, status
-    real(r8), allocatable, dimension(:)   :: Vof_1, Vof_2
-    real(r8), allocatable, dimension(:,:) :: Vof_Tmp
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Set the threshold.
-    threshold = cutvof
-
-    ! Get some working space.
-    ALLOCATE(Vof_1(ncells),STAT=status)
-    if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocation failed: vof_1')
-    ALLOCATE(Vof_2(ncells),STAT=status)
-    if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocation failed: vof_2')
-    ALLOCATE(Vof_Tmp(nfc,ncells),STAT=status)
-    if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocation failed: vof_tmp')
-
-    ! start with a null boundary
-    Mask = .false.
-
-    ! get vof of material 1 in each cell
-    call GATHER_VOF (material_1, Vof_1)
-
-    ! get vof of material 2 in each cell
-    call GATHER_VOF (material_2, Vof_2)
-
-    ! gather vof of material 2 across cell faces
-    call EE_GATHER (Vof_Tmp, Vof_2)
-
-    ! look for cells made of (mostly) material 1
-    do c = 1, ncells
-       if (Vof_1(c) > threshold .and. Vof_Tmp(face,c) > threshold) Mask(c) = .true.
-    end do
-
-    ! gather vof of material 1 across cell faces
-    call EE_GATHER (Vof_Tmp, Vof_1)
-
-    ! look for cells made of (mostly) material 2
-    do c = 1, ncells
-       if (Vof_2(c) > threshold .and. Vof_Tmp(face,c) > threshold) Mask(c) = .true.
-    end do
-
-    ! release working space
-    DEALLOCATE(Vof_Tmp)
-    DEALLOCATE(Vof_2)
-    DEALLOCATE(Vof_1)
-
-  END SUBROUTINE BOUNDARYBETWEENMATERIALS
-
-  SUBROUTINE EXTERNALMATERIALBOUNDARY (face, material, Mask)
-    !=======================================================================
-    ! Purpose:
-    !
-    ! Find all faces that have a cell made of material_1 on one side
-    ! and material_2 on the other side.
-    !
-    !=======================================================================
-    use cutoffs_module,    only: cutvof
-    use matl_module,       only: GATHER_VOF
-    use legacy_mesh_api,   only: ncells, Mesh
-
-    ! Arguments
-    integer, intent(IN) :: face
-    integer, intent(IN) :: material
-    logical, dimension(ncells), intent(INOUT) :: Mask
-
-    ! Local Variables
-    real(r8) :: threshold
-    integer  :: c, status
-    real(r8), allocatable, dimension(:) :: Vof
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Set the threshold.
-    threshold = cutvof
-
-    ! Get some working space.
-    ALLOCATE(Vof(ncells),STAT=status)
-    if (status /= 0) call TLS_panic ('ExternalMaterialBoundary: allocation failed: vof')
-
-    ! Start with a null boundary.
-    Mask = .false.
-
-    ! Get the material volume fraction (vof) in each cell.
-    call GATHER_VOF (material, Vof)
-
-    ! Look for cell boundary faces having the specified material.
-    do c = 1, ncells
-       if (Vof(c) > threshold .and. Mesh(c)%Ngbr_Cell(face) == 0) Mask(c) = .true.
-    end do
-
-    ! Release working space.
-    DEALLOCATE(Vof)
-
-  END SUBROUTINE EXTERNALMATERIALBOUNDARY
-
-  SUBROUTINE MESHBCFACES(face, set1, Mask, nssets, Ngbr_Mesh_Face_Set )
-    !=======================================================================
-    ! Purpose:
-    !
-    ! Find all faces and cells that are in the side sets specified by set1.
-    ! At least some mesh generators, e.g. Cubit only list one
-    ! cell/face pair for each boundary location.  We need cells and face
-    ! ids on both sides of internal boundaries.  Do not include faces on gap
-    ! elements.
-    !
-    !=======================================================================
-    use legacy_mesh_api, only: ncells, nfc, Mesh, Mesh_Face_Set
-
-    ! Arguments
-    integer, intent(IN) :: face, set1, nssets
-    logical, dimension(ncells), intent(INOUT) :: Mask
-    integer, dimension(nssets,nfc,nfc,ncells), intent(IN) :: Ngbr_Mesh_Face_Set
-
-    ! Local Variables
-    integer :: n, nf, icell
-
-    ! Start with a null boundary.
-    Mask = .false.
-
-    !nssets = SIZE(Mesh_Face_Set,1)
-
-    ! Check each neighbor of each cell to see if it is in the face set list.
-    do n = 1,nssets
-       CELL_LOOP: do icell = 1,ncells
-          if (Mesh_Face_Set(n,face,icell) == set1) then
-             Mask(icell) = .true.
-          else
-             if (Mesh(icell)%Ngbr_Face(face) > 0) then
-                nf = Mesh(icell)%Ngbr_Face(face)
-             else
-                cycle CELL_LOOP
-             end if
-             if (Ngbr_Mesh_Face_Set(n,nf,face,icell) == set1) then
-                Mask(icell) = .true.
-             end if
-          end if
-       end do CELL_LOOP
-    end do
-
-  END SUBROUTINE MESHBCFACES
 
  !!
  !! COMPUTE_CELL_ENTHALPY

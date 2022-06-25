@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 MODULE EDIT_MODULE
   !=======================================================================
   ! Purpose(s):
@@ -44,7 +46,17 @@ MODULE EDIT_MODULE
 
 CONTAINS
 
-  SUBROUTINE EDIT_SHORT ()
+  !! Acquire the mesh to pass as an argument to the real edit_short
+  subroutine edit_short
+    use mesh_manager, only: unstr_mesh_ptr
+    use unstr_mesh_type
+    type(unstr_mesh), pointer :: mesh
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
+    call edit_short_aux(mesh)
+  end subroutine
+
+  SUBROUTINE EDIT_SHORT_AUX (mesh)
     !=======================================================================
     ! Purpose(s):
     !
@@ -53,7 +65,6 @@ CONTAINS
     !=======================================================================
     use cutoffs_module,         only: alittle
     use matl_module,            only: GATHER_VOF
-    use legacy_mesh_api,        only: ncells, ndim, Cell
     use truchas_env,            only: output_file_name
     use parameter_module,       only: nmat
     use parallel_communication
@@ -61,12 +72,16 @@ CONTAINS
     use time_step_module,       only: cycle_number, t
     use zone_module,            only: Zone
     use output_utilities,       only: ANNOUNCE_FILE_WRITE
+    use unstr_mesh_type
+
+    type(unstr_mesh), intent(in) :: mesh
 
     ! Local Variables
+    integer, parameter :: ndim = 3
     character(LEN = 128) :: string, string2
     integer :: i, m, n, variables = 2*ndim + 6, nmechvar = 4
     integer, dimension(1) :: MaxLoc_L, MinLoc_L
-    real(r8), dimension(ncells) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
+    real(r8), dimension(mesh%ncell_onP) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
     real(r8) :: Temperature
     !type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
 
@@ -111,7 +126,7 @@ CONTAINS
        call GATHER_VOF (m, Tmp)
 
        ! Sum material volume.
-       Matl_Vol = Cell%Volume * Tmp
+       Matl_Vol = mesh%volume(:mesh%ncell_onP) * Tmp
        Material_Volume(m) = global_sum(Matl_Vol)
        if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
@@ -138,7 +153,7 @@ CONTAINS
 
        ! Get the material enthalpy.
        call matl_model%alloc_phase_prop(m, 'enthalpy', f)
-       ENTHALPY_LOOP: do n=1,ncells
+       ENTHALPY_LOOP: do n=1,mesh%ncell_onP
          Tmp(n) = Matl_Vol(n) * f%eval([Zone(n)%Temp])
        end do ENTHALPY_LOOP
 
@@ -160,7 +175,7 @@ CONTAINS
 
     end do MATERIAL_SUMS
 
-    total_volume = global_sum(Cell%Volume)
+    total_volume = global_sum(mesh%volume(:mesh%ncell_onP))
 
     ! Write out the totals.
     write (string,30) total_volume, total_mass, (Total_Momentum(n),n=1,ndim), total_KE, total_enthalpy
@@ -248,6 +263,6 @@ CONTAINS
 
     call ANNOUNCE_FILE_WRITE ('Short edit', output_file_name('log'))
 
-  END SUBROUTINE EDIT_SHORT
+  END SUBROUTINE EDIT_SHORT_AUX
 
 END MODULE EDIT_MODULE

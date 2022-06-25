@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 module zone_module
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -70,26 +72,33 @@ CONTAINS
 
   subroutine read_zone_data (unit, version)
 
-    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
     use restart_utilities, only: read_dist_array
+    use unstr_mesh_type
+    use mesh_manager, only: unstr_mesh_ptr
 
     integer, intent(in) :: unit, version
+    type(unstr_mesh), pointer :: mesh
 
     integer :: n
 
-    call read_dist_array (unit, zone%rho,      pcell, 'READ_ZONE_DATA: error reading RHO record')
-    call read_dist_array (unit, zone%temp,     pcell, 'READ_ZONE_DATA: error reading TEMP record')
-    call read_dist_array (unit, zone%enthalpy, pcell, 'READ_ZONE_DATA: error reading ENTHALPY record')
-    call read_dist_array (unit, zone%p,        pcell, 'READ_ZONE_DATA: error reading PRESSURE record')
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
 
-    zone%rho_old      = zone%rho
-    zone%temp_old     = zone%temp
-    zone%enthalpy_old = zone%enthalpy
+    associate (pcell => mesh%xcell(1:mesh%ncell_onP))
+      call read_dist_array (unit, zone%rho,      pcell, 'READ_ZONE_DATA: error reading RHO record')
+      call read_dist_array (unit, zone%temp,     pcell, 'READ_ZONE_DATA: error reading TEMP record')
+      call read_dist_array (unit, zone%enthalpy, pcell, 'READ_ZONE_DATA: error reading ENTHALPY record')
+      call read_dist_array (unit, zone%p,        pcell, 'READ_ZONE_DATA: error reading PRESSURE record')
 
-    do n = 1, 3
-      call read_dist_array (unit, zone%vc(n), pcell, 'READ_ZONE_DATA: error reading VC records')
-      zone%vc_old(n) = zone%vc(n)
-    end do
+      zone%rho_old      = zone%rho
+      zone%temp_old     = zone%temp
+      zone%enthalpy_old = zone%enthalpy
+
+      do n = 1, 3
+        call read_dist_array (unit, zone%vc(n), pcell, 'READ_ZONE_DATA: error reading VC records')
+        zone%vc_old(n) = zone%vc(n)
+      end do
+    end associate
 
   end subroutine read_zone_data
 

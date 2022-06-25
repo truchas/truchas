@@ -38,7 +38,6 @@ CONTAINS
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use parameter_module, only: mbody, mphi
-    use legacy_mesh_api, only: ndim
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
     use string_utilities, only: i_to_c
@@ -47,7 +46,7 @@ CONTAINS
 
     !! Namelist variables used here
     integer :: material_number
-    real(r8) :: phi(mphi), temperature, velocity(ndim)
+    real(r8) :: phi(mphi), temperature, velocity(3)
     character(31) :: temperature_function
     !! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
     character(64) :: surface_name, axis, fill, material_name

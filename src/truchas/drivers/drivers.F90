@@ -395,7 +395,13 @@ call hijack_truchas ()
     call mem_diag_close
 
     ! report the timing info
-    call REPORT_MEMORY
+    block
+      use base_mesh_class
+      use mesh_manager, only: named_mesh_ptr
+      class(base_mesh), pointer :: mesh
+      mesh => named_mesh_ptr('MAIN')
+      call REPORT_MEMORY(mesh%cell_imap%global_size)
+    end block
 
   END SUBROUTINE CLEANUP
 
