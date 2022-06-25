@@ -11,14 +11,10 @@ MODULE OVERWRITE_MODULE
   ! Purpose(s):
   !
   !   Define procedures that overwrite the standard initialization of the
-  !   BC, Matl, and Zone derived types.  These are null routines.  If you
+  !   Matl, and Zone derived types.  These are null routines.  If you
   !   would like to see some examples, look in overwrite.F90.examples.
   !
   ! Public Interface:
-  !
-  !   * call OVERWRITE_BC ()
-  !       Overwrite the standard initialization of the BC derived
-  !       type.
   !
   !   * call OVERWRITE_MATL ()
   !
@@ -35,8 +31,7 @@ MODULE OVERWRITE_MODULE
   !       Overwrite the standard initialization of the Zone derived
   !       type.
   !
-  ! Contains: OVERWRITE_BC
-  !           OVERWRITE_MATL
+  ! Contains: OVERWRITE_MATL
   !           OVERWRITE_VEL
   !           OVERWRITE_ZONE
   !
@@ -49,23 +44,11 @@ MODULE OVERWRITE_MODULE
   private
 
   ! Public Procedures
-  public :: OVERWRITE_BC,  OVERWRITE_MATL, &
-            OVERWRITE_VEL, OVERWRITE_ZONE, &
-            CREATE_PLUME
+  public :: OVERWRITE_MATL, OVERWRITE_VEL, OVERWRITE_ZONE
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
-
-  SUBROUTINE OVERWRITE_BC ()
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Overwrite the standard initialization of the BC derived type
-    !   as computed in BC_INIT
-    !
-    !=======================================================================
-  END SUBROUTINE OVERWRITE_BC
 
   SUBROUTINE OVERWRITE_MATL ()
     !=======================================================================
@@ -259,204 +242,5 @@ CONTAINS
 !!$    call ERROR_CHECK ((n /= 0), (/'FATAL: error deallocating Vof'/), 'OVERWRITE_ZONE')
 
   END SUBROUTINE OVERWRITE_ZONE
-
-  !-----------------------------------------------------------------------------
-
-  subroutine BoundaryBetweenMaterials (mask, material_1, material_2)
-     !--------------------------------------------------------------------------
-     ! Find all faces that have a cell made of material_1 on one side
-     ! and material_2 on the other side.
-     !
-     ! mask should be declared logical, (nfc,ncells) in the caller.
-     ! It is set to true for the boundary faces.
-     !
-     ! THRESHOLD is in case a cell isn't completely made of
-     ! material_1 or material_2.  Set as close to 1.0 as desired.
-     !--------------------------------------------------------------------------
-
-     use legacy_mesh_api,   only: ncells, nfc, EE_GATHER
-     use matl_module,       only: gather_vof
-
-     ! arguments
-     logical, dimension(:,:) :: mask
-     integer :: material_1
-     integer :: material_2
-
-     ! local variables
-     real(r8), allocatable, dimension(:)   :: vof_1
-     real(r8), allocatable, dimension(:)   :: vof_2
-     real(r8), allocatable, dimension(:,:) :: vof_tmp
-     real(r8), parameter :: THRESHOLD = 0.99
-     integer :: c, f, status
-
-     !--------------------------------------------------------------------------
-
-     ! make sure mask is the right size
-     ASSERT(size(mask,1) == nfc)
-     ASSERT(size(mask,2) == ncells)
-
-     ! get some working space
-     allocate(vof_1(ncells),STAT=status)
-     if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocate failed: vof_1')
-     allocate(vof_2(ncells),STAT=status)
-     if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocate failed: vof_2')
-     allocate(vof_tmp(nfc,ncells),STAT=status)
-     if (status /= 0) call TLS_panic ('BoundaryBetweenMaterials: allocate failed: vof_tmp')
-
-     ! start with a null boundary
-     mask = .false.
-
-     ! get vof of material 1 in each cell
-     call gather_vof (material_1,vof_1)
-
-     ! get vof of material 2 in each cell
-     call gather_vof (material_2,vof_2)
-
-     ! gather vof of material 2 across cell faces
-     call ee_gather (vof_tmp, vof_2)
-
-     ! look for cells made of (mostly) material 1
-     do c = 1, ncells
-        if (vof_1(c) > THRESHOLD) then
-           ! that touch cells made of (mostly) material 2 across faces
-           do f = 1, nfc
-              if (vof_tmp(f,c) > THRESHOLD) then
-                 ! call this part of the boundary
-                 mask(f,c) = .true.
-              end if
-           end do
-        end if
-     end do
-
-     ! gather vof of material 1 across cell faces
-     call ee_gather (vof_tmp, vof_1)
-
-     ! look for cells made of (mostly) material 2
-     do c = 1, ncells
-        if (vof_2(c) > THRESHOLD) then
-           ! that touch cells made of (mostly) material 1 across faces
-           do f = 1, nfc
-              if (vof_tmp(f,c) > THRESHOLD) then
-                 ! call this part of the boundary
-                 mask(f,c) = .true.
-              end if
-           end do
-        end if
-     end do
-
-     ! release working space
-     deallocate(vof_tmp)
-     deallocate(vof_2)
-     deallocate(vof_1)
-
-  end subroutine BoundaryBetweenMaterials
-
-  !-----------------------------------------------------------------------------
-
-  SUBROUTINE CREATE_PLUME(Phi,xc,yc,zc,r1,type)
-
-    use legacy_mesh_api, only: ncells, ndim, Cell
-
-    ! Arguments...
-    real(r8), dimension(:), intent(INOUT) :: Phi
-    real(r8), intent(IN) :: xc,yc,zc,r1
-    character(*), intent(IN) :: type
-
-    integer :: nc, n
-    real(r8) :: sum, r, std, ro
-    real(r8), dimension(ndim) :: xcent
-
-    xcent(1) = xc
-    xcent(2) = yc
-    xcent(3) = zc
-
-    std = 3.0*.02;
-
-    ro = r1
-
-    select case(type)
-
-    case ('bounded')
-
-       do nc = 1,ncells
-
-          Phi(nc) = 0.0_r8
-          sum     = 0.0_r8
-          r       = 0.0_r8
-          ! calculate distance...
-          do n = 1, ndim
-             r = r + (Cell(nc)%Centroid(n) - xcent(n))**2;
-          end do
-          r = sqrt(r)
-
-          ! a bounded plume...
-          if (r < ro) then
-             Phi(nc) = 5.0 * (1.0 + cos(r * 3.141592654 / ro)) / 10.00;
-          end if
-
-       end do ! ncells loop...
-
-    case('gaussian')
-
-       do nc = 1,ncells
-          Phi(nc) = 0.0_r8
-          sum     = 0.0_r8
-          r       = 0.0_r8
-          ! calculate distance...
-          do n = 1, ndim
-             r = r + (Cell(nc)%Centroid(n) - xcent(n))**2;
-          end do
-          r = sqrt(r)
-
-          ! a guassian plume...
-          Phi(nc) = exp(-r * r / 2.0 / std / std);
-
-       end do
-
-    case ('box')
-
-       do nc = 1,ncells
-
-          Phi(nc) = 0.0_r8
-          ! a step...
-          if (Cell(nc)%Centroid(1) < 0.5 .AND. Cell(nc)%Centroid(1) > 0.1) then
-             if (Cell(nc)%Centroid(3) < 0.8 .AND. Cell(nc)%Centroid(3) > 0.2) then
-                Phi(nc) = 1.0
-             end if
-          end if
-
-
-
-          ! a square...
-          if (Cell(nc)%Centroid(1) < 0.4 .AND. Cell(nc)%Centroid(1) > 0.1) then
-
-             if (Cell(nc)%Centroid(3) < 0.4 .AND. Cell(nc)%Centroid(3) > 0.1) then
-                Phi(nc) = 1.0
-             end if
-
-          end if
-
-       end do
-    case ('phiequalsx')
-
-       do nc = 1,ncells
-          Phi(nc) = Cell(nc)%Centroid(1)
-       end do
-
-    case ('phiequalsy')
-
-       do nc = 1,ncells
-          Phi(nc) = Cell(nc)%Centroid(2)
-       end do
-
-    case ('phiequalsz')
-
-       do nc = 1,ncells
-          Phi(nc) = Cell(nc)%Centroid(3)
-       end do
-
-    end select
-
-  END SUBROUTINE CREATE_PLUME
 
 END MODULE OVERWRITE_MODULE

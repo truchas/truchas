@@ -59,8 +59,7 @@ CONTAINS
     !   Initialize all probe objects.
     !
     !=======================================================================
-    use overwrite_module,       only: OVERWRITE_BC, OVERWRITE_MATL,       &
-        OVERWRITE_VEL, OVERWRITE_ZONE
+    use overwrite_module,       only: OVERWRITE_MATL, OVERWRITE_VEL, OVERWRITE_ZONE
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use zone_module,            only: Zone
@@ -128,7 +127,6 @@ CONTAINS
     call OVERWRITE_MATL ()
     call OVERWRITE_ZONE ()
     call OVERWRITE_VEL  ()
-    call OVERWRITE_BC   ()
 
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
     if (solid_mechanics) call solid_mechanics_init
