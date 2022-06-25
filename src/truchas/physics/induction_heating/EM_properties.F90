@@ -40,25 +40,25 @@ contains
     have_constant_EM_properties = .true.
   end function
 
-  function EM_permittivity () result (value)
+  subroutine EM_permittivity(value)
     use zone_module, only: zone
-    real(r8) :: value(size(zone))
+    real(r8), intent(out) :: value(:)
     call compute_cell_property('electric-susceptibility', zone%temp, value)
     value = 1.0_r8 + value
-  end function EM_permittivity
+  end subroutine
 
-  function EM_permeability () result (value)
+  subroutine EM_permeability(value)
     use zone_module, only: zone
-    real(r8) :: value(size(zone))
+    real(r8) :: value(:)
     call compute_cell_property('magnetic-susceptibility', zone%temp, value)
     value = 1.0_r8 + value
-  end function EM_permeability
+  end subroutine
 
-  function EM_conductivity () result (value)
+  subroutine EM_conductivity(value)
     use zone_module, only: zone
-    real(r8) :: value(size(zone))
+    real(r8) :: value(:)
     call compute_cell_property('electrical-conductivity', zone%temp, value)
-  end function EM_conductivity
+  end subroutine
 
   !!
   !! COMPUTE_CELL_PROPERTY

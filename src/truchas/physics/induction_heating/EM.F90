@@ -64,9 +64,20 @@ contains
     !! Push the initial source and EM material parameters into the EM data proxy.
     call set_source_properties (t)
     call init_material_properties
-    call set_permittivity (EM_permittivity())
-    call set_permeability (EM_permeability())
-    call set_conductivity (EM_conductivity())
+    block
+      use base_mesh_class
+      use mesh_manager, only: named_mesh_ptr
+      class(base_mesh), pointer :: mesh
+      real(rk), allocatable :: value(:)
+      mesh => named_mesh_ptr('MAIN')
+      allocate(value(mesh%ncell_onP))
+      call EM_permittivity(value)
+      call set_permittivity(value)
+      call EM_permeability(value)
+      call set_permeability(value)
+      call EM_conductivity(value)
+      call set_conductivity(value)
+    end block
     const_prop = have_constant_EM_properties()
 
     if (jh_defined) then
@@ -160,9 +171,20 @@ contains
     !! Push the source and EM material parameters at time T1 into the EM data proxy.
     call set_source_properties (t1)
     if (.not.const_prop) then
-      call set_permittivity (EM_permittivity())
-      call set_permeability (EM_permeability())
-      call set_conductivity (EM_conductivity())
+      block
+        use base_mesh_class
+        use mesh_manager, only: named_mesh_ptr
+        class(base_mesh), pointer :: mesh
+        real(rk), allocatable :: value(:)
+        mesh => named_mesh_ptr('MAIN')
+        allocate(value(mesh%ncell_onP))
+        call EM_permittivity(value)
+        call set_permittivity(value)
+        call EM_permeability(value)
+        call set_permeability(value)
+        call EM_conductivity(value)
+        call set_conductivity(value)
+      end block
     end if
 
     if (no_source_field()) then ! there is no joule heat ...
