@@ -291,9 +291,6 @@ contains
 
   !! Returns a vertex coloring of the graph.
   subroutine graph_vertex_coloring (this, vcolor, ncolor)
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
     use sort_utilities
     class(graph), intent(in) :: this
     integer, allocatable, intent(out) :: vcolor(:)

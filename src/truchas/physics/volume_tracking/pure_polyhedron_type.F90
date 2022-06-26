@@ -1300,10 +1300,6 @@ contains
     subroutine modified_parent_face (face_vid, ierr, par_face_vid, p2c_vid, edge_vid, side, &
         valid_side, nParVerts, nPolyVerts, v_assoc_pe, edge_cont_verts)
 
-#ifdef NO_2008_FINDLOC
-      use f08_intrinsics, only: findloc
-#endif
-
       integer, intent(out) :: face_vid(:), ierr
       integer, intent(in) :: par_face_vid(:), p2c_vid(:), edge_vid(:,:), side(:), valid_side, &
           nParVerts, nPolyVerts, v_assoc_pe(:), edge_cont_verts(:,:)

@@ -24,9 +24,6 @@ contains
     use input_utilities
     use string_utilities, only: i_to_c
     use truchas_logging_services
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
 
     integer, intent(in) :: lun
 

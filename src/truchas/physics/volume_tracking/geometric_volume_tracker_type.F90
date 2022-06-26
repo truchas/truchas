@@ -51,9 +51,6 @@ contains
 
     use parameter_list_type
     use material_model_driver, only: matl_model
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
 
     class(geometric_volume_tracker), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -216,9 +213,6 @@ contains
   subroutine normals(this, vof)
 
     use flow_operators, only: gradient_cc
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
     intrinsic :: norm2
 
     class(geometric_volume_tracker), intent(inout) :: this
@@ -325,9 +319,6 @@ contains
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
       flux_volume, stat, errmsg)
 
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
     use locate_plane_os_function
     use plane_type
     use cell_geom_type

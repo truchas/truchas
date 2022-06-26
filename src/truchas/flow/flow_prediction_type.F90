@@ -382,10 +382,6 @@ contains
 
   subroutine accumulate_rhs_momentum(this, props, vel_cc, vel_fn, flux_volumes)
 
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
-
     class(flow_prediction), intent(inout) :: this
     real(r8), intent(in) :: flux_volumes(:,:), vel_cc(:,:), vel_fn(:)
     type(flow_props), intent(in) :: props

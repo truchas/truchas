@@ -133,9 +133,6 @@ module unstr_mesh_type
   use parallel_communication
   use bitfield_type
   use cell_topology
-#ifdef NO_2008_FINDLOC
-  use f08_intrinsics
-#endif
   implicit none
   private
 
