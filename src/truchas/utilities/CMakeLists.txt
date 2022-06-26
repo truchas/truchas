@@ -8,15 +8,12 @@ target_sources(truchas PRIVATE
   integer_map_type.F90
   string_set_type.F90
   kinds.F90
-  lnorm_module.F90
-  lu_solve_module.F90
   permutations.F90
   process_info_module.F90
   signal_handler.F90
   sort_module.F90
   sort_utilities.F90
   string_utilities.F90
-  tabular_utilities.F90
   truchas_env.F90
   truchas_logging_services.F90
   truchas_timers.F90
