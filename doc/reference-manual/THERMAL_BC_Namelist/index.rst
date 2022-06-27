@@ -74,6 +74,8 @@ Components
 * :ref:`htc_func<TB_htcFunc>`
 * :ref:`ambient_temp<TB_AT>`
 * :ref:`ambient_temp_func<TB_ATF>`
+* :ref:`absorptivity<TB_absorp>`
+* :ref:`absorptivity_func<TB_absorpFunc>`
 * :ref:`emissivity<TB_emis>`
 * :ref:`emissivity_func<TB_emisFunc>`
 
@@ -192,6 +194,23 @@ ambient_temp
 ambient_temp_func
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the ambient temperature for external heat transfer or radiation-type boundary condition. The function is expected to be a function of (t,x,y,z).
+| **Type**        : string
+| **Default**     : none
+
+.. _TB_absorp:
+
+absorptivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The constant value of absorptivity for oriented-flux-type boundary condition. To specify a function, use :ref:`absorptivity_func<TB_absorpFunc>` instead.
+| **Valid values** :math:`[0.0,1.0]`
+| **Type**        : real
+| **Default**     : none
+
+.. _TB_absorpFunc:
+
+absorptivity_func
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the absorptivity for a oriented-flux-type boundary condition. The function is expected to be a function of T.
 | **Type**        : string
 | **Default**     : none
 

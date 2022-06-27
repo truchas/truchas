@@ -33,7 +33,7 @@ module HTSD_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
-    class(bndry_vfunc), allocatable :: bc_vflux ! oriented flux
+    class(bndry_func2), allocatable :: bc_vflux! oriented flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC
     class(bndry_func2), allocatable :: bc_rad  ! simple radiation
     class(intfc_func2), allocatable :: ic_htc  ! internal HTC
@@ -309,7 +309,7 @@ contains
 
       !! Oriented flux BC contribution.
       if (allocated(this%ht%bc_vflux)) then
-        call this%ht%bc_vflux%compute(t)
+        call this%ht%bc_vflux%compute(t, Tface)
         do j = 1, size(this%ht%bc_vflux%index)
           n = this%ht%bc_vflux%index(j)
           Fface(n) = Fface(n) + dot_product(this%mesh%normal(:,n), this%ht%bc_vflux%value(:,j))

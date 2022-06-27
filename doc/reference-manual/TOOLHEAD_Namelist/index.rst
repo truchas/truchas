@@ -96,15 +96,6 @@ discontinuously, specify 0.
    which *may* be helpful in some difficult cases.
    
 
-laser_absorp
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The laser absorption coefficient.  This is the fraction of the incident
-power that is absorbed as heat.
-
-:Type: real
-:Valid values: :math:`[0.0,1.0]`
-:Default: none
-
 
 laser_type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -175,11 +175,11 @@ contains
 
         if (absorptivity /= NULL_R .and. absorptivity_func /= NULL_C) then
           call TLS_fatal(label // ': both ABSORPTIVITY and ABSORPTIVITY_FUNC specified')
-        else if (emissivity /= NULL_R) then
-          if (emissivity < 0) call TLS_fatal(label // ': ABSORPTIVITY < 0.0')
-          if (emissivity > 1) call TLS_fatal(label // ': ABSORPTIVITY > 1.0')
+        else if (absorptivity /= NULL_R) then
+          if (absorptivity < 0) call TLS_fatal(label // ': ABSORPTIVITY < 0.0')
+          if (absorptivity > 1) call TLS_fatal(label // ': ABSORPTIVITY > 1.0')
           call plist%set('absorptivity', absorptivity)
-        else if (emissivity_func /= NULL_C) then
+        else if (absorptivity_func /= NULL_C) then
           call plist%set('absorptivity', absorptivity_func)
         else
           call TLS_fatal(label // ': neither ABSORPTIVITY OR ABSORPTIVITY_FUNC specified')
