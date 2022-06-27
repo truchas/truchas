@@ -60,7 +60,6 @@ contains
   !! to about 25 degrees.
   subroutine init(this, mesh, nodebc, bc, penalty, distance, traction)
 
-    use cell_geometry, only: cross_product, normalized
     use sm_bc_utilities, only: check_if_matching_node
 
     class(sm_bc_c0d1), intent(out) :: this
@@ -70,7 +69,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, k, icontact(0), idispl(1)
+    integer :: nnode, ni, icontact(0), idispl(1)
     logical :: matching_node
 
     this%mesh => mesh
@@ -122,8 +121,8 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
     real(r8), intent(inout) :: r(:,:)
 
-    integer :: i, n1, n2
-    real(r8) :: args(0:3), stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, x(3)
+    integer :: i, n1
+    real(r8) :: args(0:3), stress_penalty, v, x(3)
 
     args(0) = time
     do i = 1, size(this%index)
@@ -148,7 +147,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, nl, n, d
+    integer :: i, n, d
     real(r8) :: x(3)
 
     do i = 1, size(this%index)

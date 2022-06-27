@@ -427,14 +427,14 @@ contains
     use pcsr_precon_factory
     use parameter_list_type
     use nka_type
-    use parallel_communication, only: is_IOP, global_sum, global_maxval, global_all
+    use parallel_communication, only: global_maxval, global_all
 
     type(HTSD_model), intent(inout) :: this
     real(r8), intent(in) :: t, state(:,:) ! lower bound is now 1
     real(r8), intent(inout), target :: u(:)
     type(parameter_list) :: params
     
-    integer :: n, j, stat, num_itr, max_iter, iter
+    integer :: n, stat, num_itr, max_iter, iter
     type(mfd_diff_matrix), target :: matrix
     real(r8) :: atol, rtol, error, r0_err, r_err, dT_max
     real(r8), pointer :: Tface(:), var(:), Fface(:)
@@ -561,10 +561,10 @@ contains
     
       type(mfd_diff_matrix), intent(inout) :: matrix
       
-      integer :: j, n, n1, n2, index
+      integer :: j, n, index
       integer, allocatable :: more_dir_faces(:)
-      real(r8) :: D(this%mesh%ncell), Tface(this%mesh%nface), term
-      real(r8), allocatable :: values(:), values2(:,:)
+      real(r8) :: D(this%mesh%ncell), Tface(this%mesh%nface)
+      real(r8), allocatable :: values(:)
       
       !! Generate list of void faces; these are treated like Dirichlet BC.
       if (associated(this%void_face)) then

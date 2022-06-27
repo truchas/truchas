@@ -105,12 +105,11 @@ contains
 
     type(rad_encl), intent(in) :: this
 
-    integer :: j, n, dimen, nnode, nface, offset
+    integer :: j, n, nnode, nface, offset
     integer, allocatable :: map(:), fsize(:), fnode(:)
     real(r8), allocatable :: x(:), y(:), z(:)
     character(8) :: name
 
-    dimen = size(this%coord,dim=1)
     nnode = this%node_imap%global_size
     nface = this%face_imap%global_size
 

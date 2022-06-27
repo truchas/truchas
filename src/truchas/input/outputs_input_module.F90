@@ -206,13 +206,14 @@ CONTAINS
 
     ! Check number of output times and output delta times.
     dt_okay = .false.
-    OUTPUT_DT_CHECK: do nops = mops,1,-1
+    OUTPUT_DT_CHECK: do n = mops,1,-1
        ! Found last positive dt, exit.
-       if (Output_Dt(nops) > 0) then
+       if (Output_Dt(n) > 0) then
           dt_okay = .true.
           exit OUTPUT_DT_CHECK
        end if
     end do OUTPUT_DT_CHECK
+    nops = n
 
     ! Check output times
     if (.not.dt_okay) then

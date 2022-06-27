@@ -82,7 +82,7 @@ contains
     character(:), allocatable, intent(inout) :: dt_tag
 
     real(r8) :: v, dtc, dtv
-    integer :: i, j
+    integer :: j
 
     dtc = huge(1.0_r8)
     dtv = huge(1.0_r8)
@@ -130,8 +130,6 @@ contains
     logical, optional, intent(in) :: prescribed
     type(parameter_list), intent(inout) :: params
 
-    integer :: i
-    real(r8) :: xc, yc, sigma, x, y, r2, theta, w, vel(3)
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: array(:)
 
@@ -333,9 +331,6 @@ contains
 
     class(flow), intent(inout) :: this
     real(r8), intent(in) :: t, dt, vof(:,:), flux_volumes(:,:), tcell(:)
-
-    real(r8) :: p_max, p_min
-    integer :: j
 
     call this%props%update_cc(vof, tcell)
 

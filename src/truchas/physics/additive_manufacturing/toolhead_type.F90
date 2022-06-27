@@ -166,7 +166,6 @@ contains
     class(laser_vector_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx(this%dim)
-    integer :: i
     fx = this%th%laser_irrad(x(1),x(2:4)) * this%th%dir
   end function
 

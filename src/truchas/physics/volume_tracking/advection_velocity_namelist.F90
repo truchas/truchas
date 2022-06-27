@@ -23,7 +23,7 @@ contains
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
-    use input_utilities, only: seek_to_namelist, NULL_R, NULL_C
+    use input_utilities, only: seek_to_namelist, NULL_R
     use vector_func_factories
     use truchas_logging_services
 

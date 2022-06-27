@@ -65,7 +65,7 @@
 
 module edge_hash_type
 
-  use,intrinsic :: iso_fortran_env, only: int32, int64
+  use,intrinsic :: iso_fortran_env, only: int32
   implicit none
   private
 

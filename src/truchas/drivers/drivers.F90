@@ -25,7 +25,6 @@ MODULE DRIVERS
   ! Author(s): Bryan Lally (lally@lanl.gov)
   !            Douglas B. Kothe (dbk@lanl.gov)
   !-----------------------------------------------------------------------------
-  use parameter_module,  only: string_len
   use process_info_module
   implicit none
   private
@@ -122,7 +121,6 @@ call hijack_truchas ()
     use edit_module,              only: edit_short
     use EM,                       only: INDUCTION_HEATING
     use parallel_communication,   only: global_any
-    use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint, dt_min
@@ -141,7 +139,6 @@ call hijack_truchas ()
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
-    use zone_module, only: Zone
     use probes_driver, only: probes_write
     use kinds
 

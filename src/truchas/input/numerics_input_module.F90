@@ -6,7 +6,6 @@
 
 module numerics_input_module
 
-  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -65,9 +64,8 @@ contains
   subroutine numerics_check
 
     use input_utilities,   only: NULL_R
-    use string_utilities,  only: lower_case
     use cutoffs_module,    only: cutvof
-    use time_step_module,  only: t, dt, constant_dt, dt_constraint, &
+    use time_step_module,  only: dt, constant_dt, dt_constraint, &
                                  dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                  cycle_max, cycle_number
 

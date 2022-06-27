@@ -104,7 +104,7 @@ contains
     integer, intent(in) :: lun
 
     integer :: n, ios
-    logical :: found, exists
+    logical :: found
     character(128) :: iom
     real(r8) :: source_times(MAXSV-1)
     real(r8) :: source_frequency(MAXSV)

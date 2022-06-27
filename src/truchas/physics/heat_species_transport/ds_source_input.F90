@@ -135,7 +135,6 @@ contains
     logical :: found
     class(scalar_func), allocatable :: srcf
     character(:), allocatable :: label
-    character(len=127) :: errmsg
     character(80) :: iom
 
     !! Namelist variables

@@ -38,7 +38,6 @@ MODULE OVERWRITE_MODULE
   ! Author(s): Bryan Lally, (lally@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private

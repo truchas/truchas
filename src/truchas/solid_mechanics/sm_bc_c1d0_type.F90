@@ -20,11 +20,10 @@ module sm_bc_c1d0_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication, only: global_sum
   use truchas_logging_services
-  use scalar_func_containers, only: scalar_func_ptr
   use unstr_mesh_type
   use sm_bc_list_type
   use sm_bc_node_list_type
-  use sm_bc_utilities, only: contact_factor, derivative_contact_factor
+  use sm_bc_utilities, only: contact_factor
   use sm_bc_class
   implicit none
   private
@@ -46,7 +45,6 @@ contains
 
   subroutine init(this, mesh, nodebc, bc, penalty, distance, traction)
 
-    use cell_geometry, only: cross_product, normalized
     use sm_bc_utilities, only: check_if_matching_node
 
     class(sm_bc_c1d0), intent(out) :: this
@@ -56,7 +54,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, k, icontact(1), idispl(0)
+    integer :: nnode, ni, icontact(1), idispl(0)
     logical :: matching_node
 
     this%mesh => mesh
@@ -105,7 +103,7 @@ contains
     real(r8), intent(inout) :: r(:,:)
 
     integer :: i, n1, n2
-    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, x(3)
+    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2
 
     do i = 1, size(this%index)
       n1 = this%index(i)
@@ -141,30 +139,33 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, n1, n2
-    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, x(3), dldu(3), dl(2)
-
-    do i = 1, size(this%index)
-      n1 = this%index(i)
-      n2 = this%linked_node(i)
-      stress_penalty = this%penalty * stress_factor(n1)
-
-      stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
-      stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
-      x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
-      x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
-      s = x2 - x1
-      tn = - stress1 / this%area(i)
-      l = contact_factor(s, tn, this%distance, this%normal_traction)
-
-      v = stress2 + stress_penalty * (x2 - x1)
-
-      dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
-      dldu = -dl(1)*this%normal_gap(:,i) - dl(2)*this%normal_gap(:,i)*diag(:,n1) / this%area(i)
-
-      ! diag(:,n1) = diag(:,n1) - this%normal_gap(:,i)**2 * l * stress_penalty
-      ! diag(:,n1) = diag(:,n1) + this%normal_gap(:,i) * v * dldu
-    end do
+!NNC, 7/27/2022. Per ZJIBBEN this experiment to improve the PC actually made it
+!worse, so its been commented out so as to be a no-op.
+!
+!    integer :: i, n1, n2
+!    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, dldu(3), dl(2)
+!
+!    do i = 1, size(this%index)
+!      n1 = this%index(i)
+!      n2 = this%linked_node(i)
+!      stress_penalty = this%penalty * stress_factor(n1)
+!
+!      stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
+!      stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
+!      x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
+!      x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
+!      s = x2 - x1
+!      tn = - stress1 / this%area(i)
+!      l = contact_factor(s, tn, this%distance, this%normal_traction)
+!
+!      v = stress2 + stress_penalty * (x2 - x1)
+!
+!      dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
+!      dldu = -dl(1)*this%normal_gap(:,i) - dl(2)*this%normal_gap(:,i)*diag(:,n1) / this%area(i)
+!
+!      ! diag(:,n1) = diag(:,n1) - this%normal_gap(:,i)**2 * l * stress_penalty
+!      ! diag(:,n1) = diag(:,n1) + this%normal_gap(:,i) * v * dldu
+!    end do
 
   end subroutine apply_deriv
 

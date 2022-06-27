@@ -490,7 +490,7 @@ contains
     type(flow_props), intent(in) :: props
 
     integer :: i, j, ierr
-    real(r8) :: coeff, mass
+    real(r8) :: coeff
     character(20), parameter :: slabel(3) = '  predictor' // ['1', '2', '3'] // ' solve: '
 
     call start_timer("solve")

@@ -202,8 +202,7 @@ contains
     real(r8), intent(in) :: vel(:), p_cc(:), dt
 
     type(pcsr_matrix), pointer :: A
-    real(r8), pointer :: ds(:,:), row_val(:)
-    integer, pointer :: row_idx(:)
+    real(r8), pointer :: ds(:,:)
     integer :: i, j, fi, ni
     real(r8) :: coeff
     logical :: pressure_pinned
@@ -453,7 +452,7 @@ contains
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:), vel_cc(:,:), vel_fc(:)
 
-    integer :: ierr, i, in
+    integer :: ierr
 
     call start_timer("solve")
 
@@ -532,9 +531,7 @@ contains
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(inout) :: p_cc(:)
-    real(r8) :: dp_vof, vof, g_vof, g_dp_vof
-    integer :: i
-    associate (p => props, dp => this%delta_p_cc)
+    associate (dp => this%delta_p_cc)
       p_cc = p_cc + dp
       call this%mesh%cell_imap%gather_offp(p_cc)
     end associate
@@ -545,7 +542,7 @@ contains
     class(flow_projection), intent(inout) :: this
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: p_cc(:)
-    integer :: i, j
+    integer :: j
     associate (rho => props%rho_fc, &
         gp_cc => this%grad_p_rho_cc, gp_fc => this%grad_p_rho_fc)
 
@@ -589,7 +586,7 @@ contains
     type(flow_props), intent(in) :: props
     real(r8), intent(in) :: grad_p_rho_cc_n(:,:)
     real(r8), intent(inout) :: vel_cc(:,:)
-    integer :: i, j
+    integer :: i
     ! assumes dynamic pressure gradients have already been computed
     do i = 1, this%mesh%ncell_onP
       ! -dt * grad(dP)/rho

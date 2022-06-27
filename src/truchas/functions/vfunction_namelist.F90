@@ -31,7 +31,7 @@ module vfunction_namelist
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
-  use string_utilities, only: lower_case, raise_case, i_to_c
+  use string_utilities, only: raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
   use vector_func_factories
   use vector_func_table, only: known_func, insert_func
@@ -57,9 +57,9 @@ contains
     integer, intent(in) :: lun
 
     !! local variables
-    logical :: found, tabular_smooth
+    logical :: found
     character(:), allocatable :: label
-    integer :: n, ios, ncoef, nvar, npar, npts, rank
+    integer :: n, ios, npts, rank
     class(vector_func), allocatable :: f
     character(80) :: iom
 

@@ -33,7 +33,6 @@ contains
     class(laser_irrad), allocatable, intent(out) :: this
     type(parameter_list) :: params
 
-    integer :: stat
     character(:), allocatable :: irrad_type
 
     call params%get('type', irrad_type)

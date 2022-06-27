@@ -20,11 +20,10 @@ module sm_bc_c2d0_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication, only: global_sum
   use truchas_logging_services
-  use scalar_func_containers, only: scalar_func_ptr
   use unstr_mesh_type
   use sm_bc_list_type
   use sm_bc_node_list_type
-  use sm_bc_utilities, only: contact_factor, derivative_contact_factor
+  use sm_bc_utilities, only: contact_factor
   use sm_bc_class
   implicit none
   private

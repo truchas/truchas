@@ -187,8 +187,6 @@ contains
     real(r8), parameter :: deg = pi / 180
     integer, parameter :: ndim = 3
     integer, parameter :: nrot = 3
-    real(r8) :: c, s, tmp, rot(nrot)
-    integer :: n, n1, n2, coeff, na
 
     INSIST(axis == 'x' .or. axis == 'y' .or. axis == 'z')
     normal = 0

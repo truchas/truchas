@@ -67,7 +67,6 @@ CONTAINS
     use kinds
     use process_info_module,    only: get_process_size
     use parallel_communication
-    use time_step_module,       only: cycle_number
     use flow_driver, only: flow_enabled, flow_vel_cc_view
 
     ! Local variables.

@@ -149,7 +149,7 @@ contains
     real(r8), intent(out) :: strain_plastic_new(:,:), dstrain_plastic_dt_new(:,:)
 
     integer :: p, j
-    real(r8) :: strain_rate_old, strain_rate_new, max_strain, rate_change
+    real(r8) :: strain_rate_old, strain_rate_new, max_strain!, rate_change
 
     call start_timer("viscoplasticity")
 
@@ -170,7 +170,7 @@ contains
         strain_rate_old = this%model%strain_rate(0.0_r8, u0)
         strain_rate_new = this%model%strain_rate(dt, u0)
         max_strain = max(strain_rate_old, strain_rate_new) * dt
-        rate_change = max(strain_rate_new / strain_rate_old, strain_rate_old / strain_rate_new)
+        !rate_change = max(strain_rate_new / strain_rate_old, strain_rate_old / strain_rate_new)
 
         ! The rate_change threshold was present in the legacy code, and it seems to
         ! moderately speed up calculations, but the result is less stable. I've

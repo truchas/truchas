@@ -15,7 +15,6 @@
 module EM_properties
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: maxmat
   use material_model_driver, only:  matl_model
   use truchas_logging_services
   implicit none

@@ -925,6 +925,7 @@ contains
 
     subroutine destroy_side_table (table)
       type(side_table), intent(inout) :: table
+      integer :: j
       if (associated(table%row)) then
         do j = lbound(table%row,dim=1), ubound(table%row,dim=1)
           if (associated(table%row(j)%list)) deallocate(table%row(j)%list)
@@ -997,6 +998,7 @@ contains
 
     subroutine destroy_nhbr_table (table)
       type(nhbr_table), intent(inout) :: table
+      integer :: j
       if (associated(table%row)) then
         do j = lbound(table%row,dim=1), ubound(table%row,dim=1)
           if (associated(table%row(j)%list)) deallocate(table%row(j)%list)

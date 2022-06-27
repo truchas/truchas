@@ -28,7 +28,6 @@ contains
 
     integer :: ios
     logical :: found
-    character(:), allocatable :: label
     character(128) :: iom
     character(len=8)  :: string
     type(parameter_list), pointer :: plist

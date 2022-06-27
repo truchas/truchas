@@ -309,7 +309,7 @@ contains
     type(bndry_face_group_builder) :: builder
     integer, allocatable :: setids(:), mlist(:), xgroup(:), index(:)
     character(:), allocatable :: name
-    integer :: j, n, ngroup
+    integer :: j, n
 
     call builder%init(this%mesh, omit_offp=.true.)
 

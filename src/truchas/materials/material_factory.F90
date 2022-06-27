@@ -20,7 +20,6 @@
 
 module material_factory
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use material_class
   use material_database_type
   use parameter_list_type
@@ -148,7 +147,6 @@ contains
 
     use multi_phase_matl_type
     use phase_change_factory
-    use string_utilities, only: i_to_c
 
     class(material), allocatable, intent(out) :: this
     character(*), intent(in) :: name
@@ -161,7 +159,7 @@ contains
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
     type(parameter_list) :: phase_list
-    character(:), allocatable :: string, pname, context
+    character(:), allocatable :: string, pname
 
     allocate(matl)
     matl%name = name

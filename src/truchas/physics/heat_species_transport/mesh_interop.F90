@@ -56,7 +56,6 @@ module mesh_interop
   use base_mesh_class
   use matl_mesh_func_type
   use material_model_driver, only: matl_model
-  use truchas_logging_services, only: TLS_info
   implicit none
   private
 
@@ -171,9 +170,6 @@ contains
 !    use material_class
     use matl_module, only: gather_vof
     !use material_interop, only: material_to_system
-#ifdef EXTRA_VOF_DIAGNOSTICS
-    use parallel_communication, only: global_minval, global_maxval
-#endif
 
     type(matl_mesh_func), intent(inout) :: mmf
 
@@ -182,9 +178,7 @@ contains
     real(r8), allocatable :: vf(:), vofm(:)
     real(r8), pointer :: vfrac(:,:)
     class(base_mesh), pointer :: mesh
-#ifdef EXTRA_VOF_DIAGNOSTICS
-    character(len=90) :: string
-#endif
+
     integer :: material_to_system(matl_model%nphase)
 !    class(material), pointer :: matl
 
@@ -226,10 +220,15 @@ contains
     deallocate(vofm, vf)
 
 #ifdef EXTRA_VOF_DIAGNOSTICS
-    INSIST(all(vfrac >= 0.0_r8 .and. vfrac <= 1.0_r8))
-    write(string,'(3(a,f18.16))') 'UPDATE_MMF_FROM_MATL: vfrac sum interval: [', &
-       global_minval(sum(vfrac,dim=2)), ', ', global_maxval(sum(vfrac,dim=2)) , ']'
-    call TLS_info (string)
+    block
+      use parallel_communication, only: global_minval, global_maxval
+      use truchas_logging_services, only: TLS_info
+      character(len=90) :: string
+      INSIST(all(vfrac >= 0.0_r8 .and. vfrac <= 1.0_r8))
+      write(string,'(3(a,f18.16))') 'UPDATE_MMF_FROM_MATL: vfrac sum interval: [', &
+         global_minval(sum(vfrac,dim=2)), ', ', global_maxval(sum(vfrac,dim=2)) , ']'
+      call TLS_info (string)
+    end block
 #endif
 
   end subroutine update_mmf_from_matl
@@ -259,10 +258,7 @@ contains
 
   subroutine update_matl_from_mmf (mmf, state)
 
-    use matl_utilities, only: update_matl, matl_get_cell_vof
-#ifdef EXTRA_VOF_DIAGNOSTICS
-    use parallel_communication, only: global_minval, global_maxval
-#endif
+    use matl_utilities, only: update_matl
 
     type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: state(:,:)
@@ -272,9 +268,6 @@ contains
     real(r8), pointer :: vfrac(:,:)
     real(r8), allocatable :: vofm(:), vof(:,:)
     class(base_mesh),  pointer :: mesh
-#ifdef EXTRA_VOF_DIAGNOSTICS
-    character(len=90) :: string
-#endif
 
     mesh => mmf%mesh_ptr()
 
@@ -341,10 +334,15 @@ contains
     end do
 
 #ifdef EXTRA_VOF_DIAGNOSTICS
-    INSIST(all(vof(1:,:) >= 0.0_r8 .and. vof(1:,:) <= 1.0_r8))
-    write(string,'(3(a,f18.16))') 'UPDATE_MATL_FROM_MMF: vof sum interval: [', &
-       global_minval(sum(vof(1:,:),dim=1)), ', ', global_maxval(sum(vof(1:,:),dim=1)) , ']'
-    call TLS_info (string)
+    block
+      use parallel_communication, only: global_minval, global_maxval
+      use truchas_logging_services, only: TLS_info
+      character(len=90) :: string
+      INSIST(all(vof(1:,:) >= 0.0_r8 .and. vof(1:,:) <= 1.0_r8))
+      write(string,'(3(a,f18.16))') 'UPDATE_MATL_FROM_MMF: vof sum interval: [', &
+         global_minval(sum(vof(1:,:),dim=1)), ', ', global_maxval(sum(vof(1:,:),dim=1)) , ']'
+      call TLS_info (string)
+      end block
 #endif
 
     !! Update the MATL structure using the uncompressed VoF data.

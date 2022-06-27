@@ -20,11 +20,10 @@ module sm_bc_c3d0_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication, only: global_sum
   use truchas_logging_services
-  use scalar_func_containers, only: scalar_func_ptr
   use unstr_mesh_type
   use sm_bc_list_type
   use sm_bc_node_list_type
-  use sm_bc_utilities, only: contact_factor, derivative_contact_factor
+  use sm_bc_utilities, only: contact_factor
   use sm_bc_class
   implicit none
   private
@@ -58,7 +57,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, li, lni, ni, k, icontact(3), idispl(0), linked_node(3)
+    integer :: nnode, ni, k, icontact(3), idispl(0), linked_node(3)
     logical :: matching_node
 
     this%mesh => mesh
@@ -122,7 +121,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
     real(r8), intent(inout) :: r(:,:)
 
-    integer :: i, n1, n2, n3, li
+    integer :: i, n1, n2, li
     real(r8) :: stress1, stress2, delta, lambda(3), v, stress_penalty
     real(r8) :: x(3), xn(3,3), xt(3,3)
 

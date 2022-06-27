@@ -28,7 +28,11 @@
 !
 module metis_c_binding
 
-    use iso_c_binding, only: c_int32_t, c_int64_t, c_float, c_double, c_ptr
+#ifdef INT64
+    use iso_c_binding, only: c_int64_t, c_double, c_ptr
+#else
+    use iso_c_binding, only: c_int32_t, c_float, c_ptr
+#endif
 
     implicit none
     private

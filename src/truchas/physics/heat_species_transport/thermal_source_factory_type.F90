@@ -18,13 +18,11 @@
 
 module thermal_source_factory_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_base_mesh_class
   use parameter_list_type
   use scalar_mesh_func_class
   use scalar_func_class
   use scalar_func_factories, only: alloc_scalar_func
-  use string_utilities, only: lower_case
   use truchas_logging_services
   implicit none
   private

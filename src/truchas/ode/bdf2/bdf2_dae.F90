@@ -652,14 +652,13 @@ contains
 #include "bdf2_dae_updpc_if.fpp"
 #include "bdf2_dae_enorm_if.fpp"
 
-    real(r8) :: t, t0, tlast
+    real(r8) :: t, tlast
     real(r8) :: up(size(u))
     real(r8), pointer :: u0(:)
     logical :: fresh_pc
 
     tlast = most_recent_time(this%uhist)
     t = tlast + h
-    t0 = tlast
 
     if (this%verbose) write(this%unit,fmt=1) this%seq+1, tlast, h
 

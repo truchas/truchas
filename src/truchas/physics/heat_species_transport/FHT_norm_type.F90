@@ -207,10 +207,10 @@ contains
     target :: u, f
 
     integer :: i, loc1, loc2, pid1, pid2
-    real(r8), pointer :: useg(:), fseg(:), qres(:), temp(:)
+    real(r8), pointer :: fseg(:), qres(:), temp(:)
     integer, pointer :: faces(:)
     real(r8), allocatable :: rhs(:)
-    real(r8) :: qerror, err1, err2, bad_vfrac, bad_T, bad_F
+    real(r8) :: qerror, err1, err2
 
     ASSERT(size(u) == FHT_model_size(this%model))
     ASSERT(size(f) == FHT_model_size(this%model))

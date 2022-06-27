@@ -191,7 +191,7 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
-    integer :: i, f, j, fl, m
+    integer :: i, f, j, fl
 
     do i = 1, size(this%bc_index)
       f = this%bc_index(i)
@@ -290,7 +290,7 @@ contains
     character(:), allocatable, intent(inout) :: errmsg
 
     real(r8) :: face_normal(3,6)
-    integer :: j,k,ierr
+    integer :: j,k
     type(cell_geom) :: cell
 
     associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
@@ -332,7 +332,7 @@ contains
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
-    integer :: ni,f,nlast, nint, ierr,nmat_in_cell
+    integer :: ni,f,nlast,nmat_in_cell
     logical :: is_mixed_donor_cell
     type(plane) :: P
 
@@ -691,8 +691,8 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
-    integer :: i, nmat, l, stat
-    character(:), allocatable :: errmsg, tmp, global_message(:)
+    integer :: i, nmat, stat
+    character(:), allocatable :: errmsg
 
 
     ! calculate the flux volumes for each face
@@ -1034,7 +1034,7 @@ contains
     integer, intent(in) :: fluids
 
     integer :: i, j
-    real(r8) :: flux_vol_adj, excess, r
+    real(r8) :: flux_vol_adj, r
 
     ! both inflow and outflow will be rescaled so take abs. Ignore BCs for now
     flux_vol_adj = sum(abs(flux_vol(1:fluids,:)))

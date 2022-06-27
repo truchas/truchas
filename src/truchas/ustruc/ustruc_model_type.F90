@@ -118,7 +118,6 @@ contains
     integer, allocatable :: setids(:)
     integer(kind(mesh%cell_set_mask)) :: bitmask
     character(:), allocatable :: errmsg
-    real(r8) :: rpar
 
     this%mesh => mesh
 
@@ -285,7 +284,7 @@ contains
     real(r8), allocatable, intent(out) :: sol_frac(:)
     logical,  allocatable, intent(out) :: invalid(:)
 
-    integer  :: j, stat
+    integer  :: j
     logical  :: mask(this%mesh%ncell)
     real(r8) :: sfrac(this%mesh%ncell)
 

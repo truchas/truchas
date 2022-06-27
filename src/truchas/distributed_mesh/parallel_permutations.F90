@@ -287,6 +287,7 @@ contains
 
     logical function is_one_to_one (m)
       integer, intent(in) :: m(:)
+      integer :: j
       is_one_to_one = .false.
       m2inv = 0
       do j = 1, size(m)

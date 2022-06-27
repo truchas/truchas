@@ -118,8 +118,7 @@ contains
     class(viscoplastic_model), intent(in) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), intent(out) :: udot(:)
-    integer :: i
-    real(r8) :: stress(6), vmstress, dstress(6), strain_rate, f
+    real(r8) :: stress(6), vmstress, dstress(6)
     call this%compute_stresses(t, u, stress, vmstress, dstress)
     !if (vmstress /= 0) then
     udot = (1.5_r8 * this%g(vmstress) / vmstress) * dstress

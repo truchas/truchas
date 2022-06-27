@@ -158,7 +158,6 @@ contains
 
   subroutine HT_model_delete (this)
     type(HT_model), intent(inout) :: this
-    integer :: n
     !call destroy (this%conductivity)
     !call destroy (this%H_of_T)
     call smf_destroy (this%source)
@@ -237,7 +236,6 @@ contains
     subroutine HT_model_compute_f ()
 
       integer :: j, n, n1, n2
-      real(r8) :: term
       real(r8), pointer :: uptr(:), fptr(:), qrad(:)
       real(r8), dimension(this%mesh%ncell) :: Fcell, Tcell, Hdot, value
       real(r8), dimension(this%mesh%nface) :: Fface, Tface

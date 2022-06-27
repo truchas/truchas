@@ -45,7 +45,6 @@ contains
 
   subroutine init(this, mesh, nodebc, bc, penalty, distance, traction)
 
-    use cell_geometry, only: cross_product, normalized
     use sm_bc_utilities, only: check_if_matching_node
 
     class(sm_bc_c0d3), intent(out) :: this
@@ -55,7 +54,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, k, ncontact, icontact(3), idispl(3), d
+    integer :: nnode, ni, ncontact, icontact(3), idispl(3), d
     logical :: matching_node
 
     this%mesh => mesh
@@ -119,8 +118,8 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
     real(r8), intent(inout) :: r(:,:)
 
-    integer :: i, n1, n2, stat, ipiv(3)
-    real(r8) :: args(0:3), stress_penalty, y(3), x(3)
+    integer :: i, n1, stat, ipiv(3)
+    real(r8) :: args(0:3), stress_penalty, y(3)
 
     args(0) = time
     do i = 1, size(this%index)
@@ -149,8 +148,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, nl, n, d
-    real(r8) :: x(3)
+    integer :: i, n
 
     do i = 1, size(this%index)
       n = this%index(i)

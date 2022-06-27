@@ -79,10 +79,9 @@ CONTAINS
     ! Local Variables
     integer, parameter :: ndim = 3
     character(LEN = 128) :: string, string2
-    integer :: i, m, n, variables = 2*ndim + 6, nmechvar = 4
+    integer :: i, m, n, variables = 2*ndim + 6
     integer, dimension(1) :: MaxLoc_L, MinLoc_L
     real(r8), dimension(mesh%ncell_onP) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
-    real(r8) :: Temperature
     !type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
 
     real(r8), dimension(nmat) :: Material_Enthalpy, Material_KE, Material_Volume, Material_Mass

@@ -105,7 +105,6 @@ contains
 
   subroutine FHT_model_delete (this)
     type(FHT_model), intent(inout) :: this
-    integer :: n
     this%disc => null()
     this%mesh => null()
     call delete_layout (this%layout)
@@ -135,7 +134,6 @@ contains
     target :: u, f
 
     integer :: j, n, n1, n2
-    real(r8) :: term
     real(r8), target :: state(this%mesh%ncell,1)
     real(r8), pointer :: rptr(:), qrad(:), Tcell(:)
     real(r8), dimension(this%mesh%ncell) :: Fcell, value

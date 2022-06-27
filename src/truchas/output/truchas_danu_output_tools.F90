@@ -21,7 +21,6 @@ module truchas_danu_output_tools
   use kinds, only: r8
   use truchas_h5_outfile, only: th5_seq_group
   use parallel_communication
-  use,intrinsic :: iso_c_binding, only: c_ptr
   implicit none
   private
   

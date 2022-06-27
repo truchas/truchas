@@ -40,7 +40,6 @@ contains
     logical :: found
     character(:), allocatable :: label
     character(128) :: iom
-    type(parameter_list), pointer :: plist
 
     character(31) :: name, toolpath, laser_type, laser_power_func
     real(r8) :: laser_direction(3), laser_absorp, laser_time_const, laser_power

@@ -16,7 +16,6 @@ MODULE DIAGNOSTICS_MODULE
   ! Author(s): Kin Lam (klam@lanl.gov)
   !            Sharen Cummins (scummins@lanl.gov)
   !=======================================================================
-  use kinds, only: r8
   implicit none
   private
 

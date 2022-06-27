@@ -50,7 +50,7 @@ contains
     class(patch_vf), intent(out) :: this
     type(rad_encl_file), intent(in) :: file  ! only referenced on IOP
 
-    integer :: j, n, offset, bsize(nPE)
+    integer :: n, offset, bsize(nPE)
     integer, allocatable :: f2p_map(:), face_map(:), color_p(:), color(:)
     real(r8), allocatable :: w(:)
 

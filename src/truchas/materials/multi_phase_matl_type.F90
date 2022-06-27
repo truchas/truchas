@@ -194,7 +194,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    class(scalar_func), allocatable :: cp, h, hd
+    class(scalar_func), allocatable :: cp, h
     real(r8) :: t0, h0
     integer :: n
 
@@ -281,8 +281,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    class(scalar_func), allocatable :: cp, h, rho, hd
-    real(r8) :: t0, h0
+    class(scalar_func), allocatable :: h, rho, hd
     integer :: n
 
     if (this%has_prop('enthalpy')) return

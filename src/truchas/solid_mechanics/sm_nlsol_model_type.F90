@@ -91,7 +91,6 @@ contains
   real(r8) function du_norm(this, t, u, du)
 
     use parallel_communication, only: global_maxval
-    use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t

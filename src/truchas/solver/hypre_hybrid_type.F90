@@ -299,7 +299,6 @@ contains
     integer, intent(out) :: stat
 
     integer :: i, ierr, rows(this%nrows)
-    real(r8) :: norm
 
     call fHYPRE_ClearAllErrors
 

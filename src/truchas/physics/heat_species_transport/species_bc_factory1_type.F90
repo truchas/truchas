@@ -58,7 +58,6 @@
 
 module species_bc_factory1_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use species_bc_factory_class
   use unstr_mesh_type
   use parameter_list_type

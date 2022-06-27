@@ -49,7 +49,7 @@
 module ustruc_gl_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use,intrinsic :: iso_fortran_env, only: int8, int16
+  use,intrinsic :: iso_fortran_env, only: int8
   use ustruc_plugin_class
   implicit none
   private

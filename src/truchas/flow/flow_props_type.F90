@@ -192,7 +192,7 @@ contains
     real(r8), intent(in) :: vof(:,:), temperature_cc(:)
 
     integer :: m, i, j
-    real(r8) :: minrho, w(2), min_face_rho, state(1)
+    real(r8) :: minrho, state(1)
 
     call start_timer("update properties")
 
@@ -300,8 +300,8 @@ contains
 
     class(flow_props), intent(inout) :: this
 
-    integer :: m, i, j
-    real(r8) :: minrho, w(2), min_face_rho
+    integer :: j
+    real(r8) :: w(2), min_face_rho
 
     min_face_rho = this%minrho*this%min_face_fraction
 
