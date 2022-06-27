@@ -1,4 +1,4 @@
-target_sources(truchas PRIVATE random_module.F90 setup_module.F90)
+target_sources(truchas PRIVATE setup_module.F90)
 
 add_subdirectory(base_types)
 add_subdirectory(initialize)

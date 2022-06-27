@@ -49,7 +49,6 @@ CONTAINS
     use truchas_env,            only: input_file, title
     use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
-    use random_module,          only: INITIALIZE_RANDOM
     use signal_handler
     use output_utilities,       only: announce
     use truchas_logging_services
@@ -78,9 +77,6 @@ CONTAINS
     ! announce
     call ANNOUNCE ('PROGRAM INFORMATION')
     call PROGRAM_SPECIFICATIONS ()
-
-    ! initialize the random number generator
-    call INITIALIZE_RANDOM()
 
     ! read the data file
     call ANNOUNCE ('INPUT')
