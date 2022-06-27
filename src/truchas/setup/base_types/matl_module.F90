@@ -40,7 +40,7 @@ MODULE MATL_MODULE
   !
   !=======================================================================
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: max_relation_forms, max_slots
+  use parameter_module, only: max_slots
   use truchas_logging_services
   implicit none
   private
@@ -58,10 +58,6 @@ MODULE MATL_MODULE
   end interface
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  ! Variables needed in processing the namelist input
-  character(LEN = 80), dimension(max_relation_forms), public, save :: &
-                       Relation_Forms, P_Change_Forms
 
   ! Define MATERIAL Structure
   type MATERIAL
