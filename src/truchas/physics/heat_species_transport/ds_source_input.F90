@@ -88,7 +88,7 @@
 
 module ds_source_input
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   use source_mesh_function
   use unstr_mesh_type

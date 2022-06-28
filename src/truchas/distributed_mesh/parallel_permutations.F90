@@ -87,7 +87,7 @@
 
 module parallel_permutations
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use permutations
   use index_map_type
   use parallel_communication

@@ -3,7 +3,7 @@
 module sort_utilities
 
   use,intrinsic :: iso_fortran_env, only: int8, int16, int32, int64, real32, real64
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 

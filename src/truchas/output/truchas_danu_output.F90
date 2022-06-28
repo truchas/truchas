@@ -18,12 +18,12 @@
 
 module truchas_danu_output
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_danu_output_data
   use truchas_danu_output_tools
   use parallel_communication
   use truchas_logging_services
   use truchas_h5_outfile, only: th5_mesh_group, th5_seq_group
-  use kinds, only: r8
   implicit none
   private
 

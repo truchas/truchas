@@ -7,7 +7,6 @@ target_sources(truchas PRIVATE
   integer_set_type_wavl.F90
   integer_map_type.F90
   string_set_type.F90
-  kinds.F90
   permutations.F90
   process_info_module.F90
   signal_handler.F90

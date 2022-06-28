@@ -8,7 +8,7 @@
 
 module HTSD_init_cond_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use data_layout_type
   use HTSD_model_type

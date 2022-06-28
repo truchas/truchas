@@ -72,7 +72,7 @@ contains
 
   function new_simpl_mesh (params, stat, errmsg) result (this)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use exodus_mesh_type
     use exodus_mesh_io
     use simpl_mesh_tools

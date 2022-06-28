@@ -102,7 +102,7 @@
 
 module source_mesh_function
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_containers
   use unstr_base_mesh_class
   implicit none

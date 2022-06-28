@@ -52,7 +52,7 @@
 
 module ustruc_gv1_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use ustruc_plugin_class
   implicit none
   private

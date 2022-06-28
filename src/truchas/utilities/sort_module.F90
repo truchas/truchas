@@ -71,7 +71,7 @@ MODULE SORT_MODULE
   ! Author(s): Jerry S. Brock, LANL T-3 (jsbrock@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 

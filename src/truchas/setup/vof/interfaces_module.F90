@@ -18,7 +18,7 @@ MODULE INTERFACES_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_module, only: mbody, mphi
   use scalar_func_containers, only: scalar_func_box
   implicit none

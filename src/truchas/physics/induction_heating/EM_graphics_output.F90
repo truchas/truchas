@@ -19,7 +19,7 @@
 
 module EM_graphics_output
 
-  use kinds, only: rk => r8
+  use,intrinsic :: iso_fortran_env, only: rk => real64
   use string_utilities, only: i_to_c
   use parallel_communication
   use simpl_mesh_type

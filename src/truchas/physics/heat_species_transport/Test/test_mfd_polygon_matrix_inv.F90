@@ -6,7 +6,7 @@
 
 program test_mfd_polygon_matrix_inv
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mfd_disc_type
   use cell_geometry
 

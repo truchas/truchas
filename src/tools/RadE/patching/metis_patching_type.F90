@@ -55,7 +55,7 @@
 
 module metis_patching_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use re_encl_type
   use patching_class
   use parameter_list_type

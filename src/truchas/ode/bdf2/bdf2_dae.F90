@@ -41,7 +41,7 @@
 
 module bdf2_dae
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use solution_history
   use nka_type
   implicit none

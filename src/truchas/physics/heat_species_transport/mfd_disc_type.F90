@@ -73,7 +73,7 @@
 
 module mfd_disc_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   implicit none
   private

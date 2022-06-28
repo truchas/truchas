@@ -14,7 +14,7 @@
 
 module diffusion_solver
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use diffusion_solver_data
   use mesh_manager
   use parallel_communication

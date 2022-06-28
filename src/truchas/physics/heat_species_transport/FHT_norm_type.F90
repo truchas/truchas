@@ -8,7 +8,7 @@
 
 module FHT_norm_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use FHT_model_type
   use rad_problem_type
   use parallel_communication

@@ -8,7 +8,7 @@
 
 module HTSD_model_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use mfd_disc_type
   use data_layout_type

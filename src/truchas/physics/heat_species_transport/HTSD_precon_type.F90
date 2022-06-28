@@ -8,7 +8,7 @@
 
 module HTSD_precon_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HTSD_model_type
   use rad_problem_type
   use unstr_mesh_type

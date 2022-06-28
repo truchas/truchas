@@ -9,7 +9,7 @@
 
 MODULE BODY_INPUT_MODULE
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use interfaces_module
   use material_model_driver, only: matl_model
   use truchas_logging_services

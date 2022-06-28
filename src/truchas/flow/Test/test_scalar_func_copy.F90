@@ -5,7 +5,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program test_scalar_func_copy
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_containers
   use scalar_func_class
   use scalar_func_factories

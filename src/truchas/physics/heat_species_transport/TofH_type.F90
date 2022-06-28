@@ -46,7 +46,7 @@
 
 module TofH_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use prop_mesh_func_type
   use ridders_class
   implicit none

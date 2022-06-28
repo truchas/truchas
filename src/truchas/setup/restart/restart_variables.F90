@@ -17,7 +17,7 @@
 
 module restart_variables
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_module, only: string_len
   implicit none
   private

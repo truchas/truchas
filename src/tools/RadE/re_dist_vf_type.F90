@@ -35,7 +35,7 @@
 
 module re_dist_vf_type
 
-  use kinds, only: i8, r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
   use scl
   implicit none
   private

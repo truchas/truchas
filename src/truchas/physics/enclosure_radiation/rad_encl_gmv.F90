@@ -55,7 +55,7 @@
 
 module rad_encl_gmv
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use gmvwrite_c_binding
   use rad_encl_type
   use parallel_communication

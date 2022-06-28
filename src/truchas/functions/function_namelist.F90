@@ -29,7 +29,7 @@
 
 module function_namelist
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use string_utilities, only: lower_case, raise_case, i_to_c
   use input_utilities, only: seek_to_namelist

@@ -14,7 +14,7 @@
 
 module MaxwellBoundaryData
 
-  use kinds, only: rk => r8
+  use,intrinsic :: iso_fortran_env, only: rk => real64
   use simpl_mesh_type
   implicit none
   private
@@ -115,7 +115,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kinds, only: rk => r8
+        use,intrinsic :: iso_fortran_env, only: rk => real64
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -168,7 +168,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kinds, only: rk => r8
+        use,intrinsic :: iso_fortran_env, only: rk => real64
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -196,7 +196,7 @@ contains
     
     interface
       function f (x) result (fx)
-        use kinds, only: rk => r8
+        use,intrinsic :: iso_fortran_env, only: rk => real64
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f
@@ -225,7 +225,7 @@ contains
     real(kind=rk) :: avg(size(x1))
     interface
       function f (x) result (fx)
-        use kinds, only: rk => r8
+        use,intrinsic :: iso_fortran_env, only: rk => real64
         real(kind=rk), intent(in) :: x(:)
         real(kind=rk) :: fx(3)
       end function f

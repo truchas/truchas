@@ -17,7 +17,7 @@
 
 module cell_grad_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use pcsr_matrix_type
   use mfd_disc_type

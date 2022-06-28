@@ -6,7 +6,7 @@
 
 module debug_EM
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use index_map_type
   

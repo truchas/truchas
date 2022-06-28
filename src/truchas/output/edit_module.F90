@@ -25,7 +25,7 @@ MODULE EDIT_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_module, only: mops
   use truchas_logging_services
   use scalar_func_class

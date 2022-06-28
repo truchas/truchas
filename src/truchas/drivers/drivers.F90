@@ -117,6 +117,7 @@ call hijack_truchas ()
     !
     !   Cycle through each time step
     !---------------------------------------------------------------------------
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
     use EM,                       only: INDUCTION_HEATING
@@ -140,7 +141,6 @@ call hijack_truchas ()
     use truchas_logging_services
     use truchas_timers
     use probes_driver, only: probes_write
-    use kinds
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds

@@ -9,7 +9,7 @@ program test_hypre_pcg_type
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use index_map_type
   use pcsr_matrix_type

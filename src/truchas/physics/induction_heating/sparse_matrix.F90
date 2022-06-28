@@ -16,7 +16,7 @@
 
 module sparse_matrix
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
   

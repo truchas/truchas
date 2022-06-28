@@ -8,7 +8,7 @@
 
 module nodal_FEM_1D
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
   
@@ -257,7 +257,7 @@ end module nodal_FEM_1D
 
 program main
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use nodal_FEM_1D
   use bdf2_dae
   implicit none

@@ -58,7 +58,7 @@ contains
 
   subroutine init_mesh_manager_params (params)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use string_utilities, only: raise_case
 
     type(parameter_list) :: params

@@ -30,7 +30,7 @@
 
 module scalar_func_factories
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
   implicit none
   private
