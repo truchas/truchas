@@ -24,7 +24,7 @@ contains
 
     use material_factory,  only: load_material_database
     use material_namelist, only: params
-    use parameter_module, only: nmat_old => nmat
+    use matl_module, only: nmat_old => nmat
 
     integer :: stat
     character(:), allocatable :: errmsg

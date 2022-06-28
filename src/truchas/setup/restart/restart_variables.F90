@@ -18,7 +18,6 @@
 module restart_variables
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: string_len
   implicit none
   private
   save
@@ -27,7 +26,7 @@ module restart_variables
 
   !! These are defined externally by PROCESS_COMMAND_LINE.
   logical, public :: restart
-  character(len=string_len), public :: restart_file
+  character(256), public :: restart_file
 
   !! The namelist variables.
   logical, public :: ignore_t  = .false.

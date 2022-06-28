@@ -29,13 +29,15 @@
 module EM_input
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: string_len, MAXSV
   use string_utilities, only: i_to_c
   use truchas_logging_services
   implicit none
   private
 
   public :: read_EM_input
+
+  integer, parameter :: string_len = 256
+  integer, parameter :: MAXSV = 32
 
   !! Domain type: 'FULL_CYLINDER', 'HALF_CYLINDER', or 'QUARTER_CYLINDER'
   character(string_len), public :: EM_Domain_Type

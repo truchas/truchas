@@ -19,13 +19,13 @@
 module output_control
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: mops
   use toolpath_type
   implicit none
   private
 
   public :: output_init, add_output_events
 
+  integer, parameter, public :: mops = 21
   real(r8), save, public :: output_dt(mops)
   real(r8), save, public :: output_t(mops+1)
   integer,  save, public :: output_dt_multiplier(mops) = 1

@@ -187,8 +187,7 @@ CONTAINS
     !
     !=======================================================================
     use edit_module,             only: short_edit, Short_Output_Dt_Multiplier
-    use output_control,          only: nops, Output_Dt, Output_T
-    use parameter_module,        only: mops
+    use output_control,          only: mops, nops, Output_Dt, Output_T
     use time_step_module,        only: t
 
     ! Arguments

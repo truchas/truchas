@@ -481,7 +481,6 @@ call hijack_truchas ()
                                     input_file, overwrite_output
     !use truchas_logging_services
     use utilities_module,     only: MAKE_DIRECTORY_HIERARCHY
-    use parameter_module,     only: string_len
     use restart_variables,    only: restart_file, restart
     use file_utility,         only: count_tokens, get_token
     use string_utilities,     only: i_to_c
@@ -505,7 +504,7 @@ call hijack_truchas ()
     logical :: h
     logical :: f
     logical :: g
-    character (LEN=string_len), dimension(10) :: usage = (/                       &
+    character(80) :: usage(10) = [ &
     'usage: truchas [options] infile                                       ', &
     '                                                                      ', &
     'options:                                                              ', &
@@ -515,7 +514,7 @@ call hijack_truchas ()
     '  -m            turn on memory diagnostics                            ', &
     '  -g:n          output group size                                     ', &
     '  -f            force overwrite of output directory contents          ', &
-    '  -h            help                                                  ' /)
+    '  -h            help                                                  ']
     
     !---------------------------------------------------------------------------
 

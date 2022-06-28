@@ -37,7 +37,6 @@ CONTAINS
 
     use parallel_communication, only: is_IOP, broadcast
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_R
-    use parameter_module, only: mbody, mphi
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
     use string_utilities, only: i_to_c

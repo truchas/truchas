@@ -26,7 +26,7 @@ MODULE EDIT_MODULE
   !
   !=======================================================================
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: mops
+  use output_control, only: mops
   use truchas_logging_services
   use scalar_func_class
   implicit none
@@ -64,9 +64,8 @@ CONTAINS
     !
     !=======================================================================
     use cutoffs_module,         only: alittle
-    use matl_module,            only: GATHER_VOF
+    use matl_module,            only: nmat, GATHER_VOF
     use truchas_env,            only: output_file_name
-    use parameter_module,       only: nmat
     use parallel_communication
     use material_model_driver,  only: matl_model
     use time_step_module,       only: cycle_number, t
