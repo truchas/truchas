@@ -10,7 +10,6 @@ module flow_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use flow_domain_types
-  use constants_module
   use truchas_logging_services
   use truchas_timers
   use flow_projection_type

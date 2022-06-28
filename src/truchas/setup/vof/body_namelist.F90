@@ -178,7 +178,7 @@ contains
   !! Rotation angles are provided in degrees.
   function normal_vector(axis, rotation_angle, rotation_point) result(normal)
 
-    use constants_module, only: pi
+    use math_constants, only: pi
 
     character(*), intent(in) :: axis
     real(r8), intent(in) :: rotation_angle(:), rotation_point(:)
@@ -202,7 +202,7 @@ contains
   
   function reverse_transform(q, rotation_angle, rotation_point) result(x)
 
-    use constants_module, only: pi
+    use math_constants, only: pi
 
     real(r8), intent(in) :: q(:), rotation_angle(:), rotation_point(:)
     real(r8) :: x(3)

@@ -222,7 +222,7 @@ contains
 
   ! vel_fn is the outward oriented face-normal velocity
   subroutine vtrack_update(t, dt, vel_fn, initial)
-    use constants_module
+
     real(r8), intent(in) :: t, dt
     real(r8), intent(in) :: vel_fn(:)
     logical, intent(in), optional :: initial
