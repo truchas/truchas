@@ -19,7 +19,6 @@ contains
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities,       only: i_to_c
     use input_utilities,        only: seek_to_namelist
-    use cutoffs_module,         only: cutvof
     use time_step_module,       only: t, dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                       cycle_max, cycle_number
 
@@ -29,7 +28,7 @@ contains
     logical :: found
     character(80) :: iom
 
-    namelist /numerics/ cutvof, cycle_number, cycle_max, &
+    namelist /numerics/ cycle_number, cycle_max, &
         t, dt_constant, dt_init, dt_grow, dt_min, dt_max
 
     call TLS_info('Reading NUMERICS namelist ...')
@@ -64,14 +63,12 @@ contains
   subroutine numerics_check
 
     use input_utilities,   only: NULL_R
-    use cutoffs_module,    only: cutvof
     use time_step_module,  only: dt, constant_dt, dt_constraint, &
                                  dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                  cycle_max, cycle_number
 
     if (cycle_max < 0) call TLS_fatal('CYCLE_MAX must be >= 0')
     if (cycle_number < 0) call TLS_fatal('CYCLE_NUMBER must be >= 0')
-    if (cutvof < 0 .or. cutvof > 1) call TLS_fatal('CUTVOF must be in [0,1]')
     if (dt_grow < 1) call TLS_fatal('DT_GROW must be >= 1')
     if (dt_constant <= 0 .and. dt_constant /= NULL_R) call TLS_fatal('DT_CONSTANT must be > 0.0')
     if (dt_init <= 0) call TLS_fatal('DT_INIT must be > 0.0')
@@ -95,7 +92,6 @@ contains
   subroutine numerics_default
 
     use input_utilities, only: NULL_R
-    use cutoffs_module, only: cutvof
     use time_step_module, only: t, constant_dt, dt_constant, dt_grow, dt_init, dt_max, dt_min, &
         cycle_max, cycle_number, cycle_number_restart
 
@@ -111,21 +107,17 @@ contains
 
     dt_constant = NULL_R
     constant_dt = .false.
-    cutvof  = 1.0d-8 ! volume fraction cutoff
 
   end subroutine numerics_default
 
 
   subroutine numerics_input_parallel
 
-    use cutoffs_module,         only: cutvof
     use parallel_communication, only: broadcast
     use time_step_module,       only: t, constant_dt, cycle_max, &
                                       cycle_number, cycle_number_restart,     &
                                       dt_constant, dt_constraint, dt_grow,    &
                                       dt_init, dt_max, dt_min
-
-    call broadcast(cutvof)
 
     call broadcast(t)
     call broadcast(dt_constant)

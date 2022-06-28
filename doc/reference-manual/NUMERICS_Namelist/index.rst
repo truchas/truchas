@@ -18,7 +18,6 @@ DS_SOURCE Namelist Features
 
 Components
 ------------
-* :ref:`Cutvof<NUMERICS_C>`
 * :ref:`Cycle_Max<NUMERICS_CM>`
 * :ref:`Cycle_Number<NUMERICS_CN>`
 * :ref:`Dt_Constant<NUMERICS_DTC>`
@@ -27,17 +26,6 @@ Components
 * :ref:`Dt_Max<NUMERICS_DTMax>`
 * :ref:`Dt_Min<NUMERICS_DTMin>`
 * :ref:`t<NUMERICS_T>`
-
-.. _NUMERICS_C:
-
-Cutvof
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description**       : The value of a material cell volume fraction below which that material is ignored. If any material has a cell volume fraction less than Cutvof, then that material is deleted from that cell, with all other materials present receiving a proportional increase in volume fraction. The only exception is the “background” material, which if present receives the entire allocation (equal to the volume fraction deleted).
-| **Physical dimension**: dimensionless
-| **Type**              : real
-| **Default**           : :math:`10^{−8}` 
-| **Valid Values**      : (0.0, 1.0)
-| **Notes**             : Relative to most other volume-fraction-based algorithms, :ref:`Cutvof<NUMERICS_C>` is defaulted and used at a much lower value. If a prototypical value of :ref:`Cutvof<NUMERICS_C>` equal to :math:`10^{−4}` were used, as is the case in most commercial software, local and global mass conservation would suffer, and lack of algorithmic robustness would be masked. The default :math:`10^{−8}` value for :ref:`Cutvof<NUMERICS_C>` yields good results, hence setting it higher is generally not necessary.
 
 .. _NUMERICS_CM:
 
