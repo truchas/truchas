@@ -54,7 +54,7 @@ contains
     call this%builder%init(mesh)
   end subroutine init
 
-  subroutine add(this, htc, tamb, setids, stat, errmsg)
+  subroutine add(this, absorptivity, setids, stat, errmsg)
     class(vflux_bndry_func), intent(inout) :: this
     class(scalar_func), allocatable, intent(inout) :: absorptivity
     integer, intent(in) :: setids(:)
@@ -79,7 +79,8 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in) :: var(:)
     integer :: n, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), c
+    real(r8) :: args(0:size(this%mesh%x,dim=1))
+    real(r8) :: absorptivity, irrad(3)
     ASSERT(allocated(this%index))
     args(0) = t
     do n = 1, this%ngroup
@@ -90,9 +91,9 @@ contains
           associate (fnode => this%mesh%face_node_list_view(index(j)))
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
-          c = this%mesh%area(index(j)) * this%f(n)%eval(args)
-          value(j) = c * (var(index(j)) - this%g(n)%eval(args))
-          deriv(j) = c
+          absorptivity = this%f(n)%eval(var)
+          !irrad = this%farray(n)%f%eval(args)
+          !value(j) = dot_product(this%mesh%normal(:,index(j)), absorptivity * irrad)
         end do
       end associate
     end do

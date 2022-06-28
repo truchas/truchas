@@ -206,7 +206,7 @@ contains
 
     !! Oriented flux BC contribution.
     if (allocated(this%bc_vflux)) then
-      call this%bc_vflux%compute(t)
+      call this%bc_vflux%compute(t, Tface)
       do j = 1, size(this%bc_vflux%index)
         n = this%bc_vflux%index(j)
         Fface(n) = Fface(n) + this%bc_vflux%value(j)
