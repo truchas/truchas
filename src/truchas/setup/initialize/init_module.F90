@@ -635,7 +635,6 @@ CONTAINS
     !   Compute initial cell-centered velocities
     !
     !=======================================================================
-    use cutoffs_module,    only: alittle
     use interfaces_module, only: Body_Vel, nbody, Matnum
     use zone_module,       only: Zone
     use unstr_mesh_type
@@ -672,10 +671,10 @@ CONTAINS
        Massc = Momentum(n,:)
 
        ! Compute the center of mass velocity
-       where (ABS(Massc) <= alittle)
-          Zone%Vc(n) = 0.0_r8
+       where (Mass > 0)
+          Zone%Vc(n) = Massc / Mass
        elsewhere
-          Zone%Vc(n) = Massc/(Mass + alittle)
+          Zone%Vc(n) = 0.0_r8
        end where
 
        Zone%Vc_old(n) = Zone%Vc(n)

@@ -19,7 +19,7 @@ contains
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities,       only: i_to_c
     use input_utilities,        only: seek_to_namelist
-    use cutoffs_module,         only: alittle, cutvof
+    use cutoffs_module,         only: cutvof
     use time_step_module,       only: t, dt_init, dt_constant, dt_grow, dt_min, dt_max, &
                                       cycle_max, cycle_number
 
@@ -29,7 +29,7 @@ contains
     logical :: found
     character(80) :: iom
 
-    namelist /numerics/ alittle, cutvof, cycle_number, cycle_max, &
+    namelist /numerics/ cutvof, cycle_number, cycle_max, &
         t, dt_constant, dt_init, dt_grow, dt_min, dt_max
 
     call TLS_info('Reading NUMERICS namelist ...')
@@ -118,14 +118,13 @@ contains
 
   subroutine numerics_input_parallel
 
-    use cutoffs_module,         only: alittle, cutvof
+    use cutoffs_module,         only: cutvof
     use parallel_communication, only: broadcast
     use time_step_module,       only: t, constant_dt, cycle_max, &
                                       cycle_number, cycle_number_restart,     &
                                       dt_constant, dt_constraint, dt_grow,    &
                                       dt_init, dt_max, dt_min
 
-    call broadcast(alittle)
     call broadcast(cutvof)
 
     call broadcast(t)

@@ -63,7 +63,6 @@ CONTAINS
     !   Perform a "short edit" by computing and printing global diagnostics.
     !
     !=======================================================================
-    use cutoffs_module,         only: alittle
     use matl_module,            only: nmat, GATHER_VOF
     use truchas_env,            only: output_file_name
     use parallel_communication
@@ -126,12 +125,12 @@ CONTAINS
        ! Sum material volume.
        Matl_Vol = mesh%volume(:mesh%ncell_onP) * Tmp
        Material_Volume(m) = global_sum(Matl_Vol)
-       if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
+       !if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
        ! Sum material mass.
        Matl_Mass = Matl_Vol*matl_model%const_phase_prop(m, 'density')
        Material_Mass(m) = global_sum(Matl_Mass)
-       if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
+       !if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
 
        ! Accumulate the total mass.
        Mass = Mass + Matl_Mass
@@ -140,13 +139,13 @@ CONTAINS
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
           Material_Momentum(n,m) = global_sum(Matl_Mass*Zone%Vc(n))
-          if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
+          !if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
 
        ! Compute material kinetic energy.
        Material_KE(m) = global_sum(Matl_Mass*KE)
-       if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
+       !if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
        total_KE = total_KE + Material_KE(m)
 
        ! Get the material enthalpy.
@@ -157,7 +156,7 @@ CONTAINS
 
        ! Accumulate the material enthalpy.
        Material_Enthalpy(m) = global_sum(Tmp)
-       if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
+       !if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
 
        ! Accumulate the total enthalpy.
        Enthalpy = Enthalpy + Tmp

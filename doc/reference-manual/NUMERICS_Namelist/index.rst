@@ -18,7 +18,6 @@ DS_SOURCE Namelist Features
 
 Components
 ------------
-* :ref:`Alittle<NUMERICS_A>`
 * :ref:`Cutvof<NUMERICS_C>`
 * :ref:`Cycle_Max<NUMERICS_CM>`
 * :ref:`Cycle_Number<NUMERICS_CN>`
@@ -28,16 +27,6 @@ Components
 * :ref:`Dt_Max<NUMERICS_DTMax>`
 * :ref:`Dt_Min<NUMERICS_DTMin>`
 * :ref:`t<NUMERICS_T>`
-
-.. _NUMERICS_A:
-
-Alittle
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description**       : A small, positive real number (relative to unity) used to avoid division by zero or to compare against other numbers to deduce relative significance.
-| **Physical dimension**: dimensionless
-| **Type**              : real
-| **Default**           : EPSILON(x), where **x** is of type **real**. If the precision of **x** is **double**, EPSILON(x) returns :math:`1.0^{−16}` for most combinations of software (Fortran 90 compiler) and hardware platforms tested.
-| **Valid Values**      : (0.0, 0.001]
 
 .. _NUMERICS_C:
 
