@@ -321,12 +321,11 @@ contains
   logical function defined_par_perm (this)
     type(par_perm), intent(in) :: this
     defined_par_perm = .false.
-    CHECKLIST: do
-      if (.not.allocated(this%perm)) exit
-!      if (.not.this%src_imap%defined()) exit
+    CHECKLIST: block
+      if (.not.allocated(this%perm)) exit CHECKLIST
+!      if (.not.this%src_imap%defined()) exit CHECKLIST
       defined_par_perm = .true.
-      exit
-    end do CHECKLIST
+    end block CHECKLIST
     defined_par_perm = global_all(defined_par_perm)
   end function defined_par_perm
 

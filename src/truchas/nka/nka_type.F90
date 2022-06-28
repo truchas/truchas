@@ -473,28 +473,28 @@ contains
     integer :: n
     logical, allocatable :: tag(:)
 
-    CHECKLIST: do
+    CHECKLIST: block
       nka_defined = .false.
-      if (this%mvec < 1) exit
-      if (.not.allocated(this%v)) exit
-      if (.not.allocated(this%w)) exit
-      if (any(shape(this%v) /= shape(this%w))) exit
-      if (size(this%v,dim=1) /= this%vlen) exit
-      if (size(this%v,dim=2) /= this%mvec+1) exit
-      if (.not.allocated(this%h)) exit
-      if (size(this%h,dim=1) /= this%mvec+1) exit
-      if (size(this%h,dim=2) /= this%mvec+1) exit
-      if (.not.allocated(this%next)) exit
-      if (size(this%next) /= this%mvec+1) exit
-      if (.not.allocated(this%prev)) exit
-      if (size(this%prev) /= this%mvec+1) exit
+      if (this%mvec < 1) exit CHECKLIST
+      if (.not.allocated(this%v)) exit CHECKLIST
+      if (.not.allocated(this%w)) exit CHECKLIST
+      if (any(shape(this%v) /= shape(this%w))) exit CHECKLIST
+      if (size(this%v,dim=1) /= this%vlen) exit CHECKLIST
+      if (size(this%v,dim=2) /= this%mvec+1) exit CHECKLIST
+      if (.not.allocated(this%h)) exit CHECKLIST
+      if (size(this%h,dim=1) /= this%mvec+1) exit CHECKLIST
+      if (size(this%h,dim=2) /= this%mvec+1) exit CHECKLIST
+      if (.not.allocated(this%next)) exit CHECKLIST
+      if (size(this%next) /= this%mvec+1) exit CHECKLIST
+      if (.not.allocated(this%prev)) exit CHECKLIST
+      if (size(this%prev) /= this%mvec+1) exit CHECKLIST
 
-      if (this%vtol <= 0.0_r8) exit
+      if (this%vtol <= 0.0_r8) exit CHECKLIST
 
       n = size(this%next)
-      if (any(this%next < 0) .or. any(this%next > n)) exit
-      if (this%first < 0 .or. this%first > n) exit
-      if (this%free  < 0 .or. this%free  > n) exit
+      if (any(this%next < 0) .or. any(this%next > n)) exit CHECKLIST
+      if (this%first < 0 .or. this%first > n) exit CHECKLIST
+      if (this%free  < 0 .or. this%free  > n) exit CHECKLIST
 
       !! Tag array: each location is either in the free list or vector list.
       allocate(tag(size(this%next)))
@@ -502,10 +502,10 @@ contains
 
       !! Check the vector list for consistency.
       if (this%first == 0) then
-        if (this%last /= 0) exit
+        if (this%last /= 0) exit CHECKLIST
       else
         n = this%first
-        if (this%prev(n) /= 0) exit
+        if (this%prev(n) /= 0) exit CHECKLIST
         tag(n) = .true.
         do while (this%next(n) /= 0)
           if (this%prev(this%next(n)) /= n) exit CHECKLIST
@@ -513,7 +513,7 @@ contains
           if (tag(n)) exit CHECKLIST
           tag(n) = .true.
         end do
-        if (this%last /= n) exit
+        if (this%last /= n) exit CHECKLIST
       end if
 
       !! Check the free list.
@@ -525,11 +525,10 @@ contains
       end do
 
       !! All locations accounted for?
-      if (.not.all(tag)) exit
+      if (.not.all(tag)) exit CHECKLIST
 
       nka_defined = .true.
-      exit
-    end do CHECKLIST
+    end block CHECKLIST
 
     if (allocated(tag)) deallocate(tag)
 
