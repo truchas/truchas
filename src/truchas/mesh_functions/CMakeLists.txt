@@ -9,6 +9,7 @@ target_sources(truchas PRIVATE
   bndry_face_group_builder_type.F90
   intfc_link_group_builder_type.F90
   cell_group_builder_type.F90
+  vflux_bndry_func_type.F90
   htc_bndry_func_type.F90
   rad_bndry_func_type.F90
   htc_intfc_func_type.F90

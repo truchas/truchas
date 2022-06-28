@@ -44,7 +44,7 @@ module FHT_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
-    class(bndry_vfunc), allocatable :: bc_vflux ! oriented flux
+    class(bndry_func2), allocatable :: bc_vflux ! oriented flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC (coef, ref temp)
     class(bndry_func2), allocatable :: bc_rad  ! simple radiation (eps, amb temp)
     class(intfc_func2), allocatable :: ic_htc  ! internal HTC
@@ -209,7 +209,7 @@ contains
       call this%bc_vflux%compute(t)
       do j = 1, size(this%bc_vflux%index)
         n = this%bc_vflux%index(j)
-        Fface(n) = Fface(n) + dot_product(this%mesh%normal(:,n), this%bc_vflux%value(:,j))
+        Fface(n) = Fface(n) + this%bc_vflux%value(j)
       end do
     end if
 

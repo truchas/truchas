@@ -253,18 +253,16 @@ contains
 
 
   subroutine alloc_vflux_bc(this, bc, stat, errmsg)
-
-    use vector_func_class
-    use vector_func_factories, only: alloc_vector_func
-    use bndry_vfunc_class
-    use bndry_face_vfunc_type
+    
+    use bndry_func2_class
+    use vflux_bndry_func_type
 
     class(thermal_bc_factory1), intent(inout) :: this
-    class(bndry_vfunc), allocatable, intent(out) :: bc
+    class(bndry_func2), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(bndry_face_vfunc), allocatable :: bff
+    type(vflux_bndry_func), allocatable :: bff
 
     call TLS_info('  generating "oriented-flux" thermal boundary condition')
     call this%iterate_list('oriented-flux', proc, stat, errmsg)
@@ -288,8 +286,8 @@ contains
       integer, intent(in) :: setids(:)
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
-      class(vector_func), allocatable :: f
-      call alloc_vector_func(plist, 'flux', f, stat, errmsg)
+      class(scalar_func), allocatable :: f
+      call alloc_scalar_func(plist, 'absorptivity', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(bff)) then
         allocate(bff)

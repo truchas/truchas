@@ -312,7 +312,7 @@ contains
         call this%ht%bc_vflux%compute(t, Tface)
         do j = 1, size(this%ht%bc_vflux%index)
           n = this%ht%bc_vflux%index(j)
-          Fface(n) = Fface(n) + dot_product(this%mesh%normal(:,n), this%ht%bc_vflux%value(:,j))
+          Fface(n) = Fface(n) + this%ht%bc_vflux%value(j)
         end do
       end if
 
