@@ -23,6 +23,8 @@ module vflux_bndry_func_type
   use unstr_base_mesh_class
   use scalar_func_containers
   use bndry_face_group_builder_type
+  use vector_func_class
+  use vector_func_containers
   implicit none
   private
 
@@ -32,6 +34,7 @@ module vflux_bndry_func_type
     integer :: ngroup
     integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: f(:)
+    type(vector_func_box), allocatable :: farray(:)
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist
@@ -92,8 +95,8 @@ contains
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
           absorptivity = this%f(n)%eval(var)
-          !irrad = this%farray(n)%f%eval(args)
-          !value(j) = dot_product(this%mesh%normal(:,index(j)), absorptivity * irrad)
+          irrad = this%farray(n)%f%eval(args)
+          value(j) = dot_product(this%mesh%normal(:,index(j)), absorptivity * irrad)
         end do
       end associate
     end do
