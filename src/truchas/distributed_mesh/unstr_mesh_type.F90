@@ -146,7 +146,6 @@ module unstr_mesh_type
     integer, allocatable :: xcnhbr(:), cnhbr(:) ! cell neighbors
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
-    real(r8), allocatable :: normal(:,:)
     real(r8), allocatable :: cell_centroid(:,:)
     real(r8), allocatable :: face_centroid(:,:)
     real(r8), allocatable :: face_normal_dist(:)  ! minimum distance from face along edges
