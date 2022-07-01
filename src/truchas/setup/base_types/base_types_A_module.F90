@@ -51,12 +51,10 @@ CONTAINS
     !   Allocate the Cell, Matl, and Zone base types and Fluxing_Velocity
     !
     !=======================================================================
-    use bc_module,           only: BC
     use matl_module,         only: SLOT_INCREASE, Matl
     use legacy_mesh_api,     only: nfc, ncells
     use parameter_module,    only: mat_slot, mat_slot_new, nmat
     use zone_module,            only: Zone
-    use solid_mechanics_module, only: SOLID_MECHANICS_ALLOCATE
     use EM_data_proxy,          only: EM_is_on
 
     ! Arguments
@@ -65,14 +63,6 @@ CONTAINS
     integer :: memstat
     integer :: i
 
-    ! Allocate the BC derived type.
-    ALLOCATE (BC(ncells), STAT = memstat)
-    if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: BC derived type memory allocation error')
-
-    ! BC base type.
-    BC%Flag = 0
-    BC%Internal = 0
-
     ! Allocate the Zone derived type.
     ALLOCATE (Zone(ncells), STAT = memstat)
     if (memstat /= 0) call TLS_panic ('BASE_TYPES_A_ALLOCATE: Zone derived type memory allocation error')
@@ -80,9 +70,6 @@ CONTAINS
     ! Allocate the Matl derived type.
     mat_slot_new = merge(1, 2, nmat <= 1)
     call SLOT_INCREASE (Matl, mat_slot, mat_slot_new)
-
-    ! Allocate the material property, displacement, strain, and stress arrays
-    call SOLID_MECHANICS_ALLOCATE ()
 
     ! Set the new arrays to their defaults
     call BASE_TYPES_DEFAULT ()
@@ -96,13 +83,9 @@ CONTAINS
     !   Deallocate the base types.
     !
     !=======================================================================
-    use bc_module,         only: BC
     use matl_module,       only: SLOT_DECREASE, Matl
     use parameter_module,  only: mat_slot, mat_slot_new
     use zone_module,       only: ZONE
-
-    ! deallocate the BC derived type.
-    if (ASSOCIATED(BC)) DEALLOCATE (BC)
 
     ! Deallocate the Zone derived type.
     if (ASSOCIATED(Zone)) DEALLOCATE (Zone)

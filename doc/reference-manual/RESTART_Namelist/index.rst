@@ -21,7 +21,6 @@ Components
 * :ref:`Ignore_T<R_IT>`
 * :ref:`Ignore_Dt<R_ID>`
 * :ref:`Ignore_Joule_Heat<R_IJH>`
-* :ref:`Ignore_Legacy_Solid_Mechanics<R_ISM>`
 
 .. _R_IT:
 
@@ -44,13 +43,5 @@ Ignore_Dt
 Ignore_Joule_Heat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : If this flag is true, the Joule heat data in the restart file (if any) will be ignored when initializing the code. This variable is only relevant for restart calculations with :ref:`Electromagnetics<PHYSICS_EM>` enabled in the :ref:`PHYSICS<PHYSICS_Namelist>` namelist.
-| **Type**        : logical
-| **Default**     : false
-
-.. _R_ISM:
-
-Ignore_Legacy_Solid_Mechanics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : If this flag is true, the solid mechanics data in the restart file (if any) will be ignored when initializing the code. This variable is only relevant for restart calculations with :ref:`Legacy_Solid_Mechanics<PHYSICS_LSM>` enabled in the :ref:`PHYSICS<PHYSICS_Namelist>` namelist.
 | **Type**        : logical
 | **Default**     : false

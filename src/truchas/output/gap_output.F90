@@ -32,17 +32,6 @@ contains
     use parameter_module,            only: ncomps
     use legacy_mesh_api,             only: ncells, nfc, Mesh, EE_GATHER
     use legacy_mesh_api,             only: GAP_ELEMENT_1, GAP_ELEMENT_3, GAP_ELEMENT_5 
-    use physics_module, only: solid_mechanics => legacy_solid_mechanics
-    use solid_mechanics_output,      only: get_sm_rotation_magnitude,          &
-                                           set_sm_rotation_magnitude,          &
-                                           get_smech_cell_total_strain,        &
-                                           set_smech_cell_total_strain,        &
-                                           get_smech_cell_plastic_strain,      &
-                                           set_smech_cell_plastic_strain,      &
-                                           get_smech_cell_elastic_stress,      &
-                                           set_smech_cell_elastic_stress,      &
-                                           get_smech_cell_plastic_strain_rate, &
-                                           set_smech_cell_plastic_strain_rate
     use zone_module,                 only: Zone 
     use parallel_communication
     use physics_module, only: heat_transport
@@ -56,62 +45,6 @@ contains
                                              elastic_stress
     !--------------------------------------------------------------------------- 
     if (.not. global_any(Mesh%Cell_Shape >= GAP_ELEMENT_1)) return 
-    SOLID_MECH: if (solid_mechanics) then 
-       allocate(rotation_magnitude(ncells))
-       call get_sm_rotation_magnitude(rotation_magnitude)
-       allocate(total_strain(ncomps,ncells))
-       call get_smech_cell_total_strain(total_strain)
-       allocate(elastic_stress(ncomps,ncells))
-       call get_smech_cell_elastic_stress(elastic_stress)
-       allocate(plastic_strain(ncomps,ncells))
-       call get_smech_cell_plastic_strain(plastic_strain)
-       allocate(plastic_strain_rate(ncells))
-       call get_smech_cell_plastic_strain_rate(plastic_strain_rate)
-       do icomp = 1,ncomps 
-          call EE_GATHER(Tstemp, Total_Strain(icomp,:)) 
-          call EE_GATHER(Estemp, Elastic_Stress(icomp,:)) 
-          call EE_GATHER(Pstemp, Plastic_Strain(icomp,:)) 
-          where (Mesh%Cell_Shape == GAP_ELEMENT_1) 
-             Total_Strain(icomp,:) = Tstemp(1,:) 
-             Elastic_Stress(icomp,:) = Estemp(1,:) 
-             Plastic_Strain(icomp,:) = Pstemp(1,:) 
-          end where 
-          where (Mesh%Cell_Shape == GAP_ELEMENT_3) 
-             Total_Strain(icomp,:) = Tstemp(3,:) 
-             Elastic_Stress(icomp,:) = Estemp(3,:) 
-             Plastic_Strain(icomp,:) = Pstemp(3,:) 
-          end where 
-          where (Mesh%Cell_Shape == GAP_ELEMENT_5) 
-             Total_Strain(icomp,:) = Tstemp(5,:) 
-             Elastic_Stress(icomp,:) = Estemp(5,:) 
-             Plastic_Strain(icomp,:) = Pstemp(5,:) 
-          end where 
-       end do 
-       call EE_GATHER(Prtemp, Plastic_Strain_Rate) 
-       call EE_GATHER(Rtemp, Rotation_Magnitude) 
-       where (Mesh%Cell_Shape == GAP_ELEMENT_1) 
-          Plastic_Strain_Rate(:) = Prtemp(1,:) 
-          Rotation_Magnitude(:) = Rtemp(1,:) 
-       end where 
-       where (Mesh%Cell_Shape == GAP_ELEMENT_3) 
-          Plastic_Strain_Rate(:) = Prtemp(3,:) 
-          Rotation_Magnitude(:) = Rtemp(3,:) 
-       end where 
-       where (Mesh%Cell_Shape == GAP_ELEMENT_5) 
-          Plastic_Strain_Rate(:) = Prtemp(5,:) 
-          Rotation_Magnitude(:) = Rtemp(5,:) 
-       end where
-       call set_sm_rotation_magnitude(rotation_magnitude)
-       call set_smech_cell_total_strain(total_strain)
-       call set_smech_cell_elastic_stress(elastic_stress)
-       call set_smech_cell_plastic_strain(plastic_strain)
-       call set_smech_cell_plastic_strain_rate(plastic_strain_rate)
-       deallocate(rotation_magnitude)
-       deallocate(total_strain)
-       deallocate(elastic_stress)
-       deallocate(plastic_strain)
-       deallocate(plastic_strain_rate)
-    end if SOLID_MECH 
     HEAT_COND: if (heat_transport) then 
        call EE_GATHER(Tstemp, Zone%Temp) 
        call EE_GATHER(Estemp, Zone%Enthalpy) 

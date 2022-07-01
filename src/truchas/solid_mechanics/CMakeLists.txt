@@ -34,4 +34,5 @@ target_sources(truchas PRIVATE
   sm_model_type.F90
   sm_ds_precon_type.F90
   sm_nlsol_model_type.F90
+  tm_density.F90
 )

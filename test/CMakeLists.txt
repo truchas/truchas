@@ -260,21 +260,6 @@ add_pytruchas_test(contact-box-open
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
 
-add_pytruchas_test(contact-box-close-legacy
-                   contact-box-close-legacy/testContactBoxClose.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(contact-box-open-legacy
-                   contact-box-open-legacy/testContactBoxOpen.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(viscoplastic-ring-legacy
-                   viscoplastic-ring-legacy/testViscoplasticRing.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
 add_pytruchas_test(viscoplastic-ring
                    viscoplastic-ring/test.py
                    PROCESSORS 4
@@ -289,41 +274,6 @@ add_pytruchas_test(sm-restart
                    sm-viscoplastic/test-restart.py
                    PROCESSORS 4
                    LABELS SOLID_MECHANICS)
-
-add_pytruchas_test(shear-constr-heat
-                   shear-constr-heat/testShearConstrHeat.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(stretch-consistency
-                   sm-consistency/test-stretch-consistency.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(thermoelastic-consistency
-                   sm-consistency/test-thermoelastic-consistency.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(traction-consistency
-                   sm-consistency/test-traction-consistency.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(shear-legacy
-                   sm-shear/test-shear-legacy.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(simple-gap
-                   simple-gap/testSimpleGap.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY)
-
-add_pytruchas_test(tm-pc
-                   tm-pc/testTMPC.py
-                   PROCESSORS 4
-                   LABELS SOLID_MECHANICS_LEGACY PHASE_CHANGE)
 
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py

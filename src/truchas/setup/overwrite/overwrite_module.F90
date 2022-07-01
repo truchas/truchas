@@ -353,35 +353,6 @@ CONTAINS
 
   !-----------------------------------------------------------------------------
 
-  subroutine BoundaryTExternalUncovered (mask)
-     !--------------------------------------------------------------------------
-     ! Find all external faces that don't have thermal boundary conditions.
-     !
-     ! mask should be declared logical, (nfc,ncells) in the caller.
-     ! It is set to true for the uncovered boundary faces.
-     !--------------------------------------------------------------------------
-
-     use legacy_mesh_api,   only: ncells, nfc, Mesh
-     use bc_module,         only: Boundary, BC_T
-
-     ! arguments
-     logical, dimension(:,:) :: mask
-
-     ! local variables
-     integer :: f
-
-     !--------------------------------------------------------------------------
-
-     ! make sure mask is the right size
-     ASSERT(size(mask,1) == nfc)
-     ASSERT(size(mask,2) == ncells)
-
-     do f = 1, nfc
-        mask(f,:) = Mesh%Ngbr_cell(f) == 0 .and. .not. Boundary(BC_T,f)
-     end do
-
-  end subroutine BoundaryTExternalUncovered
-
   SUBROUTINE CREATE_PLUME(Phi,xc,yc,zc,r1,type)
 
     use legacy_mesh_api, only: ncells, ndim, Cell

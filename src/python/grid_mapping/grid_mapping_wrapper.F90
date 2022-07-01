@@ -126,7 +126,6 @@ contains
   subroutine mpi_init()
 
     use parallel_communication
-    use pgslib_module
     use truchas_env, only: prefix, overwrite_output
     use truchas_logging_services
 

@@ -32,7 +32,6 @@ endif()
 add_library(truchas ${ver_info})
 
 # Library sources (and unit tests)
-add_subdirectory(bcs)
 add_subdirectory(communication)
 add_subdirectory(discrete_operators)
 add_subdirectory(distributed_mesh)
@@ -59,7 +58,7 @@ add_subdirectory(toolpath)
 add_subdirectory(truchasio)
 
 target_link_libraries(truchas PUBLIC
-    blas lapack exodus hypre petaca hdf5 chaco truchas::pgslib_fe scorpio MPI::MPI_Fortran
+    blas lapack exodus hypre petaca hdf5 chaco scorpio MPI::MPI_Fortran
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)

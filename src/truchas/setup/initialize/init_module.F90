@@ -23,7 +23,6 @@ MODULE INIT_MODULE
 !     Initialize the Matl and Zone types.
 !
 ! Contains: INITIAL
-!           BC_INIT
 !           MATL_INIT
 !           ZONE_INIT
 !           CHECK_VOF
@@ -65,9 +64,8 @@ CONTAINS
     use parameter_module,       only: nmat
     use legacy_mesh_api,        only: ncells
     use restart_variables,      only: restart
-    use restart_driver,         only: restart_matlzone, restart_legacy_solid_mechanics, restart_solid_mechanics, restart_species, restart_ustruc
+    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
     use zone_module,            only: Zone
-    use solid_mechanics_module, only: SOLID_MECH_INIT
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
     use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view, &
@@ -77,7 +75,7 @@ CONTAINS
     use flow_driver, only: flow_driver_init, flow_enabled, flow_driver_set_initial_state
     use vtrack_driver, only: vtrack_driver_init, vtrack_enabled
     use solid_mechanics_driver, only: solid_mechanics_init
-    use physics_module,         only: heat_transport, flow, solid_mechanics, legacy_solid_mechanics
+    use physics_module,         only: heat_transport, flow, solid_mechanics
     use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -121,7 +119,6 @@ CONTAINS
     if (restart) then
 
       call restart_matlzone(vel_fn)
-      call restart_legacy_solid_mechanics
 
     else
 
@@ -133,8 +130,6 @@ CONTAINS
     ! Initialize Zone%Rho and Zone%Temp
     call ZONE_INIT (mesh, Hits_Vol)
 
-    if (legacy_solid_mechanics) call BC_INIT()
-
     if (flow) call flow_driver_init
 
     ! Allow arbitrary overwriting of the Matl, Zone, and BC types.
@@ -144,11 +139,7 @@ CONTAINS
     call OVERWRITE_BC   ()
 
     ! Calculate initial stress-strain field and displacements if solid mechanics is active
-    if (solid_mechanics) then
-      call solid_mechanics_init
-    else if (legacy_solid_mechanics) then
-      Call SOLID_MECH_INIT
-    end if
+    if (solid_mechanics) call solid_mechanics_init
     if (restart) call restart_solid_mechanics
 
     call toolhead_init(t)
@@ -272,276 +263,6 @@ CONTAINS
   end subroutine init_conc
 
   ! <><><><><><><><><><><><> PRIVATE ROUTINES <><><><><><><><><><><><><><><>
-
-  SUBROUTINE BC_INIT ()
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Initialize boundary condition quantities in the BC structure.
-    !=======================================================================
-    use bc_data_module,         only: BC_Type, BC_Name, BC_Variable, nbc_surfaces,          &
-                                      Conic_XX, Conic_YY, Conic_ZZ, Conic_XY, Conic_XZ,     &
-                                      Conic_YZ, Conic_X, Conic_Y, Conic_Z, Conic_Constant,  &
-                                      Conic_Tolerance, Bounding_Box, Surface_Name,          &
-                                      Conic_Relation, Surfaces_In_This_BC, Mesh_Surface
-    use bc_displacement_init,   only: Initialize_Displacement_BC, Node_Set_BC_Init,         &
-                                      append_to_displacement_bc,                            &
-                                      Make_Displacement_BC_Atlases, Interface_Surface_Id
-    use legacy_mesh_api,        only: ncells, ndim, nfc, nvc, EE_GATHER
-    use legacy_mesh_api,        only: Cell, Mesh, DEGENERATE_FACE, mesh_face_set
-    use parallel_communication, only: global_count, global_sum
-    use physics_module,         only: legacy_solid_mechanics
-
-    ! Local Variables
-    integer                              :: f, n, nf, p, &
-                                                             c, set1, nssets
-    logical, dimension(:),   allocatable :: Mask1, Mask2
-    logical, dimension(:,:), allocatable :: Disp_Mask
-    logical, dimension(:,:), allocatable :: Found_Faces
-    integer, allocatable, dimension(:,:,:,:) :: Ngbr_Mesh_Face_Set
-    real(r8), dimension(:),   allocatable :: Coeff_XX
-    real(r8), dimension(:),   allocatable :: Coeff_X
-    real(r8), dimension(:),   allocatable :: Area
-    integer,  dimension(:),   allocatable :: Faces
-    real(r8), dimension(:,:), allocatable :: tmp_r2
-    integer,  dimension(:,:), allocatable :: Tmp_BC
-    real(r8), dimension(:),   allocatable :: Tmp1, Tmp2
-    integer :: istatus
-    character(128) :: message
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-
-    ALLOCATE(Mask1(ncells),                      &
-             Mask2(ncells),                      &
-             Disp_Mask(nfc,ncells),              &
-             Found_Faces(nfc,nbc_surfaces),      &
-             Coeff_XX(3*(ndim-1)),               &
-             Coeff_X(ndim),                      &
-             Area(nbc_surfaces),                 &
-             Faces(nbc_surfaces),                &
-             tmp_r2(nfc,ncells),                 &
-             Tmp_BC(nvc,ncells),                 &
-             Tmp1(ncells),                       &
-             Tmp2(ncells),                       &
-             Stat = istatus)
-    if (istatus /= 0) call TLS_panic ('BC_INIT: allocation error')
-
-    ! Set the number of side sets to zero to indicate we haven't setup
-    !  the parallel data structures yet
-    nssets      = 0
-
-    ! Thermo-mechanics bcs are handled differently using the "new" bc stuff
-    ! We still use the face and bc surface loops to get the masks for each surface
-    ! specified in the bc namelists
-    ! NB: Code will crash if displacement BCs are defined but solid mechanics is not active.
-    if (legacy_solid_mechanics) call Initialize_Displacement_BC
-
-    ! Initialize relevant quantities
-    Found_Faces = .true.
-    Area        = 0.0_r8
-    Faces       = 0
-
-    ! Loop over faces, finding those that need a BC applied to them
-    FACE_LOOP: do f = 1,nfc
-
-       if (nbc_surfaces == 0) exit FACE_LOOP
-
-       ! Loop over each BC surface, looking for those cell faces that lie on
-       ! on the surface within the specified bounding box.
-       ! For those faces satisfying these conditions, apply the BC
-       ! associated with that surface.
-       SURFACE_LOOP: Do p = 1, nbc_surfaces
-
-          Mask1 = .true.
-          ! Assign conic function coefficients
-          do c = 1,Surfaces_In_This_BC(p)
-
-             select case(Surface_Name(c,p))
-
-             ! BC surface provided in the mesh file.
-             case('from mesh file')
-
-                ! If Ngbr_Mesh_Face is not built, do it now then set nssets to
-                !   indicate it is done
-                if (nssets .eq. 0) then
-                   nssets      = SIZE(Mesh_Face_Set,1)
-
-                   ALLOCATE(Ngbr_Mesh_Face_Set(nssets,nfc,nfc,ncells), &
-                        Stat=istatus)
-                   if (istatus /= 0) call TLS_panic ('MeshBCFaces: allocation error')
-
-                   ! Gather the face set arrays of all the neighboring cells so that we check for
-                   ! shared faces that are in the face sets.  This is used by MeshBCFace, but it
-                   ! is initialized here to avoid gathering it for every side set
-                   do n = 1,nssets
-                      do nf = 1,nfc
-                         call EE_GATHER(Ngbr_Mesh_Face_Set(n,nf,:,:), Mesh_Face_Set(n,nf,:))
-                      end do
-                   end do
-                endif
-
-                set1 = Mesh_Surface(c,p)
-                call MeshBCFaces(f, set1, Mask2, nssets, Ngbr_Mesh_Face_Set )
-
-                Mask1 = Mask1 .and. Mask2
-
-             ! Node set specified instead of a surface; this is handled elsewhere,
-             ! only for solid mechanics.
-             case('node set')
-
-                ! Find those faces which are on this conic function.
-             case('conic')
-
-                Coeff_X(1) = Conic_X(c,p)
-                Coeff_X(2) = Conic_Y(c,p)
-                Coeff_X(3) = Conic_Z(c,p)
-
-                Coeff_XX(1) = Conic_XX(c,p)
-                Coeff_XX(2) = Conic_XY(c,p)
-                Coeff_XX(3) = Conic_XZ(c,p)
-                Coeff_XX(4) = Conic_YY(c,p)
-                Coeff_XX(5) = Conic_YZ(c,p)
-                Coeff_XX(6) = Conic_ZZ(c,p)
-
-                   ! Mask off those faces whose centroids do not lie on this BC surface.
-                Mask2 = BC_SURFACE (f, Coeff_X, Coeff_XX, Conic_Constant(c,p), &
-                     Conic_Tolerance(c,p), Conic_Relation(c,p))
-                Mask1 = Mask1 .and. Mask2
-
-             end select
-
-          end do
-
-          ! Further mask off those faces not contained within this bounding box.
-          do n = 1,ndim
-             Mask1 = Mask1 .and. &
-                    Cell%Face_Centroid(n,f) >= Bounding_Box(1,n,p) .and. &
-                    Cell%Face_Centroid(n,f) <= Bounding_Box(2,n,p)
-          end do
-
-          ! Mask off any degenerate faces.
-          Mask1 = Mask1 .and. (Mesh%Ngbr_Cell(f) /= DEGENERATE_FACE)
-
-          ! Treat temperature differently than all others.
-          select case (BC_Variable(p))
-
-                   ! Handle all displacement bc setup with "new" bc stuff in another routine
-                case ('displacement')
-                   if (TRIM(Surface_Name(1,p)) == 'node set') then
-                      Mask1 = .false.
-                      if (f == 1) call Node_Set_BC_Init(1,p)
-                   else
-                      Disp_Mask = .false.
-                      Disp_Mask(f,:) = Mask1
-                      call Append_to_Displacement_BC(Disp_Mask,p,f)
-                      ! Get multiple side set info for gap interfaces
-                      if ((TRIM(BC_Type(p)) == 'normal-constraint') .or. &
-                           (TRIM(BC_Type(p)) == 'contact') .or. (TRIM(BC_Type(p)) == 'normal-displacement') &
-                           .or. (TRIM(BC_Type(p)) == 'free-interface')) &
-                           call Interface_Surface_Id(Disp_Mask,p,f,p)
-                   end if
-                end select
-
-          ! Print out how many cells were affected by this BC
-          n = global_count(Mask1)
-          if (n > 0) then
-
-             Faces(p) = Faces(p) + n
-             Tmp2     = MERGE (Cell%Face_Area(f), 0.0_r8, Mask1)
-             Area(p)  = Area(p) + global_sum(Tmp2)
-             n = global_count(Mask1 .and. Mesh%Ngbr_cell(f) /= 0)
-
-             ! If the BC is internal, warn the user and
-             ! set the internal BC flag (BC%Internal)
-             if (n > 0) then
-
-                write (message, 20) n, f, p
-20              format (i6,' interior #',i1,' faces are affected by BC namelist ',i2,'!')
-                !call TLS_warn (message)
-                Mask1 = Mask1 .and. Mesh%Ngbr_cell(f) /= 0
-
-             end if
-
-          else
-
-             ! No faces matched this surface; set the flag.
-             Found_Faces(f,p) = .false.
-
-          end if
-
-       end do SURFACE_LOOP
-
-    end do FACE_LOOP
-
-    ! Make sure each BC surface matches at least one face, otherwise terminate.
-    ! If things are OK, then write out diagnostics.
-    BC_SURFACE_CHECK: do p = 1,nbc_surfaces
-
-       if ((.not. ANY(Found_Faces(:,p))) .and. (TRIM(Surface_Name(1,p)) /= 'node set')) then
-
-          write(message,'(a,i0,2a)') 'BC_INIT: found no faces for BC namelist ', p, ' named ', trim(BC_Name(p))
-          call TLS_fatal (message)
-
-       end if
-
-    end do BC_SURFACE_CHECK
-
-    if (legacy_solid_mechanics) call Make_Displacement_BC_Atlases
-
-  END SUBROUTINE BC_INIT
-
-  FUNCTION BC_SURFACE (face, Coeff_X, Coeff_XX, constant, tolerance, relation)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !=======================================================================
-    use legacy_mesh_api, only: ndim, ncells, Cell
-
-    ! Arguments
-    integer, intent(IN) :: face
-    real(r8), dimension(ndim), intent(IN) :: Coeff_X
-    real(r8), dimension(3*(ndim-1)), intent(IN) :: Coeff_XX
-    real(r8), intent(IN) :: constant
-    real(r8), intent(IN) :: tolerance
-    character(*), intent(IN) :: relation
-
-    ! Function Return
-    logical, dimension(ncells) :: BC_SURFACE
-
-    ! Local variables
-    integer :: m, n, k
-    real(r8), dimension(ncells) :: F
-
-    ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    ! Constant term.
-    F = Constant
-
-    ! Linear terms.
-    do n = 1,ndim
-       F = F + Coeff_X(n)*Cell%Face_Centroid(n,face)
-    end do
-
-    ! Quadratic terms.
-    m = 0
-    do n = 1,ndim
-       do k = n, ndim
-          m = m + 1
-          F = F + Coeff_XX(m)*Cell%Face_Centroid(n,face)*Cell%Face_Centroid(k,face)
-       end do
-    end do
-
-    ! Function return.
-    select case(relation)
-       case ('<')
-          BC_SURFACE = F      <  tolerance
-       case ('=')
-          BC_SURFACE = ABS(F) <= tolerance
-       case ('>')
-          BC_SURFACE = F      > tolerance
-    end select
-
-  END FUNCTION BC_SURFACE
 
   SUBROUTINE MATL_INIT (Hits_Vol)
     !=======================================================================

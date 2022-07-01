@@ -30,7 +30,6 @@ contains
     !   driver for reading input file
     !=======================================================================
     use probe_namelist,            only: read_probe_namelists
-    use bc_input_module,           only: bc_input
     use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
@@ -51,13 +50,10 @@ contains
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
     use material_namelist,         only: read_material_namelists
-    use legacy_solid_mechanics_namelist, only: read_legacy_solid_mechanics_namelist
-    use legacy_viscoplastic_model_namelist, only: read_viscoplastic_model_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
-    use physics_module,            only: heat_transport, flow, solid_mechanics, &
-        legacy_flow, legacy_solid_mechanics
+    use physics_module,            only: heat_transport, flow, solid_mechanics
     use advection_velocity_namelist, only: read_advection_velocity_namelist
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
@@ -126,13 +122,7 @@ contains
     if (flow) call read_flow_namelists(lun)
 
     ! read namelists for solid mechanics options
-    if (solid_mechanics) then
-      call read_solid_mechanics_namelists (lun)
-    else if (legacy_solid_mechanics) then
-      call read_legacy_solid_mechanics_namelist (lun)
-      call read_viscoplastic_model_namelists (lun)
-      call bc_input (lun) ! read bc specifications (only relevant now to legacy solid mechanics)
-    end if
+    if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
     ! Read Electromagnetics
     if (em_is_on()) call read_em_input (lun)
