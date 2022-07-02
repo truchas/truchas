@@ -258,7 +258,7 @@ contains
 
   subroutine update_matl_from_mmf (mmf, state)
 
-    use matl_utilities, only: update_matl
+    use matl_utilities, only: define_matl
 
     type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: state(:,:)
@@ -282,7 +282,7 @@ contains
     !! We assume an identity mapping from region cells to mesh cells.
     ASSERT(all(mmf%reg_cell(1) == (/(m,m=1,mesh%ncell)/)))
 
-    allocate(vof(0:matl_model%nphase,mesh%ncell_onP), vofm(mesh%ncell_onP))
+    allocate(vof(matl_model%nphase,mesh%ncell_onP), vofm(mesh%ncell_onP))
     vof = 0.0_r8
 
     !! Copy void volume fraction, if any, into VOF
@@ -346,7 +346,7 @@ contains
 #endif
 
     !! Update the MATL structure using the uncompressed VoF data.
-    call update_matl (vof)
+    call define_matl (vof)
 
   end subroutine update_matl_from_mmf
 
