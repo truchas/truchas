@@ -127,7 +127,6 @@ CONTAINS
                 if (Matl(s)%Cell(n)%Id == m) then
                    Matl(s)%Cell(n)%Id = 0
                    Matl(s)%Cell(n)%Vof = 0.0_r8
-                   Matl(s)%Cell(n)%Vof_Old = 0.0_r8
                    CYCLE MATERIALS_1
                 end if
              end do
@@ -154,7 +153,6 @@ CONTAINS
              if (Matl(s)%Cell(n)%Id == 0) then
                 Matl(s)%Cell(n)%Id = m
                 Matl(s)%Cell(n)%Vof = VOF(m,n)
-                Matl(s)%Cell(n)%Vof_Old = 0.0_r8
                 cycle MATERIALS_2
              end if
           end do
@@ -180,13 +178,9 @@ CONTAINS
 
     ! Local Variables
     integer :: i, m, s, slots_needed
-    real(r8), dimension(0:nmat) :: vof_old_temp 
     real(r8), dimension(ncells) :: nslots_cell
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-    !Initialize variables
-    vof_old_temp(:) = 0.0
 
     ! Check the number of slots and increase if needed
     nslots_cell = 0
@@ -203,11 +197,6 @@ CONTAINS
     do i=1,ncells
        nslots_cell(i)=1
 
-       ! Updating the  old information for all materials, by slots
-       do s = 1,mat_slot
-          m = Matl(s)%Cell(i)%Id
-          vof_old_temp(m) = Matl(s)%Cell(i)%Vof_old
-       end do
        ! Resetting the information for the materials by slots
        do s = 1,mat_slot
           matl(s)%cell(i)%id = 0
@@ -219,7 +208,6 @@ CONTAINS
           if (VF_New(m,i) > 0) then
              Matl(s)%Cell(i)%Id = m
              Matl(s)%Cell(i)%Vof  = VF_New(m,i)
-             Matl(s)%Cell(i)%Vof_old = vof_old_temp(m)
              s = s+1
           end if
        end do
@@ -245,8 +233,6 @@ CONTAINS
  !! Given the volume fraction array VF, covering all materials and cells, this
  !! routine initializes the data in the MATL structure.  The first index of
  !! the VF array is the material index, and the second is the cell index.
- !!
- !! The VOF_OLD structure component is set to 0.
  !!
  !! NB: MATL is intent(inout) because it has pointer components that may be
  !! associated.  None of its values are used, however, and all are overwritten.
@@ -275,7 +261,6 @@ CONTAINS
     allocate(mlist(size(vf,1)))  ! This is default initialized.
     do m = 1, size(mlist)
       mlist(m)%ID  = m
-      mlist(m)%vof_old = 0.0_r8
     end do
 
     !! Define MATL.

@@ -66,9 +66,6 @@ MODULE MATL_MODULE
      ! Volume Fraction
      real(r8)   :: Vof = 0.0_r8
 
-     ! Old time step Volume Fraction
-     real(r8)   :: Vof_Old = 0.0_r8
-
   end type MATERIAL
 
   ! Define MATL_SLOT Structure
@@ -286,10 +283,8 @@ CONTAINS
           where (Move_slot .and. s_new == Num_mat)
              ABC(s_new)%Cell%Id       = ABC(s_old)%Cell%Id
              ABC(s_new)%Cell%Vof      = ABC(s_old)%Cell%Vof
-             ABC(s_new)%Cell%Vof_Old  = ABC(s_old)%Cell%Vof_Old
              ABC(s_old)%Cell%Id       = 0
              ABC(s_old)%Cell%Vof      = 0.0_r8
-             ABC(s_old)%Cell%Vof_Old  = 0.0_r8
           end where
        end do
 
@@ -318,7 +313,6 @@ CONTAINS
     ! Assign defaults
     ABC(s)%Cell%Id      = Id_def
     ABC(s)%Cell%Vof     = Vof_def
-    ABC(s)%Cell%Vof_Old = Vof_def
 
   END SUBROUTINE SLOT_SET
   
