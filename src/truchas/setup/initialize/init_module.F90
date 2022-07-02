@@ -258,7 +258,7 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module,    only: matnum, nbody
-    use matl_module,          only: nmat, matl
+    use matl_module,          only: nmat
     use matl_utilities,       only: define_matl
     use restart_variables,    only: restart
     use unstr_mesh_type
@@ -284,7 +284,7 @@ CONTAINS
         vf(m,j) = sum(hits_vol(:,j), mask=bm_mask(:,m)) / mesh%volume(j)
       end do
     end do
-    call define_matl(vf, matl)
+    call define_matl(vf)
 
     !! We are guaranteed that HITS_VOL sums to the cell volume within roundoff.
     !! TODO? tweak the vofs to drop small values and adjust to sum exactly to 1

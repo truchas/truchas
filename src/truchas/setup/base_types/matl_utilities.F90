@@ -238,13 +238,12 @@ CONTAINS
  !! associated.  None of its values are used, however, and all are overwritten.
  !!
 
-  subroutine define_matl (vf, matl)
+  subroutine define_matl (vf)
 
-    use matl_module, only: material, matl_slot, slot_resize, ncells, nmat, mat_slot
+    use matl_module, only: matl, material, slot_resize, ncells, nmat, mat_slot
     use parallel_communication, only: global_maxval
 
     real(r8), intent(in)    :: vf(:,:)
-    type(matl_slot), intent(inout) :: matl(:)
 
     integer :: j, m, s
     type(material) :: null_mat  ! This is default initialized.
@@ -304,7 +303,7 @@ CONTAINS
 
   subroutine read_matl_data (unit, version)
 
-    use matl_module, only: matl, nmat
+    use matl_module, only: nmat
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
     use base_mesh_class
@@ -328,7 +327,7 @@ CONTAINS
     call read_dist_array (unit, vf, mesh%xcell(:mesh%ncell_onP), 'READ_MATL_DATA: error reading VF records')
 
     !! Derive the MATL structure from the volume fraction array.
-    call define_matl (vf, matl)
+    call define_matl (vf)
     deallocate(vf)
 
   end subroutine read_matl_data
