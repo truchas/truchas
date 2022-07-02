@@ -258,18 +258,17 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module,    only: matnum, nbody
-    use matl_module,          only: matl, slot_increase, slot_set, mat_slot, mat_slot_new, nmat
-    use parallel_communication, only: global_maxval
+    use matl_module,          only: nmat, matl
+    use matl_utilities,       only: define_matl
     use restart_variables,    only: restart
     use unstr_mesh_type
 
     type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(inout) :: Hits_Vol(:,:)
 
-    integer :: b, m, s, j
-    integer :: mcount(mesh%ncell_onP)
+    integer :: b, m, j
     logical :: bm_mask(nbody,nmat)
-    real(r8) :: vofm
+    real(r8), allocatable :: vf(:,:)
 
     if (restart) return ! nothing to do
 
@@ -279,34 +278,13 @@ CONTAINS
       bm_mask(b,matnum(b)) = .true.
     end do
 
-    !! Count the number of materials in each cell and size MATL accordingly
-    mcount = 0
-    do m = 1, nmat
-      do j = 1, mesh%ncell_onP
-        if (any(hits_vol(:,j) > 0 .and. bm_mask(:,m))) mcount(j) = mcount(j) + 1
+    allocate(vf(nmat,mesh%ncell_onP))
+    do j = 1, mesh%ncell_onP
+      do m = 1, nmat
+        vf(m,j) = sum(hits_vol(:,j), mask=bm_mask(:,m)) / mesh%volume(j)
       end do
     end do
-    mat_slot_new = global_maxval(mcount)
-    if (mat_slot_new > mat_slot) call slot_increase(matl, mat_slot, mat_slot_new)
-
-    !! Zero out MATL
-    do s = 1, mat_slot
-      call slot_set(matl, s)
-    end do
-
-    !! Initialize MATL
-    mcount = 0
-    do m = 1, nmat
-      do j = 1, mesh%ncell_onP
-        vofm = sum(hits_vol(:,j), mask=bm_mask(:,m)) / mesh%volume(j)
-        if (vofm > 0) then
-          mcount(j) = mcount(j) + 1
-          s = mcount(j)
-          matl(s)%cell(j)%id = m
-          matl(s)%cell(j)%vof = vofm
-        end if
-      end do
-    end do
+    call define_matl(vf, matl)
 
     !! We are guaranteed that HITS_VOL sums to the cell volume within roundoff.
     !! TODO? tweak the vofs to drop small values and adjust to sum exactly to 1
