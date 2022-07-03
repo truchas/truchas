@@ -168,7 +168,7 @@ contains
   subroutine update_mmf_from_matl (mmf)
 
 !    use material_class
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof
     !use material_interop, only: material_to_system
 
     type(matl_mesh_func), intent(inout) :: mmf
@@ -258,7 +258,7 @@ contains
 
   subroutine update_matl_from_mmf (mmf, state)
 
-    use matl_utilities, only: define_matl
+    use legacy_matl_api, only: define_matl
 
     type(matl_mesh_func), intent(inout) :: mmf
     real(r8), intent(in) :: state(:,:)

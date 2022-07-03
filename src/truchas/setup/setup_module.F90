@@ -45,7 +45,7 @@ CONTAINS
     !=======================================================================
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use zone_module, only: zone_init
-    use matl_module, only: matl_init
+    use legacy_matl_api, only: matl_init
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
     use restart_driver,         only: close_restart_file, skip_restart_mesh

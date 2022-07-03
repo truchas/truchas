@@ -258,8 +258,7 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module,    only: matnum, nbody
-    use matl_module,          only: nmat
-    use matl_utilities,       only: define_matl
+    use legacy_matl_api,      only: nmat, define_matl
     use restart_variables,    only: restart
     use unstr_mesh_type
 
@@ -302,7 +301,7 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module,    only: Body_Temp, Matnum, nbody
-    use matl_utilities,       only: matl_get_cell_vof
+    use legacy_matl_api,      only: matl_get_cell_vof
     use zone_module,          only: Zone
     use restart_variables,    only: restart
     use physics_module, only: heat_transport
@@ -421,8 +420,7 @@ CONTAINS
 
   subroutine check_vof (mesh, stat)
 
-    use matl_module, only: nmat
-    use matl_utilities, only: matl_get_vof
+    use legacy_matl_api, only: nmat, matl_get_vof
     use unstr_mesh_type
 
     type(unstr_mesh), intent(in) :: mesh
@@ -676,7 +674,7 @@ CONTAINS
 
   subroutine compute_cell_enthalpy (T, vof, H)
 
-    use matl_module, only: nmat
+    use legacy_matl_api, only: nmat
     use avg_matl_prop_type
     use material_class
 
