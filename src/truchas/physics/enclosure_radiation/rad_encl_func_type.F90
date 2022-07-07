@@ -74,7 +74,7 @@
 
 module rad_encl_func_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_containers
   use rad_encl_type
   implicit none

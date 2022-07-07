@@ -63,7 +63,7 @@ contains
     class(polygon),     intent(inout) :: this
     real(r8), optional, intent(inout) :: norm(:) ! return the newly calculated norm if it wasn't known
 
-    integer :: i,j
+    integer :: i
 
     ! the direction of the normal is assumed from the node ordering (and assuming convex)
 
@@ -115,7 +115,7 @@ contains
     integer, optional, intent(inout) :: array(:) ! an array that gets sorted along with the polygon
 
     real(r8), allocatable :: q(:,:)
-    real(r8) :: xc(3), t(this%nVerts), t2(this%nVerts), prjx(2), xl(3,this%nVerts), tmp
+    real(r8) :: xc(3), t(this%nVerts), t2(this%nVerts), prjx(2), xl(3,this%nVerts)
     integer :: i,ind(size(this%x,dim=2))
 
     ! calculate the location of the centroid, and the vertex coordinates with respect to the centroid

@@ -5,18 +5,14 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program test_mfd_polygon_matrix_inv
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
-  use kinds
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mfd_disc_type
   use cell_geometry
 
   implicit none
 
-  integer :: status = 0
-
-  type(mfd_cell) :: hex_cell, pyr_cell, prism_cell
+  type(mfd_cell) :: hex_cell
 
   call init_hex(hex_cell)
   call test_mass_matrix_inv(hex_cell)
@@ -118,8 +114,6 @@ contains
   subroutine init_hex(hex_cell)
 
     type(mfd_cell), intent(inout) :: hex_cell
-    real(r8) :: vertices(3,8)
-    integer :: cnodes(8), i
 
 !!$    cnodes = [ (i, i = 1, 8) ]
 !!$

@@ -190,7 +190,7 @@ contains
   !!
 
   subroutine restart_matlzone (vel_fn)
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use zone_module, only: read_zone_data
     use matl_utilities, only: read_matl_data
     use flow_driver, only: flow_enabled, read_fluxing_velocity
@@ -228,7 +228,7 @@ contains
 
   subroutine restart_species (pcell, phi, found)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
 
     integer,  intent(in),  optional :: pcell(:)

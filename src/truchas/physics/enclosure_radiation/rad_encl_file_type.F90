@@ -17,7 +17,7 @@
 
 module rad_encl_file_type
 
-  use,intrinsic :: iso_fortran_env, only: int32, int64, real32, real64
+  use,intrinsic :: iso_fortran_env, only: int32, real32, real64
   use,intrinsic :: iso_c_binding, only: c_size_t
   use netcdf_c_binding
   use netcdf_file_type

@@ -8,7 +8,7 @@
 
 module FHT_precon_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use FHT_model_type
   use unstr_mesh_type
   use mfd_diff_matrix_type
@@ -49,7 +49,6 @@ contains
     type(parameter_list) :: params
     
     integer :: j, n, stat
-    type(parameter_list), pointer :: plist
     character(:), allocatable :: string_array(:), errmsg
     type(mfd_diff_matrix), allocatable :: matrix
 
@@ -186,10 +185,10 @@ contains
     real(r8), intent(in) :: t, u(:), h
     target :: u
 
-    integer :: index, n, j, n1, n2
-    real(r8) :: fdinc, term
+    integer :: index, n, j
+    real(r8) :: fdinc
     real(r8) :: state(this%mesh%ncell,1), D(this%mesh%ncell), A(this%mesh%ncell), Tface(this%mesh%nface)
-    real(r8), allocatable :: values(:), values2(:,:)
+    real(r8), allocatable :: values(:)
     type(mfd_diff_matrix), pointer :: dm
     integer, pointer :: faces(:) => null()
     integer, allocatable :: more_dir_faces(:)

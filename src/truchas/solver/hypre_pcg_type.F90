@@ -16,7 +16,7 @@
 
 module hypre_pcg_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fhypre
   use pcsr_matrix_type
   use parameter_list_type

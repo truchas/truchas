@@ -25,8 +25,8 @@ MODULE EDIT_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
-  use parameter_module, only: mops
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use output_control, only: mops
   use truchas_logging_services
   use scalar_func_class
   implicit none
@@ -63,10 +63,8 @@ CONTAINS
     !   Perform a "short edit" by computing and printing global diagnostics.
     !
     !=======================================================================
-    use cutoffs_module,         only: alittle
-    use matl_module,            only: GATHER_VOF
+    use matl_module,            only: nmat, GATHER_VOF
     use truchas_env,            only: output_file_name
-    use parameter_module,       only: nmat
     use parallel_communication
     use material_model_driver,  only: matl_model
     use time_step_module,       only: cycle_number, t
@@ -79,10 +77,9 @@ CONTAINS
     ! Local Variables
     integer, parameter :: ndim = 3
     character(LEN = 128) :: string, string2
-    integer :: i, m, n, variables = 2*ndim + 6, nmechvar = 4
+    integer :: i, m, n, variables = 2*ndim + 6
     integer, dimension(1) :: MaxLoc_L, MinLoc_L
     real(r8), dimension(mesh%ncell_onP) :: Enthalpy, KE, Mass, Matl_Mass, Tmp, Matl_Vol
-    real(r8) :: Temperature
     !type(CELL_MECH_INVARIANT), pointer, dimension(:) :: mech_info => NULL()
 
     real(r8), dimension(nmat) :: Material_Enthalpy, Material_KE, Material_Volume, Material_Mass
@@ -128,12 +125,12 @@ CONTAINS
        ! Sum material volume.
        Matl_Vol = mesh%volume(:mesh%ncell_onP) * Tmp
        Material_Volume(m) = global_sum(Matl_Vol)
-       if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
+       !if (ABS(Material_Volume(m)) <= alittle) Material_Volume(m) = 0.0_r8
 
        ! Sum material mass.
        Matl_Mass = Matl_Vol*matl_model%const_phase_prop(m, 'density')
        Material_Mass(m) = global_sum(Matl_Mass)
-       if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
+       !if (ABS(Material_Mass(m)) <= alittle) Material_Mass(m) = 0.0_r8
 
        ! Accumulate the total mass.
        Mass = Mass + Matl_Mass
@@ -142,13 +139,13 @@ CONTAINS
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
           Material_Momentum(n,m) = global_sum(Matl_Mass*Zone%Vc(n))
-          if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
+          !if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
 
        ! Compute material kinetic energy.
        Material_KE(m) = global_sum(Matl_Mass*KE)
-       if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
+       !if (ABS(Material_KE(m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_KE(m) = 0.0_r8
        total_KE = total_KE + Material_KE(m)
 
        ! Get the material enthalpy.
@@ -159,7 +156,7 @@ CONTAINS
 
        ! Accumulate the material enthalpy.
        Material_Enthalpy(m) = global_sum(Tmp)
-       if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
+       !if (ABS(Material_Enthalpy(m)) <= alittle) Material_Enthalpy(m) = 0.0_r8
 
        ! Accumulate the total enthalpy.
        Enthalpy = Enthalpy + Tmp

@@ -8,7 +8,7 @@
 
 module HTSD_solver_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HTSD_model_type
   use HTSD_precon_type
   use HTSD_norm_type

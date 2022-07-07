@@ -169,8 +169,6 @@ contains
     class(pure_polyhedron), intent(in) :: this
     integer :: ierr
 
-    integer :: v
-
     ierr = 0
 
     if (this%nVerts < 4) ierr = 1 ! must have >= 4 vertices
@@ -363,7 +361,6 @@ contains
   !         still produce volumes on the order of e-27, far below the double precision limit of e-16.
   real(r8) function volume (this)
 
-    use ieee_arithmetic, only: ieee_is_nan
     use cell_geometry,   only: cross_product
     use near_zero_function
 
@@ -372,7 +369,7 @@ contains
 
     real(r8), parameter :: alittle = 1e-9_r8
     integer :: f,nV,v,i,n
-    real(r8) :: tmp(ndim), volume_factor, xn(3), xi(3), xc(3), vt, area, t
+    real(r8) :: volume_factor, xn(3), xi(3), xc(3), vt, area, t
     type(pure_polyhedron) :: scaled
 
     !ierr = 0
@@ -464,8 +461,7 @@ contains
     class(plane),      intent(in)  :: P
     integer, optional, intent(out) :: v_assoc_pe(:)
 
-    integer  :: e,Nintersections, on_point, nf, i
-    integer, allocatable :: index_sort(:)
+    integer  :: e,Nintersections, on_point
     real(r8) :: x(ndim,this%nEdges),intx(ndim)
     !type(set_integer) :: vertex_faces(this%nEdges) !vertex_faces(size(this%vertex_faces, dim=1), this%nEdges)
 
@@ -650,8 +646,8 @@ contains
     class(pure_polyhedron), intent(in) :: this
     type(pure_polyhedron), allocatable :: tesselated(:)
 
-    real(r8) :: xc(3), ec(3,this%nEdges), fc(3,this%nFaces), xtet(3,4)
-    integer :: f, e, v, nV, t, ierr
+    real(r8) :: xtet(3,4)
+    integer :: f, v, nV, t, ierr
 
     ! calculate cell center
     xtet(:,1) = sum(this%x, dim=2) / this%nVerts
@@ -805,7 +801,7 @@ contains
 
     integer       :: v, v_assoc_pe(this%nEdges),side(this%nVerts)
     type(polygon) :: intpoly
-    real(r8)      :: dist, tmp1, tmp2, tmp(3)
+    real(r8)      :: dist, tmp1, tmp2
 
     ASSERT(size(split_poly)==2)
     ierr = 0
@@ -993,7 +989,7 @@ contains
     integer,           intent(in) :: v_assoc_pe(:) ! intersection polygon vertex id for a given parent edge id
     integer,           intent(out) :: ierr
 
-    integer :: pcf, nVerts, nParVerts, nEdges, nFaces, tmp, invalid_side, &
+    integer :: pcf, nVerts, nParVerts, nEdges, nFaces, tmp, &
          p2c_vid(this%nVerts), & ! parent to child vertex id conversion table for cases they correspond
          edge_vid(2,this%nEdges+intpoly%nVerts), & ! can have intpoly%nVerts more edges than parent
          face_vid(max(size(this%face_vid,dim=1)+2,intpoly%nVerts),this%nFaces+1) ! could have 1 more face and faces could be intpoly%nverts longer than parent
@@ -1004,8 +1000,6 @@ contains
     real(r8)      :: x(3,this%nVerts+intpoly%nVerts), face_normal(3, this%nFaces+1)
 
     call polyhedron_on_side_of_plane%init ()
-
-    invalid_side = -valid_side
 
     if (.not.any(side==-valid_side)) then ! the entire polyhedron is within the half-space
       polyhedron_on_side_of_plane = this
@@ -1300,15 +1294,11 @@ contains
     subroutine modified_parent_face (face_vid, ierr, par_face_vid, p2c_vid, edge_vid, side, &
         valid_side, nParVerts, nPolyVerts, v_assoc_pe, edge_cont_verts)
 
-#ifdef NO_2008_FINDLOC
-      use f08_intrinsics, only: findloc
-#endif
-
       integer, intent(out) :: face_vid(:), ierr
       integer, intent(in) :: par_face_vid(:), p2c_vid(:), edge_vid(:,:), side(:), valid_side, &
           nParVerts, nPolyVerts, v_assoc_pe(:), edge_cont_verts(:,:)
 
-      integer :: v, cvid, new_v, ecv, pv, nV
+      integer :: v, cvid, ecv, pv, nV
 
       face_vid = 0; ierr = 0
       nV = size(par_face_vid)

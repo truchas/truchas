@@ -29,6 +29,7 @@ Components
 * :ref:`Abs_Enthalpy_Tol<DIFF_SOL_AET>`
 * :ref:`Abs_Temp_Tol<DIFF_SOL_ATT>`
 * :ref:`Cond_Vfrac_Threshold<DIFF_SOL_CVT>`
+* :ref:`Cutvof<DIFF_SOL_CV>`
 * :ref:`Hypre_AMG_Debug<DIFF_SOL_HAD>`
 * :ref:`Hypre_AMG_Logging_Level<DIFF_SOL_HALL>`
 * :ref:`Hypre_AMG_Print_Level<DIFF_SOL_HAPL>`
@@ -121,6 +122,19 @@ Cond_Vfrac_Threshold
 | **Default**     : 0.001
 | **Valid Values**: (0,1)
 | **Notes** : Fluid flow systems that include void will result in partially filled cells, often times with only a tiny fragment of material. Including such cells in the heat conduction problem can cause severe numerical difficulties. By excluding cells with a material volume fraction less than this threshold from participation in heat conduction we can obtain a much better conditioned system. Note that we continue to track enthalpy for such cells, including enthalpy that may be advected into or out of the cell; we just do not consider diffusive transport of enthalpy.
+
+.. _DIFF_SOL_CV:
+
+Cutvof (expert)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description**       : When flow with void is enabled, the heat transfer solver will remove
+                          all material from any cell whose non-void volume fraction falls below
+                          the value of this threshold.
+| **Physical dimension**: dimensionless
+| **Type**              : real
+| **Default**           : 1e-8 
+| **Valid Values**      : [0.0, 1.0)
+| **Notes**             : See also :ref:`vol_frac_cutoff<FLOW_VFC>`.
 
 .. _DIFF_SOL_HAD:
 

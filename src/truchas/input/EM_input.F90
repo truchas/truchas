@@ -28,14 +28,16 @@
 
 module EM_input
 
-  use kinds, only: r8
-  use parameter_module, only: string_len, MAXSV
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use string_utilities, only: i_to_c
   use truchas_logging_services
   implicit none
   private
 
   public :: read_EM_input
+
+  integer, parameter :: string_len = 256
+  integer, parameter :: MAXSV = 32
 
   !! Domain type: 'FULL_CYLINDER', 'HALF_CYLINDER', or 'QUARTER_CYLINDER'
   character(string_len), public :: EM_Domain_Type
@@ -104,7 +106,7 @@ contains
     integer, intent(in) :: lun
 
     integer :: n, ios
-    logical :: found, exists
+    logical :: found
     character(128) :: iom
     real(r8) :: source_times(MAXSV-1)
     real(r8) :: source_frequency(MAXSV)

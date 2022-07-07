@@ -62,7 +62,7 @@
 
 module re_vf_diff_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scl
   use re_patch_type
   use re_dist_vf_type

@@ -181,7 +181,7 @@ contains
     integer, intent(out) :: nface
     integer, allocatable, intent(out) :: xcface(:), cface(:), lface(:,:)
 
-    integer :: j, k, n, offset, ncell, nlink, max_face, node_max
+    integer :: j, k, offset, ncell, nlink, max_face, node_max
     integer, allocatable :: face(:)
     type(facet_table) :: table
 

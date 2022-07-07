@@ -226,7 +226,7 @@ CONTAINS
 
     INTEGER, DIMENSION(maxCrnrs) :: newCrnr
     INTEGER, DIMENSION(maxEdges) :: newEdge, facet_newEdge
-    INTEGER :: newC, newE, last_newE, nOrigC
+    INTEGER :: newC, newE, last_newE!, nOrigC
     INTEGER :: nEdgeBehind
 
     INTEGER :: PolyiP1, PolyiP2
@@ -289,7 +289,7 @@ CONTAINS
     ! exist in Int from Corner(1:nOrigC).
     ! Intersection corners will be
     ! stored following these.
-    nOrigC = newC
+    !nOrigC = newC ! unused -- commented out NNC 6/27/2022
 
     ! Loop over Poly's edges. If they reside
     ! behind or on the plane, assign them
@@ -1431,7 +1431,7 @@ CONTAINS
   !-------------------------------------------------------------------
 
   INTEGER :: face, edge, e
-  INTEGER, DIMENSION(maxEperF,maxFaces) :: tmp_EdgeofFace
+  !INTEGER, DIMENSION(maxEperF,maxFaces) :: tmp_EdgeofFace
   LOGICAL, DIMENSION(-Poly%numEdges:Poly%numEdges) :: Possible_Edges
   LOGICAL :: Error_Found
 
@@ -1439,13 +1439,14 @@ CONTAINS
 
 ! ALLOCATE (Possible_Edges(-Poly%numEdgesPoly%:numEdges))
 
-  ! Copy the poly's edges to a temporary array
-  tmp_EdgeofFace = 0
-  do face = 1, Poly%numFaces
-    do edge = 1, Poly%nEdgeofFace(face)
-      tmp_EdgeofFace(edge,face) = Poly%EdgeofFace(edge,face)
-    enddo
-  enddo
+  ! tmp_edgeofface unused; commented out 6/27/2022 NNC
+  !! Copy the poly's edges to a temporary array
+  !tmp_EdgeofFace = 0
+  !do face = 1, Poly%numFaces
+  !  do edge = 1, Poly%nEdgeofFace(face)
+  !    tmp_EdgeofFace(edge,face) = Poly%EdgeofFace(edge,face)
+  !  enddo
+  !enddo
 
   ! Initialize the list of possible edges
   do edge = 1, Poly%numEdges

@@ -73,7 +73,7 @@
 
 module mfd_disc_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   implicit none
   private
@@ -598,10 +598,9 @@ contains
     real(r8), intent(in) :: coef
     real(r8), intent(out) :: matrix(:)
 
-    integer :: c, i, j, k, n, loc
-    real(r8) :: alpha, stab_val, u_par
+    integer :: i, j, k, n, loc
+    real(r8) :: stab_val, rv(3)
     real(r8), allocatable :: Q(:,:), R(:, :)
-    real(r8) :: rv(3)
 
     allocate(Q(3, this%nfaces)) 
     allocate(R(3, this%nfaces)) 

@@ -8,7 +8,7 @@
 
 module EM
 
-  use kinds, only: rk => r8
+  use,intrinsic :: iso_fortran_env, only: rk => real64
   use parallel_communication
   use EM_data_proxy
   use truchas_logging_services

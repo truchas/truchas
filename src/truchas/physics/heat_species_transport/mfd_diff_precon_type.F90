@@ -152,7 +152,7 @@ contains
     real(r8), intent(in) :: b1x(:)
     real(r8), intent(inout) :: b2x(:)
 
-    integer :: j, k, n
+    integer :: j
     real(r8) :: s
     real(r8), allocatable :: b2x_dir(:)
 
@@ -186,8 +186,7 @@ contains
     type(mfd_diff_matrix), intent(in) :: this
     real(r8), intent(inout) :: b1x(:), u2x(:)
 
-    integer :: j, k
-    real(r8) :: s
+    integer :: j
     real(r8), allocatable :: u2x_dir(:)
 
     if (allocated(this%dir_faces)) then

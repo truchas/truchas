@@ -258,8 +258,7 @@ CONTAINS
     !
     !=======================================================================
     use interfaces_module,    only: matnum, nbody
-    use matl_module,          only: matl, slot_increase, slot_set
-    use parameter_module,     only: mat_slot, mat_slot_new, nmat
+    use matl_module,          only: matl, slot_increase, slot_set, mat_slot, mat_slot_new, nmat
     use parallel_communication, only: global_maxval
     use restart_variables,    only: restart
     use unstr_mesh_type
@@ -444,7 +443,7 @@ CONTAINS
 
   subroutine check_vof (mesh, stat)
 
-    use parameter_module, only: nmat
+    use matl_module, only: nmat
     use matl_utilities, only: matl_get_vof
     use unstr_mesh_type
 
@@ -636,7 +635,6 @@ CONTAINS
     !   Compute initial cell-centered velocities
     !
     !=======================================================================
-    use cutoffs_module,    only: alittle
     use interfaces_module, only: Body_Vel, nbody, Matnum
     use zone_module,       only: Zone
     use unstr_mesh_type
@@ -673,10 +671,10 @@ CONTAINS
        Massc = Momentum(n,:)
 
        ! Compute the center of mass velocity
-       where (ABS(Massc) <= alittle)
-          Zone%Vc(n) = 0.0_r8
+       where (Mass > 0)
+          Zone%Vc(n) = Massc / Mass
        elsewhere
-          Zone%Vc(n) = Massc/(Mass + alittle)
+          Zone%Vc(n) = 0.0_r8
        end where
 
        Zone%Vc_old(n) = Zone%Vc(n)
@@ -700,7 +698,7 @@ CONTAINS
 
   subroutine compute_cell_enthalpy (T, vof, H)
 
-    use parameter_module, only: nmat
+    use matl_module, only: nmat
     use avg_matl_prop_type
     use material_class
 

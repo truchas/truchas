@@ -195,7 +195,7 @@
 
 module EM_data_proxy
 
-  use kinds, only : rk => r8
+  use,intrinsic :: iso_fortran_env, only: rk => real64
   use data_mapper_class
   use truchas_logging_services
   use truchas_timers

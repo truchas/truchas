@@ -291,8 +291,7 @@ contains
 
     class(integration_geometry), intent(inout) :: this
 
-    logical :: touched(this%mesh%nnode)
-    integer :: count, l, n, lni(this%mesh%nnode)
+    integer :: count, l, n
     integer, allocatable :: lnode(:,:)
 
     integer :: setid
@@ -300,7 +299,6 @@ contains
     allocate(this%lnode(2,1), this%link_setid(1)) ! will be extended dynamically here
 
     count = 0
-    touched = .false.
     do l = 1, this%mesh%nlink
       setid = link_set_id(l, this%mesh)
       lnode = face_lnode(this%mesh%lface(:,l), this%mesh)
@@ -543,7 +541,6 @@ contains
   subroutine add_element_1(list, i, item)
     integer, intent(inout), allocatable :: list(:)
     integer, intent(in) :: i, item
-    integer :: j
     if (i > size(list,dim=1)) call extend_array(list)
     list(i) = item
   end subroutine add_element_1
@@ -553,7 +550,6 @@ contains
   subroutine add_element_2(list, i, item)
     integer, intent(inout), allocatable :: list(:,:)
     integer, intent(in) :: i, item(:)
-    integer :: j
     if (i > size(list,dim=2)) call extend_array(list)
     if (item(1) < item(2)) then
       list(:,i) = item

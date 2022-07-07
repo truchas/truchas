@@ -150,9 +150,7 @@ contains
     use advection_velocity_namelist
 
     integer, intent(in) :: lun
-    integer :: ios
-    logical :: found
-    character(128) :: iom
+
     type(parameter_list), pointer :: plist
 
     if (.not.allocated(this)) allocate(this)

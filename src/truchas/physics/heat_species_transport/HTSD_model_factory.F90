@@ -182,7 +182,6 @@ contains
       use bitfield_type
       use parallel_communication, only: global_all, global_any, global_count
       use string_utilities, only: i_to_c
-      use f08_intrinsics, only: findloc
 
       type(unstr_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model

@@ -63,8 +63,8 @@
 
 module fhypre
 
-  use kinds, only: r8
   use hypre_c_binding
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
   use,intrinsic :: iso_c_binding, only: hypre_obj => c_ptr
   use,intrinsic :: iso_c_binding, only: hypre_null_obj => c_null_ptr

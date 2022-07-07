@@ -28,7 +28,7 @@ Module GRID_MAPPING_MODULE
   ! Author(s): Andrew Kuprat (kuprat@lanl.gov)
   !
   !=======================================================================
-  USE hpsort, only: hpsortimp,hpsortim
+  USE hpsort, only: hpsortimp
   USE gm_mesh_type
   USE grid_mapping_utils, only: write_msg
   implicit none
@@ -524,7 +524,7 @@ CONTAINS
     integer, intent(out) :: adjtet_tet(:,:)
     integer, intent(out) :: adjface_tet(:,:)
 
-    integer :: j, k, jj, kk, p1, p2, tsize, nface, facet(3)
+    integer :: j, k, p1, p2, tsize, nface, facet(3)
     type(facet_hash) :: fhash
 
     type :: table_record
@@ -620,7 +620,7 @@ CONTAINS
     integer, intent(out) :: adjhex_hex(:,:)
     integer, intent(out) :: adjface_hex(:,:)
 
-    integer :: j, k, jj, kk, n, p1, p2, tsize, nface, temp(4)
+    integer :: j, k, n, p1, p2, tsize, nface, temp(4)
     type(facet_hash) :: fhash
 
     type :: table_record

@@ -64,10 +64,9 @@ CONTAINS
     !   write cycle information that is known after the cycle ends
     !   (iteration counts) to stdout and various output files
     !=======================================================================
-    use kinds
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use process_info_module,    only: get_process_size
     use parallel_communication
-    use time_step_module,       only: cycle_number
     use flow_driver, only: flow_enabled, flow_vel_cc_view
 
     ! Local variables.

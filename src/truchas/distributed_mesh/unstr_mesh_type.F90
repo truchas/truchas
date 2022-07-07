@@ -127,15 +127,12 @@
 
 module unstr_mesh_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_base_mesh_class
   use index_map_type
   use parallel_communication
   use bitfield_type
   use cell_topology
-#ifdef NO_2008_FINDLOC
-  use f08_intrinsics
-#endif
   implicit none
   private
 

@@ -18,13 +18,12 @@
 
 module truchas_danu_output
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_danu_output_data
   use truchas_danu_output_tools
-  use,intrinsic :: iso_c_binding, only: c_ptr, C_NULL_PTR, c_associated
   use parallel_communication
   use truchas_logging_services
   use truchas_h5_outfile, only: th5_mesh_group, th5_seq_group
-  use kinds, only: r8
   implicit none
   private
 
@@ -48,7 +47,7 @@ contains
 
     type(unstr_mesh), intent(in) :: mesh
 
-    integer :: j, k
+    integer :: j
     integer, allocatable :: hnode(:,:), cblockid(:)
     logical :: exists
     integer :: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
@@ -162,7 +161,7 @@ contains
     use output_control, only: part_path, write_mesh_partition
     use truchas_env, only: output_file_name
 
-    integer :: stat, ncells
+    integer :: ncells
     real(r8) :: r(3)
     type(unstr_mesh), pointer :: mesh
 
@@ -208,13 +207,12 @@ contains
 
     subroutine write_common_data
 
-      use parameter_module, only: nmat
       use zone_module, only: zone
-      use matl_module, only: gather_vof
+      use matl_module, only: nmat, gather_vof
       use material_model_driver, only: matl_model
 
-      integer :: j, m, stat
-      real(r8), allocatable :: vof(:,:), xc(:,:)
+      integer :: m
+      real(r8), allocatable :: vof(:,:)
       character(32), allocatable :: name(:)
 
       !! Average cell density

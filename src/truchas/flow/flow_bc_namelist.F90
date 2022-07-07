@@ -26,7 +26,7 @@ contains
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: params
 
-    integer :: n, ios, data_size, matid
+    integer :: n, ios, matid
     logical :: found
     character(128) :: iom
     character(:), allocatable :: label

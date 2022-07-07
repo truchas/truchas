@@ -14,7 +14,7 @@
 
 module rad_encl_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use index_map_type
   implicit none
   private

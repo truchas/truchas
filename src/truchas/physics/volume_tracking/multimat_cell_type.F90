@@ -231,7 +231,7 @@ contains
 
     type(plane) :: flux_plane
     real(r8)    :: xf(3)
-    integer     :: f,nV,m
+    integer     :: f,nV
 
     ierr = 0
     do f = 1,size(face_area)

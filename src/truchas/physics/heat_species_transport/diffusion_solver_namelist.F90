@@ -28,7 +28,6 @@ contains
 
     integer :: ios
     logical :: found
-    character(:), allocatable :: label
     character(128) :: iom
     character(len=8)  :: string
     type(parameter_list), pointer :: plist
@@ -63,7 +62,7 @@ contains
     real(r8) :: rel_conc_tol, rel_temp_tol, rel_enthalpy_tol
     real(r8) :: residual_atol, residual_rtol
 
-    real(r8) :: cond_vfrac_threshold
+    real(r8) :: cond_vfrac_threshold, cutvof
     character(len=32) :: nlk_preconditioner, stepping_method
 
     logical :: use_new_mfd  ! use the new MFD mass matrix (temporary)
@@ -79,7 +78,7 @@ contains
         hypre_amg_coarsen_type, hypre_amg_interp_type, hypre_amg_strong_threshold, &
         hypre_amg_relax_down_type, hypre_amg_relax_up_type, &
         cond_vfrac_threshold, residual_atol, residual_rtol, &
-        use_new_mfd, void_temperature
+        use_new_mfd, void_temperature, cutvof
 
     integer, parameter :: DS_SPEC_SYS = 1
     integer, parameter :: DS_TEMP_SYS = 2
@@ -123,6 +122,7 @@ contains
     verbose_stepping = .false.
     stepping_method = NULL_C
     cond_vfrac_threshold = NULL_R
+    cutvof = NULL_R
     residual_atol = NULL_R
     residual_rtol = NULL_R
     use_new_mfd = .true.
@@ -160,6 +160,7 @@ contains
     call broadcast(verbose_stepping)
     call broadcast(stepping_method)
     call broadcast(cond_vfrac_threshold)
+    call broadcast(cutvof)
     call broadcast(residual_atol)
     call broadcast(residual_rtol)
     call broadcast(use_new_mfd)
@@ -521,6 +522,12 @@ contains
         call TLS_fatal ('COND_VFRAC_THRESHOLD must be > 0 and < 1')
       end if
       call params%set('epsilon', cond_vfrac_threshold)
+      if (cutvof == NULL_R) then
+        cutvof = 1.0d-8
+      else if (cutvof <= 0.0d0) then
+        call TLS_fatal ('CUTVOF must be >= 0')
+      end if
+      call params%set('cutvof', cutvof)
     else
       if (residual_atol /= NULL_R) then
         call TLS_info ('  ignoring RESIDUAL_ATOL value; not relevant to STEPPING_METHOD choice')

@@ -25,7 +25,6 @@ MODULE DRIVERS
   ! Author(s): Bryan Lally (lally@lanl.gov)
   !            Douglas B. Kothe (dbk@lanl.gov)
   !-----------------------------------------------------------------------------
-  use parameter_module,  only: string_len
   use process_info_module
   implicit none
   private
@@ -49,7 +48,6 @@ CONTAINS
     use truchas_env,            only: input_file, title
     use parallel_communication, only: init_parallel_communication
     use setup_module,           only: SETUP
-    use random_module,          only: INITIALIZE_RANDOM
     use signal_handler
     use output_utilities,       only: announce
     use truchas_logging_services
@@ -78,9 +76,6 @@ CONTAINS
     ! announce
     call ANNOUNCE ('PROGRAM INFORMATION')
     call PROGRAM_SPECIFICATIONS ()
-
-    ! initialize the random number generator
-    call INITIALIZE_RANDOM()
 
     ! read the data file
     call ANNOUNCE ('INPUT')
@@ -122,11 +117,11 @@ call hijack_truchas ()
     !
     !   Cycle through each time step
     !---------------------------------------------------------------------------
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
     use EM,                       only: INDUCTION_HEATING
     use parallel_communication,   only: global_any
-    use restart_variables,        only: restart
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint, dt_min
@@ -145,9 +140,7 @@ call hijack_truchas ()
     use time_step_sync_type
     use truchas_logging_services
     use truchas_timers
-    use zone_module, only: Zone
     use probes_driver, only: probes_write
-    use kinds
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
@@ -488,7 +481,6 @@ call hijack_truchas ()
                                     input_file, overwrite_output
     !use truchas_logging_services
     use utilities_module,     only: MAKE_DIRECTORY_HIERARCHY
-    use parameter_module,     only: string_len
     use restart_variables,    only: restart_file, restart
     use file_utility,         only: count_tokens, get_token
     use string_utilities,     only: i_to_c
@@ -512,7 +504,7 @@ call hijack_truchas ()
     logical :: h
     logical :: f
     logical :: g
-    character (LEN=string_len), dimension(10) :: usage = (/                       &
+    character(80) :: usage(10) = [ &
     'usage: truchas [options] infile                                       ', &
     '                                                                      ', &
     'options:                                                              ', &
@@ -522,7 +514,7 @@ call hijack_truchas ()
     '  -m            turn on memory diagnostics                            ', &
     '  -g:n          output group size                                     ', &
     '  -f            force overwrite of output directory contents          ', &
-    '  -h            help                                                  ' /)
+    '  -h            help                                                  ']
     
     !---------------------------------------------------------------------------
 

@@ -8,7 +8,7 @@
 
 MODULE MATL_UTILITIES
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   IMPLICIT NONE
   private
 
@@ -31,8 +31,7 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use matl_module,      only: Matl, ncells
-    use parameter_module, only: nmat, mat_slot
+    use matl_module, only: Matl, ncells, nmat, mat_slot
 
     ! Arguments
     real(r8), dimension(nmat,ncells), intent(INOUT) :: VOF
@@ -64,8 +63,7 @@ CONTAINS
 
   subroutine matl_get_cell_vof (n, vof)
   
-    use matl_module, only: matl, ncells
-    use parameter_module, only: nmat, mat_slot
+    use matl_module, only: matl, ncells, nmat, mat_slot
     
     integer, intent(in) :: n
     real(r8), intent(out) :: vof(:)
@@ -92,8 +90,8 @@ CONTAINS
     ! Written by:
     ! Markus Bussmann (University of Toronto)
     !===========================================================================
-    use matl_module,       only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE, ncells
-    use parameter_module,  only: nmat, mat_slot
+    use matl_module, only: Matl, SLOT_COMPRESS, SLOT_DECREASE, SLOT_INCREASE, ncells, &
+        nmat, mat_slot
     use parallel_communication, only: global_maxval
 
     ! Arguments
@@ -173,8 +171,8 @@ CONTAINS
     !  Update the matl pointer with the new  volume fractions and  densitiy
     !  values
     !===========================================================================
-    use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE, ncells
-    use parameter_module, only: mat_slot, mat_slot_new, nmat
+    use matl_module, only: Matl, SLOT_INCREASE, SLOT_DECREASE, ncells, &
+        mat_slot, mat_slot_new, nmat
     use parallel_communication, only: global_maxval
 
     ! Arguments
@@ -256,8 +254,7 @@ CONTAINS
 
   subroutine define_matl (vf, matl)
 
-    use parameter_module, only: nmat, mat_slot
-    use matl_module, only: material, matl_slot, slot_resize, ncells
+    use matl_module, only: material, matl_slot, slot_resize, ncells, nmat, mat_slot
     use parallel_communication, only: global_maxval
 
     real(r8), intent(in)    :: vf(:,:)
@@ -322,8 +319,7 @@ CONTAINS
 
   subroutine read_matl_data (unit, version)
 
-    use parameter_module, only: nmat
-    use matl_module, only: matl
+    use matl_module, only: matl, nmat
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
     use base_mesh_class

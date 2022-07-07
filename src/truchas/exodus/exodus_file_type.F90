@@ -112,7 +112,7 @@ contains
   subroutine exodus_file_final (this)
     type(exodus_file), intent(inout) :: this
     integer :: error
-    if (this%exoid >= 0) error = ex_close(this%exoid)
+    if (this%exoid >= 0) error = ex_close(this%exoid) ! error ignored
   end subroutine exodus_file_final
 
  !! Closes the Exodus file and default initializes the components of the

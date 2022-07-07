@@ -259,10 +259,6 @@ contains
   subroutine sort_donors(this, mean_donor_volumes, enough_acceptor, remove_type, remove_vol)
 
     use sort_utilities, only: quick_sort
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
-
 
     class(wisp_redistribution), intent(inout) :: this
     real(r8), intent(in) :: mean_donor_volumes(:)

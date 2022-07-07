@@ -27,8 +27,8 @@ contains
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use truchas_logging_services
     use parallel_communication, only: is_IOP, broadcast
-    use string_utilities, only: i_to_c, lower_case
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R, NULL_I
+    use string_utilities, only: i_to_c
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R
 
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: params

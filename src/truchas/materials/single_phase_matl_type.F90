@@ -86,7 +86,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    class(scalar_func), allocatable :: cp, h, rho, hd
+    class(scalar_func), allocatable :: cp, h
     real(r8) :: t0, h0
 
     if (this%has_prop('specific-enthalpy')) return

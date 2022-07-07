@@ -9,7 +9,7 @@
 
 MODULE BODY_INPUT_MODULE
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use interfaces_module
   use material_model_driver, only: matl_model
   use truchas_logging_services
@@ -36,8 +36,7 @@ CONTAINS
   subroutine read_body_namelists(lun)
 
     use parallel_communication, only: is_IOP, broadcast
-    use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
-    use parameter_module, only: mbody, mphi
+    use input_utilities, only: seek_to_namelist, NULL_C, NULL_R
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
     use string_utilities, only: i_to_c
@@ -45,7 +44,6 @@ CONTAINS
     integer, intent(in) :: lun
 
     !! Namelist variables used here
-    integer :: material_number
     real(r8) :: phi(mphi), temperature, velocity(3)
     character(31) :: temperature_function
     !! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)

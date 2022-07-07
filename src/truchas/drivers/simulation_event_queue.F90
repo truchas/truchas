@@ -147,7 +147,7 @@ contains
 
   subroutine read_simulation_control_namelist (lun)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use input_utilities, only: seek_to_namelist, NULL_R, NULL_I
     use sort_module, only: sort
     use string_utilities, only: i_to_c

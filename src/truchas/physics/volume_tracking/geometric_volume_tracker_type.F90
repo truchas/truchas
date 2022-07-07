@@ -51,9 +51,6 @@ contains
 
     use parameter_list_type
     use material_model_driver, only: matl_model
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
 
     class(geometric_volume_tracker), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -194,7 +191,7 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
-    integer :: i, f, j, fl, m
+    integer :: i, f, j, fl
 
     do i = 1, size(this%bc_index)
       f = this%bc_index(i)
@@ -216,9 +213,6 @@ contains
   subroutine normals(this, vof)
 
     use flow_operators, only: gradient_cc
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
     intrinsic :: norm2
 
     class(geometric_volume_tracker), intent(inout) :: this
@@ -296,7 +290,7 @@ contains
     character(:), allocatable, intent(inout) :: errmsg
 
     real(r8) :: face_normal(3,6)
-    integer :: j,k,ierr
+    integer :: j,k
     type(cell_geom) :: cell
 
     associate (cn => this%mesh%cnode(this%mesh%xcnode(i):this%mesh%xcnode(i+1)-1), &
@@ -325,9 +319,6 @@ contains
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
       flux_volume, stat, errmsg)
 
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
     use locate_plane_os_function
     use plane_type
     use cell_geom_type
@@ -341,7 +332,7 @@ contains
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
-    integer :: ni,f,nlast, nint, ierr,nmat_in_cell
+    integer :: ni,f,nlast,nmat_in_cell
     logical :: is_mixed_donor_cell
     type(plane) :: P
 
@@ -700,8 +691,8 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
-    integer :: i, nmat, l, stat
-    character(:), allocatable :: errmsg, tmp, global_message(:)
+    integer :: i, nmat, stat
+    character(:), allocatable :: errmsg
 
 
     ! calculate the flux volumes for each face
@@ -1043,7 +1034,7 @@ contains
     integer, intent(in) :: fluids
 
     integer :: i, j
-    real(r8) :: flux_vol_adj, excess, r
+    real(r8) :: flux_vol_adj, r
 
     ! both inflow and outflow will be rescaled so take abs. Ignore BCs for now
     flux_vol_adj = sum(abs(flux_vol(1:fluids,:)))

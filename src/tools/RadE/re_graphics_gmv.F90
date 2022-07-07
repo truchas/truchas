@@ -8,7 +8,7 @@
 
 module re_graphics_gmv
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use re_encl_type
   use gmvwrite_c_binding
   implicit none

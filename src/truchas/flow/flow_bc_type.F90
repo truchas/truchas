@@ -85,9 +85,6 @@ contains
   logical function is_p_neumann_fix_pe(this, any_real_fluid_onP)
 
     use parallel_communication
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
 
     class(flow_bc), intent(inout) :: this
     logical, intent(in) :: any_real_fluid_onP

@@ -57,7 +57,7 @@ contains
     real(r8), intent(in) :: tcell(:)
     real(r8), intent(out) :: dq(:)
 
-    integer :: i, i1, i2, j, n, m
+    integer :: i, i1, i2, j, n
     real(r8) :: dq_tot, dq_i, state(1)
     real(r8), allocatable :: tcellx(:)
     logical :: found
@@ -102,7 +102,7 @@ contains
     real(r8), intent(in) :: tcell(:)
     real(r8), intent(out) :: dq(:), tmin(:), tmax(:)
 
-    integer :: i, i1, i2, j, n, m
+    integer :: i, i1, i2, j, n
     real(r8) :: dq_tot, dq_i, state(1)
     real(r8), allocatable :: tcellx(:)
     logical :: found

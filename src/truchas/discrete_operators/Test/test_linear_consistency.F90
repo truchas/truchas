@@ -8,7 +8,7 @@
 
 module test_cell_grad_type_tools
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
@@ -85,7 +85,7 @@ program test_linear_consistency
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use truchas_env, only: prefix
   use mesh_manager

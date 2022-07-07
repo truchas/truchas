@@ -281,7 +281,6 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: i, body(3), nbody
-    real(r8) :: x(3)
     type(dnc_cell) :: subtet
 
     stat = 0
@@ -420,7 +419,7 @@ contains
 
     integer, parameter :: nedge = 6
     integer :: ierr, i, j, b1, b2
-    real(r8) :: xp(3,3), xn(3,4), signed_distance(4), s1, s2, cell_volume
+    real(r8) :: xp(3,3), xn(3,4), signed_distance(4), s1, s2
     type(plane) :: P
     type(pure_polyhedron) :: poly
 

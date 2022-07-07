@@ -7,6 +7,9 @@
 #include <assert.h>
 #include "scorpio.h"
 
+int scorpio_write_dataset2( void *vector, datatype_t mytype, int ndims, int *globaldims,
+    int *localdims, int fhandle, char *dset_name,  iogroup_t *myIOgroup);
+
 /* Wraps initialization of the iogroup and file opening into a single function */
 
 void scorpio_open_file_ext(const char *filename, int groupSize,

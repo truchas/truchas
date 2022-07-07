@@ -17,7 +17,7 @@
 
 module patching_tools
 
-  use kinds, only: r8, i8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
   implicit none
 
   real(r8), parameter :: PI = 3.1415926535897932_r8

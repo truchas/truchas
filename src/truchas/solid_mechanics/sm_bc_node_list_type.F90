@@ -148,7 +148,7 @@ contains
     ! which are not assigned contact conditions.
     subroutine compute_links()
 
-      integer :: l, nlink, node_index(mesh%nnode)
+      integer :: ni, l, nlink, node_index(mesh%nnode)
 
       node_index = 0
       do ni = 1, size(this%node)
@@ -205,11 +205,9 @@ contains
     subroutine append_nodeset_bcs()
 
       logical :: applied
-      integer :: nbc, nbcnode, n, ki, k, nnode
+      integer :: nbc, n, ki, k
       integer, allocatable :: nodeset_index(:), nodeset_bcid(:), xbcid(:), bcid(:), node(:)
       real(r8), allocatable :: normal(:,:)
-
-      nnode = size(this%node)
 
       ! get a list of the BCIDs for nodeset BCs, and a list of the associated nodesets.
       nodeset_index = pack(bc_list%displacement(:)%setid, mask=bc_list%displacement(:)%nodeset)
@@ -278,7 +276,7 @@ contains
     integer, intent(in) :: id2(:), xarr2(:), arr2(:)
     real(r8), intent(in) :: rarr2(:,:)
 
-    integer :: ni, ni2, n, k, nnode
+    integer :: ni, ni2, k, nnode
     integer, allocatable :: id3(:), xarr3(:), arr3(:), ni_to_ni2(:)
     real(r8), allocatable :: rarr3(:,:)
     logical, allocatable :: counted(:)

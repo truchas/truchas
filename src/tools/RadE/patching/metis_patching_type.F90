@@ -55,7 +55,7 @@
 
 module metis_patching_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use re_encl_type
   use patching_class
   use parameter_list_type
@@ -426,7 +426,7 @@ contains
     real(r8) :: normal(3,this%npatch)  ! Area-weighted normal
     integer, allocatable :: perm(:)
     real(r8) :: angle
-    integer :: i, j, n, p
+    integer :: i
 
     nfp = 0.0_r8
     tpa = 0.0_r8

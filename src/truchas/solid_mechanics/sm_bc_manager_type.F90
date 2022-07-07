@@ -313,7 +313,6 @@ contains
     real(r8), intent(inout) :: diag(:,:)
 
     integer :: b
-    integer :: i, n
 
     ASSERT(size(displ,dim=2) == this%mesh%nnode)
     ASSERT(size(force,dim=2) == this%mesh%nnode)

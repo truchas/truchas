@@ -110,7 +110,7 @@ module vector_func_containers
 contains
 
   function vector_func_box_eval (this, x) result (fx)
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     class(vector_func_box), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx(this%f%dim)
@@ -118,7 +118,7 @@ contains
   end function vector_func_box_eval
 
   function vector_func_box_eval_comp (this, i, x) result (fx)
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     class(vector_func_box), intent(in) :: this
     integer, intent(in) :: i
     real(r8), intent(in) :: x(:)

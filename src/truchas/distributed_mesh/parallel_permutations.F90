@@ -87,7 +87,7 @@
 
 module parallel_permutations
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use permutations
   use index_map_type
   use parallel_communication
@@ -287,6 +287,7 @@ contains
 
     logical function is_one_to_one (m)
       integer, intent(in) :: m(:)
+      integer :: j
       is_one_to_one = .false.
       m2inv = 0
       do j = 1, size(m)
@@ -320,12 +321,11 @@ contains
   logical function defined_par_perm (this)
     type(par_perm), intent(in) :: this
     defined_par_perm = .false.
-    CHECKLIST: do
-      if (.not.allocated(this%perm)) exit
-!      if (.not.this%src_imap%defined()) exit
+    CHECKLIST: block
+      if (.not.allocated(this%perm)) exit CHECKLIST
+!      if (.not.this%src_imap%defined()) exit CHECKLIST
       defined_par_perm = .true.
-      exit
-    end do CHECKLIST
+    end block CHECKLIST
     defined_par_perm = global_all(defined_par_perm)
   end function defined_par_perm
 

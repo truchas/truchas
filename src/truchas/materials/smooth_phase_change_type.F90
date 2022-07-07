@@ -58,7 +58,6 @@ contains
   subroutine init(this, tlo, thi)
     class(smooth_phase_change), intent(out) :: this
     real(r8), intent(in) :: tlo, thi
-    real(r8) :: t(6), fs(6)
     this%tlo = tlo
     this%thi = thi
   end subroutine init

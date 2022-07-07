@@ -16,7 +16,7 @@
 
 module hypre_hybrid_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fhypre
   use pcsr_matrix_type
   use parameter_list_type
@@ -299,7 +299,6 @@ contains
     integer, intent(out) :: stat
 
     integer :: i, ierr, rows(this%nrows)
-    real(r8) :: norm
 
     call fHYPRE_ClearAllErrors
 

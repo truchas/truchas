@@ -63,7 +63,7 @@
 
 module unstr_mesh_gmv
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use gmvwrite_c_binding
   use parallel_communication
   implicit none

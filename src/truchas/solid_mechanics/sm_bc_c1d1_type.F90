@@ -24,7 +24,7 @@ module sm_bc_c1d1_type
   use unstr_mesh_type
   use sm_bc_list_type
   use sm_bc_node_list_type
-  use sm_bc_utilities, only: contact_factor, derivative_contact_factor
+  use sm_bc_utilities, only: contact_factor
   use sm_bc_class
   implicit none
   private
@@ -59,7 +59,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, k, icontact(1), idispl(1)
+    integer :: nnode, ni, icontact(1), idispl(1)
     logical :: matching_node
 
     this%mesh => mesh
@@ -164,7 +164,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, nl, n, d
+    integer :: i, n, d
     real(r8) :: x(3)
 
     do i = 1, size(this%index)

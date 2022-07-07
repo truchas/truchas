@@ -40,22 +40,22 @@ Contains
 
     use,intrinsic :: iso_c_binding, only: c_int
     use parallel_communication, only: nPE, global_all, global_minval, global_maxval, global_sum
-    use constants_module, only: FLOATBYTES  ! we ought to compute this here
     use truchas_logging_services
 
     integer, intent(in) :: ncells_tot
 
+    integer, parameter :: real_bytes = storage_size(1.0d0)/8
     integer(c_int) :: vsize, rsize, dsize
     character(128) :: string(4)
 
     call get_process_size (vsize, rsize, dsize)
     if (global_all(vsize /= 0)) then
       if (npe == 1) then
-        write(string,1) real(vsize)/1024, int(real(1024*vsize)/(ncells_tot*FLOATBYTES))
+        write(string,1) real(vsize)/1024, int(real(1024*vsize)/(ncells_tot*real_bytes))
         call TLS_info (string(:2))
       else
         write(string,2) global_minval(real(vsize)/1024), global_maxval(real(vsize)/1024), &
-            global_sum(real(vsize))/1024, int(global_sum(real(1024*vsize))/(ncells_tot*FLOATBYTES))
+            global_sum(real(vsize))/1024, int(global_sum(real(1024*vsize))/(ncells_tot*real_bytes))
         call TLS_info (string(:4))
       end if
     end if

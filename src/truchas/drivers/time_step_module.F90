@@ -27,7 +27,7 @@ MODULE TIME_STEP_MODULE
   ! Author(s): Douglas B. Kothe (dbk@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
@@ -72,8 +72,7 @@ CONTAINS
     !   fluid-flow (advection and viscosity) and heat-transfer (conduction).
     !=======================================================================
     use physics_module,           only: flow
-    use matl_module,              only: Matl
-    use parameter_module,         only: mat_slot
+    use matl_module,              only: mat_slot, Matl
     use restart_variables,        only: restart
     use zone_module,              only: Zone
     use diffusion_solver_data,    only: ds_enabled

@@ -40,7 +40,6 @@ MODULE MATL_MODULE
   !
   !=======================================================================
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use parameter_module, only: max_relation_forms, max_slots
   use truchas_logging_services
   implicit none
   private
@@ -58,10 +57,6 @@ MODULE MATL_MODULE
   end interface
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-
-  ! Variables needed in processing the namelist input
-  character(LEN = 80), dimension(max_relation_forms), public, save :: &
-                       Relation_Forms, P_Change_Forms
 
   ! Define MATERIAL Structure
   type MATERIAL
@@ -81,6 +76,7 @@ MODULE MATL_MODULE
      type(MATERIAL), dimension(:), pointer :: Cell => NULL()
   end type MATL_SLOT
 
+  integer, parameter :: max_slots = 10
   type(MATL_SLOT), dimension(max_slots), save, Target  :: Matl
 
   ! The matl_init subroutine sets this value, which is intended for use
@@ -88,13 +84,15 @@ MODULE MATL_MODULE
   ! until the matl structure can be redesigned.
   integer, protected, public :: ncells = 0
 
+  ! Public variables formerly in parameter_module
+  integer, public :: nmat, mat_slot = 0, mat_slot_new = 0
+
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 CONTAINS
 
   ! From base_types_a_allocate
   subroutine matl_init(n)
-    use parameter_module, only: mat_slot, mat_slot_new, nmat
     integer, intent(in) :: n
     ncells = n
     mat_slot_new = merge(1, 2, nmat <= 1)
@@ -103,7 +101,6 @@ CONTAINS
 
   ! From base_types_a_deallocate
   subroutine matl_free
-    use parameter_module, only: mat_slot, mat_slot_new
     mat_slot_new = 0
     call slot_decrease(matl, mat_slot, mat_slot_new)
   end subroutine
@@ -114,7 +111,6 @@ CONTAINS
     !   Gather material m volume fractions from the Matl derived
     !   type and place them into array Vof.
     !=======================================================================
-    use parameter_module, only: mat_slot
 
     ! Argument List
     integer,  intent(IN)  :: m
@@ -144,7 +140,6 @@ CONTAINS
     ! Purpose(s):
     !   Decrease the ABC structure size from slot to slot_new.
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -181,7 +176,6 @@ CONTAINS
     ! Purpose(s):
     !   Increase the ABC structure size from slot to slot_new.
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -260,7 +254,6 @@ CONTAINS
     !   This routine compresses the slot structure to remove unused holes.
     !
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -311,7 +304,6 @@ CONTAINS
     ! Purpose(s):
     !   Initialize the ABC structure for slot s.
     !=======================================================================
-    use parameter_module, only: max_slots
 
     ! Argument List
     type(MATL_SLOT), dimension(max_slots), intent(INOUT) :: ABC
@@ -342,7 +334,6 @@ CONTAINS
     !   max_slots slots, of which mat_slot are used.
     !
     !====================================================================
-    use parameter_module, only: mat_slot, max_slots
 
     ! Arguments
     type(MATL_SLOT), dimension(max_slots), intent(IN)  :: Matl_Src

@@ -84,7 +84,7 @@ contains
     real(r8), intent(in) :: t
 
     integer :: i, j, f, fi, fn
-    real(r8) :: gradT(3), maxdist, dist(3)
+    real(r8) :: gradT(3)
 
     associate (faces => this%index, value => this%value)
       do i = 1, size(faces)

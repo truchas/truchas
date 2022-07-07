@@ -13,7 +13,7 @@
 
 module rad_problem_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use parallel_permutations
   use rad_solver_type

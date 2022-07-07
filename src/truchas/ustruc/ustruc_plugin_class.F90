@@ -42,7 +42,7 @@
 
 module ustruc_plugin_class
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use ustruc_comp_class
   use ustruc_core_type
   implicit none

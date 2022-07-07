@@ -72,7 +72,6 @@ contains
     type(map_data) :: mesh_map
 
     type(mapper_switch), pointer :: this => null()
-    character(:), allocatable :: filename
 
     if (.not.mpi_initialized) call mpi_init
 

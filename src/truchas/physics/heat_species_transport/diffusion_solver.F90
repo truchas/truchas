@@ -14,7 +14,7 @@
 
 module diffusion_solver
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use diffusion_solver_data
   use mesh_manager
   use parallel_communication
@@ -75,6 +75,7 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
+    real(r8) :: cutvof
     type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
   end type ds_driver
   type(ds_driver), save, target :: this
@@ -112,8 +113,6 @@ contains
 
   subroutine ds_step(h, hnext, errc)
 
-    use cutoffs_module, only: cutvof
-
     real(r8), intent(in)  :: h
     real(r8), intent(out) :: hnext
     integer,  intent(out) :: errc
@@ -124,7 +123,7 @@ contains
 
     if (this%have_fluid_flow) then
       call update_mmf_from_matl(this%mmf)
-      if (this%have_void) call cull_material_fragments(this%mmf, cutvof)
+      if (this%have_void) call cull_material_fragments(this%mmf, this%cutvof)
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
@@ -442,6 +441,7 @@ contains
       call move_alloc(hadv1, this%hadv)
     end if
 
+    call this%ds_params%get('cutvof', this%cutvof, default=0.0_r8)
     call this%ds_params%get('integrator', integrator)
 
     !! Figure out which diffusion solver we should be running, and ensure

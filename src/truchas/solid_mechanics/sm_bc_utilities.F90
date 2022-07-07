@@ -310,7 +310,7 @@ contains
     integer, intent(in) :: f
     real(r8), intent(out) :: normal(:,:)
 
-    integer :: i, j, n, xf
+    integer :: i, j, xf
     integer, pointer :: cn(:) => null()
     type(integration_cell) :: ic
 
@@ -322,7 +322,7 @@ contains
     ASSERT(size(normal,dim=2) >= ic%fsize(xf))
     i = 0
     do j = 1, ic%fsize(xf)
-      n = mesh%fnode(mesh%xfnode(f)+j-1)
+      !n = mesh%fnode(mesh%xfnode(f)+j-1)
       !if (n > mesh%nnode_onP) cycle
       i = i + 1
       normal(:,i) = ic%normal_boundary(xf,j)

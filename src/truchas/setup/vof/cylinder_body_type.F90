@@ -64,12 +64,11 @@ contains
     class(cylinder_body), intent(in) :: this
     real(r8), intent(in) :: x(:)
 
-    real(r8) :: xl, yl, x1(3), xo(3)
+    real(r8) :: xl, x1(3), xo(3)
 
-    ! get the local coordinates xl, yl
+    ! get the local coordinates xl
     xo = x - this%center
     x1 = dot_product(xo, this%axis) * this%axis
-    yl = norm2(x1)
     xl = norm2(xo - x1)
 
     !signed_distance = 0 ! not implemented yet

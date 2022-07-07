@@ -115,7 +115,7 @@ module scalar_func_containers
 contains
 
   function scalar_func_box_eval(this, x) result(fx)
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     class(scalar_func_box), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx
@@ -123,7 +123,7 @@ contains
   end function scalar_func_box_eval
 
   function scalar_func_ptr_eval(this, x) result(fx)
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     class(scalar_func_ptr), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx

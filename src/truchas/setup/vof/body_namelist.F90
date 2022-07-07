@@ -24,9 +24,6 @@ contains
     use input_utilities
     use string_utilities, only: i_to_c
     use truchas_logging_services
-#ifdef NO_2008_FINDLOC
-    use f08_intrinsics, only: findloc
-#endif
 
     integer, intent(in) :: lun
 
@@ -181,7 +178,7 @@ contains
   !! Rotation angles are provided in degrees.
   function normal_vector(axis, rotation_angle, rotation_point) result(normal)
 
-    use constants_module, only: pi
+    use math_constants, only: pi
 
     character(*), intent(in) :: axis
     real(r8), intent(in) :: rotation_angle(:), rotation_point(:)
@@ -190,8 +187,6 @@ contains
     real(r8), parameter :: deg = pi / 180
     integer, parameter :: ndim = 3
     integer, parameter :: nrot = 3
-    real(r8) :: c, s, tmp, rot(nrot)
-    integer :: n, n1, n2, coeff, na
 
     INSIST(axis == 'x' .or. axis == 'y' .or. axis == 'z')
     normal = 0
@@ -207,7 +202,7 @@ contains
   
   function reverse_transform(q, rotation_angle, rotation_point) result(x)
 
-    use constants_module, only: pi
+    use math_constants, only: pi
 
     real(r8), intent(in) :: q(:), rotation_angle(:), rotation_point(:)
     real(r8) :: x(3)

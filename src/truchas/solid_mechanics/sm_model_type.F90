@@ -21,7 +21,6 @@ module sm_model_type
   use integration_geometry_type
   use sm_material_model_type
   use viscoplastic_solver_type
-  use ieee_arithmetic, only: ieee_is_normal
   implicit none
   private
 
@@ -188,7 +187,6 @@ contains
   !! repeatedly computed for any number of different inputs (displacements).
   subroutine update_properties(this, vof, temperature_cc)
 
-    use parallel_communication, only: global_maxval, global_minval
     use sm_bc_utilities, only: compute_stress
 
     class(sm_model), intent(inout) :: this
@@ -587,8 +585,6 @@ contains
 
     ! Convert a ragged-array with points for each cell-edge pair into a square array
     function square_array(a) result(b)
-
-      use cell_topology, only: cell_edges
 
       real(r8), intent(in) :: a(:,:)
       !real(r8), intent(out) :: b(:,:,:)

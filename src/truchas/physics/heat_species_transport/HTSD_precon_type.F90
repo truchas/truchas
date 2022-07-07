@@ -8,7 +8,7 @@
 
 module HTSD_precon_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HTSD_model_type
   use rad_problem_type
   use unstr_mesh_type
@@ -117,8 +117,6 @@ contains
 
     type(HTSD_precon), intent(inout) :: this
 
-    integer :: n
-
     if (associated(this%dHdT)) deallocate(this%dHdT)
     if (associated(this%vfr_precon_coupling)) deallocate(this%vfr_precon_coupling)
     if (associated(this%hcprecon)) deallocate(this%hcprecon)
@@ -179,9 +177,9 @@ contains
 
     subroutine HT_precon_compute ()
 
-      integer :: index, j, n1, n2
-      real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), Tface(this%mesh%nface), term
-      real(r8), allocatable :: values(:), values2(:,:)
+      integer :: index, j
+      real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), Tface(this%mesh%nface)
+      real(r8), allocatable :: values(:)
       type(mfd_diff_matrix), pointer :: dm
       integer, pointer :: faces(:) => null()
 
@@ -297,6 +295,7 @@ contains
 
       integer, intent(in) :: index
 
+      integer :: j
       real(r8) :: values(this%mesh%ncell), Cface(this%mesh%nface)
       type(mfd_diff_matrix), pointer :: matrix
 

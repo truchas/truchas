@@ -42,7 +42,7 @@
 
 module ustruc_gv0_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: iso_fortran_env, only: int8, int16
   use ustruc_plugin_class
   implicit none

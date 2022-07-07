@@ -32,7 +32,7 @@ contains
   !! Returns the area of enclosure faces on rank 1.
   subroutine compute_face_area(xface, fnode, x, area)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cell_geometry, only: face_normal, vector_length
 
     integer, allocatable, intent(in) :: xface(:), fnode(:)

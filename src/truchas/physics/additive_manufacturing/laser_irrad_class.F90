@@ -39,7 +39,7 @@ module laser_irrad_class
       import laser_irrad, r8
       class(laser_irrad), intent(in) :: this
       real(r8), intent(in) :: t, dx, dy, dz
-      real(r8) :: irrad, c4
+      real(r8) :: irrad
     end function
   end interface
 

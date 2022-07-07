@@ -34,7 +34,7 @@
 
 module physical_constants
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 

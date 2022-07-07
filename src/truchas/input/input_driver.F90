@@ -54,7 +54,6 @@ contains
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
     use physics_module,            only: heat_transport, flow, solid_mechanics
-    use advection_velocity_namelist, only: read_advection_velocity_namelist
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers

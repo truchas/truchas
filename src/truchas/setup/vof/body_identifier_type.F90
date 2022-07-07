@@ -40,8 +40,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j, matl_id, matl_index, nback
-    class(body), allocatable :: tmp
+    integer :: i, nback
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: bparams
 

@@ -139,7 +139,7 @@ contains
     real(r8), intent(in) :: t, dt
     real(r8), intent(inout) :: displ(:,:) ! need to update halo
 
-    integer :: n, d, i, f, xn
+    integer :: n
     real(r8) :: force(3,this%model%mesh%nnode)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%model%mesh%nnode)

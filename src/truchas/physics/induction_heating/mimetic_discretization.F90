@@ -8,7 +8,7 @@
 
 module mimetic_discretization
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
   implicit none
   private

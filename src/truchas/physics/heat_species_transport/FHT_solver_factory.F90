@@ -23,7 +23,6 @@ contains
   function create_FHT_solver(mmf, model, params) result(solver)
 
     use enclosure_radiation_namelist, only: er_params => params
-    use cutoffs_module, only: cutvof
     use parallel_communication
     use truchas_env, only: output_file_name
 

@@ -16,7 +16,6 @@
 
 module sm_bc_face_list_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   implicit none
   private

@@ -14,7 +14,7 @@
 
 module EM_boundary_data
 
-  use kinds, only: rk => r8
+  use,intrinsic :: iso_fortran_env, only: rk => real64
   use MaxwellBoundaryData
   implicit none
   private

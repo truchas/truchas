@@ -38,7 +38,6 @@ MODULE OVERWRITE_MODULE
   ! Author(s): Bryan Lally, (lally@lanl.gov)
   !
   !=======================================================================
-  use kinds, only: r8
   use truchas_logging_services
   implicit none
   private
@@ -74,11 +73,10 @@ CONTAINS
     !
     !=======================================================================
 !    use constants_module, only: pi
-!    use parameter_module, only: max_slots
 !    use legacy_mesh_api,  only: ncells, nnodes, ndim
 !    use zone_module,      only: Zone
 !    use legacy_mesh_api,  only: Mesh, Cell, Vertex
-!    use matl_module,      only: Matl
+!    use matl_module,      only: Matl, max_slots
 
     ! Arguments
 
@@ -188,9 +186,8 @@ CONTAINS
     !=======================================================================
 
 !!$    use error_module,         only: ERROR_CHECK
-!!$    use matl_module,          only: GATHER_VOF
+!!$    use matl_module,          only: GATHER_VOF, max_slots, mat_slot, nmat
 !!$    use legacy_mesh_api,      only: Mesh, Cell, Vertex
-!!$    use parameter_module,     only: max_slots, mat_slot, nmat
 !!$    use legacy_mesh_api,      only: ncells, nnodes
 !!$    use thermo,               only: Volume_Fraction
 !!$    use zone_module,          only: Zone

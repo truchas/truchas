@@ -40,7 +40,7 @@
 
 module rad_problem_gmv
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use rad_encl_gmv
   use rad_problem_type
   use parallel_permutations

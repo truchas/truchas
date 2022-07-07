@@ -55,7 +55,7 @@
 
 module rad_encl_gmv
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use gmvwrite_c_binding
   use rad_encl_type
   use parallel_communication
@@ -105,12 +105,11 @@ contains
 
     type(rad_encl), intent(in) :: this
 
-    integer :: j, n, dimen, nnode, nface, offset
+    integer :: j, n, nnode, nface, offset
     integer, allocatable :: map(:), fsize(:), fnode(:)
     real(r8), allocatable :: x(:), y(:), z(:)
     character(8) :: name
 
-    dimen = size(this%coord,dim=1)
     nnode = this%node_imap%global_size
     nface = this%face_imap%global_size
 

@@ -1,6 +1,6 @@
 program main
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use functions
   use face_boundary_values
@@ -169,7 +169,7 @@ contains
 end program main
 
 function user_sf_s (index, s) result (f)
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   integer,  intent(in) :: index
   real(r8), intent(in) :: s
   real(r8) :: f

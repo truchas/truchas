@@ -12,7 +12,7 @@
 
 module MaxwellEddy
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use simpl_mesh_type
   use mimetic_discretization
@@ -122,12 +122,12 @@ contains
 
     interface
       subroutine set_bv (t, e)
-        use kinds, only: r8
+        use,intrinsic :: iso_fortran_env, only: r8 => real64
         real(kind=r8), intent(in) :: t
         real(kind=r8), intent(inout) :: e(:)
       end subroutine set_bv
       subroutine bndry_src (t, s)
-        use kinds, only: r8
+        use,intrinsic :: iso_fortran_env, only: r8 => real64
         real(kind=r8), intent(in) :: t
         real(kind=r8), intent(out) :: s(:)
       end subroutine bndry_src

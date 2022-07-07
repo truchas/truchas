@@ -55,7 +55,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, k, icontact(0), idispl(2), d
+    integer :: nnode, ni, icontact(0), idispl(2), d
     logical :: matching_node
 
     this%mesh => mesh
@@ -107,7 +107,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
     real(r8), intent(inout) :: r(:,:)
 
-    integer :: i, n1, n2
+    integer :: i, n1
     real(r8) :: args(0:3), stress_penalty, y(2), x(3)
 
     args(0) = time
@@ -182,7 +182,7 @@ contains
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, nl, n, d
+    integer :: i, n, d
     real(r8) :: x(3)
 
     do i = 1, size(this%index)

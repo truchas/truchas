@@ -22,7 +22,6 @@
 
 module turbulence_models
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use turbulence_model_class
   use algebraic_turb_model_type

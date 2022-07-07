@@ -78,7 +78,7 @@ contains
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg !FIXME: allocatable
     
-    integer :: i, m
+    integer :: i
     integer, pointer :: material_id(:)
     character(:), allocatable :: errmsg2
     
@@ -155,12 +155,10 @@ contains
     real(r8), intent(in)  :: state(:,:)
     real(r8), intent(out) :: value(:)
     
-    integer :: i, j, m, n
-    real(r8) :: val
+    integer :: i, j, n
     real(r8), pointer :: vfrac(:,:)
     integer,  pointer :: cell(:)
     !type(mat_prop), pointer :: mp
-    logical, allocatable :: mask(:)
     
     value = 0.0_r8
     
@@ -261,12 +259,10 @@ contains
     integer,  intent(in)  :: index
     real(r8), intent(out) :: value(:)
     
-    integer :: i, j, m, n
-    real(r8) :: val
+    integer :: i, j, n
     real(r8), pointer :: vfrac(:,:)
     integer,  pointer :: cell(:)
     !type(mat_prop), pointer :: mp
-    logical, allocatable :: mask(:)
     
     value = 0.0_r8
     
@@ -335,8 +331,6 @@ contains
     real(r8), intent(in)  :: state(:)
     real(r8), intent(out) :: value
     
-    integer :: m
-    real(r8) :: val
     real(r8), pointer :: vfrac(:)
     !type(mat_prop), pointer :: mprop(:)
     class(avg_matl_prop), pointer :: mprop

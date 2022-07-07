@@ -12,14 +12,6 @@ MODULE UTILITIES_MODULE
   !
   !   Public Interface(s):
   !
-  !     * call STRING_COMPARE (string1, string2, string_match)
-  !
-  !       Performs a string comparison.
-  !
-  !     * logical = FSTRING_COMPARE (string1, string2)
-  !
-  !       Performs a string comparison.
-  !
   !     * call TIMESTAMP (date_time)
   !
   !       Returns the date and time in string date_time.
@@ -28,8 +20,7 @@ MODULE UTILITIES_MODULE
   !
   !       an F90 interface to mkdir
   !
-  ! Contains: STRING_COMPARE
-  !           TIMESTAMP
+  ! Contains: TIMESTAMP
   !           MAKE_DIRECTORY
   !           MAKE_DIRECTORY_HIERARCHY
   !
@@ -42,12 +33,9 @@ MODULE UTILITIES_MODULE
   private
 
   ! public procedures
-  public :: STRING_COMPARE,  &
-            FSTRING_COMPARE, &
-            TIMESTAMP,       &
+  public :: TIMESTAMP,       &
             MAKE_DIRECTORY,  &
-            MAKE_DIRECTORY_HIERARCHY,  &
-            BUBBLE_PERMUTE
+            MAKE_DIRECTORY_HIERARCHY
 
   ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
@@ -68,50 +56,6 @@ MODULE UTILITIES_MODULE
      end interface
 
 CONTAINS
-
-
-   function fstring_compare (string1, string2)
-      !-------------------------------------------------------------------------
-      ! purpose:
-      !
-      !    case insensitive string comparision - a function interface to a
-      !    subroutine
-      !-------------------------------------------------------------------------
-
-      ! argument list
-      character(*), intent(IN) :: string1
-      character(*), intent(IN) :: string2
-
-      ! local variables
-      logical :: status
-
-      ! function return
-      logical :: fstring_compare
-
-      !-------------------------------------------------------------------------
-
-      call STRING_COMPARE (string1, string2, status)
-
-      fstring_compare = status
-
-   end function fstring_compare
-
-  SUBROUTINE STRING_COMPARE (string1, string2, strings_match)
-    !=======================================================================
-    ! Purpose(s):
-    !
-    !   Performs a case insensitive comparison of two character strings,
-    !   and returns true or false for the comparison result.
-    !
-    !=======================================================================
-    use string_utilities, only: lower_case
-
-    character(*), intent(in) :: string1, string2
-    logical, intent(out) :: strings_match
-
-    strings_match = (lower_case(trim(string1)) == lower_case(trim(string2)))
-
-  END SUBROUTINE STRING_COMPARE
 
   SUBROUTINE TIMESTAMP (date_time)
     !=======================================================================
@@ -239,54 +183,5 @@ CONTAINS
      MAKE_DIRECTORY_HIERARCHY = status
 
   end function MAKE_DIRECTORY_HIERARCHY
-
-  !-----------------------------------------------------------------------------
-
-  function BUBBLE_PERMUTE (vector)
-     !--------------------------------------------------------------------------
-     ! Purpose:
-     !    return a permutation vector that will permute an unsorted
-     !    integer vector into a vector sorted into ascending order
-     !
-     !    vector(permute(i)) is the i'th element of the sorted list
-     !
-     !    warning: this is a simple n^2 sort, and should not be used
-     !    if n is greater than about 10
-     !
-     !--------------------------------------------------------------------------
-
-     ! arguments
-     integer, dimension(:) :: Vector
-
-     ! function return
-     integer, dimension(SIZE(Vector)) :: BUBBLE_PERMUTE
-
-     ! local variables
-     integer :: i, j, n, tmp
-
-     !--------------------------------------------------------------------------
-
-     n = SIZE(Vector)
-
-     ! initialize permutation vector to do nothing
-     do i = 1, n
-        BUBBLE_PERMUTE(i) = i
-     end do
-
-     ! bubble sort on the vector, reordering the permutation indices
-     do j = n-1, 1, -1
-        do i = 1, j
-           if (Vector(BUBBLE_PERMUTE(i)) > Vector(BUBBLE_PERMUTE(i+1))) then
-              ! exchange the permutation indices
-              tmp               = BUBBLE_PERMUTE(i+1)
-              BUBBLE_PERMUTE(i+1) = BUBBLE_PERMUTE(i)
-              BUBBLE_PERMUTE(i)   = tmp
-           end if
-        end do
-     end do
-
-  end function BUBBLE_PERMUTE
-
-  !-----------------------------------------------------------------------------
 
 END MODULE UTILITIES_MODULE

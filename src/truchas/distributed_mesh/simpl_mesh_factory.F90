@@ -72,7 +72,7 @@ contains
 
   function new_simpl_mesh (params, stat, errmsg) result (this)
 
-    use kinds, only: r8
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use exodus_mesh_type
     use exodus_mesh_io
     use simpl_mesh_tools
@@ -366,7 +366,6 @@ contains
     use graph_partitioner_factory
     use simple_partitioning_methods, only: get_block_partition, read_partition
     use parameter_list_type
-    use string_utilities, only: i_to_c
 
     type(parameter_list) :: params
     integer, intent(in)  :: cnode(:,:)    ! the cell node array
@@ -801,7 +800,7 @@ contains
 
     use exodus_mesh_type
     use permutations, only: reorder
-    use parallel_communication, only: is_IOP, broadcast, gather
+    use parallel_communication, only: is_IOP, broadcast
 
     type(simpl_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: exo_mesh

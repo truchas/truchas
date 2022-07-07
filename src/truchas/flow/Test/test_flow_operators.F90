@@ -2,7 +2,7 @@ program test_pressure_poisson
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
@@ -14,10 +14,7 @@ program test_pressure_poisson
   use bndry_func1_class
   implicit none
 
-  type(parameter_list), pointer :: p, pp
-  !type(flow_bc), pointer :: bc
   type(unstr_mesh), pointer :: mesh
-  integer :: i, in
 
   call init_parallel_communication
   overwrite_output = .true.
