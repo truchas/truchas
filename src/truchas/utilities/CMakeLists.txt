@@ -10,7 +10,6 @@ target_sources(truchas PRIVATE
   kinds.F90
   lnorm_module.F90
   lu_solve_module.F90
-  old_mesh_gmv.F90
   permutations.F90
   process_info_module.F90
   signal_handler.F90
@@ -18,12 +17,10 @@ target_sources(truchas PRIVATE
   sort_utilities.F90
   string_utilities.F90
   tabular_utilities.F90
-  tensor_module.F90
   truchas_env.F90
   truchas_logging_services.F90
   truchas_timers.F90
   utilities_module.F90
-  var_vector_module.F90
   gmv/gmvwrite_c_binding.F90
   f08_intrinsics.F90
   get_process_size.c

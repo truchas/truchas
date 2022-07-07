@@ -48,7 +48,7 @@ contains
 
     class(HTSD_init_cond), intent(inout) :: this
     real(r8), intent(in) :: t
-    real(r8), pointer :: temp(:), conc(:,:)
+    real(r8), intent(in), optional :: temp(:), conc(:,:)
     real(r8), intent(out), target :: u(:), udot(:)
 
     integer :: n
@@ -67,7 +67,7 @@ contains
     
     !! Set cell temperatures.
     if (associated(this%model%ht)) then
-      ASSERT(associated(temp))
+      ASSERT(present(temp))
       ASSERT(size(temp) == this%mesh%ncell_onP)
       call HTSD_model_set_cell_temp (this%model, temp, u)
       call HTSD_model_get_cell_temp_view (this%model, u, var)
@@ -77,7 +77,7 @@ contains
     
     !! Set cell concentrations.
     if (associated(this%model%sd)) then
-      ASSERT(associated(conc))
+      ASSERT(present(conc))
       ASSERT(size(conc,dim=1) == this%mesh%ncell_onP)
       ASSERT(size(conc,dim=2) == this%model%num_comp)
       do n = 1, this%model%num_comp

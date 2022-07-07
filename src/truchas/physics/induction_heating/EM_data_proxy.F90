@@ -908,14 +908,14 @@ CONTAINS
 
   subroutine read_joule_data (unit, version)
 
-    use mesh_manager, only: simpl_mesh, simpl_mesh_ptr
-    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
+    use base_mesh_class
+    use mesh_manager, only: named_mesh_ptr
     use restart_utilities, only: read_var, read_dist_array, halt
     use string_utilities, only: i_to_c
     use parallel_communication, only: global_sum
 
     integer, intent(in) :: unit,  version
-    type(simpl_mesh), pointer :: mesh => null()
+    class(base_mesh), pointer :: em_mesh, ht_mesh
     
     integer :: n
 
@@ -934,21 +934,22 @@ CONTAINS
       call read_var (unit, coil_q(n)%nturns,  'READ_JOULE_DATA: error reading NTURNS record')
     end do
 
-    mesh => simpl_mesh_ptr('alt')
+    em_mesh => named_mesh_ptr('alt')
+    ht_mesh => named_mesh_ptr('main')
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NMU record')
-    if (n /= mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
-    call read_dist_array (unit, mu_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading MU record')
-    call mesh%cell_imap%gather_offp(mu_q)
+    if (n /= em_mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NMU value: ' // i_to_c(n))
+    call read_dist_array (unit, mu_q(:em_mesh%ncell_onP), em_mesh%xcell(:em_mesh%ncell_onP), 'READ_JOULE_DATA: error reading MU record')
+    call em_mesh%cell_imap%gather_offp(mu_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NSIGMA record')
-    if (n /= mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
-    call read_dist_array (unit, sigma_q(:mesh%ncell_onP), mesh%xcell(:mesh%ncell_onP), 'READ_JOULE_DATA: error reading SIGMA record')
-    call mesh%cell_imap%gather_offp(sigma_q)
+    if (n /= em_mesh%cell_imap%global_size) call halt ('READ_JOULE_DATA: incompatible NSIGMA value: ' // i_to_c(n))
+    call read_dist_array (unit, sigma_q(:em_mesh%ncell_onP), em_mesh%xcell(:em_mesh%ncell_onP), 'READ_JOULE_DATA: error reading SIGMA record')
+    call em_mesh%cell_imap%gather_offp(sigma_q)
 
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NJOULE record')
     if (n /= global_sum(size(joule))) call halt ('READ_JOULE_DATA: incompatible NJOULE value: ' // i_to_c(n))
-    call read_dist_array (unit, joule, pcell, 'READ_JOULE_DATA: error reading JOULE record')
+    call read_dist_array (unit, joule, ht_mesh%xcell(:ht_mesh%ncell_onp), 'READ_JOULE_DATA: error reading JOULE record')
       
   end subroutine read_joule_data
 

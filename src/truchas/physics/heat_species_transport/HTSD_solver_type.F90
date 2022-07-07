@@ -242,15 +242,14 @@ contains
     this%state_is_pending = .false.
   end subroutine HTSD_solver_commit_pending_state
   
-  subroutine HTSD_solver_set_initial_state (this, t, temp, conc, dt)
+  subroutine HTSD_solver_set_initial_state (this, t, dt, temp, conc)
   
     use parallel_communication, only: global_count
     use HTSD_init_cond_type
   
     type(HTSD_solver), intent(inout) :: this
-    real(r8), intent(in) :: t
-    real(r8), pointer :: temp(:), conc(:,:)
-    real(r8), intent(in) :: dt
+    real(r8), intent(in) :: t, dt
+    real(r8), intent(in), optional :: temp(:), conc(:,:)
     
     integer :: j
     real(r8), allocatable :: void_vol_frac(:), udot(:)
@@ -283,7 +282,7 @@ contains
     allocate(udot(size(this%u)))
     call this%ic_params%set ('dt', dt)
     call ic%init (this%model, this%ic_params)
-    call ic%compute (t, temp, conc, this%u, udot)
+    call ic%compute (t, temp, conc, u=this%u, udot=udot)
     call this%integ%set_initial_state(t, this%u, udot)
     deallocate(udot)
     

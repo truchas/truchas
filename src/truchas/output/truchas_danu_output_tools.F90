@@ -39,15 +39,16 @@ contains
   
   subroutine write_seq_cell_field_r0 (seq, ldata, name, for_viz, viz_name)
   
-    use legacy_mesh_api, only: ncells, ncells_tot
-
     type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
-    
-    INSIST(size(ldata) == ncells)
+
+    integer :: ncells, ncells_tot
+
+    ncells = size(ldata)
+    ncells_tot = global_sum(ncells)
     
     call seq%write_dist_array(name, ncells_tot, ldata)
     
@@ -64,7 +65,6 @@ contains
   
   subroutine write_seq_cell_field_r1 (seq, ldata, name, for_viz, viz_name)
   
-    use legacy_mesh_api, only: ncells, ncells_tot
     use string_utilities, only: i_to_c
 
     type(th5_seq_group), intent(in) :: seq
@@ -74,8 +74,10 @@ contains
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: n
-    
-    INSIST(size(ldata,dim=2) == ncells)
+    integer :: ncells, ncells_tot
+
+    ncells = size(ldata,dim=2)
+    ncells_tot = global_sum(ncells)
     
     call seq%write_dist_array(name, ncells_tot, ldata)
     
@@ -94,15 +96,16 @@ contains
   
   subroutine write_seq_node_field_r0 (seq, ldata, name, for_viz, viz_name)
   
-    use legacy_mesh_api, only: nnodes, nnodes_tot
-
     type(th5_seq_group), intent(in) :: seq
     real(r8), intent(in) :: ldata(:)
     character(*), intent(in) :: name
     logical, intent(in) :: for_viz
     character(*), intent(in), optional :: viz_name
 
-    INSIST(size(ldata) == nnodes)
+    integer :: nnodes, nnodes_tot
+
+    nnodes = size(ldata)
+    nnodes_tot = global_sum(nnodes)
     
     call seq%write_dist_array(name, nnodes_tot, ldata)
     
@@ -119,7 +122,6 @@ contains
   
   subroutine write_seq_node_field_r1 (seq, ldata, name, for_viz, viz_name)
   
-    use legacy_mesh_api, only: nnodes, nnodes_tot
     use string_utilities, only: i_to_c
 
     type(th5_seq_group), intent(in) :: seq
@@ -129,6 +131,10 @@ contains
     character(*), intent(in), optional :: viz_name(:)
 
     integer :: n
+    integer :: nnodes, nnodes_tot
+
+    nnodes = size(ldata,dim=2)
+    nnodes_tot = global_sum(nnodes)
     
     INSIST(size(ldata,dim=2) == nnodes)
     

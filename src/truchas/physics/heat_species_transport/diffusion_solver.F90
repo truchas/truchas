@@ -149,20 +149,16 @@ contains
 
     subroutine update_adv_heat
 
-      use legacy_mesh_api, only: ncells
-      use EM_data_proxy,      only: joule_power_density
+      use EM_data_proxy, only: joule_power_density
 
-      real(r8), allocatable :: q_t(:), q_ds(:)
+      real(r8), allocatable :: q_ds(:)
 
       if (this%have_joule_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
         allocate(q_ds(this%mesh%ncell))
         !! Joule heat source.
         if (this%have_joule_heat) then
-          allocate(q_t(ncells))
-          q_t = joule_power_density()
-          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
+          q_ds(:this%mesh%ncell_onP) = joule_power_density()
           call this%mesh%cell_imap%gather_offp(q_ds)
-          deallocate(q_t)
         else
           q_ds = 0.0_r8
         end if
@@ -287,10 +283,9 @@ contains
   end subroutine ds_accept
 
   subroutine ds_get_temp (array)
-    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
+    ASSERT(size(array) >= this%mesh%ncell_onP)
     ASSERT(this%have_heat_transfer)
-    ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
       call HTSD_solver_get_cell_temp_copy (this%sol1, array)
@@ -302,10 +297,9 @@ contains
   end subroutine
 
   subroutine ds_get_enthalpy (array)
-    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:)
+    ASSERT(size(array) >= this%mesh%ncell_onP)
     ASSERT(this%have_heat_transfer)
-    ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
       call HTSD_solver_get_cell_heat_copy (this%sol1, array)
@@ -317,11 +311,10 @@ contains
   end subroutine
 
   subroutine ds_get_phi (n, array)
-    use legacy_mesh_api, only: ncells
     integer,  intent(in)  :: n
     real(r8), intent(inout) :: array(:)
+    ASSERT(size(array) >= this%mesh%ncell_onP)
     ASSERT(this%have_species_diffusion)
-    ASSERT(size(array) == ncells)
     select case (this%solver_type)
     case (SOLVER1)
       call HTSD_solver_get_cell_conc_copy (this%sol1, n, array)
@@ -331,9 +324,8 @@ contains
   end subroutine ds_get_phi
 
   subroutine ds_get_temp_grad (array)
-    use legacy_mesh_api, only: ncells
     real(r8), intent(inout) :: array(:,:)
-    ASSERT(size(array,dim=2) == ncells)
+    ASSERT(size(array,dim=2) >= this%mesh%ncell_onP)
     ASSERT(size(array,dim=1) == 3)
     ASSERT(this%have_heat_transfer)
     select case (this%solver_type)
@@ -550,34 +542,28 @@ contains
 
   subroutine ds_set_initial_state (t, dt, temp, conc)
 
-    use legacy_mesh_api, only: ncells
-
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in), optional, target :: temp(:), conc(:,:)
-
-    real(r8), pointer :: temp_ds(:) => null(), conc_ds(:,:) => null()
+    real(r8), intent(in), optional :: temp(:), conc(:,:)
 
     !! Permute the cell temperature array to the DS ordering.
     if (this%have_heat_transfer) then
       ASSERT(present(temp))
-      ASSERT(size(temp) == ncells)
-      temp_ds => temp(:this%mesh%ncell_onP)
+      ASSERT(size(temp) == this%mesh%ncell_onP)
     end if
 
     !! Permute the cell concentration array to the DS ordering.
     if (this%have_species_diffusion) then
       INSIST(present(conc))
-      ASSERT(size(conc,dim=1) == ncells)
+      ASSERT(size(conc,dim=1) == this%mesh%ncell_onP)
       ASSERT(size(conc,dim=2) == num_species)
-      conc_ds => conc(:this%mesh%ncell_onP,:)
     end if
 
     !! Set the initial state in the appropriate solver.
     select case (this%solver_type)
     case (SOLVER1)
-      call HTSD_solver_set_initial_state (this%sol1, t, temp_ds, conc_ds, dt)
+      call HTSD_solver_set_initial_state (this%sol1, t, dt, temp, conc)
     case (SOLVER2)
-      call FHT_solver_set_initial_state (this%sol2, t, temp_ds)
+      call FHT_solver_set_initial_state (this%sol2, t, temp)
     case default
       INSIST(.false.)
     end select

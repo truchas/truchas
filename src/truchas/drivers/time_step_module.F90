@@ -74,7 +74,6 @@ CONTAINS
     use physics_module,           only: flow
     use matl_module,              only: Matl
     use parameter_module,         only: mat_slot
-    use legacy_mesh_api,          only: ndim
     use restart_variables,        only: restart
     use zone_module,              only: Zone
     use diffusion_solver_data,    only: ds_enabled
@@ -97,7 +96,7 @@ CONTAINS
     ! ZJIBBEN 5/16/22: This subroutine is called after fields have already been
     !   updated. The temp_old field is needed for output during the current cycle,
     !   so it is instead updated in ds_accept.
-    do n = 1, ndim
+    do n = 1, 3
        Zone%Vc_Old(n) = Zone%Vc(n)
     end do
     Zone%Rho_Old      = Zone%Rho

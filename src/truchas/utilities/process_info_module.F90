@@ -36,13 +36,14 @@ Contains
  !! the words-per-cell metric using the old mesh is losing its relevance.
  !!
 
-  subroutine report_memory
+  subroutine report_memory(ncells_tot)
 
     use,intrinsic :: iso_c_binding, only: c_int
     use parallel_communication, only: nPE, global_all, global_minval, global_maxval, global_sum
-    use legacy_mesh_api, only: ncells_tot
     use constants_module, only: FLOATBYTES  ! we ought to compute this here
     use truchas_logging_services
+
+    integer, intent(in) :: ncells_tot
 
     integer(c_int) :: vsize, rsize, dsize
     character(128) :: string(4)

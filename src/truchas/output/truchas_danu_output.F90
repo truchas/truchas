@@ -28,7 +28,7 @@ module truchas_danu_output
   implicit none
   private
 
-  public :: TDO_write_default_mesh
+  public :: TDO_write_mesh
   public :: TDO_write_timestep
 
   type(th5_mesh_group), save :: out_mesh
@@ -38,19 +38,20 @@ module truchas_danu_output
 
 contains
 
-  subroutine TDO_write_default_mesh
+  subroutine TDO_write_mesh(mesh)
 
-    use kinds, only: r8
-    use legacy_mesh_api, only: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
-    use legacy_mesh_api, only: vertex, mesh, unpermute_mesh_vector, unpermute_vertex_vector, mesh_has_cblockid_data
+    use unstr_mesh_type
+    use degen_hex_topology, only: OLD_TET_NODE_MAP, OLD_PYR_NODE_MAP, OLD_PRI_NODE_MAP
     use output_control,  only: part
     use truchas_logging_services
     use truchas_env, only: output_file_name, overwrite_output
 
-    integer :: k
-    real(r8), allocatable :: x(:,:)
-    integer, allocatable :: cnode(:,:)
+    type(unstr_mesh), intent(in) :: mesh
+
+    integer :: j, k
+    integer, allocatable :: hnode(:,:), cblockid(:)
     logical :: exists
+    integer :: ndim, nvc, ncells, ncells_tot, nnodes, nnodes_tot
 
     if (is_IOP .and. .not. overwrite_output) then
       inquire(file=output_file_name('h5'), exist=exists)
@@ -60,22 +61,40 @@ contains
     endif
     call outfile%open (output_file_name('h5'), io_group_size, is_IOP)
 
+    ndim = 3
+    nvc  = 8
+    ncells = mesh%ncell_onP
+    ncells_tot = mesh%cell_imap%global_size
+    nnodes = mesh%nnode_onP
+    nnodes_tot = mesh%node_imap%global_size
+
     !! Create the mesh entry.
     call outfile%add_unstr_mesh_group('DEFAULT', nvc, ndim, out_mesh)
 
     !! Write the node coordinates.
-    allocate(x(3,nnodes))
-    x(1,:) = vertex%coord(1); x(2,:) = vertex%coord(2); x(3,:) = vertex%coord(3)
-    call out_mesh%write_coordinates(nnodes_tot, x)
-    deallocate(x)
+    call out_mesh%write_coordinates(nnodes_tot, mesh%x(:,:nnodes))
 
-    !! Write the cell connectivity.
-    allocate(cnode(nvc,ncells))
-    do k = 1, nvc
-      cnode(k,:) = mesh%ngbr_vrtx_orig(k)
+    !! Write the cell connectivity as degenerate hexes
+    allocate(hnode(nvc,ncells))
+    do j = 1, ncells
+      associate (cnode => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
+        select case (size(cnode))
+        case (4) ! tet
+          hnode(:,j) = cnode(OLD_TET_NODE_MAP)
+        case (5) ! pyramid
+          hnode(:,j) = cnode(OLD_PYR_NODE_MAP)
+        case (6) ! prism
+          hnode(:,j) = cnode(OLD_PRI_NODE_MAP)
+        case (8) ! hex
+          hnode(:,j) = cnode
+        case default
+          INSIST(.false.)
+        end select
+        hnode(:,j) = mesh%node_imap%global_index(hnode(:,j))  ! map to global node IDs
+      end associate
     end do
-    call out_mesh%write_connectivity(ncells_tot, cnode)
-    deallocate(cnode)
+    call out_mesh%write_connectivity(ncells_tot, hnode)
+    deallocate(hnode)
 
     ! I don't know where this should go
     call TDO_start_simulation
@@ -84,16 +103,24 @@ contains
     !! of the simulation.  Soon we will write these in the mesh section.
 
     !! Mapping from internal serial cell numbering to external numbering.
-    call sim%write_dist_array('CELLMAP', unpermute_mesh_vector, ncells_tot)
+    call sim%write_dist_array('CELLMAP', mesh%xcell(:mesh%ncell_onP), ncells_tot)
 
     !! Cell block IDs.
-    call sim%write_dist_array('BLOCKID', mesh%cblockid, ncells_tot)
+    allocate(cblockid(ncells))
+    do j = 1, ncells
+     associate (bitmask => mesh%cell_set_mask(j))
+       INSIST(popcnt(bitmask) == 1)
+       cblockid(j) = mesh%cell_set_id(trailz(bitmask))
+     end associate
+    end do
+    call sim%write_dist_array('BLOCKID', cblockid, ncells_tot)
+    deallocate(cblockid)
 
     !! Cell partition assignment.
     call sim%write_dist_array('CELLPART', spread(this_PE,dim=1,ncopies=ncells), ncells_tot)
 
     !! Mapping from internal serial node numbering to external numbering.
-    call sim%write_dist_array('NODEMAP', unpermute_vertex_vector, nnodes_tot)
+    call sim%write_dist_array('NODEMAP', mesh%xnode(:mesh%nnode_onP), nnodes_tot)
 
     !! Node partition assignment.
     call sim%write_dist_array('NODEPART', spread(this_PE,dim=1,ncopies=nnodes), nnodes_tot)
@@ -105,7 +132,7 @@ contains
 
     call outfile%close()
 
-  end subroutine TDO_write_default_mesh
+  end subroutine TDO_write_mesh
 
   subroutine TDO_start_simulation
 
@@ -124,18 +151,24 @@ contains
 
   subroutine TDO_write_timestep
 
+    use unstr_mesh_type
+    use mesh_manager, only: unstr_mesh_ptr
     use time_step_module, only: t, dt, cycle_number
     use physics_module, only: heat_transport, species_transport
     use EM_data_proxy, only: EM_is_on
-    use gap_output, only: set_gap_element_output
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
     use solid_mechanics_driver, only: solid_mechanics_enabled
     use output_control, only: part_path, write_mesh_partition
     use truchas_env, only: output_file_name
 
-    integer :: stat
+    integer :: stat, ncells
     real(r8) :: r(3)
+    type(unstr_mesh), pointer :: mesh
+
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
+    ncells = mesh%ncell_onP
 
     call outfile%reopen (output_file_name('h5'), io_group_size, is_IOP)
 
@@ -147,12 +180,6 @@ contains
       call part_path%get_position(t, r)
       call seq%write_attr('translate_part1', r)
     end if
-
-    !! Prior to writing, overwrite (bogus) field data on gap elements with
-    !! something reasonable.  This doesn't belong here and should be moved.
-    !! Currently commented out, because the TBrook output does this.  When
-    !! the TBrook output is disabled, this should be uncommented.
-    call set_gap_element_output
 
     !! Cell density, temperature, enthalpy, phase volume fractions.
     call write_common_data
@@ -182,23 +209,16 @@ contains
     subroutine write_common_data
 
       use parameter_module, only: nmat
-      use legacy_mesh_api, only: ndim, ncells, cell
       use zone_module, only: zone
       use matl_module, only: gather_vof
       use material_model_driver, only: matl_model
 
       integer :: j, m, stat
-      real(r8), allocatable :: rho(:), vof(:,:), xc(:,:)
+      real(r8), allocatable :: vof(:,:), xc(:,:)
       character(32), allocatable :: name(:)
 
       !! Average cell density
-      !! In TBU_WriteTimeStepData, DAK switched (2/4/09) to using the value
-      !! computed like that done by the call to density below, instead of just
-      !! using the value in zone%rho; not sure why, as the computation is the
-      !! same, but perhaps the zone%rho value is stale?  NNC, 8/9/2012.
-      allocate(rho(ncells))
       call write_seq_cell_field (seq, zone%rho, 'Z_RHO', for_viz=.true., viz_name='Density')
-      deallocate(rho)
 
       !! Cell temperature
       call write_seq_cell_field (seq, zone%temp, 'Z_TEMP', for_viz=.true., viz_name='T')
@@ -217,14 +237,6 @@ contains
         deallocate(vof, name)
       end if
 
-      !! Cell centroids
-      !allocate(xc(ndim,ncells))
-      !do j = 1, ncells
-      !  xc(:,j) = cell(j)%centroid
-      !end do
-      !call write_seq_cell_field (seq, xc, 'CENTROID', for_viz=.true., viz_name=['XC', 'YC', 'ZC'])
-      !deallocate(xc)
-
       !! This is a stop-gap because the Truchas paraview reader ignores this
       !! data written with the mesh. It is only written to the first snapshot.
       if (write_mesh_partition) then
@@ -235,11 +247,10 @@ contains
     end subroutine write_common_data
 
     subroutine write_new_flow_data
-      use legacy_mesh_api, only: ndim, ncells, nfc
       use flow_driver
 
       real(r8), pointer :: vec_cc(:,:), scalar_cc(:)
-      real(r8) :: fluxing_velocity(nfc,ncells)
+      real(r8) :: fluxing_velocity(6,ncells)
 
       vec_cc => flow_vel_cc_view()
       call write_seq_cell_field(seq, vec_cc(:,1:ncells), 'Z_VC', for_viz=.true., viz_name=['U','V','W'])
@@ -274,12 +285,11 @@ contains
 
     subroutine write_heat_transfer_data
 
-      use legacy_mesh_api, only: ndim, ncells
       use zone_module, only: zone
       use time_step_module, only: dt
       use diffusion_solver, only: ds_get_temp_grad
 
-      real(r8) :: dTdt(ncells), gradT(ndim,ncells)
+      real(r8) :: dTdt(ncells), gradT(3,ncells)
 
       dTdt = (zone%temp - zone%temp_old) / dt
       call write_seq_cell_field (seq, dTdt, 'dTdt', for_viz=.true., viz_name='dT/dt')
@@ -347,7 +357,6 @@ contains
 
     subroutine write_species_data
 
-      use legacy_mesh_api, only: ncells
       use diffusion_solver_data, only: num_species
       use diffusion_solver, only: ds_get_phi
       use string_utilities, only: i_to_c

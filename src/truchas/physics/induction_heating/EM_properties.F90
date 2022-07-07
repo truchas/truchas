@@ -40,28 +40,25 @@ contains
     have_constant_EM_properties = .true.
   end function
 
-  function EM_permittivity () result (value)
-    use legacy_mesh_api, only: ncells
+  subroutine EM_permittivity(value)
     use zone_module, only: zone
-    real(r8) :: value(ncells)
+    real(r8), intent(out) :: value(:)
     call compute_cell_property('electric-susceptibility', zone%temp, value)
     value = 1.0_r8 + value
-  end function EM_permittivity
+  end subroutine
 
-  function EM_permeability () result (value)
-    use legacy_mesh_api, only: ncells
+  subroutine EM_permeability(value)
     use zone_module, only: zone
-    real(r8) :: value(ncells)
+    real(r8) :: value(:)
     call compute_cell_property('magnetic-susceptibility', zone%temp, value)
     value = 1.0_r8 + value
-  end function EM_permeability
+  end subroutine
 
-  function EM_conductivity () result (value)
-    use legacy_mesh_api, only: ncells
+  subroutine EM_conductivity(value)
     use zone_module, only: zone
-    real(r8) :: value(ncells)
+    real(r8) :: value(:)
     call compute_cell_property('electrical-conductivity', zone%temp, value)
-  end function EM_conductivity
+  end subroutine
 
   !!
   !! COMPUTE_CELL_PROPERTY
@@ -78,7 +75,6 @@ contains
 
   subroutine compute_cell_property(prop, temp, value)
 
-    use legacy_mesh_api, only: ncells
     use scalar_func_class
     use scalar_func_tools, only: is_const
     use matl_module, only: gather_vof
@@ -88,11 +84,10 @@ contains
     real(r8), intent(out) :: value(:)
 
     integer :: m, j
-    real(r8) :: vofm (ncells), state(1), mval
+    real(r8) :: vofm (size(temp)), state(1), mval
     class(scalar_func), allocatable :: prop_fun
 
-    ASSERT(size(temp) == ncells)
-    ASSERT(size(value) == ncells)
+    ASSERT(size(value) == size(temp))
 
     value = 0.0_r8
     do m = 1, matl_model%nphase_real
@@ -103,7 +98,7 @@ contains
         mval = prop_fun%eval(state)  ! state is ignored, but required
         value = value + mval*vofm
       else
-        do j = 1, ncells
+        do j = 1, size(value)
           if (vofm(j) > 0.0_r8) then
             state(1) = temp(j)
             mval = prop_fun%eval(state)

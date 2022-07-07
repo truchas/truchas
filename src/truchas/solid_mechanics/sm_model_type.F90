@@ -614,7 +614,6 @@ contains
 
   subroutine read_checkpoint(this, unit)
 
-    use legacy_mesh_api, only: ncells, pcell => unpermute_mesh_vector
     use restart_utilities, only: read_dist_array
     use restart_variables, only: restart_t
 
@@ -625,20 +624,22 @@ contains
 
     this%tlast = restart_t
 
-    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_STRAIN_TOTAL: error reading strain_total records')
-    call this%mesh%cell_imap%gather_offp(field)
-    call generate_integrationpt_array(field, this%strain_total_old)
+    associate (pcell => this%mesh%xcell(:this%mesh%ncell_onp))
+      call read_dist_array(unit, field(:,:this%mesh%ncell_onp), pcell, 'READ_STRAIN_TOTAL: error reading strain_total records')
+      call this%mesh%cell_imap%gather_offp(field)
+      call generate_integrationpt_array(field, this%strain_total_old)
 
-    call read_dist_array(unit, this%strain_thermal_old(:,:ncells), pcell, 'READ_STRAIN_THERMAL: error reading strain_thermal records')
-    call this%mesh%cell_imap%gather_offp(this%strain_thermal_old)
+      call read_dist_array(unit, this%strain_thermal_old(:,:this%mesh%ncell_onp), pcell, 'READ_STRAIN_THERMAL: error reading strain_thermal records')
+      call this%mesh%cell_imap%gather_offp(this%strain_thermal_old)
 
-    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_STRAIN_PLASTIC: error reading strain_plastic records')
-    call this%mesh%cell_imap%gather_offp(field)
-    call generate_integrationpt_array(field, this%strain_plastic_old)
+      call read_dist_array(unit, field(:,:this%mesh%ncell_onp), pcell, 'READ_STRAIN_PLASTIC: error reading strain_plastic records')
+      call this%mesh%cell_imap%gather_offp(field)
+      call generate_integrationpt_array(field, this%strain_plastic_old)
 
-    call read_dist_array(unit, field(:,:ncells), pcell, 'READ_DSTRAIN_PLASTIC_DT: error reading dstrain_plastic_dt records')
-    call this%mesh%cell_imap%gather_offp(field)
-    call generate_integrationpt_array(field, this%dstrain_plastic_dt_old)
+      call read_dist_array(unit, field(:,:this%mesh%ncell_onp), pcell, 'READ_DSTRAIN_PLASTIC_DT: error reading dstrain_plastic_dt records')
+      call this%mesh%cell_imap%gather_offp(field)
+      call generate_integrationpt_array(field, this%dstrain_plastic_dt_old)
+    end associate
 
   contains
 

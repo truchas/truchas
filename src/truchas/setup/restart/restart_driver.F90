@@ -224,13 +224,14 @@ contains
   !!
   !! Read (or skip) the species concentration data.
   !!
+  !! NB: Fragile! Either all arguments should be present or none. FIXME
 
-  subroutine restart_species (phi, found)
+  subroutine restart_species (pcell, phi, found)
 
     use kinds, only: r8
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
-    use legacy_mesh_api, only: pcell => unpermute_mesh_vector
 
+    integer,  intent(in),  optional :: pcell(:)
     real(r8), intent(out), optional :: phi(:,:)
     logical,  intent(out), optional :: found
 

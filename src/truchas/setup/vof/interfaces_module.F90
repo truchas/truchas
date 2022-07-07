@@ -20,13 +20,12 @@ MODULE INTERFACES_MODULE
   !=======================================================================
   use kinds, only: r8
   use parameter_module, only: mbody, mphi
-  use legacy_mesh_api, only: ndim
   use scalar_func_containers, only: scalar_func_box
   implicit none
   private
 
   integer, public, save :: Matnum(mbody), nbody
-  real(r8), public, save :: Body_Mass(mbody), Body_Vel(ndim,mbody), Body_Phi(mbody,mphi)
+  real(r8), public, save :: Body_Mass(mbody), Body_Vel(3,mbody), Body_Phi(mbody,mphi)
   type(scalar_func_box), public, save :: Body_Temp(mbody)
 
 END MODULE INTERFACES_MODULE

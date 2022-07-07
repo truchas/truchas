@@ -4,6 +4,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 MODULE SETUP_MODULE
   !=======================================================================
   ! Purpose:
@@ -41,46 +43,42 @@ CONTAINS
     !
     !    set up the problem
     !=======================================================================
-    use kinds, only: r8
-    use base_types_A_module,    only: BASE_TYPES_A_ALLOCATE
-    !use bc_module,              only: ASSIGN_BC_BITS, Conc, Prs, Vel
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
+    use zone_module, only: zone_init
+    use matl_module, only: matl_init
     use restart_variables,      only: restart, ignore_t, ignore_dt, restart_t, restart_dt, &
                                       restart_cycle_number
     use restart_driver,         only: close_restart_file, skip_restart_mesh
     use time_step_module,       only: cycle_number, cycle_number_restart, &
                                       dt, t, t1, t2
     use init_module,            only: INITIAL
-    use tensor_module,          only: TENSOR_MATRIX
-    use mesh_manager,           only: init_mesh_manager
-    use legacy_mesh_api,        only: init_legacy_mesh_api
+    use unstr_mesh_type
+    use mesh_manager,           only: init_mesh_manager, unstr_mesh_ptr
     use EM,                     only: initialize_EM
-    use truchas_danu_output,    only: TDO_write_default_mesh
+    use truchas_danu_output,    only: TDO_write_mesh
     use truchas_timers
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
+    type(unstr_mesh), pointer :: mesh
+
     ! Start the initialization timer.
     call start_timer("Initialization")
 
-    ! Setup the tensor matrix.
-    call TENSOR_MATRIX ()
-    
     ! Skip over unused legacy mesh data in the restart file (TEMPORARY)
-    if (restart) then
-      call skip_restart_mesh
-    end if
+    if (restart) call skip_restart_mesh
 
-    ! Instantiate the new mesh objects.
+    ! Instantiate the mesh objects.
     call init_mesh_manager
 
-    ! Initialize old_mesh_api module
-    call init_legacy_mesh_api
-
     ! Allocate the base types and set them to their defaults.
-    call BASE_TYPES_A_ALLOCATE
+    mesh => unstr_mesh_ptr('MAIN')
+    INSIST(associated(mesh))
+    call zone_init(mesh%ncell_onP)
+    call matl_init(mesh%ncell_onP)
 
     ! Write the primary truchas mesh.
-    call TDO_write_default_mesh
+    call TDO_write_mesh(mesh)
 
     ! NNC, Sep 2014.  This used to be done after the call to INITIAL, but is
     ! needed here because of time-dependent boundary conditions.  I left the
