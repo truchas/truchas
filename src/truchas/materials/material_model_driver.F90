@@ -24,7 +24,6 @@ contains
 
     use material_factory,  only: load_material_database
     use material_namelist, only: params
-    use legacy_matl_api, only: nmat_old => nmat
 
     integer :: stat
     character(:), allocatable :: errmsg
@@ -34,8 +33,6 @@ contains
 
     call matl_model%init(materials(1:nmat), matl_db, stat, errmsg)
     if (stat /= 0) call TLS_fatal('error initializing material model: ' // errmsg)
-
-    nmat_old = matl_model%nphase !TODO: eliminate the need for this
 
   end subroutine init_material_model
 
