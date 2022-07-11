@@ -69,6 +69,7 @@ module vtrack_driver
   public :: vtrack_vof_view, vtrack_flux_vol_view, vtrack_liq_matid_view
   public :: get_vof_from_matl
   public :: vtrack_set_inflow_bc, vtrack_set_inflow_material
+  public :: put_orig_vof_into_matl
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -219,6 +220,15 @@ contains
     end do
     call matl_set_vof(this%vof)
   end subroutine put_vof_into_matl
+
+  subroutine put_orig_vof_into_matl
+    use matl_utilities, only: matl_set_vof
+    integer :: i
+    do i = 1, size(this%liq_matid)
+      this%vof(this%liq_matid(i),:) = this%fvof_i(i,:this%mesh%ncell_onP)
+    end do
+    call matl_set_vof(this%vof)
+  end subroutine
 
   ! vel_fn is the outward oriented face-normal velocity
   subroutine vtrack_update(t, dt, vel_fn, initial)

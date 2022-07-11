@@ -131,7 +131,7 @@ call hijack_truchas ()
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
         flow_set_pre_solidification_density
     use vtrack_driver, only: vtrack_update, vtrack_enabled, vtrack_vof_view, vtrack_flux_vol_view, &
-        get_vof_from_matl
+        get_vof_from_matl, put_orig_vof_into_matl
     use solid_mechanics_driver, only: solid_mechanics_enabled, solid_mechanics_step
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
@@ -234,6 +234,7 @@ call hijack_truchas ()
               call ds_accept
               exit
             end if
+            if (vtrack_enabled() .and. flow_enabled()) call put_orig_vof_into_matl
             dt = dt_ds
             t2 = t1 + dt
             call TLS_info('Diffusion solver step failed; retrying with reduced step size')
