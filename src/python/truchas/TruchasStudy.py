@@ -162,7 +162,8 @@ class TruchasStudy:
             print("done.")
 
             # construct the output line and write it
-            line = "\t".join([f"{v:.3e}" for k,v in parameters.items()
+            line = "\t".join([f"{v:.3e}" if isinstance(v, (float, int)) else f"{v}"
+                              for k,v in replacements.items()
                               if not k == "toolpath_file"]) + "\t" # dump the inputs
             line += "\t".join([f(parameters, output) for f in output_metrics.values()]) # outputs
             with open(output_filename, "a") as fh: fh.write(line + "\n")
