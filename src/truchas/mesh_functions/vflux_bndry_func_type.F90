@@ -38,6 +38,7 @@ module vflux_bndry_func_type
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist
+    type(vector_func_list) :: glist
   contains
     procedure :: init
     procedure :: add
@@ -57,15 +58,17 @@ contains
     call this%builder%init(mesh)
   end subroutine init
 
-  subroutine add(this, absorptivity, setids, stat, errmsg)
+  subroutine add(this, absorptivity, g, setids, stat, errmsg)
     class(vflux_bndry_func), intent(inout) :: this
     class(scalar_func), allocatable, intent(inout) :: absorptivity
+    class(vector_func), allocatable, intent(inout) :: g
     integer, intent(in) :: setids(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     call this%builder%add_face_group(setids, stat, errmsg)
     if (stat /= 0) return
     call this%flist%append(absorptivity)
+    call this%glist%append(g)
   end subroutine add
 
   subroutine add_complete(this)
@@ -75,6 +78,7 @@ contains
     deallocate(this%builder)
     allocate(this%value(size(this%index)), this%deriv(size(this%index)))
     call scalar_func_list_to_box_array(this%flist, this%f)
+    call vector_func_list_to_box_array(this%glist, this%farray)
   end subroutine add_complete
 
   subroutine compute(this, t, var)
