@@ -107,7 +107,9 @@ module thermal_bc_factory1_type
   use unstr_base_mesh_class
   use parameter_list_type
   use scalar_func_class
+  use vector_func_class
   use scalar_func_factories, only: alloc_scalar_func
+  use vector_func_factories, only: alloc_vector_func
   use string_utilities, only: lower_case
   use truchas_logging_services
   implicit none
@@ -287,13 +289,16 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
+      class(vector_func), allocatable :: g
       call alloc_scalar_func(plist, 'absorptivity', f, stat, errmsg)
+      if (stat /= 0) return
+      call alloc_vector_func(plist, 'flux', g, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(bff)) then
         allocate(bff)
         call bff%init(this%mesh)
       end if
-      call bff%add(f, setids, stat, errmsg)
+      call bff%add(f, g, setids, stat, errmsg)
     end subroutine proc
 
   end subroutine alloc_vflux_bc
