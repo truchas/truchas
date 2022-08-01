@@ -28,9 +28,9 @@
 
 &DIFFUSION_SOLVER
   abs_temp_tol = 0.0
-  rel_temp_tol = 1.0e-2
+  rel_temp_tol = 1.0e-4
   abs_enthalpy_tol = 0.0
-  rel_enthalpy_tol = 1.0e-2
+  rel_enthalpy_tol = 1.0e-4
   nlk_tol = 0.01
   max_nlk_itr = 5
   pc_amg_cycles = 2
