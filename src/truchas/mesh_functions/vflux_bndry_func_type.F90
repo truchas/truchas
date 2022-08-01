@@ -55,7 +55,7 @@ contains
     class(unstr_base_mesh), intent(in), target :: mesh
     this%mesh => mesh
     allocate(this%builder)
-    call this%builder%init(mesh)
+    call this%builder%init(mesh, no_overlap=.false.)
   end subroutine init
 
   subroutine add(this, absorptivity, g, setids, stat, errmsg)

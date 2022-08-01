@@ -201,7 +201,7 @@ ambient_temp_func
 
 absorptivity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : The constant value of absorptivity for oriented-flux-type boundary condition. To specify a function, use :ref:`absorptivity_func<TB_absorpFunc>` instead.
+| **Description** : The constant value of absorptivity when **oriented-flux** :ref:`type<TB_Type>` boundary condition is used. To specify a function, use :ref:`absorptivity_func<TB_absorpFunc>` instead.
 | **Valid values** :math:`[0.0,1.0]`
 | **Type**        : real
 | **Default**     : none
@@ -210,7 +210,7 @@ absorptivity
 
 absorptivity_func
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the absorptivity for a oriented-flux-type boundary condition. The function is expected to be a function of T.
+| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist defining a function that gives the absorptivity for a **oriented-flux** :ref:`type<TB_Type>` boundary condition. This is expected to be a function of temperature.
 | **Type**        : string
 | **Default**     : none
 
