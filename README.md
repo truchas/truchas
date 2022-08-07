@@ -35,7 +35,7 @@ News (updated 2021-05-03)
 ------------------------------------------------------------------------------
 See [NEWS.md](NEWS.md) for important changes since the last release.
 
-Building Truchas (updated 2021-05-28)
+Building Truchas (updated 2022-08-07)
 ------------------------------------------------------------------------------
 See [BUILDING.md](BUILDING.md) for instructions on compiling and testing
 Truchas.  See [SPACK.md](SPACK.md) for instructions on using spack to build Truchas

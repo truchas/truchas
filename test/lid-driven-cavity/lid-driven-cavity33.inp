@@ -1,105 +1,68 @@
 &MESH
-
-    Mesh_File = 'mesh33.exo'
-
+  !mesh_file = 'mesh33.exo'
+  x_axis%coarse_grid = 0.0, 1.0
+  y_axis%coarse_grid = 0.0, 1.0
+  z_axis%coarse_grid = -.01, .01
+  x_axis%intervals = 33
+  y_axis%intervals = 33
+  z_axis%intervals = 1
 /
 
 &OUTPUTS
-
-    Output_T                    = 0.0, 40.0
-    Output_Dt                   = 1.0
-    output_dt_Multiplier    = 1
-
+  output_t = 0.0, 40.0
+  output_dt = 1.0
 /
 
-&flow_options
-	viscous_implicitness = 0.5
-        inviscid = f
-	viscous_number = 0.5
-	courant_number = 0.1
-
+&FLOW
+  inviscid = F
+  viscous_implicitness = 0.5
+  courant_number = 0.5
 /
 
-&flow_predictor
-	rel_tol =  1.0e-10,
-	abs_tol = 1e-10,
-	max_ds_iter = 50,
-	max_amg_iter = 5,
-	krylov_method = "cg",
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1e-10,
+  max_ds_iter = 50
+  max_amg_iter = 10
 /
 
-&flow_corrector
-        rel_tol =  1e-10,
-	abs_tol = 1e-10,
-        max_ds_iter = 10,
-	max_amg_iter = 5,
-	krylov_method = "cg"
-	gmres_krylov_dim = 5
-/
-
-&VOLUMETRACKING
-	active = f
-/
-
-
-&LINEAR_SOLVER
-
-    name                            = 'projection'
-    method                          = 'fgmres'
-    preconditioning_method          = 'ssor'
-    convergence_criterion           = 1.0e-10
-    relaxation_parameter            = 1.4
-    preconditioning_steps           = 2
-    stopping_criterion              = '||r||',
-    maximum_iterations              = 50,
-
-/
-
-&NUMERICS
-
-    volume_track_interfaces     = .false.
-    volume_track_brents_method  = .true.
-    volume_track_iter_tol       = 1.0e-12
-    projection_linear_solution  = 'projection'
-    discrete_ops_type           = 'ortho'
-    courant_number              = 0.5
-    dt_init                     = 1.0e-03
-    dt_grow                     = 1.1
-    dt_min                      = 1.0e-05
-    dt_max                      = 1e-1
-
+&FLOW_VISCOUS_SOLVER
+  rel_tol = 1e-8
+  abs_tol = 0.0
+  max_ds_iter = 10
+  max_amg_iter = 5
 /
 
 &PHYSICS
-  materials = 'water', 'VOID'
-
-    flow                   = .false.
-    inviscid               = .false.
-    stokes                 = .false.
-    surface_tension        = .false.
-
+  flow = T
+  materials = 'water'
 /
 
-&flow_bc
-	! x-, x+, y-
-	condition = 'no slip'
-	face_sets = 1, 2, 3
+&NUMERICS
+ dt_init = 1e-3
+ dt_grow = 1.1
+ dt_min  = 1e-5
+ dt_max  = 1e-1
 /
 
-&flow_bc
-	! y+
-	condition = 'velocity'
-	face_sets = 4
-	data = 1.0, 0.0, 0.0
+&FLOW_BC
+  name = 'x-, x+, y-'
+  type = 'no-slip'
+  face_set_ids = 1, 2, 3
+/
+
+&FLOW_BC
+  name = 'y+'
+  type = 'velocity'
+  face_set_ids = 4
+  velocity = 1.0, 0.0, 0.0
 /
 
 &BODY
-
-    Material_name    = 'water'
-    Surface_Name     = 'background'
-    Velocity         = 0.0, 0.0, 0.0
-    Temperature      = 0.0
-
+  material_name = 'water'
+  surface_name  = 'background'
+  velocity      = 0.0, 0.0, 0.0
+  temperature   = 0.0
 /
 
 &MATERIAL
@@ -108,10 +71,4 @@
   density = 1.0
   specific_heat = 1.0
   viscosity = 0.01
-/
-
-&PARALLEL_PARAMETERS
-
-    Partitioner  = 'chaco'
-
 /
