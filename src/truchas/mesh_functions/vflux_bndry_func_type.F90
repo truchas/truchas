@@ -34,7 +34,7 @@ module vflux_bndry_func_type
     integer :: ngroup
     integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: f(:)
-    type(vector_func_box), allocatable :: farray(:)
+    type(vector_func_box), allocatable :: garray(:)
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist
@@ -58,16 +58,16 @@ contains
     call this%builder%init(mesh, no_overlap=.false.)
   end subroutine init
 
-  subroutine add(this, absorptivity, g, setids, stat, errmsg)
+  subroutine add(this, f, g, setids, stat, errmsg)
     class(vflux_bndry_func), intent(inout) :: this
-    class(scalar_func), allocatable, intent(inout) :: absorptivity
+    class(scalar_func), allocatable, intent(inout) :: f
     class(vector_func), allocatable, intent(inout) :: g
     integer, intent(in) :: setids(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     call this%builder%add_face_group(setids, stat, errmsg)
     if (stat /= 0) return
-    call this%flist%append(absorptivity)
+    call this%flist%append(f)
     call this%glist%append(g)
   end subroutine add
 
@@ -78,7 +78,7 @@ contains
     deallocate(this%builder)
     allocate(this%value(size(this%index)), this%deriv(size(this%index)))
     call scalar_func_list_to_box_array(this%flist, this%f)
-    call vector_func_list_to_box_array(this%glist, this%farray)
+    call vector_func_list_to_box_array(this%glist, this%garray)
   end subroutine add_complete
 
   subroutine compute(this, t, var)
@@ -92,15 +92,14 @@ contains
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
-                value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
-                deriv => this%deriv(this%xgroup(n):this%xgroup(n+1)-1))
+                value => this%value(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index)
           associate (fnode => this%mesh%face_node_list_view(index(j)))
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
           absorptivity = this%f(n)%eval(var)
-          irrad = this%farray(n)%f%eval(args)
-          value(j) = dot_product(this%mesh%normal(:,index(j)), absorptivity * irrad)
+          irrad = this%garray(n)%f%eval(args)
+          value(j) = absorptivity*dot_product(this%mesh%normal(:,index(j)), irrad)
         end do
       end associate
     end do

@@ -15,7 +15,6 @@ module FHT_model_type
   use prop_mesh_func_type
   use source_mesh_function
   use scalar_mesh_func_class
-  use bndry_vfunc_class
   use bndry_func1_class
   use bndry_func2_class
   use intfc_func2_class
