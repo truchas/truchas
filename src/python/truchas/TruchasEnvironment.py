@@ -277,8 +277,7 @@ class TruchasEnvironment:
         try:
             process.check_returncode()
         except:
-            print(
-                "ERROR: write-restart returned a nonzero exit code. Printing stdout, stderr.")
+            print("ERROR: write-restart returned a nonzero exit code. Printing stdout, stderr.")
             print(process.stdout)
             print(process.stderr)
             raise

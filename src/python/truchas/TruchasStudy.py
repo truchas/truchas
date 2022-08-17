@@ -8,6 +8,7 @@
 
 import time
 import os
+import multiprocessing
 
 from .TruchasDatabase import TruchasDatabase
 
@@ -43,12 +44,17 @@ class TruchasStudy:
         :func:`generate_1d_parameter_study_inputs`, this parameter is ignored.
 
     :type nproc: int
+
+    :param njobs: Number of Truchas simulations to run in simultaneously.
+
+    :type njobs: int, optional (default 1)
     """
 
-    def __init__(self, tenv, tdb, nprocs):
+    def __init__(self, tenv, tdb, nprocs, njobs=1):
         self._tenv = tenv
         self._tdb = tdb
         self._nprocs = nprocs
+        self._njobs = njobs
         self._working_dir = "parameter_study_inputs"
 
 
@@ -129,46 +135,51 @@ class TruchasStudy:
         line += "\t".join(output_metrics)
         with open(output_filename, "w") as fh: fh.write("# " + line + "\n")
 
-        for i, p in enumerate(points):
-            # Parameters may be functions of other non-function parameters. If
-            # a function which depends on other data is needed, it should be
-            # constructed with that data hardcoded, or via a lambda.
-            parameters = initial_parameters.copy()
-            parameters[variable] = p
-            print(f"Running with {variable} = {parameters[variable]:.2e}")
-            replacements = self._replacements(parameters)
+        # Generate list of replacements and new input files (those not already in the database)
+        print("Generating input decks ... ", end="", flush=True)
+        replacements = [self._instance_replacements(initial_parameters, variable, p) for p in points]
+        new_replacements = [r for r in replacements if not self._tdb.exists(r)]
+        new_input_files = [self._generate_input_deck(template_input_file, r) for r in new_replacements]
+        print(f"done. {len(new_input_files)} new input files.\n")
 
-            if not self._tdb.exists(replacements):
-                print("Generating input deck ... ", end="", flush=True)
-                identifier = TruchasDatabase.identifier(replacements)
-                input_file = f"{identifier}.inp"
-                toolpath_file = f"{identifier}.json"
-                self._tenv.generate_input_deck(replacements, template_input_file, input_file)
-                if os.path.isfile("template.json"):
-                    self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
-                print("done.")
+        # Run Truchas on all new inputs
+        args = [(self, i, r) for i, r in zip(new_input_files, new_replacements)]
+        with multiprocessing.Pool(self._njobs) as pool:
+            pool.starmap(_run, args)
 
-                print("Running Truchas ... ")
-                elapsed = time.time()
-                stdout, output = self._tenv.truchas(self._nprocs, input_file)
-                elapsed = time.time() - elapsed
-                print("done.")
-                print("Elapsed {:.0f} seconds.".format(elapsed))
-
-                self._tdb.donate(replacements, input_file, output.directory)
-
-            print("Grabbing from database ... ", end="", flush=True)
-            output = self._tdb.truchas_output(replacements)
-            print("done.")
+        # Mine database for requested data
+        print("Reading database ... ", end="", flush=True)
+        for i, r in enumerate(replacements):
+            output = self._tdb.truchas_output(r)
 
             # construct the output line and write it
-            line = "\t".join([f"{v:.3e}" for k,v in parameters.items()
+            line = "\t".join([f"{v:.3e}" if isinstance(v, (float, int)) else f"{v}"
+                              for k,v in r.items()
                               if not k == "toolpath_file"]) + "\t" # dump the inputs
-            line += "\t".join([f(parameters, output) for f in output_metrics.values()]) # outputs
+            line += "\t".join([f(r, output) for f in output_metrics.values()]) # outputs
             with open(output_filename, "a") as fh: fh.write(line + "\n")
 
-            if callable(extra_outputs): extra_outputs(parameters, output, output_filename, i)
-            print()
+            if callable(extra_outputs): extra_outputs(r, output, output_filename, i)
+        print("done.")
+
+
+    def _instance_replacements(self, initial_parameters, variable, p):
+        # Parameters may be functions of other non-function parameters. If
+        # a function which depends on other data is needed, it should be
+        # constructed with that data hardcoded, or via a lambda.
+        parameters = initial_parameters.copy()
+        parameters[variable] = p
+        return self._replacements(parameters)
+
+
+    def _generate_input_deck(self, template_input_file, replacements):
+        identifier = TruchasDatabase.identifier(replacements)
+        input_file = f"{identifier}.inp"
+        toolpath_file = f"{identifier}.json"
+        self._tenv.generate_input_deck(replacements, template_input_file, input_file)
+        if os.path.isfile("template.json"):
+            self._tenv.generate_input_deck(replacements, "template.json", toolpath_file)
+        return input_file
 
 
     def generate_1d_parameter_study_inputs(self, template_input_file,
@@ -275,3 +286,19 @@ class TruchasStudy:
         identifier = TruchasDatabase.identifier(replacements)
         replacements["toolpath_file"] = f"{identifier}.json"
         return replacements
+
+
+### Multiprocessing variables & routines need to be global ###
+
+_lock = multiprocessing.Lock()
+
+def _run(self, input_file, replacements):
+    elapsed = time.time()
+    stdout, output = self._tenv.truchas(self._nprocs, input_file)
+    elapsed = time.time() - elapsed
+    print(f"Finished {input_file}. Elapsed {elapsed:.0f} seconds.")
+    _lock.acquire()
+    try:
+        self._tdb.donate(replacements, input_file, output.directory)
+    finally:
+        _lock.release()
