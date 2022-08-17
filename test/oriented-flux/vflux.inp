@@ -61,6 +61,7 @@
   face_set_ids = 6
   type = 'oriented-flux'
   vflux = 0., 0., -1.
+  absorptivity = 1.0
 /
 
 &THERMAL_BC

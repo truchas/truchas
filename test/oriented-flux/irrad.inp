@@ -55,7 +55,6 @@
   toolpath = 'laser'
   laser_type = 'gaussian'
   laser_time_const = 0.01e-3
-  laser_absorp = 1.0
   laser_power = 1.0 ! [W]
   laser_sigma = 0.2
   laser_direction = 0,0,-1
@@ -78,6 +77,7 @@
   face_set_ids = 4, 6
   type = 'oriented-flux'
   vflux_func = 'laser'
+  absorptivity = 1.0
 /
 
 &THERMAL_BC

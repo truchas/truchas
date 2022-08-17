@@ -42,12 +42,12 @@ contains
 
     !! Namelist variables
     integer :: face_set_ids(100)
-    real(r8) :: htc, ambient_temp, emissivity, temp, flux, vflux(3)
-    character(32) :: name, type, htc_func, ambient_temp_func, &
+    real(r8) :: htc, ambient_temp, absorptivity, emissivity, temp, flux, vflux(3)
+    character(32) :: name, type, htc_func, ambient_temp_func, absorptivity_func, &
         emissivity_func, temp_func, flux_func, vflux_func
     namelist /thermal_bc/ name, type, face_set_ids, &
         temp, temp_func, flux, flux_func, htc, htc_func, ambient_temp, ambient_temp_func, &
-        emissivity, emissivity_func, vflux, vflux_func
+        absorptivity, absorptivity_func, emissivity, emissivity_func, vflux, vflux_func
 
     call TLS_info('Reading THERMAL_BC namelists ...')
 
@@ -72,6 +72,8 @@ contains
       htc_func = NULL_C
       ambient_temp = NULL_R
       ambient_temp_func = NULL_C
+      absorptivity = NULL_R
+      absorptivity_func = NULL_C
       emissivity = NULL_R
       emissivity_func = NULL_C
       temp = NULL_R
@@ -92,6 +94,8 @@ contains
       call broadcast(htc_func)
       call broadcast(ambient_temp)
       call broadcast(ambient_temp_func)
+      call broadcast(absorptivity)
+      call broadcast(absorptivity_func)
       call broadcast(emissivity)
       call broadcast(emissivity_func)
       call broadcast(temp)
@@ -168,6 +172,19 @@ contains
         else
           call TLS_fatal(label // ': neither VFLUX or VFLUX_FUNC specified')
         end if
+
+        if (absorptivity /= NULL_R .and. absorptivity_func /= NULL_C) then
+          call TLS_fatal(label // ': both ABSORPTIVITY and ABSORPTIVITY_FUNC specified')
+        else if (absorptivity /= NULL_R) then
+          if (absorptivity < 0) call TLS_fatal(label // ': ABSORPTIVITY < 0.0')
+          if (absorptivity > 1) call TLS_fatal(label // ': ABSORPTIVITY > 1.0')
+          call plist%set('absorptivity', absorptivity)
+        else if (absorptivity_func /= NULL_C) then
+          call plist%set('absorptivity', absorptivity_func)
+        else
+          call TLS_fatal(label // ': neither ABSORPTIVITY OR ABSORPTIVITY_FUNC specified')
+        end if
+
 
       case ('htc')
 
