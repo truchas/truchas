@@ -60,7 +60,6 @@
   toolpath = 'path1'
   laser_type = 'gaussian'
   laser_time_const = 2e-2
-  laser_absorp = 1.0
   laser_power = 5.0 ! [W]
   laser_sigma = 0.15
   laser_direction = 2, 1, -1
@@ -71,7 +70,6 @@
   toolpath = 'path2'
   laser_type = 'gaussian'
   laser_time_const = 2e-2
-  laser_absorp = 1.0
   laser_power = 5.0 ! [W]
   laser_sigma = 0.15
   laser_direction = -1, 2, -1
@@ -100,6 +98,7 @@
   face_set_ids = 6
   type = 'oriented-flux'
   vflux_func = 'laser1'
+  absorptivity = 1.0
 /
 
 &VFUNCTION
@@ -113,6 +112,7 @@
   face_set_ids = 6
   type = 'oriented-flux'
   vflux_func = 'laser2'
+  absorptivity = 1.0
 /
 
 &VFUNCTION

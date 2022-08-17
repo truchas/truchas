@@ -58,6 +58,8 @@ add_pytruchas_test(3d-ss-hc-linear-mixed
 add_pytruchas_test(oriented-flux-1 oriented-flux/test1.py PROCESSORS 4 LABELS CONDUCTION)
 add_pytruchas_test(oriented-flux-2 oriented-flux/test2.py PROCESSORS 4 LABELS CONDUCTION)
 add_pytruchas_test(oriented-flux-3 oriented-flux/test3.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(oriented-flux-4 oriented-flux/Temp-depen-absorp/test.py PROCESSORS 4 LABELS CONDUCTION)
+
 
 add_pytruchas_test(two-toolheads toolhead/two-toolheads/test.py PROCESSORS 4 LABELS CONDUCTION)
 add_pytruchas_test(laser-power-function-time toolhead/laser-power-function-time/test.py PROCESSORS 4 LABELS CONDUCTION)

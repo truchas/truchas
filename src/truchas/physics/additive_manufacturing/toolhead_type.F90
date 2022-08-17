@@ -32,7 +32,7 @@ module toolhead_type
   type, public :: toolhead
     type(toolpath), allocatable :: tp
     class(laser_irrad), allocatable :: laser
-    real(r8) :: absorp, dir(3)
+    real(r8) :: dir(3)
     logical :: laser_is_on, fade_is_on
     real(r8):: tau, a0, t0
   contains
@@ -77,7 +77,6 @@ contains
 
     plist => params%sublist('laser')
     call alloc_laser_irrad(this%laser, plist)
-    call params%get('laser-absorp', this%absorp)
     call params%get('laser-time-constant', this%tau)
     call params%get('laser-direction', array)
     this%dir = array / norm2(array) ! unit normal direction
@@ -142,7 +141,7 @@ contains
     dr(1) = norm2(dr)
     dr(2) = 0
     dr(3) = 0
-    irrad = this%absorp * this%fade_factor(t) * this%laser%irrad(t, dr(1), dr(2), dr(3))
+    irrad = this%fade_factor(t) * this%laser%irrad(t, dr(1), dr(2), dr(3))
   end function irrad
 
   subroutine alloc_laser_func(this, f)

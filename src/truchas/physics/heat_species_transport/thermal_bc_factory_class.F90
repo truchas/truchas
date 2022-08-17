@@ -37,7 +37,7 @@ module thermal_bc_factory_class
     subroutine alloc_vbf(this, bc, stat, errmsg)
       import
       class(thermal_bc_factory), intent(inout) :: this    !TODO: intent(in)?
-      class(bndry_vfunc), allocatable, intent(out) :: bc
+      class(bndry_func2), allocatable, intent(out) :: bc
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
     end subroutine

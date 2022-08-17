@@ -107,7 +107,9 @@ module thermal_bc_factory1_type
   use unstr_base_mesh_class
   use parameter_list_type
   use scalar_func_class
+  use vector_func_class
   use scalar_func_factories, only: alloc_scalar_func
+  use vector_func_factories, only: alloc_vector_func
   use string_utilities, only: lower_case
   use truchas_logging_services
   implicit none
@@ -253,18 +255,16 @@ contains
 
 
   subroutine alloc_vflux_bc(this, bc, stat, errmsg)
-
-    use vector_func_class
-    use vector_func_factories, only: alloc_vector_func
-    use bndry_vfunc_class
-    use bndry_face_vfunc_type
+    
+    use bndry_func2_class
+    use vflux_bndry_func_type
 
     class(thermal_bc_factory1), intent(inout) :: this
-    class(bndry_vfunc), allocatable, intent(out) :: bc
+    class(bndry_func2), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(bndry_face_vfunc), allocatable :: bff
+    type(vflux_bndry_func), allocatable :: bff
 
     call TLS_info('  generating "oriented-flux" thermal boundary condition')
     call this%iterate_list('oriented-flux', proc, stat, errmsg)
@@ -288,14 +288,17 @@ contains
       integer, intent(in) :: setids(:)
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
-      class(vector_func), allocatable :: f
-      call alloc_vector_func(plist, 'flux', f, stat, errmsg)
+      class(scalar_func), allocatable :: f
+      class(vector_func), allocatable :: g
+      call alloc_scalar_func(plist, 'absorptivity', f, stat, errmsg)
+      if (stat /= 0) return
+      call alloc_vector_func(plist, 'flux', g, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(bff)) then
         allocate(bff)
         call bff%init(this%mesh)
       end if
-      call bff%add(f, setids, stat, errmsg)
+      call bff%add(f, g, setids, stat, errmsg)
     end subroutine proc
 
   end subroutine alloc_vflux_bc
