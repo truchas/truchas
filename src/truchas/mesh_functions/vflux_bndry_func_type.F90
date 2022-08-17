@@ -33,7 +33,7 @@ module vflux_bndry_func_type
     class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     integer :: ngroup
     integer, allocatable :: xgroup(:)
-    type(scalar_func_box), allocatable :: f(:)
+    type(scalar_func_box), allocatable :: farray(:)
     type(vector_func_box), allocatable :: garray(:)
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
@@ -77,7 +77,7 @@ contains
     call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
     deallocate(this%builder)
     allocate(this%value(size(this%index)), this%deriv(size(this%index)))
-    call scalar_func_list_to_box_array(this%flist, this%f)
+    call scalar_func_list_to_box_array(this%flist, this%farray)
     call vector_func_list_to_box_array(this%glist, this%garray)
   end subroutine add_complete
 
@@ -97,7 +97,7 @@ contains
           associate (fnode => this%mesh%face_node_list_view(index(j)))
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
-          absorptivity = this%f(n)%eval(var)
+          absorptivity = this%farray(n)%eval(var)
           irrad = this%garray(n)%f%eval(args)
           value(j) = absorptivity*dot_product(this%mesh%normal(:,index(j)), irrad)
         end do
