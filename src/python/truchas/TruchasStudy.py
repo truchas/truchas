@@ -48,13 +48,19 @@ class TruchasStudy:
     :param njobs: Number of Truchas simulations to run in simultaneously.
 
     :type njobs: int, optional (default 1)
+
+    :param restart_file: Filename of Truchas restart file. This restart will be
+        used for all runs.
+
+    :type restart_file: str, optional (default None)
     """
 
-    def __init__(self, tenv, tdb, nprocs, njobs=1):
+    def __init__(self, tenv, tdb, nprocs, njobs=1, restart_file=None):
         self._tenv = tenv
         self._tdb = tdb
         self._nprocs = nprocs
         self._njobs = njobs
+        self._restart_file = restart_file
         self._working_dir = "parameter_study_inputs"
 
 
@@ -294,7 +300,7 @@ _lock = multiprocessing.Lock()
 
 def _run(self, input_file, replacements):
     elapsed = time.time()
-    stdout, output = self._tenv.truchas(self._nprocs, input_file)
+    stdout, output = self._tenv.truchas(self._nprocs, input_file, restart_file=self._restart_file)
     elapsed = time.time() - elapsed
     print(f"Finished {input_file}. Elapsed {elapsed:.0f} seconds.")
     _lock.acquire()
