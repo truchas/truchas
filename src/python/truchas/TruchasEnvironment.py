@@ -193,8 +193,9 @@ class TruchasEnvironment:
         """
 
         # find the absolute path to the input file
-        input_name = os.path.splitext(input_file)[0]
-        input_file_abs = os.path.join(self._input_dir, input_file)
+        input_name = os.path.splitext(os.path.basename(input_file))[0]
+        input_file_abs = input_file if os.path.isabs(input_file) \
+            else os.path.join(self._input_dir, input_file)
         assert os.path.isfile(input_file_abs)
 
         # build the command
@@ -205,16 +206,17 @@ class TruchasEnvironment:
         # the same directory as the Truchas working directory.
         # If so, no need to specify output directory to Truchas.
         if output_dir is None:
-            output_dir_abs = os.path.join(
-                self._working_dir, input_name + "_output")
+            output_dir_abs = os.path.join(self._working_dir, input_name + "_output")
             if not os.path.samefile(self._working_dir, "."):
                 command += " -o:" + output_dir_abs
         else:
-            output_dir_abs = os.path.join(self._working_dir, output_dir)
+            output_dir_abs = output_dir if os.path.isabs(output_dir) \
+                else os.path.join(self._working_dir, output_dir)
             command += " -o:" + output_dir_abs
 
         if restart_file is not None:
-            restart_file_abs = os.path.join(self._input_dir, restart_file)
+            restart_file_abs = restart_file if os.path.isabs(restart_file) \
+                else os.path.join(self._input_dir, restart_file)
             assert os.path.isfile(restart_file_abs)
             command += " -r:" + restart_file_abs
 
