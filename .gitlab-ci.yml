@@ -28,6 +28,7 @@ build truchas binary:
     paths:
       - dist/*
     when: always
+    expire_in: 1 week
 
 test truchas intel (Release):
   stage: build
@@ -41,6 +42,9 @@ test truchas intel (Release):
     - export INTELDIR=/opt/intel/
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
     - ctest --repeat until-pass:2 --output-on-failure
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 test truchas intel (Debug):
   stage: build
@@ -55,6 +59,9 @@ test truchas intel (Debug):
     - export INTELDIR=/opt/intel/
     - export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
     - ctest --repeat until-pass:2 --output-on-failure
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 test truchas GFortran (Debug):
   stage: build
@@ -84,6 +91,9 @@ test truchas GFortran (Debug):
     - make
     - make install
     - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 test truchas GFortran (Release):
   stage: build
@@ -113,6 +123,9 @@ test truchas GFortran (Release):
     - make
     - make install
     - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 test truchas binary (Ubuntu 18.04):
   stage: test
@@ -120,6 +133,9 @@ test truchas binary (Ubuntu 18.04):
   image: ubuntu:18.04
   script:
     - ci/test_tarball.sh
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 test truchas binary (Centos 7):
   stage: test
@@ -128,6 +144,9 @@ test truchas binary (Centos 7):
   script:
     - yum install -y bzip2
     - ci/test_tarball.sh
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 upload truchas binary:
   stage: deploy
@@ -139,6 +158,9 @@ upload truchas binary:
     - pip3 install aiohttp==3.5.4 gidgethub==3.1.0 PyJWT==1.7.1 github3.py==1.3.0
     - python3 ci/upload_binary.py $CI_COMMIT_REF_NAME $CI_COMMIT_TAG
     - ci/upload_json.sh
+  artifacts:
+    untracked: false
+    expire_in: 1 week
 
 # Update the downloads page
 downloads_update:
@@ -152,3 +174,6 @@ downloads_update:
   only:
     - master
     - tags
+  artifacts:
+    untracked: false
+    expire_in: 1 week
