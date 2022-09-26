@@ -1,0 +1,81 @@
+
+&MESH
+  Mesh_File                   = 'HT.gen'
+/
+
+&ALTMESH
+  Altmesh_File                = 'EM.gen'
+/
+
+&PHYSICS
+  Heat_Transport              = True
+  Electromagnetics            = True
+  Materials		      = 'graphite'
+/
+
+&OUTPUTS
+  Output_T                    = 0.0, 30.0
+  Output_Dt                   = 5.0
+/
+
+&MATERIAL
+  Name                        = 'graphite'
+  Density                     = 1750.0
+  specific_heat               = 895.0
+  conductivity                = 7.80
+  electrical_conductivity     = 5.6e4
+/
+
+&BODY
+  Material_Name               = 'graphite'
+  Surface_Name                = 'from mesh file'
+  Mesh_Material_Number        = 1
+  Temperature                 = 300.0
+/
+ 
+&THERMAL_BC
+	name = 'All_Sides'
+	face_set_ids = 1
+	type = 'htc'
+	htc = 0.0
+	ambient_temp = 300.0
+/
+ 
+
+&NUMERICS
+ dt_init     = 0.01
+ dt_max      = 0.5
+ dt_grow     = 2.0
+/
+
+&DIFFUSION_SOLVER
+ abs_temp_tol = 0.0
+ rel_temp_tol = 1.0e-3
+ abs_enthalpy_tol = 0.0
+ rel_enthalpy_tol = 1.0e-3
+ max_nlk_itr = 5
+ nlk_tol = 0.02
+ nlk_preconditioner = 'hypre_amg'
+ pc_amg_cycles = 2
+ verbose_stepping = .true.
+/
+
+&ELECTROMAGNETICS
+  EM_Domain_Type              = 'Full_cylinder'
+  Source_Frequency            = 2000.0
+  Steps_Per_Cycle             = 20
+  Maximum_Source_Cycles       = 5
+  SS_Stopping_Tolerance       = 0.01
+  Maximum_CG_Iterations       = 500
+  Output_Level                = 2
+  CG_Stopping_Tolerance       = 1.0e-8
+  !Num_Etasq                  = 1.0e-6
+/
+
+&INDUCTION_COIL
+  Center  = 3*0.0
+  Radius  = 0.04
+  Length  = 0.02
+  NTurns  = 3
+  Current = 5000.0
+/

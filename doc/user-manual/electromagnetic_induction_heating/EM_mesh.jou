@@ -1,0 +1,14 @@
+reset 
+create sphere radius 0.01
+create cylinder height 0.03 radius 0.02
+remove overlap volume 2 1 modify volume 2
+imprint volume all
+merge volume all
+volume 1 size 0.0005
+volume 4 size 0.001
+volume 1 scheme tetmesh
+volume 4 scheme tetmesh
+mesh volume 1
+mesh volume 4
+set large exodus file off
+export genesis "EM.gen" overwrite

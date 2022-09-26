@@ -1,0 +1,8 @@
+reset 
+create sphere radius 0.01
+sideset 1 add surface 1
+sideset 1 name "All Sides"
+volume 1 size 0.0005
+mesh volume 1
+set large exodus file off
+export genesis "HT.gen" overwrite

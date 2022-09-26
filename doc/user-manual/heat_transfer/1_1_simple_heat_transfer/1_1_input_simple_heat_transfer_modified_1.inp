@@ -1,0 +1,94 @@
+
+&MESH
+ mesh_file = '1_mesh_heat_transfer.exo'
+/
+
+
+&OUTPUTS
+ output_t          = 0.0, 10000.0
+ output_dt         = 1000.0
+/
+
+&MATERIAL
+ name             = 'aluminum'
+ density          = 2700
+ specific_heat    = 887
+ conductivity     = 200 
+/
+
+&BODY
+ material_name   = 'aluminum'
+ surface_name    = 'background'
+ temperature     =  400.0 
+/
+
+
+&PHYSICS
+ heat_transport    = True 
+ flow              = False
+ species_transport = False
+ electromagnetics  = False
+ materials         = 'aluminum'
+/
+
+&THERMAL_BC
+ name = 'top'
+ face_set_ids = 1 
+ type = 'htc'
+ htc = 20.0
+ ambient_temp = 300.0
+/
+
+&THERMAL_BC
+ name = 'bottom'
+ face_set_ids = 2 
+ type = 'temperature'
+ temp = 400.0 
+/
+
+&THERMAL_BC
+ name = 'side 1'
+ face_set_ids = 3 
+ type = 'flux'
+ flux = 0.0
+/
+
+&THERMAL_BC
+ name = 'side 2'
+ face_set_ids = 4
+ type = 'flux'
+ flux = 0.0
+/
+
+&THERMAL_BC
+ name = 'side 3'
+ face_set_ids = 5
+ type = 'flux'
+ flux = 0.0
+/
+
+&THERMAL_BC
+ name = 'side 4'
+ face_set_ids = 6
+ type = 'flux'
+ flux = 0.0
+/
+
+
+&DIFFUSION_SOLVER
+ abs_temp_tol = 0.0
+ rel_temp_tol = 1.0e-3
+ abs_enthalpy_tol = 0.0
+ rel_enthalpy_tol = 1.0e-3
+ max_nlk_itr = 5
+ nlk_tol = 0.02
+ nlk_preconditioner = 'hypre_amg'
+ pc_amg_cycles = 2
+ verbose_stepping = .true.
+/
+
+&NUMERICS
+ dt_init = 0.01
+ dt_grow = 5.0
+ dt_max = 60.0
+/

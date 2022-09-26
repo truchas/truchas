@@ -1,0 +1,86 @@
+This is an example input file
+------------------------------
+
+&OUTPUTS
+ output_t = 0.0, 1000.0
+ output_dt = 10.0
+/
+
+&MESH
+ mesh_file = 'mesh_file_name.gen'
+/
+
+&PHYSICS
+ heat_transport = T
+ materials = 'graphite'
+/
+
+
+&THERMAL_BC
+ name = 'X-positive'
+ face_set_ids = 1
+ type = 'flux'
+ flux = 0.0
+/
+
+&THERMAL_BC
+ name = 'X-negative'
+ face_set_ids = 2
+ type = 'htc'
+ htc = 50.0
+ ambient_temp = 300.0
+/
+
+&THERMAL_BC
+ name = 'Y-positive'
+ face_set_ids = 3
+ type = 'flux'
+ flux = 0.0
+/
+
+&THERMAL_BC
+ name = 'Y-negative'
+ face_set_ids = 4
+ type = 'gap-radiation'
+ emissivity = 0.75
+/
+
+&THERMAL_BC
+ name = 'Z-positive'
+ face_set_ids = 5
+ type = 'interface-htc'
+ htc = 500.0
+/
+
+&THERMAL_BC
+ name = 'Z-negative'
+ face_set_ids = 6
+ type = 'interface-htc'
+ htc = 200.0
+/
+
+
+&MATERIAL
+ name = 'graphite'
+ density = 1750
+ specific_heat = 1500
+ conductivity = 100
+/
+  
+&DIFFUSION_SOLVER
+ abs_temp_tol = 0.0
+ rel_temp_tol = 1.0e-3
+ abs_enthalpy_tol = 0.0
+ rel_enthalpy_tol = 1.0e-3
+ max_nlk_itr = 5
+ nlk_tol = 0.02
+ nlk_preconditioner = 'hypre_amg'
+ pc_amg_cycles = 2
+ verbose_stepping = .true.
+/
+
+&NUMERICS
+ dt_init = 0.01
+ dt_grow = 5.0
+ dt_max = 60.0
+/

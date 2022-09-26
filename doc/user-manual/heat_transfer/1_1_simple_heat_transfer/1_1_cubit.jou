@@ -1,0 +1,25 @@
+reset
+
+# Specify the XYZ dimensions of the entire domain
+create brick x 1 y 1 z 1 
+
+
+curve 1 2 3 4 5 6 7 8 9  10 11 12 scheme equal size 0.02
+
+#Specify sidesets that will help in mentioning Boundary Conditions while running the program
+sideset 1 surface 1
+sideset 2 surface 2
+sideset 3 surface 3
+sideset 4 surface 4
+sideset 5 surface 5
+sideset 6 surface 6
+
+preview mesh volume all 
+mesh volume all 
+block 1 volume 1
+block 1 element type HEX 
+nodeset 100 volume all 
+set large exodus file off 
+
+#export the mesh file *.exo to specified path Change the path in the following command
+export mesh "~/1_mesh_heat_transfer.exo" block 1 overwrite
