@@ -18,8 +18,8 @@ import sphinx.ext.imgmath
 
 # -- Project information -----------------------------------------------------
 
-project = 'Truchas Reference Manual'
-copyright = '2021, LANL'
+project = 'Truchas User Manual'
+copyright = '2022, LANL'
 author = 'LANL'
 
 # The full version, including alpha/beta/rc tags
