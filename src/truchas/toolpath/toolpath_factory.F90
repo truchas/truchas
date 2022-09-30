@@ -132,7 +132,7 @@ contains
     use,intrinsic :: iso_fortran_env, only: iostat_end
     use string_utilities, only: i_to_c
 
-    type(toolpath), allocatable, intent(out), target :: path
+    type(toolpath), allocatable, intent(out) :: path
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
