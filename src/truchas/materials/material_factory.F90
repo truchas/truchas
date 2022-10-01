@@ -286,7 +286,7 @@ contains
       plist => phase_list%sublist(piter%name())
       call plist%get('index', n)
       matl%phi(n)%name = piter%name()
-      matl%phi(n)%matl => matl
+      matl%phi(n)%matl => matl%phase
       plist => piter%sublist()
       call add_phase_properties(matl%phi(n), plist, stat, errmsg)
       if (stat /= 0) return !TODO: refine errmsg

@@ -38,7 +38,7 @@ module material_class
     character(:), allocatable, public :: name ! READ-ONLY
     type(scalar_func_map) :: prop_map
     type(string_set) :: attr_set
-    class(material), pointer, public :: matl => null()  ! the parent material
+    type(phase), pointer, public :: matl => null() ! parent material as a phase
   contains
     procedure :: add_attr
     procedure :: has_attr
@@ -125,15 +125,14 @@ contains
     call this%attr_set%add(name)
   end subroutine add_attr
 
-  !! Return true if the phase has the attribute NAME; otherwise false.
-  !! NB: the MATERIAL class may have overridden the HAS_ATTR method and
-  !! we must ensure we use the parent PHASE type's method instead.
+  !! Return true if the phase or its parent material has the attribute NAME;
+  !! otherwise return false.
   recursive logical function has_attr(this, name)
     class(phase), intent(in) :: this
     character(*), intent(in) :: name
     has_attr = this%attr_set%has(name)
     if (has_attr) return  ! else check the parent material phase
-    if (associated(this%matl)) has_attr = this%matl%phase%has_attr(name)
+    if (associated(this%matl)) has_attr = this%matl%has_attr(name)
   end function has_attr
 
   !! Add property NAME with SCALAR_FUNC class function FUNC to the phase.
@@ -146,13 +145,11 @@ contains
     call this%prop_map%insert(name, func)
   end subroutine add_prop
 
-  !! Return true if the phase has property NAME; otherwise false. If the
-  !! optional argument ONLY is specified, the query is limited to the case
-  !! when the phase has the attribute ONLY; if not, true is always returned.
-  !! If the phase has a parent material, it will be included in the query
-  !! unless the optional argument STRICT is present with value true.
-  !! NB: the MATERIAL class may have overridden the HAS_PROP method and we
-  !! must ensure we use the parent PHASE type's method instead.
+  !! Return true if the phase or its parent material has property NAME;
+  !! otherwise false. If the optional argument ONLY is specified, the query
+  !! is limited to the case when the phase has the attribute ONLY; if not,
+  !! true is always returned. If the optional argument STRICT is present
+  !! with value true the parent material is excluded from the query.
   recursive logical function has_prop(this, name, only, strict) result(has)
     class(phase), intent(in) :: this
     character(*), intent(in) :: name
@@ -166,13 +163,12 @@ contains
       if (present(strict)) then
         if (strict) return
       end if
-      if (associated(this%matl)) has = this%matl%phase%has_prop(name)
+      if (associated(this%matl)) has = this%matl%has_prop(name)
     end if
   end function has_prop
 
-  !! Return true if the phase has property NAME and it is constant.
-  !! NB: the MATERIAL class may have overridden the HAS_CONST_PROP method and
-  !! we must ensure we use the parent PHASE type's method instead.
+  !! Return true if the phase or its parent material has property NAME and
+  !! it is constant; otherwise return false.
   recursive logical function has_const_prop(this, name)
     use scalar_func_tools, only: is_const
     class(phase), intent(in) :: this
@@ -183,22 +179,22 @@ contains
       has_const_prop = is_const(func)
     else  ! check the parent material phase
       has_const_prop = .false.
-      if (associated(this%matl)) has_const_prop = this%matl%phase%has_const_prop(name)
+      if (associated(this%matl)) has_const_prop = this%matl%has_const_prop(name)
     end if
   end function has_const_prop
 
   !! Return a polymorphic copy FUNC of the SCALAR_FUNC class function for
-  !! phase property NAME. If the phase does not have the property FUNC is
+  !! phase property NAME. The property function associated with the phase
+  !! takes precedence over that associated with the parent material. If
+  !! neither the phase or its parent material has the property, FUNC is
   !! returned unallocated.
-  !! NB: the MATERIAL class may have overridden the GET_PROP method and we
-  !! must ensure we use the parent PHASE type's method instead.
   recursive subroutine get_prop_func(this, name, func)
     class(phase), intent(in) :: this
     character(*), intent(in) :: name
     class(scalar_func), allocatable, intent(out) :: func
     call this%prop_map%lookup(name, func)
     if (allocated(func)) return ! else check the parent material phase
-    if (associated(this%matl)) call this%matl%phase%get_prop(name, func)
+    if (associated(this%matl)) call this%matl%get_prop(name, func)
   end subroutine get_prop_func
 
   !! Return the value CONST of the constant phase property NAME. It is an
