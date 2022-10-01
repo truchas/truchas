@@ -66,7 +66,7 @@ contains
   logical function has_attr(this, name)
     class(multi_phase_matl), intent(in) :: this
     character(*), intent(in) :: name
-    has_attr = all(has_prop_mask(this, name))
+    has_attr = all(has_attr_mask(this, name))
   end function
 
   !! Overload the base class HAS_PROP procedure. Returns true if every phase of
