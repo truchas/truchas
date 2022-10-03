@@ -62,7 +62,6 @@ module material_model_type
     procedure, private :: alloc_avg_matl_prop_list
     procedure, private :: alloc_avg_matl_prop_all
     procedure :: alloc_avg_phase_prop => alloc_avg_phase_prop_list
-    procedure :: alloc_equil_temp
   end type
 
   character(4), parameter :: VOID = 'VOID'
@@ -411,27 +410,5 @@ contains
       end if
     end do
   end subroutine alloc_avg_phase_prop_list
-
-  !! Allocate an EQUIL_TEMP type object FUNC. PIDS is a list of phase indexes
-  !! to include in the object. All must be in the range [1, NUM_REAL_PHASE].
-  !! Later evaluation of FUNC requires an array of phase weights corresponding
-  !! to PIDS. If an error occurs, FUNC is returned unallocated and an
-  !! explanatory message is returned in ERRMSG.
-
-  subroutine alloc_equil_temp(this, pids, func, errmsg)
-    use equil_temp_type
-    class(material_model), intent(in) :: this
-    integer, intent(in) :: pids(:)
-    type(equil_temp), allocatable, intent(out), target :: func
-    character(:), allocatable, intent(out) :: errmsg
-    allocate(func)
-    call this%alloc_avg_phase_prop('enthalpy', pids, func%H_of_T, errmsg)
-    if (.not.allocated(func%H_of_T)) then
-      deallocate(func)
-      return
-    end if
-    call func%T_of_H%init(eps=0.0_r8)
-    func%T_of_H%H_of_T => func%H_of_T
-  end subroutine alloc_equil_temp
 
 end module material_model_type

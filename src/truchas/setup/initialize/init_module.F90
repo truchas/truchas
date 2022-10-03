@@ -386,6 +386,7 @@ CONTAINS
   subroutine compute_equil_cell_temp(mesh, body_pid, body_temp, body_vol, tcell)
 
     use scalar_func_containers, only: scalar_func_box
+    use material_utilities, only: alloc_equil_temp
     use equil_temp_type
     use unstr_mesh_type
 
@@ -414,7 +415,7 @@ CONTAINS
     nvbi = pack([(i,i=1,size(body_pid))], body_pid /= matl_model%void_index)
     if (size(nvbi) == 0) return  ! all bodies are void
 
-    call matl_model%alloc_equil_temp(body_pid(nvbi), equil_temp_func, errmsg)
+    call alloc_equil_temp(matl_model, body_pid(nvbi), equil_temp_func, errmsg)
     if (.not.allocated(equil_temp_func)) call TLS_fatal(errmsg)
 
     allocate(temps(size(nvbi)))

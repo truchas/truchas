@@ -18,6 +18,7 @@ module material_utilities
   public :: optional_property_check, constant_property_check
   public :: define_property_default, define_fluid_property_default
   public :: add_enthalpy_prop
+  public :: alloc_equil_temp
 
 contains
 
@@ -181,5 +182,27 @@ contains
     end do
     stat = merge(1, 0, allocated(errmsg))
   end subroutine constant_property_check
+
+  !! Allocate an EQUIL_TEMP type object FUNC. PIDS is a list of phase indexes
+  !! to include in the object. All must be in the range [1, NUM_REAL_PHASE].
+  !! Later evaluation of FUNC requires an array of phase weights corresponding
+  !! to PIDS. If an error occurs, FUNC is returned unallocated and an
+  !! explanatory message is returned in ERRMSG.
+
+  subroutine alloc_equil_temp(model, pids, func, errmsg)
+    use equil_temp_type
+    type(material_model), intent(in) :: model
+    integer, intent(in) :: pids(:)
+    type(equil_temp), allocatable, intent(out), target :: func
+    character(:), allocatable, intent(out) :: errmsg
+    allocate(func)
+    call model%alloc_avg_phase_prop('enthalpy', pids, func%H_of_T, errmsg)
+    if (.not.allocated(func%H_of_T)) then
+      deallocate(func)
+      return
+    end if
+    call func%T_of_H%init(eps=0.0_r8)
+    func%T_of_H%H_of_T => func%H_of_T
+  end subroutine
 
 end module material_utilities
