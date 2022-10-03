@@ -164,7 +164,7 @@ contains
     !! as a fluid.
     allocate(this%is_fluid(this%nphase))
     do p = 1, this%nphase_real
-      this%is_fluid(p) = this%plist(p)%phi%has_attr('is-fluid')
+      this%is_fluid(p) = this%plist(p)%phi%has_attr('fluid')
     end do
     if (this%have_void) this%is_fluid(this%nphase) = .true.
 
@@ -172,16 +172,16 @@ contains
 
   end subroutine init
 
-  !! Return the name of phase N. N must be in [1, NUM_PHASE] (unchecked)
+  !! Return the name of phase PID. PID must be in [1, NUM_PHASE] (unchecked)
   !! and will return VOID for the pseudo void phase, if it exists.
-  function phase_name(this, n) result(name)
+  function phase_name(this, pid) result(name)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: pid
     character(:), allocatable :: name
-    if (n == this%void_index) then
+    if (pid == this%void_index) then
       name = VOID
     else
-      name = this%plist(n)%phi%name
+      name = this%plist(pid)%phi%name
     end if
   end function phase_name
 
@@ -204,28 +204,28 @@ contains
     has_phase = (phase_index(this, name) > 0)
   end function has_phase
 
-  !! Return the name of material N. N must be in [1, NUM_MATL] (unchecked)
+  !! Return the name of material MID. MID must be in [1, NUM_MATL] (unchecked)
   !! and will return VOID for the pseudo void material, if it exists.
-  function matl_name(this, n) result(name)
+  function matl_name(this, mid) result(name)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: mid
     character(:), allocatable :: name
-    if (this%have_void .and. n == this%nmatl) then
+    if (this%have_void .and. mid == this%nmatl) then
       name = VOID
     else
-      name = this%mlist(n)%matl%name
+      name = this%mlist(mid)%matl%name
     end if
   end function matl_name
 
   !! Return the index of the material with name NAME. if no such material
   !! exists, 0 is returned. NAME may be the reserved name 'VOID'.
-  elemental integer function matl_index(this, name) result(n)
+  elemental integer function matl_index(this, name) result(mid)
     class(material_model), intent(in) :: this
     character(*), intent(in) :: name
-    do n = this%nmatl_real, 1, -1
-      if (this%mlist(n)%matl%name == name) return
+    do mid = this%nmatl_real, 1, -1
+      if (this%mlist(mid)%matl%name == name) return
     end do
-    if (this%have_void .and. name == VOID) n = this%nmatl
+    if (this%have_void .and. name == VOID) mid = this%nmatl
   end function matl_index
 
   !! Return true if a material with name NAME exists; otherwise false.
@@ -236,103 +236,103 @@ contains
     has_matl = (matl_index(this, name) > 0)
   end function has_matl
 
-  !! Return the number of phases that comprise the Nth material.
-  !! N must be in [1, NUM_REAL_MATL) (unchecked).
-  integer function num_matl_phase(this, n)
+  !! Return the number of phases that comprise the material with index MID.
+  !! MID must be in [1, NUM_REAL_MATL) (unchecked).
+  integer function num_matl_phase(this, mid)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
-    num_matl_phase = this%mlist(n)%matl%num_phase()
+    integer, intent(in) :: mid
+    num_matl_phase = this%mlist(mid)%matl%num_phase()
   end function
 
   !! Phases are grouped by the material to which they belong. This subroutine
   !! returns the phase index range [FIRST, LAST] of the phases that comprise
-  !! material N. Currently the phases are ordered from low to high-temperature.
-  !! N must be in [1, NUM_MATL] and may be the VOID material index.
-  subroutine get_matl_phase_index_range(this, n, first, last)
+  !! material MID. Currently the phases are ordered from low to high-temperature.
+  !! MID must be in [1, NUM_MATL] and may be the VOID material index.
+  subroutine get_matl_phase_index_range(this, mid, first, last)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: mid
     integer, intent(out) :: first, last
-    first = this%m2p(n)
-    last  = this%m2p(n+1) - 1
+    first = this%m2p(mid)
+    last  = this%m2p(mid+1) - 1
   end subroutine get_matl_phase_index_range
 
-  !! Return the phase fractions BETA for material N at the temperature TEMP.
+  !! Return the phase fractions BETA for material MID at the temperature TEMP.
   !! The order of values in the BETA array correspond to the order of the phases
   !! of the material. The size of BETA may be larger than the number of phases.
-  !! Unused elements at the end of the array are left unchanged. N must be in
+  !! Unused elements at the end of the array are left unchanged. MID must be in
   !! [1, NUM_REAL_MATL] (unchecked).
-  subroutine get_matl_phase_frac(this, n, temp, beta)
+  subroutine get_matl_phase_frac(this, mid, temp, beta)
     class(material_model), intent(in) :: this
-    integer,  intent(in)  :: n
+    integer,  intent(in)  :: mid
     real(r8), intent(in)  :: temp
     real(r8), intent(inout) :: beta(:)  ! INOUT to not alter unused elements
-    call this%mlist(n)%matl%get_phase_frac(temp, beta)
+    call this%mlist(mid)%matl%get_phase_frac(temp, beta)
   end subroutine
 
-  !! Return a MATERIAL class pointer to material N. N must be in
+  !! Return a MATERIAL class pointer to material MID. MID must be in
   !! [1, NUM_REAL_MATL] (unchecked).
-  subroutine get_matl_ref(this, n, matl)
+  subroutine get_matl_ref(this, mid, matl)
     class(material_model), intent(in), target :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: mid
     class(material), pointer :: matl
-    matl => this%mlist(n)%matl
+    matl => this%mlist(mid)%matl
   end subroutine
 
-  !! Return a PHASE class pointer to phase N. N must be in [1, NUM_REAL_PHASE]
+  !! Return a PHASE class pointer to phase PID. PID must be in [1, NUM_REAL_PHASE]
   !! (unchecked).
   !TODO: should this be a TYPE(PHASE) pointer?
-  subroutine get_phase_ref(this, n, phi)
+  subroutine get_phase_ref(this, pid, phi)
     class(material_model), intent(in), target :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: pid
     type(phase), pointer :: phi
-    phi => this%plist(n)%phi
+    phi => this%plist(pid)%phi
   end subroutine
 
-  !! Return the value of the constant property NAME of phase N. N must be in
+  !! Return the value of the constant property NAME of phase PID. PID must be in
   !! [1, NUM_REAL_PHASE] (unchecked). The property must exist and be constant
   !! valued (unchecked).
-  function const_phase_prop(this, n, name) result(const)
+  function const_phase_prop(this, pid, name) result(const)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: pid
     character(*), intent(in) :: name
     real(r8) :: const
-    call this%plist(n)%phi%get_prop(name, const)
+    call this%plist(pid)%phi%get_prop(name, const)
   end function const_phase_prop
 
-  !! Allocate a SCALAR_FUNC class copy FUNC of property NAME of phase N.
-  !! N must be in [1, NUM_REAL_PHASE] (unchecked). If the property does not
+  !! Allocate a SCALAR_FUNC class copy PROP of property NAME of phase PID.
+  !! PID must be in [1, NUM_REAL_PHASE] (unchecked). If the property does not
   !! exist, FUNC is returned unallocated.
-  subroutine alloc_phase_prop(this, n, name, func)
+  subroutine alloc_phase_prop(this, pid, name, prop)
     use scalar_func_class
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: pid
     character(*), intent(in) :: name
-    class(scalar_func), allocatable, intent(out) :: func
-    call this%plist(n)%phi%get_prop(name, func)
+    class(scalar_func), allocatable, intent(out) :: prop
+    call this%plist(pid)%phi%get_prop(name, prop)
   end subroutine alloc_phase_prop
 
-  !! Adds property NAME with SCALAR_FUNC class function FUNC to phase N.
-  !! N must be in [1, NUM_REAL_PHASE] (unchecked). FUNC is moved into the
+  !! Adds property NAME with SCALAR_FUNC class function FUNC to phase PID.
+  !! PID must be in [1, NUM_REAL_PHASE] (unchecked). FUNC is moved into the
   !! phase object, not copied.
-  subroutine add_phase_prop(this, n, name, func)
+  subroutine add_phase_prop(this, pid, name, func)
     use scalar_func_class
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: pid
     character(*), intent(in) :: name
     class(scalar_func), allocatable, intent(inout) :: func
-    call this%plist(n)%phi%add_prop(name, func)
+    call this%plist(pid)%phi%add_prop(name, func)
   end subroutine
 
-  !! Allocate a MATL_PROP class object PROP for property NAME of material N.
-  !! N must be in [1, NUM_REAL_MATL] (unchecked). If an error occurs, PROP is
+  !! Allocate a MATL_PROP class object PROP for property NAME of material MID.
+  !! MID must be in [1, NUM_REAL_MATL] (unchecked). If an error occurs, PROP is
   !! returned unallocated and an explanatory message is returned in ERRMSG.
-  subroutine alloc_matl_prop(this, n, name, prop, errmsg)
+  subroutine alloc_matl_prop(this, mid, name, prop, errmsg)
     class(material_model), intent(in) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: mid
     character(*), intent(in) :: name
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
-    call this%mlist(n)%matl%alloc_matl_prop(name, prop, errmsg)
+    call this%mlist(mid)%matl%alloc_matl_prop(name, prop, errmsg)
   end subroutine alloc_matl_prop
 
   !! Allocate an AVG_MATL_PROP type object FUNC for property NAME. MIDS

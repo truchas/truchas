@@ -219,7 +219,7 @@ contains
       plist => matl_plist%sublist('properties')
 
       !! Boolean properties
-      if (is_fluid) call plist%set('is-fluid', is_fluid)  ! default is F if omitted
+      if (is_fluid) call plist%set('fluid', is_fluid)  ! default is F if omitted
 
       !! Process thermal properties
       call process2(plist, density, NULL_C, 'density', 'density', label)
@@ -390,7 +390,7 @@ contains
       plist => plist%sublist(name)
 
       !! Boolean properties
-      if (is_fluid) call plist%set('is-fluid', is_fluid)  ! default is F if omitted
+      if (is_fluid) call plist%set('fluid', is_fluid)  ! default is F if omitted
 
       !! Process thermal properties
       call process2(plist, specific_heat, specific_heat_func, 'SPECIFIC_HEAT', 'specific-heat', label)

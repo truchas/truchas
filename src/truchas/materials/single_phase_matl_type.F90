@@ -35,7 +35,7 @@ module single_phase_matl_type
     procedure :: add_enthalpy_prop
   end type single_phase_matl
 
-  type, extends(matl_prop) :: simple_prop
+  type, extends(matl_prop) :: single_phase_prop
     class(scalar_func), allocatable :: func
   contains
     ! Deferred procedure from MATL_PROP
@@ -167,7 +167,7 @@ contains
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
 
-    type(simple_prop), allocatable :: p
+    type(single_phase_prop), allocatable :: p
     allocate(p)
     call this%get_prop(name, p%func)
     if (.not.allocated(p%func)) then
@@ -179,7 +179,7 @@ contains
   end subroutine alloc_matl_prop
 
   subroutine compute_value(this, state, value)
-    class(simple_prop), intent(in) :: this
+    class(single_phase_prop), intent(in) :: this
     real(r8), intent(in) :: state(:)
     real(r8), intent(out) :: value
     value = this%func%eval(state)

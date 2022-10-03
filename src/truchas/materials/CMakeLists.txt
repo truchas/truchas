@@ -4,7 +4,7 @@ target_sources(truchas PRIVATE
   material_factory.F90
   material_namelist.F90
   single_phase_matl_type.F90
-  multi_phase_matl_type.F90
+  multiphase_matl_type.F90
   phase_change_class.F90
   smooth_phase_change_type.F90
   tabular_phase_change_type.F90
