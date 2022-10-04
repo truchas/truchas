@@ -5,8 +5,6 @@
 !! a body formed from a collection of material phases at possibly different
 !! temperatures.
 !!
-!! See MATERIAL_MODEL%ALLOC_EQUIL_TEMP for a factory method for this type.
-!!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! May 2020
 !!
@@ -33,20 +31,35 @@ module equil_temp_type
   private
 
   type, extends(inverse_func) :: invf
-    type(avg_phase_prop), pointer :: H_of_T => null()
+    type(avg_phase_prop) :: H_of_T
     real(r8), pointer :: w(:) => null()
   contains
     procedure :: g
   end type
 
   type, public :: equil_temp
-    type(avg_phase_prop), allocatable :: H_of_T
+    private
     type(invf) :: T_of_H
+    real(r8), allocatable :: v(:) ! persistent workspace for compute
   contains
+    procedure :: init
     procedure :: compute
   end type
 
 contains
+
+  subroutine init(this, pids, model, stat, errmsg)
+    use material_model_type
+    class(equil_temp), intent(out) :: this
+    integer, intent(in) :: pids(:)
+    type(material_model), intent(in) :: model
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    call this%T_of_H%H_of_T%init('enthalpy', pids, model, stat, errmsg)
+    if (stat /= 0) return
+    allocate(this%v(size(pids)))
+    call this%T_of_H%init(eps=0.0_r8)
+  end subroutine
 
   subroutine compute(this, w, temps, temp)
 
@@ -56,10 +69,9 @@ contains
     real(r8), intent(out) :: temp
 
     integer :: n, stat
-     real(r8) :: tmin, tmax, H
+    real(r8) :: tmin, tmax, H, Hn
 
-    ASSERT(allocated(this%H_of_T))
-    ASSERT(size(w) == size(this%H_of_T%phase))
+    ASSERT(size(w) == size(this%v))
     ASSERT(size(w) == size(temps))
 
     tmin = minval(temps, mask=(w > 0))
@@ -71,10 +83,17 @@ contains
       return
     end if
 
-    !! Total enthalpy
+    !! Total enthalpy. This is a bit of a hack. We need to evaluate the
+    !! enthalpy of the individual materials at *different* temperatures,
+    !! but only have access to the average enthalpy function.
     H = 0
     do n = 1, size(w)
-      if (w(n) > 0) H = H + w(n)*this%H_of_T%phase(n)%func%eval([temps(n)])
+      if (w(n) > 0) then
+        this%v = 0
+        this%v(n) = w(n)
+        call this%T_of_H%H_of_T%compute_value(this%v, [temps(n)], Hn)
+        H = H + Hn
+      end if
     end do
 
     !! Equilibrium temperature yielding the same total enthalpy

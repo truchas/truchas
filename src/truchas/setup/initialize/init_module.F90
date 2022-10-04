@@ -334,9 +334,9 @@ CONTAINS
     type(unstr_mesh), intent(inout) :: mesh
     real(r8), intent(in) :: hits_vol(:,:)
 
-    integer  :: i, j, pid(matl_model%nphase)
+    integer  :: i, j, pid(matl_model%nphase), stat
     real(r8) :: vfrac(matl_model%nphase)
-    type(avg_phase_prop), allocatable :: func
+    type(avg_phase_prop) :: func
     character(:), allocatable :: errmsg
 
     INSIST(size(hits_vol,dim=1) == nbody)
@@ -359,8 +359,8 @@ CONTAINS
 
       !! ZONE%RHO
       pid = [(i, i = 1, matl_model%nphase)]
-      call matl_model%alloc_avg_phase_prop('density', pid, func, errmsg)
-      if (.not.allocated(func)) call TLS_fatal(errmsg)
+      call func%init('density', pid, matl_model, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(errmsg)
       do j = 1, mesh%ncell_onP
         call matl_get_cell_vof(j, vfrac)
         call func%compute_value(vfrac, [zone(j)%temp], zone(j)%rho)
@@ -369,8 +369,8 @@ CONTAINS
       zone%rho_old = zone%rho
 
       !! ZONE%ENTHALPY
-      call matl_model%alloc_avg_phase_prop('enthalpy', pid, func, errmsg)
-      if (.not.allocated(func)) call TLS_fatal(errmsg)
+      call func%init('enthalpy', pid, matl_model, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(errmsg)
       do j = 1, mesh%ncell_onP
         call matl_get_cell_vof(j, vfrac)
         call func%compute_value(vfrac, [zone(j)%temp], zone(j)%enthalpy)
@@ -386,7 +386,6 @@ CONTAINS
   subroutine compute_equil_cell_temp(mesh, body_pid, body_temp, body_vol, tcell)
 
     use scalar_func_containers, only: scalar_func_box
-    use material_utilities, only: alloc_equil_temp
     use equil_temp_type
     use unstr_mesh_type
 
@@ -396,9 +395,9 @@ CONTAINS
     real(r8), intent(in) :: body_vol(:,:)
     real(r8), intent(out) :: tcell(:)
 
-    integer :: i, j
+    integer :: i, j, stat
     integer, allocatable :: nvbi(:)
-    type(equil_temp), allocatable :: equil_temp_func
+    type(equil_temp) :: equil_temp_func
     character(:), allocatable :: errmsg
     real(r8), allocatable :: temps(:)
 
@@ -415,8 +414,8 @@ CONTAINS
     nvbi = pack([(i,i=1,size(body_pid))], body_pid /= matl_model%void_index)
     if (size(nvbi) == 0) return  ! all bodies are void
 
-    call alloc_equil_temp(matl_model, body_pid(nvbi), equil_temp_func, errmsg)
-    if (.not.allocated(equil_temp_func)) call TLS_fatal(errmsg)
+    call equil_temp_func%init(body_pid(nvbi), matl_model, stat, errmsg)
+    if (stat /= 0) call TLS_fatal(errmsg)
 
     allocate(temps(size(nvbi)))
     call mesh%init_cell_centroid
@@ -707,10 +706,10 @@ CONTAINS
     real(r8), intent(inout) :: vof(:,:) ! Truchas material phase volume fractions
     real(r8), intent(out)   :: H(:)     ! enthalpy density
 
-    integer :: ncell, nm, m, p1, p2, j
+    integer :: ncell, nm, m, p1, p2, j, stat
     real(r8), allocatable :: vfrac(:,:)
     real(r8), pointer :: state(:,:)
-    type(avg_matl_prop), allocatable :: avg_H
+    type(avg_matl_prop) :: avg_H
     character(:), allocatable :: errmsg
 
     ncell = size(vof,dim=2)
@@ -729,8 +728,8 @@ CONTAINS
     end do
 
     !! Compute the volume fraction weighted average material enthalpy density.
-    call matl_model%alloc_avg_matl_prop('enthalpy', avg_H, errmsg)
-    ASSERT(allocated(avg_H))
+    call avg_H%init('enthalpy', matl_model, stat, errmsg)
+    ASSERT(stat == 0)
     state(1:1,1:ncell) => T
     call avg_H%compute_value(vfrac, state, H)
 

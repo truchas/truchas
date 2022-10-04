@@ -45,7 +45,7 @@ module prop_mesh_func_type
     integer :: mfirst = 1
     integer :: nmatl ! number of non-void materials
     !type(mat_prop), pointer :: mp(:) => null()
-    type(avg_matl_prop), allocatable :: prop
+    type(avg_matl_prop), allocatable :: prop  !TODO: must this be allocatable?
   end type
   
   type :: cell_prop
@@ -92,8 +92,10 @@ contains
       if (material_id(1) == 0) this%reg(i)%mfirst = 2  ! initial void material -- skip it
       associate (matl_ids => material_id(this%reg(i)%mfirst:))
         if (size(matl_ids) > 0) then
-          call matl_model%alloc_avg_matl_prop(name, matl_ids, this%reg(i)%prop, errmsg2)
-          if (.not.allocated(this%reg(i)%prop)) then
+          !call matl_model%alloc_avg_matl_prop(name, matl_ids, this%reg(i)%prop, errmsg2)
+          allocate(this%reg(i)%prop)
+          call this%reg(i)%prop%init(name, matl_ids, matl_model, stat, errmsg2)
+          if (stat /= 0) then
             stat = 1
             errmsg = 'unable to initialize region: ' // errmsg2
             return
