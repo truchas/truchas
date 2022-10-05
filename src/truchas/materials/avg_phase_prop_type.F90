@@ -57,7 +57,7 @@ contains
       if (pids(n) == model%void_index) then
         call alloc_const_scalar_func(this%phase(n)%func, 0.0_r8)
       else
-        call model%alloc_phase_prop(pids(n), name, this%phase(n)%func)
+        call model%get_phase_prop(pids(n), name, this%phase(n)%func)
         if (.not.allocated(this%phase(n)%func)) then
           stat = 1
           errmsg = name // ' undefined for phase ' // model%phase_name(pids(n))

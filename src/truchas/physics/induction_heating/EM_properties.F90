@@ -90,7 +90,7 @@ contains
 
     value = 0.0_r8
     do m = 1, matl_model%nphase_real
-      call matl_model%alloc_phase_prop(m, prop, prop_fun)
+      call matl_model%get_phase_prop(m, prop, prop_fun)
       ASSERT(allocated(prop_fun))
       call gather_vof (m, vofm)
       if (is_const(prop_fun)) then

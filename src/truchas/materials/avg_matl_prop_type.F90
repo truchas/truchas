@@ -55,7 +55,7 @@ contains
     stat = 1
     allocate(this%matl(size(mids)))
     do n = 1, size(mids)
-      call model%alloc_matl_prop(mids(n), name, this%matl(n)%prop, errmsg)
+      call model%get_matl_prop(mids(n), name, this%matl(n)%prop, errmsg)
       if (.not.allocated(this%matl(n)%prop)) return
     end do
     stat = 0

@@ -55,8 +55,8 @@ module material_model_type
     procedure :: get_phase_ref
     procedure :: get_matl_ref
     procedure :: const_phase_prop
-    procedure :: alloc_phase_prop
-    procedure :: alloc_matl_prop
+    procedure :: get_phase_prop
+    procedure :: get_matl_prop
   end type material_model
 
   character(4), parameter :: VOID = 'VOID'
@@ -295,8 +295,8 @@ contains
 
   !! Allocate a SCALAR_FUNC class copy PROP of property NAME of phase PID.
   !! PID must be in [1, NUM_REAL_PHASE] (unchecked). If the property does not
-  !! exist, FUNC is returned unallocated.
-  subroutine alloc_phase_prop(this, pid, name, prop)
+  !! exist, PROP is returned unallocated.
+  subroutine get_phase_prop(this, pid, name, prop)
     use scalar_func_class
     class(material_model), intent(in) :: this
     integer, intent(in) :: pid
@@ -308,7 +308,7 @@ contains
   !! Allocate a MATL_PROP class object PROP for property NAME of material MID.
   !! MID must be in [1, NUM_REAL_MATL] (unchecked). If an error occurs, PROP is
   !! returned unallocated and an explanatory message is returned in ERRMSG.
-  subroutine alloc_matl_prop(this, mid, name, prop, errmsg)
+  subroutine get_matl_prop(this, mid, name, prop, errmsg)
     class(material_model), intent(in) :: this
     integer, intent(in) :: mid
     character(*), intent(in) :: name

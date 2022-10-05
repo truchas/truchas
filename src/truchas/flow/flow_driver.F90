@@ -230,7 +230,7 @@ contains
     ! get density
     allocate(density(size(fluids)))
     do i = 1, size(fluids)
-      call matl_model%alloc_phase_prop(fluids(i), 'density', f)
+      call matl_model%get_phase_prop(fluids(i), 'density', f)
       ASSERT(allocated(f))
       ASSERT(is_const(f))
       density(i) = f%eval([real(r8)::])
@@ -240,7 +240,7 @@ contains
     ! if not given, assume 0-valued viscosity
     allocate(viscosity(size(fluids)))
     do i = 1, size(fluids)
-      call matl_model%alloc_phase_prop(fluids(i), 'viscosity', viscosity(i)%f)
+      call matl_model%get_phase_prop(fluids(i), 'viscosity', viscosity(i)%f)
       if (.not.allocated(viscosity(i)%f)) call alloc_const_scalar_func(viscosity(i)%f, 0.0_r8)
     end do
 
@@ -248,7 +248,7 @@ contains
     ! if not given, assume 0-valued density delta
     allocate(density_delta(size(fluids)))
     do i = 1, size(fluids)
-      call matl_model%alloc_phase_prop(fluids(i), 'density-delta', density_delta(i)%f)
+      call matl_model%get_phase_prop(fluids(i), 'density-delta', density_delta(i)%f)
       if (.not.allocated(density_delta(i)%f)) call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
     end do
 
