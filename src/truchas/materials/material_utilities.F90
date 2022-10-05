@@ -1,10 +1,16 @@
 !!
 !! MATERIAL_UTILITIES
 !!
-!! This provides a collection of specialized utilities for
+!! This provides an ad hoc collection of high-level material utilities.
+!!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! November 2019
 !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module material_utilities
 
@@ -30,7 +36,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     call req_prop_check_aux(model, name, stat, errmsg)
-  end subroutine required_property_check
+  end subroutine
 
   !! Check that property NAME is defined for all fluid material phases. If not,
   !! STAT returns a nonzero value and an error message is returned in ERRMSG.
@@ -42,7 +48,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     call req_prop_check_aux(model, name, stat, errmsg, only='fluid')
     if (stat /= 0) errmsg = 'fluid ' // errmsg
-  end subroutine required_fluid_property_check
+  end subroutine
 
   subroutine req_prop_check_aux(model, name, stat, errmsg, only)
     class(material_model), intent(in) :: model
@@ -60,7 +66,7 @@ contains
       return
     end do
     stat = 0
-  end subroutine req_prop_check_aux
+  end subroutine
 
   !! Ensure that property NAME is defined for all phases by assigning the
   !! constant value DEFAULT to those phases without the property.
@@ -70,7 +76,7 @@ contains
     character(*), intent(in) :: name
     real(r8), intent(in) :: default
     call def_prop_default(model, name, default)
-  end subroutine define_property_default
+  end subroutine
 
   !! Ensure that property NAME is defined for all fluid phases by assigning
   !! the constant value DEFAULT to those fluid phases without the property.
@@ -79,24 +85,21 @@ contains
     character(*), intent(in) :: name
     real(r8), intent(in) :: default
     call def_prop_default(model, name, default, only='fluid')
-  end subroutine define_fluid_property_default
+  end subroutine
 
   subroutine def_prop_default(model, name, default, only)
-    use scalar_func_factories
     class(material_model), intent(in) :: model
     character(*), intent(in) :: name
     real(r8), intent(in) :: default
     character(*), intent(in), optional :: only
     integer :: n
     type(phase), pointer :: phi
-    class(scalar_func), allocatable :: f_default
     do n = 1, model%nphase_real
       call model%get_phase_ref(n, phi)
       if (phi%has_prop(name, only)) cycle
-      call alloc_const_scalar_func(f_default, default)
-      call phi%add_prop(name, f_default)
+      call phi%add_prop(name, default)
     end do
-  end subroutine def_prop_default
+  end subroutine
 
   subroutine add_enthalpy_prop(model, stat, errmsg)
 
@@ -116,7 +119,7 @@ contains
       end if
     end do
 
-  end subroutine add_enthalpy_prop
+  end subroutine
 
   !TODO: Rethink. This replicates the original procedure and seems clumsy.
   !! Examine the material_model for property NAME. If all phases have the
@@ -157,7 +160,7 @@ contains
       stat = 1
     end if
 
-  end subroutine optional_property_check
+  end subroutine
 
   !! Check that each real material has the constant property NAME. The value
   !! of the constant may differ between materials. If the check fails, STAT
@@ -180,6 +183,6 @@ contains
       end if
     end do
     stat = merge(1, 0, allocated(errmsg))
-  end subroutine constant_property_check
+  end subroutine
 
 end module material_utilities

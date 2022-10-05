@@ -30,13 +30,13 @@ module avg_matl_prop_type
   end type
 
   type, public :: avg_matl_prop
-    private ! public only for matl_model:alloc_avg_matl_prop
+    private
     type(matl_prop_box), allocatable :: matl(:)
   contains
     generic :: init => init_list, init_all
+    generic :: compute_value => compute_value_1, compute_value_2
+    generic :: compute_deriv => compute_deriv_1, compute_deriv_2
     procedure, private :: init_list, init_all
-    generic   :: compute_value => compute_value_1, compute_value_2
-    generic   :: compute_deriv => compute_deriv_1, compute_deriv_2
     procedure, private :: compute_value_1, compute_value_2
     procedure, private :: compute_deriv_1, compute_deriv_2
   end type
@@ -87,7 +87,7 @@ contains
       end if
     end do
     value = tmp2
-  end subroutine compute_value_1
+  end subroutine
 
   subroutine compute_value_2(this, w, state, value)
     class(avg_matl_prop), intent(in) :: this
@@ -107,7 +107,7 @@ contains
         end if
       end do
     end do
-  end subroutine compute_value_2
+  end subroutine
 
   subroutine compute_deriv_1(this, w, state, n, deriv)
     class(avg_matl_prop), intent(in) :: this
@@ -125,7 +125,7 @@ contains
       end if
     end do
     deriv = tmp2
-  end subroutine compute_deriv_1
+  end subroutine
 
   subroutine compute_deriv_2(this, w, state, n, deriv)
     class(avg_matl_prop), intent(in) :: this
@@ -146,6 +146,6 @@ contains
         end if
       end do
     end do
-  end subroutine compute_deriv_2
+  end subroutine
 
 end module avg_matl_prop_type

@@ -33,7 +33,7 @@ module single_phase_matl_type
     procedure :: phase_ref
     procedure :: get_phase_frac
     procedure :: add_enthalpy_prop
-  end type single_phase_matl
+  end type
 
   type, extends(matl_prop) :: single_phase_prop
     class(scalar_func), allocatable :: func
@@ -69,7 +69,7 @@ contains
     real(r8), intent(in) :: temp
     real(r8), intent(out) :: beta(:)
     beta(1) = 1
-  end subroutine get_phase_frac
+  end subroutine
 
   !! If the material does not already have the specific enthalpy property,
   !! this subroutine attempts to build it from the specific heat property
@@ -183,6 +183,6 @@ contains
     real(r8), intent(in) :: state(:)
     real(r8), intent(out) :: value
     value = this%func%eval(state)
-  end subroutine compute_value
+  end subroutine
 
 end module single_phase_matl_type

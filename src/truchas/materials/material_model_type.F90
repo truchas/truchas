@@ -56,13 +56,8 @@ module material_model_type
     procedure :: get_matl_ref
     procedure :: const_phase_prop
     procedure :: alloc_phase_prop
-    procedure :: add_phase_prop
     procedure :: alloc_matl_prop
-    !generic   :: alloc_avg_matl_prop => alloc_avg_matl_prop_list, alloc_avg_matl_prop_all
-    !procedure, private :: alloc_avg_matl_prop_list
-    !procedure, private :: alloc_avg_matl_prop_all
-    !procedure :: alloc_avg_phase_prop => alloc_avg_phase_prop_list
-  end type
+  end type material_model
 
   character(4), parameter :: VOID = 'VOID'
 
@@ -182,7 +177,7 @@ contains
     else
       name = this%plist(pid)%phi%name
     end if
-  end function phase_name
+  end function
 
   !! Return the index of the phase with name NAME. If no such phase exists,
   !! 0 is returned. NAME may be the reserved name 'VOID'.
@@ -193,7 +188,7 @@ contains
       if (this%plist(n)%phi%name == name) return
     end do
     if (this%have_void .and. name == VOID) n = this%void_index
-  end function phase_index
+  end function
 
   !! Return true if a phase with name NAME exists; otherwise false.
   !! NAME may be the reserved name 'VOID'.
@@ -201,7 +196,7 @@ contains
     class(material_model), intent(in) :: this
     character(*), intent(in) :: name
     has_phase = (phase_index(this, name) > 0)
-  end function has_phase
+  end function
 
   !! Return the name of material MID. MID must be in [1, NUM_MATL] (unchecked)
   !! and will return VOID for the pseudo void material, if it exists.
@@ -214,7 +209,7 @@ contains
     else
       name = this%mlist(mid)%matl%name
     end if
-  end function matl_name
+  end function
 
   !! Return the index of the material with name NAME. if no such material
   !! exists, 0 is returned. NAME may be the reserved name 'VOID'.
@@ -225,7 +220,7 @@ contains
       if (this%mlist(mid)%matl%name == name) return
     end do
     if (this%have_void .and. name == VOID) mid = this%nmatl
-  end function matl_index
+  end function
 
   !! Return true if a material with name NAME exists; otherwise false.
   !! NAME may be the reserved name 'VOID'.
@@ -233,7 +228,7 @@ contains
     class(material_model), intent(in) :: this
     character(*), intent(in) :: name
     has_matl = (matl_index(this, name) > 0)
-  end function has_matl
+  end function
 
   !! Return the number of phases that comprise the material with index MID.
   !! MID must be in [1, NUM_REAL_MATL) (unchecked).
@@ -253,7 +248,7 @@ contains
     integer, intent(out) :: first, last
     first = this%m2p(mid)
     last  = this%m2p(mid+1) - 1
-  end subroutine get_matl_phase_index_range
+  end subroutine
 
   !! Return the phase fractions BETA for material MID at the temperature TEMP.
   !! The order of values in the BETA array correspond to the order of the phases
@@ -296,7 +291,7 @@ contains
     character(*), intent(in) :: name
     real(r8) :: const
     call this%plist(pid)%phi%get_prop(name, const)
-  end function const_phase_prop
+  end function
 
   !! Allocate a SCALAR_FUNC class copy PROP of property NAME of phase PID.
   !! PID must be in [1, NUM_REAL_PHASE] (unchecked). If the property does not
@@ -308,18 +303,6 @@ contains
     character(*), intent(in) :: name
     class(scalar_func), allocatable, intent(out) :: prop
     call this%plist(pid)%phi%get_prop(name, prop)
-  end subroutine alloc_phase_prop
-
-  !! Adds property NAME with SCALAR_FUNC class function FUNC to phase PID.
-  !! PID must be in [1, NUM_REAL_PHASE] (unchecked). FUNC is moved into the
-  !! phase object, not copied.
-  subroutine add_phase_prop(this, pid, name, func)
-    use scalar_func_class
-    class(material_model), intent(in) :: this
-    integer, intent(in) :: pid
-    character(*), intent(in) :: name
-    class(scalar_func), allocatable, intent(inout) :: func
-    call this%plist(pid)%phi%add_prop(name, func)
   end subroutine
 
   !! Allocate a MATL_PROP class object PROP for property NAME of material MID.
@@ -332,82 +315,6 @@ contains
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
     call this%mlist(mid)%matl%alloc_matl_prop(name, prop, errmsg)
-  end subroutine alloc_matl_prop
-
-!  !! Allocate an AVG_MATL_PROP type object FUNC for property NAME. MIDS
-!  !! is a list of material indexes to include in the object. All must be in
-!  !! the range [1, NUM_REAL_MATL]. Later evaluation of FUNC requires an array
-!  !! of material weights corresponding to MIDS. If an error occurs, FUNC is
-!  !! returned unallocated and an explanatory message is returned in ERRMSG.
-!  subroutine alloc_avg_matl_prop_list(this, name, mids, func, errmsg)
-!    use avg_matl_prop_type
-!    class(material_model), intent(in) :: this
-!    character(*), intent(in) :: name
-!    integer, intent(in) :: mids(:)
-!    type(avg_matl_prop), allocatable, intent(out) :: func
-!    character(:), allocatable, intent(out) :: errmsg
-!    integer :: n
-!    allocate(func)
-!    allocate(func%matl(size(mids)))
-!    do n = 1, size(mids)
-!      call this%alloc_matl_prop(mids(n), name, func%matl(n)%prop, errmsg)
-!      if (.not.allocated(func%matl(n)%prop)) then
-!        deallocate(func)
-!        return
-!      end if
-!    end do
-!  end subroutine alloc_avg_matl_prop_list
-!
-!  !! Allocate an AVG_MATL_PROP type object FUNC for property NAME. All real
-!  !! materials are included in the object. Later evaluation of FUNC requires
-!  !! an array of material weights corresponding to the real materials in order.
-!  !! If an error occurs, FUNC is returned unallocated and an explanatory message
-!  !! is returned in ERRMSG.
-!  subroutine alloc_avg_matl_prop_all(this, name, func, errmsg)
-!    use avg_matl_prop_type
-!    class(material_model), intent(in) :: this
-!    character(*), intent(in) :: name
-!    type(avg_matl_prop), allocatable, intent(out) :: func
-!    character(:), allocatable, intent(out) :: errmsg
-!    integer :: n, all_mids(this%nmatl_real)
-!    all_mids = [(n, n=1,this%nmatl_real)]
-!    call alloc_avg_matl_prop_list(this, name, all_mids, func, errmsg)
-!  end subroutine alloc_avg_matl_prop_all
-!
-!  !! Allocate an AVG_PHASE_PROP type object FUNC for property NAME. PIDS is a
-!  !! list of phase indexes to include in the object. All must be in the range
-!  !! [1, NUM_REAL_PHASE]. Later evaluation of FUNC requires an array of phase
-!  !! weights corresponding to PIDS. If an error occurs, FUNC is returned
-!  !! unallocated and an explanatory message is returned in ERRMSG.
-!  !! UPDATE: This will now handle the VOID phase index; the effect is as if
-!  !! that index had not been included in PIDS.
-!
-!  subroutine alloc_avg_phase_prop_list(this, name, pids, func, errmsg)
-!    use avg_phase_prop_type
-!    use scalar_func_factories, only: alloc_const_scalar_func
-!    class(material_model), intent(in) :: this
-!    character(*), intent(in) :: name
-!    integer, intent(in) :: pids(:)
-!    type(avg_phase_prop), allocatable, intent(out) :: func
-!    character(:), allocatable, intent(out) :: errmsg
-!    integer :: n
-!    allocate(func)
-!    allocate(func%phase(size(pids)))
-!    do n = 1, size(pids)
-!      if (pids(n) == this%void_index) then
-!        call alloc_const_scalar_func(func%phase(n)%func, 0.0_r8)
-!      else
-!        call this%alloc_phase_prop(pids(n), name, func%phase(n)%func)
-!        !associate (phi => this%plist(pids(n))%phi)
-!        !  call phi%get_prop(name, func%phase(n)%func)
-!          if (.not.allocated(func%phase(n)%func)) then
-!            errmsg = name // ' undefined for phase ' // this%phase_name(pids(n))
-!            deallocate(func)
-!            return
-!          end if
-!        !end associate
-!      end if
-!    end do
-!  end subroutine alloc_avg_phase_prop_list
+  end subroutine
 
 end module material_model_type

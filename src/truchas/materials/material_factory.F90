@@ -66,7 +66,7 @@ contains
         select type (matl)
         class is (multiphase_matl)
           do n = 1, matl%num_phase() - 1
-            filename = trim(output_dir) // matl%phi(n)%name // '-frac.dat'
+            filename = trim(output_dir) // matl%phase_name(n) // '-frac.dat'
             do ! until all blanks replaced with underscores
               i = scan(filename, ' ')
               if (i == 0) exit

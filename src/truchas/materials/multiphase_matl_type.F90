@@ -29,7 +29,7 @@ module multiphase_matl_type
   end type
 
   type, extends(material), public :: multiphase_matl
-    !private
+    !NB: public *only* for the material factory
     type(phase), allocatable :: phi(:)
     type(phase_change_box), allocatable :: pc_seq(:)
   contains
@@ -45,7 +45,7 @@ module multiphase_matl_type
     procedure :: get_phase_frac
     procedure :: add_enthalpy_prop
     procedure :: write_solid_frac_plotfile
-  end type
+  end type multiphase_matl
 
   type :: scalar_func_box
     class(scalar_func), allocatable :: func
@@ -87,7 +87,7 @@ contains
     else
       has_prop = all(has_prop_mask(this, name))
     end if
-  end function has_prop
+  end function
 
   function has_prop_mask(this, name) result(mask)
     class(multiphase_matl), intent(in) :: this
@@ -97,7 +97,7 @@ contains
     do n = 1, size(mask)
       mask(n) = this%phi(n)%has_prop(name)
     end do
-  end function has_prop_mask
+  end function
 
   function has_attr_mask(this, name) result(mask)
     class(multiphase_matl), intent(in) :: this
@@ -107,7 +107,7 @@ contains
     do n = 1, size(mask)
       mask(n) = this%phi(n)%has_attr(name)
     end do
-  end function has_attr_mask
+  end function
 
   !! Overload the base class HAS_CONST_PROP procedure. Return true if every
   !! phase of the material has the constant property NAME and its value is
@@ -128,7 +128,7 @@ contains
       end if
     end do
     has_const_prop = .true.
-  end function has_const_prop
+  end function
 
   integer function num_phase(this)
     class(multiphase_matl), intent(in) :: this
@@ -175,7 +175,7 @@ contains
     end do
     beta(n) = 1
 
-  end subroutine get_phase_frac
+  end subroutine
 
   !! If the material does not already have the specific enthalpy property,
   !! this subroutine attempts to build it. For each phase that is missing

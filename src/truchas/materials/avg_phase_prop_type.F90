@@ -30,12 +30,12 @@ module avg_phase_prop_type
   end type
 
   type, public :: avg_phase_prop
-    private ! public only for phase_model:alloc_avg_phase_prop
+    private
     type(scalar_func_box), allocatable :: phase(:)
   contains
     generic :: init => init_list
+    generic :: compute_value => compute_value_1
     procedure, private :: init_list
-    generic   :: compute_value => compute_value_1
     procedure, private :: compute_value_1
   end type
 

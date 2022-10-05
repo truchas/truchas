@@ -41,7 +41,7 @@ module tabular_phase_change_type
     procedure :: solidus_temp
     procedure :: liquidus_temp
     procedure :: solid_frac
-  end type tabular_phase_change
+  end type
 
 contains
 
@@ -53,7 +53,7 @@ contains
     allocate(pc)
     call pc%init(temp, fsol, errmsg)
     if (.not.allocated(errmsg)) call move_alloc(pc, this)
-  end subroutine alloc_tabular_phase_change
+  end subroutine
 
   pure function solidus_temp(this)
     class(tabular_phase_change), intent(in) :: this
@@ -82,7 +82,7 @@ contains
       fs = min(1.0_r8, max(0.0_r8, fs))
       fs = scale(real(int(scale(fs,D),i8),r8),-D) ! See Note 1
     end if
-  end function solid_frac
+  end function
 
   subroutine init(this, temp, fsol, errmsg)
 
