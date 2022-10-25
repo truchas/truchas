@@ -20,15 +20,15 @@ def run_test(tenv):
         # fields
         test = output.field(sid, "Z_TEMP")
         gold = golden.field(sid, "Z_TEMP")
-        nfail += truchas.compare_max_rel(test, gold, 1e-8, "temp", time)
+        nfail += truchas.compare_max_rel(test, gold, 1e-7, "temp", time)
 
         test = output.field(sid, "phi1")
         gold = golden.field(sid, "phi1")
-        nfail += truchas.compare_max_rel(test, gold, 1e-8, "phi1", time)
+        nfail += truchas.compare_max_rel(test, gold, 1e-7, "phi1", time)
 
         test = output.field(sid, "phi2")
         gold = golden.field(sid, "phi2")
-        nfail += truchas.compare_max_rel(test, gold, 1e-8, "phi2", time)
+        nfail += truchas.compare_max_rel(test, gold, 1e-7, "phi2", time)
 
     truchas.report_summary(nfail)
     return nfail

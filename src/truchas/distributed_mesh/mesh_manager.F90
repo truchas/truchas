@@ -201,7 +201,6 @@ contains
       case ('file')
         call plist%set ('partition-file', trim(partition_file))
         call plist%set ('first-partition', first_partition)
-#ifdef USE_METIS
       case ('metis')
         plist => plist%sublist('metis-options')
         if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
@@ -214,7 +213,6 @@ contains
         if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
         if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
         if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
-#endif
       end select
     end if
 
@@ -347,11 +345,10 @@ contains
 
     call params%set('rotation-angles', rotation_angles)
 
-    if (partitioner == NULL_C) partitioner = 'chaco'
+    if (partitioner == NULL_C) partitioner = 'metis'
     select case (lower_case(partitioner))
     case ('chaco')
     case ('metis')
-#ifdef USE_METIS
       plist => params%sublist('metis-options')
       if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
       if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
@@ -363,10 +360,6 @@ contains
       if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
       if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
       if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
-#else
-      call TLS_fatal('PARTITIONER = "metis" is not supported by this Truchas build')
-#endif
-
     case ('block')
     case ('file')
       if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')

@@ -124,10 +124,8 @@ contains
     use vsa_patching_type, only: VSA_MAX_ITER_DEFAULT, VSA_MIN_DELTA_DEFAULT, &
       VSA_FACE_PATCH_RATIO_DEFAULT, VSA_MAX_PATCH_RADIUS_DEFAULT, VSA_NORMALIZE_DIST_DEFAULT
     use vac_patching_type, only: VAC_MERGE_LEVEL_DEFAULT, VAC_SPLIT_PATCH_SIZE_DEFAULT
-#ifdef USE_METIS
     use metis_patching_type, only: METIS_FACE_PATCH_RATIO_DEFAULT, METIS_FACE_WEIGHT_DEFAULT, &
       METIS_EDGE_WEIGHT_DEFAULT
-#endif
 
     integer, intent(in) :: lun
     type(parameter_list), intent(out) :: params
@@ -208,7 +206,6 @@ contains
     pave_split_patch_size = NULL_I
     pave_random_seed = NULL_I
 
-#ifdef USE_METIS
     metis_face_patch_ratio = NULL_R
     metis_face_weight = METIS_FACE_WEIGHT_DEFAULT
     metis_edge_weight = METIS_EDGE_WEIGHT_DEFAULT
@@ -224,7 +221,6 @@ contains
     metis_seed = NULL_I
     metis_dbglvl = NULL_I
     metis_ptype = NULL_I
-#endif
 
     patch_file = NULL_C
 
@@ -250,7 +246,6 @@ contains
     call scl_bcast(pave_split_patch_size)
     call scl_bcast(pave_random_seed)
 
-#ifdef USE_METIS
     call scl_bcast(metis_face_patch_ratio)
     call scl_bcast(metis_face_weight)
     call scl_bcast(metis_edge_weight)
@@ -266,7 +261,6 @@ contains
     call scl_bcast(metis_seed)
     call scl_bcast(metis_dbglvl)
     call scl_bcast(metis_ptype)
-#endif
 
     call scl_bcast(patch_file)
 
@@ -409,7 +403,6 @@ contains
     end if
 
     !! METIS settings
-#ifdef USE_METIS
     if (patch_alg == PATCH_ALG_METIS) then
       if (metis_face_patch_ratio == NULL_R) then
         metis_face_patch_ratio = METIS_FACE_PATCH_RATIO_DEFAULT
@@ -444,7 +437,6 @@ contains
       if (metis_seed    /= NULL_I) call plist%set('seed', metis_seed)
       if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl', metis_dbglvl)
     end if
-#endif
 
     !! FILE settings
     if (patch_alg == PATCH_ALG_FILE) then
@@ -562,13 +554,8 @@ contains
       write (*,'(a)') 'Generating patches using the PAVE algorithm'
       allocate(pave_patching :: patch)
     case (PATCH_ALG_METIS)
-#ifdef USE_METIS
       write (*,'(a)') 'Generating patches using the METIS graph partitioner'
       allocate(metis_patching :: patch)
-#else
-      stat = 1
-      errmsg = 'the "METIS" patching algorithm is not supported by this Truchas build'
-#endif
     case default
       stat = 1
       errmsg = 'no such patching algorithm'

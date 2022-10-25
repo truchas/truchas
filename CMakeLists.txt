@@ -167,17 +167,14 @@ if (USE_PORTAGE)
 endif()
 
 # Metis library
-option(USE_METIS "Build with support for the Portage data mapping tool" ON)
-if (USE_METIS)
-  find_package(METIS 5.1.0)
-  if(NOT METIS_FOUND)
-    message(FATAL_ERROR "Could NOT find a suitable Metis installation")
-  endif()
-  add_library(metis UNKNOWN IMPORTED)
-  set_target_properties(metis PROPERTIES
-      IMPORTED_LOCATION "${METIS_LIBRARIES}")
-  set_property(TARGET metis PROPERTY INTERFACE_LINK_LIBRARIES "${METIS_LIBRARIES}")
+find_package(METIS 5.1.0)
+if(NOT METIS_FOUND)
+  message(FATAL_ERROR "Could NOT find a suitable Metis installation")
 endif()
+add_library(metis UNKNOWN IMPORTED)
+set_target_properties(metis PROPERTIES
+    IMPORTED_LOCATION "${METIS_LIBRARIES}")
+set_property(TARGET metis PROPERTY INTERFACE_LINK_LIBRARIES "${METIS_LIBRARIES}")
 
 # optional for building version information
 find_package(Git)
@@ -257,10 +254,6 @@ endif()
 
 if(USE_PORTAGE)
   add_compile_definitions(USE_PORTAGE)
-endif()
-
-if(USE_METIS)
-  add_compile_definitions(USE_METIS)
 endif()
 
 # More hardcoded defines - only used in drivers.f90 need to move
