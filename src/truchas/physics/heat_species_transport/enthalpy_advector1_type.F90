@@ -13,7 +13,7 @@ module enthalpy_advector1_type
   type, extends(enthalpy_advector), public :: enthalpy_advector1
     type(unstr_mesh), pointer :: mesh => null()
     real(r8), pointer :: flux_vol(:,:) => null()
-    type(avg_phase_prop), allocatable :: enthalpy
+    type(avg_phase_prop) :: enthalpy
     integer,  allocatable :: inflow_face(:)
     real(r8), allocatable :: inflow_temp(:)
   contains
@@ -37,11 +37,8 @@ contains
     this%mesh => mesh
     this%flux_vol => vtrack_flux_vol_view()
     matid => vtrack_liq_matid_view()
-    call matl_model%alloc_avg_phase_prop('enthalpy', matid, this%enthalpy, errmsg)
-    if (.not.allocated(this%enthalpy)) then
-      stat = 1
-      return
-    end if
+    call this%enthalpy%init('enthalpy', matid, matl_model, stat, errmsg)
+    if (stat /= 0) return
     plist => inflow_plist()
     call set_inflow_bc(this, plist, stat, errmsg)
     if (stat /= 0) return

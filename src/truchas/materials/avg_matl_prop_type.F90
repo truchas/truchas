@@ -30,16 +30,47 @@ module avg_matl_prop_type
   end type
 
   type, public :: avg_matl_prop
-    !private ! public only for matl_model:alloc_avg_matl_prop
+    private
     type(matl_prop_box), allocatable :: matl(:)
   contains
-    generic   :: compute_value => compute_value_1, compute_value_2
-    generic   :: compute_deriv => compute_deriv_1, compute_deriv_2
+    generic :: init => init_list, init_all
+    generic :: compute_value => compute_value_1, compute_value_2
+    generic :: compute_deriv => compute_deriv_1, compute_deriv_2
+    procedure, private :: init_list, init_all
     procedure, private :: compute_value_1, compute_value_2
     procedure, private :: compute_deriv_1, compute_deriv_2
   end type
 
 contains
+
+  subroutine init_list(this, name, mids, model, stat, errmsg)
+    use material_model_type
+    class(avg_matl_prop), intent(out) :: this
+    character(*), intent(in) :: name
+    integer, intent(in) :: mids(:)
+    type(material_model), intent(in) :: model
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    integer :: n
+    stat = 1
+    allocate(this%matl(size(mids)))
+    do n = 1, size(mids)
+      call model%get_matl_prop(mids(n), name, this%matl(n)%prop, errmsg)
+      if (.not.allocated(this%matl(n)%prop)) return
+    end do
+    stat = 0
+  end subroutine
+
+  subroutine init_all(this, name, model, stat, errmsg)
+    use material_model_type
+    class(avg_matl_prop), intent(out) :: this
+    character(*), intent(in) :: name
+    type(material_model), intent(in) :: model
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    integer :: n
+    call init_list(this, name, [(n,n=1,model%nmatl_real)], model, stat, errmsg)
+  end subroutine
 
   subroutine compute_value_1(this, w, state, value)
     class(avg_matl_prop), intent(in) :: this
@@ -56,7 +87,7 @@ contains
       end if
     end do
     value = tmp2
-  end subroutine compute_value_1
+  end subroutine
 
   subroutine compute_value_2(this, w, state, value)
     class(avg_matl_prop), intent(in) :: this
@@ -76,7 +107,7 @@ contains
         end if
       end do
     end do
-  end subroutine compute_value_2
+  end subroutine
 
   subroutine compute_deriv_1(this, w, state, n, deriv)
     class(avg_matl_prop), intent(in) :: this
@@ -94,7 +125,7 @@ contains
       end if
     end do
     deriv = tmp2
-  end subroutine compute_deriv_1
+  end subroutine
 
   subroutine compute_deriv_2(this, w, state, n, deriv)
     class(avg_matl_prop), intent(in) :: this
@@ -115,6 +146,6 @@ contains
         end if
       end do
     end do
-  end subroutine compute_deriv_2
+  end subroutine
 
 end module avg_matl_prop_type

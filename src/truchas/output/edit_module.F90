@@ -149,7 +149,7 @@ CONTAINS
        total_KE = total_KE + Material_KE(m)
 
        ! Get the material enthalpy.
-       call matl_model%alloc_phase_prop(m, 'enthalpy', f)
+       call matl_model%get_phase_prop(m, 'enthalpy', f)
        ENTHALPY_LOOP: do n=1,mesh%ncell_onP
          Tmp(n) = Matl_Vol(n) * f%eval([Zone(n)%Temp])
        end do ENTHALPY_LOOP

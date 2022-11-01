@@ -58,15 +58,15 @@ contains
       end if
       !! Write a solid fraction plot file for each phase change
       block
-        use multi_phase_matl_type
+        use multiphase_matl_type
         use parallel_communication, only: is_IOP
         use truchas_env, only: output_dir
         integer :: n, i, ios
         character(:), allocatable :: filename
         select type (matl)
-        class is (multi_phase_matl)
+        class is (multiphase_matl)
           do n = 1, matl%num_phase() - 1
-            filename = trim(output_dir) // matl%phi(n)%name // '-frac.dat'
+            filename = trim(output_dir) // matl%phase_name(n) // '-frac.dat'
             do ! until all blanks replaced with underscores
               i = scan(filename, ' ')
               if (i == 0) exit
@@ -93,7 +93,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     if (params%is_sublist('phases')) then
-      call alloc_multi_phase(this, name, params, stat, errmsg)
+      call alloc_multiphase(this, name, params, stat, errmsg)
       if (stat /= 0) then
         errmsg = 'ill-defined multi-phase material: ' // errmsg
         return
@@ -140,12 +140,12 @@ contains
 
   end subroutine alloc_single_phase
 
-  !! Allocate the MULTI_PHASE_MATL object specified by PARAMS and assign it
+  !! Allocate the MULTIPHASE_MATL object specified by PARAMS and assign it
   !! the name NAME.
 
-  subroutine alloc_multi_phase(this, name, params, stat, errmsg)
+  subroutine alloc_multiphase(this, name, params, stat, errmsg)
 
-    use multi_phase_matl_type
+    use multiphase_matl_type
     use phase_change_factory
 
     class(material), allocatable, intent(out) :: this
@@ -155,7 +155,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: n, nphase
-    type(multi_phase_matl), allocatable, target :: matl
+    type(multiphase_matl), allocatable, target :: matl
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
     type(parameter_list) :: phase_list
@@ -286,7 +286,7 @@ contains
       plist => phase_list%sublist(piter%name())
       call plist%get('index', n)
       matl%phi(n)%name = piter%name()
-      matl%phi(n)%matl => matl
+      matl%phi(n)%matl => matl%phase
       plist => piter%sublist()
       call add_phase_properties(matl%phi(n), plist, stat, errmsg)
       if (stat /= 0) return !TODO: refine errmsg
@@ -322,7 +322,7 @@ contains
 
     call move_alloc(matl, this)
 
-  end subroutine alloc_multi_phase
+  end subroutine alloc_multiphase
 
   !! This auxiliary subroutine adds the properties and attributes specified by
   !! PARAMS to the PHASE class object.

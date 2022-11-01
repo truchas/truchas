@@ -30,14 +30,42 @@ module avg_phase_prop_type
   end type
 
   type, public :: avg_phase_prop
-    !private ! public only for phase_model:alloc_avg_phase_prop
+    private
     type(scalar_func_box), allocatable :: phase(:)
   contains
-    generic   :: compute_value => compute_value_1
+    generic :: init => init_list
+    generic :: compute_value => compute_value_1
+    procedure, private :: init_list
     procedure, private :: compute_value_1
   end type
 
 contains
+
+  subroutine init_list(this, name, pids, model, stat, errmsg)
+    use material_model_type
+    use scalar_func_factories, only: alloc_const_scalar_func
+    class(avg_phase_prop), intent(out) :: this
+    character(*), intent(in) :: name
+    integer, intent(in) :: pids(:)
+    type(material_model), intent(in) :: model
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    integer :: n
+    stat = 0
+    allocate(this%phase(size(pids)))
+    do n = 1, size(pids)
+      if (pids(n) == model%void_index) then
+        call alloc_const_scalar_func(this%phase(n)%func, 0.0_r8)
+      else
+        call model%get_phase_prop(pids(n), name, this%phase(n)%func)
+        if (.not.allocated(this%phase(n)%func)) then
+          stat = 1
+          errmsg = name // ' undefined for phase ' // model%phase_name(pids(n))
+          return
+        end if
+      end if
+    end do
+  end subroutine
 
   subroutine compute_value_1(this, w, state, value)
     class(avg_phase_prop), intent(in) :: this

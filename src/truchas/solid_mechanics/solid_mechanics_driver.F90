@@ -106,13 +106,13 @@ contains
       m = this%matl_phase(p)
       ref_dens(p) = matl_model%const_phase_prop(m, 'tm-ref-density')
       ref_temp = matl_model%const_phase_prop(m, 'tm-ref-temp')
-      call matl_model%alloc_phase_prop(m, 'tm-linear-cte', cte)
+      call matl_model%get_phase_prop(m, 'tm-linear-cte', cte)
       ASSERT(allocated(cte))
       call alloc_tm_density_func(density(p)%f, ref_dens(p), ref_temp, cte, stat, errmsg)
       if (stat /= 0) call tls_fatal("SOLID MECHANICS ERROR: tm-linear-cte -- " // errmsg)
 
-      call matl_model%alloc_phase_prop(m, 'tm-lame1', lame1(p)%f)
-      call matl_model%alloc_phase_prop(m, 'tm-lame2', lame2(p)%f)
+      call matl_model%get_phase_prop(m, 'tm-lame1', lame1(p)%f)
+      call matl_model%get_phase_prop(m, 'tm-lame2', lame2(p)%f)
       ASSERT(allocated(lame1(p)%f))
       ASSERT(allocated(lame2(p)%f))
 

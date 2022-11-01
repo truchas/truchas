@@ -42,7 +42,7 @@ module smooth_phase_change_type
     procedure :: solid_frac
     procedure :: solidus_temp
     procedure :: liquidus_temp
-  end type smooth_phase_change
+  end type
 
 contains
 
@@ -53,14 +53,14 @@ contains
     allocate(pc)
     call pc%init(tlo, thi)
     call move_alloc(pc, this)
-  end subroutine alloc_smooth_phase_change
+  end subroutine
 
   subroutine init(this, tlo, thi)
     class(smooth_phase_change), intent(out) :: this
     real(r8), intent(in) :: tlo, thi
     this%tlo = tlo
     this%thi = thi
-  end subroutine init
+  end subroutine
 
   pure function solidus_temp(this)
     class(smooth_phase_change), intent(in) :: this
@@ -91,6 +91,6 @@ contains
       !fs = (z*z*z)*(10 - z*(15 - 6*z))   ! C2
       fs = scale(real(int(scale(fs,D),i8),r8),-D) ! See Note 1
     end if
-  end function solid_frac
+  end function
 
 end module smooth_phase_change_type

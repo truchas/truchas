@@ -1,6 +1,6 @@
-!! MULTI_PHASE_MATL_TYPE
+!! MULTIPHASE_MATL_TYPE
 !!
-!! This module provides the concrete implementation MULTI_PHASE_MATL of
+!! This module provides the concrete implementation MULTIPHASE_MATL of
 !! the MATERIAL base class that defines a multi-phase material.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
@@ -14,7 +14,7 @@
 
 #include "f90_assert.fpp"
 
-module multi_phase_matl_type
+module multiphase_matl_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use material_class
@@ -28,8 +28,8 @@ module multi_phase_matl_type
     class(phase_change), allocatable :: pc
   end type
 
-  type, extends(material), public :: multi_phase_matl
-    !private
+  type, extends(material), public :: multiphase_matl
+    !NB: public *only* for the material factory
     type(phase), allocatable :: phi(:)
     type(phase_change_box), allocatable :: pc_seq(:)
   contains
@@ -45,14 +45,14 @@ module multi_phase_matl_type
     procedure :: get_phase_frac
     procedure :: add_enthalpy_prop
     procedure :: write_solid_frac_plotfile
-  end type
+  end type multiphase_matl
 
   type :: scalar_func_box
     class(scalar_func), allocatable :: func
   end type
 
   type, extends(matl_prop) :: multiphase_prop
-    type(multi_phase_matl), pointer :: matl => null()  ! reference only -- not owned
+    type(multiphase_matl), pointer :: matl => null()  ! reference only -- not owned
     type(scalar_func_box), allocatable :: farray(:)
   contains
     ! Deferred procedure from MATL_PROP
@@ -64,9 +64,9 @@ contains
   !! Overload the base class HAS_ATTR procedure. Returns true if every phase of
   !! the material has attribue NAME.
   logical function has_attr(this, name)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: name
-    has_attr = all(has_prop_mask(this, name))
+    has_attr = all(has_attr_mask(this, name))
   end function
 
   !! Overload the base class HAS_PROP procedure. Returns true if every phase of
@@ -78,7 +78,7 @@ contains
   !! behavior would be to ignore a property defined at the material level and
   !! restrict the query to the property defined per material phase. Useful?
   logical function has_prop(this, name, only, strict)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: name
     character(*), intent(in), optional :: only
     logical, intent(in), optional :: strict ! ignored
@@ -87,33 +87,33 @@ contains
     else
       has_prop = all(has_prop_mask(this, name))
     end if
-  end function has_prop
+  end function
 
   function has_prop_mask(this, name) result(mask)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: name
     logical :: mask(size(this%phi))
     integer :: n
     do n = 1, size(mask)
       mask(n) = this%phi(n)%has_prop(name)
     end do
-  end function has_prop_mask
+  end function
 
   function has_attr_mask(this, name) result(mask)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: name
     logical :: mask(size(this%phi))
     integer :: n
     do n = 1, size(mask)
       mask(n) = this%phi(n)%has_attr(name)
     end do
-  end function has_attr_mask
+  end function
 
   !! Overload the base class HAS_CONST_PROP procedure. Return true if every
   !! phase of the material has the constant property NAME and its value is
   !! the same for all phases.
   logical function has_const_prop(this, name)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: name
     integer :: n
     real(r8) :: c, cref
@@ -128,15 +128,15 @@ contains
       end if
     end do
     has_const_prop = .true.
-  end function has_const_prop
+  end function
 
   integer function num_phase(this)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     num_phase = size(this%phi)
   end function
 
   function phase_name(this, n) result(name)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     integer, intent(in) :: n
     character(:), allocatable :: name
     name = this%phi(n)%name
@@ -144,7 +144,7 @@ contains
   end function
 
   function phase_ref(this, n) result(phi)
-    class(multi_phase_matl), intent(in), target :: this
+    class(multiphase_matl), intent(in), target :: this
     integer, intent(in) :: n
     type(phase), pointer :: phi
     phi => this%phi(n)
@@ -152,7 +152,7 @@ contains
 
   subroutine get_phase_frac(this, temp, beta)
 
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     real(r8), intent(in) :: temp
     real(r8), intent(out) :: beta(:)
 
@@ -175,7 +175,7 @@ contains
     end do
     beta(n) = 1
 
-  end subroutine get_phase_frac
+  end subroutine
 
   !! If the material does not already have the specific enthalpy property,
   !! this subroutine attempts to build it. For each phase that is missing
@@ -190,7 +190,7 @@ contains
 
     use scalar_func_tools
 
-    class(multi_phase_matl), intent(inout) :: this
+    class(multiphase_matl), intent(inout) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -277,7 +277,7 @@ contains
 
     use scalar_func_tools
 
-    class(multi_phase_matl), intent(inout) :: this
+    class(multiphase_matl), intent(inout) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -327,7 +327,7 @@ contains
 
   subroutine alloc_matl_prop(this, name, prop, errmsg)
 
-    class(multi_phase_matl), intent(in), target :: this
+    class(multiphase_matl), intent(in), target :: this
     character(*), intent(in) :: name
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
@@ -374,7 +374,7 @@ contains
   end subroutine compute_value
 
   subroutine write_solid_frac_plotfile(this, n, filename, digits, npoints, iostat)
-    class(multi_phase_matl), intent(in) :: this
+    class(multiphase_matl), intent(in) :: this
     character(*), intent(in) :: filename
     integer, intent(in) :: n, digits, npoints
     integer, intent(out) :: iostat
@@ -382,4 +382,4 @@ contains
     call this%pc_seq(n)%pc%write_solid_frac_plotfile(filename, digits, npoints, iostat)
   end subroutine
 
-end module multi_phase_matl_type
+end module multiphase_matl_type
