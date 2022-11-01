@@ -136,9 +136,3 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
     density = 3000.0
     specific_heat = 1.0
 /
-
-&PARALLEL_PARAMETERS
-
-    Partitioner  = 'automatic', 
-
-/

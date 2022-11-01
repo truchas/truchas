@@ -36,12 +36,8 @@ set(LIBRARY_RADE_FILES
     patching/vsa_patch_type.F90
     patching/vsa_patching_type.F90
     patching/vac_min_heap.F90
-    patching/vac_patching_type.F90)
-
-if(USE_METIS)
-  list(APPEND LIBRARY_RADE_FILES
-        patching/metis_patching_type.F90)
-endif()
+    patching/vac_patching_type.F90
+    patching/metis_patching_type.F90)
 
 list(APPEND LIBRARY_RADE_FILES
             chaparral_ext.c

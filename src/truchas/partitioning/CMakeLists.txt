@@ -4,8 +4,6 @@ target_sources(truchas PRIVATE
   graph_partitioner_factory.F90
   chaco_c_binding.F90
   chaco_partitioner_type.F90
+  metis_c_binding.F90
+  metis_partitioner_type.F90
 )
-
-if(USE_METIS)
-  target_sources(truchas PRIVATE metis_c_binding.F90 metis_partitioner_type.F90)
-endif()

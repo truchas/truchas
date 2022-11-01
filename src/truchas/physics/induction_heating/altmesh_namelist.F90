@@ -119,13 +119,10 @@ contains
     if (altmesh_coordinate_scale_factor <= 0.0_r8) &
         call TLS_fatal('ALTMESH_COORDINATE_SCALE_FACTOR must be > 0')
 
-    if (partitioner == NULL_C) partitioner = 'chaco'
+    if (partitioner == NULL_C) partitioner = 'metis'
     select case (lower_case(partitioner))
     case ('chaco')
     case ('metis')
-#ifndef USE_METIS
-      call TLS_fatal('PARTITIONER = "metis" is not supported by this Truchas build')
-#endif
     case ('block')
     case ('file')
       if (partition_file == NULL_C) call TLS_fatal('PARTITION_FILE not specified')
