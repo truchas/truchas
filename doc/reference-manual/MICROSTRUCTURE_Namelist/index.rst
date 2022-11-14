@@ -39,8 +39,8 @@ By default, the thermal gradient :math:`G=\nabla T` and cooling rate
 rate :math:`L=-\partial T/\partial t` are recorded at the onset of
 of solidification, and the local solidification time (time spent in the mushy
 zone) is recorded at the completion of solidification. These are written to
-the output file as the cell-based fields "uStruc-G", "uStruc-L", and
-"uStruc-t-sol", respectively. A dummy value of 0 is written for cells not
+the output file as the cell-based fields "ustruc-G", "ustruc-L", and
+"ustruc-t_sol", respectively. A dummy value of 0 is written for cells not
 included in the analysis and cells without valid GL or solidification time
 data.
 

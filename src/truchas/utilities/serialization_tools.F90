@@ -10,11 +10,11 @@
 !!
 !!  The module defines two generic subroutines:
 !!
-!!  COPY_TO_BYTES (VAR, BUFFER, OFFSET)
+!!  COPY_TO_BYTES(VAR, BUFFER, OFFSET)
 !!    TYPE(INT8), INTENT(INOUT) :: BUFFER(:)
 !!    INTEGER, INTENT(INOUT) :: OFFSET
 !!
-!!  COPY_FROM_BYTES (BUFFER, OFFSET, VAR)
+!!  COPY_FROM_BYTES(BUFFER, OFFSET, VAR)
 !!    TYPE(INT8), INTENT(IN) :: BUFFER(:)
 !!    INTEGER, INTENT(INOUT) :: OFFSET
 !!
@@ -67,7 +67,7 @@ module serialization_tools
 
 contains
 
-  subroutine copy_to_bytes_int8 (var, buffer, offset)
+  subroutine copy_to_bytes_int8(var, buffer, offset)
     integer(int8), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -78,12 +78,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_int8
+  end subroutine
 
-  subroutine copy_to_bytes_int16 (var, buffer, offset)
+  subroutine copy_to_bytes_int16(var, buffer, offset)
     integer(int16), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -94,12 +94,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_int16
+  end subroutine
 
-  subroutine copy_to_bytes_int32 (var, buffer, offset)
+  subroutine copy_to_bytes_int32(var, buffer, offset)
     integer(int32), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -110,12 +110,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_int32
+  end subroutine
 
-  subroutine copy_to_bytes_int64 (var, buffer, offset)
+  subroutine copy_to_bytes_int64(var, buffer, offset)
     integer(int64), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -126,12 +126,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_int64
+  end subroutine
 
-  subroutine copy_to_bytes_real32 (var, buffer, offset)
+  subroutine copy_to_bytes_real32(var, buffer, offset)
     real(real32), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -142,12 +142,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_real32
+  end subroutine
 
-  subroutine copy_to_bytes_real64 (var, buffer, offset)
+  subroutine copy_to_bytes_real64(var, buffer, offset)
     real(real64), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -158,12 +158,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_real64
+  end subroutine
 
-  subroutine copy_to_bytes_real64_1 (var, buffer, offset)
+  subroutine copy_to_bytes_real64_1(var, buffer, offset)
     real(real64), intent(in), contiguous, target :: var(:)
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -176,12 +176,12 @@ contains
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
     len = n*size(var)
-    call c_f_pointer (c_loc(var(1)), ptr, shape=[len])
+    call c_f_pointer(c_loc(var(1)), ptr, shape=[len])
     buffer(offset+1:offset+len) = ptr
     offset = offset + len
-  end subroutine copy_to_bytes_real64_1
+  end subroutine
 
-  subroutine copy_to_bytes_log32 (var, buffer, offset)
+  subroutine copy_to_bytes_log32(var, buffer, offset)
     logical(int32), intent(in), target :: var
     integer, intent(inout) :: offset
     integer(int8), intent(inout) :: buffer(:)
@@ -192,12 +192,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     buffer(offset+1:offset+n) = ptr
     offset = offset + n
-  end subroutine copy_to_bytes_log32
+  end subroutine
 
-  subroutine copy_from_bytes_int8 (buffer, offset, var)
+  subroutine copy_from_bytes_int8(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     integer(int8), intent(out), target :: var
@@ -208,12 +208,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_int8
+  end subroutine
 
-  subroutine copy_from_bytes_int16 (buffer, offset, var)
+  subroutine copy_from_bytes_int16(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     integer(int16), intent(out), target :: var
@@ -224,12 +224,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_int16
+  end subroutine
 
-  subroutine copy_from_bytes_int32 (buffer, offset, var)
+  subroutine copy_from_bytes_int32(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     integer(int32), intent(out), target :: var
@@ -240,12 +240,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_int32
+  end subroutine
 
-  subroutine copy_from_bytes_int64 (buffer, offset, var)
+  subroutine copy_from_bytes_int64(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     integer(int64), intent(out), target :: var
@@ -256,12 +256,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_int64
+  end subroutine
 
-  subroutine copy_from_bytes_real32 (buffer, offset, var)
+  subroutine copy_from_bytes_real32(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     real(real32), intent(out), target :: var
@@ -272,12 +272,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_real32
+  end subroutine
 
-  subroutine copy_from_bytes_real64 (buffer, offset, var)
+  subroutine copy_from_bytes_real64(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     real(real64), intent(out), target :: var
@@ -288,12 +288,12 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_real64
+  end subroutine
 
-  subroutine copy_from_bytes_real64_1 (buffer, offset, var)
+  subroutine copy_from_bytes_real64_1(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     real(real64), intent(out), contiguous, target :: var(:)
@@ -306,12 +306,12 @@ contains
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
     len = n*size(var)
-    call c_f_pointer (c_loc(var(1)), ptr, shape=[len])
+    call c_f_pointer(c_loc(var(1)), ptr, shape=[len])
     ptr = buffer(offset+1:offset+len)
     offset = offset + len
-  end subroutine copy_from_bytes_real64_1
+  end subroutine
 
-  subroutine copy_from_bytes_log32 (buffer, offset, var)
+  subroutine copy_from_bytes_log32(buffer, offset, var)
     integer(int8), intent(in) :: buffer(:)
     integer, intent(inout) :: offset
     logical(int32), intent(out), target :: var
@@ -322,9 +322,9 @@ contains
 #else
     integer, parameter :: n = storage_size(var)/storage_size(buffer)
 #endif
-    call c_f_pointer (c_loc(var), ptr, shape=[n])
+    call c_f_pointer(c_loc(var), ptr, shape=[n])
     ptr = buffer(offset+1:offset+n)
     offset = offset + n
-  end subroutine copy_from_bytes_log32
+  end subroutine
 
 end module serialization_tools

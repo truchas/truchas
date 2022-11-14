@@ -287,15 +287,30 @@ add_pytruchas_test(tangential-surface-tension-couette
                    PROCESSORS 4
                    LABELS DIFFUSION FLOW)
 
-add_pytruchas_test(ustruc1
-                   ustruc1/test.py
+add_pytruchas_test(ustruc-ldrd
+                   ustruc/test-ldrd.py
                    PROCESSORS 4
                    LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
 
-add_pytruchas_test(ustruc2
-                   ustruc2/test.py
+add_pytruchas_test(ustruc-ldrd-restart
+                   ustruc/test-ldrd-restart.py
                    PROCESSORS 4
                    LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+
+add_pytruchas_test(ustruc-gl-temp
+                   ustruc/test-gl-temp.py
+                   PROCESSORS 4
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
+
+add_pytruchas_test(ustruc-gl-restart
+                   ustruc/test-gl-restart.py
+                   PROCESSORS 4
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+
+add_pytruchas_test(ustruc-gl-frac
+                   ustruc/test-gl-frac.py
+                   PROCESSORS 4
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)

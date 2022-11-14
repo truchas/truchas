@@ -22,6 +22,7 @@ target_sources(truchas PRIVATE
   get_process_size.c
   make_directory.c
   gmv/gmvwrite.c
+  serialization_tools.F90
 )
 
 add_subdirectory(Test)
