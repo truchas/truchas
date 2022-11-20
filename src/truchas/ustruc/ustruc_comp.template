@@ -9,8 +9,9 @@
 
 module ustruc_<name>_type
 
-  use kinds, only: r8
-  use ustruc_plugin_class
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: int8
+  use ustruc_comp_class
   implicit none
   private
 
@@ -34,38 +35,42 @@ module ustruc_<name>_type
   !
   !     t -- time
   !     temp(:) -- temperature
-  !     temp(:,:) -- temperature gradient
+  !     temp_grad(:,:) -- temperature gradient
   !     frac(:) -- solid fraction
-  !     frac_grad(:,:) -- solid fraction gradient
-  !     frac_rate(:) -- solid fraction time rate of change
-  !     invalid(:) -- logical mask marking points with invalid data (above)
+  !     invalid(:) -- logical mask marking elements with invalid data (above)
   !
-  !   If a velocity analysis component is enabled then there is also
-  !
-  !     velocity(:,:) -- transformation front velocity (vector)
-  !     speed(:) -- transformation front speed (scalar)
-  !     invalid_velocity(:) -- logical mask marking invalid velocity data
-  type, extends(ustruc_plugin) :: ustruc_<name>
+  type, extends(ustruc_comp) :: ustruc_<name>
     ! Declare parameters for this analysis component here
     ! Declare state arrays specific to this analysis component here
   contains
+    procedure :: get_comp_list
     procedure :: set_state
     procedure :: update_state
     !procedure :: geti1 ! uncomment if needed (see below)
     !procedure :: getl1 ! uncomment if needed (see below)
     !procedure :: getr1 ! uncomment if needed (see below)
     !procedure :: getr2 ! uncomment if needed (see below)
+    procedure :: has
+    procedure :: serialize
+    procedure :: deserialize
   end type ustruc_<name>
+
+  ! NBYTES is the number of bytes (per point) of internal state managed by
+  ! the serialization/deserialization subroutines. This can be computed
+  ! like the following example.
+  type(ustruc_<name>), allocatable :: dummy  ! only use is the next line
+  integer, parameter :: NBYTES = storage_size(dummy%scalar_data)/8 &
+      + 3*storage_size(dummy%vector_data)/8 + ...
 
 contains
 
-  function new_ustruc_<name> (comp, params) result (this)
+  function new_ustruc_<name>(comp, params) result(this)
 
     use parameter_list_type
 
-    class(ustruc_comp), pointer, intent(in) :: comp
+    class(ustruc_analysis), pointer, intent(in) :: comp
     type(parameter_list) :: params
-    type(ustruc_<name>), pointer :: this
+    type(ustruc_<name>), pointer :: this  ! class okay instead of type
 
     allocate(this)
     ! This wraps the passed microstructure analysis object with an instance
@@ -89,17 +94,17 @@ contains
   ! of length THIS%N ultimately get copied into the same-named components
   ! of the THIS%CORE derived type variable.
 
-  subroutine set_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine set_state (this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_<name>), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
     integer :: j
 
     !! Set the initial state for the next analysis component in the chain.
     !! This will define the core component state arrays.
-    call this%ustruc_plugin%set_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%ustruc_comp%set_state(t, temp, temp_grad, frac, invalid)
 
     ! Assign values to the state arrays specific to this analysis component.
     ! Arrays which don't have a well-defined meaning initially should be
@@ -108,10 +113,10 @@ contains
 
   end subroutine set_state
 
-  subroutine update_state (this, t, temp, temp_grad, frac, frac_grad, invalid)
+  subroutine update_state(this, t, temp, temp_grad, frac, invalid)
 
     class(ustruc_<name>), intent(inout) :: this
-    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:), frac_grad(:,:)
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
     logical,  intent(in) :: invalid(:)
 
     ! Add code here or below, as appropriate, to update the state arrays
@@ -122,15 +127,29 @@ contains
     ! Update the enclosed analysis components.  The core analysis component
     ! is always at the center, and thus this updates the state held by the
     ! CORE component.
-    call this%ustruc_plugin%update_state (t, temp, temp_grad, frac, frac_grad, invalid)
+    call this%ustruc_comp%update_state(t, temp, temp_grad, frac, invalid)
 
     ! Add code here or above, as appropriate, to update the state arrays
     ! specific to this new analysis component.  At this point the state held
     ! by the CORE component is the state at the (new) current time and is the
-    ! same as the passed arguments.  (The CORE component holds some additional
-    ! derived state, like velocities.)
+    ! same as the passed arguments.  (The CORE component could possibly hold
+    ! some additional derived state.)
 
   end subroutine update_state
+
+  ! A unique integer ID must be associated to each analysis component.
+  ! See the parameters in ustruc_comp_class.F90. This boilerplate
+  ! procedure adds this ID to the active component ID list.
+
+  subroutine get_comp_list(this, list)
+    class(ustruc_<name>), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    integer, allocatable :: rest(:)
+    call this%ustruc_comp%get_comp_list(rest)
+    allocate(list(size(rest)+1))
+    list(1) = <unique integer ID for this analysis module>
+    list(2:) = rest
+  end subroutine
 
   ! Here we add procedures for accessing analysis data computed by this new
   ! analysis component.  The types of data that can be handled are scalar
@@ -140,12 +159,12 @@ contains
   ! names needs to be coordinated with all the other analysis components.
   ! These subroutines need to respond to the chosen names and return the
   ! appropriate data, else delegate back to the GET procedure of the parent
-  ! class to be handled by another analysis component.  A subroutine only
+  ! class to be handled by another analysis component. A GET subroutine only
   ! needs to be included if it is needed to respond to a chosen name for
   ! this new analysis component; otherwise leave it out entirely.  See the
   ! existing analysis components for examples.
 
-  !subroutine getl1 (this, name, array)
+  !subroutine getl1(this, name, array)
   !  class(ustruc_<name>), intent(in) :: this
   !  character(*), intent(in) :: name
   !  logical, intent(out) :: array(:)
@@ -154,11 +173,11 @@ contains
   !    ASSERT(size(array) == this%n)
   !    array = ... ! assign appropriate values here
   !  case default
-  !    call this%ustruc_plugin%get (name, array)
+  !    call this%ustruc_comp%get (name, array)
   !  end select
-  !end subroutine getl1
+  !end subroutine
 
-  !subroutine geti1 (this, name, array, invalid)
+  !subroutine geti1(this, name, array, invalid)
   !  class(ustruc_<name>), intent(in) :: this
   !  character(*), intent(in) :: name
   !  integer, intent(out) :: array(:)
@@ -172,11 +191,11 @@ contains
   !      invalid = ... ! assign appropriate values here
   !    end if
   !  case default
-  !    call this%ustruc_plugin%get (name, array)
+  !    call this%ustruc_comp%get(name, array)
   !  end select
-  !end subroutine geti1
+  !end subroutine
 
-  !subroutine getr1 (this, name, array, invalid)
+  !subroutine getr1(this, name, array, invalid)
   !  class(ustruc_<name>), intent(in) :: this
   !  character(*), intent(in) :: name
   !  real(r8), intent(out) :: array(:)
@@ -197,11 +216,11 @@ contains
   !      invalid = ... ! assign appropriate values here
   !    end if
   !  case default
-  !    call this%ustruc_plugin%get (name, array, invalid)
+  !    call this%ustruc_comp%get(name, array, invalid)
   !  end select
-  !end subroutine getr1
+  !end subroutine
 
-  !subroutine getr2 (this, name, array, invalid)
+  !subroutine getr2(this, name, array, invalid)
   !  class(ustruc_<name>), intent(in) :: this
   !  character(*), intent(in) :: name
   !  real(r8), intent(out) :: array(:,:)
@@ -216,26 +235,86 @@ contains
   !      invalid =  ... ! assign appropriate values here
   !    end if
   !  case default
-  !    call this%ustruc_plugin%get (name, array, invalid)
+  !    call this%ustruc_comp%get(name, array, invalid)
   !  end select
-  !end subroutine getr2
+  !end subroutine
 
-  ! This function goes along with the preceding GET procedures (if any).
-  ! It needs to return true for any of the data names handled by one of
-  ! the GET procedures.  For any other data name it needs to delegate back
-  ! to the HAS procedure of the parent class to be handled by another
-  ! analysis component.  If none of the above GET procedures are defined,
-  ! then leave this one out too.
+  ! This function goes along with the preceding GET procedures. It needs to
+  ! return true for any of the data names handled by one of the GET procedures.
+  ! For any other data name it needs to delegate back to the HAS procedure of
+  ! the parent class to be handled by another analysis component.
 
-  !logical function has (this, name)
-  !  class(ustruc_<name>), intent(in) :: this
-  !  character(*), intent(in) :: name
-  !  select case (name)
-  !  case ('chosen-name-1', 'chosen-name-2', ...)
-  !    has = .true.
-  !  case default
-  !    has = this%ustruc_plugin%has(name)
-  !  end select
-  !end function has
+  logical function has(this, name)
+    class(ustruc_<name>), intent(in) :: this
+    character(*), intent(in) :: name
+    select case (name)
+    case ('chosen-name-1', 'chosen-name-2', ...)
+      has = .true.
+    case default
+      has = this%ustruc_comp%has(name)
+    end select
+  end function
+
+  ! The serialize/deserialize subroutines are used to checkpoint and restore
+  ! the internal state arrays of the analysis component. The data is packed
+  ! into a rank-1 byte array. These subroutines need to respond to the chosen
+  ! ID for the component, writing to / reading from the passed data array as
+  ! appropriate, else delegate back to the serialize/deserialize procedure of
+  ! the parent class to be used by another analysis component.
+
+  subroutine serialize(this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_to_bytes
+
+    class(ustruc_gl), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == <component ID>) then
+      allocate(array(NBYTES,this%n))
+      do j = 1, this%n
+        offset = 0
+        ! The state data for the jth point is copied into the byte array
+        ! data component by data component. The order here must match the
+        ! order in the deserialization subroutine. Examples:
+        !call copy_to_bytes(this%scalar_data(j), array(:,j), offset)
+        !call copy_to_bytes(this%vector_data(:,j), array(:,j), offset)
+      end do
+    else
+      call this%ustruc_comp%serialize(cid, array)
+    end if
+
+  end subroutine serialize
+
+  subroutine deserialize(this, cid, array)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use serialization_tools, only: copy_from_bytes
+
+    class(ustruc_gl), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+
+    integer :: j, offset
+
+    if (cid == USTRUC_GL_ID) then
+      INSIST(size(array,1) == NBYTES)
+      INSIST(size(array,2) == this%n)
+      do j = 1, this%n
+        offset = 0
+        ! The state data for the jth point is read from the byte array
+        ! data component by data component. The order here must match the
+        ! order in the serialization subroutine. Examples:
+        !call copy_from_bytes(array(:,j), offset, this%this%scalar_data(j))
+        !call copy_from_bytes(array(:,j), offset, this%this%vector_data(:,j))
+      end do
+    else
+      call this%ustruc_comp%deserialize(cid, array)
+    end if
+
+  end subroutine deserialize
 
 end module ustruc_<name>_type
