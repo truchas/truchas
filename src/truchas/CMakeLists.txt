@@ -30,6 +30,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 endif()
 
 add_library(truchas ${ver_info})
+set_target_properties(truchas PROPERTIES LINKER_LANGUAGE Fortran)
 
 # Library sources (and unit tests)
 add_subdirectory(communication)
