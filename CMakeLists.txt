@@ -70,9 +70,8 @@ find_package(PythonInterp 3.5 REQUIRED)
 find_python_package(numpy 1.12)
 find_python_package(h5py 2.6.0)
 
-# BLAS and LAPACK -- these are not required
-find_package(LAPACK)
-find_package(BLAS)
+# LAPACK (and BLAS)
+find_package(LAPACK REQUIRED)
 
 # Rest are external dependencies that can be provided by the Truchas TPL build
 
