@@ -528,6 +528,8 @@ contains
 
         if (liquidus_temp == NULL_R) then
           call TLS_fatal(label // ': LIQUIDUS_TEMP not specified')
+	else if (liquidus_temp <= solidus_temp) then
+	  call TLS_fatal(label // ': LIQUIDUS_TEMP must be > SOLIDUS_TEMP')
         else
           call plist%set('liquidus-temp', liquidus_temp)
         end if
