@@ -72,7 +72,6 @@ CONTAINS
     !   fluid-flow (advection and viscosity) and heat-transfer (conduction).
     !=======================================================================
     use physics_module,           only: flow
-    use matl_module,              only: mat_slot, Matl
     use restart_variables,        only: restart
     use zone_module,              only: Zone
     use diffusion_solver_data,    only: ds_enabled
@@ -101,9 +100,6 @@ CONTAINS
     Zone%Rho_Old      = Zone%Rho
     !Zone%Temp_Old     = Zone%Temp
     Zone%Enthalpy_Old = Zone%Enthalpy
-    do s = 1,mat_slot
-       Matl(s)%Cell%Vof_Old = Matl(s)%Cell%Vof
-    end do
 
     ! Initialize Variables
     dt_old = dt

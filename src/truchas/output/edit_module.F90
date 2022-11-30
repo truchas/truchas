@@ -63,7 +63,7 @@ CONTAINS
     !   Perform a "short edit" by computing and printing global diagnostics.
     !
     !=======================================================================
-    use matl_module,            only: nmat, GATHER_VOF
+    use legacy_matl_api,        only: nmat, GATHER_VOF
     use truchas_env,            only: output_file_name
     use parallel_communication
     use material_model_driver,  only: matl_model

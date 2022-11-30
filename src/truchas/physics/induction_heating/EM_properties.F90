@@ -76,7 +76,7 @@ contains
 
     use scalar_func_class
     use scalar_func_tools, only: is_const
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof
 
     character(*), intent(in) :: prop
     real(r8), intent(in) :: temp(:)

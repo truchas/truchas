@@ -355,7 +355,7 @@ call hijack_truchas ()
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
     use zone_module, only: zone_free
-    use matl_module, only: matl_free
+    use legacy_matl_api, only: matl_free
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete

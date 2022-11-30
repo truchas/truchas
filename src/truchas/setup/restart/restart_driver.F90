@@ -192,7 +192,7 @@ contains
   subroutine restart_matlzone (vel_fn)
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use zone_module, only: read_zone_data
-    use matl_utilities, only: read_matl_data
+    use legacy_matl_api, only: read_matl_data
     use flow_driver, only: flow_enabled, read_fluxing_velocity
     use restart_utilities, only: skip_records
     real(r8), allocatable, intent(out) :: vel_fn(:)

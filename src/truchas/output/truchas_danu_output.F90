@@ -208,7 +208,7 @@ contains
     subroutine write_common_data
 
       use zone_module, only: zone
-      use matl_module, only: nmat, gather_vof
+      use legacy_matl_api, only: nmat, gather_vof
       use material_model_driver, only: matl_model
 
       integer :: m

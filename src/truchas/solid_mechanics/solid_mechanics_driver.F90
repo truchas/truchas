@@ -216,7 +216,7 @@ contains
 
   subroutine get_vof(vof)
 
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof
 
     real(r8), intent(out) :: vof(:,:)
     integer :: p
