@@ -17,4 +17,6 @@ target_sources(truchas PRIVATE
   equil_temp_type.F90
   material_model_driver.F90
   material_utilities.F90
+  legacy_matl_api.F90
+  legacy_matl_type.F90
 )

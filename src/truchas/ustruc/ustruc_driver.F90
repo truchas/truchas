@@ -588,7 +588,7 @@ contains
 
   subroutine get_vol_frac (matid, vf)
 
-    use matl_module, only: gather_vof
+    use legacy_matl_api, only: gather_vof
 
     integer, intent(in) :: matid(:)
     real(r8), intent(out) :: vf(:)

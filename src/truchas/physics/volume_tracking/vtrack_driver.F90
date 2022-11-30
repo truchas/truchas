@@ -190,7 +190,7 @@ contains
 
   subroutine get_vof_from_matl(vof)
 
-    use matl_utilities, only: matl_get_vof
+    use legacy_matl_api, only: matl_get_vof
 
     real(r8), intent(out) :: vof(:,:)
 
@@ -213,21 +213,21 @@ contains
   end subroutine get_vof_from_matl
 
   subroutine put_vof_into_matl()
-    use matl_utilities, only: matl_set_vof
+    use legacy_matl_api, only: define_matl
     integer :: i
     do i = 1, size(this%liq_matid)
       this%vof(this%liq_matid(i),:) = this%fvof_o(i,:this%mesh%ncell_onP)
     end do
-    call matl_set_vof(this%vof)
+    call define_matl(this%vof)
   end subroutine put_vof_into_matl
 
   subroutine put_orig_vof_into_matl
-    use matl_utilities, only: matl_set_vof
+    use legacy_matl_api, only: define_matl
     integer :: i
     do i = 1, size(this%liq_matid)
       this%vof(this%liq_matid(i),:) = this%fvof_i(i,:this%mesh%ncell_onP)
     end do
-    call matl_set_vof(this%vof)
+    call define_matl(this%vof)
   end subroutine
 
   ! vel_fn is the outward oriented face-normal velocity
