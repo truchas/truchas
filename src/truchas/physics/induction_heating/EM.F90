@@ -324,9 +324,9 @@ contains
 
     !! Create and initialize the time-discretized system.
     dt = 1.0_rk / real(steps_per_cycle,kind=rk)
-    call initialize_system (sys, mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge)
-    call set_param (sys, minitr=1, maxitr=cg_max_itr, tol=0.0_rk, red=cg_red)
-    call set_param (sys, output_level=get_output_level())
+    call sys%init(mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge)
+    call sys%set_param(minitr=1, maxitr=cg_max_itr, tol=0.0_rk, red=cg_red)
+    call sys%set_param(output_level=get_output_level())
 
     allocate(efield(mesh%nedge), bfield(mesh%nface))
     allocate(q(mesh%ncell), q_avg(mesh%ncell), q_avg_last(mesh%ncell))
@@ -334,9 +334,9 @@ contains
     t = 0.0_rk
     efield = 0.0_rk
     bfield = 0.0_rk
-    call set_initial_values (sys, t, efield, bfield)
+    call sys%set_initial_state(t, efield, bfield)
 
-    q = qscf * joule_heat(sys, efield)
+    q = qscf * sys%joule_heat(efield)
 
     if (graphics()) then
       call export_mesh (mesh, eps, mu, sigma)
@@ -365,10 +365,10 @@ contains
 
         q_avg = q_avg + 0.5_rk * q
 
-        call step (sys, t, efield, bfield, status, set_bv, bndry_src)
+        call sys%step(t, efield, bfield, status, set_bv, bndry_src)
         if (global_any(status /= 0)) exit STEADY_STATE
 
-        q = qscf * joule_heat(sys, efield)
+        q = qscf * sys%joule_heat(efield)
         if (graphics()) then
           call export_fields (mesh, t, escf*efield, bscf*bfield, q)
 !NNC!          call update_probes (t, escf*efield, bscf*bfield, q*mesh%volume)
@@ -419,11 +419,6 @@ contains
 
     !! Store the the computed Joule heat in the EM data proxy for later retrieval.
     call set_joule_power_density (q_avg)
-
-    !! Clean-up.
-    deallocate(efield, bfield, q, q_avg, q_avg_last)
-    call destroy_system (sys)
-    ! The BDATA structure needs to be deallocated too!
 
     call TLS_info ('  Joule heat computation completed.')
 
