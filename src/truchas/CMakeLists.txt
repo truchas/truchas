@@ -30,6 +30,7 @@ if(CMAKE_SYSTEM_NAME MATCHES Linux)
 endif()
 
 add_library(truchas ${ver_info})
+set_target_properties(truchas PROPERTIES LINKER_LANGUAGE Fortran)
 
 # Library sources (and unit tests)
 add_subdirectory(communication)
@@ -57,7 +58,7 @@ add_subdirectory(toolpath)
 add_subdirectory(truchasio)
 
 target_link_libraries(truchas PUBLIC
-    blas lapack exodus hypre petaca hdf5 chaco metis scorpio MPI::MPI_Fortran
+    lapack exodus hypre petaca hdf5 chaco metis scorpio MPI::MPI_Fortran
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)
