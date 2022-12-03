@@ -260,7 +260,16 @@ contains
     call this%mesh%node_imap%gather_offp(this%w0mask)
 
     !! Assemble the edge-based coefficient matrix A1
-    call this%a1%init(mesh%nedge, mesh%cedge)
+    block
+      type(msr_graph), pointer :: g
+      allocate(g)
+      call g%init(mesh%nedge)
+      call g%add_clique(mesh%cedge)
+      call g%add_complete
+      call this%a1%init(g, take_graph=.true.)
+    end block    
+    !call this%a1%init(mesh%nedge, mesh%cedge)
+
     do j = 1, mesh%ncell
       l = 0
       do n = 1, 6     ! NB: we traverse the elements (m,n) of the upper triangular
@@ -278,7 +287,7 @@ contains
     ebedge = pack(array=(/(j,j=1,mesh%nedge)/), mask=(emask/=0))
     call remove_dof (this%a1, ebedge)
     deallocate(ebedge)
-    !ASSERT( is_symmetric(this%a1) )
+    !ASSERT(this%a1%is_symmetric())
 
     !! Projected System.  We form the projected system defined on the nullspace
     !! of the curl operator.  This corresponds to the range of the gradient
@@ -291,7 +300,15 @@ contains
                            0.0_r8,  0.0_r8,  1.0_r8,  0.0_r8,  1.0_r8,  1.0_r8/), shape=shape(g))
 
     !! Compute and assemble the node-based projected matrix A0.
-    call this%a0%init(mesh%nnode, mesh%cnode)
+    block
+      type(msr_graph), pointer :: g
+      allocate(g)
+      call g%init(mesh%nnode)
+      call g%add_clique(mesh%cnode)
+      call g%add_complete
+      call this%a0%init(g, take_graph=.true.)
+    end block    
+    !call this%a0%init(mesh%nnode, mesh%cnode)
     do j = 1, this%mesh%ncell
       !if (this%fs_cell(j)) cycle
       a0 = (etasq*eps(j) + 0.5_r8*dt*sigma(j)) * matmul(transpose(g), sym_matmul(W1_matrix_WE(mesh, j), g))
@@ -307,26 +324,20 @@ contains
     ebedge = pack(array=(/(j,j=1,mesh%nnode)/), mask=.not.this%w0mask)
     call remove_dof (this%a0, ebedge)
     deallocate(ebedge)
-    !ASSERT( is_symmetric(this%a0) )
+    !ASSERT(this%a0%is_symmetric()) ! will generally fail due to order-of-operation differences
 
   end subroutine initialize_system
 
-  subroutine remove_dof (this, dof)
-
+  subroutine remove_dof(this, dof)
     type(msr_matrix), intent(inout) :: this
     integer, intent(in) :: dof(:)
-
-    integer :: j, m, n, lmn, lnm
-
-    ASSERT( this%nrow == this%ncol )
-
+    integer :: j
+    ASSERT(this%nrow == this%ncol)
     do j = 1, size(dof)
-      m = dof(j)
-      call this%project_out(m)
-      this%diag(m) = 1.0_r8
+      call this%project_out(dof(j))
+      this%diag(dof(j)) = 1.0_r8
     end do
-
-  end subroutine remove_dof
+  end subroutine
 
   !!
   !! Residual for the time-discretized system (trapezoid-rule).
