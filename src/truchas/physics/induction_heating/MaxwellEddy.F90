@@ -17,7 +17,7 @@ module MaxwellEddy
   use simpl_mesh_type
   use mimetic_discretization
   use state_history_type
-  use sparse_matrix
+  use msr_matrix_type
   use CGSolver
   use truchas_logging_services
 

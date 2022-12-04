@@ -1,20 +1,15 @@
 !!
-!! Neil Carlson <nnc@newmexico.com>
-!! Last revised 4 Apr 2004
-!!
-!! This module encapsulates just the essential sparse matrix bits needed
-!! to implement the Hiptmair relaxation procedure used as a CG preconditioner.
-!! This in NOT a general sparse matrix module.
+!! MSR_MATRIX_TYPE
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!! Copyright 2022 Neil N. Carlson <neil.n.carlson@gmail.com>
+!! Use subject to the MIT license: https://opensource.org/licenses/MIT
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
 
-module sparse_matrix
+module msr_matrix_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use graph_type
@@ -277,4 +272,4 @@ contains
 
   end subroutine gs_relaxation_msr
 
-end module sparse_matrix
+end module msr_matrix_type

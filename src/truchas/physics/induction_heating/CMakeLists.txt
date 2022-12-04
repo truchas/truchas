@@ -15,5 +15,5 @@ target_sources(truchas PRIVATE
   field_probes.F90
   mimetic_discretization.F90
   solenoid_fields.F90
-  sparse_matrix.F90
+  msr_matrix_type.F90
 )
