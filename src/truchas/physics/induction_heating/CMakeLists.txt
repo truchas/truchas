@@ -16,4 +16,5 @@ target_sources(truchas PRIVATE
   mimetic_discretization.F90
   solenoid_fields.F90
   msr_matrix_type.F90
+  cg_solver_class.F90
 )

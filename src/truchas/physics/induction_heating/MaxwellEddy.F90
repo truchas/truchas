@@ -19,12 +19,20 @@ module MaxwellEddy
   use state_history_type
   use msr_matrix_type
   use CGSolver
+  use cg_solver_class
   use truchas_logging_services
 
 use debug_EM
 
   implicit none
   private
+
+  type, extends(cg_solver) :: e_solver !TODO: need an appropriate name here
+    type(system), pointer :: sys
+  contains
+    procedure :: ax
+    procedure :: pc
+  end type
 
   type, public :: system
     type(simpl_mesh), pointer :: mesh => null() ! spatial discretization
@@ -36,6 +44,7 @@ use debug_EM
 
     !! CG control descriptor
     type(cg_desc) :: cg = cg_desc(0, 1000, 1, 0.0_r8, 1.0e-6_r8)
+    type(e_solver) :: eslv
 
     real(r8), allocatable :: eps(:)
     real(r8), allocatable :: mu(:)
@@ -85,6 +94,11 @@ contains
     if (present(tol))    this%cg%tol = tol
     if (present(red))    this%cg%red = red
     if (present(output_level)) this%cg%output_level = output_level
+    if (present(minitr)) this%eslv%minitr = minitr
+    if (present(maxitr)) this%eslv%maxitr = maxitr
+    if (present(tol))    this%eslv%tol = tol
+    if (present(red))    this%eslv%red = red
+    if (present(output_level)) this%eslv%output_level = output_level
   end subroutine
 
   subroutine interpolate_fields(this, t, e, b)
@@ -149,7 +163,8 @@ contains
     !call verify_vector (r, this%mesh%edge_gs, 'R:')
 
     de = 0.0_r8 ! initial guess for the correction
-    call SolveCG (this%cg, cg_ax, cg_pc, r, de, this%mesh%nedge_onP, status)!, this%mesh%edge_gs)
+    !call SolveCG (this%cg, cg_ax, cg_pc, r, de, this%mesh%nedge_onP, status)!, this%mesh%edge_gs)
+    call this%eslv%solve(r, de, this%mesh%nedge_onP, status)
     call this%mesh%edge_imap%gather_offp(de)
     !call verify_vector (de, this%mesh%edge_gs, 'DE:')
     !stop
@@ -182,7 +197,7 @@ contains
 
   subroutine initialize_system (this, mesh, eps, mu, sigma, etasq, delta, dt, emask)
 
-    class(system), intent(out) :: this
+    class(system), intent(out), target :: this
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: eps(:), mu(:), sigma(:)
     real(r8), intent(in) :: dt, etasq, delta
@@ -326,6 +341,8 @@ contains
     deallocate(ebedge)
     !ASSERT(this%a0%is_symmetric()) ! will generally fail due to order-of-operation differences
 
+    this%eslv%sys => this
+
   end subroutine initialize_system
 
   subroutine remove_dof(this, dof)
@@ -441,6 +458,23 @@ contains
   !! initialized) module variable CG_SYS which points to the additional data
   !! required by the computations.
   !!
+
+  subroutine ax(this, x, y)
+    class(e_solver), intent(in) :: this
+    real(r8), intent(in)  :: x(:)
+    real(r8), intent(out) :: y(:)
+    ASSERT(all(this%sys%w1mask .or. (x == 0.0_r8)))
+    y = this%sys%a1%matvec(x)
+    ASSERT(all(this%sys%w1mask .or. (y == 0.0_r8)))
+    call this%sys%mesh%edge_imap%gather_offp(y)
+  end subroutine
+
+  subroutine pc(this, x, y)
+    class(e_solver), intent(in) :: this
+    real(r8), intent(in)  :: x(:)
+    real(r8), intent(out) :: y(:)
+    call hiptmair(this%sys, x, y)
+  end subroutine
 
   subroutine cg_ax (x, y)
 
