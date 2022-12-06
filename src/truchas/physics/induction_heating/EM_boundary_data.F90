@@ -35,23 +35,28 @@ module EM_boundary_data
   
 contains
 
-  subroutine cylinder_bv_init (mesh)
+  subroutine cylinder_bv_init (mesh, params)
   
     use parallel_communication
     use simpl_mesh_type
-    use EM_data_proxy, only: symmetry_axis, get_EM_domain_type
     use GeometricModeler
     use bitfield_type, only: btest
+    use parameter_list_type
     
     type(simpl_mesh), intent(in), target :: mesh
+    type(parameter_list), intent(inout) :: params
     
     integer :: k, bface(mesh%nface), bx0, by0, bz0, bx1, by1, bz1, br1, b30, b60, b120, b150
     real(kind=rk) :: xmin(3), xmax(3), rmax, xh(3), yh(3), zh(3), tol, rmin, vertex(3), slope
     integer, allocatable :: group(:)
     type(GeometricModel) :: gm
+    character(:), allocatable :: domain_type, symmetry_axis
     
     real(kind=rk), parameter :: ORIGIN(3) = (/ 0.0_rk, 0.0_rk, 0.0_rk /)
     
+    call params%get('em-domain-type', domain_type)
+    call params%get('symmetry-axis', symmetry_axis)
+
   !!!
   !!! RECOVER BOUNDARY INFORMATION BASED ON A PRIORI KNOWLEDGE OF THE PROBLEM
     
@@ -61,7 +66,7 @@ contains
       xmax(k) = global_maxval(mesh%x(k,:)) ! max corner of the tight bounding box
     end do
     
-    select case (symmetry_axis())
+    select case (symmetry_axis)
     case ('X')
       rmax = sqrt(global_maxval(mesh%x(2,:)**2 + mesh%x(3,:)**2))
       xh = YHAT
@@ -82,9 +87,9 @@ contains
     end select
     
     !! Extract some geometrical info used in the frustum case.
-    select case (get_EM_domain_type())
+    select case (domain_type)
     case ('FRUSTUM')
-       select case (symmetry_axis())
+       select case (symmetry_axis)
        case ('X')
           tol = 1.0d-5 * (xmax(1)-xmin(1))
           !! Radius of frustum bottom
@@ -126,7 +131,7 @@ contains
 
     call GMTune (gm, tol=1.0e-3_rk*minval(xmax-xmin))
     
-    select case (get_EM_domain_type())
+    select case (domain_type)
       case ('FULL_CYLINDER')
         !! Define the bounding surfaces.
         call AddCylinder (gm, br1, ORIGIN, zh, rmax)  ! z-axial cylindrical surface

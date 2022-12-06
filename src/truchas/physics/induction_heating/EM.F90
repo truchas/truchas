@@ -38,6 +38,7 @@ contains
     use restart_variables, only: restart
     use restart_driver, only: restart_joule_heat
     use EM_properties
+    use electromagnetics_namelist
 
     real(kind=rk), intent(in) :: t
 
@@ -94,7 +95,7 @@ contains
       else if (material_has_changed()) then
         call TLS_info ('   EM material parameters have changed; restart data not usable.')
         call TLS_info ('  Computing the Joule heat ...')
-        call compute_joule_heat ()
+        call compute_joule_heat(params)
       else if (source_has_changed()) then
         if (source_is_scaled(s)) then
           write(ss,fmt='(es9.3)') s
@@ -103,7 +104,7 @@ contains
         else
           call TLS_info ('   Magnetic source field has changed; restart data not usable.')
           call TLS_info ('  Computing the Joule heat ...')
-          call compute_joule_heat ()
+          call compute_joule_heat(params)
         end if
       else
         call TLS_info ('   Using the Joule heat data from the restart file.')
@@ -117,7 +118,7 @@ contains
         call zero_joule_power_density ()
       else
         call TLS_info ('  Computing the Joule heat ...')
-        call compute_joule_heat ()
+        call compute_joule_heat(params)
       end if
 
     end if
@@ -159,6 +160,7 @@ contains
   subroutine induction_heating (t1, t2)
 
     use EM_properties
+    use electromagnetics_namelist, only: params
 
     real(kind=rk), intent(in) :: t1, t2
 
@@ -195,7 +197,7 @@ contains
       end if
     else if (matl_has_changed()) then
       call TLS_info (' EM material parameters have changed; computing the Joule heat ...')
-      call compute_joule_heat ()
+      call compute_joule_heat(params)
       call danu_write_joule (t1)
     else if (source_has_changed()) then
       if (source_is_scaled(s)) then
@@ -204,7 +206,7 @@ contains
         call scale_joule_power_density (s)
       else
         call TLS_info (' Magnetic source field has changed; computing the Joule heat ...')
-        call compute_joule_heat ()
+        call compute_joule_heat(params)
       end if
       call danu_write_joule (t1)
     end if
@@ -231,22 +233,25 @@ contains
  !!  DRIVER FOR THE JOULE HEAT SIMULATION -- SERIAL CODE
  !!
 
-  subroutine compute_joule_heat ()
+  subroutine compute_joule_heat(params)
 
     use simpl_mesh_type
     use mimetic_discretization
     use MaxwellEddy
     use EM_boundary_data
     use EM_graphics_output
+    use parameter_list_type
 
-    integer :: j, status, n, cg_max_itr, steps_per_cycle
+    type(parameter_list), intent(inout) :: params
+
+    integer :: j, status, n, cg_max_itr, steps_per_cycle, max_cycles, output_level
     real(kind=rk), pointer :: eps(:), mu(:), sigma(:)
     type(simpl_mesh), pointer :: mesh
 
-    type(system) :: sys
+    type(system), target :: sys
     real(kind=rk), pointer :: efield(:), bfield(:), q(:), q_avg(:), q_avg_last(:)
-    real(kind=rk) :: t, dt, error, eps0, mu0, sigma0, escf, bscf, qscf, freq, curr, etasq, delta, cg_red
-    logical :: converged
+    real(kind=rk) :: t, dt, error, eps0, mu0, sigma0, escf, bscf, qscf, freq, curr, etasq, delta, cg_red, ss_tol, num_etasq
+    logical :: converged, graphics_output
     character(len=256) :: string
     real(kind=rk) :: eps_min, eps_max, mu_min, mu_max, sigma_min, sigma_max
 
@@ -258,7 +263,7 @@ contains
     mesh => EM_mesh()
 
     !! Initialize the boundary conditions.
-    call cylinder_bv_init (mesh)
+    call cylinder_bv_init(mesh, params)
 
     eps   => permittivity()
     mu    => permeability()
@@ -305,8 +310,9 @@ contains
       call TLS_info (trim(string))
     end if
 
-    if (get_num_etasq() > etasq) then
-      etasq = get_num_etasq()
+    call params%get('num-etasq', num_etasq)
+    if (num_etasq > etasq) then
+      etasq = num_etasq
       if (is_IOP) then
         write(string,fmt='(3x,a,es11.4)') 'Using input numerical ETASQ value instead:', etasq
         call TLS_info (trim(string))
@@ -318,15 +324,12 @@ contains
     escf = curr / sigma0
     qscf = curr**2 / sigma0
 
-    steps_per_cycle = get_steps_per_cycle()
-    cg_red = get_cg_stopping_tolerance()
-    cg_max_itr = get_maximum_cg_iterations()
+    call params%get('steps-per-cycle', steps_per_cycle)
+    call params%get('ss-stopping-tolerance', ss_tol)
 
     !! Create and initialize the time-discretized system.
     dt = 1.0_rk / real(steps_per_cycle,kind=rk)
-    call sys%init(mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge)
-    call sys%set_param(minitr=1, maxitr=cg_max_itr, tol=0.0_rk, red=cg_red)
-    call sys%set_param(output_level=get_output_level())
+    call sys%init(mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge, params)
 
     allocate(efield(mesh%nedge), bfield(mesh%nface))
     allocate(q(mesh%ncell), q_avg(mesh%ncell), q_avg_last(mesh%ncell))
@@ -338,23 +341,25 @@ contains
 
     q = qscf * sys%joule_heat(efield)
 
-    if (graphics()) then
+    call params%get('graphics-output', graphics_output)
+    if (graphics_output) then
       call export_mesh (mesh, eps, mu, sigma)
-!NNC!      if (get_num_probe_points() > 0) then
-!NNC!        allocate(probe_point(3,get_num_probe_points()))
-!NNC!        probe_point = get_probe_points()
-!NNC!      end if
-!NNC!      call initialize_probes (mesh)
-!NNC!      call update_probes (t, escf*efield, bscf*bfield, q*mesh%volume)
+!NNC!      block
+!NNC!        real(r8), allocatable :: probe_point(:,:)
+!NNC!        call params%get('probe-points', probe_point)
+!NNC!        call initialize_probes (mesh)
+!NNC!        call update_probes (t, escf*efield, bscf*bfield, q*mesh%volume)
+!NNC!      end block
     end if
 
     converged = .false.
 
-    STEADY_STATE: do n = 1, get_maximum_source_cycles()
+    call params%get('maximum-source-cycles', max_cycles)
+    STEADY_STATE: do n = 1, max_cycles
 
       if (converged) exit
 
-      if (graphics()) then
+      if (graphics_output) then
         call initialize_field_output ()
         if (n == 1) call export_fields (mesh, t, escf*efield, bscf*bfield, q)
       end if
@@ -369,7 +374,7 @@ contains
         if (global_any(status /= 0)) exit STEADY_STATE
 
         q = qscf * sys%joule_heat(efield)
-        if (graphics()) then
+        if (graphics_output) then
           call export_fields (mesh, t, escf*efield, bscf*bfield, q)
 !NNC!          call update_probes (t, escf*efield, bscf*bfield, q*mesh%volume)
         end if
@@ -386,12 +391,13 @@ contains
         global_dot_product(q_avg(:mesh%ncell_onP), abs(mesh%volume(:mesh%ncell_onP)))
       call TLS_info (trim(string))
 
-      if (graphics()) call finalize_field_output (q_avg)
+      if (graphics_output) call finalize_field_output (q_avg)
 
       !! Check for 'convergence' to the steady-state periodic solution.
       if (n > 1) then
         error = global_maxval(abs(q_avg-q_avg_last)) / global_maxval(abs(q_avg))
-        converged = (error < get_ss_stopping_tolerance())
+        !converged = (error < get_ss_stopping_tolerance())
+        converged = (error < ss_tol)
       end if
 
       q_avg_last = q_avg
@@ -400,13 +406,13 @@ contains
 
     !! Check for time step failure.
     if (global_any(status /= 0)) then ! finalize the output and bail.
-      if (graphics()) then
+      if (graphics_output) then
 !NNC!        call write_probes (em_output)
       end if
       call TLS_fatal ('COMPUTE_JOULE_HEAT: EM time step failure')
     end if
 
-    if (graphics()) then
+    if (graphics_output) then
 !NNC!      call write_probes (em_output)
     end if
 

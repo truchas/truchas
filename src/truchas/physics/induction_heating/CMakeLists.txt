@@ -1,6 +1,5 @@
 target_sources(truchas PRIVATE
   altmesh_namelist.F90
-  CGSolver.F90
   EM.F90
   EM_boundary_data.F90
   EM_data_proxy.F90
@@ -17,4 +16,5 @@ target_sources(truchas PRIVATE
   solenoid_fields.F90
   msr_matrix_type.F90
   cg_solver_class.F90
+  electromagnetics_namelist.F90
 )

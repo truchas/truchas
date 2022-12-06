@@ -50,7 +50,7 @@
 !!    target of a pointer assignment.  However, the target of the result should
 !!    never be deallocated.  The corresponding 'set' routine must have been
 !!    previously called.
-!!  
+!!
 !!  CALL SET_JOULE_POWER_DENSITY (VALUES) stores the values of the Joule power
 !!    density on the tet-mesh cells, which is computed by the EM solver, for
 !!    later retrieval by the hex-mesh side of Truchas.  VALUES is a rank-1
@@ -73,7 +73,7 @@
 !!  procedures, however each processor will have the same value for parameters.
 !!  None of these procedures should be used unless the EM simulation has been
 !!  enabled.
-!!   
+!!
 !!  Real-valued functions:
 !!    GET_EPSILON_0(), GET_MU_0(), GET_SS_STOPPING_TOLERANCE(),
 !!    GET_CG_STOPPING_TOLERANCE(), GET_NUM_ETASQ()
@@ -190,40 +190,36 @@
 !!    undesirable copying of data, although this will permit the malicous
 !!    corruption of this private data.
 !!
-  
+
 #include "f90_assert.fpp"
 
 module EM_data_proxy
 
-  use,intrinsic :: iso_fortran_env, only: rk => real64
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use data_mapper_class
   use truchas_logging_services
   use truchas_timers
-  
+
   implicit none
   private
-  
+
   !! EM simulation state procedures
   public :: set_EM_simulation_on_or_off, EM_is_on, EM_is_off
-  
+
   !! Initialization procedure
   public :: init_EM_data_proxy
-  
-  !! Data store/retrieval procedures 
+
+  !! Data store/retrieval procedures
   public :: set_permittivity, permittivity
   public :: set_permeability, permeability
   public :: set_conductivity, conductivity
   public :: set_joule_power_density, joule_power_density
   public :: EM_mesh
-  
+
   !! Accessor functions for the electromagnetic namelist input parameters.
   public :: get_epsilon_0, get_mu_0
-  public :: get_EM_domain_type, symmetry_axis
-  public :: get_steps_per_cycle, get_maximum_source_cycles, get_ss_stopping_tolerance
-  public :: get_maximum_cg_iterations, get_cg_stopping_tolerance
-  public :: get_num_etasq, get_output_level, graphics
-  public :: get_num_probe_points, get_probe_points
-  
+  public :: symmetry_axis
+
   !! Magnetic source field procedures
   public :: source_has_changed, set_source_properties
   public :: source_frequency, uniform_source, induction_coils
@@ -232,46 +228,46 @@ module EM_data_proxy
   public :: in_time_interval
   public :: time_interval
   public :: material_has_changed
-  
+
   !! Restart procedures
   public :: read_joule_data, skip_joule_data, danu_write_joule
-  
+
   !! Container for the description of a driving coil
   type, public :: solenoid
-     real(kind=rk) :: current
-     !real(kind=rk) :: frequency
-     !real(kind=rk) :: axis(3)
-     real(kind=rk) :: center(3)
-     real(kind=rk) :: length
-     real(kind=rk) :: radius
+     real(kind=r8) :: current
+     !real(kind=r8) :: frequency
+     !real(kind=r8) :: axis(3)
+     real(kind=r8) :: center(3)
+     real(kind=r8) :: length
+     real(kind=r8) :: radius
      integer       :: nturns
   end type solenoid
-  
+
   !! Hex-tet grid mapping data.
   class(data_mapper), allocatable :: ht2em
-  
+
   !! Distributed tet-mesh cell-based vectors: EM material parameters.
-  real(kind=rk), allocatable, target, save :: eps(:), mu(:), sigma(:)
-  real(kind=rk), allocatable, target, save :: eps_q(:), mu_q(:), sigma_q(:)
-  
+  real(kind=r8), allocatable, target, save :: eps(:), mu(:), sigma(:)
+  real(kind=r8), allocatable, target, save :: eps_q(:), mu_q(:), sigma_q(:)
+
   !! Distributed hex-mesh cell-based vector: Joule power density.
-  real(kind=rk), allocatable, target, save :: joule(:)
+  real(kind=r8), allocatable, target, save :: joule(:)
 
   !! Source field parameters.
-  real(kind=rk), save :: uhfs   ! Uniform H-field strength returned by UNIFORM_SOURCE, and
-  real(kind=rk), save :: uhfs_q !   that value used to compute JOULE.
-  real(kind=rk), save :: freq   ! Source frequency returned by SOURCE_FREQUENCY, and
-  real(kind=rk), save :: freq_q !   that value used to compute JOULE.
+  real(kind=r8), save :: uhfs   ! Uniform H-field strength returned by UNIFORM_SOURCE, and
+  real(kind=r8), save :: uhfs_q !   that value used to compute JOULE.
+  real(kind=r8), save :: freq   ! Source frequency returned by SOURCE_FREQUENCY, and
+  real(kind=r8), save :: freq_q !   that value used to compute JOULE.
   type(solenoid), pointer, save :: coil(:) => null()  ! Coil properties returned by INDUCTION_COILS,
   type(solenoid), pointer, save :: coil_q(:) => null()!   and those values used to compute JOULE.
-  
+
   !! Source field parameters corresponding to JOULE
-  
+
   !! EM simulation state variable
   logical, save :: EM_enabled = .false.
-  
+
 CONTAINS
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! SET_EM_SIMULATION_ON_OR_OFF, EM_IS_ON, EM_IS_OFF
@@ -279,7 +275,7 @@ CONTAINS
  !! Set and query the state of the EM simulation.  When setting the state,
  !! only the value of the argument on the IO processor is relevant.
  !!
- 
+
   subroutine set_EM_simulation_on_or_off (on)
     use parallel_communication, only : broadcast
     logical, intent(in) :: on
@@ -314,7 +310,7 @@ CONTAINS
  !!
 
   subroutine init_EM_data_proxy ()
-  
+
     use parallel_communication
     use base_mesh_class
     use mesh_manager, only: named_mesh_ptr
@@ -324,10 +320,10 @@ CONTAINS
     use portage_mapper_type
 #endif
     use altmesh_namelist, only: data_mapper_kind
-    
+
     integer :: j
     class(base_mesh), pointer :: ht_mesh, em_mesh
-    
+
     !! Generate the mapping between the HT and EM meshes
     ht_mesh => named_mesh_ptr('main')
     em_mesh => named_mesh_ptr('alt')
@@ -345,13 +341,13 @@ CONTAINS
     end select
     call ht2em%init(ht_mesh, em_mesh)
     call TLS_info('    mesh-to-mesh mapper created')
-    
+
     !! Allocate the module's tet-mesh data store arrays.
     if (allocated(eps)) deallocate(eps)
     if (allocated(mu)) deallocate(mu)
     if (allocated(sigma)) deallocate(sigma)
     allocate(eps(em_mesh%ncell), mu(em_mesh%ncell), sigma(em_mesh%ncell))
-    
+
     if (allocated(eps_q)) deallocate(eps_q)
     if (allocated(mu_q)) deallocate(mu_q)
     if (allocated(sigma_q)) deallocate(sigma_q)
@@ -360,7 +356,7 @@ CONTAINS
     !! Allocate the module's hex-mesh data store array.
     if (allocated(joule)) deallocate(joule)
     allocate(joule(ht_mesh%ncell_onP))
-    
+
     !! Copy the input coil physical properties to our own data structure.
     allocate(coil(size(coil_array)), coil_q(size(coil_array)))
     do j = 1, size(coil)
@@ -368,12 +364,12 @@ CONTAINS
       coil(j)%radius = coil_array(j)%radius
       coil(j)%length = coil_array(j)%length
       coil(j)%nturns = coil_array(j)%nturns
-      coil(j)%current = 0.0_rk
+      coil(j)%current = 0.0_r8
     end do
     coil_q = coil
 
     !! The initial joule heat is set later in INITIALIZE_EM.
-    
+
   end subroutine init_EM_data_proxy
 
   function EM_mesh () result (ptr)
@@ -382,51 +378,51 @@ CONTAINS
     type(simpl_mesh), pointer :: ptr
     ptr => simpl_mesh_ptr('alt')
   end function EM_mesh
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! Truchas-side data store procedures
  !!
  !! Procedures map cell-based, hex-mesh input data to cell-based data on the
  !! tet mesh, storing the results as module data for later retrieval.
- !! 
-  
+ !!
+
   subroutine set_permittivity (values)
     use simpl_mesh_type
-    real(kind=rk), intent(in) :: values(:)
+    real(kind=r8), intent(in) :: values(:)
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(eps) )
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
-    call ht2em%map_field(values, eps(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, eps(:mesh%ncell_onP), defval=1.0_r8, map_type=LOCALLY_BOUNDED)
     call mesh%cell_imap%gather_offp(eps)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permittivity
 
   subroutine set_permeability (values)
     use simpl_mesh_type
-    real(kind=rk), intent(in) :: values(:)
+    real(kind=r8), intent(in) :: values(:)
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(mu) )
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
-    call ht2em%map_field(values, mu(:mesh%ncell_onP), defval=1.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, mu(:mesh%ncell_onP), defval=1.0_r8, map_type=LOCALLY_BOUNDED)
     call mesh%cell_imap%gather_offp(mu)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_permeability
 
   subroutine set_conductivity (values)
     use simpl_mesh_type
-    real(kind=rk), intent(in) :: values(:)
+    real(kind=r8), intent(in) :: values(:)
     type(simpl_mesh), pointer :: mesh
     ASSERT( allocated(sigma) )
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
-    call ht2em%map_field(values, sigma(:mesh%ncell_onP), defval=0.0_rk, map_type=LOCALLY_BOUNDED)
+    call ht2em%map_field(values, sigma(:mesh%ncell_onP), defval=0.0_r8, map_type=LOCALLY_BOUNDED)
     call mesh%cell_imap%gather_offp(sigma)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine set_conductivity
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! Solver-side data retrieval procedures
@@ -435,26 +431,26 @@ CONTAINS
  !! cell-based arrays on the tet mesh.  Functions may be used in expressions,
  !! or as the target of a pointer assignment, however the target of the result
  !! should never be deallocated.
- !! 
- 
+ !!
+
   function permittivity () result (ptr)
-    real(kind=rk), pointer :: ptr(:)
+    real(kind=r8), pointer :: ptr(:)
     ASSERT( allocated(eps) )
     ptr => eps
   end function permittivity
-  
+
   function permeability () result (ptr)
-    real(kind=rk), pointer :: ptr(:)
+    real(kind=r8), pointer :: ptr(:)
     ASSERT( allocated(mu) )
     ptr => mu
   end function permeability
 
   function conductivity () result (ptr)
-    real(kind=rk), pointer :: ptr(:)
+    real(kind=r8), pointer :: ptr(:)
     ASSERT( allocated(sigma) )
     ptr => sigma
   end function conductivity
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! Solver-side data store procedures
@@ -462,22 +458,22 @@ CONTAINS
  !! Procedures map cell-based, tet-mesh input data to cell-based data on the
  !! hex mesh, storing the results as module data for later retrieval.
  !!
- 
+
   subroutine set_joule_power_density (values)
-  
+
     use simpl_mesh_type
 
-    real(kind=rk), intent(in) :: values(:)
+    real(kind=r8), intent(in) :: values(:)
     type(simpl_mesh), pointer :: mesh
 
     ASSERT( allocated(joule) )
-    
+
     mesh => EM_mesh()
     call start_timer('mesh-to-mesh mapping')
-    call ht2em%map_field(values(:mesh%ncell_onP), joule, defval=0.0_rk, &
+    call ht2em%map_field(values(:mesh%ncell_onP), joule, defval=0.0_r8, &
                          map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
     call stop_timer('mesh-to-mesh mapping')
-    
+
     !! Record the data that gave rise to this Joule heat field.
     uhfs_q  = uhfs
     freq_q  = freq
@@ -486,7 +482,7 @@ CONTAINS
     mu_q    = mu
     sigma_q = sigma
 
-  end subroutine set_joule_power_density 
+  end subroutine set_joule_power_density
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -496,97 +492,37 @@ CONTAINS
  !! cell-based arrays on the hex mesh.  Functions may be used in expressions,
  !! or as the target of a pointer assignment, however the target of the result
  !! should never be deallocated.
- !! 
- 
+ !!
+
   function joule_power_density () result (ptr)
-    real(kind=rk), pointer :: ptr(:)
+    real(kind=r8), pointer :: ptr(:)
     ASSERT( allocated(joule) )
     ptr => joule
   end function joule_power_density
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! EM namelist input accessor functions
  !!
-  
+
   function get_epsilon_0 ()
     use physical_constants, only: vacuum_permittivity
-    real(kind=rk) :: get_epsilon_0
+    real(kind=r8) :: get_epsilon_0
     get_epsilon_0 = vacuum_permittivity
   end function get_epsilon_0
-  
+
   function get_mu_0 ()
     use physical_constants, only: vacuum_permeability
-    real(kind=rk) :: get_mu_0
+    real(kind=r8) :: get_mu_0
     get_mu_0 = vacuum_permeability
   end function get_mu_0
-  
-  function get_EM_domain_type () result (string)
-    use EM_input, only: EM_Domain_Type
-    character(len=len_trim(EM_Domain_Type)) :: string
-    string = EM_Domain_Type
-  end function get_EM_domain_type
-  
-  function symmetry_axis ()
-    use EM_input, only: sa => Symmetry_Axis
-    character(len=1) :: symmetry_axis
-    symmetry_axis = sa
-  end function symmetry_axis
-  
-  integer function get_steps_per_cycle ()
-    use EM_input, only: steps_per_cycle
-    get_steps_per_cycle = steps_per_cycle
-  end function get_steps_per_cycle
-  
-  integer function get_maximum_source_cycles ()
-    use EM_input, only: Maximum_Source_Cycles
-    get_maximum_source_cycles = Maximum_Source_Cycles
-  end function get_maximum_source_cycles
-  
-  function get_ss_stopping_tolerance ()
-    use EM_input, only: SS_Stopping_Tolerance
-    real(kind=rk) :: get_ss_stopping_tolerance
-    get_ss_stopping_tolerance = SS_Stopping_Tolerance
-  end function get_ss_stopping_tolerance
-  
-  integer function get_maximum_cg_iterations ()
-    use EM_input, only: Maximum_CG_Iterations
-    get_maximum_cg_iterations = Maximum_CG_Iterations
-  end function get_maximum_cg_iterations
-  
-  function get_cg_stopping_tolerance ()
-    use EM_input, only: CG_Stopping_Tolerance
-    real(kind=rk) :: get_cg_stopping_tolerance
-    get_cg_stopping_tolerance = CG_Stopping_Tolerance
-  end function get_cg_stopping_tolerance
-  
-  function get_num_etasq ()
-    use EM_input, only: Num_Etasq
-    real(kind=rk) :: get_num_etasq
-    get_num_etasq = Num_Etasq
-  end function get_num_etasq
-  
-  integer function get_output_level ()
-    use EM_input, only: Output_Level
-    get_output_level = Output_Level
-  end function get_output_level
-  
-  logical function graphics ()
-    use EM_input, only: Graphics_Output
-    graphics = Graphics_Output
-  end function graphics
-  
-  integer function get_num_probe_points ()
-    use EM_input, only: num_probes
-    get_num_probe_points = num_probes
-  end function get_num_probe_points
-  
-  function get_probe_points () result (array)
-    use EM_input, only: Probe_Points, num_probes
-    real(kind=rk) :: array(3,num_probes)
-    array = Probe_Points(:,:num_probes)
-  end function get_probe_points
-  
+
+  function symmetry_axis() result(string)
+    use electromagnetics_namelist, only: params
+    character(:), allocatable :: string
+    call params%get('symmetry-axis', string)
+  end function
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! SOURCE_HAS_CHANGED
@@ -613,14 +549,14 @@ CONTAINS
       source_has_changed = .true.   ! at least one coil current changed
     else if (uhfs /= uhfs_q) then
       source_has_changed = .true.   ! the uniform field strength changed
-    else if (any(coil%current /= 0.0_rk) .or. (uhfs /= 0.0_rk)) then
+    else if (any(coil%current /= 0.0_r8) .or. (uhfs /= 0.0_r8)) then
       if (freq /= freq_q) then
         source_has_changed = .true. ! the frequency changed with a non-zero source field
       end if
     end if
 
   end function source_has_changed
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! MATERIAL_HAS_CHANGED
@@ -646,24 +582,25 @@ CONTAINS
 
   logical function material_has_changed ()
 
-    use EM_input, only: Material_Change_Threshold
+    use electromagnetics_namelist, only: params
     use parallel_communication, only: global_maxval
 
     integer :: j
-    real(kind=rk) :: dmu, dsigma
+    real(kind=r8) :: dmu, dsigma, a
     character(len=80) :: string
 
     material_has_changed = .false.
 
     dmu = global_maxval(abs(mu-mu_q)/mu)
 
-    dsigma = -huge(1.0_rk)
+    dsigma = -huge(1.0_r8)
     do j = 1, size(sigma)
-      if (sigma(j) > 0.0_rk) dsigma = max(dsigma, abs(sigma(j)-sigma_q(j))/sigma(j))
+      if (sigma(j) > 0.0_r8) dsigma = max(dsigma, abs(sigma(j)-sigma_q(j))/sigma(j))
     end do
     dsigma = global_maxval(dsigma)
 
-    if (max(dmu, dsigma) > Material_Change_Threshold) material_has_changed = .true.
+    call params%get('material-change-threshold', a)
+    if (max(dmu, dsigma) > a) material_has_changed = .true.
 
     write(string,fmt='(3x,2(a,es10.3))') 'maximum relative change: sigma=', dsigma, ', mu=', dmu
     call TLS_info(string)
@@ -678,17 +615,17 @@ CONTAINS
  !! and UNIFORM_SOURCE, and the current-component of the value returned
  !! by INDUCTION_COILS, to the appropriate values for time T.
  !!
-  
+
   subroutine set_source_properties (t)
-  
-    real(kind=rk), intent(in) :: t
-    
+
+    real(kind=r8), intent(in) :: t
+
     uhfs = uhfs_at_time(t)
     freq = freq_at_time(t)
     coil%current = curr_at_time(t)
-    
+
   end subroutine set_source_properties
-  
+
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! NO_SOURCE_FIELD, ZERO_JOULE_POWER_DENSITY
@@ -699,22 +636,22 @@ CONTAINS
  !! the resulting Joule power density field to zero (on the hex mesh),
  !! eliminating the need to 'compute' the Joule power density.
  !!
- 
+
   logical function no_source_field ()
-    no_source_field = (uhfs == 0.0_rk) .and. all(coil%current == 0.0_rk)
+    no_source_field = (uhfs == 0.0_r8) .and. all(coil%current == 0.0_r8)
   end function no_source_field
-  
+
   subroutine zero_joule_power_density ()
     ASSERT( allocated(joule) )
-    joule = 0.0_rk
+    joule = 0.0_r8
     !! Data from which the preceding joule heat derives.
-    uhfs_q = 0.0_rk
-    freq_q = 0.0_rk
-    coil_q%current = 0.0_rk
+    uhfs_q = 0.0_r8
+    freq_q = 0.0_r8
+    coil_q%current = 0.0_r8
     eps_q   = eps
     mu_q    = mu
     sigma_q = sigma
-  end subroutine zero_joule_power_density 
+  end subroutine zero_joule_power_density
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -737,16 +674,16 @@ CONTAINS
 
   logical function source_is_scaled (s)
 
-    real(kind=rk), intent(out) :: s
+    real(kind=r8), intent(out) :: s
 
-    real(kind=rk) :: a, err
+    real(kind=r8) :: a, err
 
     !! Best scale factor in least-squares sense.
     a = sqrt(uhfs_q**2 + sum(coil_q%current**2))
-    if (a > 0.0_rk) then
+    if (a > 0.0_r8) then
       s = (uhfs*uhfs_q + sum(coil%current*coil_q%current)) / a**2
     else
-      s = 0.0_rk
+      s = 0.0_r8
     end if
 
     !! L2 error in best scaling.
@@ -759,7 +696,7 @@ CONTAINS
 
   subroutine scale_joule_power_density (s)
 
-    real(kind=rk), intent(in) :: s
+    real(kind=r8), intent(in) :: s
 
     ASSERT( allocated(joule) )
 
@@ -774,12 +711,12 @@ CONTAINS
 
  end subroutine scale_joule_power_density
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
  !! Solver-side source field parameter accessor functions
  !!
  !! These functions return data previously set in the module.  The physical
- !! property components of the coil data are static and are set during the 
+ !! property components of the coil data are static and are set during the
  !! initialization of the module.  The electrical current component of the
  !! of the coil data, and the remaining data are time-dependent and are set
  !! by SET_SOURCE_PROPERTIES for a specific time.
@@ -789,14 +726,14 @@ CONTAINS
     type(solenoid), pointer :: induction_coils(:)
     induction_coils => coil
   end function induction_coils
-  
+
   function source_frequency ()
-    real(kind=rk) :: source_frequency
+    real(kind=r8) :: source_frequency
     source_frequency = freq
   end function source_frequency
-  
+
   function uniform_source ()
-    real(kind=rk) :: uniform_source
+    real(kind=r8) :: uniform_source
     uniform_source = uhfs
   end function uniform_source
 
@@ -819,8 +756,8 @@ CONTAINS
 
     use EM_input, only: src_freq
 
-    real(kind=rk), intent(in) :: t
-    real(kind=rk) :: freq
+    real(kind=r8), intent(in) :: t
+    real(kind=r8) :: freq
 
     freq = src_freq(time_interval(t))
 
@@ -831,8 +768,8 @@ CONTAINS
 
     use EM_input, only: coil_array
 
-    real(kind=rk), intent(in) :: t
-    real(kind=rk) :: curr(size(coil_array))
+    real(kind=r8), intent(in) :: t
+    real(kind=r8) :: curr(size(coil_array))
 
     integer :: n, j
 
@@ -848,13 +785,13 @@ CONTAINS
 
     use EM_input, only: unif_src
 
-    real(kind=rk), intent(in) :: t
-    real(kind=rk) :: uhfs
+    real(kind=r8), intent(in) :: t
+    real(kind=r8) :: uhfs
 
     if (size(unif_src) > 0) then
       uhfs = unif_src(time_interval(t))
     else
-      uhfs = 0.0_rk
+      uhfs = 0.0_r8
     end if
 
   end function uhfs_at_time
@@ -864,7 +801,7 @@ CONTAINS
 
     use EM_input, only: src_time
 
-    real(kind=rk), intent(in) :: t
+    real(kind=r8), intent(in) :: t
     integer :: n
 
     n = size(src_time)
@@ -887,7 +824,7 @@ CONTAINS
 
   logical function in_time_interval (t, n)
 
-    real(kind=rk), intent(in) :: t
+    real(kind=r8), intent(in) :: t
     integer, intent(in) ::n
 
     in_time_interval = (n == time_interval(t))
@@ -916,7 +853,7 @@ CONTAINS
 
     integer, intent(in) :: unit,  version
     class(base_mesh), pointer :: em_mesh, ht_mesh
-    
+
     integer :: n
 
     call TLS_info ('  reading the Joule heat data from the restart file')
@@ -950,7 +887,7 @@ CONTAINS
     call read_var (unit, n, 'READ_JOULE_DATA: error reading NJOULE record')
     if (n /= global_sum(size(joule))) call halt ('READ_JOULE_DATA: incompatible NJOULE value: ' // i_to_c(n))
     call read_dist_array (unit, joule, ht_mesh%xcell(:ht_mesh%ncell_onp), 'READ_JOULE_DATA: error reading JOULE record')
-      
+
   end subroutine read_joule_data
 
 
@@ -988,14 +925,14 @@ CONTAINS
     use truchas_h5_outfile, only: th5_sim_group
     use truchas_danu_output_data, only: outfile, io_group_size
     use truchas_env, only: output_file_name
-    
-    real(rk), intent(in) :: t
+
+    real(r8), intent(in) :: t
 
     integer :: n
     type(simpl_mesh), pointer :: mesh => null()
     integer, pointer :: cell_perm(:) => null()
-    real(kind=rk), pointer :: col_mu(:)    => null()
-    real(kind=rk), pointer :: col_sigma(:) => null()
+    real(kind=r8), pointer :: col_mu(:)    => null()
+    real(kind=r8), pointer :: col_sigma(:) => null()
 
     integer, save :: sim_num = 0
     character(32) :: sim_name
@@ -1008,7 +945,7 @@ CONTAINS
     ASSERT( associated(coil_q) )
 
     call outfile%reopen (output_file_name('h5'), io_group_size, is_IOP)
-    
+
     mesh => simpl_mesh_ptr('alt')
     n = global_sum(mesh%ncell_onP)
 
@@ -1050,10 +987,10 @@ CONTAINS
     deallocate(cell_perm, col_mu, col_sigma)
 
   end subroutine danu_write_joule
-  
+
   function solenoid_serialize (coil) result (array)
     type(solenoid), intent(in) :: coil(:)
-    real(rk) :: array(7,size(coil))
+    real(r8) :: array(7,size(coil))
     integer :: j
     do j = 1, size(coil)
       array(1,j) = coil(1)%current

@@ -18,8 +18,8 @@ module MaxwellEddy
   use mimetic_discretization
   use state_history_type
   use msr_matrix_type
-  use CGSolver
   use cg_solver_class
+  use parameter_list_type
   use truchas_logging_services
 
 use debug_EM
@@ -30,6 +30,7 @@ use debug_EM
   type, extends(cg_solver) :: e_solver !TODO: need an appropriate name here
     type(system), pointer :: sys
   contains
+    procedure :: init => cg_solver_init
     procedure :: ax
     procedure :: pc
   end type
@@ -37,13 +38,13 @@ use debug_EM
   type, public :: system
     type(simpl_mesh), pointer :: mesh => null() ! spatial discretization
 
+    integer :: output_level
+
     !! Solution history
     real(r8) :: t, dt
     type(state_history) :: ehist, bhist
     real(r8), allocatable :: g0(:)
 
-    !! CG control descriptor
-    type(cg_desc) :: cg = cg_desc(0, 1000, 1, 0.0_r8, 1.0e-6_r8)
     type(e_solver) :: eslv
 
     real(r8), allocatable :: eps(:)
@@ -64,7 +65,6 @@ use debug_EM
   contains
     procedure :: init => initialize_system
     procedure :: set_initial_state
-    procedure :: set_param
     procedure :: step
     !procedure :: interpolate_fields ! currently unused
     procedure :: joule_heat
@@ -83,22 +83,6 @@ contains
     this%t = t
     call this%ehist%init(3, t, e)
     call this%bhist%init(3, t, b)  ! really just mvec=1 if no interpolated output.
-  end subroutine
-
-  subroutine set_param(this, minitr, maxitr, tol, red, output_level)
-    class(system), intent(inout) :: this
-    real(r8), intent(in), optional :: tol, red
-    integer, intent(in), optional :: minitr, maxitr, output_level
-    if (present(minitr)) this%cg%minitr = minitr
-    if (present(maxitr)) this%cg%maxitr = maxitr
-    if (present(tol))    this%cg%tol = tol
-    if (present(red))    this%cg%red = red
-    if (present(output_level)) this%cg%output_level = output_level
-    if (present(minitr)) this%eslv%minitr = minitr
-    if (present(maxitr)) this%eslv%maxitr = maxitr
-    if (present(tol))    this%eslv%tol = tol
-    if (present(red))    this%eslv%red = red
-    if (present(output_level)) this%eslv%output_level = output_level
   end subroutine
 
   subroutine interpolate_fields(this, t, e, b)
@@ -163,7 +147,6 @@ contains
     !call verify_vector (r, this%mesh%edge_gs, 'R:')
 
     de = 0.0_r8 ! initial guess for the correction
-    !call SolveCG (this%cg, cg_ax, cg_pc, r, de, this%mesh%nedge_onP, status)!, this%mesh%edge_gs)
     call this%eslv%solve(r, de, this%mesh%nedge_onP, status)
     call this%mesh%edge_imap%gather_offp(de)
     !call verify_vector (de, this%mesh%edge_gs, 'DE:')
@@ -172,7 +155,7 @@ contains
     e = e + de
     !call verify_vector (e, this%mesh%edge_gs, 'E:')
 
-    if (this%cg%output_level >= 3) then
+    if (this%eslv%output_level >= 3) then ! TODO: do not use internals
       write(message,fmt='(t6,a,es10.3)') 'step |de|_max=', global_maxval(abs(de))
       call TLS_info (trim(message))
     end if
@@ -195,13 +178,14 @@ contains
 !!  SPECIAL PURPOSE PROCEDURES FOR TRAPEZOID-RULE TIME INTEGRATION
 !!
 
-  subroutine initialize_system (this, mesh, eps, mu, sigma, etasq, delta, dt, emask)
+  subroutine initialize_system (this, mesh, eps, mu, sigma, etasq, delta, dt, emask, params)
 
     class(system), intent(out), target :: this
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: eps(:), mu(:), sigma(:)
     real(r8), intent(in) :: dt, etasq, delta
     integer, intent(in) :: emask(:)
+    type(parameter_list), intent(inout) :: params
 
     integer :: i, j, k, l, m, n
     real(r8) :: c(4,6), ctm2(6,4), ctm2c(6,6), g(6,4), a0(4,4), m1(21), m2(10)
@@ -341,7 +325,7 @@ contains
     deallocate(ebedge)
     !ASSERT(this%a0%is_symmetric()) ! will generally fail due to order-of-operation differences
 
-    this%eslv%sys => this
+    call this%eslv%init(this, params)
 
   end subroutine initialize_system
 
@@ -459,6 +443,18 @@ contains
   !! required by the computations.
   !!
 
+  subroutine cg_solver_init(this, sys, params)
+    class(e_solver), intent(out) :: this
+    type(system), intent(in), target :: sys
+    type(parameter_list), intent(inout) :: params
+    this%sys => sys
+    this%minitr = 1
+    call params%get('maximum-cg-iterations', this%maxitr)
+    this%tol = 0.0_r8
+    call params%get('cg-stopping-tolerance', this%red)
+    call params%get('output-level', this%output_level)
+  end subroutine
+
   subroutine ax(this, x, y)
     class(e_solver), intent(in) :: this
     real(r8), intent(in)  :: x(:)
@@ -475,28 +471,6 @@ contains
     real(r8), intent(out) :: y(:)
     call hiptmair(this%sys, x, y)
   end subroutine
-
-  subroutine cg_ax (x, y)
-
-    real(r8), intent(in)  :: x(:)
-    real(r8), intent(out) :: y(:)
-
-    ASSERT( all(cg_sys%w1mask .or. (x == 0.0_r8)) )
-
-    y = cg_sys%a1%matvec(x)
-    ASSERT( all(cg_sys%w1mask .or. (y == 0.0_r8)) )
-
-    call cg_sys%mesh%edge_imap%gather_offp(y)
-
-  end subroutine cg_ax
-
-
-  subroutine cg_pc (x, y)
-    real(r8), intent(in)  :: x(:)
-    real(r8), intent(out) :: y(:)
-    call hiptmair (cg_sys, x, y)
-  end subroutine cg_pc
-
 
   function joule_heat(this, u) result(q)
 

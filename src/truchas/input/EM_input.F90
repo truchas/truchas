@@ -86,10 +86,13 @@ contains
   subroutine read_EM_input (lun)
 
     use mesh_manager, only: enable_mesh
+    use electromagnetics_namelist
+
     integer, intent(in) :: lun
     logical :: exists
 
     call read_electromagnetics_namelist(lun)
+    call orig_read_electromagnetics_namelist(lun)
     call read_induction_coil_namelists(lun)
 
     call enable_mesh('alt', exists)
@@ -97,7 +100,7 @@ contains
 
   end subroutine read_EM_input
 
-  subroutine read_electromagnetics_namelist(lun)
+  subroutine orig_read_electromagnetics_namelist(lun)
 
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_I, NULL_R
     use parallel_communication, only: is_IOP, broadcast
@@ -285,7 +288,7 @@ contains
       num_probes = n
     end do
 
-  end subroutine read_electromagnetics_namelist
+  end subroutine orig_read_electromagnetics_namelist
 
   subroutine read_induction_coil_namelists(lun)
 
