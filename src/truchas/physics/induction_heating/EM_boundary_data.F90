@@ -39,7 +39,7 @@ contains
   
     use parallel_communication
     use simpl_mesh_type
-    use GeometricModeler
+    use geometry_model_type
     use bitfield_type, only: btest
     use parameter_list_type
     
@@ -49,7 +49,7 @@ contains
     integer :: k, bface(mesh%nface), bx0, by0, bz0, bx1, by1, bz1, br1, b30, b60, b120, b150
     real(kind=rk) :: xmin(3), xmax(3), rmax, xh(3), yh(3), zh(3), tol, rmin, vertex(3), slope
     integer, allocatable :: group(:)
-    type(GeometricModel) :: gm
+    type(geometry_model) :: gm
     character(:), allocatable :: domain_type, symmetry_axis
     
     real(kind=rk), parameter :: ORIGIN(3) = (/ 0.0_rk, 0.0_rk, 0.0_rk /)
@@ -129,14 +129,14 @@ contains
     case default
     end select
 
-    call GMTune (gm, tol=1.0e-3_rk*minval(xmax-xmin))
+    call gm%tune(tol=1.0e-3_rk*minval(xmax-xmin))
     
     select case (domain_type)
       case ('FULL_CYLINDER')
         !! Define the bounding surfaces.
-        call AddCylinder (gm, br1, ORIGIN, zh, rmax)  ! z-axial cylindrical surface
-        call AddPlane (gm, bz0, xmin, -zh)  ! bottom surface
-        call AddPlane (gm, bz1, xmax, zh)   ! top surface
+        call gm%add_cylinder(ORIGIN, zh, rmax, br1)  ! z-axial cylindrical surface
+        call gm%add_plane(xmin, -zh, bz0)  ! bottom surface
+        call gm%add_plane(xmax,  zh, bz1)  ! top surface
 
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -146,10 +146,10 @@ contains
 
       case ('HALF_CYLINDER')
         !! Define the bounding surfaces.
-        call AddCylinder (gm, br1, ORIGIN, zh, rmax)  ! z-axial cylindrical surface
-        call AddPlane (gm, bz0, xmin, -zh)    ! bottom surface
-        call AddPlane (gm, bz1, xmax, zh)     ! top surface
-        call AddPlane (gm, bx0, ORIGIN, -xh)  ! x=0 symmetry plane
+        call gm%add_cylinder(ORIGIN, zh, rmax, br1)  ! z-axial cylindrical surface
+        call gm%add_plane(xmin, -zh, bz0)    ! bottom surface
+        call gm%add_plane(xmax,  zh, bz1)    ! top surface
+        call gm%add_plane(ORIGIN, -xh, bx0)  ! x=0 symmetry plane
 
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -159,11 +159,11 @@ contains
 
       case ('QUARTER_CYLINDER')
         !! Define the bounding surfaces.
-        call AddCylinder (gm, br1, ORIGIN, zh, rmax)  ! z-axial cylindrical surface
-        call AddPlane (gm, bz0, xmin, -zh)    ! bottom surface
-        call AddPlane (gm, bz1, xmax, zh)     ! top surface
-        call AddPlane (gm, bx0, ORIGIN, -xh)  ! x=0 symmetry plane
-        call AddPlane (gm, by0, ORIGIN, -yh)  ! y=0 symmetry plane
+        call gm%add_cylinder(ORIGIN, zh, rmax, br1)  ! z-axial cylindrical surface
+        call gm%add_plane(xmin, -zh, bz0)    ! bottom surface
+        call gm%add_plane(xmax,  zh, bz1)    ! top surface
+        call gm%add_plane(ORIGIN, -xh, bx0)  ! x=0 symmetry plane
+        call gm%add_plane(ORIGIN, -yh, by0)  ! y=0 symmetry plane
 
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -173,15 +173,15 @@ contains
 
       case ('CYLINDER')
         !! Define the bounding surfaces.
-        call AddCylinder (gm, br1, ORIGIN, zh, rmax)  ! z-axial cylindrical surface
-        call AddPlane (gm, bz0, xmin, -zh)    ! bottom surface
-        call AddPlane (gm, bz1, xmax, zh)     ! top surface
-        call AddPlane (gm, bx0, ORIGIN, -xh)  ! x=0 symmetry plane
-        call AddPlane (gm, by0, ORIGIN, -yh)  ! y=0 symmetry plane
-        call AddPlane (gm, b30, ORIGIN, xh - sqrt(3.0_rk)*yh)
-        call AddPlane (gm, b60, ORIGIN, sqrt(3.0_rk)*xh - yh)
-        call AddPlane (gm, b120, ORIGIN, sqrt(3.0_rk)*xh + yh)
-        call AddPlane (gm, b150, ORIGIN, xh + sqrt(3.0_rk)*yh)
+        call gm%add_cylinder(ORIGIN, zh, rmax, br1)  ! z-axial cylindrical surface
+        call gm%add_plane(xmin, -zh, bz0)    ! bottom surface
+        call gm%add_plane(xmax, zh, bz1)     ! top surface
+        call gm%add_plane(ORIGIN, -xh, bx0)  ! x=0 symmetry plane
+        call gm%add_plane(ORIGIN, -yh, by0)  ! y=0 symmetry plane
+        call gm%add_plane(ORIGIN, xh - sqrt(3.0_rk)*yh, b30)
+        call gm%add_plane(ORIGIN, sqrt(3.0_rk)*xh - yh, b60)
+        call gm%add_plane(ORIGIN, sqrt(3.0_rk)*xh + yh, b120)
+        call gm%add_plane(ORIGIN, xh + sqrt(3.0_rk)*yh, b150)
 
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -191,15 +191,15 @@ contains
 
       case ('FRUSTUM')
         !! Define the bounding surfaces.
-        call AddCone  (gm, br1, vertex, zh, slope)
-        call AddPlane (gm, bz0, xmin, -zh)    ! bottom surface
-        call AddPlane (gm, bz1, xmax, zh)     ! top surface
-        call AddPlane (gm, bx0, ORIGIN, -xh)  ! x=0 symmetry plane
-        call AddPlane (gm, by0, ORIGIN, -yh)  ! y=0 symmetry plane
-        call AddPlane (gm, b30, ORIGIN, xh - sqrt(3.0_rk)*yh)   ! other symmetry planes
-        call AddPlane (gm, b60, ORIGIN, sqrt(3.0_rk)*xh - yh)
-        call AddPlane (gm, b120, ORIGIN, sqrt(3.0_rk)*xh + yh)
-        call AddPlane (gm, b150, ORIGIN, xh + sqrt(3.0_rk)*yh)
+        call gm%add_cone(vertex, zh, slope, br1)
+        call gm%add_plane(xmin, -zh, bz0)    ! bottom surface
+        call gm%add_plane(xmax, zh, bz1)     ! top surface
+        call gm%add_plane(ORIGIN, -xh, bx0)  ! x=0 symmetry plane
+        call gm%add_plane(ORIGIN, -yh, by0)  ! y=0 symmetry plane
+        call gm%add_plane(ORIGIN, xh - sqrt(3.0_rk)*yh, b30)   ! other symmetry planes
+        call gm%add_plane(ORIGIN, sqrt(3.0_rk)*xh - yh, b60)
+        call gm%add_plane(ORIGIN, sqrt(3.0_rk)*xh + yh, b120)
+        call gm%add_plane(ORIGIN, xh + sqrt(3.0_rk)*yh, b150)
         
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -208,12 +208,12 @@ contains
         group(3) = bit_mask((/bz0, bz1/)) ! nxH given (source) or nxH=0 (symmetry)
       
       case ('VERIFICATION1')
-        call AddPlane (gm, bx0, xmin, -XHAT)
-        call AddPlane (gm, by0, xmin, -YHAT)
-        call AddPlane (gm, bz0, xmin, -ZHAT)
-        call AddPlane (gm, bx1, xmax, XHAT)
-        call AddPlane (gm, by1, xmax, YHAT)
-        call AddPlane (gm, bz1, xmax, ZHAT)
+        call gm%add_plane(xmin, -XHAT, bx0)
+        call gm%add_plane(xmin, -YHAT, by0)
+        call gm%add_plane(xmin, -ZHAT, bz0)
+        call gm%add_plane(xmax,  XHAT, bx1)
+        call gm%add_plane(xmax,  YHAT, by1)
+        call gm%add_plane(xmax,  ZHAT, bz1)
         
         !! Define surface groups to be treated alike.
         allocate(group(3))
@@ -226,7 +226,7 @@ contains
     end select
     
     call generate_bface (gm, mesh, btest(mesh%face_set_mask,0), group, bface)
-    call DestroyGeometricModel (gm)
+    !call DestroyGeometricModel (gm)
     deallocate(group)
     
     !! NB: As written, the preceding code is not strict.  A quarter cylinder mesh,

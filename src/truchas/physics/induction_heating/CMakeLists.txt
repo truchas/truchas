@@ -5,7 +5,7 @@ target_sources(truchas PRIVATE
   EM_data_proxy.F90
   EM_graphics_output.F90
   EM_properties.F90
-  GeometricModeler.F90
+  geometry_model_type.F90
   MaxwellBoundaryData.F90
   MaxwellEddy.F90
   data_explorer.F90
