@@ -311,6 +311,8 @@ contains
     allocate(this%length(this%nedge), this%area(this%nface), this%volume(this%ncell))
     call this%compute_geometry
 
+    call init_face_cell_data(this)  ! NB: must call after compute_geometry
+
   contains
 
     subroutine rotate_coord(angle, x, y)
@@ -967,6 +969,30 @@ contains
     end do
     ASSERT(all(this%enode > 0))
   end subroutine init_edge_node_data
+
+  !! This subroutine initializes the face-cell connectivity component %FCELL.
+  !! FCELL(:,j) are the IDs of the two cells containing the oriented face j:
+  !! its normal points out of cell FCELL(1,j) into cell FCELL(2,j). If the
+  !! face is on the subdomain boundary, then one of the two values will be 0.
+  !!
+  !! NB: We require the cell orientation in order to determine the order of the
+  !! cells. For that we use the sign of the %VOLUME component which must have
+  !! been initialized prior to calling this routine.
+
+  subroutine init_face_cell_data(this)
+    class(simpl_mesh), intent(inout) :: this
+    integer :: j, k, p
+    allocate(this%fcell(2,this%nface))
+    this%fcell = 0
+    do j = 1, this%ncell
+      p = merge(0, 1, this%volume(j) > 0)
+      do k = 1, size(this%cface,dim=1)
+        ASSERT(this%fcell(p+1,this%cface(k,j))==0)
+        this%fcell(p+1,this%cface(k,j)) = j
+        p = modulo(p+1,2)
+      end do
+    end do
+  end subroutine
 
   !! When a procedure executed only on the IO processor returns a status
   !! and possible error message, these need to be communicated to the other

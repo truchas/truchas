@@ -244,10 +244,10 @@ contains
 
 !!!! PLANE SURFACE TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  pure logical function on_plane(this, point, tol)
+  pure logical function on_plane(this, point, tol) result(on_surf)
     class(plane_surface), intent(in) :: this
     real(r8), intent(in) :: point(:), tol
-    on_plane = abs(dot_product(this%normal,point-this%point)) < tol
+    on_surf = abs(dot_product(this%normal,point-this%point)) < tol
   end function
 
   pure logical function co_oriented_plane(this, face) result(same)
@@ -259,43 +259,44 @@ contains
 
 !!!! CYLINDER SURFACE TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  pure logical function on_cylinder (this, point, tol)
+  pure logical function on_cylinder(this, point, tol) result(on_surf)
     class(cylinder_surface), intent(in) :: this
     real(r8), intent(in) :: point(:), tol
-    real :: dist
-    dist = sqrt(sum((point - this%point - dot_product(this%axis, point - this%point) * this%axis)**2))
-    on_cylinder = abs(dist - this%radius) < tol
+    real(r8) :: z(3)
+    z = point - this%point
+    z = z - dot_product(this%axis,z)*this%axis
+    on_surf = abs(norm2(z) - this%radius) < tol
   end function
 
   pure logical function co_oriented_cylinder(this, face) result(same)
     use cell_geometry, only: face_normal, polygon_center
     class(cylinder_surface), intent(in) :: this
     real(r8), intent(in) :: face(:,:)
-    real(r8) :: p(3)
-    p = polygon_center(face) - this%point
-    p = p - dot_product(p, this%axis) * this%axis
-    same = (dot_product(face_normal(face), p) > 0)
+    real(r8) :: z(3)
+    z = polygon_center(face) - this%point
+    z = z - dot_product(z,this%axis)*this%axis
+    same = (dot_product(face_normal(face), z) > 0)
   end function
 
 !!!! CONE SURFACE TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  pure logical function on_cone(this, point, tol)
+  pure logical function on_cone(this, point, tol) result(on_surf)
     class(cone_surface), intent(in) :: this
     real(r8), intent(in) :: point(:), tol
-    real(r8) :: dist, z(3)
+    real(r8) :: z(3)
     z = point - this%vertex
-    dist = sqrt(sum((z - dot_product(this%axis, z) * this%axis)**2))
-    on_cone = abs(dist - this%slope*abs(dot_product(this%axis, z))) < tol*sqrt(1.0_r8+this%slope**2)
+    z = z - dot_product(this%axis,z)*this%axis
+    on_surf = abs(norm2(z) - this%slope*abs(dot_product(this%axis, z))) < tol*sqrt(1.0_r8+this%slope**2)
   end function
 
   pure logical function co_oriented_cone(this, face) result(same)
     use cell_geometry, only: face_normal, polygon_center
     class(cone_surface), intent(in) :: this
     real(r8), intent(in) :: face(:,:)
-    real(r8) :: p(3)
-    p = polygon_center(face) - this%vertex
-    p = p - dot_product(p, this%axis) * this%axis
-    same = (dot_product(face_normal(face), p) > 0)
+    real(r8) :: z(3)
+    z = polygon_center(face) - this%vertex
+    z = z - dot_product(z,this%axis)*this%axis
+    same = (dot_product(face_normal(face), z) > 0)
   end function
 
 end module geometry_model_type
