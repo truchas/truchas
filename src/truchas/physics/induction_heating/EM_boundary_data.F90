@@ -26,7 +26,8 @@ module EM_boundary_data
 
   public :: cylinder_bv_init, set_bv, bndry_src
 
-  type(BoundaryData), public, save :: bdata
+  type(efield_bndry_func), public, save :: efield_bc
+  type(hfield_bndry_func), public, save :: hfield_bc
 
   !! Parameters for the COIL_H_FIELD function
   !real(r8), private, save :: center(3), radius, length
@@ -45,9 +46,9 @@ contains
     type(simpl_mesh), intent(inout), target :: mesh
     type(parameter_list), intent(inout) :: params
 
-    integer :: k, bface(mesh%nface), bx0, by0, bz0, bx1, by1, bz1, br1, b30, b60, b120, b150
+    integer :: k, bx0, by0, bz0, bx1, by1, bz1, br1, b30, b60, b120, b150
     real(r8) :: xmin(3), xmax(3), rmax, xh(3), yh(3), zh(3), tol, rmin, vertex(3), slope
-    integer, allocatable :: group(:)
+    integer, allocatable :: group(:), setids(:)
     type(geometry_model) :: gm
     character(:), allocatable :: domain_type, symmetry_axis
 
@@ -224,8 +225,10 @@ contains
         INSIST( .false. )
     end select
 
-    call add_face_sets(mesh, gm, group) ! overwrites GROUP
-    call generate_bface(mesh, group, bface)
+    ! GROUP is a list of bit masks, each identifying a set of surfaces
+    allocate(setids, mold=group)
+    call add_face_sets(mesh, gm, group, setids) ! overwrites GROUP
+    ! GROUP is a list of bit positions (in %FACE_SET_MASK), one for eash of the surface sets
 
     !! NB: As written, the preceding code is not strict.  A quarter cylinder mesh,
     !! declared QUARTER_CYLINDER, in any of the four quadrants will be properly
@@ -245,15 +248,15 @@ contains
     !! of the type declared and officially documented.  The direction of the normal
     !! on the symmetry planes is irrelevant.
 
-    !! The sole result of the preceding calculations is the BFACE array!
-
   !!!
   !!! INITIALIZE THE BOUNDARY DATA STRUCTURE
 
-    call bdata%init(mesh, bface, ebgroup=[1], hbgroup=[2,3])
-    call bdata%set_Eb_function(1, zero_field) ! unnec; defaults to zero.
-    call bdata%set_Hb_function(1, source_H_field)
-    call bdata%set_Hb_function(2, source_H_field)
+    call efield_bc%init(mesh, setids(1:1)) !ebgroup=group([1]))
+    call efield_bc%set_Eb_function(1, zero_field) ! unnec; defaults to zero.
+
+    call hfield_bc%init(mesh, setids(2:3))
+    call hfield_bc%set_Hb_function(1, source_H_field)
+    call hfield_bc%set_Hb_function(2, source_H_field)
 
   end subroutine cylinder_bv_init
 
@@ -263,17 +266,21 @@ contains
   !! the GROUP array are overwritten with the corresponding index in the
   !! MESH%FACE_SET_ID array; the index is the bit in the %FACE_SET_MASK array.
 
-  subroutine add_face_sets(mesh, gm, group)
+  subroutine add_face_sets(mesh, gm, group, setids)
 
     type(simpl_mesh), intent(inout) :: mesh
     type(geometry_model), intent(in) :: gm
     integer, intent(inout) :: group(:)
+    integer, intent(out) :: setids(:)
 
-    integer :: i, j, fsid(size(group))
+    integer :: i, j, bits(size(group))
     integer, allocatable :: surf(:)
 
-    fsid = [(i + size(mesh%face_set_id), i=1,size(group))]
-    mesh%face_set_id = [mesh%face_set_id, fsid]
+    ASSERT(size(setids) == size(group))
+
+    bits = [(i + size(mesh%face_set_id), i=1,size(group))]
+    setids = [(i + max(0, maxval(mesh%face_set_id)), i=1,size(group))]
+    mesh%face_set_id = [mesh%face_set_id, setids]
 
     do j = 1, mesh%nface
       if (.not.btest(mesh%face_set_mask(j), pos=0)) cycle ! not a boundary face
@@ -283,7 +290,7 @@ contains
         case (1)
           ASSERT(surf(1) > 0 .and. surf(1) < bit_size(surf(1)))
           do i = 1, size(group)
-            if (btest(group(i), surf(1))) mask = ibset(mask, pos=fsid(i))
+            if (btest(group(i), surf(1))) mask = ibset(mask, pos=bits(i))
           end do
         case (2:)
           INSIST(.false.) !TODO: better error handling
@@ -291,7 +298,7 @@ contains
       end associate
     end do
 
-    group = fsid
+    group = bits
 
     block ! check for a complete set of boundary face sets
       use parallel_communication, only: global_any
@@ -300,7 +307,7 @@ contains
       character(:), allocatable :: vtk_file
       logical :: mask(mesh%nface)
       do j = 1, mesh%nface
-        mask(j) = btest(mesh%face_set_mask(j), pos=0) .and. .not.any(btest(mesh%face_set_mask(j), pos=fsid))
+        mask(j) = btest(mesh%face_set_mask(j), pos=0) .and. .not.any(btest(mesh%face_set_mask(j), pos=bits))
       end do
       if (global_any(mask)) then
         vtk_file = trim(output_dir) // 'em_no_bc.vtk'
@@ -316,60 +323,6 @@ contains
     end block
 
   end subroutine add_face_sets
-
-  subroutine generate_bface (mesh, group, bface, status)
-
-    use truchas_env, only: output_dir
-    use parallel_communication, only: global_any
-    use truchas_logging_services
-
-    type(simpl_mesh), intent(in) :: mesh
-    integer, intent(in) :: group(:)
-    integer, intent(out) :: bface(:)
-    integer, intent(out), optional :: status
-
-    integer :: i, j
-    logical :: mask(mesh%nface)
-    character(:), allocatable :: vtk_file
-
-    ASSERT(size(bface) == mesh%nface)
-
-    bface = 0
-    do j = 1, mesh%nface
-      if (.not.btest(mesh%face_set_mask(j), pos=0)) cycle ! ignore this face
-      do i = 1, size(group)
-        if (btest(mesh%face_set_mask(j), pos=group(i))) then
-          if (mesh%fcell(2,j) == 0) then ! face normal points out of domain
-            bface(j) = i
-          else  ! face normal points into the domain
-            bface(j) = -i
-          end if
-          exit  ! NB: the face sets in GROUP are disjoint
-        end if
-      end do
-    end do
-
-    mask = ((bface == 0) .and. btest(mesh%face_set_mask, pos=0))
-    if (global_any(mask)) then
-      if (present(status)) then
-        status = -1
-        return
-      else
-        vtk_file = trim(output_dir) // 'em_no_bc.vtk'
-        call mesh%write_faces_vtk(mask, vtk_file, 'Boundary faces without BC')
-        call TLS_fatal('found unexpected EM mesh boundary faces; possible causes:' &
-            // new_line('a') &
-            // '* invalid EM domain or specification; check EM_domain_type and symmetry_axis' &
-            // new_line('a') &
-            // '* volumes were not imprinted and merged in Cubit before meshing' &
-            // new_line('a') &
-            // 'Faces written to the Paraview input file "' // vtk_file // '" for visualization')
-      end if
-    end if
-
-    if (present(status)) status = 0
-
-  end subroutine generate_bface
 
   !!
   !! These H source fields are used to initialize the boundary data structure.
@@ -435,7 +388,7 @@ contains
   subroutine set_bv (t, e)
     real(r8), intent(in) :: t
     real(r8), intent(inout) :: e(:)
-    call bdata%set_Eb_values(coef=[0.0_r8], e=e)
+    call efield_bc%set_Eb_values(coef=[0.0_r8], e=e)
   end subroutine set_bv
 
   !!
@@ -457,7 +410,44 @@ contains
       a = sin(TWOPI*t)
     end select
     a = (1.0_r8 - exp(-2.0_r8*t**2))*a
-    call bdata%get_Hb_source(coef=[a, a], bsrc=s)
+    call hfield_bc%get_Hb_source(coef=[a, a], bsrc=s)
   end subroutine bndry_src
+
+  !!
+  !! THESE TRIVIAL FIELDS ARE PROVIDED FOR THE USER'S CONVENIENCE
+  !!
+
+  function zero_field (x) result (v)
+    real(r8), intent(in) :: x(:)
+    real(r8) :: v(3)
+    v = 0.0_r8
+  end function zero_field
+
+  function xhat_field (x) result (v)
+    real(r8), intent(in) :: x(:)
+    real(r8) :: v(3)
+    v = [ 1.0_r8, 0.0_r8, 0.0_r8 ]
+  end function xhat_field
+
+  function yhat_field (x) result (v)
+    real(r8), intent(in) :: x(:)
+    real(r8) :: v(3)
+    v = [ 0.0_r8, 1.0_r8, 0.0_r8 ]
+  end function yhat_field
+
+  function zhat_field (x) result (v)
+    real(r8), intent(in) :: x(:)
+    real(r8) :: v(3)
+    v = [ 0.0_r8, 0.0_r8, 1.0_r8 ]
+  end function zhat_field
+
+  function bit_mask (list) result (n)
+    integer, intent(in) :: list(:)
+    integer :: n, j
+    n = 0
+    do j = 1, size(list)
+      n = ibset(n, list(j))
+    end do
+  end function bit_mask
 
 end module EM_boundary_data

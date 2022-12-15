@@ -329,7 +329,7 @@ contains
 
     !! Create and initialize the time-discretized system.
     dt = 1.0_rk / real(steps_per_cycle,kind=rk)
-    call sys%init(mesh, eps, mu, sigma/sigma0, etasq, delta, dt, bdata%ebedge, params)
+    call sys%init(mesh, eps, mu, sigma/sigma0, etasq, delta, dt, efield_bc%ebedge, params)
 
     allocate(efield(mesh%nedge), bfield(mesh%nface))
     allocate(q(mesh%ncell), q_avg(mesh%ncell), q_avg_last(mesh%ncell))

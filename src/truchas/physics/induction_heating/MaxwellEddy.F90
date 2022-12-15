@@ -131,8 +131,10 @@ contains
       if (.not.allocated(this%g0)) then
         allocate(this%g0(this%mesh%nedge))   !   allocate the component vector
         call bndry_src (this%t, this%g0)  !   compute the previous boundary source vector
+        where (this%emask /= 0) this%g0 = 0.0_r8
       end if
       call bndry_src (t, g)
+      where (this%emask /= 0) g = 0.0_r8
     else if (allocated(this%g0)) then    ! deallocate the component vector, so we know that
       deallocate(this%g0)                 ! the 'previous' value will need to be computed
     end if

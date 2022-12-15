@@ -19,51 +19,51 @@ module MaxwellBoundaryData
   implicit none
   private
 
-  public :: zero_field, xhat_field, yhat_field, zhat_field, bit_mask
-
-  type, public :: BoundaryData
+  type, public :: efield_bndry_func
     type(simpl_mesh), pointer :: mesh => null()
-    !! Boundary conditions on nxE (essential)
     integer :: nebgroup = 0
-    integer, pointer :: dummy(:) => null()  ! Unused -- workaround for NAG bug?
     integer, allocatable :: ebedge(:)
     real(r8), allocatable :: eb(:)
-    !! Boundary conditions on nxH (natural)
+  contains
+    procedure :: init
+    procedure :: set_Eb_function, set_Eb_values
+  end type
+
+  type, public :: hfield_bndry_func
+    type(simpl_mesh), pointer :: mesh => null()
     integer :: nhbgroup = 0
     integer, allocatable :: hbface(:)
     real(r8), allocatable :: hb(:,:)
   contains
-    procedure :: init
-    procedure :: set_Eb_function, set_Eb_values
+    procedure :: init => init_hfield_bndry_func
     procedure :: set_Hb_function, get_Hb_source
-  end type BoundaryData
+  end type
 
 contains
 
-  subroutine init(this, mesh, bface, ebgroup, hbgroup)
+  subroutine init(this, mesh, setids)
 
-    class(BoundaryData), intent(out) :: this
+    use bitfield_type
+
+    class(efield_bndry_func), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
-    integer, intent(in) :: bface(:)
-    integer, intent(in) :: ebgroup(:)
-    integer, intent(in), optional :: hbgroup(:)
+    integer, intent(in) :: setids(:)
 
-    integer :: i, j, k
-
-    ASSERT(size(bface) == mesh%nface)
-    ASSERT(all(ebgroup > 0) )
-    ! Fails in the case of a 0-sized bface
-    !ASSERT(all(ebgroup <= maxval(abs(bface))))
+    integer :: i, j, k, stat
+    type(bitfield) :: bitmask
 
     this%mesh => mesh ! we'll need this for subsequent initialization steps
 
     allocate(this%ebedge(mesh%nedge), this%eb(mesh%nedge))
     this%ebedge = 0
     this%eb = 0.0_r8
-    this%nebgroup = size(ebgroup)
+    this%nebgroup = size(setids)
     do i = 1, this%nebgroup
+      call this%mesh%get_face_set_bitmask([setids(i)], bitmask, stat)
+      ASSERT(stat == 0)
       do j = 1, mesh%nface
-        if (abs(bface(j)) == ebgroup(i)) then
+        if (popcnt(iand(bitmask, this%mesh%face_set_mask(j))) /= 0) then
+        !if (btest(this%mesh%face_set_mask(j), pos=ebgroup(i))) then
           do k = 1, 3
             if (this%ebedge(abs(mesh%fedge(k,j))) == 0) this%ebedge(abs(mesh%fedge(k,j))) = i
           end do
@@ -74,27 +74,11 @@ contains
     !! Ensure consistency of values for edges on the partition boundary.
     call mesh%edge_imap%gather_offp(this%ebedge)
 
-    if (present(hbgroup)) then
-      ASSERT(all(hbgroup > 0))
-      ! Assertion fails for 0-sized bface
-      !ASSERT(all(hbgroup <= maxval(abs(bface))))
-      allocate(this%hbface(mesh%nface), this%hb(mesh%nedge,size(hbgroup)))
-      this%hbface = 0
-      this%nhbgroup = size(hbgroup)
-      do i = 1, this%nhbgroup
-        do j = 1, mesh%nface
-          if (abs(bface(j)) == hbgroup(i)) then
-            if (this%hbface(j) == 0) this%hbface(j) = sign(i, bface(j))
-          end if
-        end do
-      end do
-    end if
-
   end subroutine init
 
   subroutine set_Eb_function(this, n, f, order)
 
-    class(BoundaryData), intent(inout) :: this
+    class(efield_bndry_func), intent(inout) :: this
     integer, intent(in) :: n
     integer, intent(in), optional :: order
 
@@ -127,7 +111,7 @@ contains
 
   subroutine set_Eb_values(this, coef, e)
 
-    class(BoundaryData), intent(in) :: this
+    class(efield_bndry_func), intent(in) :: this
     real(r8), intent(in) :: coef(:)
     real(r8), intent(inout) :: e(:)
 
@@ -143,9 +127,60 @@ contains
 
   end subroutine set_Eb_values
 
+  function vector_average (x1, x2, f, order) result (avg)
+    real(r8), intent(in) :: x1(:), x2(:)
+    integer, intent(in) :: order
+    real(r8) :: avg(size(x1))
+    interface
+      function f (x) result (fx)
+        use,intrinsic :: iso_fortran_env, only: r8 => real64
+        real(r8), intent(in) :: x(:)
+        real(r8) :: fx(3)
+      end function f
+    end interface
+    select case (order)
+    case (:0) ! midpoint rule
+      avg = f(0.5_r8*(x1+x2))
+    case (1)  ! trapezoid rule
+      avg = 0.5_r8*(f(x1)+f(x2))
+    case (2:) ! Simpson's rule
+      avg = (f(x1)+4.0_r8*f(0.5_r8*(x1+x2))+f(x2))/6.0_r8
+    end select
+  end function vector_average
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine init_hfield_bndry_func(this, mesh, setids)
+
+    use bitfield_type
+
+    class(hfield_bndry_func), intent(out) :: this
+    type(simpl_mesh), intent(in), target :: mesh
+    integer, intent(in) :: setids(:)
+
+    integer :: i, j, stat
+    type(bitfield) :: bitmask
+
+    this%mesh => mesh
+
+    allocate(this%hbface(mesh%nface), this%hb(mesh%nedge,size(setids)))
+    this%hbface = 0
+    this%nhbgroup = size(setids)
+    do i = 1, this%nhbgroup
+      call this%mesh%get_face_set_bitmask([setids(i)], bitmask, stat)
+      ASSERT(stat == 0)
+      do j = 1, mesh%nface
+        if (popcnt(iand(bitmask, this%mesh%face_set_mask(j))) /= 0) then
+          if (this%hbface(j) == 0) this%hbface(j) = merge(i, -i, this%mesh%fcell(2,j) == 0)
+        end if
+      end do
+    end do
+
+  end subroutine init_hfield_bndry_func
+
   subroutine set_Hb_function(this, n, f)
 
-    class(BoundaryData), intent(inout) :: this
+    class(hfield_bndry_func), intent(inout) :: this
     integer, intent(in) :: n
 
     integer :: j, edge(3)
@@ -204,31 +239,10 @@ contains
 
   end subroutine project_on_face_edges
 
-  function vector_average (x1, x2, f, order) result (avg)
-    real(r8), intent(in) :: x1(:), x2(:)
-    integer, intent(in) :: order
-    real(r8) :: avg(size(x1))
-    interface
-      function f (x) result (fx)
-        use,intrinsic :: iso_fortran_env, only: r8 => real64
-        real(r8), intent(in) :: x(:)
-        real(r8) :: fx(3)
-      end function f
-    end interface
-    select case (order)
-    case (:0) ! midpoint rule
-      avg = f(0.5_r8*(x1+x2))
-    case (1)  ! trapezoid rule
-      avg = 0.5_r8*(f(x1)+f(x2))
-    case (2:) ! Simpson's rule
-      avg = (f(x1)+4.0_r8*f(0.5_r8*(x1+x2))+f(x2))/6.0_r8
-    end select
-  end function vector_average
-
 
   subroutine get_Hb_source(this, coef, bsrc)
 
-    class(BoundaryData), intent(in) :: this
+    class(hfield_bndry_func), intent(in) :: this
     real(r8), intent(in) :: coef(:)
     real(r8), intent(out) :: bsrc(:)
 
@@ -244,46 +258,6 @@ contains
       end do
     end do
 
-    !! We need to suppress values on any edges where nxE is specified.
-    where (this%ebedge /= 0) bsrc = 0.0_r8
-
   end subroutine get_Hb_source
-
-  !!
-  !! THESE TRIVIAL FIELDS ARE PROVIDED FOR THE USER'S CONVENIENCE
-  !!
-
-  function zero_field (x) result (v)
-    real(r8), intent(in) :: x(:)
-    real(r8) :: v(3)
-    v = 0.0_r8
-  end function zero_field
-
-  function xhat_field (x) result (v)
-    real(r8), intent(in) :: x(:)
-    real(r8) :: v(3)
-    v = (/ 1.0_r8, 0.0_r8, 0.0_r8 /)
-  end function xhat_field
-
-  function yhat_field (x) result (v)
-    real(r8), intent(in) :: x(:)
-    real(r8) :: v(3)
-    v = (/ 0.0_r8, 1.0_r8, 0.0_r8 /)
-  end function yhat_field
-
-  function zhat_field (x) result (v)
-    real(r8), intent(in) :: x(:)
-    real(r8) :: v(3)
-    v = (/ 0.0_r8, 0.0_r8, 1.0_r8 /)
-  end function zhat_field
-
-  function bit_mask (list) result (n)
-    integer, intent(in) :: list(:)
-    integer :: n, j
-    n = 0
-    do j = 1, size(list)
-      n = ibset(n, list(j))
-    end do
-  end function bit_mask
 
 end module MaxwellBoundaryData
