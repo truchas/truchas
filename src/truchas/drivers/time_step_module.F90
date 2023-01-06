@@ -149,10 +149,13 @@ CONTAINS
 
     ! Non-Constant Time Step
     else
-       if (cycle_number == cycle_number_restart .and. .not.restart) then
-          ! First cycle; use initial time step
-          dt = dt_init
-          dt_constraint = 'initial'
+       if (cycle_number == cycle_number_restart) then ! first cycle
+          if (restart) then ! use dt read from restart file
+             dt_constraint = 'restart'
+          else ! use initial time step
+             dt = dt_init
+             dt_constraint = 'initial'
+          end if
        else
           ! Non-First Cycle; use computed time step
           dt = dt_next

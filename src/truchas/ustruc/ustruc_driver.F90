@@ -5,38 +5,11 @@
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !!
-!! PROGRAMMING INTERFACE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!!  This module provides procedures for driving the microstructure modeling
-!!  kernel.  It serves as an adapter between top-level Truchas drivers (input,
-!!  initialization, cycle, and output) and the microstructure modeling object.
-!!  The existing top-level drivers manage no data; they merely provide for
-!!  orchestrating the sequence of procedural steps.  Thus a major role of
-!!  these subroutines is to assemble the data from various Truchas components
-!!  that must be passed the the microstructure modeling object.
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
-!!  CALL READ_MICROSTRUCTURE_NAMELIST (LUN) reads the first instance of the
-!!    MICROSTRUCTURE namelist from the file opened on logical unit LUN.  This
-!!    is a collective procedure; the file is read on the I/O process and the
-!!    data replicated to all other processes.  If an error occurs (I/O error
-!!    or invalid data) a message is written and execution is halted.  The
-!!    presence of this namelist serves to enable the the microstructure
-!!    modeling kernel; it is permissible for there to be no instance of this
-!!    namelist.  NB: this should be called ONLY when heat transfer is active.
-!!
-!!  CALL USTRUC_DRIVER_INIT (T) initializes the driver.  T is the initial time.
-!!    This should be called only if heat transfer physics is enabled, and after
-!!    its initialization.  If microstructure analysis has not been enabled this
-!!    subroutine does nothing, and so may always be called.
-!!
-!!  CALL USTRUC_UPDATE (T) updates or advances the microstructure model to the
-!!    next time level.  The subroutine handles collecting all the necessary
-!!    mesh-based state arrays required by the model; only the current time T
-!!    needs to be passed.
-!!
-!!  CALL USTRUC_OUTPUT (SEQ_ID) outputs the computed microstructure analysis
-!!    quantities.  SEQ_ID is an HDF5 handle that is available in the
-!!    TDO_WRITE_TIMESTEP subroutine that will call this.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! NOTES
 !!
@@ -81,18 +54,18 @@ contains
 
   subroutine ustruc_driver_final
     if (allocated(this)) deallocate(this)
-  end subroutine ustruc_driver_final
+  end subroutine
 
-  logical function ustruc_enabled ()
+  logical function ustruc_enabled()
     ustruc_enabled = allocated(this)
-  end function ustruc_enabled
+  end function
 
   !! Current Truchas design requires that parameter input and object
   !! initialization be separated and occur at distinct execution stages.
   !! The following procedure reads the MICROSTRUCTURE namelist and stores
   !! the data in private module data.
 
-  subroutine read_microstructure_namelist (lun)
+  subroutine read_microstructure_namelist(lun)
 
     use string_utilities, only: i_to_c
     use truchas_env, only: input_dir
@@ -102,60 +75,65 @@ contains
     integer, intent(in) :: lun
 
     integer :: ios, cell_set_ids(32)
-    real(r8) :: vel_max, vel_lo_solid_frac, vel_hi_solid_frac
-    real(r8) :: theta1, theta1p, theta2, theta2p, theta_gv
+    real(r8) :: begin_temp, end_temp, gl_temp, begin_temp_reset, end_temp_reset
+    real(r8) :: begin_frac, end_frac, gl_frac, begin_frac_reset, end_frac_reset
     logical :: found
     integer, allocatable :: setids(:)
     character(64) :: material
-    character(128) :: iom, gv_model_file
+    character(128) :: iom, model_file
 
     namelist /microstructure/ material, cell_set_ids, &
-        vel_max, vel_lo_solid_frac, vel_hi_solid_frac, &
-        theta1, theta1p, theta2, theta2p, theta_gv, gv_model_file
+        begin_temp, end_temp, gl_temp, begin_temp_reset, end_temp_reset, &
+        begin_frac, end_frac, gl_frac, begin_frac_reset, end_frac_reset, &
+        model_file
 
     !! Locate the MICROSTRUCTURE namelist (first occurrence)
     if (is_IOP) then
       rewind lun
-      call seek_to_namelist (lun, 'MICROSTRUCTURE', found, iostat=ios)
+      call seek_to_namelist(lun, 'MICROSTRUCTURE', found, iostat=ios)
     end if
-    call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('error reading input file: iostat=' // i_to_c(ios))
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
 
-    call broadcast (found)
+    call broadcast(found)
     if (.not.found) return  ! the namelist is optional
 
-    call TLS_info ('Reading MICROSTRUCTURE namelist ...')
+    call TLS_info('Reading MICROSTRUCTURE namelist ...')
 
     !! Read the namelist.
     if (is_IOP) then
       material = NULL_C
       cell_set_ids = NULL_I
-      vel_max = NULL_R
-      vel_lo_solid_frac = NULL_R
-      vel_hi_solid_frac = NULL_R
-      theta1 = NULL_R
-      theta1p = NULL_R
-      theta2 = NULL_R
-      theta2p = NULL_R
-      theta_gv = NULL_R
-      gv_model_file = NULL_C
+      begin_temp = NULL_R
+      end_temp = NULL_R
+      gl_temp = NULL_R
+      begin_temp_reset = NULL_R
+      end_temp_reset = NULL_R
+      begin_frac = NULL_R
+      end_frac = NULL_R
+      gl_frac = NULL_R
+      begin_frac_reset = NULL_R
+      end_frac_reset = NULL_R
+      model_file = NULL_C
       read(lun,nml=microstructure,iostat=ios,iomsg=iom)
     end if
-    call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('error reading MICROSTRUCTURE namelist: ' // trim(iom))
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('error reading MICROSTRUCTURE namelist: ' // trim(iom))
 
     !! Broadcast the namelist variables
-    call broadcast (material)
-    call broadcast (cell_set_ids)
-    call broadcast (vel_max)
-    call broadcast (vel_lo_solid_frac)
-    call broadcast (vel_hi_solid_frac)
-    call broadcast (theta1)
-    call broadcast (theta1p)
-    call broadcast (theta2)
-    call broadcast (theta2p)
-    call broadcast (theta_gv)
-    call broadcast (gv_model_file)
+    call broadcast(material)
+    call broadcast(cell_set_ids)
+    call broadcast(begin_temp)
+    call broadcast(end_temp)
+    call broadcast(gl_temp)
+    call broadcast(begin_temp_reset)
+    call broadcast(end_temp_reset)
+    call broadcast(begin_frac)
+    call broadcast(end_frac)
+    call broadcast(gl_frac)
+    call broadcast(begin_frac_reset)
+    call broadcast(end_frac_reset)
+    call broadcast(model_file)
 
     !! Check the values of the namelist variables as best we can before
     !! stuffing them into a parameter list.  The parameters are checked
@@ -164,116 +142,146 @@ contains
 
     !! Check the MATERIAL value.
     if (material == NULL_C) then
-      call TLS_fatal ('no value assigned to MATERIAL')
+      call TLS_fatal('no value assigned to MATERIAL')
     else if (material == 'VOID') then
-      call TLS_fatal ('VOID is an invalid value for MATERIAL')
+      call TLS_fatal('VOID is an invalid value for MATERIAL')
     else if (matl_model%has_matl(material)) then
-      call params%set ('material', trim(material))
+      call params%set('material', trim(material))
     else
-      call TLS_fatal ('unknown MATERIAL: "' // trim(material) // '"')
+      call TLS_fatal('unknown MATERIAL: "' // trim(material) // '"')
     end if
 
     !! Check CELL-SET-IDS.
     setids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
     if (size(setids) == 0) then
-      call TLS_fatal ('no values assigned to CELL-SET-IDS')
+      call TLS_fatal('no values assigned to CELL_SET_IDS')
     else
-      call params%set ('cell-set-ids', setids)
+      call params%set('cell-set-ids', setids)
     end if
 
-    !! Check VEL-MAX
-    if (vel_max == NULL_R) then
-      call TLS_fatal ('no value assigned to VEL_MAX')
-    else if (vel_max < 0.0_r8) then
-      call TLS_fatal ('VEL_MAX must be >= 0')
-    else
-      call params%set ('vel-max', vel_max)
-    end if
+    if (model_file == NULL_C) then ! use the default GL analysis module
 
-    !! Check VEL-LO-SOLID-FRAC and VEL-HI-SOLID-FRAC.
-    if (vel_lo_solid_frac == NULL_R) then
-      call TLS_fatal ('no value assigned to VEL-LO-SOLID-FRAC')
-    else if (vel_lo_solid_frac <= 0.0_r8 .or. vel_lo_solid_frac >= 1.0_r8) then
-      call TLS_fatal ('VEL-LO-SOLID-FRAC must be > 0.0 and < 1.0')
-    end if
-    if (vel_hi_solid_frac == NULL_R) then
-      call TLS_fatal ('no value assigned to VEL-HI-SOLID-FRAC')
-    else if (vel_hi_solid_frac <= 0.0_r8 .or. vel_hi_solid_frac >= 1.0_r8) then
-      call TLS_fatal ('VEL-HI-SOLID-FRAC must be > 0.0 and < 1.0')
-    end if
-    if (vel_lo_solid_frac <= vel_hi_solid_frac) then
-      call params%set ('vel-lo-solid-frac', vel_lo_solid_frac)
-      call params%set ('vel-hi-solid-frac', vel_hi_solid_frac)
-    else
-      call TLS_fatal ('require VEL-LO-SOLID-FRAC <= VEL-HI-SOLID-FRAC')
-    end if
-
-    if (gv_model_file /= NULL_C) then ! file mode
-
-      !! Check GV_MODEL_FILE.
-      if (gv_model_file(1:1) /= '/') gv_model_file = trim(input_dir) // trim(gv_model_file)
-      inquire(file=trim(gv_model_file), exist=found)  ! NB: all processes will read
-      if (.not.found) call TLS_fatal (' GV_MODEL_FILE not found: "' // trim(gv_model_file) // '"')
-      call params%set ('gv-model-file', trim(gv_model_file))
-
-    else  ! basic GV fall back mode
-
-      !! Check THETA1 and THETA2.
-      if (theta1 == NULL_R) then
-        call TLS_fatal ('no value assigned to THETA1')
-      else if (theta1 < 0.0_r8 .or. theta1 > 1.0_r8) then
-        call TLS_fatal ('THETA1 must be >= 0.0 and <= 1.0')
-      end if
-      if (theta2 == NULL_R) then
-        call TLS_fatal ('no value assigned to THETA2')
-      else if (theta2 < 0.0_r8 .or. theta2 > 1.0_r8) then
-        call TLS_fatal ('THETA2 must be >= 0.0 and <= 1.0')
-      end if
-      if (theta1 <= theta2) then
-        call params%set ('theta1', theta1)
-        call params%set ('theta2', theta2)
-      else
-        call TLS_fatal ('require THETA1 <= THETA2')
+      if (BEGIN_TEMP == NULL_R .eqv. BEGIN_FRAC == NULL_R) then
+        call TLS_fatal('Either BEGIN_TEMP or BEGIN_FRAC must be specified')
+      else if (BEGIN_TEMP /= NULL_R) then
+        call check_temp_thresholds
+      else  ! BEGIN_FRAC /= NULL_R
+        call check_frac_thresholds
       end if
 
-      !! Check THETA1P.
-      if (theta1p == NULL_R) then
-        ! do not set a parameter value -- accept its default value
-      else if (theta1p < 0.0_r8 .or. theta1p > theta1) then
-        call TLS_fatal ('THETA1P must be >= 0.0 and <= THETA1')
-      else
-        call params%set ('theta1p', theta1p)
-      end if
+    else  ! use a custom analysis module
 
-      !! Check THETA2P.
-      if (theta2p == NULL_R) then
-        ! do not set a parameter value -- accept its default value
-      else if (theta2p < theta1 .or. theta2p > theta2) then
-        call TLS_fatal ('THETA2P must be >= THETA1 and <= THETA2')
-      else
-        call params%set ('theta2p', theta2p)
-      end if
-
-      !! Check THETA_GV.
-      if (theta_gv == NULL_R) then
-        ! do not set a parameter value -- accept its default value
-      else if (theta_gv < theta1 .or. theta_gv >= theta2) then
-        call TLS_fatal ('THETA_GV must be >= THETA1 and < THETA2')
-      else
-        call params%set ('theta-gv', theta_gv)
-      end if
+      !! Check MODEL_FILE.
+      if (model_file(1:1) /= '/') model_file = trim(input_dir) // trim(model_file)
+      inquire(file=trim(model_file), exist=found)  ! NB: all processes will read
+      if (.not.found) call TLS_fatal(' MODEL_FILE not found: "' // trim(model_file) // '"')
+      call params%set('model-file', trim(model_file))
 
     end if
 
     !! Enable microstructure modeling by allocating the data object THIS.
     allocate(this)
 
+  contains
+
+    subroutine check_temp_thresholds
+
+      !! Check BEGIN_TEMP and END_TEMP.
+      if (begin_temp == NULL_R) then
+        call TLS_fatal('no value assigned to BEGIN_TEMP')
+      else
+        call params%set('begin-temp', begin_temp)
+      end if
+      if (end_temp == NULL_R) then
+        call TLS_fatal('no value assigned to END_TEMP')
+      else if (end_temp >= begin_temp) then
+        call TLS_fatal('END_TEMP must be < BEGIN_TEMP')
+      else
+        call params%set('end-temp', end_temp)
+      end if
+
+      !! Check GL_TEMP.
+      if (gl_temp == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (gl_temp <= end_temp .or. gl_temp > begin_temp) then
+        call TLS_fatal('GL_TEMP must belong to (END_TEMP, BEGIN_TEMP]')
+      else
+        call params%set('gl-temp', gl_temp)
+      end if
+
+      !! Check BEGIN_TEMP_RESET.
+      if (begin_temp_reset == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (begin_temp_reset < begin_temp) then
+        call TLS_fatal('BEGIN_TEMP_RESET must be >= BEGIN_TEMP')
+      else
+        call params%set('begin-temp-reset', begin_temp_reset)
+      end if
+
+      !! Check END_TEMP_RESET.
+      if (end_temp_reset == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (end_temp_reset < end_temp .or. end_temp_reset >= begin_temp) then
+        call TLS_fatal('END_TEMP_RESET must belong to [END_TEMP, BEGIN_TEMP)')
+      else
+        call params%set('end-temp-reset', end_temp_reset)
+      end if
+
+    end subroutine check_temp_thresholds
+
+    subroutine check_frac_thresholds
+
+      !! Check BEGIN_FRAC and END_FRAC.
+      if (begin_frac == NULL_R) then
+        call TLS_fatal('no value assigned to BEGIN_FRAC')
+      else if (begin_frac <= 0.0_r8 .or. begin_frac >= 1.0_r8) then
+        call TLS_fatal('BEGIN_FRAC must belong to (0.0, 1.0)')
+      else
+        call params%set('begin-frac', begin_frac)
+      end if
+      if (end_frac == NULL_R) then
+        call TLS_fatal('no value assigned to END_FRAC')
+      else if (end_frac <= begin_frac .or. end_frac >= 1.0_r8) then
+        call TLS_fatal('END_FRAC must belong to (BEGIN_FRAC, 1.0)')
+      else
+        call params%set('end-frac', end_frac)
+      end if
+
+      !! Check GL_FRAC.
+      if (gl_frac == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (gl_frac < begin_frac .or. gl_frac >= end_frac) then
+        call TLS_fatal('GL_FRAC must belong to [BEGIN_FRAC, END_FRAC)')
+      else
+        call params%set('gl-frac', gl_frac)
+      end if
+
+      !! Check BEGIN_FRAC_RESET.
+      if (begin_frac_reset == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (begin_frac_reset <= 0.0_r8 .or. begin_frac_reset > begin_frac) then
+        call TLS_fatal('BEGIN_FRAC_RESET must belong to (0.0, BEGIN_FRAC]')
+      else
+        call params%set('begin-frac-reset', begin_frac_reset)
+      end if
+
+      !! Check END_FRAC_RESET.
+      if (end_frac_reset == NULL_R) then
+        ! do not set a parameter value -- accept its default value
+      else if (end_frac_reset <= begin_frac .or. end_frac_reset > end_frac) then
+        call TLS_fatal('END_FRAC_RESET must belong to (BEGIN_FRAC, END_FRAC]')
+      else
+        call params%set('end-frac-reset', end_frac_reset)
+      end if
+
+    end subroutine check_frac_thresholds
+
   end subroutine read_microstructure_namelist
 
   !! This initializes the driver.  It should only be called if heat transfer is
   !! enabled, and after its initialization (mesh_interop data).
 
-  subroutine ustruc_driver_init (t)
+  subroutine ustruc_driver_init(t)
 
     use mesh_manager, only: unstr_mesh_ptr
     use diffusion_solver_data, only: mesh_name
@@ -286,9 +294,9 @@ contains
 
     if (.not.allocated(this)) return ! microstructure modeling not enabled
 
-    call TLS_info ('')
-    call TLS_info ('Configuring microstructure modeling ...')
-    call start_timer ('Microstructure')
+    call TLS_info('')
+    call TLS_info('Configuring microstructure modeling ...')
+    call start_timer('Microstructure')
 
     !! We should be using the same mesh as the heat transfer physics;
     !! it should eventually be provided by the MPC.
@@ -297,7 +305,7 @@ contains
 
     !! Split the phase id list between solid and liquid phases.
     !! They should be ordered from low to high temperature phases.
-    call params%get ('material', name)
+    call params%get('material', name)
     m = matl_model%matl_index(name)
     INSIST(m > 0)
     call matl_model%get_matl_phase_index_range(m, p1, p2)
@@ -310,42 +318,42 @@ contains
       this%sol_matid = [(p, p=p1,n-1)]
       this%liq_matid = [(p, p=n,p2)]
     else
-      call TLS_fatal ('no compatible liquid-solid transformation found for MATERIAL: "' // name // '"')
+      call TLS_fatal('no compatible liquid-solid transformation found for MATERIAL: "' // name // '"')
     end if
 
-    call this%model%init (this%mesh, params)
-    call ustruc_set_initial_state (t)
+    call this%model%init(this%mesh, params)
+    call ustruc_set_initial_state(t)
 
-    call stop_timer ('Microstructure')
+    call stop_timer('Microstructure')
 
   end subroutine ustruc_driver_init
 
-  subroutine ustruc_set_initial_state (t)
+  subroutine ustruc_set_initial_state(t)
     real(r8), intent(in) :: t
     real(r8), allocatable :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
-    call ustruct_update_aux (tcell, tface, liq_vf, sol_vf)
-    call this%model%set_state (t, tcell, tface, liq_vf, sol_vf)
-  end subroutine ustruc_set_initial_state
+    call ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
+    call this%model%set_state(t, tcell, tface, liq_vf, sol_vf)
+  end subroutine
 
-  subroutine ustruc_update (t)
+  subroutine ustruc_update(t)
     real(r8), intent(in) :: t
     real(r8), allocatable :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
     if (.not.allocated(this)) return ! microstructure modeling not enabled
-    call start_timer ('Microstructure')
-    call start_timer ('collect input')
-    call ustruct_update_aux (tcell, tface, liq_vf, sol_vf)
-    call stop_timer ('collect input')
-    call start_timer ('analysis')
-    call this%model%update_state (t, tcell, tface, liq_vf, sol_vf)
-    call stop_timer ('analysis')
-    call stop_timer ('Microstructure')
-  end subroutine ustruc_update
+    call start_timer('Microstructure')
+    call start_timer('collect input')
+    call ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
+    call stop_timer('collect input')
+    call start_timer('analysis')
+    call this%model%update_state(t, tcell, tface, liq_vf, sol_vf)
+    call stop_timer('analysis')
+    call stop_timer('Microstructure')
+  end subroutine
 
   !! Output the microstructure analysis data to the HDF output file.
   !! No control over what gets written is provided; we write most everything
   !! that is available.
 
-  subroutine ustruc_output (seq)
+  subroutine ustruc_output(seq)
 
     use truchas_danu_output_tools
     use truchas_h5_outfile, only: th5_seq_group
@@ -355,59 +363,45 @@ contains
     real(r8), allocatable :: scalar_out(:), vector_out(:,:)
 
     if (.not.allocated(this)) return
-    call start_timer ('Microstructure')
+    call start_timer('Microstructure')
 
     allocate(scalar_out(this%mesh%ncell_onP), vector_out(3,this%mesh%ncell_onP))
 
-    !! Core module: temperature and gradient -- modeled cells only
-    !call write_scalar_field (data_name='temp',      hdf_name='uStruc-T',     viz_name='T')
-    !call write_vector_field (data_name='temp-grad', hdf_name='uStruc-gradT', viz_name=['dT/dx','dT/dy','dT/dz'])
-    !call write_scalar_field (data_name='temp-rate', hdf_name='uStruc-Tdot',  viz_name='dT/dt')
-    !call write_scalar_field (data_name='frac',      hdf_name='uStruc-Fs',    viz_name='F_solid')
-    !call write_vector_field (data_name='velocity',  hdf_name='uStruc-veloc', viz_name=['Vx','Vy','Vz'])
-    !call write_scalar_field (data_name='speed',     hdf_name='uStruc-speed', viz_name='V')
+    !! GL analysis module
+    call write_vector_field(data_name='gl-G', hdf_name='ustruc-G', viz_name='G')
+    call write_scalar_field(data_name='gl-L', hdf_name='ustruc-L', viz_name='L')
+    call write_scalar_field(data_name='gl-t_sol', hdf_name='ustruc-t_sol', viz_name='t_sol')
 
-    !! GV0, GV1, or GL analysis modules: time to solidify
-    call write_scalar_field (data_name='solid-time', hdf_name='uStruc-solid-time', viz_name='solid-time')
+    !! LDRD analysis module
+    call write_scalar_field(data_name='ldrd-type', hdf_name='ustruc-type',  viz_name='ustruc-type')
+    call write_scalar_field(data_name='ldrd-lambda1', hdf_name='ustruc-lambda1', viz_name='lambda1')
+    call write_scalar_field(data_name='ldrd-lambda2', hdf_name='ustruc-lambda2', viz_name='lambda2')
+    call write_scalar_field(data_name='ldrd-G', hdf_name='ustruc-G', viz_name='G')
+    call write_scalar_field(data_name='ldrd-V', hdf_name='ustruc-V', viz_name='V')
+    call write_scalar_field(data_name='ldrd-t_sol', hdf_name='ustruc-t_sol', viz_name='t_sol')
 
-    !! GV0 analysis module: temp gradient and solidification front speed at onset
-    call write_scalar_field (data_name='g', hdf_name='uStruc-G', viz_name='ustruc-G')
-    call write_scalar_field (data_name='v', hdf_name='uStruc-V', viz_name='ustruc-V')
-
-    !! GV0 analysis module: count of steps in mushy zone
-    !call write_scalar_field (data_name='count', hdf_name='uStruc-count', viz_name='ustruc-count')
-
-    !! GV1 analysis module
-    call write_scalar_field (data_name='ustruc',  hdf_name='uStruc-gv1-ustruc',  viz_name='gv1-ustruc')
-    call write_scalar_field (data_name='lambda1', hdf_name='uStruc-gv1-lambda1', viz_name='gv1-lambda1')
-    call write_scalar_field (data_name='lambda2', hdf_name='uStruc-gv1-lambda2', viz_name='gv1-lambda2')
-
-    !! GL analysis module: temp gradient and solidification front speed at onset
-    call write_vector_field (data_name='G', hdf_name='uStruc-G', viz_name=['Gx','Gy','Gz'])
-    call write_scalar_field (data_name='L', hdf_name='uStruc-L', viz_name='L')
-
-    call stop_timer ('Microstructure')
+    call stop_timer('Microstructure')
 
     !! Additional checkpoint data gets written at the same time.
-    call ustruc_write_checkpoint (seq)
+    call ustruc_write_checkpoint(seq)
 
   contains
 
-    subroutine write_scalar_field (data_name, hdf_name, viz_name)
+    subroutine write_scalar_field(data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name
       if (this%model%has(data_name)) then
-        call this%model%get (data_name, scalar_out)
+        call this%model%get(data_name, scalar_out)
         scalar_out(this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
-        call write_seq_cell_field (seq, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
+        call write_seq_cell_field(seq, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
-    subroutine write_vector_field (data_name, hdf_name, viz_name)
-      character(*), intent(in) :: data_name, hdf_name, viz_name(:)
+    subroutine write_vector_field(data_name, hdf_name, viz_name)
+      character(*), intent(in) :: data_name, hdf_name, viz_name
       if (this%model%has(data_name)) then
-        call this%model%get (data_name, vector_out)
+        call this%model%get(data_name, vector_out)
         vector_out(:,this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
-        call write_seq_cell_field (seq, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
+        call write_seq_cell_field(seq, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
@@ -418,7 +412,7 @@ contains
   !! by USTRUC_SET_INITIAL_STATE, and it corresponds to data recorded during the
   !! course of integration.
 
-  subroutine ustruc_write_checkpoint (seq)
+  subroutine ustruc_write_checkpoint(seq)
 
     use,intrinsic :: iso_fortran_env, only: int8
     use truchas_h5_outfile, only: th5_seq_group
@@ -433,20 +427,20 @@ contains
     character(:), allocatable :: name
 
     if (.not.allocated(this)) return
-    call start_timer ('Microstructure')
+    call start_timer('Microstructure')
 
     !! Write the external cell indices that correspond to the state data.
-    call this%model%get_map (lmap)
+    call this%model%get_map(lmap)
     lmap = this%mesh%xcell(lmap)
     name = 'CP-USTRUC-MAP'
     n = global_sum(size(lmap))
     call seq%write_dist_array(name, n, lmap)
 
     !! Get the list of analysis components ...
-    call this%model%get_comp_list (cid)
+    call this%model%get_comp_list(cid)
     do j = 1, size(cid)
       !! and for each one, fetch its state and write it.
-      call this%model%serialize (cid(j), lar)
+      call this%model%serialize(cid(j), lar)
       if (.not.allocated(lar))  cycle ! no checkpoint data for this analysis component
       if (size(lar,dim=1) == 0) cycle ! no checkpoint data for this analysis component
       n = global_sum(size(lar,dim=2))
@@ -455,7 +449,7 @@ contains
       call seq%write_dataset_attr(name, 'COMP-ID', cid(j))
     end do
 
-    call stop_timer ('Microstructure')
+    call stop_timer('Microstructure')
 
   end subroutine ustruc_write_checkpoint
 
@@ -465,7 +459,7 @@ contains
   !! via USTRUC_SET_INITIAL_STATE, and if this procedure is called (optional) it
   !! must be after the call to USTRUC_DRIVER_INIT.
 
-  subroutine ustruc_read_checkpoint (lun)
+  subroutine ustruc_read_checkpoint(lun)
 
     use,intrinsic :: iso_fortran_env, only: int8
     use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, gather, scatter
@@ -479,28 +473,28 @@ contains
     integer, allocatable :: lmap(:), gmap(:), map(:), perm(:), perm1(:)
     integer(int8), allocatable :: garray(:,:), larray(:,:)
 
-    call TLS_info ('  reading microstructure state data from the restart file.')
+    call TLS_info('  reading microstructure state data from the restart file.')
 
     !! Get the cell list and translate to external cell numbers.  This needs to
     !! exactly match the cell list read from the restart file, modulo the order.
-    call this%model%get_map (lmap)
+    call this%model%get_map(lmap)
     ncell = size(lmap)
     do j = 1, size(lmap)
       lmap(j) = this%mesh%xcell(lmap(j))
     end do
     n = global_sum(size(lmap))
     allocate(gmap(merge(n,0,is_IOP)))
-    call gather (lmap, gmap)
+    call gather(lmap, gmap)
 
     !! Read the number of microstructure cells and verify the value.
-    call read_var (lun, ncell_tot, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCELL record')
-    if (ncell_tot /= n) call TLS_fatal ('USTRUC_READ_CHECKPOINT: incorrect number of cells')
+    call read_var(lun, ncell_tot, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCELL record')
+    if (ncell_tot /= n) call TLS_fatal('USTRUC_READ_CHECKPOINT: incorrect number of cells')
 
     !! Read the cell list; these are external cell numbers.
     allocate(map(merge(ncell_tot,0,is_IOP)))
     if (is_IOP) read(lun,iostat=ios) map
-    call broadcast (ios)
-    if (ios /= 0) call TLS_fatal ('USTRUC_READ_CHECKPOINT: error reading USTRUC-CELL record')
+    call broadcast(ios)
+    if (ios /= 0) call TLS_fatal('USTRUC_READ_CHECKPOINT: error reading USTRUC-CELL record')
 
     !! We need to verify that GMAP and MAP specify the same cells and also determine the
     !! pull-back permutation that takes MAP to GMAP.  This will be used to permute the
@@ -508,15 +502,15 @@ contains
     !! the permutations that sort both GMAP and MAP.
     if (is_IOP) then
       allocate(perm(ncell_tot), perm1(ncell_tot))
-      call heap_sort (map, perm1)
-      call reorder (map, perm1) ! map is now sorted
-      call heap_sort (gmap, perm)
-      call reorder (gmap, perm) ! gmap is now sorted
+      call heap_sort(map, perm1)
+      call reorder(map, perm1) ! map is now sorted
+      call heap_sort(gmap, perm)
+      call reorder(gmap, perm) ! gmap is now sorted
     end if
-    if (global_any(map /= gmap)) call TLS_fatal ('USTRUC_READ_CHECKPOINT: incorrect cell list')
+    if (global_any(map /= gmap)) call TLS_fatal('USTRUC_READ_CHECKPOINT: incorrect cell list')
     deallocate(lmap, gmap, map)
     if (is_IOP) then
-      call invert_perm (perm)
+      call invert_perm(perm)
       do j = 1, size(perm)
         perm(j) = perm1(perm(j))
       end do
@@ -524,23 +518,23 @@ contains
     end if
 
     !! Read the number of component sections to follow.
-    call read_var (lun, ncomp, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCOMP record')
+    call read_var(lun, ncomp, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCOMP record')
 
     !! For each component ...
     do n = 1, ncomp
       !! Read the component ID and the number of data bytes (per cell)
-      call read_var (lun, cid, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-ID record')
-      call read_var (lun, nbyte, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-NBYTE record')
+      call read_var(lun, cid, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-ID record')
+      call read_var(lun, nbyte, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-NBYTE record')
       !! Read the component checkpoint data and reorder it according to PERM
       allocate(garray(nbyte,merge(ncell_tot,0,is_IOP)))
       if (is_IOP) read(lun,iostat=ios) garray
-      call broadcast (ios)
-      if (ios /= 0) call TLS_fatal ('USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-DATA record')
-      if (is_IOP) call reorder (garray, perm)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('USTRUC_READ_CHECKPOINT: error reading USTRUC-COMP-DATA record')
+      if (is_IOP) call reorder(garray, perm)
       !! Distribute the checkpoint data and push it into the analysis component to consume.
       allocate(larray(nbyte,ncell))
-      call scatter (garray, larray)
-      call this%model%deserialize (cid, larray)
+      call scatter(garray, larray)
+      call this%model%deserialize(cid, larray)
       deallocate(garray,larray)
     end do
 
@@ -550,14 +544,14 @@ contains
   !! microstructure modeling is not enabled, this subroutine should be called
   !! to skip over the data so that the file is left correctly positioned.
 
-  subroutine ustruc_skip_checkpoint (lun)
+  subroutine ustruc_skip_checkpoint(lun)
     use restart_utilities, only: skip_records, read_var
     integer, intent(in) :: lun
     integer :: n
-    call skip_records (lun, 2, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
-    call read_var (lun, n, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
-    call skip_records (lun, 3*n,  'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
-  end subroutine ustruc_skip_checkpoint
+    call skip_records(lun, 2, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+    call read_var(lun, n, 'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+    call skip_records(lun, 3*n,  'USTRUC_SKIP_CHECKPOINT: error skipping the USTRUC data')
+  end subroutine
 
 !!!!!! AUXILIARY PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -567,26 +561,26 @@ contains
   !! solid volume fraction data is assembled from MATL and mapped to the mesh
   !! used by the microstructure modeling component.
 
-  subroutine ustruct_update_aux (tcell, tface, liq_vf, sol_vf)
+  subroutine ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
 
     use diffusion_solver, only: ds_get_cell_temp, ds_get_face_temp
 
     real(r8), allocatable, intent(out) :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
 
     allocate(tcell(this%mesh%ncell_onP), tface(this%mesh%nface_onP))
-    call ds_get_cell_temp (tcell)
-    call ds_get_face_temp (tface)
+    call ds_get_cell_temp(tcell)
+    call ds_get_face_temp(tface)
 
     allocate(liq_vf(this%mesh%ncell_onP), sol_vf(this%mesh%ncell_onP))
-    call get_vol_frac (this%liq_matid, liq_vf)
-    call get_vol_frac (this%sol_matid, sol_vf)
+    call get_vol_frac(this%liq_matid, liq_vf)
+    call get_vol_frac(this%sol_matid, sol_vf)
 
-  end subroutine ustruct_update_aux
+  end subroutine
 
   !! This routine returns the total volume fraction VF occupied by the phases
   !! corresponding to the old material indices in the list MATID.
 
-  subroutine get_vol_frac (matid, vf)
+  subroutine get_vol_frac(matid, vf)
 
     use legacy_matl_api, only: gather_vof
 
@@ -598,15 +592,15 @@ contains
 
     ASSERT(size(vf) == this%mesh%ncell_onP)
 
-    call gather_vof (matid(1), vf)
+    call gather_vof(matid(1), vf)
     if (size(matid) > 1) then
       allocate(vf1, mold=vf)
       do n = 2, size(matid)
-        call gather_vof (matid(n), vf1)
+        call gather_vof(matid(n), vf1)
         vf = vf + vf1
       end do
     end if
 
-  end subroutine get_vol_frac
+  end subroutine
 
 end module ustruc_driver

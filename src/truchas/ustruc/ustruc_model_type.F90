@@ -7,36 +7,11 @@
 !! Neil N. Carlson <nnc@lanl.gov>
 !! August 2014
 !!
-!! PROGRAMMING INTERFACE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!!  The derived type USTRUC_MODEL encapsulates the microstructure modeling
-!!  kernel.  It has the following type bound procedures.
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
-!!  INIT (MESH, PARAMS) initializes the object.  MESH is a pointer to
-!!    the TYPE(UNSTR_MESH) computational mesh.  An internal reference to
-!!    the mesh is held by the object.  All input/output state fields are
-!!    relative to this mesh.
-!!
-!!  SET_STATE (THIS, T, TCELL, TFACE, LIQ_VF, SOL_VF) sets the initial
-!!    state at time T.  TCELL and TFACE are the cell and face temperatures
-!!    associated with the mesh, and LIQ_VF and SOL_VF are the liquid and
-!!    solid volume fractions of the subject material on the cells.
-!!
-!!  UPDATE_STATE (THIS, T, TCELL, TFACE, LIQ_VF, SOL_VF) updates the state
-!!    to the specified values.  The interface is identical to SET_STATE.
-!!    The difference here is in behavior: the microstructure model is
-!!    advanced from the previous state to the new specified state.
-!!
-!!  GET (NAME, ARRAY) returns the value of the named data in the provided
-!!    array.  This is a generic procedure.  ARRAY is a rank-1 or 2 array
-!!    of type logical, integer, or real.  NAME is a character string that
-!!    identifies the requested data.  The known names are those encoded in
-!!    the various concrete implementations of the USTRUC_COMP class which
-!!    ultimately handle the request.  The TKR of ARRAY and its shape must
-!!    be consistent with the requested data.
-!!
-!!  HAS (NAME) returns true if NAME identifies known data that the GET
-!!    subroutine is able to retrieve.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! NOTES
 !!
@@ -53,7 +28,7 @@
 !!  though unnecessarily so.  A redesign may be appropriate here (FIXME).
 !!
 !!  3. The GET procedures are limited to exactly what the driver uses, and
-!!  do not expose the full capabilities of the underlying USTRUC_COMP%GET
+!!  do not expose the full capabilities of the underlying USTRUC_ANALYSIS%GET
 !!  interface.  There are issues here on how best to deal with values on
 !!  inactive cells and values on active cells that have invalid data.  The
 !!  current implementation is adequate for the present Truchas output needs,
@@ -67,7 +42,7 @@ module ustruc_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use mfd_disc_type
-  use ustruc_comp_class
+  use ustruc_analysis_class
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
@@ -76,7 +51,7 @@ module ustruc_model_type
 
   type, public :: ustruc_model
     private
-    class(ustruc_comp), pointer :: comp => null() ! analysis component
+    class(ustruc_analysis), pointer :: analysis => null() ! owned
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(mfd_disc) :: disc  ! see Note 1
     logical, allocatable :: mask(:)  ! identifies active mesh cells
@@ -101,14 +76,14 @@ module ustruc_model_type
 
 contains
 
-  subroutine delete_ustruc_model (this)
+  subroutine delete_ustruc_model(this)
     type(ustruc_model) :: this
-    if (associated(this%comp)) deallocate(this%comp)
-  end subroutine delete_ustruc_model
+    if (associated(this%analysis)) deallocate(this%analysis)
+  end subroutine
 
-  subroutine init (this, mesh, params)
+  subroutine init(this, mesh, params)
 
-    use ustruc_comp_factory
+    use ustruc_analysis_factory
 
     class(ustruc_model), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -121,11 +96,11 @@ contains
 
     this%mesh => mesh
 
-    call this%disc%init (this%mesh, use_new_mfd=.true.) ! See Note 1
+    call this%disc%init(this%mesh, use_new_mfd=.true.) ! See Note 1
 
-    call params%get ('cell-set-ids', setids)
-    call this%mesh%get_cell_set_bitmask (setids, bitmask, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('USTRUC%INIT: ' // errmsg)
+    call params%get('cell-set-ids', setids)
+    call this%mesh%get_cell_set_bitmask(setids, bitmask, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('USTRUC%INIT: ' // errmsg)
 
     allocate(this%mask(mesh%ncell_onP))
     this%mask = (iand(bitmask, this%mesh%cell_set_mask(:this%mesh%ncell_onP)) /= 0)
@@ -134,72 +109,72 @@ contains
 
     this%ncell = size(this%map)
 
-    call params%get ('material-fraction-threshold', this%mfrac_min, default=1.0d-2)
+    call params%get('material-fraction-threshold', this%mfrac_min, default=1.0d-2)
     INSIST(this%mfrac_min <= 1.0_r8)
     INSIST(this%mfrac_min >= 0.0_r8)
 
     !! For now we instantiate the analysis components here, but this needs to
     !! be done outside and the result passed in.
-    this%comp => new_ustruc_comp(this%ncell, params)
+    this%analysis => new_ustruc_analysis(this%ncell, params)
 
   end subroutine init
 
-  subroutine set_state (this, t, tcell, tface, liq_vf, sol_vf)
+  subroutine set_state(this, t, tcell, tface, liq_vf, sol_vf)
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)
     logical,  allocatable :: invalid(:)
     real(r8), allocatable :: sol_frac(:), temp(:), temp_grad(:,:)
-    call get_temp_state (this, tcell, tface, temp, temp_grad)
-    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
-    call this%comp%set_state (t, temp, temp_grad, sol_frac, invalid)
-  end subroutine set_state
+    call get_temp_state(this, tcell, tface, temp, temp_grad)
+    call get_sol_frac_state(this, liq_vf, sol_vf, sol_frac, invalid)
+    call this%analysis%set_state(t, temp, temp_grad, sol_frac, invalid)
+  end subroutine
 
-  subroutine update_state (this, t, tcell, tface, liq_vf, sol_vf)
+  subroutine update_state(this, t, tcell, tface, liq_vf, sol_vf)
     class(ustruc_model), intent(inout) :: this
     real(r8), intent(in) :: t, tcell(:), tface(:), liq_vf(:), sol_vf(:)
     logical,  allocatable :: invalid(:)
     real(r8), allocatable :: temp(:), temp_grad(:,:), sol_frac(:)
-    call get_temp_state (this, tcell, tface, temp, temp_grad)
-    call get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
-    call this%comp%update_state (t, temp, temp_grad, sol_frac, invalid)
-  end subroutine update_state
+    call get_temp_state(this, tcell, tface, temp, temp_grad)
+    call get_sol_frac_state(this, liq_vf, sol_vf, sol_frac, invalid)
+    call this%analysis%update_state(t, temp, temp_grad, sol_frac, invalid)
+  end subroutine
 
-  subroutine get_comp_list (this, list)
+  subroutine get_comp_list(this, list)
     class(ustruc_model), intent(in) :: this
     integer, allocatable, intent(out) :: list(:)
-    call this%comp%get_comp_list (list)
-  end subroutine get_comp_list
-  
+    call this%analysis%get_comp_list(list)
+  end subroutine
+
   !! Returns true if one of the analysis components has the named data.
-  logical function has (this, name)
+  logical function has(this, name)
     class(ustruc_model), intent(in) :: this
     character(*), intent(in) :: name
-    has = this%comp%has(name)
-  end function has
+    has = this%analysis%has(name)
+  end function
 
   !! I do not know how to handle the logical data with respect to assigning
   !! data on inactive cells -- this really requires knowing what the logical
   !! data means.
 
-  subroutine getr1 (this, name, array)
+  subroutine getr1(this, name, array)
     class(ustruc_model), intent(in) :: this
     character(*), intent(in) :: name
     real(r8), intent(inout) :: array(:)
     real(r8) :: tmp(this%ncell)
     ASSERT(size(array) >= size(this%mask))
-    call this%comp%get (name, tmp)
-    call unpack_cc_scalar (this, 0.0_r8, tmp, array)
-  end subroutine getr1
+    call this%analysis%get(name, tmp)
+    call unpack_cc_scalar(this, 0.0_r8, tmp, array)
+  end subroutine
 
-  subroutine getr2 (this, name, array)
+  subroutine getr2(this, name, array)
     class(ustruc_model), intent(in) :: this
     character(*), intent(in) :: name
     real(r8), intent(inout) :: array(:,:)
     real(r8) :: tmp(size(array,1),this%ncell)
     ASSERT(size(array,2) >= size(this%mask))
-    call this%comp%get (name, tmp)
-    call unpack_cc_vector (this, 0.0_r8, tmp, array)
-  end subroutine getr2
+    call this%analysis%get(name, tmp)
+    call unpack_cc_vector(this, 0.0_r8, tmp, array)
+  end subroutine
 
   !! These auxillary routines unpack cell-centered data on active cells into
   !! the full cell-centered array over the mesh, assigning specified values
@@ -208,7 +183,7 @@ contains
   !! say equal to the number of cells, the values on the additional elements
   !! are returned unchanged.
 
-  subroutine unpack_cc_scalar (this, inactive_value, src, dest)
+  subroutine unpack_cc_scalar(this, inactive_value, src, dest)
     class(ustruc_model), intent(in) :: this
     real(r8), intent(in) :: inactive_value  ! value to assign to inactive cells
     real(r8), intent(in) :: src(:)          ! values on active cells
@@ -220,9 +195,9 @@ contains
       if (.not.this%mask(j)) dest(j) = inactive_value
     end do
     dest(this%map) = src
-  end subroutine unpack_cc_scalar
+  end subroutine
 
-  subroutine unpack_cc_vector (this, inactive_value, src, dest)
+  subroutine unpack_cc_vector(this, inactive_value, src, dest)
     class(ustruc_model), intent(in) :: this
     real(r8), intent(in) :: inactive_value  ! value to assign to inactive cells
     real(r8), intent(in) :: src(:,:)        ! values on active cells
@@ -235,7 +210,7 @@ contains
       if (.not.this%mask(j)) dest(:,j) = inactive_value
     end do
     dest(:,this%map) = src
-  end subroutine unpack_cc_vector
+  end subroutine
 
   !! This auxiliary subroutine generates the temperature state arrays expected
   !! by the microstructure analysis kernel.  Input temperatures are provided
@@ -248,7 +223,7 @@ contains
   !! was used (under control of a mask).  The temporary array GRAD could be
   !! entirely eliminated if this were to be done more smartly (FIXME).
 
-  subroutine get_temp_state (this, tcell, tface, temp, temp_grad)
+  subroutine get_temp_state(this, tcell, tface, temp, temp_grad)
 
     class(ustruc_model), intent(in) :: this
     real(r8), intent(in)  :: tcell(:), tface(:)
@@ -265,19 +240,19 @@ contains
     !! Compute gradients mesh-wide (under control of mask); see NB above.
     xtface(:this%mesh%nface_onP) = tface  ! off-process extended face temperatures
     call this%mesh%face_imap%gather_offp(xtface)
-    call this%disc%compute_cell_grad (xtface, this%mask, grad)
+    call this%disc%compute_cell_grad(xtface, this%mask, grad)
 
     !! Now extract the relevant gradients.
     temp_grad = grad(:,this%map)
 
-  end subroutine get_temp_state
+  end subroutine
 
   !! This auxiliary subroutine generates the solid fraction state arrays
   !! expected by the microstructure analysis kernel.  Input volume fraction
   !! data is provided at all on-process cells, but the output solid fraction
   !! state only on active cells.
 
-  subroutine get_sol_frac_state (this, liq_vf, sol_vf, sol_frac, invalid)
+  subroutine get_sol_frac_state(this, liq_vf, sol_vf, sol_frac, invalid)
 
     class(ustruc_model), intent(inout), target :: this
     real(r8), intent(in)  :: liq_vf(:), sol_vf(:)
@@ -309,26 +284,26 @@ contains
 
   end subroutine get_sol_frac_state
 
-  subroutine get_map (this, map)
+  subroutine get_map(this, map)
     class(ustruc_model), intent(in) :: this
     integer, allocatable, intent(out) :: map(:)
     map = this%map
   end subroutine
 
-  subroutine serialize (this, cid, array)
+  subroutine serialize(this, cid, array)
     use,intrinsic :: iso_fortran_env, only: int8
     class(ustruc_model), intent(in) :: this
     integer, intent(in) :: cid
     integer(int8), allocatable, intent(out) :: array(:,:)
-    call this%comp%serialize (cid, array)
-  end subroutine serialize
+    call this%analysis%serialize(cid, array)
+  end subroutine
 
-  subroutine deserialize (this, cid, array)
+  subroutine deserialize(this, cid, array)
     use,intrinsic :: iso_fortran_env, only: int8
     class(ustruc_model), intent(inout) :: this
     integer, intent(in) :: cid
     integer(int8), intent(in) :: array(:,:)
-    call this%comp%deserialize (cid, array)
-  end subroutine deserialize
+    call this%analysis%deserialize(cid, array)
+  end subroutine
 
 end module ustruc_model_type

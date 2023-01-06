@@ -1,0 +1,202 @@
+MICROSTRUCTURE MODELING TEST LDRD
+
+Solidification and microstructure prediction in a small wedge casting.
+3D quarter symmetry domain includes mold.  Mesh contains both hex and
+prism elements.  Mold initially cold with a vertical temperature gradient.
+Metal initially liquid.  External HTC BC on the mold and internal HTC BC
+between mold and casting.  Graphite mold and Sn-Bi metal alloy.  Material
+properties and microstructure model parameters taken from a full wedge
+casting simulation by John Gibbs (MST-6).  Final time is well before
+solidification has completed in order to capture a full mixture of liquid,
+solidifying, solid, and undefined cell states from the microstructure model.
+
+&OUTPUTS
+  output_t = 0.0, 4.0, 10.0
+  output_dt = 4.0, 6.0
+/
+
+&MESH
+  mesh_file = 'wedge.exo'
+  coordinate_scale_factor = 0.001
+  interface_side_sets = 5
+/
+
+&PHYSICS
+  materials = 'Graphite 2020', 'alloy'
+  heat_transport = .true.
+/
+
+&MICROSTRUCTURE
+  material = 'alloy'
+  cell_set_ids = 1
+  model_file = 'ldrd-ustruc-model.json'
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 0.02
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  verbose_stepping   = .true.
+/
+
+&NUMERICS
+  dt_init = 1.0e-3
+  dt_grow = 5.0
+  dt_min  = 1.0e-5
+  dt_max  = 1.0
+/
+
+Metal volume at a constant temperature
+&BODY
+  surface_name		= 'from mesh file'
+  mesh_material_number 	= 1
+  material_name         = 'alloy'
+  temperature		= 520.0
+/
+
+Graphite mold with a thermal gradient
+&BODY
+  surface_name		= 'from mesh file'
+  mesh_material_number	= 2
+  material_name         = 'Graphite 2020'
+  temperature_function  = 'temp-grad'
+/
+
+&FUNCTION
+  name = 'temp-grad'
+  type = 'polynomial'
+  poly_coefficients = 250.0, 2000.0
+  poly_exponents(:,1) = 0, 0, 0
+  poly_exponents(:,2) = 0, 0, 1
+/
+
+&THERMAL_BC
+  name = 'symmetry planes'
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
+/
+
+&THERMAL_BC
+  name = 'mold surface'
+  type = 'htc'
+  face_set_ids = 2, 3, 4
+  htc = 100.0
+  ambient_temp = 300.0
+/
+
+&THERMAL_BC
+  name = 'metal/mold'
+  face_set_ids = 5
+  type = 'interface-htc'
+  htc = 1500.0
+/
+
+################################################################################
+  MATERIALS
+################################################################################
+
+1 - Liquid Metal
+2 - Solid Metal
+3 - Graphite (background)
+
+### GRAPHITE (MOLD) ############################################################
+3-Graphite grade 2020
+
+&MATERIAL
+  name = 'Graphite 2020'
+  density = 1750.0
+  specific_heat_func = 'graphite_Cp'
+  conductivity_func = 'graphite_k'
+  electrical_conductivity = 8.4e4
+  tm_ref_density = 1750.0
+  tm_ref_temp = 873.0
+  tm_linear_cte = 7.0e-6
+/
+
+&FUNCTION
+  name = 'graphite_Cp'
+  type = 'polynomial'
+  poly_coefficients   = 2.40e+2,  2.50e+0, -1.12e-3,  1.70e-7
+  poly_exponents(1,:) = 0,        1,        2,        3
+/
+
+! This conductivity function is only good for 0 - 3000K
+&FUNCTION
+  name = 'graphite_k'
+  type = 'polynomial'
+  poly_coefficients   = 1.13e+2, -1.44914e-1,  1.06957e-4, -3.42556e-8, 4.00456e-12
+  poly_exponents(1,:) = 0,           1,           2,           3,          4
+/
+
+
+
+### Metal ######################################################################
+Sn60Bi40 wt pct
+Sn73Bi27 at pct
+
+&MATERIAL
+  name   = 'alloy'
+  density = 8290
+  phases = 'solid', 'alloy'
+/
+
+#  Assumed ideal solution type mixing for Latent heat,
+#  may be 48000 based on some literature
+
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'alloy'
+  solidus_temp  = 412.0
+  liquidus_temp = 448.0
+  latent_heat   = 57000.0
+/
+
+################################################################################
+
+&PHASE
+  name = 'solid'
+  specific_heat = 188.4
+  conductivity = 30.0
+/
+# Solid thermal conductivity is a handbook type value from the internet
+
+###############################################################################
+
+&PHASE
+  name = 'alloy'
+  is_fluid = T
+  specific_heat_func = 'alloy_cp'
+  conductivity_func = 'alloy_k'
+  viscosity_func = 'alloy_n'
+/
+
+!! This is unknown right now and assumed to be 20% higher than the solid
+&FUNCTION
+  name = 'alloy_cp'
+  type = 'polynomial'
+  poly_coefficients   = 225
+  poly_exponents(1,:) = 0
+/
+
+!! This themal conductivity function is only good for MP - 750K
+   Fit from Plevachuk 2010
+&FUNCTION
+  name = 'alloy_k'
+  type = 'polynomial'
+  poly_coefficients   = 6.9217,	2.143e-2
+  poly_exponents(1,:) = 0,	1
+/
+
+!! This viscosity function is only good for ~450 - 850K
+   Fit from Plevachuk 2010
+&FUNCTION
+  name = 'alloy_n'
+  type = 'polynomial'
+  poly_coefficients   = 1.562e-2,	-5.24e-5,	6.458e-8,	-2.688e-11
+  poly_exponents(1,:) = 0,		1,		2,		3
+/

@@ -1,12 +1,21 @@
-MICROSTRUCTURE MODELING TEST 2
+MICROSTRUCTURE MODELING TEST GL-TEMP
 
-Exactly the same problem as microstructure modeling test 1 (USTRUC1) except
-we start from a restart file. This exercises the serialization/deserialization
-of the microstructure state data and the process of restarting the model.
+Solidification and microstructure prediction in a small wedge casting.
+3D quarter symmetry domain includes mold.  Mesh contains both hex and
+prism elements.  Mold initially cold with a vertical temperature gradient.
+Metal initially liquid.  External HTC BC on the mold and internal HTC BC
+between mold and casting.  Graphite mold and Sn-Bi metal alloy.  Material
+properties and microstructure model parameters taken from a full wedge
+casting simulation by John Gibbs (MST-6).  Final time is well before
+solidification has completed in order to capture a full mixture of liquid,
+solidifying, solid, and undefined cell states from the microstructure model.
+
+This particular case uses the default GL analysis module with temperature
+based thresholds.
 
 &OUTPUTS
-  output_t = 0.0, 4.0, 10.0
-  output_dt = 4.0, 6.0
+  output_t = 0.0, 4.0, 6.0
+  output_dt = 4.0, 2.0
 /
 
 &MESH
@@ -23,10 +32,9 @@ of the microstructure state data and the process of restarting the model.
 &MICROSTRUCTURE
   material = 'alloy'
   cell_set_ids = 1
-  vel_max = 1.0
-  vel_lo_solid_frac = 0.05
-  vel_hi_solid_frac = 0.95
-  gv_model_file = 'alloy-gv1-model.json'
+  begin_temp = 445
+  gl_temp = 443
+  end_temp = 415
 /
 
 &DIFFUSION_SOLVER
@@ -34,7 +42,8 @@ of the microstructure state data and the process of restarting the model.
   rel_temp_tol       = 1.0e-3
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
-  nlk_tol            = 0.02
+  nlk_tol            = 0.01
+  max_nlk_itr        = 6
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
   verbose_stepping   = .true.

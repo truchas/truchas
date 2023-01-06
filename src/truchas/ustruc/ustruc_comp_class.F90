@@ -1,63 +1,36 @@
 !!
 !! USTRUC_COMP_CLASS
 !!
-!! This module provides the abstract base class USTRUC_COMP that defines the
-!! interface to the low-level microstructure analysis component used by the
-!! microstructure modeling kernel as implemented by the USTRUC_MODEL type.
+!! This module provides an extension USTRUC_COMP of the abstract base class
+!! USTRUC_ANALYSIS from which optional analysis components will be derived.
 !!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! August 2014
 !!
-!! PROGRAMMING INTERFACE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! This interface provides for point microstructure models that depend on
-!! local quantities like temperature, solid fraction, and their gradients
-!! at a point.  The models are applied independently at each point in a
-!! collection of points; at this level there is no reference to any spatial
-!! mesh.  The models are expected to be time dependent however, requiring
-!! concrete implementations to maintain state through time as needed.
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
-!! For flexibility, the microstructure model is decomposed into individual
-!! analysis components that can be combined dynamically at run time.  The
-!! decorator programming pattern is used to implement this design.  The
-!! core component which holds the state used by other components is defined
-!! by the concrete implementation USTRUC_CORE of this abstract class.  Other
-!! optional analysis components which add specific functionality will be
-!! derived from the USTRUC_PLUGIN class which also derives from this abstract
-!! class.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! The abstract base class specifies the following type bound procedures.
-!! The data component N is the number of points the analysis component is
-!! being applied to.
+!! NOTES
 !!
-!!  SET_STATE (T, TEMP, TEMP_GRAD, FRAC, FRAC_GRAD, INVALID) sets the initial
-!!    state, removing and resetting any existing state back to its starting
-!!    condition.  All arguments are intent(in).  The scalar T is time, TEMP
-!!    and FRAC are the rank-1 arrays of length N giving the temperature and
-!!    solid fraction, and TEMP_GRAD and FRAC_GRAD are corresponding rank-2
-!!    arrays with first dimension size 3, giving the spatial gradients.  The
-!!    corresponding rank-1 logical array INVALID marks those points for which
-!!    the preceding arrays do not have valid data.
+!! 1) While the USTRUC_COMP class should be regarded as an abstract type that
+!! cannot/should not be instantiated, it is not actually abstract.  This is
+!! because extensions of this type override the type bound procedures with
+!! their specific functionality and then call back to the original procedures
+!! defined here to pass control off to the next analysis component in the
+!! chain.  Fortran requires that this type not be abstract in order to call
+!! these procedures (even though they aren't deferred).
 !!
-!!  UPDATE_STATE (T, TEMP, TEMP_GRAD, FRAC, FRAC_GRAD, INVALID) updates the
-!!    state.  The interface is identical to SET_STATE.  The difference here
-!!    is that the analysis component is expected to be advancing its internal
-!!    state using the previous state and this new passed state.  SET_STATE
-!!    must be called before this subroutine is called.
-!!
-!!  GET (NAME, ARRAY) returns the named data in the provided array.  NAME
-!!    is a intent(in) character variable with an implementation-defined
-!!    value that identifies the requested data.  The data is returned in
-!!    the intent(out) ARRAY. It is a rank-1 array of length N, or a rank-2
-!!    array of shape (3,N), and of real, integer, or logical type.  It is
-!!    an error if the name is not known.  Concrete implementations must
-!!    provide implementations of the specific subroutines GETL1, GETI1, GETR1,
-!!    and GETR2.
-!!
-!! The abstract class also defines the type bound function VECTOR_MAGNITUDE
-!! which computes the magnitude of the passed 2 or 3-vector using a numerically
-!! robust procedure.  Implementations should use this function when computing
-!! the norm of a gradient.
+!! 2) The canonical method for creating the ultimate USTRUC_ANALYSIS object is
+!! to allocate a USTRUC_ANALYSIS pointer via the NEW_USTRUC_CORE function, pass
+!! this to a NEW_USTRUC_* call to wrap it with an optional analysis component,
+!! and take the resulting USTRUC_ANALYSIS pointer and continue to wrap with
+!! additional optional analysis components. As long as no reference is retained
+!! to any of the intermediate pointers, the final pointer can be considered to
+!! own the chain it begins, and when it is deleted the finalization defined
+!! here will do the right thing.
 !!
 
 #include "f90_assert.fpp"
@@ -65,132 +38,143 @@
 module ustruc_comp_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use,intrinsic :: iso_fortran_env, only: int8
+  use ustruc_analysis_class
+  use ustruc_core_type
   implicit none
   private
 
-  type, abstract, public :: ustruc_comp
-    integer :: n  ! number of points
+  public :: ustruc_analysis, ustruc_core  ! re-export
+
+  type, extends(ustruc_analysis), public :: ustruc_comp ! see Note 1
+    private
+    class(ustruc_analysis), pointer :: next => null() ! the next component in the chain
+    type(ustruc_core), pointer, public :: core => null() ! reference only -- do not own
   contains
-    procedure(update), deferred :: set_state
-    procedure(update), deferred :: update_state
-    procedure(has),    deferred :: has
-    procedure(comp_list), deferred :: get_comp_list
-    generic :: get => getl1, geti1, getr1, getr2
-    procedure(getl1), deferred :: getl1
-    procedure(geti1), deferred :: geti1
-    procedure(getr1), deferred :: getr1
-    procedure(getr2), deferred :: getr2
-    procedure(serialize), deferred :: serialize
-    procedure(deserialize), deferred :: deserialize
-    procedure, nopass :: vector_magnitude
+    procedure :: init
+    procedure :: set_state
+    procedure :: update_state
+    procedure :: get_comp_list
+    procedure :: has
+    procedure :: getl1
+    procedure :: geti1
+    procedure :: getr1
+    procedure :: getr2
+    procedure :: serialize
+    procedure :: deserialize
+    final :: delete_chain
   end type
 
-  abstract interface
-    subroutine update (this, t, temp, temp_grad, frac, invalid)
-      import ustruc_comp, r8
-      class(ustruc_comp), intent(inout) :: this
-      real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
-      logical,  intent(in) :: invalid(:)
-    end subroutine
-    logical function has (this, name)
-      import ustruc_comp
-      class(ustruc_comp), intent(in) :: this
-      character(*), intent(in) :: name
-    end function has
-    subroutine comp_list (this, list)
-      import ustruc_comp
-      class(ustruc_comp), intent(in) :: this
-      integer, allocatable, intent(out) :: list(:)
-    end subroutine
-    subroutine getl1 (this, name, array)
-      import ustruc_comp
-      class(ustruc_comp), intent(in) :: this
-      character(*), intent(in) :: name
-      logical, intent(out) :: array(:)
-    end subroutine
-    subroutine geti1 (this, name, array, invalid)
-      import ustruc_comp, r8
-      class(ustruc_comp), intent(in) :: this
-      character(*), intent(in) :: name
-      integer, intent(out) :: array(:)
-      logical, intent(out), optional :: invalid(:)
-    end subroutine
-    subroutine getr1 (this, name, array, invalid)
-      import ustruc_comp, r8
-      class(ustruc_comp), intent(in) :: this
-      character(*), intent(in) :: name
-      real(r8), intent(out) :: array(:)
-      logical, intent(out), optional :: invalid(:)
-    end subroutine
-    subroutine getr2 (this, name, array, invalid)
-      import ustruc_comp, r8
-      class(ustruc_comp), intent(in) :: this
-      character(*), intent(in) :: name
-      real(r8), intent(out) :: array(:,:)
-      logical, intent(out), optional :: invalid(:)
-    end subroutine
-    subroutine serialize (this, cid, array)
-      import ustruc_comp, int8
-      class(ustruc_comp), intent(in) :: this
-      integer, intent(in) :: cid
-      integer(int8), allocatable, intent(out) :: array(:,:)
-    end subroutine
-    subroutine deserialize (this, cid, array)
-      import ustruc_comp, int8
-      class(ustruc_comp), intent(inout) :: this
-      integer, intent(in) :: cid
-      integer(int8), intent(in) :: array(:,:)
-    end subroutine
-  end interface
+  !! Unique IDs for the existing analysis components
+  integer, parameter, public :: USTRUC_CORE_ID = 1
+  integer, parameter, public :: USTRUC_GL_ID   = 2
+  integer, parameter, public :: USTRUC_LDRD_ID = 3
 
 contains
 
-  !! Numerically robust procedure to compute the magnitude of a 2 or 3-vector.
+  !! Finalizer for objects of class USTRUC_COMP.  This effectively
+  !! walks down the chain of CLASS(USTRUC_ANALYSIS) and deallocates each
+  !! starting with the one at the end.  The assumption here is that the
+  !! chain owns each of its objects.  See NOTE 2.
 
-  pure function vector_magnitude (v) result (vmag)
+  recursive subroutine delete_chain(this)
+    type(ustruc_comp) :: this
+    if (associated(this%next)) deallocate(this%next)
+  end subroutine
 
-    real(r8), intent(in) :: v(:)  ! length 2 or 3
-    real(r8) :: vmag
-
-    real(r8) :: a, b, c, t
-
-    select case (size(v))
-    case (2)
-      a = abs(v(1))
-      b = abs(v(2))
-      !! Swap largest value to A.
-      if (b > a) then
-        t = a
-        a = b
-        b = t
-      end if
-      vmag = 0.0_r8
-      if (a > 0.0_r8) vmag = a * sqrt(1.0_r8 + (b/a)**2)
-    case (3)
-      a = abs(v(1))
-      b = abs(v(2))
-      c = abs(v(3))
-      !! Swap largest value to A.
-      if (b > a) then
-        if (c > b) then
-          t = a
-          a = c
-          c = t
-        else
-          t = a
-          a = b
-          b = t
-        end if
-      else if (c > a) then
-        t = a
-        a = c
-        c = t
-      end if
-      vmag = 0.0_r8
-      if (a > 0.0_r8) vmag = a * sqrt(1.0_r8 + ((b/a)**2 + (c/a)**2))
+  subroutine init(this, comp)
+    class(ustruc_comp), intent(out) :: this
+    class(ustruc_analysis), pointer, intent(in) :: comp
+    ASSERT(associated(comp))
+    this%next => comp
+    select type (comp)
+    type is (ustruc_core)
+      this%core => comp
+    class is (ustruc_comp)
+      ASSERT(associated(comp%core))
+      this%core => comp%core
     end select
+    this%n = this%core%n
+  end subroutine
 
-  end function vector_magnitude
+  recursive subroutine set_state(this, t, temp, temp_grad, frac, invalid)
+    class(ustruc_comp), intent(inout) :: this
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
+    logical,  intent(in) :: invalid(:)
+    ASSERT(associated(this%next))
+    call this%next%set_state(t, temp, temp_grad, frac, invalid)
+  end subroutine
+
+  recursive subroutine update_state(this, t, temp, temp_grad, frac, invalid)
+    class(ustruc_comp), intent(inout) :: this
+    real(r8), intent(in) :: t, temp(:), temp_grad(:,:), frac(:)
+    logical,  intent(in) :: invalid(:)
+    ASSERT(associated(this%next))
+    call this%next%update_state(t, temp, temp_grad, frac, invalid)
+  end subroutine
+
+  recursive subroutine get_comp_list(this, list)
+    class(ustruc_comp), intent(in) :: this
+    integer, allocatable, intent(out) :: list(:)
+    call this%next%get_comp_list(list)
+  end subroutine
+
+  recursive logical function has(this, name)
+    class(ustruc_comp), intent(in) :: this
+    character(*), intent(in) :: name
+    ASSERT(associated(this%next))
+    has = this%next%has(name)
+  end function
+
+  recursive subroutine getl1(this, name, array)
+    class(ustruc_comp), intent(in) :: this
+    character(*), intent(in) :: name
+    logical, intent(out) :: array(:)
+    ASSERT(associated(this%next))
+    call this%next%get(name, array)
+  end subroutine
+
+  recursive subroutine geti1(this, name, array, invalid)
+    class(ustruc_comp), intent(in) :: this
+    character(*), intent(in) :: name
+    integer, intent(out) :: array(:)
+    logical, intent(out), optional :: invalid(:)
+    ASSERT(associated(this%next))
+    call this%next%get(name, array, invalid)
+  end subroutine
+
+  recursive subroutine getr1(this, name, array, invalid)
+    class(ustruc_comp), intent(in) :: this
+    character(*), intent(in) :: name
+    real(r8), intent(out) :: array(:)
+    logical, intent(out), optional :: invalid(:)
+    ASSERT(associated(this%next))
+    call this%next%get(name, array, invalid)
+  end subroutine
+
+  recursive subroutine getr2(this, name, array, invalid)
+    class(ustruc_comp), intent(in) :: this
+    character(*), intent(in) :: name
+    real(r8), intent(out) :: array(:,:)
+    logical, intent(out), optional :: invalid(:)
+    ASSERT(associated(this%next))
+    call this%next%get(name, array, invalid)
+  end subroutine
+
+  recursive subroutine serialize(this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_comp), intent(in) :: this
+    integer, intent(in) :: cid
+    integer(int8), allocatable, intent(out) :: array(:,:)
+    ASSERT(associated(this%next))
+    call this%next%serialize(cid, array)
+  end subroutine
+
+  recursive subroutine deserialize(this, cid, array)
+    use,intrinsic :: iso_fortran_env, only: int8
+    class(ustruc_comp), intent(inout) :: this
+    integer, intent(in) :: cid
+    integer(int8), intent(in) :: array(:,:)
+    call this%next%deserialize(cid, array)
+  end subroutine
 
 end module ustruc_comp_class

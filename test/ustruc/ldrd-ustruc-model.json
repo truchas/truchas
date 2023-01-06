@@ -1,5 +1,5 @@
 {
-  "gv-model-type": "gv1",
+  "model-type": "ldrd",
   "theta1": 0.05, "theta1p": 0.04,
   "theta2": 0.95, "theta2p": 0.94,
   

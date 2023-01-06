@@ -23,6 +23,7 @@ Reference Manual
    INDUCTION_COIL_Namelist/index
    MATERIAL_and_PHASE_Namelists/index
    MESH_Namelist/index
+   MICROSTRUCTURE_Namelist/index
    NUMERICS_Namelist/index
    OUTPUTS_Namelist/index
    PHASE_CHANGE_Namelist/index
