@@ -76,6 +76,7 @@ contains
     ! note ~30 iterations seem to be necessary to pass current unit tests
 
     if (ierr /= 0) then
+      if (.not.allocated(error_message)) error_message = ""
       write (my_error_message, '(a,2es13.3)') &
           "  Error, tolerance: ", vof_error%f(locate_plane_nd%rho), vof_error%feps
       error_message = error_message // new_line(my_error_message) // trim(my_error_message)
