@@ -3,7 +3,7 @@
 .. toctree::
    :maxdepth: 1
 
-FLOW Namelist 
+FLOW Namelist
 ==============================
 
 Overview
@@ -20,10 +20,13 @@ Components
 Physics Options
 ^^^^^^^^^^^^^^^^^^
 * :ref:`inviscid<FLOW_inviscid>`
+* :ref:`porous_drag<FLOW_drag>`
 
 Numerical Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^
 * :ref:`courant_number<FLOW_CN>`
+* :ref:`drag_coef<FLOW_DC>`
+* :ref:`drag_implicitness<FLOW_DI>`
 * :ref:`viscous_number<FLOW_VN>`
 * :ref:`viscous_implicitness<FLOW_VI>`
 * :ref:`track_interfaces<FLOW_TI>`
@@ -59,6 +62,41 @@ courant_number
 | **Valid values**: (0.0,1.0]
 | **Notes**       : The Courant number for a cell is the dimensionless value :math:`C_i = u_i \Delta t/\Delta x_i` where :math:`\Delta t` is the timestep, :math:`u_i` the fluid velocity magnitude on the cell, and :math:`\Delta x_i` a measure of the cell size. The time steplimit is the largest :math:`\Delta t` such that :math:`max\{C_i\}` equals the value of :ref:`courant_number<FLOW_CN>`. The interpretation of :math:`u_i` and :math:`\Delta x_i` for a general cell is somewhat sticky. Currently a ratio :math:`u_f/h_f` is computed for each face of a cell and the maximum taken for the value of :math:`u_i/\Delta x_i`. Here :math:`u_f` is the normal fluxing velocity on the face, and :math:`h_f` is the inscribed cell height at the face; that is, the minimum normal distance between the face and cell nodes not belonging to the face.
 
+
+.. _FLOW_drag:
+
+porous_drag
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : This option enables a modification\ :footcite:p:`voller1987fixed` to the momentum equation that adds a drag force in the two-phase mushy zone of solidification problems. Flow in the mushy zone is viewed as flow of the liquid fraction through a porous medium formed by a fixed solid matrix. The added drag force is
+.. math::
+   \mathbf{F}_d = - \mu D_0 \frac{(1-\lambda)^2}{\lambda^3} \mathbf{u},
+
+where :math:`\lambda` is the local liquid fraction and :math:`\mu` is the liquid viscosity. The constant :math:`D_0` is specified by the input variable :ref:`drag_coef<FLOW_DC>`. See also the variable :ref:`drag_implicitness<FLOW_DI>`. This option is only available for viscous flows.
+
+| **Type**        : logical
+| **Default**     : false
+
+
+.. _FLOW_DC:
+drag_coef
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The coefficient :math:`D_0` in the porous drag force :math:`\mathbf{F}_d`.
+| **Physical dimension** : :math:`1/L^2`
+| **Type**        : real
+| **Default**     : none
+| **Valid values**       : :math:`> 0.0`
+
+
+.. _FLOW_DI:
+drag_implicitness
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : The degree of time implicitness :math:`\theta` used for the velocity field in the discretization of the porous drag force in the fluid momentum equation. The discretized velocity is given by the :math:`\theta`-method, :math:`\mathbf{u} = (1-\theta)\mathbf{u}_n + \theta\mathbf{u}_{n+1}`: :math:`\theta = 0` gives an explicit discretization and :math:`\theta = 1` a fully implicit discretization. In practice only the values :math:`1, \frac{1}{2}` (trapezoid method), and 0 are useful, and use of the latter explicit discretization is generally not recommended. Note that an implicit discretization, :math:`\theta > 0`, will require the solution of a linear system; see :ref:`FLOW_VISCOUS_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>`.
+| **Type**        : real
+| **Default**     : 1
+| **Valid values**: [0, 1]
+| **Notes**   : The discretization is first order except for the trapezoid method (:math:`\theta=\frac12`) which is second order. However note that the flow algorithm overall is only first order irrespective of the choice of :math:`\theta`. The advanced velocity :math:`u_{n+1}` is actually the predicted velocity :math:`u_{n+1}^*` from the predictor stage of the flow algorithm.
+
+
 .. _FLOW_VN:
 
 viscous_number
@@ -78,7 +116,7 @@ viscous_implicitness
 | **Type**    : real
 | **Default** : 1
 | **Valid Values**: [0,1]
-| **Notes**   : The discretization is first order except for the trapezoid method (:math:`\theta` = 12) which is second order. However note that the flow algorithm overall is only first order irrespective of the choice of :math:`\theta`. The advanced velocity :math:`u_{n+1}` is actually the predicted velocity :math:`u_{n+1}^*` from the predictor stage of the flow algorithm. 
+| **Notes**   : The discretization is first order except for the trapezoid method (:math:`\theta=\frac12`) which is second order. However note that the flow algorithm overall is only first order irrespective of the choice of :math:`\theta`. The advanced velocity :math:`u_{n+1}` is actually the predicted velocity :math:`u_{n+1}^*` from the predictor stage of the flow algorithm.
 
 .. _FLOW_TI:
 
@@ -97,13 +135,13 @@ material_priority
 | **Description** : A list of material names that defines the priority order in which material interfaces are reconstructed within a cell for volume tracking. All fluid material names must be listed, and if the problem includes any non-fluid materials, this list must include the case-sensitive keyword "SOLID", which stands for all non-fluid materials lumped together. The default is the list of fluid materials in input file order, followed by "SOLID" for the lumped non-fluids.
 | **Type**    : string list
 | **Notes**   : Different priorities will result in somewhat different results. Unfortunately there are no hard and fast rules for selecting the priorities.
-  
+
 .. _FLOW_VTS:
 
 vol_track_subcycles
 ^^^^^^^^^^^^^^^^^^^^^^
 
-| **Description** : The number of sub-time steps :math:`n` taken by the volume tracker for every time step of the flow algorithm. If the flow time step size is :math:`\Delta t` then the volume tracker will taken time steps of size :math:`\Delta t/n` to compute the net flux volumes and advance the volume fractions for the flow step. 
+| **Description** : The number of sub-time steps :math:`n` taken by the volume tracker for every time step of the flow algorithm. If the flow time step size is :math:`\Delta t` then the volume tracker will taken time steps of size :math:`\Delta t/n` to compute the net flux volumes and advance the volume fractions for the flow step.
 | **Type**   : integer
 | **Default**: 2
 | **Notes**  : With the current unsplit advection algorithm :footcite:`rider1998reconstructing` it is necessary to sub-cycle the the volume tracking time integration method in order to obtain good “corner coupling” of the volume flux terms.
@@ -214,7 +252,5 @@ wisp_neighbor_cutoff (Experimental)
 | **Default**: 0.25
 
 
-
-
 .. footbibliography::
-   
+
