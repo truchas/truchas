@@ -311,13 +311,13 @@ class TruchasEnvironment:
         return TruchasData(os.path.join(self._input_dir, output_file))
 
 
-    def generate_input_deck(self, replacements, template_filename, output_filename):
-        """Generates a truchas input file from a template and replacements.
-        Expects a dictionary of replacements, e.g. ``{"sigma": 1.2e-3}``.
-        Will replace Python format-strings in the input template file,
-        e.g. ``{sigma}`` is then replaced with ``.0012``. Formatting can be
-        specified in the input template in the typical Python way, such
-        as ``{sigma:.2e}``.
+    def generate_input_deck(self, replacements, template_filenames, output_filename):
+        """Generates a truchas input file from a template (or templates) and
+        replacements. Expects a dictionary of replacements, e.g. ``{"sigma":
+        1.2e-3}``. Will replace Python format-strings in the input template
+        file, e.g. ``{sigma}`` is then replaced with ``.0012``. Formatting can
+        be specified in the input template in the typical Python way, such as
+        ``{sigma:.2e}``.
 
         :param replacements: A dictionary of replacements to be inserted into
             the Truchas input deck according to the given template. Dictionary
@@ -326,16 +326,27 @@ class TruchasEnvironment:
         :type replacements: dict
 
         :param template_filename: Filename of the template for the Truchas input
-            deck. Should contain Python format-strings, such as ``{sigma}`` or
-            ``{sigma:.2e}`` where replacements from the dictionary (e.g.
-            ``{"sigma": 1.2e-3}``) will be inserted.
-        :type template_filename: str
+            deck. Can also be a list of template filenames that should be
+            concatenated. Should contain Python format-strings, such as
+            ``{sigma}`` or ``{sigma:.2e}`` where replacements from the
+            dictionary (e.g. ``{"sigma": 1.2e-3}``) will be inserted.
+        :type template_filename: str or list of str
 
         :param output_filename: Filename of the generated Truchas input deck.
         :type output_filename: str
+
         """
-        template_filename_abs = os.path.join(self._input_dir, template_filename)
+
         output_filename_abs = os.path.join(self._input_dir, output_filename)
-        with open(template_filename_abs, "r") as ifh, open(output_filename_abs, "w") as ofh:
-            for line in ifh:
-                ofh.write(line.format(**replacements))
+        open(output_filename_abs, "w").close() # create an empty output file
+
+        # hack to handle both strs and lists of strs
+        tfs = [template_filenames] if isinstance(template_filenames, str) \
+            else template_filenames
+
+        for template_filename in tfs:
+            template_filename_abs = os.path.join(self._input_dir, template_filename)
+            with open(template_filename_abs, "r") as ifh, open(output_filename_abs, "a") as ofh:
+                for line in ifh:
+                    ofh.write(line.format(**replacements))
+                ofh.write("\n")
