@@ -464,7 +464,7 @@ contains
         call plist%set('relax-up-type', hypre_amg_relax_up_type)
 
       if (hypre_amg_strong_threshold /= NULL_R) &
-        call plist%set('strong_threshold', hypre_amg_strong_threshold)
+        call plist%set('strong-threshold', hypre_amg_strong_threshold)
 
       if (hypre_amg_print_level == NULL_I) then
         hypre_amg_print_level = 0
