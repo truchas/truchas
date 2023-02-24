@@ -144,13 +144,14 @@ call hijack_truchas ()
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
-    integer :: c, errc, lookahead, num_try
+    integer :: c, errc, lookahead, num_try, stat
     integer, parameter :: MAX_TRY = 10  !TODO: make expert parameter
     type(time_step_sync) :: ts_sync
     type(action_list), allocatable :: actions
     class(event_action), allocatable :: action
     real(r8), pointer :: vel_fn(:), vof(:,:), flux_vol(:,:), temperature_fc(:) => null()
     real(r8) :: tout, t_write, dt_new
+    character(:), allocatable :: errmsg
     !---------------------------------------------------------------------------
 
     if (cycle_max == 0) then
@@ -175,7 +176,8 @@ call hijack_truchas ()
 
     t1 = t
     restart_ds = .false.
-    call time_step  ! Does stuff not related to dt
+    call time_step(stat, errmsg)  ! Does stuff not related to dt
+    if (stat /= 0) call TLS_fatal(errmsg) ! shouldn't ever happen
 
     call event_queue%fast_forward(t)
 
@@ -245,7 +247,9 @@ call hijack_truchas ()
         end do
 
         if (num_try > max_try) then
-          call TLS_info('Too many repeated failures to take a step; giving up')
+          call TLS_info('Too many repeated failures to take a step; &
+                        &writing last time step data and terminating')
+          call TDO_write_timestep
           exit MAIN_CYCLE
         end if
 
@@ -281,7 +285,13 @@ call hijack_truchas ()
         ! set beginning cycle time (= previous cycle's end time)
         t1 = t2
 
-        call time_step  ! next dt, plus other stuff it should not be doing
+        call time_step(stat, errmsg)  ! next dt, plus other stuff it should not be doing
+        if (stat /= 0) then
+          call TLS_info(errmsg)
+          call TLS_info('Writing last time step data and terminating')
+          call TDO_write_timestep
+          exit MAIN_CYCLE
+        end if
 
         ! See if a signal was caught.
         call read_signal(SIGUSR2, sig_rcvd)

@@ -65,7 +65,7 @@ MODULE TIME_STEP_MODULE
 
 CONTAINS
 
-  SUBROUTINE TIME_STEP ()
+  subroutine time_step(stat, errmsg)
     !=======================================================================
     ! Purpose(s):
     !   Compute the time step. The time step is limited by constraints for
@@ -78,6 +78,9 @@ CONTAINS
     use flow_driver,              only: flow_timestep
     use truchas_logging_services
     use truchas_timers
+
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     ! Local Variables
     integer :: n, s
@@ -167,7 +170,10 @@ CONTAINS
     if (dt < dt_min) then
       write(message,'(3a,es13.5,a)') 'Time step too small: dt(', trim(dt_constraint), &
                                      ') = ', dt, ' < dt_min'
-      call TLS_fatal(message)
+      stat = -1
+      errmsg = message
+    else
+      stat = 0
     end if
 
     call stop_timer("Time Step")
