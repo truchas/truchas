@@ -1089,7 +1089,7 @@ contains
     if (warn_ .and. lmax == 0) return
 
     ! all strings passed to collate must be the same length
-    if (is_IOP) allocate(character(lmax) :: global_message(nPE))
+    allocate(character(lmax) :: global_message(merge(nPE, 0, is_IOP)))
     allocate(character(lmax) :: tmp)
     tmp(:) = errmsg_
     call gather(tmp, global_message)
