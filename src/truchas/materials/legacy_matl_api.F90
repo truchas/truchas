@@ -11,6 +11,10 @@ module legacy_matl_api
   public :: gather_vof, matl_get_vof, matl_get_cell_vof, define_matl
   public :: read_matl_data
 
+  interface matl_get_cell_vof
+    procedure :: matl_get_cell_vof_all, matl_get_cell_vof_one
+  end interface
+
   integer, public, protected :: nmat
   type(legacy_matl), allocatable :: this
 
@@ -39,10 +43,16 @@ contains
     call this%get_vof(vof)
   end subroutine
 
-  subroutine matl_get_cell_vof(m, vof)
-    integer, intent(in) :: m
+  subroutine matl_get_cell_vof_all(j, vof)
+    integer, intent(in) :: j
     real(r8), intent(out) :: vof(:)
-    call this%get_cell_vof(m, vof)
+    call this%get_cell_vof(j, vof)
+  end subroutine
+
+  subroutine matl_get_cell_vof_one(m, j, vof)
+    integer, intent(in) :: m, j
+    real(r8), intent(out) :: vof
+    call this%get_cell_vof(m, j, vof)
   end subroutine
 
   subroutine define_matl(vof)

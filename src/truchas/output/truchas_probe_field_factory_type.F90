@@ -47,6 +47,13 @@ module truchas_probe_field_factory_type
     procedure :: value => value_zone_vc
   end type probe_field_zone_vc
 
+  !! Special type for phase volume fractions
+  type, extends(probe_field) :: probe_field_vfrac
+    integer :: m1, m2
+  contains
+    procedure :: value => value_vfrac
+  end type
+
 contains
 
   function value_vector(this, index)
@@ -69,6 +76,21 @@ contains
     integer, intent(in) :: index
     real(r8), allocatable :: value_zone_vc(:)
     value_zone_vc = zone(index)%vc
+  end function
+
+  function value_vfrac(this, index)
+    use legacy_matl_api, only: matl_get_cell_vof  ! stores phase volume fractions
+    class(probe_field_vfrac), intent(in) :: this
+    integer, intent(in) :: index
+    real(r8), allocatable :: value_vfrac(:)
+    integer :: m
+    real(r8) :: vof, vofm
+    call matl_get_cell_vof(this%m1, index, vof)
+    do m = this%m1+1, this%m2
+      call matl_get_cell_vof(m, index, vofm)
+      vof = vof + vofm
+    end do
+    value_vfrac = [vof]
   end function
 
   subroutine alloc_field(this, field, data)
@@ -148,6 +170,30 @@ contains
       end if
 
     end select
+
+    if (allocated(field)) return
+
+    if (lower_case(data(1:9)) == 'vol-frac-') then
+      block
+        use material_model_driver, only: matl_model
+        character(:), allocatable :: name ! phase or material name
+        type(probe_field_vfrac), allocatable :: pf
+        integer :: mid
+        name = data(10:)
+        allocate(pf)
+        pf%label = ', ' // name // ' vol frac'
+        pf%kind  = 'cell'
+        mid = matl_model%matl_index(name)
+        if (mid /= 0) then
+          call matl_model%get_matl_phase_index_range(mid, pf%m1, pf%m2)
+        else  ! look for a specific phase
+          pf%m1 = matl_model%phase_index(name)
+          pf%m2 = pf%m1
+        end if
+        if (pf%m1 /= 0) call move_alloc(pf, field)
+      end block
+      return
+    end if
 
   end subroutine
 
