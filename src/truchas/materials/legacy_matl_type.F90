@@ -45,7 +45,8 @@ module legacy_matl_type
     procedure :: init
     procedure :: gather_vof
     procedure :: get_vof
-    procedure :: get_cell_vof
+    generic   :: get_cell_vof => get_cell_vof_all, get_cell_vof_one
+    procedure, private :: get_cell_vof_all, get_cell_vof_one
     procedure :: set_vof
     procedure, private :: resize
   end type
@@ -102,7 +103,7 @@ contains
   !! This returns a rank-1 array VOF of all material volume fractions
   !! for the given cell index J.
 
-  subroutine get_cell_vof(this, j, vof)
+  subroutine get_cell_vof_all(this, j, vof)
     class(legacy_matl), intent(in) :: this
     integer, intent(in) :: j
     real(r8), intent(out) :: vof(:)
@@ -112,6 +113,25 @@ contains
     do s = 1, size(this%slot)
       associate (cell_j => this%slot(s)%cell(j))
         if (cell_j%id > 0) vof(cell_j%id) = cell_j%vof
+      end associate
+    end do
+  end subroutine
+
+  !! This returns the material volume fraction for the given material M
+  !! for the given cell index J in the scalar VOF.
+
+  subroutine get_cell_vof_one(this, m, j, vof)
+    class(legacy_matl), intent(in) :: this
+    integer, intent(in) :: m, j
+    real(r8), intent(out) :: vof
+    integer :: s
+    vof = 0.0_r8
+    do s = 1, size(this%slot)
+      associate (cell_j => this%slot(s)%cell(j))
+        if (cell_j%id == m) then
+          vof = cell_j%vof
+          return
+        end if
       end associate
     end do
   end subroutine

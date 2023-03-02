@@ -51,6 +51,7 @@ data
    * "temperature - Cell-centered temperature
    * "pressure"   - Cell-centered fluid pressure
    * "velocity"   - Cell-centered fluid velocity
+   * "vol-frac-*name* - Cell-centered volume fraction of material or phase *name*. Name may also be the reserved name "VOID".
 
 | **Type**        : string 
 | **Default**     : none
