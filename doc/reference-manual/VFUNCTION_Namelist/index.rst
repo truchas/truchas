@@ -27,6 +27,27 @@ The following function types are available.
   namelist, which can be used by certain thermal boundary condition and
   source models.
 
+* **Shared Library Function** This is a function from a shared object library
+  having a simple Fortran 77 or C compatible interface. Written in Fortran 77
+  the function interface must look like
+
+``subroutine myfun (v, p, r) bind(c)``
+
+``double precision v(*), p(*), r(*)``
+
+where **myfunc** can, of course, be any name. The equivalent C interface is
+
+``void myfun (double v[], double p[], double r[]);``
+
+The vector of variables :math:`v= (v_1,...,v_m)` is passed in the argument
+:math:`v` and a vector of parameter values specified by `parameters`_ is
+passed in the argument :math:`p`. The vector of variables
+:math:`r=(r_1,...,r_d)` of dimension `dim`_ is returned. The path to the
+library is given by `library_path`_ and the name of the function (myfun,
+e.g.) is given by `library_symbol`_. Note that the bind(c) attribute on the
+function declaration inhibits the Fortran compiler from mangling the function
+name (by appending an underscore, for example) as it normally would.
+
 .. note::
 
    :Required/Optional: Optional
@@ -54,7 +75,7 @@ The type of function defined by the namelist.
 
 :Type: case-sensitive string
 :Default: none
-:Valid values: "tabular", "toolhead-laser"
+:Valid values: "tabular", "toolhead-laser", "library"
 
 
 tabular_data
@@ -92,3 +113,34 @@ a 3-vector valued function that depends on the variables :math:`(t, x, y, z)`.
 
 :Type: case sensitive string
 :Default: none
+
+
+library_path
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The path to the shared object library that contains the function.
+
+:Type: A string of up to 128 characters.
+:Default: none
+
+
+library_symbol
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The symbol name of the function within the shared object file.
+
+:Type: A string of up to 128 characters.
+:Default: none
+:Notes: Unless the Fortran function is declared with the BIND(C) attribute, which is the recommended practice, a Fortran compiler will almost always mangle the name of the function so that the symbol name is not quite the same as the name in the source code. Use the UNIX/Linux command-line utility **nm** to list the symbol names in the library file to determine the correct name to use here.
+
+parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Optional parameter values to pass to the shared library function.
+
+:Type: real vector of up to 16 values
+:Default: None
+
+dim
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Number of components of the return value of the shared library function.
+
+:Type: integer
+:Default: None

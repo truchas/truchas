@@ -40,12 +40,18 @@ module vector_func_factories
   !! These functions return CLASS(VECTOR_FUNC) pointers
   public :: new_const_vector_func
   public :: new_tabular_vector_func
+#ifdef ENABLE_DYNAMIC_LOADING
+  public :: new_dl_vector_func
+#endif
 
   !! These subroutines allocate an allocatable CLASS(VECTOR_FUNC) argument
   public :: alloc_const_vector_func
   public :: alloc_tabular_vector_func
   public :: alloc_fptr_vector_func
   public :: alloc_div_radial_cyl_flow_func
+#ifdef ENABLE_DYNAMIC_LOADING
+  public :: alloc_dl_vector_func
+#endif
 
   !! These higher-level procedures take a parameter list as input.
   public :: alloc_vector_func
@@ -80,6 +86,17 @@ contains
     allocate(f, source=fptr_vector_func(dim, fptr, p))
   end subroutine alloc_fptr_vector_func
 
+#ifdef ENABLE_DYNAMIC_LOADING
+  subroutine alloc_dl_vector_func(f, lib, sym, dim, p)
+    use dl_vector_func_type
+    class(vector_func), allocatable, intent(out) :: f
+    character(*), intent(in) :: lib, sym
+    integer, intent(in) :: dim
+    real(r8), intent(in), optional :: p(:)
+    allocate(f, source=dl_vector_func(lib, sym, dim, p))
+  end subroutine alloc_dl_vector_func
+#endif
+
   ! needed in lieu of parameter-based allocation
   subroutine alloc_div_radial_cyl_flow_func (f, axis)
     class(vector_func), allocatable, intent(out) :: f
@@ -101,6 +118,17 @@ contains
     class(vector_func), pointer :: f
     allocate(f, source=tabular_vector_func(x,y,arg))
   end function new_tabular_vector_func
+
+#ifdef ENABLE_DYNAMIC_LOADING
+  function new_dl_vector_func(lib, sym, dim, p) result(f)
+    use dl_vector_func_type
+    character(*), intent(in) :: lib, sym
+    integer, intent(in) :: dim
+    real(r8), intent(in), optional :: p(:)
+    class(vector_func), pointer :: f
+    allocate(f, source=dl_vector_func(lib, sym, dim, p))
+  end function new_dl_vector_func
+#endif
 
 
   subroutine alloc_vector_func (f, params)
