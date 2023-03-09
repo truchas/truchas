@@ -18,6 +18,7 @@ module simple_volume_tracker_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use volume_tracker_class
   use unstr_mesh_type
+  use vector_func_containers
   implicit none
   private
 
@@ -45,10 +46,10 @@ contains
 
   end subroutine init
 
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
+  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, t)
 
     class(simple_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt, t
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
@@ -91,7 +92,7 @@ contains
   subroutine set_inflow_material(this, mat, faces)
     use truchas_logging_services
     class(simple_volume_tracker), intent(inout) :: this
-    integer, intent(in) :: mat  ! material index
+    class(vector_func), intent(in) :: mat ! material inflow vector function
     integer, intent(in) :: faces(:) ! face indices
     call TLS_warn('****************************************************')
     call TLS_warn('INFLOW BC NOT IMPLEMENTED FOR SIMPLE VOLUME TRACKING')

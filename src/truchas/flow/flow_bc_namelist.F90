@@ -35,9 +35,9 @@ contains
     !! Namelist variables
     integer :: face_set_ids(32)
     real(r8) :: pressure, velocity(3), dsigma, inflow_temperature
-    character(31) :: name, type, pressure_func, velocity_func, inflow_material
+    character(31) :: name, type, pressure_func, velocity_func, inflow_material, inflow_material_func
     namelist /flow_bc/ name, face_set_ids, type, pressure, pressure_func, velocity, &
-        velocity_func, dsigma, inflow_material, inflow_temperature
+        velocity_func, dsigma, inflow_material, inflow_material_func, inflow_temperature
 
     call TLS_info('Reading FLOW_BC namelists ...')
 
@@ -63,6 +63,7 @@ contains
       pressure_func = NULL_C
       velocity_func = NULL_C
       inflow_material = NULL_C
+      inflow_material_func = NULL_C
       inflow_temperature = NULL_R
 
       if (is_IOP) read(lun,nml=flow_bc,iostat=ios,iomsg=iom)
@@ -78,6 +79,7 @@ contains
       call broadcast(pressure_func)
       call broadcast(velocity_func)
       call broadcast(inflow_material)
+      call broadcast(inflow_material_func)
       call broadcast(inflow_temperature)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
@@ -139,7 +141,9 @@ contains
       !! Additional inflow data
       select case (lower_case(type))
       case ('velocity', 'pressure')
-        if (inflow_material /= NULL_C) then
+        if (inflow_material /= NULL_C .and. inflow_material_func /= NULL_C) then
+          call TLS_fatal(label // ': cannot specify both INFLOW_MATERIAL and INFLOW_MATERIAL_FUNC')
+        else if (inflow_material /= NULL_C) then
           matid = matl_model%phase_index(inflow_material)
           if (matid == 0) then
             call TLS_fatal('unknown material for INFLOW_MATERIAL: ' // trim(inflow_material))
@@ -147,6 +151,9 @@ contains
             call TLS_fatal('INFLOW_MATERIAL not a liquid: ' // trim(inflow_material))
           end if
           call plist%set('inflow-material', trim(inflow_material))
+        else if (inflow_material_func /= NULL_C) then
+          !TODO: verify a vector function with this name exists
+          call plist%set('inflow-material-func', trim(inflow_material_func))
         end if
         if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)
       end select
