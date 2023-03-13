@@ -3,7 +3,7 @@
 .. toctree::
    :maxdepth: 1
 
-FLOW_BC Namelist 
+FLOW_BC Namelist
 ==============================
 
 Overview
@@ -40,6 +40,7 @@ Components
 * :ref:`velocity_func<FLOW_BC_VF>`
 * :ref:`dsigma<FLOW_BC_D>`
 * :ref:`inflow_material<FLOW_BC_IM>`
+* :ref:`inflow_material_func<FLOW_BC_IMF>`
 * :ref:`inflow_temperature<FLOW_BC_IT>`
 
 .. _FLOW_BC_N:
@@ -57,7 +58,7 @@ face_set_ids
 | **Description** : A list of face set IDs that define the portion of the boundary where the boundary condition will be imposed.
 | **Type**        : integer list (32 max)
 | **Default**     : none
-  
+
 .. _FLOW_BC_Type:
 
 type
@@ -66,19 +67,19 @@ type
 
 .. _flow_bc_options:
 
-.. csv-table:: 
+.. csv-table::
    :header: "Option", "Description"
    :class: tight-table
    :widths: 1 5
 
-   "**pressure**", "Pressure is prescribed on the boundary. Use :ref:`pressure<FLOW_BC_P>` or :ref:`pressure_func<FLOW_BC_PF>` to specify its value." 
+   "**pressure**", "Pressure is prescribed on the boundary. Use :ref:`pressure<FLOW_BC_P>` or :ref:`pressure_func<FLOW_BC_PF>` to specify its value."
    "**velocity**", "Velocity is prescribed on the boundary. Use :ref:`velocity<FLOW_BC_V>` or :ref:`velocity_func<FLOW_BC_VF>` to specify its value."
    "**no-slip**", "0-velocity is imposed on the boundary. This is incompatible with inviscid flow."
    "**free-slip**", "No velocity normal to the boundary, but the tangential velocity is otherwise free (notraction forces)."
    "**marangoni**", "Like **free-slip** except a tangential traction is applied that is due to temperature dependence of surface tension. Use :ref:`dsigma<FLOW_BC_D>` to specify the value of :math:`d\sigma/dT`. This is incompatible with inviscid flow."
 
 | **Type**        : string
-| **Default**     : none 
+| **Default**     : none
 | **Notes**       :The different boundary condition types are mutually exclusive; no two can be specified on a common portion of the boundary.
 
 .. _FLOW_BC_P:
@@ -125,8 +126,16 @@ dsigma
 
 inflow_material
 ^^^^^^^^^^^^^^^^
-| **Description** : Velocity and pressure boundary conditions may result in fluid flow into the domain across the boundary. This parameter specifies the name of the fluid material to flux in. If not specified, materials are fluxed into a cell through a boundary face in the same proportion as the material volume fractions present in the cell.
+| **Description** : Velocity and pressure boundary conditions may result in fluid flow into the domain across the boundary. This parameter specifies the name of the fluid material to flux in. If not specified, materials are fluxed into a cell through a boundary face in the same proportion as the material volume fractions present in the cell. To specify a function, use :ref:`inflow_material_func<FLOW_BC_IMF>` instead.
 | **Default**     : none
+
+.. _FLOW_BC_IMF:
+
+inflow_material_func
+^^^^^^^^^^^^^^^^^^^^
+| **Description** : The name of a :ref:`VFUNCTION<VFUNCTION_Namelist>` namelist defining a function that gives the inflow material volume fractions for an inflow boundary condition. The function is expected to be a function of :math:`(t,x,y,z)`, and return a vector of length equal to the number of liquid phases, plus void (if present). The order of the output components is the same as the input file ordering provided by :ref:`materials<PHYSICS_M>`.
+| **Default**     : none
+| **Type**        : string
 
 .. _FLOW_BC_IT:
 

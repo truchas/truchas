@@ -24,7 +24,10 @@ target_sources(truchas PRIVATE
 )
 
 if(ENABLE_DYNAMIC_LOADING)
-  target_sources(truchas PRIVATE dl_scalar_func_type.F90)
+  target_sources(truchas PRIVATE
+    dl_scalar_func_type.F90
+    dl_vector_func_type.F90
+  )
 endif()
 
 add_subdirectory(Test)

@@ -13,6 +13,7 @@ module geometric_volume_tracker_type
   use truchas_logging_services
   use truchas_timers
   use unstr_mesh_type
+  use vector_func_containers
   use wisp_redistribution_type
   implicit none
   private
@@ -27,7 +28,8 @@ module geometric_volume_tracker_type
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
     real(r8), allocatable :: w_node(:,:), w_face(:,:), w_cell(:,:,:)
-    integer, allocatable :: priority(:), bc_index(:), local_face(:), inflow_mat(:)
+    integer, allocatable :: priority(:), bc_index(:), local_face(:)
+    type(vector_func_box), allocatable :: inflow_mat(:)
     integer :: nrealfluid, nfluid, nmat ! # of non-void fluids, # of fluids incl. void, # of materials
     type(wisp_redistribution) :: wisp
   contains
@@ -115,15 +117,14 @@ contains
         j = j + 1
       end if
     end do
-    this%inflow_mat = 0
 
     call this%wisp%init(mesh, nrealfluid, params)
   end subroutine init
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
+  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, t)
     class(geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt, t
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
     integer, intent(in) :: fluids, void
 
@@ -143,7 +144,7 @@ contains
 
       call this%flux_acceptor()
 
-      call this%flux_bc(vel, vof_n, sub_dt)
+      call this%flux_bc(vel, vof_n, sub_dt, t + (i-1)*sub_dt)
 
       call this%accumulate_volume(vof, flux_vol)
 
@@ -163,10 +164,9 @@ contains
 
   subroutine set_inflow_material(this, mat, faces)
     class(geometric_volume_tracker), intent(inout) :: this
-    integer, intent(in) :: mat  ! material index
+    class(vector_func), intent(in) :: mat ! material inflow vector function
     integer, intent(in) :: faces(:) ! face indices
     integer :: i
-    ASSERT(mat >= 0)
     do i = 1, size(faces)
       block
         integer :: k, k1, k2
@@ -181,29 +181,37 @@ contains
         end do
         ASSERT(k1 == k2)
         ASSERT(this%bc_index(k1) == faces(i))
-        this%inflow_mat(k1) = mat
+        this%inflow_mat(k1)%f = mat
       end block
     end do
   end subroutine set_inflow_material
 
-  subroutine flux_bc(this, vel, vof_n, dt)
+  subroutine flux_bc(this, vel, vof_n, dt, t)
 
     class(geometric_volume_tracker), intent(inout) :: this
-    real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+    real(r8), intent(in) :: vel(:), vof_n(:,:), dt, t
 
     integer :: i, f, j, fl
+    real(r8) :: vof_inflow(this%nmat), args(4)
 
+    args(1) = t
     do i = 1, size(this%bc_index)
       f = this%bc_index(i)
       fl = this%local_face(i)
       j = this%mesh%fcell(1,f)
       if (j > this%mesh%ncell_onP) cycle
       if (vel(fl) < 0) then
-        if (this%inflow_mat(i) > 0) then
-          this%flux_vol_sub(this%inflow_mat(i),fl) = vel(fl) * dt * this%mesh%area(f)
+        if (allocated(this%inflow_mat(i)%f)) then
+          args(2:) = this%mesh%face_centroid(:,f)
+          vof_inflow(:this%nfluid) = this%inflow_mat(i)%f%eval(args)
         else ! flux material in proportion to starting fractions in cell
-          this%flux_vol_sub(:,fl) = vof_n(:,j) * vel(fl) * dt * this%mesh%area(f)
+          vof_inflow(:this%nfluid) = vof_n(:this%nfluid,j)
         end if
+        ! this ensures the flux volume matches the expected size, though the
+        ! actual update ignores solid VOF
+        if (this%nmat > this%nfluid) &
+            vof_inflow(this%nmat) = 1 - sum(vof_inflow(:this%nfluid))
+        this%flux_vol_sub(:,fl) = vof_inflow * vel(fl) * dt * this%mesh%area(f)
       end if
     end do
 

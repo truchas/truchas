@@ -9,6 +9,7 @@ module volume_tracker_class
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use parameter_list_type
+  use vector_func_containers
   implicit none
   private
 
@@ -28,18 +29,19 @@ module volume_tracker_class
       type(parameter_list), intent(inout) :: params
     end subroutine vt_init
 
-    subroutine vt_flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt)
+    subroutine vt_flux_volumes(this, vel, vof_n, vof, flux_vol, fluids, void, dt, t)
       import :: volume_tracker, r8
       class(volume_tracker), intent(inout) :: this
-      real(r8), intent(in) :: vel(:), vof_n(:,:), dt
+      real(r8), intent(in) :: vel(:), vof_n(:,:), dt, t
       real(r8), intent(out) :: flux_vol(:,:), vof(:,:)
       integer, intent(in) :: fluids, void
     end subroutine vt_flux_volumes
 
     subroutine vt_set_inflow_material(this, mat, faces)
-      import :: volume_tracker
+      import :: volume_tracker, vector_func
       class(volume_tracker), intent(inout) :: this
-      integer, intent(in) :: mat, faces(:)
+      class(vector_func), intent(in) :: mat
+      integer, intent(in) :: faces(:)
     end subroutine
   end interface
 

@@ -261,7 +261,7 @@ contains
     call get_vof_from_matl(this%fvof_i)
 
     call this%vt%flux_volumes(this%flux_vel, this%fvof_i, this%fvof_o, this%flux_vol, &
-        this%fluids, this%void, dt)
+        this%fluids, this%void, dt, t)
 
     ! update the matl structure if this isn't the initial pass
     if (present(initial)) then
@@ -282,21 +282,10 @@ contains
   !! in the cell. The initial default for all boundary faces is the latter.
 
   subroutine vtrack_set_inflow_material(matid, faces)
-
-    integer, intent(in) :: matid, faces(:)
-    integer :: n
-
-    if (matid == 0) then
-      n = 0
-    else
-      do n = 1, size(this%liq_matid)
-        if (this%liq_matid(n) == matid) exit
-      end do
-      ASSERT(n <= size(this%liq_matid))
-    end if
-
-    call this%vt%set_inflow_material(n, faces)
-
+    use vector_func_class
+    class(vector_func), intent(in) :: matid
+    integer, intent(in) :: faces(:)
+    call this%vt%set_inflow_material(matid, faces)
   end subroutine vtrack_set_inflow_material
 
   !! Sets the inflow material boundary conditions specified by the given
@@ -309,6 +298,8 @@ contains
   subroutine vtrack_set_inflow_bc(params, stat, errmsg)
 
     use bndry_face_group_builder_type
+    use vector_func_containers
+    use vector_func_factories
 
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -317,9 +308,11 @@ contains
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
     type(bndry_face_group_builder) :: builder
-    integer, allocatable :: setids(:), mlist(:), xgroup(:), index(:)
+    integer, allocatable :: setids(:), xgroup(:), index(:)
+    type(vector_func_box), allocatable :: mlist(:)
     character(:), allocatable :: name
-    integer :: j, n
+    integer :: j, n, matid, vofid
+    real(r8) :: vof(this%fluids+this%void)
 
     call builder%init(this%mesh, omit_offp=.true.)
 
@@ -329,15 +322,31 @@ contains
     n = 0
     do while (.not.piter%at_end())
       plist => piter%sublist()
-      if (plist%is_parameter('inflow-material')) then
-        call plist%get('inflow-material', name, stat=stat, errmsg=errmsg)
-        if (stat /= 0) return
+      if (plist%is_parameter('inflow-material') &
+          .or. plist%is_parameter('inflow-material-func')) then
+
         call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
         if (stat /= 0) return
         call builder%add_face_group(setids, stat, errmsg)
         if (stat /= 0) return
-        n = n + 1
-        mlist(n) = matl_model%phase_index(name)
+
+        if (plist%is_parameter('inflow-material')) then
+          call plist%get('inflow-material', name, stat=stat, errmsg=errmsg)
+          if (stat /= 0) return
+          n = n + 1
+          matid = matl_model%phase_index(name)
+          do vofid = 1, size(this%liq_matid)
+            if (this%liq_matid(vofid) == matid) exit
+          end do
+          ASSERT(vofid <= size(this%liq_matid))
+          vof = 0
+          vof(vofid) = 1
+          call alloc_const_vector_func(mlist(n)%f, vof)
+        else
+          n = n + 1
+          call alloc_vector_func(plist, 'inflow-material-func', mlist(n)%f, stat, errmsg)
+          if (stat /= 0) return
+        end if
       end if
       call piter%next
     end do
@@ -345,7 +354,7 @@ contains
     call builder%get_face_groups(n, xgroup, index)
 
     do j = 1, n
-      call vtrack_set_inflow_material(mlist(j), index(xgroup(j):xgroup(j+1)-1))
+      call vtrack_set_inflow_material(mlist(j)%f, index(xgroup(j):xgroup(j+1)-1))
     end do
 
   end subroutine vtrack_set_inflow_bc

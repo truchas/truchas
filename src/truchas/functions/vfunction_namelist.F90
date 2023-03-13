@@ -59,16 +59,19 @@ contains
     !! local variables
     logical :: found
     character(:), allocatable :: label
-    integer :: n, ios, npts, rank
+    integer :: n, ios, npts, rank, npar
     class(vector_func), allocatable :: f
     character(80) :: iom
 
     !! namelist variables
     character(len=31)  :: name, type, toolhead
+    character(len=128) :: library_path, library_symbol
+    real(r8) :: parameters(MAX_PARAM)
     real(r8) :: tabular_data(10,100), axis(3)
-    integer  :: tabular_dim
+    integer  :: tabular_dim, dim
 
-    namelist /vfunction/ name, type, tabular_data, tabular_dim, axis, toolhead
+    namelist /vfunction/ name, type, tabular_data, tabular_dim, axis, toolhead, &
+        library_path, library_symbol, dim, parameters
 
     call TLS_info('Reading VFUNCTION namelists ...')
 
@@ -94,6 +97,10 @@ contains
       tabular_dim = NULL_I
       axis = NULL_R
       toolhead = NULL_C
+      library_path = NULL_C
+      library_symbol = NULL_C
+      dim = NULL_I
+      parameters = NULL_R
 
       !! Read the VFUNCTION namelist
       if (is_IOP) read(lun,nml=vfunction,iostat=ios,iomsg=iom)
@@ -107,6 +114,10 @@ contains
       call broadcast(tabular_dim)
       call broadcast(axis)
       call broadcast(toolhead)
+      call broadcast(library_path)
+      call broadcast(library_symbol)
+      call broadcast(dim)
+      call broadcast(parameters)
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal(label // ': NAME must be assigned a nonempty value')
@@ -114,14 +125,36 @@ contains
         call TLS_fatal(label // ': another VFUNCTION namelist has this NAME: ' // trim(name))
       end if
 
+      !! Identify the number of parameters.
+      do npar = size(parameters), 1, -1
+        if (parameters(npar) /= NULL_R) exit
+      end do
+
       !! Check the type
       select case (raise_case(type))
       case ('TABULAR')
       case ('DIV-RADIAL-CYL-FLOW')
       case ('TOOLHEAD-LASER')
+      case ('LIBRARY')
+#ifndef ENABLE_DYNAMIC_LOADING
+        call TLS_fatal (label // ': the configuration of this executable does not support TYPE="LIBRARY"')
+#endif
       case default
         call TLS_fatal(label // ': unknown value for TYPE: ' // trim(type))
       end select
+
+#ifdef ENABLE_DYNAMIC_LOADING
+      if (raise_case(type) /= 'LIBRARY') then
+        if (library_path /= NULL_C) &
+            call TLS_warn (label // ': LIBRARY_PATH is ignored when TYPE="' // trim(type) // '"')
+        if (library_symbol /= NULL_C) &
+            call TLS_warn (label // ': LIBRARY_SYMBOL is ignored when TYPE="' // trim(type) // '"')
+        if (dim /= NULL_I) &
+            call TLS_warn (label // ': DIM is ignored when TYPE="' // trim(type) // '"')
+        if (npar /= 0) &
+            call TLS_warn (label // ': PARAMETERS is not used when TYPE="' // trim(type) // '"')
+      end if
+#endif
 
       !! Create the specified vfunction and add it to the vfunction table.
 
@@ -175,6 +208,14 @@ contains
             end if
           end block
         end associate
+
+#ifdef ENABLE_DYNAMIC_LOADING
+      case ('LIBRARY')
+
+        call alloc_dl_vector_func(f, library_path, library_symbol, dim, parameters(:npar))
+        call insert_func(name, f)
+
+#endif
 
       end select
       call TLS_info('  read namelist "' // trim(name) // '"')
