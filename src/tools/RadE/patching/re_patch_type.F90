@@ -662,7 +662,16 @@ contains
 
     call pgraph%init(this%npatch)
     call get_face_neighbor_array(e%xface, e%fnode, xfnhbr, fnhbr, stat, errmsg)
-    if (stat /= 0) return
+    if (stat /= 0) then
+      block
+        integer :: n
+        character(40) :: coord
+        n = findloc(fnhbr, -1, dim=1) ! first side with invalid topology
+        write(coord,'("(",es12.5,2(",",es12.5),")")') e%side_location(n)
+        errmsg = errmsg // ' at ' // coord
+      end block
+      return
+    end if
 
     !! Construct patch adjacency graph
     do f = 1, e%nface
