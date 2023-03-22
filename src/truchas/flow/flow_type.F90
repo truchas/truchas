@@ -199,8 +199,15 @@ contains
     !! else we ought to be doing something different.
 
     do j = 1, this%mesh%nface_onP
-      vel = this%vel_cc(:,this%mesh%fcell(1,j))
-      if (this%mesh%fcell(2,j) /= 0) vel = (vel + this%vel_cc(:,this%mesh%fcell(2,j))) / 2
+      if (this%props%face_t(j) == regular_void_t) then
+        ! Cells neighboring void and non-void should take on the value of the non-void cell.
+        i = findloc(this%props%cell_t(this%mesh%fcell(:,j)) /= void_t, .true., dim=1)
+        vel = this%vel_cc(:,this%mesh%fcell(i,j))
+      else
+        vel = this%vel_cc(:,this%mesh%fcell(1,j))
+        if (this%mesh%fcell(2,j) /= 0) vel = (vel + this%vel_cc(:,this%mesh%fcell(2,j))) / 2
+      end if
+
       this%vel_fn(j) = dot_product(this%mesh%normal(:,j), vel) / this%mesh%area(j)
     end do
     call this%mesh%face_imap%gather_offp(this%vel_fn)

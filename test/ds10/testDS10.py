@@ -33,7 +33,7 @@ def run_test(tenv):
                     Tref += 3.5
             error[j] = abs(T[j] - Tref) / Tref
 
-    nfail += truchas.compare_max(error, 0, 1e-7, "temperature", output.time(nseries))
+    nfail += truchas.compare_max(error, 0, 2e-7, "temperature", output.time(nseries))
 
     truchas.report_summary(nfail)
     return nfail
