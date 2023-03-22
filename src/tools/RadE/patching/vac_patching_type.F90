@@ -246,7 +246,16 @@ contains
 
     !! Get face adjacency matrix
     call get_fnhbr_aux(this%enhbr, this%e%xface, this%e%fnode, this%xfnhbr, this%fnhbr, stat, errmsg, this%normal, max_angle)
-    if (stat/=0) return
+    if (stat /= 0) then
+      block
+        integer :: n
+        character(40) :: coord
+        n = findloc(this%fnhbr, -1, dim=1) ! first side with invalid topology
+        write(coord,'("(",es12.5,2(",",es12.5),")")') this%e%side_location(n)
+        errmsg = errmsg // ' at ' // coord
+      end block
+      return
+    end if
 
     !! Mark vertices on mesh boundary
     max_angle_rad = PI*max_angle/180.0_r8

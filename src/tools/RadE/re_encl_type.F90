@@ -79,6 +79,7 @@ module re_encl_type
     procedure :: bcast => encl_bcast
     procedure :: write => encl_write
     procedure :: read  => encl_read
+    procedure :: side_location
   end type encl
 
   type, extends(encl), public :: encl_list
@@ -207,5 +208,22 @@ contains
     if (present(has_vf)) call scl_bcast(has_vf)
 
   end subroutine encl_read
+
+  !! This utility function returns the midpoint of side N for use in forming
+  !! helpful error messages in the case of bad surface topology. Here N is an
+  !! index in the FNODE array. The sides correspond 1-1 to face nodes.
+
+  function side_location(this, n) result(x)
+    class(encl), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8) :: x(3)
+    integer :: j, np1
+    INSIST(n >= 1 .and. n < size(this%fnode))
+    do j = 1, this%nface ! identify the face containing the side
+      if (n < this%xface(j+1)) exit
+    end do
+    np1 = merge(this%xface(j), n+1, n+1 == this%xface(j+1))
+    x = 0.5_r8*(this%x(:,this%fnode(n)) + this%x(:,this%fnode(np1)))
+  end function
 
 end module re_encl_type

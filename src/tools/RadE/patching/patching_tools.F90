@@ -307,5 +307,4 @@ contains
 
   end function faces_neighboring_vertices
 
-
 end module patching_tools
