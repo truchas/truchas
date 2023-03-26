@@ -662,7 +662,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, j, k, n, n1, n2, b, l, bitmask, tsize
+    integer :: i, j, jj, k, n, n1, n2, b, l, bitmask, tsize
     integer, pointer :: list(:), side_sig(:)
     logical, allocatable :: surf_sset(:), omit_elem(:)
     integer, allocatable :: surf_side(:), nhbr_side(:)  ! bitmask arrays
@@ -683,7 +683,8 @@ contains
 
     !! Another hash table structure
     type :: nhbr_row
-      integer, pointer :: list(:) => null() ! key values, no data
+      integer, pointer :: list(:) => null() ! key values
+      integer :: j=0  ! data value
     end type
     type :: nhbr_table
       integer :: size=0, nentry=0
@@ -866,7 +867,7 @@ contains
         if (btest(nhbr_side(j), k-1)) then
           list => mesh%side_node_list(j, k, reverse=.true.)
           ASSERT( associated(list) )
-          call add_nhbr (ntab, list)
+          call add_nhbr (ntab, list, j)
         end if
       end do
     end do
@@ -891,9 +892,12 @@ contains
           surf%xface(n+1) = surf%xface(n) + size(list)
           surf%fnode(surf%xface(n):surf%xface(n+1)-1) = nmap(list)
           surf%gnum(n) = gmap(i)
-          if (nhbr_exists(ntab, list)) then
+          call get_nhbr(ntab, list, jj)
+          if (jj /= 0) then
             stat = -1
-            errmsg = 'surface face not on the mesh boundary'
+            errmsg = 'face in side set ' // i_to_c(mesh%sset(i)%ID) // &
+                ' is not a boundary face; shared by elements ' // i_to_c(j) // &
+                ' and ' // i_to_c(jj)
             return
           end if
         end if
@@ -1007,9 +1011,10 @@ contains
       end if
     end subroutine
 
-    subroutine add_nhbr (table, list)
+    subroutine add_nhbr (table, list, j)
       type(nhbr_table), intent(inout) :: table
       integer, pointer :: list(:)
+      integer, intent(in) :: j
       integer :: n, inc
       call table%hpar%hash (list, n, inc)
       do while (associated(table%row(n)%list))
@@ -1018,6 +1023,26 @@ contains
       end do
       INSIST( table%nentry < table%size - 1 )
       table%row(n)%list => list
+      table%row(n)%j = j
+    end subroutine
+
+    subroutine get_nhbr (table, list, j)
+      type(nhbr_table), intent(in) :: table
+      integer, intent(in) :: list(:)
+      integer, intent(out) :: j
+      integer :: n, inc
+      j = 0
+      call table%hpar%hash (list, n, inc)
+      do while (associated(table%row(n)%list))
+        if (size(table%row(n)%list) == size(list)) then
+          if (all(table%row(n)%list == list)) then
+            j = table%row(n)%j
+            exit
+          end if
+        end if
+        n = n - inc
+        if (n < 0) n = n + table%size
+      end do
     end subroutine
 
     logical function nhbr_exists (table, list)
