@@ -845,7 +845,7 @@ contains
         !! Mark sides having all surface nodes.
         if (bitmask == 0) cycle ! nothing to see on this element
         do k = 1, size(side_sig)
-          if (iand(bitmask, side_sig(k)) == bitmask) then
+          if (iand(bitmask, side_sig(k)) == side_sig(k)) then
             nhbr_side(j) = ibset(nhbr_side(j), k-1)
             tsize = tsize + 1
           end if
