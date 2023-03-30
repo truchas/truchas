@@ -41,10 +41,24 @@ List of element blocks to mask-off from the mesh.
 side_set_ids
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-List of side sets specifying the surface.
+List of side sets specifying the surface. All surface faces must belong to the
+boundary of the mesh less any element blocks specified by `ignore_block_IDs`.
+By default it is a fatal error if not satisfied; see `warn_non_boundary`.
 
 :Type: integer list
 :Default: none
+
+
+warn_non_boundary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If any surface faces specified by `side_set_ids` are non-boundary faces, this
+normally fatal error is reduced to a warning when this parameter is true. Such
+faces are *not included in the surface*, and the number of such faces for each
+side set are written to the terminal.
+
+:Type: logical
+:Default: F
 
 
 symmetries

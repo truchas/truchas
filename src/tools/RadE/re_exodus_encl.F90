@@ -106,11 +106,12 @@ contains
     character(MAX_NAME_LEN) :: name, displacement_toolpath
     character(MAX_FILE_LEN) :: mesh_file
     character(7) :: symmetries(3)
+    logical :: warn_non_boundary
     integer :: side_set_ids(MAX_IDS), ignore_block_ids(MAX_IDS)
     integer :: displace_block_ids(MAX_IDS), exodus_block_modulus
     real(r8) :: coord_scale_factor, displacements(3,MAX_DISPL)
     namelist /enclosure/ name, mesh_file, coord_scale_factor, exodus_block_modulus, &
-        side_set_ids, ignore_block_ids, symmetries, &
+        side_set_ids, warn_non_boundary, ignore_block_ids, symmetries, &
         displace_block_ids, displacements, displacement_toolpath
 
     integer :: j, n, ios, rot_axis, num_rot, ndispl
@@ -138,6 +139,7 @@ contains
     coord_scale_factor = 1.0_r8
     exodus_block_modulus = NULL_I
     side_set_ids = NULL_I
+    warn_non_boundary = .false.
     ignore_block_ids = NULL_I
     symmetries = NULL_C
     displace_block_ids = NULL_I
@@ -154,6 +156,7 @@ contains
     call scl_bcast(coord_scale_factor)
     call scl_bcast(exodus_block_modulus)
     call scl_bcast(side_set_ids)
+    call scl_bcast(warn_non_boundary)
     call scl_bcast(ignore_block_ids)
     call scl_bcast(symmetries)
     call scl_bcast(displace_block_ids)
@@ -183,6 +186,8 @@ contains
     !! Check for a non-empty SIDE_SET_IDS.
     if (count(side_set_ids /= NULL_I) == 0) call re_halt('SIDE_SET_IDS not specified')
     call params%set('side-set-ids', pack(side_set_ids, mask=(side_set_ids /= NULL_I)))
+
+    call params%set('warn-non-boundary', warn_non_boundary)
 
     if (any(ignore_block_ids /= NULL_I)) &
     call params%set('ignore-block-ids', pack(ignore_block_ids, mask=(ignore_block_ids /= NULL_I)))
@@ -414,10 +419,12 @@ contains
 
     integer, allocatable :: ssid(:), ebid(:)
     logical, allocatable :: mirror(:)
+    logical :: warn
     real(r8) :: scale
 
     !! Extract the surface from the mesh
     call params%get('side-set-ids', ssid)
+    call params%get('warn-non-boundary', warn)
 #ifdef GNU_PR86277
     if (params%is_parameter('ignore-block-ids')) then
       call params%get('ignore-block-ids', ebid)
@@ -427,7 +434,7 @@ contains
 #else
     call params%get('ignore-block-ids', ebid, default=[integer::])
 #endif
-    call extract_surface_from_exodus(mesh, ssid, ebid, this, stat, errmsg)
+    call extract_surface_from_exodus(mesh, ssid, ebid, warn, this, stat, errmsg)
     if (stat /= 0) return
     call params%get('coord-scale-factor', scale, default=1.0_r8)
     if (scale /= 1.0_r8) this%x = scale * this%x
@@ -648,7 +655,7 @@ contains
  !! the specified surface, and through the use of hash tables for searching.
  !!
 
-  subroutine extract_surface_from_exodus (mesh, ssid, ebid, surf, stat, errmsg)
+  subroutine extract_surface_from_exodus (mesh, ssid, ebid, warn, surf, stat, errmsg)
 
     use exodus_mesh_type
     use string_utilities, only: i_to_c
@@ -658,6 +665,7 @@ contains
     type(exodus_mesh), intent(in)  :: mesh
     integer, intent(in) :: ssid(:)  ! IDs of side sets describing the surface
     integer, intent(in) :: ebid(:)  ! IDs of element blocks to omit from the mesh
+    logical, intent(in) :: warn     ! reduce non-boundary error to a warning
     type(encl), intent(out) :: surf  ! mesh of the extracted surface
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -666,7 +674,7 @@ contains
     integer, pointer :: list(:), side_sig(:)
     logical, allocatable :: surf_sset(:), omit_elem(:)
     integer, allocatable :: surf_side(:), nhbr_side(:)  ! bitmask arrays
-    integer, allocatable :: nmap(:), gmap(:)
+    integer, allocatable :: nmap(:), gmap(:), excl_face(:)
 
     !! Hash table structure
     type :: side_row
@@ -761,8 +769,6 @@ contains
     nmap = 0
     surf_side = 0
 
-    n1 = 0  ! surface face count
-    n2 = 0  ! surface face node count
     do n = 1, mesh%num_sset
       if (.not.surf_sset(n)) cycle
       do i = 1, mesh%sset(n)%num_side
@@ -774,8 +780,6 @@ contains
         call store_side (stab, j, k, n, list, stat)
         select case (stat)
         case (0)
-          n1 = n1 + 1
-          n2 = n2 + size(list)
           surf_side(j) = ibset(surf_side(j),k-1)
           nmap(list) = 1
         case (1) ! duplicate side; okay but might want to warn
@@ -786,22 +790,6 @@ contains
           return
         end select
       end do
-    end do
-
-    !! Surface nodes have been tagged with a nonzero value in NMAP.
-    !! Now modify NMAP to give the node-to-surface node mapping.
-    n = 0 ! surface node index
-    do j = 1, size(nmap)
-      if (nmap(j) == 0) cycle
-      n = n + 1
-      nmap(j) = n
-    end do
-    surf%nnode = n
-
-    !! Create the surface node coordinate array.
-    allocate(surf%x(size(mesh%coord,dim=1),surf%nnode))
-    do j = 1, mesh%num_node
-      if (nmap(j) > 0) surf%x(:,nmap(j)) = mesh%coord(:,j)
     end do
 
     !! Identify all mesh element sides that could possibly be a neighbor of
@@ -845,7 +833,7 @@ contains
         !! Mark sides having all surface nodes.
         if (bitmask == 0) cycle ! nothing to see on this element
         do k = 1, size(side_sig)
-          if (iand(bitmask, side_sig(k)) == bitmask) then
+          if (iand(bitmask, side_sig(k)) == side_sig(k)) then
             nhbr_side(j) = ibset(nhbr_side(j), k-1)
             tsize = tsize + 1
           end if
@@ -853,7 +841,7 @@ contains
       end do
     end do
 
-    !! Put the hypothetical neighbor face to each of neighbor sides identified
+    !! Put the potential neighbor face to each of neighbor sides identified
     !! above into a hash table.  If the face of a surface side appears in this
     !! table it isn't a boundary face.  The reason for not simply including
     !! this in the above loop is because we can't reliably and reasonably
@@ -870,6 +858,63 @@ contains
           call add_nhbr (ntab, list, j)
         end if
       end do
+    end do
+
+    !! Scan the surface faces for any that are not boundary faces. These will
+    !! be dropped from the surface if so directed, otherwise it is a fatal
+    !! error. In the process we count the final number of faces and face nodes,
+    !! and mark the final surface nodes with a nonzero value in NMAP.
+
+    n1 = 0  ! surface face count
+    n2 = 0  ! surface face node count
+    nmap = 0
+    allocate(excl_face(mesh%num_sset), source=0)  ! count of dropped faces
+    do j = 1, mesh%num_elem
+      if (surf_side(j) == 0) cycle
+      do k = 1, MAX_SIDE
+        if (btest(surf_side(j),k-1)) then
+          call retrieve_side (stab, j, k, i, list)
+          call get_nhbr(ntab, list, jj)
+          if (jj /= 0) then
+            if (warn) then  ! exclude side, but continue
+              surf_side(j) = ibclr(surf_side(j),k-1)
+              excl_face(i) = excl_face(i) + 1
+              cycle
+            else
+              stat = -1
+              errmsg = 'face in side set ' // i_to_c(mesh%sset(i)%ID) // &
+                  ' is not a boundary face; shared by elements ' // i_to_c(j) // &
+                  ' and ' // i_to_c(jj)
+              return
+            end if
+          end if
+          n1 = n1 + 1
+          n2 = n2 + size(list)
+          nmap(list) = 1
+        end if
+      end do
+    end do
+    do i = 1, size(excl_face)
+      if (excl_face(i) == 0) cycle
+      call re_info('WARNING: ' // i_to_c(excl_face(i)) // &
+          ' non-boundary faces in side set ' // i_to_c(mesh%sset(i)%ID) // &
+          ' excluded from the enclosure surface')
+    end do
+
+    !! Surface nodes have been tagged with a nonzero value in NMAP.
+    !! Now modify NMAP to give the node-to-surface node mapping.
+    n = 0 ! surface node index
+    do j = 1, size(nmap)
+      if (nmap(j) == 0) cycle
+      n = n + 1
+      nmap(j) = n
+    end do
+    surf%nnode = n
+
+    !! Create the surface node coordinate array.
+    allocate(surf%x(size(mesh%coord,dim=1),surf%nnode))
+    do j = 1, mesh%num_node
+      if (nmap(j) > 0) surf%x(:,nmap(j)) = mesh%coord(:,j)
     end do
 
     !! Finally we can create the surface face connection arrays.
@@ -892,14 +937,6 @@ contains
           surf%xface(n+1) = surf%xface(n) + size(list)
           surf%fnode(surf%xface(n):surf%xface(n+1)-1) = nmap(list)
           surf%gnum(n) = gmap(i)
-          call get_nhbr(ntab, list, jj)
-          if (jj /= 0) then
-            stat = -1
-            errmsg = 'face in side set ' // i_to_c(mesh%sset(i)%ID) // &
-                ' is not a boundary face; shared by elements ' // i_to_c(j) // &
-                ' and ' // i_to_c(jj)
-            return
-          end if
         end if
       end do
     end do
