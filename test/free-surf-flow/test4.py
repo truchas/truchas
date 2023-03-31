@@ -23,15 +23,15 @@ def run_test(tenv):
 
     test = output.field(2, "VOF")[:,0]
     gold = golden.field(2, "VOF")[:,0]
-    nfail += truchas.compare_max(test, gold, 1e-13, "vof", time)
+    nfail += truchas.compare_max(test, gold, 2e-8, "vof", time)
 
     test = output.field(2, "Z_P")
     gold = golden.field(2, "Z_P")
-    nfail += truchas.compare_max(test, gold, 1e-13, "pressure", time)
+    nfail += truchas.compare_max(test, gold, 1e-8, "pressure", time)
 
     test = output.field(2, "Z_VC")
     gold = golden.field(2, "Z_VC")
-    nfail += truchas.compare_max(test, gold, 1e-13, "velocity", time)
+    nfail += truchas.compare_max(test, gold, 1e-8, "velocity", time)
 
     truchas.report_summary(nfail)
     return nfail

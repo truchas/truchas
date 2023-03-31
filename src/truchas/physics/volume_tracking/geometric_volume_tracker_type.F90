@@ -765,6 +765,7 @@ contains
         adjust_fluxes = .false.
 
         do m = 1, nmat
+          if (vof_n(m,i) == 0.0_r8) avail(m) = .false.
           mat_flux_cur = sum(this%flux_vol_sub(m,f0:f1))
           if (mat_flux_cur == 0.0_r8) cycle
 
@@ -773,8 +774,9 @@ contains
             if (flux_vol(m,j) > 0.0_r8) mat_flux_acc = mat_flux_acc + flux_vol(m,j)
           end do
           mat_avail = vof_n(m,i)*this%mesh%volume(i)
+
           ! check/correct for overflow
-          if ((mat_flux_acc + mat_flux_cur) > mat_avail) then
+          if (mat_flux_acc + mat_flux_cur > mat_avail) then
             adjust_fluxes = .true.
             avail(m) = .false.
             ! rescale so that mat_flux_acc + mat_flux_cur == mat_avail
@@ -787,36 +789,38 @@ contains
 
         do j = f0, f1
           face_flux = dt*vel(j)*this%mesh%area(this%mesh%cface(j))
-          if (face_flux > this%cutoff*this%mesh%volume(i)) then
-            face_flux_fixed = 0.0_r8
-            face_flux_adjustable = 0.0_r8
-            do m = 1, nmat
-              if (avail(m)) then
-                face_flux_adjustable = face_flux_adjustable + this%flux_vol_sub(m,j)
-              else
-                face_flux_fixed = face_flux_fixed + this%flux_vol_sub(m,j)
-              end if
-            end do
+          if (face_flux <= this%cutoff*this%mesh%volume(i)) cycle
 
-            if (face_flux_adjustable > 0.0_r8) then
-              ! rescale so face_flux_adj+face_flux_fixed == face_flux
-              do m = 1, nmat
-                if (avail(m)) this%flux_vol_sub(m,j) = this%flux_vol_sub(m,j) * &
-                    (face_flux - face_flux_fixed)/face_flux_adjustable
-              end do
+          face_flux_fixed = 0.0_r8
+          face_flux_adjustable = 0.0_r8
+          do m = 1, nmat
+            if (avail(m)) then
+              face_flux_adjustable = face_flux_adjustable + this%flux_vol_sub(m,j)
             else
-              navail = count(avail)
-              if (navail == 0) then
-                ierr = 1
-                exit
-              end if
-
-              ! arbitrarily add volume flux to potentially non-existent material in cell to balance
-              ! equations.  This seems really, really, really, really, really, really bad.
-              do m = 1, nmat
-                if (avail(m)) this%flux_vol_sub(m,j) = (face_flux-face_flux_fixed)/real(navail,r8)
-              end do
+              face_flux_fixed = face_flux_fixed + this%flux_vol_sub(m,j)
             end if
+          end do
+
+          if (face_flux_adjustable > 0.0_r8) then
+            ! rescale so face_flux_adj+face_flux_fixed == face_flux
+            do m = 1, nmat
+              if (avail(m)) this%flux_vol_sub(m,j) = this%flux_vol_sub(m,j) * &
+                  (face_flux - face_flux_fixed) / face_flux_adjustable
+            end do
+          else
+            navail = count(avail)
+            if (navail == 0) then
+              ierr = 1
+              exit
+            end if
+
+            ! uniformly add volume flux to available material in the cell that might not already
+            ! be fluxed through this face.
+            do m = 1, nmat
+              if (avail(m)) &
+                  this%flux_vol_sub(m,j) = (face_flux - face_flux_fixed) &
+                  / navail
+            end do
           end if
         end do
       end do
@@ -828,7 +832,7 @@ contains
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
-      do m = 1, nmat
+      do m = 1, this%nfluid
         this%w_cell(1:f1-f0+1,m,i) = this%flux_vol_sub(m,f0:f1)
       end do
     end do
@@ -836,7 +840,7 @@ contains
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%xcface(i)
       f1 = this%mesh%xcface(i+1)-1
-      do m = 1, nmat
+      do m = 1, this%nfluid
         this%flux_vol_sub(m,f0:f1) = this%w_cell(1:f1-f0+1,m,i)
       end do
     end do
@@ -942,23 +946,18 @@ contains
 
       q = sum(vof(fluids+1:fluids+void,i))
 
-      if (q > 0.0_r8) then
-        ! we can add or remove enough void from cell
-        if (excess < 0.0_r8 .or. (excess > 0.0_r8 .and. q >= excess)) then
-          do m = fluids+1, fluids+void
-            vof(m,i) = vof(m,i) * (1.0_r8 - excess/q)
-          end do
-        else ! we cannot remove enough void from cell
-          do m = fluids+1, fluids+void
-            vof(m,i) = 0.0_r8
-          end do
-          call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), q-excess, this%mesh%volume(i), fluids)
+      if (q > 0.0_r8 .and. excess > 0.0_r8) then
+        if (q >= excess) then ! we can remove enough void from cell
+          vof(fluids+1:fluids+void,i) = vof(fluids+1:fluids+void,i) * (1.0_r8 - excess/q)
+          cycle
+        else ! purge all void from the cell, but we'll need to purge more from other materials...
+          vof(fluids+1:fluids+void,i) = 0.0_r8
+          excess = excess - q
         end if
-        cycle
       end if
 
-      ! There is no void to adjust in this cell.
-      call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
+      ! Adjust the fluids as needed.
+      call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids+void)
     end do
 
     call this%mesh%cell_imap%gather_offp(vof)

@@ -20,7 +20,7 @@ def run_test(tenv):
     # intermediate time
     vof = output.field(2, "VOF")
     nfail += vof_test(vof, xc, 5e-9, output.time(2))
-    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-14, "pressure", output.time(2))
+    nfail += truchas.compare_max(output.field(2, "Z_P"), 0, 1e-13, "pressure", output.time(2))
     nfail += velocity_test(output.field(2, "Z_VC"), vof[:,0], 1e-14, output.time(2))
 
     # final time
