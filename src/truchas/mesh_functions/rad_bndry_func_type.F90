@@ -85,7 +85,7 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in) :: var(:)
     integer :: n, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), temp, eps, tamb, c
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), temp, eps, tamb, c, tmp, fdinc, eps_p, eps_m, deps
     ASSERT(allocated(this%index))
     args(0) = t
     do n = 1, this%ngroup
@@ -97,11 +97,20 @@ contains
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
           temp = var(index(j))
+          args(-1) = temp
           eps  = this%f(n)%eval(args)
-          tamb = this%g(n)%eval(args)
-          c = this%mesh%area(index(j)) * this%sigma * eps
-          value(j) = c*((temp-this%abszero)**4 - (tamb-this%abszero)**4)
-          deriv(j) = 4*c*(temp-this%abszero)**3
+          tamb = this%g(n)%eval(args(0:))
+          c = this%mesh%area(index(j)) * this%sigma
+          tmp = (temp-this%abszero)**4 - (tamb-this%abszero)**4
+          value(j) = c*eps*tmp
+          fdinc = max(1.0_r8, abs(temp)) * sqrt(epsilon(1.0_r8))
+          fdinc = scale(1.0_r8,exponent(fdinc))
+          args(-1) = temp + fdinc
+          eps_p = this%f(n)%eval(args)
+          args(-1) = temp - fdinc
+          eps_m = this%f(n)%eval(args)
+          deps = (eps_p - eps_m) / (2*fdinc)
+          deriv(j) = 4*c*eps*(temp-this%abszero)**3 + c*deps*tmp
         end do
       end associate
     end do

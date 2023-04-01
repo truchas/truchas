@@ -35,7 +35,7 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinxcontrib.bibtex',
     'sphinx.ext.autosectionlabel',
-    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -101,3 +101,6 @@ autosectionlabel_prefix_document = True
 
 # Don't add module names to the truchas Python module autodoc documentation
 add_module_names = False
+
+mathjax3_config = {'chtml': {'displayAlign': 'left',
+                             'displayIndent': '2em'}}

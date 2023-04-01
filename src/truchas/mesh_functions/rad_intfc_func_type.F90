@@ -82,7 +82,7 @@ contains
     class(rad_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, var(:)
     integer :: n, j
-    real(r8) :: args(0:size(this%mesh%x,dim=1)), c
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), c, f, g, fp, fm, df, fdinc, tmp
     ASSERT(allocated(this%index))
     args(0) = t
     do n = 1, this%ngroup
@@ -93,10 +93,23 @@ contains
           associate(fnode => this%mesh%face_node_list_view(index(1,j)))
             args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
           end associate
-          c = this%sigma * this%f(n)%eval(args) * this%mesh%area(index(1,j))
-          value(j) = c*((var(index(1,j))-this%abszero)**4 - (var(index(2,j))-this%abszero)**4)
-          deriv(1,j) = 4*c*(var(index(1,j))-this%abszero)**3
-          deriv(2,j) = -4*c*(var(index(2,j))-this%abszero)**3
+          associate (v1 => var(index(1,j)), v2 => var(index(2,j)))
+            args(-1) = max(v1, v2)
+            c = this%sigma * this%mesh%area(index(1,j))
+            f = this%f(n)%eval(args)
+            g = (v1-this%abszero)**4 - (v2-this%abszero)**4
+            value(j) = c*f*g
+            fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
+            fdinc = scale(1.0_r8,exponent(fdinc))
+            args(-1) = max(v1, v2) + fdinc
+            fp = this%f(n)%eval(args)
+            args(-1) = max(v1, v2) - fdinc
+            fm = this%f(n)%eval(args)
+            df = (fp - fm) / (2*fdinc)
+            tmp = c*df*g
+            deriv(1,j) =  4*c*f*(var(index(1,j))-this%abszero)**3 + merge(tmp, 0.0_r8, v1 > v2)
+            deriv(2,j) = -4*c*f*(var(index(2,j))-this%abszero)**3 + merge(tmp, 0.0_r8, v2 > v1)
+          end associate
         end do
       end associate
     end do
