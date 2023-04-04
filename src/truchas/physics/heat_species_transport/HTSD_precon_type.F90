@@ -430,16 +430,17 @@ contains
       if (associated(this%model%ht%vf_rad_prob)) then
         call start_timer ('VF rad precon')
         call HTSD_model_get_face_temp_view (this%model, f, f2)
+        call HTSD_model_get_face_temp_view (this%model, u, Tface)
         do index = 1, size(this%model%ht%vf_rad_prob)
           if (this%vfr_precon_coupling(index) == VFR_FGS .or. &
               this%vfr_precon_coupling(index) == VFR_FAC) then
             call HTSD_model_get_radiosity_view (this%model, index, f, fq)
             allocate(z(size(fq)))
             z = fq
-            call this%model%ht%vf_rad_prob(index)%precon (t, z)
+            call this%model%ht%vf_rad_prob(index)%precon (t, Tface(this%model%ht%vf_rad_prob(index)%faces), z)
             if (this%vfr_precon_coupling(index) == VFR_FGS) fq = z
             !! Update the heat equation face residual.
-            call this%model%ht%vf_rad_prob(index)%precon_matvec1 (t, z)
+            call this%model%ht%vf_rad_prob(index)%precon_matvec1 (t, Tface(this%model%ht%vf_rad_prob(index)%faces), z)
             do j = 1, size(z)
               if (this%model%ht%vf_rad_prob(index)%fmask(j)) then
                 n = this%model%ht%vf_rad_prob(index)%faces(j)
@@ -494,7 +495,7 @@ contains
               fq = fq + z * f2(this%model%ht%vf_rad_prob(index)%faces)
               deallocate(z)
             end if
-            call this%model%ht%vf_rad_prob(index)%precon (t, fq)
+            call this%model%ht%vf_rad_prob(index)%precon (t, Tface(this%model%ht%vf_rad_prob(index)%faces), fq)
           end if
         end do
         call stop_timer ('VF rad precon')

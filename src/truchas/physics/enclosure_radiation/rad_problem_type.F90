@@ -795,14 +795,16 @@ contains
 
   end subroutine solve_radiosity
 
-  subroutine precon (this, time, z)
+  subroutine precon (this, time, temp, z)
 
     class(rad_problem), intent(inout) :: this
     real(r8), intent(in) :: time
+    real(r8), intent(in) :: temp(:)
     real(r8), intent(inout) :: z(:)
 
-    real(r8) :: z_er(this%nface_er)
+    real(r8) :: z_er(this%nface_er), temp_er(this%nface_er)
 
+    ASSERT(size(temp) == this%nface_hc)
     ASSERT(size(z) == this%nface_hc)
 
     select type (vf => this%vf)
@@ -813,10 +815,12 @@ contains
     select case (this%pc_method)
     case (PC_JACOBI)
       if (this%pc_numitr == 1) return ! the effect of 1 iteration
+      call reorder (this%perm_er_to_hc, temp_er, temp)
       call reorder (this%perm_er_to_hc, z_er, z)  ! form the Z vector in the ER ordering
       call this%sol%precon_jacobi (time, this%pc_numitr, z_er)
       call reorder (this%perm_hc_to_er, z, z_er)  ! form the Z vector in the HC ordering
     case (PC_CHEBY)
+      call reorder (this%perm_er_to_hc, temp_er, temp)
       call reorder (this%perm_er_to_hc, z_er, z)  ! form the Z vector in the ER ordering
       call this%sol%precon_cheby (time, this%pc_numitr, z_er)
       call reorder (this%perm_hc_to_er, z, z_er)  ! form the Z vector in the HC ordering

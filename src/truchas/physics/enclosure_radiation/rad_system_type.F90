@@ -122,18 +122,19 @@ contains
   !! This is diagonal, and DRHS returns the diagonal.
   !!
 
-  subroutine rhs_deriv (this, t, eps, drhs)
+  subroutine rhs_deriv (this, t, tamb, eps, deps, drhs)
 
     class(rad_system), intent(in) :: this
-    real(r8), intent(in) :: t(:)
-    real(r8), intent(in) :: eps(:)
+    real(r8), intent(in) :: t(:), tamb
+    real(r8), intent(in) :: eps(:), deps(:)
     real(r8), intent(out) :: drhs(:)
 
     ASSERT(size(t) == this%nface)
     ASSERT(size(eps) == this%nface)
     ASSERT(size(drhs) == this%nface)
 
-    drhs = 4*this%sigma*eps*(t-this%t0)**3
+    drhs = this%sigma*(4*eps + deps*(t-this%t0))*(t-this%t0)**3
+    if (this%vf%has_ambient) drhs = drhs - this%sigma*deps*(tamb-this%t0)**4
 
   end subroutine rhs_deriv
 

@@ -85,7 +85,6 @@ module rad_encl_func_type
     real(r8), allocatable, public :: values(:)
     !! the rest are private
     type(rad_encl), pointer :: encl => null() ! reference only -- do not own
-    real(r8) :: tlast = -huge(1.0_r8)
     integer :: ngroup = -1
     integer, allocatable :: group(:)
     integer, allocatable :: faces(:)
@@ -104,8 +103,6 @@ module rad_encl_func_type
   !! Optimization hint values.
   integer, parameter, public :: EF_HINT_NONE    = 0
   integer, parameter, public :: EF_HINT_CONST   = 1
-  integer, parameter, public :: EF_HINT_T_INDEP = 2
-  integer, parameter, public :: EF_HINT_X_INDEP = 3
 
 contains
 
@@ -258,6 +255,8 @@ contains
     !! Convert the function list into the final function array.
     call scalar_func_list_to_box_array (this%flist, this%farray)
 
+    allocate(this%values(this%encl%nface))
+
     !! For now we don't expose optimization hinting to the user,
     !! but we can determine directly which functions are constant.
     allocate(this%hint(this%ngroup))
@@ -279,51 +278,36 @@ contains
  !! EF_EVAL
  !!
 
-  subroutine eval (this, t)
+  subroutine eval (this, t, temp)
 
     class(rad_encl_func), intent(inout) :: this
-    real(r8), intent(in)  :: t
+    real(r8), intent(in)  :: t, temp(:)
 
     integer :: j, n
-    logical :: unevaluated
-    real(r8) :: args(0:size(this%encl%coord,dim=1))
+    real(r8) :: args(-1:size(this%encl%coord,dim=1))
+
+    ASSERT(size(temp) == size(this%values))
 
     !! Verify that THIS is in the correct state.
     INSIST(allocated(this%faces) .and. .not.allocated(this%tag))
 
-    unevaluated = .not.allocated(this%values)
-    if (unevaluated) allocate(this%values(this%encl%nface))
-
-    if (unevaluated .or. t /= this%tlast) then
-      args(0) = t
-      do n = 1, this%ngroup
-        associate (faces => this%faces(this%group(n):this%group(n+1)-1))
-          select case (this%hint(n))
-          case (EF_HINT_CONST)
-            if (unevaluated) this%values(faces) = this%farray(n)%f%eval(args)
-          case (EF_HINT_X_INDEP)
-            this%values(faces) = this%farray(n)%f%eval(args)
-          case (EF_HINT_T_INDEP)
-            if (unevaluated) then
-              do j = 1, size(faces)
-                associate (fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1))
-                  args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-                  this%values(faces(j)) = this%farray(n)%f%eval(args)
-                end associate
-              end do
-            end if
-          case default
-            do j = 1, size(faces)
-              associate (fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1))
-                args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
-                this%values(faces(j)) = this%farray(n)%f%eval(args)
-              end associate
-            end do
-          end select
-        end associate
-      end do
-      this%tlast = t
-    end if
+    args(0) = t
+    do n = 1, this%ngroup
+      associate (faces => this%faces(this%group(n):this%group(n+1)-1))
+        select case (this%hint(n))
+        case (EF_HINT_CONST)  ! args ignored by f%eval
+          this%values(faces) = this%farray(n)%eval(args)
+        case default
+          do j = 1, size(faces)
+            associate (fnode => this%encl%fnode(this%encl%xface(faces(j)):this%encl%xface(faces(j)+1)-1))
+              args(1:) = sum(this%encl%coord(:,fnode),dim=2) / size(fnode)
+            end associate
+            args(-1) = temp(faces(j))
+            this%values(faces(j)) = this%farray(n)%eval(args)
+          end do
+        end select
+      end associate
+    end do
 
   end subroutine eval
 

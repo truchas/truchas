@@ -133,7 +133,7 @@ contains
     ASSERT(size(qrad) == this%nface)
 
     tamb = this%tamb%eval ([time])
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
 
     call this%sys%cheby_solve (temp, tamb, this%eps%values, &
                                this%c, this%d, this%tol, this%maxitr, qrad, numitr, error)
@@ -141,51 +141,54 @@ contains
 
   end subroutine solve_radiosity
 
-  subroutine precon_cheby (this, time, numitr, z)
+  subroutine precon_cheby (this, time, temp, numitr, z)
 
     class(rad_solver), intent(inout) :: this
-    real(r8), intent(in) :: time
+    real(r8), intent(in) :: time, temp(:)
     integer, intent(in) :: numitr
     real(r8), intent(inout) :: z(:)
 
+    ASSERT(size(temp) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%cheby_precon (this%eps%values, this%c, this%d, numitr, z)
 
   end subroutine precon_cheby
 
-  subroutine precon_jacobi (this, time, numitr, z)
+  subroutine precon_jacobi (this, time, temp, numitr, z)
 
     class(rad_solver), intent(inout) :: this
-    real(r8), intent(in) :: time
+    real(r8), intent(in) :: time, temp(:)
     integer, intent(in) :: numitr
     real(r8), intent(inout) :: z(:)
 
+    ASSERT(size(temp) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%jacobi_precon (this%eps%values, numitr, z)
 
   end subroutine precon_jacobi
 
-  subroutine precon_matvec1 (this, time, z)
+  subroutine precon_matvec1 (this, time, temp, z)
 
     class(rad_solver), intent(inout) :: this
-    real(r8), intent(in) :: time
+    real(r8), intent(in) :: time, temp(:)
     real(r8), intent(inout) :: z(:)
 
+    ASSERT(size(temp) == this%nface)
     ASSERT(size(z) == this%nface)
 
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%matvec1 (this%eps%values, z)
 
   end subroutine precon_matvec1
 
-  subroutine set_cheby_param (this, time)
+  subroutine set_cheby_param (this, time, temp)
 
     class(rad_solver), intent(inout) :: this
-    real(r8), intent(in) :: time
+    real(r8), intent(in) :: time, temp(:)
 
     integer, parameter ::  maxitr = 10000
     real(r8), parameter :: tol = 1.0d-4
@@ -197,7 +200,7 @@ contains
 
     call TLS_info ('    calculating Chebyshev iteration parameters ...')
 
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
 
     !! Set the PRN generator seed.  This gives us reproducibility on the same
     !! platform using the same number of processes/data distribution.  But we
@@ -255,7 +258,7 @@ contains
     ASSERT(size(flux) == this%nface)
 
     tamb = this%tamb%eval([time])
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%flux (qrad, temp, tamb, this%eps%values, flux)
 
   end subroutine heat_flux
@@ -284,7 +287,7 @@ contains
     ASSERT(size(res)  == this%nface)
 
     tamb = this%tamb%eval([time])
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%residual (qrad, temp, tamb, this%eps%values, res)
 
   end subroutine residual
@@ -305,11 +308,21 @@ contains
     real(r8), intent(in)  :: temp(:)  ! temperature vector
     real(r8), intent(out) :: drhs(:)  ! RHS derivative (diagonal)
 
+    real(r8) :: tamb
+    real(r8), allocatable :: fdinc(:), deps(:)
+
     ASSERT(size(temp) == this%nface)
     ASSERT(size(drhs) == this%nface)
 
-    call this%eps%eval (time)
-    call this%sys%rhs_deriv (temp, this%eps%values, drhs)
+    fdinc = max(1.0_r8, abs(temp)) * sqrt(epsilon(1.0_r8))
+    call this%eps%eval (time, temp + fdinc)
+    deps = this%eps%values
+    call this%eps%eval (time, temp - fdinc)
+    deps = (deps - this%eps%values) / (2*fdinc)
+
+    tamb = this%tamb%eval([time])
+    call this%eps%eval (time, temp)
+    call this%sys%rhs_deriv (temp, tamb, this%eps%values, deps, drhs)
 
   end subroutine rhs_deriv
 
@@ -326,7 +339,7 @@ contains
     ASSERT(size(b) == this%nface)
 
     tamb = this%tamb%eval([time])
-    call this%eps%eval (time)
+    call this%eps%eval (time, temp)
     call this%sys%rhs (temp, tamb, this%eps%values, b)
 
   end subroutine rhs
