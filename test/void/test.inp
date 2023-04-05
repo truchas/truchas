@@ -1,0 +1,189 @@
+
+&MESH
+  coordinate_scale_factor = 0.001
+  x_axis%coarse_grid = 0.0 100.0
+  x_axis%intervals = 40
+  y_axis%coarse_grid = 0.0 100.0
+  y_axis%intervals = 40
+  z_axis%coarse_grid = 0.0 2.5
+  z_axis%intervals = 1
+/
+
+&OUTPUTS
+  output_t  = 0.0, 10.3 !11.0
+  output_dt = 0.025
+/
+
+x&PROBE
+  coord = 100, 1.25, 0
+  coord_scale_factor = 0.001
+  data = 'vol-frac-VOID'
+  data_file = 'void-frac.dat'
+/
+
+x&PROBE
+  coord = 100, 1.25, 0
+  coord_scale_factor = 0.001
+  data = 'vol-frac-solid'
+  data_file = 'solid-frac.dat'
+/
+
+&PHYSICS
+  flow = T
+  body_force_density = 0.0, -9.81, 0.0
+  heat_transport = T
+  materials = "aluminum", "VOID"
+/
+
+&PHYSICAL_CONSTANTS
+  absolute_zero = -273.15
+/
+
+&NUMERICS
+  dt_init = 1e-03
+  dt_grow = 1.05
+  dt_max = 10.0
+  dt_min = 1e-06
+/
+
+### FLOW #######################################################################
+
+&FLOW
+  courant_number= 0.25
+  nested_dissection = F ! see https://gitlab.com/truchas/truchas/-/issues/491
+  viscous_implicitness = 0.5
+  material_priority = "SOLID", "liquid", "VOID"
+  vol_track_subcycles = 1
+  void_collapse = T
+  void_collapse_relaxation = 0.5
+  inviscid = T
+  !porous_drag = F
+  !drag_coef = 1e9
+  !drag_implicitness = 0.5
+/
+
+x&TURBULENCE
+  length = 5e-3
+/
+
+&FLOW_PRESSURE_SOLVER
+  abs_tol = 1e-8
+  rel_tol = 0.0
+  max_ds_iter = 500
+  max_amg_iter = 20
+/
+
+&FLOW_VISCOUS_SOLVER
+  abs_tol = 0.0
+  rel_tol = 1e-6
+  max_ds_iter = 100
+  max_amg_iter = 10
+/
+
+&FLOW_BC
+  name = "walls"
+  face_set_ids = 1, 2, 3, 4
+  type = "no-slip"
+/
+
+### HEAT TRANSFER ##############################################################
+
+&DIFFUSION_SOLVER
+  stepping_method = "Non-adaptive BDF1"
+  residual_atol = 1e-6
+  residual_rtol = 1e-9
+  nlk_preconditioner = "Hypre_AMG"
+  max_nlk_itr = 50
+  max_nlk_vec = 10
+  nlk_tol = 0.1
+  nlk_vec_tol = 0.001
+  verbose_stepping = T
+  pc_amg_cycles = 2
+  cond_vfrac_threshold = 0.001
+/
+
+&THERMAL_BC
+  name = "left"
+  type = "temperature"
+  face_set_ids = 1
+  temp = 700
+/
+
+&THERMAL_BC
+  name = "right"
+  type = "htc"
+  face_set_ids = 2, 3
+  htc = 3000
+  ambient_temp = 400
+/
+
+x&THERMAL_BC
+  name = "back"
+  type = "htc"
+  face_set_ids = 5
+  htc = 1000.0
+  ambient_temp = 575
+/
+
+&THERMAL_BC
+  name = "adiabatic"
+  type = "flux"
+  face_set_ids = 4, 5, 6
+  flux = 0
+/
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = "background"
+  material_name = "liquid"
+  temperature_function = 'init-temp'
+/
+
+&FUNCTION
+  name = 'init-temp'
+  type = 'polynomial'
+  poly_coefficients = 700, -1000
+  poly_exponents = 0, 0, 0
+  poly_exponents(:,2) = 1, 0, 0
+/
+
+### MATERIALS ##################################################################
+
+&MATERIAL
+  name = "aluminum"
+  phases = "solid", "liquid"
+  density = 2400.0
+/
+
+&PHASE
+  name = "solid"
+  specific_heat = 1100.0
+  conductivity  = 220.0
+/
+
+&PHASE
+  name = "liquid"
+  is_fluid = T
+  specific_heat = 1100.0
+  conductivity  = 110.0
+  viscosity = 0.02
+  density_delta_func = 'liquid-drho'
+/
+
+&FUNCTION
+  name = 'liquid-drho'
+  type = 'polynomial'
+  poly_coefficients = -2.3e-1
+  poly_exponents = 1
+  poly_refvars = 660
+/
+
+&PHASE_CHANGE
+  low_temp_phase = "solid"
+  high_temp_phase = "liquid"
+  solidus_temp = 575
+  liquidus_temp = 600
+  latent_heat = 289292.0
+/
+
