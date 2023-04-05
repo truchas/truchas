@@ -146,6 +146,7 @@ add_pytruchas_test(evap
 add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX)
 
 add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(void void/test.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(gap-rad
                    gap-rad/testGapRad.py
