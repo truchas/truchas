@@ -165,7 +165,7 @@ contains
 
   subroutine process2(plist, const, fname, bname, pname, label)
     use input_utilities, only: NULL_C, NULL_R
-    use scalar_func_table
+    use func_table
     type(parameter_list), intent(inout) :: plist
     real(r8),     intent(in) :: const ! possible constant value
     character(*), intent(in) :: fname ! possible function name value
@@ -177,7 +177,7 @@ contains
     else if (const /= NULL_R) then
       call plist%set(pname, const)
     else if (fname /= NULL_C) then
-      if (known_func(fname)) then
+      if (known_scalar_func(fname)) then
         call plist%set(pname, trim(fname))
       else
         call TLS_fatal(label // ': unknown function for ' // bname // '_FUNC: ' // trim(fname))

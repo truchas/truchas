@@ -1,0 +1,21 @@
+## /opt/cubit/16.12/bin/clarox
+## Cubit Version 16.12.0
+## Cubit Build a9a6168
+## Revised Thu Jun 1 17:19:14 2023 -0600
+## Running 12/12/2024 05:32:40 PM
+## Command Options:
+
+brick x {a} y {a} z {2*d}
+
+sideset 1 add surface with z_coord {-d}
+sideset 1 name "z_left"
+sideset 2 add surface with z_coord {d}
+sideset 2 name "z_right"
+sideset 3 add surface with x_coord {-a/2}
+sideset 3 add surface with x_coord {a/2}
+sideset 3 name "x_const"
+sideset 4 add surface with y_coord {-a/2}
+sideset 4 add surface with y_coord {a/2}
+sideset 4 name "y_const"
+
+block 1 add volume 1

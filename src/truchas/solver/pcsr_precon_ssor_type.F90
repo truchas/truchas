@@ -54,9 +54,9 @@ module pcsr_precon_ssor_type
 
   type, extends(pcsr_precon), public :: pcsr_precon_ssor
     private
-    real(r8), allocatable :: diag(:)
     integer  :: num_iter
     real(r8) :: omega
+    real(r8), allocatable :: diag(:)
   contains
     procedure :: init
     procedure :: compute
@@ -76,11 +76,11 @@ contains
     character(:), allocatable :: context
 
     this%A => A
-    allocate(this%diag(A%nrow_onP))
+    allocate(this%diag(a%nrow_onP))
 
     context = 'processing ' // params%path() // ': '
 
-    call params%get('num-cycles', this%num_iter, stat, errmsg)
+    call params%get('num-cycles', this%num_iter, stat, errmsg, default=1)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -123,7 +123,7 @@ contains
 
     ASSERT(size(x) >= this%A%nrow_onP)
 
-    call start_timer('ssor-solve')
+    call start_timer('ssor-cycles')
 
     u = 0.0_r8
     do n = 1, this%num_iter
@@ -150,7 +150,7 @@ contains
     !! Copy solution to return array.
     x(:this%A%nrow_onP) = u(:this%A%nrow_onP)
 
-    call stop_timer('ssor-solve')
+    call stop_timer('ssor-cycles')
 
   end subroutine apply
 

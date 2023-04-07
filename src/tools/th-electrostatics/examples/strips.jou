@@ -1,0 +1,49 @@
+## /opt/cubit/16.18/bin/clarox
+## Cubit Version 16.18.0
+## Cubit Build 4ee5708
+## Revised Thu Jun 6 10:47:43 2024 -0600
+## Running 03/31/2025 08:31:42 AM
+## Command Options:
+
+brick x 10 y 10 z 0.25
+brick x 0.2 y 2 z 1
+modify curve 24 23 22 21 blend radius 0.1
+move volume 2 x -0.5 include_merged
+volume 2 copy move x 1
+
+subtract volume 2 3 from volume 1
+webcut volume 1 with plane yplane offset 0
+delete volume 1
+compress all
+
+webcut volume 1 with plane yplane offset {Vy(11)}
+unite volume 1 3 4
+imprint volume all
+merge volume all
+compress all
+
+block 1 add volume 2
+block 2 add volume 1
+sideset 1 add surface 8 3 9
+sideset 1 name "left"
+sideset 2 add surface 7 2 10
+sideset 2 name "right"
+sideset 3 add surface 17 1 16
+sideset 3 name "walls"
+
+surface 15 12 sizing function type skeleton min_size 0.05 max_size 0.5 max_gradient 1.2 min_num_layers_2d 1 min_num_layers_1d 1 scale 2 time_accuracy_level 2 min_depth 2 max_depth 7 facet_extract_ang 10 max_span_ang_surf 5 max_span_ang_curve 5
+mesh surface 15 12
+
+curve 21 interval 2
+curve 21 scheme equal
+
+volume 1 2 redistribute nodes on
+volume 1 2 scheme Sweep sweep transform translate propagate bias
+volume 1 2 autosmooth target off
+mesh volume 1 2
+
+htet volume all structured
+
+set exodus netcdf4 off
+set large exodus file on
+export mesh "strips.gen" overwrite

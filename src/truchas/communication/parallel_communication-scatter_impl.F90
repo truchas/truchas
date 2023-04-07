@@ -44,6 +44,22 @@ contains
     call MPI_Scatter(src, 1, MPI_REAL8, dest, 1, MPI_REAL8, root, comm, ierr)
   end subroutine
 
+  module subroutine scat_c4_0(src, dest)
+    complex(r4), intent(in)  :: src(:)
+    complex(r4), intent(out) :: dest
+    integer :: ierr
+    ASSERT(size(src) >= merge(npe,0,is_iop))
+    call MPI_Scatter(src, 1, MPI_COMPLEX8, dest, 1, MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine scat_c8_0(src, dest)
+    complex(r8), intent(in)  :: src(:)
+    complex(r8), intent(out) :: dest
+    integer :: ierr
+    ASSERT(size(src) >= merge(npe,0,is_iop))
+    call MPI_Scatter(src, 1, MPI_COMPLEX16, dest, 1, MPI_COMPLEX16, root, comm, ierr)
+  end subroutine
+
   module subroutine scat_dl_0(src, dest)
     logical, intent(in)  :: src(:)
     logical, intent(out) :: dest
@@ -158,37 +174,49 @@ contains
     integer(i1), intent(in)  :: src(:)
     integer(i1), intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_INTEGER1, src, dest)
-  end subroutine scat_i1_1
+  end subroutine
 
   module subroutine scat_i4_1(src, dest)
     integer(i4), intent(in)  :: src(:)
     integer(i4), intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_INTEGER4, src, dest)
-  end subroutine scat_i4_1
+  end subroutine
 
   module subroutine scat_i8_1(src, dest)
     integer(i8), intent(in)  :: src(:)
     integer(i8), intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_INTEGER8, src, dest)
-  end subroutine scat_i8_1
+  end subroutine
 
   module subroutine scat_r4_1(src, dest)
     real(r4), intent(in)  :: src(:)
     real(r4), intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_REAL4, src, dest)
-  end subroutine scat_r4_1
+  end subroutine
 
   module subroutine scat_r8_1(src, dest)
     real(r8), intent(in)  :: src(:)
     real(r8), intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_REAL8, src, dest)
-  end subroutine scat_r8_1
+  end subroutine
+
+  module subroutine scat_c4_1(src, dest)
+    complex(r4), intent(in)  :: src(:)
+    complex(r4), intent(out) :: dest(:)
+    call scat_aux1(size(src), size(dest), MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine scat_c8_1(src, dest)
+    complex(r8), intent(in)  :: src(:)
+    complex(r8), intent(out) :: dest(:)
+    call scat_aux1(size(src), size(dest), MPI_COMPLEX16, src, dest)
+  end subroutine
 
   module subroutine scat_dl_1(src, dest)
     logical, intent(in)  :: src(:)
     logical, intent(out) :: dest(:)
     call scat_aux1(size(src), size(dest), MPI_LOGICAL, src, dest)
-  end subroutine scat_dl_1
+  end subroutine
 
 !!!! SCATTER RANK-2 DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -200,7 +228,7 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER1, src, dest)
-  end subroutine scat_i1_2
+  end subroutine
 
   module subroutine scat_i4_2(src, dest)
     integer(i4), intent(in)  :: src(:,:)
@@ -210,7 +238,7 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER4, src, dest)
-  end subroutine scat_i4_2
+  end subroutine
 
   module subroutine scat_i8_2(src, dest)
     integer(i8), intent(in)  :: src(:,:)
@@ -220,7 +248,7 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER8, src, dest)
-  end subroutine scat_i8_2
+  end subroutine
 
   module subroutine scat_r4_2(src, dest)
     real(r4), intent(in)  :: src(:,:)
@@ -230,7 +258,7 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_REAL4, src, dest)
-  end subroutine scat_r4_2
+  end subroutine
 
   module subroutine scat_r8_2(src, dest)
     real(r8), intent(in)  :: src(:,:)
@@ -240,7 +268,27 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_REAL8, src, dest)
-  end subroutine scat_r8_2
+  end subroutine
+
+  module subroutine scat_c4_2(src, dest)
+    complex(r4), intent(in)  :: src(:,:)
+    complex(r4), intent(out) :: dest(:,:)
+    integer :: srclen, destlen, block_size
+    destlen = size(dest, dim=2)
+    srclen = size(src, dim=2)
+    if (is_iop) block_size = size(src(:,1))
+    call scat_aux2(srclen, destlen, block_size, MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine scat_c8_2(src, dest)
+    complex(r8), intent(in)  :: src(:,:)
+    complex(r8), intent(out) :: dest(:,:)
+    integer :: srclen, destlen, block_size
+    destlen = size(dest, dim=2)
+    srclen = size(src, dim=2)
+    if (is_iop) block_size = size(src(:,1))
+    call scat_aux2(srclen, destlen, block_size, MPI_COMPLEX16, src, dest)
+  end subroutine
 
   module subroutine scat_dl_2(src, dest)
     logical, intent(in)  :: src(:,:)
@@ -250,7 +298,7 @@ contains
     srclen = size(src, dim=2)
     if (is_iop) block_size = size(src(:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_LOGICAL, src, dest)
-  end subroutine scat_dl_2
+  end subroutine
 
 !!!! SCATTER RANK-3 DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -262,7 +310,7 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER1, src, dest)
-  end subroutine scat_i1_3
+  end subroutine
 
   module subroutine scat_i4_3(src, dest)
     integer(i4), intent(in)  :: src(:,:,:)
@@ -272,7 +320,7 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER4, src, dest)
-  end subroutine scat_i4_3
+  end subroutine
 
   module subroutine scat_i8_3(src, dest)
     integer(i8), intent(in)  :: src(:,:,:)
@@ -282,7 +330,7 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_INTEGER8, src, dest)
-  end subroutine scat_i8_3
+  end subroutine
 
   module subroutine scat_r4_3(src, dest)
     real(r4), intent(in)  :: src(:,:,:)
@@ -292,7 +340,7 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_REAL4, src, dest)
-  end subroutine scat_r4_3
+  end subroutine
 
   module subroutine scat_r8_3(src, dest)
     real(r8), intent(in)  :: src(:,:,:)
@@ -302,7 +350,27 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_REAL8, src, dest)
-  end subroutine scat_r8_3
+  end subroutine
+
+  module subroutine scat_c4_3(src, dest)
+    complex(r4), intent(in)  :: src(:,:,:)
+    complex(r4), intent(out) :: dest(:,:,:)
+    integer :: srclen, destlen, block_size
+    destlen = size(dest, dim=3)
+    srclen = size(src, dim=3)
+    if (is_iop) block_size = size(src(:,:,1))
+    call scat_aux2(srclen, destlen, block_size, MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine scat_c8_3(src, dest)
+    complex(r8), intent(in)  :: src(:,:,:)
+    complex(r8), intent(out) :: dest(:,:,:)
+    integer :: srclen, destlen, block_size
+    destlen = size(dest, dim=3)
+    srclen = size(src, dim=3)
+    if (is_iop) block_size = size(src(:,:,1))
+    call scat_aux2(srclen, destlen, block_size, MPI_COMPLEX16, src, dest)
+  end subroutine
 
   module subroutine scat_dl_3(src, dest)
     logical, intent(in)  :: src(:,:,:)
@@ -312,6 +380,6 @@ contains
     srclen = size(src, dim=3)
     if (is_iop) block_size = size(src(:,:,1))
     call scat_aux2(srclen, destlen, block_size, MPI_LOGICAL, src, dest)
-  end subroutine scat_dl_3
+  end subroutine
 
 end submodule scatter_impl

@@ -129,14 +129,11 @@ contains
     class(mfd_diff_matrix), intent(out) :: this
     class(mfd_diff_matrix), intent(in)  :: mold
 
-    type(pcsr_graph), pointer :: g
-
     this%disc => mold%disc
     this%mesh => mold%mesh
     allocate(this%a11(size(mold%a11)))
     allocate(this%a12_val(size(mold%a12_val)))
-    g => mold%a22%graph_ptr()
-    call this%a22%init(g, take_graph=.false.)
+    call this%a22%init(mold%a22)
 
   end subroutine init_mold
 

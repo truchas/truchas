@@ -1,0 +1,178 @@
+
+================================================================================
+
+PROGRAM INFORMATION
+
+   code:                Truchas 24.07-119-gb6fd8238-dirty
+   build architecture:  x86_64
+   build date/time:     2025-07-03 21:43:54
+   build flags:          -u -O3 -DNDEBUG -f2018 -w=uda
+   build host:          thelio2.indiana
+   run architecture:    Linux thelio2.indiana 6.11.9-100.fc39.x86_64 #1
+   run host:            thelio2.indiana
+   run date/time:       04 Jul 25 06:50:35
+   processors:          1
+
+================================================================================
+
+INPUT
+
+Opening input file "wg1.inp"
+Reading FUNCTION namelists ...
+  none found
+Reading COMPLEX_FUNCTION namelists ...
+  none found
+Reading TOOLPATH namelists ...
+  none found
+Reading TOOLHEAD namelists ...
+  none found
+Reading VFUNCTION namelists ...
+  none found
+Reading COMPLEX_VFUNCTION namelists ...
+  none found
+Reading PHYSICS namelist ...
+Reading MATERIAL namelists ...
+  read namelist "dielectric"
+Reading PHASE namelists ...
+  none found
+Reading PHASE_CHANGE namelists ...
+  none found
+Reading OUTPUTS namelist ...
+Reading MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
+Reading EM_MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
+Reading BODY namelists (first pass) ...
+  read 2 BODY namelists
+Reading BODY namelists (second pass) ...
+  read 2 BODY namelists
+Reading NUMERICS namelist ...
+Reading ELECTROMAGNETICS namelist ...
+Reading ELECTROMAGNETIC_BC namelists ...
+  read namelist "walls"
+  read namelist "waveguide port"
+Reading DIFFUSION_SOLVER namelist ...
+  using default STEPPING_METHOD value: "Adaptive BDF2"
+  using default MAX_NLK_ITR value: 5
+  using default NLK_TOL value: 1.00E-01
+  using default MAX_STEP_TRIES value: 10
+  using default MAX_NLK_VEC value: MAX_NLK_ITR - 1
+  using default NLK_VEC_TOL value: 1.00E-03
+  WARNING: using a pure relative error norm; temp must be bounded away from 0
+  WARNING: using a pure relative error norm; enthalpy must be bounded away from 0
+  using default PC_AMG_CYCLES value: 2
+Reading THERMAL_BC namelists ...
+  read namelist "adiabatic"
+Reading THERMAL_SOURCE namelists ...
+  none found
+Reading SPECIES_BC namelists ...
+  none found
+Reading SPECIES_SOURCE namelists ...
+  none found
+Reading ENCLOSURE_RADIATION namelists ...
+  none found
+Reading MICROSTRUCTURE namelists ...
+Reading PROBE namelists ...
+  none found
+Input file "wg1.inp" closed
+
+================================================================================
+
+INITIALIZATION
+
+Initializing mesh "MAIN" ...
+  generating an internal ExodusII mesh
+
+Initializing mesh "EM" ...
+  generating an internal ExodusII mesh
+
+Computing initial volume fractions ...
+
+Initializing diffusion solver ...
+  generating "scalar_cell_func1" thermal source
+    none specified
+  generating "scalar_cell_func2" thermal source
+    none specified
+  generating "interface-htc" thermal interface condition
+    none specified
+  generating "gap-radiation" thermal interface condition
+    none specified
+  generating "flux" thermal boundary condition
+    using THERMAL_BC[adiabatic]
+  generating "oriented-flux" thermal boundary condition
+    none specified
+  generating "htc" thermal boundary condition
+    none specified
+  generating "radiation" thermal boundary condition
+    none specified
+  generating "temperature" thermal boundary condition
+    none specified
+  diffusion solver initialized
+
+Computing consistent initial state for HT/SD solver ...
+  computing consistent face temperatures and radiosities ...
+
+Computing consistent initial state derivative for HT/SD solver ...
+  computing consistent face temperatures and radiosities ...
+
+Initializing electromagnetic heat solver ...
+creating kuprat mesh-to-mesh mapper ...
+
+Initializing solution probes ...
+
+================================================================================
+
+EXECUTION
+  generating "nxE" electromagnetic boundary condition
+    using ELECTROMAGNETICS_BC[walls]
+  generating "pmc" electromagnetic boundary condition
+    none specified.
+  generating "nxH" electromagnetic boundary condition
+    none specified.
+  generating "wg-port" electromagnetic boundary condition
+    using ELECTROMAGNETICS_BC[waveguide port]
+  generating "impedance" electromagnetic boundary condition
+    none specified.
+  generating "robin" electromagnetic boundary condition
+    none specified.
+  done
+CS-MINRES converged: 2276 iterations
+FDME_SOLVE: |r|=8.06E-06, |b|=2.19E+04, |r|/|b|=3.68E-10, |Div E|=4.20E-02
+|Q|_max= 2.2701E+05, Q_total= 4.1115E+01
+  writing EM restart data for EM001
+
+================================================================================
+
+TERMINATION
+                 Final Time:  0.0000E+00 after     0 steps
+
+
+TIMING SUMMARY
+--------------
+  3.185E+00 --- Total
+    1.101E-03 --- Input
+    1.568E-01 --- Initialization
+      6.122E-03 --- mesh-MAIN
+        1.730E-04 --- ghost-cells
+          1.540E-04 --- cell-ghosts
+            1.120E-04 --- node-neighbors
+            2.600E-05 --- ghost-cells
+          1.000E-06 --- link-ghosts
+          1.500E-05 --- assemble-ghosts
+      1.796E-02 --- mesh-EM
+      3.529E-03 --- VOF Initialize
+      5.500E-04 --- HTSD function
+        5.430E-04 --- HT function
+    3.027E+00 --- Main Cycle
+      3.022E+00 --- EM heat
+        5.190E-04 --- mesh-to-mesh mapping
+        1.337E-02 --- div
+        2.346E-01 --- setup
+        1.820E-04 --- ssor-setup
+        2.060E+00 --- ssor-solve
+      5.000E-06 --- Time Step
+
+                  Process virtual memory used: 2.62E+02 mB
+                                   words/cell: 23826
+
+truchas terminated normally on 04 Jul 25 at 06:50:38

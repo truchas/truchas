@@ -87,7 +87,7 @@ module restart_driver
 
   public :: open_restart_file, skip_restart_mesh, restart_matlzone, &
             restart_solid_mechanics, restart_species, &
-            restart_joule_heat, restart_ustruc, close_restart_file
+            restart_em_heat, restart_ustruc, close_restart_file
 
   !! Private data; defined by OPEN_RESTART_FILE.
   integer, save :: unit, version
@@ -129,8 +129,8 @@ contains
       select case (feature)
       case ('fluid_flow')
         have_fluid_flow_data = .true.
-      case ('joule_heat')
-        have_joule_heat_data = .true.
+      case ('em_heat')
+        have_em_heat_data = .true.
       case ('solid_mechanics')
         have_solid_mechanics_data = .true.
       case ('temperature')
@@ -276,16 +276,16 @@ contains
   end subroutine restart_ustruc
 
   !!
-  !! Read the optional Joule heat data segment.
+  !! Read the optional EM heat data segment.
   !!
 
-  subroutine restart_joule_heat
-    use ih_driver, only: ih_enabled, read_joule_data, skip_joule_data
-    if (have_joule_heat_data) then
-      if (ih_enabled() .and. .not.ignore_joule_heat) then
-        call read_joule_data(unit, version)
+  subroutine restart_em_heat
+    use em_heat_driver, only: em_heat_enabled, read_em_heat_restart_data, skip_em_heat_restart_data
+    if (have_em_heat_data) then
+      if (em_heat_enabled() .and. .not.ignore_em_heat) then
+        call read_em_heat_restart_data(unit, version)
       else
-        call skip_joule_data(unit, version)
+        call skip_em_heat_restart_data(unit, version)
       end if
     end if
   end subroutine

@@ -88,6 +88,22 @@ contains
       pass = (dest == adest)
       call write_result(pass, 'scat_scalar_real64')
     end block
+    block
+      complex(real32) :: src(npe), dest
+      src = (1,-1)*asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == (1,-1)*adest)
+      call write_result(pass, 'scat_scalar_complex32')
+    end block
+    block
+      complex(real64) :: src(npe), dest
+      src = (1,-1)*asrc
+      dest = 0
+      call scatter(src, dest)
+      pass = (dest == (1,-1)*adest)
+      call write_result(pass, 'scat_scalar_complex64')
+    end block
   end subroutine
 
   ! generic rank-1 array case
@@ -141,6 +157,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank1_real64')
     end block
+    block
+      complex(real32), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank1_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank1_complex64')
+    end block
   end subroutine
 
   ! Rank-1 array case with a 0-sized vector
@@ -193,6 +225,22 @@ contains
       call scatter(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank1_zero_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank1_zero_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank1_zero_complex64')
     end block
   end subroutine
 
@@ -250,6 +298,22 @@ contains
       call scatter(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank2_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank2_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank2_complex64')
     end block
   end subroutine
 
@@ -309,6 +373,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank2_zero_real64')
     end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank2_zero_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank2_zero_complex64')
+    end block
   end subroutine
 
   ! rank-2 array section case
@@ -366,6 +446,22 @@ contains
       call scatter(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'scat_array_section_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(3,size(adest,2))); dest = 0
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_array_section_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(3,size(adest,2))); dest = 0
+      call scatter(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_array_section_complex64')
     end block
   end subroutine
 
@@ -428,6 +524,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank3_real64')
     end block
+    block
+      complex(real32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank3_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank3_complex64')
+    end block
   end subroutine
 
   ! Rank-3 array case with a 0-sized vector
@@ -489,6 +601,22 @@ contains
       call scatter(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'scat_rank3_zero_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:,:,:), dest(:,:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank3_zero_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:,:), dest(:,:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,2,size(adest,3)))
+      call scatter(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'scat_rank3_zero_complex64')
     end block
   end subroutine
 

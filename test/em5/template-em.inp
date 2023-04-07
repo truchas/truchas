@@ -1,0 +1,123 @@
+1D AXISYMMETRIC INDUCTION HEATING WITH TIME-DEPENDENT EM SOURCE
+
+Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
+one quarter of a thin cross-sectional slab, surrounded by some free-space.
+The EM conductivity is larger in a surface layer of the cylinder than in
+its core.  The source charcteristics (magnitude, frequency) change several
+times during the course of the simulation.  The hex mesh includes the free
+space region.  The tet mesh conforms to the hex mesh, being obtained by
+subdivision of the hex cells.
+
+&MESH
+  mesh_file = 'meshes/em-qcyl-hex.gen'
+  coordinate_scale_factor = 0.001
+/
+
+&EM_MESH
+  mesh_file = 'meshes/em-qcyl-tet-small.gen'
+  coord_scale_factor = 0.001
+/
+
+&PHYSICS
+  materials = 'conductor'
+  heat_transport = T
+  electromagnetics = T
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 5.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 5.0e-3
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  nlk_tol = 0.001
+  void_temperature = 300.0
+/
+
+&OUTPUTS
+  Output_T = 0.0, 100.0
+  Output_Dt = 5.0
+/
+
+&NUMERICS
+  cycle_max = 1
+/
+
+&ELECTROMAGNETICS
+  graphics_output = T
+  use_emfd_solver = {emfd}
+  
+  ! frequency domain solver
+  fd_solver_type = 'gmres'
+  fd_precon_type = 'ams'
+  krylov_dim = 5
+  
+  !fd_solver_type = 'nlk'
+  !fd_precon_type = 'hiptmair'
+  max_vec = 5
+  
+  ! time domain solver
+  steps_per_cycle = 24
+  steady_state_tol = 0.01
+  max_source_cycles = 5
+  c_ratio = 1e-4
+
+  td_solver_type = 'pcg'
+  !td_solver_type = 'ams'
+  !ams_cycle_type = 1
+  relax_type = 1
+  
+  abs_tol = 0
+  rel_tol = 1e-10
+  max_iter = 500
+  print_level = 1
+/
+
+&INDUCTION_SOURCE_FIELD
+  frequency = {source_frequency}
+  uniform_strength = {H_bc}
+  orientation = 'z'
+/
+
+&ELECTROMAGNETIC_BC
+ name = 'x,y=0'
+ type = 'pec'
+ face_set_ids = 2
+/
+
+&ELECTROMAGNETIC_BC
+ name = 'applied H field'
+ type = 'ih-hfield'
+ face_set_ids = 1
+/
+
+!nxH = 0 is the natural BC and is implied by doing nothing
+!&ELECTROMAGNETIC_BC
+! name = 'z=const planes'
+! type = 'ih-hfield' ! Really want nxH = 0 symmetry condition
+! face_set_ids = 3
+!/
+
+Core of the conducting cylinder
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'conductor'
+  temperature = 300.0
+/
+
+&THERMAL_BC
+  name = 'whole boundary insulated'
+  type = 'flux'
+  face_set_ids = 1, 2, 3
+  flux = 0.0
+/
+
+&MATERIAL
+  name = 'conductor'
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity = 5.0e4
+/

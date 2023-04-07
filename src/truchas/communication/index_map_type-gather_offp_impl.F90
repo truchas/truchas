@@ -200,6 +200,134 @@ contains
     call MPI_Type_free(block_type, ierr)
   end subroutine
 
+!!!! C4 DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  module subroutine gath1_c4_1(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(inout) :: local_data(:)
+    call gath2_c4_1(this, local_data(:this%onp_size), local_data(this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c4_1(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: onp_data(:)
+    complex(r4), intent(inout) :: offp_data(:)
+    integer :: ierr
+    complex(r4), allocatable :: onp_buf(:)
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(this%onp_index)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, MPI_COMPLEX8, &
+        offp_data, this%offp_counts, this%offp_displs, MPI_COMPLEX8, this%gather_comm, ierr)
+  end subroutine
+
+  module subroutine gath1_c4_2(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(inout) :: local_data(:,:)
+    call gath2_c4_2(this, local_data(:,:this%onp_size), local_data(:,this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c4_2(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: onp_data(:,:)
+    complex(r4), intent(inout) :: offp_data(:,:)
+    integer :: ierr
+    complex(r4), allocatable :: onp_buf(:,:)
+    integer :: block_type
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(:,this%onp_index)
+    call MPI_Type_contiguous(size(onp_data,dim=1), MPI_COMPLEX8, block_type, ierr)
+    call MPI_Type_commit(block_type, ierr)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, block_type, &
+        offp_data, this%offp_counts, this%offp_displs, block_type, this%gather_comm, ierr)
+    call MPI_Type_free(block_type, ierr)
+  end subroutine
+
+  module subroutine gath1_c4_3(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(inout) :: local_data(:,:,:)
+    call gath2_c4_3(this, local_data(:,:,:this%onp_size), local_data(:,:,this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c4_3(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: onp_data(:,:,:)
+    complex(r4), intent(inout) :: offp_data(:,:,:)
+    integer :: ierr
+    complex(r4), allocatable :: onp_buf(:,:,:)
+    integer :: block_type
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(:,:,this%onp_index)
+    call MPI_Type_contiguous(size(onp_data(:,:,1)), MPI_COMPLEX8, block_type, ierr)
+    call MPI_Type_commit(block_type, ierr)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, block_type, &
+        offp_data, this%offp_counts, this%offp_displs, block_type, this%gather_comm, ierr)
+    call MPI_Type_free(block_type, ierr)
+  end subroutine
+
+!!!! C8 DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  module subroutine gath1_c8_1(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(inout) :: local_data(:)
+    call gath2_c8_1(this, local_data(:this%onp_size), local_data(this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c8_1(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: onp_data(:)
+    complex(r8), intent(inout) :: offp_data(:)
+    integer :: ierr
+    complex(r8), allocatable :: onp_buf(:)
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(this%onp_index)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, MPI_COMPLEX16, &
+        offp_data, this%offp_counts, this%offp_displs, MPI_COMPLEX16, this%gather_comm, ierr)
+  end subroutine
+
+  module subroutine gath1_c8_2(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(inout) :: local_data(:,:)
+    call gath2_c8_2(this, local_data(:,:this%onp_size), local_data(:,this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c8_2(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: onp_data(:,:)
+    complex(r8), intent(inout) :: offp_data(:,:)
+    integer :: ierr
+    complex(r8), allocatable :: onp_buf(:,:)
+    integer :: block_type
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(:,this%onp_index)
+    call MPI_Type_contiguous(size(onp_data,dim=1), MPI_COMPLEX16, block_type, ierr)
+    call MPI_Type_commit(block_type, ierr)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, block_type, &
+        offp_data, this%offp_counts, this%offp_displs, block_type, this%gather_comm, ierr)
+    call MPI_Type_free(block_type, ierr)
+  end subroutine
+
+  module subroutine gath1_c8_3(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(inout) :: local_data(:,:,:)
+    call gath2_c8_3(this, local_data(:,:,:this%onp_size), local_data(:,:,this%onp_size+1:))
+  end subroutine
+
+  module subroutine gath2_c8_3(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: onp_data(:,:,:)
+    complex(r8), intent(inout) :: offp_data(:,:,:)
+    integer :: ierr
+    complex(r8), allocatable :: onp_buf(:,:,:)
+    integer :: block_type
+    if (.not.allocated(this%offp_index)) return
+    onp_buf = onp_data(:,:,this%onp_index)
+    call MPI_Type_contiguous(size(onp_data(:,:,1)), MPI_COMPLEX16, block_type, ierr)
+    call MPI_Type_commit(block_type, ierr)
+    call MPI_Neighbor_alltoallv(onp_buf, this%onp_counts, this%onp_displs, block_type, &
+        offp_data, this%offp_counts, this%offp_displs, block_type, this%gather_comm, ierr)
+    call MPI_Type_free(block_type, ierr)
+  end subroutine
+
 !!!! LOGICAL DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   module subroutine gath1_dl_1(this, local_data)

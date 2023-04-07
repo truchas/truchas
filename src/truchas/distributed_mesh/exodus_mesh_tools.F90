@@ -59,7 +59,7 @@ module exodus_mesh_tools
 
   public :: convert_cells_to_links
   public :: create_internal_interfaces
-  
+
 contains
 
   subroutine convert_cells_to_links (mesh, ebid, stat, errmsg)
@@ -94,13 +94,13 @@ contains
       call mesh%set_no_links
       return
     end if
-    
+
     if (mesh%nlink /= 0) then
       stat = -1
       errmsg = 'CONVERT_CELLS_TO_LINKS: found pre-existing links'
       return
     end if
-    
+
     !! Tag the element blocks whose elements are to be converted into links.
     allocate(link_eblk(mesh%num_eblk))
     link_eblk = .false.
@@ -171,7 +171,7 @@ contains
     allocate(xbin(0:n))
 
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
-    offset = 0    
+    offset = 0
     xbin = 0
     do i = 1, mesh%num_eblk
       if (.not.link_eblk(i)) then
@@ -199,7 +199,7 @@ contains
     end do
 
     !! Fill the table; use XBIN as a temporary to hold the next free location for each bin.
-    offset = 0    
+    offset = 0
     do i = 1, mesh%num_eblk
       if (.not.link_eblk(i)) then
         associate (connect => mesh%eblk(i)%connect)
@@ -386,8 +386,8 @@ contains
  !! case a link can be regarded as a special 0-thickness cell bridging the
  !! pair of faces:
  !!                                                              6
- !!                        8-----7                              /:\ 
- !!                       /:    /:                 +           / : \ 
+ !!                        8-----7                              /:\
+ !!                       /:    /:                 +           / : \
  !!       +-----+        5-----6 :                / \         4-----5
  !!      /     /   ==>   : :   : :      and      /   \   ==>  :  :  :
  !!     +-----+          : 4---:-3              +-----+       :  3  :
@@ -469,7 +469,7 @@ contains
     type(table_entry), pointer :: table(:)
     integer, allocatable :: xbin(:)
     type(facet_hash) :: hpar
-    
+
     !! Data structure to hold working data about active cells
     type :: active_elem
       integer :: cnum, nmask, smask, nface
@@ -522,7 +522,7 @@ contains
       end do
     end do
     ASSERT(n == size(active_cell))
-    
+
     !! Generate the structure array ACELL of active cell data.  The components
     !! of an element are:
     !!  - the cell index CNUM
@@ -597,13 +597,13 @@ contains
    !! closer to the lower bound.  Setting N equal to the number of active sides
    !! is generous.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     !! Allocate space for the bin table, and initialize the hash function.
     n = sum(popcnt(acell%smask))  ! number of active sides
     allocate(table(n))
     call hpar%init (n, mesh%num_node)  ! adjusts N up to a power of 2
     allocate(xbin(0:n))
-    
+
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
     xbin = 0
     do j = 1, size(acell)
@@ -904,7 +904,7 @@ contains
         end do
       end associate
     end do
-    
+
     deallocate(link_jnbr, link_knbr)
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1094,7 +1094,7 @@ contains
         end do
       end associate
     end do
-    
+
     !! Renumber the link nodes.
     do i = 1, size(mesh%lnode)
       mesh%lnode(i) = map(mesh%lnode(i))

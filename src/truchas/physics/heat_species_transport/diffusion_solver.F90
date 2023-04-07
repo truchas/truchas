@@ -55,7 +55,7 @@ module diffusion_solver
     !! Problem characteristics.
     logical :: have_heat_transfer = .false.
     logical :: have_species_diffusion = .false.
-    logical :: have_joule_heat = .false.
+    logical :: have_em_heat = .false.
     logical :: have_fluid_flow = .false.
     logical :: have_phase_change = .false.
     logical :: have_void = .false.
@@ -149,15 +149,15 @@ contains
 
     subroutine update_adv_heat
 
-      use ih_driver, only: joule_power_density
+      use em_heat_driver, only: em_heat_ptr
 
       real(r8), allocatable :: q_ds(:)
 
-      if (this%have_joule_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
+      if (this%have_em_heat .or. (this%have_fluid_flow .and. this%solver_type /= SOLVER2)) then
         allocate(q_ds(this%mesh%ncell))
         !! Joule heat source.
-        if (this%have_joule_heat) then
-          q_ds(:this%mesh%ncell_onP) = joule_power_density()
+        if (this%have_em_heat) then
+          q_ds(:this%mesh%ncell_onP) = em_heat_ptr()
           call this%mesh%cell_imap%gather_offp(q_ds)
         else
           q_ds = 0.0_r8
@@ -387,7 +387,7 @@ contains
  !!
   subroutine ds_init (tinit)
 
-    use ih_driver, only: ih_enabled
+    use em_heat_driver, only: em_heat_enabled
     use FHT_model_factory
     use FHT_solver_factory
     use HTSD_model_factory
@@ -429,7 +429,7 @@ contains
     !! Problem attributes
     this%have_heat_transfer = heat_eqn
     this%have_species_diffusion = (num_species > 0)
-    this%have_joule_heat = ih_enabled()
+    this%have_em_heat = em_heat_enabled()
     this%have_fluid_flow = .false.
     this%have_phase_change = multiphase_problem(this%mmf)
     this%have_void = void_is_present()

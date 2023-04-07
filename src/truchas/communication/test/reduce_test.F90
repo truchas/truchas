@@ -216,6 +216,8 @@ contains
     call write_result((global_sum(int(x,int64)) == a), 'sum_scalar_int64')
     call write_result((global_sum(real(x,real32)) == a), 'sum_scalar_real32')
     call write_result((global_sum(real(x,real64)) == a), 'sum_scalar_real64')
+    call write_result((global_sum(cmplx(x,-x,real32)) == cmplx(a,-a)), 'sum_scalar_complex32')
+    call write_result((global_sum(cmplx(x,-x,real64)) == cmplx(a,-a)), 'sum_scalar_complex64')
   end subroutine
 
   ! generic vector argument case
@@ -227,6 +229,8 @@ contains
     call write_result((global_sum(int(x,int64)) == a), 'sum_rank1_int64')
     call write_result((global_sum(real(x,real32)) == a), 'sum_rank1_real32')
     call write_result((global_sum(real(x,real64)) == a), 'sum_rank1_real64')
+    call write_result((global_sum(cmplx(x,-x,real32)) == cmplx(a,-a)), 'sum_rank1_complex32')
+    call write_result((global_sum(cmplx(x,-x,real64)) == cmplx(a,-a)), 'sum_rank1_complex64')
   end subroutine
 
   ! generic vector argument case with mask
@@ -240,6 +244,8 @@ contains
     call write_result((global_sum(int(x,int64),mask) == 1), 'sum_rank1_mask_int64')
     call write_result((global_sum(real(x,real32),mask) == 1), 'sum_rank1_mask_real32')
     call write_result((global_sum(real(x,real64),mask) == 1), 'sum_rank1_mask_real64')
+    call write_result((global_sum(cmplx(x,-x,real32),mask) == cmplx(1,-1)), 'sum_mask1_complex32')
+    call write_result((global_sum(cmplx(x,-x,real64),mask) == cmplx(1,-1)), 'sum_mask1_complex64')
   end subroutine
 
   ! vector arguments with a 0-sized vector
@@ -251,6 +257,8 @@ contains
     call write_result((global_sum(int(x,int64)) == a), 'sum_rank1_zero_int64')
     call write_result((global_sum(real(x,real32)) == a), 'sum_rank1_zero_real32')
     call write_result((global_sum(real(x,real64)) == a), 'sum_rank1_zero_real64')
+    call write_result((global_sum(cmplx(x,-x,real32)) == cmplx(a,-a)), 'sum_rank1_zero_complex32')
+    call write_result((global_sum(cmplx(x,-x,real64)) == cmplx(a,-a)), 'sum_rank1_zero_complex64')
   end subroutine
 
   ! vector arguments corner case: all 0-sized vectors
@@ -259,6 +267,8 @@ contains
     call write_result((global_sum([integer(int64)::]) == 0), 'sum_rank1_all_zero_int64')
     call write_result((global_sum([real(real32)::]) == 0), 'sum_rank1_all_zero_real32')
     call write_result((global_sum([real(real64)::]) == 0), 'sum_rank1_all_zero_real64')
+    call write_result((global_sum([complex(real32)::]) == 0), 'sum_rank1_all_zero_complex32')
+    call write_result((global_sum([complex(real64)::]) == 0), 'sum_rank1_all_zero_complex64')
   end subroutine
 
   ! scalar argument case
@@ -379,6 +389,8 @@ contains
     a = (a*(a+1))/2
     call write_result((global_dot_product(real(x,real32),real(y,real32)) == a), 'dot_prod_real32')
     call write_result((global_dot_product(real(x,real64),real(y,real64)) == a), 'dot_prod_real64')
+    call write_result((global_dot_product(cmplx(x,x,real32),cmplx(y,y,real32)) == 2*a), 'dot_prod_complex32')
+    call write_result((global_dot_product(cmplx(x,x,real64),cmplx(y,y,real64)) == 2*a), 'dot_prod_complex64')
   end subroutine
 
   ! case with 0-sized vector
@@ -391,12 +403,16 @@ contains
     a = (a*(a+1))/2
     call write_result((global_dot_product(real(x,real32),real(y,real32)) == a), 'dot_prod_zero_real32')
     call write_result((global_dot_product(real(x,real64),real(y,real64)) == a), 'dot_prod_zero_real64')
+    call write_result((global_dot_product(cmplx(x,x,real32),cmplx(y,y,real32)) == 2*a), 'dot_prod_zero_complex32')
+    call write_result((global_dot_product(cmplx(x,x,real64),cmplx(y,y,real64)) == 2*a), 'dot_prod_zero_complex64')
   end subroutine
 
   ! corner case with all 0-sized vectors
   subroutine dot_prod_all_zero
     call write_result((global_dot_product([real(real32)::],[real(real32)::]) == 0), 'dot_prod_all_zero_real32')
     call write_result((global_dot_product([real(real64)::],[real(real64)::]) == 0), 'dot_prod_all_zero_real64')
+    call write_result((global_dot_product([complex(real32)::],[complex(real32)::]) == 0), 'dot_prod_all_zero_complex32')
+    call write_result((global_dot_product([complex(real64)::],[complex(real64)::]) == 0), 'dot_prod_all_zero_complex64')
   end subroutine
 
 end program

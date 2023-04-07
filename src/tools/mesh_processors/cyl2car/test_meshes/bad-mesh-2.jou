@@ -1,9 +1,0 @@
-# Mesh with tets that must be transformed
-brick x 1 
-volume 1  move x .5 y .5 z .5 
-volume 1  interval 1
-volume 1  scheme Tetmesh
-mesh volume 1 
-set large exodus file off
-export Genesis  "bad-mesh-2.exo" dimension 3 
-
