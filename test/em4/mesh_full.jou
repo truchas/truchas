@@ -1,0 +1,26 @@
+# Cubit 16.08
+
+reset
+
+########## GEOMETRY ##########
+create cylinder height 4 radius 2
+
+
+########## BLOCKS AND SIDESETS ##########
+block 1 add volume 1
+block 1 name "stuff"
+
+sideset 2 add surface 2 3
+sideset 2 name "ends"
+sideset 3 add surface 1
+sideset 3 name "outside"
+
+
+########## MESHING ##########
+volume all scheme tetmesh
+volume all size 0.25
+mesh volume all
+
+
+########## EXPORT ##########
+export genesis "mesh_full.gen" overwrite
