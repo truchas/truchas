@@ -1,0 +1,31 @@
+# Cubit 16.08
+
+reset
+
+########## GEOMETRY ##########
+create cylinder height 0.25 radius 2
+webcut volume 1  with plane xplane offset 0 
+webcut volume 1  with plane yplane offset 0 
+delete volume 2 1  
+
+
+########## BLOCKS AND SIDESETS ##########
+block 1 add volume 3
+block 1 name "stuff"
+
+sideset 1 add surface 17 19
+sideset 1 name "symmetry"
+sideset 2 add surface 18 20
+sideset 2 name "ends"
+sideset 3 add surface 21
+sideset 3 name "outside"
+
+
+########## MESHING ##########
+volume all scheme tetmesh
+volume 3 size 0.25
+mesh volume 3
+
+
+########## EXPORT ##########
+export genesis "mesh_flat.gen" overwrite

@@ -55,12 +55,16 @@ contains
     model_size = 3*this%model%mesh%nnode
   end function model_size
 
-  subroutine compute_f(this, t, u, udot, f)
+  subroutine compute_f(this, t, u, udot, f, ax)
     class(sm_nlsol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:), udot(:)
     real(r8), intent(out), contiguous, target :: f(:)
+    logical, intent(in), optional :: ax
     real(r8), pointer :: u2(:,:), f2(:,:)
+    if (present(ax)) then
+      ASSERT(.not.ax)
+    end if
     u2(1:3, 1:this%model%mesh%nnode) => u
     f2(1:3, 1:this%model%mesh%nnode) => f
     call this%model%compute_residual(t, u2, f2)

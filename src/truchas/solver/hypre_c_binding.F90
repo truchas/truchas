@@ -40,7 +40,7 @@ module hypre_c_binding
   use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
   implicit none
   private
-  
+
   integer(c_int), parameter, public :: HYPRE_ERROR_GENERIC = 1
   integer(c_int), parameter, public :: HYPRE_ERROR_MEMORY  = 2
   integer(c_int), parameter, public :: HYPRE_ERROR_ARG     = 4
@@ -117,6 +117,37 @@ module hypre_c_binding
   public :: HYPRE_ParCSRHybridGetDSCGNumIterations
   public :: HYPRE_ParCSRHybridGetPCGNumIterations
   public :: HYPRE_ParCSRHybridGetFinalRelativeResidualNorm
+
+  !! Functions from the AMS interface
+  public :: HYPRE_AMSCreate
+  public :: HYPRE_AMSDestroy
+  public :: HYPRE_Ext_AMSSetup
+  public :: HYPRE_Ext_AMSSolve
+  !public :: HYPRE_AMSSetDimension
+  public :: HYPRE_Ext_AMSSetDiscreteGradient
+  public :: HYPRE_Ext_AMSSetCoordinateVectors
+  public :: HYPRE_Ext_AMSSetEdgeConstantVectors
+  !public :: HYPRE_AMSSetInterpolations
+  public :: HYPRE_Ext_AMSSetAlphaPoissonMatrix
+  public :: HYPRE_Ext_AMSSetBetaPoissonMatrix
+  public :: HYPRE_Ext_AMSSetInteriorNodes
+  public :: HYPRE_AMSSetProjectionFrequency
+  public :: HYPRE_AMSSetMaxIter
+  public :: HYPRE_AMSSetTol
+  public :: HYPRE_AMSSetCycleType
+  !public :: HYPRE_AMSSetCycleType
+  public :: HYPRE_AMSSetPrintLevel
+  !public :: HYPRE_AMSSetSmoothingOptions
+  !public :: HYPRE_AMSSetAlphaAMGOptions
+  !public :: HYPRE_AMSSetAlphaAMGCoarseRelaxType
+  !public :: HYPRE_AMSSetBetaAMGOptions
+  !public :: HYPRE_AMSSetBetaAMGCoarseRelaxType
+  !public :: HYPRE_AMSGetNumIterations
+  !public :: HYPRE_AMSGetFinalRelativeResidualNorm
+  public :: HYPRE_AMSProjectOutGradients
+  !public :: HYPRE_AMSConstructDiscreteGradient
+  public :: HYPRE_AMSGetNumIterations
+  public :: HYPRE_AMSGetFinalRelativeResidualNorm
 
   !! Miscelaneous functions
   public :: HYPRE_ClearAllErrors
@@ -607,6 +638,128 @@ module hypre_c_binding
       import c_ptr, c_int, c_double
       type(c_ptr), value :: solver
       real(c_double), intent(out) :: norm
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+  !!
+  !! AMS SOLVER INTERFACES
+  !!
+
+  interface
+    function HYPRE_AMSCreate (solver) &
+        result(ierr) bind(c, name="HYPRE_AMSCreate")
+      import c_ptr, c_int
+      type(c_ptr), intent(inout) :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSDestroy (solver) &
+        result(ierr) bind(c, name="HYPRE_AMSDestroy")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetup (solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetup")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSolve (solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSolve")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetDiscreteGradient (solver, G) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetDiscreteGradient")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, G
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetCoordinateVectors (solver, x, y, z) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetCoordinateVectors")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, x, y, z
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetEdgeConstantVectors (solver, Gx, Gy, Gz) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetEdgeConstantVectors")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, Gx, Gy, Gz
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetAlphaPoissonMatrix (solver, A_alpha) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetAlphaPoissonMatrix")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A_alpha
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetBetaPoissonMatrix (solver, A_beta) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetBetaPoissonMatrix")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A_beta
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_AMSSetInteriorNodes (solver, interior_nodes) &
+        result(ierr) bind(c, name="HYPRE_Ext_AMSSetInteriorNodes")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, interior_nodes
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSSetProjectionFrequency (solver, projection_frequency) &
+        result(ierr) bind(c, name="HYPRE_AMSSetProjectionFrequency")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: projection_frequency
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSSetMaxIter (solver, maxit) &
+        result(ierr) bind(c, name="HYPRE_AMSSetMaxIter")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: maxit
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSSetTol (solver, tol) &
+        result(ierr) bind(c, name="HYPRE_AMSSetTol")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: tol
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSSetCycleType (solver, cycle_type) &
+        result(ierr) bind(c, name="HYPRE_AMSSetCycleType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: cycle_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSSetPrintLevel (solver, print_level) &
+        result(ierr) bind(c, name="HYPRE_AMSSetPrintLevel")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: print_level
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSProjectOutGradients (solver, x) &
+        result(ierr) bind(c, name="HYPRE_AMSProjectOutGradients")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSGetNumIterations (solver, num_iterations) &
+        result(ierr) bind(c, name="HYPRE_AMSGetNumIterations")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int) :: num_iterations
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_AMSGetFinalRelativeResidualNorm (solver, rel_resid_norm) &
+        result(ierr) bind(c, name="HYPRE_AMSGetFinalRelativeResidualNorm")
+      import c_ptr, c_double, c_int
+      type(c_ptr), value :: solver
+      real(c_double) :: rel_resid_norm
       integer(c_int) :: ierr
     end function
   end interface

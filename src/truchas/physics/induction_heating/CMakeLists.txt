@@ -1,6 +1,5 @@
 target_sources(truchas PRIVATE
   ih_driver.F90
-  ih_legacy_bc.F90
   geometry_model_type.F90
   em_properties.F90
   EM_graphics_output.F90
@@ -22,4 +21,9 @@ target_sources(truchas PRIVATE
   tdme_solver_type.F90
   tdme_cg_solver_type.F90
   tdme_joule_heat_sim_type.F90
+  EM_FD_solver_type.F90
+  emfd_nlsol_solver_type.F90
+  em_bc_type.F90
+  ams_precon_type.F90
+  hiptmair_precon_type.F90
 )

@@ -209,6 +209,7 @@ contains
         f(:,j) = f(:,j) + this%omega * (x - f(:,j))
         !f(:,j) = (f(:,j) - this%omega*f(:,j)) + this%omega*x
       end do
+      f(:,j) = -f(:,j)
     end do
 
     call stop_timer("precon-apply")
