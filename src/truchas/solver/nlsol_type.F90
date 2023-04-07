@@ -50,6 +50,7 @@ module nlsol_type
   end type nlsol
 
   type, abstract, public :: nlsol_model
+    real(r8), allocatable :: rhs(:) ! made accessible to solvers
   contains
     procedure(model_size), deferred :: size
     procedure(compute_f), deferred :: compute_f
@@ -64,12 +65,13 @@ module nlsol_type
       import nlsol_model
       class(nlsol_model), intent(in) :: this
     end function
-    subroutine compute_f(this, t, u, udot, f)
+    subroutine compute_f(this, t, u, udot, f, ax)
       import nlsol_model, r8
       class(nlsol_model) :: this
       real(r8), intent(in) :: t
       real(r8), intent(in), contiguous, target :: u(:), udot(:)
       real(r8), intent(out), contiguous, target :: f(:)
+      logical, intent(in), optional :: ax
     end subroutine
     subroutine apply_precon(this, t, u, f)
       import nlsol_model, r8
@@ -168,6 +170,12 @@ contains
       return
     end if
 
+    call params%get('verbosity', this%verbose, default=1, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = context//errmsg
+      return
+    end if
+
     !! Initialize the NKA structure.
     if (maxv > 0) then
       allocate(this%nka)
@@ -256,7 +264,7 @@ contains
       if (allocated(this%nka)) call this%nka%accel_update(du)
 
       !! Next solution iterate.
-      u = u - du
+      u = u + du
 
       !! Error estimate.
       error = this%model%du_norm(t, u, du)

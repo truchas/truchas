@@ -29,13 +29,13 @@ contains
     real(r8) :: source_times(MAXSV-1), source_frequency(MAXSV), uniform_source(MAXSV)
 
     !! Namelist variables
-    logical :: use_legacy_bc, graphics_output
+    logical :: use_emfd_solver, use_legacy_bc, graphics_output
     integer :: steps_per_cycle, max_source_cycles, cg_max_iter, output_level
     real(r8) :: matl_change_threshold, steady_state_tol, cg_tol
     character(string_len) :: data_mapper_kind, em_domain_type
     character :: symmetry_axis
     namelist /electromagnetics/ symmetry_axis, source_times, source_frequency, &
-      uniform_source, matl_change_threshold, data_mapper_kind, &
+      uniform_source, matl_change_threshold, use_emfd_solver, data_mapper_kind, &
       steps_per_cycle, steady_state_tol, max_source_cycles, cg_max_iter, cg_tol, &
       output_level, graphics_output, &
       use_legacy_bc, em_domain_type
@@ -56,6 +56,8 @@ contains
     uniform_source = NULL_R
     matl_change_threshold = NULL_R
     data_mapper_kind = NULL_C
+
+    use_emfd_solver = .false.
 
     steps_per_cycle = NULL_I
     max_source_cycles = NULL_I
@@ -79,6 +81,8 @@ contains
     call broadcast(uniform_source)
     call broadcast(matl_change_threshold)
     call broadcast(data_mapper_kind)
+
+    call broadcast(use_emfd_solver)
 
     call broadcast(steps_per_cycle)
     call broadcast(max_source_cycles)
@@ -138,14 +142,45 @@ contains
       call params%set('matl-change-threshold', matl_change_threshold)
     end if
 
-    !! Time domain Joule heat solver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    call params%set('frequency-domain-solver', use_emfd_solver)
 
-    !! All these parameters have default values which are applied, if needed,
-    !! when the parameter list is consumed.
+    if (use_emfd_solver) then
+      ! no parameters
+      
+    else ! use the time domain solver
 
-    if (steps_per_cycle /= NULL_I) then
-      if (steps_per_cycle < 1) call TLS_fatal('STEPS_PER_CYCLE must be > 0')
-      call params%set('steps-per-cycle', steps_per_cycle)
+      !! Time domain Joule heat solver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !! All these parameters have default values which are applied, if needed,
+      !! when the parameter list is consumed.
+      if (steps_per_cycle /= NULL_I) then
+        if (steps_per_cycle < 1) call TLS_fatal('STEPS_PER_CYCLE must be > 0')
+        call params%set('steps-per-cycle', steps_per_cycle)
+      end if
+
+      if (steady_state_tol /= NULL_R) then
+        if (steady_state_tol <= 0.0_r8) call TLS_fatal('STEADY_STATE_TOL must be > 0.0')
+        call params%set('steady-state-tol', steady_state_tol)
+      end if
+
+      if (max_source_cycles /= NULL_I) then
+        if (max_source_cycles < 1) call TLS_fatal('MAX_SOURCE_CYCLES must be > 0')
+        call params%set('max-source-cycles', max_source_cycles)
+      end if
+
+      if (cg_max_iter /= NULL_I) then
+        if (cg_max_iter < 1) call TLS_fatal('CG_MAX_ITER must be > 0')
+        call params%set('cg-max-iter', cg_max_iter)
+      end if
+
+      if (cg_tol /= NULL_R) then
+        if (cg_tol <= 0.0_r8 .or. cg_tol >= 0.1_r8) call TLS_fatal('CG_TOL must be > 0.0 and < 0.1')
+        call params%set('cg-tol', cg_tol)
+      end if
+
+      if (output_level /= NULL_I) call params%set('output-level', output_level)
+
+      call params%set('graphics-output', graphics_output)
     end if
 
     if (steady_state_tol /= NULL_R) then

@@ -73,7 +73,7 @@ module fhypre
 #endif
   implicit none
   private
-  
+
   !! Error codes
   public :: HYPRE_ERROR_GENERIC, HYPRE_ERROR_MEMORY, HYPRE_ERROR_ARG, HYPRE_ERROR_CONV
 
@@ -161,6 +161,37 @@ module fhypre
   public :: fHYPRE_ParCSRHybridGetDSCGNumIterations
   public :: fHYPRE_ParCSRHybridGetPCGNumIterations
   public :: fHYPRE_ParCSRHybridGetFinalRelativeResidualNorm
+
+  !! AMS interface procedures
+  public :: fHYPRE_AMSCreate
+  public :: fHYPRE_AMSDestroy
+  public :: fHYPRE_AMSSetup
+  public :: fHYPRE_AMSSolve
+  !public :: fHYPRE_AMSSetDimension
+  public :: fHYPRE_AMSSetDiscreteGradient
+  public :: fHYPRE_AMSSetCoordinateVectors
+  public :: fHYPRE_AMSSetEdgeConstantVectors
+  !public :: fHYPRE_AMSSetInterpolations
+  public :: fHYPRE_AMSSetAlphaPoissonMatrix
+  public :: fHYPRE_AMSSetBetaPoissonMatrix
+  public :: fHYPRE_AMSSetInteriorNodes
+  public :: fHYPRE_AMSSetProjectionFrequency
+  public :: fHYPRE_AMSSetMaxIter
+  public :: fHYPRE_AMSSetTol
+  public :: fHYPRE_AMSSetCycleType
+  !public :: fHYPRE_AMSSetCycleType
+  public :: fHYPRE_AMSSetPrintLevel
+  !public :: fHYPRE_AMSSetSmoothingOptions
+  !public :: fHYPRE_AMSSetAlphaAMGOptions
+  !public :: fHYPRE_AMSSetAlphaAMGCoarseRelaxType
+  !public :: fHYPRE_AMSSetBetaAMGOptions
+  !public :: fHYPRE_AMSSetBetaAMGCoarseRelaxType
+  !public :: fHYPRE_AMSGetNumIterations
+  !public :: fHYPRE_AMSGetFinalRelativeResidualNorm
+  public :: fHYPRE_AMSProjectOutGradients
+  !public :: fHYPRE_AMSConstructDiscreteGradient
+  public :: fHYPRE_AMSGetNumIterations
+  public :: fHYPRE_AMSGetFinalRelativeResidualNorm
 
   !! Miscellaneous procedures
   public :: fHYPRE_ClearAllErrors
@@ -678,6 +709,124 @@ contains
     integer, intent(out) :: ierr
     ierr = HYPRE_ParCSRHybridGetFinalRelativeResidualNorm (solver, norm)
   end subroutine
+
+  !!!! AMS INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_AMSCreate(solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSCreate(solver)
+  end subroutine
+
+  subroutine fHYPRE_AMSDestroy(solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSDestroy(solver)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetup(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_AMSSolve(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetDiscreteGradient(solver, G, ierr)
+    type(c_ptr), intent(in) :: solver, G
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetDiscreteGradient(solver, G)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetCoordinateVectors(solver, x, y, z, ierr)
+    type(c_ptr), intent(in) :: solver, x, y, z
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetCoordinateVectors(solver, x, y, z)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetEdgeConstantVectors(solver, Gx, Gy, Gz, ierr)
+    type(c_ptr), intent(in) :: solver, Gx, Gy, Gz
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetEdgeConstantVectors(solver, Gx, Gy, Gz)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetAlphaPoissonMatrix(solver, A_alpha, ierr)
+    type(c_ptr), intent(in) :: solver, A_alpha
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetAlphaPoissonMatrix(solver, A_alpha)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetBetaPoissonMatrix(solver, A_beta, ierr)
+    type(c_ptr), intent(in) :: solver, A_beta
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetBetaPoissonMatrix(solver, A_beta)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetInteriorNodes(solver, interior_nodes, ierr)
+    type(c_ptr), intent(in) :: solver, interior_nodes
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_AMSSetInteriorNodes(solver, interior_nodes)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetProjectionFrequency(solver, projection_frequency, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: projection_frequency
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSSetProjectionFrequency(solver, projection_frequency)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetMaxIter(solver, maxit, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: maxit
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSSetMaxIter(solver, maxit)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetTol(solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSSetTol(solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetCycleType(solver, cycle_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: cycle_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSSetCycleType(solver, cycle_type)
+  end subroutine
+
+  subroutine fHYPRE_AMSSetPrintLevel(solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSSetPrintLevel(solver, print_level)
+  end subroutine
+
+  subroutine fHYPRE_AMSProjectOutGradients(solver, x, ierr)
+    type(c_ptr), intent(in) :: solver, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSProjectOutGradients(solver, x)
+  end subroutine
+
+  subroutine fHYPRE_AMSGetNumIterations(solver, num_iterations, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: num_iterations
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSGetNumIterations(solver, num_iterations)
+  end subroutine
+
+  subroutine fHYPRE_AMSGetFinalRelativeResidualNorm(solver, rel_resid_norm, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(out) :: rel_resid_norm
+    integer, intent(out) :: ierr
+    ierr = HYPRE_AMSGetFinalRelativeResidualNorm(solver, rel_resid_norm)
+  end subroutine
+
 
   !!!! MISCELLANEOUS PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

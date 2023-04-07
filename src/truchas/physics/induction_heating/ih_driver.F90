@@ -298,6 +298,46 @@ contains
 
   end subroutine compute_joule_heat_emtd
 
+    !! Frequency-domain EM driver
+    subroutine compute_joule_heat_emfd(eps_relative, mu_relative, q)
+
+      real(rk), intent(in) :: eps_relative(:), mu_relative(:)
+      real(rk), intent(out) :: q(:)
+
+      real(rk), parameter :: PI = 3.1415926535897932385_rk
+      real(rk) :: omega, t, epsr(mesh%ncell), epsi(mesh%ncell), mu(mesh%ncell)
+
+      ! Initialize temporarily moved here -- see emfd_init subroutine
+      block
+        use em_bc_type
+        type(em_bc), pointer :: bc => null()
+        type(parameter_list), pointer :: plist, plist_bc => null()
+        plist => params%sublist("emfd-solver")
+        allocate(bc)
+        if (params%is_sublist("bc")) plist_bc => params%sublist('bc')
+        call bc%init(mesh, use_custom_bcs, plist_bc)
+        print *, 'init2'
+        call emfd_solver%init(mesh, bc, plist) ! solver takes ownership of bc
+        print *, 'init3'
+      end block
+
+      print *, "eps0: ", eps0
+
+      t = 0 ! TODO: move to time-dependent BCs
+      !epsr = eps0 * eps_relative
+      epsi = 0 ! TODO: Currently not exposed to user input. Needed for dielectric heating.
+      !mu = mu0 * mu_relative
+      omega = 2 * PI * source_frequency()
+
+      print *, 'setup'
+      call emfd_solver%setup(t, eps_relative, epsi, mu_relative, sigma, omega)
+      print *, 'solve'
+      call emfd_solver%solve
+      print *, 'compute'
+      call emfd_solver%compute_heat_source(q)
+
+    end subroutine compute_joule_heat_emfd
+
   !! Set the Joule heat to 0. Used when the magnetic source is 0 and
   !! the actual computation is unnecessary.
 

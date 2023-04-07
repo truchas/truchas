@@ -1,0 +1,99 @@
+################################################################################
+# 
+# AXISYMMETRIC INDUCTION HEATING OF UNIFORM CORE
+# 
+# Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
+# one quarter of a thin cross-sectional slab, surrounded by some free-space.
+# The EM permeability and conductivity are temperature dependent.  The hex mesh
+# does not include any free space region.  The tet mesh conforms to the hex
+# mesh in the conductor, being obtained by subdivision of the hex cells.
+#
+################################################################################
+
+&MESH
+  mesh_file = 'mesh_full.gen'
+  coordinate_scale_factor = 0.01
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0e-6
+  output_dt = 1.0e-6
+/
+
+&NUMERICS /
+
+&PHYSICS
+  materials = 'stuff'
+  heat_transport = T
+  electromagnetics = T
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-4
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-4
+  verbose_stepping = T
+/
+
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 300.0
+/
+
+
+### BOUNDARY CONDITIONS #######################################################
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  !face_set_ids = 1, 2, 3
+  face_set_ids = 2, 3
+  flux = 0.0
+/
+
+
+### INDUCTION HEATING ##########################################################
+
+&ALTMESH
+  altmesh_file = 'mesh_full.gen'
+  altmesh_coordinate_scale_factor = 0.01
+/
+
+&ELECTROMAGNETICS
+  emfd_solver = T
+
+  !EM_domain_type = 'quarter_cylinder'
+  EM_domain_type = 'full_cylinder'
+  uniform_source = 1e4
+  !source_frequency = 1.0e9
+  source_frequency = 1.0e2
+
+  steps_per_cycle = 12
+  maximum_source_cycles = 4
+  SS_Stopping_Tolerance = 0.1
+  Maximum_CG_Iterations = 100
+  CG_Stopping_Tolerance = 1.0e-8
+  material_change_threshold = 0.6
+  output_level = 2
+/
+
+
+### MATERIALS ##################################################################
+
+### STUFF ###
+
+&MATERIAL
+  name = 'stuff'
+  density = 100.0
+  specific_heat = 100.0
+  conductivity = 1.0
+  electrical_conductivity = 1.0 !e-2
+  !electric_susceptibility = 1.0
+  !magnetic_susceptibility = 1.0e4
+/
