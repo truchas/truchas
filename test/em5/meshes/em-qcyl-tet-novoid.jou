@@ -1,0 +1,40 @@
+create Cylinder height 1 radius 10
+move volume 1 x 0 y 0 z 0.5 include_merged
+webcut volume 1  with plane xplane noimprint nomerge 
+webcut volume 1  with plane yplane noimprint nomerge 
+delete volume 1 2
+compress volume all
+webcut volume 1  with cylinder radius 7 axis z
+webcut volume 2  with cylinder radius 5 axis z 
+imprint volume all
+merge volume all
+compress all
+
+block 1 add volume 2 3
+block 1 name "conductor"
+
+delete volume 1
+#block 2 add volume 1
+#block 2 name "free space"
+
+sideset 1 add surface 2 # where H source field is applied
+sideset 1 name "outer surface"
+
+sideset 2 add surface with x_coord == 0
+sideset 2 add surface with y_coord == 0
+sideset 2 name "xy symmetry planes"
+
+sideset 3 add surface with z_coord == 0
+sideset 3 add surface with z_coord == 1
+sideset 2 name "z symmetry planes"
+
+set trimesher surface gradation 1.2
+set trimesher volume gradation 1.2
+
+volume 2 size {size_bl}
+volume 2 scheme tetmesh
+mesh volume 2
+
+volume 3 size {size_core}
+volume 3 scheme tetmesh
+mesh volume 3

@@ -327,7 +327,7 @@ contains
   subroutine get_scalar_func(plist, param, f, stat, errmsg)
 
     use parameter_list_type
-    use scalar_func_table, only: lookup_func  !TODO: pass underlying object as argument
+    use func_table, only: lookup_func  !TODO: pass underlying object as argument
 
     type(parameter_list), intent(inout) :: plist
     character(*), intent(in) :: param

@@ -59,17 +59,36 @@ The boolean attribute **is_fluid** is used to indicate whether or not the materi
 
 The dynamic viscosity (mass per length per time) of a material or phase is specified by **viscosity** for a constant or **viscosity_func** for a function of temperature. This is required for viscous flow problems (:ref:`FLOW<FLOW_Namelist>` namelist variable **inviscid = F**).
 
-Electromagentic Properties
+Electromagnetic Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The following property variables are used by the induction heating model:
+The following property variables are used by the electromagnetic models:
 
+* **relative_permittivity**, **relative_permittivity_func**
+* **relative_permeability**, **relative_permeability_func**
+* **dielectric_loss_tangent**, **dielectric_loss_tangent_func**
 * **electrical_conductivity**, **electrical_conductivity_func**
-* **electric_susceptibility**, **electric_susceptibility_func**
-* **magnetic_susceptibility**, **magnetic_susceptibility_func**
 
-The electrical conductivity of a material or phase is specified using either **electrical_conductivity** for aconstant, or **electrical_conductivity_func** for a function of temperature. The default value is :math:`0`. The electromagnetics solver assumes SI units by default and the units of electrical conductivity are :math:`Siemens\:per\:meter`. To use different units, the values for the :ref:`PHYSICAL_CONSTANTS<PHYSICAL_CONSTANTS_Namelist>` namelist variables **vacuum_permeability** and **vacuum_permittivity** must be redefined appropriately.
+The relative permittivity :math:`\epsilon_r` of a material or phase is
+specified using either **relative_permittivity** for a constant, or
+**relative_permittivity_func** for a function of temperature. Its default
+value is 1. In the case of complex permittivity :math:`\epsilon_r =
+\epsilon' + i \epsilon''` the dielectric loss tangent, :math:`\tan\delta=
+\epsilon''/\epsilon'`, is specified using either **dielectric_loss_tangent**
+for a constant, or **dielectric_loss_tangent_func** for a function of
+temperature. Its default value is 0.
 
-The electric susceptibility :math:`\chi_e` of a material or phase is specified using either **electric_susceptibility** fora constant, or **electric_susceptibility_func** for a function of temperature. The relative permittivity is :math:`1 +\chi_e`. This property has a default value of zero, which is appropriate in most cases.
+The relative permeability :math:`\mu_r` of a material or phase is
+specified using either **relative_permeability** for a constant, or
+**relative_permeability_func** for a function of temperature. Its default
+value is 1.
+
+The electrical conductivity of a material or phase is specified using either
+**electrical_conductivity** for a constant, or **electrical_conductivity_func**
+for a function of temperature. Its default value is 0. Note that the
+electromagnetics solvers assume SI units by default and the units of electrical
+conductivity are Siemens per meter. To use different units, the
+PHYSICAL_CONSTANTS namelist variables :ref:`vacuum_permittivity<PhyCo_VPt>` and
+:ref:`vacuum_permeability<PhyCo_VPm>` must be redefined appropriately.
 
 Thermomechanical Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

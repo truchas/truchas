@@ -1,8 +1,0 @@
-# Mesh with negative r-coordinates.
-brick x 1 
-volume 1  interval 1
-volume 1  scheme Map
-mesh volume 1 
-set large exodus file off
-export Genesis  "bad-mesh-1.exo" dimension 3 
-

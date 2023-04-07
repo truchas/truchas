@@ -17,6 +17,8 @@ module sort_utilities
   interface insertion_sort
     module procedure insertion_sort_3r8r8, insertion_sort_ir8, insertion_sort_r8
     module procedure insertion_sort_i4
+    module procedure insertion_sort_r8i4, insertion_sort_i4i4
+    module procedure insertion_sort_c8i4
   end interface insertion_sort
 
   interface quick_sort
@@ -111,6 +113,90 @@ contains
     end do
 
   end subroutine insertion_sort_ir8
+
+  subroutine insertion_sort_c8i4 (x,key)
+    complex(r8), intent(inout) :: x(:)
+    integer,  intent(inout) :: key(:)
+
+    complex(r8) :: tmpX
+    integer  :: tmp
+    integer  :: i,j
+
+    do i = 2,size(key)
+      tmp  = key(i)
+      tmpX = x(i)
+      j = i
+      do while (j>1)
+        ! fortran doesn't guarantee short-circuiting, so we segfault if the two checks are together
+        if (key(j-1)>tmp) then
+          key(j) = key(j-1)
+          x(j)   = x(j-1)
+          j = j-1
+        else
+          exit
+        end if
+      end do
+      key(j) = tmp
+      x(j)   = tmpX
+    end do
+
+  end subroutine insertion_sort_c8i4
+
+  subroutine insertion_sort_r8i4 (x,key)
+    real(r8), intent(inout) :: x(:)
+    integer,  intent(inout) :: key(:)
+
+    real(r8) :: tmpX
+    integer  :: tmp
+    integer  :: i,j
+
+    do i = 2,size(key)
+      tmp  = key(i)
+      tmpX = x(i)
+      j = i
+      do while (j>1)
+        ! fortran doesn't guarantee short-circuiting, so we segfault if the two checks are together
+        if (key(j-1)>tmp) then
+          key(j) = key(j-1)
+          x(j)   = x(j-1)
+          j = j-1
+        else
+          exit
+        end if
+      end do
+      key(j) = tmp
+      x(j)   = tmpX
+    end do
+
+  end subroutine insertion_sort_r8i4
+
+  subroutine insertion_sort_i4i4 (x,key)
+    integer,  intent(inout) :: x(:)
+    integer, intent(inout) :: key(:)
+
+    integer  :: tmpX
+    integer  :: tmp
+    integer  :: i,j
+
+    do i = 2,size(key)
+      tmp  = key(i)
+      tmpX = x(i)
+      j = i
+      do while (j>1)
+        ! fortran doesn't guarantee short-circuiting, so we segfault if the two checks are together
+        if (key(j-1)>tmp) then
+          key(j) = key(j-1)
+          x(j)   = x(j-1)
+          j = j-1
+        else
+          exit
+        end if
+      end do
+      key(j) = tmp
+      x(j)   = tmpX
+    end do
+
+  end subroutine insertion_sort_i4i4
 
   subroutine insertion_sort_r8 (key)
     real(r8), intent(inout) :: key(:)

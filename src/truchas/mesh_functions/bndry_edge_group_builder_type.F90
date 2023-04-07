@@ -87,7 +87,7 @@ contains
       gmask = .false.
       associate (gface => index(xgroup(i):xgroup(i+1)-1))
         do j = 1, size(gface)
-          associate (fedge => abs(this%mesh%fedge(:,gface(j))))
+          associate (fedge => this%mesh%fedge(:,gface(j)))
             gmask(fedge) = .true.
           end associate
         end do
@@ -98,14 +98,14 @@ contains
           gmask(omit_edge_list(j)) = .false.
         end do
       end if
+      !NB: next call overwrites any off-process edges in omit_edge_list
       call this%mesh%edge_imap%gather_offp(gmask)
 
       !! Generate the list of edge indices
-      gsize = count(gmask(:this%mesh%nedge_onp))
+      gsize = count(gmask)
       allocate(glist(i)%array(gsize))
       n = 0
       do j = 1, size(gmask)
-        if (n >= gsize) exit ! no more to be found
         if (gmask(j)) then
           n = n + 1
           glist(i)%array(n) = j
@@ -135,6 +135,7 @@ contains
       xgroup(i+1) = xgroup(i) + size(glist(i)%array)
       index(xgroup(i):xgroup(i+1)-1) = glist(i)%array
     end do
+
   end subroutine get_edge_groups
 
 end module bndry_edge_group_builder_type

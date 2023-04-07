@@ -1,0 +1,8 @@
+
+#{size_bl = 0.12}
+#{size_core  = 0.2}
+#{size_void  = 0.5}
+
+playback "em-qcyl-tet.jou"
+
+export mesh "em-qcyl-tet-large.gen" overwrite

@@ -38,7 +38,6 @@ add_subdirectory(discrete_operators)
 add_subdirectory(distributed_mesh)
 add_subdirectory(drivers)
 add_subdirectory(exodus)
-add_subdirectory(nka)
 add_subdirectory(functions)
 add_subdirectory(mesh_functions)
 add_subdirectory(data_mapping)
@@ -50,6 +49,7 @@ add_subdirectory(output)
 add_subdirectory(partitioning)
 add_subdirectory(flow)
 add_subdirectory(solid_mechanics)
+add_subdirectory(electromagnetics)
 add_subdirectory(physics)
 add_subdirectory(setup)
 add_subdirectory(solver)
@@ -59,11 +59,14 @@ add_subdirectory(truchasio)
 add_subdirectory(vtkhdf)
 
 target_link_libraries(truchas PUBLIC
-    LAPACK::LAPACK exodus hypre petaca hdf5::hdf5 metis scorpio MPI::MPI_Fortran netcdf
+    LAPACK::LAPACK exodus hypre petaca hdf5::hdf5 METIS::METIS scorpio MPI::MPI_Fortran netcdf
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)
   target_link_libraries(truchas PUBLIC portage::portage)
+endif()
+if(USE_MUMPS)
+  target_link_libraries(truchas PUBLIC MUMPS::DMUMPS MUMPS::ZMUMPS)
 endif()
 
 target_include_directories(truchas PUBLIC

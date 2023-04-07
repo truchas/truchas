@@ -44,15 +44,17 @@ contains
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
     use solid_mechanics_driver,    only: read_solid_mechanics_namelists
-    use ih_driver,                 only: read_ih_namelists
+    use em_heat_driver,            only: read_em_heat_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
+    use complex_function_namelist, only: read_complex_function_namelists
+    use complex_vfunction_namelist,only: read_complex_vfunction_namelists
     use material_namelist,         only: read_material_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
-    use physics_module,            only: heat_transport, flow, solid_mechanics, electromagnetics
+    use physics_module,            only: heat_transport, flow, solid_mechanics, em_heating
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers
@@ -86,10 +88,12 @@ contains
     call broadcast (title)
      
     call read_function_namelists (lun)
+    call read_complex_function_namelists (lun)
     call read_physical_constants (lun)
     call read_toolpath_namelists (lun)
     call read_toolhead_namelists (lun)
     call read_vfunction_namelists (lun)
+    call read_complex_vfunction_namelists (lun)
 
     ! read current physics data
     call physics_input (lun)
@@ -123,7 +127,7 @@ contains
     if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
     ! read namelists for induction heating
-    if (electromagnetics) call read_ih_namelists(lun)
+    if (em_heating) call read_em_heat_namelists(lun)
 
     ! Read diffusion solver namelists
     if (ds_enabled) then

@@ -85,6 +85,18 @@ contains
       call broadcast(x)
       call write_result((x == a), 'bcast_scalar_real64')
     end block
+    block
+      complex(real32) :: x
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result((x == (1,-1)*a), 'bcast_scalar_complex32')
+    end block
+    block
+      complex(real64) :: x
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result((x == (1,-1)*a), 'bcast_scalar_complex64')
+    end block
   end subroutine
 
   ! rank-1 array case
@@ -120,6 +132,18 @@ contains
       x = merge(a, 0, is_iop)
       call broadcast(x)
       call write_result(all(x == a), 'bcast_rank1_real64')
+    end block
+    block
+      complex(real32) :: x(size(a))
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank1_complex32')
+    end block
+    block
+      complex(real64) :: x(size(a))
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank1_complex64')
     end block
   end subroutine
 
@@ -157,6 +181,18 @@ contains
       call broadcast(x)
       call write_result(all(x == a), 'bcast_rank2_real64')
     end block
+    block
+      complex(real32) :: x(2,2)
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank2_complex32')
+    end block
+    block
+      complex(real64) :: x(2,2)
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank2_complex64')
+    end block
   end subroutine
 
   ! rank-3 array case
@@ -192,6 +228,18 @@ contains
       x = merge(a, 0, is_iop)
       call broadcast(x)
       call write_result(all(x == real(a,real64)), 'bcast_rank3_real64')
+    end block
+    block
+      complex(real32) :: x(2,1,2)
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank3_complex32')
+    end block
+    block
+      complex(real64) :: x(2,1,2)
+      x = (1,-1)*merge(a, 0, is_iop)
+      call broadcast(x)
+      call write_result(all(x == (1,-1)*a), 'bcast_rank3_complex64')
     end block
   end subroutine
 
@@ -234,6 +282,18 @@ contains
       x = xx
       call broadcast(x(1::2,1::2))
       call write_result(all(x == a), 'bcast_section_real64')
+    end block
+    block
+      complex(real32) :: x(3,3)
+      x = (1,-1)*xx
+      call broadcast(x(1::2,1::2))
+      call write_result(all(x == (1,-1)*a), 'bcast_section_complex32')
+    end block
+    block
+      complex(real64) :: x(3,3)
+      x = (1,-1)*xx
+      call broadcast(x(1::2,1::2))
+      call write_result(all(x == (1,-1)*a), 'bcast_section_complex64')
     end block
   end subroutine
 

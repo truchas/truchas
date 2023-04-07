@@ -3,7 +3,7 @@
 import os
 
 # Name of the main executable
-tbin="t-linux.x86_64.intelllvm"
+tbin="t-linux.x86_64.gnu"
 
 # mpich root directory
 mpich_root="/home/swuser/ext"
@@ -90,20 +90,20 @@ run("cp %s/ci/README-binary-Linux.md %s/README.md" % \
 
 # Copy Python
 run("cp /home/swuser/ext/python-install/bin/python %s/bin/" % (dist))
-run("cp -r /home/swuser/ext/python-install/lib/python3.9 %s/lib/" % (dist))
+run("cp -r /home/swuser/ext/python-install/lib/python3.12 %s/lib/" % (dist))
 run("cp write-restart.py %s/bin" % (dist))
-run("cp -r ../lib/python3.9/site-packages/truchas %s/lib/python3.9/site-packages/" % (dist))
-run("cp %s/ci/TruchasConfigInstall-binary-Linux.py %s/lib/python3.9/site-packages/truchas/TruchasConfigInstall.py" % (root_dir, dist))
-run("cp -r ../lib/python3.9/site-packages/fortran_write %s/lib/python3.9/site-packages/" % (dist))
-run("cp -r ../lib/python3.9/site-packages/grid_mapping %s/lib/python3.9/site-packages/" % (dist))
+run("cp -r ../lib/python3.12/site-packages/truchas %s/lib/python3.12/site-packages/" % (dist))
+run("cp %s/ci/TruchasConfigInstall-binary-Linux.py %s/lib/python3.12/site-packages/truchas/TruchasConfigInstall.py" % (root_dir, dist))
+run("cp -r ../lib/python3.12/site-packages/fortran_write %s/lib/python3.12/site-packages/" % (dist))
+run("cp -r ../lib/python3.12/site-packages/grid_mapping %s/lib/python3.12/site-packages/" % (dist))
 run("cp -r ../lib/libfwrite.so %s/lib/" % (dist))
 run("cp -r ../lib/libgridmap.so %s/lib/" % (dist))
 for lib in ["libfwrite.so", "libgridmap.so"]:
     run("patchelf --set-rpath '$ORIGIN/.' %s/lib/%s" % (dist, lib))
-for l in os.listdir("%s/lib/python3.9/lib-dynload/" % (dist)):
-    lib = "%s/lib/python3.9/lib-dynload/%s" % (dist, l)
+for l in os.listdir("%s/lib/python3.12/lib-dynload/" % (dist)):
+    lib = "%s/lib/python3.12/lib-dynload/%s" % (dist, l)
     os.system("patchelf --set-rpath '$ORIGIN/../../' %s" % lib)
-    copy_lib_deps(lib, local_path="lib/python3.9/lib-dynload")
+    copy_lib_deps(lib, local_path="lib/python3.12/lib-dynload")
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
@@ -111,7 +111,8 @@ for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
     os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, b))
 
 # Remove libraries that we need to use from the system
-for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
+for lib in ["libc", "libm", "libpthread", "libdl", "librt", "libcrypto", "libssl", "libselinux"
+            "libkrb5support", "libcrypt"]:
     run("rm -f %s/lib/%s.so.*" % (dist, lib))
 
 # Create a distribution tarball

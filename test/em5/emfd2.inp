@@ -1,0 +1,126 @@
+2D AXISYMMETRIC INDUCTION HEATING TEST PROBLEM
+
+Origin-centered ball surrounded free space in a z-axial cylindrical domain.
+Symmetry is exploited by considering only the positive octant.  Driven by an
+alternating, z-axial magnetic field produced by a 2-turn induction coil.
+Hex mesh does not include any free-space region.  The tet and hex meshes in
+the ball are not conforming.
+
+&MESH
+  mesh_file = 'meshes/em3-medium-hex.gen'
+  coordinate_scale_factor = 0.01
+/
+
+&EM_MESH
+  mesh_file = 'meshes/em3-medium-tet.gen'
+  coord_scale_factor = 0.01
+/
+
+&OUTPUTS
+  Output_T = 0.0, 100.0
+  Output_Dt = 100.0
+/
+
+&PHYSICS
+  materials = 'conductor'
+  heat_transport = .true.
+  electromagnetics = .true.
+/
+
+&NUMERICS
+  dt_init = 0.01
+  dt_grow = 5.0
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.05
+  nlk_preconditioner = 'hypre_amg'
+/
+
+&ELECTROMAGNETICS
+  use_emfd_solver = T
+  fd_solver_type = 'minres'
+  fd_precon_type = 'hiptmair'
+  krylov_dim = 5
+
+  steps_per_cycle = 12
+  steady_state_tol = 0.01
+  max_source_cycles = 4
+  rel_tol = 1.0e-10
+  max_iter = 1000000
+  c_ratio = 1e-3
+  print_level = 2
+  graphics_output = T
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'y=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 2
+/
+
+nxH=0 is a natural BC, implied by doing nothing
+x&ELECTROMAGNETIC_BC
+  name = 'z=0 symmetry plane'
+  type = 'ih-hfield'  ! really want nxH = 0
+  face_set_ids = 3
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'applied H field'
+  type = 'ih-hfield'
+  face_set_ids = 4, 5
+/
+
+&INDUCTION_SOURCE_FIELD
+  frequency = 500.0
+  orientation = 'z'
+  coils(1)%num_loops  = 2
+  coils(1)%center  = 3*0.0
+  coils(1)%radius  = 0.12
+  coils(1)%length  = 0.12
+  coils(1)%current = 1000.
+/
+
+The conducting ball.
+&BODY
+  Surface_Name = 'from mesh file'
+  Mesh_Material_Number = 1
+  Material_Name = 'conductor'
+  Temperature = 300.0
+/
+
+Symmetry planes
+&THERMAL_BC
+  name = 'symmetry planes'
+  type = 'flux'
+  face_set_ids = 1
+  flux = 0.0
+/
+
+Surface of the ball
+&THERMAL_BC
+  name = 'ball surface'
+  type = 'radiation'
+  face_set_ids = 2
+  emissivity = 0.2
+  ambient_temp = 300.0
+/
+
+&MATERIAL
+  name = 'conductor'
+  density = 200.0
+  specific_heat = 150.0
+  conductivity = 0.1
+  electrical_conductivity = 1.0e5
+/

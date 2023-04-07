@@ -1,0 +1,127 @@
+################################################################################
+# 
+# AXISYMMETRIC INDUCTION HEATING OF UNIFORM CORE
+# 
+# Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
+# one quarter of a thin cross-sectional slab, surrounded by some free-space.
+# The EM permeability and conductivity are temperature dependent.  The hex mesh
+# does not include any free space region.  The tet mesh conforms to the hex
+# mesh in the conductor, being obtained by subdivision of the hex cells.
+#
+################################################################################
+
+&MESH
+  mesh_file = 'mesh_flat.gen'
+  coordinate_scale_factor = 0.01
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0e-6
+  output_dt = 1.0e-6
+/
+
+&NUMERICS /
+
+&PHYSICS
+  induction_heating = T
+  materials = 'stuff'
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-4
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-4
+  verbose_stepping = T
+/
+
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 300.0
+/
+
+
+### BOUNDARY CONDITIONS #######################################################
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 3
+  !face_set_ids = 2, 3
+  flux = 0.0
+/
+
+
+### INDUCTION HEATING ##########################################################
+
+&EM_MESH
+  mesh_file = 'mesh_flat.gen'
+  coord_scale_factor = 0.01
+/
+
+&INDUCTION_HEATING
+  use_fd_solver = {fdme}
+/
+
+&TDME_JOULE_SOLVER
+  rel_tol = 1e-12
+  steps_per_cycle = 36
+  steady_state_tol = 0.01
+  max_source_cycles = 5
+  max_iter = 100000
+  print_level = 1
+  graphics_output = T
+/
+
+&FDME_SOLVER
+  !use_mixed_form = T
+  solver_type = 'minres'
+  precon_type = 'ssor'
+  rel_tol = 1e-12
+  max_iter = 100000
+  print_level = 2
+  graphics_output = T
+/
+
+&INDUCTION_SOURCE_FIELD
+  frequency = {source_frequency}
+  uniform_strength = {H_bc}
+  orientation = 'z'
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x,y=0 symmetry planes'
+  type = 'pec'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'applied H field'
+  type = 'ih-hfield'
+  face_set_ids = 3
+/
+
+! nxH=0 is a natural BC that is implied by doing nothing
+!&ELECTROMAGNETIC_BC
+!  name = 'ends'
+!  face_set_ids = 2
+!/
+
+### MATERIALS ##################################################################
+
+### STUFF ###
+
+&MATERIAL
+  name = 'stuff'
+  density = 100.0
+  specific_heat = 100.0
+  conductivity = 1.0
+  electrical_conductivity = {sigma}
+  relative_permittivity = {relative_permittivity}
+  relative_permeability = {relative_permeability}
+/

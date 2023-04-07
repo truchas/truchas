@@ -70,15 +70,62 @@ module simpl_mesh_factory
 
 contains
 
-  function new_simpl_mesh (params, stat, errmsg) result (this)
+  function new_simpl_mesh(params, stat, errmsg) result(this)
 
-    use,intrinsic :: iso_fortran_env, only: r8 => real64
-    use exodus_mesh_type
-    use exodus_mesh_io
-    use simpl_mesh_tools
-    use index_map_type
+    type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(simpl_mesh), pointer :: this
+
+    if (params%is_parameter('mesh-file')) then
+      this => new_simpl_mesh_file(params, stat, errmsg)
+    else if (params%is_parameter('x-axis')) then
+      this => new_simpl_mesh_internal(params, stat, errmsg)
+    else
+      stat = 1
+      errmsg = 'invalid mesh specification'
+      this => null()
+    end if
+
+  end function
+
+!!!! INTERNALLY GENERATED MESH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function new_simpl_mesh_internal(params, stat, errmsg) result(this)
+
+    use exodus_mesh_factory
     use parallel_communication
-    use permutations
+    use truchas_logging_services
+
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(simpl_mesh), pointer :: this
+
+    type(exodus_mesh) :: mesh
+
+    this => null()
+
+    call TLS_info('  generating an internal ExodusII mesh')
+    if (is_IOP) call create_rect_exodus_mesh(mesh, params, stat, errmsg)
+    call broadcast_status(stat, errmsg)
+    if (stat /= 0) return
+
+    if (is_IOP) call refine_hex_to_tet(mesh, stat, errmsg)
+    call broadcast_status(stat, errmsg)
+    if (stat /= 0) return
+
+    this => new_simpl_mesh_aux(mesh, params, stat, errmsg)
+
+  end function new_simpl_mesh_internal
+
+!!!! EXTERNAL MESH FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  function new_simpl_mesh_file(params, stat, errmsg) result(this)
+
+    use exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
+    use parallel_communication
     use truchas_logging_services
 
     type(parameter_list) :: params
@@ -86,29 +133,19 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     type(simpl_mesh), pointer :: this
 
-    integer :: j, k, n, offset, ncell, nedge, nface, nnode
-    integer, allocatable :: cnode(:,:), cedge(:,:), cface(:,:), node_perm(:), cell_perm(:)
-    integer, dimension(nPE) :: node_bsize, edge_bsize, face_bsize, cell_bsize
-    integer, allocatable :: side_map(:), perm(:), offP_size(:), offP_index(:), cblock(:)
-    type(exodus_mesh), target :: mesh
     character(:), allocatable :: mesh_file
-    real(r8) :: csf
-    real(r8), allocatable :: angle(:)
-
-    this => null()
+    type(exodus_mesh) :: mesh
+    integer :: n
 
     !! Read the Exodus mesh file into MESH.
     if (is_IOP) then
       call params%get('mesh-file', mesh_file)
-      call TLS_info ('  reading ExodusII mesh file "' // mesh_file // '"')
-      call read_exodus_mesh (mesh_file, mesh, stat, errmsg)
+      call TLS_info('  reading ExodusII mesh file "' // mesh_file // '"')
+      call read_exodus_mesh(mesh_file, mesh, stat, errmsg)
       if (stat /= 0) errmsg = 'error reading mesh file: ' // errmsg
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
-
-    ncell = mesh%num_elem
-    nnode = mesh%num_node
 
     !! Ensure the mesh comprises only tet cells.
     if (is_IOP) then
@@ -120,8 +157,42 @@ contains
         end if
       end do
     end if
-    call broadcast_status (stat, errmsg)
+    call broadcast_status(stat, errmsg)
     if (stat /= 0) return
+
+    this => new_simpl_mesh_aux(mesh, params, stat, errmsg)
+
+  end function new_simpl_mesh_file
+
+
+  function new_simpl_mesh_aux(mesh, params, stat, errmsg) result(this)
+
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
+    use exodus_mesh_type
+    use exodus_mesh_io
+    use simpl_mesh_tools
+    use index_map_type
+    use parallel_communication
+    use permutations
+    use truchas_logging_services
+
+    type(parameter_list) :: params
+    type(exodus_mesh), intent(inout) :: mesh
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(simpl_mesh), pointer :: this
+
+    integer :: j, k, n, offset, ncell, nedge, nface, nnode
+    integer, allocatable :: cnode(:,:), cedge(:,:), cface(:,:), node_perm(:), cell_perm(:)
+    integer, dimension(nPE) :: node_bsize, edge_bsize, face_bsize, cell_bsize
+    integer, allocatable :: side_map(:), perm(:), offP_size(:), offP_index(:), cblock(:)
+    real(r8) :: csf
+    real(r8), allocatable :: angle(:)
+
+    this => null()
+
+    ncell = mesh%num_elem
+    nnode = mesh%num_node
 
     !! Flatten the Exodus element block structure.
     allocate(cnode(4,ncell), cblock(ncell))
@@ -331,7 +402,7 @@ contains
       end do
     end subroutine
 
-  end function new_simpl_mesh
+  end function new_simpl_mesh_aux
 
   !! This auxiliary subroutine partitions the mesh cells and generates a new
   !! cell numbering for which the partition becomes a block partition and the

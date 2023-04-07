@@ -10,7 +10,9 @@ import sys
 
 import h5py
 import numpy as np
-import numpy.linalg as npla
+
+from . import truchas_geometry as tg
+from .TruchasEMData import TruchasEMData
 
 # Try to import through PYTHONPATH, and if not found, look in the truchas
 # install directory, set by CMake at configure-time.
@@ -69,6 +71,10 @@ class TruchasData:
         self._h5_nnode = self.nnode
 
         self._modified_fields = {}
+
+
+    def em_data(self):
+        return TruchasEMData(os.path.join(self.directory, "fdme-1.vtkhdf"))
 
 
     def stdout(self):
@@ -348,7 +354,7 @@ class TruchasData:
         if self._centroid is None:
             x = self.node_coordinates()
             cnode = self._cell_node_map()
-            self._centroid = np.array([np.average(x[_cell_nodes(cn),:], axis=0) for cn in cnode])
+            self._centroid = np.array([np.average(x[tg.cell_nodes(cn),:], axis=0) for cn in cnode])
         return self._centroid
 
 
@@ -360,7 +366,7 @@ class TruchasData:
         if self._volume is None:
             x = self.node_coordinates()
             cnode = self._cell_node_map()
-            self._volume = np.array([_cell_volume(x[_cell_nodes(cn),:]) for cn in cnode])
+            self._volume = np.array([tg.cell_volume(x[tg.cell_nodes(cn),:]) for cn in cnode])
         return self._volume
 
 
@@ -649,8 +655,8 @@ class TruchasData:
                     fw.write_i4x0(ustruc_comp.shape[1])
                     fw.write_i8x2(ustruc_comp)
 
-        # JOULE HEAT SEGMENT
-        if "joule_heat" in features:
+        # ELECTROMAGNETIC HEAT SEGMENT
+        if "em_heat" in features:
             t = self.time(series_id)
 
             # scan through the EM simulations, in order, looking for
@@ -670,24 +676,52 @@ class TruchasData:
             em_sim = self._root["Simulations/" + name + "/Non-series Data"]
             print("Using EM simulation {:s} (t = {:f})".format(name, t_em))
 
-            md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
-            fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
+            em_kind = self._root["Simulations/" + name].attrs["EM-KIND"]
+            fw.write_i4x0(em_kind)
 
-            array = em_sim["SOURCE_DATA"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+            match em_kind:
+                case 1: # induction heating
 
-            array = em_sim["MU"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+                    array = em_sim["Q"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
-            array = em_sim["SIGMA"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+                    array = em_sim["MU"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
-            array = em_sim["JOULE"][:][self._cellmap]
-            fw.write_i4x0(self.ncell)
-            fw.write_r8x1(array)
+                    array = em_sim["SIGMA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
+                    fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
+
+                    array = em_sim["QDATA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                case 2: # microwave heating
+
+                    array = em_sim["Q"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["EPS"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["EPSI"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["MU"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["QDATA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
         fw.close()
 
@@ -705,60 +739,6 @@ class TruchasData:
             features.append("solid_mechanics")
 
         if "phi1" in fields: features.append("species")
-        if "Joule_P" in fields and not self.mapped: features.append("joule_heat")
+        if "Joule_P" in fields and not self.mapped: features.append("em_heat")
         if "CP-USTRUC-1-MAP" in fields and not self.mapped: features.append("microstructure")
         return features
-
-
-def _cell_nodes(cn):
-    """Map node IDs from degenerate hex to tet, pyramid, wedge, or hex."""
-    cn2 = (   cn[1:5] if cn[0] == cn[1] # TET
-        else  cn[:5]  if cn[4] == cn[5] # PYR
-        else  cn[:6]  if cn[4] == cn[7] # PYR
-        else  cn)                       # HEX
-    return cn2
-
-
-def _cell_volume(x):
-    """Return the volume for a cell, given its node coordinates."""
-    vol = (  _tet_volume(x) if 4 == x.shape[0]
-        else _pyr_volume(x) if 5 == x.shape[0]
-        else _wed_volume(x) if 6 == x.shape[0]
-        else _hex_volume(x))
-    return vol
-
-
-def _tet_volume(x):
-    return npla.det([x[1,:]-x[0,:], x[2,:]-x[0,:], x[3,:]-x[0,:]]) / 6
-
-
-def _pyr_volume(x):
-    vol = (_tet_volume(x[[0,1,3,4],:])
-        +  _tet_volume(x[[1,2,0,4],:])
-        +  _tet_volume(x[[2,3,1,4],:])
-        +  _tet_volume(x[[3,0,2,4],:])) / 2
-    return vol
-
-
-def _wed_volume(x):
-    vol = (_tet_volume(x[[0,1,2,3],:])
-        +  _tet_volume(x[[4,3,5,1],:])
-        +  _tet_volume(x[[1,2,3,5],:])
-        +  _tet_volume(x[[1,2,0,4],:])
-        +  _tet_volume(x[[3,5,4,0],:])
-        +  _tet_volume(x[[0,2,5,4],:])) / 2
-    return vol
-
-
-def _hex_volume(x):
-    vol = (_tet_volume(x[[0,1,3,4],:])
-        +  _tet_volume(x[[1,2,0,5],:])
-        +  _tet_volume(x[[2,3,1,6],:])
-        +  _tet_volume(x[[3,0,2,7],:])
-        +  _tet_volume(x[[4,7,5,0],:])
-        +  _tet_volume(x[[5,4,6,1],:])
-        +  _tet_volume(x[[6,5,7,2],:])
-        +  _tet_volume(x[[7,6,4,3],:])
-        +  _tet_volume(x[[0,2,7,5],:])
-        +  _tet_volume(x[[1,3,4,6],:])) / 2
-    return vol

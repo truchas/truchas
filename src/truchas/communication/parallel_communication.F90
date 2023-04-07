@@ -29,7 +29,7 @@ module parallel_communication
   public :: init_parallel_communication, halt_parallel_communication, abort_parallel_communication
   public :: broadcast, scatter, gather
   public :: global_any, global_all, global_count
-  public :: global_sum, global_minval, global_maxval, global_dot_product
+  public :: global_sum, global_minval, global_maxval, global_dot_product, global_norm2
   public :: global_minloc, global_maxloc, global_maxloc_sub
 
   integer, parameter :: root = 0
@@ -56,6 +56,12 @@ module parallel_communication
     module subroutine bcast_r8_0(scalar)
       real(r8), intent(inout) :: scalar
     end subroutine
+    module subroutine bcast_c4_0(scalar)
+      complex(r4), intent(inout) :: scalar
+    end subroutine
+    module subroutine bcast_c8_0(scalar)
+      complex(r8), intent(inout) :: scalar
+    end subroutine
     module subroutine bcast_dl_0(scalar)
       logical, intent(inout) :: scalar
     end subroutine
@@ -76,6 +82,12 @@ module parallel_communication
     end subroutine
     module subroutine bcast_r8_1(vector)
       real(r8), intent(inout) :: vector(:)
+    end subroutine
+    module subroutine bcast_c4_1(vector)
+      complex(r4), intent(inout) :: vector(:)
+    end subroutine
+    module subroutine bcast_c8_1(vector)
+      complex(r8), intent(inout) :: vector(:)
     end subroutine
     module subroutine bcast_dl_1(vector)
       logical, intent(inout) :: vector(:)
@@ -98,6 +110,12 @@ module parallel_communication
     module subroutine bcast_r8_2(vector)
       real(r8), intent(inout) :: vector(:,:)
     end subroutine
+    module subroutine bcast_c4_2(vector)
+      complex(r4), intent(inout) :: vector(:,:)
+    end subroutine
+    module subroutine bcast_c8_2(vector)
+      complex(r8), intent(inout) :: vector(:,:)
+    end subroutine
     module subroutine bcast_dl_2(vector)
       logical, intent(inout) :: vector(:,:)
     end subroutine
@@ -118,6 +136,12 @@ module parallel_communication
     end subroutine
     module subroutine bcast_r8_3(vector)
       real(r8), intent(inout) :: vector(:,:,:)
+    end subroutine
+    module subroutine bcast_c4_3(vector)
+      complex(r4), intent(inout) :: vector(:,:,:)
+    end subroutine
+    module subroutine bcast_c8_3(vector)
+      complex(r8), intent(inout) :: vector(:,:,:)
     end subroutine
     module subroutine bcast_dl_3(vector)
       logical, intent(inout) :: vector(:,:,:)
@@ -148,6 +172,14 @@ module parallel_communication
       real(r8), intent(in)  :: src(:)
       real(r8), intent(out) :: dest
     end subroutine
+    module subroutine scat_c4_0(src, dest)
+      complex(r4), intent(in)  :: src(:)
+      complex(r4), intent(out) :: dest
+    end subroutine
+    module subroutine scat_c8_0(src, dest)
+      complex(r8), intent(in)  :: src(:)
+      complex(r8), intent(out) :: dest
+    end subroutine
     module subroutine scat_dl_0(src, dest)
       logical, intent(in)  :: src(:)
       logical, intent(out) :: dest
@@ -171,6 +203,14 @@ module parallel_communication
     module subroutine scat_r8_1(src, dest)
       real(r8), intent(in)  :: src(:)
       real(r8), intent(out) :: dest(:)
+    end subroutine
+    module subroutine scat_c4_1(src, dest)
+      complex(r4), intent(in)  :: src(:)
+      complex(r4), intent(out) :: dest(:)
+    end subroutine
+    module subroutine scat_c8_1(src, dest)
+      complex(r8), intent(in)  :: src(:)
+      complex(r8), intent(out) :: dest(:)
     end subroutine
     module subroutine scat_dl_1(src, dest)
       logical, intent(in)  :: src(:)
@@ -196,6 +236,14 @@ module parallel_communication
       real(r8), intent(in)  :: src(:,:)
       real(r8), intent(out) :: dest(:,:)
     end subroutine
+    module subroutine scat_c4_2(src, dest)
+      complex(r4), intent(in)  :: src(:,:)
+      complex(r4), intent(out) :: dest(:,:)
+    end subroutine
+    module subroutine scat_c8_2(src, dest)
+      complex(r8), intent(in)  :: src(:,:)
+      complex(r8), intent(out) :: dest(:,:)
+    end subroutine
     module subroutine scat_dl_2(src, dest)
       logical, intent(in)  :: src(:,:)
       logical, intent(out) :: dest(:,:)
@@ -219,6 +267,14 @@ module parallel_communication
     module subroutine scat_r8_3(src, dest)
       real(r8), intent(in)  :: src(:,:,:)
       real(r8), intent(out) :: dest(:,:,:)
+    end subroutine
+    module subroutine scat_c4_3(src, dest)
+      complex(r4), intent(in)  :: src(:,:,:)
+      complex(r4), intent(out) :: dest(:,:,:)
+    end subroutine
+    module subroutine scat_c8_3(src, dest)
+      complex(r8), intent(in)  :: src(:,:,:)
+      complex(r8), intent(out) :: dest(:,:,:)
     end subroutine
     module subroutine scat_dl_3(src, dest)
       logical, intent(in)  :: src(:,:,:)
@@ -246,6 +302,14 @@ module parallel_communication
     module subroutine gath_r8_0(src, dest)
       real(r8), intent(in)  :: src
       real(r8), intent(inout) :: dest(:)
+    end subroutine
+    module subroutine gath_c4_0(src, dest)
+      complex(r4), intent(in)  :: src
+      complex(r4), intent(inout) :: dest(:)
+    end subroutine
+    module subroutine gath_c8_0(src, dest)
+      complex(r8), intent(in)  :: src
+      complex(r8), intent(inout) :: dest(:)
     end subroutine
     module subroutine gath_dl_0(src, dest)
       logical, intent(in)  :: src
@@ -275,6 +339,14 @@ module parallel_communication
       real(r8), intent(in)  :: src(:)
       real(r8), intent(inout) :: dest(:)
     end subroutine
+    module subroutine gath_c4_1(src, dest)
+      complex(r4), intent(in)  :: src(:)
+      complex(r4), intent(inout) :: dest(:)
+    end subroutine
+    module subroutine gath_c8_1(src, dest)
+      complex(r8), intent(in)  :: src(:)
+      complex(r8), intent(inout) :: dest(:)
+    end subroutine
     module subroutine gath_dl_1(src, dest)
       logical, intent(in)  :: src(:)
       logical, intent(inout) :: dest(:)
@@ -302,6 +374,14 @@ module parallel_communication
     module subroutine gath_r8_2(src, dest)
       real(r8), intent(in)  :: src(:,:)
       real(r8), intent(inout) :: dest(:,:)
+    end subroutine
+    module subroutine gath_c4_2(src, dest)
+      complex(r4), intent(in)  :: src(:,:)
+      complex(r4), intent(inout) :: dest(:,:)
+    end subroutine
+    module subroutine gath_c8_2(src, dest)
+      complex(r8), intent(in)  :: src(:,:)
+      complex(r8), intent(inout) :: dest(:,:)
     end subroutine
     module subroutine gath_dl_2(src, dest)
       logical, intent(in)  :: src(:,:)
@@ -375,6 +455,14 @@ module parallel_communication
       real(r8), intent(in) :: a
       real(r8) :: s
     end function
+    module function sum_c4_0(a) result(s)
+      complex(r4), intent(in) :: a
+      complex(r4) :: s
+    end function
+    module function sum_c8_0(a) result(s)
+      complex(r8), intent(in) :: a
+      complex(r8) :: s
+    end function
     module function sum_i4_1(a, mask) result(s)
       integer(i4), intent(in) :: a(:)
       logical, intent(in), optional :: mask(:)
@@ -394,6 +482,16 @@ module parallel_communication
       real(r8), intent(in) :: a(:)
       logical, intent(in), optional :: mask(:)
       real(r8) :: s
+    end function
+    module function sum_c4_1(a, mask) result(s)
+      complex(r4), intent(in) :: a(:)
+      logical, intent(in), optional :: mask(:)
+      complex(r4) :: s
+    end function
+    module function sum_c8_1(a, mask) result(s)
+      complex(r8), intent(in) :: a(:)
+      logical, intent(in), optional :: mask(:)
+      complex(r8) :: s
     end function
   end interface
 
@@ -483,6 +581,33 @@ module parallel_communication
     module function dot_prod_r8(a, b) result(dp)
       real(r8), intent(in) :: a(:), b(:)
       real(r8) :: dp
+    end function
+    module function dot_prod_c4(a, b) result(dp)
+      complex(r4), intent(in) :: a(:), b(:)
+      complex(r4) :: dp
+    end function
+    module function dot_prod_c8(a, b) result(dp)
+      complex(r8), intent(in) :: a(:), b(:)
+      complex(r8) :: dp
+    end function
+  end interface
+
+  interface global_norm2
+    module function norm2_r4(a) result(nrm2)
+      real(r4), intent(in) :: a(:)
+      real(r4) :: nrm2
+    end function
+    module function norm2_r8(a) result(nrm2)
+      real(r8), intent(in) :: a(:)
+      real(r8) :: nrm2
+    end function
+    module function norm2_c4(a) result(nrm2)
+      complex(r4), intent(in) :: a(:)
+      real(r4) :: nrm2
+    end function
+    module function norm2_c8(a) result(nrm2)
+      complex(r8), intent(in) :: a(:)
+      real(r8) :: nrm2
     end function
   end interface
 
