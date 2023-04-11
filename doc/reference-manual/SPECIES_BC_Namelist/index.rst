@@ -71,7 +71,7 @@ can be used in the definition of the following interface condition.
   across the interface :math:`\Gamma` and gives this flux as
 
       :math:`\vec{f}_\mathrm{mass} = k_j[\phi_j]` on :math:`\Gamma`
-  
+
   where :math:`[\phi_j]` is the jump in :math:`\phi_j` across :math:`\Gamma`
   in the direction :math:`\hat{n}`. It is defined by setting `type`_ to
   ``'interface-mtc'``. The mass transfer coefficient :math:`k_j` for species
@@ -182,10 +182,10 @@ mtc_func
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the mass transfer coefficient for a mass
               transfer-type boundary condition. The function is expected to be a
-              function of :math:`(t,x,y,z)` for an external condition, and a
-              function of :math:`(\phi_j,t,x,y,z)` for an interface condition.
-              In the latter case :math:`\phi_j` is taken to be the maximum of
-              :math:`\phi_j` on either side of the interface.
+              function of :math:`(T,\phi_j,t,x,y,z)`. When used as an interface
+              condition, :math:`T` and :math:`\phi_j` are taken to be the
+              maximums on either side of the interface. When heat transfer is
+              not active, :math:`T` is taken to be 0.
 :Type: string
 :Default: none
 

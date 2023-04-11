@@ -296,7 +296,7 @@ contains
       integer, intent(in) :: index
 
       integer :: j
-      real(r8) :: values(this%mesh%ncell), Cface(this%mesh%nface)
+      real(r8) :: values(this%mesh%ncell), Tface(this%mesh%nface), Cface(this%mesh%nface)
       type(mfd_diff_matrix), pointer :: matrix
 
       matrix => this%sdprecon(index)%matrix_ref()
@@ -317,21 +317,27 @@ contains
       call matrix%set_dir_faces (more_dir_faces)
 
       !! External MTC boundary condition contribution.
+      if (associated(this%model%ht)) then
+        call HTSD_model_get_face_temp_copy (this%model, u, Tface)
+        call this%mesh%face_imap%gather_offp(Tface)
+      else
+        Tface = 0
+      end if
       call HTSD_model_get_face_conc_copy (this%model, index, u, Cface)
       call this%mesh%face_imap%gather_offp(Cface)
       if (allocated(this%model%sd(index)%bc_mtc)) then
-        call this%model%sd(index)%bc_mtc%compute_deriv(t, Cface)
+        call this%model%sd(index)%bc_mtc%compute_deriv2(t, Tface, Cface)
         associate (bcindex => this%model%sd(index)%bc_mtc%index, &
-                   deriv   => this%model%sd(index)%bc_mtc%deriv)
+                   deriv   => this%model%sd(index)%bc_mtc%deriv2)
           call matrix%incr_face_diag(bcindex, deriv)
         end associate
       end if
 
       !! Internal MTC interface condition contribution.
       if (allocated(this%model%sd(index)%ic_mtc)) then
-        call this%model%sd(index)%ic_mtc%compute(t, Cface)
+        call this%model%sd(index)%ic_mtc%compute_deriv2(t, Tface, Cface)
         associate (icindex => this%model%sd(index)%ic_mtc%index, &
-                   deriv   => this%model%sd(index)%ic_mtc%deriv)
+                   deriv   => this%model%sd(index)%ic_mtc%deriv2)
           if (associated(this%model%void_face)) then
             do j = 1, size(icindex,2) !FIXME? Bad form to modify deriv?
               if (any(this%model%void_face(icindex(:,j)))) deriv(:,j) = 0.0_r8
@@ -522,6 +528,8 @@ contains
         call HTSD_model_get_face_conc_view (this%model, index, f, fview)
         fview = fview - Fface(:this%mesh%nface_onP)
       end if
+
+      !TODO! HT and SD coupling due to temperature-dependence of the MTC coefficient.
 
       !! Off-process extended cell concentration components of F.
       call HTSD_model_get_cell_conc_copy (this%model, index, f, Fcell)

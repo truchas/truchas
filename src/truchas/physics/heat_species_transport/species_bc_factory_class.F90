@@ -17,7 +17,9 @@ module species_bc_factory_class
 
   use bndry_func1_class
   use bndry_func2_class
+  use bndry_func3_class
   use intfc_func2_class
+  use intfc_func3_class
   implicit none
   private
 
@@ -25,8 +27,8 @@ module species_bc_factory_class
   contains
     procedure(alloc_bf1), deferred :: alloc_dir_bc
     procedure(alloc_bf1), deferred :: alloc_flux_bc
-    procedure(alloc_bf2), deferred :: alloc_mtc_bc
-    procedure(alloc_if2), deferred :: alloc_mtc_ic
+    procedure(alloc_bf3), deferred :: alloc_mtc_bc
+    procedure(alloc_if3), deferred :: alloc_mtc_ic
   end type
 
   abstract interface
@@ -46,11 +48,19 @@ module species_bc_factory_class
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
     end subroutine
-    subroutine alloc_if2(this, comp, ic, stat, errmsg)
+    subroutine alloc_bf3(this, comp, bc, stat, errmsg)
       import
       class(species_bc_factory), intent(inout) :: this    !TODO: intent(in)?
       integer, intent(in) :: comp
-      class(intfc_func2), allocatable, intent(out) :: ic
+      class(bndry_func3), allocatable, intent(out) :: bc
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+    end subroutine
+    subroutine alloc_if3(this, comp, ic, stat, errmsg)
+      import
+      class(species_bc_factory), intent(inout) :: this    !TODO: intent(in)?
+      integer, intent(in) :: comp
+      class(intfc_func3), allocatable, intent(out) :: ic
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
     end subroutine
