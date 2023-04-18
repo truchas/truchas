@@ -17,7 +17,9 @@ module HTSD_model_type
   use scalar_mesh_func_class
   use bndry_func1_class
   use bndry_func2_class
+  use bndry_func3_class
   use intfc_func2_class
+  use intfc_func3_class
   use rad_problem_type
   use truchas_timers
   implicit none
@@ -50,8 +52,8 @@ module HTSD_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! simple flux
-    class(bndry_func2), allocatable :: bc_mtc   ! mass-transfer-coefficient
-    class(intfc_func2), allocatable :: ic_mtc   ! internal mass-transfer-coefficient
+    class(bndry_func3), allocatable :: bc_mtc   ! mass-transfer-coefficient
+    class(intfc_func3), allocatable :: ic_mtc   ! internal mass-transfer-coefficient
   end type SD_model
 
   type, public :: HTSD_model
@@ -473,8 +475,18 @@ contains
       end if
 
       !! Mass-transfer-coefficient (MTC) BC flux contribution.
+      if (allocated(this%sd(index)%bc_mtc) .or. allocated(this%sd(index)%ic_mtc)) then
+        allocate(Tface(this%mesh%nface))
+        if (associated(this%ht)) then
+          call HTSD_model_get_face_temp_copy (this, u, Tface)
+          call this%mesh%face_imap%gather_offp(Tface)
+        else
+          Tface = 0
+        end if
+      end if
+
       if (allocated(this%sd(index)%bc_mtc)) then
-        call this%sd(index)%bc_mtc%compute(t, Cface)
+        call this%sd(index)%bc_mtc%compute(t, Tface, Cface)
         do j = 1, size(this%sd(index)%bc_mtc%index)
           n = this%sd(index)%bc_mtc%index(j)
           Fface(n) = Fface(n) + this%sd(index)%bc_mtc%value(j)
@@ -483,7 +495,7 @@ contains
 
       !! Internal MTC flux contribution.
       if (allocated(this%sd(index)%ic_mtc)) then
-        call this%sd(index)%ic_mtc%compute(t, Cface)
+        call this%sd(index)%ic_mtc%compute(t, Tface, Cface)
         allocate(void_link(size(this%sd(index)%ic_mtc%index,2)))
         if (associated(this%void_face)) then
           do j = 1, size(void_link)
@@ -514,9 +526,11 @@ contains
       if (associated(this%sd(index)%soret)) then
         Tcell => state(:,0)
         !! Get face temperatures overwritten with Dirichlet values.
-        allocate(Tface(this%mesh%nface))
-        call HTSD_model_get_face_temp_copy (this, u, Tface)
-        call this%mesh%face_imap%gather_offp(Tface)
+        if (.not.allocated(Tface)) then
+          allocate(Tface(this%mesh%nface))
+          call HTSD_model_get_face_temp_copy (this, u, Tface)
+          call this%mesh%face_imap%gather_offp(Tface)
+        end if
         if (allocated(this%ht%bc_dir)) then
           call this%ht%bc_dir%compute(t)
           Tface(this%ht%bc_dir%index) = this%ht%bc_dir%value

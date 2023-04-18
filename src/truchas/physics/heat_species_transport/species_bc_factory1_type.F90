@@ -204,16 +204,16 @@ contains
 
   subroutine alloc_mtc_bc(this, comp, bc, stat, errmsg)
 
-    use bndry_func2_class
-    use htc_bndry_func_type
+    use bndry_func3_class
+    use mtc_bndry_func_type
 
     class(species_bc_factory1), intent(inout) :: this
     integer, intent(in) :: comp
-    class(bndry_func2), allocatable, intent(out) :: bc
+    class(bndry_func3), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(htc_bndry_func), allocatable :: htc
+    type(mtc_bndry_func), allocatable :: htc
 
     call TLS_info('  generating "MTC" species-'//i_to_c(comp)//' boundary condition')
     call this%iterate_list('mtc', comp, proc, stat, errmsg)
@@ -254,16 +254,16 @@ contains
 
   subroutine alloc_mtc_ic(this, comp, ic, stat, errmsg)
 
-    use intfc_func2_class
-    use htc_intfc_func_type
+    use intfc_func3_class
+    use mtc_intfc_func_type
 
     class(species_bc_factory1), intent(inout) :: this
     integer, intent(in) :: comp
-    class(intfc_func2), allocatable, intent(out) :: ic
+    class(intfc_func3), allocatable, intent(out) :: ic
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(htc_intfc_func), allocatable :: htc
+    type(mtc_intfc_func), allocatable :: htc
 
     call TLS_info('  generating "interface-mtc" species-'//i_to_c(comp)//' interface condition')
     call this%iterate_list('interface-mtc', comp, proc, stat, errmsg)
