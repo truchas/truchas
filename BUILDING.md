@@ -17,9 +17,10 @@ and macOS with GNU and NAG compilers.
   Apple Clang should be fine)
   - GNU Fortran/C/C++: Versions 10.2, 10.3, 11.2, 11.3, and 12.1 are known to
   work. Versions 9.x, 10.1, and 11.1 are broken.
-* Cmake version 3.16 or later
+* CMake version 3.16 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
+* LAPACK library or equivalent
 * Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
   later) and numpy (version 1.12.0 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
@@ -31,40 +32,67 @@ third party library build step described below.
 Compiling Truchas for the first time is usually a two-stage process.  The
 first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
-only needs to be done once.  A cmake superbuild project for this stage can be
+only needs to be done once.  A CMake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
 on GitLab. This version of Truchas is tested against the "v21" bundle of TPLs;
 do a `git checkout v21` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
-straightforward. You create a build directory, run cmake from that directory,
-and then run make. What you choose for a build directory is irrelevant (other
+straightforward. You create a build directory, run `cmake` from that directory,
+and then run `make`. What you choose for a build directory is irrelevant (other
 than it must be different than the current directory). Here is an example:
 
     $ mkdir build
     $ cd build
-    $ cmake -C ../config/linux-intel.cmake \
+    $ cmake .. -C ../config/linux-intel.cmake \
             -D CMAKE_BUILD_TYPE=Release \
-            -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
+            -D CMAKE_PREFIX_PATH=<truchas_tpl_dir>
     $ make
     $ make install
 
-* *Don't overlook the final `..` argument on the cmake command line!*
-* The `-C` argument pre-loads the cmake cache with settings from the following
+* The `-C` argument pre-loads the CMake cache with settings from the following
   file. The `config` subdirectory contains some examples. If none of those are
   suitable, create your own, or simply define the various variables directly
   on the cmake command line (using the `-D` flag).
 * `Release` directs CMake to configure an optimized build of Truchas. Another
   option is `Debug` for an unoptimized build with lots of additional runtime
   checking.
-* Set the `TRUCHAS_TPL_DIR` variable to the TPL installation directory you
+* Set the `CMAKE_PREFIX_PATH` variable to the TPL installation directory you
   used in the first stage. It must be an absolute path.
 * By default Truchas will be installed into the `install` subdirectory of the
   top-level source directory. Use the `-D CMAKE_INSTALL_PREFIX=<truchas_dir>`
   cmake argument to specify a different directory.
 
-#### Optional Portage data mapping component
+#### LAPACK
+A system-installed version of the LAPACK library is required. This can be a
+generic reference version provided by a Linux distribution, or a specialized
+one such as the Intel Math Kernel Library (MKL). CMake is generally able to
+locate the library, though it may require some help through the setting of
+additional CMake variables on the `cmake` command line. See this CMake
+[page](https://cmake.org/cmake/help/latest/module/FindLAPACK.html)
+for a description of the relevant variables, and `BLA_VENDOR` in particular.
+
+* Nothing additional should need to be specified when using a generic reference
+  LAPACK library installed in a standard system location.
+
+* To use the Intel oneAPI MKL library with the Intel oneAPI compiler, use the
+  additional argument `-D BLA_VENDOR=Intel10_64lp`. The environment variable
+  `MKLROOT` must also be set to the root of the MKL installation, but this is
+  likely to have been done as part of configuring the environment to use the
+  oneAPI compiler.
+
+* The Intel oneAPI MKL library can also be used when compiling with either
+  the GFortran or NAG compilers. In this case the environment variable
+  `MKLROOT` will likely need to be set manually. With NAG,
+  `-D BLA_VENDOR=Intel10_64lp_seq` must used instead to get the basic sequential
+  version.
+
+Note that Truchas currently makes limited direct use of LAPACK and then only
+for very small systems, so that use of a highly optimized library is unlikely
+to yield any noticeable performance improvement.
+
+#### Optional Portage Data Mapping Component
 Truchas provides optional support for using the Portage library to do solution
 field mapping in induction heating simulations. To enable support, which is
 not included by default, add `-D USE_PORTAGE=ON` to the cmake command line.
