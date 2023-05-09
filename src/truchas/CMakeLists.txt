@@ -58,7 +58,7 @@ add_subdirectory(toolpath)
 add_subdirectory(truchasio)
 
 target_link_libraries(truchas PUBLIC
-    lapack exodus hypre petaca hdf5 chaco metis scorpio MPI::MPI_Fortran
+    LAPACK::LAPACK exodus hypre petaca hdf5 chaco metis scorpio MPI::MPI_Fortran
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)
