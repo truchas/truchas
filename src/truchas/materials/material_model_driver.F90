@@ -11,7 +11,7 @@ module material_model_driver
   public :: init_material_model
 
   type(material_database), target :: matl_db
-  type(material_model), public :: matl_model
+  type(material_model), target, public :: matl_model
 
   !! These are initialized through the PHYSICS namelist. They are for
   !! internal consumption and should not be used externally.

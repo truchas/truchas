@@ -32,6 +32,7 @@ module diffusion_solver
   use truchas_logging_services
   use unstr_mesh_type
   use enthalpy_advector_class
+  use pbf_material_type
   use parameter_list_type
   use rad_problem_type, only: vf_event
   implicit none
@@ -63,6 +64,7 @@ module diffusion_solver
     type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(matl_mesh_func), pointer :: mmf => null()
+    type(pbf_material), allocatable :: pbf_matl
     !! Saved references to the model sources.
     type(source_mf), pointer :: ht_source => null()
     type(source_mf), pointer :: sd_source(:) => null()
@@ -77,6 +79,7 @@ module diffusion_solver
     class(enthalpy_advector), allocatable :: hadv
     real(r8) :: cutvof
     type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
+    type(parameter_list), pointer :: pbf_params => null()
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -93,6 +96,7 @@ contains
     use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
     use diffusion_solver_namelist
+    use pbf_material_namelist
     use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
 
     integer, intent(in) :: lun
@@ -103,6 +107,7 @@ contains
     call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_ds_source (lun)
+    call read_pbf_material_namelist(lun, this%pbf_params)
 
     call read_enclosure_radiation_namelists(lun)
 
@@ -221,6 +226,16 @@ contains
     case default
       INSIST(.false.)
     end select
+
+    !! Update MMF when history-dependent PBF material model is used
+    if (allocated(this%pbf_matl)) then
+      block
+        real(r8) :: temp(this%mesh%ncell)
+        call ds_get_temp(temp)
+        call this%mesh%cell_imap%gather_offp(temp)
+        call this%pbf_matl%update_mmf(temp, this%mmf)
+      end block
+    end if
 
     !! Update MATL in contexts that can modify the phase distribution.
     if (this%have_phase_change) then
@@ -399,6 +414,7 @@ contains
     use species_bc_factory1_type
     use thermal_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
+    use material_model_driver, only: matl_model
 
     real(r8), intent(in) :: tinit
 
@@ -499,6 +515,16 @@ contains
 
     call TLS_info ('  diffusion solver initialized')
 
+    if (this%have_heat_transfer .and. associated(this%pbf_params)) then
+      if (this%have_fluid_flow) then
+        call TLS_fatal('PBF_MATERIAL feature not yet supported with flow')
+      else
+        allocate(this%pbf_matl)
+        call this%pbf_matl%init(matl_model, this%mmf, this%pbf_params, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
+      end if
+    end if
+
   contains
 
     logical function multiphase_problem (mmf)
@@ -549,6 +575,14 @@ contains
     if (this%have_heat_transfer) then
       ASSERT(present(temp))
       ASSERT(size(temp) == this%mesh%ncell_onP)
+      if (allocated(this%pbf_matl)) then
+        block
+          real(r8) :: xtemp(this%mesh%ncell)
+          xtemp(:this%mesh%ncell_onP) = temp
+          call this%mesh%cell_imap%gather_offp(xtemp)
+          call this%pbf_matl%set_initial_state(xtemp)
+        end block
+      end if
     end if
 
     !! Permute the cell concentration array to the DS ordering.

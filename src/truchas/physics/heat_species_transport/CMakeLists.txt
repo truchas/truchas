@@ -38,6 +38,8 @@ target_sources(truchas PRIVATE
   evaporation_namelist.F90
   thermal_source_namelist.F90
   thermal_source_factory_type.F90
+  pbf_material_type.F90
+  pbf_material_namelist.F90
 )
 
 add_subdirectory(Test)

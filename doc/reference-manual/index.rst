@@ -26,6 +26,7 @@ Reference Manual
    MICROSTRUCTURE_Namelist/index
    NUMERICS_Namelist/index
    OUTPUTS_Namelist/index
+   PBF_MATERIAL_Namelist/index
    PHASE_CHANGE_Namelist/index
    PHYSICAL_CONSTANTS_Namelist/index
    PHYSICS_Namelist/index
