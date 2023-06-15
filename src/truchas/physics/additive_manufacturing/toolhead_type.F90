@@ -113,6 +113,11 @@ contains
     end if
   end subroutine
 
+  !! Compute the fade factor in [0,1]. We need to guard against overflow in the
+  !! exponential argument that will occur when t0 == -huge(1.0_r8), which only
+  !! happens for the initial unbounded path segment where the laser is necessarily
+  !! off.
+
   pure function fade_factor(this, t) result(a)
     class(toolhead), intent(in) :: this
     real(r8), intent(in) :: t
@@ -125,7 +130,12 @@ contains
       end if
     else  ! fade to 0
       if (this%fade_is_on) then
-        a = this%a0*exp((this%t0 - t)/this%tau)
+        !! Guard against overflow in case t0 == -huge(1.0_r8)
+        if (this%t0 < t - 50*this%tau) then
+          a = 0.0_r8
+        else 
+          a = this%a0*exp((this%t0 - t)/this%tau)
+        end if
       else
         a = 0
       end if
