@@ -1,0 +1,134 @@
+PBF MATERIAL TEST
+-----------------
+The purpose of this test is to verify the history-dependent PBF material
+feature.
+
+This is a 2D problem with a unit square domain. Initially, "metal" occupies
+the left half of the domain and "powder" the right half. Both materials are
+2-phase with identical properties (for simplicity) and phase changes. The
+temperature of the bottom side is fixed at a value below the solidus
+temperature and a time-dependent temperature BC applied at the top side.
+The remaining sides are adiabatic. The top temperature rises quickly from
+a low temperature below solidus to a high temperature above liquidus and
+held there for a time before quickly dropping back to its original value.
+The intial temperature is constant, conforming to the BC. The top half of
+the domain melts, and then resolidifies, returning to nearly its original
+temperature by the final time. With this PBF material feature, all melted
+powder material should solidify into metal material -- not powder.
+
+&PBF_MATERIAL
+  material1 = 'powder'
+  material2 = 'metal'
+/
+&MATERIAL
+  name = 'metal'
+  phases = 'metal-sol', 'metal-liq'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/
+
+&PHASE_CHANGE
+  low_temp_phase = 'metal-sol'
+  high_temp_phase = 'metal-liq'
+  solidus_temp = 1.4
+  liquidus_temp = 1.6
+  latent_heat = 1.0
+/
+
+&MATERIAL
+  name = 'powder'
+  phases = 'powder-sol', 'powder-liq'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/
+
+&PHASE_CHANGE
+  low_temp_phase = 'powder-sol'
+  high_temp_phase = 'powder-liq'
+  solidus_temp = 1.4
+  liquidus_temp = 1.6
+  latent_heat = 1.0
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'x'
+  translation_pt = 0.5, 0.5, 0.0
+  material_name = 'powder-sol'
+  temperature = 1.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'metal-sol'
+  temperature = 1.0
+/
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals = 11
+  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%intervals = 21
+  z_axis%coarse_grid = -0.05, 0.05
+  z_axis%intervals = 1
+/
+
+&OUTPUTS
+  output_t = 0.0, 2.0, 4.0
+  output_dt = 2*10.0
+/
+
+&FUNCTION
+  name = 'top-temp'
+  type = 'tabular'
+  tabular_interp = 'akima'
+  tabular_data = 0.0, 1.0
+                 0.2, 2.0
+                 1.0, 2.0
+                 2.0, 2.0
+                 2.2, 1.0
+                 2.3, 1.0
+/
+
+&PHYSICS
+  materials = 'metal', 'powder'
+  heat_transport = T
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-4
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-4
+  nlk_tol            = 0.01
+/
+
+&NUMERICS
+  dt_init = 1.0d-5
+  dt_min  = 1.0d-7
+  dt_grow = 10.0
+  dt_max  = 100.0
+/
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 5, 6
+  flux = 0.0
+/
+
+&THERMAL_BC
+  name = 'bottom'
+  type = 'temperature'
+  face_set_ids = 3
+  temp = 1.0
+/
+
+&THERMAL_BC
+  name = 'top'
+  type = 'temperature'
+  face_set_ids = 4
+  temp_func = 'top-temp'
+/
