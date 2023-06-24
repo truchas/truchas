@@ -6,7 +6,7 @@ module evap_heat_flux_type
   private
 
   type, extends(bndry_func2), public :: evap_heat_flux
-    real(r8), private :: a, beta, b
+    real(r8), private :: a, b, temp_0
   contains
     procedure :: init
     procedure :: compute
@@ -21,19 +21,17 @@ contains
     real(r8), intent(in) :: t, var(:)
     integer  :: j
     real(r8) :: temp
-    if (this%beta == 0.0_r8) then
-      do j = 1, size(this%index)
-        temp = var(this%index(j))
-        this%value(j) = this%a * exp(-this%b/temp)
-        this%deriv(j) = this%value(j) * (this%b/temp**2)
-      end do
-    else
-      do j = 1, size(this%index)
-        temp = var(this%index(j))
-        this%value(j) = this%a * (temp**this%beta) * exp(-this%b/temp)
-        this%deriv(j) = this%value(j) * (this%b/temp + this%beta)/temp
-      end do
-    end if
+    do j = 1, size(this%index)
+      temp = var(this%index(j))
+      if (temp > 0.0_r8) then
+        this%value(j) = (this%a / sqrt(temp)) * &
+                        exp(this%b*(1.0_r8/this%temp_0 - 1.0_r8/temp))
+        this%deriv(j) = this%value(j) * (this%b/temp - 0.5_r8) / temp
+      else ! wonky temperature data -- avoid invalid floating exception
+        this%value(j) = 0.0_r8
+        this%deriv(j) = 0.0_r8
+      end if
+    end do
   end subroutine compute
 
   subroutine init(this, mesh, params, stat, errmsg)
@@ -42,6 +40,7 @@ contains
     use unstr_mesh_type
     use parameter_list_type
     use parallel_communication, only: global_any
+    use physical_constants, only: R => gas_constant
 
     class(evap_heat_flux), intent(out) :: this
     type(unstr_mesh), intent(in) :: mesh
@@ -50,15 +49,57 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: j, n
+    real(r8) :: L, M, p0, lambda
     logical, allocatable :: mask(:)
     integer, allocatable :: setids(:)
     type(bitfield) :: bitmask
-    real(r8), parameter :: R = 8.3144598_r8 ! Gas constant [J/mol-K]
 
-    call params%get('prefactor', this%a)
-    call params%get('temp-exponent', this%beta, default=0.0_r8)
-    call params%get('activation-energy', this%b)
-    this%b = this%b/R
+    real(r8), parameter :: TWOPI = 6.2831853071795862_r8
+
+    call params%get('vaporization-heat', L, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (L < 0) then
+      stat = -1
+      errmsg = '"vaporization-heat" is < 0'
+      return
+    end if
+
+    call params%get('vaporization-temp', this%temp_0, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (this%temp_0 <= 0) then
+      stat = -1
+      errmsg = '"vaporization-temp" is <= 0'
+      return
+    end if
+
+    call params%get('molar-mass', M, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (M <= 0) then
+      stat = -1
+      errmsg = '"molar-mass" is <= 0'
+      return
+    end if
+
+    ! default is 1 atm in SI units
+    call params%get('ambient-pressure', p0, default=1.01325e5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (p0 <= 0) then
+      stat = -1
+      errmsg = '"ambient-pressure" is <= 0'
+      return
+    end if
+
+    call params%get('condensation-factor', lambda, default=0.1_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (lambda < 0) then
+      stat = -1
+      errmsg = '"condensation-factor" is < 0'
+      return
+    end if
+
+    !! Form the coefficients in the mathematical form of the flux
+    this%a = L * lambda * p0 * sqrt(M/(TWOPI*R))
+    this%b = M * L / R
 
     call params%get('face-set-ids', setids)
     call mesh%get_face_set_bitmask(setids, bitmask, stat, errmsg)

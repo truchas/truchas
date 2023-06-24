@@ -26,9 +26,11 @@ value of 1 to a uniform value of 3 at infinite times.
 Parameters conspire to yield a flux of 1.0 at temperature 3.0
 &EVAPORATION
   face_set_ids = 1
-  prefactor = 0.302031314
-  temp_exponent = 2
-  activation_energy = 24.94337694 ! 3*R
+  vaporization_heat = 6.0
+  vaporization_temp = 3.0
+  molar_mass = 4.157231309 ! R/2
+  ambient_pressure = 10.23326703
+  condensation_factor = 0.1
 /
 
 &DIFFUSION_SOLVER
