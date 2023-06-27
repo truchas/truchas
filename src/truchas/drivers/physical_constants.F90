@@ -52,6 +52,9 @@ module physical_constants
   !! Permeability of free space; default in SI units.
   real(r8), public, save :: vacuum_permeability = 1.256637e-6_r8
 
+  !! Universal gas constants; default in SI units.
+  real(r8), public, save :: gas_constant = 8.31446261815324_r8
+
 contains
 
   subroutine read_physical_constants (lun)
@@ -67,7 +70,8 @@ contains
     character(128) :: iom
 
     namelist /physical_constants/ stefan_boltzmann, absolute_zero, &
-                                  vacuum_permittivity, vacuum_permeability
+                                  vacuum_permittivity, vacuum_permeability, &
+                                  gas_constant
 
     !! Position the input file at the first occurrence of the namelist.
     if (is_IOP) then
@@ -92,11 +96,13 @@ contains
     call broadcast (Absolute_Zero)
     call broadcast (Vacuum_Permittivity)
     call broadcast (Vacuum_Permeability)
+    call broadcast (gas_constant)
 
     !! Check the values.
     if (Stefan_Boltzmann <= 0) call TLS_fatal ('STEFAN_BOLTZMANN must be > 0.0')
     if (vacuum_permeability <= 0) call TLS_fatal ('VACUUM_PERMEABILITY must be > 0.0')
     if (vacuum_permittivity <= 0) call TLS_fatal ('VACUUM_PERMITTIVITY must be > 0.0')
+    if (gas_constant <= 0) call TLS_fatal ('GAS_CONSTANT must be > 0.0')
 
   end subroutine read_physical_constants
 
