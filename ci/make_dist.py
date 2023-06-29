@@ -24,7 +24,7 @@ def run(x):
     if r != 0:
         raise Exception("The command '%s' failed." % x)
 
-def copy_deps(binary_executable):
+def copy_binary_deps(binary_executable):
     os.system("""\
     ldd %s \
         | grep "=>" \
@@ -37,12 +37,14 @@ def copy_deps(binary_executable):
 
     for l in open("ldd_output").readlines():
         lib = l.strip()
-        filename = os.path.basename(lib)
-        print("Direct dependency %s" % filename)
-        os.system("cp %s %s/lib" % (lib, dist))
-        lib = "%s/lib/%s" % (dist, filename)
-        os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib)
-        os.system("""\
+        copy_lib(lib, "Direct dependency %s")
+        copy_lib_deps(lib)
+
+
+def copy_lib_deps(lib, local_path="lib"):
+    filename = os.path.basename(lib)
+    lib = "%s/%s/%s" % (dist, local_path, filename)
+    os.system("""\
         ldd %s \
             | grep "=>" \
             | sed -e '/^[^\t]/ d' \
@@ -51,14 +53,16 @@ def copy_deps(binary_executable):
             | sed -e 's/ (0.*)//' \
             > ldd_output
         """ % lib)
-        for m in open("ldd_output").readlines():
-            lib2 = m.strip()
-            filename2 = os.path.basename(lib2)
-            print("    Indirect dependency %s" % filename2)
-            os.system("cp %s %s/lib" % (lib2, dist))
-            lib2 = "%s/lib/%s" % (dist, filename2)
-            os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib2)
+    for m in open("ldd_output").readlines():
+        copy_lib(m.strip(), "    Indirect dependency %s")
 
+
+def copy_lib(lib, msg):
+    filename = os.path.basename(lib)
+    print(msg % filename)
+    os.system("cp %s %s/lib" % (lib, dist))
+    lib = "%s/lib/%s" % (dist, filename)
+    os.system("patchelf --set-rpath '$ORIGIN/.' %s" % lib)
 
 
 run("rm -rf %s" % dist)
@@ -96,10 +100,14 @@ run("cp -r ../lib/libfwrite.so %s/lib/" % (dist))
 run("cp -r ../lib/libgridmap.so %s/lib/" % (dist))
 for lib in ["libfwrite.so", "libgridmap.so"]:
     run("patchelf --set-rpath '$ORIGIN/.' %s/lib/%s" % (dist, lib))
+for l in os.listdir("%s/lib/python3.9/lib-dynload/" % (dist)):
+    lib = "%s/lib/python3.9/lib-dynload/%s" % (dist, l)
+    os.system("patchelf --set-rpath '$ORIGIN/../../' %s" % lib)
+    copy_lib_deps(lib, local_path="lib/python3.9/lib-dynload")
 
 # Copy all dependencies and set rpath properly
 for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
-    copy_deps("%s/bin/%s" % (dist, b))
+    copy_binary_deps("%s/bin/%s" % (dist, b))
     os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, b))
 
 # Remove libraries that we need to use from the system
