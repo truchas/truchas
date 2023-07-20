@@ -56,7 +56,7 @@ contains
   !TODO: Add error checking of parameter list; currently assumed valid
   !      because the namelist reader checks and creates the parameter list.
 
-  subroutine init(this, params)
+  subroutine init(this, params, stat, errmsg)
 
     use parameter_list_type
     use toolpath_driver, only: alloc_toolpath
@@ -64,16 +64,20 @@ contains
 
     class(toolhead), intent(out) :: this
     type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     character(:), allocatable :: tp_name
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: array(:)
-    integer :: stat
-    character(:), allocatable :: errmsg
 
-    call params%get('toolpath', tp_name)
+    call params%get('toolpath', tp_name, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
     call alloc_toolpath(this%tp, tp_name, stat, errmsg)
-    INSIST(stat == 0)
+    if (stat /= 0) then
+      errmsg = 'error creating toolpath: ' // errmsg
+      return
+    end if
 
     plist => params%sublist('laser')
     call alloc_laser_irrad(this%laser, plist)

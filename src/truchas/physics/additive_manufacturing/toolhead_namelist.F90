@@ -134,6 +134,8 @@ contains
 
       type(parameter_list), pointer :: params, plist
       type(toolhead), allocatable :: head
+      integer :: stat
+      character(:), allocatable :: errmsg
 
       !! Stuff them into a parameter list for later use
       allocate(params)
@@ -153,7 +155,8 @@ contains
       end select
 
       allocate(head)
-      call head%init(params)
+      call head%init(params, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(label // ': ' // errmsg)
       call table%add_toolhead(name, head)
 
     end subroutine
