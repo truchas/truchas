@@ -55,6 +55,7 @@ contains
     type(parameter_list), pointer :: laser_params
     type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, ref(0:6), error
+    character(:), allocatable :: errmsg
 
     !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
@@ -82,7 +83,11 @@ contains
     end do
 
     t = 0.0_r8
-    call head%init(params)
+    call head%init(params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_fade: unexpected error creating toolhead')
+      return
+    end if
     call head%set_initial_state(t)
 
     stat = 0
@@ -129,6 +134,7 @@ contains
     type(parameter_list), pointer :: laser_params
     type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, error
+    character(:), allocatable :: errmsg
 
     !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
@@ -141,7 +147,11 @@ contains
     call laser_params%set('sigma', 1.0_r8)
 
     t = 0.0_r8
-    call head%init(params)
+    call head%init(params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_no_fade: unexpected error creating toolhead')
+      return
+    end if
     call head%set_initial_state(t)
 
     stat = 0
@@ -189,6 +199,7 @@ contains
     type(toolhead) :: head
     real(r8) :: t, r(3) = 0.0_r8, ref, error
     integer :: stat
+    character(:), allocatable :: errmsg
 
     !! Parameters for TOOLHEAD object initialization
     call params%set('toolpath', 'tp1')
@@ -203,7 +214,11 @@ contains
     stat = 0
 
     !! Off-to-on at t=0
-    call head%init(params)
+    call head%init(params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_fade_init: unexpected error creating toolhead')
+      return
+    end if
     call head%set_initial_state(t=1.0_r8)
     t = 1.0_r8
     ref = 1 - exp(-t/0.5_r8)
