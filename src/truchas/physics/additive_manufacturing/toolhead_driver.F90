@@ -38,8 +38,9 @@ contains
 
 
   subroutine add_toolhead_events(eventq)
+    use time_step_module, only: dt_init
     type(sim_event_queue), intent(inout) :: eventq
-    call table%add_events(eventq)
+    call table%add_events(dt_init, eventq)
   end subroutine
 
 end module toolhead_driver

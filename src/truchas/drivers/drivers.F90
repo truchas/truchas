@@ -328,6 +328,7 @@ call hijack_truchas ()
           type is (toolhead_event)
             call action%update_toolhead(t1)
             dt_new = min(dt_new, action%init_dt(dt_old, dt))
+            restart_ds = .true.
           type is (vf_event)
             call update_moving_vf
             dt_new = min(dt_new, action%init_dt(dt_old, dt))

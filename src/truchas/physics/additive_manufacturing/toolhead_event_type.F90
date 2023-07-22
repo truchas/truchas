@@ -77,9 +77,10 @@ contains
     end select
   end function
 
-  subroutine add_toolhead_events(th, eventq)
+  subroutine add_toolhead_events(th, init_dt, eventq)
 
     type(toolhead), intent(in), target :: th
+    real(r8), intent(in) :: init_dt
     type(sim_event_queue), intent(inout) :: eventq
 
     integer :: j
@@ -89,7 +90,8 @@ contains
     call th%tp%get_segment_starts(times, discont)
     do j = 1, size(times)
       if (discont(j)) then
-        call eventq%add_event(times(j), toolhead_event(th, DT_POLICY_FACTOR, 1.0e-1_r8), rank=80)
+        !call eventq%add_event(times(j), toolhead_event(th, DT_POLICY_FACTOR, 1.0e-1_r8), rank=80)
+        call eventq%add_event(times(j), toolhead_event(th, DT_POLICY_VALUE, init_dt), rank=80)
       else
         call eventq%add_event(times(j), toolhead_event(th, DT_POLICY_NEXT), rank=80)
       end if

@@ -21,7 +21,7 @@
 /
 
 &NUMERICS
-  dt_init = 1.0e-4
+  dt_init = 1.0e-3
   dt_grow = 5.0
   dt_min  = 1.0e-6
 /
@@ -59,7 +59,7 @@
   name = 'head1'
   toolpath = 'path1'
   laser_type = 'gaussian'
-  laser_time_const = 2e-2
+  laser_time_const = 0.0 ! none -- switches discontinuously
   laser_power = 5.0 ! [W]
   laser_sigma = 0.15
   laser_direction = 2, 1, -1
@@ -69,7 +69,7 @@
   name = 'head2'
   toolpath = 'path2'
   laser_type = 'gaussian'
-  laser_time_const = 2e-2
+  laser_time_const = 0.0 ! none -- switches discontinuously
   laser_power = 5.0 ! [W]
   laser_sigma = 0.15
   laser_direction = -1, 2, -1

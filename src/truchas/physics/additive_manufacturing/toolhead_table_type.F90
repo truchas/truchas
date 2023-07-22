@@ -125,9 +125,10 @@ contains
   end subroutine
 
 
-  subroutine add_events(this, eventq)
+  subroutine add_events(this, init_dt, eventq)
     use toolhead_event_type, only: add_toolhead_events
     class(toolhead_table), intent(in) :: this
+    real(r8), intent(in) :: init_dt
     type(sim_event_queue), intent(inout) :: eventq
     type(map_any_iterator) :: iter
     class(*), pointer :: uptr
@@ -137,7 +138,7 @@ contains
       select type (uptr)
       type is (outer_box)
         associate (th => uptr%ibox%th)
-          call add_toolhead_events(th, eventq)
+          call add_toolhead_events(th, init_dt, eventq)
         end associate
       end select
       call iter%next
