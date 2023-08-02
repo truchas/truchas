@@ -1,0 +1,130 @@
+1D PRESSURE-DRIVEN FLOW WITH MUSHY-ZONE POROUS MEDIA DRAG
+---------------------------------------------------------
+
+X-directed flow in a 20 x 1 x 1 channel with high pressure at the left end and
+low pressure at the right end. Free slip BC on sides of the channel. There are
+multiple zones across the channel in the y-direction but only a single zone in
+the z-direction, allowing all cells to be initialized with a 50-50 fluid-solid
+fraction. The fluid starts at rest and maintains a spatially uniform x-directed
+velocity. The x-component u is given by
+
+  u(t) = (-p_x/(\mu D(f_l))) (1 - \exp(-\mu D(f_l) t/\rho)),
+
+  D(f_l) = D_0 (1 - f_l)^2 / f_l^3,
+
+where $\mu$ is the viscosity, $f_l$ the liquid volume fraction, $D_0$ the drag
+coefficient, $p_x$ the pressure gradient, and $\rho$ the fluid density. For the
+current setup
+
+  u(t) = 1.5 (1 - \exp(-2t)).
+
+At steady state
+
+  u = - (1/D(f_l)) p_x / \mu,
+
+which corresponds to Darcy flow with permeability $K = 1/D$ given by the
+Carman-Kozeny relation.
+
+This problem uses a fixed time step of 2**-6 and the 2nd order trapezoid rule
+for integrating the drag term (drag_implicitness = 0.5).
+
+This input file can also be used (and has been) to establish 1st order
+convergence when using fully implicit discretization (drag_implicitness = 1)
+and 2nd order convergence when using the trapezoid rule.
+
+&MESH
+  x_axis%coarse_grid = 0.0, 20.0
+  x_axis%intervals   = 20
+  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%intervals   = 5
+  z_axis%coarse_grid = 0.0, 1.0
+  z_axis%intervals   = 1
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0, 2.0
+  output_dt = 1.0, 1.0
+/
+
+&PROBE
+  coord = 15.0, 0.5, 0.5
+  data = 'velocity'
+  data_file = 'vel.dat'
+/
+
+&PHYSICS
+  flow = T
+  materials = 'solid', 'liquid'
+/
+
+&NUMERICS
+  dt_constant = 0.015625
+  !dt_grow = 1.2
+  !dt_max = 10.0
+  !dt_min = 1e-06
+/
+
+&FLOW
+  courant_number= 0.25
+  viscous_implicitness = 0.5
+  porous_drag = T
+  drag_coef = 1e6
+  drag_implicitness = 0.5
+/
+
+&FLOW_PRESSURE_SOLVER
+  abs_tol = 1e-10
+  rel_tol = 0.0
+  max_ds_iter = 500
+  max_amg_iter = 20
+/
+
+&FLOW_VISCOUS_SOLVER
+  abs_tol = 0.0
+  rel_tol = 1e-9
+  max_ds_iter = 100
+  max_amg_iter = 10
+/
+
+&FLOW_BC
+ name = 'left end'
+ face_set_ids = 1
+ type = 'pressure'
+ pressure = 60000
+ inflow_material = 'liquid'
+/
+
+&FLOW_BC
+  name = 'right end'
+  face_set_ids = 2
+  type = 'pressure'
+  pressure = 0.0
+/
+
+&BODY
+  surface_name = 'plane'
+  axis = 'z'
+  translation_pt = 0.0, 0.0, 0.5
+  material_name = 'solid'
+  velocity = 0.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'liquid'
+  velocity = 0.0, 0.0, 0.0
+  temperature = 0.0
+/
+
+&MATERIAL
+  name = 'liquid'
+  is_fluid = T
+  density = 1e3
+  viscosity = 1e-3
+/
+
+&MATERIAL
+  name = 'solid'
+  density = 1
+/

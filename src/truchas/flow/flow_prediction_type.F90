@@ -64,13 +64,13 @@ module flow_prediction_type
     type(unstr_mesh), pointer :: mesh => null()
     type(flow_bc), pointer :: bc => null()
     class(turbulence_model), allocatable :: turb
-    !class(porous_drag_model), allocatable :: drag
     type(hypre_hybrid) :: solver(3)
-    logical :: inviscid
+    logical :: inviscid, porous_drag
     real(r8), allocatable :: rhs(:,:), sol(:), rhs1d(:)
     real(r8), allocatable :: grad_fc_vector(:,:,:)
     real(r8) :: viscous_implicitness
     real(r8) :: solidify_implicitness = 1.0_r8
+    real(r8) :: drag_coef, drag_implicitness = 1.0_r8
   contains
     procedure :: init
     procedure :: setup
@@ -116,6 +116,12 @@ contains
     plist => params%sublist("options")
     call plist%get('viscous-implicitness', this%viscous_implicitness, default=1.0_r8)
     call alloc_turbulence_model(this%turb, plist, off=this%inviscid)
+    call plist%get('porous-drag', this%porous_drag, default=.false.)
+    this%porous_drag = this%porous_drag .and. .not.this%inviscid
+    if (this%porous_drag) then
+      call plist%get('drag-coef', this%drag_coef)
+      call plist%get('drag-implicitness', this%drag_implicitness, default=1.0_r8)
+    end if
 
     allocate(this%rhs(3,mesh%ncell))
     allocate(this%grad_fc_vector(3,3,mesh%nface))
@@ -198,7 +204,7 @@ contains
 
     real(r8), pointer :: ds(:,:)
     integer :: i, j, fi, ni, k
-    real(r8) :: coeff, dtv
+    real(r8) :: coeff, dtv, dtd
     type(matrix_container) :: A(size(this%solver))
 
     ! this should be changed to check all other terms which may be treated implicitly
@@ -211,8 +217,9 @@ contains
 
     ds => flow_gradient_coefficients()
     dtv = dt*this%viscous_implicitness
+    dtd = dt*this%drag_implicitness
 
-    associate (mu_f => props%mu_fc, rho => props%rho_cc, &
+    associate (mu_f => props%mu_fc, mu_c => props%mu_cc, rho => props%rho_cc, &
         vof => props%vof, cell_t => props%cell_t, face_t => props%face_t)
 
       do j = 1, this%mesh%ncell_onP
@@ -260,7 +267,13 @@ contains
             end do
           end if
 
-          ! porous drag - skip for now
+          ! porous drag (Voller-Prakash, 1987)
+          if (this%porous_drag .and. vof(j) < 1.0_r8) then
+            coeff = dtd * this%drag_coef * mu_c(j) * ((1 - vof(j))**2 / vof(j)**3) * this%mesh%volume(j)
+            do k = 1, size(A)
+              call A(k)%A%add_to(j, j, coeff)
+            end do
+          end if
 
           ! solidification
           if (vof(j) > 0.0_r8) then
@@ -502,6 +515,18 @@ contains
     ! Once a better solid/fluid model is used, change this numerical hackjob.
     call this%accumulate_rhs_pressure(dt, props, grad_p_rho_cc)
     call this%accumulate_rhs_viscous_stress(dt, props, vel_cc)
+
+    ! handle porous drag (Voller-Prakash, 1987)
+    if (this%porous_drag .and. this%drag_implicitness < 1.0_r8) then
+      coeff = dt*(1.0_r8 - this%drag_implicitness)*this%drag_coef
+      associate (rhs => this%rhs, cell_t => props%cell_t, mu_c => props%mu_cc, vof => props%vof)
+        do j = 1, this%mesh%ncell_onP
+          if (cell_t(j) <= regular_t .and. vof(j) < 1.0_r8) &
+              rhs(:,j) = rhs(:,j) - coeff*mu_c(j)*((1 - vof(j))**2/vof(j)**3)*this%mesh%volume(j) * vel_cc(:,j)
+        end do
+      end associate
+    end if
+
     do j = 1, this%mesh%ncell_onP
       this%rhs(:,j) = this%rhs(:,j)*props%vof(j)
     end do
@@ -519,8 +544,6 @@ contains
         this%rhs(:,j) = this%rhs(:,j) + dt * value(:,i)
       end do
     end associate
-
-    ! handle porous drag
 
     associate (rho => props%rho_cc_n, vof => props%vof_n, rhs => this%rhs)
       do j = 1, this%mesh%ncell_onP

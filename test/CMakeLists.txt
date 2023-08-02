@@ -449,3 +449,6 @@ add_pytruchas_test(steady-flow-6b steady-flow/test6b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(inflow-bc-1 inflow-bc/test1.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(inflow-bc-2 inflow-bc/test2.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(inflow-bc-3 inflow-bc/test3.py PROCESSORS 4 LABELS FLOW)
+
+# POROUS DRAG TESTS
+add_pytruchas_test(drag-1d drag/test-1d.py PROCESSORS 1 LABELS FLOW)

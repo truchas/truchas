@@ -35,11 +35,12 @@ contains
     !! Namelist variables
     integer  :: vol_track_subcycles, location_iter_max, fischer_dim
     logical  :: inviscid, track_interfaces, nested_dissection, void_collapse
-    logical  :: wisp_redistribution
+    logical  :: wisp_redistribution, porous_drag
     real(r8) :: viscous_implicitness, viscous_number, courant_number
     real(r8) :: fluid_frac_threshold, min_face_fraction, vol_frac_cutoff
     real(r8) :: void_collapse_relaxation, wisp_cutoff, wisp_absorption_fraction
     real(r8) :: wisp_neighbor_cutoff
+    real(r8) :: drag_coef, drag_implicitness
     character(32) :: material_priority(16)
     namelist /flow/ inviscid, &
         viscous_implicitness, viscous_number, courant_number, &
@@ -47,7 +48,8 @@ contains
         track_interfaces, nested_dissection, vol_track_subcycles, location_iter_max, &
         vol_frac_cutoff, material_priority, fischer_dim, void_collapse, &
         void_collapse_relaxation, wisp_redistribution, wisp_cutoff, &
-        wisp_absorption_fraction, wisp_neighbor_cutoff
+        wisp_absorption_fraction, wisp_neighbor_cutoff, &
+        porous_drag, drag_coef, drag_implicitness
 
     call TLS_info('Reading FLOW namelist ...')
 
@@ -85,6 +87,10 @@ contains
     void_collapse = .false.
     void_collapse_relaxation = NULL_R
 
+    porous_drag = .false.
+    drag_coef = NULL_R
+    drag_implicitness = NULL_R
+
     !! Read the FLOW namelist
     if (is_IOP) read(lun,nml=flow,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -109,6 +115,9 @@ contains
 
     call broadcast(void_collapse)
     call broadcast(void_collapse_relaxation)
+
+    call broadcast(drag_coef)
+    call broadcast(drag_implicitness)
 
     call broadcast(wisp_redistribution)
     call broadcast(wisp_cutoff)
@@ -195,6 +204,18 @@ contains
       if (void_collapse_relaxation < 0 .or. void_collapse_relaxation > 1) &
           call TLS_fatal('VOID COLLAPSE RELAXATION must be in [0,1]')
       call plist%set('void-collapse-relaxation', void_collapse_relaxation)
+    end if
+
+    call plist%set('porous-drag', porous_drag)
+    if (porous_drag) then
+      if (drag_coef == NULL_R) call TLS_fatal('DRAG_COEF not specified')
+      if (drag_coef <= 0.0_r8) call TLS_fatal('DRAG_COEF must be > 0.0')
+      call plist%set('drag-coef', drag_coef)
+      if (drag_implicitness /= NULL_R) then
+        if (drag_implicitness < 0.0_r8 .or. drag_implicitness > 1.0_r8) &
+            call TLS_fatal('DRAG_IMPLICITNESS must be in [0,1]')
+        call plist%set('drag-implicitness', drag_implicitness)
+      end if
     end if
 
     plist => params%sublist('cutoffs')
