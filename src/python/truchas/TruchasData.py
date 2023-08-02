@@ -71,6 +71,15 @@ class TruchasData:
         self._modified_fields = {}
 
 
+    def stdout(self):
+        """:return: Truchas stdout
+        :rtype: str"""
+        logfile = os.path.splitext(self.filename)[0] + ".log"
+        with open(logfile, 'r') as f:
+            log = f.read()
+        return log
+
+
     def field(self, series_id, field_name):
         """Return the requested field of the requested series as a ndarray.
         This will read the entire field from disk. If the field has been

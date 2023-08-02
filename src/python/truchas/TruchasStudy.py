@@ -142,16 +142,9 @@ class TruchasStudy:
         with open(output_filename, "w") as fh: fh.write("# " + line + "\n")
 
         # Generate list of replacements and new input files (those not already in the database)
-        print("Generating input decks ... ", end="", flush=True)
-        replacements = [self._instance_replacements(initial_parameters, variable, p) for p in points]
-        new_replacements = [r for r in replacements if not self._tdb.exists(r)]
-        new_input_files = [self._generate_input_deck(template_input_file, r) for r in new_replacements]
-        print(f"done. {len(new_input_files)} new input files.\n")
-
-        # Run Truchas on all new inputs
-        args = [(self, i, r) for i, r in zip(new_input_files, new_replacements)]
-        with multiprocessing.Pool(self._njobs) as pool:
-            pool.starmap(_run, args)
+        replacements = [self._instance_replacements(initial_parameters, variable, p)
+                        for p in points]
+        self.run_inputs(template_input_file, replacements)
 
         # Mine database for requested data
         print("Reading database ... ", end="", flush=True)
@@ -167,6 +160,19 @@ class TruchasStudy:
 
             if callable(extra_outputs): extra_outputs(r, output, output_filename, i)
         print("done.")
+
+
+    def run_inputs(self, template_input_file, replacements):
+        # Generate list of replacements and new input files (those not already in the database)
+        print("Generating input decks ... ", end="", flush=True)
+        new_replacements = [r for r in replacements if not self._tdb.exists(r)]
+        new_input_files = [self._generate_input_deck(template_input_file, r) for r in new_replacements]
+        print(f"done. {len(new_input_files)} new input files.\n")
+
+        # Run Truchas on all new inputs
+        args = [(self, i, r) for i, r in zip(new_input_files, new_replacements)]
+        with multiprocessing.Pool(self._njobs) as pool:
+            pool.starmap(_run, args)
 
 
     def _instance_replacements(self, initial_parameters, variable, p):
@@ -295,7 +301,6 @@ class TruchasStudy:
 
 
 ### Multiprocessing variables & routines need to be global ###
-
 _lock = multiprocessing.Lock()
 
 def _run(self, input_file, replacements):
