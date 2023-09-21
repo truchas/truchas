@@ -19,26 +19,24 @@ def run_test(tenv):
     # G
     atol = 20
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-G"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-G"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-G"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-G"), 0)
     error = abs((test-gold) / (atol + rtol*abs(gold)))
     nfail += truchas.compare_max(error, 0, 1.0, "G", time)
 
     # L
     atol = 0
     rtol = 3e-2
-    test = np.ma.masked_values(output.field(2, "ustruc-L"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-L"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-L"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-L"), 0)
     error = abs((test-gold) / (atol + rtol* gold))
     nfail += truchas.compare_max(error, 0, 1.0, "L", time)
 
     # Solidification time
     atol = 0
     rtol = 2e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-t_sol"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-t_sol"), 0)
-    print("%d" % test.size)
-    print("%d" % gold.size)
+    test = np.ma.masked_values(output.field(2, "ustruc1-t_sol"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-t_sol"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "t_sol", time)
 

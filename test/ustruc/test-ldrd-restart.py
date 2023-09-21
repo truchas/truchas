@@ -19,38 +19,38 @@ def run_test(tenv):
     # G
     atol = 200
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-G"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-G"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-G"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-G"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "G", time)
 
     # V
     atol = 1e-4
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-V"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-V"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-V"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-V"), 0)
     error = abs((test-gold) / (atol + rtol* gold))
     nfail += truchas.compare_max(error, 0, 1.0, "V", time)
 
     # lambda1
     atol = 1e-5
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-lambda1"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-lambda1"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-lambda1"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-lambda1"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda1", time)
 
     # lambda2
     atol = 2e-6
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(2, "ustruc-lambda2"), 0)
-    gold = np.ma.masked_values(golden.field(3, "ustruc-lambda2"), 0)
+    test = np.ma.masked_values(output.field(2, "ustruc1-lambda2"), 0)
+    gold = np.ma.masked_values(golden.field(3, "ustruc1-lambda2"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda2", time)
 
     # ustruc
-    test = output.field(2, "ustruc-type")
-    gold = golden.field(3, "ustruc-type")
+    test = output.field(2, "ustruc1-type")
+    gold = golden.field(3, "ustruc1-type")
     success = (test == gold).all()
     print("{:s}: {:s} at t={:8.2e}".format("PASS" if success else "FAIL", "ustruc", time))
     if not success: nfail += 1

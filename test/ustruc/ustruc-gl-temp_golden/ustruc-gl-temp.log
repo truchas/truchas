@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 22.11-2-g2d0c6657-dirty
+   code:                Truchas 23.08-6-g818da83d-dirty
    build architecture:  x86_64
-   build date/time:     2022-11-15 14:42:36
+   build date/time:     2023-10-23 07:47:17
    build flags:          -u -O0 -C -C=dangling -gline -nan -f2018 -w=uda
    build host:          thelio.indiana
-   run architecture:    Linux thelio.indiana 6.0.5-200.fc36.x86_64 #1 S
+   run architecture:    Linux thelio.indiana 6.5.5-100.fc37.x86_64 #1 S
    run host:            thelio.indiana
-   run date/time:       15 Nov 22 14:48:31
+   run date/time:       23 Oct 23 09:30:52
    processors:          1
 
 ================================================================================
@@ -66,7 +66,7 @@ Reading DS_SOURCE namelists ...
   none found
 Reading ENCLOSURE_RADIATION namelists ...
   none found
-Reading MICROSTRUCTURE namelist ...
+Reading MICROSTRUCTURE namelists ...
 Reading PROBE namelists ...
   none found
 Input file "ustruc-gl-temp.inp" closed
@@ -906,39 +906,39 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  1.535E+01 --- Total
-    3.723E-03 --- Input
-    1.244E+00 --- Initialization
-      1.482E-01 --- mesh-MAIN
-        4.908E-02 --- ghost-cells
-          4.901E-02 --- cell-ghosts
-            3.122E-02 --- node-neighbors
-            3.993E-03 --- ghost-cells
-          3.200E-05 --- link-ghosts
-          2.900E-05 --- assemble-ghosts
-      1.397E-02 --- VOF Initialize
-      6.517E-02 --- HTSD function
-        6.434E-02 --- HT function
-      1.209E-03 --- ssor-setup
-      3.793E-02 --- ssor-solve
-      7.989E-02 --- Microstructure
-    4.650E-04 --- electromagnetics
-    1.410E+01 --- Main Cycle
-      3.641E+00 --- Microstructure
-        2.788E-02 --- collect input
-        3.609E+00 --- analysis
-      1.029E-02 --- Time Step
-      1.028E+01 --- Diffusion Solver
-        1.208E+00 --- HTSD precon compute
-          6.196E-02 --- hypre-matrix-copy
-          3.156E-01 --- boomer-setup
-        4.874E+00 --- HTSD function
-          4.817E+00 --- HT function
-        2.908E+00 --- HTSD precon apply
-          2.908E+00 --- HT precon apply
-            1.599E+00 --- boomer-solve
+  1.551E+01 --- Total
+    3.973E-03 --- Input
+    1.275E+00 --- Initialization
+      1.481E-01 --- mesh-MAIN
+        5.048E-02 --- ghost-cells
+          5.040E-02 --- cell-ghosts
+            3.219E-02 --- node-neighbors
+            4.180E-03 --- ghost-cells
+          3.500E-05 --- link-ghosts
+          3.200E-05 --- assemble-ghosts
+      1.407E-02 --- VOF Initialize
+      6.705E-02 --- HTSD function
+        6.617E-02 --- HT function
+      1.203E-03 --- ssor-setup
+      3.812E-02 --- ssor-solve
+      8.062E-02 --- Microstructure
+    7.610E-04 --- electromagnetics
+    1.423E+01 --- Main Cycle
+      3.629E+00 --- Microstructure
+        1.586E-02 --- collect input
+        3.607E+00 --- analysis
+      8.233E-03 --- Time Step
+      1.041E+01 --- Diffusion Solver
+        1.231E+00 --- HTSD precon compute
+          6.227E-02 --- hypre-matrix-copy
+          3.191E-01 --- boomer-setup
+        5.044E+00 --- HTSD function
+          4.983E+00 --- HT function
+        2.877E+00 --- HTSD precon apply
+          2.872E+00 --- HT precon apply
+            1.569E+00 --- boomer-solve
 
-                  Process virtual memory used: 1.54E+02 mB
-                                   words/cell: 6230
+                  Process virtual memory used: 1.56E+02 mB
+                                   words/cell: 6288
 
-truchas terminated normally on 15 Nov 22 at 14:48:47
+truchas terminated normally on 23 Oct 23 at 09:31:07

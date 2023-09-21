@@ -269,11 +269,7 @@ contains
     use restart_utilities, only: info
     use ustruc_driver, only: ustruc_enabled, ustruc_read_checkpoint, ustruc_skip_checkpoint
     if (have_microstructure_data) then
-      if (ustruc_enabled())  then
-        call ustruc_read_checkpoint (unit)
-      else
-        call ustruc_skip_checkpoint (unit)
-      end if
+      call ustruc_read_checkpoint (unit)
     else if (ustruc_enabled()) then
       call info ('  WARNING: restart file contains no microstructure state data')
     end if
