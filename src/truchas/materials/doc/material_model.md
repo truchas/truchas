@@ -130,6 +130,14 @@ model%num_matl_phase(mid)
 Returns the number of phases that comprise material `mid`. It is an error if
 `mid` is not a valid material index.
 
+#### phase_matl_index
+```Fortran
+type(material_model) :: model
+model%phase_matl_index(pid)
+```
+Returns the index of the parent material of phase `pid`. It is an error if
+`pid` is not a valid phase index. This function is elemental.
+
 #### get_matl_phase_index_range
 ```Fortran
 type(material_model) :: model

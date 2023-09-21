@@ -50,6 +50,7 @@ module material_model_type
     procedure :: matl_index
     procedure :: has_matl
     procedure :: num_matl_phase
+    procedure :: phase_matl_index
     procedure :: get_matl_phase_index_range
     procedure :: get_matl_phase_frac
     procedure :: get_phase_ref
@@ -188,6 +189,14 @@ contains
       if (this%plist(n)%phi%name == name) return
     end do
     if (this%have_void .and. name == VOID) n = this%void_index
+  end function
+
+  !! Return the index of the parent material for the phase with index PID.
+  !! PID must be in [1, NUM_PHASE].
+  elemental integer function phase_matl_index(this, pid) result(mid)
+    class(material_model), intent(in) :: this
+    integer, intent(in) :: pid
+    mid = this%p2m(pid)
   end function
 
   !! Return true if a phase with name NAME exists; otherwise false.

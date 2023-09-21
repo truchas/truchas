@@ -1,4 +1,4 @@
-MICROSTRUCTURE MODELING TEST GL-FRAC
+MICROSTRUCTURE MODELING TEST GL-BOTH
 
 Solidification and microstructure prediction in a small wedge casting.
 3D quarter symmetry domain includes mold.  Mesh contains both hex and
@@ -10,13 +10,13 @@ casting simulation by John Gibbs (MST-6).  Final time is well before
 solidification has completed in order to capture a full mixture of liquid,
 solidifying, solid, and undefined cell states from the microstructure model.
 
-This is the same problem as GL-TEMP with the same microstructure thresholds,
-except that they are expressed in terms of solid fraction, and so the results
-should be identical.
- 
+This particular case tests multiple instances of the MICROSTRUCTURE using
+combining both the default GL analysis module with temperature and solid
+fraction based thresholds.
+
 &OUTPUTS
-  output_t = 0.0, 4.0
-  output_dt = 4.0
+  output_t = 0.0, 4.0, 6.0
+  output_dt = 4.0, 2.0
 /
 
 &MESH
@@ -30,8 +30,15 @@ should be identical.
   heat_transport = .true.
 /
 
+&MICROSTRUCTURE
+  cell_set_ids = 1
+  begin_temp = 445
+  gl_temp = 443
+  end_temp = 415
+/
+
 The fraction thresholds here are chosen to match the temperature thresholds from
-ustruc-gl-temp.inp of 445, 443, and 415 assuming use of the smooth transition
+assuming use of the smooth transition
 
 &MICROSTRUCTURE
   low_temp_phase = 'solid'
@@ -39,7 +46,7 @@ ustruc-gl-temp.inp of 445, 443, and 415 assuming use of the smooth transition
   begin_frac = 0.019675926
   gl_frac    = 0.051512003
   end_frac   = 0.980324074
-/
+/ 
 
 &DIFFUSION_SOLVER
   abs_temp_tol       = 0.0

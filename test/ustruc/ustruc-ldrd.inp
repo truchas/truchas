@@ -27,7 +27,7 @@ solidifying, solid, and undefined cell states from the microstructure model.
 /
 
 &MICROSTRUCTURE
-  material = 'alloy'
+  low_temp_phase = 'solid'
   cell_set_ids = 1
   model_file = 'ldrd-ustruc-model.json'
 /

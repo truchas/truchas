@@ -626,23 +626,28 @@ class TruchasData:
 
         # MICROSTRUCTURE SEGMENT
         if "microstructure" in features:
-            ustruc_map = self._series(series_id)["CP-USTRUC-MAP"][:]
-            fw.write_i4x0(ustruc_map.size)
-            fw.write_i4x1(ustruc_map)
+            ustruc_num = self._series(series_id).attrs["CP-USTRUC-NUM"]
+            fw.write_i4x0(ustruc_num)
 
-            # get the number of components
-            ncomp = 0
-            while "CP-USTRUC-COMP-" + str(ncomp+1) in fields: ncomp += 1
-            fw.write_i4x0(ncomp)
+            for j in range(ustruc_num):
+                prefix = "CP-USTRUC-" + str(j+1)
+                ustruc_map = self._series(series_id)[prefix+"-MAP"][:]
+                fw.write_i4x0(ustruc_map.size)
+                fw.write_i4x1(ustruc_map)
 
-            for n in range(ncomp):
-                name = "CP-USTRUC-COMP-" + str(n+1)
-                ustruc_comp = self._series(series_id)[name][:]
-                cid = self._series(series_id)[name].attrs["COMP-ID"]
+                # get the number of components
+                ncomp = 0
+                while prefix + "-COMP-" + str(ncomp+1) in fields: ncomp += 1
+                fw.write_i4x0(ncomp)
 
-                fw.write_i4x0(cid)
-                fw.write_i4x0(ustruc_comp.shape[1])
-                fw.write_i8x2(ustruc_comp)
+                for n in range(ncomp):
+                    name = prefix + "-COMP-" + str(n+1)
+                    ustruc_comp = self._series(series_id)[name][:]
+                    cid = self._series(series_id)[name].attrs["COMP-ID"]
+
+                    fw.write_i4x0(cid)
+                    fw.write_i4x0(ustruc_comp.shape[1])
+                    fw.write_i8x2(ustruc_comp)
 
         # JOULE HEAT SEGMENT
         if "joule_heat" in features:
@@ -706,7 +711,7 @@ class TruchasData:
 
         if "phi1" in fields: features.append("species")
         if "Joule_P" in fields and not self.mapped: features.append("joule_heat")
-        if "CP-USTRUC-MAP" in fields and not self.mapped: features.append("microstructure")
+        if "CP-USTRUC-1-MAP" in fields and not self.mapped: features.append("microstructure")
         return features
 
 

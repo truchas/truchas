@@ -313,6 +313,11 @@ add_pytruchas_test(ustruc-gl-frac
                    PROCESSORS 4
                    LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
 
+add_pytruchas_test(ustruc-gl-both
+                   ustruc/test-gl-both.py
+                   PROCESSORS 4
+		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
 add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)

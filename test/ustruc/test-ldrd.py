@@ -21,38 +21,38 @@ def run_test(tenv):
     # G
     atol = 200
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(sid, "ustruc-G"), 0)
-    gold = np.ma.masked_values(golden.field(sid, "ustruc-G"), 0)
+    test = np.ma.masked_values(output.field(sid, "ustruc1-G"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "ustruc1-G"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "G", time)
 
     # V
     atol = 1e-4
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(sid, "ustruc-V"), 0)
-    gold = np.ma.masked_values(golden.field(sid, "ustruc-V"), 0)
+    test = np.ma.masked_values(output.field(sid, "ustruc1-V"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "ustruc1-V"), 0)
     error = abs((test-gold) / (atol + rtol* gold))
     nfail += truchas.compare_max(error, 0, 1.0, "V", time)
 
     # lambda1
     atol = 2e-6
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(sid, "ustruc-lambda1"), 0)
-    gold = np.ma.masked_values(golden.field(sid, "ustruc-lambda1"), 0)
+    test = np.ma.masked_values(output.field(sid, "ustruc1-lambda1"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "ustruc1-lambda1"), 0)
     error = abs((test-gold) / (atol + rtol* gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda1", time)
 
     # lambda2
     atol = 2e-6
     rtol = 1e-4
-    test = np.ma.masked_values(output.field(sid, "ustruc-lambda2"), 0)
-    gold = np.ma.masked_values(golden.field(sid, "ustruc-lambda2"), 0)
+    test = np.ma.masked_values(output.field(sid, "ustruc1-lambda2"), 0)
+    gold = np.ma.masked_values(golden.field(sid, "ustruc1-lambda2"), 0)
     error = abs((test-gold) / (atol + rtol*gold))
     nfail += truchas.compare_max(error, 0, 1.0, "lambda2", time)
 
     # ustruc
-    test = output.field(sid, "ustruc-type")
-    gold = golden.field(sid, "ustruc-type")
+    test = output.field(sid, "ustruc1-type")
+    gold = golden.field(sid, "ustruc1-type")
     success = (test == gold).all()
     print("{:s}: {:s} at t={:8.2e}".format("PASS" if success else "FAIL", "ustruc", time))
     if not success: nfail += 1
