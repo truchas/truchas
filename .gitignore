@@ -298,3 +298,11 @@ $RECYCLE.BIN/
 *.lnk
 
 install
+build-*
+setup-*
+configure
+\#*
+.vscode
+TAGS
+cubit*jou
+history*jou

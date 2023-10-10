@@ -1,7 +1,8 @@
 # Generic MacOS with GNU Fortran and GNU C
 
-set(CMAKE_C_COMPILER gcc CACHE STRING "C Compiler")
-set(CMAKE_Fortran_COMPILER gfortran CACHE STRING "Fortran Compiler")
+set(CMAKE_C_COMPILER $ENV{CC} CACHE STRING "C Compiler")
+set(CMAKE_CXX_COMPILER $ENV{CXX} CACHE STRING "C++ Compiler")
+set(CMAKE_Fortran_COMPILER $ENV{FC} CACHE STRING "Fortran Compiler")
 
 # Additional flags to the default CMAKE_<lang>_FLAGS_<build_type> flags
 set(CMAKE_Fortran_FLAGS_RELEASE "-O2 -DNDEBUG"

@@ -199,7 +199,8 @@ dependencies:
 
 ```bash
 > spack env activate truchas-devel
-> spack install --only dependencies truchas %gcc
+> spack add truchas %gcc
+> spack install --only dependencies
 ```
 
 Once completed, note that the spack environment has set
