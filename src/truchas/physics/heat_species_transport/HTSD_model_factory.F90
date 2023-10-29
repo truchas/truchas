@@ -267,21 +267,7 @@ contains
       !! Define the (simple) radiation boundary conditions.
       call bc_fac%alloc_rad_bc(model%bc_rad, stat, errmsg)
       if (stat /= 0) return
-      if (allocated(model%bc_rad)) then
-        if (global_any(rmask(model%bc_rad%index))) then
-          stat = -1
-          errmsg = 'temperature radiation boundary condition overlaps with enclosure radiation'
-          return
-        end if
-      end if
-      if (allocated(model%bc_rad)) then
-        if (global_any(mask(model%bc_rad%index))) then
-          stat = -1
-          errmsg = 'temperature radiation boundary condition overlaps with interface conditions'
-          return
-        end if
-        fmask(model%bc_rad%index) = .true. ! mark the radiation faces
-      end if
+      if (allocated(model%bc_rad)) fmask(model%bc_rad%index) = .true. ! mark the radiation faces
 
       !! Define the evaporation heat flux boundary condition
       if (allocated(evap_params)) then
