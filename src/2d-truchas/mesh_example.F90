@@ -9,16 +9,12 @@
 program mesh_example
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH, pgslib_finalize, pgslib_barrier
-  use parallel_util_module, only: parallel_init
   use parallel_communication
   use truchas_env, only: prefix
   use truchas_logging_services
   use unstr_2d_mesh_factory
   use xdmf_file_type
   implicit none
-
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
 
   integer  :: nx(2)
   real(r8) :: xmin(2), xmax(2), eps, ptri
@@ -31,7 +27,6 @@ program mesh_example
   type(xdmf_file) :: outfile
 
   !! Initialize MPI and other base stuff that truchas depends on
-  call parallel_init(argv)
   call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
   call TLS_initialize
@@ -83,6 +78,6 @@ program mesh_example
   call outfile%close
 
   !! Shutdown MPI
-  call pgslib_finalize
+  call halt_parallel_communication
 
 end program

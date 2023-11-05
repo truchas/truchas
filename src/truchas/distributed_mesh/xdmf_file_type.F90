@@ -8,7 +8,7 @@
 
 module xdmf_file_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
@@ -38,11 +38,13 @@ contains
 
   subroutine open_file(this, filename)
 
-    use parallel_communication, only: is_IOP
-    use pgslib_module, only: pgslib_barrier
+    use mpi, only: MPI_Barrier
+    use parallel_communication, only: is_IOP, comm
 
     class(xdmf_file), intent(out) :: this
     character(*), intent(in) :: filename
+
+    integer :: ierr
 
     !! The IO process handles the XDMF header file
     if (is_IOP) then
@@ -58,9 +60,9 @@ contains
     this%binfile = filename // '.bin'
     if (is_IOP) then  ! create an empty file
       open(newunit=this%bin,file=this%binfile,access='stream',action='write',status='replace')
-      call pgslib_barrier
+      call MPI_Barrier(comm, ierr)
     else  ! wait for the IOP to create the file and then open it
-      call pgslib_barrier
+      call MPI_Barrier(comm, ierr)
       open(newunit=this%bin,file=this%binfile,access='stream',action='write',status='old')
     end if
     !TODO: need iostat error handling
@@ -157,7 +159,7 @@ contains
         case default
           INSIST(.false.)
         end select
-        connect(n+1:n+size(list)) = mesh%node_ip%global_index(list) - 1  ! XDMF uses 0-based indexing
+        connect(n+1:n+size(list)) = mesh%node_imap%global_index(list) - 1  ! XDMF uses 0-based indexing
         n = n + size(list) + 1
       end associate
     end do
@@ -344,7 +346,7 @@ contains
     use parallel_communication
     integer, intent(in) :: n
     integer :: buffer(nPE)
-    call collate(buffer, n)
+    call gather(n, buffer)
     call broadcast(buffer)
     my_offset = sum(buffer(1:this_PE-1))
   end function my_offset

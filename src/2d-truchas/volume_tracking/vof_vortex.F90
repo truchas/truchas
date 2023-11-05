@@ -8,10 +8,8 @@
 program vof_vortex
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH, pgslib_finalize, pgslib_barrier
-  use parallel_util_module, only: parallel_init
   use parallel_communication
-  use truchas_env, only: prefix
+  use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use unstr_2d_mesh_factory
   use xdmf_file_type
@@ -19,8 +17,6 @@ program vof_vortex
   use gaussian_quadrature_vofinit
   use vof_2d_test_driver
   implicit none
-
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
 
   character(len=100) :: inputfile
   integer  :: nx(2), tsmax, nmat, nvtrack
@@ -41,9 +37,9 @@ program vof_vortex
   call cpu_time(t_start)
 
   !! Initialize MPI and other base stuff that truchas depends on
-  call parallel_init(argv)
   call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
+  overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NOISY)
 
@@ -134,8 +130,8 @@ program vof_vortex
   allocate(global_vof(merge(gncell,0,is_IOP)))
   allocate(global_xcell(merge(gncell,0,is_IOP)))
 
-  call collate(global_vof, vof(1,:mesh%ncell_onP))
-  call collate(global_xcell, mesh%xcell(:mesh%ncell_onP))
+  call gather(vof(1,:mesh%ncell_onP), global_vof)
+  call gather(mesh%xcell(:mesh%ncell_onP), global_xcell)
 
   if (is_iop) global_vof(global_xcell) = global_vof
 
@@ -166,7 +162,7 @@ program vof_vortex
   end if
 
   !! Shutdown MPI
-  call pgslib_finalize
+  call halt_parallel_communication
 
   call cpu_time(t_end)
 
