@@ -256,7 +256,6 @@ contains
     use ext_exodus_mesh_type
     use permutations
     use simple_partitioning_methods, only: get_block_partition, read_partition
-    use index_partitioning
     use unstr_2d_mesh_tools
     use parallel_communication
     use parameter_list_type
@@ -396,16 +395,16 @@ contains
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
-    call this%cell_ip%init(cell_psize, offP_size, offP_index)
+    call this%cell_imap%init(cell_psize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
 
-    this%ncell = this%cell_ip%local_size()
-    this%ncell_onP = this%cell_ip%onP_size()
+    this%ncell = this%cell_imap%local_size
+    this%ncell_onP = this%cell_imap%onP_size
 
     !! Distribute the cell permutation array; gives mapping to the external cell number.
     allocate(this%xcell(this%ncell))
-    call distribute(this%xcell(:this%ncell_onP), cell_perm)
-    call gather_boundary(this%cell_ip, this%xcell)
+    call scatter(cell_perm, this%xcell(:this%ncell_onP))
+    call this%cell_imap%gather_offp(this%xcell)
     deallocate(cell_perm)
 
     !! Create the node index partition and localize the global CNODE array,
@@ -414,8 +413,8 @@ contains
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
-    call distribute(this%xnode(:this%nnode_onP), node_perm)
-    call gather_boundary(this%node_ip, this%xnode)
+    call scatter(node_perm, this%xnode(:this%nnode_onP))
+    call this%node_imap%gather_offp(this%xnode)
     deallocate(node_perm)
 
     !! Create the face index partition and localize the global CFACE array,
@@ -442,8 +441,8 @@ contains
       if (.not.allocated(mesh%coord)) allocate(mesh%coord(2,0))
     end if
     allocate(this%x(2,this%nnode))
-    call distribute(this%x(:,:this%nnode_onP), mesh%coord)
-    call gather_boundary(this%node_ip, this%x)
+    call scatter(mesh%coord, this%x(:,:this%nnode_onP))
+    call this%node_imap%gather_offp(this%x)
 
     !! Initialize the mesh geometry data components.
     allocate(this%volume(this%ncell), this%normal(2,this%nface), &
@@ -741,20 +740,19 @@ contains
   end subroutine all_cell_neighbors
 
   !! This subroutine initializes the node partition and cell node data
-  !! components: NODE_IP, NNODE, NNODE_ONP, CSTART, and CNODE.
+  !! components: node_imap, NNODE, NNODE_ONP, CSTART, and CNODE.
 
   subroutine init_cell_node_data(this, psize, cstart, cnode)
 
     use parallel_communication, only: is_IOP
-    use index_partitioning, only: localize_index_struct
 
     type(unstr_2d_mesh), intent(inout) :: this
     integer, intent(in) :: psize(:), cstart(:), cnode(:)
 
     integer :: j
-    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:)
 
-    call this%node_ip%init(psize)
+    call this%node_imap%init(psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -763,9 +761,8 @@ contains
       allocate(count_g(0))
     end if
 
-    call localize_index_struct(count_g, cnode, this%cell_ip, this%node_ip, count_l, this%cnode, offP_index)
-    call this%node_ip%add_offP_index(offP_index)
-    deallocate(count_g, offP_index)
+    call this%cell_imap%localize_index_array(count_g, cnode, this%node_imap, count_l, this%cnode)
+    deallocate(count_g)
 
     !! Translate the local row sizes into the local indexing array.
     allocate(this%cstart(1+size(count_l)))
@@ -775,25 +772,24 @@ contains
     end do
     deallocate(count_l)
 
-    this%nnode = this%node_ip%local_size()
-    this%nnode_onP = this%node_ip%onP_size()
+    this%nnode = this%node_imap%local_size
+    this%nnode_onP = this%node_imap%onP_size
 
   end subroutine init_cell_node_data
 
   !! This subroutine initializes the face partition and cell face data
-  !! components: FACE_IP, NFACE, NFACE_ONP, CFACE, and CFPAR.
+  !! components: face_imap, NFACE, NFACE_ONP, CFACE, and CFPAR.
 
   subroutine init_cell_face_data(this, psize, cstart, cface, cfpar)
 
-    use parallel_communication, only: is_IOP, distribute
-    use index_partitioning, only: localize_index_struct, gather_boundary
+    use parallel_communication, only: is_IOP, scatter
 
     type(unstr_2d_mesh), intent(inout) :: this
     integer, intent(in) :: psize(:), cstart(:), cface(:), cfpar(:)
 
-    integer, allocatable :: count_g(:), count_l(:), offP_index(:)
+    integer, allocatable :: count_g(:), count_l(:)
 
-    call this%face_ip%init(psize)
+    call this%face_imap%init(psize)
 
     !! Translate the global indexing array into global row sizes.
     if (is_IOP) then
@@ -802,20 +798,19 @@ contains
       allocate(count_g(0))
     end if
 
-    call localize_index_struct(count_g, cface, this%cell_ip, this%face_ip, count_l, this%cface, offP_index)
-    call this%face_ip%add_offP_index(offP_index)
-    deallocate(count_g, offP_index)
+    call this%cell_imap%localize_index_array(count_g, cface, this%face_imap, count_l, this%cface)
+    deallocate(count_g)
 
     INSIST(size(this%cstart) == size(count_l)+1)
     INSIST(all(count_l == this%cstart(2:) - this%cstart(:this%ncell)))
 
     !! Distribute the CFPAR mask array.
     allocate(this%cfpar(this%ncell))
-    call distribute(this%cfpar(:this%ncell_onP), cfpar)
-    call gather_boundary(this%cell_ip, this%cfpar)
+    call scatter(cfpar, this%cfpar(:this%ncell_onP))
+    call this%cell_imap%gather_offp(this%cfpar)
 
-    this%nface = this%face_ip%local_size()
-    this%nface_onP = this%face_ip%onP_size()
+    this%nface = this%face_imap%local_size
+    this%nface_onP = this%face_imap%onP_size
 
   end subroutine init_cell_face_data
 
@@ -896,8 +891,7 @@ contains
 
     use bitfield_type
     use exodus_mesh_type
-    use parallel_communication, only: is_IOP, distribute, broadcast
-    use index_partitioning, only: gather_boundary
+    use parallel_communication, only: is_IOP, scatter, broadcast
 
     type(unstr_2d_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
@@ -907,7 +901,7 @@ contains
     type(bitfield), allocatable :: face_set_mask(:)
     integer, allocatable :: tag(:)
 
-    nface_tot = this%face_ip%global_size()
+    nface_tot = this%face_imap%global_size
 
     !! Generate the global face set mask array.
     allocate(face_set_mask(merge(nface_tot,0,is_IOP)))
@@ -945,8 +939,8 @@ contains
 
     !! Initialize the distributed face set mask (%FACE_SET_MASK)
     allocate(this%face_set_mask(this%nface))
-    call distribute(this%face_set_mask(:this%nface_onP), face_set_mask)
-    call gather_boundary(this%face_ip, this%face_set_mask)
+    call scatter(face_set_mask, this%face_set_mask(:this%nface_onP))
+    call gather_offp(this%face_imap, this%face_set_mask)
     deallocate(face_set_mask)
 
     !! Initialize the list of cell set IDs (%FACE_SET_ID)
@@ -968,8 +962,7 @@ contains
 
     use exodus_mesh_type
     use bitfield_type
-    use parallel_communication, only: is_IOP, distribute, broadcast
-    use index_partitioning, only: gather_boundary, scatter_boundary_or
+    use parallel_communication, only: is_IOP, scatter, broadcast
 
     type(unstr_2d_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
@@ -981,7 +974,7 @@ contains
     ASSERT(allocated(this%fnode))
     ASSERT(allocated(this%face_set_mask))
 
-    nnode_tot = this%node_ip%global_size()
+    nnode_tot = this%node_imap%global_size
 
     !! Initialize the node set data, %NODE_SET_MASK
     allocate(node_set_mask(merge(nnode_tot,0,is_IOP)))
@@ -1000,8 +993,8 @@ contains
 
     !! Initialize the distributed node set mask (%NODE_SET_MASK)
     allocate(this%node_set_mask(this%nnode))
-    call distribute(this%node_set_mask(:this%nnode_onP), node_set_mask)
-    call gather_boundary(this%node_ip, this%node_set_mask)
+    call scatter(node_set_mask, this%node_set_mask(:this%nnode_onP))
+    call this%node_imap%gather_offp(this%node_set_mask)
     deallocate(node_set_mask)
 
     !! Initialize the list of node set IDs (%NODE_SET_ID)
@@ -1019,7 +1012,7 @@ contains
         bnode(this%fnode(:,j)) = .true.
       end if
     end do
-    call scatter_boundary_or(this%node_ip, bnode)
+    call this%node_imap%scatter_offp_or(bnode)
     where (bnode) this%node_set_mask = ibset(this%node_set_mask, pos=0)
     deallocate(bnode)
 
@@ -1043,8 +1036,7 @@ contains
     use exodus_mesh_type
     use integer_set_type
     use permutations, only: reorder
-    use parallel_communication, only: is_IOP, distribute, broadcast, collate
-    use index_partitioning, only: gather_boundary
+    use parallel_communication, only: is_IOP, scatter, broadcast, gather
 
     type(unstr_2d_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
@@ -1065,7 +1057,7 @@ contains
     if (is_IOP) this%cell_set_id = id_set
     call broadcast(this%cell_set_id)
 
-    ncell_tot = this%cell_ip%global_size()
+    ncell_tot = this%cell_imap%global_size
 
     !! Generate the global cell_set mask array (original cell ordering)
     allocate(cell_set_mask(merge(ncell_tot,0,is_IOP)))
@@ -1086,14 +1078,14 @@ contains
 
     !! Reorder the global cell_set_mask to the internal cell ordering.
     allocate(cell_perm(merge(ncell_tot,0,is_IOP)))
-    call collate(cell_perm, this%xcell(:this%ncell_onP))
+    call gather(this%xcell(:this%ncell_onP), cell_perm)
     if (is_IOP) call reorder(cell_set_mask, cell_perm)
     deallocate(cell_perm)
 
     !! Initialize the distributed cell set mask (%CELL_SET_MASK)
     allocate(this%cell_set_mask(this%ncell))
-    call distribute(this%cell_set_mask(:this%ncell_onP), cell_set_mask)
-    call gather_boundary(this%cell_ip, this%cell_set_mask)
+    call scatter(cell_set_mask, this%cell_set_mask(:this%ncell_onP))
+    call this%cell_imap%gather_offp(this%cell_set_mask)
     deallocate(cell_set_mask)
 
   end subroutine init_cell_set_data

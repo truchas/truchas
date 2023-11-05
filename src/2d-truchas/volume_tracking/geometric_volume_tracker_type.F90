@@ -13,7 +13,6 @@ module geometric_volume_tracker_type
   use truchas_logging_services
   use truchas_timers
   use unstr_2d_mesh_type
-  use index_partitioning
   implicit none
   private
 
@@ -50,7 +49,6 @@ contains
   subroutine init(this, mesh, nrealfluid, nfluid, nmat, axisym)
 
     use parameter_list_type
-    use f08_intrinsics, only: findloc
 
     class(geometric_volume_tracker), intent(out) :: this
     type(unstr_2d_mesh), intent(in), target :: mesh
@@ -92,7 +90,7 @@ contains
         this%bc_index(j) = i
         k = this%mesh%fcell(1,i)
         this%local_face(j) = this%mesh%cstart(k) - 1 + &
-            findloc(this%mesh%cface(this%mesh%cstart(k):this%mesh%cstart(k+1)-1), i)
+            findloc(this%mesh%cface(this%mesh%cstart(k):this%mesh%cstart(k+1)-1), i, dim=1)
         j = j + 1
       end if
     end do
@@ -172,7 +170,7 @@ contains
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
-    integer :: i, f, j, fl, m
+    integer :: i, f, j, fl
 
     do i = 1, size(this%bc_index)
       f = this%bc_index(i)
@@ -194,7 +192,6 @@ contains
   subroutine normals(this, vof)
 
     use gradient_2d_cc_function, only: gradient_2d_cc, gradient_rz_cc
-    use f08_intrinsics, only: findloc
     intrinsic :: norm2
 
     class(geometric_volume_tracker), intent(inout) :: this
@@ -224,8 +221,8 @@ contains
       this%normal(:,:,i) = -this%normal(:,:,i)
       ! enforce consistency for two materials
       if (c == 2) then
-        j = findloc(hasvof,.true.)
-        k = findloc(hasvof,.true.,back=.true.)
+        j = findloc(hasvof,.true.,dim=1)
+        k = findloc(hasvof,.true.,dim=1,back=.true.)
         this%normal(:,k,i) = -this%normal(:,j,i)
       endif
 
@@ -263,7 +260,7 @@ contains
 
     end do
     ! will need normals for vof reconstruction in ghost cells
-    call gather_boundary(this%mesh%cell_ip, this%normal)
+    call this%mesh%cell_imap%gather_offp(this%normal)
 
     call stop_timer('normals')
 
@@ -278,7 +275,7 @@ contains
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
     real(r8) :: face_normal(2,4)
-    integer :: j,k,ierr
+    integer :: j,k
     type(cell_geom) :: cell
 
     associate (cn => this%mesh%cnode(this%mesh%cstart(i):this%mesh%cstart(i+1)-1), &
@@ -309,7 +306,6 @@ contains
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
       is_axisym, flux_volume)
 
-    use f08_intrinsics, only: findloc
     use locate_plane_os_2d_function
     use plane_2d_type
     use cell_geom_2d_vof_type
@@ -322,14 +318,13 @@ contains
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
-    integer :: ni,f,nlast, nint, ierr,nmat_in_cell
+    integer :: ni,f,nlast, nmat_in_cell
     logical :: is_mixed_donor_cell
     type(plane) :: P
 
     flux_volume = 0.0_r8
     flux_vol_sum = 0.0_r8
     nmat_in_cell = count(vof > 0.0_r8)
-    !nint = count(vof > 0.0_r8)
     ! Here, I am not certain the conversion from pri_ptr to direct material indices worked properly.
     ! This will be clear when trying 3 or more materials. -zjibben
 
@@ -352,7 +347,7 @@ contains
     end do
 
     ! Compute the advection volume for the last material.
-    nlast = priority(findloc(vof(priority) >= cutoff, .true., back=.true.))
+    nlast = priority(findloc(vof(priority) >= cutoff, .true., dim=1, back=.true.))
     ASSERT(nlast <= size(flux_volume, dim=1))
     do f = 1,cell%nfc
       ! Recalculate the total flux volume for this face.
@@ -446,7 +441,6 @@ contains
 
   subroutine flux_vol_nodes(face, cell, dist, flux_vol, cutoff, flux_vol_node, is_axisym)
 
-    use cell_geometry, only: hex_volume
     use cell_geom_2d_vof_type
     use plane_2d_type
     use locate_plane_os_2d_function
@@ -710,7 +704,7 @@ contains
         this%w_cell(1:f1-f0+1,m,i) = this%flux_vol_sub(m,f0:f1)
       end do
     end do
-    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    call this%mesh%cell_imap%gather_offp(this%w_cell)
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%cstart(i)
       f1 = this%mesh%cstart(i+1)-1
@@ -838,7 +832,7 @@ contains
       call adjust_flux_all(flux_vol(:,f0:f1), vof(:,i), -excess, this%mesh%volume(i), fluids)
     end do
 
-    call gather_boundary(this%mesh%cell_ip, vof)
+    call this%mesh%cell_imap%gather_offp(vof)
 
     ! Is there really not a better way?
     do i = 1, this%mesh%ncell_onP
@@ -848,7 +842,7 @@ contains
         this%w_cell(1:f1-f0+1,m,i) = flux_vol(m,f0:f1)
       end do
     end do
-    call gather_boundary(this%mesh%cell_ip, this%w_cell)
+    call this%mesh%cell_imap%gather_offp(this%w_cell)
     do i = this%mesh%ncell_onP+1, this%mesh%ncell
       f0 = this%mesh%cstart(i)
       f1 = this%mesh%cstart(i+1)-1
@@ -919,7 +913,7 @@ contains
     integer, intent(in) :: fluids
 
     integer :: i, j
-    real(r8) :: flux_vol_adj, excess, r
+    real(r8) :: flux_vol_adj, r
 
     ! both inflow and outflow will be rescaled so take abs. Ignore BCs for now
     flux_vol_adj = sum(abs(flux_vol(1:fluids,:)))

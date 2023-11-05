@@ -27,7 +27,7 @@ contains
       gp_weight(1) = 4.0_r8
 
     case (4)
-      gp = 1.0_r8/dsqrt(3.0_r8)
+      gp = 1.0_r8/sqrt(3.0_r8)
 
       gp_coord(1,1) = gp
       gp_coord(2,1) = gp
@@ -44,9 +44,9 @@ contains
       gp_weight(4) = 1.0_r8
 
     case (9)
-      gp0 = dsqrt(3.0_r8/5.0_r8)
+      gp0 = sqrt(3.0_r8/5.0_r8)
       gp1 = 0.0_r8
-      gp2 = -dsqrt(3.0_r8/5.0_r8)
+      gp2 = -sqrt(3.0_r8/5.0_r8)
 
       w0 = 5.0_r8/9.0_r8
       w1 = 8.0_r8/9.0_r8

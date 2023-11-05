@@ -11,7 +11,6 @@ module gradient_2d_cc_function
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use unstr_2d_mesh_type
-  use index_partitioning
   implicit none
   private
 
@@ -32,7 +31,7 @@ contains
 
     ! node average data stored in w_node0 workspace array
     call node_avg(mesh, x, w_node0, w_node1)
-    call gather_boundary(mesh%node_ip, w_node0)
+    call mesh%node_imap%gather_offp(w_node0)
 
     do i = 1, mesh%nface
       ASSERT(size(mesh%fnode(1:2,i)) == 2)
@@ -80,7 +79,7 @@ contains
 
     ! node average data stored in w_node0 workspace array
     call node_avg(mesh, x, w_node0, w_node1)
-    call gather_boundary(mesh%node_ip, w_node0)
+    call mesh%node_imap%gather_offp(w_node0)
 
     do i = 1, mesh%nface
       ASSERT(size(mesh%fnode(1:2,i)) == 2)
