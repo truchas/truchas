@@ -8,7 +8,7 @@
 
 module test_ht_2d_common
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use unstr_2d_mesh_type
   use matl_mesh_func_type
@@ -72,9 +72,9 @@ contains
     class(scalar_func), intent(in) :: f
     real(r8), intent(out) :: ucell(:), uface(:)
 
-    real(r8) :: x0(2) = [dsqrt(3.0_r8)/3.0_r8, -dsqrt(3.0_r8)/3.0_r8]  ! Quadrature points
+    real(r8) :: x0(2) = [sqrt(3.0_r8)/3.0_r8, -sqrt(3.0_r8)/3.0_r8]  ! Quadrature points
     real(r8) :: w(2) = [1.0_r8, 1.0_r8]   ! Quadrature weights
-    ! real(r8) :: x0(3) = [dsqrt(3.0_r8/5.0_r8), 0.0_r8, -dsqrt(3.0_r8/5.0_r8)]  ! Quadrature points
+    ! real(r8) :: x0(3) = [sqrt(3.0_r8/5.0_r8), 0.0_r8, -sqrt(3.0_r8/5.0_r8)]  ! Quadrature points
     ! real(r8) :: w(3) = [5.0_r8/9.0_r8, 8.0_r8/9.0_r8, 5.0_r8/9.0_r8]   ! Quadrature weights
     real(r8) :: phi(4,size(x0),size(x0))  ! values of DG shape functions
     real(r8) :: N(4)  ! corner normals

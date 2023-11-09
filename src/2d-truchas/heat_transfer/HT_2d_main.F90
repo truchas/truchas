@@ -18,18 +18,14 @@ program HT_2D_main
   use,intrinsic :: f90_unix, only: exit
 #endif
   use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
-  use parallel_util_module, only: parallel_init
   use parallel_communication
-  use truchas_env, only: prefix
+  use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use timer_tree_type
   use HT_2D_sim_type
   implicit none
-
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
 
   integer :: n, num_arg, inlun, stat
   character(255) :: arg
@@ -38,7 +34,6 @@ program HT_2D_main
   type(HT_2D_sim) :: sim
 
   !! Initialize MPI
-  call parallel_init(argv)
   call init_parallel_communication
 
   !! Get the program name from the command line.
@@ -69,6 +64,7 @@ program HT_2D_main
 
   !! Initialize the message logging system.
   prefix='run'  ! TLS will write to 'run.log'
+  overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NORMAL)
 

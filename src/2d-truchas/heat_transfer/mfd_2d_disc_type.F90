@@ -15,7 +15,7 @@
 
 module mfd_2d_disc_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   implicit none
   private

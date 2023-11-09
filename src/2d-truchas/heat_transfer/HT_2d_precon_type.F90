@@ -38,13 +38,11 @@
 
 module HT_2d_precon_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HT_2d_model_type
   use unstr_2d_mesh_type
   use mfd_2d_diff_precon_type
   use mfd_2d_diff_matrix_type
-  use parameter_list_type
-  use index_partitioning
   implicit none
   private
 
@@ -64,11 +62,16 @@ contains
 
   subroutine init(this, model, params)
 
+    use parameter_list_type
+    use truchas_logging_services
+
     class(HT_2d_precon), intent(out) :: this
     type(HT_2d_model), intent(in), target :: model
     type(parameter_list) :: params
 
+    integer :: stat
     type(mfd_2d_diff_matrix), allocatable :: dm
+    character(:), allocatable :: errmsg
 
     this%model => model
     this%mesh  => model%mesh
@@ -80,7 +83,8 @@ contains
     !! The preconditioner assumes ownership of the matrix.
     allocate(dm)
     call dm%init(model%disc)
-    call this%hcprecon%init(dm, params)
+    call this%hcprecon%init(dm, params, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('HT_2D_PRECON%INIT: ' // errmsg)
 
   end subroutine init
 
@@ -100,7 +104,7 @@ contains
     ASSERT(dt > 0.0_r8)
 
     call this%model%get_face_temp_copy(u, Tface)
-    call gather_boundary(this%mesh%face_ip, Tface)
+    call this%mesh%face_imap%gather_offp(Tface)
 
     call this%model%new_state_array(u, state)
 
@@ -143,11 +147,11 @@ contains
     call this%model%get_cell_heat_view(f, f0)
     call this%model%get_cell_temp_view(f, f1)
     f1x(:this%mesh%ncell_onP) = f1 - (this%mesh%volume(:this%mesh%ncell_onP)/this%dt)*f0
-    call gather_boundary(this%mesh%cell_ip, f1x)
+    call this%mesh%cell_imap%gather_offp(f1x)
 
     !! Heat equation face residual.
     call this%model%get_face_temp_copy(f, f2x)
-    call gather_boundary(this%mesh%face_ip, f2x)
+    call this%mesh%face_imap%gather_offp(f2x)
 
     !! Precondition the heat equation.
     call this%hcprecon%apply(f1x, f2x)

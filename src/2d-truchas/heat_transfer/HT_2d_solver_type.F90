@@ -14,7 +14,7 @@
 
 module HT_2d_solver_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use HT_2d_model_type
   use HT_2d_precon_type
@@ -218,10 +218,8 @@ contains
     real(r8), intent(out) :: hnext
     integer, intent(out) :: stat
 
-    real(r8) :: h
-
-    h = t - this%time()
-    call this%integ%step(h, this%hmin, this%max_step_tries, this%u, hnext, stat)
+    !call this%integ%step(h, this%hmin, this%max_step_tries, this%u, hnext, stat)
+    call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
       this%t = t
       this%state_is_pending = .true.
