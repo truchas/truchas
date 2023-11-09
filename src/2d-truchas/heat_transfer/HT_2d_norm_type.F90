@@ -14,7 +14,7 @@
 
 module HT_2d_norm_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HT_2d_model_type
   use parameter_list_type
   use truchas_logging_services

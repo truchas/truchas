@@ -9,11 +9,9 @@ program test_HT_2d_solver_type
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use kinds, only: r8
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
-  use parallel_util_module, only: parallel_init
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
-  use truchas_env, only: prefix
+  use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
@@ -29,8 +27,6 @@ program test_HT_2d_solver_type
   use test_ht_2d_common
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
-
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
   type(material_database), target :: matl_db
@@ -42,9 +38,9 @@ program test_HT_2d_solver_type
 
 
   !! Initialize MPI and other base stuff that Truchas depends on
-  call parallel_init(argv)
   call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
+  overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NORMAL)
 
@@ -95,7 +91,7 @@ contains
 
     sublist => params%sublist('preconditioner')
     call sublist%set('method','BoomerAMG')
-    sublist => sublist%sublist('parameters')
+    sublist => sublist%sublist('params')
     call sublist%set('num-cycles', 1)
 
     sublist => params%sublist('error-norm')

@@ -73,12 +73,11 @@
 
 module mfd_2d_diff_precon_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mfd_2d_diff_matrix_type
   use pcsr_matrix_type
   use pcsr_precon_class
-  use index_partitioning
-  use parameter_list_type
+  use index_map_type
   implicit none
   private
 
@@ -103,45 +102,22 @@ contains
     if (associated(this%Sff)) deallocate(this%Sff)
   end subroutine mfd_2d_diff_precon_delete
 
-  subroutine init(this, dm, params)
+  subroutine init(this, dm, params, stat, errmsg)
 
-    use pcsr_precon_ssor_type
-    use pcsr_precon_boomer_type
-    use truchas_logging_services
+    use pcsr_precon_factory
+    use parameter_list_type
 
     class(mfd_2d_diff_precon), intent(out) :: this
     type(mfd_2d_diff_matrix), allocatable, intent(inout) :: dm
     type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: stat
-    character(:), allocatable :: context, errmsg, method
-    type(parameter_list), pointer :: plist
-
-    !! Take the diffusion matrix.
-    call move_alloc(dm, this%dm)
-
-    !! Initialize the Schur complement matrix; same structure as A22.
     allocate(this%Sff)
-    call this%Sff%init(mold=this%dm%a22)
-
-    !! Instantiate the requested preconditioner for the Schur complement matrix.
-    context = 'processing ' // params%name() // ': '
-    call params%get('method', method, stat=stat, errmsg=errmsg)
-    if (stat /= 0) call TLS_fatal(context//errmsg)
-    select case (method)
-    case ('SSOR')
-      allocate(pcsr_precon_ssor :: this%Sff_precon)
-    case ('BoomerAMG')
-      allocate(pcsr_precon_boomer :: this%Sff_precon)
-    case default
-      call TLS_fatal(context//'unknown "method": '//method)
-    end select
-    if (params%is_sublist('parameters')) then
-      plist => params%sublist('parameters')
-      call this%Sff_precon%init(this%Sff, plist)
-    else
-      call TLS_fatal(context//'missing "parameters" sublist parameter')
-    end if
+    call this%Sff%init(mold=dm%a22)
+    call alloc_pcsr_precon(this%Sff_precon, this%Sff, params, stat, errmsg)
+    if (stat /= 0) return
+    call move_alloc(dm, this%dm)
 
   end subroutine init
 
@@ -166,7 +142,7 @@ contains
     call this%dm%forward_elimination(f1, f2)
     !! Approximately solve the Schur complement system for the face unknowns.
     call this%Sff_precon%apply(f2)
-    call gather_boundary(this%dm%mesh%face_ip, f2)
+    call this%dm%mesh%face_imap%gather_offp(f2)
     !! Solve for the cell unknowns by back substitution.
     call this%dm%backward_substitution(f1, f2)
   end subroutine apply

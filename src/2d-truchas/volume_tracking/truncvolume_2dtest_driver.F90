@@ -8,8 +8,8 @@ program truncvolume_2dtest_driver
   use plane_2d_type
   implicit none
 
-  real*8 :: xn(2,4), vp
-  real*8 :: t_start, t_end
+  real(r8) :: xn(2,4), vp
+  real(r8) :: t_start, t_end
   real(r8) :: pi
   logical :: is_axisym
   type(plane) :: intplane

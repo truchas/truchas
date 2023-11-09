@@ -9,11 +9,9 @@ program test_HT_2d_model_type
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use kinds, only: r8
-  use pgslib_module, only: PGSLib_CL_MAX_TOKEN_LENGTH
-  use parallel_util_module, only: parallel_init
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
-  use truchas_env, only: prefix
+  use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
@@ -29,8 +27,6 @@ program test_HT_2d_model_type
   use test_ht_2d_common
   implicit none
 
-  character(PGSLib_CL_MAX_TOKEN_LENGTH), pointer :: argv(:) => null()
-
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
   type(material_database), target :: matl_db
@@ -40,9 +36,9 @@ program test_HT_2d_model_type
   integer :: status = 0
 
   !! Initialize MPI and other base stuff that Truchas depends on
-  call parallel_init(argv)
   call init_parallel_communication
   prefix='run'  ! TLS will write to 'run.log'
+  overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NORMAL)
 
@@ -277,8 +273,6 @@ contains
   !! The quadratic has the form ax^2+by^2, where a and b are constant
   subroutine test_quadratic_dir(disc, mmf, tol)
 
-    use index_partitioning, only: gather_boundary
-
     type(mfd_2d_disc), target, intent(in) :: disc
     type(matl_mesh_func), target, intent(in) :: mmf
     real(r8), intent(in) :: tol
@@ -338,7 +332,7 @@ contains
     ! TODO: which is correct for this problem, BC functions correct, or average integral?
     allocate(uface_all(mesh%nface))
     call HT_model%get_face_temp_copy(u, uface_all)
-    call gather_boundary(mesh%face_ip, uface_all)
+    call mesh%face_imap%gather_offp(uface_all)
     call HT_model%bc_dir%compute(t)
     HT_model%bc_dir%value = uface_all(HT_model%bc_dir%index)
     call HT_model%bc_dir%compute(t)

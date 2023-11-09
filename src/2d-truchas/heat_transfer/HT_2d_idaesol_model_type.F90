@@ -19,7 +19,7 @@
 
 module HT_2d_idaesol_model_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use idaesol_type, only: idaesol_model
   use HT_2d_model_type
   use HT_2d_precon_type

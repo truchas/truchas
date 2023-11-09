@@ -14,12 +14,12 @@
 
 module mfd_2d_diff_matrix_type
 
-  use kinds, only: r8
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use mfd_2d_disc_type
   use pcsr_matrix_type
   use parallel_communication
-  use index_partitioning
+  use index_map_type
   implicit none
   private
 
@@ -51,7 +51,7 @@ contains
 
     integer :: j
     type(pcsr_graph), pointer :: g
-    type(ip_desc), pointer :: row_ip
+    type(index_map), pointer :: row_imap
 
     this%disc => disc
     this%mesh => disc%mesh
@@ -61,8 +61,8 @@ contains
 
     !! Create a CSR matrix graph for the A22 submatrix.
     allocate(g)
-    row_ip => this%mesh%face_ip
-    call g%init (row_ip)
+    row_imap => this%mesh%face_imap
+    call g%init(row_imap)
       do j = 1, this%mesh%ncell
         associate (cface => this%mesh%cface(this%mesh%cstart(j):this%mesh%cstart(j+1)-1))
           call g%add_clique (cface)

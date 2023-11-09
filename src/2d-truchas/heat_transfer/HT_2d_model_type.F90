@@ -14,7 +14,7 @@
 
 module HT_2d_model_type
 
-  use kinds
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use mfd_2d_disc_type
   use bndry_func1_class
@@ -325,19 +325,16 @@ contains
   end function num_dof
 
   subroutine new_state_array(this, u, state)
-    use index_partitioning, only: gather_boundary
     class(HT_2d_model) :: this
     real(r8), intent(in) :: u(:)
     real(r8), allocatable, intent(out) :: state(:,:)
     allocate(state(this%mesh%ncell,0:0))
     call this%get_cell_temp_copy(u, state(:,0))
-    call gather_boundary(this%mesh%cell_ip, state(:,0))
+    call this%mesh%cell_imap%gather_offp(state(:,0))
   end subroutine new_state_array
 
 
   subroutine compute_f(this, t, u, udot, f)
-
-    use index_partitioning, only: gather_boundary
 
     class(HT_2d_model), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -365,12 +362,12 @@ contains
       !! Off-process cell and face temperatures
       call this%get_cell_temp_copy(u, Tcell)
       call this%get_face_temp_copy(u, Tface)
-      call gather_boundary(this%mesh%cell_ip, Tcell)
-      call gather_boundary(this%mesh%face_ip, Tface)
+      call this%mesh%cell_imap%gather_offp(Tcell)
+      call this%mesh%face_imap%gather_offp(Tface)
 
       !! Off-process cell enthalpy time derivative
       call this%get_cell_heat_copy(udot, Hdot)
-      call gather_boundary(this%mesh%cell_ip, Hdot)
+      call this%mesh%cell_imap%gather_offp(Hdot)
 
       !! Pre-compute the Dirichlet condition residual and
       !! impose the Dirichlet data on the face temperature.
