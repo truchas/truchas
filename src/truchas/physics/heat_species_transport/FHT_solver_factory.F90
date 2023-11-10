@@ -20,7 +20,7 @@ module FHT_solver_factory
 
 contains
 
-  function create_FHT_solver(mmf, model, params, er_params) result(solver)
+  function create_FHT_solver(mmf, model, params) result(solver)
 
     use enclosure_radiation_namelist, only: er_params => params
     use parallel_communication
@@ -28,7 +28,7 @@ contains
 
     type(matl_mesh_func), intent(in), target :: mmf
     type(FHT_model), intent(in), target :: model
-    type(parameter_list), intent(inout) :: params, er_params
+    type(parameter_list), intent(inout) :: params
     type(FHT_solver), pointer :: solver
 
     integer :: j, n, lun
