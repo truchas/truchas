@@ -34,7 +34,6 @@ module FHT_model_factory
   use rad_problem_type
   use thermal_bc_factory_class
   use thermal_source_factory_type
-  use parameter_list_type
   implicit none
   private
 
@@ -42,7 +41,7 @@ module FHT_model_factory
 
 contains
 
-  function create_FHT_model (tinit, disc, mmf, tbc_fac, tsrc_fac, er_params, stat, errmsg) result (model)
+  function create_FHT_model (tinit, disc, mmf, tbc_fac, tsrc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: void_temperature
 
@@ -51,7 +50,6 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: tbc_fac
     type(thermal_source_factory), intent(inout) :: tsrc_fac
-    type(parameter_list), intent(inout) :: er_params
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -64,7 +62,7 @@ contains
     allocate(model)
 
     !! Initializes the VF_RAD_PROB components of MODEL.
-    call vf_rad_init (tinit, mesh, model, er_params, stat, errmsg)
+    call vf_rad_init (tinit, mesh, model, stat, errmsg)
     if (stat /= 0) return
 
     !! Defines the heat equation parameter components of MODEL.
@@ -86,15 +84,16 @@ contains
   end function create_FHT_model
 
 
-  subroutine vf_rad_init (tinit, mesh, model, params, stat, errmsg)
+  subroutine vf_rad_init (tinit, mesh, model, stat, errmsg)
 
+    use enclosure_radiation_namelist, only: params
     use bitfield_type, only: btest
     use parallel_communication, only: global_any, global_all
+    use parameter_list_type
 
     real(r8), intent(in) :: tinit
     type(unstr_mesh), intent(in) :: mesh
     type(FHT_model), intent(inout) :: model
-    type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(len=*), intent(out) :: errmsg
 

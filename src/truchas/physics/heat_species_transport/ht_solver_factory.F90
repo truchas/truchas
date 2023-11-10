@@ -20,14 +20,15 @@ module ht_solver_factory
 
 contains
 
-  function create_ht_solver(mmf, model, params, er_params, stat, errmsg) result(solver)
+  function create_ht_solver(mmf, model, params, stat, errmsg) result(solver)
 
+    use enclosure_radiation_namelist, only: er_params => params
     use parallel_communication
     use truchas_env, only: output_file_name
 
     type(matl_mesh_func), intent(in), target :: mmf
     type(ht_model), intent(in), target :: model
-    type(parameter_list), intent(inout) :: params, er_params
+    type(parameter_list), intent(inout) :: params
     type(ht_solver), pointer :: solver
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

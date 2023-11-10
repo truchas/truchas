@@ -20,14 +20,15 @@ module HTSD_solver_factory
 
 contains
 
-  function create_HTSD_solver(mmf, model, params, er_params) result(solver)
+  function create_HTSD_solver(mmf, model, params) result(solver)
 
+    use enclosure_radiation_namelist, only: er_params => params
     use parallel_communication
     use truchas_env, only: output_file_name
 
     type(matl_mesh_func), intent(in), target :: mmf
     type(HTSD_model), intent(in), target :: model
-    type(parameter_list), intent(inout) :: params, er_params
+    type(parameter_list), intent(inout) :: params
     type(HTSD_solver), pointer :: solver
 
     integer :: j, n, lun

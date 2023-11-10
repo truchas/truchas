@@ -26,14 +26,15 @@ module enclosure_radiation_namelist
 
   public :: read_enclosure_radiation_namelists
 
+  type(parameter_list), public :: params
+
   integer, parameter :: MAX_NAME_LEN = 31, MAX_FILE_LEN = 255, MAX_FACE_BLOCK_IDS = 32
 
 contains
 
-  subroutine read_enclosure_radiation_namelists(lun, params)
+  subroutine read_enclosure_radiation_namelists(lun)
 
     integer, intent(in) :: lun
-    type(parameter_list), intent(inout) :: params
 
     integer :: n, ios
     logical :: found
@@ -190,7 +191,7 @@ contains
     end do
 
     if (n > 0) then
-      call read_enclosure_surface_namelists(lun, params)
+      call read_enclosure_surface_namelists(lun)
     else
       call TLS_info('  none found')
     end if
@@ -198,10 +199,9 @@ contains
   end subroutine read_enclosure_radiation_namelists
 
 
-  subroutine read_enclosure_surface_namelists(lun, params)
+  subroutine read_enclosure_surface_namelists(lun)
 
     integer, intent(in) :: lun
-    type(parameter_list), intent(inout) :: params
 
     integer :: n, ios
     logical :: found

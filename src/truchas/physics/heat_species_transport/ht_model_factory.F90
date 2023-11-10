@@ -24,8 +24,9 @@ module ht_model_factory
 
 contains
 
-  function create_ht_model(tinit, disc, mmf, bc_fac, src_fac, er_params, stat, errmsg) result(model)
+  function create_ht_model(tinit, disc, mmf, bc_fac, src_fac, stat, errmsg) result(model)
 
+    use enclosure_radiation_namelist, only: er_params => params
     use diffusion_solver_data, only: void_temperature
     use rad_problem_type
 
@@ -34,7 +35,6 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
     type(thermal_source_factory), intent(inout) :: src_fac
-    type(parameter_list), intent(inout) :: er_params
     integer, intent(out) :: stat
     character(:), allocatable , intent(out):: errmsg
     type(ht_model), pointer :: model
@@ -119,7 +119,6 @@ contains
       use bitfield_type
       use parallel_communication, only: global_all, global_any, global_count
       use string_utilities, only: i_to_c
-      use f08_intrinsics, only: findloc
 
       type(unstr_mesh), intent(in), target :: mesh
       type(HT_model), intent(inout) :: model
