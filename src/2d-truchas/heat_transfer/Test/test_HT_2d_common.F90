@@ -13,6 +13,7 @@ module test_ht_2d_common
   use unstr_2d_mesh_type
   use matl_mesh_func_type
   use material_database_type
+  use material_model_type
   use scalar_func_class
   use mfd_2d_disc_type
   use HT_2d_model_type
@@ -21,22 +22,22 @@ module test_ht_2d_common
 contains
 
   !! Initializes material database and related objects needed by the HT types
-  subroutine init_materials(mesh, matl_db, mmf)
+  subroutine init_materials(mesh, matl_model, mmf)
 
     use parameter_list_type
     use parameter_list_json
-    use material_model_driver, only: matl_model
     use material_factory, only: load_material_database
     use material_utilities, only: add_enthalpy_prop
 
     type(unstr_2d_mesh), target, intent(in) :: mesh
-    type(material_database), intent(out) :: matl_db
+    type(material_model), intent(out) :: matl_model
     type(matl_mesh_func), intent(out) :: mmf
 
     type(parameter_list), pointer :: plist
     integer, allocatable :: matids(:)
     integer :: stat
     character(:), allocatable :: errmsg, string
+    type(material_database), save :: matl_db
 
     string = '{"unobtanium": &
                 {"properties":{"conductivity":1.0, &

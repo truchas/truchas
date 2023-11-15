@@ -14,10 +14,12 @@ set(HT2D_SOURCE_FILES
     HT_2d_precon_type.F90
     HT_2d_idaesol_model_type.F90
     HT_2d_solver_type.F90
-    HT_2d_sim_type.F90)
+    HT_2d_sim_type.F90
+    new_TofH_type.F90
+)
 
 add_library(ht2d ${HT2D_SOURCE_FILES})
-target_link_libraries(ht2d truchas ${Truchas_LINK_LIBS})
+target_link_libraries(ht2d truchas truchas-extra ${Truchas_LINK_LIBS})
 
 # --- driver program binary
 add_executable(HT_2d_main HT_2d_main.F90)

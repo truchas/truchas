@@ -17,7 +17,7 @@ program test_HT_2d_norm_type
   use parameter_list_json
   use unstr_2d_mesh_factory
   use matl_mesh_func_type
-  use material_database_type
+  use material_model_type
   use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
@@ -29,7 +29,7 @@ program test_HT_2d_norm_type
 
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
-  type(material_database), target :: matl_db
+  type(material_model), target :: matl_model
   type(matl_mesh_func), target :: mmf
   real(r8) :: xmin(2), xmax(2), eps
   integer  :: nx(2)
@@ -52,13 +52,13 @@ program test_HT_2d_norm_type
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
-  call init_materials(mesh, matl_db, mmf)
+  call init_materials(mesh, matl_model, mmf)
 
   !! Run test problems
-  call test_abs(mfd_disc, mmf)
-  call test_rel(mfd_disc, mmf)
-  call test_mixed(mfd_disc, mmf)
-  call test_global(mfd_disc, mmf)
+  call test_abs(mfd_disc, matl_model)
+  call test_rel(mfd_disc, matl_model)
+  call test_mixed(mfd_disc, matl_model)
+  call test_global(mfd_disc, matl_model)
 
   !! Wrap up
   call halt_parallel_communication
@@ -76,10 +76,10 @@ contains
 
 
   !! Test the HT_2d_norm type with only the absolute tolerance set
-  subroutine test_abs(disc, mmf)
+  subroutine test_abs(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
 
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
@@ -107,7 +107,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, mmf, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -131,10 +131,10 @@ contains
 
 
   !! Test the HT_2d_norm type with only the relative tolerance set
-  subroutine test_rel(disc, mmf)
+  subroutine test_rel(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
 
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
@@ -162,7 +162,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, mmf, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -186,10 +186,10 @@ contains
 
 
   !! Test the HT_2d_norm type with mixed tolerances
-  subroutine test_mixed(disc, mmf)
+  subroutine test_mixed(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
 
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
@@ -219,7 +219,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, mmf, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -243,10 +243,10 @@ contains
 
 
   !! Test the global consistency of the HT_2d_norm type
-  subroutine test_global(disc, mmf)
+  subroutine test_global(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
 
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
@@ -274,7 +274,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, mmf, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm

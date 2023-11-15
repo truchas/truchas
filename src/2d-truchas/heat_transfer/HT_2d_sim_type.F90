@@ -22,6 +22,7 @@ module HT_2d_sim_type
   use unstr_2d_mesh_type
   use matl_mesh_func_type
   use material_database_type
+  use material_model_type
   use scalar_func_factories
   use mfd_2d_disc_type
   use HT_2d_model_type
@@ -38,6 +39,7 @@ module HT_2d_sim_type
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(mfd_2d_disc), pointer :: disc => null()
+    type(material_model) :: matl_model
     type(matl_mesh_func), pointer :: mmf => null()
     type(HT_2d_model), pointer :: model => null()
     type(HT_2d_solver), pointer :: solver => null()
@@ -72,6 +74,8 @@ contains
     use parameter_list_type
     use unstr_2d_mesh_factory
     use signal_handler, only: init_signal_handler, SIGURG
+    use material_factory, only: load_material_database
+    use material_utilities, only: add_enthalpy_prop
 
     class(HT_2d_sim), intent(out) :: this
     type(parameter_list) :: params
@@ -116,20 +120,35 @@ contains
     call this%disc%init(this%mesh)
     call stop_timer('mfd-discretization')
 
-    !TODO: finalize material init
-    !! Create the material object.
-    ! if (params%is_sublist('material')) then
-    !   plist => params%sublist('material')
-    !   context = 'processing ' // plist%name() // ': '
-    !   allocate(this%mmf)
-    !   call load_material_database(matl_db, plist, stat, errmsg)
-    !   if (stat /= 0) call TLS_fatal(context//errmsg)
-    !   call this%mat%init(plist)
-    ! else
-    !   call LS_fatal('missing "material" sublist parameter')
-    ! end if
-    allocate(this%mmf)
-    call init_materials(this%mesh, matl_db, this%mmf)
+    !! Load the material database and initialize the material model
+    !TODO: input name instead of hardwiring it
+    if (params%is_sublist('materials')) then
+      plist => params%sublist('materials')
+      context = 'processing ' // plist%name() // ': '
+      call load_material_database(matl_db, plist, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+    else
+      call TLS_fatal('missing "materials" sublist parameter')
+    end if
+    call this%matl_model%init(['default'], matl_db, stat, errmsg)
+    if (stat /= 0) call TLS_fatal(errmsg)
+    
+    !! Layout materials across the mesh
+    !TODO: expose material layout to input
+!    block
+!      integer, allocatable :: matids(:)
+!      allocate(this%mmf)
+!      matids = this%matl_model%matl_index(['unobtanium'])
+!      call this%mmf%init(this%mesh)
+!      call this%mmf%define_region(this%mesh%cell_set_id, matids, stat, errmsg)
+!      if (stat /= 0) call TLS_fatal(errmsg)
+!      call this%mmf%define_complete(stat, errmsg)
+!      if (stat /= 0) call TLS_fatal(errmsg)
+!    end block
+
+    !! Initialize enthalpy
+    call add_enthalpy_prop(this%matl_model, stat, errmsg)
+    if (stat /= 0) call TLS_FATAL(errmsg)
 
     !! Create the heat conduction model.
     call start_timer('ht-model')
@@ -137,7 +156,8 @@ contains
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%name() // ': '
       allocate(this%model)
-      call this%model%init(this%disc, this%mmf, plist, stat, errmsg)
+      !call this%model%init(this%disc, this%mmf, plist, stat, errmsg)
+      call this%model%init(this%disc, this%matl_model, plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
     else
       call TLS_fatal('missing "ht-model" sublist parameter')
@@ -387,54 +407,6 @@ contains
     call stop_timer('output')
 
   end subroutine write_solution
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! TODO: remove the following when possible. It's a copy of test_HT_2d_common.F90
-
-  !! Initializes material database and related objects needed by the HT types
-  subroutine init_materials(mesh, matl_db, mmf)
-
-    use parameter_list_type
-    use parameter_list_json
-    use material_model_driver, only: matl_model
-    use material_factory, only: load_material_database
-    use material_utilities, only: add_enthalpy_prop
-
-    type(unstr_2d_mesh), target, intent(in) :: mesh
-    type(material_database), intent(out) :: matl_db
-    type(matl_mesh_func), intent(out) :: mmf
-
-    type(parameter_list), pointer :: plist
-    integer, allocatable :: matids(:)
-    integer :: stat
-    character(:), allocatable :: errmsg, string
-
-    string = '{"unobtanium": &
-                {"properties":{"conductivity":1.0, &
-                               "density":1.0,&
-                               "specific-heat":1.0}}}'
-
-    !! Initialize material database/model with single material
-    call parameter_list_from_json_string(string, plist, errmsg)
-    call load_material_database(matl_db, plist, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-    call matl_model%init(['unobtanium'], matl_db, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-
-    !! Initialize enthalpy
-    call add_enthalpy_prop(matl_model, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-
-    !! Layout material across the mesh
-    matids = matl_model%matl_index(['unobtanium'])
-    call mmf%init(mesh)
-    call mmf%define_region(mesh%cell_set_id, matids, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-    call mmf%define_complete(stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-
-  end subroutine init_materials
 
 
   !! Computes the average integral of a function over on-process faces and cells
