@@ -19,10 +19,10 @@ module HT_2d_model_type
   use mfd_2d_disc_type
   use bndry_func1_class
   use scalar_mesh_func_class
-  use TofH_type
+  use new_TofH_type
   use data_layout_type
-  use matl_mesh_func_type
-  use prop_mesh_func_type
+  !use matl_mesh_func_type
+  use new_prop_mesh_func_type
   use parallel_communication
   use parameter_list_type
   use truchas_logging_services
@@ -63,21 +63,21 @@ module HT_2d_model_type
 
 contains
 
-  subroutine init(this, disc, mmf, params, stat, errmsg)
+  !subroutine init(this, disc, mmf, params, stat, errmsg)
+  subroutine init(this, disc, matl_model, params, stat, errmsg)
 
-    use material_model_driver, only: matl_model
+    use material_model_type
     use material_utilities
 
     class(HT_2d_model), intent(out), target :: this
     type(mfd_2d_disc), intent(in), target :: disc
-    type(matl_mesh_func), intent(in), target :: mmf
+    type(material_model), intent(in) :: matl_model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: TofH_max_try
     real(r8) :: TofH_tol, TofH_delta
-    character(len=256) :: errmsg2 !TODO: remove when possible
     character(:), allocatable :: context
     type(parameter_list), pointer :: sublist
 
@@ -95,10 +95,11 @@ contains
     !! Enthalpy density.
     call required_property_check(matl_model, 'enthalpy', stat, errmsg)
     if (stat /= 0) return
-    call this%H_of_T%init(mmf, 'enthalpy', stat, errmsg2)
+    !call this%H_of_T%init(mmf, 'enthalpy', stat, errmsg)
+    call this%H_of_T%init(matl_model, 'enthalpy', stat, errmsg)
     if (global_any(stat /= 0)) then
       stat = -1
-      errmsg = context // 'unexpected error defining H_of_T: ' // trim(errmsg2)
+      errmsg = context // 'unexpected error defining H_of_T: ' // errmsg
       return
     end if
 
@@ -128,10 +129,11 @@ contains
     !! Thermal conductivity.
     call required_property_check(matl_model, 'conductivity', stat, errmsg)
     if (stat /= 0) return
-    call this%conductivity%init(mmf, 'conductivity', stat, errmsg2)
+    !call this%conductivity%init(mmf, 'conductivity', stat, errmsg)
+    call this%conductivity%init(matl_model, 'conductivity', stat, errmsg)
     if (global_any(stat /= 0)) then
       stat = -1
-      errmsg = context // 'unexpected error defining conductivity: ' // trim(errmsg2)
+      errmsg = context // 'unexpected error defining conductivity: ' // errmsg
       return
     end if
 

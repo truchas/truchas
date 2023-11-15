@@ -17,7 +17,7 @@ program test_HT_2d_model_type
   use parameter_list_json
   use unstr_2d_mesh_factory
   use matl_mesh_func_type
-  use material_database_type
+  use material_model_type
   use source_mesh_function
   use scalar_func_factories
   use cell_geometry, only: normalized
@@ -29,7 +29,7 @@ program test_HT_2d_model_type
 
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
-  type(material_database), target :: matl_db
+  type(material_model), target :: matl_model
   type(matl_mesh_func), target :: mmf
   real(r8) :: xmin(2), xmax(2), tol, eps
   integer  :: nx(2)
@@ -54,13 +54,13 @@ program test_HT_2d_model_type
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
-  call init_materials(mesh, matl_db, mmf)
+  call init_materials(mesh, matl_model, mmf)
 
   !! Run test problems
-  call test_linear_dir(mfd_disc, mmf, tol)
-  call test_linear_flux(mfd_disc, mmf, tol)
-  call test_quadratic_dir(mfd_disc, mmf, tol)
-  call test_quadratic_flux(mfd_disc, mmf, tol)
+  call test_linear_dir(mfd_disc, matl_model, tol)
+  call test_linear_flux(mfd_disc, matl_model, tol)
+  call test_quadratic_dir(mfd_disc, matl_model, tol)
+  call test_quadratic_flux(mfd_disc, matl_model, tol)
 
   !! Wrap up
   call halt_parallel_communication
@@ -77,10 +77,10 @@ contains
   end subroutine error_exit
 
   !! Tests the HT_2d_model on a linear problem with Dirichlet boundary conditions
-  subroutine test_linear_dir(disc, mmf, tol)
+  subroutine test_linear_dir(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
     type(HT_2d_model) :: HT_model
@@ -112,7 +112,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, mmf, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Define state variables
@@ -163,10 +163,10 @@ contains
 
 
   !! Tests the HT_2d_model on a linear problem with Neumann boundary conditions
-  subroutine test_linear_flux(disc, mmf, tol)
+  subroutine test_linear_flux(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
     type(HT_2d_model) :: HT_model
@@ -208,7 +208,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, mmf, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Define state variables
@@ -271,10 +271,10 @@ contains
 
   !! Tests the HT_2d_model on a quadratic problem with Dirichlet boundary conditions
   !! The quadratic has the form ax^2+by^2, where a and b are constant
-  subroutine test_quadratic_dir(disc, mmf, tol)
+  subroutine test_quadratic_dir(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
     type(HT_2d_model) :: HT_model
@@ -308,7 +308,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, mmf, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, params, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Define state variables
@@ -373,10 +373,10 @@ contains
 
   !! Tests the HT_2d_model on a quadratic problem with Neumann boundary conditions
   !! The quadratic has the form ax^2+by^2, where a and b are constant
-  subroutine test_quadratic_flux(disc, mmf, tol)
+  subroutine test_quadratic_flux(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(matl_mesh_func), target, intent(in) :: mmf
+    type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
     type(HT_2d_model) :: HT_model
@@ -430,7 +430,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, mmf, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Define state variables
