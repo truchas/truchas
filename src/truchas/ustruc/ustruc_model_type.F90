@@ -98,12 +98,14 @@ contains
 
     call this%disc%init(this%mesh, use_new_mfd=.true.) ! See Note 1
 
-    call params%get('cell-set-ids', setids)
-    call this%mesh%get_cell_set_bitmask(setids, bitmask, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('USTRUC%INIT: ' // errmsg)
-
-    allocate(this%mask(mesh%ncell_onP))
-    this%mask = (iand(bitmask, this%mesh%cell_set_mask(:this%mesh%ncell_onP)) /= 0)
+    if (params%is_parameter('cell-set-ids')) then
+      call params%get('cell-set-ids', setids)
+      call this%mesh%get_cell_set_bitmask(setids, bitmask, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('USTRUC%INIT: ' // errmsg)
+      this%mask = (iand(bitmask, this%mesh%cell_set_mask(:this%mesh%ncell_onP)) /= 0)
+    else  ! all cells
+      allocate(this%mask(this%mesh%ncell_onP), source=.true.)
+    end if
 
     this%map = pack([(j, j=1,this%mesh%ncell_onP)], this%mask)
 
@@ -112,6 +114,9 @@ contains
     call params%get('material-fraction-threshold', this%mfrac_min, default=1.0d-2)
     INSIST(this%mfrac_min <= 1.0_r8)
     INSIST(this%mfrac_min >= 0.0_r8)
+
+    if (params%is_parameter('begin-frac') .and. .not.params%is_parameter('low-temp-phase')) &
+        call TLS_fatal('USTRUC%INIT: low-temp-phase must be defined when begin-frac is defined')
 
     !! For now we instantiate the analysis components here, but this needs to
     !! be done outside and the result passed in.

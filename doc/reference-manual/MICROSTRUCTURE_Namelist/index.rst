@@ -3,46 +3,48 @@
 MICROSTRUCTURE Namelist
 =======================
 
-Truchas is able to capture and analyze data about the solidification process
+Truchas is able to capture and analyze data about a solidification process
 as it evolves within each mesh cell, and output the results for later analysis.
 This data is generally used by analytic 0-dimensional models to predict the
 local microstructural characteristics and defects of the solidified material.
-Use the MICROSTRUCTURE namelist to enable this feature and set the parameters
-that control it.
+This capability is described in terms of the usual liquid-solid transformation
+but can be used for other transformation processes (e.g., solid-solid). Use
+the MICROSTRUCTURE namelist to enable this feature and set the parameters that
+control it.
 
 .. note::
 
    :Required/Optional: Optional
-   :Single/Multiple Instances: Single
+   :Single/Multiple Instances: Multiple
 
 Common Namelist Variables
 -------------------------
-The following variables are common to all analysis modules and are required.
+The following variables are common to all analysis modules.
 
-**material**
+**low_temp_phase**
 
-      The name of the material for which solidification data will be collected.
-      The material must have a single high-temperature liquid phase and one
-      or more lower-temperature solid phases. The analysis is applied to its
-      liquid-solid phase transformation.
+      The name of the low-temperature phase (e.g., solid) of the transformation
+      for which data will be collected. This is optional. When defined, the
+      fraction of low temperature phase will be made available to the analysis
+      module for use.
 
 **cell_set_ids**
 
-      A list of cell set IDs that specify the part of the domain where
-      solidification data will be collected. Cell-based data is output for the
-      entire mesh, using dummy values for cells that are not included in the
-      analysis and included cells without valid data.
+      A list of cell set IDs that specify the part of the domain where data
+      will be collected. Cell-based data is output for the entire mesh, using
+      dummy values for cells that are not included in the analysis and
+      included cells without valid data. If not defined, all cell sets are
+      assumed.
 
 Basic GL Analysis Module
 ------------------------
 By default, the thermal gradient :math:`G=\nabla T` and cooling rate
-rate :math:`L=-\partial T/\partial t` are recorded at the onset of
-of solidification, and the local solidification time (time spent in the mushy
-zone) is recorded at the completion of solidification. These are written to
-the output file as the cell-based fields "ustruc-G", "ustruc-L", and
-"ustruc-t_sol", respectively. A dummy value of 0 is written for cells not
-included in the analysis and cells without valid GL or solidification time
-data.
+:math:`L=-\partial T/\partial t` are recorded at the onset of solidification,
+and the local solidification time (time spent in the mushy zone) is recorded
+at the completion of solidification. These are written to the output file as
+the cell-based fields "ustruc-G", "ustruc-L", and "ustruc-t_sol", respectively.
+A dummy value of 0 is written for cells not included in the analysis and cells
+without valid GL or solidification time data.
 
 .. tip::
    Many, if not most, analytic models for microstructure and defect prediction
@@ -54,12 +56,13 @@ data.
    front speed is :math:`\Vert{V}\Vert = L / \Vert{G}\Vert`.
 
 There are two methods of specifying the parameters that control how the
-data is collected, which are pictured below: one based on solid fraction
-and the other based on temperature. They are mutually exclusive. The
-collection procedure is designed to only report data for those cells that
-have ultimately passed monotically from liquid to solid (or are in the
-process of doing so). Thus some cells included in the analysis may report
-invalid data even after all solidification is complete.
+data is collected, which are pictured below: one based on the fraction of
+the low-temperature phase and the other based on temperature. They are
+mutually exclusive. The phase fraction method requires **low_temp_phase**
+to be defined. The collection procedure is designed to only report data for
+those cells that have ultimately passed monotically from liquid to solid
+(or are in the process of doing so). Thus some cells included in the analysis
+may report invalid data even after all solidification is complete. 
 
    .. figure:: images/fig.png
       :width: 600px
@@ -102,6 +105,11 @@ Namelist Variables for the Temperature Based Method
    G, L, and solidification time are erased. This is an optional variable;
    its value defaults to the value of end_temp, and if specified it must be
    greater than or equal to that value.
+
+.. tip::
+   This option can be used to capture temperature GL data for *any* cooling
+   process, and not just those associated with an explicitly modeled phase
+   transformation.
 
 Namelist Variables for the Solid Fraction Based Method
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

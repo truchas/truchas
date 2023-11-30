@@ -30,7 +30,6 @@ based thresholds.
 /
 
 &MICROSTRUCTURE
-  material = 'alloy'
   cell_set_ids = 1
   begin_temp = 445
   gl_temp = 443

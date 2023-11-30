@@ -43,9 +43,10 @@ module ustruc_driver
   type :: ustruc_driver_data
     type(unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     integer, allocatable :: sol_matid(:), liq_matid(:)
+    integer :: void_id = 0
     type(ustruc_model) :: model
   end type ustruc_driver_data
-  type(ustruc_driver_data), allocatable, save :: this
+  type(ustruc_driver_data), allocatable, save :: this(:)
 
   !! Input data cached in a private parameter list.
   type(parameter_list), save :: params
@@ -74,35 +75,39 @@ contains
 
     integer, intent(in) :: lun
 
-    integer :: ios, cell_set_ids(32)
+    integer :: n, ios, cell_set_ids(32)
     real(r8) :: begin_temp, end_temp, gl_temp, begin_temp_reset, end_temp_reset
     real(r8) :: begin_frac, end_frac, gl_frac, begin_frac_reset, end_frac_reset
     logical :: found
     integer, allocatable :: setids(:)
-    character(64) :: material
+    character(64) :: low_temp_phase
     character(128) :: iom, model_file
+    character(:), allocatable :: label
+    type(parameter_list), pointer :: plist
 
-    namelist /microstructure/ material, cell_set_ids, &
+    namelist /microstructure/ low_temp_phase, cell_set_ids, &
         begin_temp, end_temp, gl_temp, begin_temp_reset, end_temp_reset, &
         begin_frac, end_frac, gl_frac, begin_frac_reset, end_frac_reset, &
         model_file
 
-    !! Locate the MICROSTRUCTURE namelist (first occurrence)
-    if (is_IOP) then
-      rewind lun
-      call seek_to_namelist(lun, 'MICROSTRUCTURE', found, iostat=ios)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
+    call TLS_info('Reading MICROSTRUCTURE namelists ...')
+    if (is_IOP) rewind lun
 
-    call broadcast(found)
-    if (.not.found) return  ! the namelist is optional
 
-    call TLS_info('Reading MICROSTRUCTURE namelist ...')
+    n = 0 ! namelist counter
+    do ! until all MICROSTRUCTURE namelists have been read
 
-    !! Read the namelist.
-    if (is_IOP) then
-      material = NULL_C
+      if (is_IOP) call seek_to_namelist(lun, 'MICROSTRUCTURE', found, iostat=ios)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
+
+      call broadcast(found)
+      if (.not.found) exit
+
+      n = n + 1
+      label = 'MICROSTRUCTURE[' // i_to_c(n) // ']'
+
+      low_temp_phase = NULL_C
       cell_set_ids = NULL_I
       begin_temp = NULL_R
       end_temp = NULL_R
@@ -115,76 +120,80 @@ contains
       begin_frac_reset = NULL_R
       end_frac_reset = NULL_R
       model_file = NULL_C
-      read(lun,nml=microstructure,iostat=ios,iomsg=iom)
-    end if
-    call broadcast(ios)
-    if (ios /= 0) call TLS_fatal('error reading MICROSTRUCTURE namelist: ' // trim(iom))
 
-    !! Broadcast the namelist variables
-    call broadcast(material)
-    call broadcast(cell_set_ids)
-    call broadcast(begin_temp)
-    call broadcast(end_temp)
-    call broadcast(gl_temp)
-    call broadcast(begin_temp_reset)
-    call broadcast(end_temp_reset)
-    call broadcast(begin_frac)
-    call broadcast(end_frac)
-    call broadcast(gl_frac)
-    call broadcast(begin_frac_reset)
-    call broadcast(end_frac_reset)
-    call broadcast(model_file)
+      if (is_IOP) read(lun,nml=microstructure,iostat=ios,iomsg=iom)
+      call broadcast(ios)
+      if (ios /= 0) call TLS_fatal('error reading ' // label // ' namelist: ' // trim(iom))
 
-    !! Check the values of the namelist variables as best we can before
-    !! stuffing them into a parameter list.  The parameters are checked
-    !! again when finally used, but only with assertions; we need proper
-    !! error handling for this type of input.
+      call broadcast(low_temp_phase)
+      call broadcast(cell_set_ids)
+      call broadcast(begin_temp)
+      call broadcast(end_temp)
+      call broadcast(gl_temp)
+      call broadcast(begin_temp_reset)
+      call broadcast(end_temp_reset)
+      call broadcast(begin_frac)
+      call broadcast(end_frac)
+      call broadcast(gl_frac)
+      call broadcast(begin_frac_reset)
+      call broadcast(end_frac_reset)
+      call broadcast(model_file)
 
-    !! Check the MATERIAL value.
-    if (material == NULL_C) then
-      call TLS_fatal('no value assigned to MATERIAL')
-    else if (material == 'VOID') then
-      call TLS_fatal('VOID is an invalid value for MATERIAL')
-    else if (matl_model%has_matl(material)) then
-      call params%set('material', trim(material))
-    else
-      call TLS_fatal('unknown MATERIAL: "' // trim(material) // '"')
-    end if
+      !! Check the values of the namelist variables as best we can before
+      !! stuffing them into a parameter list.  The parameters are checked
+      !! again when finally used, but only with assertions; we need proper
+      !! error handling for this type of input.
 
-    !! Check CELL-SET-IDS.
-    setids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
-    if (size(setids) == 0) then
-      call TLS_fatal('no values assigned to CELL_SET_IDS')
-    else
-      call params%set('cell-set-ids', setids)
-    end if
+      plist => params%sublist('ustruc' // i_to_c(n))
 
-    if (model_file == NULL_C) then ! use the default GL analysis module
-
-      if (BEGIN_TEMP == NULL_R .eqv. BEGIN_FRAC == NULL_R) then
-        call TLS_fatal('Either BEGIN_TEMP or BEGIN_FRAC must be specified')
-      else if (BEGIN_TEMP /= NULL_R) then
-        call check_temp_thresholds
-      else  ! BEGIN_FRAC /= NULL_R
-        call check_frac_thresholds
+      !! Check the LOW_TEMP_PHASE value.
+      if (low_temp_phase /= NULL_C) then
+        if (low_temp_phase == 'VOID') then
+          call TLS_fatal('VOID is an invalid value for LOW_TEMP_PHASE')
+        else if (matl_model%has_phase(low_temp_phase)) then
+          call plist%set('low-temp-phase', trim(low_temp_phase))
+        else
+          call TLS_fatal('unknown LOW_TEMP_PHASE: "' // trim(low_temp_phase) // '"')
+        end if
       end if
 
-    else  ! use a custom analysis module
+      !! Check CELL-SET-IDS.
+      setids = pack(cell_set_ids, mask=(cell_set_ids /= NULL_I))
+      if (size(setids) > 0) call plist%set('cell-set-ids', setids)
 
-      !! Check MODEL_FILE.
-      if (model_file(1:1) /= '/') model_file = trim(input_dir) // trim(model_file)
-      inquire(file=trim(model_file), exist=found)  ! NB: all processes will read
-      if (.not.found) call TLS_fatal(' MODEL_FILE not found: "' // trim(model_file) // '"')
-      call params%set('model-file', trim(model_file))
+      if (model_file == NULL_C) then ! use the default GL analysis module
 
-    end if
+        if (BEGIN_TEMP == NULL_R .eqv. BEGIN_FRAC == NULL_R) then
+          call TLS_fatal('Either BEGIN_TEMP or BEGIN_FRAC must be defined')
+        else if (BEGIN_TEMP /= NULL_R) then
+          call check_temp_thresholds(plist)
+        else  ! BEGIN_FRAC /= NULL_R
+          if (low_temp_phase == NULL_C) then
+            call TLS_fatal('LOW_TEMP_PHASE must be defined when BEGIN_FRAC is defined')
+          else
+            call check_frac_thresholds(plist)
+          end if
+        end if
+
+      else  ! use a custom analysis module
+
+        !! Check MODEL_FILE.
+        if (model_file(1:1) /= '/') model_file = trim(input_dir) // trim(model_file)
+        inquire(file=trim(model_file), exist=found)  ! NB: all processes will read
+        if (.not.found) call TLS_fatal(' MODEL_FILE not found: "' // trim(model_file) // '"')
+        call plist%set('model-file', trim(model_file))
+
+      end if
+    end do
 
     !! Enable microstructure modeling by allocating the data object THIS.
-    allocate(this)
+    if (n > 0) allocate(this(n))
 
   contains
 
-    subroutine check_temp_thresholds
+    subroutine check_temp_thresholds(params)
+
+      type(parameter_list), intent(inout) :: params
 
       !! Check BEGIN_TEMP and END_TEMP.
       if (begin_temp == NULL_R) then
@@ -229,7 +238,9 @@ contains
 
     end subroutine check_temp_thresholds
 
-    subroutine check_frac_thresholds
+    subroutine check_frac_thresholds(params)
+
+      type(parameter_list), intent(inout) :: params
 
       !! Check BEGIN_FRAC and END_FRAC.
       if (begin_frac == NULL_R) then
@@ -288,9 +299,10 @@ contains
 
     real(r8), intent(in) :: t
 
-    integer :: m, n, p, p1, p2
-    logical :: valid_mat
+    integer :: m, n, p, p1, p2, j
     character(:), allocatable :: name
+    type(parameter_list_iterator) :: iter
+    type(parameter_list), pointer :: plist
 
     if (.not.allocated(this)) return ! microstructure modeling not enabled
 
@@ -298,30 +310,40 @@ contains
     call TLS_info('Configuring microstructure modeling ...')
     call start_timer('Microstructure')
 
-    !! We should be using the same mesh as the heat transfer physics;
-    !! it should eventually be provided by the MPC.
-    this%mesh => unstr_mesh_ptr(mesh_name)
-    INSIST(associated(this%mesh))
+    iter = parameter_list_iterator(params, sublists_only=.true.)
 
-    !! Split the phase id list between solid and liquid phases.
-    !! They should be ordered from low to high temperature phases.
-    call params%get('material', name)
-    m = matl_model%matl_index(name)
-    INSIST(m > 0)
-    call matl_model%get_matl_phase_index_range(m, p1, p2)
-    do n = p1, p2 ! find the lowest temperature liquid phase
-      if (matl_model%is_fluid(n)) exit
+    do n = 1, size(this)
+
+      plist => iter%sublist()
+
+      !! We should be using the same mesh as the heat transfer physics;
+      !! it should eventually be provided by the MPC.
+      this(n)%mesh => unstr_mesh_ptr(mesh_name)
+      INSIST(associated(this(n)%mesh))
+
+      if (plist%is_parameter('low-temp-phase')) then
+        call plist%get('low-temp-phase', name)
+        p = matl_model%phase_index(name)
+        INSIST(p > 0)
+        m = matl_model%phase_matl_index(p)
+
+        !! Split the phase id list between low and high-temperature phases.
+        !! They should be ordered from low to high temperature.
+        call matl_model%get_matl_phase_index_range(m, p1, p2)
+        if (p < p2) then  ! valid phase change
+          this(n)%sol_matid = [(j, j=p1,p)]    ! low-temp phases
+          this(n)%liq_matid = [(j, j=p+1,p2)]  ! high-temp phases
+        else
+          call TLS_fatal('no phase change with LOW_TEMP_PHASE: "' // name // '"')
+        end if
+      else
+        this(n)%void_id = matl_model%void_index
+      end if
+
+      call this(n)%model%init(this(n)%mesh, plist)
+      call iter%next
     end do
-    valid_mat = (n > p1) .and. (n <= p2)
-    if (valid_mat) valid_mat = all(matl_model%is_fluid(n:p2))
-    if (valid_mat) then
-      this%sol_matid = [(p, p=p1,n-1)]
-      this%liq_matid = [(p, p=n,p2)]
-    else
-      call TLS_fatal('no compatible liquid-solid transformation found for MATERIAL: "' // name // '"')
-    end if
 
-    call this%model%init(this%mesh, params)
     call ustruc_set_initial_state(t)
 
     call stop_timer('Microstructure')
@@ -330,22 +352,28 @@ contains
 
   subroutine ustruc_set_initial_state(t)
     real(r8), intent(in) :: t
+    integer :: n
     real(r8), allocatable :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
-    call ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
-    call this%model%set_state(t, tcell, tface, liq_vf, sol_vf)
+    do n = 1, size(this)
+      call ustruct_update_aux(this(n), tcell, tface, liq_vf, sol_vf)
+      call this(n)%model%set_state(t, tcell, tface, liq_vf, sol_vf)
+    end do
   end subroutine
 
   subroutine ustruc_update(t)
     real(r8), intent(in) :: t
+    integer :: n
     real(r8), allocatable :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
     if (.not.allocated(this)) return ! microstructure modeling not enabled
     call start_timer('Microstructure')
-    call start_timer('collect input')
-    call ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
-    call stop_timer('collect input')
-    call start_timer('analysis')
-    call this%model%update_state(t, tcell, tface, liq_vf, sol_vf)
-    call stop_timer('analysis')
+    do n = 1, size(this)
+      call start_timer('collect input')
+      call ustruct_update_aux(this(n), tcell, tface, liq_vf, sol_vf)
+      call stop_timer('collect input')
+      call start_timer('analysis')
+      call this(n)%model%update_state(t, tcell, tface, liq_vf, sol_vf)
+      call stop_timer('analysis')
+    end do
     call stop_timer('Microstructure')
   end subroutine
 
@@ -357,28 +385,36 @@ contains
 
     use truchas_danu_output_tools
     use truchas_h5_outfile, only: th5_seq_group
+    use string_utilities, only: i_to_c
 
     class(th5_seq_group), intent(in) :: seq
 
+    integer :: n
     real(r8), allocatable :: scalar_out(:), vector_out(:,:)
+    character(:), allocatable :: label
 
     if (.not.allocated(this)) return
     call start_timer('Microstructure')
 
-    allocate(scalar_out(this%mesh%ncell_onP), vector_out(3,this%mesh%ncell_onP))
+    !NB: all microstructure components must be using the same mesh
+    allocate(scalar_out(this(1)%mesh%ncell_onP), vector_out(3,this(1)%mesh%ncell_onP))
 
-    !! GL analysis module
-    call write_vector_field(data_name='gl-G', hdf_name='ustruc-G', viz_name='G')
-    call write_scalar_field(data_name='gl-L', hdf_name='ustruc-L', viz_name='L')
-    call write_scalar_field(data_name='gl-t_sol', hdf_name='ustruc-t_sol', viz_name='t_sol')
+    do n = 1, size(this)
+      label = 'ustruc' // i_to_c(n)
 
-    !! LDRD analysis module
-    call write_scalar_field(data_name='ldrd-type', hdf_name='ustruc-type',  viz_name='ustruc-type')
-    call write_scalar_field(data_name='ldrd-lambda1', hdf_name='ustruc-lambda1', viz_name='lambda1')
-    call write_scalar_field(data_name='ldrd-lambda2', hdf_name='ustruc-lambda2', viz_name='lambda2')
-    call write_scalar_field(data_name='ldrd-G', hdf_name='ustruc-G', viz_name='G')
-    call write_scalar_field(data_name='ldrd-V', hdf_name='ustruc-V', viz_name='V')
-    call write_scalar_field(data_name='ldrd-t_sol', hdf_name='ustruc-t_sol', viz_name='t_sol')
+      !! GL analysis module
+      call write_vector_field(data_name='gl-G', hdf_name=label//'-G', viz_name=label//'-G')
+      call write_scalar_field(data_name='gl-L', hdf_name=label//'-L', viz_name=label//'-L')
+      call write_scalar_field(data_name='gl-t_sol', hdf_name=label//'-t_sol', viz_name=label//'-t_sol')
+
+      !! LDRD analysis module
+      call write_scalar_field(data_name='ldrd-type', hdf_name=label//'-type',  viz_name=label//'-type')
+      call write_scalar_field(data_name='ldrd-lambda1', hdf_name=label//'-lambda1', viz_name=label//'-lambda1')
+      call write_scalar_field(data_name='ldrd-lambda2', hdf_name=label//'-lambda2', viz_name=label//'-lambda2')
+      call write_scalar_field(data_name='ldrd-G', hdf_name=label//'-G', viz_name=label//'-G')
+      call write_scalar_field(data_name='ldrd-V', hdf_name=label//'-V', viz_name=label//'-V')
+      call write_scalar_field(data_name='ldrd-t_sol', hdf_name=label//'-t_sol', viz_name=label//'-t_sol')
+    end do
 
     call stop_timer('Microstructure')
 
@@ -389,18 +425,18 @@ contains
 
     subroutine write_scalar_field(data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name
-      if (this%model%has(data_name)) then
-        call this%model%get(data_name, scalar_out)
-        scalar_out(this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
+      if (this(n)%model%has(data_name)) then
+        call this(n)%model%get(data_name, scalar_out)
+        scalar_out(this(n)%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
         call write_seq_cell_field(seq, scalar_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
 
     subroutine write_vector_field(data_name, hdf_name, viz_name)
       character(*), intent(in) :: data_name, hdf_name, viz_name
-      if (this%model%has(data_name)) then
-        call this%model%get(data_name, vector_out)
-        vector_out(:,this%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
+      if (this(n)%model%has(data_name)) then
+        call this(n)%model%get(data_name, vector_out)
+        vector_out(:,this(n)%mesh%ncell_onP+1:) = 0.0_r8 ! gap elements, if any
         call write_seq_cell_field(seq, vector_out, hdf_name, for_viz=.true., viz_name=viz_name)
       end if
     end subroutine
@@ -414,25 +450,47 @@ contains
 
   subroutine ustruc_write_checkpoint(seq)
 
+    use truchas_h5_outfile, only: th5_seq_group
+    use string_utilities, only: i_to_c
+
+    class(th5_seq_group), intent(in) :: seq
+
+    integer :: n
+    character(:), allocatable :: label
+
+    if (.not.allocated(this)) return
+    call start_timer('Microstructure')
+
+    call seq%write_attr('CP-USTRUC-NUM', size(this))
+    do n = 1, size(this)
+      label = 'CP-USTRUC-' // i_to_c(n)
+      call ustruc_write_checkpoint_one(this(n), seq, label)
+    end do
+
+    call stop_timer('Microstructure')
+
+  end subroutine ustruc_write_checkpoint
+
+  subroutine ustruc_write_checkpoint_one(this, seq, label)
+
     use,intrinsic :: iso_fortran_env, only: int8
     use truchas_h5_outfile, only: th5_seq_group
     use parallel_communication, only: global_sum
     use string_utilities, only: i_to_c
 
+    type(ustruc_driver_data), intent(in) :: this
     class(th5_seq_group), intent(in) :: seq
+    character(*), intent(in) :: label
 
     integer :: j, n
     integer, allocatable :: cid(:), lmap(:)
     integer(int8), allocatable :: lar(:,:)
     character(:), allocatable :: name
 
-    if (.not.allocated(this)) return
-    call start_timer('Microstructure')
-
     !! Write the external cell indices that correspond to the state data.
     call this%model%get_map(lmap)
     lmap = this%mesh%xcell(lmap)
-    name = 'CP-USTRUC-MAP'
+    name = label // '-MAP'
     n = global_sum(size(lmap))
     call seq%write_dist_array(name, n, lmap)
 
@@ -444,14 +502,12 @@ contains
       if (.not.allocated(lar))  cycle ! no checkpoint data for this analysis component
       if (size(lar,dim=1) == 0) cycle ! no checkpoint data for this analysis component
       n = global_sum(size(lar,dim=2))
-      name = 'CP-USTRUC-COMP-' // i_to_c(j)
+      name = label // '-COMP-' // i_to_c(j)
       call seq%write_dist_array(name, n, lar)
       call seq%write_dataset_attr(name, 'COMP-ID', cid(j))
     end do
 
-    call stop_timer('Microstructure')
-
-  end subroutine ustruc_write_checkpoint
+  end subroutine ustruc_write_checkpoint_one
 
   !! Reads the microstructure checkpoint data from the restart file, and pushes
   !! it to the microstructure analysis components (deserialize).  Note that this
@@ -461,12 +517,51 @@ contains
 
   subroutine ustruc_read_checkpoint(lun)
 
+    use restart_utilities, only: read_var
+    use string_utilities, only: i_to_c
+
+    integer, intent(in) :: lun
+
+    integer :: n, ncp
+
+    call read_var(lun, ncp, 'USTRUC_READ_CHECKPOINT: error reading USTRUC-NCP')
+
+    if (allocated(this)) then
+
+      do n = 1, min(ncp, size(this))
+        call ustruc_read_checkpoint_one(this(n), lun)
+      end do
+
+      !! Skip unused checkpoint data, if any.
+      do n = size(this)+1, ncp
+        call ustruc_skip_checkpoint(lun)
+      end do
+
+      n = size(this) - ncp
+      if (n > 0) then
+        call TLS_info('  WARNING: restart file contains no microstructure state data for final ' &
+             // i_to_c(n) // ' namelist instances')
+      end if
+
+    else
+
+      do n = 1, ncp
+        call ustruc_skip_checkpoint(lun)
+      end do
+
+    end if
+
+  end subroutine ustruc_read_checkpoint
+
+  subroutine ustruc_read_checkpoint_one(this, lun)
+
     use,intrinsic :: iso_fortran_env, only: int8
     use parallel_communication, only: is_IOP, global_sum, global_any, broadcast, gather, scatter
     use sort_utilities, only: heap_sort
     use permutations, only: reorder, invert_perm
     use restart_utilities, only: read_var
 
+    type(ustruc_driver_data), intent(inout) :: this
     integer, intent(in) :: lun
 
     integer :: j, n, ios, ncell, ncomp, ncell_tot, cid, nbyte
@@ -538,7 +633,7 @@ contains
       deallocate(garray,larray)
     end do
 
-  end subroutine ustruc_read_checkpoint
+  end subroutine ustruc_read_checkpoint_one
 
   !! In the event the restart file contains microstructure checkpoint data but
   !! microstructure modeling is not enabled, this subroutine should be called
@@ -561,19 +656,32 @@ contains
   !! solid volume fraction data is assembled from MATL and mapped to the mesh
   !! used by the microstructure modeling component.
 
-  subroutine ustruct_update_aux(tcell, tface, liq_vf, sol_vf)
+  subroutine ustruct_update_aux(this, tcell, tface, liq_vf, sol_vf)
 
     use diffusion_solver, only: ds_get_cell_temp, ds_get_face_temp
+    use legacy_matl_api, only: gather_vof
 
-    real(r8), allocatable, intent(out) :: tcell(:), tface(:), liq_vf(:), sol_vf(:)
+    type(ustruc_driver_data), intent(in) :: this
+    real(r8), allocatable, intent(out) :: tcell(:), tface(:)
+    real(r8), allocatable, intent(out), optional :: liq_vf(:), sol_vf(:)
 
     allocate(tcell(this%mesh%ncell_onP), tface(this%mesh%nface_onP))
     call ds_get_cell_temp(tcell)
     call ds_get_face_temp(tface)
 
     allocate(liq_vf(this%mesh%ncell_onP), sol_vf(this%mesh%ncell_onP))
-    call get_vol_frac(this%liq_matid, liq_vf)
-    call get_vol_frac(this%sol_matid, sol_vf)
+    if (allocated(this%liq_matid)) then
+      call get_vol_frac(this%liq_matid, liq_vf)
+      call get_vol_frac(this%sol_matid, sol_vf)
+    else ! not associated with a phase change; set dummy values
+      liq_vf = 0.0_r8
+      if (this%void_id == 0) then
+        sol_vf = 1.0_r8
+      else
+        call gather_vof(this%void_id, sol_vf)
+        sol_vf = 1.0_r8 - sol_vf  ! non-void fraction
+      end if
+    end if
 
   end subroutine
 
@@ -589,8 +697,6 @@ contains
 
     integer :: n
     real(r8), allocatable :: vf1(:)
-
-    ASSERT(size(vf) == this%mesh%ncell_onP)
 
     call gather_vof(matid(1), vf)
     if (size(matid) > 1) then
