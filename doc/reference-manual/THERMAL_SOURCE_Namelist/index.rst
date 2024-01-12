@@ -12,7 +12,7 @@ The THERMAL_SOURCE namelist is used to define external volumetric heat sources (
 
 Two forms of sources :math:`q` can be defined:
 
-1. :math:`q(t,x) = f(t,x)\chi_S(x)`, where :math:`f` is a user-defined function and :math:`S` is a subdomain corresponding to one or more user-specified mesh cell sets. Here :math:`\chi_S` is the characteristic function on :math:`S: \chi_S = 1` for :math:`x \in S` and :math:`\chi_S = 0` for :math:`x \notin S`. Sources of this form can be summed as long as the interiors of their subdomains do not intersect.
+1. :math:`q(t,x) = f(t,x,T)\chi_S(x)`, where :math:`f` is a user-defined function and :math:`S` is a subdomain corresponding to one or more user-specified mesh cell sets. Here :math:`\chi_S` is the characteristic function on :math:`S: \chi_S = 1` for :math:`x \in S` and :math:`\chi_S = 0` for :math:`x \notin S`. Sources of this form can be summed as long as the interiors of their subdomains do not intersect.
 
 2. :math:`q(t,x) = A(t)\Sigma_jq_j\chi_j(x)`, where :math:`A` is a user-defined time-dependent prefactor, :math:`q_j` is a constant source of mesh cell :math:`j`, and :math:`\chi_j` is the characteristic function on cell :math:`j`. The collection of values {:math:`q_j`} is read from a data file.
 
@@ -62,7 +62,7 @@ source
 
 source_func
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist that defines the source function. That function is expected to be a function of (t,x,y,z).
+| **Description** : The name of a :ref:`FUNCTION<FUNCTION_Namelist>` namelist that defines the source function. That function is expected to be a function of (t,x,y,z,T).
 | **Type**        : string
 | **Default**     : none
 

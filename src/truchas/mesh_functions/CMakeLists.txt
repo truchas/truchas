@@ -19,8 +19,10 @@ target_sources(truchas PRIVATE
   mtc_intfc_func_type.F90
   rad_intfc_func_type.F90
   scalar_mesh_func_class.F90
+  scalar_mesh_func2_class.F90
   scalar_cell_func1_type.F90
   scalar_cell_func2_type.F90
+  scalar_mesh_multifunc_type.F90
 )
 
 #TODO?

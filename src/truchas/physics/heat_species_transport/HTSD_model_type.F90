@@ -14,7 +14,7 @@ module HTSD_model_type
   use data_layout_type
   use prop_mesh_func_type
   use source_mesh_function
-  use scalar_mesh_func_class
+  use scalar_mesh_multifunc_type
   use bndry_func1_class
   use bndry_func2_class
   use bndry_func3_class
@@ -30,7 +30,7 @@ module HTSD_model_type
     type(prop_mesh_func) :: conductivity ! thermal conductivity
     type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
     type(source_mf) :: source     ! external heat source
-    class(scalar_mesh_func), allocatable :: src ! another external heat source
+    type(scalar_mesh_multifunc), allocatable :: src ! another external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -286,7 +286,7 @@ contains
 
       !! Additional heat source
       if (allocated(this%ht%src)) then
-        call this%ht%src%compute(t)
+        call this%ht%src%compute(t, Tcell)
         Fcell = Fcell - this%mesh%volume*this%ht%src%value
       end if
 

@@ -18,7 +18,7 @@
 
 module thermal_source_factory_type
 
-  use unstr_base_mesh_class
+  use unstr_mesh_type
   use parameter_list_type
   use scalar_mesh_func_class
   use scalar_func_class
@@ -29,12 +29,13 @@ module thermal_source_factory_type
 
   type, public :: thermal_source_factory
     private
-    class(unstr_base_mesh), pointer :: mesh => null() ! reference only
+    type(unstr_mesh), pointer :: mesh => null() ! reference only
     type(parameter_list), pointer :: params => null() ! reference only
   contains
     procedure :: init
-    procedure :: alloc_source_func1
-    procedure :: alloc_source_func2
+    procedure :: alloc_source_funcs
+    procedure, private :: alloc_source_func1
+    procedure, private :: alloc_source_func2
     procedure, private :: iterate_list
   end type
 
@@ -57,11 +58,46 @@ contains
 
   subroutine init(this, mesh, params)
     class(thermal_source_factory), intent(out) :: this
-    class(unstr_base_mesh), intent(in), target :: mesh
+    type(unstr_mesh), intent(in), target :: mesh
     type(parameter_list), intent(in), target :: params
     this%mesh => mesh
     this%params => params
   end subroutine init
+
+
+  subroutine alloc_source_funcs(this, src, stat, errmsg)
+
+    use scalar_mesh_multifunc_type
+    use scalar_cell_func1_type
+    use scalar_cell_func2_type
+
+    class(thermal_source_factory), intent(inout) :: this
+    type(scalar_mesh_multifunc), allocatable, intent(out) :: src
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(scalar_cell_func1), allocatable :: scf1
+    type(scalar_cell_func2), allocatable :: scf2
+
+    call this%alloc_source_func1(scf1, stat, errmsg)
+    if (stat /= 0) return
+
+    call this%alloc_source_func2(scf2, stat, errmsg)
+    if (stat /= 0) return
+
+    if (allocated(scf1) .or. allocated(scf2)) allocate(src)
+
+    if (allocated(scf1)) then
+      call scf1%assemble
+      call move_alloc(scf1, src%f1)
+    end if
+
+    if (allocated(scf2)) then
+      call scf2%assemble
+      call move_alloc(scf2, src%f2)
+    end if
+
+  end subroutine alloc_source_funcs
 
 
   subroutine alloc_source_func1(this, src, stat, errmsg)
@@ -70,22 +106,15 @@ contains
     use bndry_face_func_type
 
     class(thermal_source_factory), intent(inout) :: this
-    class(scalar_mesh_func), allocatable, intent(out) :: src
+    type(scalar_cell_func1), allocatable, intent(inout) :: src
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-
-    type(scalar_cell_func1), allocatable :: scf
 
     !TODO (08/12/2020): needs a better name than "scalar_cell_func1"?
     call TLS_info('  generating "scalar_cell_func1" thermal source')
     call this%iterate_list(TYPE_SCF1, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(scf)) call TLS_info('    none specified')
-
-    if (allocated(scf)) then
-      call scf%assemble
-      call move_alloc(scf, src)
-    end if
+    if (.not.allocated(src)) call TLS_info('    none specified')
 
   contains
 
@@ -104,11 +133,11 @@ contains
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'prefactor', f, stat, errmsg)
       if (stat /= 0) return
-      if (.not.allocated(scf)) then
-        allocate(scf)
-        call scf%init(this%mesh)
+      if (.not.allocated(src)) then
+        allocate(src)
+        call src%init(this%mesh)
       end if
-      call scf%add(file, f, stat, errmsg)
+      call src%add(file, f, stat, errmsg)
    end subroutine proc
 
   end subroutine alloc_source_func1
@@ -120,22 +149,15 @@ contains
     use bndry_face_func_type
 
     class(thermal_source_factory), intent(inout) :: this
-    class(scalar_mesh_func), allocatable, intent(out) :: src
+    type(scalar_cell_func2), allocatable, intent(inout) :: src
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-
-    type(scalar_cell_func2), allocatable :: scf
 
     !TODO (08/12/2020): needs a better name than "scalar_cell_func2"?
     call TLS_info('  generating "scalar_cell_func2" thermal source')
     call this%iterate_list(TYPE_SCF2, proc, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(scf)) call TLS_info('    none specified')
-
-    if (allocated(scf)) then
-      call scf%assemble
-      call move_alloc(scf, src)
-    end if
+    if (.not.allocated(src)) call TLS_info('    none specified')
 
   contains
 
@@ -154,11 +176,11 @@ contains
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'source', f, stat, errmsg)
       if (stat /= 0) return
-      if (.not.allocated(scf)) then
-        allocate(scf)
-        call scf%init(this%mesh)
+      if (.not.allocated(src)) then
+        allocate(src)
+        call src%init(this%mesh)
       end if
-      call scf%add(f, setids, stat, errmsg)
+      call src%add(f, setids, stat, errmsg)
    end subroutine proc
 
   end subroutine alloc_source_func2

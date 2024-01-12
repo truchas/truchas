@@ -15,17 +15,17 @@
 module scalar_cell_func2_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_base_mesh_class
-  use scalar_mesh_func_class
+  use unstr_mesh_type
+  use scalar_mesh_func2_class
   use scalar_func_containers
   use cell_group_builder_type
   implicit none
   private
 
-  type, extends(scalar_mesh_func), public :: scalar_cell_func2
+  type, extends(scalar_mesh_func2), public :: scalar_cell_func2
     private
-    class(unstr_base_mesh), pointer :: mesh => null()  ! reference only -- not owned
-    real(r8) :: tlast = -huge(1.0_r8)
+    class(unstr_mesh), pointer :: mesh => null()  ! reference only -- not owned
+    logical :: evaluated = .false.
     integer :: ngroup
     integer, allocatable :: xgroup(:), index(:)
     type(scalar_func_box), allocatable :: farray(:)
@@ -43,15 +43,15 @@ module scalar_cell_func2_type
   !! Optimization hint values.
   integer, parameter :: HINT_NONE    = 0
   integer, parameter :: HINT_CONST   = 1
-  integer, parameter :: HINT_T_INDEP = 2
   integer, parameter :: HINT_X_INDEP = 3
 
 contains
 
   subroutine init(this, mesh)
     class(scalar_cell_func2), intent(out) :: this
-    class(unstr_base_mesh), intent(in), target :: mesh
+    class(unstr_mesh), intent(in), target :: mesh
     this%mesh => mesh
+    call this%mesh%init_cell_centroid
     allocate(this%builder)
     call this%builder%init(mesh)
   end subroutine
@@ -87,43 +87,32 @@ contains
   end subroutine assemble
 
 
-  subroutine compute(this, t)
+  subroutine compute(this, t, v)
 
     class(scalar_cell_func2), intent(inout) :: this
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, v(:)
 
     integer :: j, n
-    logical :: evaluated
     real(r8) :: args(0:size(this%mesh%x,dim=1))
-
-    !! First time: allocate and assign a default value
-    evaluated = allocated(this%value)
-    if (.not.evaluated) then
-      allocate(this%value(this%mesh%ncell))
-      this%value = 0.0_r8 ! default
-    end if
-
-    if (evaluated .and. t == this%tlast) return ! nothing to do
 
     args(0) = t
     do n = 1, this%ngroup
       associate (index => this%index(this%xgroup(n):this%xgroup(n+1)-1))
         select case (this%hint(n))
         case (HINT_CONST)
-          if (.not.evaluated) this%value(index) = this%farray(n)%eval(args)
+          if (.not.this%evaluated) this%value(index) = this%farray(n)%eval(args)
         case (HINT_X_INDEP)
           this%value(index) = this%farray(n)%eval(args)
         case default
           do j = 1, size(index)
-            associate (cnode => this%mesh%cell_node_list_view(index(j)))
-              args(1:) = sum(this%mesh%x(:,cnode),dim=2) / size(cnode)
-            end associate
+            args(1:3) = this%mesh%cell_centroid(:,index(j))
+            args(4) = v(index(j))
             this%value(index(j)) = this%farray(n)%eval(args)
           end do
         end select
       end associate
     end do
-    this%tlast = t
+    this%evaluated = .true.
 
   end subroutine compute
 
