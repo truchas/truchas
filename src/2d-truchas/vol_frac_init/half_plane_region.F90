@@ -1,12 +1,12 @@
 module half_plane_region_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region2d_class
+  use region_class
   implicit none
 
   public :: alloc_half_plane_region
 
-  type, extends(region2d) :: half_plane_region
+  type, extends(region) :: half_plane_region
     private
     real(r8) :: point(2), normal(2)
     logical  :: complement = .false.
@@ -17,7 +17,7 @@ module half_plane_region_type
 contains
 
   subroutine alloc_half_plane_region(this, point, normal, complement)
-    class(region2d), allocatable, intent(out) :: this
+    class(region), allocatable, intent(out) :: this
     real(r8), intent(in) :: point(:), normal(:)
     logical, intent(in), optional :: complement
     allocate(this, source=half_plane_region(center, point, normal))

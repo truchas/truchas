@@ -1,12 +1,12 @@
 module disk_region_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region2d_class
+  use region_class
   implicit none
 
   public :: alloc_disk_region
 
-  type, extends(region2d) :: disk_region
+  type, extends(region) :: disk_region
     private
     real(r8) :: center(2), radius
     logical  :: complement = .false.
@@ -17,7 +17,7 @@ module disk_region_type
 contains
 
   subroutine alloc_disk_region(this, center, radius, complement)
-    class(region2d), allocatable, intent(out) :: this
+    class(region), allocatable, intent(out) :: this
     real(r8), intent(in) :: center(:), radius
     logical, intent(in), optional :: complement
     allocate(this, source=disk_region(center, radius, complement))
