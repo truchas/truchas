@@ -20,14 +20,14 @@ contains
     class(region), allocatable, intent(out) :: this
     real(r8), intent(in) :: point(:), normal(:)
     logical, intent(in), optional :: complement
-    allocate(this, source=half_plane_region(center, point, normal))
+    allocate(this, source=half_plane_region(point, normal, complement))
   end subroutine
 
   pure logical function encloses(this, x, bitmask)
     class(half_plane_region), intent(in) :: this
     real(r8), intent(in) :: x(:)
-    integer, intent(in) :: bitmask  ! irrelevant to this type
-    encloses = (dot_product(this%normal, x-this%point) <= 0) .xor. this%complement
+    integer, intent(in) :: bitmask  ! unused for this type
+    encloses = (dot_product(this%normal, x-this%point) <= 0) .neqv. this%complement
   end function
 
 end module half_plane_region_type

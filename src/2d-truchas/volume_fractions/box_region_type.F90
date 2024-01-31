@@ -26,8 +26,8 @@ contains
   pure logical function encloses(this, x, bitmask)
     class(box_region), intent(in) :: this
     real(r8), intent(in) :: x(:)
-    integer, intent(in) :: bitmask  ! irrelevant to this type
-    encloses = all(x >= this%lower .and. x <= this%upper) .xor. this%complement
+    integer, intent(in) :: bitmask  ! unused for this type
+    encloses = all(x >= this%lower .and. x <= this%upper) .neqv. this%complement
   end function
 
 end module box_region_type
