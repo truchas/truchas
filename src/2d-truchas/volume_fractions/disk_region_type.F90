@@ -26,8 +26,8 @@ contains
   pure logical function encloses(this, x, bitmask)
     class(disk_region), intent(in) :: this
     real(r8), intent(in) :: x(:)
-    integer, intent(in) :: bitmask  ! irrelevant to this type
-    encloses = (norm2(x-this%center) <= this%radius) .xor. this%complement
+    integer, intent(in) :: bitmask  ! unused for this type
+    encloses = (norm2(x-this%center) <= this%radius) .neqv. this%complement
   end function
 
 end module disk_region_type

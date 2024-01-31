@@ -19,15 +19,15 @@ contains
   subroutine alloc_cell_set_region(this, bitmask, complement)
     class(region), allocatable, intent(out) :: this
     integer, intent(in) :: bitmask
-    integer, intent(in), optional :: complement
+    logical, intent(in), optional :: complement
     allocate(this, source=cell_set_region(bitmask, complement))
   end subroutine
 
   pure logical function encloses(this, x, bitmask)
     class(cell_set_region), intent(in) :: this
-    real(r8), intent(in) :: x(:)  ! irrelevant to this type
+    real(r8), intent(in) :: x(:)  ! unused for this type
     integer,  intent(in) :: bitmask
-    encloses = (iand(bitmask, this%bitmask) /= 0) .xor. this%complement
+    encloses = (iand(bitmask, this%bitmask) /= 0) .neqv. this%complement
   end function
 
 end module cell_set_region_type
