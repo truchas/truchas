@@ -23,8 +23,7 @@ program test_region_func_type
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_SILENT)
 
-  block
-  end block
+  status = 0
 
   call create_mesh1(mesh)
   call test1

@@ -28,6 +28,8 @@ program test_2d_regions
     call config_mesh_cell_sets(mesh)
   end block
 
+  status = 0
+
   call test_box_region
   call test_disk_region
   call test_half_plane_region
