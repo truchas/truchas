@@ -28,6 +28,8 @@ program test_region_func_type
     call config_mesh_cell_sets(mesh)
   end block
 
+  status = 0
+
   call config_mesh_cell_sets(mesh)
   call test1
 
