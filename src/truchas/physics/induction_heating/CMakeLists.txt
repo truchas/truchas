@@ -1,5 +1,6 @@
 target_sources(truchas PRIVATE
   ih_driver.F90
+  ih_legacy_bc.F90
   geometry_model_type.F90
   em_properties.F90
   EM_graphics_output.F90

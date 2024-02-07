@@ -6,6 +6,7 @@ import multiprocessing
 
 import numpy as np
 import scipy as sp
+import scipy.special as spsp
 import scipy.constants
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -42,10 +43,10 @@ def heat_analytic(H_bc, source_frequency, sigma, R,
 
     c = mu * (1j * omega * sigma - omega**2 * epsilon)
     sqrt_c = np.sqrt(c)
-    A = B_bc / sp.special.jv(0, sqrt_c * R)
+    A = B_bc / spsp.jv(0, sqrt_c * R)
     r = np.linspace(0, R, 100)
-    B = A * sp.special.jv(0, sqrt_c * r)
-    E = -1j * omega * A / sqrt_c * sp.special.jvp(0, sqrt_c * r)
+    B = A * spsp.jv(0, sqrt_c * r)
+    E = -1j * omega * A / sqrt_c * spsp.jvp(0, sqrt_c * r)
     E2 = np.abs(E)**2
     Q = (sigma + omega * np.imag(epsilon)) * np.abs(E)**2 / 2
 
@@ -104,8 +105,8 @@ if __name__ == "__main__":
                         "electric_susceptibility": electric_susceptibility,
                         "magnetic_susceptibility": magnetic_susceptibility,
                         }
-    tdata = [#run_truchas(input_parameters, emfd=True),
-             truchas.TruchasData("emfd_output/emfd.h5"),
+    tdata = [run_truchas(input_parameters, emfd=True),
+             #truchas.TruchasData("emfd_output/emfd.h5"),
              run_truchas(input_parameters, emfd=False),
              ]
 

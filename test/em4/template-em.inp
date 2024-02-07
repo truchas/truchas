@@ -60,28 +60,45 @@
 
 ### INDUCTION HEATING ##########################################################
 
-&ALTMESH
-  altmesh_file = 'mesh_flat.gen'
-  altmesh_coordinate_scale_factor = 0.01
+&EM_MESH
+  mesh_file = 'mesh_flat.gen'
+  coord_scale_factor = 0.01
 /
 
 &ELECTROMAGNETICS
-  emfd_solver = {emfd}
-
-  EM_domain_type = 'quarter_cylinder'
-  !EM_domain_type = 'full_cylinder'
-  uniform_source = {H_bc}
-  source_frequency = {source_frequency}
-
+  use_emfd_solver = {emfd}
+  matl_change_threshold = 0.6
   steps_per_cycle = 64
-  maximum_source_cycles = 64
-  SS_Stopping_Tolerance = 0.01
-  Maximum_CG_Iterations = 1000
-  CG_Stopping_Tolerance = 1.0e-10
-  material_change_threshold = 0.6
+  steady_state_tol = 0.01
+  max_source_cycles = 64
+  cg_max_iter = 1000
+  cg_tol = 1.0e-10
   output_level = 2
 /
 
+&INDUCTION_SOURCE_FIELD
+  frequency = {source_frequency}
+  uniform_strength = {H_bc}
+  orientation = 'z'
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x,y=0 symmetry planes'
+  type = 'pec'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'applied H field'
+  type = 'ih-hfield'
+  face_set_ids = 3
+/
+
+! nxH=0 is a natural BC that is implied by doing nothing
+!&ELECTROMAGNETIC_BC
+!  name = 'ends'
+!  face_set_ids = 2
+!/
 
 ### MATERIALS ##################################################################
 

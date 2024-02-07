@@ -156,7 +156,8 @@ contains
   !! State-dependent setup: compute and assemble the node-based projected matrix An
   subroutine setup(this, mu, epsr, epsi, sigma, omega)
 
-    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, sym_matmul
+    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we
+    use upper_packed_matrix_procs, only: sym_matmul
 
     class(hiptmair_precon), intent(inout) :: this
     real(r8), intent(in) :: mu(:), epsr(:), epsi(:), sigma(:), omega
