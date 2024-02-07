@@ -238,7 +238,8 @@ contains
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
-    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, sym_matmul
+    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we
+    use upper_packed_matrix_procs, only: sym_matmul
 
     class(em_fd_solver), intent(inout) :: this
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
