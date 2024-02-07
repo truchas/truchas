@@ -37,6 +37,7 @@ module em_bc_factory_type
     procedure :: init
     procedure :: alloc_nxE_bc
     procedure :: alloc_nxH_bc
+    procedure :: alloc_fd_nxH_bc
     procedure, private :: iterate_list
   end type
 
@@ -192,6 +193,63 @@ contains
     end subroutine
 
   end subroutine alloc_nxH_bc
+
+  subroutine alloc_fd_nxH_bc(this, bc, stat, errmsg, scale_factor, omit_edge_list)
+
+    use bndry_func1_class
+    use nxH_bndry_func_type
+    class(scalar_func), allocatable :: f
+    class(vector_func), allocatable :: g
+
+    class(em_bc_factory), intent(in) :: this
+    class(bndry_func1), allocatable, intent(out) :: bc
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: scale_factor
+    integer, intent(in), optional :: omit_edge_list(:)
+
+    type(nxH_bndry_func), allocatable :: nxH_bc
+    type(parameter_list) :: unused_plist
+
+    call TLS_info('  generating "nxH" electromagnetic boundary condition')
+
+    if (this%use_legacy_bc) then
+      call proc(unused_plist, this%nxH_setid, stat, errmsg)
+    else
+      call this%iterate_list('ih-hfield', proc, stat, errmsg)
+    end if
+    if (stat /= 0) return
+    if (allocated(nxH_bc)) then
+      call nxH_bc%add_complete(omit_edge_list)
+    else
+      call TLS_info('    none specified')
+    end if
+    call move_alloc(nxh_bc, bc)
+
+  contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to the ih-hfield BC specification and incrementally builds the BC object
+    !! accordingly. NB: The NXH_BC and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine proc(plist, setids, stat, errmsg)
+      use scalar_func_factories, only: alloc_const_scalar_func
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      if (.not.allocated(nxH_bc)) then
+        allocate(nxH_bc)
+        call nxH_bc%init(this%mesh)
+      end if
+      call alloc_const_scalar_func(f, 1.0_r8)
+      call this%src_fac%alloc_H_profile_func(g, scale_factor)
+      call nxH_bc%add(f, g, setids, stat, errmsg)
+      if (stat /= 0) return
+    end subroutine
+
+  end subroutine alloc_fd_nxH_bc
 
   !! This auxiliary subroutine iterates over the parameter list and for each BC
   !! sublist that matches the given TYPE, it calls the supplied subroutine
