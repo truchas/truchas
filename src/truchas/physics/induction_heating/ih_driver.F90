@@ -243,6 +243,7 @@ contains
     real(r8), allocatable :: q(:)
     type(em_bc_factory) :: bc_fac
     real(r8) :: freq
+    type(parameter_list), pointer :: plist
     integer, save :: sim_num = 0  ! global counter for the number of calls
 
     call start_timer('simulation')
@@ -255,7 +256,8 @@ contains
     freq = this%src_fac%H_freq()
     call bc_fac%init(this%em_mesh, this%src_fac, params)
     if (this%use_emfd_solver) then
-      call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
+      plist => params%sublist('emfd-solver')
+      call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, plist, q)
     else
       call compute_joule_heat_emtd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
     end if
@@ -314,14 +316,15 @@ contains
 
   end subroutine compute_joule_heat_emtd
 
-  !! Frequency-domain EM driver
+  !! Compute Joule heat using the frequency domain EM solver
+
   subroutine compute_joule_heat_emfd(mesh, freq, eps, mu, sigma, bc_fac, params, q)
 
     use simpl_mesh_type
-    use parameter_list_type
     use em_bc_factory_type
-    use bndry_func1_class
+    use parameter_list_type
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
+    use emfd_nlsol_solver_type
 
     type(simpl_mesh), intent(inout), target :: mesh
     real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
@@ -329,44 +332,23 @@ contains
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
 
+    type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
-    real(r8) :: omega, tt, epsr(mesh%ncell), epsi(mesh%ncell)
-    integer, allocatable :: pec_setid(:), src_setid(:)
-    class(bndry_func1), allocatable :: ebc, hbc
+    real(r8) :: t, omega, epsi(mesh%ncell)
     integer :: stat
     character(:), allocatable :: errmsg
 
-    call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-    call bc_fac%alloc_fd_nxH_bc(hbc, stat, errmsg, omit_edge_list=ebc%index)
+    call solver%init(mesh, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
-    ! Initialize temporarily moved here -- see emfd_init subroutine
-    block
-      use em_bc_type
-      type(em_bc), pointer :: bc => null()
-      type(parameter_list), pointer :: plist
-      plist => params%sublist("emfd-solver")
-      allocate(bc)
-      call bc%init(mesh, ebc, hbc)
-      call emfd_solver%init(mesh, bc, plist) ! solver takes ownership of bc
-    end block
-
-    !print *, "eps0: ", eps0
-
-    tt = 0 ! TODO: move to time-dependent BCs
-    !epsr = eps0 * eps_relative
+    t = 0 ! dummy time
     epsi = 0 ! TODO: Currently not exposed to user input. Needed for dielectric heating.
-    !mu = mu0 * mu_relative
-    omega = 2 * PI * source_frequency()
+    omega = 2 * PI * freq
 
-    print *, 'setup'
-    !TODO? rewor8 solver to use absolute eps and mu?
-    call emfd_solver%setup(tt, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
-    print *, 'solve'
-    call emfd_solver%solve
-    print *, 'compute'
-    call emfd_solver%compute_heat_source(q)
+    !TODO? rework solver to use absolute eps and mu?
+    call solver%setup(t, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
+    call solver%solve
+    call solver%compute_heat_source(q)
 
   end subroutine compute_joule_heat_emfd
 
