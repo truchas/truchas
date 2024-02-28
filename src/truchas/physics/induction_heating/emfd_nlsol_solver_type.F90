@@ -33,6 +33,7 @@ module emfd_nlsol_solver_type
   use simpl_mesh_type
   use index_map_type
   use em_bc_type
+  use bndry_func1_class
   use truchas_logging_services
   use truchas_timers
   implicit none
@@ -67,7 +68,7 @@ module emfd_nlsol_solver_type
     type(index_map), pointer :: imap => null()
     type(pcsr_matrix), pointer :: A => null(), Ap => null()
 
-    type(em_bc), pointer :: bc => null()
+    type(em_bc) :: bc
 
     real(r8), allocatable :: efield(:) ! electric field (real and imaginary parts)
     real(r8), allocatable :: rhs(:) ! rhs (set by BCs)
@@ -98,22 +99,24 @@ contains
     if (associated(this%imap)) deallocate(this%imap)
     if (associated(this%A)) deallocate(this%A)
     if (associated(this%Ap)) deallocate(this%Ap)
-    if (associated(this%bc)) deallocate(this%bc)
     if (associated(this%precon)) deallocate(this%precon)
     if (associated(this%model)) deallocate(this%model)
   end subroutine emfd_nlsol_solver_delete
 
 
-  subroutine init(this, mesh, bc, params)
+  subroutine init(this, mesh, bc_fac, params, stat, errmsg)
 
     use mimetic_discretization
+    use em_bc_factory_type
     use parameter_list_type
     use parallel_communication, only: is_IOP
 
     class(emfd_nlsol_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
-    type(em_bc), intent(inout), pointer :: bc
-    type(parameter_list), intent(inout), pointer :: params
+    type(em_bc_factory), intent(in) :: bc_fac
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: plist
     type(index_map), pointer :: row_imap
@@ -123,10 +126,15 @@ contains
     integer :: e1, e1x, e1r, e1i, e2, e2x, e2r, e2i
     integer :: ierr
     real(r8) :: atol, rtol, ftol
-    character(:), allocatable :: errmsg
 
-    !ASSERT(size(emask) == mesh%nedge)
-    ASSERT(associated(bc))
+    block
+      class(bndry_func1), allocatable :: ebc, hbc
+      call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
+      if (stat /= 0) return
+      call bc_fac%alloc_fd_nxH_bc(hbc, stat, errmsg, omit_edge_list=ebc%index)
+      if (stat /= 0) return
+      call this%bc%init(mesh, ebc, hbc)
+    end block
 
     ! set defaults
     !if (.not.params%is_parameter("rel-tol")) call params%set("rel-tol", 0.0_r8)
@@ -167,7 +175,6 @@ contains
     ! this%sigma = sigma
     ! this%omega = omega
     !this%emask = emask
-    this%bc => bc ! taking ownership
     allocate(this%efield(2*mesh%nedge), this%rhs(2*mesh%nedge))
     this%efield = 0
     this%rhs = 0
