@@ -54,7 +54,6 @@ CONTAINS
     use init_module,            only: INITIAL
     use unstr_mesh_type
     use mesh_manager,           only: init_mesh_manager, unstr_mesh_ptr
-    use EM,                     only: initialize_EM
     use truchas_danu_output,    only: TDO_write_mesh
     use truchas_timers
 
@@ -98,13 +97,6 @@ CONTAINS
     if (restart) then
       if (.not.ignore_t) cycle_number = restart_cycle_number
     end if
-
-    ! Initialize electromagnetics.
-    call stop_timer("Initialization")
-    call start_timer("electromagnetics")
-    call initialize_EM (t)
-    call stop_timer("electromagnetics")
-    call start_timer("Initialization")
 
     if (restart) call close_restart_file ()
 

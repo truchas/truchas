@@ -106,12 +106,14 @@ module truchas_h5_outfile
     private
     procedure, public :: add_mesh_link
     procedure, public :: next_seq_group
-    generic, public :: write_attr => sim_write_attr_int32, sim_write_attr_real64
+    generic, public :: write_attr => sim_write_attr_int32, sim_write_attr_real64, &
+        sim_write_attr_string
     generic, public :: write_dist_array => sim_write_dist_array_int32_r1, &
         sim_write_dist_array_real64_r1, sim_write_dist_array_real64_r2
     generic, public :: write_repl_data => sim_write_repl_data_int32_r0, &
         sim_write_repl_data_int32_r1, sim_write_repl_data_reall64_r0, &
-        sim_write_repl_data_reall64_r1, sim_write_repl_data_reall64_r2
+        sim_write_repl_data_reall64_r1, sim_write_repl_data_reall64_r2, &
+        sim_write_repl_data_char_r0
     procedure, private :: sim_write_repl_data_int32_r0
     procedure, private :: sim_write_repl_data_int32_r1
     procedure, private :: sim_write_repl_data_reall64_r0
@@ -120,8 +122,10 @@ module truchas_h5_outfile
     procedure, private :: sim_write_dist_array_int32_r1
     procedure, private :: sim_write_dist_array_real64_r1
     procedure, private :: sim_write_dist_array_real64_r2
+    procedure, private :: sim_write_repl_data_char_r0
     procedure, private :: sim_write_attr_int32
     procedure, private :: sim_write_attr_real64
+    procedure, private :: sim_write_attr_string
   end type th5_sim_group
 
 
@@ -236,6 +240,19 @@ contains
     character(*), intent(in) :: mesh_name
     call this%file%create_link('/Meshes/'//mesh_name, this%groupid, 'Mesh')
   end subroutine
+
+  subroutine sim_write_repl_data_char_r0(this, name, ldata)
+    class(th5_sim_group), intent(in) :: this
+    character(*), intent(in) :: name
+    character(*), intent(in) :: ldata
+    integer :: len1, glen
+    character(:), allocatable :: dataset
+    dataset = this%path // '/Non-series Data/' // name
+    glen = len(ldata)
+    call broadcast(glen)
+    len1 = merge(glen, 0, this%is_IOP)
+    call this%file%write_dataset(dataset, ldata(:len1), glen)
+  end subroutine sim_write_repl_data_char_r0
 
   subroutine sim_write_repl_data_int32_r0(this, name, ldata)
     class(th5_sim_group), intent(in) :: this
@@ -353,6 +370,13 @@ contains
     real(real64), intent(in) :: value
     call this%file%write_attr(this%path, name, value)
   end subroutine sim_write_attr_real64
+
+  subroutine sim_write_attr_string(this, name, value)
+    class(th5_sim_group), intent(in) :: this
+    character(*), intent(in) :: name
+    character(*), intent(in) :: value
+    call this%file%write_attr(this%path, name, value)
+  end subroutine sim_write_attr_string
 
 !!!! TH5_SEQ_GROUP TYPE BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

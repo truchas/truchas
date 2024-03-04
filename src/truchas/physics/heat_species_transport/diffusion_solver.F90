@@ -148,7 +148,7 @@ contains
 
     subroutine update_adv_heat
 
-      use EM_data_proxy, only: joule_power_density
+      use ih_driver, only: joule_power_density
 
       real(r8), allocatable :: q_ds(:)
 
@@ -388,7 +388,7 @@ contains
  !!
   subroutine ds_init (tinit)
 
-    use EM_data_proxy, only: EM_is_on
+    use ih_driver, only: EM_is_on
     use FHT_model_factory
     use FHT_solver_factory
     use HTSD_model_factory

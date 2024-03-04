@@ -45,6 +45,7 @@ module scorpio_file_type
         write_attr_real64_r1, &
         write_attr_string
 
+    procedure, private :: write_dataset_char_r0
     procedure, private :: write_dataset_int8_r1
     procedure, private :: write_dataset_int8_r2
     procedure, private :: write_dataset_int32_r1
@@ -53,7 +54,8 @@ module scorpio_file_type
     procedure, private :: write_dataset_real64_r2
     generic :: write_dataset => write_dataset_int8_r1, write_dataset_int8_r2, &
                                 write_dataset_int32_r1, write_dataset_int32_r2, &
-                                write_dataset_real64_r1, write_dataset_real64_r2
+                                write_dataset_real64_r1, write_dataset_real64_r2, &
+                                write_dataset_char_r0
   end type scorpio_file
 
 contains
@@ -101,6 +103,15 @@ contains
     call scorpio_create_link(link_target//c_null_char, link_loc_id, link_name//c_null_char, &
                              this%fhandle, this%myIOgroup)
   end subroutine create_link
+
+  subroutine write_dataset_char_r0(this, name, ldata, glen)
+    class(scorpio_file), intent(in) :: this
+    character(*), intent(in) :: name
+    character(*), intent(in) :: ldata
+    integer(int32), intent(in) :: glen
+    call scorpio_write_dataset2_char(&
+        ldata, 1, [glen], [len(ldata)], this%fhandle, name//c_null_char, this%myIOgroup)
+  end subroutine
 
   subroutine write_dataset_int8_r1(this, name, ldata, glen)
     class(scorpio_file), intent(in) :: this

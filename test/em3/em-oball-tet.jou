@@ -4,7 +4,6 @@ imprint body all
 merge body all
 
 volume 1  size .8
-volume 1  scheme Map
 volume 1  scheme Tetmesh
 mesh volume 1 
 
@@ -19,6 +18,17 @@ mesh volume 2
 
 block 1 volume 1  
 block 2 volume 2
+
+sideset 1 add surface with x_coord == 0
+sideset 1 name "x=0 sym plane"
+sideset 2 add surface with y_coord == 0
+sideset 2 name "y=0 sym plane"
+sideset 3 add surface with z_coord == 0
+sideset 3 name "z=0 sym plane"
+sideset 4 add surface 7
+sideset 4 name "top"
+sideset 5 add surface 6
+sideset 5 name "cylinder"
 
 export genesis "em-oball-tet.gen" overwrite
 

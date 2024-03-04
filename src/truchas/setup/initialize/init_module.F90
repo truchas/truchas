@@ -61,7 +61,7 @@ CONTAINS
     !=======================================================================
     use overwrite_module,       only: OVERWRITE_MATL, OVERWRITE_VEL, OVERWRITE_ZONE
     use restart_variables,      only: restart
-    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_ustruc
+    use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_joule_heat, restart_ustruc
     use zone_module,            only: Zone
     use diffusion_solver_data,  only: ds_enabled, num_species, &
         ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
@@ -71,7 +71,8 @@ CONTAINS
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_driver_set_initial_state
     use solid_mechanics_driver, only: solid_mechanics_init
-    use physics_module,         only: flow, solid_mechanics
+    use ih_driver,              only: ih_driver_init
+    use physics_module,         only: flow, solid_mechanics, electromagnetics
     use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -178,6 +179,10 @@ CONTAINS
     ! Initialize the microstructure modeling driver (if enabled).
     call ustruc_driver_init (t)
     if (restart) call restart_ustruc
+
+    ! Initialize electromagnetics.
+    if (electromagnetics) call ih_driver_init(t)
+    if (restart) call restart_joule_heat
 
     ! Initialize probes.
     call probes_init

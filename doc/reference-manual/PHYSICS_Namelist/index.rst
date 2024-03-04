@@ -49,7 +49,7 @@ PHYSICS Namelist Features
 Components
 ------------
 * :ref:`Body_Force_Density<PHYSICS_BFD>`
-* :ref:`Electromagentics<PHYSICS_EM>`
+* :ref:`Electromagnetics<PHYSICS_EM>`
 * :ref:`Flow<PHYSICS_F>`
 * :ref:`Heat_Transport<PHYSICS_HT>`
 * :ref:`Materials<PHYSICS_M>`
@@ -70,7 +70,7 @@ Body_Force_Density
 
 .. _PHYSICS_EM:
 
-Electromagentics
+Electromagnetics
 ^^^^^^^^^^^^^^^^^^
 
 | **Description** : Enables the calculation of Joule heating.

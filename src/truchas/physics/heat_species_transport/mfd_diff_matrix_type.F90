@@ -142,7 +142,7 @@ contains
 
   subroutine compute(this, d)
 
-    use upper_packed_matrix, only: upm_col_sum
+    use upper_packed_matrix_procs, only: upm_col_sum
 
     class(mfd_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: d(:)

@@ -88,7 +88,8 @@ module graph_type
     procedure, private :: graph_add_edge_one
     procedure, private :: graph_add_edge_many
     generic :: add_edge => graph_add_edge_one, graph_add_edge_many
-    procedure :: add_clique => graph_add_clique
+    procedure, private :: graph_add_clique_one, graph_add_clique_many
+    generic :: add_clique => graph_add_clique_one, graph_add_clique_many
     procedure :: get_adjacency => graph_get_adjacency
     procedure, private :: graph_get_components
     procedure, private :: graph_get_components_mask
@@ -151,7 +152,7 @@ contains
   end subroutine graph_add_edge_many
 
   !! Add the specified clique of edges to the graph.
-  subroutine graph_add_clique (this, clique)
+  subroutine graph_add_clique_one(this, clique)
     class(graph), intent(inout) :: this
     integer, intent(in) :: clique(:)
     integer :: j, k, from, to
@@ -166,7 +167,17 @@ contains
         call this%nbrs(from)%add (to)
       end do
     end do
-  end subroutine graph_add_clique
+  end subroutine
+
+  !! Add the specified set of cliques to the graph.
+  subroutine graph_add_clique_many(this, clique)
+    class(graph), intent(inout) :: this
+    integer, intent(in) :: clique(:,:)
+    integer :: j
+    do j = 1, size(clique,dim=2)
+      call graph_add_clique_one(this, clique(:,j))
+    end do
+  end subroutine
 
   !! Return the adjacency structure of the graph.
   subroutine graph_get_adjacency (this, xadj, adjncy)

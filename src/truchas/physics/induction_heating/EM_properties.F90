@@ -12,52 +12,71 @@
 
 #include "f90_assert.fpp"
 
-module EM_properties
+module em_properties
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use material_model_driver, only:  matl_model
-  use truchas_logging_services
   implicit none
   private
 
-  public :: have_constant_EM_properties
-  public :: EM_permittivity, EM_permeability, EM_conductivity
+  public :: define_default_em_properties
+  public :: get_permittivity, get_permeability, get_conductivity
+  public :: permittivity_is_const, permeability_is_const, conductivity_is_const
 
 contains
 
-  logical function have_constant_EM_properties()
-    use material_utilities, only: constant_property_check
-    integer :: stat
-    character(:), allocatable :: errmsg
-    have_constant_EM_properties = .false.
-    call constant_property_check(matl_model, 'electrical-conductivity', stat, errmsg)
-    if (stat /= 0) return
-    call constant_property_check(matl_model, 'electric-susceptibility', stat, errmsg)
-    if (stat /= 0) return
-    call constant_property_check(matl_model, 'magnetic-susceptibility', stat, errmsg)
-    if (stat /= 0) return
-    have_constant_EM_properties = .true.
-  end function
+  subroutine define_default_em_properties
+    use material_utilities, only: define_property_default
+    call define_property_default(matl_model, 'electrical-conductivity', 0.0_r8)
+    call define_property_default(matl_model, 'electric-susceptibility', 0.0_r8)
+    call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_r8)
+  end subroutine
 
-  subroutine EM_permittivity(value)
+  subroutine get_permittivity(value)
+    use physical_constants, only: vacuum_permittivity
     use zone_module, only: zone
     real(r8), intent(out) :: value(:)
     call compute_cell_property('electric-susceptibility', zone%temp, value)
-    value = 1.0_r8 + value
+    value = vacuum_permittivity*(1.0_r8 + value)
   end subroutine
 
-  subroutine EM_permeability(value)
+  logical function permittivity_is_const()
+    use material_utilities, only: constant_property_check
+    integer :: stat
+    character(:), allocatable :: errmsg
+    call constant_property_check(matl_model, 'electric-susceptibility', stat, errmsg)
+    permittivity_is_const = (stat == 0)
+  end function
+
+  subroutine get_permeability(value)
+    use physical_constants, only: vacuum_permeability
     use zone_module, only: zone
     real(r8) :: value(:)
     call compute_cell_property('magnetic-susceptibility', zone%temp, value)
-    value = 1.0_r8 + value
+    value = vacuum_permeability*(1.0_r8 + value)
   end subroutine
 
-  subroutine EM_conductivity(value)
+  logical function permeability_is_const()
+    use material_utilities, only: constant_property_check
+    integer :: stat
+    character(:), allocatable :: errmsg
+    call constant_property_check(matl_model, 'magnetic-susceptibility', stat, errmsg)
+    permeability_is_const = (stat == 0)
+  end function
+
+  subroutine get_conductivity(value)
     use zone_module, only: zone
     real(r8) :: value(:)
     call compute_cell_property('electrical-conductivity', zone%temp, value)
   end subroutine
+
+  logical function conductivity_is_const()
+    use material_utilities, only: constant_property_check
+    integer :: stat
+    character(:), allocatable :: errmsg
+    call constant_property_check(matl_model, 'electrical-conductivity', stat, errmsg)
+    conductivity_is_const = (stat == 0)
+  end function
 
   !!
   !! COMPUTE_CELL_PROPERTY
@@ -109,4 +128,4 @@ contains
 
   end subroutine compute_cell_property
 
-end module EM_properties
+end module em_properties
