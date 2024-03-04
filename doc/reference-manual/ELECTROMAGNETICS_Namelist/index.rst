@@ -9,7 +9,7 @@ ELECTROMAGNETICS Namelist
 Overview
 ------------
 
-The ELECTROMAGNETICS namelist sets most of the parameters used by the electromagnetic (EM) solver to calculate the Joule heat used in induction heating simulations. Exceptions are the electrical conductivity, electric susceptibility, and magnetic susceptibility which are defined for each material phase using the :ref:`MATERIAL <MATERIAL_and_PHASE_Namelists>` namelist, and the induction coils hat produce an external magnetic source field, which are specified in :ref:`INDUCTION_COIL<INDUCTION_COIL_Namelist>` namelists. The EM calculations are performed on a tetrahedral mesh specified by the :ref:`ALTMESH<ALTMESH_Namelist>` namelist, which is generally different than the main mesh used throughout the rest of Truchas.
+The ELECTROMAGNETICS namelist sets most of the parameters used by the electromagnetic (EM) solver to calculate the Joule heat used in induction heating simulations. Exceptions are the electrical conductivity, electric susceptibility, and magnetic susceptibility which are defined for each material phase using the :ref:`MATERIAL <MATERIAL_and_PHASE_Namelists>` namelist, and the induction coils hat produce an external magnetic source field, which are specified in :ref:`INDUCTION_COIL<INDUCTION_COIL_Namelist>` namelists. The EM calculations are performed on a tetrahedral mesh specified by the :ref:`EM_MESH<EM_MESH_Namelist>` namelist, which is generally different than the main mesh used throughout the rest of Truchas.
 
 **A Remark on Units:** The EM solver assumes SI units by default. In particular, the result of the Joule heat calculation is a power density :math:`W/m^3` in SI units. To use a different system of units, the user must supply appropriate values for the free-space constants :ref:`Vacuum_Permittivity<PhyCo_VPm>` and :ref:`Vacuum_Permeability<PhyCo_VPt>` in the :ref:`PHYSICAL_CONSTANTS<PHYSICAL_CONSTANTS_Namelist>`. In any case, the user must ensure that a consistent set of units is used throughout Truchas.
 
@@ -73,7 +73,7 @@ EM_Domain_Type
 
 The values :math:`r \gt 0, z_1 \gt z_2` are inferred from the mesh and are not specified directly. Dirichlet source field conditions are imposed on the boundaries :math:`\{x_2+y_2=r_2\}` and :math:`\{z=z_1,z_2\}`, and symmetry conditions on the symmetry planes :math:`\{x= 0\}` and :math:`\{y= 0\}` if present. The analogous definitions for the other possible symmetry axes,’x’ and ’y’, are obtained by the appropriate cyclic permutation of the coordinates.
 
-For the computational mesh used in the EM simulation, see the :ref:`ALTMESH<ALTMESH_Namelist>` namelist.
+For the computational mesh used in the EM simulation, see the :ref:`EM_MESH<EM_MESH_Namelist>` namelist.
 
 **Experimental Features**. The value ’Frustum’ specifies that the domain is a frustum of a right cone.
 
@@ -229,3 +229,15 @@ Uniform_Source
 | **Valid Values**: Any single value, or any sequence of values.
 | **Notes**       : A sequence of up to 32 values may be assigned to this variable in order to specify at ime-dependent amplitude; see :ref:`Source_Times<EM_ST>` and :numref:`Figure %s<fig_rm_em_pc>` If this variable is not specified, its value or values, as appropriate, are assumed to be zero. The total external magnetic source field that drives the Joule heat computation will be the superposition of this field and the fields due to the coils specified in the :ref:`INDUCTION_COIL<INDUCTION_COIL_Namelist>` namelists, if any. For reference, the magnitude of the magnetic field within an infinitely-long, finely-wound coil with current density :math:`I` is simply :math:`I`. The field magnitude at the center of a circular current loop of radius :math:`r` with current :math:`I` is :math:`I/{2r}`. In both cases the field is directed along the axis of the coil/loop.
 
+
+data_mapper_kind (Experimental)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This specifies the tool that will be used to map fields between the primary
+mesh used for heat transfer and this EM mesh. If "portage" is selected,
+an experimental data mapper based on the Portage toolkit,
+https://laristra.github.io/portage, will be used. Otherwise, the normal
+data mapping tool will be used by default.
+
+:Type: string
+:Default: "default"
+:Valid Values: "default", "portage"

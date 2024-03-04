@@ -149,7 +149,7 @@ contains
 
   subroutine mfd_disc_apply_diff (this, coef, ucell, uface, rcell, rface)
 
-    use upper_packed_matrix, only: sym_matmul
+    use upper_packed_matrix_procs, only: sym_matmul
 
     class(mfd_disc), intent(in) :: this
     real(r8), intent(in)  :: coef(:)
@@ -352,7 +352,7 @@ contains
   subroutine mfd_tet_compute_flux_matrix (this, coef, matrix, invert)
 
     use cell_topology, only: TET4_VERT_FACE
-    use upper_packed_matrix, only: invert_upm
+    use upper_packed_matrix_procs, only: upm_invert
 
     class(mfd_tet), intent(in) :: this
     real(r8), intent(in) :: coef
@@ -382,7 +382,7 @@ contains
     end do
 
     if (present(invert)) then
-      if (invert) call invert_upm (matrix)
+      if (invert) call upm_invert (matrix)
     end if
 
   end subroutine mfd_tet_compute_flux_matrix
@@ -407,7 +407,7 @@ contains
   subroutine mfd_wedge_compute_flux_matrix (this, coef, matrix, invert)
 
     use cell_topology, only: WED6_VERT_FACE
-    use upper_packed_matrix, only: invert_upm
+    use upper_packed_matrix_procs, only: upm_invert
 
     class(mfd_wedge), intent(in) :: this
     real(r8), intent(in) :: coef
@@ -438,7 +438,7 @@ contains
     end do
 
     if (present(invert)) then
-      if (invert) call invert_upm (matrix)
+      if (invert) call upm_invert (matrix)
     end if
 
   end subroutine mfd_wedge_compute_flux_matrix
@@ -457,7 +457,7 @@ contains
   subroutine mfd_hex_compute_flux_matrix (this, coef, matrix, invert)
 
     use cell_topology, only: HEX8_VERT_FACE
-    use upper_packed_matrix, only: invert_upm
+    use upper_packed_matrix_procs, only: upm_invert
 
     class(mfd_hex), intent(in) :: this
     real(r8), intent(in) :: coef
@@ -488,7 +488,7 @@ contains
     end do
 
     if (present(invert)) then
-      if (invert) call invert_upm (matrix)
+      if (invert) call upm_invert (matrix)
     end if
 
   end subroutine mfd_hex_compute_flux_matrix
@@ -517,7 +517,7 @@ contains
   !! NNC, August 2014.  Need external access to a MFD_HEX_COMPUTE_FLUX_MATRIX.
   !! This needs to be revisited/generalized when this module is refactored.
   subroutine mfd_disc_compute_flux_matrix (this, n, matrix)
-    use upper_packed_matrix, only: invert_upm
+    use upper_packed_matrix_procs, only: upm_invert
     class(mfd_disc), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(out) :: matrix(:)
@@ -539,7 +539,7 @@ contains
         case (5)  ! pyramid or wedge (and eventually tet and hex too!)
           call cell%init (this%mesh%x(:,cnode))
           call cell%compute_flux_matrix_inv (1.0_r8, matrix)
-          call invert_upm (matrix)
+          call upm_invert (matrix)
         case (6)
           call wedge%init (this%mesh%x(:,cnode))
           call wedge%compute_flux_matrix (1.0_r8, matrix, invert=.false.)

@@ -8,11 +8,11 @@ Reference Manual
    :numbered: 2
 
    introduction/index
-   ALTMESH_Namelist/index
    BODY_Namelist/index
    DIFFUSION_Solver_Namelist/index
    DS_SOURCE_Namelist/index
    ELECTROMAGNETICS_Namelist/index
+   EM_MESH_Namelist/index
    ENCLOSURE_RADIATION_Namelist/index
    ENCLOSURE_SURFACE_Namelist/index
    EVAPORATION_Namelist/index

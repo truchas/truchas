@@ -13,9 +13,9 @@ subdivision of the hex cells.
   coordinate_scale_factor = 0.01
 /
 
-&ALTMESH
-  altmesh_file = 'em-qcyl-tet.gen'
-  altmesh_coordinate_scale_factor = 0.01
+&EM_MESH
+  mesh_file = 'em-qcyl-tet.gen'
+  coord_scale_factor = 0.01
 /
 
 &PHYSICS
@@ -45,17 +45,35 @@ subdivision of the hex cells.
 /
 
 &ELECTROMAGNETICS
-  EM_Domain_Type = 'quarter_cylinder'
-  Uniform_Source = 2000., 4000., 0.0, 4000.
-  Source_Frequency = 2*1000., 2*500.
-  Source_Times = 25.0, 50.0, 75.0
-  Steps_Per_Cycle = 12
-  Maximum_Source_Cycles = 4
-  SS_Stopping_Tolerance = 0.01
-  Maximum_CG_Iterations = 100
-  CG_Stopping_Tolerance = 1.0e-8
-  Output_Level = 2
+  source_Times = 25.0, 50.0, 75.0
+  source_frequency = 2*1000., 2*500.
+  uniform_source = 2000., 4000., 0.0, 4000.
+  steps_per_cycle = 12
+  steady_state_tol = 0.01
+  max_source_cycles = 4
+  cg_tol = 1.0e-8
+  cg_max_iter = 100
+  output_level = 2
 /
+
+&ELECTROMAGNETIC_BC
+ name = 'x,y==0'
+ type = 'pec'
+ face_set_ids = 2
+/
+
+&ELECTROMAGNETIC_BC
+ name = 'applied H field'
+ type = 'ih-hfield'
+ face_set_ids = 1
+/
+
+!nxH = 0 is the natural BC and is implied by doing nothing
+!&ELECTROMAGNETIC_BC
+! name = 'z=const planes'
+! type = 'ih-hfield' ! Really want nxH = 0 symmetry condition
+! face_set_ids = 3
+!/
 
 Core of the conducting cylinder
 &BODY

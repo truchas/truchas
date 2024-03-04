@@ -31,7 +31,6 @@ target_sources(truchas PRIVATE
   mesh_interop.F90
   prop_mesh_func_type.F90
   source_mesh_function.F90
-  upper_packed_matrix.F90
   enthalpy_advector_class.F90
   enthalpy_advector1_type.F90
   evap_heat_flux_type.F90

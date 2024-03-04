@@ -120,7 +120,7 @@ call hijack_truchas ()
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
-    use EM,                       only: INDUCTION_HEATING
+    use ih_driver,                only: ih_enabled, update_joule_heat
     use parallel_communication,   only: global_any
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
@@ -154,6 +154,12 @@ call hijack_truchas ()
     character(:), allocatable :: errmsg
     !---------------------------------------------------------------------------
 
+    call start_timer('Main Cycle')
+
+    ! Compute the initial value of Joule heat here before the main loop
+    ! so that the result will be output along with the initial solutions.
+    if (ih_enabled()) call update_joule_heat(t)
+
     if (cycle_max == 0) then
       call TLS_info('')
       call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
@@ -165,8 +171,6 @@ call hijack_truchas ()
     call init_sim_event_queue(dt_min)
     call params%get('event-lookahead', lookahead, default=5)
     ts_sync = time_step_sync(lookahead)
-
-    call start_timer('Main Cycle')
 
     call mem_diag_write('Before main loop:')
 
@@ -206,11 +210,7 @@ call hijack_truchas ()
 
         ! Evaluate the Joule heat source for the enthalpy calculation.
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
-        call stop_timer('Main Cycle')
-        call start_timer('electromagnetics')
-        call induction_heating(t1, t2)
-        call stop_timer('electromagnetics')
-        call start_timer('Main Cycle')
+        if (ih_enabled()) call update_joule_heat(t1)
 
         do num_try = 1, MAX_TRY
 

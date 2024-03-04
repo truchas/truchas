@@ -11,9 +11,9 @@ the ball are not conforming.
   coordinate_scale_factor = 0.01
 /
 
-&ALTMESH
-  altmesh_file = 'em-oball-tet.gen'
-  altmesh_coordinate_scale_factor = 0.01
+&EM_MESH
+  mesh_file = 'em-oball-tet.gen'
+  coord_scale_factor = 0.01
 /
 
 &OUTPUTS
@@ -42,15 +42,38 @@ the ball are not conforming.
 /
 
 &ELECTROMAGNETICS
-  EM_Domain_Type = 'quarter_cylinder'
-  Source_Frequency = 500.0
-  Steps_Per_Cycle = 12
-  Maximum_Source_Cycles = 4
-  SS_Stopping_Tolerance = 0.01
-  Maximum_CG_Iterations = 100
-  CG_Stopping_Tolerance = 1.0e-8
-  Output_Level = 2
-  Num_Etasq = 1.0e-6
+  source_frequency = 500.0
+  steps_per_cycle = 12
+  steady_state_tol = 0.01
+  max_source_cycles = 4
+  cg_tol = 1.0e-10
+  cg_max_iter = 100
+  output_level = 2
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'y=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 2
+/
+
+nxH=0 is a natural BC, implied by doing nothing
+x&ELECTROMAGNETIC_BC
+  name = 'z=0 symmetry plane'
+  type = 'ih-hfield'  ! really want nxH = 0
+  face_set_ids = 3
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'applied H field'
+  type = 'ih-hfield'
+  face_set_ids = 4, 5
 /
 
 &INDUCTION_COIL

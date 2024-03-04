@@ -171,7 +171,7 @@ contains
   
   subroutine compute (this, ucell, gradu, stat, errmsg)
   
-    use upper_packed_matrix
+    use upper_packed_matrix_procs
 
     class(cell_grad), intent(inout) :: this
     real(r8), intent(in)  :: ucell(:)     ! u on cells (all)

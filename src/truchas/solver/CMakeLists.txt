@@ -9,8 +9,11 @@ target_sources(truchas PRIVATE
   pcsr_precon_ssor_type.F90
   pcsr_precon_boomer_type.F90
   pcsr_precon_factory.F90
+  cg_solver_class.F90
   ridders_class.F90
   nlsol_type.F90
+  upper_packed_matrix_procs.F90
+  msr_matrix_type.F90
 )
 
 add_subdirectory(Test)

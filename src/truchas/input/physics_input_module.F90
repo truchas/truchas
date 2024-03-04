@@ -13,8 +13,6 @@ module physics_input_module
 
   public :: physics_input
 
-  logical :: electromagnetics
-
 contains
 
   subroutine physics_check
@@ -40,7 +38,7 @@ contains
   subroutine physics_input(lun)
 
     use physics_module
-    use EM_data_proxy,          only: SET_EM_SIMULATION_ON_OR_OFF
+    use ih_driver,              only: SET_EM_SIMULATION_ON_OR_OFF
     use input_utilities,        only: seek_to_namelist, NULL_C
     use diffusion_solver_data,  only: ds_enabled, system_type, num_species
     use material_model_driver,  only: materials, nmat
@@ -113,7 +111,7 @@ contains
     ! Electromagnetics is a local variable.  Now need to
     ! store the result in EM_Data_Store.
     ! Note that this handles the broadcast, also.
-    call SET_EM_SIMULATION_ON_OR_OFF (electromagnetics)
+    call SET_EM_SIMULATION_ON_OR_OFF(electromagnetics)
 
     !! Configure the heat/species transport kernel.
     ds_enabled = heat_transport .or. species_transport

@@ -154,7 +154,7 @@ contains
     use mesh_manager, only: unstr_mesh_ptr
     use time_step_module, only: t, dt, cycle_number
     use physics_module, only: heat_transport, species_transport
-    use EM_data_proxy, only: EM_is_on
+    use ih_driver, only: EM_is_on
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
     use solid_mechanics_driver, only: solid_mechanics_enabled
@@ -299,7 +299,7 @@ contains
 
     subroutine write_EM_data
 
-      use EM_data_proxy, only: joule_power_density
+      use ih_driver, only: joule_power_density
 
       real(r8), pointer :: q(:)
 

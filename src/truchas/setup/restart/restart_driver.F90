@@ -279,19 +279,16 @@ contains
   !! Read the optional Joule heat data segment.
   !!
 
-  subroutine restart_joule_heat (defined)
-    use EM_data_proxy, only: EM_is_on, read_joule_data, skip_joule_data
-    logical, intent(out) :: defined
-    defined = .false.
+  subroutine restart_joule_heat
+    use ih_driver, only: EM_is_on, read_joule_data, skip_joule_data
     if (have_joule_heat_data) then
       if (EM_is_on() .and. .not.ignore_joule_heat) then
-        call read_joule_data (unit, version)
-        defined = .true.
+        call read_joule_data(unit, version)
       else
-        call skip_joule_data (unit, version)
+        call skip_joule_data(unit, version)
       end if
     end if
-  end subroutine restart_joule_heat
+  end subroutine
 
   subroutine close_restart_file ()
     use restart_utilities, only: info
