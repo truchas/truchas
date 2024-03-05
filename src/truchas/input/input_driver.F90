@@ -30,7 +30,6 @@ contains
     !   driver for reading input file
     !=======================================================================
     use probe_namelist,            only: read_probe_namelists
-    use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
@@ -45,6 +44,7 @@ contains
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
     use solid_mechanics_driver,    only: read_solid_mechanics_namelists
+    use ih_driver,                 only: read_ih_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
@@ -122,9 +122,8 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
-    ! Read Electromagnetics
-    if (electromagnetics) call read_em_input(lun)
-    !TODO: read_em_input should be in the EM driver
+    ! read namelists for induction heating
+    if (electromagnetics) call read_ih_namelists(lun)
 
     ! Read diffusion solver namelists
     if (ds_enabled) then

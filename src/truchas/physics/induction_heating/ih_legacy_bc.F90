@@ -1,3 +1,17 @@
+!!
+!! IH_LEGACY_BC
+!!
+!! The original induction heating model did not require a specification of
+!! EM boundary conditions, but inferred them for a specific set of EM mesh
+!! domain shapes. This module provides a procedure that adds side sets to
+!! the EM mesh for those shapes and returns the side set IDs where the
+!! nxE=0 and nxH source boundary conditions should be applied.
+!!
+!! This legacy method of applying boundary conditions is deprecated.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!! Refactored February 2024
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -6,7 +20,7 @@
 
 #include "f90_assert.fpp"
 
-module legacy_ih_bc
+module ih_legacy_bc
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -311,4 +325,4 @@ contains
     end do
   end function bit_mask
 
-end module legacy_ih_bc
+end module ih_legacy_bc

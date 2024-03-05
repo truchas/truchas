@@ -1,6 +1,10 @@
 !!
 !! EM_PROPERTIES
 !!
+!! This module provides procedures that deal with the EM properties, including
+!! subroutines that evaluate the temperature-dependent properties on the heat
+!! transfer mesh.
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -25,6 +29,9 @@ module em_properties
 
 contains
 
+  !! Define default values for the EM properties read from input. EM properties
+  !! only need to be specified in the input where they differ from the default.
+
   subroutine define_default_em_properties
     use material_utilities, only: define_property_default
     call define_property_default(matl_model, 'electrical-conductivity', 0.0_r8)
@@ -32,6 +39,7 @@ contains
     call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_r8)
   end subroutine
 
+  !! Returns the electric permittivity at the current temperature.
   subroutine get_permittivity(value)
     use physical_constants, only: vacuum_permittivity
     use zone_module, only: zone
@@ -40,6 +48,8 @@ contains
     value = vacuum_permittivity*(1.0_r8 + value)
   end subroutine
 
+  !! Returns true of the electric permittivity is constant with respect to
+  !! time/temperature; otherwise it returns false.
   logical function permittivity_is_const()
     use material_utilities, only: constant_property_check
     integer :: stat
@@ -48,6 +58,7 @@ contains
     permittivity_is_const = (stat == 0)
   end function
 
+  !! Returns the magnetic permeability at the current temperature.
   subroutine get_permeability(value)
     use physical_constants, only: vacuum_permeability
     use zone_module, only: zone
@@ -56,6 +67,9 @@ contains
     value = vacuum_permeability*(1.0_r8 + value)
   end subroutine
 
+
+  !! Returns true of the magnetic permeability is constant with respect to
+  !! time/temperature; otherwise it returns false.
   logical function permeability_is_const()
     use material_utilities, only: constant_property_check
     integer :: stat
@@ -64,12 +78,15 @@ contains
     permeability_is_const = (stat == 0)
   end function
 
+  !! Returns the electrical conductivity at the current temperature.
   subroutine get_conductivity(value)
     use zone_module, only: zone
     real(r8) :: value(:)
     call compute_cell_property('electrical-conductivity', zone%temp, value)
   end subroutine
 
+  !! Returns true if the electrical conductivity is constant with respect to
+  !! time/temperature; otherwise it returns false.
   logical function conductivity_is_const()
     use material_utilities, only: constant_property_check
     integer :: stat
@@ -78,18 +95,14 @@ contains
     conductivity_is_const = (stat == 0)
   end function
 
+  !! This computes the specified property for the cells on the heat transfer
+  !! mesh. The routine handles the material averaging of the property over a
+  !! cell using the volume fraction data.
   !!
-  !! COMPUTE_CELL_PROPERTY
-  !!
-  !! This computes the specified property for the cells on the original Truchas
-  !! mesh. The property is one given in a PHASE namelist PROPERTY_NAME variable,
-  !! or one created internally by Truchas, and the associated property value is
-  !! either constant or a function of temperature only.  The routine essentially
-  !! handles the material averaging of the property over a cell using the volume
-  !! fraction data from MATL.  The void material (one with a MATERIAL namelist
-  !! density of zero) contributes nothing to the property value; e.g., zero is
-  !! returned for an entirely void cell.
-  !!
+  !! NB: VOID material is ignored in this computation, which is suitable for
+  !! the electrical conductivity and electric and magnetic susceptibilities
+  !! which are all zero for void/vacuum. This would not be the case for the
+  !! electric permittivity, for example.
 
   subroutine compute_cell_property(prop, temp, value)
 

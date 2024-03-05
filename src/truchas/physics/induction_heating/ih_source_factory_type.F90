@@ -1,3 +1,30 @@
+!!
+!! IH_SOURCE_FACTORY_TYPE
+!!
+!! This module defines a derived type that encapsulates the parameters defining
+!! an external magnetic field, with factory methods for creating abstract
+!! function objects for the evaluation of the field. This magnetic field will
+!! serve as the driving force in the computation of Joule heat in induction
+!! heating (IH) simulations, entering the equations in the nxH boundary condition.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!! Refactored February 2024
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! The external source is the superposition of a uniform periodic background
+!! field and the periodic fields due to a collection of current loops carrying
+!! alternating currents, all having the same frequency and phase. Over the
+!! much longer time scale of heat transfer, this rapidly varying external
+!! source may change at discrete times in "piecewise-constant" manner. Hence
+!! the need for this type with factory methods capable of creating abstract
+!! field functions on demand at any given induction heating simulation time.
+!!
+
 module ih_source_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -11,14 +38,14 @@ module ih_source_factory_type
     private
     real(r8) :: t
     real(r8), allocatable :: times(:), freq(:), const_src(:), current(:,:)
-    type(solenoid), allocatable :: coil(:)
+    type(induction_coil), allocatable :: coil(:)
     character(1) :: axis
   contains
     procedure :: init
     procedure :: set_time
-    procedure :: source_frequency
-    procedure :: alloc_src_mod_func
-    procedure :: alloc_ih_source_func
+    procedure :: H_freq
+    procedure :: alloc_H_profile_func
+    procedure :: alloc_H_waveform_func
     procedure :: source_is_zero
     generic :: source_differs => source_differs1, source_differs2
     procedure, private :: source_differs1, source_differs2
@@ -29,9 +56,11 @@ module ih_source_factory_type
     procedure, private :: data_index
   end type
 
-  type, extends(scalar_func), private :: src_mod_func
+  !! Custom SCALAR_FUNC extension that implements the time-periodic
+  !! waveform factor for the magnetic field source.
+  type, extends(scalar_func), private :: waveform_func
   contains
-    procedure :: eval => src_mod
+    procedure :: eval => waveform
   end type
 
 contains
@@ -55,9 +84,9 @@ contains
 
     this%t = t
 
-    !TODO: For case where source-times is not specified we should expect scalar
+    !TODO: For case where source-times is not specified should we expect scalar
     ! values for source-frequency, uniform-source, and coil current rather than
-    ! size-1 arrays.
+    ! size-1 arrays?
 
     if (params%is_parameter('source-times')) then
       call params%get('source-times', this%times, stat=stat, errmsg=errmsg)
@@ -117,11 +146,11 @@ contains
           errmsg = piter%name() // ': radius is <= 0.0'
           return
         end if
-        call plist%get('num-turns', coil%nloop, stat=stat, errmsg=errmsg)
+        call plist%get('num-loops', coil%nloop, stat=stat, errmsg=errmsg)
         if (stat /= 0) return
         if (coil%nloop <= 0) then
           stat = 1
-          errmsg = piter%name() // ': num-turns is <= 0'
+          errmsg = piter%name() // ': num-loops is <= 0'
           return
         end if
         if (coil%nloop > 1) then
@@ -158,7 +187,10 @@ contains
       return
     end select
 
-  end subroutine
+  end subroutine init
+
+  !! Set the IH time to T. This effects the results returned by subsequent
+  !! calls to H_FREQ, ALLOC_H_WAVEFORM_FUNC, and ALLOC_H_PROFILE_FUNC.
 
   subroutine set_time(this, t)
     class(ih_source_factory), intent(inout) :: this
@@ -166,18 +198,29 @@ contains
     this%t = t
   end subroutine
 
-  real(r8) function source_frequency(this) result(freq)
+  !! Return the frequency of the H source at the current IH time.
+
+  real(r8) function H_freq(this)
     class(ih_source_factory), intent(in) :: this
-    freq = this%freq(this%data_index(this%t))
+    H_freq = this%freq(this%data_index(this%t))
   end function
 
-  subroutine alloc_src_mod_func(this, f)
+  !! Allocate a SCALAR_FUNC class object that is the time-periodic waveform
+  !! source factor at the current IH time. NB: This is a 1-periodic function
+  !! requiring time scaling / change in time units when setting up the Joule
+  !! heat computation using the time domain EM solver.
+
+  subroutine alloc_H_waveform_func(this, f)
     class(ih_source_factory), intent(in) :: this
     class(scalar_func), allocatable, intent(out) :: f
-    allocate(src_mod_func :: f)
+    allocate(waveform_func :: f)
   end subroutine
 
-  subroutine alloc_ih_source_func(this, f, scf)
+  !! Allocate a VECTOR_FUNC class object that is the space-dependent profile
+  !! source factor at the current IH time. An optional multiplicative scale
+  !! factor SCF may be specified.
+
+  subroutine alloc_H_profile_func(this, f, scf)
     class(ih_source_factory), intent(in) :: this
     class(vector_func), allocatable, intent(out) :: f
     real(r8), intent(in), optional :: scf
@@ -189,6 +232,7 @@ contains
     call move_alloc(h, f)
   end subroutine
 
+  !! An auxiliary function that locates the IH time interval containing time T.
   integer function data_index(this, t) result(n)
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in) :: t
@@ -200,6 +244,12 @@ contains
     n = n + 1
   end function
 
+  !! Return an array [FREQ, CONST, CURRENTS] of the parameters defining the
+  !! source at the given IH time T. These are the frequency, the strength
+  !! of the uniform background field and the currents in the coils. Client
+  !! code should use this only as a fingerprint of the source, for use as
+  !! input to the SOURCE_DIFFERS and SOURCE_IS_SCALED methods.
+
   function source_data(this, t) result(src_data)
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in) :: t
@@ -209,6 +259,8 @@ contains
     src_data = [this%freq(n), this%const_src(n), this%current(:,n)]
   end function
 
+  !! Return true if the source is 0 at the given IH time T; otherwise false.
+
   logical function source_is_zero(this, t)
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in) :: t
@@ -217,11 +269,18 @@ contains
     source_is_zero = all(d(2:) == 0.0_r8)
   end function
 
+  !! Return true if the source at IH times T1 and T2 differ; otherwise false.
+  !! This is a specific function for the generic SOURCE_DIFFERS.
+
   logical function source_differs1(this, t1, t2) result(differs)
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in) :: t1, t2
     differs = this%source_differs(this%source_data(t1), t2)
   end function
+
+  !! Return true if the source at IH time T2 differs from the source with
+  !! fingerprint D1, as returned by SOURCE_DATA. This is a specific function
+  !! for the generic SOURCE_DIFFERS.
 
   logical function source_differs2(this, d1, t2) result(differs)
     class(ih_source_factory), intent(in) :: this
@@ -236,18 +295,28 @@ contains
     end associate
   end function
 
-  logical function source_is_scaled1(this, t1, t2, s) result(scaled)
+  !! Return true if the source at IH time T2 is a multiple of the source
+  !! at IH time T1, and return the scale factor in the argument SCF. This
+  !! is a specific function for the generic SOURCE_IS_SCALED.
+
+  logical function source_is_scaled1(this, t1, t2, scf) result(scaled)
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in)  :: t1, t2
-    real(r8), intent(out) :: s
-    scaled = this%source_is_scaled(this%source_data(t1), t2, s)
+    real(r8), intent(out) :: scf
+    scaled = this%source_is_scaled(this%source_data(t1), t2, scf)
   end function source_is_scaled1
 
-  logical function source_is_scaled2(this, d1, t2, s) result(scaled)
+  !! Return true if the source strength at IH time T2 is a multiple of the
+  !! strength of the source with fingerprint D1, as returned by SOURCE_DATA,
+  !! and return the scale factor in the argument SCF. This is a specific
+  !! function for the generic SOURCE_IS_SCALED. NB: A relatively arbitrary
+  !! tolerance is used to decide between scaled and not-scaled.
+
+  logical function source_is_scaled2(this, d1, t2, scf) result(scaled)
 
     class(ih_source_factory), intent(in) :: this
     real(r8), intent(in)  :: d1(:), t2
-    real(r8), intent(out) :: s
+    real(r8), intent(out) :: scf
 
     real(r8) :: a, err
     real(r8), allocatable :: d2(:)
@@ -255,18 +324,25 @@ contains
     d2 = this%source_data(t2)
 
     associate (f1 => d1(1), u1 => d1(2:), f2 => d2(1), u2 => d2(2:))
-      !! Best scale factor in least-squares sense
+      ! Best scale factor in least-squares sense
       a = norm2(u1)
       if (a > 0.0_r8) then
-        s = dot_product(u1,u2) / a**2
+        scf = dot_product(u1,u2) / a**2
       else
-        s = 0.0_r8
+        scf = 0.0_r8
       end if
-      err = norm2(u2-s*u1) ! l2 error in best scaling
+      err = norm2(u2-scf*u1) ! l2 error in best scaling
       scaled = (f1 == f2) .and. (err <= a*1.0e-6)
     end associate
 
   end function source_is_scaled2
+
+  !! Returns the MD5 checksum of the source parameters that define the fixed
+  !! geometry of the source which are invariant in an induction heating
+  !! simulation. These are the symmetry axis and the parameters defining the
+  !! geometry of the coils. This is useful for tagging joule heat data in
+  !! checkpoints to ensure that the source geometry in restarts has not
+  !! changed.
 
   function coil_geom_fingerprint(this) result(fp)
     use secure_hash_factory
@@ -285,8 +361,13 @@ contains
     fp = hash%hexdigest()
   end function
 
-  function src_mod(this, x) result(fx)
-    class(src_mod_func), intent(in) :: this
+  !! The type-bound EVAL function for the WAVEFORM_FUNC extension of the
+  !! SCALAR_FUNC class. This is a 1-periodic waveform function with initial
+  !! fade-in to full strength. There are several potential options for the
+  !! waveform, but it is currently hardwired to a simple sinusoid.
+
+  function waveform(this, x) result(fx)
+    class(waveform_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx
     real(r8), parameter :: PI =    3.1415926535897932385_r8

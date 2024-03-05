@@ -1,6 +1,28 @@
+!!
+!! NXH_BNDRY_FUNC_TYPE
+!!
+!! This module defines an implementation of the base class BNDRY_FUNC1 that
+!! implements the tangential H-field (nxH) EM boundary condition on a
+!! SIMPL_MESH type mesh. The discretization of this boundary condition appears
+!! in the equations for the edge-based electric field unknowns through a
+!! boundary integral term (similar to a flux condition) and is thus somewhat
+!! more complex than essential nxE type conditions that apply directly to the
+!! electric field unknowns. This implementation considers H-field boundary data
+!! Hb(t,x) that is expressed in separable form: Hb(t,x) = f(t) g(x) where f is
+!! a scalar function and g is a 3-vector function.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!! February 2024
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
-module hfield_bndry_func_type
+module nxh_bndry_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use bndry_func1_class
@@ -11,7 +33,7 @@ module hfield_bndry_func_type
   implicit none
   private
 
-  type, extends(bndry_func1), public :: hfield_bndry_func
+  type, extends(bndry_func1), public :: nxh_bndry_func
     type(simpl_mesh), pointer :: mesh => null()
     integer :: ngroup = 0
     integer, allocatable :: xgroup(:)
@@ -33,7 +55,7 @@ module hfield_bndry_func_type
 contains
 
   subroutine init(this, mesh)
-    class(hfield_bndry_func), intent(out) :: this
+    class(nxh_bndry_func), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     this%mesh => mesh
     allocate(this%builder)
@@ -41,7 +63,7 @@ contains
   end subroutine
 
   subroutine add(this, f, g, setids, stat, errmsg)
-    class(hfield_bndry_func), intent(inout) :: this
+    class(nxh_bndry_func), intent(inout) :: this
     class(scalar_func), allocatable, intent(inout) :: f
     class(vector_func), allocatable, intent(inout) :: g
     integer, intent(in) :: setids(:)
@@ -55,7 +77,7 @@ contains
 
   subroutine add_complete(this, omit_edge_list)
 
-    class(hfield_bndry_func), intent(inout) :: this
+    class(nxh_bndry_func), intent(inout) :: this
     integer, intent(in), optional :: omit_edge_list(:)
 
     integer :: j, n, stat
@@ -116,7 +138,7 @@ contains
   end subroutine
 
   subroutine compute(this, t)
-    class(hfield_bndry_func), intent(inout) :: this
+    class(nxh_bndry_func), intent(inout) :: this
     real(r8), intent(in) :: t
     integer :: j, n
     real(r8) :: s
@@ -131,4 +153,4 @@ contains
     this%computed = .true.
   end subroutine
 
-end module hfield_bndry_func_type
+end module nxh_bndry_func_type

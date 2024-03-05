@@ -280,9 +280,9 @@ contains
   !!
 
   subroutine restart_joule_heat
-    use ih_driver, only: EM_is_on, read_joule_data, skip_joule_data
+    use ih_driver, only: ih_enabled, read_joule_data, skip_joule_data
     if (have_joule_heat_data) then
-      if (EM_is_on() .and. .not.ignore_joule_heat) then
+      if (ih_enabled() .and. .not.ignore_joule_heat) then
         call read_joule_data(unit, version)
       else
         call skip_joule_data(unit, version)

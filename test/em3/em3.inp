@@ -77,11 +77,11 @@ x&ELECTROMAGNETIC_BC
 /
 
 &INDUCTION_COIL
-  Center  = 3*0.0
-  Radius  = 0.12
-  Length  = 0.12
-  NTurns  = 2
-  Current = 1000.
+  num_loops  = 2
+  center  = 3*0.0
+  radius  = 0.12
+  length  = 0.12
+  current = 1000.
 /
 
 The conducting ball.

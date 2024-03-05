@@ -68,8 +68,8 @@ contains
     call params%get('use-legacy-bc', this%use_legacy_bc, default=.true.)
 
     if (this%use_legacy_bc) then  ! legacy data in the top level parameter list !FIXME
-      block !TODO: cleanup legacy_ih_bc
-        use legacy_ih_bc, only: create_ih_face_sets
+      block
+        use ih_legacy_bc, only: create_ih_face_sets
         call create_ih_face_sets(this%mesh, params, this%pec_setid, this%nxH_setid)
       end block
     end if
@@ -134,7 +134,7 @@ contains
   subroutine alloc_nxH_bc(this, bc, stat, errmsg, scale_factor, omit_edge_list)
 
     use bndry_func1_class
-    use hfield_bndry_func_type !TODO: rename, nxH_bndry_func_type?
+    use nxH_bndry_func_type
     class(scalar_func), allocatable :: f
     class(vector_func), allocatable :: g
 
@@ -145,13 +145,13 @@ contains
     real(r8), intent(in), optional :: scale_factor
     integer, intent(in), optional :: omit_edge_list(:)
 
-    type(hfield_bndry_func), allocatable :: nxH_bc
+    type(nxH_bndry_func), allocatable :: nxH_bc
 
     call TLS_info('  generating "nxH" electromagnetic boundary condition')
 
     if (this%use_legacy_bc) then
-      call this%src_fac%alloc_src_mod_func(f)
-      call this%src_fac%alloc_ih_source_func(g, scale_factor)
+      call this%src_fac%alloc_H_waveform_func(f)
+      call this%src_fac%alloc_H_profile_func(g, scale_factor)
       allocate(nxH_bc)
       call nxH_bc%init(this%mesh)
       call nxH_bc%add(f, g, this%nxH_setid, stat, errmsg)
@@ -185,8 +185,8 @@ contains
         allocate(nxH_bc)
         call nxH_bc%init(this%mesh)
       end if
-      call this%src_fac%alloc_src_mod_func(f)
-      call this%src_fac%alloc_ih_source_func(g, scale_factor)
+      call this%src_fac%alloc_H_waveform_func(f)
+      call this%src_fac%alloc_H_profile_func(g, scale_factor)
       call nxH_bc%add(f, g, setids, stat, errmsg)
       if (stat /= 0) return
     end subroutine

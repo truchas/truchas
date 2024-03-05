@@ -154,7 +154,7 @@ contains
     use mesh_manager, only: unstr_mesh_ptr
     use time_step_module, only: t, dt, cycle_number
     use physics_module, only: heat_transport, species_transport
-    use ih_driver, only: EM_is_on
+    use ih_driver, only: ih_enabled
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
     use solid_mechanics_driver, only: solid_mechanics_enabled
@@ -190,7 +190,7 @@ contains
     if (heat_transport) call write_heat_transfer_data
 
     !! Induction heating fields.
-    if (EM_is_on()) call write_EM_data
+    if (ih_enabled()) call write_ih_data
 
     !! Solid mechanics fields.
     if (solid_mechanics_enabled()) call write_solid_mechanics_data
@@ -297,7 +297,7 @@ contains
 
     end subroutine write_heat_transfer_data
 
-    subroutine write_EM_data
+    subroutine write_ih_data
 
       use ih_driver, only: joule_power_density
 
@@ -306,7 +306,7 @@ contains
       q => joule_power_density()
       call write_seq_cell_field (seq, q, 'Joule_P', for_viz=.true.)
 
-    end subroutine write_EM_data
+    end subroutine
 
     subroutine write_solid_mechanics_data
 

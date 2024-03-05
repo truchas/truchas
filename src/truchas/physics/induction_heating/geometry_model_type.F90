@@ -1,3 +1,10 @@
+!!
+!! GEOMETRY_MODEL_TYPE
+!!
+!! This module defines a derived type that provides some very rudimentary
+!! geometric modeling capabilities that are used by the IH_LEGACY_BC module.
+!! Use of the latter module is deprecated, and so also is this module.
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
