@@ -388,7 +388,7 @@ contains
  !!
   subroutine ds_init (tinit)
 
-    use ih_driver, only: EM_is_on
+    use ih_driver, only: ih_enabled
     use FHT_model_factory
     use FHT_solver_factory
     use HTSD_model_factory
@@ -428,7 +428,7 @@ contains
     !! Problem attributes
     this%have_heat_transfer = heat_eqn
     this%have_species_diffusion = (num_species > 0)
-    this%have_joule_heat = EM_is_on()
+    this%have_joule_heat = ih_enabled()
     this%have_fluid_flow = .false.
     this%have_phase_change = multiphase_problem(this%mmf)
     this%have_void = void_is_present()

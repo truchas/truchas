@@ -19,8 +19,6 @@ module induction_coil_namelist
 
   integer, parameter :: MAXSV = 32
 
-  type(parameter_list), pointer, public :: coil_params => null()
-
 contains
 
   subroutine read_induction_coil_namelists(lun, params)
@@ -28,21 +26,19 @@ contains
     use input_utilities, only: seek_to_namelist, NULL_I, NULL_R
     use parallel_communication, only: is_IOP, broadcast
 
-    integer, intent(in)  :: lun
+    integer, intent(in) :: lun
     type(parameter_list), pointer :: params
 
-    integer :: n, ios, j
+    integer :: n, ios
     logical :: found
     character(128) :: iom
     character(:), allocatable :: label
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer :: nturns
+    integer :: num_loops
     real(r8) :: center(3), radius, length, current(MAXSV)
-    namelist /induction_coil/ center, radius, length, nturns, current
-
-    coil_params => params ! NB: temporary
+    namelist /induction_coil/ center, radius, length, num_loops, current
 
     call TLS_info('Reading INDUCTION_COIL namelists ...')
 
@@ -63,7 +59,7 @@ contains
       center = NULL_R
       radius = NULL_R
       length = NULL_R
-      nturns = NULL_I
+      num_loops = NULL_I
       current = NULL_R
 
       if (is_IOP) read(lun,nml=induction_coil,iostat=ios,iomsg=iom)
@@ -73,41 +69,17 @@ contains
       call broadcast(center)
       call broadcast(radius)
       call broadcast(length)
-      call broadcast(nturns)
+      call broadcast(num_loops)
       call broadcast(current)
 
       plist => params%sublist('COIL' // i_to_c(n))
 
-      if (any(center == NULL_R)) then
-        if (all(center == NULL_R)) then
-          call TLS_info('  using default CENTER value (0,0,0) for ' // label)
-          center = 0.0_r8
-        else
-          call TLS_fatal(label // ': CENTER requires 3 values')
-        end if
+      if (num_loops == NULL_I) then
+        call TLS_fatal(label // ': NUM_LOOPS must be assigned a value')
+      else if (num_loops <= 0) then
+        call TLS_fatal(label // ': NUM_LOOPS must be > 0')
       end if
-      call plist%set('center', center)
-
-      if (nturns == NULL_I) then
-        call TLS_fatal(label // ': NTURNS must be assigned a value')
-      else if (nturns <= 0) then
-        call TLS_fatal(label // ': NTURNS must be > 0')
-      end if
-      call plist%set('num-turns', nturns)
-
-      if (nturns == 1) then
-        if (length /= NULL_R) then
-          call TLS_info('  ignoring LENGTH value for ' // label)
-        end if
-        length = 0.0_r8
-      end if
-
-      if (length == NULL_R) then
-        call TLS_fatal(label // ': LENGTH must be assigned a value')
-      else if (length < 0.0_r8) then
-        call TLS_fatal(label // ': LENGTH must be >= 0.0')
-      end if
-      if (nturns > 1) call plist%set('length', length)
+      call plist%set('num-loops', num_loops)
 
       if (radius == NULL_R) then
         call TLS_fatal(label // ': RADIUS must be assigned a value')
@@ -115,6 +87,20 @@ contains
         call TLS_fatal(label // ': RADIUS must be > 0.0')
       end if
       call plist%set('radius', radius)
+
+      if (num_loops > 1) then
+        if (length == NULL_R) then
+          call TLS_fatal(label // ': LENGTH must be assigned a value')
+        else if (length < 0.0_r8) then
+          call TLS_fatal(label // ': LENGTH must be >= 0.0')
+        end if
+        call plist%set('length', length)
+      end if
+
+      if (any(center /= NULL_R)) then
+        if (any(center == NULL_R)) call TLS_fatal(label // ': CENTER requires 3 values')
+        call plist%set('center', center)
+      end if
 
       call plist%set('current', pack(current, mask=(current/=NULL_R)))
     end do

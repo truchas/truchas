@@ -6,11 +6,9 @@ module electromagnetics_namelist
 
   public :: read_electromagnetics_namelist
 
-  type(parameter_list), allocatable, public :: params
-
 contains
 
-  subroutine read_electromagnetics_namelist(lun)
+  subroutine read_electromagnetics_namelist(lun, params)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use string_utilities, only: i_to_c, raise_case
@@ -19,6 +17,7 @@ contains
     use truchas_logging_services
 
     integer, intent(in) :: lun
+    type(parameter_list), intent(inout) :: params
 
     integer, parameter :: string_len = 256
     integer, parameter :: MAXSV = 32
@@ -92,8 +91,6 @@ contains
 
     call broadcast(use_legacy_bc)
     call broadcast(em_domain_type)
-
-    allocate(params)
 
     !! Parameters defining the external applied magnetic field !!!!!!!!!!!!!!!!!
 

@@ -369,6 +369,7 @@ call hijack_truchas ()
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
+    use ih_driver, only: ih_driver_final
     use truchas_logging_services
     use truchas_timers
 
@@ -385,6 +386,7 @@ call hijack_truchas ()
 
     ! free the diffusion solver resources
     call ds_delete ()
+    call ih_driver_final
 
     ! end of run; print out diagnostics
     Write (message, 1) t, cycle_number

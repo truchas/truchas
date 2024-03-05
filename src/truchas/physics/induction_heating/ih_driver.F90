@@ -1,3 +1,12 @@
+!!
+!! IH_DRIVER
+!!
+!! Procedures for driving the computation of the Joule heat for induction
+!! heating simulations.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!! Refactored February 2024
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -12,53 +21,88 @@ module ih_driver
   use base_mesh_class
   use simpl_mesh_type
   use data_mapper_class
-  use parallel_communication
   use ih_source_factory_type
+  use parameter_list_type
+  use parallel_communication
   use truchas_logging_services
   use truchas_timers
-  use scalar_func_class
   implicit none
   private
 
-  public :: ih_enabled, ih_driver_init, update_joule_heat
-  public :: joule_power_density
-  public :: set_EM_simulation_on_or_off, EM_is_on
-  public :: read_joule_data, skip_joule_data
-
-  !! EM simulation state variable
-  logical, save :: EM_enabled = .false.
+  public :: ih_enabled, ih_driver_init, ih_driver_final
+  public :: update_joule_heat, joule_power_density
+  public :: read_ih_namelists, read_joule_data, skip_joule_data
 
   type :: ih_driver_data
     class(base_mesh), pointer :: ht_mesh => null() ! unowned reference
     type(simpl_mesh), pointer :: em_mesh => null() ! unowned reference
     class(data_mapper), allocatable :: ht2em
     type(ih_source_factory) :: src_fac
-    character(32) :: coil_md5sum
+    character(32) :: coil_md5sum  ! fingerprint of the fixed coil geometry
+    ! EM properties
     logical :: const_eps=.false., const_mu=.false., const_sigma=.false.
     real(r8) :: matl_change_threshold
     real(r8), allocatable :: eps(:), mu(:), sigma(:)  ! on EM mesh
-    ! Joule heat and the varying inputs used to compute it
+    ! Computed Joule heat and the variable inputs used
     real(r8), allocatable :: q(:) ! on HT mesh
     real(r8), allocatable :: q_data(:), q_eps(:), q_mu(:), q_sigma(:)
     logical :: q_written = .false.
     logical :: q_restart = .false. ! true when q was read from a restart file
   end type
+
   type(ih_driver_data), allocatable, target :: this
+  type(parameter_list), pointer :: params
 
 contains
+
+  logical function ih_enabled()
+    use physics_module, only: electromagnetics
+    ih_enabled = electromagnetics
+  end function
+
+  subroutine ih_driver_final
+    if (allocated(this)) deallocate(this)
+  end subroutine
+
+  function joule_power_density() result(ptr)
+    real(r8), pointer :: ptr(:)
+    ptr => this%q
+  end function
+
+  !! This driver subroutine is called by the Truchas input driver and it
+  !! coordinates the reading of all the namelists pertaining to induction
+  !! heating, and assembles the input into the PARAMS parameter list held
+  !! as a private module variable.
+
+  subroutine read_ih_namelists(lun)
+    use electromagnetics_namelist
+    use induction_coil_namelist
+    use electromagnetic_bc_namelist
+    use mesh_manager, only: enable_mesh
+    integer, intent(in) :: lun
+    logical :: exists
+    type(parameter_list), pointer :: plist
+    allocate(params)
+    call read_electromagnetics_namelist(lun, params)
+    plist => params%sublist('coils')
+    call read_induction_coil_namelists(lun, plist)
+    plist => params%sublist('bc')
+    call read_electromagnetic_bc_namelists(lun, plist)
+    call enable_mesh('em', exists)
+    if (.not.exists) call TLS_fatal('EM_MESH namelist was not specified')
+  end subroutine
 
   subroutine ih_driver_init(t)
 
     use mesh_manager, only: named_mesh_ptr, simpl_mesh_ptr
-    use electromagnetics_namelist, only: params
-    use EM_properties
+    use em_properties
 
     real(r8), intent(in) :: t
 
     integer :: n, stat
     character(:), allocatable :: errmsg, data_mapper_kind
 
-    !TODO: barrier if EM is not enabled?
+    ASSERT(.not.allocated(this))
 
     call TLS_info('')
     call TLS_info('Initializing induction heating solver ...')
@@ -113,74 +157,22 @@ contains
 
   end subroutine ih_driver_init
 
-  !! These auxiliary subroutines set the values of the EPS, MU, and SIGMA
-  !! property arrays. The property values are computed on the heat transfer
-  !! mesh using the current value of temperature, and mapped to the EM mesh.
-  !! NB: At the outset, the CONST_* flags should be false, so that the values
-  !! are set, but if a property is constant (not varying with temperature)
-  !! subsequent calls will skip computing and setting the value.
-
-  subroutine set_em_properties(this)
-    use em_properties
-    class(ih_driver_data), intent(inout) :: this
-    real(r8), allocatable :: value(:) !TODO persistent workspace
-    allocate(value(this%ht_mesh%ncell_onP))
-    if (.not.this%const_eps) then
-      call get_permittivity(value)
-      call set_permittivity(this, value)
-      this%const_eps = permittivity_is_const()
-    end if
-    if (.not.this%const_mu) then
-      call get_permeability(value)
-      call set_permeability(this, value)
-      this%const_mu = permeability_is_const()
-    end if
-    if (.not.this%const_sigma) then
-      call get_conductivity(value)
-      call set_conductivity(this, value)
-      this%const_sigma = conductivity_is_const()
-    end if
-  end subroutine
-
-  subroutine set_permittivity(this, values)
-    use physical_constants, only: vacuum_permittivity
-    class(ih_driver_data), intent(inout) :: this
-    real(r8), intent(in) :: values(:)
-    call start_timer('mesh-to-mesh mapping')
-    call this%ht2em%map_field(values, this%eps(:this%em_mesh%ncell_onP), defval=vacuum_permittivity, map_type=LOCALLY_BOUNDED)
-    call this%em_mesh%cell_imap%gather_offp(this%eps)
-    call stop_timer('mesh-to-mesh mapping')
-  end subroutine
-
-  subroutine set_permeability(this, values)
-    use physical_constants, only: vacuum_permeability
-    class(ih_driver_data), intent(inout) :: this
-    real(r8), intent(in) :: values(:)
-    call start_timer('mesh-to-mesh mapping')
-    call this%ht2em%map_field(values, this%mu(:this%em_mesh%ncell_onP), defval=vacuum_permeability, map_type=LOCALLY_BOUNDED)
-    call this%em_mesh%cell_imap%gather_offp(this%mu)
-    call stop_timer('mesh-to-mesh mapping')
-  end subroutine
-
-  subroutine set_conductivity(this, values)
-    class(ih_driver_data), intent(inout) :: this
-    real(r8), intent(in) :: values(:)
-    call start_timer('mesh-to-mesh mapping')
-    call this%ht2em%map_field(values, this%sigma(:this%em_mesh%ncell_onP), defval=0.0_r8, map_type=LOCALLY_BOUNDED)
-    call this%em_mesh%cell_imap%gather_offp(this%sigma)
-    call stop_timer('mesh-to-mesh mapping')
-  end subroutine
+  !! This primary driver subroutine is called every heat transfer time step
+  !! to update the Joule heat stored by the driver as needed in response to
+  !! evolving conditions (time, temperature). The driver seeks to avoid
+  !! computing the Joule heat when possible by zeroing the Joule heat, scaling
+  !! it, or leaving it as is. Only when necessary does it invoke the
+  !! computation of the Joule heat.
 
   subroutine update_joule_heat(t)
 
-    use EM_properties
-    use electromagnetics_namelist, only: params
+    use em_properties
 
     real(r8), intent(in) :: t
     real(r8) :: s
     character(10) :: ss
 
-    !TODO: barrier if EM is not enabled?
+    ASSERT(allocated(this))
 
     call start_timer('joule heat')
 
@@ -229,11 +221,11 @@ contains
 
   end subroutine update_joule_heat
 
-  !! Compute the Joule heat by solving Maxwell's equations.
+  !! This auxiliary subroutine computes and stores the Joule heat using the
+  !! current values of the EM properties and external magnetic source.
 
   subroutine compute_joule_heat(this, t, params)
 
-    use parameter_list_type
     use em_bc_factory_type
 
     class(ih_driver_data), intent(inout), target :: this
@@ -248,7 +240,7 @@ contains
 
     allocate(q(this%em_mesh%ncell))
     call this%src_fac%set_time(t)
-    freq = this%src_fac%source_frequency()
+    freq = this%src_fac%H_freq()
     call bc_fac%init(this%em_mesh, this%src_fac, params)
     call compute_joule_heat_emtd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
     call set_joule_power_density(q)
@@ -336,80 +328,79 @@ contains
     this%q_restart = .false.
   end subroutine
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! SET_EM_SIMULATION_ON_OR_OFF, EM_IS_ON, EM_IS_OFF
- !!
- !! Set and query the state of the EM simulation.  When setting the state,
- !! only the value of the argument on the IO processor is relevant.
- !!
+  !! These auxiliary subroutines set the values of the EPS, MU, and SIGMA
+  !! property arrays. The property values are computed on the heat transfer
+  !! mesh using the current value of temperature, and mapped to the EM mesh.
+  !!
+  !! NB: At the outset, the CONST_* flags should be false, so that the values
+  !! are set, but if a property is constant (not varying with temperature)
+  !! subsequent calls will skip computing and setting the value.
 
-  subroutine set_EM_simulation_on_or_off (on)
-    use parallel_communication, only : broadcast
-    logical, intent(in) :: on
-    EM_enabled = on
-    call broadcast (EM_enabled)
+  subroutine set_em_properties(this)
+    use em_properties
+    class(ih_driver_data), intent(inout) :: this
+    real(r8), allocatable :: value(:) !TODO persistent workspace
+    allocate(value(this%ht_mesh%ncell_onP))
+    if (.not.this%const_eps) then
+      call get_permittivity(value)
+      call set_permittivity(this, value)
+      this%const_eps = permittivity_is_const()
+    end if
+    if (.not.this%const_mu) then
+      call get_permeability(value)
+      call set_permeability(this, value)
+      this%const_mu = permeability_is_const()
+    end if
+    if (.not.this%const_sigma) then
+      call get_conductivity(value)
+      call set_conductivity(this, value)
+      this%const_sigma = conductivity_is_const()
+    end if
   end subroutine
 
-  logical function EM_is_on ()
-    EM_is_on = EM_enabled
-  end function
+  subroutine set_permittivity(this, values)
+    use physical_constants, only: vacuum_permittivity
+    class(ih_driver_data), intent(inout) :: this
+    real(r8), intent(in) :: values(:)
+    call start_timer('mesh-to-mesh mapping')
+    call this%ht2em%map_field(values, this%eps(:this%em_mesh%ncell_onP), defval=vacuum_permittivity, map_type=LOCALLY_BOUNDED)
+    call this%em_mesh%cell_imap%gather_offp(this%eps)
+    call stop_timer('mesh-to-mesh mapping')
+  end subroutine
 
-  logical function ih_enabled()
-    ih_enabled = allocated(this)
-  end function
+  subroutine set_permeability(this, values)
+    use physical_constants, only: vacuum_permeability
+    class(ih_driver_data), intent(inout) :: this
+    real(r8), intent(in) :: values(:)
+    call start_timer('mesh-to-mesh mapping')
+    call this%ht2em%map_field(values, this%mu(:this%em_mesh%ncell_onP), defval=vacuum_permeability, map_type=LOCALLY_BOUNDED)
+    call this%em_mesh%cell_imap%gather_offp(this%mu)
+    call stop_timer('mesh-to-mesh mapping')
+  end subroutine
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! Truchas-side data retrieval procedures
- !!
- !! These functions return pointers to previously stored module data, which are
- !! cell-based arrays on the hex mesh.  Functions may be used in expressions,
- !! or as the target of a pointer assignment, however the target of the result
- !! should never be deallocated.
- !!
+  subroutine set_conductivity(this, values)
+    class(ih_driver_data), intent(inout) :: this
+    real(r8), intent(in) :: values(:)
+    call start_timer('mesh-to-mesh mapping')
+    call this%ht2em%map_field(values, this%sigma(:this%em_mesh%ncell_onP), defval=0.0_r8, map_type=LOCALLY_BOUNDED)
+    call this%em_mesh%cell_imap%gather_offp(this%sigma)
+    call stop_timer('mesh-to-mesh mapping')
+  end subroutine
 
-  function joule_power_density() result(ptr)
-    real(r8), pointer :: ptr(:)
-    ptr => this%q
-  end function
-
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!
- !! MATERIAL_HAS_CHANGED
- !!
- !! This procedure returns the value true if the EM material parameters
- !! returned by CONDUCTIVITY and PERMEABILITY differ significantly from the
- !! values used to compute the Joule heat returned by JOULE_POWER_DENSITY;
- !! otherwise the procedure returns the value false.
- !!
- !! The maximum relative change is taken as the difference measure. Only
- !! when this difference exceeds MATERIAL_CHANGE_THRESHOLD is the difference
- !! considered significant.
- !!
- !! For conductivity, only the conducting region (sigma>0) is considered.
- !! An underlying assumption is that the conducting region remains fixed
- !! throughout the simulation.
- !!
- !! The permittivity only enters the equations through the displacement
- !! current term, which is exceedingly small in this magnetostatic regime
- !! and ought to be dropped entirely.  Thus the solution is essentially
- !! independent of the permittivity and so ignore any changes in its value.
- !!
-
-  !! This function returns true if the EM properties (permeability and
-  !! conductivity) have changed significantly since that last time the
-  !! Joule heat was computed; otherwise it returns false. The maximum
-  !! relative difference in a property over the cells is taken as the
-  !! measure of the change, and is considered significant if it exceeds
-  !! a user-specified threshold.
+  !! This auxiliary function returns true if the EM properties (permeability
+  !! and conductivity) have changed significantly since that last time the
+  !! Joule heat was computed; otherwise it returns false. The maximum relative
+  !! difference in a property over the cells is taken as the measure of the
+  !! change, and is considered significant if it exceeds a user-specified
+  !! threshold.
+  !!
+  !! NB: Constant properties do not normally need to be checked. The exception
+  !! is when the stored joule heat and its properties came from a restart file.
   !!
   !! NB: permittivity is not considered since the displacement current
   !! term is an insignificant perturbation to the system in the low
   !! frequency, quasi-magnetostatic regime where induction heating occurs.
   !! In fact the permittivity may be modified for numerical purposes.
-  !!
-  !! NB: At initialization const_prop is false, ensuring
 
   logical function matl_prop_differ(this) result(differ)
 
@@ -470,6 +461,8 @@ contains
 
     integer :: n
     character(32) :: coil_md5sum
+
+    ASSERT(allocated(this))
 
     call TLS_info ('  reading the Joule heat data from the restart file')
 
@@ -539,6 +532,8 @@ contains
     integer, save :: sim_num = 0
     character(32) :: sim_name
     type(th5_sim_group) :: sim
+
+    ASSERT(allocated(this))
 
     call outfile%reopen(output_file_name('h5'), io_group_size, is_IOP)
 
