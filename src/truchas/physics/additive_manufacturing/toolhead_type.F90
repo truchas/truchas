@@ -71,7 +71,7 @@ contains
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: array(:)
 
-    call params%get('toolpath', tp_name, stat=stat, errmsg=errmsg)
+    call params%get('toolpath', tp_name, stat, errmsg)
     if (stat /= 0) return
     call alloc_toolpath(this%tp, tp_name, stat, errmsg)
     if (stat /= 0) then

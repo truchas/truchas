@@ -187,22 +187,22 @@ contains
 
     !! Process the parameters.
     context = 'processing ' // params%path() // ': '
-    call params%get('max-angle', max_angle, stat=stat, errmsg=errmsg)
+    call params%get('max-angle', max_angle, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('verbosity-level', this%verbosity, stat=stat, errmsg=errmsg)
+    call params%get('verbosity-level', this%verbosity, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('merge-level', this%merge_level, stat=stat, errmsg=errmsg)
+    call params%get('merge-level', this%merge_level, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('split-patch-size', this%split_patch_size, stat=stat, errmsg=errmsg)
+    call params%get('split-patch-size', this%split_patch_size, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -309,7 +309,7 @@ contains
     !! Process the parameters.
     context = 'processing ' // params%path() // ': '
     if (params%is_parameter('random-seed')) then
-      call params%get('random-seed', seed, stat=stat, errmsg=errmsg)
+      call params%get('random-seed', seed, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return

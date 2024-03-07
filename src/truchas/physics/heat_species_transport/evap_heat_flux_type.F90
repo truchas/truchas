@@ -56,7 +56,7 @@ contains
 
     real(r8), parameter :: TWOPI = 6.2831853071795862_r8
 
-    call params%get('vaporization-heat', L, stat=stat, errmsg=errmsg)
+    call params%get('vaporization-heat', L, stat, errmsg)
     if (stat /= 0) return
     if (L < 0) then
       stat = -1
@@ -64,7 +64,7 @@ contains
       return
     end if
 
-    call params%get('vaporization-temp', this%temp_0, stat=stat, errmsg=errmsg)
+    call params%get('vaporization-temp', this%temp_0, stat, errmsg)
     if (stat /= 0) return
     if (this%temp_0 <= 0) then
       stat = -1
@@ -72,7 +72,7 @@ contains
       return
     end if
 
-    call params%get('molar-mass', M, stat=stat, errmsg=errmsg)
+    call params%get('molar-mass', M, stat, errmsg)
     if (stat /= 0) return
     if (M <= 0) then
       stat = -1
@@ -81,7 +81,7 @@ contains
     end if
 
     ! default is 1 atm in SI units
-    call params%get('ambient-pressure', p0, default=1.01325e5_r8, stat=stat, errmsg=errmsg)
+    call params%get('ambient-pressure', p0, stat, errmsg, default=1.01325e5_r8)
     if (stat /= 0) return
     if (p0 <= 0) then
       stat = -1
@@ -89,7 +89,7 @@ contains
       return
     end if
 
-    call params%get('condensation-factor', lambda, default=0.1_r8, stat=stat, errmsg=errmsg)
+    call params%get('condensation-factor', lambda, stat, errmsg, default=0.1_r8)
     if (stat /= 0) return
     if (lambda < 0) then
       stat = -1

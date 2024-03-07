@@ -82,26 +82,26 @@ contains
     !! Despite what the documentation suggests IPTYPE only applies to recursive
     !! bisection, RTYPE value is entirely ignored
 
-    call this%params%get('iptype', options(METIS_OPTION_IPTYPE), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('iptype', options(METIS_OPTION_IPTYPE), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('ctype', options(METIS_OPTION_CTYPE), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('ctype', options(METIS_OPTION_CTYPE), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('ncuts', options(METIS_OPTION_NCUTS), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('ncuts', options(METIS_OPTION_NCUTS), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('niter', options(METIS_OPTION_NITER), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('niter', options(METIS_OPTION_NITER), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('ufactor', options(METIS_OPTION_UFACTOR), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('ufactor', options(METIS_OPTION_UFACTOR), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('minconn', options(METIS_OPTION_MINCONN), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('minconn', options(METIS_OPTION_MINCONN), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('contig', options(METIS_OPTION_CONTIG), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('contig', options(METIS_OPTION_CONTIG), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('seed', options(METIS_OPTION_SEED), default=-1, stat=stat, errmsg=errmsg)
+    call this%params%get('seed', options(METIS_OPTION_SEED), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%params%get('dbglvl', options(METIS_OPTION_DBGLVL), default=0, stat=stat, errmsg=errmsg)
+    call this%params%get('dbglvl', options(METIS_OPTION_DBGLVL), stat, errmsg, default=0)
     if (stat /= 0) return
 
-    call this%params%get('ptype', ptype, default=METIS_PTYPE_RB, stat=stat, errmsg=errmsg)
+    call this%params%get('ptype', ptype, stat, errmsg, default=METIS_PTYPE_RB)
     if (stat /= 0) return
     select case (ptype)
     case (METIS_PTYPE_RB)
