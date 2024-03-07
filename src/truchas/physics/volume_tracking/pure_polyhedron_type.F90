@@ -79,7 +79,8 @@ contains
     this%edge_vid = edge_v
     this%face_vid = face_v
 
-    this%vol = merge(vol, 0.0_r8, present(vol))
+    this%vol = 0
+    if (present(vol)) this%vol = vol
 
     if (present(face_normal)) then
       this%face_normal = face_normal

@@ -242,7 +242,7 @@ module scl
     module procedure bcast_d0, bcast_d1, bcast_d2
     module procedure bcast_c0, bcast_c1
   end interface
- 
+
   interface scl_bcast_alloc
     module procedure bcast_alloc_i1, bcast_alloc_i2
     module procedure bcast_alloc_l1, bcast_alloc_l2
@@ -481,7 +481,8 @@ contains
     integer, allocatable, intent(inout) :: x(:)
     integer, intent(in), optional :: root
     integer :: r, n
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = size(x)
@@ -500,7 +501,8 @@ contains
     integer, allocatable, intent(inout) :: x(:,:)
     integer, intent(in), optional :: root
     integer :: r, n(2)
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = shape(x)
@@ -519,7 +521,8 @@ contains
     real, allocatable, intent(inout) :: x(:)
     integer, intent(in), optional :: root
     integer :: r, n
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = size(x)
@@ -538,7 +541,8 @@ contains
     real, allocatable, intent(inout) :: x(:,:)
     integer, intent(in), optional :: root
     integer :: r, n(2)
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = shape(x)
@@ -557,7 +561,8 @@ contains
     double precision, allocatable, intent(inout) :: x(:)
     integer, intent(in), optional :: root
     integer :: r, n
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = size(x)
@@ -576,7 +581,8 @@ contains
     double precision, allocatable, intent(inout) :: x(:,:)
     integer, intent(in), optional :: root
     integer :: r, n(2)
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = shape(x)
@@ -595,7 +601,8 @@ contains
     logical, allocatable, intent(inout) :: x(:)
     integer, intent(in), optional :: root
     integer :: r, n
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = size(x)
@@ -614,7 +621,8 @@ contains
     logical, allocatable, intent(inout) :: x(:,:)
     integer, intent(in), optional :: root
     integer :: r, n(2)
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       n = -1
       if (allocated(x)) n = shape(x)
@@ -633,7 +641,8 @@ contains
     character(:), allocatable, intent(inout) :: x
     integer, intent(in), optional :: root
     integer :: r, l
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       l = -1
       if (allocated(x)) l = len(x)
@@ -652,7 +661,8 @@ contains
     character(:), allocatable, intent(inout) :: x(:)
     integer, intent(in), optional :: root
     integer :: r, l, n
-    r = merge(root,1,present(root))
+    r = 1
+    if (present(root)) r = root
     if (comm_rank == r) then
       l = -1; n = -1
       if (allocated(x)) then
