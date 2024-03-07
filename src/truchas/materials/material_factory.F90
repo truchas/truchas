@@ -347,10 +347,10 @@ contains
 #ifdef GNU_PR93762
       block
         character(:), allocatable :: dummy
-        call params%get(pname, flag, stat=stat, errmsg=dummy)
+        call params%get(pname, flag, stat, errmsg=dummy)
       end block
 #else
-      call params%get(pname, flag, stat=stat)
+      call params%get(pname, flag, stat)
 #endif
       if (stat == 0) then ! this is an attribute
         if (flag) call this%add_attr(pname)

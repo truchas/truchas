@@ -59,9 +59,9 @@ contains
         integer :: lun, ios
         real(r8) :: dt
         character(:), allocatable :: plotfile
-        call plist%get('plotfile', plotfile, stat=stat, errmsg=errmsg)
+        call plist%get('plotfile', plotfile, stat, errmsg)
         if (stat /= 0) return
-        call plist%get('plotfile-dt', dt, stat=stat, errmsg=errmsg)
+        call plist%get('plotfile-dt', dt, stat, errmsg)
         if (stat /= 0) return
         if (dt <= 0) then
           stat = 1

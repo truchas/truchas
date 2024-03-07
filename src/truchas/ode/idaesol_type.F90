@@ -169,7 +169,7 @@ contains
     INSIST(this%n > 0)
 
     context = 'processing ' // params%path() // ': '
-    call params%get('nlk-max-iter', this%mitr, default=5, stat=stat, errmsg=errmsg)
+    call params%get('nlk-max-iter', this%mitr, stat, errmsg, default=5)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -180,7 +180,7 @@ contains
       return
     end if
 
-    call params%get('nlk-tol', this%ntol, default=0.1_r8, stat=stat, errmsg=errmsg)
+    call params%get('nlk-tol', this%ntol, stat, errmsg, default=0.1_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -191,7 +191,7 @@ contains
       return
     end if
 
-    call params%get('nlk-max-vec', maxv, default=this%mitr-1, stat=stat, errmsg=errmsg)
+    call params%get('nlk-max-vec', maxv, stat, errmsg, default=this%mitr-1)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -203,7 +203,7 @@ contains
     end if
     maxv = min(maxv, this%mitr-1)
 
-    call params%get('nlk-vec-tol', vtol, default=0.01_r8, stat=stat, errmsg=errmsg)
+    call params%get('nlk-vec-tol', vtol, stat, errmsg, default=0.01_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -214,7 +214,7 @@ contains
       return
     end if
 
-    call params%get('pc-freq', this%pc_freq, default=huge(this%pc_freq), stat=stat, errmsg=errmsg)
+    call params%get('pc-freq', this%pc_freq, stat, errmsg, default=huge(this%pc_freq))
     if (stat /= 0) then
       errmsg = context//errmsg
       return

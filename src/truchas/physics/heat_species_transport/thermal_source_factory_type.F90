@@ -129,7 +129,7 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
       character(:), allocatable :: file
-      call plist%get('data-file', file, stat=stat, errmsg=errmsg)
+      call plist%get('data-file', file, stat, errmsg)
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'prefactor', f, stat, errmsg)
       if (stat /= 0) return
@@ -172,7 +172,7 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
       integer, allocatable :: setids(:)
-      call plist%get('cell-set-ids', setids, stat=stat, errmsg=errmsg)
+      call plist%get('cell-set-ids', setids, stat, errmsg)
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'source', f, stat, errmsg)
       if (stat /= 0) return

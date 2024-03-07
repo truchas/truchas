@@ -165,7 +165,7 @@ contains
     character(32) :: rfmt
 
     !! Allocate the probe field.
-    call params%get('data', string, stat=stat, errmsg=errmsg)
+    call params%get('data', string, stat, errmsg)
     if (stat /= 0) return
     call pf_fac%alloc_field(this%field, string)
     if (.not.allocated(this%field)) then
@@ -176,14 +176,14 @@ contains
 
     !! Identify the cell/node closest to the probe location. The process that
     !! owns the cell/node, signified by INDEX > 0, is responsible for output.
-    call params%get('coord', coord, stat=stat, errmsg=errmsg)
+    call params%get('coord', coord, stat, errmsg)
     if (stat /= 0) return
     if (size(coord) /= 3) then
       stat = 1
       errmsg = 'coord not a 3-vector'
       return
     end if
-    call params%get('coord-scale-factor', s, default=1.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('coord-scale-factor', s, stat, errmsg, default=1.0_r8)
     if (stat /= 0) return
     if (s <= 0.0_r8) then
       stat = 1
@@ -201,7 +201,7 @@ contains
     end select
 
     !! Process that owns the closest cell/node opens the output file.
-    call params%get('data-file', data_file, stat=stat, errmsg=errmsg)
+    call params%get('data-file', data_file, stat, errmsg)
     if (stat /= 0) return
     outfile = outdir // data_file
     if (this%index > 0) then
@@ -238,7 +238,7 @@ contains
     end if
 
     !! Generate the format for writing the probe data.
-    call params%get('digits', n, default=6, stat=stat, errmsg=errmsg)
+    call params%get('digits', n, stat, errmsg, default=6)
     if (stat /= 0) return
     write(rfmt,'("es",i0,".",i0)') n+7, n-1
     this%fmt = '(' // trim(rfmt) // ',*(' // trim(rfmt) // '))'

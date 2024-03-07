@@ -200,10 +200,10 @@ contains
 #ifdef GNU_PR93762
       block
         character(:), allocatable :: dummy
-        call plist%get(param, fname, stat=stat, errmsg=dummy)
+        call plist%get(param, fname, stat, errmsg=dummy)
       end block
 #else
-      call plist%get(param, fname, stat=stat)
+      call plist%get(param, fname, stat)
 #endif
       if (stat == 0) then ! name of a function
         call lookup_func(fname, f)
@@ -214,7 +214,7 @@ contains
         end if
       end if
     else if (plist%is_vector(param)) then
-      call plist%get(param, const, stat=stat, errmsg=errmsg)
+      call plist%get(param, const, stat, errmsg)
       if (stat /= 0) return
       call alloc_const_vector_func(f, const)
     else

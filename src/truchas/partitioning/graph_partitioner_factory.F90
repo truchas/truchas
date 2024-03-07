@@ -54,7 +54,7 @@ contains
     integer :: stat
     character(:), allocatable :: partitioner, errmsg
 
-    call params%get ('partitioner', partitioner, stat=stat, errmsg=errmsg)
+    call params%get ('partitioner', partitioner, stat, errmsg)
     if (stat /= 0) call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: ' // errmsg)
     select case (raise_case(partitioner))
     case ('CHACO')

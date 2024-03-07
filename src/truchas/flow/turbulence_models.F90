@@ -56,10 +56,10 @@ contains
 #ifdef GNU_PR93762
     block
       character(:), allocatable :: dummy
-      call pp%get('type', model, stat=stat, errmsg=dummy)
+      call pp%get('type', model, stat, errmsg=dummy)
     end block
 #else
-    call pp%get('type', model, stat=stat)
+    call pp%get('type', model, stat)
 #endif
 
     if (stat /= 0 .or. off_) then

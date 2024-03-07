@@ -325,13 +325,13 @@ contains
       if (plist%is_parameter('inflow-material') &
           .or. plist%is_parameter('inflow-material-func')) then
 
-        call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+        call plist%get('face-set-ids', setids, stat, errmsg)
         if (stat /= 0) return
         call builder%add_face_group(setids, stat, errmsg)
         if (stat /= 0) return
 
         if (plist%is_parameter('inflow-material')) then
-          call plist%get('inflow-material', name, stat=stat, errmsg=errmsg)
+          call plist%get('inflow-material', name, stat, errmsg)
           if (stat /= 0) return
           n = n + 1
           matid = matl_model%phase_index(name)
