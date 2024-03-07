@@ -114,7 +114,7 @@ contains
 
     !! Process the parameters.
     context = 'processing ' // params%path() // ': '
-    call params%get('num-cycles', this%max_iter, stat=stat, errmsg=errmsg)
+    call params%get('num-cycles', this%max_iter, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -124,7 +124,7 @@ contains
       errmsg = context // '"num-cycles" must be > 0'
       return
     end if
-    call params%get('print-level', this%print_level, default=0, stat=stat, errmsg=errmsg)
+    call params%get('print-level', this%print_level, stat, errmsg, default=0)
     ! OFF=0, SETUP=1, SOLVE=2, SETUP+SOLVE=3
     if (stat /= 0) then
       errmsg = context // errmsg
@@ -135,7 +135,7 @@ contains
       errmsg = context // '"print-level" must be >= 0 and <= 3'
       return
     end if
-    call params%get('debug-level', this%debug_level, default=0, stat=stat, errmsg=errmsg)
+    call params%get('debug-level', this%debug_level, stat, errmsg, default=0)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -145,7 +145,7 @@ contains
       errmsg = context // '"debug-level" must be >= 0'
       return
     end if
-    call params%get('logging-level', this%logging_level, default=0, stat=stat, errmsg=errmsg)
+    call params%get('logging-level', this%logging_level, stat, errmsg, default=0)
     ! OFF=0, ON=1, >1=residual available from hypre
     if (stat /= 0) then
       errmsg = context // errmsg
@@ -158,35 +158,35 @@ contains
     end if
 
     !! Hypre's default coarsening technique is type 10 (v2.23)
-    call params%get('coarsen-type', this%coarsen_type, default=10, stat=stat, errmsg=errmsg)
+    call params%get('coarsen-type', this%coarsen_type, stat, errmsg, default=10)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
 
     !! Default is 0.5, Hypre's recommendation for 3D (heat transfer?)
-    call params%get('strong-threshold', this%strong_threshold, default=0.5_r8, stat=stat, errmsg=errmsg)
+    call params%get('strong-threshold', this%strong_threshold, stat, errmsg, default=0.5_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
 
     !! Hypre's default interpolation technique is type 6 (v2.23)
-    call params%get('interp-type', this%interp_type, default=6, stat=stat, errmsg=errmsg)
+    call params%get('interp-type', this%interp_type, stat, errmsg, default=6)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
 
     !! Hypre's default relaxation technique on down cycles is type 13 (v2.23)
-    call params%get('relax-down-type', this%relax_down_type, default=13, stat=stat, errmsg=errmsg)
+    call params%get('relax-down-type', this%relax_down_type, stat, errmsg, default=13)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
 
     !! Hypre's default relaxation technique on up cycles is type 14 (v2.23)
-    call params%get('relax-up-type', this%relax_up_type, default=14, stat=stat, errmsg=errmsg)
+    call params%get('relax-up-type', this%relax_up_type, stat, errmsg, default=14)
     if (stat /= 0) then
       errmsg = context // errmsg
       return

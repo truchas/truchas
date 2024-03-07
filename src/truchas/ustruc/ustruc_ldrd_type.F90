@@ -150,24 +150,24 @@ contains
     type(parameter_list) :: params
     integer :: stat
     character(:), allocatable :: errmsg
-    call params%get('theta-gv', this%theta, stat=stat, errmsg=errmsg)
+    call params%get('theta-gv', this%theta, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('liquidus-slope', this%m_liq, stat=stat, errmsg=errmsg)
+    call params%get('liquidus-slope', this%m_liq, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
     if(this%m_liq >= 0.0_r8) call TLS_fatal('liquidus-slope must be < 0')
-    call params%get('solute-conc', this%c_0, stat=stat, errmsg=errmsg)
+    call params%get('solute-conc', this%c_0, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('partition-coef', this%k_part, stat=stat, errmsg=errmsg)
+    call params%get('partition-coef', this%k_part, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('liq-sol-delta-T', this%delta_T, stat=stat, errmsg=errmsg)
+    call params%get('liq-sol-delta-T', this%delta_T, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('diffusivity', this%d, stat=stat, errmsg=errmsg)
+    call params%get('diffusivity', this%d, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('gibbs-thomson-coef', this%gamma, stat=stat, errmsg=errmsg)
+    call params%get('gibbs-thomson-coef', this%gamma, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('instability-coef', this%alpha, stat=stat, errmsg=errmsg)
+    call params%get('instability-coef', this%alpha, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    call params%get('coarsening-coef', this%k_coarse, stat=stat, errmsg=errmsg)
+    call params%get('coarsening-coef', this%k_coarse, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
   end subroutine
 
@@ -265,14 +265,14 @@ contains
     allocate(this)
     call this%init(comp)
 
-    call params%get('theta1', this%f1, stat=stat, errmsg=errmsg)
+    call params%get('theta1', this%f1, stat, errmsg)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if(this%f1 <= 0.0 .or. this%f1 >= 1.0) then
       call TLS_fatal('theta1 must be > 0.0 and < 1.0')
     end if
 
-    call params%get('theta2', this%f2, stat=stat, errmsg=errmsg)
+    call params%get('theta2', this%f2, stat, errmsg)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%f2 <= 0.0 .or. this%f2 >= 1.0) then
@@ -280,14 +280,14 @@ contains
     end if
     if (this%f2 <= this%f1) call TLS_fatal('theta2 <= theta1')
 
-    call params%get('theta1p', this%f1p, default=this%f1, stat=stat, errmsg=errmsg)
+    call params%get('theta1p', this%f1p, stat, errmsg, default=this%f1)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%f1p > this%f1 .or. this%f1p < 0.0) then
       call TLS_fatal('theta1p must be >= 0.0 and <= theta1')
     end if
 
-    call params%get('theta2p', this%f2p, default=this%f2, stat=stat, errmsg=errmsg)
+    call params%get('theta2p', this%f2p, stat, errmsg, default=this%f2)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%f1p > this%f1 .or. this%f1p < 0.0) then

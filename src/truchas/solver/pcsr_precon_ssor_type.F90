@@ -80,7 +80,7 @@ contains
 
     context = 'processing ' // params%path() // ': '
 
-    call params%get('num-cycles', this%num_iter, stat=stat, errmsg=errmsg)
+    call params%get('num-cycles', this%num_iter, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -91,7 +91,7 @@ contains
       return
     end if
 
-    call params%get('omega', this%omega, default=1.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('omega', this%omega, stat, errmsg, default=1.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
