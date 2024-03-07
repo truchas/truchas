@@ -118,7 +118,7 @@ contains
     !TODO: ensure the BC cover the entire boundary (all boundary edges)
     !NB: nxH = 0 is the natural (i.e., do nothing) BC; could be the default?
 
-    call params%get('steps-per-cycle', this%steps_per_cycle, stat=stat, errmsg=errmsg, default=20)
+    call params%get('steps-per-cycle', this%steps_per_cycle, stat, errmsg, default=20)
     if (stat /= 0) return
     if (this%steps_per_cycle < 1) then
       stat = 1
@@ -126,7 +126,7 @@ contains
       return
     end if
 
-    call params%get('steady-state-tol', this%ss_tol, stat=stat, errmsg=errmsg, default=0.01_r8)
+    call params%get('steady-state-tol', this%ss_tol, stat, errmsg, default=0.01_r8)
     if (stat /= 0) return
     if (this%ss_tol <= 0.0_r8) then
       stat = 1
@@ -134,17 +134,17 @@ contains
       return
     end if
 
-    call params%get('max-source-cycles', this%max_cycles, stat=stat, errmsg=errmsg, default=5)
+    call params%get('max-source-cycles', this%max_cycles, stat, errmsg, default=5)
     if (this%max_cycles < 1) then
       stat = 1
       errmsg = 'max-source-cycles must be > 0'
       return
     end if
 
-    call params%get('graphics-output', this%graphics_output, stat=stat, errmsg=errmsg, default=.false.)
+    call params%get('graphics-output', this%graphics_output, stat, errmsg, default=.false.)
     if (stat /= 0) return
     if (this%graphics_output) then
-      call params%get('graphics-file', filename, stat=stat, errmsg=errmsg)
+      call params%get('graphics-file', filename, stat, errmsg)
       if (stat /= 0) return
       call graphics_output_init(this, filename, stat, errmsg)
       if (stat /= 0) return
@@ -155,7 +155,7 @@ contains
 
     model_eps = eps_scf*eps
     if (params%is_parameter('c-ratio')) then ! apply a numerical regularization in void cells
-      call params%get('c-ratio', c_ratio, stat=stat, errmsg=errmsg)
+      call params%get('c-ratio', c_ratio, stat, errmsg)
       if (stat /= 0) return
       if (c_ratio <= 0.0_r8 .or. c_ratio >= 1.0_r8) then
         stat = 1

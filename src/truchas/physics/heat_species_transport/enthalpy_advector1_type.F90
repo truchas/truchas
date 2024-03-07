@@ -174,9 +174,9 @@ contains
     do while (.not.piter%at_end())
       plist => piter%sublist()
       if (plist%is_parameter('inflow-temperature')) then
-        call plist%get('inflow-temperature', temp, stat=stat, errmsg=errmsg)
+        call plist%get('inflow-temperature', temp, stat, errmsg)
         if (stat /= 0) return
-        call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+        call plist%get('face-set-ids', setids, stat, errmsg)
         if (stat /= 0) return
         call builder%add_face_group(setids, stat, errmsg)
         if (stat /= 0) return

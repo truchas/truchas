@@ -39,7 +39,7 @@ contains
 
     if (params%is_parameter('solid-frac-table')) then
 
-      call params%get('solid-frac-table', table, stat=stat, errmsg=errmsg)
+      call params%get('solid-frac-table', table, stat, errmsg)
       if (stat /= 0) return
       if (size(table,dim=1) /= 2) then
         stat = 1
@@ -56,9 +56,9 @@ contains
     else if (params%is_parameter('solidus-temp') .and. &
              params%is_parameter('liquidus-temp')) then
 
-      call params%get('solidus-temp', tlo, stat=stat, errmsg=errmsg)
+      call params%get('solidus-temp', tlo, stat, errmsg)
       if (stat /= 0) return
-      call params%get('liquidus-temp', thi, stat=stat, errmsg=errmsg)
+      call params%get('liquidus-temp', thi, stat, errmsg)
       if (stat /= 0) return
       if (tlo >= thi) then
         errmsg = 'solidus-temp must be < liquidus-temp'
@@ -76,7 +76,7 @@ contains
     end if
 
     if (params%is_parameter('latent-heat')) then
-      call params%get('latent-heat', latent_heat, stat=stat, errmsg=errmsg)
+      call params%get('latent-heat', latent_heat, stat, errmsg)
       if (stat /= 0) return
       if (latent_heat < 0) then
         stat = 1

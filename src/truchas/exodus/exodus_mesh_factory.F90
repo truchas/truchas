@@ -132,7 +132,7 @@ contains
     real(r8) :: eps
     real(r8), allocatable :: x(:), y(:), z(:)
 
-    call params%get('dimen', dim, default=3, stat=stat, errmsg=errmsg)
+    call params%get('dimen', dim, stat, errmsg, default=3)
     if (stat /= 0) return
     if (dim < 2 .or. dim > 3) then
       stat = 1
@@ -140,7 +140,7 @@ contains
       return
     end if
 
-    call params%get('noise-factor', eps, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('noise-factor', eps, stat, errmsg, default=0.0_r8)
     if (stat /= 0) return
     if (eps < 0.0_r8) then
       stat = 1
@@ -621,7 +621,7 @@ contains
     integer :: n
 
     !! The coarse grid points (required)
-    call params%get(grid_key, rarray, stat=stat, errmsg=errmsg)
+    call params%get(grid_key, rarray, stat, errmsg)
     if (stat /= 0) return
     n = size(rarray)
     if (n < 2) then
@@ -638,7 +638,7 @@ contains
     n = n - 1 ! expected size of the following arrays
 
     !! The number of subintervals for each coarse grid segment (required)
-    call params%get(nint_key, iarray, stat=stat, errmsg=errmsg)
+    call params%get(nint_key, iarray, stat, errmsg)
     if (stat /= 0) return
     if (size(iarray) /= n) then
       stat = 1
@@ -653,7 +653,7 @@ contains
 
     !! The ratio for biased subdivision for each segment (optional)
     if (params%is_parameter(ratio_key)) then
-      call params%get(ratio_key, rarray, stat=stat, errmsg=errmsg)
+      call params%get(ratio_key, rarray, stat, errmsg)
       if (stat /= 0) return
       if (size(rarray) /= n) then
         stat = 1

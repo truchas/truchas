@@ -113,35 +113,35 @@ contains
 
     this%gl_state = GL_INVALID
 
-    call params%get('begin-frac', this%begin_frac, stat=stat, errmsg=errmsg)
+    call params%get('begin-frac', this%begin_frac, stat, errmsg)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%begin_frac <= 0 .or. this%begin_frac >= 1) then
       call TLS_fatal('begin-frac must belong to (0, 1)')
     end if
 
-    call params%get('end-frac', this%end_frac, stat=stat, errmsg=errmsg)
+    call params%get('end-frac', this%end_frac, stat, errmsg)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%end_frac <= this%begin_frac .or. this%end_frac >= 1) then
       call TLS_fatal('end-frac must belong to (begin-frac, 1)')
     end if
 
-    call params%get('gl-frac', this%gl_frac, default=this%begin_frac, stat=stat, errmsg=errmsg)
+    call params%get('gl-frac', this%gl_frac, stat, errmsg, default=this%begin_frac)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%gl_frac < this%begin_frac .or. this%gl_frac >= this%end_frac) then
       call TLS_fatal('gl-frac must belong to [begin-frac, end-frac)')
     end if
 
-    call params%get('begin-frac-reset', this%begin_frac_reset, default=this%begin_frac, stat=stat, errmsg=errmsg)
+    call params%get('begin-frac-reset', this%begin_frac_reset, stat, errmsg, default=this%begin_frac)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%begin_frac_reset <= 0 .or. this%begin_frac_reset > this%begin_frac) then
       call TLS_fatal('begin-frac-reset must belong to (0, begin-frac]')
     end if
 
-    call params%get('end-frac-reset', this%end_frac_reset, default=this%end_frac, stat=stat, errmsg=errmsg)
+    call params%get('end-frac-reset', this%end_frac_reset, stat, errmsg, default=this%end_frac)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%end_frac_reset <= this%begin_frac .or. this%end_frac_reset > this%end_frac) then
@@ -170,31 +170,31 @@ contains
 
     this%gl_state = GL_INVALID
 
-    call params%get('begin-temp', this%begin_temp, stat=stat, errmsg=errmsg)
+    call params%get('begin-temp', this%begin_temp, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
 
-    call params%get('end-temp', this%end_temp, stat=stat, errmsg=errmsg)
+    call params%get('end-temp', this%end_temp, stat, errmsg)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%end_temp >= this%begin_temp) then
       call TLS_fatal('end-temp must be < begin-temp')
     end if
 
-    call params%get('gl-temp', this%gl_temp, default=this%begin_temp, stat=stat, errmsg=errmsg)
+    call params%get('gl-temp', this%gl_temp, stat, errmsg, default=this%begin_temp)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%gl_temp <= this%end_temp .or. this%gl_temp > this%begin_temp) then
       call TLS_fatal('gl-temp must belong to (end-temp, begin-temp]')
     end if
 
-    call params%get('begin-temp-reset', this%begin_temp_reset, default=this%begin_temp, stat=stat, errmsg=errmsg)
+    call params%get('begin-temp-reset', this%begin_temp_reset, stat, errmsg, default=this%begin_temp)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%begin_temp_reset < this%begin_temp) then
       call TLS_fatal('begin-temp-reset must be > begin-temp')
     end if
 
-    call params%get('end-temp-reset', this%end_temp_reset, default=this%end_temp, stat=stat, errmsg=errmsg)
+    call params%get('end-temp-reset', this%end_temp_reset, stat, errmsg, default=this%end_temp)
     if (stat /= 0) then
       call TLS_fatal(errmsg)
     else if (this%end_temp_reset < this%end_temp) then

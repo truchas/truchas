@@ -132,44 +132,44 @@ contains
 
     !! Process the parameters.
     context = 'processing ' // params%path() // ': '
-    call params%get('max-angle', max_angle, stat=stat, errmsg=errmsg)
+    call params%get('max-angle', max_angle, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('verbosity-level', this%verbosity, stat=stat, errmsg=errmsg)
+    call params%get('verbosity-level', this%verbosity, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('face-patch-ratio', fp_ratio, stat=stat, errmsg=errmsg)
+    call params%get('face-patch-ratio', fp_ratio, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('max-iter', this%max_iter, stat=stat, errmsg=errmsg)
+    call params%get('max-iter', this%max_iter, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('min-delta', this%min_delta, stat=stat, errmsg=errmsg)
+    call params%get('min-delta', this%min_delta, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('max-patch-radius', this%max_radius, stat=stat, errmsg=errmsg)
+    call params%get('max-patch-radius', this%max_radius, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('normalize-dist', this%normalize, stat=stat, errmsg=errmsg)
+    call params%get('normalize-dist', this%normalize, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
 
     if (params%is_parameter('random-seed')) then
-      call params%get('random-seed', seed, stat=stat, errmsg=errmsg)
+      call params%get('random-seed', seed, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return

@@ -85,7 +85,7 @@ contains
 
     !! Add path partition data if requested.
     if (plist%is_parameter('partition-ds')) then
-      call plist%get('partition-ds', ds, stat=stat, errmsg=errmsg)
+      call plist%get('partition-ds', ds, stat, errmsg)
       if (stat /= 0) return
       call path%set_partition(ds)
     end if
