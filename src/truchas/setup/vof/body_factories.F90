@@ -129,7 +129,7 @@ contains
     logical :: flag
 
     stat = 0
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     call params%get('type', rtype, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
 
