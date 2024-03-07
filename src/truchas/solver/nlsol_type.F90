@@ -122,7 +122,7 @@ contains
     this%n = model%size()
     INSIST(this%n > 0)
 
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     call params%get('nlk-max-iter', this%mitr, default=100, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = context//errmsg

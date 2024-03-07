@@ -114,7 +114,7 @@ contains
     character(:), allocatable :: context
 
     !! Process the parameters.
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     call params%get('max-angle', max_angle, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg

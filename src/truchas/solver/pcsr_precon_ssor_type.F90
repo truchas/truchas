@@ -78,7 +78,7 @@ contains
     this%A => A
     allocate(this%diag(A%nrow_onP))
 
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
 
     call params%get('num-cycles', this%num_iter, stat=stat, errmsg=errmsg)
     if (stat /= 0) then

@@ -113,7 +113,7 @@ contains
     INSIST(ierr == 0)
 
     !! Process the parameters.
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     call params%get('num-cycles', this%max_iter, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg

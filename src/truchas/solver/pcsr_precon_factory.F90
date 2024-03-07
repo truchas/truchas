@@ -31,7 +31,7 @@ contains
     character(:), allocatable :: context, method
     type(parameter_list), pointer :: plist
 
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
 
     call params%get('method', method, default='BOOMERAMG', stat=stat, errmsg=errmsg)
     if (stat /= 0) then

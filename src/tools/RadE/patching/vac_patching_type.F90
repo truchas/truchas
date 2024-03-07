@@ -186,7 +186,7 @@ contains
     character(:), allocatable :: context
 
     !! Process the parameters.
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     call params%get('max-angle', max_angle, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
@@ -307,7 +307,7 @@ contains
     if (stat/=0) return
 
     !! Process the parameters.
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     if (params%is_parameter('random-seed')) then
       call params%get('random-seed', seed, stat=stat, errmsg=errmsg)
       if (stat /= 0) then
