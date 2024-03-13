@@ -20,13 +20,10 @@ contains
     type(parameter_list), intent(inout) :: params
 
     integer, parameter :: string_len = 256
-    integer, parameter :: MAXSV = 32
 
     integer :: n, ios
     logical :: found
     character(128) :: iom
-    real(r8), allocatable :: src_time(:), src_freq(:), unif_src(:)
-    real(r8) :: source_times(MAXSV-1), source_frequency(MAXSV), uniform_source(MAXSV)
 
     !! Namelist variables
     logical :: use_legacy_bc, graphics_output
@@ -34,11 +31,10 @@ contains
     real(r8) :: matl_change_threshold, steady_state_tol, cg_tol
     character(string_len) :: data_mapper_kind, em_domain_type
     character :: symmetry_axis
-    namelist /electromagnetics/ symmetry_axis, source_times, source_frequency, &
-      uniform_source, matl_change_threshold, data_mapper_kind, &
+    namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, &
       steps_per_cycle, steady_state_tol, max_source_cycles, cg_max_iter, cg_tol, &
       output_level, graphics_output, &
-      use_legacy_bc, em_domain_type
+      use_legacy_bc, symmetry_axis, em_domain_type
 
     call TLS_info('Reading ELECTROMAGNETICS namelist ...')
 
@@ -50,10 +46,6 @@ contains
     call broadcast(found)
     if (.not.found) call TLS_fatal('ELECTROMAGNETICS namelist not found')
 
-    symmetry_axis  = NULL_C
-    source_times = NULL_R
-    source_frequency = NULL_R
-    uniform_source = NULL_R
     matl_change_threshold = NULL_R
     data_mapper_kind = NULL_C
 
@@ -67,16 +59,13 @@ contains
     graphics_output = .false.
 
     use_legacy_bc = .false.
+    symmetry_axis  = NULL_C
     em_domain_type = NULL_C
 
     if (is_IOP) read(lun,nml=electromagnetics,iostat=ios,iomsg=iom)
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading ELECTROMAGNETICS namelist: ' // trim(iom))
 
-    call broadcast(symmetry_axis)
-    call broadcast(source_times)
-    call broadcast(source_frequency)
-    call broadcast(uniform_source)
     call broadcast(matl_change_threshold)
     call broadcast(data_mapper_kind)
 
@@ -90,46 +79,8 @@ contains
     call broadcast(graphics_output)
 
     call broadcast(use_legacy_bc)
+    call broadcast(symmetry_axis)
     call broadcast(em_domain_type)
-
-    !! Parameters defining the external applied magnetic field !!!!!!!!!!!!!!!!!
-
-    symmetry_axis = raise_case(trim(adjustl(symmetry_axis)))
-    select case (symmetry_axis)
-    case ('X', 'Y', 'Z')
-    case (NULL_C)
-      call TLS_info('  using default value "Z" for SYMMETRY_AXIS')
-      symmetry_axis = 'Z'
-    case default
-      call TLS_fatal('invalid SYMMETRY_AXIS: ' // trim(symmetry_axis))
-    end select
-    call params%set('symmetry-axis', symmetry_axis)
-
-    src_time = pack(source_times, mask=(source_times /= NULL_R))
-    if (size(src_time) > 1) then
-      n = size(src_time)
-      if (any(src_time(2:n) <= src_time(:n-1))) &
-          call TLS_fatal('SOURCE_TIMES values must be strictly increasing')
-      call params%set('source-times', src_time)
-    end if
-
-    src_freq = pack(source_frequency, mask=(source_frequency /= NULL_R))
-    if (size(src_freq) == 0) then
-      call TLS_fatal('SOURCE_FREQUENCY must be assigned a value')
-    else if (any(src_freq <= 0.0_r8)) then
-      call TLS_fatal('SOURCE_FREQUENCY values must be > 0.0')
-    else if (size(src_freq) /= size(src_time) + 1) then
-      call TLS_fatal('wrong number of values provided for SOURCE_FREQUENCY')
-    end if
-    call params%set('source-frequency', src_freq)
-
-    unif_src = pack(uniform_source, mask=(uniform_source /= NULL_R))
-    if (size(unif_src) > 0) then
-      if (size(unif_src) /= size(src_freq)) then
-        call TLS_fatal('wrong number of values provided for UNIFORM_SOURCE')
-      end if
-      call params%set('uniform-source', unif_src)
-    end if
 
     !! Joule heat driver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -189,6 +140,17 @@ contains
 
     call params%set('use-legacy-bc', use_legacy_bc)
     if (use_legacy_bc) then
+      symmetry_axis = raise_case(trim(adjustl(symmetry_axis)))
+      select case (symmetry_axis)
+      case ('X', 'Y', 'Z')
+      case (NULL_C)
+        call TLS_info('  using default value "Z" for SYMMETRY_AXIS')
+        symmetry_axis = 'Z'
+      case default
+        call TLS_fatal('invalid SYMMETRY_AXIS: ' // trim(symmetry_axis))
+      end select
+      call params%set('symmetry-axis', symmetry_axis)
+
       em_domain_type = raise_case(trim(adjustl(em_domain_type)))
       select case (em_domain_type)
       case ('FULL_CYLINDER')

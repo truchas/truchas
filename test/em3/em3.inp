@@ -42,7 +42,6 @@ the ball are not conforming.
 /
 
 &ELECTROMAGNETICS
-  source_frequency = 500.0
   steps_per_cycle = 12
   steady_state_tol = 0.01
   max_source_cycles = 4
@@ -74,6 +73,11 @@ x&ELECTROMAGNETIC_BC
   name = 'applied H field'
   type = 'ih-hfield'
   face_set_ids = 4, 5
+/
+
+&INDUCTION_SOURCE_FIELD
+  frequency = 500.0
+  orientation = 'z'
 /
 
 &INDUCTION_COIL

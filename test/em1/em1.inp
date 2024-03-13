@@ -45,15 +45,19 @@ subdivision of the hex cells.
 /
 
 &ELECTROMAGNETICS
-  source_Times = 25.0, 50.0, 75.0
-  source_frequency = 2*1000., 2*500.
-  uniform_source = 2000., 4000., 0.0, 4000.
   steps_per_cycle = 12
   steady_state_tol = 0.01
   max_source_cycles = 4
   cg_tol = 1.0e-8
   cg_max_iter = 100
   output_level = 2
+/
+
+&INDUCTION_SOURCE_FIELD
+  times = 25.0, 50.0, 75.0
+  frequency = 2*1000., 2*500.
+  uniform_strength = 2000., 4000., 0.0, 4000.
+  orientation = 'z'
 /
 
 &ELECTROMAGNETIC_BC
