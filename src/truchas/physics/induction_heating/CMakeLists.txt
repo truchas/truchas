@@ -10,6 +10,7 @@ target_sources(truchas PRIVATE
   em_mesh_namelist.F90
   electromagnetics_namelist.F90
   electromagnetic_bc_namelist.F90
+  induction_source_field_namelist.F90
   induction_coil_namelist.F90
   ih_source_factory_type.F90
   ih_source_func_type.F90

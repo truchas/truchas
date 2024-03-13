@@ -76,6 +76,7 @@ contains
 
   subroutine read_ih_namelists(lun)
     use electromagnetics_namelist
+    use induction_source_field_namelist
     use induction_coil_namelist
     use electromagnetic_bc_namelist
     use mesh_manager, only: enable_mesh
@@ -84,7 +85,9 @@ contains
     type(parameter_list), pointer :: plist
     allocate(params)
     call read_electromagnetics_namelist(lun, params)
-    plist => params%sublist('coils')
+    plist => params%sublist('external-field')
+    call read_induction_source_field_namelist(lun, plist)
+    plist => plist%sublist('coils')
     call read_induction_coil_namelists(lun, plist)
     plist => params%sublist('bc')
     call read_electromagnetic_bc_namelists(lun, plist)
@@ -101,6 +104,7 @@ contains
 
     integer :: n, stat
     character(:), allocatable :: errmsg, data_mapper_kind
+    type(parameter_list), pointer :: plist
 
     ASSERT(.not.allocated(this))
 
@@ -145,7 +149,8 @@ contains
     !NB: the allocation status of Q_DATA indicates whether Q contains data
 
     !! Initialize the external H-field source factory
-    call this%src_fac%init(params, t, stat, errmsg)
+    plist => params%sublist('external-field')
+    call this%src_fac%init(plist, t, stat, errmsg)
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
     this%coil_md5sum = this%src_fac%coil_geom_fingerprint()
 

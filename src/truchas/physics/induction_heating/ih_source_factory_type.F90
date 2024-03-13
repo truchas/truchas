@@ -88,14 +88,14 @@ contains
     ! values for source-frequency, uniform-source, and coil current rather than
     ! size-1 arrays?
 
-    if (params%is_parameter('source-times')) then
-      call params%get('source-times', this%times, stat=stat, errmsg=errmsg)
+    if (params%is_parameter('times')) then
+      call params%get('times', this%times, stat=stat, errmsg=errmsg)
       if (stat /= 0) return
       n = size(this%times)
       if (n > 1) then
         if (any(this%times(2:n) <= this%times(:n-1))) then
           stat = 1
-          errmsg = 'source-times values not strictly increasing'
+          errmsg = 'times values not strictly increasing'
           return
         end if
       end if
@@ -104,23 +104,23 @@ contains
       n = 0
     end if
 
-    call params%get('source-frequency', this%freq, stat=stat, errmsg=errmsg)
+    call params%get('frequency', this%freq, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
     if (any(this%freq <= 0.0_r8)) then
       stat = 1
-      errmsg = 'source-frequency is <= 0.0'
+      errmsg = 'frequency is <= 0.0'
       return
     else if (size(this%freq) /= n+1) then
       stat = 1
-      errmsg = 'expect ' // i_to_c(n+1) // ' values for source-frequency'
+      errmsg = 'expect ' // i_to_c(n+1) // ' values for frequency'
       return
     endif
 
-    call params%get('uniform-source', this%const_src, stat=stat, errmsg=errmsg, default=spread(0.0_r8,1,n+1))
+    call params%get('uniform-strength', this%const_src, stat=stat, errmsg=errmsg, default=spread(0.0_r8,1,n+1))
     if (stat /= 0) return
     if (size(this%const_src) /= n+1) then
       stat = 1
-      errmsg = 'expect ' // i_to_c(n+1) // ' values for uniform-source'
+      errmsg = 'expect ' // i_to_c(n+1) // ' values for uniform-strength'
       return
     endif
 
@@ -176,14 +176,14 @@ contains
       call piter%next
     end do
 
-    call params%get('symmetry-axis', axis, stat=stat, errmsg=errmsg, default='Z')
+    call params%get('orientation', axis, stat=stat, errmsg=errmsg, default='Z')
     if (stat /= 0) return
     select case (axis)
     case ('x','X','y','Y','z','Z')
       this%axis = axis
     case default
       stat = 1
-      errmsg = 'invalid value for symmetry-axis: ' // axis
+      errmsg = 'invalid value for orientation: ' // axis
       return
     end select
 

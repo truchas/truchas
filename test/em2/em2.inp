@@ -42,8 +42,6 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 /
 
 &ELECTROMAGNETICS
-  uniform_source = 2.3e4
-  source_frequency = 500.0
   matl_change_threshold = 0.6
   steps_per_cycle = 12
   steady_state_tol = 0.1
@@ -51,6 +49,12 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
   cg_tol = 1.0e-8
   cg_max_iter = 100
   output_level = 2
+/
+
+&INDUCTION_SOURCE_FIELD
+  frequency = 500.0
+  uniform_strength = 2.3e4
+  orientation = 'z'
 /
 
 &ELECTROMAGNETIC_BC
