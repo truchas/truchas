@@ -12,6 +12,7 @@ Reference Manual
    DIFFUSION_Solver_Namelist/index
    DS_SOURCE_Namelist/index
    ELECTROMAGNETICS_Namelist/index
+   ELECTROMAGNETIC_BC_Namelist/index
    EM_MESH_Namelist/index
    ENCLOSURE_RADIATION_Namelist/index
    ENCLOSURE_SURFACE_Namelist/index
