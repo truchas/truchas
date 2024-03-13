@@ -78,14 +78,11 @@ x&ELECTROMAGNETIC_BC
 &INDUCTION_SOURCE_FIELD
   frequency = 500.0
   orientation = 'z'
-/
-
-&INDUCTION_COIL
-  num_loops  = 2
-  center  = 3*0.0
-  radius  = 0.12
-  length  = 0.12
-  current = 1000.
+  coils(1)%num_loops  = 2
+  coils(1)%center  = 3*0.0
+  coils(1)%radius  = 0.12
+  coils(1)%length  = 0.12
+  coils(1)%current = 1000.
 /
 
 The conducting ball.

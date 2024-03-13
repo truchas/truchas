@@ -77,7 +77,6 @@ contains
   subroutine read_ih_namelists(lun)
     use electromagnetics_namelist
     use induction_source_field_namelist
-    use induction_coil_namelist
     use electromagnetic_bc_namelist
     use mesh_manager, only: enable_mesh
     integer, intent(in) :: lun
@@ -87,8 +86,6 @@ contains
     call read_electromagnetics_namelist(lun, params)
     plist => params%sublist('external-field')
     call read_induction_source_field_namelist(lun, plist)
-    plist => plist%sublist('coils')
-    call read_induction_coil_namelists(lun, plist)
     plist => params%sublist('bc')
     call read_electromagnetic_bc_namelists(lun, plist)
     call enable_mesh('em', exists)

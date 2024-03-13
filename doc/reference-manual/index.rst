@@ -20,7 +20,6 @@ Reference Manual
    FLOW_BC_Namelist/index
    FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists/index
    FUNCTION_Namelist/index
-   INDUCTION_COIL_Namelist/index
    INDUCTION_SOURCE_FIELD_Namelist/index
    MATERIAL_and_PHASE_Namelists/index
    MESH_Namelist/index
