@@ -465,7 +465,11 @@ contains
     call stop_timer("hypre solve")
     call tls_info('  projection solve: ' // this%solver%metrics_string())
     if (ierr /= 0) call tls_error("projection solve unsuccessful")
-    call this%fg%update(this%rhs, this%delta_p_cc, this%solver%matrix())
+    block
+      type(pcsr_matrix), pointer :: A
+      A => this%solver%matrix()
+      call this%fg%update(this%rhs, this%delta_p_cc, A)
+    end block
 
     ! not sure if this call is necesary
     call this%mesh%cell_imap%gather_offp(this%delta_p_cc)
