@@ -138,12 +138,6 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
-# Chaco library
-find_package(Chaco)
-if(NOT Chaco_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
-endif()
-
 # Chaparral library
 find_package(Chaparral)
 if(NOT Chaparral_FOUND)

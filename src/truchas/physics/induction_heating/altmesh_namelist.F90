@@ -121,7 +121,6 @@ contains
 
     if (partitioner == NULL_C) partitioner = 'metis'
     select case (lower_case(partitioner))
-    case ('chaco')
     case ('metis')
     case ('block')
     case ('file')

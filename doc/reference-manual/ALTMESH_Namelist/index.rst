@@ -68,7 +68,7 @@ Partitioner
 | **Description** : The partitioning method used to generate the parallel decomposition of the EM mesh.
 | **Type**        : case-insensitive string
 | **Default**     : "metis"
-| **Valid Values**: "chaco", "metis", "file", "block"
+| **Valid Values**: "metis", "file", "block"
 | **Notes**       : See the :ref:`MESH<MESH_Namelist>` namelist variable :ref:`Partitioner <M_P>` for a description of the options and their associated input variables.
 
 .. _AM_PF:

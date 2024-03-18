@@ -18,16 +18,10 @@
 !!  CALL ALLOC_GRAPH_PARTITIONER (THIS, PARAMS) allocates the allocatable
 !!    CLASS(GRAPH_PARTITIONER) argument THIS.  The parameter list PARAMS
 !!    expects a single parameter 'partitioner' whose value is either 'block'
-!!    or 'chaco'.  For 'block', the dynamic type of THIS is BLOCK_PARTITIONER
+!!    or 'metis'.  For 'block', the dynamic type of THIS is BLOCK_PARTITIONER
 !!    which computes a simple block partition of the graph vertices (ignoring
-!!    the graph connectivity).  For 'chaco', the dynamic type of THIS is
-!!    CHACO_PARTITIONER, which uses the Chaco library to compute the partition.
-!!
-!! IMPLEMENTATION NOTES
-!!
-!!  Use of a parameter list argument was intended to prepare the way for adding
-!!  partitioiner-specifc parameters.  Currently these parameters are hardwired
-!!  in the chaco implementation.
+!!    the graph connectivity).  For 'metis', the dynamic type of THIS is
+!!    METIS_PARTITIONER, which uses the METIS library to compute the partition.
 !!
 
 module graph_partitioner_factory
@@ -44,7 +38,6 @@ contains
 
   subroutine alloc_graph_partitioner (this, params)
 
-    use chaco_partitioner_type
     use truchas_logging_services
     use string_utilities, only: raise_case
 
@@ -57,8 +50,6 @@ contains
     call params%get ('partitioner', partitioner, stat=stat, errmsg=errmsg)
     if (stat /= 0) call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: ' // errmsg)
     select case (raise_case(partitioner))
-    case ('CHACO')
-      allocate(this, source=chaco_partitioner())
     case ('METIS')
       block
         use metis_partitioner_type

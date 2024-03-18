@@ -148,7 +148,7 @@ partitioner
 | **Description** : The partitioning method used to generate the parallel decomposition of the mesh.
 | **Type**        : case-insensitive string
 | **Default**     : "metis"
-| **Valid Values**: "chaco", "metis", "file", "block"
+| **Valid Values**: "metis", "file", "block"
 | **Notes**       :
 
 .. _partitioner_options:
@@ -157,7 +157,6 @@ partitioner
    :class: tight-table
    :widths: 1 5
 
-   "**chaco**","uses a graph partitioning method from the Chaco library :footcite:`leland1995chaco` to compute the mesh decomposition at run time. Support for this legacy library may be removed in the future."
    "**metis**","uses the well-known METIS library :footcite:`karypis1998fast` to partition the dual graph of the mesh at runtime. This method has a number of options which are described below."
    "**file**","reads the partitioning of the mesh cells from a disk file; see :ref:`partition_file<M_PF>`."
    "**block**","partitions the mesh cells into nearly equal-sized blocks of consecutively numbered cells according their numbering in the mesh file. The quality of this naive decomposition entirely depends on the given ordering of mesh cells, and thus this option is not generally recommended."
