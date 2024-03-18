@@ -325,7 +325,6 @@ contains
 
     if (partitioner == NULL_C) partitioner = 'metis'
     select case (lower_case(partitioner))
-    case ('chaco')
     case ('metis')
       plist => params%sublist('metis-options')
       if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
