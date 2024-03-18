@@ -354,10 +354,6 @@ contains
   !! the number of graph edges connecting different partitions; this is a
   !! typical domain decomposition.
   !!
-  !! Currently this is hardwired to use Chaco to do the partitioning (with
-  !! hardwired Chaco parameters), but the framework is more or less in place
-  !! to allow the input of partitioner choice and parameters.
-  !!
   !! This implementation does not currently do anything about well-ordering
   !! the cells within a partition (FIXME!); RCM would be better than nothing.
 
@@ -398,7 +394,7 @@ contains
     end if
 
     allocate(part(ncell))
-    call params%get ('partitioner', string, default='chaco')
+    call params%get ('partitioner', string, default='metis')
     select case (string)
     case ('block')
       call get_block_partition (npart, part)
@@ -412,7 +408,7 @@ contains
         errmsg = 'error reading cell partition: ' // errmsg
         return
       end if
-    case ('chaco', 'metis')
+    case ('metis')
       !! Generate the cell neighbor data array CNHBR.
       allocate(cnhbr, mold=cnode) ! valid for simplicial cells
       call get_tet_neighbor_array (cnode, cnhbr, stat)
@@ -437,7 +433,7 @@ contains
         xadj(j) = xadj(j) + xadj(j-1)
       end do
 
-      !! Call Chaco to partition the cell adjacency graph.
+      !! Call the partitioner to partition the cell adjacency graph.
       call alloc_graph_partitioner (gpart, params)
       allocate(ewgt(size(adjncy)))
       ewgt = 1.0
