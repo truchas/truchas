@@ -229,6 +229,8 @@ contains
   subroutine compute_joule_heat(this, t, params)
 
     use em_bc_factory_type
+    use string_utilities, only: i_to_c
+    use truchas_env, only: output_dir
 
     class(ih_driver_data), intent(inout), target :: this
     real(r8), intent(in) :: t
@@ -237,8 +239,12 @@ contains
     real(r8), allocatable :: q(:)
     type(em_bc_factory) :: bc_fac
     real(r8) :: freq
+    integer, save :: sim_num = 0  ! global counter for the number of calls
 
     call start_timer('simulation')
+
+    sim_num = sim_num + 1
+    call params%set('graphics-file', trim(output_dir)//'tdme-'//i_to_c(sim_num)//'.vtkhdf')
 
     allocate(q(this%em_mesh%ncell))
     call this%src_fac%set_time(t)

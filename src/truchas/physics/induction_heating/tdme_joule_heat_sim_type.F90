@@ -43,7 +43,7 @@ module tdme_joule_heat_sim_type
   use tdme_solver_type
   use ih_source_factory_type
   use scalar_func_class
-  use EM_graphics_output  !TODO: modernize
+  use vtkhdf_file_type
   implicit none
   private
 
@@ -56,6 +56,7 @@ module tdme_joule_heat_sim_type
     integer :: steps_per_cycle, max_cycles
     real(r8) :: ss_tol
     logical :: graphics_output
+    type(vtkhdf_file) :: viz_file
   contains
     procedure :: init
     procedure :: compute
@@ -85,6 +86,7 @@ contains
 
     class(bndry_func1), allocatable :: ebc, hbc
     real(r8) :: dt, eps_scf, sigma_scf
+    character(:), allocatable :: filename
 
     ASSERT(size(eps) == mesh%ncell)
     ASSERT(size(mu)  == mesh%ncell)
@@ -140,7 +142,15 @@ contains
 
     call params%get('graphics-output', this%graphics_output, stat=stat, errmsg=errmsg, default=.false.)
     if (stat /= 0) return
-    if (this%graphics_output) call export_mesh(mesh, eps, mu, sigma)
+    if (this%graphics_output) then
+      call params%get('graphics-file', filename, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      call graphics_output_init(this, filename, stat, errmsg)
+      if (stat /= 0) return
+      call export_scalar_cell_field(this, eps, 'permittivity')
+      call export_scalar_cell_field(this, mu, 'permeability')
+      call export_scalar_cell_field(this, sigma, 'conductivity')
+    end if
 
     !! Create and initialize the time-discretized model and solver.
     dt = 1.0_r8 / this%steps_per_cycle
@@ -155,6 +165,7 @@ contains
 
     use parallel_communication, only: global_maxval, global_dot_product
     use truchas_logging_services
+    use string_utilities, only: i_to_c
 
     class(tdme_joule_heat_sim), intent(inout) :: this
     real(r8), intent(out) :: q_avg(:)
@@ -179,14 +190,10 @@ contains
     !call this%solver%set_initial_state(t, efield/this%escf, bfield/this%bscf)
     q = 0.0_r8  ! assuming efield == 0
 
-    if (this%graphics_output) then
-      call initialize_field_output
-      call export_fields(this%mesh, t, this%escf*efield, this%bscf*bfield, q)
-    end if
+    if (this%graphics_output) call export_fields(this, t, this%escf*efield, this%bscf*bfield, q)
 
     do n = 1, this%max_cycles
       !! Time step through one source cycle while integrating the joule heat
-      if (this%graphics_output .and. n > 1) call initialize_field_output
       q_avg = 0.0_r8  ! use trapezoid rule for the time average
       do j = 1, this%steps_per_cycle
         q_avg = q_avg + 0.5_r8 * q
@@ -199,13 +206,13 @@ contains
         call this%model%compute_joule_heat(efield, q)
         q = this%qscf * q
         q_avg = q_avg + 0.5_r8 * q
-        if (this%graphics_output) call export_fields(this%mesh, t, this%escf*efield, this%bscf*bfield, q)
+        if (this%graphics_output) call export_fields(this, t, this%escf*efield, this%bscf*bfield, q)
       end do
 
       !! Time-averaged Joule power density over the last source cycle.
       q_avg = q_avg / this%steps_per_cycle
       q_avg_max = global_maxval(q_avg)
-      if (this%graphics_output) call finalize_field_output(q_avg)
+      if (this%graphics_output) call export_scalar_cell_field(this, q_avg, 'Avg_Joule-'//i_to_c(n))
 
       !TODO: make output subject to verbosity level
       q_tot = global_dot_product(q_avg(:this%mesh%ncell_onP), abs(this%mesh%volume(:this%mesh%ncell_onP)))
@@ -224,5 +231,133 @@ contains
     errmsg = 'not converged to steady-state'
 
   end subroutine compute
+
+  !! Create the VTKHDF format graphics file with the given file name, write the
+  !! mesh, and register the time-dependent fields that will be written.
+
+  subroutine graphics_output_init(this, filename, stat, errmsg)
+
+    use parallel_communication, only: is_IOP, broadcast
+
+    class(tdme_joule_heat_sim), intent(inout) :: this
+    character(*), intent(in) :: filename
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    real(r8) :: vec_mold(3,0), sca_mold(0)
+
+    if (is_IOP) call this%viz_file%create(filename, stat, errmsg)
+    call broadcast(stat)
+    if (stat /= 0) then
+      call broadcast(errmsg)
+      return
+    end if
+
+    call export_mesh(this)
+
+    if (is_IOP) call this%viz_file%register_temporal_cell_dataset('E-field', vec_mold, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    if (is_IOP) call this%viz_file%register_temporal_cell_dataset('B-field', vec_mold, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    if (is_IOP) call this%viz_file%register_temporal_cell_dataset('Joule', sca_mold, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+  end subroutine graphics_output_init
+
+  !! Write the mesh to the VTKHDF graphics file.
+
+  subroutine export_mesh(this)
+
+    use,intrinsic :: iso_fortran_env, only: int8
+    use parallel_communication, only: is_IOP, broadcast
+
+    class(tdme_joule_heat_sim), intent(inout) :: this
+
+    integer, allocatable, target :: cnode(:,:)
+    integer, allocatable :: xcnode(:)
+    integer(int8), allocatable :: types(:)
+    real(r8), allocatable :: x(:,:)
+    integer, pointer :: connectivity(:)
+    integer :: j, stat
+    character(:), allocatable :: errmsg
+
+    !! Collate the mesh data structure onto the IO process
+    call this%mesh%get_global_cnode_array(cnode)
+    call this%mesh%get_global_x_array(x)
+
+    if (is_IOP) then
+      xcnode = [(1+4*j, j=0, size(cnode,dim=2))]
+      connectivity(1:size(cnode)) => cnode ! flattened view
+      types = spread(VTK_TETRA, dim=1, ncopies=size(cnode,dim=2))
+      call this%viz_file%write_mesh(x, connectivity, xcnode, types, stat, errmsg)
+    end if
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+  end subroutine export_mesh
+
+  !! Write the given cell-based scalar field to the VTKHDF file as a
+  !! time-independent dataset with the given name.
+
+  subroutine export_scalar_cell_field(this, field, name)
+    use parallel_communication, only: is_IOP, broadcast, gather
+    class(tdme_joule_heat_sim), intent(in) :: this
+    real(r8), intent(in) :: field(:)
+    character(*), intent(in) :: name
+    integer :: stat
+    character(:), allocatable :: errmsg
+    real(r8), allocatable :: g_field(:)
+    allocate(g_field(merge(this%mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(field(:this%mesh%ncell_onP), g_field)
+    if (is_IOP) call this%viz_file%write_cell_dataset(name, g_field, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+  end subroutine
+
+  !! Write the given time-dependent EM fields to the VTKHDF graphics file.
+
+  subroutine export_fields(this, t, efield, bfield, qfield)
+
+    use parallel_communication, only: is_IOP, broadcast, gather
+    use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
+
+    class(tdme_joule_heat_sim), intent(inout) :: this
+    real(r8), intent(in) :: t, efield(:), bfield(:), qfield(:)
+
+    real(r8) :: v(3,this%mesh%ncell)
+    real(r8), allocatable :: g_v(:,:), g_s(:)
+    integer :: stat
+    character(:), allocatable :: errmsg
+
+    if (is_IOP) call this%viz_file%write_time_step(t)
+
+    allocate(g_v(3,merge(this%mesh%cell_imap%global_size,0,is_iop)))
+    allocate(g_s(merge(this%mesh%cell_imap%global_size,0,is_iop)))
+
+    !! Interpolate cell average E-field from the primitive E-field edge circulations.
+    v = w1_vector_on_cells(this%mesh, efield)
+    call gather(v(:,:this%mesh%ncell_onP), g_v)
+    if (is_IOP) call this%viz_file%write_temporal_cell_dataset('E-field', g_v, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    !! Interpolate cell average B-field from the primitive B-field face fluxes.
+    v = w2_vector_on_cells(this%mesh, bfield)
+    call gather(v(:,:this%mesh%ncell_onP), g_v)
+    if (is_IOP) call this%viz_file%write_temporal_cell_dataset('B-field', g_v, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    call gather(qfield(:this%mesh%ncell_onP), g_s)
+    if (is_IOP) call this%viz_file%write_temporal_cell_dataset('Joule', g_s, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+  end subroutine
 
 end module tdme_joule_heat_sim_type
