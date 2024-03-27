@@ -48,6 +48,7 @@ the ball are not conforming.
   cg_tol = 1.0e-10
   cg_max_iter = 100
   output_level = 2
+  graphics_output = F
 /
 
 &ELECTROMAGNETIC_BC

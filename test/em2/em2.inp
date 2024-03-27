@@ -49,6 +49,7 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
   cg_tol = 1.0e-8
   cg_max_iter = 100
   output_level = 2
+  graphics_output = F
 /
 
 &INDUCTION_SOURCE_FIELD
