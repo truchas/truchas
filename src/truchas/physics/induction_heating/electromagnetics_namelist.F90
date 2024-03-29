@@ -28,12 +28,12 @@ contains
     !! Namelist variables
     logical :: use_legacy_bc, graphics_output
     integer :: steps_per_cycle, max_source_cycles, cg_max_iter, output_level
-    real(r8) :: matl_change_threshold, steady_state_tol, cg_tol
+    real(r8) :: matl_change_threshold, steady_state_tol, cg_tol, c_ratio
     character(string_len) :: data_mapper_kind, em_domain_type
     character :: symmetry_axis
     namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, &
       steps_per_cycle, steady_state_tol, max_source_cycles, cg_max_iter, cg_tol, &
-      output_level, graphics_output, &
+      output_level, c_ratio, graphics_output, &
       use_legacy_bc, symmetry_axis, em_domain_type
 
     call TLS_info('Reading ELECTROMAGNETICS namelist ...')
@@ -54,6 +54,7 @@ contains
     steady_state_tol = NULL_R
     cg_max_iter = NULL_I
     cg_tol = NULL_R
+    c_ratio = NULL_R
 
     output_level = NULL_I
     graphics_output = .false.
@@ -74,6 +75,7 @@ contains
     call broadcast(steady_state_tol)
     call broadcast(cg_max_iter)
     call broadcast(cg_tol)
+    call broadcast(c_ratio)
 
     call broadcast(output_level)
     call broadcast(graphics_output)
@@ -117,6 +119,11 @@ contains
     if (cg_tol /= NULL_R) then
       if (cg_tol <= 0.0_r8 .or. cg_tol >= 0.1_r8) call TLS_fatal('CG_TOL must be > 0.0 and < 0.1')
       call params%set('cg-tol', cg_tol)
+    end if
+
+    if (c_ratio /= NULL_R) then
+      if (c_ratio <= 0.0_r8 .or. c_ratio > 1.0_r8) call TLS_fatal('C_RATIO must be > 0.0 and <= 1.0')
+      call params%set('c-ratio', c_ratio)
     end if
 
     if (output_level /= NULL_I) call params%set('output-level', output_level)

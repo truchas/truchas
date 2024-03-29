@@ -85,7 +85,8 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     class(bndry_func1), allocatable :: ebc, hbc
-    real(r8) :: dt, eps_scf, sigma_scf
+    real(r8) :: dt, eps_scf, sigma_scf, c_ratio
+    real(r8), allocatable :: model_eps(:), model_sigma(:)
     character(:), allocatable :: filename
 
     ASSERT(size(eps) == mesh%ncell)
@@ -152,10 +153,24 @@ contains
       call export_scalar_cell_field(this, sigma, 'conductivity')
     end if
 
+    model_eps = eps_scf*eps
+    if (params%is_parameter('c-ratio')) then ! apply a numerical regularization in void cells
+      call params%get('c-ratio', c_ratio, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (c_ratio <= 0.0_r8 .or. c_ratio >= 1.0_r8) then
+        stat = 1
+        errmsg = 'c-ratio must be > 0 and < 1'
+        return
+      end if
+      where (sigma == 0.0_r8) model_eps = model_eps / c_ratio**2
+    end if
+
+    model_sigma = sigma_scf*sigma
+
     !! Create and initialize the time-discretized model and solver.
     dt = 1.0_r8 / this%steps_per_cycle
     allocate(this%model)
-    call this%model%init(this%mesh, eps_scf*eps, mu, sigma_scf*sigma, dt, ebc, hbc)
+    call this%model%init(this%mesh, model_eps, mu, model_sigma, dt, ebc, hbc)
     call this%solver%init(this%mesh, this%model, params, stat, errmsg)
     if (stat /= 0) return
 

@@ -47,6 +47,7 @@ the ball are not conforming.
   max_source_cycles = 4
   cg_tol = 1.0e-10
   cg_max_iter = 100
+  c_ratio = 1e-3
   output_level = 2
   graphics_output = F
 /

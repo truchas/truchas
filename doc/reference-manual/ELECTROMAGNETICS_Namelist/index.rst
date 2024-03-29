@@ -197,6 +197,36 @@ fatal error if convergence is not attained within this number of iterations.
 :Valid Values: > 0
 
 
+c_ratio
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the quasi-magnetostatic regime, Maxwell's equations can become become very
+ill-conditioned and difficult to solve in regions with zero electrical
+conductivity, such as free space. Artificially reducing the speed of light
+in those regions helps ameliorate that difficulty, and this numerical parameter
+is that reduction factor :math:`r`. A value of 1 means no reduction and is the
+default.
+
+:Type: real
+:Default: 1
+:Valid Values: :math:`\in(0,1]`
+:Notes: This is implemented by altering the permittivity,
+        :math:`\epsilon\to\epsilon/r^2`,
+        which only modifies the displacement current term
+        :math:`\partial\epsilon\vec{E}/\partial t`.
+        In the magnetostatic regime, this term functions as a very small
+        perturbation in Maxwell's equations.
+
+        For common induction heating applications, this parameter can be taken
+        fairly small, :math:`10^{-3}` or :math:`10^{-4}`, without any signficant
+        effect on the computed Joule heat.
+
+        More generally, :math:`\omega\epsilon\ll\sigma` in the magnetostatic
+        regime, where :math:`\omega` is the frequency of the external driving
+        field, and one wants to ensure that this separation of scales is
+        maintained when choosing the reduction factor,
+        :math:`\omega\epsilon/r^2\ll\sigma`.
+
+
 output_level
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Controls the verbosity of the time-domain Joule heat solver.
