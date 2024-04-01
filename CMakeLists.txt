@@ -196,19 +196,25 @@ endif()
 
 add_compile_options(
   "$<$<COMPILE_LANG_AND_ID:Fortran,Intel>:-standard-semantics>"
-  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel>>:SHELL:-assume nostd_mod_proc_name>")
+  "$<$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>:-standard-semantics>"
+  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,Intel>>:SHELL:-assume nostd_mod_proc_name>"
+  "$<$<AND:$<NOT:$<BOOL:${ENABLE_STD_MOD_PROC_NAME}>>,$<COMPILE_LANG_AND_ID:Fortran,IntelLLVM>>:SHELL:-assume nostd_mod_proc_name>"
+)
 
 add_compile_options(
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-fimplicit-none>
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
 
+add_compile_options(
+  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:-ieee=full>
+)
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
 add_compile_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
 
 # Compiler-specific bug workarounds and defines.
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel OR CMAKE_Fortran_COMPILER_ID MATCHES IntelLLVM)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "19.0.4")
     # Needed by any version earlier than 19.0.4
     add_compile_definitions(INTEL_BUG20180115)

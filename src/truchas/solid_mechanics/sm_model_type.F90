@@ -153,7 +153,8 @@ contains
       this%dstrain_plastic_dt = 0
       this%tlast = 0
       this%tcurrent = 0
-      call this%vp_solver%init(params%sublist('viscoplastic-solver'), this%ig, this%matl_model)
+      plist => params%sublist('viscoplastic-solver')
+      call this%vp_solver%init(plist, this%ig, this%matl_model)
     end if
 
   contains

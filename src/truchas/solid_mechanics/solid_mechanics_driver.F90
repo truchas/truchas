@@ -89,7 +89,7 @@ contains
     real(r8) :: ref_temp
     real(r8), allocatable :: ref_dens(:)
     character(:), allocatable :: errmsg, phase_name
-    type(parameter_list), pointer :: vpm_plist => null()
+    type(parameter_list), pointer :: vpm_plist => null(), phase_name_plist => null()
     type(viscoplastic_material_model_box), allocatable :: vp(:)
     type(scalar_func_box), allocatable :: lame1(:), lame2(:), density(:)
     class(scalar_func), allocatable :: cte
@@ -118,7 +118,8 @@ contains
 
       phase_name = matl_model%phase_name(m)
       !if (vpm_plist%is_sublist(phase_name)) &
-      call alloc_viscoplastic_material_model(vpm_plist%sublist(phase_name), vp(p)%m)
+      phase_name_plist => vpm_plist%sublist(phase_name)
+      call alloc_viscoplastic_material_model(phase_name_plist, vp(p)%m)
     end do
 
     call this%sm%init(this%mesh, params, this%nphase, lame1, lame2, density, ref_dens, vp)
