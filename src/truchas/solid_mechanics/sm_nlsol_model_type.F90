@@ -11,7 +11,7 @@ module sm_nlsol_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use nlsol_type
   use sm_model_type
-  use sm_ds_precon_type
+  use sm_precon_class
   !use sm_norm_class
   implicit none
   private
@@ -19,7 +19,7 @@ module sm_nlsol_model_type
   type, extends(nlsol_model), public :: sm_nlsol_model
     private
     type(sm_model), pointer :: model => null() ! unowned reference
-    type(sm_ds_precon), pointer :: precon => null() ! unowned reference
+    class(sm_precon), pointer :: precon => null() ! unowned reference
     !type(sm_norm), pointer :: norm => null() ! unowned reference
 
     real(r8) :: atol, rtol, ftol
@@ -39,12 +39,12 @@ contains
   subroutine init(this, model, precon)
     class(sm_nlsol_model), intent(out) :: this
     type(sm_model), intent(in), target :: model
-    type(sm_ds_precon), intent(in), target :: precon
+    class(sm_precon), intent(in), target :: precon
     !type(sm_norm), intent(in), target :: norm
     this%model => model
     this%precon => precon
     !this%norm => norm
-    ASSERT(associated(this%model, precon%model))
+    ASSERT(associated(this%model))
     this%atol = this%model%atol
     this%rtol = this%model%rtol
     this%ftol = this%model%ftol
@@ -61,6 +61,8 @@ contains
     real(r8), intent(in), contiguous, target :: u(:), udot(:)
     real(r8), intent(out), contiguous, target :: f(:)
     real(r8), pointer :: u2(:,:), f2(:,:)
+    ASSERT(size(u) == 3*this%model%mesh%nnode)
+    ASSERT(size(f) == 3*this%model%mesh%nnode)
     u2(1:3, 1:this%model%mesh%nnode) => u
     f2(1:3, 1:this%model%mesh%nnode) => f
     call this%model%compute_residual(t, u2, f2)
@@ -73,6 +75,8 @@ contains
     real(r8), intent(in), contiguous, target :: u(:)
     real(r8), intent(inout), contiguous, target :: f(:)
     real(r8), pointer :: u2(:,:), f2(:,:)
+    ASSERT(size(u) == 3*this%model%mesh%nnode)
+    ASSERT(size(f) == 3*this%model%mesh%nnode)
     u2(1:3, 1:this%model%mesh%nnode) => u
     f2(1:3, 1:this%model%mesh%nnode) => f
     call this%precon%apply(u2, f2)
@@ -84,6 +88,7 @@ contains
     real(r8), intent(in) :: t, dt
     real(r8), intent(in), contiguous, target :: u(:)
     real(r8), pointer :: u2(:,:)
+    ASSERT(size(u) == 3*this%model%mesh%nnode)
     u2(1:3, 1:this%model%mesh%nnode) => u
     call this%precon%compute(t, dt, u2)
   end subroutine

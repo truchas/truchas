@@ -40,7 +40,8 @@ module sm_bc_c2d0_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c2d0
 
 contains
@@ -209,11 +210,21 @@ contains
 
 
   !! Contact preconditioner contribution currently not implemented.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
     class(sm_bc_c2d0), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
     ! do nothing
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  !! Only the displacement part is currently implemented in the preconditioner.
+  subroutine compute_deriv_full(this, time, stress_factor, A)
+    use pcsr_matrix_type
+    class(sm_bc_c2d0), intent(inout) :: this
+    real(r8), intent(in) :: time, stress_factor(:)
+    type(pcsr_matrix), intent(inout) :: A
+    ! no-op
+  end subroutine compute_deriv_full
 
 end module sm_bc_c2d0_type

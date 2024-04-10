@@ -42,7 +42,8 @@ module sm_bc_c1d2_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c1d2
 
 contains
@@ -205,7 +206,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c1d2), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -216,6 +217,7 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
+      if (n > this%mesh%nnode_onP) cycle
 
       !diag(:,n) = - this%tangent(:,i)**2 * this%penalty * stress_factor(n)
 
@@ -226,6 +228,20 @@ contains
           &                 - this%penalty * stress_factor(n) * (1 - this%tangent(:,i)**2)
     end do
 
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  !! Only the displacement part is currently implemented in the preconditioner.
+  subroutine compute_deriv_full(this, time, stress_factor, A)
+
+    use pcsr_matrix_type
+
+    class(sm_bc_c1d2), intent(inout) :: this
+    real(r8), intent(in) :: time, stress_factor(:)
+    type(pcsr_matrix), intent(inout) :: A
+
+    ! TODO
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c1d2_type

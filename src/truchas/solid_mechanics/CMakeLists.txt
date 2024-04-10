@@ -32,7 +32,10 @@ target_sources(truchas PRIVATE
   viscoplastic_jacob_idaesol_model_type.F90
   viscoplastic_jfree_idaesol_model_type.F90
   sm_model_type.F90
-  sm_ds_precon_type.F90
   sm_nlsol_model_type.F90
   tm_density.F90
+
+  sm_precon_class.F90
+  sm_ds_precon_type.F90
+  sm_hypre_precon_type.F90
 )

@@ -36,7 +36,7 @@ module solid_mechanics_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use sm_model_type
-  use sm_ds_precon_type
+  use sm_precon_class
   use sm_nlsol_model_type
   use nlsol_type
   use truchas_logging_services
@@ -47,7 +47,7 @@ module solid_mechanics_type
   type, public :: solid_mechanics
     private
     type(sm_model) :: model
-    type(sm_ds_precon) :: precon
+    class(sm_precon), allocatable :: precon
     type(sm_nlsol_model) :: solver_model
     type(nlsol) :: solver
 
@@ -78,6 +78,8 @@ contains
     use unstr_mesh_type
     use scalar_func_containers
     use viscoplastic_material_model_types
+    use sm_ds_precon_type
+    use sm_hypre_precon_type
 
     class(solid_mechanics), intent(out), target :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -97,6 +99,8 @@ contains
     call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     plist => params%sublist("preconditioner")
+    !allocate(sm_ds_precon :: this%precon)
+    allocate(sm_hypre_precon :: this%precon)
     call this%precon%init(this%model, plist)
 
     call this%solver_model%init(this%model, this%precon)

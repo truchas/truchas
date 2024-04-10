@@ -38,7 +38,8 @@ module sm_bc_c0d3_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c0d3
 
 contains
@@ -65,6 +66,7 @@ contains
 
     nnode = 0
     do ni = 1, size(nodebc%node)
+      if (nodebc%node(ni) > mesh%nnode_onP) cycle ! only consider owned nodes
       matching_node = .false.
       block
         ndispl = 0
@@ -80,6 +82,7 @@ contains
 
     nnode = 0
     do ni = 1, size(nodebc%node)
+      if (nodebc%node(ni) > mesh%nnode_onP) cycle ! only consider owned nodes
       ! For the 3-displacement BC, we'll also consider nodes with any
       ! number of contact BCs. These nodes are overconstrained, so
       ! contact BCs are neglected.
@@ -169,7 +172,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d3), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -179,9 +182,41 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
+      if (n > this%mesh%nnode_onP) cycle
       diag(:,n) = - this%penalty * stress_factor(n)
     end do
 
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  !! Only the displacement part is currently implemented in the preconditioner.
+  subroutine compute_deriv_full(this, time, stress_factor, A)
+
+    use pcsr_matrix_type
+
+    class(sm_bc_c0d3), intent(inout) :: this
+    real(r8), intent(in) :: time, stress_factor(:)
+    type(pcsr_matrix), intent(inout) :: A
+
+    integer :: i, n, d, ii, n1, n2, n3
+    real(r8), pointer :: values(:) => null()
+    integer, pointer :: indices(:) => null()
+
+    do i = 1, size(this%index)
+      n = this%index(i)
+      if (n > this%mesh%nnode_onP) cycle
+      n1 = 3*(n-1) + 1
+      n2 = 3*(n-1) + 2
+      n3 = 3*(n-1) + 3
+
+      ! displacement part
+      do ii = n1, n3
+        call A%get_row_view(ii, values, indices)
+        values = 0
+        call A%set(ii, ii, -this%penalty * stress_factor(n))
+      end do
+    end do
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c0d3_type

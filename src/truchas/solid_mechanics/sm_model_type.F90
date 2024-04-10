@@ -124,7 +124,7 @@ contains
         this%strain_total(6,this%ig%npt), &
         this%strain_thermal(6,this%mesh%ncell), this%strain_pc(6,this%mesh%ncell), &
         this%lame1(this%mesh%ncell), this%lame2(this%mesh%ncell), &
-        this%lame1_n(this%mesh%nnode_onP), this%lame2_n(this%mesh%nnode_onP), &
+        this%lame1_n(this%mesh%nnode), this%lame2_n(this%mesh%nnode), &
         this%rhs(3,this%mesh%nnode_onP), this%scaling_factor(this%mesh%nnode_onP))
 
     this%max_cell_halfwidth = max_cell_halfwidth()
@@ -238,6 +238,8 @@ contains
     call cell_to_node(this%mesh, this%density_c, this%density_n)
     call cell_to_node(this%mesh, this%lame1, this%lame1_n)
     call cell_to_node(this%mesh, this%lame2, this%lame2_n)
+    call this%mesh%node_imap%gather_offp(this%lame1_n)
+    call this%mesh%node_imap%gather_offp(this%lame2_n)
 
     ! right hand side & scaling factor
     do n = 1, this%mesh%nnode_onP
@@ -250,7 +252,7 @@ contains
       else
         this%scaling_factor(n) = 1
       end if
-      !this%scaling_factor(n) = 1 ! DEBUGGING
+      this%scaling_factor(n) = 1 ! DEBUGGING
 
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
         this%rhs(:,n) = -this%body_force_density * this%density_n(n) * this%ig%volume(n)
@@ -461,6 +463,7 @@ contains
           do d = 1, 3
             grad_displ(:,d) = matmul(this%ig%grad_shape(p)%p, displ(d,cn))
           end do
+          !grad_displ = matmul(this%ig%grad_shape(p)%p, transpose(displ(:,cn)))
           total_strain(:,p) = this%strain_tensor(grad_displ)
         end do
       end associate

@@ -15,14 +15,14 @@
 module sm_ds_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use sm_precon_class
   use sm_model_type
   use sm_bc_manager_type
   use truchas_timers
   implicit none
   private
 
-  !! TODO extend a generic sm precon class
-  type, public :: sm_ds_precon
+  type, extends(sm_precon), public :: sm_ds_precon
     private
     type(sm_model), pointer, public :: model => null() ! unowned reference
     type(sm_bc_manager), pointer, public :: bc => null() ! unowned reference
@@ -42,7 +42,7 @@ contains
 
     use parameter_list_type
 
-    class(sm_ds_precon), intent(inout) :: this
+    class(sm_ds_precon), intent(out) :: this
     type(sm_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
@@ -180,7 +180,8 @@ contains
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag, this%F)
+    call this%model%bc%compute_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
+        this%diag, this%F)
 
     do n = 1, this%model%mesh%nnode_onP
       this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)
@@ -194,8 +195,8 @@ contains
   subroutine apply(this, u, f)
 
     class(sm_ds_precon), intent(in), target :: this
-    real(r8), intent(in), contiguous :: u(:,:) ! current displacement guess
-    real(r8), intent(inout), contiguous :: f(:,:) ! in residual, out next displacement guess
+    real(r8), intent(in), contiguous, target :: u(:,:) ! current displacement guess
+    real(r8), intent(inout), contiguous, target :: f(:,:) ! in residual, out next displacement guess
 
     integer :: i, j
     real(r8) :: x(3)

@@ -83,7 +83,6 @@ contains
   end subroutine compute_precon
 
   subroutine apply_precon(this, t, u, f)
-    external dgesv ! LAPACK
     class(viscoplastic_jfree_idaesol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous :: u(:)
