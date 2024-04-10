@@ -54,8 +54,11 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, ncontact, icontact(3), idispl(3), d
+    integer :: nnode, ni, ncontact, d, ndispl
     logical :: matching_node
+
+    integer :: xd, ibc, xibc
+    logical :: degenerate
 
     this%mesh => mesh
     this%penalty = penalty
@@ -63,11 +66,14 @@ contains
     nnode = 0
     do ni = 1, size(nodebc%node)
       matching_node = .false.
-      do ncontact = 0, 3
-        call check_if_matching_node(ni, nodebc%node(ni), nodebc%bcid, nodebc%xbcid, &
-            mesh%nnode_onP, bc%xcontact, icontact(:ncontact), idispl, matching_node)
-        if (matching_node) exit
-      end do
+      block
+        ndispl = 0
+        do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+          ibc = nodebc%bcid(xibc)
+          if (ibc < bc%xcontact) ndispl = ndispl + 1
+        end do
+        matching_node = ndispl >= 3
+      end block
       if (matching_node) nnode = nnode + 1
     end do
     allocate(this%index(nnode), this%normal_d(3,3,nnode), this%displf(3,nnode))
@@ -78,19 +84,40 @@ contains
       ! number of contact BCs. These nodes are overconstrained, so
       ! contact BCs are neglected.
       matching_node = .false.
-      do ncontact = 0, 3
-        call check_if_matching_node(ni, nodebc%node(ni), nodebc%bcid, nodebc%xbcid, &
-            mesh%nnode_onP, bc%xcontact, icontact(:ncontact), idispl, matching_node)
-        if (matching_node) exit
-      end do
+      block
+        ndispl = 0
+        do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+          ibc = nodebc%bcid(xibc)
+          if (ibc < bc%xcontact) ndispl = ndispl + 1
+        end do
+        matching_node = ndispl >= 3
+      end block
       if (.not.matching_node) cycle
       nnode = nnode + 1
       this%index(nnode) = nodebc%node(ni)
 
-      do d = 1, 3
-        this%displf(d,nnode)%f => bc%displacement(nodebc%bcid(idispl(d)))%f
-        this%normal_d(:,d,nnode) = nodebc%normal(:,idispl(d)) / norm2(nodebc%normal(:,idispl(d)))
+      d = 1
+      do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        ibc = nodebc%bcid(xibc)
+        if (ibc >= bc%xcontact) cycle
+        this%displf(d,nnode)%f => bc%displacement(ibc)%f
+        this%normal_d(:,d,nnode) = nodebc%normal(:,xibc) / norm2(nodebc%normal(:,xibc))
+        if (d > 1) then
+          ! TODO: only add BCs orthogonal to already added BCs.
+          ! Can probably do this more efficiently with LAPACK.
+          degenerate = .false.
+          do xd = 1, d-1
+            if (dot_product(this%normal_d(:,d,nnode), this%normal_d(:,xd,nnode)) > 1-1d-2) then
+              degenerate = .true.
+              exit
+            end if
+          end do
+          if (degenerate) cycle
+        end if
+        d = d + 1
+        if (d > 3) exit
       end do
+      INSIST(d > 3)
     end do
 
     nnode = count(this%index <= mesh%nnode_onP)

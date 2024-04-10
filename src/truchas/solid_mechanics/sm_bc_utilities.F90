@@ -663,6 +663,10 @@ contains
   !! displacements. On output, the routine will provide a logical value
   !! indicating whether the node matches the requested type, and indexes
   !! for those BCs into sm_bc_node_list::bcid.
+  !!
+  !! Note 1: At overconstrained displacement nodes (such as can legitimately
+  !! happen on edges and corners) we only apply the first 3 displacement BCs
+  !! found.
   subroutine check_if_matching_node(ni, n, bcid, xbcid, nnode_onP, xcontact, &
       icontact, idispl, matching_node)
 
@@ -679,9 +683,9 @@ contains
     if (n > nnode_onP) return ! only consider owned nodes
 
     ! Count the BCs applied to this node. If the node doesn't have
-    ! exactly the requested number of BCs, it is disqualified.
+    ! exactly the requested number of BCs, it is disqualified. See note 1.
     nbc = xbcid(ni+1) - xbcid(ni)
-    if (nbc /= size(icontact)+size(idispl)) return
+    if (size(idispl) < 3 .and. nbc /= size(icontact)+size(idispl)) return
 
     do xibc = xbcid(ni), xbcid(ni+1)-1
       ibc = bcid(xibc)
@@ -703,7 +707,7 @@ contains
             exit
           end if
         end do
-        if (b > size(idispl)) return
+        if (b > size(idispl) .and. size(idispl) < 3) return ! see note 1
       end if
     end do
 
