@@ -120,12 +120,12 @@ contains
     real(r8), intent(out) :: udot(:)
     real(r8) :: stress(6), vmstress, dstress(6)
     call this%compute_stresses(t, u, stress, vmstress, dstress)
-    !if (vmstress /= 0) then
-    udot = (1.5_r8 * this%g(vmstress) / vmstress) * dstress
-    ! else
-    !   ! If the Von Mises stress is 0, set udot to 0.
-    !   udot = 0
-    ! end if
+    if (vmstress /= 0) then
+      udot = (1.5_r8 * this%g(vmstress) / vmstress) * dstress
+    else
+      ! If the Von Mises stress is 0, set udot to 0.
+      udot = 0
+    end if
   end subroutine compute_udot
 
 
