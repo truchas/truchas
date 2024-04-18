@@ -14,8 +14,8 @@ The VISCOPLASTIC_MODEL namelist defines the viscoplastic model to be used for a 
 
 .. math::
    :label: vpm_eq1
-   
-   \dot{\epsilon} = A*exp(-Q/RT)*\sigma^n
+
+   \dot{\epsilon} = A*exp(-Q/R(T - T_0))*\sigma^n
 
 where A, n, Q, and R are parameters given by this namelist.
 
@@ -52,6 +52,7 @@ Components
 * :ref:`Pwr_Law_N <VPM_PLN>`
 * :ref:`Pwr_Law_Q <VPM_PLQ>`
 * :ref:`Pwr_Law_R <VPM_PLR>`
+* :ref:`Pwr_Law_Tref <VPM_PLT>`
 
 .. _VPM_Phase:
 
@@ -237,6 +238,13 @@ Pwr_Law_R
 | **Valid Values**: :math:`\gt 0`
 | **Note**        : Temperature should be expressed in Kelvin, or other temperature scale where :math:`0` corresponds to absolute zero. Use the value for :math:`R` appropriate to the units used in :eq:`vpm_eq1`
 
+.. _VPM_PLTref:
 
+Pwr_Law_Tref
+^^^^^^^^^^^^^^^^^^^
 
-
+| **Description** : Reference temperature :math:`T_0`
+| **Physical Dimension**: :math:`E`
+| **Type**        : real
+| **Default**     : 0
+| **Note**        : Used to offset temperature units from an absolute scale like Kelvin to non-absolute units like Celsius.
