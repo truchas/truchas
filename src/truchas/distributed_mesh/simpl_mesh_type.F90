@@ -133,7 +133,7 @@ module simpl_mesh_type
     !! Primary indexing arrays which define the mesh topology.
     integer, allocatable :: cnode(:,:), cedge(:,:), cface(:,:)
     !! Secondary indexing arrays derivable from the primary indexing arrays.
-    integer, allocatable :: fnode(:,:), fedge(:,:), enode(:,:)
+    integer, allocatable :: fnode(:,:), fedge(:,:), enode(:,:), fcell(:,:)
     !! Cell block ID arrays.
     integer, allocatable :: block_id(:) ! user-assigned ID for each cell block
     integer, allocatable :: cblock(:)   ! cell block index

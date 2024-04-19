@@ -670,17 +670,12 @@ class TruchasData:
             em_sim = self._root["Simulations/" + name + "/Non-series Data"]
             print("Using EM simulation {:s} (t = {:f})".format(name, t_em))
 
-            fw.write_r8x0(em_sim["FREQ"][0])
-            fw.write_r8x0(em_sim["UHFS"][0])
+            md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
+            fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
 
-            coils = em_sim["COILS"][:]
-            fw.write_i4x0(coils.shape[0])
-            for c in coils:
-                fw.write_r8x0(c[0])
-                fw.write_r8x1(c[1:4])
-                fw.write_r8x0(c[4])
-                fw.write_r8x0(c[5])
-                fw.write_i4x0(int(round(c[6])))
+            array = em_sim["SOURCE_DATA"][:]
+            fw.write_i4x0(array.size)
+            fw.write_r8x1(array)
 
             array = em_sim["MU"][:]
             fw.write_i4x0(array.size)

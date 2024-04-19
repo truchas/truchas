@@ -7,7 +7,6 @@ target_sources(truchas PRIVATE
   intfc_func2_class.F90
   intfc_func3_class.F90
   bndry_face_func_type.F90
-  #bc_factory_type.F90
   bndry_face_group_builder_type.F90
   intfc_link_group_builder_type.F90
   cell_group_builder_type.F90
@@ -23,6 +22,7 @@ target_sources(truchas PRIVATE
   scalar_cell_func1_type.F90
   scalar_cell_func2_type.F90
   scalar_mesh_multifunc_type.F90
+  bndry_edge_group_builder_type.F90
 )
 
 #TODO?

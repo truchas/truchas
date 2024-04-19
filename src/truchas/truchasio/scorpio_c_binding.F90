@@ -25,6 +25,7 @@ module scorpio_c_binding
   public :: scorpio_create_dataset_group
   public :: scorpio_close_dataset_group
   public :: scorpio_create_link
+  public :: scorpio_write_dataset2_char
   public :: scorpio_write_dataset2_byte
   public :: scorpio_write_dataset2_int
   public :: scorpio_write_dataset2_double
@@ -77,6 +78,15 @@ module scorpio_c_binding
     subroutine scorpio_close_file_ext(fhandle, myIOgroup) bind(c)
       import c_int, c_ptr
       integer(c_int), value :: fhandle
+      type(c_ptr), value :: myIOgroup
+    end subroutine
+    subroutine scorpio_write_dataset2_char(vector, ndims, globaldims, localdims, &
+        fhandle, dset_name, myIOgroup) bind(c)
+      import c_int, c_char, c_ptr
+      character(kind=c_char), intent(in) :: vector(*)
+      integer(c_int), value :: ndims, fhandle
+      integer(c_int), intent(in) :: globaldims(*), localdims(*)
+      character(kind=c_char), intent(in) :: dset_name(*)
       type(c_ptr), value :: myIOgroup
     end subroutine
     subroutine scorpio_write_dataset2_byte(vector, ndims, globaldims, localdims, &

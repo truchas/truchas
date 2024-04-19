@@ -11,15 +11,14 @@ module solenoid_fields
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
-  
+
   public :: H_coil
-  
+
   !! Don't use; not ready for prime time!
   public :: H_sheet
-  
+
 contains
 
-  !!
   !! This routine computes the H-field at a point due to current flow in a
   !! cylindrical, z-axial, n-turn coil centered at the origin.  The coil is
   !! approximated by an array of coaxial current loops centered at equi-spaced
@@ -28,18 +27,17 @@ contains
   !! H-field is linear in the current.  If n is negative, the result corresponds
   !! to a |n|-turn coil with a cw flowing current.  If n=0, the result is a
   !! zero vector.
-  !!
-  
-  function H_coil (x, radius, a, n) result (H)
-  
-    real(kind=r8), intent(in) :: x(3)
-    real(kind=r8), intent(in) :: radius
-    real(kind=r8), intent(in) :: a
-    integer,       intent(in) :: n
-    
+
+  function H_coil(x, radius, a, n) result(H)
+
+    real(r8), intent(in) :: x(3)
+    real(r8), intent(in) :: radius
+    real(r8), intent(in) :: a
+    integer, intent(in) :: n
+
     integer :: j
-    real(kind=r8) :: H(3), dz, y(3)
-    
+    real(r8) :: H(3), dz, y(3)
+
     select case (abs(n))
     case (0)  ! No loops.
       H = 0.0_r8
@@ -47,7 +45,7 @@ contains
       H = H_loop (x, radius)
       if (n < 0) H = -H
     case (2:) ! Multiple loops distributed over [-a,a] on the z-axis.
-      dz = 2.0_r8 * a / real(abs(n)-1, kind=r8)
+      dz = 2.0_r8 * a / real(abs(n)-1, r8)
       y = x
       y(3) = y(3) + a
       H = 0.0_r8
@@ -57,10 +55,9 @@ contains
       end do
       if (n < 0) H = -H
     end select
-    
+
   end function H_coil
-  
-  !!
+
   !! This routine computes the H-field at a point due to a circular current
   !! loop in the x/y-plane centered at the origin.  The result assumes a
   !! unit current flowing ccw; to obtain the result for a current J, simply
@@ -71,16 +68,15 @@ contains
   !! singularity by using the analytic limiting expression for points exactly
   !! on the axis.  We really ought to be using a series expansion for points
   !! near the axis, with a smooth transition between the two expressions.
-  !!
-  
-  function H_loop (x, radius) result (H)
-  
+
+  function H_loop(x, radius) result(H)
+
     use elliptic_integrals, only: elk, ele
-    real(kind=r8), intent(in) :: x(3), radius
-    
-    real(kind=r8) :: H(3), a, b, c, r, q, E, K, hz, hr, m
-    real(kind=r8), parameter :: TWOPI = 6.2831853071795864769_r8
-    
+    real(r8), intent(in) :: x(3), radius
+
+    real(r8) :: H(3), a, b, c, r, q, E, K, hz, hr, m
+    real(r8), parameter :: TWOPI = 6.2831853071795864769_r8
+
     r = sqrt(x(1)**2 + x(2)**2)
     if (r > 0.0_r8) then
       a = r / radius
@@ -100,33 +96,31 @@ contains
       H(2) = 0.0_r8
       H(3) = 0.5_r8 * radius**2 / (radius**2 + x(3)**2)**1.5_r8
     end if
-    
+
   end function H_loop
-  
-  !!
+
   !! This routine computes the H-field at a point due to a current in a
   !! cylindrical sheet solenoid.  This should be viewed as the limiting
   !! case of an n-turn coil as n -> infinity.  The routine uses the
   !! adaptive Romberg integration procedure.
   !!
   !! NB: This is still in the evaluation phase.
-  !!
-  
-  function H_sheet (x, radius, a) result (H)
-  
-    real(kind=r8), intent(in) :: x(:), radius, a
-    
+
+  function H_sheet(x, radius, a) result(H)
+
+    real(r8), intent(in) :: x(:), radius, a
+
     integer, parameter :: KMAX=10
-    real(kind=r8) :: H(3), y1(3), y2(3), RTable(3,0:KMAX,0:KMAX)
+    real(r8) :: H(3), y1(3), y2(3), RTable(3,0:KMAX,0:KMAX)
     integer :: j, k
-    
+
     y1 = x
     y2 = x
     y1(3) = y1(3) + a
     y2(3) = y2(3) - a
     RTable(:,0,0) = 0.5_r8 * (H_loop(y1, radius) + H_loop(y2, radius))
     print *, 0, RTable(:,0,0)
-    
+
     do j = 1, KMAX
       RTable(:,j,0) = 0.5_r8 * (RTable(:,j-1,0) + H_coil(x, radius, a, 2**(j-1)))
       do k = 1, j
@@ -134,9 +128,9 @@ contains
       end do
       print *, j, RTable(:,j,j)
       H = RTable(:,j,j)
-      if (sqrt(sum((H-RTable(:,j-1,j-1))**2)) < 1.0e-4_r8 * sqrt(sum(H**2))) exit
+      if (norm2(H-RTable(:,j-1,j-1)) < 1.0e-4_r8 * norm2(H)) exit
     end do
 
   end function H_sheet
-  
+
 end module solenoid_fields

@@ -169,13 +169,12 @@ contains
 
   end subroutine init_mesh_manager
 
-  !! This procedure reads the MESH and ALTMESH namelists and uses the data to
+  !! This procedure reads the MESH and EM_MESH namelists and uses the data to
   !! initialize the module variable MESHES parameter list.
 
-  subroutine read_truchas_mesh_namelists (lun)
+  subroutine read_truchas_mesh_namelists(lun)
 
-    use altmesh_namelist
-    use input_utilities, only: NULL_I
+    use em_mesh_namelist
 
     integer, intent(in) :: lun
 
@@ -183,37 +182,16 @@ contains
 
     !! The MESH namelist: the "MAIN" mesh used by most physics
     plist => meshes%sublist('MAIN')
-    call plist%set ('mesh', any_mesh())
-    call plist%set ('enabled', .true.)  ! always enabled
-    call read_mesh_namelist (lun, plist)
+    call plist%set('mesh', any_mesh())
+    call plist%set('enabled', .true.)  ! always enabled
+    call read_mesh_namelist(lun, plist)
 
-    !! The ALTMESH namelist: the "ALT" mesh used by EM
-    call read_altmesh_namelist (lun)
-    if (altmesh_exists) then
-      plist => meshes%sublist('ALT')
-      call plist%set ('mesh', any_mesh())
-      call plist%set ('mesh-file', trim(altmesh_file))
-      call plist%set ('coord-scale-factor', altmesh_coordinate_scale_factor)
-      call plist%set ('rotation-angles', rotation_angles)
-      call plist%set ('em-mesh', .true.)
-      call plist%set ('partitioner', trim(partitioner))
-      select case (partitioner)
-      case ('file')
-        call plist%set ('partition-file', trim(partition_file))
-        call plist%set ('first-partition', first_partition)
-      case ('metis')
-        plist => plist%sublist('metis-options')
-        if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
-        if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
-        if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)
-        if (metis_ncuts   /= NULL_I) call plist%set('ncuts',   metis_ncuts)
-        if (metis_niter   /= NULL_I) call plist%set('niter',   metis_niter)
-        if (metis_ufactor /= NULL_I) call plist%set('ufactor', metis_ufactor)
-        if (metis_minconn /= NULL_I) call plist%set('minconn', metis_minconn)
-        if (metis_contig  /= NULL_I) call plist%set('contig',  metis_contig)
-        if (metis_seed    /= NULL_I) call plist%set('seed',    metis_seed)
-        if (metis_dbglvl  /= NULL_I) call plist%set('dbglvl',  metis_dbglvl)
-      end select
+    !! The EM_MESH namelist: the mesh used by EM
+    if (em_mesh_namelist_exists(lun)) then
+      plist => meshes%sublist('EM')
+      call read_em_mesh_namelist(lun, plist)
+      call plist%set('mesh', any_mesh())
+      call plist%set('em-mesh', .true.)
     end if
 
   end subroutine read_truchas_mesh_namelists

@@ -115,6 +115,14 @@ void scorpio_write_attr_double(char *attr_name, double *attr_data, int ndims, in
 }
 
 
+void scorpio_write_dataset2_char(
+    char *vector, int ndims, int *globaldims, int *localdims,
+    int fhandle, char *dset_name, iogroup_t *myIOgroup)
+{
+  scorpio_write_dataset2(vector, SCORPIO_CHAR, ndims, globaldims, localdims,
+      fhandle, dset_name, myIOgroup);
+}
+
 void scorpio_write_dataset2_byte(
     int8_t *vector, int ndims, int *globaldims, int *localdims,
     int fhandle, char *dset_name, iogroup_t *myIOgroup)

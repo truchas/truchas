@@ -56,6 +56,7 @@ add_subdirectory(solver)
 add_subdirectory(utilities)
 add_subdirectory(toolpath)
 add_subdirectory(truchasio)
+add_subdirectory(vtkhdf)
 
 target_link_libraries(truchas PUBLIC
     LAPACK::LAPACK exodus hypre petaca hdf5 chaco metis scorpio MPI::MPI_Fortran

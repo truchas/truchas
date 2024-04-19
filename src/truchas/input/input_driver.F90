@@ -30,7 +30,6 @@ contains
     !   driver for reading input file
     !=======================================================================
     use probe_namelist,            only: read_probe_namelists
-    use EM_input,                  only: read_em_input
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
     use outputs_input_module,      only: outputs_input
@@ -38,7 +37,6 @@ contains
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
-    use EM_data_proxy,             only: em_is_on
     use mesh_manager,              only: read_truchas_mesh_namelists
     use diffusion_solver_data,     only: ds_enabled, heat_eqn
     use diffusion_solver,          only: read_ds_namelists
@@ -46,6 +44,7 @@ contains
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
     use solid_mechanics_driver,    only: read_solid_mechanics_namelists
+    use ih_driver,                 only: read_ih_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
@@ -53,7 +52,7 @@ contains
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
-    use physics_module,            only: heat_transport, flow, solid_mechanics
+    use physics_module,            only: heat_transport, flow, solid_mechanics, electromagnetics
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers
@@ -123,8 +122,8 @@ contains
     ! read namelists for solid mechanics options
     if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
-    ! Read Electromagnetics
-    if (em_is_on()) call read_em_input (lun)
+    ! read namelists for induction heating
+    if (electromagnetics) call read_ih_namelists(lun)
 
     ! Read diffusion solver namelists
     if (ds_enabled) then
