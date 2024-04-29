@@ -164,6 +164,8 @@ module fhypre
 
   !! Miscellaneous procedures
   public :: fHYPRE_ClearAllErrors
+  public :: fHYPRE_Initialize
+  public :: fHYPRE_Finalize
 
 contains
 
@@ -684,6 +686,16 @@ contains
   subroutine fHYPRE_ClearAllErrors ()
     integer :: ierr
     ierr = HYPRE_ClearAllErrors ()  ! ignore return code
+  end subroutine
+
+  subroutine fHYPRE_Initialize()
+    integer :: ierr
+    ierr = HYPRE_initialize()  ! ignore return code
+  end subroutine
+
+  subroutine fHYPRE_Finalize()
+    integer :: ierr
+    ierr = HYPRE_Finalize()  ! ignore return code
   end subroutine
 
 end module fhypre
