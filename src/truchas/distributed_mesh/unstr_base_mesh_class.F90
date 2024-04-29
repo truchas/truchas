@@ -31,12 +31,16 @@ module unstr_base_mesh_class
     type(bitfield), allocatable :: link_set_mask(:)  ! link block index
     type(index_map) :: link_imap
     real(r8), allocatable :: normal(:,:)  ! area-weighted face normals
+    real(r8), allocatable :: cell_centroid(:,:)
+    real(r8), allocatable :: face_centroid(:,:)
   contains
     procedure :: get_link_set_bitmask
     procedure :: get_link_set_ids
     procedure(conn_list), deferred :: cell_node_list_view
     procedure(conn_list), deferred :: cell_face_list_view
     procedure(conn_list), deferred :: face_node_list_view
+    procedure(init_comp), deferred :: init_cell_centroid
+    procedure(init_comp), deferred :: init_face_centroid
   end type unstr_base_mesh
 
   abstract interface
@@ -47,6 +51,11 @@ module unstr_base_mesh_class
       integer, intent(in) :: n
       integer, pointer, contiguous :: view(:)
     end function
+    !! Allocates and computes an optional mesh component
+    subroutine init_comp(this)
+      import unstr_base_mesh
+      class(unstr_base_mesh), intent(inout) :: this
+    end subroutine
   end interface
 
 contains
