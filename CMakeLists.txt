@@ -199,10 +199,6 @@ add_compile_options(
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-fimplicit-none>
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
 
-add_compile_options(
-  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:-ieee=full>
-)
-
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)
 add_compile_definitions(${Truchas_Compiler_Define} ${Truchas_Compiler_Define}_WORKAROUND)
