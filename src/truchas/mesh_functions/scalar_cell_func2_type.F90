@@ -15,7 +15,7 @@
 module scalar_cell_func2_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_mesh_type
+  use unstr_base_mesh_class
   use scalar_mesh_func2_class
   use scalar_func_containers
   use cell_group_builder_type
@@ -24,7 +24,7 @@ module scalar_cell_func2_type
 
   type, extends(scalar_mesh_func2), public :: scalar_cell_func2
     private
-    class(unstr_mesh), pointer :: mesh => null()  ! reference only -- not owned
+    class(unstr_base_mesh), pointer :: mesh => null()  ! reference only -- not owned
     logical :: evaluated = .false.
     integer :: ngroup
     integer, allocatable :: xgroup(:), index(:)
@@ -49,7 +49,7 @@ contains
 
   subroutine init(this, mesh)
     class(scalar_cell_func2), intent(out) :: this
-    class(unstr_mesh), intent(in), target :: mesh
+    class(unstr_base_mesh), intent(in), target :: mesh
     this%mesh => mesh
     call this%mesh%init_cell_centroid
     allocate(this%builder)
