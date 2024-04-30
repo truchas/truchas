@@ -76,6 +76,7 @@ contains
     deallocate(this%builder)
     call scalar_func_list_to_box_array(this%flist, this%farray)
     allocate(this%hint(this%ngroup))
+    allocate(this%value(this%mesh%ncell))
     do n = 1, this%ngroup
       select type (f => this%farray(n)%f)
       type is (const_scalar_func)
