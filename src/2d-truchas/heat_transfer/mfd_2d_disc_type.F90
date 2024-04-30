@@ -85,7 +85,7 @@ contains
   !! Applies local MFD diffusion operator
   subroutine mfd_2d_disc_apply_diff (this, coef, ucell, uface, rcell, rface)
 
-    use upper_packed_matrix, only: sym_matmul
+    use upper_packed_matrix_procs, only: sym_matmul
 
     class(mfd_2d_disc), intent(in) :: this
     real(r8), intent(in)  :: coef(:)

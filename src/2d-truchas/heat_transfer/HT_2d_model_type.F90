@@ -18,7 +18,7 @@ module HT_2d_model_type
   use unstr_2d_mesh_type
   use mfd_2d_disc_type
   use bndry_func1_class
-  use scalar_mesh_func_class
+  use scalar_mesh_multifunc_type
   use new_TofH_type
   use data_layout_type
   !use matl_mesh_func_type
@@ -39,7 +39,7 @@ module HT_2d_model_type
     type(prop_mesh_func) :: conductivity  ! thermal conductivity
     type(prop_mesh_func) :: H_of_T        ! enthalpy as a function of temperature
     type(TofH) :: T_of_H                  ! inverse of enthalpy-temperature function
-    class(scalar_mesh_func), allocatable :: source  ! external heat source
+    type(scalar_mesh_multifunc), allocatable :: source  ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
@@ -249,7 +249,7 @@ contains
     call src_fac%init(model%mesh, params)
 
     !! Allocated function-based source
-    call src_fac%alloc_source_func2(model%source, stat, errmsg)
+    call src_fac%alloc_source_funcs(model%source, stat, errmsg)
     if (stat /= 0) return
 
     !TODO: check all cells have a source, if a source was specified?
@@ -389,7 +389,7 @@ contains
 
       !! Optional source function contribution
       if (allocated(this%source)) then
-        call this%source%compute(t)
+        call this%source%compute(t, Tcell)
         Fcell = Fcell - this%mesh%volume*this%source%value
       end if
 

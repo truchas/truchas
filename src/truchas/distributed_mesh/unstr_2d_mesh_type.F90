@@ -138,8 +138,6 @@ module unstr_2d_mesh_type
     integer, allocatable :: cfpar(:)  ! relative cell face orientation (bit mask)
     integer, allocatable :: fcell(:,:)  ! face cell neighbors
     real(r8), allocatable :: unit_normal(:,:)
-    real(r8), allocatable :: cell_centroid(:,:)
-    real(r8), allocatable :: face_centroid(:,:)
   contains
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array
