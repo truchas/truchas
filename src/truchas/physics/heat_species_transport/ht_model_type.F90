@@ -14,7 +14,7 @@ module ht_model_type
   use mfd_disc_type
   use prop_mesh_func_type
   use source_mesh_function
-  use scalar_mesh_func_class
+  use scalar_mesh_multifunc_type
   use bndry_func1_class
   use bndry_func2_class
   use intfc_func2_class
@@ -36,7 +36,7 @@ module ht_model_type
     type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
     type(TofH) :: T_of_H
     type(source_mf) :: source            ! external heat source
-    class(scalar_mesh_func), allocatable :: src ! another external heat source
+    type(scalar_mesh_multifunc), allocatable :: src ! another external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -153,7 +153,7 @@ contains
 
     !! Additional heat source
     if (allocated(this%src)) then
-      call this%src%compute(t)
+      call this%src%compute(t, u%tc)
       f%tc = f%tc - this%mesh%volume*this%src%value
     end if
 

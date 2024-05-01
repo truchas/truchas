@@ -104,7 +104,7 @@ contains
       call define_external_source (mesh, 'temperature', model%source)
 
       !! Additional heat sources
-      call src_fac%alloc_source_func1(model%src, stat, errmsg)
+      call src_fac%alloc_source_funcs(model%src, stat, errmsg)
       if (stat /= 0) return
 
       stat = 0
