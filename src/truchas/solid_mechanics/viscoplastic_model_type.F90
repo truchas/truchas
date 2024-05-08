@@ -192,7 +192,11 @@ contains
     real(r8) :: a
     real(r8), dimension(6) :: strain_total, strain_thermal, strain_elastic
 
-    a = merge(t / this%dt, 0.0_r8, this%dt > 0) ! dt might be zero during initialization
+    if (this%dt > 0) then ! dt might be zero during initialization
+      a = t / this%dt
+    else
+      a = 0
+    end if
     strain_total = a * this%strain_total_new + (1 - a) * this%strain_total_old
     strain_thermal = a * this%strain_thermal_new + (1 - a) * this%strain_thermal_old
     strain_elastic = strain_total - strain_plastic - strain_thermal - this%strain_pc
