@@ -9,12 +9,12 @@ else
 fi
 
 # Set Intel compilers env variables
-export INTELDIR=/opt/intel/
-export PATH="$INTELDIR/bin/:$PATH"
-export LD_LIBRARY_PATH=$INTELDIR/lib/intel64
-export FC=ifort
-export CC=icc
-export CXX=icpc
+export INTELDIR=/opt/intel/oneapi/2024.0
+export PATH=$INTELDIR/bin/:$PATH
+export LD_LIBRARY_PATH=$INTELDIR/lib
+export FC=ifx
+export CC=icx
+export CXX=icpx
 
 # Add openmpi executables into path
 export PATH=$HOME/ext/bin/:$PATH
@@ -29,7 +29,7 @@ mkdir build
 cd build
 cmake --version
 cmake \
-    -C ../config/linux-intel.cmake \
+    -C ../config/linux-intel-llvm.cmake \
     -DCMAKE_BUILD_TYPE=${build_type} \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
