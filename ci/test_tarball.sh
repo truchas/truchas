@@ -11,7 +11,7 @@ set -ex
 tar xaf dist/truchas-*.tar.bz2
 cd truchas-*/
 cat README.md
-./bin/t-linux.x86_64.intel -h
+./bin/t-linux.x86_64.intelllvm -h
 ./bin/truchas -h
 ./bin/python -c "import numpy, h5py; print(h5py.__file__)"
 ./bin/python bin/write-restart.py -h

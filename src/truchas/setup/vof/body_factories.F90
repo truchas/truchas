@@ -129,30 +129,30 @@ contains
     logical :: flag
 
     stat = 0
-    context = 'processing ' // params%name() // ': '
-    call params%get('type', rtype, stat=stat, errmsg=errmsg)
+    context = 'processing ' // params%path() // ': '
+    call params%get('type', rtype, stat, errmsg)
     if (stat /= 0) return
 
     select case (rtype)
     case ('sphere')
-      call params%get('center', x, stat=stat, errmsg=errmsg)
+      call params%get('center', x, stat, errmsg)
       if (stat /= 0) return
-      call params%get('radius', p, stat=stat, errmsg=errmsg)
+      call params%get('radius', p, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       ASSERT(size(x)==3)
       ASSERT(p > 0)
       call alloc_sphere_body(r, x, p, flag)
 
     ! case ('sinusoid')
-    !   call params%get('coeffs', x, stat=stat, errmsg=errmsg)
+    !   call params%get('coeffs', x, stat, errmsg)
     !   if (stat /= 0) return
     !   ASSERT(size(x)==7)
     !   call alloc_sinusoid_body(r, x)
 
     case ('plane')
-      call params%get('normal', coeffs, stat=stat, errmsg=errmsg)
+      call params%get('normal', coeffs, stat, errmsg)
       if (stat /= 0) return
       ASSERT(size(coeffs)==3)
       ASSERT(any(coeffs /= 0))
@@ -160,10 +160,10 @@ contains
 #ifdef GNU_PR93762
       block
         character(:), allocatable :: dummy
-        call params%get('point-on-plane', x, stat=stat, errmsg=dummy)
+        call params%get('point-on-plane', x, stat, errmsg=dummy)
       end block
 #else
-      call params%get('point-on-plane', x, stat=stat)
+      call params%get('point-on-plane', x, stat)
 #endif
       call params%get('plane-const', p, stat=i, errmsg=errmsg)
       if (stat == 0) then
@@ -179,31 +179,31 @@ contains
         errmsg = context // 'must define either point-on-plane or plane-const for plane body'
         return
       end if
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       call alloc_plane_body(r, coeffs, p, flag)
 
     case ('box')
-      call params%get('upper-corner', x, stat=stat, errmsg=errmsg)
+      call params%get('upper-corner', x, stat, errmsg)
       if (stat /= 0) return
-      call params%get('lower-corner', coeffs, stat=stat, errmsg=errmsg)
+      call params%get('lower-corner', coeffs, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       ASSERT(size(x)==3)
       ASSERT(size(coeffs)==3)
       call alloc_box_body(r, x, coeffs, flag)
 
     case ('cylinder')
-      call params%get('center', x, stat=stat, errmsg=errmsg)
+      call params%get('center', x, stat, errmsg)
       if (stat /= 0) return
-      call params%get('axis', coeffs, stat=stat, errmsg=errmsg)
+      call params%get('axis', coeffs, stat, errmsg)
       if (stat /= 0) return
-      call params%get('radius', p, stat=stat, errmsg=errmsg)
+      call params%get('radius', p, stat, errmsg)
       if (stat /= 0) return
-      call params%get('length', l, stat=stat, errmsg=errmsg)
+      call params%get('length', l, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       ASSERT(size(x)==3)
       ASSERT(size(coeffs)==3)
@@ -211,29 +211,29 @@ contains
       call alloc_cylinder_body(r, x, coeffs, l, p, flag)
 
     case ('ellipsoid')
-      call params%get('center', x, stat=stat, errmsg=errmsg)
+      call params%get('center', x, stat, errmsg)
       if (stat /= 0) return
-      call params%get('coeffs', coeffs, stat=stat, errmsg=errmsg)
+      call params%get('coeffs', coeffs, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       ASSERT(size(x)==3)
       ASSERT(all(coeffs > 0))
       call alloc_ellipsoid_body(r, x, coeffs, flag)
 
     case ('ellipse')
-      call params%get('center', x, stat=stat, errmsg=errmsg)
+      call params%get('center', x, stat, errmsg)
       if (stat /= 0) return
-      call params%get('coeffs', coeffs, stat=stat, errmsg=errmsg)
+      call params%get('coeffs', coeffs, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       call alloc_ellipse_body(r, x, coeffs, flag)
 
     case ('element-block')
-      call params%get('blockids', ids, stat=stat, errmsg=errmsg)
+      call params%get('blockids', ids, stat, errmsg)
       if (stat /= 0) return
-      call params%get('fill-inside', flag, default=.true., stat=stat, errmsg=errmsg)
+      call params%get('fill-inside', flag, stat, errmsg, default=.true.)
       if (stat /= 0) return
       call alloc_element_block_body(r, mesh, ids, flag)
 

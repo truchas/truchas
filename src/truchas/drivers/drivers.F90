@@ -52,10 +52,12 @@ CONTAINS
     use output_utilities,       only: announce
     use truchas_logging_services
     use truchas_timers
+    use fhypre, only: fhypre_initialize
 
     !---------------------------------------------------------------------------
 
     call init_parallel_communication
+    call fhypre_initialize
 
 !   you can use this to debug in parallel under Linux with LAM and Totalview
 !   see the comments in src/utility/wait_for_debugger.tv

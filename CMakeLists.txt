@@ -138,12 +138,6 @@ if(NOT PETACA_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Petaca installation")
 endif()
 
-# Chaco library
-find_package(Chaco)
-if(NOT Chaco_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Chaco installation")
-endif()
-
 # Chaparral library
 find_package(Chaparral)
 if(NOT Chaparral_FOUND)
@@ -204,10 +198,6 @@ add_compile_options(
 add_compile_options(
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-fimplicit-none>
   $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
-
-add_compile_options(
-  $<$<COMPILE_LANG_AND_ID:Fortran,NAG>:-ieee=full>
-)
 
 # Add the compiler type to the global defines and the preprocessor
 string(TOUPPER "${CMAKE_Fortran_COMPILER_ID}_COMPILER" Truchas_Compiler_Define)

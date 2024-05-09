@@ -3,7 +3,7 @@
 import os
 
 # Name of the main executable
-tbin="t-linux.x86_64.intel"
+tbin="t-linux.x86_64.intelllvm"
 
 # mpich root directory
 mpich_root="/home/swuser/ext"
@@ -112,7 +112,7 @@ for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
 
 # Remove libraries that we need to use from the system
 for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
-    run("rm %s/lib/%s.so.*" % (dist, lib))
+    run("rm -f %s/lib/%s.so.*" % (dist, lib))
 
 # Create a distribution tarball
 run("tar cjf %s.tar.bz2 %s" % (dist, dist))

@@ -114,28 +114,28 @@ contains
     character(:), allocatable :: context
 
     !! Process the parameters.
-    context = 'processing ' // params%name() // ': '
-    call params%get('max-angle', max_angle, stat=stat, errmsg=errmsg)
+    context = 'processing ' // params%path() // ': '
+    call params%get('max-angle', max_angle, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('verbosity-level', this%verbosity, stat=stat, errmsg=errmsg)
+    call params%get('verbosity-level', this%verbosity, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('face-patch-ratio', fp_ratio, stat=stat, errmsg=errmsg)
+    call params%get('face-patch-ratio', fp_ratio, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('face-weight', face_weight, stat=stat, errmsg=errmsg)
+    call params%get('face-weight', face_weight, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call params%get('edge-weight', edge_weight, stat=stat, errmsg=errmsg)
+    call params%get('edge-weight', edge_weight, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -262,30 +262,30 @@ contains
 
     options(METIS_OPTION_NUMBERING) = 1 ! Fortran 1-based array indexing
 
-    call this%metis_opt%get('ctype', options(METIS_OPTION_CTYPE), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('ctype', options(METIS_OPTION_CTYPE), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('iptype', options(METIS_OPTION_IPTYPE), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('iptype', options(METIS_OPTION_IPTYPE), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('objtype', options(METIS_OPTION_OBJTYPE), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('objtype', options(METIS_OPTION_OBJTYPE), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('no2hop', options(METIS_OPTION_NO2HOP), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('no2hop', options(METIS_OPTION_NO2HOP), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('contig', options(METIS_OPTION_CONTIG), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('contig', options(METIS_OPTION_CONTIG), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('minconn', options(METIS_OPTION_MINCONN), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('minconn', options(METIS_OPTION_MINCONN), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('ufactor', options(METIS_OPTION_UFACTOR), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('ufactor', options(METIS_OPTION_UFACTOR), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('niter', options(METIS_OPTION_NITER), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('niter', options(METIS_OPTION_NITER), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('ncuts', options(METIS_OPTION_NCUTS), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('ncuts', options(METIS_OPTION_NCUTS), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('seed', options(METIS_OPTION_SEED), default=-1, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('seed', options(METIS_OPTION_SEED), stat, errmsg, default=-1)
     if (stat /= 0) return
-    call this%metis_opt%get('dbglvl', options(METIS_OPTION_DBGLVL), default=0, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('dbglvl', options(METIS_OPTION_DBGLVL), stat, errmsg, default=0)
     if (stat /= 0) return
 
-    call this%metis_opt%get('ptype', ptype, default=METIS_PTYPE_RB, stat=stat, errmsg=errmsg)
+    call this%metis_opt%get('ptype', ptype, stat, errmsg, default=METIS_PTYPE_RB)
     if (stat /= 0) return
 
     !! Run METIS

@@ -305,7 +305,7 @@ contains
       plist => piter%sublist()
       call alloc_phase_change(matl%pc_seq(n)%pc, plist, stat, errmsg)
       if (stat /= 0) then
-        errmsg = 'processing ' // plist%name() // ': ' // errmsg
+        errmsg = 'processing ' // plist%path() // ': ' // errmsg
         return
       end if
       call piter%next
@@ -315,7 +315,7 @@ contains
     do n = 1, size(matl%pc_seq) - 1
       if (matl%pc_seq(n)%pc%liquidus_temp() > matl%pc_seq(n+1)%pc%solidus_temp()) then
         stat = 1
-        errmsg = 'processing ' // params%name() // ': overlapping phase changes'
+        errmsg = 'processing ' // params%path() // ': overlapping phase changes'
         return
       end if
     end do
@@ -347,10 +347,10 @@ contains
 #ifdef GNU_PR93762
       block
         character(:), allocatable :: dummy
-        call params%get(pname, flag, stat=stat, errmsg=dummy)
+        call params%get(pname, flag, stat, errmsg=dummy)
       end block
 #else
-      call params%get(pname, flag, stat=stat)
+      call params%get(pname, flag, stat)
 #endif
       if (stat == 0) then ! this is an attribute
         if (flag) call this%add_attr(pname)

@@ -47,8 +47,8 @@ contains
     character(:), allocatable :: errmsg
     this%model => model
     if (associated(model%ht)) then
-      call params%get('abs-t-tol', this%abs_T_tol, stat=stat, errmsg=errmsg)
-      if (stat /= 0) print *, params%name() // ': ' // errmsg
+      call params%get('abs-t-tol', this%abs_T_tol, stat, errmsg)
+      if (stat /= 0) print *, params%path() // ': ' // errmsg
       call params%get('rel-t-tol', this%rel_T_tol)
       INSIST(valid_tol(this%abs_T_tol, this%rel_T_tol))
       call params%get('abs-h-tol', this%abs_h_tol)

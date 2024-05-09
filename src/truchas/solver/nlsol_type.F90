@@ -122,8 +122,8 @@ contains
     this%n = model%size()
     INSIST(this%n > 0)
 
-    context = 'processing ' // params%name() // ': '
-    call params%get('nlk-max-iter', this%mitr, default=100, stat=stat, errmsg=errmsg)
+    context = 'processing ' // params%path() // ': '
+    call params%get('nlk-max-iter', this%mitr, stat, errmsg, default=100)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -134,7 +134,7 @@ contains
       return
     end if
 
-    call params%get('nlk-tol', this%ntol, default=1e-12_r8, stat=stat, errmsg=errmsg)
+    call params%get('nlk-tol', this%ntol, stat, errmsg, default=1e-12_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -145,7 +145,7 @@ contains
       return
     end if
 
-    call params%get('nlk-max-vec', maxv, default=20, stat=stat, errmsg=errmsg)
+    call params%get('nlk-max-vec', maxv, stat, errmsg, default=20)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -157,7 +157,7 @@ contains
     end if
     maxv = min(maxv, this%mitr-1)
 
-    call params%get('nlk-vec-tol', vtol, default=0.01_r8, stat=stat, errmsg=errmsg)
+    call params%get('nlk-vec-tol', vtol, stat, errmsg, default=0.01_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return

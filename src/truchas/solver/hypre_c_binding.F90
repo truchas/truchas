@@ -120,6 +120,8 @@ module hypre_c_binding
 
   !! Miscelaneous functions
   public :: HYPRE_ClearAllErrors
+  public :: HYPRE_Initialize
+  public :: HYPRE_Finalize
 
   !! Functions from hypre_ext.c
   public :: HYPRE_Ext_IJVectorCreate
@@ -616,6 +618,16 @@ module hypre_c_binding
   interface
     function HYPRE_ClearAllErrors() &
         result(ierr) bind(c, name="HYPRE_ClearAllErrors")
+      import c_int
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Initialize() &
+        result(ierr) bind(c, name="HYPRE_Initialize")
+      import c_int
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Finalize() &
+        result(ierr) bind(c, name="HYPRE_Finalize")
       import c_int
       integer(c_int) :: ierr
     end function

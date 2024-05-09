@@ -114,7 +114,7 @@ contains
     this%em_mesh => simpl_mesh_ptr('em')
 
     !! Generate the mapping between the HT and EM meshes
-    call params%get('data-mapper-kind', data_mapper_kind, stat=stat, errmsg=errmsg, default='default')
+    call params%get('data-mapper-kind', data_mapper_kind, stat, errmsg, default='default')
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
     select case (data_mapper_kind)
     case ('default', 'kuprat')
@@ -153,7 +153,7 @@ contains
 
     call define_default_em_properties
 
-    call params%get('matl-change-threshold', this%matl_change_threshold, stat=stat, errmsg=errmsg, default=0.3_r8)
+    call params%get('matl-change-threshold', this%matl_change_threshold, stat, errmsg, default=0.3_r8)
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
     if (this%matl_change_threshold <= 0.0_r8) call TLS_fatal('IH_DRIVER_INIT: matl-change-threshold must be > 0.0')
 

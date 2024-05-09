@@ -146,7 +146,7 @@ contains
       piter = parameter_list_iterator(params, sublists_only=.true.)
       do while (.not.piter%at_end())
         plist => piter%sublist()
-        call plist%get('type', this_type, stat=stat, errmsg=errmsg)
+        call plist%get('type', this_type, stat, errmsg)
         if (stat /= 0) exit
         if (lower_case(this_type) == type_string) then  ! use this sublist
           call TLS_info('  using SM_BC[' // piter%name() // ']')
@@ -157,9 +157,9 @@ contains
               errmsg = 'Given node-set-ids, incompatible with traction type BC.'
               exit
             end if
-            call plist%get('node-set-ids', setids, stat=stat, errmsg=errmsg)
+            call plist%get('node-set-ids', setids, stat, errmsg)
           else
-            call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+            call plist%get('face-set-ids', setids, stat, errmsg)
           end if
           if (stat /= 0) exit
           call alloc_scalar_func(plist, data_label, f, stat, errmsg)
@@ -195,11 +195,11 @@ contains
       piter = parameter_list_iterator(params, sublists_only=.true.)
       do while (.not.piter%at_end())
         plist => piter%sublist()
-        call plist%get('type', this_type, stat=stat, errmsg=errmsg)
+        call plist%get('type', this_type, stat, errmsg)
         if (stat /= 0) exit
         if (lower_case(this_type) == type_string) then  ! use this sublist
           call TLS_info('  using SM_BC[' // piter%name() // ']')
-          call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+          call plist%get('face-set-ids', setids, stat, errmsg)
           if (stat /= 0) exit
 
           do s = 1, size(setids)
@@ -234,14 +234,14 @@ contains
       piter = parameter_list_iterator(params, sublists_only=.true.)
       do while (.not.piter%at_end())
         plist => piter%sublist()
-        call plist%get('type', this_type, stat=stat, errmsg=errmsg)
+        call plist%get('type', this_type, stat, errmsg)
         if (stat /= 0) exit
         if (lower_case(this_type) == type_string) then  ! use this sublist
           !call TLS_info('  using SM_BC[' // piter%name() // ']')
           if (plist%is_parameter('node-set-ids')) then
-            call plist%get('node-set-ids', setids, stat=stat, errmsg=errmsg)
+            call plist%get('node-set-ids', setids, stat, errmsg)
           else
-            call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+            call plist%get('face-set-ids', setids, stat, errmsg)
           end if
           if (stat /= 0) exit
           count_entries = count_entries + size(setids)

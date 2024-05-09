@@ -59,7 +59,7 @@ The partitioning method used to generate the parallel decomposition of the mesh.
 
 :Type: case-insensitive string
 :Default: "metis"
-:Valid Values: "chaco", "metis", "file", "block"
+:Valid Values: "metis", "file", "block"
 :Notes: See the :ref:`MESH<MESH_Namelist>` namelist variable
         :ref:`partitioner <M_P>` for a description of the options and their associated
         input variables. In particular, the METIS options listed there may also be

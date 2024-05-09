@@ -11,6 +11,7 @@ program test_hypre_pcg_type
 #endif
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
+  use fhypre, only: fhypre_initialize
   use index_map_type
   use pcsr_matrix_type
   use hypre_pcg_type
@@ -30,6 +31,7 @@ program test_hypre_pcg_type
   real(r8), parameter :: PI = 3.1415926535897931_r8
   
   call init_parallel_communication
+  call fhypre_initialize
   
   a = 1.0e-6_r8
   call create_matrix (a, matrix)

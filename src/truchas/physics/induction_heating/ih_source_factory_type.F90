@@ -89,7 +89,7 @@ contains
     ! size-1 arrays?
 
     if (params%is_parameter('times')) then
-      call params%get('times', this%times, stat=stat, errmsg=errmsg)
+      call params%get('times', this%times, stat, errmsg)
       if (stat /= 0) return
       n = size(this%times)
       if (n > 1) then
@@ -104,7 +104,7 @@ contains
       n = 0
     end if
 
-    call params%get('frequency', this%freq, stat=stat, errmsg=errmsg)
+    call params%get('frequency', this%freq, stat, errmsg)
     if (stat /= 0) return
     if (any(this%freq <= 0.0_r8)) then
       stat = 1
@@ -116,7 +116,7 @@ contains
       return
     endif
 
-    call params%get('uniform-strength', this%const_src, stat=stat, errmsg=errmsg, default=spread(0.0_r8,1,n+1))
+    call params%get('uniform-strength', this%const_src, stat, errmsg, default=spread(0.0_r8,1,n+1))
     if (stat /= 0) return
     if (size(this%const_src) /= n+1) then
       stat = 1
@@ -130,7 +130,7 @@ contains
     do i = 1, size(this%coil)
       plist => piter%sublist()
       associate (coil => this%coil(i))
-        call plist%get('center', array, stat=stat, errmsg=errmsg, default=spread(0.0_r8,1,3))
+        call plist%get('center', array, stat, errmsg, default=spread(0.0_r8,1,3))
         if (stat /= 0) return
         if (size(array) /= 3) then
           stat = 1
@@ -139,14 +139,14 @@ contains
         else
           coil%center = array
         end if
-        call plist%get('radius', coil%radius, stat=stat, errmsg=errmsg)
+        call plist%get('radius', coil%radius, stat, errmsg)
         if (stat /= 0) return
         if (coil%radius <= 0.0_r8) then
           stat = 1
           errmsg = piter%name() // ': radius is <= 0.0'
           return
         end if
-        call plist%get('num-loops', coil%nloop, stat=stat, errmsg=errmsg)
+        call plist%get('num-loops', coil%nloop, stat, errmsg)
         if (stat /= 0) return
         if (coil%nloop <= 0) then
           stat = 1
@@ -154,7 +154,7 @@ contains
           return
         end if
         if (coil%nloop > 1) then
-          call plist%get('length', coil%length, stat=stat, errmsg=errmsg)
+          call plist%get('length', coil%length, stat, errmsg)
           if (stat /= 0) return
           if (coil%length <= 0) then
             stat = 1
@@ -164,7 +164,7 @@ contains
         else
           coil%length = 0.0_r8
         end if
-        call plist%get('current', array, stat=stat, errmsg=errmsg)
+        call plist%get('current', array, stat, errmsg)
         if (stat /= 0) return
         if (size(array) /= n+1) then
           stat = 1
@@ -176,7 +176,7 @@ contains
       call piter%next
     end do
 
-    call params%get('orientation', axis, stat=stat, errmsg=errmsg, default='Z')
+    call params%get('orientation', axis, stat, errmsg, default='Z')
     if (stat /= 0) return
     select case (axis)
     case ('x','X','y','Y','z','Z')

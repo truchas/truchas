@@ -170,7 +170,7 @@ contains
       patch_file
 
     is_IOP = (scl_rank()==1)  ! process rank 1 does the reading
-    call params%set_name('patches')  ! used when printing errors
+    call params%set_path('patches')  ! used when printing errors
 
     !! Seek to the first instance of the PATCH namelist.
     if (is_IOP) then

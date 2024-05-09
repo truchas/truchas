@@ -13,4 +13,4 @@ TRUCHAS_DIR="$(dirname "$(readlink -f "$0")")"
 ulimit -s unlimited
 
 # Launch the Truchas binary itself, forwarding all arguments
-${TRUCHAS_DIR}/t-linux.x86_64.intel $@
+${TRUCHAS_DIR}/t-linux.x86_64.intelllvm $@

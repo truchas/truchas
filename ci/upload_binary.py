@@ -11,7 +11,6 @@ from github3 import login
 
 
 def get_jwt(app_id):
-
     pem_file = os.getenv("PEM_FILE")
     if pem_file is None:
         raise Exception("PEM_FILE not specified")
@@ -21,8 +20,7 @@ def get_jwt(app_id):
         "exp": int(time.time()) + (10 * 60),
         "iss": app_id,
     }
-    encoded = jwt.encode(payload, pem_file, algorithm="RS256")
-    bearer_token = encoded.decode("utf-8")
+    bearer_token = jwt.encode(payload, pem_file, algorithm="RS256")
 
     return bearer_token
 

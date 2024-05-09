@@ -198,11 +198,11 @@ contains
     piter = parameter_list_iterator(params, sublists_only=.true.)
     do while (.not.piter%at_end())
       plist => piter%sublist()
-      call plist%get('type', this_type, stat=stat, errmsg=errmsg)
+      call plist%get('type', this_type, stat, errmsg)
       if (stat /= 0) exit
       if (lower_case(this_type) == type) then  ! use this sublist
         call TLS_info('  using SM_BC[' // piter%name() // ']')
-        call plist%get('face-set-ids', setids, stat=stat, errmsg=errmsg)
+        call plist%get('face-set-ids', setids, stat, errmsg)
         if (stat /= 0) exit
         call alloc_scalar_func(plist, data_label, f, stat, errmsg)
         if (stat /= 0) exit

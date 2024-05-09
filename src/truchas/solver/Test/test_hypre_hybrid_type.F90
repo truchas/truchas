@@ -11,6 +11,7 @@ program test_hypre_hybrid_type
 #endif
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
+  use fhypre, only: fhypre_initialize
   use index_map_type
   use pcsr_matrix_type
   use hypre_hybrid_type
@@ -25,6 +26,7 @@ program test_hypre_hybrid_type
   integer :: nx, ny, nz ! set by the tests
   
   call init_parallel_communication
+  call fhypre_initialize
 
   call cg_test_1
   call cg_test_2
