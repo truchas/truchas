@@ -297,7 +297,7 @@ contains
       call TLS_info('  partitioning the mesh cells', TLS_VERB_NORMAL)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
-      call params%get('partitioner', string, default='chaco')
+      call params%get('partitioner', string, default='metis')
       if (nPE == 1) then
         part = 1
         stat = 0

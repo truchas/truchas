@@ -47,19 +47,19 @@ contains
 
     this%model => model
 
-    context = 'processing ' // params%name() // ': '
-    call params%get('temp-abs-tol', this%abs_T_tol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    context = 'processing ' // params%path() // ': '
+    call params%get('temp-abs-tol', this%abs_T_tol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) call TLS_fatal(context//errmsg)
-    call params%get('temp-rel-tol', this%rel_T_tol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('temp-rel-tol', this%rel_T_tol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) call TLS_fatal(context//errmsg)
     if (this%abs_T_tol < 0.0_r8) call TLS_fatal(context//'"temp-abs-tol" must be >= 0.0')
     if (this%rel_T_tol < 0.0_r8) call TLS_fatal(context//'"temp-rel-tol" must be >= 0.0')
     if (this%abs_T_tol == 0.0_r8 .and. this%rel_T_tol == 0.0_r8) &
         call TLS_fatal(context//'"temp-abs-tol" and "temp-rel-tol" cannot both be 0.0')
 
-    call params%get('enth-abs-tol', this%abs_H_tol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('enth-abs-tol', this%abs_H_tol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) call TLS_fatal(context//errmsg)
-    call params%get('enth-rel-tol', this%rel_H_tol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('enth-rel-tol', this%rel_H_tol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) call TLS_fatal(context//errmsg)
     if (this%abs_H_tol < 0.0_r8) call TLS_fatal(context//'"enth-abs-tol" must be >= 0.0')
     if (this%rel_H_tol < 0.0_r8) call TLS_fatal(context//'"enth-rel-tol" must be >= 0.0')

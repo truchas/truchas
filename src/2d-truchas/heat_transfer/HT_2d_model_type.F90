@@ -81,7 +81,7 @@ contains
     character(:), allocatable :: context
     type(parameter_list), pointer :: sublist
 
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
 
     this%disc => disc
     this%mesh => disc%mesh
@@ -110,13 +110,13 @@ contains
     !      or better to not put these in a sublist?
       sublist => params%sublist('TofH')
       !! absolute temperature convergence tolerance, >= 0
-      call sublist%get('tolerance', TofH_tol, default=0.0d0, stat=stat, errmsg=errmsg)
+      call sublist%get('tolerance', TofH_tol, stat, errmsg, default=0.0d0)
       if (stat /= 0) return
       !! initial endpoint shift when seeking bracket, > 0
-      call sublist%get('delta', TofH_delta, default=1.0d-3, stat=stat, errmsg=errmsg)
+      call sublist%get('delta', TofH_delta, stat, errmsg, default=1.0d-3)
       if (stat /= 0) return
       !! max tries at seeking a bracketing interval, >= 0
-      call sublist%get('max-try', TofH_max_try, default=50, stat=stat, errmsg=errmsg)
+      call sublist%get('max-try', TofH_max_try, stat, errmsg, default=50)
       if (stat /= 0) return
 
       call this%T_of_H%init(this%H_of_T, eps=TofH_tol, max_try=TofH_max_try, delta=TofH_delta)

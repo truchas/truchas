@@ -19,9 +19,9 @@ contains
 
     character(:), allocatable :: context, rtype
 
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
 
-    call params%get('type', rtype, stat=stat, errmsg=errmsg)
+    call params%get('type', rtype, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -34,7 +34,7 @@ contains
         integer, allocatable :: setids(:)
         integer :: bitmask
         logical :: c
-        call params%get('cell-set-ids', setids, stat=stat, errmsg=errmsg)
+        call params%get('cell-set-ids', setids, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -44,7 +44,7 @@ contains
           errmsg = context // 'invalid "cell-set-ids" value: ' // errmsg
           return
         end if
-        call params%get('complement', c, stat=stat, errmsg=errmsg, default=.false.)
+        call params%get('complement', c, stat, errmsg, default=.false.)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -57,7 +57,7 @@ contains
         use half_plane_region_type, only: alloc_half_plane_region
         real(r8), allocatable :: p(:), n(:)
         logical :: c
-        call params%get('point', p, stat=stat, errmsg=errmsg)
+        call params%get('point', p, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -66,7 +66,7 @@ contains
           errmsg = context // 'a 2-vector for "point" is required'
           return
         end if
-        call params%get('normal', n, stat=stat, errmsg=errmsg)
+        call params%get('normal', n, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -79,7 +79,7 @@ contains
           errmsg = context // '"normal" must be non-zero'
           return
         end if
-        call params%get('complement', c, stat=stat, errmsg=errmsg, default=.false.)
+        call params%get('complement', c, stat, errmsg, default=.false.)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -92,7 +92,7 @@ contains
         use box_region_type, only: alloc_box_region
         real(r8), allocatable :: x(:), y(:)
         logical :: c
-        call params%get('lower-corner', x, stat=stat, errmsg=errmsg)
+        call params%get('lower-corner', x, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -101,7 +101,7 @@ contains
           errmsg = context // 'a 2-vector for "lower-box-corner" is required'
           return
         end if
-        call params%get('upper-corner', y, stat=stat, errmsg=errmsg)
+        call params%get('upper-corner', y, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -110,7 +110,7 @@ contains
           errmsg = context // 'a 2-vector for "upper-box-corner" is required'
           return
         end if
-        call params%get('complement', c, stat=stat, errmsg=errmsg, default=.false.)
+        call params%get('complement', c, stat, errmsg, default=.false.)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -124,7 +124,7 @@ contains
         real(r8), allocatable :: x(:)
         real(r8) :: r
         logical :: c
-        call params%get('center', x, stat=stat, errmsg=errmsg)
+        call params%get('center', x, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -133,7 +133,7 @@ contains
           errmsg = context // 'a 2-vector for "center" is required'
           return
         end if
-        call params%get('radius', r, stat=stat, errmsg=errmsg)
+        call params%get('radius', r, stat, errmsg)
         if (stat /= 0) then
           errmsg = context // errmsg
           return
@@ -142,7 +142,7 @@ contains
           errmsg = context // '"radius" must be > 0'
           return
         end if
-        call params%get('complement', c, stat=stat, errmsg=errmsg, default=.false.)
+        call params%get('complement', c, stat, errmsg, default=.false.)
         if (stat /= 0) then
           errmsg = context // errmsg
           return

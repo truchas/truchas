@@ -99,7 +99,7 @@ contains
     call start_timer('mesh')
     if (params%is_sublist('mesh')) then
       plist => params%sublist('mesh')
-      context = 'processing ' // plist%name() // ': '
+      context = 'processing ' // plist%path() // ': '
       call plist%get('xmin', xmin, stat=stat, errmsg=errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
       call plist%get('xmax', xmax, stat=stat, errmsg=errmsg)
@@ -124,7 +124,7 @@ contains
     !TODO: input name instead of hardwiring it
     if (params%is_sublist('materials')) then
       plist => params%sublist('materials')
-      context = 'processing ' // plist%name() // ': '
+      context = 'processing ' // plist%path() // ': '
       call load_material_database(matl_db, plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
     else
@@ -154,7 +154,7 @@ contains
     call start_timer('ht-model')
     if (params%is_sublist('ht-model')) then
       plist => params%sublist('ht-model')
-      context = 'processing ' // plist%name() // ': '
+      context = 'processing ' // plist%path() // ': '
       allocate(this%model)
       !call this%model%init(this%disc, this%mmf, plist, stat, errmsg)
       call this%model%init(this%disc, this%matl_model, plist, stat, errmsg)
@@ -182,7 +182,7 @@ contains
     !! Simulation control parameters
     if (params%is_sublist('sim-control')) then
       plist => params%sublist('sim-control')
-      context = 'processing ' // plist%name() // ': '
+      context = 'processing ' // plist%path() // ': '
       call plist%get('initial-time', this%t_init, stat=stat, errmsg=errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
       call plist%get('initial-time-step', this%dt_init, stat=stat, errmsg=errmsg)

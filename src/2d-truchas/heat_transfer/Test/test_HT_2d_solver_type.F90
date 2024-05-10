@@ -87,7 +87,7 @@ contains
     type(parameter_list), intent(out) :: params
     type(parameter_list), pointer :: sublist
 
-    call params%set_name('solver')
+    call params%set_path('solver')
 
     sublist => params%sublist('preconditioner')
     call sublist%set('method','BoomerAMG')

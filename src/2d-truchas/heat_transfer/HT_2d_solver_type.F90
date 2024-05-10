@@ -84,7 +84,7 @@ contains
     allocate(this%u(this%model%num_dof()))
 
     !! Create the preconditioner
-    context = 'processing ' // params%name() // ': '
+    context = 'processing ' // params%path() // ': '
     if (params%is_sublist('preconditioner')) then
       plist => params%sublist('preconditioner')
       allocate(this%precon)
@@ -124,9 +124,9 @@ contains
     !TODO: default values for hmin and max_step_tries?  idaesol%bdf2_step_driver suggests
     !   max_try = 10
     !   hmin = tiny(1.0_r8)
-    call params%get('hmin', this%hmin, stat=stat, errmsg=errmsg)
+    call params%get('hmin', this%hmin, stat, errmsg)
     if (stat /= 0) call TLS_fatal(context//errmsg)
-    call params%get('max_step_tries', this%max_step_tries, stat=stat, errmsg=errmsg)
+    call params%get('max_step_tries', this%max_step_tries, stat, errmsg)
     if (stat /= 0) call TLS_fatal(context//errmsg)
 
   end subroutine init
