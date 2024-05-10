@@ -44,8 +44,8 @@ contains
 
     this%model => model
 
-    context = 'processing ' // params%name() // ': '
-    call params%get('abs-t-tol', this%temp_atol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    context = 'processing ' // params%path() // ': '
+    call params%get('abs-t-tol', this%temp_atol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -55,7 +55,7 @@ contains
       return
     end if
 
-    call params%get('rel-t-tol', this%temp_rtol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('rel-t-tol', this%temp_rtol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -71,7 +71,7 @@ contains
       return
     end if
 
-    call params%get('abs-h-tol', this%enth_atol, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('abs-h-tol', this%enth_atol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
@@ -81,7 +81,7 @@ contains
       return
     end if
 
-    call params%get('rel-h-tol', this%enth_rtol, default=this%temp_rtol, stat=stat, errmsg=errmsg)
+    call params%get('rel-h-tol', this%enth_rtol, stat, errmsg, default=this%temp_rtol)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
