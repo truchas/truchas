@@ -102,7 +102,7 @@ Species diffusion with interfaces
   mesh_material_number = 1
   material_name = "glass"
   temperature = 1.0
-  phi = 1.0
+  conc = 1.0
 /
 
 &BODY
@@ -110,5 +110,5 @@ Species diffusion with interfaces
   mesh_material_number = 2
   material_name = "glass"
   temperature = 1.0
-  phi = 1.0
+  conc = 1.0
 /

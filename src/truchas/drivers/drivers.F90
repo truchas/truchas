@@ -143,6 +143,7 @@ call hijack_truchas ()
     use truchas_logging_services
     use truchas_timers
     use probes_driver, only: probes_write
+    use physics_module, only: heat_transport
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
@@ -258,7 +259,7 @@ call hijack_truchas ()
         ! calculate new velocity field
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
         if (flow_enabled()) then
-          if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+          if (heat_transport) call ds_get_face_temp_view(temperature_fc)
 
           ! This updates the volume tracker's internal variable for the vof, so
           ! we can give the flow the current post-heat-transfer volume fractions.

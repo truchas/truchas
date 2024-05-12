@@ -68,14 +68,14 @@ See diffusion solver tests 2, 3 and 4 for variations.
   height = 1.0
   material_name = 'A+C'
   temperature = 0.0
-  phi = 0.0
+  conc = 0.0
 /
 
 &BODY
   surface_name = 'background'
   material_name = 'B+C'
   temperature = 0.0
-  phi = 0.0
+  conc = 0.0
 /
 
 INTERFACES

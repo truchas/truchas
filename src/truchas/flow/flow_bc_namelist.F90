@@ -21,23 +21,26 @@ contains
     use input_utilities, only: seek_to_namelist, NULL_C, NULL_R, NULL_I
     use string_utilities, only: i_to_c, lower_case
     use material_model_driver, only: matl_model
+    use physics_module, only: nspecies => number_of_species
     use truchas_logging_services
 
     integer, intent(in) :: lun
     type(parameter_list), intent(inout) :: params
 
-    integer :: n, ios, matid
+    integer :: n, ios, matid, i
     logical :: found
     character(128) :: iom
-    character(:), allocatable :: label
+    character(:), allocatable :: label, var
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
     integer :: face_set_ids(32)
-    real(r8) :: pressure, velocity(3), dsigma, inflow_temperature
-    character(31) :: name, type, pressure_func, velocity_func, inflow_material, inflow_material_func
+    real(r8) :: pressure, velocity(3), dsigma, inflow_temperature, inflow_conc(nspecies)
+    character(31) :: name, type, pressure_func, velocity_func, inflow_material, &
+        inflow_material_func, inflow_conc_func(nspecies)
     namelist /flow_bc/ name, face_set_ids, type, pressure, pressure_func, velocity, &
-        velocity_func, dsigma, inflow_material, inflow_material_func, inflow_temperature
+        velocity_func, dsigma, inflow_material, inflow_material_func, inflow_temperature, &
+        inflow_conc, inflow_conc_func
 
     call TLS_info('Reading FLOW_BC namelists ...')
 
@@ -65,6 +68,8 @@ contains
       inflow_material = NULL_C
       inflow_material_func = NULL_C
       inflow_temperature = NULL_R
+      inflow_conc = NULL_R
+      inflow_conc_func = NULL_C
 
       if (is_IOP) read(lun,nml=flow_bc,iostat=ios,iomsg=iom)
       call broadcast(ios)
@@ -81,6 +86,8 @@ contains
       call broadcast(inflow_material)
       call broadcast(inflow_material_func)
       call broadcast(inflow_temperature)
+      call broadcast(inflow_conc)
+      call broadcast(inflow_conc_func)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -156,6 +163,17 @@ contains
           call plist%set('inflow-material-func', trim(inflow_material_func))
         end if
         if (inflow_temperature /= NULL_R) call plist%set('inflow-temperature', inflow_temperature)
+        do i = 1, nspecies
+          var = 'inflow-conc' // i_to_c(i)
+          if (inflow_conc(i) /= NULL_R .and. inflow_conc_func(i) /= NULL_C) then
+            call TLS_fatal(label // ': both INFLOW_CONC(' // i_to_c(i) // ') and &
+                &INFLOW_CONC_FUNC(' // i_to_c(i) // ') specified')
+          else if (inflow_conc(i) /= NULL_R) then
+            call plist%set(var, inflow_conc(i))
+          else if (inflow_conc_func(i) /= NULL_C) then
+            call plist%set(var, inflow_conc_func(i))
+          end if
+        end do
       end select
 
       call TLS_info('  read namelist "' // trim(name) // '"')

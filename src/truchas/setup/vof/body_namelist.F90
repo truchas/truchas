@@ -40,12 +40,12 @@ contains
     integer :: mesh_material_number(16)
 
     ! These values are read & initialized by body_input_module, not here.
-    character(64) :: temperature_function, material_name
-    real(r8) :: velocity(3), temperature, phi(5)
+    character(64) :: temperature_function, conc_func(5), material_name
+    real(r8) :: velocity(3), temperature, conc(5)
 
     namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
-        material_name, phi, temperature, temperature_function, velocity, mesh_material_number
+        material_name, conc, conc_func, temperature, temperature_function, velocity, mesh_material_number
 
     call TLS_info('Reading BODY namelists (second pass) ...')
 

@@ -1,0 +1,134 @@
+PASSIVE SCALAR ADVECTION-DIFFUSION
+
+Passive advection-diffusion of a scalar in a 1D channel with time-dependent,
+but uniform flow. The initial profile of the scalar is a smooth step function
+centered in the domain. The flow starts left-to-right, reverses for a time,
+and then reverses again so that the advected step profile returns to the
+center (but diffused). The problem uses default inflow BC for the scalar where
+the inflow value equals the current value on the boundary cell. The primary
+aim of this problem is to exercise passive advection.
+
+&MESH
+  x_axis%coarse_grid = -2.0, 2.0
+  x_axis%intervals   = 40
+  y_axis%coarse_grid = 0.0, 0.5
+  y_axis%intervals   = 3
+  z_axis%coarse_grid = 0.0, 0.5
+  z_axis%intervals   = 3
+/
+
+&OUTPUTS
+  output_t = 0.0, 6.0
+  output_dt = 1.5
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&PHYSICS
+  materials = 'water'
+  flow = T
+  species_transport = T
+  number_of_species = 1
+/
+
+&DIFFUSION_SOLVER
+  abs_conc_tol = 0.0
+  rel_conc_tol = 1.0e-3
+  nlk_tol = 0.01
+/
+
+&FLOW
+  inviscid = T
+  courant_number = 0.5
+  viscous_implicitness = 0.5
+/
+
+&FLOW_PRESSURE_SOLVER
+  rel_tol = 0.0
+  abs_tol = 1.0e-10
+  max_ds_iter = 50
+  max_amg_iter = 25
+/
+
+&FLOW_BC
+  name = 'left'
+  face_set_ids = 1
+  type = 'velocity'
+  !velocity = 1.0, 0.0, 0.0
+  velocity_func = 'velocity'
+  inflow_conc = 1.0
+/
+
+&VFUNCTION
+  name = 'velocity'
+  type = 'tabular'
+  tabular_data(:,1) =  0.0  1.0 0.0 0.0
+  tabular_data(:,2) =  0.9  1.0 0.0 0.0
+  tabular_data(:,3) =  1.0  1.0 0.0 0.0
+  tabular_data(:,4) =  2.0 -1.0 0.0 0.0
+  tabular_data(:,5) =  3.0 -1.0 0.0 0.0
+  tabular_data(:,6) =  4.0 -1.0 0.0 0.0
+  tabular_data(:,7) =  5.0  1.0 0.0 0.0
+  tabular_data(:,8) =  5.1  1.0 0.0 0.0
+  tabular_data(:,9) =  6.0  1.0 0.0 0.0
+/
+
+Outlet pressure
+&FLOW_BC
+  name = 'right'
+  face_set_ids = 2
+  type = 'pressure'
+  pressure = 0.0
+/
+
+&SPECIES_BC
+  name = 'left end'
+  face_set_ids = 1
+  type = 'flux'
+  flux = 0.0
+/
+
+&SPECIES_BC
+  name = 'right end'
+  face_set_ids = 2
+  type = 'flux'
+  flux = 0.0
+/
+
+&SPECIES_BC
+  name = 'other sides'
+  face_set_ids = 3, 4, 5, 6
+  type = 'flux'
+  flux = 0.0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'water'
+  temperature = 0.0
+  conc_func = 'initial-conc'
+/
+
+&FUNCTION
+  name = 'initial-conc'
+  type = 'tabular'
+  tabular_data = -2.0, 1.0
+                 -1.0, 1.0
+                 -0.5, 1.0
+                  0.5, 2.0
+                  1.0, 2.0
+                  2.0, 2.0
+  tabular_interp = 'akima'
+/
+
+&MATERIAL
+  name = 'water'
+  is_fluid = T
+  density = 1.0
+  diffusivity(1) = 0.05
+/

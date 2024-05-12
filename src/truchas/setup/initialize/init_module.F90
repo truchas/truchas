@@ -72,7 +72,7 @@ CONTAINS
     use flow_driver, only: flow_driver_init, flow_driver_set_initial_state
     use solid_mechanics_driver, only: solid_mechanics_init
     use ih_driver,              only: ih_driver_init
-    use physics_module,         only: flow, solid_mechanics, electromagnetics
+    use physics_module,         only: flow, solid_mechanics, electromagnetics, heat_transport
     use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -141,9 +141,9 @@ CONTAINS
       allocate(phi(mesh%ncell_onP,num_species))
       if (restart) then
         call restart_species (mesh%xcell(:mesh%ncell_onP), phi, found)
-        if (.not.found) call init_conc (hits_vol, phi)
+        if (.not.found) call init_conc (mesh, hits_vol, phi)
       else
-        call init_conc (hits_vol, phi)
+        call init_conc (mesh, hits_vol, phi)
       end if
     else if (restart) then
       call restart_species () ! skip any species data that may be present
@@ -168,7 +168,7 @@ CONTAINS
 
     ! Initialize the flow solver.
     if (flow) then
-      if (ds_enabled) call ds_get_face_temp_view(temperature_fc)
+      if (heat_transport) call ds_get_face_temp_view(temperature_fc)
       if (allocated(vel_fn)) then
         call flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
       else
@@ -235,19 +235,26 @@ CONTAINS
 !
 !  end subroutine flow_property_init
 
-  subroutine init_conc (hits_vol, phi)
+  subroutine init_conc (mesh, hits_vol, phi)
 
+    use unstr_mesh_type
     use interfaces_module, only: body_phi
 
+    type(unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: hits_vol(:,:)
     real(r8), intent(out) :: phi(:,:)
 
-    integer :: j, nbody, nconc
+    integer :: i, j, k
+    real(r8), allocatable :: bphi(:,:)
 
-    nbody = size(hits_vol,dim=1)
-    nconc = size(phi,dim=2)
+    allocate(bphi(size(hits_vol,dim=1),size(phi,dim=2)))
     do j = 1, size(phi,dim=1)
-      phi(j,:) = matmul(hits_vol(:,j), body_phi(:nbody,:nconc)) / sum(hits_vol(:,j))
+      do i = 1, size(bphi,dim=1)
+        do k = 1, size(bphi,dim=2)
+          bphi(i,k) = body_phi(i,k)%eval(mesh%cell_centroid(:,j))
+        end do
+      end do
+      phi(j,:) = matmul(hits_vol(:,j), bphi) / sum(hits_vol(:,j))
     end do
 
   end subroutine init_conc

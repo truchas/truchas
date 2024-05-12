@@ -15,26 +15,6 @@ module physics_input_module
 
 contains
 
-  subroutine physics_check
-
-    use physics_module
-
-    logical :: fatal
-
-    fatal = .false.
-
-    ! Check the number_of_species value.
-    if (species_transport) then
-      if (number_of_species <= 0) then
-        call TLS_error ('NUMBER_OF_SPECIES must be > 0')
-        fatal = .true.
-      end if
-    end if
-
-    if (fatal) call TLS_fatal('Errors found with PHYSICS namelists variables')
-
-  end subroutine physics_check
-
   subroutine physics_input(lun)
 
     use physics_module
@@ -95,8 +75,11 @@ contains
 
     ! flow and prescribed_flow are mutually exclusive
 
-    ! Check for stupid input errors.
-    call physics_check
+    if (species_transport) then
+      if (number_of_species <= 0) call TLS_fatal('NUMBER_OF_SPECIES must be > 0')
+    else
+      number_of_species = 0
+    end if
 
     !NNC: temporary test code
     if (prescribed_flow .and. (heat_transport .or. species_transport &

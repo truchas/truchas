@@ -33,6 +33,7 @@ target_sources(truchas PRIVATE
   source_mesh_function.F90
   enthalpy_advector_class.F90
   enthalpy_advector1_type.F90
+  conc_advector_type.F90
   evap_heat_flux_type.F90
   evaporation_namelist.F90
   thermal_source_namelist.F90
