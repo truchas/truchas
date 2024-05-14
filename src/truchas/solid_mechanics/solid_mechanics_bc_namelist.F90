@@ -44,7 +44,6 @@ contains
     namelist /solid_mechanics_bc/ name, face_set_ids, node_set_ids, type, &
         displacement, traction, displacement_func, traction_func
 
-    call TLS_info('')
     call TLS_info('Reading SOLID_MECHANICS_BC namelists ...')
 
     if (is_IOP) rewind(lun)

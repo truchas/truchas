@@ -41,9 +41,9 @@ module sm_hypre_precon_type
     class(pcsr_precon), allocatable :: precon
 
     type(matrix_box), allocatable :: displ_to_force(:)
-    integer :: niter
     logical :: first = .true.
     real(r8), allocatable :: l1(:), l2(:)
+    real(r8) :: rtol, atol
   contains
     final :: sm_hypre_precon_delete
     procedure :: init
@@ -72,7 +72,7 @@ contains
     type(sm_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
-    type(parameter_list), pointer :: plist, plist_params
+    type(parameter_list), pointer :: plist
     type(pcsr_graph), pointer :: g
     type(index_map), pointer :: row_imap
     integer, allocatable :: nvars(:)
@@ -129,15 +129,13 @@ contains
       call this%A%init(g, take_graph=.true.)
     end associate
 
-    !call params%get('num-iter', this%niter, default=1)
-    plist => params%sublist("precon")
-    plist_params => plist%sublist("params")
-    call plist%set("method", "boomeramg")
-    !call plist%set("method", "ssor")
-    call plist_params%set("num-cycles", 2)
+    call params%get("abs-lame-tol", this%atol, default=1d-1)
+    call params%get("rel-lame-tol", this%rtol, default=1d-1)
+    plist => params%sublist("params")
+    if (.not.plist%is_parameter("num-cycles")) call plist%set("num-cycles", 2) ! set a default
     ! call plist_params%set("print-level", 3)
     ! call plist_params%set("debug-level", 1)
-    call alloc_pcsr_precon(this%precon, this%A, plist, stat, errmsg)
+    call alloc_pcsr_precon(this%precon, this%A, params, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS PRECON INIT: " // errmsg)
 
   end subroutine init
@@ -227,6 +225,16 @@ contains
           call this%A%set(n1, n1, 1.0_r8 / this%model%scaling_factor(n))
           call this%A%set(n2, n2, 1.0_r8 / this%model%scaling_factor(n))
           call this%A%set(n3, n3, 1.0_r8 / this%model%scaling_factor(n))
+          ! block
+          !   integer :: ii
+          !   real(r8), pointer :: values(:) => null()
+          !   integer, pointer :: indices(:) => null()
+          !   do ii = n1, n3
+          !     call this%A%get_row_view(ii, values, indices)
+          !     values = 0
+          !     call this%A%set(ii, ii, 1.0_r8 / this%model%scaling_factor(n))
+          !   end do
+          ! end block
         else
           do xp = ig%xnpoint(n), ig%xnpoint(n+1)-1
             k = xp - ig%xnpoint(n) + 1
@@ -323,9 +331,6 @@ contains
 
     class(sm_hypre_precon), intent(inout) :: this
 
-    ! TODO: Figure out good parameters & expose to user input
-    real(r8), parameter :: atol = 1d-3
-    real(r8), parameter :: rtol = 1d-3
     real(r8) :: err1, err2
     integer :: c
 
@@ -335,8 +340,8 @@ contains
     else
       recompute_needed = .false.
       do c = 1, this%model%mesh%ncell_onP
-        err1 = abs(this%l1(c) - this%model%lame1(c)) / (atol + rtol*this%model%lame1(c))
-        err2 = abs(this%l2(c) - this%model%lame2(c)) / (atol + rtol*this%model%lame2(c))
+        err1 = abs(this%l1(c) - this%model%lame1(c)) / (this%atol + this%rtol*this%model%lame1(c))
+        err2 = abs(this%l2(c) - this%model%lame2(c)) / (this%atol + this%rtol*this%model%lame2(c))
         if (err1 > 1 .or. err2 > 1) then
           recompute_needed = .true.
           exit

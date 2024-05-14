@@ -61,11 +61,15 @@ contains
   subroutine read_solid_mechanics_namelists(lun)
     use solid_mechanics_namelist
     use solid_mechanics_bc_namelist
+    use viscoplastic_solver_namelist
     use viscoplastic_model_namelist
     use parameter_list_type
     integer, intent(in) :: lun
     type(parameter_list), pointer :: plist
     call read_solid_mechanics_namelist(lun)
+    plist => params%sublist('model')
+    plist => plist%sublist('viscoplastic-solver')
+    call read_viscoplastic_solver_namelist(lun, plist)
     plist => params%sublist('model')
     plist => plist%sublist('bc')
     call read_solid_mechanics_bc_namelists(lun, plist)

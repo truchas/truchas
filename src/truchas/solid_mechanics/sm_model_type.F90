@@ -54,7 +54,6 @@ module sm_model_type
 
     !! input parameters
     real(r8), allocatable :: body_force_density(:)
-    real(r8) :: strain_limit
 
     !! solver parameters -- expose to nlsol
     real(r8), public :: atol, rtol, ftol
@@ -115,10 +114,8 @@ contains
     call this%matl_model%init(params, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     call params%get('body-force-density', this%body_force_density, default=[0d0, 0d0, 0d0])
-    call params%get('strain-limit', this%strain_limit, default=1e-10_r8)
 
     ASSERT(size(this%body_force_density) == 3)
-    if (this%strain_limit < 0) call TLS_fatal('strain-limit must be >= 0')
 
     allocate(this%density_c(this%mesh%ncell), this%density_n(this%mesh%nnode_onP), &
         this%strain_total(6,this%ig%npt), &

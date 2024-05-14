@@ -46,11 +46,14 @@ contains
     type(sm_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
+    type(parameter_list), pointer :: plist => null()
+
     this%model => model
     this%bc => model%bc
-    call params%get('num-iter', this%niter, default=1)
+    plist => params%sublist("params")
     call params%get('relaxation-parameter', this%omega, default=1.0_r8)
     call params%get('stress-relaxation-parameter', this%gamma, default=1.0_r8) ! legacy used 16/9
+    call plist%get('num-cycles', this%niter, default=1)
 
     allocate(this%diag(3,model%mesh%nnode_onP))
     this%diag = 0

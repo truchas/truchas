@@ -90,7 +90,7 @@ contains
     type(viscoplastic_material_model_box), allocatable, intent(inout) :: vp(:)
 
     integer :: stat
-    character(:), allocatable :: errmsg
+    character(:), allocatable :: errmsg, preconditioner_method
     type(parameter_list), pointer :: plist => null()
 
     call start_timer("solid mechanics")
@@ -99,8 +99,15 @@ contains
     call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     plist => params%sublist("preconditioner")
-    !allocate(sm_ds_precon :: this%precon)
-    allocate(sm_hypre_precon :: this%precon)
+    call plist%get("method", preconditioner_method, default="boomeramg")
+    select case(preconditioner_method)
+    case("ds")
+      allocate(sm_ds_precon :: this%precon)
+    case("boomeramg", "ssor")
+      allocate(sm_hypre_precon :: this%precon)
+    case default
+      call TLS_fatal("Invalid selection for solid mechanics preconditioner_type")
+    end select
     call this%precon%init(this%model, plist)
 
     call this%solver_model%init(this%model, this%precon)

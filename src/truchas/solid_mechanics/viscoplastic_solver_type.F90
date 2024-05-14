@@ -29,7 +29,7 @@ module viscoplastic_solver_type
 
   type, public :: viscoplastic_solver
     private
-    real(r8) :: strain_limit, atol, rtol, ntol
+    real(r8) :: strain_limit, rate_limit, atol, rtol
     logical :: use_bdf2
 
     type(viscoplastic_model), public, pointer :: model => null()
@@ -74,37 +74,43 @@ contains
 
     integer :: stat
     character(:), allocatable :: errmsg, solver_type
-    real(r8) :: atol(6)
 
     this%ig => ig
 
     allocate(this%model)
     call this%model%init(matl_model)
 
-    if (.not.params%is_parameter("nlk-tol")) call params%set("nlk-tol", 1d-2) ! default, passed to idaesol
+    ! set some defaults to be passed to idaesol
+    if (.not.params%is_parameter("nlk-tol")) call params%set("nlk-tol", 1d-2)
+    if (.not.params%is_parameter("nlk-max-vec")) call params%set("nlk-max-vec", 3)
+    if (.not.params%is_parameter("nlk-max-itr")) call params%set("nlk-max-itr", 10)
+    if (.not.params%is_parameter("pc-freq")) call params%set("pc-freq", 1)
+
     call params%get('strain-limit', this%strain_limit, default=1d-10)
+    call params%get('rate-limit', this%rate_limit, default=-huge(1.0_r8)) ! 1.1_r8
     call params%get('atol', this%atol, default=1d-12)
     call params%get('rtol', this%rtol, default=1d-3)
-    call params%get('nlk-tol', this%ntol)
 
     call params%get('solver', solver_type, default="bdf2")
     select case (solver_type)
     case ("bdf2")
-      atol = this%atol
-      call bdf2_create_state(this%bdf2state, 6)
-      call bdf2_set_param(this%bdf2control, atol=atol, rtol=this%rtol, mvec=0, ntol=this%ntol)
-      this%use_bdf2 = .true.
+      block
+        real(r8) :: atol(6), ntol
+        integer :: mitr, mvec
+        call params%get('nlk-tol', ntol)
+        call params%get('nlk-max-vec', mvec)
+        call params%get('nlk-max-itr', mitr)
+        atol = this%atol
+        call bdf2_create_state(this%bdf2state, 6)
+        call bdf2_set_param(this%bdf2control, atol=atol, rtol=this%rtol, &
+            mvec=mvec, mitr=mitr, ntol=ntol)
+        this%use_bdf2 = .true.
+      end block
     case ("jacobian")
       this%use_bdf2 = .false.
-      call params%set('nlk-max-vec', 0)
-      call params%set('nlk-max-itr', 50)
-      call params%set('pc-freq', 1)
       allocate(viscoplastic_jacob_idaesol_model :: this%integ_model)
     case ("jfree")
       this%use_bdf2 = .false.
-      call params%set('nlk-max-vec', 0)
-      call params%set('nlk-max-itr', 10)
-      call params%set('pc-freq', 1)
       allocate(viscoplastic_jfree_idaesol_model :: this%integ_model)
     case default
       call TLS_fatal("Invalid selection for viscoplastic_solver")
@@ -148,8 +154,8 @@ contains
     real(r8), intent(in) :: strain_plastic_old(:,:), dstrain_plastic_dt_old(:,:)
     real(r8), intent(out) :: strain_plastic_new(:,:), dstrain_plastic_dt_new(:,:)
 
-    integer :: p, j
-    real(r8) :: strain_rate_old, strain_rate_new, max_strain!, rate_change
+    integer :: p, j, stat
+    real(r8) :: strain_rate_old, strain_rate_new, max_strain, rate_change
 
     call start_timer("viscoplasticity")
 
@@ -170,17 +176,41 @@ contains
         strain_rate_old = this%model%strain_rate(0.0_r8, u0)
         strain_rate_new = this%model%strain_rate(dt, u0)
         max_strain = max(strain_rate_old, strain_rate_new) * dt
-        !rate_change = max(strain_rate_new / strain_rate_old, strain_rate_old / strain_rate_new)
+        rate_change = max(strain_rate_new / strain_rate_old, strain_rate_old / strain_rate_new)
 
         ! The rate_change threshold was present in the legacy code, and it seems to
         ! moderately speed up calculations, but the result is less stable. I've
         ! disabled it for now. -zjibben
-        if (dt == 0 .or. max_strain < this%strain_limit) then ! .or. rate_change < 1.1_r8) then
+        if (dt == 0 .or. max_strain < this%strain_limit .or. rate_change < this%rate_limit) then
           u1 = u0 + (0.5_r8 * dt) * udot0
           call this%model%compute_udot(0.5_r8 * dt, u1, udot1)
           u1 = u1 + (0.5_r8 * dt) * udot1
         else
-          call this%integrate(dt, strain_rate_old, u0, udot0, u1)
+          call this%integrate(dt, strain_rate_old, u0, udot0, u1, stat)
+          if (stat /= 0) then
+            block
+              real(r8) :: stress(6), vmstress, dstress(6)
+              call this%model%compute_stresses(0.0_r8, u0, stress, vmstress, dstress)
+              print '(a,4es15.5)', "state: ", dt, temperature(j), lame1(j), lame2(j)
+              print '(a,4es15.5)', "vof:  ", vof(:,j)
+              print '(a,6es15.5)', "spc:  ", strain_pc(:,j)
+              print '(a,7es15.5)', "stoo: ", strain_total_old(:,j)
+              print '(a,7es15.5)', "stho: ", strain_thermal_old(:,j)
+              print '(a,7es15.5)', "ston: ", strain_total_new(:,j)
+              print '(a,7es15.5)', "sthn: ", strain_thermal_new(:,j)
+              print '(4es15.5)', strain_rate_old, strain_rate_new
+
+              print '(a,es15.5)', "vmstress: ", vmstress
+              print *, "dstress: ", dstress
+              print *, u0
+              print *, u1
+            end block
+            block
+              character(128) :: msg
+              write(msg,"(a,i6)") "Viscoplastic strain integrator failed: ", stat
+              call TLS_panic(trim(msg))
+            end block
+          end if
         end if
 
         call this%model%compute_udot(dt, u1, udot1)
@@ -196,34 +226,36 @@ contains
 
 
   subroutine integrate(this, dt, strain_rate_old, strain_plastic_old, dstrain_plastic_dt_old, &
-      strain_plastic_new)
+      strain_plastic_new, status)
 
     class(viscoplastic_solver), intent(inout) :: this
     real(r8), intent(in) :: dt, strain_rate_old, strain_plastic_old(:), dstrain_plastic_dt_old(:)
     real(r8), intent(out) :: strain_plastic_new(:)
+    integer, intent(out) :: status
 
     integer :: stat
-    character(128) :: msg
     real(r8) :: idt
 
     call start_timer("integrate")
 
+    status = 0
+    !idt = min(max(this%strain_limit / strain_rate_old, dt / 32), dt) ! / 10
     idt = min(this%strain_limit / strain_rate_old, dt) ! / 10
 
     if (this%use_bdf2) then
       call bdf2_init_state(this%bdf2state, strain_plastic_old, 0.0_r8, hstart=idt)
       call bdf2_integrate(this%bdf2state, this%bdf2control, tout=dt, stat=stat, rhs=dstrain_dt)
       if (stat /= SOLN_AT_TOUT) then
-        write(msg,"(a,i6)") "Viscoplastic strain integrator failed: ", stat
-        call TLS_fatal(trim(msg))
+        status = stat
+        return
       end if
       strain_plastic_new = bdf2_interpolate_solution(this%bdf2state, dt)
     else
       call this%integrator%set_initial_state(0.0_r8, strain_plastic_old, dstrain_plastic_dt_old)
       call this%integrator%integrate(idt, stat, tout=dt)
       if (stat /= 1) then
-        write(msg,"(a,i6)") "Viscoplastic strain integrator failed: ", stat
-        call TLS_fatal(trim(msg))
+        status = stat
+        return
       end if
 
       !call this%integrator%get_last_state_copy(strain_plastic_new)

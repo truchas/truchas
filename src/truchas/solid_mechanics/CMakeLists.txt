@@ -4,6 +4,7 @@ target_sources(truchas PRIVATE
   solid_mechanics_namelist.F90
   solid_mechanics_bc_namelist.F90
   viscoplastic_model_namelist.F90
+  viscoplastic_solver_namelist.F90
   integration_geometry_type.F90
   integration_cell_type.F90
   bndry_ip_func_type.F90

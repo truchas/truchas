@@ -49,7 +49,6 @@ contains
         mts_k, mts_mu_0, mts_sig_a, mts_d, mts_temp_0, mts_b, &
         mts_edot_0i, mts_g_0i, mts_q_i, mts_p_i, mts_sig_i
 
-    call TLS_info('')
     call TLS_info('Reading VISCOPLASTIC_MODEL namelists ...')
 
     if (is_IOP) rewind(lun)
