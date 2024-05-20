@@ -16,16 +16,41 @@ The PHYSICS namelist specifies which physics models are active in the simulation
 **Heat and Species Transport**.  The heat and species transport physics kernel models both heat conduction with thermal (view factor) radiation, and solutal species diffusion and thermodiffusion. These (primarily) diffusive transport processes are fully coupled; advection of enthalpy and solutal species are handled by the fluid flow physics kernel and incorporated as loosely-coupled source terms. Heat transport is enabled using the :ref:`Heat_Transport<PHYSICS_HT>` flag, and solves the heat equation
 
 .. math::
-  \frac{\partial H}{\partial T} = \Delta . K \Delta T + Q + Q_{joule} + Q_{adv} 
- :label: eq_ht
+  :label: eq_ht
+  
+  \frac{\partial H}{\partial T} = \nabla\cdot K \nabla T + Q + Q_\text{joule} + Q_\text{adv} 
 
-with dependent variables temperature :math:`T` and enthalpy density :math:`H`. The enthalpy density is algebraically related to temperature as :math:`H=f(T)` where :math:`f′(T) =\rho c_p`is the volumetric heat capacity. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the heat equation. The optional volumetric heat source :math:`Q` is defined through the :ref:`DS_SOURCE<DS_SOURCE_Namelist>` namelist using "temperature" as the equation name. The Joule heating source :math:`Q_{joule}` is computed by the induction heating kernel, and the advected heat :math:`Q_{adv}` by the flow kernel. The boundary conditions on :math:`T` are defined through the :ref:`THERMAL_BC<THERMAL_BC_Namelist>` namelists. The initial value of :math:`T` are defined through the Temperature variable of the :ref:`BODY<BODY_Namelist>` namelists. View factor radiation systems which couple to the heat equation are defined using :ref:`ENCLOSURE_RADIATION<ENCLOSURE_RADIATION_Namelist>` namelists. Solutal species transport is enabled using the :ref:`Species_Transport<PHYSICS_ST>` flag, which solves the :math:`n` coupled equations
+with dependent variables temperature :math:`T` and enthalpy density :math:`H`.
+The enthalpy density is algebraically related to temperature as :math:`H=f(T)`
+where :math:`f'(T)=\rho c_p` is the volumetric heat capacity. See the
+:ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of
+the material properties required by the heat equation. The optional volumetric
+heat source :math:`Q` is defined through the
+:ref:`THERMAL_SOURCE<THERMAL_SOURCE_Namelist>` namelist. The Joule heating
+source :math:`Q_\text{joule}` is computed by the induction heating kernel,
+and the advected heat :math:`Q_\text{adv}` by the flow kernel. The boundary
+conditions on :math:`T` are defined using the
+:ref:`THERMAL_BC<THERMAL_BC_Namelist>` namelists. The initial value of
+:math:`T` is defined by the Temperature variable of the :ref:`BODY<BODY_Namelist>` namelists. View factor radiation systems which couple to the heat equation are defined using :ref:`ENCLOSURE_RADIATION<ENCLOSURE_RADIATION_Namelist>` namelists. Solutal species transport is enabled using the :ref:`Species_Transport<PHYSICS_ST>` flag, which solves the :math:`n` coupled equations
 
 .. math::
-  \frac{\partial \phi_i}{\partial t} = \Delta . D_i (\Delta \phi_i[+S_i\Delta T]) + Q_i + Q_{{i},{adv}} 
- :label: eq_st
+  :label: eq_st
+  
+  \frac{\partial\phi_i}{\partial t} = \nabla\cdot D_i
+      (\nabla\phi_i~[{}+S_i\nabla T]~) + Q_i + Q_{i,\text{adv}} 
 
-for species concentrations :math:`\phi_i`. The number of components :math:`n` is defined by :ref:`Number_of_Species <PHYSICS_NOS>`. The thermodiffusion term in [·] is only included when coupled with heat transport. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for defining the diffusivities :math:`D_i` and Soret coefficients :math:`S_i`. The optional volumetric source :math:`Q_i` is defined through the :ref:`DS_SOURCE<DS_SOURCE_Namelist>` namelist using "concentration i" as the equation name. The advected species source :math:`Q_{i,adv}` is computed by the flow kernel. Boundary conditions on :math:`\phi_i` are defined through the :ref:`SPECIES_BC<SPECIES_BC_Namelist>` namelists. The initial value of the :math:`\phi_i` are defined through the :ref:`Phi<B_phi>` variable of the :ref:`BODY<BODY_Namelist>` namelists.
+for species concentrations :math:`\phi_i`. The number of components :math:`n`
+is defined by :ref:`Number_of_Species <PHYSICS_NOS>`. The thermodiffusion
+term in :ref:`eq_st` is only included when coupled with heat transport.
+See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for defining
+the diffusivities :math:`D_i` and Soret coefficients :math:`S_i`. The optional
+volumetric source :math:`Q_i` is defined through the
+:ref:`DS_SOURCE<DS_SOURCE_Namelist>` namelist using "concentration i" as the
+equation name. The advected species source :math:`Q_{i,\text{adv}}` is computed
+by the flow kernel. Boundary conditions on :math:`\phi_i` are defined through
+the :ref:`SPECIES_BC<SPECIES_BC_Namelist>` namelists. The initial value of the
+:math:`\phi_i` are defined through the :ref:`Phi<B_phi>` variable of the
+:ref:`BODY<BODY_Namelist>` namelists.
 
 **Induction Heating**.  The induction heating physics kernel solves for the Joule heat that is used as a source in heat transport. It is enabled using the :ref:`Electromagnetics<PHYSICS_EM>` flag. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the electromagnetics solver. The :ref:`Electromagnetics<PHYSICS_EM>` namelist is used to describe the induction heating problem.
 
