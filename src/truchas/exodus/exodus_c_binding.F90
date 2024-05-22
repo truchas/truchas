@@ -71,8 +71,8 @@ module exodus_c_binding
   public :: ex_put_side_set         ! write side set
   public :: ex_put_qa               ! write QA records
 
-  !! Parameters from exodusII.h (version 8.11)
-  integer(c_int), parameter :: EX_API_VERS_NODOT = 811 ! MUST MATCH THE INSTALLED LIBRARY
+  !! Parameters from exodusII.h (version 8.25)
+  integer(c_int), parameter :: EX_API_VERS_NODOT = 825 ! MUST MATCH THE INSTALLED LIBRARY
 
   integer, parameter, public :: MAX_STR_LENGTH  = 32
   integer, parameter, public :: MAX_LINE_LENGTH = 80
@@ -85,7 +85,7 @@ module exodus_c_binding
   integer(c_int), parameter, public :: EX_NORMAL_MODEL =  int(z'10')
   integer(c_int), parameter, public :: EX_64BIT_OFFSET =  int(z'20')
   integer(c_int), parameter, public :: EX_LARGE_MODEL  =  EX_64BIT_OFFSET
-  integer(c_int), parameter, public :: EX_64BIT_DATA   =  int(z'40000')
+  integer(c_int), parameter, public :: EX_64BIT_DATA   =  int(z'400000')
   integer(c_int), parameter, public :: EX_NETCDF4      =  int(z'40')
   integer(c_int), parameter, public :: EX_NOSHARE      =  int(z'80')
   integer(c_int), parameter, public :: EX_SHARE        =  int(z'100')
