@@ -19,6 +19,7 @@ program HT_2D_main
 #endif
   use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
   use parallel_communication
+  use fhypre, only: fhypre_initialize
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
@@ -35,6 +36,7 @@ program HT_2D_main
 
   !! Initialize MPI
   call init_parallel_communication
+  call fhypre_initialize
 
   !! Get the program name from the command line.
   call get_command_argument(0, arg)

@@ -11,6 +11,7 @@ program test_HT_2d_solver_initial_state
 #endif
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
+  use fhypre, only: fhypre_initialize
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
@@ -37,6 +38,7 @@ program test_HT_2d_solver_initial_state
 
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
+  call fhypre_initialize
   prefix='run'  ! TLS will write to 'run.log'
   overwrite_output = .true.
   call TLS_initialize
