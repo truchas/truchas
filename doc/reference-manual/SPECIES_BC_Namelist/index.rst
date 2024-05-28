@@ -11,7 +11,7 @@ domain boundary. The boundary subset :math:`\Gamma` is specified using mesh face
 sets. The namelist variable `face_set_ids`_ takes a list of face set IDs, and
 the boundary condition is imposed on all faces belonging to those face sets.
 Note that ExodusII mesh side sets are imported into Truchas as face sets with
-the same IDs. The species component is specified using the `comp`_ namelist
+the same IDs. The species component is specified using the `comp_id`_ namelist
 variable.
 
 :Required/Optional: Required
@@ -93,9 +93,10 @@ name
 :Default: none
 
 
-comp
+comp_id
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:Description: The species component this boundary condition applies to.
+:Description: The index of the species component to which this boundary
+              condition applies.
 :Type: integer
 :Default: 1
 
