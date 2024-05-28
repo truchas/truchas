@@ -14,6 +14,7 @@ module HTSD_model_type
   use data_layout_type
   use prop_mesh_func_type
   use source_mesh_function
+  use scalar_mesh_func_class
   use scalar_mesh_multifunc_type
   use bndry_func1_class
   use bndry_func2_class
@@ -47,7 +48,8 @@ module HTSD_model_type
   type, public :: SD_model
     !! Equation parameters
     type(prop_mesh_func) :: diffusivity
-    type(source_mf) :: source
+    type(source_mf) :: source ! advection term
+    class(scalar_mesh_func), allocatable :: src
     type(prop_mesh_func), pointer :: soret => null()
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
@@ -456,6 +458,12 @@ contains
       call this%mesh%cell_imap%gather_offp(Cdot)
       call smf_eval (this%sd(index)%source, t, value)
       Fcell = Fcell + this%mesh%volume*(Cdot - value)
+
+      !! External source term
+      if (allocated(this%sd(index)%src)) then
+        call this%sd(index)%src%compute(t)
+        Fcell = Fcell - this%mesh%volume*this%sd(index)%src%value
+      end if
 
       !! Dirichlet condition residuals.
       if (allocated(this%sd(index)%bc_dir)) then

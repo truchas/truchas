@@ -41,10 +41,10 @@ contains
     type(parameter_list), pointer :: plist
 
     !! Namelist variables
-    integer :: face_set_ids(100), comp
+    integer :: face_set_ids(100), comp_id
     real(r8) :: conc, flux, mtc, ambient_conc
     character(32) :: name, type, conc_func, flux_func, mtc_func, ambient_conc_func
-    namelist /species_bc/ name, face_set_ids, comp, type, conc, conc_func, flux, flux_func, &
+    namelist /species_bc/ name, face_set_ids, comp_id, type, conc, conc_func, flux, flux_func, &
         mtc, mtc_func, ambient_conc, ambient_conc_func
 
 
@@ -66,7 +66,7 @@ contains
 
       name = NULL_C
       face_set_ids = NULL_I
-      comp = NULL_I
+      comp_id = NULL_I
       type = NULL_C
       conc = NULL_R
       conc_func = NULL_C
@@ -83,7 +83,7 @@ contains
 
       call broadcast(name)
       call broadcast(face_set_ids)
-      call broadcast(comp)
+      call broadcast(comp_id)
       call broadcast(type)
       call broadcast(conc)
       call broadcast(conc_func)
@@ -110,12 +110,12 @@ contains
         call plist%set('face-set-ids', pack(face_set_ids, mask=(face_set_ids/=NULL_I)))
       end if
 
-      !! COMP is optional; will default to 1 if not set.
-      if (comp /= NULL_I) then
-        if (comp <= 0) then
-          call TLS_fatal(label // ': COMP must be > 0')
+      !! COMP_ID is optional; will default to 1 if not set.
+      if (comp_id /= NULL_I) then
+        if (comp_id <= 0) then
+          call TLS_fatal(label // ': COMP_ID must be > 0')
         else
-          call plist%set('comp', comp)
+          call plist%set('comp', comp_id)
         end if
       end if
 
