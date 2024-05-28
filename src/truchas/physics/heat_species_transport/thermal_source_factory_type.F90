@@ -85,7 +85,10 @@ contains
     call this%alloc_source_func2(scf2, stat, errmsg)
     if (stat /= 0) return
 
-    if (allocated(scf1) .or. allocated(scf2)) allocate(src)
+    if (allocated(scf1) .or. allocated(scf2)) then
+      allocate(src)
+      allocate(src%value(this%mesh%ncell))
+    end if
 
     if (allocated(scf1)) then
       call scf1%assemble

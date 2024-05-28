@@ -31,10 +31,10 @@
   cutvof = 1.0e-8
 /
 
-&DS_SOURCE
-  equation = 'temperature'
+&THERMAL_SOURCE
+  name = 'foo'
   cell_set_ids = 3
-  source_constant = 3.5e8
+  source = 3.5e8
 /
   
 
