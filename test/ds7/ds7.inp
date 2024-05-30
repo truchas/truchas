@@ -71,10 +71,10 @@ so ortho operators are used for HT/PC.
   flux = 0.0
 /
 
-&DS_SOURCE
-  equation = 'temperature'
+&THERMAL_SOURCE
+  name = 'foo'
   cell_set_ids = 1
-  source_constant = 9.0
+  source = 9.0
 /
 
 &BODY

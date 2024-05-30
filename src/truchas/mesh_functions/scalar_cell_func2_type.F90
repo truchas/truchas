@@ -76,6 +76,7 @@ contains
     deallocate(this%builder)
     call scalar_func_list_to_box_array(this%flist, this%farray)
     allocate(this%hint(this%ngroup))
+    allocate(this%value(this%mesh%ncell))
     do n = 1, this%ngroup
       select type (f => this%farray(n)%f)
       type is (const_scalar_func)
@@ -93,9 +94,10 @@ contains
     real(r8), intent(in) :: t, v(:)
 
     integer :: j, n
-    real(r8) :: args(0:size(this%mesh%x,dim=1))
+    real(r8) :: args(0:size(this%mesh%x,dim=1)+1)
 
     args(0) = t
+    if (.not.this%evaluated) this%value = 0.0_r8
     do n = 1, this%ngroup
       associate (index => this%index(this%xgroup(n):this%xgroup(n+1)-1))
         select case (this%hint(n))

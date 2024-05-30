@@ -40,16 +40,16 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
   dt_grow = 10.0
 /
 
-&DS_SOURCE
-  equation = 'temperature'
+&THERMAL_SOURCE
+  name = 'foo'
   cell_set_ids = 1
-  source_constant = 1.0
+  source = 1.0
 /
 
-&DS_SOURCE
-  equation = 'temperature'
+&THERMAL_SOURCE
+  name = 'bar'
   cell_set_ids = 2
-  source_function = 'one'
+  source_func = 'one'
 /
 
 &FUNCTION

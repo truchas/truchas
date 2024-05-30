@@ -110,10 +110,10 @@ an internal HTC condition.
 !! SPATIALLY VARYING HEAT SOURCE IN THE SOLID REGION.
 !! SOURCE EXHIBITS THE SYMMETRIES IMPOSED ON THE TEMPERATURE.
 
-&DS_SOURCE
-  equation = 'temperature'
+&THERMAL_SOURCE
+  name = 'foo'
   cell_set_ids = 1
-  source_function = 'heat source'
+  source_func = 'heat source'
 /
 
 &FUNCTION
