@@ -13,7 +13,6 @@ module HTSD_model_type
   use mfd_disc_type
   use data_layout_type
   use prop_mesh_func_type
-  use source_mesh_function
   use scalar_mesh_func_class
   use scalar_mesh_multifunc_type
   use bndry_func1_class
@@ -30,8 +29,8 @@ module HTSD_model_type
     !! Equation parameters
     type(prop_mesh_func) :: conductivity ! thermal conductivity
     type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
-    type(source_mf) :: source     ! external heat source
-    type(scalar_mesh_multifunc), allocatable :: src ! another external heat source
+    real(r8), allocatable :: q_adv(:) ! advective source
+    type(scalar_mesh_multifunc), allocatable :: src ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -48,8 +47,8 @@ module HTSD_model_type
   type, public :: SD_model
     !! Equation parameters
     type(prop_mesh_func) :: diffusivity
-    type(source_mf) :: source ! advection term
-    class(scalar_mesh_func), allocatable :: src
+    real(r8), allocatable :: q_adv(:) ! advective source
+    class(scalar_mesh_func), allocatable :: src ! external source
     type(prop_mesh_func), pointer :: soret => null()
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
@@ -73,6 +72,8 @@ module HTSD_model_type
   contains
     procedure :: update_moving_vf
     procedure :: add_moving_vf_events
+    procedure :: set_ht_adv_source
+    procedure :: set_sd_adv_source
   end type HTSD_model
 
   public :: HTSD_model_init
@@ -163,7 +164,6 @@ contains
     type(HT_model), intent(inout) :: this
     !call destroy (this%conductivity)
     !call destroy (this%H_of_T)
-    call smf_destroy (this%source)
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine HT_model_delete
 
@@ -174,8 +174,27 @@ contains
      ! call destroy (this%soret)
      ! deallocate(this%soret)
     !end if
-    call smf_destroy (this%source)
   end subroutine SD_model_delete
+
+  subroutine set_ht_adv_source(this, q_adv)
+    class(HTSD_model), intent(in) :: this
+    real(r8), intent(in) :: q_adv(:)
+    ASSERT(associated(this%ht))
+    ASSERT(size(q_adv) == this%mesh%ncell)
+    if (.not.allocated(this%ht%q_adv)) allocate(this%ht%q_adv(this%mesh%ncell))
+    this%ht%q_adv = q_adv
+  end subroutine
+
+  subroutine set_sd_adv_source(this, n, q_adv)
+    class(HTSD_model), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), intent(in) :: q_adv(:)
+    ASSERT(associated(this%sd))
+    ASSERT(n > 0 .and. n <= size(this%sd))
+    ASSERT(size(q_adv) == this%mesh%ncell)
+    if (.not.allocated(this%sd(n)%q_adv)) allocate(this%sd(n)%q_adv(this%mesh%ncell))
+    this%sd(n)%q_adv = q_adv
+  end subroutine
 
   function HTSD_model_new_state_array (this, u) result (state)
     type(HTSD_model), intent(in) :: this
@@ -283,8 +302,11 @@ contains
       call this%ht%conductivity%compute_value(state, value)
       if (associated(this%void_cell)) where (this%void_cell) value = 0.0_r8
       call this%disc%apply_diff (value, Tcell, Tface, Fcell, Fface)
-      call smf_eval (this%ht%source, t, value)
-      Fcell = Fcell + this%mesh%volume*(Hdot - value)
+      if (allocated(this%ht%q_adv)) then
+        Fcell = Fcell + this%mesh%volume*(Hdot - this%ht%q_adv)
+      else
+        Fcell = Fcell + this%mesh%volume*Hdot
+      end if
 
       !! Additional heat source
       if (allocated(this%ht%src)) then
@@ -453,11 +475,14 @@ contains
       if (associated(this%void_cell)) where (this%void_cell) D = 0.0_r8
       call this%disc%apply_diff (D, Ccell, Cface, Fcell, Fface)
 
-      !! Time derivative and source contribution.
+      !! Time derivative and advective source contribution.
       call HTSD_model_get_cell_conc_copy (this, index, udot, Cdot)
       call this%mesh%cell_imap%gather_offp(Cdot)
-      call smf_eval (this%sd(index)%source, t, value)
-      Fcell = Fcell + this%mesh%volume*(Cdot - value)
+      if (allocated(this%sd(index)%q_adv)) then
+        Fcell = Fcell + this%mesh%volume*(Cdot - this%sd(index)%q_adv)
+      else
+        Fcell = Fcell + this%mesh%volume*Cdot
+      end if
 
       !! External source term
       if (allocated(this%sd(index)%src)) then

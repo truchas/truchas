@@ -6,26 +6,23 @@
 NUMERICS Namelist
 ===================
 
-Overview
-------------
-The NUMERICS namelist specifies general numerical parameters not specific to any particular physics, especially those controlling the overall time stepping of the Truchas model.
+The NUMERICS namelist specifies general numerical parameters not specific to
+any particular physics, especially those controlling the overall time stepping
+of the Truchas model.
 
 
-DS_SOURCE Namelist Features
-----------------------------
-| **Required/Optional        :** Required
-| **Single/Multiple Instances:** Single
+.. admonition:: Namelist Usage
 
-Components
-------------
-* :ref:`Cycle_Max<NUMERICS_CM>`
-* :ref:`Cycle_Number<NUMERICS_CN>`
-* :ref:`Dt_Constant<NUMERICS_DTC>`
-* :ref:`Dt_Grow<NUMERICS_DTG>`
-* :ref:`Dt_Init<NUMERICS_DTI>`
-* :ref:`Dt_Max<NUMERICS_DTMax>`
-* :ref:`Dt_Min<NUMERICS_DTMin>`
-* :ref:`t<NUMERICS_T>`
+   :Required/Optional: Required
+   :Single/Multiple Instances: Single
+
+
+Namelist Variables
+------------------
+
+.. contents::
+   :local:
+
 
 .. _NUMERICS_CM:
 

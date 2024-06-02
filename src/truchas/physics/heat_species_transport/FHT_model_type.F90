@@ -13,7 +13,6 @@ module FHT_model_type
   use unstr_mesh_type
   use data_layout_type
   use prop_mesh_func_type
-  use source_mesh_function
   use scalar_mesh_multifunc_type
   use bndry_func1_class
   use bndry_func2_class
@@ -38,7 +37,7 @@ module FHT_model_type
     !type(prop_mf), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
     type(prop_mesh_func), pointer :: conductivity => null()   ! thermal conductivity
     type(prop_mesh_func), pointer :: H_of_T => null()          ! enthalpy as a function of temperature
-    type(source_mf), pointer :: q => null()    ! external heat source
+    real(r8), allocatable :: q_adv(:) ! advective heat source
     type(scalar_mesh_multifunc), allocatable :: src ! another external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
@@ -53,6 +52,7 @@ module FHT_model_type
   contains
     procedure :: update_moving_vf
     procedure :: add_moving_vf_events
+    procedure :: set_ht_adv_source
   end type FHT_model
 
   public :: FHT_model_init
@@ -118,12 +118,15 @@ contains
       !call destroy (this%H_of_T)
       deallocate(this%H_of_T)
     end if
-    if (associated(this%q)) then
-      call smf_destroy (this%q)
-      deallocate(this%q)
-    end if
     if (associated(this%vf_rad_prob)) deallocate(this%vf_rad_prob)
   end subroutine FHT_model_delete
+
+  subroutine set_ht_adv_source(this, q_adv)
+    class(FHT_model), intent(inout) :: this
+    real(r8), intent(in) :: q_adv(:)
+    ASSERT(size(q_adv) == this%mesh%ncell)
+    this%q_adv = q_adv
+  end subroutine
 
   subroutine FHT_model_compute_f (this, t, u, hdot, f)
 
@@ -173,10 +176,15 @@ contains
     !! Add the source and time deriviative contribution.
     !! The result is complete on on-process cells only, but the
     !! off-process values are not used hereafter.
-    call smf_eval (this%q, t, value)
-    do j = 1, this%mesh%ncell_onP
-      Fcell(j) = Fcell(j) + this%mesh%volume(j)*(hdot(j) - value(j))
-    end do
+    if (allocated(this%q_adv)) then
+      do j = 1, this%mesh%ncell_onP
+        Fcell(j) = Fcell(j) + this%mesh%volume(j)*(hdot(j) - this%q_adv(j))
+      end do
+    else
+      do j = 1, this%mesh%ncell_onP
+        Fcell(j) = Fcell(j) + this%mesh%volume(j)*hdot(j)
+      end do
+    end if
     !call this%mesh%cell_imap%gather_offp(Fcell) ! off-process not used below
 
     !! Additional heat source

@@ -44,12 +44,12 @@ is defined by :ref:`Number_of_Species <PHYSICS_NOS>`. The thermodiffusion
 term in :ref:`eq_st` is only included when coupled with heat transport.
 See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for defining
 the diffusivities :math:`D_i` and Soret coefficients :math:`S_i`. The optional
-volumetric source :math:`Q_i` is defined through the
-:ref:`DS_SOURCE<DS_SOURCE_Namelist>` namelist using "concentration i" as the
-equation name. The advected species source :math:`Q_{i,\text{adv}}` is computed
+volumetric source :math:`Q_i` is defined using the
+:ref:`SPECIES_SOURCE<SPECIES_SOURCE_Namelist>` namelist. The advected species
+source :math:`Q_{i,\text{adv}}` is computed
 by the flow kernel. Boundary conditions on :math:`\phi_i` are defined through
 the :ref:`SPECIES_BC<SPECIES_BC_Namelist>` namelists. The initial value of the
-:math:`\phi_i` are defined through the :ref:`Phi<B_phi>` variable of the
+:math:`\phi_i` are defined through the `conc` variable of the
 :ref:`BODY<BODY_Namelist>` namelists.
 
 **Induction Heating**.  The induction heating physics kernel solves for the Joule heat that is used as a source in heat transport. It is enabled using the :ref:`Electromagnetics<PHYSICS_EM>` flag. See the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for a description of the material properties required by the electromagnetics solver. The :ref:`Electromagnetics<PHYSICS_EM>` namelist is used to describe the induction heating problem.

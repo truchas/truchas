@@ -22,7 +22,6 @@ module diffusion_solver
   use mfd_disc_type
   use matl_mesh_func_type
   use string_utilities, only: i_to_c
-  use source_mesh_function
   use mesh_interop
   use FHT_model_type
   use FHT_solver_type
@@ -64,9 +63,6 @@ module diffusion_solver
     type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc), pointer :: disc => null()
     type(matl_mesh_func), pointer :: mmf => null()
-    !! Saved references to the model sources.
-    type(source_mf), pointer :: ht_source => null()
-    type(source_mf), pointer :: sd_source(:) => null()
     !! Solver selections
     integer :: solver_type = 0
     !! The standard model and solver.
@@ -94,7 +90,6 @@ contains
     use thermal_source_namelist
     use species_bc_namelist
     use species_source_namelist
-    use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
     use diffusion_solver_namelist
     use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
@@ -107,7 +102,6 @@ contains
     call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
     call read_species_source_namelists(lun, this%species_source_params)
-    call read_ds_source (lun)
 
     call read_enclosure_radiation_namelists(lun)
 
@@ -178,7 +172,12 @@ contains
             q_ds = q_ds + (dQ / (h * this%mesh%volume))
           end block
         end if
-        call smf_set_extra_source (this%ht_source, q_ds)
+        select case (this%solver_type)
+        case (SOLVER1)  ! HT/SD solver with static void
+          call this%mod1%set_ht_adv_source(q_ds)
+        case (SOLVER2)  ! HT solver with transient void
+          call this%mod2%set_ht_adv_source(q_ds)
+        end select
         deallocate(q_ds)
       end if
 
@@ -195,7 +194,7 @@ contains
         call this%cadv(i)%get_advected_scalar(t, phi, dphi)
         call this%mesh%cell_imap%gather_offp(dphi)
         dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
-        call smf_set_extra_source(this%sd_source(i), dphi)
+        call this%mod1%set_sd_adv_source(i, dphi)
       end do
 
     end subroutine update_adv_conc
@@ -487,8 +486,6 @@ contains
         this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, ssrc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
-      if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source
-      if (this%have_species_diffusion) this%sd_source => this%mod1%sd%source
       this%sol1 => create_HTSD_solver (this%mmf, this%mod1, this%ds_params)
 
     case (SOLVER2)
@@ -500,7 +497,6 @@ contains
         this%mod2 => create_FHT_model (tinit, this%disc, this%mmf, bc_fac, tsrc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
-      this%ht_source => this%mod2%q ! we need this to set the advected heat at each step
       this%sol2 => create_FHT_solver(this%mmf, this%mod2, this%ds_params)
       call move_alloc(this%hadv, this%sol2%hadv)
 
@@ -536,8 +532,6 @@ contains
       call FHT_solver_delete (this%sol2)
       deallocate(this%sol2)
     end if
-    this%ht_source => null()
-    this%sd_source => null()
     if (associated(this%mod1)) then
       call HTSD_model_delete (this%mod1)
       deallocate(this%mod1)

@@ -118,7 +118,6 @@ contains
     subroutine define_system_parameters (mesh, mmf, model, stat, errmsg)
 
       use matl_mesh_func_type
-      use ds_source_input, only: define_external_source
       use parallel_communication, only: global_any
       use material_model_driver, only: matl_model
       use material_utilities
@@ -162,10 +161,7 @@ contains
         return
       end if
 
-      !! External heat source.
-      call define_external_source (mesh, 'temperature', model%source)
-
-      !! Additional heat sources
+      !! External heat sources
       call src_fac%alloc_source_funcs(model%src, stat, errmsg2)
       if (stat /= 0) then
         errmsg = errmsg2
@@ -409,7 +405,6 @@ contains
   function create_SD_model (mesh, mmf, bc_fac, src_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: num_species, heat_eqn
-    use ds_source_input, only: define_external_source
     use bitfield_type, only: btest
     use parallel_communication, only: global_any
     use material_model_driver, only: matl_model
@@ -447,8 +442,6 @@ contains
         errmsg = 'unexpected error defining diffusivity: ' // trim(errmsg)
         return
       end if
-      !! Source due to explicit treatment of species advection
-      call define_external_source (mesh, variable, model(n)%source)
       !! External species source
       call src_fac%alloc_source_func(n, model(n)%src, stat, errmsg2)
       if (stat /= 0) then
