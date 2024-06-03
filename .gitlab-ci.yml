@@ -8,7 +8,7 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.12.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
@@ -35,7 +35,7 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.12.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
   script:
     - git config --global --add safe.directory '*'
     - bash ci/build.sh
@@ -51,7 +51,7 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.12.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
   script:
   script:
     - git config --global --add safe.directory '*'
@@ -68,7 +68,7 @@ test truchas GFortran (Debug):
   stage: build
   needs: []
   tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.12.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.13.0
   script:
     - source /opt/rh/gcc-toolset-12/enable
       # Add mpich executables into path
@@ -100,7 +100,7 @@ test truchas GFortran (Release):
   stage: build
   needs: []
   tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.12.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.13.0
   script:
     - source /opt/rh/gcc-toolset-12/enable
       # Add mpich executables into path
