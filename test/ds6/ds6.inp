@@ -120,7 +120,7 @@ D*S=2*T*phi.  (All we've done here is to split phi into two pieces.)
   mesh_material_number = 1
   material_name = 'A+XY'
   temperature = 2.0
-  phi = 1.0, 1.0
+  conc = 1.0, 1.0
 /
 
 &MATERIAL

@@ -32,6 +32,7 @@ module diffusion_solver
   use truchas_logging_services
   use unstr_mesh_type
   use enthalpy_advector_class
+  use conc_advector_type
   use parameter_list_type
   use rad_problem_type, only: vf_event
   implicit none
@@ -75,6 +76,7 @@ module diffusion_solver
     type(FHT_model),  pointer :: mod2  => null()
     type(FHT_solver), pointer :: sol2 => null()
     class(enthalpy_advector), allocatable :: hadv
+    type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
     type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
   end type ds_driver
@@ -127,8 +129,10 @@ contains
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
-    !TODO: see issue 367
-    !if (this%have_species_diffusion) call update_adv_conc
+    if (allocated(this%cadv)) then  ! necessarily using SOLVER1
+      t = HTSD_solver_last_time(this%sol1)
+      call update_adv_conc
+    end if
 
     select case (this%solver_type)
     case (SOLVER1)  ! HT/SD solver with static void
@@ -177,28 +181,21 @@ contains
 
     end subroutine update_adv_heat
 
-!    subroutine update_adv_conc
-!
-!      use legacy_mesh_api, only: ncells
-!      use advection_module,   only: advected_phi
-!
-!      integer :: i
-!      real(r8), allocatable :: q_t(:), q_ds(:), phi_t(:)
-!
-!      if (this%have_fluid_flow) then
-!        allocate(q_t(ncells), q_ds(this%mesh%ncell), phi_t(ncells))
-!        do i = 1, num_species
-!          call ds_get_phi (i, phi_t)
-!          call advected_phi(phi_t, q_t)    ! species deltas for the time step
-!          q_ds(:this%mesh%ncell_onP) = q_t(:this%mesh%ncell_onP)
-!          call this%mesh%cell_imap%gather_offp(q_ds)
-!          q_ds = q_ds / (h * this%mesh%volume) ! convert to a rate density
-!          call smf_set_extra_source (this%sd_source(i), q_ds)
-!        end do
-!        deallocate(q_t, q_ds, phi_t)
-!      end if
-!
-!    end subroutine update_adv_conc
+    subroutine update_adv_conc
+
+      integer :: i
+      real(r8) :: phi(this%mesh%ncell), dphi(this%mesh%ncell)
+
+      do i = 1, num_species
+        call ds_get_phi(i, phi)
+        call this%mesh%cell_imap%gather_offp(phi)
+        call this%cadv(i)%get_advected_scalar(t, phi, dphi)
+        call this%mesh%cell_imap%gather_offp(dphi)
+        dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+        call smf_set_extra_source(this%sd_source(i), dphi)
+      end do
+
+    end subroutine update_adv_conc
 
   end subroutine ds_step
 
@@ -400,6 +397,7 @@ contains
     use thermal_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
+    integer :: i
     real(r8), intent(in) :: tinit
 
     integer :: stat
@@ -439,6 +437,13 @@ contains
       call hadv1%init(this%mesh, stat, errmsg2)
       if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
       call move_alloc(hadv1, this%hadv)
+      if (num_species > 0) then
+        allocate(this%cadv(num_species))
+        do i = 1, num_species
+          call this%cadv(i)%init(this%mesh, i, stat, errmsg2)
+          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
+        end do
+      end if
     end if
 
     call this%ds_params%get('cutvof', this%cutvof, default=0.0_r8)

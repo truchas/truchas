@@ -8,3 +8,10 @@ code.literal {
 	border-width: 0px;
 	padding: 0px;
 }
+
+.math {
+    text-align: left;
+}
+.eqno {
+    float: right;
+}

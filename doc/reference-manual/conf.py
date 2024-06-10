@@ -19,7 +19,7 @@ import sphinx.ext.imgmath
 # -- Project information -----------------------------------------------------
 
 project = 'Truchas Reference Manual'
-copyright = '2021-2023, The Truchas Team'
+copyright = '2021-2024, The Truchas Team'
 author = 'The Truchas Team'
 
 # The full version, including alpha/beta/rc tags

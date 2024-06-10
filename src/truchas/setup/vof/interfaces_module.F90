@@ -27,7 +27,8 @@ MODULE INTERFACES_MODULE
   integer, parameter, public :: mphi  =  5
 
   integer, public, save :: Matnum(mbody), nbody
-  real(r8), public, save :: Body_Mass(mbody), Body_Vel(3,mbody), Body_Phi(mbody,mphi)
+  real(r8), public, save :: Body_Mass(mbody), Body_Vel(3,mbody)
+  type(scalar_func_box), public, save :: Body_Phi(mbody,mphi)
   type(scalar_func_box), public, save :: Body_Temp(mbody)
 
 END MODULE INTERFACES_MODULE

@@ -40,21 +40,22 @@ CONTAINS
     use scalar_func_factories, only: alloc_const_scalar_func
     use scalar_func_table, only: lookup_func
     use string_utilities, only: i_to_c
+    use physics_module, only: number_of_species
 
     integer, intent(in) :: lun
 
     !! Namelist variables used here
-    real(r8) :: phi(mphi), temperature, velocity(3)
-    character(31) :: temperature_function
+    real(r8) :: conc(mphi), temperature, velocity(3)
+    character(31) :: conc_func(mphi), temperature_function
     !! Namelist variables unneeded here (used by body_namelist.F90 to initialize body geometry)
     character(64) :: surface_name, axis, fill, material_name
     real(r8) :: height, length(3), radius, rotation_angle(3), rotation_pt(3), translation_pt(3)
     integer :: mesh_material_number(16)
     namelist /body/ surface_name, axis, height, radius, length, fill, &
         rotation_angle, rotation_pt, translation_pt, &
-        material_name, phi, temperature, temperature_function, velocity, mesh_material_number
+        material_name, conc, conc_func, temperature, temperature_function, velocity, mesh_material_number
 
-    integer :: ios
+    integer :: ios, i
     logical :: found
     character(:), allocatable :: label
     character(128) :: iom
@@ -79,7 +80,8 @@ CONTAINS
       material_name = NULL_C
       temperature = NULL_R
       temperature_function = NULL_C
-      phi = 0
+      conc = NULL_R
+      conc_func = NULL_C
       velocity = 0
 
       if (is_IOP) read(lun,nml=body,iostat=ios,iomsg=iom)
@@ -89,7 +91,8 @@ CONTAINS
       call broadcast(material_name)
       call broadcast(temperature)
       call broadcast(temperature_function)
-      call broadcast(phi)
+      call broadcast(conc)
+      call broadcast(conc_func)
       call broadcast(velocity)
 
       if (temperature == NULL_R .eqv. temperature_function == NULL_C) &
@@ -108,7 +111,6 @@ CONTAINS
         end if
       end if
 
-      body_phi(nbody,:) = phi
       body_vel(:,nbody) = velocity
 
       ! Generate and store the body temperature function.
@@ -119,6 +121,21 @@ CONTAINS
         if (.not.allocated(body_temp(nbody)%f)) &
             call TLS_fatal(label // ': unknown function name: ' // trim(temperature_function))
       end if
+
+      ! Generate and store the body phi functions.
+      do i = 1, number_of_species
+        if (conc(i) /= NULL_R .and. conc_func(i) /= NULL_C) then
+          call TLS_fatal(label // ': both CONC and CONC_FUNC specified')
+        else if (conc(i) /= NULL_R) then
+          call alloc_const_scalar_func(body_phi(nbody,i)%f, conc(i))
+        else if (conc_func(i) /= NULL_C) then
+          call lookup_func(conc_func(i), body_phi(nbody,i)%f)
+          if (.not.allocated(body_phi(nbody,i)%f)) &
+              call TLS_fatal(label // ': unknown function name: ' // trim(conc_func(i)))
+        else
+          call TLS_fatal(label // ': neither CONC nor CONC_FUNC specified')
+        end if
+      end do
     end do
 
     select case (nbody)
