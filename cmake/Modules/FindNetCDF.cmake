@@ -123,23 +123,22 @@ find_package_handle_standard_args(NetCDF
 if(NETCDF_FOUND)
   if(NETCDF_C_LIBRARY AND NETCDF_C_INCLUDE_DIR)
     if(NOT TARGET netcdf)
-      add_library(netcdf UNKNOWN IMPORTED)
+      add_library(netcdf INTERFACE IMPORTED)
       set_target_properties(netcdf PROPERTIES
-          IMPORTED_LOCATION "${NETCDF_C_LIBRARY}"
+          INTERFACE_LINK_LIBRARIES "${NETCDF_C_LIBRARY}"
           INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_C_INCLUDE_DIR}")
       if(NETCDF_HAS_NC4)
-        set_target_properties(netcdf PROPERTIES
-            INTERFACE_LINK_LIBRARIES "${HDF5_C_LIBRARIES}")
+        target_link_libraries(netcdf INTERFACE hdf5::hdf5)
       endif()
     endif()
   endif()
   if(NETCDF_Fortran_LIBRARY AND NETCDF_Fortran_INCLUDE_DIR)
     if(NOT TARGET netcdff)
-      add_library(netcdff UNKNOWN IMPORTED)
+      add_library(netcdff INTERFACE IMPORTED)
       set_target_properties(netcdff PROPERTIES
-          IMPORTED_LOCATION "${NETCDF_Fortran_LIBRARY}"
-          INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_Fortran_INCLUDE_DIR}"
-          INTERFACE_LINK_LIBRARIES netcdf)
+          INTERFACE_LINK_LIBRARIES "${NETCDF_Fortran_LIBRARY}"
+          INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_Fortran_INCLUDE_DIR}")
+      target_link_libraries(netcdff INTERFACE netcdf)
     endif()
   endif()
 endif()
