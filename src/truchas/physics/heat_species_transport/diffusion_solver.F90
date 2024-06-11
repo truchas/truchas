@@ -78,7 +78,8 @@ module diffusion_solver
     class(enthalpy_advector), allocatable :: hadv
     type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
-    type(parameter_list) :: ds_params, bc_params, species_bc_params, thermal_source_params
+    type(parameter_list) :: ds_params, bc_params, thermal_source_params, &
+        species_bc_params, species_source_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -92,6 +93,7 @@ contains
     use thermal_bc_namelist
     use thermal_source_namelist
     use species_bc_namelist
+    use species_source_namelist
     use ds_source_input, only: read_ds_source
     use enclosure_radiation_namelist
     use diffusion_solver_namelist
@@ -104,6 +106,7 @@ contains
     call read_thermal_bc_namelists(lun, this%bc_params)
     call read_thermal_source_namelists(lun, this%thermal_source_params)
     call read_species_bc_namelists(lun, this%species_bc_params)
+    call read_species_source_namelists(lun, this%species_source_params)
     call read_ds_source (lun)
 
     call read_enclosure_radiation_namelists(lun)
@@ -395,6 +398,7 @@ contains
     use thermal_bc_factory1_type
     use species_bc_factory1_type
     use thermal_source_factory_type
+    use species_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
     integer :: i
@@ -475,10 +479,12 @@ contains
         type(thermal_bc_factory1)    :: tbc_fac
         type(species_bc_factory1)    :: sbc_fac
         type(thermal_source_factory) :: tsrc_fac
+        type(species_source_factory) :: ssrc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call sbc_fac%init(this%mesh, this%species_bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg)
+        call ssrc_fac%init(this%mesh, this%species_source_params)
+        this%mod1 => create_HTSD_model(tinit, this%disc, this%mmf, tbc_fac, sbc_fac, tsrc_fac, ssrc_fac, stat, errmsg)
       end block
       if (stat /= 0) call TLS_fatal ('DS_INIT: ' // trim(errmsg))
       if (this%have_heat_transfer) this%ht_source => this%mod1%ht%source

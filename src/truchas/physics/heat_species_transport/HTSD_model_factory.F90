@@ -35,6 +35,7 @@ module HTSD_model_factory
   use thermal_bc_factory_class
   use species_bc_factory_class
   use thermal_source_factory_type
+  use species_source_factory_type
   use truchas_logging_services
   implicit none
   private
@@ -43,7 +44,7 @@ module HTSD_model_factory
 
 contains
 
-  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, tsrc_fac, stat, errmsg) result (model)
+  function create_HTSD_model (tinit, disc, mmf, tbc_fac, sbc_fac, tsrc_fac, ssrc_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: heat_eqn, num_species, void_temperature
 
@@ -53,6 +54,7 @@ contains
     class(thermal_bc_factory), intent(inout) :: tbc_fac
     class(species_bc_factory), intent(inout) :: sbc_fac
     type(thermal_source_factory), intent(inout) :: tsrc_fac
+    type(species_source_factory), intent(inout) :: ssrc_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     type(HTSD_model), pointer :: model
@@ -69,7 +71,7 @@ contains
     endif
 
     if (num_species > 0) then
-      sdmodel => create_SD_model(mesh, mmf, sbc_fac, stat, errmsg)
+      sdmodel => create_SD_model(mesh, mmf, sbc_fac, ssrc_fac, stat, errmsg)
       if (stat /= 0) return
     end if
 
@@ -404,7 +406,7 @@ contains
 
   end function create_vf_rad_prob
 
-  function create_SD_model (mesh, mmf, bc_fac, stat, errmsg) result (model)
+  function create_SD_model (mesh, mmf, bc_fac, src_fac, stat, errmsg) result (model)
 
     use diffusion_solver_data, only: num_species, heat_eqn
     use ds_source_input, only: define_external_source
@@ -416,6 +418,7 @@ contains
     type(unstr_mesh), intent(in), target :: mesh
     type(matl_mesh_func), intent(in), target :: mmf
     class(species_bc_factory), intent(inout) :: bc_fac
+    type(species_source_factory), intent(inout) :: src_fac
     integer, intent(out) :: stat
     character(*), intent(out) :: errmsg
     character(:), allocatable :: errmsg2
@@ -444,7 +447,14 @@ contains
         errmsg = 'unexpected error defining diffusivity: ' // trim(errmsg)
         return
       end if
+      !! Source due to explicit treatment of species advection
       call define_external_source (mesh, variable, model(n)%source)
+      !! External species source
+      call src_fac%alloc_source_func(n, model(n)%src, stat, errmsg2)
+      if (stat /= 0) then
+        errmsg = errmsg2
+        return
+      end if
       !! Define the optional Soret effect coefficients.
       if (heat_eqn) then
         write(property,'(a,i0)') 'soret-coef', n

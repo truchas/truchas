@@ -458,6 +458,8 @@ add_pytruchas_test(inflow-bc-3 inflow-bc/test3.py PROCESSORS 4 LABELS FLOW)
 # POROUS DRAG TESTS
 add_pytruchas_test(drag-1d drag/test-1d.py PROCESSORS 1 LABELS FLOW)
 
-add_pytruchas_test(adv-diff-1 scalar-adv-diff/test1.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(adv-diff-2 scalar-adv-diff/test2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(adv-diff-3 scalar-adv-diff/test3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(species-adv-1 scalar-adv-diff/test-adv1.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(species-adv-2 scalar-adv-diff/test-adv2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(species-adv-3 scalar-adv-diff/test-adv3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+
+add_pytruchas_test(species-src-1 scalar-adv-diff/test-src1.py PROCESSORS 4 LABELS DIFFUSION)

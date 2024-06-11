@@ -1,0 +1,127 @@
+SCALAR DIFFUSION WITH SOURCE
+
+Test of the source terms in a 2-component scalar advection-diffusion system.
+We choose c1(t,x) = 1 + 4*t*x*(1-x) as the solution for the first component
+with Dirichlet conditions on the left and right sides, and symmetry conditions
+elsewhere. This implies a source q1(t,x) = 4*x*(1-x) + 8*t. For the second
+component we choose c2(t,x,y) = 2 + (t**3)*(x + y) as the solution and impose
+compatible Dirichlet conditions for the x,y = const boundaries, and symmetry
+conditions elsewhere. This implies a source q2 = 3*(t**2)*(x + y).
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals   = 21
+  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%intervals   = 21
+  z_axis%coarse_grid = 0.0, 0.1
+  z_axis%intervals   = 3
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0
+  output_dt = 1.0
+/
+
+&NUMERICS
+  dt_init = 1.0d-3
+  dt_min  = 1.0d-5
+  dt_grow = 10.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+  species_transport = T
+  number_of_species = 2
+/
+
+&DIFFUSION_SOLVER
+  abs_conc_tol = 0.0
+  rel_conc_tol = 1.0e-4
+  nlk_tol = 0.01
+/
+
+&SPECIES_SOURCE
+  comp_id = 1
+  cell_set_ids = 1
+  source_func = 'conc1-src'
+/
+
+&FUNCTION
+  name = 'conc1-src'
+  type = 'polynomial'
+  poly_coefficients = 8.0, 4.0, -4.0
+  poly_exponents(:,1) = 1, 0, 0, 0
+  poly_exponents(:,2) = 0, 1, 0, 0
+  poly_exponents(:,3) = 0, 2, 0, 0
+/
+
+&SPECIES_SOURCE
+  comp_id = 2
+  cell_set_ids = 1
+  source_func = 'conc2-src'
+/
+
+&FUNCTION
+  name = 'conc2-src'
+  type = 'polynomial'
+  poly_coefficients = 3.0, 3.0
+  poly_exponents(:,1) = 2, 1, 0, 0
+  poly_exponents(:,2) = 2, 0, 1, 0
+/
+
+&SPECIES_BC
+  name = 'left/right for c1'
+  comp_id = 1
+  face_set_ids = 1, 2
+  type = 'concentration'
+  conc = 1.0
+/
+
+&SPECIES_BC
+  name = 'symmetry for c1'
+  comp_id = 1
+  face_set_ids = 3, 4, 5, 6
+  type = 'flux'
+  flux = 0.0
+/
+
+&SPECIES_BC
+  name = 'c2'
+  comp_id = 2
+  face_set_ids = 1, 2, 3, 4
+  type = 'concentration'
+  conc_func = 'c2-bv'
+/
+
+&SPECIES_BC
+  name = 'symmetry for c2'
+  comp_id = 2
+  face_set_ids = 5, 6
+  type = 'flux'
+  flux = 0.0
+/
+
+&FUNCTION
+  name = 'c2-bv'
+  type = 'polynomial'
+  poly_coefficients = 2.0, 1.0, 1.0
+  poly_exponents(:,1) = 0, 0, 0, 0
+  poly_exponents(:,2) = 3, 1, 0, 0
+  poly_exponents(:,3) = 3, 0, 1, 0
+/
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
+  material_name = 'stuff'
+  temperature = 0.0
+  conc(1) = 1.0
+  conc(2) = 2.0
+/
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  diffusivity(1) = 1.0
+  diffusivity(2) = 1.0
+/

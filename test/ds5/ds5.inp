@@ -48,7 +48,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C1-inner'
   face_set_ids = 1
-  comp = 1
+  comp_id = 1
   type = 'concentration'
   conc = 1.0
 /
@@ -56,7 +56,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C1-outer'
   face_set_ids = 2
-  comp = 1
+  comp_id = 1
   type = 'flux'
   flux = 0.4444444444444444
 /
@@ -64,7 +64,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C1-symmetry sides'
   face_set_ids = 3
-  comp = 1
+  comp_id = 1
   type = 'flux'
   flux = 0.0
 /
@@ -72,7 +72,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C2-inner'
   face_set_ids = 1
-  comp = 2
+  comp_id = 2
   type = 'concentration'
   conc = 1.5
 /
@@ -80,7 +80,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C2-outer'
   face_set_ids = 2
-  comp = 2
+  comp_id = 2
   type = 'flux'
   flux = 0.6666666666666666
 /
@@ -88,7 +88,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C2-symmetry sides'
   face_set_ids = 3
-  comp = 2
+  comp_id = 2
   type = 'flux'
   flux = 0.0
 /
@@ -96,7 +96,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C3-inner'
   face_set_ids = 1
-  comp = 3
+  comp_id = 3
   type = 'concentration'
   conc = 2.0
 /
@@ -104,7 +104,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C3-outer'
   face_set_ids = 2
-  comp = 3
+  comp_id = 3
   type = 'flux'
   flux = 0.8888888888888888
 /
@@ -112,7 +112,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 &SPECIES_BC
   name = 'C3-symmetry sides'
   face_set_ids = 3
-  comp = 3
+  comp_id = 3
   type = 'flux'
   flux = 0.0
 /

@@ -45,7 +45,7 @@ remain identical as they should.
 &SPECIES_BC
   name = 'conc/left end'
   face_set_ids = 1
-  comp = 1
+  comp_id = 1
   type = 'flux'
   flux = -10.0
 /

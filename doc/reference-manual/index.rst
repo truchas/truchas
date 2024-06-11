@@ -10,7 +10,6 @@ Reference Manual
    introduction/index
    BODY_Namelist/index
    DIFFUSION_Solver_Namelist/index
-   DS_SOURCE_Namelist/index
    ELECTROMAGNETICS_Namelist/index
    ELECTROMAGNETIC_BC_Namelist/index
    EM_MESH_Namelist/index
@@ -36,6 +35,7 @@ Reference Manual
    SOLID_MECHANICS_Namelist/index
    SOLID_MECHANICS_BC_Namelist/index
    SPECIES_BC_Namelist/index
+   SPECIES_SOURCE_Namelist/index
    THERMAL_BC_Namelist/index
    THERMAL_SOURCE_Namelist/index
    TOOLHEAD_Namelist/index

@@ -63,7 +63,7 @@ Species diffusion with interfaces
 
 &SPECIES_BC
   name = "sides/right end"
-  comp = 1
+  comp_id = 1
   face_set_ids = 1, 3
   type = "flux"
   flux = 0.0
@@ -71,7 +71,7 @@ Species diffusion with interfaces
 
 &SPECIES_BC
   name = "left end"
-  comp = 1
+  comp_id = 1
   face_set_ids = 2
   type = "mtc"
   mtc = 1.0
@@ -89,7 +89,7 @@ Species diffusion with interfaces
 
 &SPECIES_BC
   name = "x=0"
-  comp = 1
+  comp_id = 1
   face_set_ids = 10
   type = "interface-mtc"
   mtc = 1.0
