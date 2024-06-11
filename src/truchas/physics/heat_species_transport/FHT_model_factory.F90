@@ -144,7 +144,6 @@ contains
   subroutine define_system_parameters (mesh, mmf, src_fac, model, stat, errmsg)
 
     use matl_mesh_func_type
-    use ds_source_input, only: define_external_source
     use parallel_communication, only: global_any
     use material_model_driver, only: matl_model
     use material_utilities
@@ -191,11 +190,7 @@ contains
       return
     end if
 
-    !! External heat source.
-    allocate(model%q)
-    call define_external_source (mesh, 'temperature', model%q)
-
-    !! Additional heat sources
+    !! External heat sources
     call src_fac%alloc_source_funcs(model%src, stat, errmsg2)
     if (stat /= 0) then
       errmsg = errmsg2

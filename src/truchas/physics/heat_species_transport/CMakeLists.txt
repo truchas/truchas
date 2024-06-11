@@ -27,10 +27,8 @@ target_sources(truchas PRIVATE
   mfd_diff_precon_type.F90
   diffusion_solver.F90
   diffusion_solver_data.F90
-  ds_source_input.F90
   mesh_interop.F90
   prop_mesh_func_type.F90
-  source_mesh_function.F90
   enthalpy_advector_class.F90
   enthalpy_advector1_type.F90
   conc_advector_type.F90

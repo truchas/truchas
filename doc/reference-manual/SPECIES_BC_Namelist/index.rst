@@ -1,3 +1,8 @@
+.. _SPECIES_BC_Namelist:
+
+.. toctree::
+   :maxdepth: 1
+
 SPECIES_BC Namelist
 ====================
 
