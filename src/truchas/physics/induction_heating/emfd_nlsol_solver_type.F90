@@ -15,15 +15,14 @@
 
 #include "f90_assert.fpp"
 
-!#define PRECON hiptmair_precon
 #define PRECON ams_precon
 #define SOLVER gmres_left_solver
+!#define PRECON hiptmair_precon
 !#define SOLVER nlsol
 
 module emfd_nlsol_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  !use,intrinsic :: iso_fortran_env, only: r8 => real128
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use ams_precon_type
   use hiptmair_precon_type
@@ -32,7 +31,6 @@ module emfd_nlsol_solver_type
   use pcsr_matrix_type
   use simpl_mesh_type
   use index_map_type
-  use em_bc_type
   use bndry_func1_class
   use truchas_logging_services
   use truchas_timers
@@ -43,13 +41,13 @@ module emfd_nlsol_solver_type
     private
     real(r8) :: atol, rtol, ftol
     real(r8), allocatable :: b(:)
-    type(pcsr_matrix), pointer :: A => null() ! unowned reference
+    type(pcsr_matrix), pointer :: A(:,:) => null() ! unowned reference
     type(PRECON), pointer :: precon => null() ! unowned reference
   contains
     procedure :: init => emfd_nlsol_model_init
     !!!! INHERITED !!!!
     procedure :: size => emfd_nlsol_model_size
-    procedure :: compute_f => emfd_nlsol_model_compute_f
+    procedure :: compute_f => new_compute_f
     procedure :: apply_precon => emfd_nlsol_model_apply_precon
     procedure :: compute_precon => emfd_nlsol_model_compute_precon
     procedure :: du_norm => emfd_nlsol_model_du_norm
@@ -65,13 +63,14 @@ module emfd_nlsol_solver_type
     type(PRECON), pointer :: precon => null()
     type(SOLVER) :: solver
     type(emfd_nlsol_model), pointer :: model => null()
-    type(index_map), pointer :: imap => null()
-    type(pcsr_matrix), pointer :: A => null(), Ap => null()
+    type(pcsr_matrix), pointer :: A(:,:) => null(), Ap => null()
 
-    type(em_bc) :: bc
+    class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
+    class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
 
     real(r8), allocatable :: efield(:) ! electric field (real and imaginary parts)
     real(r8), allocatable :: rhs(:) ! rhs (set by BCs)
+    real(r8), allocatable :: rhs_r(:), rhs_i(:)
 
     real(r8), allocatable :: epsr(:)  ! real part of the permittivity
     real(r8), allocatable :: epsi(:)  ! imaginary part of the permittivity
@@ -96,7 +95,6 @@ contains
   !! Final subroutine for emfd_nlsol_solver type objects.
   subroutine emfd_nlsol_solver_delete(this)
     type(emfd_nlsol_solver), intent(inout) :: this
-    if (associated(this%imap)) deallocate(this%imap)
     if (associated(this%A)) deallocate(this%A)
     if (associated(this%Ap)) deallocate(this%Ap)
     if (associated(this%precon)) deallocate(this%precon)
@@ -106,10 +104,8 @@ contains
 
   subroutine init(this, mesh, bc_fac, params, stat, errmsg)
 
-    use mimetic_discretization
     use em_bc_factory_type
     use parameter_list_type
-    use parallel_communication, only: is_IOP
 
     class(emfd_nlsol_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
@@ -119,21 +115,19 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: plist
-    type(index_map), pointer :: row_imap
-    integer, allocatable :: nvars(:)
-    integer, allocatable :: ebedge(:)
-    integer :: e, c, er, ei
-    integer :: e1, e1x, e1r, e1i, e2, e2x, e2r, e2i
     integer :: ierr
     real(r8) :: atol, rtol, ftol
 
     block
       class(bndry_func1), allocatable :: ebc, hbc
-      call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
+      call bc_fac%alloc_nxE_bc(this%ebc, stat, errmsg)
       if (stat /= 0) return
-      call bc_fac%alloc_fd_nxH_bc(hbc, stat, errmsg, omit_edge_list=ebc%index)
+      if (allocated(this%ebc)) then
+        call bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg, omit_edge_list=this%ebc%index)
+      else
+        call bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg)
+      end if
       if (stat /= 0) return
-      call this%bc%init(mesh, ebc, hbc)
     end block
 
     ! set defaults
@@ -179,8 +173,21 @@ contains
     this%efield = 0
     this%rhs = 0
 
-    call init_full_system(this%A)
-    call init_precon_system(this%Ap)
+    allocate(this%rhs_r(mesh%nedge), this%rhs_i(mesh%nedge), source=0.0_r8)
+
+    block ! full system in block form
+      type(pcsr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%edge_imap)
+      call g%add_clique(this%mesh%cedge)
+      call g%add_complete
+      allocate(this%A(2,2), this%Ap)
+      call this%A(1,1)%init(g, take_graph=.true.)
+      call this%A(1,2)%init(mold=this%A(1,1))
+      call this%A(2,1)%init(mold=this%A(1,1))
+      call this%A(2,2)%init(mold=this%A(1,1))
+      call this%Ap%init(mold=this%A(1,1))
+    end block
 
     call params%get("abs-tol", atol)
     call params%get("rel-tol", rtol)
@@ -196,60 +203,10 @@ contains
 
     allocate(this%precon, this%model)
     plist => params%sublist("precon")
-    call this%precon%init(plist, this%meshr, this%Ap, this%bc)
+    call this%precon%init(plist, this%meshr, this%Ap, this%ebc)
     call this%model%init(this%A, this%precon, atol, rtol, ftol)
     call this%solver%init(this%model, params, ierr, errmsg)
     if (ierr /= 0) call tls_fatal("EMFD_NLSOL INIT: " // errmsg)
-
-  contains
-
-    subroutine init_full_system(A)
-
-      type(pcsr_matrix), pointer :: A
-      type(pcsr_graph), pointer :: g
-
-      allocate(g, this%imap, A)
-      row_imap => mesh%edge_imap
-      allocate(nvars(merge(this%mesh%edge_imap%global_size, 0, is_IOP)))
-      nvars = 2
-      call this%imap%init(row_imap, nvars)
-
-      call g%init(this%imap)
-      do c = 1, mesh%ncell
-        ! add curl terms
-        call g%add_clique(2*(mesh%cedge(:,c)-1) + 1) ! real components
-        call g%add_clique(2*(mesh%cedge(:,c)-1) + 2) ! imaginary components
-
-        ! add cross-diagonal terms
-        do e1x = 1, size(mesh%cedge(:,c))
-          e1 = mesh%cedge(e1x,c)
-          e1r = 2*(e1-1) + 1
-          e1i = 2*(e1-1) + 2
-          do e2x = 1, e1x
-            e2 = mesh%cedge(e2x,c)
-            e2r = 2*(e2-1) + 1
-            e2i = 2*(e2-1) + 2
-            call g%add_edge(e1r, e2i)
-            call g%add_edge(e1i, e2r)
-          end do
-        end do
-      end do
-      call g%add_complete
-      call A%init(g, take_graph=.true.)
-
-    end subroutine init_full_system
-
-    subroutine init_precon_system(A)
-      type(pcsr_matrix), pointer :: A
-      type(pcsr_graph), pointer :: g
-      allocate(g, A)
-      call g%init(this%mesh%edge_imap)
-      do c = 1, mesh%ncell
-        call g%add_clique(mesh%cedge(:,c))
-      end do
-      call g%add_complete
-      call A%init(g, take_graph=.true.)
-    end subroutine init_precon_system
 
   end subroutine init
 
@@ -257,33 +214,26 @@ contains
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
     use mimetic_discretization, only: w1_matrix_we, w2_matrix_we
-    use upper_packed_matrix_procs, only: sym_matmul
+    use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(emfd_nlsol_solver), intent(inout) :: this
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
 
-    real(r8), parameter :: curl(4,6) = reshape(source=[&
-        0.0_r8,  0.0_r8,  1.0_r8,  1.0_r8, &
-        0.0_r8,  1.0_r8,  0.0_r8, -1.0_r8, &
-        0.0_r8, -1.0_r8, -1.0_r8,  0.0_r8, &
-        1.0_r8,  0.0_r8,  0.0_r8,  1.0_r8, &
-        -1.0_r8,  0.0_r8,  1.0_r8,  0.0_r8, &
-        1.0_r8,  1.0_r8,  0.0_r8,  0.0_r8], &
-        shape=shape(curl))
+    !! Local curl operator matrix
+    real(r8), parameter :: curl(4,6) = reshape([0,  0,  1,  1, &
+                                                0,  1,  0, -1, &
+                                                0, -1, -1,  0, &
+                                                1,  0,  0,  1, &
+                                               -1,  0,  1,  0, &
+                                                1,  1,  0,  0], shape=shape(curl))
 
-    integer :: i, j, k, l, m, n, e1, e1x, e1r, e1i, e2, e2x, e2r, e2i
-    real(r8) :: ctm2(4), ctm2c(6,6), a0(4,4), m1(21), m2(10), mtr1, mtr2, mtr3, omegar
+    integer :: j, n
+    real(r8) :: m1(21), m2(10), ctm2c(21), a(21), omegar
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
     ASSERT(size(mu) == this%mesh%ncell)
     ASSERT(size(sigma) == this%mesh%ncell)
-
-    print *, "epsr: ", epsr(1)
-    print *, "epsi: ", epsi(1)
-    print *, "mu: ", mu(1)
-    print *, "sigma: ", sigma(1)
-    print *, "omega: ", omega
 
     call start_timer("setup")
 
@@ -292,91 +242,80 @@ contains
 
     ! non-dimensionalization
     omegar = omega * this%L0 / this%c0
-    print *, "omegar: ", omegar
 
-    call this%bc%compute(t)
-    call this%A%set_all(0.0_r8)
-    call this%Ap%set_all(0.0_r8)
-    this%rhs = 0
+    call this%A(1,1)%set_all(0.0_r8)
+    call this%A(1,2)%set_all(0.0_r8)
+    call this%A(2,1)%set_all(0.0_r8)
+    call this%A(2,2)%set_all(0.0_r8)
 
-    ! print *, "setup1"
-
-    do j = 1, this%mesh%ncell_onP
-      ctm2c = matmul(transpose(curl), sym_matmul(W2_matrix_WE(this%meshr, j), curl))
-
-      !! NB: we traverse the elements of the upper triangular part column by column.
+    ! Raw system matrix ignoring boundary condtions
+    do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
       m1 = W1_matrix_WE(this%meshr, j)
-      l = 0
-      do e1x = 1, 6
-        e1 = this%mesh%cedge(e1x,j)
-        e1r = 2*(e1-1) + 1
-        e1i = 2*(e1-1) + 2
+      m2 = W2_matrix_WE(this%meshr, j)
+      ctm2c = upm_cong_prod(4, 6, m2, curl)
 
-        ! solve dummy equations on the Dirichlet edges
-        if (this%bc%is_ebc_edge(e1)) then
-          call this%A%set(e1r, e1r, 1.0_r8)
-          call this%A%set(e1i, e1i, 1.0_r8)
-          call this%Ap%set(e1, e1, 1.0_r8)
-          this%rhs(e1r) = this%bc%efield(e1)
-          this%rhs(e1i) = 0
-          l = l + e1x
-          cycle
-        end if
+      a = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
+      call this%A(1,1)%add_to(this%mesh%cedge(:,j), a)
+      call this%A(2,2)%add_to(this%mesh%cedge(:,j), -a)
 
-        ! set up the system
-        do e2x = 1, e1x
-          l = l + 1
-          e2 = this%mesh%cedge(e2x,j)
-          e2r = 2*(e2-1) + 1
-          e2i = 2*(e2-1) + 2
+      a = (omegar**2 * epsi(j) - omegar * sigma(j) * this%Z0 * this%L0) * m1
+      call this%A(1,2)%add_to(this%mesh%cedge(:,j), a)
+      call this%A(2,1)%add_to(this%mesh%cedge(:,j), a)
+    end do
 
-          ! mtr1 = ctm2c(e1x, e2x) / (omega * mu(j))
-          ! mtr2 = omega * epsr(j) * m1(l)
-          ! mtr3 = (omega * epsi(j) - sigma(j)) * m1(l)
-
-          ! non-dimensionalized
-          mtr1 = ctm2c(e1x, e2x) / mu(j)
-          mtr2 = omegar**2  * epsr(j) * m1(l)
-          mtr3 = (omegar**2 * epsi(j) - omegar * sigma(j) * this%Z0 * this%L0) * m1(l)
-          !mtr1 = 0
-
-          if (this%bc%is_ebc_edge(e2)) then
-            ! Apply Dirichlet BCs to the RHS
-            this%rhs(e1r) = this%rhs(e1r) - (mtr1 - mtr2) * this%bc%efield(e2)
-            this%rhs(e1i) = this%rhs(e1i) - mtr3 * this%bc%efield(e2)
-          else
-            call this%A%add_to(e1r, e2r,  mtr1 - mtr2)
-            call this%A%add_to(e1i, e2i, -mtr1 + mtr2)
-            call this%A%add_to(e1r, e2i,  mtr3)
-            call this%A%add_to(e1i, e2r,  mtr3)
-            call this%Ap%add_to(e1, e2, mtr1 - mtr2 - mtr3) ! preconditioner
-
-            if (e1x /= e2x) then
-              call this%A%add_to(e2r, e1r,  mtr1 - mtr2)
-              call this%A%add_to(e2i, e1i, -mtr1 + mtr2)
-              call this%A%add_to(e2i, e1r,  mtr3)
-              call this%A%add_to(e2r, e1i,  mtr3)
-              call this%Ap%add_to(e2, e1, mtr1 - mtr2 - mtr3) ! preconditioner
-            end if
-          end if
+    ! RHS contribution from nxE boundary conditions
+    if (allocated(this%ebc)) then
+      block
+        real(r8), allocatable :: efield_r(:)
+        call this%ebc%compute(t)
+        allocate(efield_r(this%mesh%nedge), source=0.0_r8)
+        do j = 1, size(this%ebc%index)
+          efield_r(this%ebc%index(j)) = this%ebc%value(j)
         end do
+        call this%A(1,1)%matvec(efield_r, this%rhs_r)
+        call this%A(2,1)%matvec(efield_r, this%rhs_i)
+        this%rhs_r = efield_r - this%rhs_r
+        this%rhs_i = - this%rhs_i
+      end block
+    end if
+
+    ! RHS contribution from nxH source boundary conditions
+    if (allocated(this%hbc)) then
+      call this%hbc%compute(t)
+      do j = 1, size(this%hbc%index)
+        n = this%hbc%index(j)
+        this%rhs_r(n) = this%rhs_r(n) + omegar * this%hbc%value(j) / this%H0
       end do
-    end do
+    end if
 
-    ! add the source to the rhs
-    do e1 = 1, this%mesh%nedge
-      e1r = 2*(e1-1) + 1
-      e1i = 2*(e1-1) + 2
-      !this%rhs(e1r) = this%rhs(e1r) + this%bc%hsource(e1)
-      this%rhs(e1r) = this%rhs(e1r) + omegar * this%bc%hsource(e1) / this%H0
-
-      !this%rhs(e1i) = this%rhs(e1i) + omegar * this%bc%hsource(e1) / this%H0
-    end do
-
-    call this%precon%setup(mu, epsr, epsi, sigma, omegar) ! this implicitly uses this%Ap
+    this%rhs(1:2*this%mesh%nedge:2) = this%rhs_r
+    this%rhs(2:2*this%mesh%nedge:2) = this%rhs_i
     this%model%rhs = this%rhs
 
     ASSERT(all(ieee_is_finite(this%model%rhs)))
+
+    ! Apply nxE boundary conditions to the system matrix
+    if (allocated(this%ebc)) then
+      do j = 1, size(this%ebc%index)
+        n = this%ebc%index(j)
+        call this%A(1,1)%project_out(n)
+        call this%A(1,2)%project_out(n)
+        call this%A(2,1)%project_out(n)
+        call this%A(2,2)%project_out(n)
+        call this%A(1,1)%set(n, n, 1.0_r8)
+        call this%A(2,2)%set(n, n, 1.0_r8)
+      end do
+    end if
+
+    ! Preconditioner
+    this%Ap%values = this%A(1,1)%values - this%A(1,2)%values
+    if (allocated(this%ebc)) then
+      do j = 1, size(this%ebc%index)
+        n = this%ebc%index(j)
+        call this%Ap%set(n, n, 1.0_r8)
+      end do
+    end if
+    call this%precon%setup(mu, epsr, epsi, sigma, omegar) ! this implicitly uses this%Ap
 
     call stop_timer("setup")
 
@@ -389,7 +328,7 @@ contains
 
     integer :: ierr
 
-    print '(a,2es13.3)', "max |rhs| = ", maxval(abs(this%rhs)), maxval(abs(this%bc%hsource))
+    print '(a,2es13.3)', "max |rhs| = ", maxval(abs(this%rhs)), maxval(abs(this%hbc%value))
 
     ASSERT(all(ieee_is_finite(this%efield)))
     ASSERT(all(ieee_is_finite(this%rhs)))
@@ -401,7 +340,7 @@ contains
     print *, "ierr: ", ierr
     if (ierr /= 0) call tls_error("EMFD solve unsuccessful")
 
-    print *, "max |rhs| = ", maxval(abs(this%rhs)), maxval(abs(this%bc%hsource))
+    print *, "max |rhs| = ", maxval(abs(this%rhs)), maxval(abs(this%hbc%value))
     print *, "max |er| = ", maxval(abs(this%efield(::2)))
     print *, "max |ei| = ", maxval(abs(this%efield(2::2)))
     print *, "max |e-rhs| = ", maxval(abs(this%efield - this%rhs))
@@ -412,77 +351,43 @@ contains
   subroutine compute_heat_source(this, q)
 
     use mimetic_discretization, only: w1_matrix_we
+    use upper_packed_matrix_procs, only: upm_quad_form
     use parallel_communication
 
-    class(emfd_nlsol_solver), intent(in) :: this
+    class(emfd_nlsol_solver), intent(in), target :: this
     real(r8), intent(out) :: q(:)
 
     real(r8) :: efieldt, efield2, q_joule, q_dielectric, m1(21)
     integer :: i, j, k, l1, l2, edges_r(6), edges_i(6)
     character(256) :: string
+    real(r8), pointer :: efield(:,:)
 
     ASSERT(size(q) == this%mesh%ncell)
 
     call start_timer("heat source")
 
-    do j = 1, this%mesh%ncell
+    efield(1:2,1:this%mesh%nedge) => this%efield
+
+    do j = 1, this%mesh%ncell_onP
       if (this%sigma(j) == 0 .and. this%epsi(j) == 0) then
         q(j) = 0
         cycle
       end if
 
       ! compute |E|^2 on cell j
-      m1 = W1_matrix_WE(this%mesh, j)
-      edges_r = 2 * (this%mesh%cedge(:,j) - 1) + 1
-      edges_i = 2 * (this%mesh%cedge(:,j) - 1) + 2
-      associate(efield_r => this%efield(edges_r), efield_i => this%efield(edges_i))
-        efield2 = 0
-
-        ! real part
-        l1 = 1
-        do k = 1, 6
-          efieldt = 0
-          l2 = l1
-          do i = 1, k-1
-            efieldt = efieldt + m1(l2) * efield_r(i)
-            l2 = l2 + 1
-          end do
-          do i = k, 6
-            efieldt = efieldt + m1(l2) * efield_r(i)
-            l2 = l2 + i
-          end do
-          efield2 = efield2 + efieldt * efield_r(k)
-          l1 = l1 + k
-        end do
-
-        ! imaginary part
-        l1 = 1
-        do k = 1, 6
-          efieldt = 0
-          l2 = l1
-          do i = 1, k-1
-            efieldt = efieldt + m1(l2) * efield_i(i)
-            l2 = l2 + 1
-          end do
-          do i = k, 6
-            efieldt = efieldt + m1(l2) * efield_i(i)
-            l2 = l2 + i
-          end do
-          efield2 = efield2 + efieldt * efield_i(k)
-          l1 = l1 + k
-        end do
+      associate(efield_r => efield(1,this%mesh%cedge(:,j)), efield_i => efield(2,this%mesh%cedge(:,j)))
+        m1 = W1_matrix_WE(this%mesh, j)
+        efield2 = (this%Z0 * this%H0)**2 * (upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i))
       end associate
 
       ! compute heat sources
-      efield2 = efield2 * (this%Z0 * this%H0)**2
-      ! q_joule = efield2
-      ! q_dielectric = 0
       q_joule = this%sigma(j) * efield2 / 2
       q_dielectric = this%omega * this%epsi(j) * efield2 / 2
 
       ! want a source density
       q(j) = (q_joule + q_dielectric) / abs(this%mesh%volume(j))
     end do
+    call this%mesh%cell_imap%gather_offp(q)
 
     write(string,fmt='(2(a,es11.4))') '|Q|_max=', global_maxval(q), ', Q_total=', &
         global_dot_product(q(:this%mesh%ncell_onP), abs(this%mesh%volume(:this%mesh%ncell_onP)))
@@ -494,9 +399,10 @@ contains
 
 
 !!!! MODEL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   subroutine emfd_nlsol_model_init(this, A, precon, atol, rtol, ftol)
     class(emfd_nlsol_model), intent(out) :: this
-    type(pcsr_matrix), pointer :: A
+    type(pcsr_matrix), pointer :: A(:,:)
     type(PRECON), pointer :: precon
     real(r8), intent(in) :: atol, rtol, ftol
     this%A => A
@@ -509,23 +415,28 @@ contains
 
   integer function emfd_nlsol_model_size(this)
     class(emfd_nlsol_model), intent(in) :: this
-    emfd_nlsol_model_size = this%A%nrow_onP
+    emfd_nlsol_model_size = this%A(1,1)%nrow_onP + this%A(2,1)%nrow_onP
   end function emfd_nlsol_model_size
 
 
-  subroutine emfd_nlsol_model_compute_f(this, t, u, udot, f, ax)
+  subroutine new_compute_f(this, t, u, udot, f, ax)
     class(emfd_nlsol_model) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in), contiguous, target :: u(:), udot(:)
     real(r8), intent(out), contiguous, target :: f(:)
     logical, intent(in), optional :: ax
+    real(r8) :: tmp(size(f))
     ASSERT(all(ieee_is_finite(u)))
-    call this%A%matvec(u, f)
+    call this%A(1,1)%matvec(u(1:size(u):2), f(1:size(f):2))
+    call this%A(2,1)%matvec(u(1:size(u):2), f(2:size(f):2))
+    call this%A(1,2)%matvec(u(2:size(u):2), tmp(1:size(f):2))
+    call this%A(2,2)%matvec(u(2:size(u):2), tmp(2:size(f):2))
+    f = f + tmp
     if (present(ax)) then
       if (ax) return
     end if
     f = this%rhs - f
-  end subroutine emfd_nlsol_model_compute_f
+  end subroutine
 
 
   subroutine emfd_nlsol_model_apply_precon(this, t, u, f)

@@ -31,7 +31,7 @@ module hiptmair_precon_type
   use simpl_mesh_type
   use index_map_type
   use pcsr_matrix_type
-  use em_bc_type
+  use bndry_func1_class
   implicit none
   private
 
@@ -63,7 +63,7 @@ contains
   end subroutine hiptmair_precon_final
 
 
-  subroutine init(this, params, mesh, A, bc)
+  subroutine init(this, params, mesh, A, ebc)
 
     use parallel_communication, only: is_IOP
 
@@ -71,7 +71,7 @@ contains
     type(parameter_list), pointer, intent(in) :: params
     type(simpl_mesh), intent(in), target :: mesh
     type(pcsr_matrix), pointer, intent(in) :: A !! taking ownership
-    type(em_bc), intent(in), target :: bc
+    class(bndry_func1), allocatable, intent(in) :: ebc
 
     integer :: i
 
@@ -94,10 +94,16 @@ contains
         shape=[4, 6])
 
     ! mark Dirichlet BC edges & nodes
-    this%is_ebc_edge = bc%is_ebc_edge
+
+    allocate(this%is_ebc_edge(mesh%nedge), source=.false.)
+    if (allocated(ebc)) then
+      do i = 1, size(ebc%index)
+        this%is_ebc_edge(ebc%index(i)) = .true.
+      end do
+    end if
     this%is_ebc_node = .false.
     do i = 1, mesh%nedge
-      if (bc%is_ebc_edge(i)) this%is_ebc_node(mesh%enode(:,i)) = .true.
+      if (this%is_ebc_edge(i)) this%is_ebc_node(mesh%enode(:,i)) = .true.
     end do
 
     ! prepare full edge matrix & node-based projection matrix

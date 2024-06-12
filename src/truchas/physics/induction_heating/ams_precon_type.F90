@@ -35,7 +35,7 @@ module ams_precon_type
   use fhypre
   use simpl_mesh_type
   use pcsr_matrix_type
-  use em_bc_type
+  use bndry_func1_class
   implicit none
   private
 
@@ -89,13 +89,13 @@ contains
   end subroutine ams_precon_final
 
 
-  subroutine init(this, params, mesh, A, bc)
+  subroutine init(this, params, mesh, A, ebc)
 
     class(ams_precon), intent(out) :: this
     type(parameter_list), pointer, intent(in) :: params
     type(simpl_mesh), intent(in), target :: mesh
     type(pcsr_matrix), pointer, intent(in) :: A !! taking ownership
-    type(em_bc), intent(in), target :: bc
+    class(bndry_func1), intent(in), target :: ebc ! unused?
 
     integer :: ipar, i, ierr
     real(r8) :: rpar
