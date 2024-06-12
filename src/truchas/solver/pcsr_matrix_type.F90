@@ -130,9 +130,11 @@ module pcsr_matrix_type
     procedure, private :: pcsr_graph_add_edge_one
     procedure, private :: pcsr_graph_add_edge_many
     generic   :: add_edge => pcsr_graph_add_edge_one, pcsr_graph_add_edge_many
-    procedure :: add_clique => pcsr_graph_add_clique
+    procedure, private :: pcsr_graph_add_clique, pcsr_graph_add_clique_many
+    generic :: add_clique => pcsr_graph_add_clique, pcsr_graph_add_clique_many
     procedure :: add_complete => pcsr_graph_add_complete
     procedure :: defined => pcsr_graph_defined
+    procedure :: index => index_linear ! alternatively, index_binary
   end type pcsr_graph
 
   type, public :: pcsr_matrix
@@ -148,7 +150,8 @@ module pcsr_matrix_type
     procedure :: graph_ptr => pcsr_matrix_graph
     procedure :: set_all => pcsr_matrix_set_all
     procedure :: set => pcsr_matrix_set
-    procedure :: add_to => pcsr_matrix_add_to
+    procedure, private :: add_to_element, add_to_submatrix, add_to_submatrix_upm
+    generic   :: add_to => add_to_element, add_to_submatrix, add_to_submatrix_upm
     procedure :: project_out => pcsr_matrix_project_out
     procedure :: get_row_view => pcsr_matrix_get_row_view
     procedure :: get_diag_copy => pcsr_matrix_get_diag_copy
@@ -175,6 +178,13 @@ contains
     call this%g%add_clique (indices)
   end subroutine pcsr_graph_add_clique
 
+  subroutine pcsr_graph_add_clique_many(this, indices)
+    class(pcsr_graph), intent(inout) :: this
+    integer, intent(in) :: indices(:,:)
+    ASSERT(allocated(this%g))
+    call this%g%add_clique(indices)
+  end subroutine pcsr_graph_add_clique_many
+
   subroutine pcsr_graph_add_edge_one (this, row, col)
     class(pcsr_graph), intent(inout) :: this
     integer, intent(in) :: row, col
@@ -200,6 +210,44 @@ contains
     class(pcsr_graph), intent(in) :: this
     pcsr_graph_defined = allocated(this%xadj)
   end function pcsr_graph_defined
+
+  !! Return the ADJNCY array index corresponding to matrix element (row, col),
+  !! or 0 if that element is not stored by the sparse matrix. This version does
+  !! a linear search of the appropriate sorted segment of the array.
+
+  pure integer function index_linear(this, row, col) result(k)
+    class(pcsr_graph), intent(in) :: this
+    integer, intent(in) :: row, col
+    do k = this%xadj(row), this%xadj(row+1)-1
+      if (this%adjncy(k) == col) return
+    end do
+    k = 0
+  end function
+
+  !! Return the ADJNCY array index corresponding to matrix element (row, col),
+  !! or 0 if that element is not stored by the sparse matrix. This version does
+  !! a binary search of the appropriate sorted segment of the array. This does
+  !! not appear to be significantly more or less efficient that the linear
+  !! search for the lengths of adjacency lists encountered in practice (FEM).
+
+  pure integer function index_binary(this, row, col) result(k)
+    class(pcsr_graph), intent(in) :: this
+    integer, intent(in) :: row, col
+    integer :: k1, k2
+    k1 = this%xadj(row)
+    k2 = this%xadj(row+1) - 1
+    do while (k1 <= k2)
+      k = (k1 + k2) / 2
+      if (this%adjncy(k) < col) then
+        k1 = k + 1
+      else if (this%adjncy(k) > col) then
+        k2 = k - 1
+      else ! this%adjncy(k) == col
+        return
+      end if
+    end do
+    k = 0
+  end function
 
   !! Final subroutine for PCSR_MATRIX type objects.
   subroutine pcsr_matrix_delete (this)
@@ -252,22 +300,66 @@ contains
     real(r8), intent(in) :: value
     integer :: n
     ASSERT(row >= 1 .and. row <= this%nrow)
-    n = array_index(this%graph, row, col)
+    n = this%graph%index(row, col)
     ASSERT(n /= 0)
     this%values(n) = value
   end subroutine pcsr_matrix_set
 
   !! Increment the specified matrix element by the given value.
-  subroutine pcsr_matrix_add_to (this, row, col, value)
+  subroutine add_to_element (this, row, col, value)
     class(pcsr_matrix), intent(inout) :: this
     integer, intent(in) :: row, col
     real(r8), intent(in) :: value
     integer :: n
     ASSERT(row >= 1 .and. row <= this%nrow)
-    n = array_index(this%graph, row, col)
+    n = this%graph%index(row, col)
     ASSERT(n /= 0)
     this%values(n) = this%values(n) + value
-  end subroutine pcsr_matrix_add_to
+  end subroutine
+
+  !! Increment the principle submatrix specified by the list of row indices
+  !! with the corresponding values in the given matrix.
+  subroutine add_to_submatrix(this, rows, matrix)
+    class(pcsr_matrix), intent(inout) :: this
+    integer, intent(in) :: rows(:)
+    real(r8), intent(in) :: matrix(:,:)
+    integer :: i, j, n
+    ASSERT(size(matrix,1) == size(matrix,2))
+    ASSERT(size(rows) == size(matrix,1))
+    ASSERT(minval(rows) >= 1 .and. maxval(rows) <= this%nrow)
+    do i = 1, size(rows)
+      do j = 1, size(rows)
+        n = this%graph%index(rows(i),rows(j))
+        ASSERT(n /= 0)
+        this%values(n) = this%values(n) + matrix(i,j)
+      end do
+    end do
+  end subroutine
+
+  !! Increment the principle submatrix specified by the list of row indices
+  !! with the corresponding values in the given symmetric matrix in upper
+  !! packed storage format.
+  subroutine add_to_submatrix_upm(this, rows, matrix)
+    class(pcsr_matrix), intent(inout) :: this
+    integer, intent(in) :: rows(:)
+    real(r8), intent(in) :: matrix(:)
+    integer :: i, j, l, n
+    ASSERT(size(matrix) == (size(rows)*(size(rows)+1))/2)
+    ASSERT(minval(rows) >= 1 .and. maxval(rows) <= this%nrow)
+    l = 0
+    do j = 1, size(rows)
+      do i = 1, j-1
+        l = l + 1
+        n = this%graph%index(rows(i),rows(j))
+        this%values(n) = this%values(n) + matrix(l)
+        n = this%graph%index(rows(j),rows(i))
+        this%values(n) = this%values(n) + matrix(l)
+      end do
+      l = l + 1
+      n = this%graph%index(rows(j),rows(j))
+      this%values(n) = this%values(n) + matrix(l)
+    end do
+  end subroutine
 
   !! Zero-out the values of the specified row and column elements.
   subroutine pcsr_matrix_project_out (this, index)
@@ -318,17 +410,6 @@ contains
       end do
     end do
   end subroutine pcsr_matrix_get_diag_copy
-
-  !! Auxillary function that computes the index within the compressed
-  !! value array corresponding to the specified matrix element.
-  pure integer function array_index (graph, row, col) result (k)
-    type(pcsr_graph), intent(in) :: graph
-    integer, intent(in) :: row, col
-    do k = graph%xadj(row), graph%xadj(row+1)-1
-      if (graph%adjncy(k) == col) return
-    end do
-    k = 0
-  end function array_index
 
   !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
   !! HYPRE_IJMatrix object.  The HYPRE matrix is created if it does not exist.
