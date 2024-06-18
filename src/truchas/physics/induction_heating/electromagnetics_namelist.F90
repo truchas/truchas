@@ -24,6 +24,7 @@ contains
     integer :: n, ios
     logical :: found
     character(128) :: iom
+    type(parameter_list), pointer :: plist
 
     !! Namelist variables
     logical :: use_emfd_solver, use_legacy_bc, graphics_output
@@ -98,8 +99,10 @@ contains
     call params%set('frequency-domain-solver', use_emfd_solver)
 
     if (use_emfd_solver) then
-      ! no parameters
-      
+
+      plist => params%sublist('emfd-solver')
+      call plist%set('graphics-output', graphics_output)
+
     else ! use the time domain solver
 
       !! Time domain Joule heat solver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
