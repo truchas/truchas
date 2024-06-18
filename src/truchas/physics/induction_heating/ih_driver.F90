@@ -257,6 +257,7 @@ contains
     call bc_fac%init(this%em_mesh, this%src_fac, params)
     if (this%use_emfd_solver) then
       plist => params%sublist('emfd-solver')
+      call plist%set('graphics-file', trim(output_dir)//'fdme-'//i_to_c(sim_num)//'.vtkhdf')
       call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, plist, q)
     else
       call compute_joule_heat_emtd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
@@ -335,8 +336,9 @@ contains
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8) :: t, omega, epsi(mesh%ncell)
+    logical :: flag
     integer :: stat
-    character(:), allocatable :: errmsg
+    character(:), allocatable :: errmsg, filename
 
     call solver%init(mesh, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
@@ -350,7 +352,78 @@ contains
     call solver%solve
     call solver%compute_heat_source(q)
 
+    !! Graphics output
+    call params%get('graphics-output', flag, stat, errmsg, default=.false.)
+    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+    if (flag) then
+      call params%get('graphics-file', filename, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+      call emfd_vtk_graphics(filename, mesh, q, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+    end if
+
   end subroutine compute_joule_heat_emfd
+
+  subroutine emfd_vtk_graphics(filename, mesh, qfield, stat, errmsg)
+
+    use vtkhdf_file_type
+
+    character(*), intent(in) :: filename
+    type(simpl_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: qfield(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(vtkhdf_file) :: viz_file
+    real(r8), allocatable :: g_scalar(:)
+
+    if (is_IOP) call viz_file%create(filename, stat, errmsg)
+    call broadcast(stat)
+    if (stat /= 0) then
+      call broadcast(errmsg)
+      return
+    end if
+
+    call export_mesh
+
+    allocate(g_scalar(merge(mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(qfield(:mesh%ncell_onP), g_scalar)
+    if (is_IOP) call viz_file%write_cell_dataset('EM_heat', g_scalar, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    call viz_file%close
+
+  contains
+
+    subroutine export_mesh
+
+      use,intrinsic :: iso_fortran_env, only: int8
+
+      integer, allocatable, target :: cnode(:,:)
+      integer, allocatable :: xcnode(:)
+      integer(int8), allocatable :: types(:)
+      real(r8), allocatable :: x(:,:)
+      integer, pointer :: connectivity(:)
+      integer :: j, stat
+      character(:), allocatable :: errmsg
+
+      !! Collate the mesh data structure onto the IO process
+      call mesh%get_global_cnode_array(cnode)
+      call mesh%get_global_x_array(x)
+
+      if (is_IOP) then
+        xcnode = [(1+4*j, j=0, size(cnode,dim=2))]
+        connectivity(1:size(cnode)) => cnode ! flattened view
+        types = spread(VTK_TETRA, dim=1, ncopies=size(cnode,dim=2))
+        call viz_file%write_mesh(x, connectivity, xcnode, types, stat, errmsg)
+      end if
+      call broadcast(stat)
+      INSIST(stat == 0)
+
+    end subroutine export_mesh
+
+  end subroutine emfd_vtk_graphics
 
   !! Set the Joule heat to 0. Used when the magnetic source is 0 and
   !! the actual computation is unnecessary.
