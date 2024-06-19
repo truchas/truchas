@@ -14,6 +14,7 @@ target_sources(truchas PRIVATE
   gmres_left_solver_type.F90
   ridders_class.F90
   nlsol_type.F90
+  nlk_solver_type.F90
   upper_packed_matrix_procs.F90
   msr_matrix_type.F90
   cgsol_type.F90
