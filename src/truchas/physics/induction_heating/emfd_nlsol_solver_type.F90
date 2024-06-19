@@ -15,18 +15,19 @@
 
 #include "f90_assert.fpp"
 
-#define PRECON ams_precon
-#define SOLVER gmres_left_solver
-!#define PRECON hiptmair_precon
-!#define SOLVER nlsol
+!#define PRECON ams_precon
+!#define SOLVER gmres_left_solver
+#define PRECON hiptmair_precon
+#define SOLVER nlk_solver
 
 module emfd_nlsol_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use fdme_model_type
   use ams_precon_type
   use hiptmair_precon_type
-  use nlsol_type
+  use nlk_solver_type
   use gmres_left_solver_type
   use pcsr_matrix_type
   use simpl_mesh_type
@@ -37,7 +38,7 @@ module emfd_nlsol_solver_type
   implicit none
   private
 
-  type, extends(nlsol_model) :: emfd_nlsol_model
+  type, extends(nlk_solver_model) :: emfd_nlsol_model
     private
     real(r8) :: atol, rtol, ftol
     real(r8), allocatable :: b(:)
@@ -47,22 +48,22 @@ module emfd_nlsol_solver_type
     procedure :: init => emfd_nlsol_model_init
     !!!! INHERITED !!!!
     procedure :: size => emfd_nlsol_model_size
-    procedure :: compute_f => new_compute_f
-    procedure :: apply_precon => emfd_nlsol_model_apply_precon
-    procedure :: compute_precon => emfd_nlsol_model_compute_precon
-    procedure :: du_norm => emfd_nlsol_model_du_norm
-    procedure :: is_converged => emfd_nlsol_model_is_converged
+    procedure :: compute_f
+    procedure :: apply_precon
+    procedure :: compute_precon
+    procedure :: du_norm
+    procedure :: is_converged
   end type emfd_nlsol_model
 
 
   type, public :: emfd_nlsol_solver
     private
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(simpl_mesh) :: meshr
 
     type(PRECON), pointer :: precon => null()
     type(SOLVER) :: solver
     type(emfd_nlsol_model), pointer :: model => null()
+    type(fdme_model), pointer :: newmodel => null()
     type(pcsr_matrix), pointer :: A(:,:) => null(), Ap => null()
 
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
@@ -142,9 +143,9 @@ contains
     !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 3d-7) ! nlsol-ams
     !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 1d-8) ! gmres-hiptmair
     !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 1d-11) ! gmres-hiptmair HF
-    if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 0.0_r8) ! gmres-hiptmair HF
     !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 0.0_r8) ! gmres-hiptmair HF
-    !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 1d-8) ! nlsol-hiptmair
+    !if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 0.0_r8) ! gmres-hiptmair HF
+    if (.not.params%is_parameter("abs-tol")) call params%set("abs-tol", 1d-8) ! nlsol-hiptmair
     if (.not.params%is_parameter("res-tol")) call params%set("res-tol", huge(1.0_r8))
     !if (.not.params%is_parameter("res-tol")) call params%set("res-tol", 1d-1) ! gmres-hiptmair HF
     !if (.not.params%is_parameter("res-tol")) call params%set("res-tol", 1d0) ! nlsol-hiptmair
@@ -173,6 +174,10 @@ contains
     this%efield = 0
     this%rhs = 0
 
+    allocate(this%newmodel)
+    call this%newmodel%init(mesh, params, stat, errmsg)
+    if (stat /= 0) return
+
     allocate(this%rhs_r(mesh%nedge), this%rhs_i(mesh%nedge), source=0.0_r8)
 
     block ! full system in block form
@@ -196,14 +201,10 @@ contains
     ! non-dimensionalization
     this%L0 = 1
     this%H0 = 1 !maxval(abs(this%bc%hsource))
-    this%meshr = this%mesh
-    this%meshr%x = this%meshr%x / this%L0
-    this%meshr%length = this%meshr%length / this%L0
-    this%meshr%volume = this%meshr%volume / this%L0**3
 
     allocate(this%precon, this%model)
     plist => params%sublist("precon")
-    call this%precon%init(plist, this%meshr, this%Ap, this%ebc)
+    call this%precon%init(plist, this%mesh, this%Ap, this%ebc)
     call this%model%init(this%A, this%precon, atol, rtol, ftol)
     call this%solver%init(this%model, params, ierr, errmsg)
     if (ierr /= 0) call tls_fatal("EMFD_NLSOL INIT: " // errmsg)
@@ -241,6 +242,7 @@ contains
     this%epsi = epsi
 
     ! non-dimensionalization
+    this%omega = omega
     omegar = omega * this%L0 / this%c0
 
     call this%A(1,1)%set_all(0.0_r8)
@@ -250,8 +252,8 @@ contains
 
     ! Raw system matrix ignoring boundary condtions
     do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
-      m1 = W1_matrix_WE(this%meshr, j)
-      m2 = W2_matrix_WE(this%meshr, j)
+      m1 = W1_matrix_WE(this%mesh, j)
+      m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, curl)
 
       a = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
@@ -334,7 +336,7 @@ contains
     ASSERT(all(ieee_is_finite(this%rhs)))
 
     call start_timer("solve")
-    call this%solver%solve(0.0_r8, 0.0_r8, this%efield, this%efield, ierr)
+    call this%solver%solve(this%efield, ierr)
     call stop_timer("solve")
     !call tls_info('  EMFD solve: ' // this%solver%metrics_string())
     print *, "ierr: ", ierr
@@ -382,7 +384,7 @@ contains
 
       ! compute heat sources
       q_joule = this%sigma(j) * efield2 / 2
-      q_dielectric = this%omega * this%epsi(j) * efield2 / 2
+      q_dielectric = (this%omega/this%c0) * this%epsi(j) * efield2 / 2
 
       ! want a source density
       q(j) = (q_joule + q_dielectric) / abs(this%mesh%volume(j))
@@ -416,14 +418,13 @@ contains
   integer function emfd_nlsol_model_size(this)
     class(emfd_nlsol_model), intent(in) :: this
     emfd_nlsol_model_size = this%A(1,1)%nrow_onP + this%A(2,1)%nrow_onP
-  end function emfd_nlsol_model_size
+  end function
 
 
-  subroutine new_compute_f(this, t, u, udot, f, ax)
+  subroutine compute_f(this, u, f, ax)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous, target :: u(:), udot(:)
-    real(r8), intent(out), contiguous, target :: f(:)
+    real(r8), intent(in) :: u(:)
+    real(r8), intent(out) :: f(:)
     logical, intent(in), optional :: ax
     real(r8) :: tmp(size(f))
     ASSERT(all(ieee_is_finite(u)))
@@ -439,59 +440,56 @@ contains
   end subroutine
 
 
-  subroutine emfd_nlsol_model_apply_precon(this, t, u, f)
+  subroutine apply_precon(this, u, f)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous, target :: u(:)
-    real(r8), intent(inout), contiguous, target :: f(:)
+    real(r8), intent(in) :: u(:)
+    real(r8), intent(inout) :: f(:)
     integer :: ierr
     this%b = f
     f = 0
     call this%precon%apply(this%b, f, ierr)
     INSIST(ierr == 0)
-  end subroutine emfd_nlsol_model_apply_precon
+  end subroutine
 
 
-  subroutine emfd_nlsol_model_compute_precon(this, t, u, dt)
+  subroutine compute_precon(this, u)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: t, dt
-    real(r8), intent(in), contiguous, target :: u(:)
+    real(r8), intent(in) :: u(:)
     ! compute precon currently handled above the nlsol solver.
     !call this%precon%setup(interior_nodes)
-  end subroutine emfd_nlsol_model_compute_precon
+  end subroutine
 
 
-  real(r8) function emfd_nlsol_model_du_norm(this, t, u, du)
+  real(r8) function du_norm(this, u, du)
 
     use parallel_communication, only: global_maxval
 
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: t
-    real(r8), intent(in), contiguous, target :: u(:), du(:)
+    real(r8), intent(in) :: u(:), du(:)
 
     integer :: i
     real(r8) :: err
 
-    emfd_nlsol_model_du_norm = 0
+    du_norm = 0
     do i = 1, size(u)
       if (this%atol == 0 .and. abs(u(i)) == 0) then
         err = huge(1.0_r8)
       else
         err = abs(du(i)) / (this%atol + this%rtol*abs(u(i)))
       end if
-      emfd_nlsol_model_du_norm = max(emfd_nlsol_model_du_norm, err)
+      du_norm = max(du_norm, err)
     end do
-    emfd_nlsol_model_du_norm = global_maxval(emfd_nlsol_model_du_norm)
+    du_norm = global_maxval(du_norm)
 
-  end function emfd_nlsol_model_du_norm
+  end function
 
 
-  logical function emfd_nlsol_model_is_converged(this, itr, t, u, du, f_lnorm, tol)
+  logical function is_converged(this, itr, u, du, f_lnorm, tol)
     class(emfd_nlsol_model) :: this
     integer, intent(in) :: itr
-    real(r8), intent(in) :: t, tol
-    real(r8), intent(in), contiguous, target :: u(:), du(:), f_lnorm(:)
-    emfd_nlsol_model_is_converged = this%du_norm(t, u, du) < tol .and. f_lnorm(3) < this%ftol
-  end function emfd_nlsol_model_is_converged
+    real(r8), intent(in) :: tol
+    real(r8), intent(in) :: u(:), du(:), f_lnorm(:)
+    is_converged = this%du_norm(u, du) < tol .and. f_lnorm(3) < this%ftol
+  end function 
 
 end module emfd_nlsol_solver_type
