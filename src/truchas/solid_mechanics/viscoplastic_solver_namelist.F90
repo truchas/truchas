@@ -58,7 +58,10 @@ contains
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading input file: iostat=' // i_to_c(ios))
     call broadcast(found)
-    if (.not.found) call TLS_info('VISCOPLASTIC_SOLVER namelist not found; using defaults.')
+    if (.not.found) then
+      call TLS_info('VISCOPLASTIC_SOLVER namelist not found; using defaults.')
+      return
+    end if
 
     !! Default values
     nlk_tol = NULL_R

@@ -22,21 +22,21 @@ direction.
 &PHYSICS
   materials = 'stuff'
   solid_mechanics = .true.
-  heat_transport = .false.
 /
 
 &SOLID_MECHANICS
-  nlk_max_vectors = 200
-  nlk_vector_tolerance = 1e-2
   maximum_iterations = 500
+  preconditioner_method = "ds"
+  abs_displ_tol = 1e100
+  rel_displ_tol = 1e100
+  abs_stress_tol = 1e-11
 /
-&DIFFUSION_SOLVER /
 
 &MATERIAL
   name = 'stuff'
   density = 1.0
-  tm_lame1 = 1
-  tm_lame2 = 1
+  tm_lame1 = 1.0
+  tm_lame2 = 1.0
   tm_ref_density = 1.0
   tm_ref_temp = 1.0
   tm_linear_cte = 0.0

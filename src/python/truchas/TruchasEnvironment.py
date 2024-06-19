@@ -337,7 +337,8 @@ class TruchasEnvironment:
 
         """
 
-        output_filename_abs = os.path.join(self._input_dir, output_filename)
+        output_filename_abs = output_filename if os.path.isabs(output_filename) \
+            else os.path.join(self._input_dir, output_filename)
         open(output_filename_abs, "w").close() # create an empty output file
 
         # hack to handle both strs and lists of strs

@@ -69,12 +69,7 @@ contains
     do fi = 1, nfi
       count = 0
       f = face_index(fi)
-      do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
-        n = mesh%fnode(xn)
-        !if (n <= mesh%nnode_onP) count = count + 1
-        count = count + 1
-      end do
-      xfini(fi+1) = xfini(fi) + count
+      xfini(fi+1) = xfini(fi) + mesh%xfnode(f+1) - mesh%xfnode(f)
     end do
 
     ! count the unique nodes
@@ -84,7 +79,6 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) /= 0) cycle
         count = count + 1
         ni_(n) = count
@@ -100,7 +94,6 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) == 0) then
           count = count + 1
           ni_(n) = count
@@ -112,7 +105,6 @@ contains
     end do
 
     ASSERT(all(fini > 0))
-    !ASSERT(all(fini <= mesh%nnode_onP))
 
   end subroutine compute_index_connectivity
 
@@ -528,6 +520,9 @@ contains
   end function contact_factor
 
 
+  !! Return the derivative of the contact factor with respect to:
+  !!   - The separation s (component 1)
+  !!   - The traction tn (component 2)
   pure function derivative_contact_factor(s, tn, distance, traction) result(dl)
 
     real(r8), intent(in) :: s, tn, distance, traction

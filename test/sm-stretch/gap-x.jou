@@ -13,6 +13,7 @@ mesh volume 1 2
 block 1 add volume all
 sideset 1 add surface 4
 sideset 2 add surface 6
+sideset 3 add surface 8 9 10 11 13 14 15 16
 sideset 10 surface 7
 
 set exodus netcdf4 off

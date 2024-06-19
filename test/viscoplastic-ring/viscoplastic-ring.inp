@@ -57,7 +57,11 @@
 
 &SOLID_MECHANICS
   maximum_iterations = 500
+  abs_stress_tol = 1e-13
+  abs_displ_tol = 1e100
+  rel_displ_tol = 1e100
   nlk_max_vectors = 60
+  preconditioner_method = "ds"
 
   ! Make the contact parameters large to model a sliding interface (no
   ! penetration or separation).

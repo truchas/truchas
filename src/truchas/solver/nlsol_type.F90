@@ -50,6 +50,7 @@ module nlsol_type
   end type nlsol
 
   type, abstract, public :: nlsol_model
+    real(r8), public :: rhs_scale = 1.0_r8
   contains
     procedure(model_size), deferred :: size
     procedure(compute_f), deferred :: compute_f
@@ -90,11 +91,11 @@ module nlsol_type
       real(r8), intent(in) :: t
       real(r8), intent(in), contiguous, target :: u(:), du(:)
     end function
-    logical function is_converged(this, itr, t, u, du, f_lnorm, tol)
+    logical function is_converged(this, itr, t, u, du, du_norm, f_lnorm, tol)
       import :: nlsol_model, r8
       class(nlsol_model) :: this
       integer, intent(in) :: itr
-      real(r8), intent(in) :: t, tol
+      real(r8), intent(in) :: t, du_norm, tol
       real(r8), intent(in), contiguous, target :: u(:), du(:), f_lnorm(:)
     end function
   end interface
@@ -261,12 +262,12 @@ contains
       !! Error estimate.
       error = this%model%du_norm(t, u, du)
       if (this%verbose >= 2) then
-        write(msg,fmt=3) itr, error, lnormi(3)
+        write(msg,fmt=3) itr, error, lnormi(3) / this%model%rhs_scale
         call tls_info(trim(msg))
       end if
 
       !! Check for convergence.
-      if (this%model%is_converged(itr, t, u, du, lnormi, this%ntol)) exit
+      if (this%model%is_converged(itr, t, u, du, error, lnormi, this%ntol)) exit
     end do
 
     this%itr = itr ! expose the number of iterations performed
@@ -275,9 +276,9 @@ contains
 
     if (this%verbose >= 1) then
       if (errc == 0) then
-        write(msg,fmt=2) itr, error, lnormi(3)
+        write(msg,fmt=2) itr, error, lnormi(3) / this%model%rhs_scale
       else
-        write(msg,fmt=1) itr, error, lnormi(3)
+        write(msg,fmt=1) itr, error, lnormi(3) / this%model%rhs_scale
       end if
       call tls_info(trim(msg))
     end if

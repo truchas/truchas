@@ -11,6 +11,7 @@ direction.
   x_axis%intervals   = 20
   y_axis%intervals   = 4
   z_axis%intervals   = 4
+  !rotation_angles = 45, 45, 45
 /
 
 &OUTPUTS
@@ -29,9 +30,11 @@ direction.
 /
 
 &SOLID_MECHANICS
-  nlk_max_vectors = 10
-  nlk_vector_tolerance = 1e-5
-  maximum_iterations = 500
+  maximum_iterations = 2000
+  preconditioner_method = "ds"
+  abs_displ_tol = 1e100
+  rel_displ_tol = 1e100
+  abs_stress_tol = 1e-10
 /
 
 &MATERIAL
@@ -56,14 +59,14 @@ direction.
 /
 
 &SOLID_MECHANICS_BC
-  name = 'displx'
-  face_set_ids = 1
-  type = 'displacement-x'
+  name = 'displ-l'
+  face_set_ids = 1, 3
+  type = 'displacement-n'
   displacement = 0
 /
 
 &SOLID_MECHANICS_BC
-  name = 'displn'
+  name = 'displ-r'
   face_set_ids = 2
   type = 'displacement-n'
   displacement = -1e-4

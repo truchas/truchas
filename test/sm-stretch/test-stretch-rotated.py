@@ -3,6 +3,8 @@
 # This test ensures the normal-direction displacement BC produces rotationally
 # invariant results.
 
+import os
+
 import numpy as np
 
 import truchas
@@ -22,32 +24,41 @@ def rotation_matrix(rotation_angles):
     rot = rotx @ roty @ rotz
     return rot
 
+
 def rotated(displ, rotation_angles):
     rot = rotation_matrix(rotation_angles)
-    displr = np.array([ rot @ d for d in displ])
+    displr = np.array([rot @ d for d in displ])
     return displr
 
+
+def run_truchas(tenv, rotation_angle):
+    replacements = {"rotation_angles": "{:f}, {:f}, {:f}".format(*rotation_angle)}
+    identifier = truchas.TruchasDatabase.identifier(replacements)
+    input_file = os.path.join(tenv._working_dir, f"{identifier}.inp")
+    tenv.generate_input_deck(replacements, "template-stretch-nx.inp", input_file)
+    stdout, output = tenv.truchas(4, input_file)
+    return output
+
+
 def run_test(tenv):
-    nfail = 0
+    rotation_angles = [[0,0,0],
+                       [0,0,45],
+                       [0,0,60],
+                       [0,0,90],
+                       [45,45,45],
+                       ]
     sid = 2 # final output
-    stdout0, output0 = tenv.truchas(4, "stretch-nx-0.inp")
+    output0 = run_truchas(tenv, rotation_angles[0])
     displ0 = output0.field(sid, "Displacement")
     time = output0.time(sid)
 
-    # opposite the rotation angles in the input files.
-    rotation_angles = [[0,0,-45],
-                       [0,0,-60],
-                       [0,0,-90],
-                       [-45,-45,-45],
-                       ]
-
-    for i, ra in zip(range(1,5), rotation_angles):
-        case = f"stretch-nx-{i}"
-        stdout, output = tenv.truchas(4, f"{case}.inp")
+    nfail = 0
+    for i, ra in enumerate(rotation_angles[1:]):
+        output = run_truchas(tenv, ra)
 
         displ = output.field(sid, "Displacement")
-        displ = rotated(displ, ra)
-        nfail += truchas.compare_max(displ0, displ, 1e-9, f"displacement-{i}", time)
+        displ = rotated(displ, -np.array(ra))
+        nfail += truchas.compare_max(displ0, displ, 1e-9, f"displacement-{i+1}", time)
 
         # TODO: compare other fields
 

@@ -33,6 +33,7 @@ module sm_model_type
 
     type(sm_material_model), pointer :: matl_model => null()
     type(viscoplastic_solver) :: vp_solver
+    logical, public :: use_uniform_scaling_factor = .true.
 
     !! state variables -- expose to driver for checkpointing
     real(r8), allocatable :: strain_plastic(:,:), strain_total(:,:)
@@ -43,11 +44,12 @@ module sm_model_type
     !! expose to the preconditioner
     real(r8), allocatable, public :: rhs(:,:)
     real(r8), allocatable, public :: lame1_n(:), lame2_n(:), scaling_factor(:)
+    real(r8), public :: bnorm3, penalty
 
     !! expose for computing viz fields
     real(r8), allocatable, public :: lame1(:), lame2(:), strain_thermal(:,:)
 
-    real(r8) :: max_cell_halfwidth, penalty, tlast, tcurrent
+    real(r8) :: eff_max_cell_width, tlast, tcurrent
     real(r8), allocatable :: density_c(:), density_n(:)
     real(r8), pointer :: vof(:,:) => null() ! unowned reference
     real(r8), pointer :: temperature(:) => null() ! unowned reference
@@ -124,11 +126,13 @@ contains
         this%lame1_n(this%mesh%nnode), this%lame2_n(this%mesh%nnode), &
         this%rhs(3,this%mesh%nnode_onP), this%scaling_factor(this%mesh%nnode_onP))
 
-    this%max_cell_halfwidth = max_cell_halfwidth()
+    this%eff_max_cell_width = eff_max_cell_width()
+    this%scaling_factor = 1
 
     call params%get('contact-distance', distance, default=1e-7_r8)
     call params%get('contact-normal-traction', traction, default=1e4_r8)
     call params%get('contact-penalty', this%penalty, default=1e3_r8)
+    !call params%get('contact-penalty', this%penalty, default=1.0_r8)
     call params%get('abs-displ-tol', this%atol, default=1e-10_r8)
     call params%get('rel-displ-tol', this%rtol, default=1e-10_r8)
     call params%get('abs-stress-tol', this%ftol, default=1e-10_r8)
@@ -156,14 +160,12 @@ contains
 
   contains
 
-    ! compute the maximum cell half-width, used for the
-    ! vector scaling factor applied to the system
-    real(r8) function max_cell_halfwidth()
+    ! Used only for the scaling factor computed in update_properties.
+    real(r8) function eff_max_cell_width()
       use parallel_communication, only: global_maxval
-      real(r8) :: halfwidth(mesh%ncell_onP)
-      halfwidth = 0.5_r8 * this%mesh%volume(:this%mesh%ncell_onP)**(1.0_r8/3.0_r8)
-      max_cell_halfwidth = global_maxval(halfwidth)
-    end function max_cell_halfwidth
+      eff_max_cell_width = maxval(this%mesh%volume(:this%mesh%ncell_onP)**(1.0_r8/3.0_r8))
+      eff_max_cell_width = global_maxval(eff_max_cell_width)
+    end function eff_max_cell_width
 
   end subroutine init
 
@@ -186,13 +188,14 @@ contains
   subroutine update_properties(this, vof, temperature_cc)
 
     use sm_bc_utilities, only: compute_stress
+    use parallel_communication, only: global_maxval
 
     class(sm_model), intent(inout) :: this
     real(r8), intent(in), target :: vof(:,:), temperature_cc(:)
 
     integer :: j, n, m, xp, p
     real(r8) :: s, state(1), thermal_stress(6,this%mesh%ncell)
-    real(r8) :: density_old, dstrain
+    real(r8) :: density_old, dstrain, max_lame, max_lame1, max_lame2
 
     ASSERT(size(vof, dim=1) == this%matl_model%nmat)
     ASSERT(size(vof, dim=2) == this%mesh%ncell)
@@ -239,17 +242,23 @@ contains
     call this%mesh%node_imap%gather_offp(this%lame2_n)
 
     ! right hand side & scaling factor
+    ! The scaling factor is aimed to be an approximation of the ratio stress /
+    ! displacement, so that contact & Dirichlet BCs have roughly the same
+    ! residual error order of magnitude as stress errors.
+    this%bnorm3 = 0
+    max_lame1 = global_maxval(abs(this%lame1(:this%mesh%ncell_onP)))
+    max_lame2 = global_maxval(abs(this%lame2(:this%mesh%ncell_onP)))
+    max_lame = max(max_lame1, max_lame2)
+
     do n = 1, this%mesh%nnode_onP
-      if (this%lame2_n(n) /= 0) then
-        !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
-        !this%scaling_factor(n) = 1e-3_r8 * this%lame2_n(n) / this%ig%volume(n)
-        !this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth
-        !this%scaling_factor(n) = 2e3_r8 * this%lame2_n(n) * this%max_cell_halfwidth
-        this%scaling_factor(n) = this%lame2_n(n) * this%max_cell_halfwidth / this%penalty
+      if (this%use_uniform_scaling_factor) then
+        this%scaling_factor(n) = max_lame * this%eff_max_cell_width / this%penalty
       else
-        this%scaling_factor(n) = 1
+        this%scaling_factor(n) = max(1.0_r8, this%lame1_n(n), this%lame2_n(n)) &
+            * this%eff_max_cell_width / this%penalty
       end if
-      this%scaling_factor(n) = 1 ! DEBUGGING
+      this%scaling_factor(n) = max_lame * this%eff_max_cell_width / this%penalty
+      !this%scaling_factor(n) = 1
 
       associate (np => this%ig%npoint(this%ig%xnpoint(n):this%ig%xnpoint(n+1)-1))
         this%rhs(:,n) = -this%body_force_density * this%density_n(n) * this%ig%volume(n)
@@ -260,13 +269,14 @@ contains
           this%rhs(:,n) = this%rhs(:,n) + s * tensor_dot(thermal_stress(:,j), this%ig%n(:,p))
         end do
       end associate
-    end do
 
-    !this%contact_penalty = global_maxval(this%lame2_n / this%ig%volume)
-    !this%contact_penalty = global_maxval(this%rhs)
-    !this%contact_penalty = 1e3_r8
-    !this%contact_penalty = global_maxval(this%lame2) * this%max_cell_halfwidth
-    !this%contact_penalty = 1
+      ! this%bnorm3 = max(this%bnorm3, &
+      !     maxval(abs(this%rhs(:,n))) / this%scaling_factor(n), &
+      !     this%lame1_n(n) / this%eff_max_cell_width**2 / this%scaling_factor(n), &
+      !     this%lame2_n(n) / this%eff_max_cell_width**2 / this%scaling_factor(n))
+    end do
+    !this%bnorm3 = global_maxval(this%bnorm3)
+    this%bnorm3 = 1
 
     call stop_timer("properties")
 
@@ -356,13 +366,7 @@ contains
 
     integer :: n
 
-    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) >= this%mesh%nnode_onP)
-
-    ! get off-rank halo
-    call start_timer("residual")
-    call this%mesh%node_imap%gather_offp(displ)
-    call stop_timer("residual")
 
     call compute_forces(this, t, displ, r)
 
@@ -382,13 +386,13 @@ contains
     use sm_bc_utilities, only: compute_stress
 
     class(sm_model), intent(inout) :: this ! inout to update BCs
-    real(r8), intent(in) :: t, displ(:,:)
+    real(r8), intent(in) :: t
+    real(r8), intent(inout) :: displ(:,:)
     real(r8), intent(out) :: r(:,:)
 
     integer :: n, xp, p, j
     real(r8) :: s, stress(6), lhs(3), lhs_strain(6), dt
 
-    ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%mesh%nnode)
     ASSERT(size(r,dim=1) == 3 .and. size(r,dim=2) >= this%mesh%nnode_onP)
 
     call start_timer("residual")
@@ -401,9 +405,11 @@ contains
     if (this%matl_model%viscoplasticity_enabled .and. t /= this%tlast) then
       this%tcurrent = t ! to be read by accept_state
       dt = t - this%tlast
-      call this%vp_solver%compute_plastic_strain(dt, this%temperature, this%lame1, this%lame2, this%vof, this%strain_pc, &
-        this%strain_total_old, this%strain_thermal_old, this%strain_plastic_old, this%dstrain_plastic_dt_old, &
-        this%strain_total, this%strain_thermal, this%strain_plastic, this%dstrain_plastic_dt)
+      call this%vp_solver%compute_plastic_strain(dt, this%temperature, this%lame1, this%lame2, &
+          this%vof, this%strain_pc, &
+          this%strain_total_old, this%strain_thermal_old, &
+          this%strain_plastic_old, this%dstrain_plastic_dt_old, &
+          this%strain_total, this%strain_thermal, this%strain_plastic, this%dstrain_plastic_dt)
     end if
 
     call start_timer("stress")
@@ -440,7 +446,7 @@ contains
   subroutine compute_total_strain(this, displ, total_strain)
 
     class(sm_model), intent(in) :: this
-    real(r8), intent(in) :: displ(:,:)
+    real(r8), intent(inout) :: displ(:,:) ! inout for off-rank halo update
     real(r8), intent(out) :: total_strain(:,:)
 
     integer :: p, j, d
@@ -449,6 +455,7 @@ contains
     ASSERT(size(displ, dim=2) == this%mesh%nnode) ! need off-rank halo
 
     call start_timer("strain")
+    call this%mesh%node_imap%gather_offp(displ)
 
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))

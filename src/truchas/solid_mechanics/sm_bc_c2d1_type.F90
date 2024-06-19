@@ -42,8 +42,8 @@ module sm_bc_c2d1_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c2d1
 
 contains
@@ -158,7 +158,7 @@ contains
         end do
 
         ! cross terms
-        x = ftot(:,n2)
+        x = ftot(:,n2) / stress_factor(n1)
         r(:,n1) = r(:,n1) + lambda(1)*lambda(2) * &
             (x &
             - this%normal_d(:,i)*dot_product(this%normal_d(:,i),x) &
@@ -220,7 +220,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c2d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -231,23 +231,19 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
-
-      diag(:,n) = diag(:,n)
-      !diag(:,n) = - this%tangent(:,i)**2 * this%penalty * stress_factor(n)
 
       do d = 1,3
         x(d) = dot_product(this%normal_d(:,i), F(:,d,n))
       end do
       diag(:,n) = diag(:,n) - this%normal_d(:,i) * x &
-          &                 - this%penalty * stress_factor(n) * this%normal_d(:,i)**2
+          &                 - this%penalty * this%normal_d(:,i)**2
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -257,6 +253,6 @@ contains
 
     ! TODO
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c2d1_type

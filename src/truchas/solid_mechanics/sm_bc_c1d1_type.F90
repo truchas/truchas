@@ -42,8 +42,8 @@ module sm_bc_c1d1_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c1d1
 
 contains
@@ -100,7 +100,7 @@ contains
       this%alpha(nnode) = dot_product(this%align(:,nnode), this%normal_gap(:,nnode))**2
     end do
 
-    nnode = count(this%index <= mesh%nnode_onP)
+    nnode = size(this%index)
     nnode = global_sum(nnode)
     this%enabled = nnode > 0
     if (this%enabled) then
@@ -124,6 +124,7 @@ contains
     do i = 1, size(this%index)
       n1 = this%index(i)
       n2 = this%linked_node(i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
       r(:,n1) = r(:,n1) - dot_product(r(:,n1), this%normal_d(:,i)) * this%normal_d(:,i)
 
@@ -146,7 +147,7 @@ contains
       stress2 = dot_product(this%align(:,i), ftot(:,n2))
       x1 = dot_product(this%align(:,i), displ(:,n1))
       x2 = dot_product(this%align(:,i), displ(:,n2))
-      v = stress2 + stress_penalty * this%alpha(i) * (x2 - x1)
+      v = stress2 + stress_penalty * this%alpha(i) * s
 
       r(:,n1) = r(:,n1) + this%align(:,i) * l * v
 
@@ -159,34 +160,56 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+
+    use sm_bc_utilities, only: derivative_contact_factor
 
     class(sm_bc_c1d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-    integer :: i, n, d
-    real(r8) :: x(3)
+    integer :: i, d, n1, n2
+    real(r8) :: x(3), v, l, tn, stress1, stress2, s, x1, x2, dldu(3), dl(2), stress_penalty
 
     do i = 1, size(this%index)
-      n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
-
-      !diag(:,n) = 0
-      !diag(:,n) = - this%tangent(:,i)**2 * this%penalty * stress_factor(n)
+      n1 = this%index(i)
 
       do d = 1,3
-        x(d) = dot_product(this%normal_d(:,i), F(:,d,n))
+        x(d) = dot_product(this%normal_d(:,i), F(:,d,n1))
       end do
-      diag(:,n) = diag(:,n) - this%normal_d(:,i) * x &
-          &                 - this%penalty * stress_factor(n) * this%normal_d(:,i)**2
+      diag(:,n1) = diag(:,n1) - this%normal_d(:,i) * x &
+          &                   - this%penalty * this%normal_d(:,i)**2
+
+      ! ! contact part
+      ! n2 = this%linked_node(i)
+      ! stress_penalty = this%penalty * stress_factor(n1)
+
+      ! stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
+      ! stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
+      ! x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
+      ! x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
+      ! s = x2 - x1
+      ! tn = - stress1 / this%area(i)
+      ! l = contact_factor(s, tn, this%distance, this%normal_traction)
+
+      ! stress1 = dot_product(this%align(:,i), ftot(:,n1))
+      ! stress2 = dot_product(this%align(:,i), ftot(:,n2))
+      ! x1 = dot_product(this%align(:,i), displ(:,n1))
+      ! x2 = dot_product(this%align(:,i), displ(:,n2))
+      ! v = stress2 + stress_penalty * this%alpha(i) * s
+
+      ! dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
+      ! dldu = -dl(1)*this%normal_gap(:,i) - dl(2)*this%normal_gap(:,i)*diag(:,n1) / this%area(i)
+
+      ! diag(:,n1) = diag(:,n1) - this%align(:,i)**2 * l * this%penalty * this%alpha(i)
+      ! diag(:,n1) = diag(:,n1) + this%align(:,i) * v * dldu / stress_factor(n1)
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -196,6 +219,6 @@ contains
 
     ! TODO
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c1d1_type

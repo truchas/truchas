@@ -30,10 +30,10 @@
 /
 
 &SOLID_MECHANICS
-  abs_stress_tol = 1e-14
-  nlk_max_vectors = 20
-  nlk_vector_tolerance = 1e-2
-  maximum_iterations = 500
+  abs_stress_tol = 1e-15
+  abs_displ_tol = 1e100
+  rel_displ_tol = 1e100
+  preconditioner_method = "ds"
 /
 
 &NUMERICS

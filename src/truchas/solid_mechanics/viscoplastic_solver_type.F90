@@ -144,7 +144,7 @@ contains
       strain_total_old, strain_thermal_old, strain_plastic_old, dstrain_plastic_dt_old, &
       strain_total_new, strain_thermal_new, strain_plastic_new, dstrain_plastic_dt_new)
 
-    use ieee_arithmetic, only: ieee_is_normal
+    use,intrinsic :: ieee_arithmetic, only: ieee_is_normal
 
     class(viscoplastic_solver), intent(inout), target :: this
     real(r8), intent(in) :: dt, temperature(:), lame1(:), lame2(:)
@@ -212,6 +212,7 @@ contains
             end block
           end if
         end if
+        ASSERT(all(ieee_is_normal(u1)))
 
         call this%model%compute_udot(dt, u1, udot1)
       end associate

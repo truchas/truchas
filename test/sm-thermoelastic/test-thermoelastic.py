@@ -14,6 +14,10 @@ def run_test(tenv):
         displg = golden.field(sid, "Displacement")
         nfail += truchas.compare_max(displt, displg, 1e-6, "displacement", output.time(sid))
 
+        sigmat = output.field(sid, "sigma")
+        sigmag = golden.field(sid, "sigma")
+        nfail += truchas.compare_max(sigmat, sigmag, 1e3, "stress", output.time(sid))
+
     truchas.report_summary(nfail)
     return nfail
 

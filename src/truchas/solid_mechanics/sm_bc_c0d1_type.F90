@@ -38,8 +38,8 @@ module sm_bc_c0d1_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c0d1
 
 contains
@@ -128,6 +128,7 @@ contains
     args(0) = time
     do i = 1, size(this%index)
       n1 = this%index(i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
       r(:,n1) = r(:,n1) - dot_product(r(:,n1), this%normal_d(:,i)) * this%normal_d(:,i)
 
@@ -142,7 +143,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -153,19 +154,18 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
       do d = 1,3
         x(d) = dot_product(this%normal_d(:,i), F(:,d,n))
       end do
       diag(:,n) = diag(:,n) - this%normal_d(:,i) * x &
-          &                 - this%penalty * stress_factor(n) * this%normal_d(:,i)**2
+          &                 - this%penalty * this%normal_d(:,i)**2
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -180,11 +180,10 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
       n1 = 3*(n-1) + 1
       n2 = 3*(n-1) + 2
       n3 = 3*(n-1) + 3
-      stress_penalty = this%penalty * stress_factor(n)
+      stress_penalty = this%penalty !/ stress_factor(n)
 
       ! It is assumed that the indices for each row here are identical.
       ! This *should* be the case.
@@ -202,11 +201,11 @@ contains
       do ii = 1, 3
         do jj = 1, 3
           call A%add_to(3*(n-1) + ii, 3*(n-1) + jj, &
-              -stress_penalty * this%normal_d(ii,i) * this%normal_d(jj,i))
+              -this%penalty * this%normal_d(ii,i) * this%normal_d(jj,i))
         end do
       end do
     end do
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c0d1_type

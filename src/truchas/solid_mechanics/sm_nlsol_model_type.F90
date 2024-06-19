@@ -114,6 +114,8 @@ contains
     end do
     du_norm = global_maxval(du_norm)
 
+    this%rhs_scale = this%model%bnorm3
+
     ! du_norm = global_maxval(abs(du))
     ! l = global_maxval(abs(u))
     ! if (l > 0) du_norm = du_norm / l
@@ -127,13 +129,12 @@ contains
   end function
 
 
-  logical function is_converged(this, itr, t, u, du, f_lnorm, tol)
+  logical function is_converged(this, itr, t, u, du, du_norm, f_lnorm, tol)
     class(sm_nlsol_model) :: this
     integer, intent(in) :: itr
-    real(r8), intent(in) :: t, tol
+    real(r8), intent(in) :: t, du_norm, tol
     real(r8), intent(in), contiguous, target :: u(:), du(:), f_lnorm(:)
-    is_converged = this%du_norm(t, u, du) < tol .and. f_lnorm(3) < this%ftol
-    !is_converged = f_lnorm(3) < tol
+    is_converged = du_norm < tol .and. f_lnorm(3) < this%ftol * this%model%bnorm3
   end function is_converged
 
 end module sm_nlsol_model_type

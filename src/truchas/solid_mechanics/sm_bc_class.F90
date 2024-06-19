@@ -23,8 +23,8 @@ module sm_bc_class
   contains
     procedure(init), deferred :: init
     procedure(apply), deferred :: apply
-    procedure(compute_deriv_diag), deferred :: compute_deriv_diag
-    procedure(compute_deriv_full), deferred :: compute_deriv_full
+    procedure(apply_deriv_diag), deferred :: apply_deriv_diag
+    procedure(apply_deriv_full), deferred :: apply_deriv_full
   end type sm_bc
 
   type, public :: sm_bc_box
@@ -48,14 +48,14 @@ module sm_bc_class
       real(r8), intent(inout) :: r(:,:)
     end subroutine
 
-    subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+    subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
       import sm_bc, r8
       class(sm_bc), intent(inout) :: this
       real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
       real(r8), intent(inout) :: diag(:,:)
     end subroutine
 
-    subroutine compute_deriv_full(this, time, stress_factor, A)
+    subroutine apply_deriv_full(this, time, stress_factor, A)
       import sm_bc, r8, pcsr_matrix
       class(sm_bc), intent(inout) :: this
       real(r8), intent(in) :: time, stress_factor(:)

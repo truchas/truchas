@@ -40,8 +40,8 @@ module sm_bc_c2d0_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c2d0
 
 contains
@@ -111,6 +111,9 @@ contains
   end subroutine init
 
 
+  !! WARN: There is some small parallel discrepancy here, that is not present in
+  !! the C1 BCs. To replicate: Run contact-2.inp with DS for 1000 iterations,
+  !! disable NKA, compare final errors in serial and parallel.
   subroutine apply(this, time, displ, ftot, stress_factor, r)
 
     class(sm_bc_c2d0), intent(inout) :: this
@@ -124,6 +127,7 @@ contains
       n1 = this%index(i)
       n2 = this%linked_node(1,i)
       n3 = this%linked_node(2,i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
 
       call compute_contact_variables(1, i, lambda(1), delta(1), stress2(1))
@@ -178,7 +182,6 @@ contains
           x = x - this%normal(:,2,i) * dot_product(this%normal(:,2,i), c31)
           r(:,n1) = r(:,n1) + lambda(1)*lambda(2)*x
         end block
-
       end if
     end do
 
@@ -210,21 +213,21 @@ contains
 
 
   !! Contact preconditioner contribution currently not implemented.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
     class(sm_bc_c2d0), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
     ! do nothing
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
     use pcsr_matrix_type
     class(sm_bc_c2d0), intent(inout) :: this
     real(r8), intent(in) :: time, stress_factor(:)
     type(pcsr_matrix), intent(inout) :: A
     ! no-op
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c2d0_type

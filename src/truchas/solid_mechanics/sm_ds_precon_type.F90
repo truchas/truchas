@@ -150,8 +150,6 @@ contains
     call start_timer("precon-compute")
 
     ! For contact, we need the force.
-    force = 0
-    call this%model%mesh%node_imap%gather_offp(displ)
     if (this%bc%contact_active) then !.or. this%model%matl_model%viscoplasticity_enabled) then
       call this%model%compute_forces(t, displ, force)
       call this%model%mesh%node_imap%gather_offp(force)
@@ -172,23 +170,18 @@ contains
         ! if (this%model%matl_model%viscoplasticity_enabled) &
         !     call this%compute_viscoplasticity_precon_contribution(dt, n, this%F(:,:,n))
 
+        ! under-relaxation & scaling
+        this%F(:,:,n) = (this%gamma / this%model%scaling_factor(n)) * this%F(:,:,n)
+
         this%diag(1,n) = this%F(1,1,n)
         this%diag(2,n) = this%F(2,2,n)
         this%diag(3,n) = this%F(3,3,n)
-
-        ! under-relaxation
-        this%F(:,:,n) = this%gamma * this%F(:,:,n)
-        this%diag(:,n) = this%gamma * this%diag(:,n)
       end if
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    call this%model%bc%compute_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
+    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
         this%diag, this%F)
-
-    do n = 1, this%model%mesh%nnode_onP
-      this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)
-    end do
 
     call stop_timer("precon-compute")
 

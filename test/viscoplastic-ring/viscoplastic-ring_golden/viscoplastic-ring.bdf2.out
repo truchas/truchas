@@ -2,34 +2,34 @@
 TRAP step      1: T= 0.000000000000000E+00, H= 1.000000000000000E-01
   Preconditioner updated at T= 1.000000000000000E-01
     1: error= 1.055243896304403E+00
-    2: error= 3.280154471665410E-02
-  NLK BCE solve succeeded:   2 iterations, error= 3.280154471665410E-02
+    2: error= 3.280154471665362E-02
+  NLK BCE solve succeeded:   2 iterations, error= 3.280154471665362E-02
   Step accepted: no local error control
 
 BDF2 step      2: T= 1.000000000000000E-01, H= 1.000000000000000E-01
-    1: error= 4.832743526356981E-01
-    2: error= 1.256512175729717E-01
-    3: error= 2.427478087009694E-03
-  NLK BCE solve succeeded:   3 iterations, error= 2.427478087009694E-03
+    1: error= 4.832743526356986E-01
+    2: error= 1.256512175729720E-01
+    3: error= 2.427478087009423E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.427478087009423E-03
   Step accepted: no local error control
 
 BDF2 step      3: T= 2.000000000000000E-01, H= 1.000000000000000E-01
-    1: error= 4.434716546611284E-01
-    2: error= 1.170006387107457E-01
-    3: error= 2.051689692811121E-03
-  NLK BCE solve succeeded:   3 iterations, error= 2.051689692811121E-03
+    1: error= 4.434716546611286E-01
+    2: error= 1.170006387107462E-01
+    3: error= 2.051689692810854E-03
+  NLK BCE solve succeeded:   3 iterations, error= 2.051689692810854E-03
   Step accepted: no local error control
 
 BDF2 step      4: T= 3.000000000000000E-01, H= 9.999999999999998E-02
-    1: error= 3.003417478485519E-01
-    2: error= 8.111518239097146E-02
-    3: error= 1.364900706910008E-03
-  NLK BCE solve succeeded:   3 iterations, error= 1.364900706910008E-03
+    1: error= 3.003417478485521E-01
+    2: error= 8.111518239097137E-02
+    3: error= 1.364900706909945E-03
+  NLK BCE solve succeeded:   3 iterations, error= 1.364900706909945E-03
   Step accepted: perr= 3.769577397251471E-01
 
 BDF2 step      5: T= 4.000000000000000E-01, H= 9.999999999999998E-02
-    1: error= 1.817957892045697E-01
-    2: error= 5.043350928078001E-02
-    3: error= 8.379024518662798E-04
-  NLK BCE solve succeeded:   3 iterations, error= 8.379024518662798E-04
+    1: error= 1.817957892045701E-01
+    2: error= 5.043350928078025E-02
+    3: error= 8.379024518664317E-04
+  NLK BCE solve succeeded:   3 iterations, error= 8.379024518664317E-04
   Step accepted: perr= 2.293131021009367E-01

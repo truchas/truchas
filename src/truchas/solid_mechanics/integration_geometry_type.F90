@@ -91,32 +91,32 @@ module integration_geometry_type
   end type integration_geometry
 
   real(r8), parameter :: tet4_xi_node(3,4) = reshape([&
-      & -1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8, -1.0_r8, -1.0_r8, &
-      &  0.0_r8,  1.0_r8, -1.0_r8, & ! coalesced hex nodes 3 & 4
-      &  0.0_r8,  0.0_r8,  1.0_r8], [3,4]) ! coalesced hex nodes 5, 6, 7, & 8
+      & -1, -1, -1, &
+      &  1, -1, -1, &
+      &  0,  1, -1, & ! coalesced hex nodes 3 & 4
+      &  0,  0,  1], [3,4]) ! coalesced hex nodes 5, 6, 7, & 8
   real(r8), parameter :: pyr5_xi_node(3,5) = reshape([&
-      & -1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8,  1.0_r8, -1.0_r8, &
-      & -1.0_r8,  1.0_r8, -1.0_r8, &
-      &  0.0_r8,  0.0_r8,  1.0_r8], [3,5]) ! coalesced hex nodes 5, 6, 7, & 8
+      & -1, -1, -1, &
+      &  1, -1, -1, &
+      &  1,  1, -1, &
+      & -1,  1, -1, &
+      &  0,  0,  1], [3,5]) ! coalesced hex nodes 5, 6, 7, & 8
   real(r8), parameter :: wed6_xi_node(3,6) = reshape([&
-      & -1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8, -1.0_r8, -1.0_r8, &
-      &  0.0_r8,  1.0_r8, -1.0_r8, & ! coalesced hex nodes 3 & 4
-      & -1.0_r8, -1.0_r8,  1.0_r8, &
-      &  1.0_r8, -1.0_r8,  1.0_r8, &
-      &  0.0_r8,  1.0_r8,  1.0_r8], [3,6]) ! coalesced hex nodes 7 & 8
+      & -1, -1, -1, &
+      &  1, -1, -1, &
+      &  0,  1, -1, & ! coalesced hex nodes 3 & 4
+      & -1, -1,  1, &
+      &  1, -1,  1, &
+      &  0,  1,  1], [3,6]) ! coalesced hex nodes 7 & 8
   real(r8), parameter :: hex8_xi_node(3,8) = reshape([&
-      & -1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8, -1.0_r8, -1.0_r8, &
-      &  1.0_r8,  1.0_r8, -1.0_r8, &
-      & -1.0_r8,  1.0_r8, -1.0_r8, &
-      & -1.0_r8, -1.0_r8,  1.0_r8, &
-      &  1.0_r8, -1.0_r8,  1.0_r8, &
-      &  1.0_r8,  1.0_r8,  1.0_r8, &
-      & -1.0_r8,  1.0_r8,  1.0_r8], [3,8])
+      & -1, -1, -1, &
+      &  1, -1, -1, &
+      &  1,  1, -1, &
+      & -1,  1, -1, &
+      & -1, -1,  1, &
+      &  1, -1,  1, &
+      &  1,  1,  1, &
+      & -1,  1,  1], [3,8])
 
   real(r8), parameter :: tet4_shape_coeff(4) = [0.125_r8, 0.125_r8, 0.25_r8, 0.5_r8]
   real(r8), parameter :: pyr5_shape_coeff(5) = [0.125_r8, 0.125_r8, 0.125_r8, 0.125_r8, 0.5_r8]
@@ -214,8 +214,7 @@ contains
     do j = 1, this%mesh%ncell
       associate (cn => this%mesh%cnode(this%mesh%xcnode(j):this%mesh%xcnode(j+1)-1))
         edges => cell_edges(cn)
-        do p = this%xcpoint(j), this%xcpoint(j+1)-1
-          xp = p - this%xcpoint(j) + 1
+        do xp = 1, this%xcpoint(j+1)-this%xcpoint(j)
           node1 = cn(edges(1,xp))
           node2 = cn(edges(2,xp))
           if (node1 <= this%mesh%nnode_onP) k(node1) = k(node1) + 1

@@ -38,8 +38,8 @@ module sm_bc_c1d0_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c1d0
 
 contains
@@ -109,6 +109,7 @@ contains
     do i = 1, size(this%index)
       n1 = this%index(i)
       n2 = this%linked_node(i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
 
       stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
@@ -119,7 +120,7 @@ contains
       tn = - stress1 / this%area(i)
       l = contact_factor(s, tn, this%distance, this%normal_traction)
 
-      v = stress2 + stress_penalty * (x2 - x1)
+      v = stress2 + stress_penalty * s
 
       r(:,n1) = r(:,n1) + this%normal_gap(:,i) * l * v
 
@@ -134,50 +135,54 @@ contains
   !! This includes the contact contribution to the preconditioner. It is
   !! the only contact type which does so, but it is also likely the most
   !! common gap situation in a simulation.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+
+    use sm_bc_utilities, only: derivative_contact_factor
 
     class(sm_bc_c1d0), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
 
-!NNC, 7/27/2022. Per ZJIBBEN this experiment to improve the PC actually made it
-!worse, so its been commented out so as to be a no-op.
-!
-!    integer :: i, n1, n2
-!    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, dldu(3), dl(2)
-!
-!    do i = 1, size(this%index)
-!      n1 = this%index(i)
-!      n2 = this%linked_node(i)
-!      stress_penalty = this%penalty * stress_factor(n1)
-!
-!      stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
-!      stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
-!      x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
-!      x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
-!      s = x2 - x1
-!      tn = - stress1 / this%area(i)
-!      l = contact_factor(s, tn, this%distance, this%normal_traction)
-!
-!      v = stress2 + stress_penalty * (x2 - x1)
-!
-!      dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
-!      dldu = -dl(1)*this%normal_gap(:,i) - dl(2)*this%normal_gap(:,i)*diag(:,n1) / this%area(i)
-!
-!      ! diag(:,n1) = diag(:,n1) - this%normal_gap(:,i)**2 * l * stress_penalty
-!      ! diag(:,n1) = diag(:,n1) + this%normal_gap(:,i) * v * dldu
-!    end do
+    integer :: i, n1, n2
+    real(r8) :: stress_penalty, v, l, tn, stress1, stress2, s, x1, x2, dldu(3), dl(2)
 
-  end subroutine compute_deriv_diag
+    ! do i = 1, size(this%index)
+    !   n1 = this%index(i)
+    !   n2 = this%linked_node(i)
+    !   stress_penalty = this%penalty * stress_factor(n1)
+
+    !   stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
+    !   stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
+    !   x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
+    !   x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
+    !   s = x2 - x1
+    !   tn = - stress1 / this%area(i)
+    !   l = contact_factor(s, tn, this%distance, this%normal_traction)
+
+    !   v = stress2 + stress_penalty * s
+
+    !   dl = derivative_contact_factor(s, tn, this%distance, this%normal_traction)
+    !   dldu = -dl(1)*this%normal_gap(:,i) - dl(2)*this%normal_gap(:,i)*diag(:,n1) / this%area(i)
+
+    !   diag(:,n1) = diag(:,n1) - this%normal_gap(:,i)**2 * l * this%penalty
+    !   diag(:,n1) = diag(:,n1) + this%normal_gap(:,i) * v * dldu / stress_factor(n1)
+    ! end do
+
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  !!
+  !! NB: Contact introduces a dependency on the stress on the node opposite side
+  !! of the link, and therefore on all the displacements neighboring that node.
+  !! The matrix is not set up to handle this graph, and so these contributions
+  !! to the preconditioner are neglected.
+  subroutine apply_deriv_full(this, time, stress_factor, A)
     use pcsr_matrix_type
     class(sm_bc_c1d0), intent(inout) :: this
     real(r8), intent(in) :: time, stress_factor(:)
     type(pcsr_matrix), intent(inout) :: A
     ! no-op
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c1d0_type

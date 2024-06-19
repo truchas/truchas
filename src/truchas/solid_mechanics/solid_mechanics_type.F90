@@ -103,6 +103,8 @@ contains
     select case(preconditioner_method)
     case("ds")
       allocate(sm_ds_precon :: this%precon)
+      ! The scaling factor may vary by row for DS.
+      this%model%use_uniform_scaling_factor = .false.
     case("boomeramg", "ssor")
       allocate(sm_hypre_precon :: this%precon)
     case default

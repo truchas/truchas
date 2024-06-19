@@ -38,8 +38,8 @@ module sm_bc_c0d2_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c0d2
 
 contains
@@ -122,9 +122,9 @@ contains
       y(1) = this%displf(1,i)%eval(args) ! associated with this%normal(:,1,i)
       y(2) = this%displf(2,i)%eval(args) ! associated with this%normal(:,2,i)
 
-      x = displ(:,n1) - displacement_vector(this%normal_d(:,:,i), y)
+      x = stress_penalty * (displ(:,n1) - displacement_vector(this%normal_d(:,:,i), y))
       x = x - dot_product(x, this%tangent(:,i)) * this%tangent(:,i)
-      r(:,n1) = r(:,n1) - stress_penalty * x
+      r(:,n1) = r(:,n1) - x
     end do
 
   contains
@@ -177,7 +177,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d2), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -193,14 +193,14 @@ contains
         x(d) = dot_product(this%tangent(:,i), F(:,d,n))
       end do
       diag(:,n) = this%tangent(:,i) * x &
-          &       - this%penalty * stress_factor(n) * (1 - this%tangent(:,i)**2)
+          &       - this%penalty * (1 - this%tangent(:,i)**2)
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -219,7 +219,7 @@ contains
       n1 = 3*(n-1) + 1
       n2 = 3*(n-1) + 2
       n3 = 3*(n-1) + 3
-      stress_penalty = this%penalty * stress_factor(n)
+      stress_penalty = this%penalty !/ stress_factor(n)
 
       ! It is assumed that the indices for each row here are identical.
       ! This *should* be the case.
@@ -235,14 +235,14 @@ contains
 
       ! displacement part
       do ii = 1, 3
-        call A%add_to(3*(n-1) + ii, 3*(n-1) + ii, -stress_penalty)
+        call A%add_to(3*(n-1) + ii, 3*(n-1) + ii, -this%penalty)
         do jj = 1, 3
           call A%add_to(3*(n-1) + ii, 3*(n-1) + jj, &
-              -stress_penalty * this%tangent(ii,i) * this%tangent(jj,i))
+              this%penalty * this%tangent(ii,i) * this%tangent(jj,i))
         end do
       end do
     end do
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c0d2_type

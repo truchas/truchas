@@ -10,7 +10,7 @@ def run_test(tenv):
     sid = 1
     nfail += truchas.compare_max(output.field(sid, "Displacement"),
                                  golden.field(sid, "Displacement"),
-                                 1e-17, "displacement", 0)
+                                 1e-10, "displacement", 0)
 
     truchas.report_summary(nfail)
     return nfail

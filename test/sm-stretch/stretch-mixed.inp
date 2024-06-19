@@ -24,9 +24,7 @@ direction.
 /
 
 &SOLID_MECHANICS
-  nlk_max_vectors = 10
-  nlk_vector_tolerance = 1e-2
-  maximum_iterations = 500
+  abs_stress_tol = 5e-10
 /
 &DIFFUSION_SOLVER /
 

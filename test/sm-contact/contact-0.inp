@@ -20,11 +20,11 @@
 /
 
 &SOLID_MECHANICS
-  nlk_max_vectors = 10
-  nlk_vector_tolerance = 1e-2
-  maximum_iterations = 500
+  preconditioner_method = "ds"
+  abs_stress_tol = 1e-11
+  abs_displ_tol = 1e100
+  rel_displ_tol = 1e100
 /
-&DIFFUSION_SOLVER /
 
 &MATERIAL
   name = 'stuff'

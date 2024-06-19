@@ -42,8 +42,8 @@ module sm_bc_c1d2_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c1d2
 
 contains
@@ -117,13 +117,15 @@ contains
     real(r8), intent(inout) :: r(:,:)
 
     integer :: i, n1, n2
-    real(r8) :: stress1, stress2, x1, x2, s, tn, l, v
+    real(r8) :: stress1, stress2, x1, x2, s, tn, l, v, stress_penalty
     real(r8) :: args(0:3), displbc(2), x(3)
 
     args(0) = time
     do i = 1, size(this%index)
       n1 = this%index(i)
       n2 = this%linked_node(i)
+      ! the stress_factor gets divided out in compute_residual
+      stress_penalty = this%penalty * stress_factor(n1)
       r(:,n1) = dot_product(r(:,n1), this%tangent(:,i)) * this%tangent(:,i)
 
       ! displacement part
@@ -132,7 +134,7 @@ contains
       displbc(2) = this%displf(2,i)%eval(args) ! associated with this%normal_d(:,2,i)
       x = displ(:,n1) - displacement_vector(this%normal_d(:,:,i), displbc)
       x = x - dot_product(x, this%tangent(:,i)) * this%tangent(:,i)
-      r(:,n1) = r(:,n1) - this%penalty * stress_factor(n1) * x
+      r(:,n1) = r(:,n1) - stress_penalty * x
 
       ! contact part
       stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
@@ -147,7 +149,7 @@ contains
       stress2 = dot_product(this%tangent(:,i), ftot(:,n2))
       x1 = dot_product(this%tangent(:,i), displ(:,n1))
       x2 = dot_product(this%tangent(:,i), displ(:,n2))
-      v = stress2 + this%penalty * this%alpha(i) * (x2 - x1) * stress_factor(n1)
+      v = stress2 + stress_penalty * this%alpha(i) * (x2 - x1)
 
       r(:,n1) = r(:,n1) + this%tangent(:,i) * l * v
 
@@ -206,7 +208,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c1d2), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -217,22 +219,19 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
-
-      !diag(:,n) = - this%tangent(:,i)**2 * this%penalty * stress_factor(n)
 
       do d = 1,3
         x(d) = dot_product(this%tangent(:,i), F(:,d,n))
       end do
       diag(:,n) = diag(:,n) + this%tangent(:,i) * x &
-          &                 - this%penalty * stress_factor(n) * (1 - this%tangent(:,i)**2)
+          &                 - this%penalty * (1 - this%tangent(:,i)**2)
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -242,6 +241,6 @@ contains
 
     ! TODO
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c1d2_type

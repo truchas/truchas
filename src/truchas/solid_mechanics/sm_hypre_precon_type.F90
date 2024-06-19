@@ -16,6 +16,7 @@
 module sm_hypre_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_is_normal
   use sm_precon_class
   use sm_model_type
   use sm_bc_manager_type
@@ -100,29 +101,6 @@ contains
           clique(nnode+1:2*nnode) = 3*(cn - 1) + 2
           clique(2*nnode+1:3*nnode) = 3*(cn - 1) + 3
           call g%add_clique(clique(:3*nnode))
-          ! call g%add_clique(3*(cn - 1) + 1)
-          ! call g%add_clique(3*(cn - 1) + 2)
-          ! call g%add_clique(3*(cn - 1) + 3)
-
-          ! do n1x = 1, size(cn)
-          !   n1 = cn(n1x)
-          !   do ii = 3*(n1 - 1) + 1, 3*(n1 - 1) + 3
-          !     call g%add_edge(ii, ii)
-          !   end do
-          ! end do
-
-          ! do n1x = 1, size(cn)
-          !   n1 = cn(n1x)
-          !   do n2x = 1, n1x
-          !     n2 = cn(n2x)
-          !     do ii = 3*(n1-1) + 1, 3*(n1-1) + 3
-          !       do jj = 3*(n2-1) + 1, 3*(n2-1) + 3
-          !         call g%add_edge(ii, jj)
-          !         call g%add_edge(jj, ii)
-          !       end do
-          !     end do
-          !   end do
-          ! end do
         end associate
       end do
       call g%add_complete
@@ -133,8 +111,7 @@ contains
     call params%get("rel-lame-tol", this%rtol, default=1d-1)
     plist => params%sublist("params")
     if (.not.plist%is_parameter("num-cycles")) call plist%set("num-cycles", 2) ! set a default
-    ! call plist_params%set("print-level", 3)
-    ! call plist_params%set("debug-level", 1)
+    !call plist%set("strong-threshold", 0.9_r8) ! Hypre recommended default for elasticity problems
     call alloc_pcsr_precon(this%precon, this%A, params, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS PRECON INIT: " // errmsg)
 
@@ -215,26 +192,11 @@ contains
         n2 = 3*(n-1) + 2
         n3 = 3*(n-1) + 3
 
-        ! call this%A%set(n1, n1, 1.0_r8)
-        ! call this%A%set(n2, n2, 1.0_r8)
-        ! call this%A%set(n3, n3, 1.0_r8)
-        ! cycle
-
         if (this%model%lame1_n(n) < 1e-6_r8 .and. this%model%lame2_n(n) < 1e-6_r8) then
           ! Set displacements to zero for empty or fluid filled cells
-          call this%A%set(n1, n1, 1.0_r8 / this%model%scaling_factor(n))
-          call this%A%set(n2, n2, 1.0_r8 / this%model%scaling_factor(n))
-          call this%A%set(n3, n3, 1.0_r8 / this%model%scaling_factor(n))
-          ! block
-          !   integer :: ii
-          !   real(r8), pointer :: values(:) => null()
-          !   integer, pointer :: indices(:) => null()
-          !   do ii = n1, n3
-          !     call this%A%get_row_view(ii, values, indices)
-          !     values = 0
-          !     call this%A%set(ii, ii, 1.0_r8 / this%model%scaling_factor(n))
-          !   end do
-          ! end block
+          call this%A%set(n1, n1, this%model%penalty)
+          call this%A%set(n2, n2, this%model%penalty)
+          call this%A%set(n3, n3, this%model%penalty)
         else
           do xp = ig%xnpoint(n), ig%xnpoint(n+1)-1
             k = xp - ig%xnpoint(n) + 1
@@ -268,7 +230,9 @@ contains
       end do
     end associate
 
-    call this%model%bc%compute_deriv_full(t, this%model%scaling_factor, this%A)
+    call this%model%bc%apply_deriv_full(t, this%model%scaling_factor, this%A)
+    ASSERT(all(ieee_is_normal(this%A%values)))
+    !print '("A: ", es13.3)', maxval(abs(this%A%values))
     call this%precon%compute
 
     call stop_timer("precon-compute")
@@ -282,9 +246,21 @@ contains
     real(r8), intent(inout), contiguous, target :: f(:,:) ! in residual, out next displacement guess
     real(r8), pointer :: f_(:) => null()
     call start_timer("precon-apply")
+    ASSERT(all(ieee_is_normal(f)))
+    ! block
+    !   integer :: j
+    !   real(r8), target :: diag_(this%A%nrow_onP)
+    !   real(r8), pointer :: diag(:,:) => null()
+    !   call this%A%get_diag_copy(diag_)
+    !   diag(1:3, 1:this%model%mesh%nnode_onP) => diag_
+    !   do j = 1, this%model%mesh%nnode_onP
+    !     f(:,j) = f(:,j) / diag(:,j)
+    !   end do
+    ! end block
     f_(1:3*size(f,dim=2)) => f
     call this%precon%apply(f_)
     call this%model%mesh%node_imap%gather_offp(f)
+    ASSERT(all(ieee_is_normal(f)))
     call stop_timer("precon-apply")
   end subroutine apply
 

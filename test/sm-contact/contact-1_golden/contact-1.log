@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 21.07-27-g5f2d3243-dirty
-   build architecture:  x86_64
-   build date/time:     2021-08-10 17:23:26
-   build flags:          -fimplicit-none -ffree-line-length-none -O3 -DNDEBUG
-   build host:          theseus
-   run architecture:    Linux theseus 5.10.55-1-lts #1 SMP Sat, 31 Jul
-   run host:            theseus
-   run date/time:       12 Aug 21 12:04:47
+   code:                Truchas 24.06-17-gd26e54c4-dirty
+   build architecture:  arm64
+   build date/time:     2024-06-18 09:55:20
+   build flags:          -g -O2 -DNDEBUG
+   build host:          pn2405035.lanl.gov
+   run architecture:    Darwin pn2405035.lanl.gov 23.5.0 Darwin Kernel
+   run host:            pn2405035.lanl.gov
+   run date/time:       27 Jun 24 10:12:35
    processors:          1
 
 ================================================================================
@@ -20,9 +20,11 @@ INPUT
 Opening input file "contact-1.inp"
 Reading FUNCTION namelists ...
   none found
-Reading VFUNCTION namelists ...
-  none found
 Reading TOOLPATH namelists ...
+  none found
+Reading TOOLHEAD namelists ...
+  none found
+Reading VFUNCTION namelists ...
   none found
 Reading PHYSICS namelist ...
 Reading MATERIAL namelists ...
@@ -38,10 +40,11 @@ Reading BODY namelists (first pass) ...
 Reading BODY namelists (second pass) ...
   read 1 BODY namelist
 Reading NUMERICS namelist ...
-
 Reading SOLID_MECHANICS namelist ...
-
-Reading SM_BC namelists ...
+Reading VISCOPLASTIC_SOLVER namelist ...
+VISCOPLASTIC_SOLVER namelist not found; using defaults.
+Reading SOLID_MECHANICS_BC namelists ...
+Reading VISCOPLASTIC_MODEL namelists ...
 Reading PROBE namelists ...
   none found
 Input file "contact-1.inp" closed
@@ -72,6 +75,7 @@ Computing initial volume fractions ...
   using SM_BC[displx]
   using SM_BC[disply]
   using SM_BC[displz]
+  using SM_BC[tracn]
   using SM_BC[contact]
 SM BC faces:     80
 SM BC nodes/links:    120    60
@@ -81,6 +85,330 @@ SM-C2D0 nodes:     20
   using SM_BC[tracn]
 Nodes with requested BCs:    120    Nodes with applied BCs:    120
 SM: Computing initial state...
+       1: error,lnorm_inf =     7.534-110    8.839E-07
+       2: error,lnorm_inf =     7.665-110    9.586E-07
+       3: error,lnorm_inf =     5.641-110    8.309E-07
+       4: error,lnorm_inf =     1.721-110    5.982E-07
+       5: error,lnorm_inf =     2.278-110    4.387E-07
+       6: error,lnorm_inf =     2.921-110    3.884E-07
+       7: error,lnorm_inf =     2.600-110    4.751E-07
+       8: error,lnorm_inf =     3.946-110    3.893E-07
+       9: error,lnorm_inf =     3.527-110    3.314E-07
+      10: error,lnorm_inf =     2.939-110    3.251E-07
+      11: error,lnorm_inf =     1.886-110    4.611E-07
+      12: error,lnorm_inf =     2.663-110    2.005E-07
+      13: error,lnorm_inf =     2.279-110    2.761E-07
+      14: error,lnorm_inf =     2.240-110    2.415E-07
+      15: error,lnorm_inf =     1.720-110    2.410E-07
+      16: error,lnorm_inf =     7.878-111    2.170E-07
+      17: error,lnorm_inf =     1.187-110    2.473E-07
+      18: error,lnorm_inf =     6.104-111    1.805E-07
+      19: error,lnorm_inf =     8.050-111    1.325E-07
+      20: error,lnorm_inf =     7.808-111    9.234E-08
+      21: error,lnorm_inf =     6.167-111    1.615E-07
+      22: error,lnorm_inf =     3.006-111    8.942E-08
+      23: error,lnorm_inf =     2.831-111    1.807E-07
+      24: error,lnorm_inf =     3.331-111    1.174E-07
+      25: error,lnorm_inf =     2.605-111    2.761E-07
+      26: error,lnorm_inf =     4.919-111    1.145E-07
+      27: error,lnorm_inf =     2.723-111    3.369E-07
+      28: error,lnorm_inf =     1.123-111    4.075E-07
+      29: error,lnorm_inf =     1.677-111    4.312E-07
+      30: error,lnorm_inf =     2.766-111    3.843E-07
+      31: error,lnorm_inf =     3.092-111    3.655E-07
+      32: error,lnorm_inf =     1.142-110    1.916E-07
+      33: error,lnorm_inf =     6.177-111    1.282E-07
+      34: error,lnorm_inf =     3.516-111    1.137E-07
+      35: error,lnorm_inf =     3.781-111    1.064E-07
+      36: error,lnorm_inf =     1.823-111    1.361E-07
+      37: error,lnorm_inf =     1.431-111    1.187E-07
+      38: error,lnorm_inf =     2.010-111    1.081E-07
+      39: error,lnorm_inf =     4.449-111    1.813E-07
+      40: error,lnorm_inf =     2.531-111    1.264E-07
+      41: error,lnorm_inf =     2.315-111    1.006E-07
+      42: error,lnorm_inf =     1.026-111    9.607E-08
+      43: error,lnorm_inf =     9.759-112    9.516E-08
+      44: error,lnorm_inf =     1.145-111    9.669E-08
+      45: error,lnorm_inf =     7.469-112    9.830E-08
+      46: error,lnorm_inf =     1.323-111    9.839E-08
+      47: error,lnorm_inf =     2.737-111    9.928E-08
+      48: error,lnorm_inf =     1.500-111    1.128E-07
+      49: error,lnorm_inf =     5.926-111    1.073E-07
+      50: error,lnorm_inf =     1.842-110    1.137E-07
+      51: error,lnorm_inf =     7.362-111    9.485E-08
+      52: error,lnorm_inf =     1.571-110    2.028E-07
+      53: error,lnorm_inf =     1.349-110    4.130E-07
+      54: error,lnorm_inf =     1.675-110    4.276E-07
+      55: error,lnorm_inf =     1.295-110    4.366E-07
+      56: error,lnorm_inf =     5.634-111    3.596E-07
+      57: error,lnorm_inf =     8.672-111    2.457E-07
+      58: error,lnorm_inf =     2.624-111    2.553E-07
+      59: error,lnorm_inf =     5.156-111    1.651E-07
+      60: error,lnorm_inf =     4.324-111    1.862E-07
+      61: error,lnorm_inf =     2.732-111    1.406E-07
+      62: error,lnorm_inf =     2.239-111    8.613E-08
+      63: error,lnorm_inf =     2.600-111    7.968E-08
+      64: error,lnorm_inf =     5.121-111    1.027E-07
+      65: error,lnorm_inf =     6.053-111    1.379E-07
+      66: error,lnorm_inf =     1.664-111    1.107E-07
+      67: error,lnorm_inf =     2.042-111    9.624E-08
+      68: error,lnorm_inf =     1.789-111    1.096E-07
+      69: error,lnorm_inf =     1.625-111    1.633E-07
+      70: error,lnorm_inf =     2.696-111    1.394E-07
+      71: error,lnorm_inf =     1.721-111    1.270E-07
+      72: error,lnorm_inf =     1.213-111    1.249E-07
+      73: error,lnorm_inf =     1.630-111    1.289E-07
+      74: error,lnorm_inf =     5.707-111    8.094E-08
+      75: error,lnorm_inf =     1.319-110    3.136E-07
+      76: error,lnorm_inf =     6.591-111    3.703E-07
+      77: error,lnorm_inf =     6.671-111    4.068E-07
+      78: error,lnorm_inf =     4.602-111    3.815E-07
+      79: error,lnorm_inf =     1.187-111    4.637E-07
+      80: error,lnorm_inf =     2.246-111    4.752E-07
+      81: error,lnorm_inf =     4.007-111    4.517E-07
+      82: error,lnorm_inf =     2.072-111    3.806E-07
+      83: error,lnorm_inf =     3.532-111    4.148E-07
+      84: error,lnorm_inf =     9.441-111    3.808E-07
+      85: error,lnorm_inf =     2.248-111    3.281E-07
+      86: error,lnorm_inf =     3.801-111    3.377E-07
+      87: error,lnorm_inf =     4.906-111    3.316E-07
+      88: error,lnorm_inf =     1.930-111    3.387E-07
+      89: error,lnorm_inf =     2.824-111    3.837E-07
+      90: error,lnorm_inf =     1.339-110    3.700E-07
+      91: error,lnorm_inf =     5.169-111    2.826E-07
+      92: error,lnorm_inf =     1.833-111    1.376E-07
+      93: error,lnorm_inf =     3.265-111    1.850E-07
+      94: error,lnorm_inf =     3.052-111    1.253E-07
+      95: error,lnorm_inf =     1.131-110    1.686E-07
+      96: error,lnorm_inf =     4.487-111    1.756E-07
+      97: error,lnorm_inf =     2.206-111    2.287E-07
+      98: error,lnorm_inf =     5.329-111    1.826E-07
+      99: error,lnorm_inf =     4.388-111    2.159E-07
+     100: error,lnorm_inf =     2.425-111    1.634E-07
+     101: error,lnorm_inf =     1.664-111    1.967E-07
+     102: error,lnorm_inf =     7.654-112    1.946E-07
+     103: error,lnorm_inf =     5.352-112    2.082E-07
+     104: error,lnorm_inf =     9.379-111    1.981E-07
+     105: error,lnorm_inf =     4.215-111    2.247E-07
+     106: error,lnorm_inf =     2.788-111    1.780E-07
+     107: error,lnorm_inf =     3.246-111    2.570E-07
+     108: error,lnorm_inf =     4.053-111    2.051E-07
+     109: error,lnorm_inf =     3.319-111    3.235E-07
+     110: error,lnorm_inf =     9.386-112    1.444E-07
+     111: error,lnorm_inf =     9.030-111    1.639E-07
+     112: error,lnorm_inf =     8.470-111    3.902E-07
+     113: error,lnorm_inf =     3.792-111    1.583E-07
+     114: error,lnorm_inf =     3.505-111    1.054E-07
+     115: error,lnorm_inf =     1.265-111    1.755E-07
+     116: error,lnorm_inf =     3.644-111    9.805E-08
+     117: error,lnorm_inf =     3.535-111    1.735E-07
+     118: error,lnorm_inf =     1.963-111    5.900E-08
+     119: error,lnorm_inf =     1.926-111    8.283E-08
+     120: error,lnorm_inf =     9.088-112    1.772E-07
+     121: error,lnorm_inf =     3.895-112    1.846E-07
+     122: error,lnorm_inf =     1.101-111    1.760E-07
+     123: error,lnorm_inf =     2.054-111    1.634E-07
+     124: error,lnorm_inf =     3.155-111    1.941E-07
+     125: error,lnorm_inf =     2.966-111    1.952E-07
+     126: error,lnorm_inf =     2.350-111    1.897E-07
+     127: error,lnorm_inf =     3.667-111    2.021E-07
+     128: error,lnorm_inf =     3.579-111    2.015E-07
+     129: error,lnorm_inf =     3.550-111    2.526E-07
+     130: error,lnorm_inf =     2.405-111    2.160E-07
+     131: error,lnorm_inf =     4.998-111    2.592E-07
+     132: error,lnorm_inf =     4.414-111    1.769E-07
+     133: error,lnorm_inf =     4.211-111    1.916E-07
+     134: error,lnorm_inf =     5.777-111    2.629E-07
+     135: error,lnorm_inf =     4.456-111    2.635E-07
+     136: error,lnorm_inf =     3.647-111    1.874E-07
+     137: error,lnorm_inf =     4.399-111    2.766E-07
+     138: error,lnorm_inf =     2.781-111    2.113E-07
+     139: error,lnorm_inf =     2.023-111    2.318E-07
+     140: error,lnorm_inf =     1.267-110    1.905E-07
+     141: error,lnorm_inf =     1.131-110    3.365E-07
+     142: error,lnorm_inf =     7.090-111    1.828E-07
+     143: error,lnorm_inf =     5.742-111    2.427E-07
+     144: error,lnorm_inf =     8.992-111    1.812E-07
+     145: error,lnorm_inf =     9.289-111    2.788E-07
+     146: error,lnorm_inf =     2.598-111    2.888E-07
+     147: error,lnorm_inf =     3.866-111    1.696E-07
+     148: error,lnorm_inf =     6.313-111    1.631E-07
+     149: error,lnorm_inf =     4.029-111    2.412E-07
+     150: error,lnorm_inf =     2.525-111    1.243E-07
+     151: error,lnorm_inf =     5.450-111    1.335E-07
+     152: error,lnorm_inf =     2.758-111    1.902E-07
+     153: error,lnorm_inf =     5.646-111    1.573E-07
+     154: error,lnorm_inf =     4.558-111    2.552E-07
+     155: error,lnorm_inf =     6.701-111    1.901E-07
+     156: error,lnorm_inf =     3.829-111    1.962E-07
+     157: error,lnorm_inf =     1.841-111    1.370E-07
+     158: error,lnorm_inf =     2.094-111    1.403E-07
+     159: error,lnorm_inf =     6.126-111    1.821E-07
+     160: error,lnorm_inf =     3.698-111    2.428E-07
+     161: error,lnorm_inf =     3.898-111    2.009E-07
+     162: error,lnorm_inf =     2.579-111    2.060E-07
+     163: error,lnorm_inf =     1.378-111    1.652E-07
+     164: error,lnorm_inf =     1.289-111    1.636E-07
+     165: error,lnorm_inf =     7.298-112    1.544E-07
+     166: error,lnorm_inf =     3.745-112    1.579E-07
+     167: error,lnorm_inf =     1.057-111    1.566E-07
+     168: error,lnorm_inf =     2.683-111    1.482E-07
+     169: error,lnorm_inf =     4.348-111    1.211E-07
+     170: error,lnorm_inf =     1.696-111    1.652E-07
+     171: error,lnorm_inf =     1.166-111    1.606E-07
+     172: error,lnorm_inf =     1.466-111    1.682E-07
+     173: error,lnorm_inf =     3.352-111    1.771E-07
+     174: error,lnorm_inf =     5.477-111    1.333E-07
+     175: error,lnorm_inf =     5.965-111    1.923E-07
+     176: error,lnorm_inf =     3.041-111    1.433E-07
+     177: error,lnorm_inf =     2.420-111    1.688E-07
+     178: error,lnorm_inf =     4.106-111    1.948E-07
+     179: error,lnorm_inf =     6.244-111    2.063E-07
+     180: error,lnorm_inf =     9.904-111    1.799E-07
+     181: error,lnorm_inf =     6.045-111    4.020E-07
+     182: error,lnorm_inf =     3.776-111    2.286E-07
+     183: error,lnorm_inf =     3.039-111    1.330E-07
+     184: error,lnorm_inf =     2.585-111    1.017E-07
+     185: error,lnorm_inf =     2.048-111    1.023E-07
+     186: error,lnorm_inf =     2.639-111    7.023E-08
+     187: error,lnorm_inf =     2.513-111    1.495E-07
+     188: error,lnorm_inf =     1.380-111    8.344E-08
+     189: error,lnorm_inf =     9.619-112    6.485E-08
+     190: error,lnorm_inf =     2.117-111    5.161E-08
+     191: error,lnorm_inf =     1.611-111    8.172E-08
+     192: error,lnorm_inf =     9.379-112    3.932E-08
+     193: error,lnorm_inf =     1.372-111    4.178E-08
+     194: error,lnorm_inf =     9.539-112    7.692E-08
+     195: error,lnorm_inf =     9.740-112    2.322E-08
+     196: error,lnorm_inf =     8.055-112    4.249E-08
+     197: error,lnorm_inf =     5.760-112    1.380E-08
+     198: error,lnorm_inf =     6.660-112    2.974E-08
+     199: error,lnorm_inf =     4.467-112    1.548E-08
+     200: error,lnorm_inf =     4.418-112    3.175E-08
+     201: error,lnorm_inf =     3.707-112    9.507E-09
+     202: error,lnorm_inf =     6.165-112    1.595E-08
+     203: error,lnorm_inf =     2.927-112    1.560E-08
+     204: error,lnorm_inf =     2.250-112    9.916E-09
+     205: error,lnorm_inf =     1.438-112    8.955E-09
+     206: error,lnorm_inf =     1.970-112    6.462E-09
+     207: error,lnorm_inf =     4.827-112    9.439E-09
+     208: error,lnorm_inf =     1.898-112    1.468E-08
+     209: error,lnorm_inf =     2.606-112    9.363E-09
+     210: error,lnorm_inf =     3.461-112    1.294E-08
+     211: error,lnorm_inf =     2.437-112    9.976E-09
+     212: error,lnorm_inf =     5.353-112    6.917E-09
+     213: error,lnorm_inf =     1.857-112    1.268E-08
+     214: error,lnorm_inf =     1.624-112    9.045E-09
+     215: error,lnorm_inf =     3.960-112    6.010E-09
+     216: error,lnorm_inf =     1.653-112    6.859E-09
+     217: error,lnorm_inf =     1.657-112    6.358E-09
+     218: error,lnorm_inf =     1.551-112    2.146E-09
+     219: error,lnorm_inf =     1.192-112    5.504E-09
+     220: error,lnorm_inf =     4.396-113    1.994E-09
+     221: error,lnorm_inf =     1.001-112    1.542E-09
+     222: error,lnorm_inf =     7.575-113    3.799E-09
+     223: error,lnorm_inf =     1.038-112    1.907E-09
+     224: error,lnorm_inf =     4.525-113    1.861E-09
+     225: error,lnorm_inf =     3.528-113    1.670E-09
+     226: error,lnorm_inf =     7.782-113    1.870E-09
+     227: error,lnorm_inf =     7.118-113    2.071E-09
+     228: error,lnorm_inf =     4.205-113    1.846E-09
+     229: error,lnorm_inf =     4.942-113    1.490E-09
+     230: error,lnorm_inf =     6.679-113    1.836E-09
+     231: error,lnorm_inf =     6.499-113    1.356E-09
+     232: error,lnorm_inf =     1.451-112    1.526E-09
+     233: error,lnorm_inf =     4.222-113    2.850E-09
+     234: error,lnorm_inf =     9.901-113    1.839E-09
+     235: error,lnorm_inf =     9.590-113    4.042E-09
+     236: error,lnorm_inf =     3.939-113    2.229E-09
+     237: error,lnorm_inf =     3.877-113    8.208E-10
+     238: error,lnorm_inf =     2.677-113    1.001E-09
+     239: error,lnorm_inf =     2.743-113    1.183E-09
+     240: error,lnorm_inf =     4.068-113    1.525E-09
+     241: error,lnorm_inf =     6.110-113    1.224E-09
+     242: error,lnorm_inf =     6.116-113    9.218E-10
+     243: error,lnorm_inf =     9.038-113    1.637E-09
+     244: error,lnorm_inf =     2.559-113    1.049E-09
+     245: error,lnorm_inf =     8.672-114    9.315E-10
+     246: error,lnorm_inf =     3.425-113    9.214E-10
+     247: error,lnorm_inf =     4.898-113    6.187E-10
+     248: error,lnorm_inf =     5.002-113    4.951E-10
+     249: error,lnorm_inf =     2.991-113    4.956E-10
+     250: error,lnorm_inf =     2.025-113    6.166E-10
+     251: error,lnorm_inf =     4.546-113    6.319E-10
+     252: error,lnorm_inf =     1.463-113    4.145E-10
+     253: error,lnorm_inf =     2.937-113    3.519E-10
+     254: error,lnorm_inf =     2.507-113    4.752E-10
+     255: error,lnorm_inf =     3.479-113    8.898E-10
+     256: error,lnorm_inf =     4.659-113    1.164E-09
+     257: error,lnorm_inf =     4.372-113    8.799E-10
+     258: error,lnorm_inf =     3.798-113    8.112E-10
+     259: error,lnorm_inf =     4.334-113    6.892E-10
+     260: error,lnorm_inf =     3.167-113    7.209E-10
+     261: error,lnorm_inf =     4.867-113    8.792E-10
+     262: error,lnorm_inf =     5.158-113    8.378E-10
+     263: error,lnorm_inf =     1.264-112    5.436E-10
+     264: error,lnorm_inf =     5.571-113    1.966E-09
+     265: error,lnorm_inf =     7.504-113    8.561E-10
+     266: error,lnorm_inf =     1.422-112    1.331E-09
+     267: error,lnorm_inf =     1.570-113    8.209E-10
+     268: error,lnorm_inf =     1.494-112    5.959E-10
+     269: error,lnorm_inf =     2.789-113    1.359E-09
+     270: error,lnorm_inf =     1.018-112    7.510E-10
+     271: error,lnorm_inf =     9.352-114    5.923E-10
+     272: error,lnorm_inf =     1.845-113    5.939E-10
+     273: error,lnorm_inf =     1.881-113    5.301E-10
+     274: error,lnorm_inf =     3.140-113    5.781E-10
+     275: error,lnorm_inf =     6.691-113    5.149E-10
+     276: error,lnorm_inf =     6.736-113    4.658E-10
+     277: error,lnorm_inf =     5.371-113    4.678E-10
+     278: error,lnorm_inf =     1.764-113    9.815E-10
+     279: error,lnorm_inf =     5.058-113    6.261E-10
+     280: error,lnorm_inf =     2.613-113    3.102E-10
+     281: error,lnorm_inf =     2.207-113    3.060E-10
+     282: error,lnorm_inf =     6.173-113    4.437E-10
+     283: error,lnorm_inf =     2.671-113    5.128E-10
+     284: error,lnorm_inf =     5.405-113    2.685E-10
+     285: error,lnorm_inf =     1.070-112    4.149E-10
+     286: error,lnorm_inf =     9.686-113    5.822E-10
+     287: error,lnorm_inf =     5.021-112    6.201E-10
+     288: error,lnorm_inf =     2.548-112    8.662E-10
+     289: error,lnorm_inf =     3.075-112    6.671E-10
+     290: error,lnorm_inf =     5.449-112    3.889E-10
+     291: error,lnorm_inf =     2.394-112    7.159E-10
+     292: error,lnorm_inf =     4.120-112    5.769E-10
+     293: error,lnorm_inf =     4.067-112    4.517E-10
+     294: error,lnorm_inf =     3.616-112    8.803E-10
+     295: error,lnorm_inf =     1.399-112    7.592E-10
+     296: error,lnorm_inf =     2.591-112    3.212E-10
+     297: error,lnorm_inf =     1.426-112    5.266E-10
+     298: error,lnorm_inf =     6.810-113    4.470E-10
+     299: error,lnorm_inf =     5.663-113    3.076E-10
+     300: error,lnorm_inf =     2.119-112    4.692E-10
+     301: error,lnorm_inf =     3.334-113    6.997E-10
+     302: error,lnorm_inf =     9.999-113    4.674E-10
+     303: error,lnorm_inf =     1.628-113    3.236E-10
+     304: error,lnorm_inf =     1.803-112    6.469E-10
+     305: error,lnorm_inf =     3.542-113    1.660E-10
+     306: error,lnorm_inf =     1.830-113    2.138E-10
+     307: error,lnorm_inf =     1.620-112    3.507E-10
+     308: error,lnorm_inf =     1.322-112    2.391E-10
+     309: error,lnorm_inf =     3.314-113    1.701E-10
+     310: error,lnorm_inf =     2.531-113    1.464E-10
+     311: error,lnorm_inf =     2.058-113    2.104E-10
+     312: error,lnorm_inf =     3.125-113    3.506E-10
+     313: error,lnorm_inf =     4.423-113    2.976E-10
+     314: error,lnorm_inf =     3.745-113    3.413E-10
+     315: error,lnorm_inf =     5.928-113    1.889E-10
+     316: error,lnorm_inf =     3.415-113    3.324E-10
+     317: error,lnorm_inf =     6.915-113    3.630E-10
+     318: error,lnorm_inf =     1.768-113    1.458E-10
+     319: error,lnorm_inf =     1.228-113    2.606E-10
+     320: error,lnorm_inf =     3.293-113    1.454E-10
+     321: error,lnorm_inf =     2.696-113    2.878E-10
+     322: error,lnorm_inf =     2.353-113    1.868E-10
+     323: error,lnorm_inf =     4.846-114    7.266E-11
+  NLK BCE solve succeeded:    323 iterations, error,lnorm_inf =     4.846-114    7.266E-11
 
 
 Initializing solution probes ...
@@ -90,6 +418,8 @@ Initializing solution probes ...
 EXECUTION
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+       1: error,lnorm_inf =     2.247-113    7.900E-11
+  NLK BCE solve succeeded:      1 iterations, error,lnorm_inf =     2.247-113    7.900E-11
 
 ================================================================================
 
@@ -99,46 +429,43 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  4.588E-02 --- Total
-    2.296E-03 --- Input
-    3.481E-02 --- Initialization
-      1.642E-03 --- mesh-MAIN
-        5.723E-05 --- ghost-cells
-          4.843E-05 --- cell-ghosts
-            2.924E-05 --- node-neighbors
-            6.040E-06 --- ghost-cells
-          2.600E-07 --- link-ghosts
-          7.530E-06 --- assemble-ghosts
-      9.750E-06 --- VOF Initialize
-      3.125E-02 --- solid mechanics
-        5.356E-05 --- properties
-        2.666E-04 --- precon-compute
-          2.458E-04 --- residual
-            1.783E-04 --- strain
-            6.068E-05 --- stress
-            4.200E-06 --- BCs
-        2.449E-02 --- residual
-          1.523E-02 --- strain
-          5.337E-03 --- stress
-          3.720E-03 --- BCs
-        1.082E-04 --- precon-apply
-    2.020E-06 --- electromagnetics
-    4.162E-03 --- Main Cycle
-      1.590E-06 --- Time Step
-      9.259E-04 --- solid mechanics
-        3.493E-05 --- properties
-        1.663E-04 --- precon-compute
-          1.546E-04 --- residual
-            1.146E-04 --- strain
-            3.778E-05 --- stress
-            1.280E-06 --- BCs
-        6.742E-04 --- residual
-          4.282E-04 --- strain
-          1.424E-04 --- stress
-          9.707E-05 --- BCs
-        3.680E-06 --- precon-apply
+  8.665E-02 --- Total
+    4.732E-03 --- Input
+    7.796E-02 --- Initialization
+      7.510E-04 --- mesh-MAIN
+        1.600E-05 --- ghost-cells
+          1.400E-05 --- cell-ghosts
+            7.000E-06 --- node-neighbors
+            1.000E-06 --- ghost-cells
+          0.000E+00 --- link-ghosts
+          2.000E-06 --- assemble-ghosts
+      6.000E-06 --- VOF Initialize
+      7.557E-02 --- solid mechanics
+        2.900E-05 --- properties
+        2.290E-04 --- precon-compute
+          2.200E-04 --- residual
+            9.500E-05 --- strain
+            1.180E-04 --- stress
+            2.000E-06 --- BCs
+        6.089E-02 --- residual
+          2.447E-02 --- strain
+          3.299E-02 --- stress
+          2.040E-03 --- BCs
+        3.270E-04 --- precon-apply
+    2.317E-03 --- Main Cycle
+      0.000E+00 --- Time Step
+      3.750E-04 --- solid mechanics
+        1.800E-05 --- properties
+        1.720E-04 --- precon-compute
+          1.670E-04 --- residual
+            7.000E-05 --- strain
+            9.200E-05 --- stress
+            1.000E-06 --- BCs
+        1.730E-04 --- residual
+          7.000E-05 --- strain
+          9.200E-05 --- stress
+          8.000E-06 --- BCs
+        1.000E-06 --- precon-apply
 
-                  Process virtual memory used: 6.05E+02 mB
-                                   words/cell: 1238176
 
-truchas terminated normally on 12 Aug 21 at 12:04:47
+truchas terminated normally on 27 Jun 24 at 10:12:35

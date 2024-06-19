@@ -38,8 +38,8 @@ module sm_bc_c0d3_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: compute_deriv_diag
-    procedure :: compute_deriv_full
+    procedure :: apply_deriv_diag
+    procedure :: apply_deriv_full
   end type sm_bc_c0d3
 
 contains
@@ -172,7 +172,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d3), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -183,14 +183,14 @@ contains
     do i = 1, size(this%index)
       n = this%index(i)
       if (n > this%mesh%nnode_onP) cycle
-      diag(:,n) = - this%penalty * stress_factor(n)
+      diag(:,n) = - this%penalty !* stress_factor(n)
     end do
 
-  end subroutine compute_deriv_diag
+  end subroutine apply_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine compute_deriv_full(this, time, stress_factor, A)
+  subroutine apply_deriv_full(this, time, stress_factor, A)
 
     use pcsr_matrix_type
 
@@ -213,10 +213,10 @@ contains
       do ii = n1, n3
         call A%get_row_view(ii, values, indices)
         values = 0
-        call A%set(ii, ii, -this%penalty * stress_factor(n))
+        call A%set(ii, ii, -this%penalty)
       end do
     end do
 
-  end subroutine compute_deriv_full
+  end subroutine apply_deriv_full
 
 end module sm_bc_c0d3_type
