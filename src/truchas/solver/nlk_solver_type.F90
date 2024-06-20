@@ -22,7 +22,6 @@ module nlk_solver_type
     integer  :: mitr            ! maximum number of nonlinear iterations
     real(r8) :: ntol            ! nonlinear solver error tolerance (relative to 1)
     type(nka), allocatable :: nka   ! nonlinear Krylov accelerator
-    ! type(state_history)   :: uhist        ! solution history structure
 
     !! Perfomance counters
     integer :: pcfun_calls = 0      ! number of calls to PCFUN
