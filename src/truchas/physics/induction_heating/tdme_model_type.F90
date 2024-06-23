@@ -58,14 +58,6 @@ contains
     real(r8), intent(in) :: dt
     class(bndry_func1), allocatable, intent(inout) :: ebc, hbc
 
-    !! Local curl operator matrix
-    real(r8), parameter :: curl(4,6) = reshape([0,  0,  1,  1, &
-                                                0,  1,  0, -1, &
-                                                0, -1, -1,  0, &
-                                                1,  0,  0,  1, &
-                                               -1,  0,  1,  0, &
-                                                1,  1,  0,  0], shape=shape(curl))
-
     integer :: j
     real(r8) :: ctm2c(21), m1(21), m2(10)
 
@@ -97,10 +89,10 @@ contains
     do j = 1, mesh%ncell
       m1 = W1_matrix_WE(mesh, j)
       m2 = W2_matrix_WE(mesh, j)
-      ctm2c = ((0.5_r8*dt)**2/mu(j)) * upm_cong_prod(4, 6, m2, curl)
+      ctm2c = ((0.5_r8*dt)**2/mu(j)) * upm_cong_prod(4, 6, m2, cell_curl)
       this%mtr1(:,j) = (eps(j) + 0.5_r8*dt*sigma(j)) * m1 + ctm2c
       this%mtr2(:,j) = (eps(j) - 0.5_r8*dt*sigma(j)) * m1 - ctm2c
-      this%mtr3(:,:,j) = (dt/mu(j)) * transpose(sym_matmul(4, 6, m2, curl))
+      this%mtr3(:,:,j) = (dt/mu(j)) * transpose(sym_matmul(4, 6, m2, cell_curl))
     end do
 
   end subroutine init

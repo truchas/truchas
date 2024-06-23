@@ -231,7 +231,7 @@ contains
       lnormi = lnorm(du)
       call this%model%apply_precon(u, du) !TODO: why u as input?
       if (allocated(this%nka)) call this%nka%accel_update(du)
-      u = u + du
+      u = u + du  !FIXME?  The "+" should be a "-" unless precon is doing something funky
 
       !! Error estimate.
       error = this%model%du_norm(u, du)

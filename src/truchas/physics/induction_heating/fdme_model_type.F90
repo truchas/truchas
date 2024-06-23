@@ -4,7 +4,8 @@ module fdme_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
-  use pcsr_matrix_type
+  !use pcsr_matrix_type
+  use msr_matrix_type
   use bndry_func1_class
   use truchas_timers
   implicit none
@@ -12,7 +13,7 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(pcsr_matrix) :: A(2,2)
+    type(msr_matrix) :: A(2,2)
     real(r8), allocatable :: rhs(:)
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
@@ -57,9 +58,10 @@ contains
     if (stat /= 0) return
 
     block ! full system in block form
-      type(pcsr_graph), pointer :: g
+      !type(pcsr_graph), pointer :: g
+      type(msr_graph), pointer :: g
       allocate(g)
-      call g%init(this%mesh%edge_imap)
+      call g%init(this%mesh%nedge)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
       call this%A(1,1)%init(g, take_graph=.true.)
@@ -77,19 +79,11 @@ contains
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
-    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we
+    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_curl
     use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(fdme_model), intent(inout) :: this
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
-
-    !! Local curl operator matrix
-    real(r8), parameter :: curl(4,6) = reshape([0,  0,  1,  1, &
-                                                0,  1,  0, -1, &
-                                                0, -1, -1,  0, &
-                                                1,  0,  0,  1, &
-                                               -1,  0,  1,  0, &
-                                                1,  1,  0,  0], shape=shape(curl))
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), a(21), omegar
@@ -120,7 +114,7 @@ contains
     do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
       m1 = W1_matrix_WE(this%mesh, j)
       m2 = W2_matrix_WE(this%mesh, j)
-      ctm2c = upm_cong_prod(4, 6, m2, curl)
+      ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
 
       a = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
       call this%A(1,1)%add_to(this%mesh%cedge(:,j), a)
@@ -140,10 +134,8 @@ contains
         do j = 1, size(this%ebc%index)
           efield_r(this%ebc%index(j)) = this%ebc%value(j)
         end do
-        call this%A(1,1)%matvec(efield_r, rhs_r)
-        call this%A(2,1)%matvec(efield_r, rhs_i)
-        rhs_r = efield_r - rhs_r
-        rhs_i = - rhs_i
+        rhs_r = efield_r - this%A(1,1)%matvec(efield_r)
+        rhs_i = - this%A(2,1)%matvec(efield_r)
       end block
     end if
 
@@ -182,12 +174,9 @@ contains
     real(r8), intent(in) :: u(:)
     real(r8), intent(out) :: f(:)
     logical, intent(in), optional :: ax
-    real(r8) :: tmp(size(f))
-    call this%A(1,1)%matvec(u(1:size(u):2), f(1:size(f):2))
-    call this%A(2,1)%matvec(u(1:size(u):2), f(2:size(f):2))
-    call this%A(1,2)%matvec(u(2:size(u):2), tmp(1:size(f):2))
-    call this%A(2,2)%matvec(u(2:size(u):2), tmp(2:size(f):2))
-    f = f + tmp
+    f(1::2) = this%A(1,1)%matvec(u(1::2)) + this%A(1,2)%matvec(u(2::2))
+    f(2::2) = this%A(2,1)%matvec(u(1::2)) + this%A(2,2)%matvec(u(2::2))
+    !f(2::2) = -f(2::2)
     if (present(ax)) then
       if (ax) return
     end if

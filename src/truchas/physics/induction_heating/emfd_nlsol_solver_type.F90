@@ -178,8 +178,8 @@ contains
 !      call this%Ap%init(mold=this%A(1,1))
 !    end block
 
-    allocate(this%Ap)
-    call this%Ap%init(mold=this%newmodel%A(1,1))
+!    allocate(this%Ap)
+!    call this%Ap%init(mold=this%newmodel%A(1,1))
 
     call params%get("abs-tol", atol)
     call params%get("rel-tol", rtol)
@@ -187,7 +187,7 @@ contains
 
     allocate(this%precon, this%model)
     plist => params%sublist("precon")
-    call this%precon%init(plist, this%mesh, this%Ap, this%newmodel%ebc)
+    call this%precon%init(this%newmodel, plist)
     call this%model%init(this%newmodel, this%precon, atol, rtol, ftol)
     call this%solver%init(this%model, params, ierr, errmsg)
     if (ierr /= 0) call tls_fatal("EMFD_NLSOL INIT: " // errmsg)
@@ -200,23 +200,21 @@ contains
     class(emfd_nlsol_solver), intent(inout) :: this
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
 
-    integer :: j, n
-
     call this%newmodel%setup(t, epsr, epsi, mu, sigma, omega)
 
     this%model%rhs = this%newmodel%rhs
 
     ASSERT(all(ieee_is_finite(this%model%rhs)))
 
-    ! Preconditioner
-    this%Ap%values = this%newmodel%A(1,1)%values - this%newmodel%A(1,2)%values
-    if (allocated(this%newmodel%ebc)) then
-      do j = 1, size(this%newmodel%ebc%index)
-        n = this%newmodel%ebc%index(j)
-        call this%Ap%set(n, n, 1.0_r8)
-      end do
-    end if
-    call this%precon%setup(mu, epsr, epsi, sigma, omega/this%c0) ! this implicitly uses this%Ap
+!    ! Preconditioner
+!    this%Ap%values = this%newmodel%A(1,1)%values - this%newmodel%A(1,2)%values
+!    if (allocated(this%newmodel%ebc)) then
+!      do j = 1, size(this%newmodel%ebc%index)
+!        n = this%newmodel%ebc%index(j)
+!        call this%Ap%set(n, n, 1.0_r8)
+!      end do
+!    end if
+    call this%precon%setup ! this implicitly uses this%Ap
 
   end subroutine setup
 
@@ -280,7 +278,7 @@ contains
 
   integer function emfd_nlsol_model_size(this)
     class(emfd_nlsol_model), intent(in) :: this
-    emfd_nlsol_model_size = 2*this%model%A(1,1)%nrow_onP
+    emfd_nlsol_model_size = 2*this%model%mesh%nedge_onP !2*this%model%A(1,1)%nrow_onP
   end function
 
 
@@ -297,11 +295,9 @@ contains
     class(emfd_nlsol_model) :: this
     real(r8), intent(in) :: u(:)
     real(r8), intent(inout) :: f(:)
-    integer :: ierr
     this%b = f
     f = 0
-    call this%precon%apply(this%b, f, ierr)
-    INSIST(ierr == 0)
+    call this%precon%apply(this%b, f)
   end subroutine
 
 
