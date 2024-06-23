@@ -24,6 +24,22 @@ module mimetic_discretization
   public :: w1_vector_on_cells, w2_vector_on_cells, w3_scalar_on_cells
   public :: eval_w0_interp_coef, eval_w1_interp_coef, eval_w2_interp_coef, eval_w3_interp_coef
 
+  !! Gradient operator on a tetrahedral cell
+  real(r8), parameter, public :: cell_grad(6,4) = &
+      reshape([-1, -1, -1,  0,  0,  0, &
+                1,  0,  0, -1, -1,  0, &
+                0,  1,  0,  1,  0, -1, &
+                0,  0,  1,  0,  1,  1], shape(cell_grad))
+
+  !! Curl operator on a tetrahedral cell
+  real(r8), parameter, public :: cell_curl(4,6) = &
+      reshape([0,  0,  1,  1, &
+               0,  1,  0, -1, &
+               0, -1, -1,  0, &
+               1,  0,  0,  1, &
+              -1,  0,  1,  0, &
+               1,  1,  0,  0], shape=shape(cell_curl))
+
 contains
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

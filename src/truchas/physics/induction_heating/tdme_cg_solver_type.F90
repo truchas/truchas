@@ -53,12 +53,6 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    !! Local gradient matrix
-    real(r8), parameter :: grad(6,4) = reshape([-1, -1, -1,  0,  0,  0, &
-                                                 1,  0,  0, -1, -1,  0, &
-                                                 0,  1,  0,  1,  0, -1, &
-                                                 0,  0,  1,  0,  1,  1], shape(grad))
-
     integer :: j
     real(r8) :: a0(10)
     integer, allocatable :: ebedge(:)
@@ -136,7 +130,7 @@ contains
 
     associate (eps => this%model%eps, sigma => this%model%sigma, dt => this%model%dt)
       do j = 1, this%mesh%ncell
-        a0 = (eps(j) + 0.5_r8*dt*sigma(j)) * upm_cong_prod(6, 4, W1_matrix_WE(this%mesh, j), grad)
+        a0 = (eps(j) + 0.5_r8*dt*sigma(j)) * upm_cong_prod(6, 4, W1_matrix_WE(this%mesh, j), cell_grad)
         call this%a0%add_to(this%mesh%cnode(:,j), a0)
       end do
     end associate

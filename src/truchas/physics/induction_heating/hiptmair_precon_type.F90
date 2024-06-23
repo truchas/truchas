@@ -19,497 +19,363 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#DEFINE ORIGINAL
+
 #include "f90_assert.fpp"
 
 module hiptmair_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  !use,intrinsic :: iso_fortran_env, only: r8 => real128
-  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use fdme_model_type
   use parameter_list_type
-  use truchas_timers
   use simpl_mesh_type
-  use index_map_type
-  use pcsr_matrix_type
-  use bndry_func1_class
+  use msr_matrix_type
+  use bcsr_matrix_type
+  use truchas_timers
   implicit none
   private
 
   type, public :: hiptmair_precon
     private
-    integer, public :: niter = 0
+    type(fdme_model), pointer :: model => null() ! unowned reference
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(index_map), pointer :: node_imap => null(), edge_imap => null()
-    type(pcsr_matrix) :: An, Ae
-    real(r8), allocatable :: un(:), rn(:), r(:), b(:), grad(:,:), curl(:,:)
+    type(bcsr_matrix) :: An, Ae
     logical, allocatable :: is_ebc_edge(:), is_ebc_node(:)
-
-    ! Non-dimensionalization parameters
-    real(r8) :: Z0 = 376.730313668 ! Ohms -- vacuum impedance
-    real(r8) :: c0 = 299792458.0_r8 ! speed of light
-    real(r8) :: L0, H0
+    type(msr_matrix) :: Bn(2,2), Be(2,2)  ! alternative to An, Ae
+    ! persistent workspace for apply
+    real(r8), allocatable :: un(:,:), rn(:,:), r(:,:)
   contains
     procedure :: init
     procedure :: setup
-    procedure :: apply
-  end type hiptmair_precon
+    procedure :: apply !=> alt_apply
+  end type
 
 contains
 
-  subroutine hiptmair_precon_final(this)
-    type(hiptmair_precon), intent(inout) :: this
-    if (associated(this%node_imap)) deallocate(this%node_imap)
-    if (associated(this%edge_imap)) deallocate(this%edge_imap)
-  end subroutine hiptmair_precon_final
-
-
-  subroutine init(this, params, mesh, A, ebc)
-
-    use parallel_communication, only: is_IOP
+  subroutine init(this, model, params)
 
     class(hiptmair_precon), intent(out) :: this
-    type(parameter_list), pointer, intent(in) :: params
-    type(simpl_mesh), intent(in), target :: mesh
-    type(pcsr_matrix), pointer, intent(in) :: A !! taking ownership
-    class(bndry_func1), allocatable, intent(in) :: ebc
+    type(fdme_model), intent(in), target :: model
+    type(parameter_list), intent(inout) :: params
 
     integer :: i
 
-    this%mesh => mesh
-    allocate(this%un(2*mesh%nnode), this%rn(2*mesh%nnode), this%r(2*mesh%nedge), &
-        this%b(2*mesh%nedge), this%is_ebc_node(mesh%nnode))
-
-    this%grad = reshape([-1.0_r8, -1.0_r8, -1.0_r8,  0.0_r8,  0.0_r8,  0.0_r8, &
-        &                 1.0_r8,  0.0_r8,  0.0_r8, -1.0_r8, -1.0_r8,  0.0_r8, &
-        &                 0.0_r8,  1.0_r8,  0.0_r8,  1.0_r8,  0.0_r8, -1.0_r8, &
-        &                 0.0_r8,  0.0_r8,  1.0_r8,  0.0_r8,  1.0_r8,  1.0_r8], &
-        shape=[6, 4])
-
-    this%curl = reshape([ 0.0_r8,  0.0_r8,  1.0_r8,  1.0_r8, &
-        &                 0.0_r8,  1.0_r8,  0.0_r8, -1.0_r8, &
-        &                 0.0_r8, -1.0_r8, -1.0_r8,  0.0_r8, &
-        &                 1.0_r8,  0.0_r8,  0.0_r8,  1.0_r8, &
-        &                -1.0_r8,  0.0_r8,  1.0_r8,  0.0_r8, &
-        &                 1.0_r8,  1.0_r8,  0.0_r8,  0.0_r8], &
-        shape=[4, 6])
+    this%model => model
+    this%mesh => model%mesh
+    allocate(this%un(2,this%mesh%nnode), this%rn(2,this%mesh%nnode))
+    allocate(this%r(2,this%mesh%nedge))
+    allocate(this%is_ebc_node(this%mesh%nnode))
 
     ! mark Dirichlet BC edges & nodes
 
-    allocate(this%is_ebc_edge(mesh%nedge), source=.false.)
-    if (allocated(ebc)) then
-      do i = 1, size(ebc%index)
-        this%is_ebc_edge(ebc%index(i)) = .true.
+    allocate(this%is_ebc_edge(this%mesh%nedge), source=.false.)
+    if (allocated(this%model%ebc)) then
+      do i = 1, size(this%model%ebc%index)
+        this%is_ebc_edge(this%model%ebc%index(i)) = .true.
       end do
     end if
     this%is_ebc_node = .false.
-    do i = 1, mesh%nedge
-      if (this%is_ebc_edge(i)) this%is_ebc_node(mesh%enode(:,i)) = .true.
+    do i = 1, this%mesh%nedge
+      if (this%is_ebc_edge(i)) this%is_ebc_node(this%mesh%enode(:,i)) = .true.
     end do
 
-    ! prepare full edge matrix & node-based projection matrix
-    call init_matrix(this%Ae, this%edge_imap, mesh%edge_imap, mesh%cedge)
-    call init_matrix(this%An, this%node_imap, mesh%node_imap, mesh%cnode)
-
-  contains
-
-    subroutine init_matrix(this_A, this_imap, mesh_imap, adjcncy)
-
-      type(pcsr_matrix), intent(out) :: this_A
-      type(index_map), pointer :: this_imap
-      type(index_map), intent(in), pointer :: mesh_imap
-      integer, intent(in) :: adjcncy(:,:)
-
-      integer :: n1, n1x, n1r, n1i
-      integer :: n2, n2x, n2r, n2i
-      integer, allocatable :: nvars(:)
-      type(index_map), pointer :: row_imap => null()
-      type(pcsr_graph), pointer :: g => null()
-
-      allocate(g, this_imap)
-      row_imap => mesh_imap
-      allocate(nvars(merge(mesh_imap%global_size, 0, is_IOP)))
-      nvars = 2
-      call this_imap%init(row_imap, nvars)
-
-      call g%init(this_imap)
-      do i = 1, this%mesh%ncell
-        ! add curl terms
-        call g%add_clique(2*(adjcncy(:,i)-1) + 1) ! real components
-        call g%add_clique(2*(adjcncy(:,i)-1) + 2) ! imaginary components
-
-        ! add cross-diagonal terms
-        do n1x = 1, size(adjcncy(:,i))
-          n1 = adjcncy(n1x,i)
-          n1r = 2*(n1-1) + 1
-          n1i = 2*(n1-1) + 2
-          do n2x = 1, n1x
-            n2 = adjcncy(n2x,i)
-            n2r = 2*(n2-1) + 1
-            n2i = 2*(n2-1) + 2
-            call g%add_edge(n1r, n2i)
-            call g%add_edge(n1i, n2r)
-          end do
-        end do
-      end do
+    !! 2x2 block CSR matrix storage
+    block
+      type(csr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%nedge)
+      call g%add_clique(this%mesh%cedge)
       call g%add_complete
-      call this_A%init(g, take_graph=.true.)
+      call this%Ae%init(2, g, take_graph=.true.)
+    end block
 
-    end subroutine init_matrix
+    block
+      type(csr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%nnode)
+      call g%add_clique(this%mesh%cnode)
+      call g%add_complete
+      call this%An%init(2, g, take_graph=.true.)
+    end block
+
+    !! Alternative real/imaginary partitioned CSR block storage.
+    block
+      type(msr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%nedge)
+      call g%add_clique(this%mesh%cedge)
+      call g%add_complete
+      call this%Be(1,1)%init(g, take_graph=.true.)
+      call this%Be(2,1)%init(mold=this%Be(1,1))
+      call this%Be(1,2)%init(mold=this%Be(1,1))
+      call this%Be(2,2)%init(mold=this%Be(1,1))
+    end block
+
+    block
+      type(msr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%nnode)
+      call g%add_clique(this%mesh%cnode)
+      call g%add_complete
+      call this%Bn(1,1)%init(g, take_graph=.true.)
+      call this%Bn(2,1)%init(mold=this%Bn(1,1))
+      call this%Bn(1,2)%init(mold=this%Bn(1,1))
+      call this%Bn(2,2)%init(mold=this%Bn(1,1))
+    end block
 
   end subroutine init
 
 
   !! State-dependent setup: compute and assemble the node-based projected matrix An
-  subroutine setup(this, mu, epsr, epsi, sigma, omega)
+  subroutine setup(this)
 
-    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we
-    use upper_packed_matrix_procs, only: sym_matmul
+    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_grad, cell_curl
+    use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in) :: mu(:), epsr(:), epsi(:), sigma(:), omega
 
+    integer :: j
+    real(r8) :: omegar, c1, c2, c3
+    real(r8) :: m1(21), ctm2c(21), etmp(2,2,21), gtm1g(10), ntmp(2,2,10)
+    real(r8), parameter :: ID2(2,2) = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape=[2,2])
     real(r8), parameter :: relaxation = 1.0_r8
-    integer :: ierr, j, l
-    integer :: n1, n1x, n1r, n1i
-    integer :: n2, n2x, n2r, n2i
-    integer :: e1, e1x, e1r, e1i
-    integer :: e2, e2x, e2r, e2i
-    real(r8) :: ct_m2_c(6,6), gt_m1_g(4,4), m1(21), mtr1, mtr2, mtr3
-    real(r8), pointer :: values => null()
-    integer, pointer :: indices => null()
 
     call start_timer("precon")
 
-    this%L0 = 1
+    omegar = this%model%omega/this%model%c0
 
     call this%Ae%set_all(0.0_r8)
     call this%An%set_all(0.0_r8)
-    do j = 1, this%mesh%ncell_onP
-      ! TODO: precompute these lines, since they're only dependent on geometry?
-      m1 = W1_matrix_WE(this%mesh, j)
-      ct_m2_c = matmul(transpose(this%curl), sym_matmul(W2_matrix_WE(this%mesh, j), this%curl))
-      gt_m1_g = matmul(transpose(this%grad), sym_matmul(W1_matrix_WE(this%mesh, j), this%grad))
 
+    do j = 1, this%mesh%ncell
       ! non-dimensionalized
-      mtr1 = mu(j)
-      mtr2 = omega**2 * epsr(j)
-      mtr3 = omega**2 * epsi(j) - omega * sigma(j) * this%Z0 * this%L0
-      mtr2 = mtr2 + relaxation * mtr3
-      mtr3 = mtr2
-      !mtr1 = huge(1.0_r8)
+      c1 = 1.0_r8 / this%model%mu(j)
+      c2 = this%model%epsr(j) * omegar**2
+      c3 = this%model%epsi(j) * omegar**2 - omegar * this%model%sigma(j) * this%model%Z0
+#ifdef ORIGINAL
+      !NB: This results in a different matrix than the actual matrix of the edge-based system.
+      !TODO: What is the rationale for the following modification?
+      c2 = c2 + relaxation * c3
+      c3 = c2
+#endif
 
-      ! full edge-based matrix
-      l = 0
-      do e2x = 1, 6
-        e2 = this%mesh%cedge(e2x,j)
-        e2r = 2*(e2-1) + 1
-        e2i = 2*(e2-1) + 2
+      m1 = W1_matrix_WE(this%mesh, j)
+      ctm2c = upm_cong_prod(4, 6, W2_matrix_WE(this%mesh, j), cell_curl)
+      gtm1g = upm_cong_prod(6, 4, m1, cell_grad)
 
-        ! project out the rows and columns corresponding to Dirichlet edges
-        if (this%is_ebc_edge(e2)) then
-          call this%Ae%set(e2r, e2r, 1.0_r8)
-          call this%Ae%set(e2i, e2i, 1.0_r8)
-          l = l + e2x
-          cycle
-        end if
+      etmp(1,1,:) = (c1 * ctm2c - c2 * m1)
+      etmp(2,2,:) = -(c1 * ctm2c - c2 * m1)
+      etmp(1,2,:) = c3 * m1
+      etmp(2,1,:) = c3 * m1
+      ! Multiply imaginary equation by -1
+      !etmp(2,1,:) = -etmp(2,1,:)
+      !etmp(2,2,:) = -etmp(2,2,:)
+      call this%Ae%add_to(this%mesh%cedge(:,j), etmp)
 
-        do e1x = 1, e2x
-          l = l + 1
-          e1 = this%mesh%cedge(e1x,j)
-          e1r = 2*(e1-1) + 1
-          e1i = 2*(e1-1) + 2
-          if (this%is_ebc_edge(e1)) cycle
+      ntmp(1,1,:) = -(c2 * gtm1g)
+      ntmp(2,2,:) =  (c2 * gtm1g)
+      ntmp(1,2,:) =  (c3 * gtm1g)
+      ntmp(2,1,:) =  (c3 * gtm1g)
+      ! Multiply imaginary equation by -1
+      !ntmp(2,1,:) = -ntmp(2,1,:)
+      !ntmp(2,2,:) = -ntmp(2,2,:)
+      call this%An%add_to(this%mesh%cnode(:,j), ntmp)
 
-          call this%Ae%add_to(e1r, e2r,  ct_m2_c(e1x,e2x) / mtr1 - mtr2 * m1(l))
-          call this%Ae%add_to(e1i, e2i, -ct_m2_c(e1x,e2x) / mtr1 + mtr2 * m1(l))
-          call this%Ae%add_to(e1r, e2i,  mtr3 * m1(l))
-          call this%Ae%add_to(e1i, e2r,  mtr3 * m1(l))
-          if (e1x /= e2x) then
-            call this%Ae%add_to(e2r, e1r,  ct_m2_c(e1x,e2x) / mtr1 - mtr2 * m1(l))
-            call this%Ae%add_to(e2i, e1i, -ct_m2_c(e1x,e2x) / mtr1 + mtr2 * m1(l))
-            call this%Ae%add_to(e2i, e1r,  mtr3 * m1(l))
-            call this%Ae%add_to(e2r, e1i,  mtr3 * m1(l))
-          end if
-        end do
-      end do
+      !! Alternative real/imaginary partitioned system
+      call this%Be(1,1)%add_to(this%mesh%cedge(:,j), (c1 * ctm2c - c2 * m1))
+      call this%Be(2,2)%add_to(this%mesh%cedge(:,j), -(c1 * ctm2c - c2 * m1))
+      call this%Be(1,2)%add_to(this%mesh%cedge(:,j), c3*m1)
+      call this%Be(2,1)%add_to(this%mesh%cedge(:,j), c3*m1)
 
-      ! node-based projection matrix
-      do n2x = 1, 4
-        n2 = this%mesh%cnode(n2x,j)
-        n2r = 2*(n2-1) + 1
-        n2i = 2*(n2-1) + 2
-        ! project out the rows and columns corresponding to Dirichlet edges
-        if (this%is_ebc_node(n2)) then
-          call this%An%set(n2r, n2r, 1.0_r8)
-          call this%An%set(n2i, n2i, 1.0_r8)
-          cycle
-        end if
-
-        do n1x = 1, 4
-          n1 = this%mesh%cnode(n1x,j)
-          n1r = 2*(n1-1) + 1
-          n1i = 2*(n1-1) + 2
-          if (this%is_ebc_node(n1)) cycle
-          call this%An%add_to(n1r, n2r,  -mtr2 * gt_m1_g(n1x, n2x))
-          call this%An%add_to(n1i, n2i,   mtr2 * gt_m1_g(n1x, n2x))
-          call this%An%add_to(n1r, n2i,   mtr3 * gt_m1_g(n1x, n2x))
-          call this%An%add_to(n1i, n2r,   mtr3 * gt_m1_g(n1x, n2x))
-        end do
-      end do
+      call this%Bn(1,1)%add_to(this%mesh%cnode(:,j), -c2*gtm1g)
+      call this%Bn(2,2)%add_to(this%mesh%cnode(:,j), c2*gtm1g)
+      call this%Bn(1,2)%add_to(this%mesh%cnode(:,j), c3*gtm1g)
+      call this%Bn(2,1)%add_to(this%mesh%cnode(:,j), c3*gtm1g)
     end do
 
-    ! diagonals used in Gauss-Seidel relaxation
-    call this%Ae%update_diag
-    call this%An%update_diag
+    do j = 1, this%mesh%nedge
+      if (this%is_ebc_edge(j)) then
+        call this%Ae%project_out(j)
+        call this%Ae%set(j, j, ID2)
+      end if
+    end do
 
-    print *, "completed setup"
+    do j = 1, this%mesh%nnode
+      if (this%is_ebc_node(j)) then
+        call this%An%project_out(j)
+        call this%An%set(j, j, ID2)
+      end if
+    end do
+
+    do j = 1, this%mesh%nedge
+      if (this%is_ebc_edge(j)) then
+        call this%Be(1,1)%project_out(j)
+        call this%Be(2,1)%project_out(j)
+        call this%Be(1,2)%project_out(j)
+        call this%Be(2,2)%project_out(j)
+        call this%Be(1,1)%set(j, j, 1.0_r8)
+        call this%Be(2,2)%set(j, j, 1.0_r8)
+      end if
+    end do
+
+    do j = 1, this%mesh%nnode
+      if (this%is_ebc_node(j)) then
+        call this%Bn(1,1)%project_out(j)
+        call this%Bn(2,1)%project_out(j)
+        call this%Bn(1,2)%project_out(j)
+        call this%Bn(2,2)%project_out(j)
+        call this%Bn(1,1)%set(j, j, 1.0_r8)
+        call this%Bn(2,2)%set(j, j, 1.0_r8)
+      end if
+    end do
+
+!    block ! test result -- Okay
+!      real(r8), dimension(2,this%mesh%nedge) :: x, y1, y2
+!      call random_number(x)
+!      y1 = this%Ae%matvec(x)
+!      y2(1,:) = this%Be(1,1)%matvec(x(1,:)) + this%Be(1,2)%matvec(x(2,:))
+!      y2(2,:) = this%Be(2,1)%matvec(x(1,:)) + this%Be(2,2)%matvec(x(2,:))
+!      print *, 'EDGE MATVEC ERROR:', count(abs(y1-y2) > 1d-12*abs(y1))
+!    end block
+
+!    block ! test result -- Okay
+!      real(r8), dimension(2,this%mesh%nnode) :: x, y1, y2
+!      call random_number(x)
+!      y1 = this%An%matvec(x)
+!      y2(1,:) = this%Bn(1,1)%matvec(x(1,:)) + this%Bn(1,2)%matvec(x(2,:))
+!      y2(2,:) = this%Bn(2,1)%matvec(x(1,:)) + this%Bn(2,2)%matvec(x(2,:))
+!      print *, 'NODE MATVEC ERROR:', count(abs(y1-y2) > 1d-12*abs(y1))
+!    end block
 
     call stop_timer("precon")
 
   end subroutine setup
 
-
-  subroutine apply(this, b, x, stat)
+  subroutine apply(this, b, x)
 
     use mimetic_discretization, only: grad, grad_t
+    use msr_matrix_type, only: gs_relaxation
 
     class(hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:) ! residual
-    real(r8), intent(inout) :: x(:) ! state
-    integer, intent(out) :: stat
+    real(r8), intent(in), target :: b(:)
+    real(r8), intent(inout), target :: x(:)
 
-    integer :: n, nr, ni, nnode, nedge, nnode_onP, nedge_onP
+    integer :: j
+    real(r8), pointer :: bb(:,:), xx(:,:)
 
     ASSERT(size(b) == 2*this%mesh%edge_imap%onp_size)
     ASSERT(size(x) == 2*this%mesh%edge_imap%onp_size)
-    ASSERT(all(ieee_is_finite(x)))
-    ASSERT(all(ieee_is_finite(b)))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(1:2*this%mesh%nedge-1:2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(2:2*this%mesh%nedge:2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. b(1::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. b(2::2) == 0))
 
-    nnode = this%mesh%nnode
-    nedge = this%mesh%nedge
-    nnode_onP = this%mesh%nnode_onP
-    nedge_onP = this%mesh%nedge_onP
+    call start_timer('precon')
 
-    stat = 0
-    this%niter = 1
-    call start_timer("precon")
+    bb(1:2,1:this%mesh%nedge) => b
+    xx(1:2,1:this%mesh%nedge) => x
 
     !! Forward Gauss-Seidel relaxation on the on-process edge system.
-    x = 0
-    call gauss_seidel_relaxation(this%Ae, b, x, "f")
-    ! print *, 'debug 0: ', maxval(abs(this%b))
-    ! print *, 'debug 0: ', maxval(abs(x))
+    xx = 0.0_r8
+    call gs_relaxation(this%Ae, bb, xx, 'f')
 
     !! Update the local residual and project it to the nodes.
-    call this%Ae%matvec(x, this%r)
-    !print *, 'debug 0: ', maxval(abs(this%r))
-    this%r = b - this%r
-    call grad_t(this%mesh, this%r(1:2*nedge-1:2), this%rn(1:2*nnode-1:2))
-    call grad_t(this%mesh, this%r(2:2*nedge:2), this%rn(2:2*nnode:2))
-    !print *, 'debug 0: ', maxval(abs(this%rn))
-    do n = 1, nnode
-      if (this%is_ebc_node(n)) then
-        nr = 2*(n-1) + 1
-        ni = 2*(n-1) + 2
-        this%rn(nr) = 0
-        this%rn(ni) = 0
-      end if
+    this%r = bb - this%Ae%matvec(xx)
+    call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
+    call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
+    do j = 1, this%mesh%nnode
+      if (this%is_ebc_node(j)) this%rn(:,j) = 0.0_r8
     end do
-    ASSERT(all(ieee_is_finite(this%rn)))
 
     !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
-    this%un = 0
-    !print *, 'debug 1: ', maxval(abs(this%rn))
-    call gauss_seidel_relaxation(this%An, this%rn, this%un, "fb", verbose=.true.)
-    !call sor_relaxation(this%An, this%rn(:2*this%mesh%nnode_onP), this%un, "fb", 0.5_r8, verbose=.true.)
-    !call jacobi_relaxation(this%An, this%rn(:2*this%mesh%nnode_onP), this%un, 10, verbose=.true.)
-    !print *, "debug 1"
-    ASSERT(all(ieee_is_finite(this%un)))
+    this%un = 0.0_r8
+    call gs_relaxation(this%An, this%rn, this%un, 'fb')
 
     !! Update the the solution with the node-based correction.
-    block
-      integer :: e, er, ei, n1, n1r, n1i, n2, n2r, n2i
-      do e = 1, this%mesh%nedge
-        n1 = this%mesh%enode(1,e)
-        n2 = this%mesh%enode(2,e)
-        er = 2*(e-1) + 1
-        ei = 2*(e-1) + 2
-        n1r = 2*(n1-1) + 1
-        n1i = 2*(n1-1) + 2
-        n2r = 2*(n2-1) + 1
-        n2i = 2*(n2-1) + 2
-
-        x(er) = x(er) + this%un(n2r) - this%un(n1r) ! grad
-        x(ei) = x(ei) + this%un(n2i) - this%un(n1i) ! grad
-      end do
-    end block
-    ! call grad(this%mesh, this%un(1:2*nnode-1:2), x(1:2*nedge-1:2), increment=.true.)
-    ! call grad(this%mesh, this%un(2:2*nnode:2), x(2:2*nedge:2), increment=.true.)
-    ASSERT(all(ieee_is_finite(x)))
+    call grad(this%mesh, this%un(1,:), xx(1,:), increment=.true.)
+    call grad(this%mesh, this%un(2,:), xx(2,:), increment=.true.)
 
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gauss_seidel_relaxation(this%Ae, b, x, "b")
-    ASSERT(all(ieee_is_finite(x)))
+    call gs_relaxation(this%Ae, bb, xx, 'b')
 
-    call this%mesh%edge_imap%scatter_offp_sum(x)
-    call this%mesh%edge_imap%gather_offp(x)
+    !TODO: Fix this parallel step
+    !call this%mesh%edge_imap%scatter_offp_sum(xx)
+    !call this%mesh%edge_imap%gather_offp(xx)
 
-    call stop_timer("precon")
+    call stop_timer('precon')
 
-    ASSERT(all(ieee_is_finite(x)))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1:2*this%mesh%nedge-1:2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2:2*this%mesh%nedge:2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(1::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(2::2) == 0))
 
   end subroutine apply
 
+  !! An alternate storage scheme for the preconditioner matrices stores them
+  !! as a 2x2 block system according to the real/imaginary part partitioning
+  !! of the unknowns. Each edge-based block has identical non-zero structure.
+  !! Morever there are only two distinct blocks in each matrix, with the other
+  !! two blocks being equal to or the negative of one of the first. This
+  !! allows the storage to be cut in half (not yet exploited). HOWEVER, the
+  !! Gauss-Seidel relaxations, which depend on the ordering of unknowns, are
+  !! fundamentally different in this scheme, and appear to be significantly
+  !! less effective.
 
-  subroutine gauss_seidel_relaxation(A, f, u, pattern, verbose)
+  subroutine alt_apply(this, b, x)
 
-    type(pcsr_matrix), intent(in) :: A
-    real(r8), intent(in) :: f(:)
-    real(r8), intent(inout) :: u(:)
-    character(*), intent(in) :: pattern
-    logical, intent(in), optional :: verbose
+    use mimetic_discretization, only: grad, grad_t
+    use msr_matrix_type, only: gs_relaxation
 
-    logical :: verbose_
-    integer :: i, j, k, imin, imax, di
-    real(r8) :: s
-    integer, pointer :: indices(:) => null()
-    real(r8), pointer :: values(:) => null()
+    class(hiptmair_precon), intent(inout) :: this
+    real(r8), intent(in) :: b(:)
+    real(r8), intent(inout) :: x(:)
 
-    call start_timer("gauss-seidel")
+    integer :: j
 
-    !ASSERT(A%nrow == A%ncol)
-    ASSERT(size(f) <= A%nrow)
-    !ASSERT(size(u) >= A%ncol)
-    ASSERT(size(u) >= A%nrow)
-    ASSERT(all(ieee_is_finite(f)))
-    ASSERT(all(ieee_is_finite(u)))
+    ASSERT(size(b) == 2*this%mesh%edge_imap%onp_size)
+    ASSERT(size(x) == 2*this%mesh%edge_imap%onp_size)
+    ASSERT(all(.not.this%is_ebc_edge .or. b(1::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. b(2::2) == 0))
 
-    verbose_ = .false.
-    if (present(verbose)) verbose_ = verbose
+    call start_timer('precon')
 
-    do j = 1, len(pattern)
-      call direction(pattern(j:j), A%nrow, imin, imax, di)
-      do i = imin, imax, di
-        ASSERT(A%diag(i) /= 0)
-        call A%get_row_view(i, values, indices)
-        ASSERT(all(ieee_is_finite(values)))
-        s = f(i)
-        do k = 1, size(indices)
-          if (indices(k) /= i) s = s - values(k) * u(indices(k))
-        end do
-        u(i) = s / A%diag(i)
-        ASSERT(ieee_is_finite(u(i)))
-      end do
+    !! Forward Gauss-Seidel relaxation on the on-process edge system.
+    x = 0.0_r8
+    call gs_relaxation(this%Be(1,1), b(1::2), x(1::2), 'f')
+    this%r(2,:) = b(2::2) - this%Be(2,1)%matvec(x(1::2))
+    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2::2), 'f')
+
+    !! Update the local residual and project it to the nodes.
+    this%r(1,:) = b(1::2) - this%Be(1,1)%matvec(x(1::2)) - this%Be(1,2)%matvec(x(2::2))
+    this%r(2,:) = b(2::2) - this%Be(2,1)%matvec(x(1::2)) - this%Be(2,2)%matvec(x(2::2))
+    call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
+    call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
+    do j = 1, this%mesh%nnode
+      if (this%is_ebc_node(j)) this%rn(:,j) = 0.0_r8
     end do
 
-    call stop_timer("gauss-seidel")
+    !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
+    this%un = 0.0_r8
+    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'f')
+    this%rn(2,:) = this%rn(2,:) - this%Bn(2,1)%matvec(this%un(1,:))
+    call gs_relaxation(this%Bn(2,2), this%rn(2,:), this%un(2,:), 'fb')
+    this%rn(1,:) = this%rn(1,:) - this%Bn(1,2)%matvec(this%un(2,:))
+    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'b')
 
-  end subroutine gauss_seidel_relaxation
+    !! Update the the solution with the node-based correction.
+    call grad(this%mesh, this%un(1,:), x(1::2), increment=.true.)
+    call grad(this%mesh, this%un(2,:), x(2::2), increment=.true.)
 
+    !! Backward Gauss-Seidel relaxation on the on-process edge system.
+    call gs_relaxation(this%Be(2,2), b(2::2), x(2::2), 'b')
+    this%r(1,:) = b(1::2) - this%Be(1,2)%matvec(x(2::2))
+    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1::2), 'b')
 
-  pure subroutine direction(pattern, len, imin, imax, di)
-    character(1), intent(in) :: pattern
-    integer, intent(in) :: len
-    integer, intent(out) :: imin, imax, di
-    select case (pattern)
-    case ('f', 'F') ! forward sweep
-      imin = 1
-      imax = len
-      di = 1
-    case ('b', 'B') ! backward sweep
-      imin = len
-      imax = 1
-      di = -1
-    end select
-  end subroutine direction
+    !TODO: Fix this parallel step
+    !call this%mesh%edge_imap%scatter_offp_sum(x)
+    !call this%mesh%edge_imap%gather_offp(x)
 
+    call stop_timer('precon')
 
-  subroutine sor_relaxation(A, f, u, pattern, omega, verbose)
+    ASSERT(all(.not.this%is_ebc_edge .or. x(1::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(2::2) == 0))
 
-    type(pcsr_matrix), intent(in) :: A
-    real(r8), intent(in) :: f(:)
-    real(r8), intent(inout) :: u(:)
-    character(*), intent(in) :: pattern
-    real(r8), intent(in) :: omega
-    logical, intent(in), optional :: verbose
-
-    logical :: verbose_
-    integer :: i, j, k, imin, imax, di
-    real(r8) :: s
-    integer, pointer :: indices(:) => null()
-    real(r8), pointer :: values(:) => null()
-
-    !ASSERT(A%nrow == A%ncol)
-    ASSERT(size(f) <= A%nrow)
-    !ASSERT(size(u) >= A%ncol)
-    ASSERT(size(u) >= A%nrow)
-    ASSERT(all(ieee_is_finite(f)))
-    ASSERT(all(ieee_is_finite(u)))
-
-    verbose_ = .false.
-    if (present(verbose)) verbose_ = verbose
-
-    do j = 1, len(pattern)
-      call direction(pattern(j:j), size(f), imin, imax, di)
-      do i = imin, imax, di
-        call A%get_row_view(i, values, indices)
-        s = f(i)
-        do k = 1, size(indices)
-          if (indices(k) == i) cycle
-          s = s - values(k) * u(indices(k))
-        end do
-        u(i) = (1 - omega) * u(i) + omega * s / A%diag(i)
-        ASSERT(ieee_is_finite(u(i)))
-      end do
-    end do
-
-  end subroutine sor_relaxation
-
-
-  subroutine jacobi_relaxation(A, f, u, niter, verbose)
-
-    type(pcsr_matrix), intent(in) :: A
-    real(r8), intent(in) :: f(:)
-    real(r8), intent(inout) :: u(:)
-    integer, intent(in) :: niter
-    logical, intent(in), optional :: verbose
-
-    logical :: verbose_
-    integer :: i, j, k, n
-    real(r8) :: s, un(size(u))
-    integer, pointer :: indices(:) => null()
-    real(r8), pointer :: values(:) => null()
-
-    !ASSERT(A%nrow == A%ncol)
-    ASSERT(size(f) <= A%nrow)
-    !ASSERT(size(u) >= A%ncol)
-    ASSERT(size(u) >= A%nrow)
-    ASSERT(all(ieee_is_finite(f)))
-    ASSERT(all(ieee_is_finite(u)))
-
-    verbose_ = .false.
-    if (present(verbose)) verbose_ = verbose
-
-    do n = 1, niter
-      do i = 1, size(f)
-        ASSERT(A%diag(i) /= 0)
-        call A%get_row_view(i, values, indices)
-        ASSERT(all(ieee_is_finite(values)))
-        s = f(i)
-        do k = 1, size(indices)
-          if (indices(k) == i) cycle
-          s = s - values(k) * u(indices(k))
-        end do
-        un(i) = s / A%diag(i)
-        ASSERT(ieee_is_finite(u(i)))
-      end do
-      u = un
-    end do
-
-  end subroutine jacobi_relaxation
+  end subroutine alt_apply
 
 end module hiptmair_precon_type

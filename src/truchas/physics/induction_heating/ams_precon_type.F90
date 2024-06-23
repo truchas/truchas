@@ -36,11 +36,13 @@ module ams_precon_type
   use simpl_mesh_type
   use pcsr_matrix_type
   use bndry_func1_class
+  use fdme_model_type
   implicit none
   private
 
   type, public :: ams_precon
     private
+    type(fdme_model), pointer :: model => null() ! unowned reference
     integer, public :: niter = 0
     integer :: nrows = 0, ilower = 0, iupper = 0
     integer, allocatable :: rows(:)
@@ -89,9 +91,10 @@ contains
   end subroutine ams_precon_final
 
 
-  subroutine init(this, params, mesh, A, ebc)
+  subroutine init(this, model, params, mesh, A, ebc)
 
     class(ams_precon), intent(out) :: this
+    type(fdme_model), intent(in), target :: model
     type(parameter_list), pointer, intent(in) :: params
     type(simpl_mesh), intent(in), target :: mesh
     type(pcsr_matrix), pointer, intent(in) :: A !! taking ownership
@@ -99,6 +102,8 @@ contains
 
     integer :: ipar, i, ierr
     real(r8) :: rpar
+
+    this%model => model
 
     this%A => A
     this%mesh => mesh

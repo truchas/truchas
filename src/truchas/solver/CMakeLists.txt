@@ -17,6 +17,7 @@ target_sources(truchas PRIVATE
   nlk_solver_type.F90
   upper_packed_matrix_procs.F90
   msr_matrix_type.F90
+  bcsr_matrix_type.F90
   cgsol_type.F90
 )
 
