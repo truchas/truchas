@@ -4,8 +4,8 @@ module fdme_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
-  !use pcsr_matrix_type
-  use msr_matrix_type
+  use pcsr_matrix_type
+  !use msr_matrix_type
   use bndry_func1_class
   use truchas_timers
   implicit none
@@ -13,7 +13,7 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(msr_matrix) :: A(2,2)
+    type(pcsr_matrix) :: A(2,2)
     real(r8), allocatable :: rhs(:)
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
@@ -58,10 +58,11 @@ contains
     if (stat /= 0) return
 
     block ! full system in block form
-      !type(pcsr_graph), pointer :: g
-      type(msr_graph), pointer :: g
+      type(pcsr_graph), pointer :: g
+      !type(msr_graph), pointer :: g
       allocate(g)
-      call g%init(this%mesh%nedge)
+      call g%init(this%mesh%edge_imap)
+      !call g%init(this%mesh%nedge)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
       call this%A(1,1)%init(g, take_graph=.true.)
@@ -134,8 +135,10 @@ contains
         do j = 1, size(this%ebc%index)
           efield_r(this%ebc%index(j)) = this%ebc%value(j)
         end do
-        rhs_r = efield_r - this%A(1,1)%matvec(efield_r)
-        rhs_i = - this%A(2,1)%matvec(efield_r)
+        call this%A(1,1)%matvec(efield_r, rhs_r)
+        rhs_r = efield_r - rhs_r
+        call this%A(2,1)%matvec(efield_r, rhs_i)
+        rhs_i = -rhs_i
       end block
     end if
 
@@ -174,8 +177,13 @@ contains
     real(r8), intent(in) :: u(:)
     real(r8), intent(out) :: f(:)
     logical, intent(in), optional :: ax
-    f(1::2) = this%A(1,1)%matvec(u(1::2)) + this%A(1,2)%matvec(u(2::2))
-    f(2::2) = this%A(2,1)%matvec(u(1::2)) + this%A(2,2)%matvec(u(2::2))
+    real(r8) :: tmp(size(f(2::2)))
+    call this%A(1,1)%matvec(u(1::2), f(1::2))
+    call this%A(1,2)%matvec(u(2::2), tmp)
+    f(1::2) = f(1::2) + tmp
+    call this%A(2,1)%matvec(u(1::2), f(2::2))
+    call this%A(2,2)%matvec(u(2::2), tmp)
+    f(2::2) = f(2::2) + tmp
     !f(2::2) = -f(2::2)
     if (present(ax)) then
       if (ax) return

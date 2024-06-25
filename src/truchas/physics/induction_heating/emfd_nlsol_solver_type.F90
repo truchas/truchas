@@ -15,10 +15,10 @@
 
 #include "f90_assert.fpp"
 
-!#define PRECON ams_precon
-!#define SOLVER gmres_left_solver
-#define PRECON hiptmair_precon
-#define SOLVER nlk_solver
+#define PRECON ams_precon
+#define SOLVER gmres_left_solver
+!#define PRECON hiptmair_precon
+!#define SOLVER nlk_solver
 
 module emfd_nlsol_solver_type
 
@@ -297,7 +297,9 @@ contains
     real(r8), intent(inout) :: f(:)
     this%b = f
     f = 0
+    ASSERT(all(ieee_is_finite(this%b)))
     call this%precon%apply(this%b, f)
+    ASSERT(all(ieee_is_finite(f)))
   end subroutine
 
 

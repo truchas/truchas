@@ -29,15 +29,16 @@ module gmres_left_solver_type
   use parameter_list_type
   use truchas_timers
   use parallel_communication, only: global_dot_product
-  use nlsol_type, only: nlsol_model
+  !use nlsol_type, only: nlsol_model
+  use nlk_solver_type, only: nlk_solver_model
   implicit none
   private
 
-  public :: nlsol_model ! re-export
+  !public :: nlsol_model ! re-export
 
   type, public :: gmres_left_solver
     private
-    class(nlsol_model), pointer :: model => null() ! unowned reference
+    class(nlk_solver_model), pointer :: model => null() ! unowned reference
     integer :: nrows_onP, krylov_dim, iter_pc, max_iter, iter
     real(r8) :: res_norm, tol, rtol
     real(r8), allocatable :: e1(:), h(:,:), r(:), w(:), v(:,:), work(:), udot(:)
@@ -56,7 +57,7 @@ contains
     external :: dgels
 
     class(gmres_left_solver), intent(out) :: this
-    class(nlsol_model), intent(in), target :: model
+    class(nlk_solver_model), intent(in), target :: model
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -95,10 +96,9 @@ contains
   end subroutine gmres_left_solver_init
 
 
-  subroutine gmres_left_solver_solve(this, t, h, u0, u, errc)
+  subroutine gmres_left_solver_solve(this, u, errc)
 
     class(gmres_left_solver), intent(inout) :: this
-    real(r8), intent(in) :: t, h, u0(:)
     real(r8), intent(inout) :: u(:)
     integer,  intent(out) :: errc
 
@@ -115,24 +115,27 @@ contains
     this%iter_pc = 0
     this%h = 0
     this%r = 0
-    call this%model%compute_precon(t, u0, h)
+    call this%model%compute_precon(u)
     n2_b = global_norm2(this%model%rhs)
 
     do iter = 1, this%max_iter+1
       !! compute the residual
-      call this%model%compute_f(t, u, this%udot, this%r)
+      call this%model%compute_f(u, this%r)
       anorm = global_norm2(this%r)
-      call this%model%apply_precon(t, u, this%r)
+      call this%model%apply_precon(u, this%r)
+ASSERT(all(ieee_is_finite(this%r)))
+
       rnorm = anorm / n2_b
       this%res_norm = global_norm2(this%r)
       print '("iter, res norm, anorm, rnorm, tol: ",i6,4es13.3)', &
           iter, this%res_norm, anorm, rnorm, this%tol
+print *, "FOO", this%res_norm
       if (this%res_norm < this%tol .or. anorm < this%tol .or. rnorm < this%rtol) exit
       this%v(:,1) = this%r / this%res_norm
 
       do j = 1, this%krylov_dim
-        call this%model%compute_f(t, this%v(:,j), this%udot, this%w, ax=.true.)
-        call this%model%apply_precon(t, u, this%w)
+        call this%model%compute_f(this%v(:,j), this%w, ax=.true.)
+        call this%model%apply_precon(u, this%w)
         this%iter_pc = this%iter_pc + 1
 
         do i = 1, j

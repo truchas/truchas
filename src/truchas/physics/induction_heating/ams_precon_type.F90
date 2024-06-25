@@ -57,7 +57,7 @@ module ams_precon_type
     type(hypre_obj) :: ynh = hypre_null_obj ! HYPRE_IJVector object handle
     type(hypre_obj) :: znh = hypre_null_obj ! HYPRE_IJVector object handle
 
-    type(pcsr_matrix), pointer :: A => null()
+    type(pcsr_matrix) :: A
     type(pcsr_matrix) :: grad
     type(hypre_obj) :: Ah = hypre_null_obj ! HYPRE_IJMatrix object handle
     type(hypre_obj) :: gradh = hypre_null_obj ! HYPRE_IJMatrix object handle
@@ -91,27 +91,23 @@ contains
   end subroutine ams_precon_final
 
 
-  subroutine init(this, model, params, mesh, A, ebc)
+  subroutine init(this, model, params)
 
     class(ams_precon), intent(out) :: this
     type(fdme_model), intent(in), target :: model
-    type(parameter_list), pointer, intent(in) :: params
-    type(simpl_mesh), intent(in), target :: mesh
-    type(pcsr_matrix), pointer, intent(in) :: A !! taking ownership
-    class(bndry_func1), intent(in), target :: ebc ! unused?
+    type(parameter_list), intent(inout) :: params
 
     integer :: ipar, i, ierr
     real(r8) :: rpar
 
     this%model => model
-
-    this%A => A
-    this%mesh => mesh
-    this%nrows = mesh%edge_imap%onp_size
-    this%ilower = mesh%edge_imap%first_gid
-    this%iupper = mesh%edge_imap%last_gid
+    this%mesh => model%mesh
+    call this%A%init(mold=model%A(1,1))
+    this%nrows = this%mesh%edge_imap%onp_size
+    this%ilower = this%mesh%edge_imap%first_gid
+    this%iupper = this%mesh%edge_imap%last_gid
     this%rows = [ (i, i = this%ilower, this%iupper) ] ! global row indices for this process
-    allocate(this%interior_nodes(mesh%nnode))
+    allocate(this%interior_nodes(this%mesh%nnode))
 
     call fHYPRE_ClearAllErrors
 
@@ -159,18 +155,18 @@ contains
 
       !! set up graph
       allocate(g)
-      call g%init(mesh%edge_imap)
-      do e = 1, mesh%nedge_onP
-        call g%add_edge(e, mesh%enode(:,e))
+      call g%init(this%mesh%edge_imap, this%mesh%node_imap)
+      do e = 1, this%mesh%nedge_onP
+        call g%add_edge(e, this%mesh%enode(:,e))
       end do
       call g%add_complete
 
       !! set up matrix
       call this%grad%init(g, take_graph=.true.)
       call this%grad%set_all(0.0_r8)
-      do e = 1, mesh%nedge_onP
-        call this%grad%set(e, mesh%enode(1,e), -1.0_r8)
-        call this%grad%set(e, mesh%enode(2,e), +1.0_r8)
+      do e = 1, this%mesh%nedge_onP
+        call this%grad%set(e, this%mesh%enode(1,e), -1.0_r8)
+        call this%grad%set(e, this%mesh%enode(2,e), +1.0_r8)
       end do
 
       !! copy to hypre
@@ -187,14 +183,14 @@ contains
       integer, allocatable :: rows(:)
       real(r8), allocatable :: x(:), y(:), z(:)
 
-      nrows = mesh%node_imap%onp_size
-      ilower = mesh%node_imap%first_gid
-      iupper = mesh%node_imap%last_gid
+      nrows = this%mesh%node_imap%onp_size
+      ilower = this%mesh%node_imap%first_gid
+      iupper = this%mesh%node_imap%last_gid
       rows = [(i, i = ilower, iupper)] ! global row indices for this process
 
-      x = mesh%x(1,:mesh%nnode_onP)
-      y = mesh%x(2,:mesh%nnode_onP)
-      z = mesh%x(3,:mesh%nnode_onP)
+      x = this%mesh%x(1,:this%mesh%nnode_onP)
+      y = this%mesh%x(2,:this%mesh%nnode_onP)
+      z = this%mesh%x(3,:this%mesh%nnode_onP)
 
       call fHYPRE_IJVectorCreate(ilower, iupper, this%xnh, ierr)
       call fHYPRE_IJVectorCreate(ilower, iupper, this%ynh, ierr)
@@ -224,20 +220,31 @@ contains
 
 
   !! State-dependent setup
-  subroutine setup(this, mu, epsr, epsi, sigma, omega)
+  subroutine setup(this)
 
     class(ams_precon), intent(inout) :: this
-    real(r8), intent(in) :: mu(:), epsr(:), epsi(:), sigma(:), omega
 
-    integer :: j, ierr
+    integer :: j, n, ierr
     real(r8) :: mtr2
 
-    ASSERT(all(ieee_is_finite(this%A%values)))
+    !ASSERT(all(ieee_is_finite(this%A%values)))
 
     call start_timer("precon")
 
+    !! Preconditioner matrix
+    this%A%values(:) = this%model%A(1,1)%values - this%model%A(1,2)%values
+    !this%A%diag = this%model%A(1,1)%diag - this%model%A(1,2)%diag
+    !this%A%nonz = this%model%A(1,1)%nonz - this%model%A(1,2)%nonz
+    if (allocated(this%model%ebc)) then
+      do j = 1, size(this%model%ebc%index)
+        n = this%model%ebc%index(j)
+        call this%A%set(n, n, 1.0_r8)
+      end do
+    end if
+
     ! List interior nodes for the AMS preconditioner. All nodes inside the
     ! 0-conductivity region are marked 1.0.
+    associate (omega => this%model%omega, epsr => this%model%epsr, epsi => this%model%epsi, sigma => this%model%sigma)
     this%interior_nodes = 1
     do j = 1, this%mesh%ncell
       ! WARN: Which of the following is correct? I think the first.
@@ -245,6 +252,7 @@ contains
       !mtr2 = omega * (epsi(j) - epsr(j)) - sigma(j)
       if (mtr2 /= 0) this%interior_nodes(this%mesh%cnode(:,j)) = 0
     end do
+    end associate
 
     call fHYPRE_ClearAllErrors
 
@@ -265,14 +273,13 @@ contains
   end subroutine setup
 
 
-  subroutine apply(this, b, x, stat)
+  subroutine apply(this, b, x)
 
     class(ams_precon), intent(inout) :: this
     real(r8), intent(in) :: b(:)
     real(r8), intent(inout) :: x(:)
-    integer, intent(out) :: stat
 
-    integer :: ierr
+    integer :: ierr, stat
     real(r8) :: bs(this%nrows), xs(this%nrows)
 
     ASSERT(size(b) == 2*this%nrows)
@@ -287,6 +294,7 @@ contains
     xs = x(1:2*this%nrows-1:2)
     call apply_system(this%solver, this%Ah, bs, xs)
     x(1:2*this%nrows-1:2) = -xs
+    ASSERT(all(ieee_is_finite(x(1:2*this%nrows-1:2))))
 
     bs = -b(2:2*this%nrows:2)
     xs = x(2:2*this%nrows:2)
@@ -334,10 +342,10 @@ contains
         stat = 0
       end if
       call stop_timer("AMSSolve")
-      ASSERT(all(ieee_is_finite(x)))
 
       !! Retrieve the solution vector from HYPRE.
       call fHYPRE_IJVectorGetValues(this%xh, this%nrows, this%rows, x, ierr)
+      ASSERT(all(ieee_is_finite(x)))
       INSIST(ierr == 0)
 
       !! TODO use hypre routine to project out gradient. Might want to save this for the final
