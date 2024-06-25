@@ -1,0 +1,7 @@
+This directory tree contains several Fortran implementations of NKA from the
+version 2.1 code release of the nka project: https://github.com/nncarlson/nka.
+The F08-vector implementation has been renamed nka_vec_type.F90 in order to
+coexist with the F08 implementation in nka_type.F90.
+
+Truchas is using and distributing this code in accordance with the terms of
+the permissive MIT license; see the COPYRIGHT file for details.
