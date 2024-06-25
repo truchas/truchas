@@ -123,10 +123,12 @@ module pcsr_matrix_type
 
   type, public :: pcsr_graph
     type(index_map), pointer :: row_imap => null()  ! reference only -- do not own
+    type(index_map), pointer :: col_imap => null()  ! reference only -- do not own
     integer, allocatable :: xadj(:), adjncy(:)  ! static graph
     type(graph), allocatable, private :: g      ! dynamic graph -- temporary
   contains
-    procedure :: init => pcsr_graph_init
+    procedure, private :: pcsr_graph_init, pcsr_bigraph_init
+    generic :: init => pcsr_graph_init, pcsr_bigraph_init
     procedure, private :: pcsr_graph_add_edge_one
     procedure, private :: pcsr_graph_add_edge_many
     generic   :: add_edge => pcsr_graph_add_edge_one, pcsr_graph_add_edge_many
@@ -141,7 +143,7 @@ module pcsr_matrix_type
     real(r8), allocatable :: values(:), x_(:)
     type(pcsr_graph), pointer :: graph => null()
     logical, private :: graph_dealloc = .false.
-    integer :: nrow = 0, nrow_onP = 0
+    integer :: nrow = 0, nrow_onP = 0, ncol = 0, ncol_onP = 0
     real(r8), allocatable :: diag(:)
   contains
     procedure, private :: pcsr_matrix_init
@@ -167,9 +169,19 @@ contains
     class(pcsr_graph), intent(out) :: this
     type(index_map), intent(in), target :: row_imap
     this%row_imap => row_imap
+    this%col_imap => row_imap
     allocate(this%g)
     call this%g%init (row_imap%local_size, self_edge=.true.)
   end subroutine pcsr_graph_init
+
+  subroutine pcsr_bigraph_init (this, row_imap, col_imap)
+    class(pcsr_graph), intent(out) :: this
+    type(index_map), intent(in), target :: row_imap, col_imap
+    this%row_imap => row_imap
+    this%col_imap => col_imap
+    allocate(this%g)
+    call this%g%init (row_imap%local_size, col_imap%local_size)
+  end subroutine pcsr_bigraph_init
 
   subroutine pcsr_graph_add_clique (this, indices)
     class(pcsr_graph), intent(inout) :: this
@@ -269,6 +281,8 @@ contains
     allocate(this%values(size(graph%adjncy)))
     this%nrow = graph%row_imap%local_size
     this%nrow_onP = graph%row_imap%onP_size
+    this%ncol = graph%col_imap%local_size
+    this%ncol_onP = graph%col_imap%onP_size
   end subroutine pcsr_matrix_init
 
   !! Initialize the sparse matrix using the non-zero structure from MOLD.
@@ -300,6 +314,7 @@ contains
     real(r8), intent(in) :: value
     integer :: n
     ASSERT(row >= 1 .and. row <= this%nrow)
+    ASSERT(col >= 1 .and. col <= this%ncol)
     n = this%graph%index(row, col)
     ASSERT(n /= 0)
     this%values(n) = value
@@ -312,6 +327,7 @@ contains
     real(r8), intent(in) :: value
     integer :: n
     ASSERT(row >= 1 .and. row <= this%nrow)
+    ASSERT(col >= 1 .and. col <= this%ncol)
     n = this%graph%index(row, col)
     ASSERT(n /= 0)
     this%values(n) = this%values(n) + value
@@ -324,6 +340,7 @@ contains
     integer, intent(in) :: rows(:)
     real(r8), intent(in) :: matrix(:,:)
     integer :: i, j, n
+    INSIST(associated(this%graph%row_imap, this%graph%col_imap))
     ASSERT(size(matrix,1) == size(matrix,2))
     ASSERT(size(rows) == size(matrix,1))
     ASSERT(minval(rows) >= 1 .and. maxval(rows) <= this%nrow)
@@ -344,6 +361,7 @@ contains
     integer, intent(in) :: rows(:)
     real(r8), intent(in) :: matrix(:)
     integer :: i, j, l, n
+    INSIST(associated(this%graph%row_imap, this%graph%col_imap))
     ASSERT(size(matrix) == (size(rows)*(size(rows)+1))/2)
     ASSERT(minval(rows) >= 1 .and. maxval(rows) <= this%nrow)
     l = 0
@@ -366,6 +384,7 @@ contains
     class(pcsr_matrix), intent(inout) :: this
     integer, intent(in) :: index
     integer :: m, n, lmn, lnm
+    INSIST(associated(this%graph%row_imap, this%graph%col_imap))
     m = index
     do lmn = this%graph%xadj(m), this%graph%xadj(m+1)-1
       this%values(lmn) = 0.0_r8
@@ -400,6 +419,7 @@ contains
     class(pcsr_matrix), intent(in) :: this
     real(r8), intent(inout) :: diag(:)
     integer :: i, k
+    INSIST(associated(this%graph%row_imap, this%graph%col_imap))
     ASSERT(size(diag) >= this%nrow_onP)
     do i = 1, this%nrow_onP
       do k = this%graph%xadj(i), this%graph%xadj(i+1)-1
@@ -429,23 +449,26 @@ contains
     class(pcsr_matrix), intent(in) :: src
     type(hypre_obj), intent(inout) :: matrix
 
-    integer :: j, ierr, ilower, iupper, nrows, nnz
-    integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
+    integer :: j, ierr, ilower, iupper, nrows, jlower, jupper, nnz, ncols
+    integer, allocatable :: ncols_onP(:), ncols_offP(:), counts(:), rows(:), cols(:)
 
     nrows  = src%graph%row_imap%onp_size
     ilower = src%graph%row_imap%first_gid
     iupper = src%graph%row_imap%last_gid
+    ncols  = src%graph%col_imap%onp_size
+    jlower = src%graph%col_imap%first_gid
+    jupper = src%graph%col_imap%last_gid
 
     call fHYPRE_ClearAllErrors
 
     if (.not.hypre_associated(matrix)) then
-      call fHYPRE_IJMatrixCreate(ilower, iupper, ilower, iupper, matrix, ierr)
+      call fHYPRE_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix, ierr)
       !! For each row we know how many column entries are on-process and how many
       !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
       !! if it knows this info up front.
       allocate(ncols_onP(nrows), ncols_offP(nrows))
       do j = 1, nrows
-        ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > nrows)
+        ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > ncols)
         ncols_onP(j)  = src%graph%xadj(j+1) - src%graph%xadj(j) - ncols_offP(j)
       end do
       call fHYPRE_IJMatrixSetDiagOffdSizes(matrix, ncols_onP, ncols_offP, ierr)
@@ -463,12 +486,12 @@ contains
     !! nonzero structure of the matrix and the values of those elements. HYPRE
     !! expects global row and column indices.
     nnz = src%graph%xadj(nrows+1) - src%graph%xadj(1)
-    allocate(ncols(nrows), rows(nrows), cols(nnz))
+    allocate(counts(nrows), rows(nrows), cols(nnz))
     rows = [ (j, j = ilower, iupper) ]
-    ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
-    cols = src%graph%row_imap%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues(matrix, nrows, ncols, rows, cols, src%values, ierr)
-    deallocate(ncols, rows, cols)
+    counts = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
+    cols = src%graph%col_imap%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
+    call fHYPRE_IJMatrixSetValues(matrix, nrows, counts, rows, cols, src%values, ierr)
+    deallocate(counts, rows, cols)
     INSIST(ierr == 0)
 
     !! After assembly the HYPRE matrix is ready to use.
