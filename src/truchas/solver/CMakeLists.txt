@@ -19,6 +19,8 @@ target_sources(truchas PRIVATE
   msr_matrix_type.F90
   bcsr_matrix_type.F90
   cgsol_type.F90
+  vector_class.F90
 )
+add_subdirectory(nka)
 
 add_subdirectory(Test)

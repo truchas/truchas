@@ -10,8 +10,9 @@
 !! typical quasi-Newton iterations, which can usually be viewed as a fixed
 !! point iteration for a preconditioned function.
 !!
-!! This is a Fortran 2008 adaptation of the original Fortran 95 version that
-!! implements the methods as type bound procedures.
+!! This is a modern Fortran adaptation of the original Fortran 95 version that
+!! implements the methods as type bound procedures and uses abstract vector
+!! objects in place of contiguous rank-1 arrays
 !!
 !! [1] N.N.Carlson and K.Miller, "Design and application of a gradient-
 !!     weighted moving finite element code I: in one dimension", SIAM J.
@@ -19,7 +20,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
-!! Copyright (c) 2010, 2011  Neil N. Carlson
+!! Copyright (c) 2010, 2011, 2021  Neil N. Carlson
 !!
 !! Permission is hereby granted, free of charge, to any person obtaining a
 !! copy of this software and associated documentation files (the "Software"),
@@ -47,21 +48,15 @@
 !! of the acceleration procedure, with the following methods as type bound
 !! procedures.
 !!
-!!  INIT(VLEN, MVEC) initializes the object to handle as many as MVEC vectors
-!!    of length VLEN.
+!!  INIT(VEC, MVEC) initializes the object to handle as many as MVEC vectors.
+!!    The procedure uses the CLONE method of the VECTOR class VEC argument to
+!!    create internal storage for the acceleration subspace, and so VEC must
+!!    be representative of the vectors that will be passed to ACCEL_UPDATE. 
 !!
 !!  SET_VEC_TOL(VTOL) sets the vector drop tolerance.  A vector is dropped
 !!    from the acceleration subspace when the sine of the angle between the
 !!    vector and the subspace spanned by the preceding vectors is less than
 !!    this value.  If not set, the default value 0.01 is used.
-!!
-!!  SET_DOT_PROD(DOT_PROD) sets the procedure used to compute vector dot
-!!    products.  DOT_PROD is a procedure pointer with the same interface
-!!    as the intrinsic function DOT_PRODUCT with real rank-1 array arguments.
-!!    If not set, the default is to use the instrinsic DOT_PRODUCT.  In a
-!!    parallel context where the vector components are distributed across
-!!    processes, a global dot product procedure needs to be supplied that
-!!    performs the necessary communication internally.
 !!
 !!  ACCEL_UPDATE(F) takes the function value F, which would be the update
 !!    vector in a fixed point iteration, and overwrites it with the accelerated
@@ -94,11 +89,7 @@
 !!
 !!  MAX_VEC() returns the max number of vectors in the acceleration subspace.
 !!
-!!  VEC_LEN() returns the length of the vectors.
-!!
 !!  VEC_TOL() returns the vector drop tolerance.
-!!
-!!  REAL_KIND() returns the kind parameter value expected of all real arguments.
 !!
 !!  DEFINED() returns the value true if the object is well-defined; otherwise
 !!    it returns the value false.  Defined means that the data components of
@@ -127,7 +118,7 @@
 !!  The accelerated iteration would look something like
 !!
 !!    type(nka) :: accel
-!!    call accel%init (size(v), mvec=5)
+!!    call accel%init(x, mvec=5)
 !!    x = 0
 !!    do <until converged>
 !!      dx = PC(F(x))
@@ -147,124 +138,93 @@
 
 #include "f90_assert.fpp"
 
-module nka_type
+module nka_vec_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use vector_class
   implicit none
   private
 
-  type, public :: nka
+  type, public :: nka_vec
     private
     logical :: subspace = .false.
     logical :: pending  = .false.
-    integer :: vlen = 0         ! vector length
     integer :: mvec = 0         ! maximum number of vectors
     real(r8) :: vtol = 0.01_r8  ! vector drop tolerance
-    procedure(dp), pointer, nopass :: dp => null()
     !! Subspace storage.
-    real(r8), allocatable :: v(:,:)   ! update vectors
-    real(r8), allocatable :: w(:,:)   ! function difference vectors
-    real(r8), allocatable :: h(:,:)   ! matrix of inner products
+    class(vector), allocatable :: v(:)  ! update vectors
+    class(vector), allocatable :: w(:)  ! function difference vectors
+    real(r8), allocatable :: h(:,:)     ! matrix of inner products
     !! Linked-list organization of the vector storage.
     integer :: first, last, free
     integer, allocatable :: next(:), prev(:)
   contains
-    procedure :: init => nka_init
-    procedure :: set_vec_tol => nka_set_vec_tol
-    procedure :: set_dot_prod => nka_set_dot_prod
-    procedure :: vec_len => nka_vec_len
-    procedure :: num_vec => nka_num_vec
-    procedure :: max_vec => nka_max_vec
-    procedure :: vec_tol => nka_vec_tol
-    procedure :: real_kind => nka_real_kind
-    procedure :: accel_update => nka_accel_update
-    procedure :: relax => nka_relax
-    procedure :: restart => nka_restart
-    procedure :: defined => nka_defined
-  end type nka
+    procedure :: init
+    procedure :: set_vec_tol
+    procedure :: num_vec
+    procedure :: max_vec
+    procedure :: vec_tol
+    procedure :: accel_update
+    procedure :: relax
+    procedure :: restart
+    procedure :: defined
+  end type nka_vec
 
 contains
 
-  subroutine nka_init (this, vlen, mvec)
-    class(nka), intent(out) :: this
-    integer, intent(in) :: vlen
+  subroutine init(this, vec, mvec)
+    class(nka_vec), intent(out) :: this
+    class(vector), intent(in) :: vec
     integer, intent(in) :: mvec
     integer :: n
     ASSERT(mvec > 0)
-    ASSERT(vlen >= 0)
-    this%dp => dp
-    this%vlen = vlen
     this%mvec = mvec
     n = mvec + 1
-    allocate(this%v(vlen,n), this%w(vlen,n))
+    call vec%clone(this%v, n)
+    call vec%clone(this%w, n)
     allocate(this%h(n,n), this%next(n), this%prev(n))
-    call nka_restart (this)
-    ASSERT(nka_defined(this))
-  end subroutine nka_init
+    call this%restart
+    ASSERT(defined(this))
+  end subroutine
 
-  subroutine nka_set_vec_tol (this, vtol)
-    class(nka), intent(inout) :: this
+  subroutine set_vec_tol(this, vtol)
+    class(nka_vec), intent(inout) :: this
     real(r8), intent(in) :: vtol
     ASSERT(vtol > 0.0_r8)
     this%vtol = vtol
-  end subroutine nka_set_vec_tol
+  end subroutine
 
-  subroutine nka_set_dot_prod (this, dot_prod)
-    class(nka), intent(inout) :: this
-    procedure(dp), pointer :: dot_prod
-    ASSERT(associated(dot_prod))
-    this%dp => dot_prod
-  end subroutine nka_set_dot_prod
-
-  real(r8) function dp (x, y)
-    real(r8), intent(in) :: x(:), y(:)
-    dp = dot_product(x, y)
-  end function dp
-
-  integer function nka_num_vec (this)
-    class(nka), intent(in) :: this
+  integer function num_vec(this)
+    class(nka_vec), intent(in) :: this
     integer :: k
-    nka_num_vec = 0
+    num_vec = 0
     k = this%first
     do while (k /= 0)
-      nka_num_vec = nka_num_vec + 1
+      num_vec = num_vec + 1
       k = this%next(k)
     end do
-    if (this%pending) nka_num_vec = nka_num_vec - 1
-  end function nka_num_vec
+    if (this%pending) num_vec = num_vec - 1
+  end function
 
-  integer function nka_max_vec (this)
-    class(nka), intent(in) :: this
-    nka_max_vec = this%mvec
-  end function nka_max_vec
+  integer function max_vec(this)
+    class(nka_vec), intent(in) :: this
+    max_vec = this%mvec
+  end function
 
-  integer function nka_vec_len (this)
-    class(nka), intent(in) :: this
-    nka_vec_len = this%vlen
-  end function nka_vec_len
+  real(r8) function vec_tol(this)
+    class(nka_vec), intent(in) :: this
+    vec_tol = this%vtol
+  end function
 
-  real(r8) function nka_vec_tol (this)
-    class(nka), intent(in) :: this
-    nka_vec_tol = this%vtol
-  end function nka_vec_tol
+  subroutine accel_update(this, f)
 
-  integer function nka_real_kind (this)
-    class(nka), intent(in) :: this
-    nka_real_kind = kind(this%h)
-  end function nka_real_kind
+    class(nka_vec), intent(inout) :: this
+    class(vector), intent(inout) :: f
 
-
-  subroutine nka_accel_update (this, f)
-
-    class(nka), intent(inout) :: this
-    real(r8),   intent(inout) :: f(:)
-
-    ! local variables.
     integer :: i, j, k, new, nvec
     real(r8) :: s, hkk, hkj, cj, c(this%mvec+1)
 
-    ASSERT(nka_defined(this))
-    ASSERT(size(f) == size(this%v,dim=1))
+    ASSERT(defined(this))
 
    !!!
    !!! UPDATE THE ACCELERATION SUBSPACE
@@ -272,8 +232,10 @@ contains
     if (this%pending) then
 
       !! Next function difference w_1.
-      this%w(:,this%first) = this%w(:,this%first) - f
-      s = sqrt(this%dp(this%w(:,this%first), this%w(:,this%first)))
+      !this%w(:,this%first) = this%w(:,this%first) - f
+      !s = sqrt(this%dp(this%w(:,this%first), this%w(:,this%first)))
+      call this%w(this%first)%update(-1.0_r8, f)
+      s = this%w(this%first)%norm2()
 
       !! If the function difference is 0, we can't update the subspace with
       !! this data; so we toss it out and continue.  In this case it is likely
@@ -281,20 +243,23 @@ contains
       !! (unless the function value is itself 0), and we merely want to do
       !! something reasonable here and hope that situation is detected on the
       !! outside.
-      if (s == 0.0_r8) call nka_relax (this)
+      if (s == 0.0_r8) call this%relax
 
     end if
 
     if (this%pending) then
 
       !! Normalize w_1 and apply same factor to v_1.
-      this%v(:,this%first) = this%v(:,this%first) / s
-      this%w(:,this%first) = this%w(:,this%first) / s
+      !this%v(:,this%first) = this%v(:,this%first) / s
+      !this%w(:,this%first) = this%w(:,this%first) / s
+      call this%v(this%first)%scale(1.0_r8/s)
+      call this%w(this%first)%scale(1.0_r8/s)
 
       !! Update H.
       k = this%next(this%first)
       do while (k /= 0)
-        this%h(this%first,k) = this%dp(this%w(:,this%first), this%w(:,k))
+        !this%h(this%first,k) = this%dp(this%w(:,this%first), this%w(:,k))
+        this%h(this%first,k) = this%w(this%first)%dot(this%w(k))
         k = this%next(k)
       end do
 
@@ -367,7 +332,8 @@ contains
     this%free = this%next(this%free)
 
     !! Save the original f for the next call.
-    this%w(:,new) = f
+    !this%w(:,new) = f
+    call this%w(new)%copy(f)
 
    !!!
    !!! ACCELERATED UPDATE
@@ -377,7 +343,8 @@ contains
       !! Project f onto the span of the w vectors: forward substitution
       j = this%first
       do while (j /= 0)
-        cj = this%dp(f, this%w(:,j))
+        !cj = this%dp(f, this%w(:,j))
+        cj = f%dot(this%w(j))
         i = this%first
         do while (i /= j)
           cj = cj - this%h(j,i) * c(i)
@@ -403,14 +370,16 @@ contains
       !! The accelerated update
       k = this%first
       do while (k /= 0)
-        f = f - c(k) * this%w(:,k) + c(k) * this%v(:,k)
+        !f = f - c(k) * this%w(:,k) + c(k) * this%v(:,k)
+        call f%update(-c(k), this%w(k), c(k), this%v(k))
         k = this%next(k)
       end do
 
     end if
 
     !! Save the update for the next call.
-    this%v(:,new) = f
+    !this%v(:,new) = f
+    call this%v(new)%copy(f)
 
     !! Prepend the new vectors to the list.
     this%prev(new) = 0
@@ -425,11 +394,11 @@ contains
     !! The original f and accelerated update are cached for the next call.
     this%pending = .true.
 
-  end subroutine nka_accel_update
+  end subroutine accel_update
 
 
-  subroutine nka_restart (this)
-    class(nka), intent(inout) :: this
+  subroutine restart(this)
+    class(nka_vec), intent(inout) :: this
     integer :: k
     this%subspace = .false.
     this%pending  = .false.
@@ -442,11 +411,11 @@ contains
       this%next(k) = k + 1
     end do
     this%next(size(this%next)) = 0
-  end subroutine nka_restart
+  end subroutine
 
 
-  subroutine nka_relax (this)
-    class(nka), intent(inout) :: this
+  subroutine relax (this)
+    class(nka_vec), intent(inout) :: this
     integer :: new
     if (this%pending) then
       ASSERT(this%first /= 0)
@@ -463,24 +432,23 @@ contains
       this%free = new
       this%pending = .false.
     end if
-  end subroutine nka_relax
+  end subroutine
 
 
-  logical function nka_defined (this)
+  logical function defined(this)
 
-    class(nka), intent(in) :: this
+    class(nka_vec), intent(in) :: this
 
     integer :: n
     logical, allocatable :: tag(:)
 
     CHECKLIST: block
-      nka_defined = .false.
+      defined = .false.
       if (this%mvec < 1) exit CHECKLIST
       if (.not.allocated(this%v)) exit CHECKLIST
       if (.not.allocated(this%w)) exit CHECKLIST
-      if (any(shape(this%v) /= shape(this%w))) exit CHECKLIST
-      if (size(this%v,dim=1) /= this%vlen) exit CHECKLIST
-      if (size(this%v,dim=2) /= this%mvec+1) exit CHECKLIST
+      if (size(this%v) /= this%mvec+1) exit CHECKLIST
+      if (size(this%w) /= this%mvec+1) exit CHECKLIST
       if (.not.allocated(this%h)) exit CHECKLIST
       if (size(this%h,dim=1) /= this%mvec+1) exit CHECKLIST
       if (size(this%h,dim=2) /= this%mvec+1) exit CHECKLIST
@@ -527,11 +495,9 @@ contains
       !! All locations accounted for?
       if (.not.all(tag)) exit CHECKLIST
 
-      nka_defined = .true.
+      defined = .true.
     end block CHECKLIST
 
-    if (allocated(tag)) deallocate(tag)
+  end function defined
 
-  end function nka_defined
-
-end module nka_type
+end module nka_vec_type
