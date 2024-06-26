@@ -22,6 +22,7 @@ target_sources(truchas PRIVATE
   tdme_solver_type.F90
   tdme_cg_solver_type.F90
   tdme_joule_heat_sim_type.F90
+  fdme_vector_type.F90
   fdme_model_type.F90
   emfd_nlsol_solver_type.F90
   ams_precon_type.F90

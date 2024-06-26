@@ -276,8 +276,8 @@ contains
   subroutine apply(this, b, x)
 
     class(ams_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:)
-    real(r8), intent(inout) :: x(:)
+    real(r8), intent(in) :: b(:,:)
+    real(r8), intent(inout) :: x(:,:)
 
     integer :: ierr, stat
     real(r8) :: bs(this%nrows), xs(this%nrows)
@@ -290,16 +290,20 @@ contains
     call fHYPRE_ClearAllErrors
     this%niter = 0
 
-    bs = -b(1:2*this%nrows-1:2)
-    xs = x(1:2*this%nrows-1:2)
-    call apply_system(this%solver, this%Ah, bs, xs)
-    x(1:2*this%nrows-1:2) = -xs
-    ASSERT(all(ieee_is_finite(x(1:2*this%nrows-1:2))))
+    !bs = -b(1:2*this%nrows-1:2)
+    !xs = x(1:2*this%nrows-1:2)
+    !call apply_system(this%solver, this%Ah, bs, xs)
+    call apply_system(this%solver, this%Ah, -b(1,:), x(1,:))
+    !x(1:2*this%nrows-1:2) = -xs
+    x(1,:) = -x(1,:)
+    ASSERT(all(ieee_is_finite(x(1,:))))
 
-    bs = -b(2:2*this%nrows:2)
-    xs = x(2:2*this%nrows:2)
-    call apply_system(this%solver, this%Ah, bs, xs)
-    x(2:2*this%nrows:2) = -xs
+    !bs = -b(2:2*this%nrows:2)
+    !xs = x(2:2*this%nrows:2)
+    !call apply_system(this%solver, this%Ah, bs, xs)
+    call apply_system(this%solver, this%Ah, -b(2,:), x(2,:))
+    !x(2:2*this%nrows:2) = -xs
+    x(2,:) = -x(2,:)
 
     call stop_timer("precon")
 

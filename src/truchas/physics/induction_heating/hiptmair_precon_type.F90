@@ -257,28 +257,24 @@ contains
     use msr_matrix_type, only: gs_relaxation
 
     class(hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in), target :: b(:)
-    real(r8), intent(inout), target :: x(:)
+    real(r8), intent(in) :: b(:,:)
+    real(r8), intent(inout) :: x(:,:)
 
     integer :: j
-    real(r8), pointer :: bb(:,:), xx(:,:)
 
-    ASSERT(size(b) == 2*this%mesh%edge_imap%onp_size)
-    ASSERT(size(x) == 2*this%mesh%edge_imap%onp_size)
-    ASSERT(all(.not.this%is_ebc_edge .or. b(1::2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(2::2) == 0))
+    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
+    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
+    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
 
     call start_timer('precon')
 
-    bb(1:2,1:this%mesh%nedge) => b
-    xx(1:2,1:this%mesh%nedge) => x
-
     !! Forward Gauss-Seidel relaxation on the on-process edge system.
-    xx = 0.0_r8
-    call gs_relaxation(this%Ae, bb, xx, 'f')
+    x = 0.0_r8
+    call gs_relaxation(this%Ae, b, x, 'f')
 
     !! Update the local residual and project it to the nodes.
-    this%r = bb - this%Ae%matvec(xx)
+    this%r = b - this%Ae%matvec(x)
     call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
     call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
     do j = 1, this%mesh%nnode
@@ -290,20 +286,20 @@ contains
     call gs_relaxation(this%An, this%rn, this%un, 'fb')
 
     !! Update the the solution with the node-based correction.
-    call grad(this%mesh, this%un(1,:), xx(1,:), increment=.true.)
-    call grad(this%mesh, this%un(2,:), xx(2,:), increment=.true.)
+    call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
+    call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
 
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Ae, bb, xx, 'b')
+    call gs_relaxation(this%Ae, b, x, 'b')
 
     !TODO: Fix this parallel step
-    !call this%mesh%edge_imap%scatter_offp_sum(xx)
-    !call this%mesh%edge_imap%gather_offp(xx)
+    !call this%mesh%edge_imap%scatter_offp_sum(x)
+    !call this%mesh%edge_imap%gather_offp(x)
 
     call stop_timer('precon')
 
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1::2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
   end subroutine apply
 
@@ -323,27 +319,27 @@ contains
     use msr_matrix_type, only: gs_relaxation
 
     class(hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:)
-    real(r8), intent(inout) :: x(:)
+    real(r8), intent(in) :: b(:,:)
+    real(r8), intent(inout) :: x(:,:)
 
     integer :: j
 
-    ASSERT(size(b) == 2*this%mesh%edge_imap%onp_size)
-    ASSERT(size(x) == 2*this%mesh%edge_imap%onp_size)
-    ASSERT(all(.not.this%is_ebc_edge .or. b(1::2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(2::2) == 0))
+    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
+    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
+    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
 
     call start_timer('precon')
 
     !! Forward Gauss-Seidel relaxation on the on-process edge system.
     x = 0.0_r8
-    call gs_relaxation(this%Be(1,1), b(1::2), x(1::2), 'f')
-    this%r(2,:) = b(2::2) - this%Be(2,1)%matvec(x(1::2))
-    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2::2), 'f')
+    call gs_relaxation(this%Be(1,1), b(1,:), x(1,:), 'f')
+    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:))
+    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2,:), 'f')
 
     !! Update the local residual and project it to the nodes.
-    this%r(1,:) = b(1::2) - this%Be(1,1)%matvec(x(1::2)) - this%Be(1,2)%matvec(x(2::2))
-    this%r(2,:) = b(2::2) - this%Be(2,1)%matvec(x(1::2)) - this%Be(2,2)%matvec(x(2::2))
+    this%r(1,:) = b(1,:) - this%Be(1,1)%matvec(x(1,:)) - this%Be(1,2)%matvec(x(2,:))
+    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:)) - this%Be(2,2)%matvec(x(2,:))
     call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
     call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
     do j = 1, this%mesh%nnode
@@ -359,13 +355,13 @@ contains
     call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'b')
 
     !! Update the the solution with the node-based correction.
-    call grad(this%mesh, this%un(1,:), x(1::2), increment=.true.)
-    call grad(this%mesh, this%un(2,:), x(2::2), increment=.true.)
+    call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
+    call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
 
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Be(2,2), b(2::2), x(2::2), 'b')
-    this%r(1,:) = b(1::2) - this%Be(1,2)%matvec(x(2::2))
-    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1::2), 'b')
+    call gs_relaxation(this%Be(2,2), b(2,:), x(2,:), 'b')
+    this%r(1,:) = b(1,:) - this%Be(1,2)%matvec(x(2,:))
+    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1,:), 'b')
 
     !TODO: Fix this parallel step
     !call this%mesh%edge_imap%scatter_offp_sum(x)
@@ -373,8 +369,8 @@ contains
 
     call stop_timer('precon')
 
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1::2) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2::2) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
   end subroutine alt_apply
 

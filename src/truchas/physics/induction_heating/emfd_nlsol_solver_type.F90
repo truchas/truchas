@@ -24,6 +24,8 @@ module emfd_nlsol_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use vector_class
+  use fdme_vector_type
   use fdme_model_type
   use ams_precon_type
   use hiptmair_precon_type
@@ -42,13 +44,13 @@ module emfd_nlsol_solver_type
     private
     type(fdme_model), pointer :: model
     real(r8) :: atol, rtol, ftol
-    real(r8), allocatable :: b(:)
+    real(r8), allocatable :: b(:,:)
     !type(pcsr_matrix), pointer :: A(:,:) => null() ! unowned reference
     type(PRECON), pointer :: precon => null() ! unowned reference
   contains
     procedure :: init => emfd_nlsol_model_init
     !!!! INHERITED !!!!
-    procedure :: size => emfd_nlsol_model_size
+    procedure :: alloc_vector
     procedure :: compute_f
     procedure :: apply_precon
     procedure :: compute_precon
@@ -68,7 +70,7 @@ module emfd_nlsol_solver_type
     type(pcsr_matrix), pointer :: Ap => null()
     !type(pcsr_matrix), pointer :: A(:,:) => null(), Ap => null()
 
-    real(r8), allocatable :: efield(:) ! electric field (real and imaginary parts)
+    type(fdme_vector) :: efield ! electric field (real and imaginary parts)
     !real(r8), allocatable :: rhs(:) ! rhs (set by BCs)
     !real(r8), allocatable :: rhs_r(:), rhs_i(:)
 
@@ -155,8 +157,7 @@ contains
     ! this%sigma = sigma
     ! this%omega = omega
     !this%emask = emask
-    allocate(this%efield(2*mesh%nedge))
-    this%efield = 0
+    call this%efield%init(mesh)
 
     allocate(this%newmodel)
     call this%newmodel%init(mesh, bc_fac, params, stat, errmsg)
@@ -202,9 +203,12 @@ contains
 
     call this%newmodel%setup(t, epsr, epsi, mu, sigma, omega)
 
-    this%model%rhs = this%newmodel%rhs
+    select type (rhs => this%model%rhs)
+    type is (fdme_vector)
+      rhs%array(:,:) = this%newmodel%rhs
+    end select
 
-    ASSERT(all(ieee_is_finite(this%model%rhs)))
+!    ASSERT(all(ieee_is_finite(this%model%rhs)))
 
 !    ! Preconditioner
 !    this%Ap%values = this%newmodel%A(1,1)%values - this%newmodel%A(1,2)%values
@@ -227,7 +231,7 @@ contains
 
     print '(a,2es13.3)', "max |rhs| = ", maxval(abs(this%newmodel%rhs)), maxval(abs(this%newmodel%hbc%value))
 
-    ASSERT(all(ieee_is_finite(this%efield)))
+    ASSERT(all(ieee_is_finite(this%efield%array)))
     ASSERT(all(ieee_is_finite(this%newmodel%rhs)))
 
     call start_timer("solve")
@@ -238,9 +242,9 @@ contains
     if (ierr /= 0) call tls_error("EMFD solve unsuccessful")
 
     print *, "max |rhs| = ", maxval(abs(this%newmodel%rhs)), maxval(abs(this%newmodel%hbc%value))
-    print *, "max |er| = ", maxval(abs(this%efield(::2)))
-    print *, "max |ei| = ", maxval(abs(this%efield(2::2)))
-    print *, "max |e-rhs| = ", maxval(abs(this%efield - this%newmodel%rhs))
+    print *, "max |er| = ", maxval(abs(this%efield%array(1,:)))
+    print *, "max |ei| = ", maxval(abs(this%efield%array(2,:)))
+    print *, "max |e-rhs| = ", maxval(abs(this%efield%array - this%newmodel%rhs))
 
   end subroutine solve
 
@@ -252,7 +256,7 @@ contains
 
     call start_timer("heat source")
 
-    call this%newmodel%compute_heat_source(this%efield, q)
+    call this%newmodel%compute_heat_source(this%efield%array, q)
 
     call stop_timer("heat source")
 
@@ -273,39 +277,59 @@ contains
     this%atol = atol
     this%rtol = rtol
     this%ftol = ftol
+    block
+      type(fdme_vector), allocatable :: tmp
+      allocate(tmp)
+      call tmp%init(model%mesh)
+      call move_alloc(tmp, this%rhs)
+    end block
   end subroutine emfd_nlsol_model_init
 
-
-  integer function emfd_nlsol_model_size(this)
+  subroutine alloc_vector(this, u)
     class(emfd_nlsol_model), intent(in) :: this
-    emfd_nlsol_model_size = 2*this%model%mesh%nedge_onP !2*this%model%A(1,1)%nrow_onP
-  end function
-
+    class(vector), allocatable, intent(out) :: u
+    type(fdme_vector), allocatable :: tmp
+    allocate(tmp)
+    call this%model%init_vector(tmp)
+    call move_alloc(tmp, u)
+  end subroutine
 
   subroutine compute_f(this, u, f, ax)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: u(:)
-    real(r8), intent(out) :: f(:)
+    class(vector), intent(in) :: u
+    class(vector), intent(inout) :: f
     logical, intent(in), optional :: ax
-    call this%model%compute_f(u, f, ax)
+    select type (u)
+    type is (fdme_vector)
+      select type (f)
+      type is (fdme_vector)
+        call this%model%compute_f(u%array, f%array, ax)
+      end select
+    end select
   end subroutine
 
 
   subroutine apply_precon(this, u, f)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: u(:)
-    real(r8), intent(inout) :: f(:)
-    this%b = f
-    f = 0
-    ASSERT(all(ieee_is_finite(this%b)))
-    call this%precon%apply(this%b, f)
-    ASSERT(all(ieee_is_finite(f)))
+    class(vector), intent(in) :: u  ! not used
+    class(vector), intent(inout) :: f
+    select type (u)
+    type is (fdme_vector)
+      select type (f)
+      type is (fdme_vector)
+        this%b = f%array  !this allocates b
+        f%array = 0.0_r8
+        ASSERT(all(ieee_is_finite(this%b)))
+        call this%precon%apply(this%b, f%array)
+        ASSERT(all(ieee_is_finite(f%array)))
+      end select
+    end select
   end subroutine
 
 
   subroutine compute_precon(this, u)
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: u(:)
+    class(vector), intent(in) :: u
     ! compute precon currently handled above the nlsol solver.
     !call this%precon%setup(interior_nodes)
   end subroutine
@@ -316,30 +340,39 @@ contains
     use parallel_communication, only: global_maxval
 
     class(emfd_nlsol_model) :: this
-    real(r8), intent(in) :: u(:), du(:)
+    class(vector), intent(in) :: u, du
 
-    integer :: i
+    integer :: i, j
     real(r8) :: err
 
-    du_norm = 0
-    do i = 1, size(u)
-      if (this%atol == 0 .and. abs(u(i)) == 0) then
-        err = huge(1.0_r8)
-      else
-        err = abs(du(i)) / (this%atol + this%rtol*abs(u(i)))
-      end if
-      du_norm = max(du_norm, err)
-    end do
-    du_norm = global_maxval(du_norm)
+    select type (u)
+    type is (fdme_vector)
+      select type (du)
+      type is (fdme_vector)
 
+        du_norm = 0.0_r8
+        do j = 1, this%model%mesh%nedge_onP
+          do i = 1, 2
+            if (this%atol == 0 .and. abs(u%array(i,j)) == 0) then
+              err = huge(1.0_r8)
+            else
+              err = abs(du%array(i,j)) / (this%atol + this%rtol*abs(u%array(i,j)))
+            end if
+            du_norm = max(du_norm, err)
+          end do
+        end do
+        du_norm = global_maxval(du_norm)
+
+      end select
+    end select
   end function
 
 
   logical function is_converged(this, itr, u, du, f_lnorm, tol)
     class(emfd_nlsol_model) :: this
     integer, intent(in) :: itr
-    real(r8), intent(in) :: tol
-    real(r8), intent(in) :: u(:), du(:), f_lnorm(:)
+    class(vector), intent(in) :: u, du
+    real(r8), intent(in) :: tol, f_lnorm(:)
     is_converged = this%du_norm(u, du) < tol .and. f_lnorm(3) < this%ftol
   end function
 
