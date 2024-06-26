@@ -26,6 +26,7 @@ module gmres_left_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use vector_class
   use parameter_list_type
   use truchas_timers
   use parallel_communication, only: global_dot_product
@@ -39,9 +40,10 @@ module gmres_left_solver_type
   type, public :: gmres_left_solver
     private
     class(nlk_solver_model), pointer :: model => null() ! unowned reference
-    integer :: nrows_onP, krylov_dim, iter_pc, max_iter, iter
+    integer :: krylov_dim, iter_pc, max_iter, iter
     real(r8) :: res_norm, tol, rtol
-    real(r8), allocatable :: e1(:), h(:,:), r(:), w(:), v(:,:), work(:), udot(:)
+    class(vector), allocatable :: r, w, v(:)
+    real(r8), allocatable :: e1(:), h(:,:), work(:), udot(:)
   contains
     procedure :: init => gmres_left_solver_init
     !procedure :: setup => gmres_left_solver_setup
@@ -67,20 +69,20 @@ contains
 
     stat = 0 ! TODO: error handling / argument verification
     this%model => model
-    this%nrows_onP = model%size()
 
     call params%get('gmres-krylov-dim', this%krylov_dim, default=5)
     call params%get('abs-tol', this%tol, default=1d-8)
     call params%get('rel-tol', this%rtol, default=0.0_r8)
     call params%get('max-iter', this%max_iter, default=20)
 
-    allocate(this%e1(this%krylov_dim+1), this%h(this%krylov_dim+1,this%krylov_dim), &
-        this%r(this%nrows_onP), this%w(this%nrows_onP), &
-        this%v(this%nrows_onP,this%krylov_dim+1), this%udot(this%nrows_onP))
+    call model%alloc_vector(this%r)
+    call this%r%clone(this%w)
+    call this%r%clone(this%v, this%krylov_dim+1)
+
+    allocate(this%e1(this%krylov_dim+1), this%h(this%krylov_dim+1,this%krylov_dim))
     this%e1 = 0
     this%e1(1) = 1
     this%h = 0
-    this%udot = 0
 
     ! get the LAPACK work size
     allocate(this%work(1))
@@ -99,7 +101,7 @@ contains
   subroutine gmres_left_solver_solve(this, u, errc)
 
     class(gmres_left_solver), intent(inout) :: this
-    real(r8), intent(inout) :: u(:)
+    class(vector), intent(inout) :: u
     integer,  intent(out) :: errc
 
     integer :: iter, i, j
@@ -107,43 +109,45 @@ contains
 
     ASSERT(this%max_iter > 0)
     ASSERT(associated(this%model))
-    ASSERT(size(u) >= this%nrows_onP)
 
     call start_timer("GMRES solve")
 
     errc = 0
     this%iter_pc = 0
     this%h = 0
-    this%r = 0
+    call this%r%setval(0.0_r8)
     call this%model%compute_precon(u)
-    n2_b = global_norm2(this%model%rhs)
+    n2_b = this%model%rhs%norm2()
 
     do iter = 1, this%max_iter+1
       !! compute the residual
       call this%model%compute_f(u, this%r)
-      anorm = global_norm2(this%r)
+      anorm = this%r%norm2()
       call this%model%apply_precon(u, this%r)
-ASSERT(all(ieee_is_finite(this%r)))
+!ASSERT(all(ieee_is_finite(this%r)))
 
       rnorm = anorm / n2_b
-      this%res_norm = global_norm2(this%r)
+      this%res_norm = this%r%norm2()
       print '("iter, res norm, anorm, rnorm, tol: ",i6,4es13.3)', &
           iter, this%res_norm, anorm, rnorm, this%tol
 print *, "FOO", this%res_norm
       if (this%res_norm < this%tol .or. anorm < this%tol .or. rnorm < this%rtol) exit
-      this%v(:,1) = this%r / this%res_norm
+      !this%v(:,1) = this%r / this%res_norm
+      call this%v(1)%update(1.0_r8/this%res_norm, this%r, 0.0_r8)
 
       do j = 1, this%krylov_dim
-        call this%model%compute_f(this%v(:,j), this%w, ax=.true.)
+        call this%model%compute_f(this%v(j), this%w, ax=.true.)
         call this%model%apply_precon(u, this%w)
         this%iter_pc = this%iter_pc + 1
 
         do i = 1, j
-          this%h(i,j) = global_dot_product(this%w, this%v(:,i))
-          this%w = this%w - this%h(i,j) * this%v(:,i)
+          this%h(i,j) = this%w%dot(this%v(i))
+          !this%w = this%w - this%h(i,j) * this%v(:,i)
+          call this%w%update(-this%h(i,j), this%v(i))
         end do
-        this%h(j+1,j) = global_norm2(this%w)
-        this%v(:,j+1) = this%w / this%h(j+1,j)
+        this%h(j+1,j) = this%w%norm2()
+        !this%v(:,j+1) = this%w / this%h(j+1,j)
+        call this%v(j+1)%update(1.0_r8/this%h(j+1,j), this%w, 0.0_r8)
 
         !! TODO: van der Vorst has some extra logic for early exit in this loop.
         !! Should consider implementing this.
@@ -153,7 +157,10 @@ print *, "FOO", this%res_norm
       this%e1(1) = this%res_norm
       call argmin(this%h, this%e1, this%work, y, errc)
       if (errc /= 0) exit
-      u = u + matmul(this%v(:,:this%krylov_dim), y)
+      !u = u + matmul(this%v(:,:this%krylov_dim), y)
+      do i = 1, this%krylov_dim
+        call u%update(y(i), this%v(i))
+      end do
     end do
 
     this%iter = iter
@@ -161,12 +168,6 @@ print *, "FOO", this%res_norm
     call stop_timer("GMRES solve")
 
   end subroutine gmres_left_solver_solve
-
-
-  real(r8) function global_norm2(x)
-    real(r8), intent(in) :: x(:)
-    global_norm2 = sqrt(global_dot_product(x, x))
-  end function global_norm2
 
 
   !! Return the y that minimizes ||b - A*y||_2.

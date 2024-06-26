@@ -4,6 +4,8 @@ module fdme_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
+  use vector_class
+  use fdme_vector_type
   use pcsr_matrix_type
   !use msr_matrix_type
   use bndry_func1_class
@@ -14,7 +16,7 @@ module fdme_model_type
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(pcsr_matrix) :: A(2,2)
-    real(r8), allocatable :: rhs(:)
+    real(r8), allocatable :: rhs(:,:)
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
@@ -27,6 +29,7 @@ module fdme_model_type
     procedure :: setup
     procedure :: compute_f
     procedure :: compute_heat_source
+    procedure :: init_vector
   end type
 
 contains
@@ -74,9 +77,17 @@ contains
     n = this%mesh%ncell
     allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
 
-    allocate(this%rhs(2*this%mesh%nedge), source=0.0_r8)
+    allocate(this%rhs(2,this%mesh%nedge))
 
   end subroutine init
+
+  !TODO: Can this be moved to another module?
+  subroutine init_vector(this, vec)
+    use fdme_vector_type
+    class(fdme_model), intent(in) :: this
+    type(fdme_vector), intent(out) :: vec
+    call vec%init(this%mesh)
+  end subroutine
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
@@ -88,7 +99,6 @@ contains
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), a(21), omegar
-    real(r8) :: rhs_r(this%mesh%nedge), rhs_i(this%mesh%nedge)
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -135,10 +145,10 @@ contains
         do j = 1, size(this%ebc%index)
           efield_r(this%ebc%index(j)) = this%ebc%value(j)
         end do
-        call this%A(1,1)%matvec(efield_r, rhs_r)
-        rhs_r = efield_r - rhs_r
-        call this%A(2,1)%matvec(efield_r, rhs_i)
-        rhs_i = -rhs_i
+        call this%A(1,1)%matvec(efield_r, this%rhs(1,:))
+        this%rhs(1,:) = efield_r - this%rhs(1,:)
+        call this%A(2,1)%matvec(efield_r, this%rhs(2,:))
+        this%rhs(2,:) = -this%rhs(2,:)
       end block
     end if
 
@@ -147,12 +157,9 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        rhs_r(n) = rhs_r(n) + omegar * this%hbc%value(j)
+        this%rhs(1,n) = this%rhs(1,n) + omegar * this%hbc%value(j)
       end do
     end if
-
-    this%rhs(1:2*this%mesh%nedge:2) = rhs_r
-    this%rhs(2:2*this%mesh%nedge:2) = rhs_i
 
     ! Apply nxE boundary conditions to the system matrix
     if (allocated(this%ebc)) then
@@ -174,24 +181,24 @@ contains
 
   subroutine compute_f(this, u, f, ax)
     class(fdme_model) :: this
-    real(r8), intent(in) :: u(:)
-    real(r8), intent(out) :: f(:)
+    real(r8), intent(in) :: u(:,:)
+    real(r8), intent(out) :: f(:,:)
     logical, intent(in), optional :: ax
-    real(r8) :: tmp(size(f(2::2)))
-    call this%A(1,1)%matvec(u(1::2), f(1::2))
-    call this%A(1,2)%matvec(u(2::2), tmp)
-    f(1::2) = f(1::2) + tmp
-    call this%A(2,1)%matvec(u(1::2), f(2::2))
-    call this%A(2,2)%matvec(u(2::2), tmp)
-    f(2::2) = f(2::2) + tmp
-    !f(2::2) = -f(2::2)
+    real(r8) :: tmp(size(f,dim=2))
+    call this%A(1,1)%matvec(u(1,:), f(1,:))
+    call this%A(1,2)%matvec(u(2,:), tmp)
+    f(1,:) = f(1,:) + tmp
+    call this%A(2,1)%matvec(u(1,:), f(2,:))
+    call this%A(2,2)%matvec(u(2,:), tmp)
+    f(2,:) = f(2,:) + tmp
+    !f(2,:) = -f(2,:)
     if (present(ax)) then
       if (ax) return
     end if
     f = this%rhs - f
   end subroutine
 
-  subroutine compute_heat_source(this, e, q)
+  subroutine compute_heat_source(this, efield, q)
 
     use mimetic_discretization, only: w1_matrix_we
     use upper_packed_matrix_procs, only: upm_quad_form
@@ -199,17 +206,14 @@ contains
     use truchas_logging_services
 
     class(fdme_model), intent(in) :: this
-    real(r8), intent(in), target :: e(:)
+    real(r8), intent(in) :: efield(:,:)
     real(r8), intent(out) :: q(:)
 
     real(r8) :: efield2, q_joule, q_dielectric, m1(21)
     integer :: j
     character(256) :: string
-    real(r8), pointer :: efield(:,:)
 
     ASSERT(size(q) == this%mesh%ncell)
-
-    efield(1:2,1:this%mesh%nedge) => e
 
     do j = 1, this%mesh%ncell_onP
       if (this%sigma(j) == 0 .and. this%epsi(j) == 0) then
@@ -218,7 +222,8 @@ contains
       end if
 
       ! compute |E|^2 on cell j
-      associate(efield_r => efield(1,this%mesh%cedge(:,j)), efield_i => efield(2,this%mesh%cedge(:,j)))
+      associate(efield_r => efield(1,this%mesh%cedge(:,j)), &
+                efield_i => efield(2,this%mesh%cedge(:,j)))
         m1 = W1_matrix_WE(this%mesh, j)
         efield2 = this%Z0**2 * (upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i))
       end associate
