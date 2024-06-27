@@ -1,0 +1,11 @@
+create Cylinder height 16 radius 10 
+volume 1  move z 8 
+webcut volume 1  with plane xplane offset 0 noimprint nomerge 
+webcut volume 1  with plane yplane offset 0 noimprint nomerge 
+delete volume 1 2 
+compress all
+create sphere radius 8 
+chop volume 1  with volume 2  
+compress all
+
+export acis "em-oball-geom.sat" ascii overwrite
