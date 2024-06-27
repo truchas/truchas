@@ -130,7 +130,6 @@ contains
       this%res_norm = this%r%norm2()
       print '("iter, res norm, anorm, rnorm, tol: ",i6,4es13.3)', &
           iter, this%res_norm, anorm, rnorm, this%tol
-print *, "FOO", this%res_norm
       if (this%res_norm < this%tol .or. anorm < this%tol .or. rnorm < this%rtol) exit
       !this%v(:,1) = this%r / this%res_norm
       call this%v(1)%update(1.0_r8/this%res_norm, this%r, 0.0_r8)

@@ -242,27 +242,30 @@ contains
       end do
     end if
 
-    ! List interior nodes for the AMS preconditioner. All nodes inside the
-    ! 0-conductivity region are marked 1.0.
-    associate (omega => this%model%omega, epsr => this%model%epsr, epsi => this%model%epsi, sigma => this%model%sigma)
-    this%interior_nodes = 1
-    do j = 1, this%mesh%ncell
-      ! WARN: Which of the following is correct? I think the first.
-      mtr2 = omega * (epsr(j) + epsi(j)) - sigma(j)
-      !mtr2 = omega * (epsi(j) - epsr(j)) - sigma(j)
-      if (mtr2 /= 0) this%interior_nodes(this%mesh%cnode(:,j)) = 0
-    end do
-    end associate
-
-    call fHYPRE_ClearAllErrors
-
-    ! Provide list of nodes inside the 0-conductivity region
-    call fHYPRE_IJVectorInitialize(this%lh, ierr)
-    call fHYPRE_IJVectorSetValues(this%lh, this%nrows, this%rows, this%interior_nodes, ierr)
-    call fHYPRE_IJVectorAssemble(this%lh, ierr)
-    INSIST(ierr == 0)
-    call fHYPRE_AMSSetInteriorNodes(this%solver, this%lh, ierr)
-    INSIST(ierr == 0)
+!NNC: I don't this this is necessary, as the AMS system is non-singular,
+!     but if needed, it is a node-based vector not edge-based -- FIXME
+!     But if it is needed, it needs to be fixed
+!    ! List interior nodes for the AMS preconditioner. All nodes inside the
+!    ! 0-conductivity region are marked 1.0.
+!    associate (omega => this%model%omega, epsr => this%model%epsr, epsi => this%model%epsi, sigma => this%model%sigma)
+!    this%interior_nodes = 1
+!    do j = 1, this%mesh%ncell
+!      ! WARN: Which of the following is correct? I think the first.
+!      mtr2 = omega * (epsr(j) + epsi(j)) - sigma(j)
+!      !mtr2 = omega * (epsi(j) - epsr(j)) - sigma(j)
+!      if (mtr2 /= 0) this%interior_nodes(this%mesh%cnode(:,j)) = 0
+!    end do
+!    end associate
+!
+!    call fHYPRE_ClearAllErrors
+!
+!    ! Provide list of nodes inside the 0-conductivity region
+!    call fHYPRE_IJVectorInitialize(this%lh, ierr)
+!    call fHYPRE_IJVectorSetValues(this%lh, this%nrows, this%rows, this%interior_nodes, ierr)
+!    call fHYPRE_IJVectorAssemble(this%lh, ierr)
+!    INSIST(ierr == 0)
+!    call fHYPRE_AMSSetInteriorNodes(this%solver, this%lh, ierr)
+!    INSIST(ierr == 0)
 
     call this%A%copy_to_ijmatrix(this%Ah)
     call fHYPRE_AMSSetup(this%solver, this%Ah, this%bh, this%xh, ierr)
