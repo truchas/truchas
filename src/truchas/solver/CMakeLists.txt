@@ -11,10 +11,10 @@ target_sources(truchas PRIVATE
   pcsr_precon_factory.F90
   cg_solver_class.F90
   #fgmres_solver_type.F90 UNUSED + NEEDS UPDATING TO COMPILE
-  gmres_left_solver_type.F90
+  gmres_left_solver_class.F90
   ridders_class.F90
   nlsol_type.F90
-  nlk_solver_type.F90
+  nlk_solver_class.F90
   upper_packed_matrix_procs.F90
   msr_matrix_type.F90
   bcsr_matrix_type.F90

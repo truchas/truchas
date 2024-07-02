@@ -1,5 +1,5 @@
 !!
-!! AMS_PRECON_TYPE
+!! FDME_AMS_PRECON_TYPE
 !!
 !! This module defines an Auxilliary-space Maxwell Solver to be used as a
 !! preconditioner for the flexible GMRES solver. It is specially designed for
@@ -26,10 +26,11 @@
 
 #include "f90_assert.fpp"
 
-module ams_precon_type
+module fdme_ams_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use fdme_precon_class
   use parameter_list_type
   use truchas_timers
   use fhypre
@@ -40,7 +41,7 @@ module ams_precon_type
   implicit none
   private
 
-  type, public :: ams_precon
+  type, extends(fdme_precon), public :: fdme_ams_precon
     private
     type(fdme_model), pointer :: model => null() ! unowned reference
     integer, public :: niter = 0
@@ -67,13 +68,13 @@ module ams_precon_type
     procedure :: init
     procedure :: setup
     procedure :: apply
-    final :: ams_precon_final
-  end type ams_precon
+    final :: fdme_ams_precon_final
+  end type fdme_ams_precon
 
 contains
 
-  subroutine ams_precon_final(this)
-    type(ams_precon), intent(inout) :: this
+  subroutine fdme_ams_precon_final(this)
+    type(fdme_ams_precon), intent(inout) :: this
     integer :: ierr
     ierr = 0
     call fHYPRE_ClearAllErrors
@@ -88,12 +89,12 @@ contains
     if (hypre_associated(this%solver)) call fHYPRE_AMSDestroy(this%solver, ierr)
     INSIST(ierr == 0)
     call fHYPRE_ClearAllErrors
-  end subroutine ams_precon_final
+  end subroutine fdme_ams_precon_final
 
 
   subroutine init(this, model, params)
 
-    class(ams_precon), intent(out) :: this
+    class(fdme_ams_precon), intent(out) :: this
     type(fdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
@@ -222,7 +223,7 @@ contains
   !! State-dependent setup
   subroutine setup(this)
 
-    class(ams_precon), intent(inout) :: this
+    class(fdme_ams_precon), intent(inout) :: this
 
     integer :: j, n, ierr
     real(r8) :: mtr2
@@ -278,7 +279,7 @@ contains
 
   subroutine apply(this, b, x)
 
-    class(ams_precon), intent(inout) :: this
+    class(fdme_ams_precon), intent(inout) :: this
     real(r8), intent(in) :: b(:,:)
     real(r8), intent(inout) :: x(:,:)
 
@@ -371,4 +372,4 @@ contains
 
   end subroutine apply
 
-end module ams_precon_type
+end module fdme_ams_precon_type

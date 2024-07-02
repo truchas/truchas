@@ -323,6 +323,8 @@ contains
 
     use simpl_mesh_type
     use em_bc_factory_type
+    use fdme_model_type
+    use fdme_vector_type
     use parameter_list_type
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
     use emfd_nlsol_solver_type
@@ -333,14 +335,19 @@ contains
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
 
+    type(fdme_model), target :: model
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8) :: t, omega, epsi(mesh%ncell)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
+    type(fdme_vector) :: efield
 
-    call solver%init(mesh, bc_fac, params, stat, errmsg)
+    call model%init(mesh, bc_fac, params, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+
+    call solver%init(model, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
     t = 0 ! dummy time
@@ -348,9 +355,13 @@ contains
     omega = 2 * PI * freq
 
     !TODO? rework solver to use absolute eps and mu?
-    call solver%setup(t, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
-    call solver%solve
-    call solver%compute_heat_source(q)
+    call model%setup(t, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
+
+    call efield%init(mesh)
+    call solver%solve(efield)
+
+    call efield%gather_offp
+    call model%compute_heat_source(efield%array, q)
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)

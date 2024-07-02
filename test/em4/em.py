@@ -71,8 +71,8 @@ def plot_results(r, Q, tdata, title):
     ax.set_title(title)
     ax.set_xlabel("r")
     ax.set_ylabel("Q")
-    ax.plot(r_fd, Q_fd, '.', label="EMFD")
-    if len(tdata) > 1: ax.plot(r_td, Q_td, '.', label="EMTD")
+    if len(tdata) > 1: ax.plot(r_td, Q_td, 'x', label="EMTD")
+    ax.plot(r_fd, Q_fd, '+', label="EMFD")
     ax.plot(r, Q, '-', label="analytic")
     ax.legend(loc="upper left")
     fig.tight_layout();

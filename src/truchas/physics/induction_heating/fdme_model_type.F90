@@ -29,7 +29,6 @@ module fdme_model_type
     procedure :: setup
     procedure :: compute_f
     procedure :: compute_heat_source
-    procedure :: init_vector
   end type
 
 contains
@@ -80,14 +79,6 @@ contains
     allocate(this%rhs(2,this%mesh%nedge))
 
   end subroutine init
-
-  !TODO: Can this be moved to another module?
-  subroutine init_vector(this, vec)
-    use fdme_vector_type
-    class(fdme_model), intent(in) :: this
-    type(fdme_vector), intent(out) :: vec
-    call vec%init(this%mesh)
-  end subroutine
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 

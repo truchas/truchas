@@ -22,7 +22,7 @@
 
 #include "f90_assert.fpp"
 
-module gmres_left_solver_type
+module gmres_left_solver_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
@@ -31,35 +31,57 @@ module gmres_left_solver_type
   use truchas_timers
   use parallel_communication, only: global_dot_product
   !use nlsol_type, only: nlsol_model
-  use nlk_solver_type, only: nlk_solver_model
+  !use nlk_solver_type, only: nlk_solver_model
   implicit none
   private
 
-  !public :: nlsol_model ! re-export
-
-  type, public :: gmres_left_solver
+  type, abstract, public :: gmres_left_solver
     private
-    class(nlk_solver_model), pointer :: model => null() ! unowned reference
     integer :: krylov_dim, iter_pc, max_iter, iter
     real(r8) :: res_norm, tol, rtol
     class(vector), allocatable :: r, w, v(:)
+    class(vector), allocatable, public :: rhs
     real(r8), allocatable :: e1(:), h(:,:), work(:), udot(:)
   contains
     procedure :: init => gmres_left_solver_init
     !procedure :: setup => gmres_left_solver_setup
     procedure :: solve => gmres_left_solver_solve
     procedure :: metrics_string
+    procedure(compute_f), deferred :: compute_f
+    procedure(apply_precon), deferred :: apply_precon
+    procedure(compute_precon), deferred :: compute_precon
   end type gmres_left_solver
+
+  abstract interface
+    subroutine compute_f(this, u, f, ax)
+      import gmres_left_solver, vector
+      class(gmres_left_solver), intent(inout) :: this
+      class(vector), intent(in) :: u
+      class(vector), intent(inout) :: f
+      logical, intent(in), optional :: ax
+    end subroutine
+    subroutine apply_precon(this, u, f)
+      import gmres_left_solver, vector
+      class(gmres_left_solver), intent(inout) :: this
+      class(vector), intent(in) :: u
+      class(vector), intent(inout) :: f
+    end subroutine
+    subroutine compute_precon(this, u)
+      import gmres_left_solver, vector
+      class(gmres_left_solver), intent(inout) :: this
+      class(vector), intent(in) :: u
+    end subroutine
+  end interface
 
 contains
 
-  subroutine gmres_left_solver_init(this, model, params, stat, errmsg)
+  subroutine gmres_left_solver_init(this, vec, params, stat, errmsg)
 
     use parameter_list_type
     external :: dgels
 
     class(gmres_left_solver), intent(out) :: this
-    class(nlk_solver_model), intent(in), target :: model
+    class(vector), intent(in) :: vec
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -68,16 +90,16 @@ contains
     integer :: lwork
 
     stat = 0 ! TODO: error handling / argument verification
-    this%model => model
 
     call params%get('gmres-krylov-dim', this%krylov_dim, default=5)
     call params%get('abs-tol', this%tol, default=1d-8)
     call params%get('rel-tol', this%rtol, default=0.0_r8)
     call params%get('max-iter', this%max_iter, default=20)
 
-    call model%alloc_vector(this%r)
-    call this%r%clone(this%w)
-    call this%r%clone(this%v, this%krylov_dim+1)
+    call vec%clone(this%r)
+    call vec%clone(this%w)
+    call vec%clone(this%v, this%krylov_dim+1)
+    call vec%clone(this%rhs)
 
     allocate(this%e1(this%krylov_dim+1), this%h(this%krylov_dim+1,this%krylov_dim))
     this%e1 = 0
@@ -108,7 +130,6 @@ contains
     real(r8) :: y(this%krylov_dim), anorm, rnorm, n2_b
 
     ASSERT(this%max_iter > 0)
-    ASSERT(associated(this%model))
 
     call start_timer("GMRES solve")
 
@@ -116,14 +137,14 @@ contains
     this%iter_pc = 0
     this%h = 0
     call this%r%setval(0.0_r8)
-    call this%model%compute_precon(u)
-    n2_b = this%model%rhs%norm2()
+    call this%compute_precon(u)
+    n2_b = this%rhs%norm2()
 
     do iter = 1, this%max_iter+1
       !! compute the residual
-      call this%model%compute_f(u, this%r)
+      call this%compute_f(u, this%r)
       anorm = this%r%norm2()
-      call this%model%apply_precon(u, this%r)
+      call this%apply_precon(u, this%r)
 !ASSERT(all(ieee_is_finite(this%r)))
 
       rnorm = anorm / n2_b
@@ -135,8 +156,8 @@ contains
       call this%v(1)%update(1.0_r8/this%res_norm, this%r, 0.0_r8)
 
       do j = 1, this%krylov_dim
-        call this%model%compute_f(this%v(j), this%w, ax=.true.)
-        call this%model%apply_precon(u, this%w)
+        call this%compute_f(this%v(j), this%w, ax=.true.)
+        call this%apply_precon(u, this%w)
         this%iter_pc = this%iter_pc + 1
 
         do i = 1, j
@@ -200,4 +221,4 @@ contains
     string = trim(buffer)
   end function metrics_string
 
-end module gmres_left_solver_type
+end module gmres_left_solver_class

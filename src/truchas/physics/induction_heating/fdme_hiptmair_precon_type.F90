@@ -1,5 +1,5 @@
 !!
-!! HIPTMAIR_PRECON_TYPE
+!! FDME_HIPTMAIR_PRECON_TYPE
 !!
 !! This module implements a preconditioner [1] modified for the block
 !! time-harmonic Maxwell equations [2].
@@ -23,9 +23,10 @@
 
 #include "f90_assert.fpp"
 
-module hiptmair_precon_type
+module fdme_hiptmair_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use fdme_precon_class
   use fdme_model_type
   use parameter_list_type
   use simpl_mesh_type
@@ -35,7 +36,7 @@ module hiptmair_precon_type
   implicit none
   private
 
-  type, public :: hiptmair_precon
+  type, extends(fdme_precon), public :: fdme_hiptmair_precon
     private
     type(fdme_model), pointer :: model => null() ! unowned reference
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
@@ -54,7 +55,7 @@ contains
 
   subroutine init(this, model, params)
 
-    class(hiptmair_precon), intent(out) :: this
+    class(fdme_hiptmair_precon), intent(out) :: this
     type(fdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
@@ -132,7 +133,7 @@ contains
     use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_grad, cell_curl
     use upper_packed_matrix_procs, only: upm_cong_prod
 
-    class(hiptmair_precon), intent(inout) :: this
+    class(fdme_hiptmair_precon), intent(inout) :: this
 
     integer :: j
     real(r8) :: omegar, c1, c2, c3
@@ -256,7 +257,7 @@ contains
     use mimetic_discretization, only: grad, grad_t
     use msr_matrix_type, only: gs_relaxation
 
-    class(hiptmair_precon), intent(inout) :: this
+    class(fdme_hiptmair_precon), intent(inout) :: this
     real(r8), intent(in) :: b(:,:)
     real(r8), intent(inout) :: x(:,:)
 
@@ -318,7 +319,7 @@ contains
     use mimetic_discretization, only: grad, grad_t
     use msr_matrix_type, only: gs_relaxation
 
-    class(hiptmair_precon), intent(inout) :: this
+    class(fdme_hiptmair_precon), intent(inout) :: this
     real(r8), intent(in) :: b(:,:)
     real(r8), intent(inout) :: x(:,:)
 
@@ -374,4 +375,4 @@ contains
 
   end subroutine alt_apply
 
-end module hiptmair_precon_type
+end module fdme_hiptmair_precon_type
