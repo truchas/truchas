@@ -7,6 +7,7 @@ module fdme_model_type
   use vector_class
   use fdme_vector_type
   use pcsr_matrix_type
+  use bcsr_matrix_type
   !use msr_matrix_type
   use bndry_func1_class
   use truchas_timers
@@ -16,18 +17,23 @@ module fdme_model_type
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(pcsr_matrix) :: A(2,2)
-    real(r8), allocatable :: rhs(:,:)
+    type(bcsr_matrix) :: B ! alternate storage scheme for A
+    !real(r8), allocatable :: rhs(:,:)
+    type(fdme_vector) :: rhs
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
     class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
     ! Non-dimensionalization parameters
-    real(r8) :: Z0 = 376.730313668 ! Ohms -- vacuum impedance
-    real(r8) :: c0 = 299792458.0_r8 ! speed of light
+    real(r8) :: Z0 ! vacuum impedance
+    real(r8) :: c0 ! speed of light
   contains
     procedure :: init
     procedure :: setup
-    procedure :: compute_f
+    procedure :: matvec
+    procedure :: residual
+    !procedure :: compute_f
+    procedure :: compute_f => alt_compute_f
     procedure :: compute_heat_source
   end type
 
@@ -37,6 +43,7 @@ contains
 
     use em_bc_factory_type
     use parameter_list_type
+    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     class(fdme_model), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
@@ -47,6 +54,8 @@ contains
 
     integer :: n
 
+    this%Z0 = sqrt(vacuum_permeability/vacuum_permittivity)
+    this%c0 = 1.0_r8/sqrt(vacuum_permittivity*vacuum_permeability)
     this%mesh => mesh
 
     !! Boundary condition data
@@ -59,7 +68,7 @@ contains
     end if
     if (stat /= 0) return
 
-    block ! full system in block form
+    block ! full system in block partitioned form
       type(pcsr_graph), pointer :: g
       !type(msr_graph), pointer :: g
       allocate(g)
@@ -73,10 +82,20 @@ contains
       call this%A(2,2)%init(mold=this%A(1,1))
     end block
 
+    block ! full system in block CSR form
+      type(csr_graph), pointer :: g
+      allocate(g)
+      call g%init(this%mesh%nedge)
+      call g%add_clique(this%mesh%cedge)
+      call g%add_complete
+      call this%B%init(2, g, take_graph=.true.)
+    end block
+
     n = this%mesh%ncell
     allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
 
-    allocate(this%rhs(2,this%mesh%nedge))
+    !allocate(this%rhs(2,this%mesh%nedge))
+    call this%rhs%init(this%mesh)
 
   end subroutine init
 
@@ -90,6 +109,8 @@ contains
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), a(21), omegar
+    real(r8) :: b(2,2,21)
+    real(r8), parameter :: ID2(2,2) = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape=[2,2])
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -122,9 +143,17 @@ contains
       call this%A(1,1)%add_to(this%mesh%cedge(:,j), a)
       call this%A(2,2)%add_to(this%mesh%cedge(:,j), -a)
 
+      b(1,1,:) = a
+      b(2,2,:) = -a
+
       a = (omegar**2 * epsi(j) - omegar * sigma(j) * this%Z0) * m1
       call this%A(1,2)%add_to(this%mesh%cedge(:,j), a)
       call this%A(2,1)%add_to(this%mesh%cedge(:,j), a)
+
+      b(1,2,:) = a
+      b(2,1,:) = a
+
+      call this%B%add_to(this%mesh%cedge(:,j), b)
     end do
 
     ! RHS contribution from nxE boundary conditions
@@ -136,10 +165,18 @@ contains
         do j = 1, size(this%ebc%index)
           efield_r(this%ebc%index(j)) = this%ebc%value(j)
         end do
-        call this%A(1,1)%matvec(efield_r, this%rhs(1,:))
-        this%rhs(1,:) = efield_r - this%rhs(1,:)
-        call this%A(2,1)%matvec(efield_r, this%rhs(2,:))
-        this%rhs(2,:) = -this%rhs(2,:)
+        call this%A(1,1)%matvec(efield_r, this%rhs%array(1,:))
+        this%rhs%array(1,:) = efield_r - this%rhs%array(1,:)
+        call this%A(2,1)%matvec(efield_r, this%rhs%array(2,:))
+        this%rhs%array(2,:) = -this%rhs%array(2,:)
+        ! alternative using B
+        !real(r8), allocatable :: efield(:,:)
+        !allocate(efield(2,this%mesh%nedge), source=0.0_r8)
+        !do j = 1, size(this%ebc%index)
+        !  efield(1,this%ebc%index(j)) = this%ebc%value(j)
+        !end do
+        !call this%B%matvec(efield, this%rhs%array)
+        !this%rhs%array = efield - this%rhs%array
       end block
     end if
 
@@ -148,7 +185,7 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        this%rhs(1,n) = this%rhs(1,n) + omegar * this%hbc%value(j)
+        this%rhs%array(1,n) = this%rhs%array(1,n) + omegar * this%hbc%value(j)
       end do
     end if
 
@@ -162,6 +199,8 @@ contains
         call this%A(2,2)%project_out(n)
         call this%A(1,1)%set(n, n, 1.0_r8)
         call this%A(2,2)%set(n, n, 1.0_r8)
+        call this%B%project_out(n)
+        call this%B%set(n, n, ID2)
       end do
     end if
 
@@ -172,49 +211,75 @@ contains
 
   subroutine compute_f(this, u, f, ax)
     class(fdme_model) :: this
-    real(r8), intent(in) :: u(:,:)
-    real(r8), intent(out) :: f(:,:)
+    type(fdme_vector), intent(inout) :: u
+    type(fdme_vector), intent(inout) :: f
     logical, intent(in), optional :: ax
-    real(r8) :: tmp(size(f,dim=2))
-    call this%A(1,1)%matvec(u(1,:), f(1,:))
-    call this%A(1,2)%matvec(u(2,:), tmp)
-    f(1,:) = f(1,:) + tmp
-    call this%A(2,1)%matvec(u(1,:), f(2,:))
-    call this%A(2,2)%matvec(u(2,:), tmp)
-    f(2,:) = f(2,:) + tmp
-    !f(2,:) = -f(2,:)
+    real(r8) :: tmp(this%mesh%nedge)
+    call u%gather_offp
+    associate (E_r => u%array(1,:), E_i => u%array(2,:), &
+               r_r => f%array(1,:), r_i => f%array(2,:))
+      call this%A(1,1)%matvec(E_r, r_r)
+      call this%A(1,2)%matvec(E_i, r_r, incr=.true.)
+      call this%A(2,1)%matvec(E_r, r_i)
+      call this%A(2,2)%matvec(E_i, r_i, incr=.true.)
+      !r_i = -r_i
+    end associate
     if (present(ax)) then
       if (ax) return
     end if
-    f = this%rhs - f
+    f%array = this%rhs%array - f%array
+  end subroutine
+
+  subroutine residual(this, e, r)
+    class(fdme_model), intent(in) :: this
+    class(fdme_vector), intent(inout) :: e, r
+    call e%gather_offp
+    r%array(:,:) = this%rhs%array - this%B%matvec(e%array)
+    !call r%gather_offp ! not necessary
+  end subroutine
+
+  subroutine alt_compute_f(this, u, f, ax)
+    class(fdme_model) :: this
+    type(fdme_vector), intent(inout) :: u
+    type(fdme_vector), intent(inout) :: f
+    logical, intent(in), optional :: ax
+    call u%gather_offp
+    f%array(:,:) = this%B%matvec(u%array)
+    if (present(ax)) then
+      if (ax) return
+    end if
+    f%array = this%rhs%array - f%array
+  end subroutine
+
+  subroutine matvec(this, x, ax)
+    class(fdme_model), intent(in) :: this
+    type(fdme_vector), intent(inout) :: x, ax
+    ax%array(:,:) = this%B%matvec(x%array)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)
 
     use mimetic_discretization, only: w1_matrix_we
     use upper_packed_matrix_procs, only: upm_quad_form
-    use parallel_communication
-    use truchas_logging_services
 
     class(fdme_model), intent(in) :: this
-    real(r8), intent(in) :: efield(:,:)
+    type(fdme_vector), intent(in) :: efield
     real(r8), intent(out) :: q(:)
 
     real(r8) :: efield2, q_joule, q_dielectric, m1(21)
     integer :: j
-    character(256) :: string
 
-    ASSERT(size(q) == this%mesh%ncell)
+    ASSERT(size(q) <= this%mesh%ncell)
 
-    do j = 1, this%mesh%ncell_onP
+    do j = 1, size(q)
       if (this%sigma(j) == 0 .and. this%epsi(j) == 0) then
         q(j) = 0
         cycle
       end if
 
       ! compute |E|^2 on cell j
-      associate(efield_r => efield(1,this%mesh%cedge(:,j)), &
-                efield_i => efield(2,this%mesh%cedge(:,j)))
+      associate(efield_r => efield%array(1,this%mesh%cedge(:,j)), &
+                efield_i => efield%array(2,this%mesh%cedge(:,j)))
         m1 = W1_matrix_WE(this%mesh, j)
         efield2 = this%Z0**2 * (upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i))
       end associate
@@ -226,13 +291,7 @@ contains
       ! want a source density
       q(j) = (q_joule + q_dielectric) / abs(this%mesh%volume(j))
     end do
-    call this%mesh%cell_imap%gather_offp(q)
-
-    write(string,fmt='(2(a,es11.4))') '|Q|_max=', global_maxval(q), ', Q_total=', &
-        global_dot_product(q(:this%mesh%ncell_onP), abs(this%mesh%volume(:this%mesh%ncell_onP)))
-    call tls_info(trim(string))
 
   end subroutine compute_heat_source
-
 
 end module fdme_model_type

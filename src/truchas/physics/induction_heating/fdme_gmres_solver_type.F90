@@ -3,7 +3,6 @@
 module fdme_gmres_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use gmres_left_solver_class
   use fdme_vector_type
   use fdme_model_type
@@ -17,14 +16,13 @@ module fdme_gmres_solver_type
     class(fdme_precon), pointer :: precon => null() ! unowned reference
     real(r8), allocatable :: b(:,:)
   contains
-    procedure :: compute_f
+    procedure :: matvec
     procedure :: apply_precon
-    procedure :: compute_precon
   end type
 
   type, public :: fdme_gmres_solver
-    type(my_gmres_solver) :: gmres
     type(fdme_model), pointer :: model => null() ! unowned reference
+    type(my_gmres_solver) :: gmres
   contains
     procedure :: init
     procedure :: solve
@@ -51,48 +49,31 @@ contains
     class(fdme_gmres_solver), intent(inout) :: this
     type(fdme_vector), intent(inout) :: efield
     integer, intent(out) :: stat
-    select type (rhs => this%gmres%rhs)
-    type is (fdme_vector)
-      rhs%array(:,:) = this%model%rhs
-    end select
-    call this%gmres%solve(efield, stat)
+    call this%gmres%solve(this%model%rhs, efield, stat)
   end subroutine
 
-  subroutine compute_f(this, u, f, ax)
+  subroutine matvec(this, x, Ax)
     class(my_gmres_solver), intent(inout) :: this
-    class(vector), intent(in) :: u
-    class(vector), intent(inout) :: f
-    logical, intent(in), optional :: ax
-    select type (u)
+    class(vector), intent(inout) :: x, Ax
+    select type (x)
     type is (fdme_vector)
-      select type (f)
+      select type (Ax)
       type is (fdme_vector)
-        call this%model%compute_f(u%array, f%array, ax)
+        call this%model%matvec(x, Ax)
       end select
     end select
   end subroutine
 
-  subroutine apply_precon(this, u, f)
+  subroutine apply_precon(this, x)
     class(my_gmres_solver), intent(inout) :: this
-    class(vector), intent(in) :: u  ! not used
-    class(vector), intent(inout) :: f
-    select type (u)
+    class(vector), intent(inout) :: x
+    select type (x)
     type is (fdme_vector)
-      select type (f)
-      type is (fdme_vector)
-        this%b = f%array  !this allocates b
-        f%array = 0.0_r8
-        ASSERT(all(ieee_is_finite(this%b)))
-        call this%precon%apply(this%b, f%array)
-        ASSERT(all(ieee_is_finite(f%array)))
-      end select
+      !TODO: Can apply operate in place with f in order to eliminate temporary b?
+      this%b = x%array  !this allocates b
+      x%array = 0.0_r8
+      call this%precon%apply(this%b, x%array)
     end select
-  end subroutine
-
-  subroutine compute_precon(this, u)
-    class(my_gmres_solver), intent(inout) :: this
-    class(vector), intent(in) :: u
-    call this%precon%setup
   end subroutine
 
 end module fdme_gmres_solver_type

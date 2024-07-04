@@ -251,7 +251,7 @@ contains
     sim_num = sim_num + 1
     call params%set('graphics-file', trim(output_dir)//'tdme-'//i_to_c(sim_num)//'.vtkhdf')
 
-    allocate(q(this%em_mesh%ncell))
+    allocate(q(this%em_mesh%ncell_onP))
     call this%src_fac%set_time(t)
     freq = this%src_fac%H_freq()
     call bc_fac%init(this%em_mesh, this%src_fac, params)
@@ -269,6 +269,14 @@ contains
     this%q_sigma = this%sigma
     this%q_written = .false.
     this%q_restart = .false.
+
+    !TODO: make output subject to verbosity level
+    block
+      character(80) :: string
+      write(string,fmt='(2(a,es11.4))') '|Q|_max=', global_maxval(q), &
+          ', Q_total=', global_dot_product(q, abs(this%em_mesh%volume(:size(q))))
+      call tls_info(trim(string))
+    end block
 
     call stop_timer('simulation')
 
@@ -358,10 +366,11 @@ contains
     call model%setup(t, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
 
     call efield%init(mesh)
-    call solver%solve(efield)
+    call efield%setval(0.0_r8) ! initial guess
+    call solver%solve(efield, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
-    call efield%gather_offp
-    call model%compute_heat_source(efield%array, q)
+    call model%compute_heat_source(efield, q)
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)

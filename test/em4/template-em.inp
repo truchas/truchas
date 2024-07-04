@@ -67,6 +67,11 @@
 
 &ELECTROMAGNETICS
   use_emfd_solver = {emfd}
+  fd_solver_type = 'gmres'
+  fd_precon_type = 'ams'
+  abs_tol = 1e-8
+  rel_tol = 1e-13
+  max_vec = 20
   matl_change_threshold = 0.6
   steps_per_cycle = 64
   steady_state_tol = 0.01

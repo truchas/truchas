@@ -192,9 +192,10 @@ contains
     real(r8), allocatable :: efield(:), bfield(:), q(:), q_avg_last(:)
     character(len=256) :: string
 
-    ASSERT(size(q_avg) == this%mesh%ncell)
+    ASSERT(size(q_avg) == this%mesh%ncell_onP)
 
-    allocate(efield(this%mesh%nedge), bfield(this%mesh%nface), q(this%mesh%ncell))
+    allocate(efield(this%mesh%nedge), bfield(this%mesh%nface))
+    allocate(q(this%mesh%ncell_onP))
     !TODO: make persistent?
 
     t = 0.0_r8
@@ -230,7 +231,7 @@ contains
       if (this%graphics_output) call export_scalar_cell_field(this, q_avg, 'Avg_Joule-'//i_to_c(n))
 
       !TODO: make output subject to verbosity level
-      q_tot = global_dot_product(q_avg(:this%mesh%ncell_onP), abs(this%mesh%volume(:this%mesh%ncell_onP)))
+      q_tot = global_dot_product(q_avg, abs(this%mesh%volume(:this%mesh%ncell_onP)))
       write(string,fmt='(t4,a,i4,2(a,es11.4))') &
           'Source cycle', n, ': |Q|_max=', q_avg_max, ', Q_total=', q_tot
       call TLS_info(trim(string))

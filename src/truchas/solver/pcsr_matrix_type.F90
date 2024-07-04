@@ -500,17 +500,23 @@ contains
 
   end subroutine copy_to_ijmatrix
 
-  subroutine matvec(this, x, b)
+  subroutine matvec(this, x, b, incr)
 
     class(pcsr_matrix), intent(inout) :: this
     real(r8), intent(in) :: x(:)
-    real(r8), intent(out) :: b(:)
+    real(r8), intent(inout) :: b(:)
+    logical, intent(in), optional :: incr
 
     integer :: i, j, xj
+    real(r8) :: s
     real(r8), pointer :: values(:) => null()
     integer, pointer :: indices(:) => null()
+    logical :: incr_
 
     ASSERT(this%nrow_onP <= size(x))
+
+    incr_ = .false.
+    if (present(incr)) incr_ = incr
 
     if (.not.allocated(this%x_)) allocate(this%x_(this%nrow))
     this%x_(:this%nrow_onP) = x(:this%nrow_onP)
@@ -518,11 +524,12 @@ contains
 
     do i = 1, this%nrow_onP
       call this%get_row_view(i, values, indices)
-      b(i) = 0
+      s = merge(b(i), 0.0_r8, incr_)
       do xj = 1, size(indices)
         j = indices(xj)
-        b(i) = b(i) + values(xj) * this%x_(j)
+        s = s + values(xj) * this%x_(j)
       end do
+      b(i) = s
     end do
 
   end subroutine matvec

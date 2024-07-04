@@ -37,6 +37,12 @@ contains
       output_level, c_ratio, graphics_output, &
       use_legacy_bc, symmetry_axis, em_domain_type
 
+    integer  :: max_iter, krylov_dim, max_vec, max_ams_iter
+    real(r8) :: abs_tol, rel_tol, vec_tol
+    character(32) :: fd_solver_type, fd_precon_type
+    namelist /electromagnetics/ fd_solver_type, max_iter, abs_tol, rel_tol, krylov_dim, &
+        max_vec, vec_tol, fd_precon_type, max_ams_iter
+
     call TLS_info('Reading ELECTROMAGNETICS namelist ...')
 
     if (is_IOP) rewind(lun)
@@ -66,6 +72,16 @@ contains
     symmetry_axis  = NULL_C
     em_domain_type = NULL_C
 
+    fd_solver_type = NULL_C
+    max_iter = NULL_I
+    krylov_dim = NULL_I
+    abs_tol = NULL_R
+    rel_tol = NULL_R
+    max_vec = NULL_I
+    vec_tol = NULL_R
+    fd_precon_type = NULL_C
+    max_ams_iter = NULL_I
+
     if (is_IOP) read(lun,nml=electromagnetics,iostat=ios,iomsg=iom)
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading ELECTROMAGNETICS namelist: ' // trim(iom))
@@ -89,6 +105,16 @@ contains
     call broadcast(symmetry_axis)
     call broadcast(em_domain_type)
 
+    call broadcast(fd_solver_type)
+    call broadcast(max_iter)
+    call broadcast(krylov_dim)
+    call broadcast(abs_tol)
+    call broadcast(rel_tol)
+    call broadcast(max_vec)
+    call broadcast(vec_tol)
+    call broadcast(fd_precon_type)
+    call broadcast(max_ams_iter)
+
     !! Joule heat driver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if (matl_change_threshold /= NULL_R) then
@@ -102,6 +128,40 @@ contains
 
       plist => params%sublist('emfd-solver')
       call plist%set('graphics-output', graphics_output)
+
+      select case (fd_solver_type)
+      case ('nlk')
+        if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
+        if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
+        if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
+        if (max_vec /= NULL_I) call plist%set('max-vec', max_vec)
+        if (vec_tol /= NULL_R) call plist%set('vec-tol', vec_tol)
+      case ('gmres')
+        if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
+        if (krylov_dim /= NULL_I) call plist%set('krylov-dim', krylov_dim)
+        if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
+        if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
+      case (NULL_C)
+        call TLS_fatal('FD_SOLVER_TYPE not specified')
+      case default
+        call TLS_fatal('invalid FD_SOLVER_TYPE: ' // fd_solver_type)
+      end select
+      call plist%set('solver-type', fd_solver_type)
+
+      if (output_level /= NULL_I) call plist%set('verbosity', output_level)
+
+      plist => plist%sublist('precon')
+
+      select case (fd_precon_type)
+      case ('ams')
+        if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)
+      case ('hiptmair')
+      case (NULL_C)
+        call TLS_fatal('FD_PRECON_TYPE not specified')
+      case default
+        call TLS_fatal('invalid FD_PRECON_TYPE: ' // fd_precon_type)
+      end select
+      call plist%set('type', fd_precon_type)
 
     else ! use the time domain solver
 

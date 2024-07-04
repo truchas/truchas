@@ -55,21 +55,20 @@ contains
 
   subroutine compute_f(this, u, f)
     class(my_nlk_solver) :: this
-    class(vector), intent(in) :: u
-    class(vector), intent(inout) :: f
+    class(vector), intent(inout) :: u, f
     select type (u)
     type is (fdme_vector)
       select type (f)
       type is (fdme_vector)
-        call this%model%compute_f(u%array, f%array, ax=.false.)
+        !call this%model%compute_f(u%array, f%array, ax=.false.)
+        call this%model%compute_f(u, f, ax=.false.)
       end select
     end select
   end subroutine
 
   subroutine apply_precon(this, u, f)
     class(my_nlk_solver) :: this
-    class(vector), intent(in) :: u  ! not used
-    class(vector), intent(inout) :: f
+    class(vector), intent(inout) :: u, f
     select type (u)
     type is (fdme_vector)
       select type (f)
@@ -85,7 +84,7 @@ contains
 
   subroutine compute_precon(this, u)
     class(my_nlk_solver) :: this
-    class(vector), intent(in) :: u
+    class(vector), intent(inout) :: u
     call this%precon%setup
   end subroutine
 

@@ -25,57 +25,42 @@
 module gmres_left_solver_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use vector_class
-  use parameter_list_type
-  use truchas_timers
-  use parallel_communication, only: global_dot_product
-  !use nlsol_type, only: nlsol_model
-  !use nlk_solver_type, only: nlk_solver_model
   implicit none
   private
 
   type, abstract, public :: gmres_left_solver
     private
-    integer :: krylov_dim, iter_pc, max_iter, iter
-    real(r8) :: res_norm, tol, rtol
-    class(vector), allocatable :: r, w, v(:)
-    class(vector), allocatable, public :: rhs
-    real(r8), allocatable :: e1(:), h(:,:), work(:), udot(:)
+    integer :: krylov_dim, max_iter
+    real(r8) :: atol, rtol
+    integer, public :: iter, iter_pc
+    real(r8), public :: res_norm
+    class(vector), allocatable, public :: r
+    class(vector), allocatable :: w, v(:)
+    real(r8), allocatable :: e1(:), h(:,:), work(:)
   contains
-    procedure :: init => gmres_left_solver_init
-    !procedure :: setup => gmres_left_solver_setup
-    procedure :: solve => gmres_left_solver_solve
-    procedure :: metrics_string
-    procedure(compute_f), deferred :: compute_f
+    procedure :: init
+    procedure :: solve
+    procedure(matvec), deferred :: matvec
     procedure(apply_precon), deferred :: apply_precon
-    procedure(compute_precon), deferred :: compute_precon
-  end type gmres_left_solver
+  end type
 
   abstract interface
-    subroutine compute_f(this, u, f, ax)
+    subroutine matvec(this, x, Ax)
       import gmres_left_solver, vector
       class(gmres_left_solver), intent(inout) :: this
-      class(vector), intent(in) :: u
-      class(vector), intent(inout) :: f
-      logical, intent(in), optional :: ax
+      class(vector), intent(inout) :: x, Ax
     end subroutine
-    subroutine apply_precon(this, u, f)
+    subroutine apply_precon(this, x)
       import gmres_left_solver, vector
       class(gmres_left_solver), intent(inout) :: this
-      class(vector), intent(in) :: u
-      class(vector), intent(inout) :: f
-    end subroutine
-    subroutine compute_precon(this, u)
-      import gmres_left_solver, vector
-      class(gmres_left_solver), intent(inout) :: this
-      class(vector), intent(in) :: u
+      class(vector), intent(inout) :: x
     end subroutine
   end interface
 
 contains
 
-  subroutine gmres_left_solver_init(this, vec, params, stat, errmsg)
+  subroutine init(this, vec, params, stat, errmsg)
 
     use parameter_list_type
     external :: dgels
@@ -92,14 +77,13 @@ contains
     stat = 0 ! TODO: error handling / argument verification
 
     call params%get('gmres-krylov-dim', this%krylov_dim, default=5)
-    call params%get('abs-tol', this%tol, default=1d-8)
+    call params%get('abs-tol', this%atol, default=1d-8)
     call params%get('rel-tol', this%rtol, default=0.0_r8)
     call params%get('max-iter', this%max_iter, default=20)
 
     call vec%clone(this%r)
     call vec%clone(this%w)
     call vec%clone(this%v, this%krylov_dim+1)
-    call vec%clone(this%rhs)
 
     allocate(this%e1(this%krylov_dim+1), this%h(this%krylov_dim+1,this%krylov_dim))
     this%e1 = 0
@@ -117,47 +101,41 @@ contains
     deallocate(this%work)
     allocate(this%work(lwork))
 
-  end subroutine gmres_left_solver_init
+  end subroutine init
 
 
-  subroutine gmres_left_solver_solve(this, u, errc)
+  subroutine solve(this, b, x, stat)
 
     class(gmres_left_solver), intent(inout) :: this
-    class(vector), intent(inout) :: u
-    integer,  intent(out) :: errc
+    class(vector), intent(in) :: b
+    class(vector), intent(inout) :: x
+    integer,  intent(out) :: stat
 
     integer :: iter, i, j
-    real(r8) :: y(this%krylov_dim), anorm, rnorm, n2_b
+    real(r8) :: y(this%krylov_dim), r0norm, rnorm
 
-    ASSERT(this%max_iter > 0)
-
-    call start_timer("GMRES solve")
-
-    errc = 0
+    stat = 0
     this%iter_pc = 0
     this%h = 0
-    call this%r%setval(0.0_r8)
-    call this%compute_precon(u)
-    n2_b = this%rhs%norm2()
+
+    !! Initial residual
+    call this%matvec(x, this%r)
+    call this%r%update(1.0_r8, b, -1.0_r8) ! r = b - r
+    r0norm = this%r%norm2()
+
+    !! Preconditioned initial residual
+    call this%apply_precon(this%r)
+    this%res_norm = this%r%norm2()
+    print '(i0,": |r|_2, |Pr|_2 =",2(es10.3,:,","))', 0, r0norm, this%res_norm
 
     do iter = 1, this%max_iter+1
-      !! compute the residual
-      call this%compute_f(u, this%r)
-      anorm = this%r%norm2()
-      call this%apply_precon(u, this%r)
-!ASSERT(all(ieee_is_finite(this%r)))
 
-      rnorm = anorm / n2_b
-      this%res_norm = this%r%norm2()
-      print '("iter, res norm, anorm, rnorm, tol: ",i6,4es13.3)', &
-          iter, this%res_norm, anorm, rnorm, this%tol
-      if (this%res_norm < this%tol .or. anorm < this%tol .or. rnorm < this%rtol) exit
       !this%v(:,1) = this%r / this%res_norm
       call this%v(1)%update(1.0_r8/this%res_norm, this%r, 0.0_r8)
 
       do j = 1, this%krylov_dim
-        call this%compute_f(this%v(j), this%w, ax=.true.)
-        call this%apply_precon(u, this%w)
+        call this%matvec(this%v(j), this%w)
+        call this%apply_precon(this%w)
         this%iter_pc = this%iter_pc + 1
 
         do i = 1, j
@@ -175,19 +153,32 @@ contains
 
       this%e1 = 0
       this%e1(1) = this%res_norm
-      call argmin(this%h, this%e1, this%work, y, errc)
-      if (errc /= 0) exit
-      !u = u + matmul(this%v(:,:this%krylov_dim), y)
+      call argmin(this%h, this%e1, this%work, y, stat)
+      if (stat /= 0) exit
+      !x = x + matmul(this%v(:,:this%krylov_dim), y)
       do i = 1, this%krylov_dim
-        call u%update(y(i), this%v(i))
+        call x%update(y(i), this%v(i))
       end do
+
+      !! Compute the residual
+      call this%matvec(x, this%r)
+      call this%r%update(1.0_r8, b, -1.0_r8) ! r = b - r
+      rnorm = this%r%norm2()
+
+      !! Preconditioned residual
+      call this%apply_precon(this%r)
+      this%res_norm = this%r%norm2()
+
+      !TODO: proper output that will work in parallel
+      print '(i0,": |r|_2, |Pr|_2 =",2(es10.3,:,","))', this%iter_pc, rnorm, this%res_norm
+      if (rnorm < max(this%atol, this%rtol * r0norm)) exit
+      ! drop the norm on the preconditioned r in order for comparison to NLK
     end do
 
     this%iter = iter
-    if (errc == 0 .and. iter > this%max_iter+1) errc = 1
-    call stop_timer("GMRES solve")
+    if (stat == 0 .and. iter > this%max_iter+1) stat = 1
 
-  end subroutine gmres_left_solver_solve
+  end subroutine solve
 
 
   !! Return the y that minimizes ||b - A*y||_2.

@@ -37,19 +37,17 @@ module nlk_solver_class
     subroutine compute_f(this, u, f)
       import nlk_solver, vector
       class(nlk_solver) :: this
-      class(vector), intent(in) :: u
-      class(vector), intent(inout) :: f
+      class(vector), intent(inout) :: u, f
     end subroutine
     subroutine apply_precon(this, u, f)
       import nlk_solver, vector
       class(nlk_solver) :: this
-      class(vector), intent(in) :: u
-      class(vector), intent(inout) :: f
+      class(vector), intent(inout) :: u, f
     end subroutine
     subroutine compute_precon(this, u)
       import nlk_solver, vector
       class(nlk_solver) :: this
-      class(vector), intent(in) :: u
+      class(vector), intent(inout) :: u
     end subroutine
   end interface
 
@@ -66,65 +64,65 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     character(:), allocatable :: context
-    integer :: maxv
-    real(r8) :: vtol
+    integer :: max_vec
+    real(r8) :: vec_tol
 
     stat = 0
 
     context = 'processing ' // params%path() // ': '
-    call params%get('nlk-max-iter', this%max_iter, stat, errmsg, default=100)
+    call params%get('max-iter', this%max_iter, stat, errmsg, default=1000)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
     end if
     if (this%max_iter < 2) then
       stat = 1
-      errmsg = context//'"nlk-max-iter" must be > 1'
+      errmsg = context//'"max-iter" must be > 1'
       return
     end if
 
-    call params%get('nlk-abs-tol', this%abs_tol, stat, errmsg, default=0.0_r8)
+    call params%get('abs-tol', this%abs_tol, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
     end if
     if (this%abs_tol < 0.0_r8) then
       stat = 1
-      errmsg = context//'"nlk-abs-tol" must be >= 0.0'
+      errmsg = context//'"abs-tol" must be >= 0.0'
       return
     end if
 
-    call params%get('nlk-rel-tol', this%rel_tol, stat, errmsg, default=1.0e-8_r8)
+    call params%get('rel-tol', this%rel_tol, stat, errmsg, default=1.0e-8_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
     end if
     if (this%rel_tol < 0.0_r8) then
       stat = 1
-      errmsg = context//'"nlk-rel-tol" must be >= 0.0'
+      errmsg = context//'"rel-tol" must be >= 0.0'
       return
     end if
 
-    call params%get('nlk-max-vec', maxv, stat, errmsg, default=20)
+    call params%get('max-vec', max_vec, stat, errmsg, default=20)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
     end if
-    if (maxv < 0) then
+    if (max_vec < 0) then
       stat = 1
-      errmsg = context//'"nlk-max-vec" must be >= 0'
+      errmsg = context//'"max-vec" must be >= 0'
       return
     end if
-    maxv = min(maxv, this%max_iter-1)
+    max_vec = min(max_vec, this%max_iter-1)
 
-    call params%get('nlk-vec-tol', vtol, stat, errmsg, default=0.01_r8)
+    call params%get('vec-tol', vec_tol, stat, errmsg, default=0.01_r8)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
     end if
-    if (vtol <= 0.0_r8) then
+    if (vec_tol <= 0.0_r8) then
       stat = 1
-      errmsg = context//'"nlk-vec-tol" must be > 0.0'
+      errmsg = context//'"vec-tol" must be > 0.0'
       return
     end if
 
@@ -137,10 +135,10 @@ contains
     call vec%clone(this%r)
 
     !! Initialize the NKA structure.
-    if (maxv > 0) then
+    if (max_vec > 0) then
       allocate(this%nka)
-      call this%nka%init(vec, maxv)
-      call this%nka%set_vec_tol(vtol)
+      call this%nka%init(vec, max_vec)
+      call this%nka%set_vec_tol(vec_tol)
     end if
 
   end subroutine init
