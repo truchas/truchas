@@ -24,12 +24,11 @@ module fdme_precon_class
       import
       class(fdme_precon), intent(inout) :: this
     end subroutine
-    subroutine apply(this, b, x)
+    subroutine apply(this, x)
       use,intrinsic :: iso_fortran_env, only: r8 => real64
       import
       class(fdme_precon), intent(inout) :: this
-      real(r8), intent(in) :: b(:,:)
-      real(r8), intent(inout) :: x(:,:) ! FIXME?  inout?
+      real(r8), intent(inout) :: x(:,:)
     end subroutine
   end interface
 

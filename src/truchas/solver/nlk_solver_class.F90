@@ -191,8 +191,7 @@ contains
     do iter = 1, this%max_iter
       call this%apply_precon(u, this%r)
       if (allocated(this%nka)) call this%nka%accel_update(this%r)
-      !u = u + r
-      call u%update(1.0_r8, this%r) !FIXME? Why is this "+" -- it ought to be "-" unless precon is doing something weird
+      call u%update(-1.0_r8, this%r) !u = u - r
 
       call this%compute_f(u, this%r)
       rnorm = this%r%norm2()
@@ -223,7 +222,7 @@ contains
 
 1   format(2x,'nlk_solver: convergence failure: ',i0,' iterations (max), 2-norm =',es10.3)
 2   format(2x,'nlk_solver: converged: ',i0,' iterations, 2-norm =',es10.3)
-3   format(2x,i6,': 2-norm =',1es10.3)
+3   format(2x,i0,": |r|_2 =",es10.3)
 
   end subroutine solve
 

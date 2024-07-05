@@ -44,7 +44,7 @@ module fdme_hiptmair_precon_type
     logical, allocatable :: is_ebc_edge(:), is_ebc_node(:)
     type(msr_matrix) :: Bn(2,2), Be(2,2)  ! alternative to An, Ae
     ! persistent workspace for apply
-    real(r8), allocatable :: un(:,:), rn(:,:), r(:,:)
+    real(r8), allocatable :: un(:,:), rn(:,:), r(:,:), b(:,:)
   contains
     procedure :: init
     procedure :: setup
@@ -64,7 +64,7 @@ contains
     this%model => model
     this%mesh => model%mesh
     allocate(this%un(2,this%mesh%nnode), this%rn(2,this%mesh%nnode))
-    allocate(this%r(2,this%mesh%nedge))
+    allocate(this%r(2,this%mesh%nedge), this%b(2,this%mesh%nedge))
     allocate(this%is_ebc_node(this%mesh%nnode))
 
     ! mark Dirichlet BC edges & nodes
@@ -252,30 +252,30 @@ contains
 
   end subroutine setup
 
-  subroutine apply(this, b, x)
+  subroutine apply(this, x)
 
     use mimetic_discretization, only: grad, grad_t
     use msr_matrix_type, only: gs_relaxation
 
     class(fdme_hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:,:)
     real(r8), intent(inout) :: x(:,:)
 
     integer :: j
 
-    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
     ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
-    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
     call start_timer('precon')
 
-    !! Forward Gauss-Seidel relaxation on the on-process edge system.
+    this%b(:,:) = x
     x = 0.0_r8
-    call gs_relaxation(this%Ae, b, x, 'f')
+
+    !! Forward Gauss-Seidel relaxation on the on-process edge system.
+    call gs_relaxation(this%Ae, this%b, x, 'f')
 
     !! Update the local residual and project it to the nodes.
-    this%r = b - this%Ae%matvec(x)
+    this%r = this%b - this%Ae%matvec(x)
     call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
     call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
     do j = 1, this%mesh%nnode
@@ -291,7 +291,7 @@ contains
     call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
 
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Ae, b, x, 'b')
+    call gs_relaxation(this%Ae, this%b, x, 'b')
 
     !TODO: Fix this parallel step
     !call this%mesh%edge_imap%scatter_offp_sum(x)
@@ -304,75 +304,75 @@ contains
 
   end subroutine apply
 
-  !! An alternate storage scheme for the preconditioner matrices stores them
-  !! as a 2x2 block system according to the real/imaginary part partitioning
-  !! of the unknowns. Each edge-based block has identical non-zero structure.
-  !! Morever there are only two distinct blocks in each matrix, with the other
-  !! two blocks being equal to or the negative of one of the first. This
-  !! allows the storage to be cut in half (not yet exploited). HOWEVER, the
-  !! Gauss-Seidel relaxations, which depend on the ordering of unknowns, are
-  !! fundamentally different in this scheme, and appear to be significantly
-  !! less effective.
-
-  subroutine alt_apply(this, b, x)
-
-    use mimetic_discretization, only: grad, grad_t
-    use msr_matrix_type, only: gs_relaxation
-
-    class(fdme_hiptmair_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:,:)
-    real(r8), intent(inout) :: x(:,:)
-
-    integer :: j
-
-    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
-    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
-    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
-
-    call start_timer('precon')
-
-    !! Forward Gauss-Seidel relaxation on the on-process edge system.
-    x = 0.0_r8
-    call gs_relaxation(this%Be(1,1), b(1,:), x(1,:), 'f')
-    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:))
-    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2,:), 'f')
-
-    !! Update the local residual and project it to the nodes.
-    this%r(1,:) = b(1,:) - this%Be(1,1)%matvec(x(1,:)) - this%Be(1,2)%matvec(x(2,:))
-    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:)) - this%Be(2,2)%matvec(x(2,:))
-    call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
-    call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
-    do j = 1, this%mesh%nnode
-      if (this%is_ebc_node(j)) this%rn(:,j) = 0.0_r8
-    end do
-
-    !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
-    this%un = 0.0_r8
-    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'f')
-    this%rn(2,:) = this%rn(2,:) - this%Bn(2,1)%matvec(this%un(1,:))
-    call gs_relaxation(this%Bn(2,2), this%rn(2,:), this%un(2,:), 'fb')
-    this%rn(1,:) = this%rn(1,:) - this%Bn(1,2)%matvec(this%un(2,:))
-    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'b')
-
-    !! Update the the solution with the node-based correction.
-    call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
-    call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
-
-    !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Be(2,2), b(2,:), x(2,:), 'b')
-    this%r(1,:) = b(1,:) - this%Be(1,2)%matvec(x(2,:))
-    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1,:), 'b')
-
-    !TODO: Fix this parallel step
-    !call this%mesh%edge_imap%scatter_offp_sum(x)
-    !call this%mesh%edge_imap%gather_offp(x)
-
-    call stop_timer('precon')
-
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
-
-  end subroutine alt_apply
+!  !! An alternate storage scheme for the preconditioner matrices stores them
+!  !! as a 2x2 block system according to the real/imaginary part partitioning
+!  !! of the unknowns. Each edge-based block has identical non-zero structure.
+!  !! Morever there are only two distinct blocks in each matrix, with the other
+!  !! two blocks being equal to or the negative of one of the first. This
+!  !! allows the storage to be cut in half (not yet exploited). HOWEVER, the
+!  !! Gauss-Seidel relaxations, which depend on the ordering of unknowns, are
+!  !! fundamentally different in this scheme, and appear to be significantly
+!  !! less effective.
+!
+!  subroutine alt_apply(this, b, x)
+!
+!    use mimetic_discretization, only: grad, grad_t
+!    use msr_matrix_type, only: gs_relaxation
+!
+!    class(fdme_hiptmair_precon), intent(inout) :: this
+!    real(r8), intent(in) :: b(:,:)
+!    real(r8), intent(inout) :: x(:,:)
+!
+!    integer :: j
+!
+!    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
+!    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
+!    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
+!
+!    call start_timer('precon')
+!
+!    !! Forward Gauss-Seidel relaxation on the on-process edge system.
+!    x = 0.0_r8
+!    call gs_relaxation(this%Be(1,1), b(1,:), x(1,:), 'f')
+!    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:))
+!    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2,:), 'f')
+!
+!    !! Update the local residual and project it to the nodes.
+!    this%r(1,:) = b(1,:) - this%Be(1,1)%matvec(x(1,:)) - this%Be(1,2)%matvec(x(2,:))
+!    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:)) - this%Be(2,2)%matvec(x(2,:))
+!    call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
+!    call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
+!    do j = 1, this%mesh%nnode
+!      if (this%is_ebc_node(j)) this%rn(:,j) = 0.0_r8
+!    end do
+!
+!    !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
+!    this%un = 0.0_r8
+!    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'f')
+!    this%rn(2,:) = this%rn(2,:) - this%Bn(2,1)%matvec(this%un(1,:))
+!    call gs_relaxation(this%Bn(2,2), this%rn(2,:), this%un(2,:), 'fb')
+!    this%rn(1,:) = this%rn(1,:) - this%Bn(1,2)%matvec(this%un(2,:))
+!    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'b')
+!
+!    !! Update the the solution with the node-based correction.
+!    call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
+!    call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
+!
+!    !! Backward Gauss-Seidel relaxation on the on-process edge system.
+!    call gs_relaxation(this%Be(2,2), b(2,:), x(2,:), 'b')
+!    this%r(1,:) = b(1,:) - this%Be(1,2)%matvec(x(2,:))
+!    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1,:), 'b')
+!
+!    !TODO: Fix this parallel step
+!    !call this%mesh%edge_imap%scatter_offp_sum(x)
+!    !call this%mesh%edge_imap%gather_offp(x)
+!
+!    call stop_timer('precon')
+!
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
+!
+!  end subroutine alt_apply
 
 end module fdme_hiptmair_precon_type

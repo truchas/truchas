@@ -14,7 +14,6 @@ module fdme_gmres_solver_type
   type, extends(gmres_left_solver) :: my_gmres_solver
     type(fdme_model), pointer :: model => null() ! unowned reference
     class(fdme_precon), pointer :: precon => null() ! unowned reference
-    real(r8), allocatable :: b(:,:)
   contains
     procedure :: matvec
     procedure :: apply_precon
@@ -69,10 +68,7 @@ contains
     class(vector), intent(inout) :: x
     select type (x)
     type is (fdme_vector)
-      !TODO: Can apply operate in place with f in order to eliminate temporary b?
-      this%b = x%array  !this allocates b
-      x%array = 0.0_r8
-      call this%precon%apply(this%b, x%array)
+      call this%precon%apply(x%array)
     end select
   end subroutine
 

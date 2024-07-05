@@ -277,16 +277,14 @@ contains
   end subroutine setup
 
 
-  subroutine apply(this, b, x)
+  subroutine apply(this, x)
 
     class(fdme_ams_precon), intent(inout) :: this
-    real(r8), intent(in) :: b(:,:)
     real(r8), intent(inout) :: x(:,:)
 
     integer :: ierr, stat
     real(r8) :: bs(this%nrows), xs(this%nrows)
 
-    ASSERT(size(b) == 2*this%nrows)
     ASSERT(size(x) == 2*this%nrows)
 
     call start_timer("precon")
@@ -294,46 +292,36 @@ contains
     call fHYPRE_ClearAllErrors
     this%niter = 0
 
-    !bs = -b(1:2*this%nrows-1:2)
-    !xs = x(1:2*this%nrows-1:2)
-    !call apply_system(this%solver, this%Ah, bs, xs)
-    call apply_system(this%solver, this%Ah, -b(1,:), x(1,:))
-    !x(1:2*this%nrows-1:2) = -xs
-    x(1,:) = -x(1,:)
+    call apply_system(this%solver, this%Ah, x(1,:))
     ASSERT(all(ieee_is_finite(x(1,:))))
 
-    !bs = -b(2:2*this%nrows:2)
-    !xs = x(2:2*this%nrows:2)
-    !call apply_system(this%solver, this%Ah, bs, xs)
-    call apply_system(this%solver, this%Ah, -b(2,:), x(2,:))
-    !x(2:2*this%nrows:2) = -xs
-    x(2,:) = -x(2,:)
+    call apply_system(this%solver, this%Ah, x(2,:))
+    ASSERT(all(ieee_is_finite(x(2,:))))
 
     call stop_timer("precon")
 
   contains
 
-    subroutine apply_system(solver, A, b, x)
+    subroutine apply_system(solver, A, x)
 
       use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
       type(hypre_obj), intent(in) :: solver, A
-      real(r8), intent(in) :: b(:)
       real(r8), intent(inout) :: x(:)
 
       real(r8) :: rel_resid_norm
       integer :: num_iterations
 
       ASSERT(all(ieee_is_finite(x)))
-      ASSERT(all(ieee_is_finite(b)))
 
       !! Initialize the Hypre RHS vector.
       call fHYPRE_IJVectorInitialize(this%bh, ierr)
-      call fHYPRE_IJVectorSetValues(this%bh, this%nrows, this%rows, b, ierr)
+      call fHYPRE_IJVectorSetValues(this%bh, this%nrows, this%rows, x, ierr)
       call fHYPRE_IJVectorAssemble(this%bh, ierr)
       INSIST(ierr == 0)
 
       !! Initialize the Hypre initial guess vector.
+      x = 0.0_r8  !TODO: is there another way to set the hypre vector to 0?
       call fHYPRE_IJVectorInitialize(this%xh, ierr)
       call fHYPRE_IJVectorSetValues(this%xh, this%nrows, this%rows, x, ierr)
       call fHYPRE_IJVectorAssemble(this%xh, ierr)

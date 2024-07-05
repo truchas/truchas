@@ -15,7 +15,6 @@ module fdme_nlk_solver_type
   type, extends(nlk_solver) :: my_nlk_solver
     type(fdme_model), pointer :: model => null() ! unowned reference
     class(fdme_precon), pointer :: precon => null() ! unowned reference
-    real(r8), allocatable :: b(:,:)
   contains
     procedure :: compute_f
     procedure :: apply_precon
@@ -60,25 +59,20 @@ contains
     type is (fdme_vector)
       select type (f)
       type is (fdme_vector)
-        !call this%model%compute_f(u%array, f%array, ax=.false.)
-        call this%model%compute_f(u, f, ax=.false.)
+        call this%model%residual(u, f)
+        f%array = -f%array ! switch from b-Ax to Ax-b
       end select
     end select
   end subroutine
 
   subroutine apply_precon(this, u, f)
     class(my_nlk_solver) :: this
-    class(vector), intent(inout) :: u, f
-    select type (u)
+    class(vector), intent(inout) :: u ! not used
+    class(vector), intent(inout) :: f
+    select type (f)
     type is (fdme_vector)
-      select type (f)
-      type is (fdme_vector)
-        this%b = f%array  !this allocates b
-        f%array = 0.0_r8
-        ASSERT(all(ieee_is_finite(this%b)))
-        call this%precon%apply(this%b, f%array)
-        ASSERT(all(ieee_is_finite(f%array)))
-      end select
+      call this%precon%apply(f%array)
+      ASSERT(all(ieee_is_finite(f%array)))
     end select
   end subroutine
 
