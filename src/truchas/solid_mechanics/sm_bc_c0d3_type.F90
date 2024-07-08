@@ -55,11 +55,8 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, ncontact, d, ndispl
+    integer :: nnode, ni, d, ndispl, ibc, xibc
     logical :: matching_node
-
-    integer :: xd, ibc, xibc
-    logical :: degenerate
 
     this%mesh => mesh
     this%penalty = penalty
@@ -105,19 +102,8 @@ contains
         if (ibc >= bc%xcontact) cycle
         this%displf(d,nnode)%f => bc%displacement(ibc)%f
         this%normal_d(:,d,nnode) = nodebc%normal(:,xibc) / norm2(nodebc%normal(:,xibc))
-        if (d > 1) then
-          ! TODO: only add BCs orthogonal to already added BCs.
-          ! Can probably do this more efficiently with LAPACK.
-          degenerate = .false.
-          do xd = 1, d-1
-            if (dot_product(this%normal_d(:,d,nnode), this%normal_d(:,xd,nnode)) > 1-1d-2) then
-              degenerate = .true.
-              exit
-            end if
-          end do
-          if (degenerate) cycle
-        end if
-        d = d + 1
+        ! only add BCs orthogonal to already added BCs.
+        if (is_orthogonal(this%normal_d(:,d,nnode), this%normal_d(:,:d-1,nnode))) d = d + 1
         if (d > 3) exit
       end do
       INSIST(d > 3)
@@ -132,6 +118,29 @@ contains
     end if
 
   end subroutine init
+
+  ! Check if x is orthogonal to the columns of A.
+  ! TODO: Can probably do this more efficiently with LAPACK.
+  logical function is_orthogonal(x, A)
+
+    real(r8), intent(in) :: x(:), A(:,:)
+
+    real(r8), parameter :: tol = 1d-2
+    real(r8) :: y(size(x)), lenA, leny
+    integer :: i
+
+    is_orthogonal = .true.
+    if (size(A, dim=2) == 0) return
+
+    y = x
+    do i = 1, size(A, dim=2)
+      lenA = norm2(A(:,i))
+      if (lenA > tol) y = y - dot_product(y, A(:,i)) * A(:,i) / lenA
+      is_orthogonal = norm2(y) > tol
+      if (.not.is_orthogonal) exit
+    end do
+
+  end function is_orthogonal
 
 
   !! When given three displacements (d1,d2,d3) associated with linearly
