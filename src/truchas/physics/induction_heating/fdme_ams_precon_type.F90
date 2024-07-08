@@ -243,7 +243,7 @@ contains
       end do
     end if
 
-!NNC: I don't this this is necessary, as the AMS system is non-singular,
+!NNC: I don't think this is necessary, as the AMS system is non-singular,
 !     but if needed, it is a node-based vector not edge-based -- FIXME
 !     But if it is needed, it needs to be fixed
 !    ! List interior nodes for the AMS preconditioner. All nodes inside the

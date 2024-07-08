@@ -30,7 +30,6 @@ module fdme_hiptmair_precon_type
   use fdme_model_type
   use parameter_list_type
   use simpl_mesh_type
-  use msr_matrix_type
   use bcsr_matrix_type
   use truchas_timers
   implicit none
@@ -42,13 +41,12 @@ module fdme_hiptmair_precon_type
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(bcsr_matrix) :: An, Ae
     logical, allocatable :: is_ebc_edge(:), is_ebc_node(:)
-    type(msr_matrix) :: Bn(2,2), Be(2,2)  ! alternative to An, Ae
     ! persistent workspace for apply
     real(r8), allocatable :: un(:,:), rn(:,:), r(:,:), b(:,:)
   contains
     procedure :: init
     procedure :: setup
-    procedure :: apply !=> alt_apply
+    procedure :: apply
   end type
 
 contains
@@ -99,31 +97,6 @@ contains
       call this%An%init(2, g, take_graph=.true.)
     end block
 
-    !! Alternative real/imaginary partitioned CSR block storage.
-    block
-      type(msr_graph), pointer :: g
-      allocate(g)
-      call g%init(this%mesh%nedge)
-      call g%add_clique(this%mesh%cedge)
-      call g%add_complete
-      call this%Be(1,1)%init(g, take_graph=.true.)
-      call this%Be(2,1)%init(mold=this%Be(1,1))
-      call this%Be(1,2)%init(mold=this%Be(1,1))
-      call this%Be(2,2)%init(mold=this%Be(1,1))
-    end block
-
-    block
-      type(msr_graph), pointer :: g
-      allocate(g)
-      call g%init(this%mesh%nnode)
-      call g%add_clique(this%mesh%cnode)
-      call g%add_complete
-      call this%Bn(1,1)%init(g, take_graph=.true.)
-      call this%Bn(2,1)%init(mold=this%Bn(1,1))
-      call this%Bn(1,2)%init(mold=this%Bn(1,1))
-      call this%Bn(2,2)%init(mold=this%Bn(1,1))
-    end block
-
   end subroutine init
 
 
@@ -152,7 +125,7 @@ contains
       ! non-dimensionalized
       c1 = 1.0_r8 / this%model%mu(j)
       c2 = this%model%epsr(j) * omegar**2
-      c3 = this%model%epsi(j) * omegar**2 - omegar * this%model%sigma(j) * this%model%Z0
+      c3 = -(this%model%epsi(j) * omegar**2 + omegar * this%model%sigma(j) * this%model%Z0)
 #ifdef ORIGINAL
       !NB: This results in a different matrix than the actual matrix of the edge-based system.
       !TODO: What is the rationale for the following modification?
@@ -181,17 +154,6 @@ contains
       !ntmp(2,1,:) = -ntmp(2,1,:)
       !ntmp(2,2,:) = -ntmp(2,2,:)
       call this%An%add_to(this%mesh%cnode(:,j), ntmp)
-
-      !! Alternative real/imaginary partitioned system
-      call this%Be(1,1)%add_to(this%mesh%cedge(:,j), (c1 * ctm2c - c2 * m1))
-      call this%Be(2,2)%add_to(this%mesh%cedge(:,j), -(c1 * ctm2c - c2 * m1))
-      call this%Be(1,2)%add_to(this%mesh%cedge(:,j), c3*m1)
-      call this%Be(2,1)%add_to(this%mesh%cedge(:,j), c3*m1)
-
-      call this%Bn(1,1)%add_to(this%mesh%cnode(:,j), -c2*gtm1g)
-      call this%Bn(2,2)%add_to(this%mesh%cnode(:,j), c2*gtm1g)
-      call this%Bn(1,2)%add_to(this%mesh%cnode(:,j), c3*gtm1g)
-      call this%Bn(2,1)%add_to(this%mesh%cnode(:,j), c3*gtm1g)
     end do
 
     do j = 1, this%mesh%nedge
@@ -207,46 +169,6 @@ contains
         call this%An%set(j, j, ID2)
       end if
     end do
-
-    do j = 1, this%mesh%nedge
-      if (this%is_ebc_edge(j)) then
-        call this%Be(1,1)%project_out(j)
-        call this%Be(2,1)%project_out(j)
-        call this%Be(1,2)%project_out(j)
-        call this%Be(2,2)%project_out(j)
-        call this%Be(1,1)%set(j, j, 1.0_r8)
-        call this%Be(2,2)%set(j, j, 1.0_r8)
-      end if
-    end do
-
-    do j = 1, this%mesh%nnode
-      if (this%is_ebc_node(j)) then
-        call this%Bn(1,1)%project_out(j)
-        call this%Bn(2,1)%project_out(j)
-        call this%Bn(1,2)%project_out(j)
-        call this%Bn(2,2)%project_out(j)
-        call this%Bn(1,1)%set(j, j, 1.0_r8)
-        call this%Bn(2,2)%set(j, j, 1.0_r8)
-      end if
-    end do
-
-!    block ! test result -- Okay
-!      real(r8), dimension(2,this%mesh%nedge) :: x, y1, y2
-!      call random_number(x)
-!      y1 = this%Ae%matvec(x)
-!      y2(1,:) = this%Be(1,1)%matvec(x(1,:)) + this%Be(1,2)%matvec(x(2,:))
-!      y2(2,:) = this%Be(2,1)%matvec(x(1,:)) + this%Be(2,2)%matvec(x(2,:))
-!      print *, 'EDGE MATVEC ERROR:', count(abs(y1-y2) > 1d-12*abs(y1))
-!    end block
-
-!    block ! test result -- Okay
-!      real(r8), dimension(2,this%mesh%nnode) :: x, y1, y2
-!      call random_number(x)
-!      y1 = this%An%matvec(x)
-!      y2(1,:) = this%Bn(1,1)%matvec(x(1,:)) + this%Bn(1,2)%matvec(x(2,:))
-!      y2(2,:) = this%Bn(2,1)%matvec(x(1,:)) + this%Bn(2,2)%matvec(x(2,:))
-!      print *, 'NODE MATVEC ERROR:', count(abs(y1-y2) > 1d-12*abs(y1))
-!    end block
 
     call stop_timer("precon")
 
@@ -303,76 +225,5 @@ contains
     ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
   end subroutine apply
-
-!  !! An alternate storage scheme for the preconditioner matrices stores them
-!  !! as a 2x2 block system according to the real/imaginary part partitioning
-!  !! of the unknowns. Each edge-based block has identical non-zero structure.
-!  !! Morever there are only two distinct blocks in each matrix, with the other
-!  !! two blocks being equal to or the negative of one of the first. This
-!  !! allows the storage to be cut in half (not yet exploited). HOWEVER, the
-!  !! Gauss-Seidel relaxations, which depend on the ordering of unknowns, are
-!  !! fundamentally different in this scheme, and appear to be significantly
-!  !! less effective.
-!
-!  subroutine alt_apply(this, b, x)
-!
-!    use mimetic_discretization, only: grad, grad_t
-!    use msr_matrix_type, only: gs_relaxation
-!
-!    class(fdme_hiptmair_precon), intent(inout) :: this
-!    real(r8), intent(in) :: b(:,:)
-!    real(r8), intent(inout) :: x(:,:)
-!
-!    integer :: j
-!
-!    ASSERT(size(b,2) == this%mesh%edge_imap%onp_size) !FIXME?
-!    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
-!    ASSERT(all(.not.this%is_ebc_edge .or. b(1,:) == 0))
-!    ASSERT(all(.not.this%is_ebc_edge .or. b(2,:) == 0))
-!
-!    call start_timer('precon')
-!
-!    !! Forward Gauss-Seidel relaxation on the on-process edge system.
-!    x = 0.0_r8
-!    call gs_relaxation(this%Be(1,1), b(1,:), x(1,:), 'f')
-!    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:))
-!    call gs_relaxation(this%Be(2,2), this%r(2,:), x(2,:), 'f')
-!
-!    !! Update the local residual and project it to the nodes.
-!    this%r(1,:) = b(1,:) - this%Be(1,1)%matvec(x(1,:)) - this%Be(1,2)%matvec(x(2,:))
-!    this%r(2,:) = b(2,:) - this%Be(2,1)%matvec(x(1,:)) - this%Be(2,2)%matvec(x(2,:))
-!    call grad_t(this%mesh, this%r(1,:), this%rn(1,:))
-!    call grad_t(this%mesh, this%r(2,:), this%rn(2,:))
-!    do j = 1, this%mesh%nnode
-!      if (this%is_ebc_node(j)) this%rn(:,j) = 0.0_r8
-!    end do
-!
-!    !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
-!    this%un = 0.0_r8
-!    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'f')
-!    this%rn(2,:) = this%rn(2,:) - this%Bn(2,1)%matvec(this%un(1,:))
-!    call gs_relaxation(this%Bn(2,2), this%rn(2,:), this%un(2,:), 'fb')
-!    this%rn(1,:) = this%rn(1,:) - this%Bn(1,2)%matvec(this%un(2,:))
-!    call gs_relaxation(this%Bn(1,1), this%rn(1,:), this%un(1,:), 'b')
-!
-!    !! Update the the solution with the node-based correction.
-!    call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
-!    call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
-!
-!    !! Backward Gauss-Seidel relaxation on the on-process edge system.
-!    call gs_relaxation(this%Be(2,2), b(2,:), x(2,:), 'b')
-!    this%r(1,:) = b(1,:) - this%Be(1,2)%matvec(x(2,:))
-!    call gs_relaxation(this%Be(1,1), this%r(1,:), x(1,:), 'b')
-!
-!    !TODO: Fix this parallel step
-!    !call this%mesh%edge_imap%scatter_offp_sum(x)
-!    !call this%mesh%edge_imap%gather_offp(x)
-!
-!    call stop_timer('precon')
-!
-!    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
-!    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
-!
-!  end subroutine alt_apply
 
 end module fdme_hiptmair_precon_type

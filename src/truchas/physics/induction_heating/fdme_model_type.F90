@@ -8,7 +8,6 @@ module fdme_model_type
   use fdme_vector_type
   use pcsr_matrix_type
   use bcsr_matrix_type
-  !use msr_matrix_type
   use bndry_func1_class
   use truchas_timers
   implicit none
@@ -18,7 +17,6 @@ module fdme_model_type
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(pcsr_matrix) :: A(2,2)
     type(bcsr_matrix) :: B ! alternate storage scheme for A
-    !real(r8), allocatable :: rhs(:,:)
     type(fdme_vector) :: rhs
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
@@ -32,8 +30,6 @@ module fdme_model_type
     procedure :: setup
     procedure :: matvec
     procedure :: residual
-    !procedure :: compute_f
-    procedure :: compute_f => alt_compute_f
     procedure :: compute_heat_source
   end type
 
@@ -70,10 +66,8 @@ contains
 
     block ! full system in block partitioned form
       type(pcsr_graph), pointer :: g
-      !type(msr_graph), pointer :: g
       allocate(g)
       call g%init(this%mesh%edge_imap)
-      !call g%init(this%mesh%nedge)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
       call this%A(1,1)%init(g, take_graph=.true.)
@@ -94,7 +88,6 @@ contains
     n = this%mesh%ncell
     allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
 
-    !allocate(this%rhs(2,this%mesh%nedge))
     call this%rhs%init(this%mesh)
 
   end subroutine init
@@ -132,6 +125,7 @@ contains
     call this%A(1,2)%set_all(0.0_r8)
     call this%A(2,1)%set_all(0.0_r8)
     call this%A(2,2)%set_all(0.0_r8)
+    call this%B%set_all(0.0_r8)
 
     ! Raw system matrix ignoring boundary condtions
     do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
@@ -146,7 +140,7 @@ contains
       b(1,1,:) = a
       b(2,2,:) = -a
 
-      a = (omegar**2 * epsi(j) - omegar * sigma(j) * this%Z0) * m1
+      a = -(omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
       call this%A(1,2)%add_to(this%mesh%cedge(:,j), a)
       call this%A(2,1)%add_to(this%mesh%cedge(:,j), a)
 
@@ -159,24 +153,12 @@ contains
     ! RHS contribution from nxE boundary conditions
     if (allocated(this%ebc)) then
       block
-        real(r8), allocatable :: efield_r(:)
-        call this%ebc%compute(t)
-        allocate(efield_r(this%mesh%nedge), source=0.0_r8)
+        real(r8), allocatable :: efield(:,:)
+        allocate(efield(2,this%mesh%nedge), source=0.0_r8)
         do j = 1, size(this%ebc%index)
-          efield_r(this%ebc%index(j)) = this%ebc%value(j)
+          efield(1,this%ebc%index(j)) = this%ebc%value(j)
         end do
-        call this%A(1,1)%matvec(efield_r, this%rhs%array(1,:))
-        this%rhs%array(1,:) = efield_r - this%rhs%array(1,:)
-        call this%A(2,1)%matvec(efield_r, this%rhs%array(2,:))
-        this%rhs%array(2,:) = -this%rhs%array(2,:)
-        ! alternative using B
-        !real(r8), allocatable :: efield(:,:)
-        !allocate(efield(2,this%mesh%nedge), source=0.0_r8)
-        !do j = 1, size(this%ebc%index)
-        !  efield(1,this%ebc%index(j)) = this%ebc%value(j)
-        !end do
-        !call this%B%matvec(efield, this%rhs%array)
-        !this%rhs%array = efield - this%rhs%array
+        this%rhs%array = efield - this%B%matvec(efield)
       end block
     end if
 
@@ -209,46 +191,12 @@ contains
   end subroutine setup
 
 
-  subroutine compute_f(this, u, f, ax)
-    class(fdme_model) :: this
-    type(fdme_vector), intent(inout) :: u
-    type(fdme_vector), intent(inout) :: f
-    logical, intent(in), optional :: ax
-    real(r8) :: tmp(this%mesh%nedge)
-    call u%gather_offp
-    associate (E_r => u%array(1,:), E_i => u%array(2,:), &
-               r_r => f%array(1,:), r_i => f%array(2,:))
-      call this%A(1,1)%matvec(E_r, r_r)
-      call this%A(1,2)%matvec(E_i, r_r, incr=.true.)
-      call this%A(2,1)%matvec(E_r, r_i)
-      call this%A(2,2)%matvec(E_i, r_i, incr=.true.)
-      !r_i = -r_i
-    end associate
-    if (present(ax)) then
-      if (ax) return
-    end if
-    f%array = this%rhs%array - f%array
-  end subroutine
-
   subroutine residual(this, e, r)
     class(fdme_model), intent(in) :: this
     class(fdme_vector), intent(inout) :: e, r
     call e%gather_offp
     r%array(:,:) = this%rhs%array - this%B%matvec(e%array)
     !call r%gather_offp ! not necessary
-  end subroutine
-
-  subroutine alt_compute_f(this, u, f, ax)
-    class(fdme_model) :: this
-    type(fdme_vector), intent(inout) :: u
-    type(fdme_vector), intent(inout) :: f
-    logical, intent(in), optional :: ax
-    call u%gather_offp
-    f%array(:,:) = this%B%matvec(u%array)
-    if (present(ax)) then
-      if (ax) return
-    end if
-    f%array = this%rhs%array - f%array
   end subroutine
 
   subroutine matvec(this, x, ax)
