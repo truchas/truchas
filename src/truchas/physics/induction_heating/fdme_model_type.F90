@@ -6,8 +6,7 @@ module fdme_model_type
   use simpl_mesh_type
   use vector_class
   use fdme_vector_type
-  use pcsr_matrix_type
-  use bsr_matrix_type
+  use pbsr_matrix_type
   use bndry_func1_class
   use truchas_timers
   implicit none
@@ -15,8 +14,7 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(pcsr_matrix) :: A(2,2)
-    type(bsr_matrix) :: B ! alternate storage scheme for A
+    type(pbsr_matrix) :: A
     type(fdme_vector) :: rhs
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
@@ -64,25 +62,13 @@ contains
     end if
     if (stat /= 0) return
 
-    block ! full system in block partitioned form
+    block
       type(pcsr_graph), pointer :: g
       allocate(g)
       call g%init(this%mesh%edge_imap)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
-      call this%A(1,1)%init(g, take_graph=.true.)
-      call this%A(1,2)%init(mold=this%A(1,1))
-      call this%A(2,1)%init(mold=this%A(1,1))
-      call this%A(2,2)%init(mold=this%A(1,1))
-    end block
-
-    block ! full system in block CSR form
-      type(csr_graph), pointer :: g
-      allocate(g)
-      call g%init(this%mesh%nedge)
-      call g%add_clique(this%mesh%cedge)
-      call g%add_complete
-      call this%B%init(2, g, take_graph=.true.)
+      call this%A%init(2, g, take_graph=.true.)
     end block
 
     n = this%mesh%ncell
@@ -101,8 +87,7 @@ contains
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
 
     integer :: j, n
-    real(r8) :: m1(21), m2(10), ctm2c(21), a(21), omegar
-    real(r8) :: b(2,2,21)
+    real(r8) :: m1(21), m2(10), ctm2c(21), a(2,2,21), omegar
     real(r8), parameter :: ID2(2,2) = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape=[2,2])
 
     ASSERT(size(epsr) == this%mesh%ncell)
@@ -121,11 +106,7 @@ contains
     this%omega = omega
     omegar = omega / this%c0
 
-    call this%A(1,1)%set_all(0.0_r8)
-    call this%A(1,2)%set_all(0.0_r8)
-    call this%A(2,1)%set_all(0.0_r8)
-    call this%A(2,2)%set_all(0.0_r8)
-    call this%B%set_all(0.0_r8)
+    call this%A%set_all(0.0_r8)
 
     ! Raw system matrix ignoring boundary condtions
     do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
@@ -133,21 +114,13 @@ contains
       m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
 
-      a = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
-      call this%A(1,1)%add_to(this%mesh%cedge(:,j), a)
-      call this%A(2,2)%add_to(this%mesh%cedge(:,j), -a)
+      a(1,1,:) = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
+      a(2,2,:) = -a(1,1,:)
 
-      b(1,1,:) = a
-      b(2,2,:) = -a
+      a(1,2,:) = -(omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
+      a(2,1,:) = a(1,2,:)
 
-      a = -(omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
-      call this%A(1,2)%add_to(this%mesh%cedge(:,j), a)
-      call this%A(2,1)%add_to(this%mesh%cedge(:,j), a)
-
-      b(1,2,:) = a
-      b(2,1,:) = a
-
-      call this%B%add_to(this%mesh%cedge(:,j), b)
+      call this%A%add_to(this%mesh%cedge(:,j), a)
     end do
 
     ! RHS contribution from nxE boundary conditions
@@ -158,7 +131,9 @@ contains
         do j = 1, size(this%ebc%index)
           efield(1,this%ebc%index(j)) = this%ebc%value(j)
         end do
-        this%rhs%array = efield - this%B%matvec(efield)
+        call this%A%matvec(efield, this%rhs%array)
+        this%rhs%array = efield - this%rhs%array
+        call this%rhs%gather_offp ! necessary?
       end block
     end if
 
@@ -175,14 +150,8 @@ contains
     if (allocated(this%ebc)) then
       do j = 1, size(this%ebc%index)
         n = this%ebc%index(j)
-        call this%A(1,1)%project_out(n)
-        call this%A(1,2)%project_out(n)
-        call this%A(2,1)%project_out(n)
-        call this%A(2,2)%project_out(n)
-        call this%A(1,1)%set(n, n, 1.0_r8)
-        call this%A(2,2)%set(n, n, 1.0_r8)
-        call this%B%project_out(n)
-        call this%B%set(n, n, ID2)
+        call this%A%project_out(n)
+        call this%A%set(n, n, ID2)
       end do
     end if
 
@@ -195,14 +164,15 @@ contains
     class(fdme_model), intent(in) :: this
     class(fdme_vector), intent(inout) :: e, r
     call e%gather_offp
-    r%array(:,:) = this%rhs%array - this%B%matvec(e%array)
+    call this%A%matvec(e%array, r%array)
+    r%array = this%rhs%array - r%array
     !call r%gather_offp ! not necessary
   end subroutine
 
   subroutine matvec(this, x, ax)
     class(fdme_model), intent(in) :: this
     type(fdme_vector), intent(inout) :: x, ax
-    ax%array(:,:) = this%B%matvec(x%array)
+    call this%A%matvec(x%array, ax%array)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)

@@ -103,7 +103,7 @@ contains
 
     this%model => model
     this%mesh => model%mesh
-    call this%A%init(mold=model%A(1,1))
+    call this%A%init(model%A%graph, take_graph=.false.)
     this%nrows = this%mesh%edge_imap%onp_size
     this%ilower = this%mesh%edge_imap%first_gid
     this%iupper = this%mesh%edge_imap%last_gid
@@ -233,9 +233,7 @@ contains
     call start_timer("precon")
 
     !! Preconditioner matrix
-    this%A%values(:) = this%model%A(1,1)%values - this%model%A(1,2)%values
-    !this%A%diag = this%model%A(1,1)%diag - this%model%A(1,2)%diag
-    !this%A%nonz = this%model%A(1,1)%nonz - this%model%A(1,2)%nonz
+    this%A%values(:) = this%model%A%values(1,1,:) - this%model%A%values(1,2,:)
     if (allocated(this%model%ebc)) then
       do j = 1, size(this%model%ebc%index)
         n = this%model%ebc%index(j)
