@@ -7,7 +7,7 @@ module fdme_model_type
   use vector_class
   use fdme_vector_type
   use pcsr_matrix_type
-  use bcsr_matrix_type
+  use bsr_matrix_type
   use bndry_func1_class
   use truchas_timers
   implicit none
@@ -16,7 +16,7 @@ module fdme_model_type
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(pcsr_matrix) :: A(2,2)
-    type(bcsr_matrix) :: B ! alternate storage scheme for A
+    type(bsr_matrix) :: B ! alternate storage scheme for A
     type(fdme_vector) :: rhs
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)

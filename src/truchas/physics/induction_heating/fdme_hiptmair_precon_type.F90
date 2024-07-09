@@ -30,7 +30,7 @@ module fdme_hiptmair_precon_type
   use fdme_model_type
   use parameter_list_type
   use simpl_mesh_type
-  use bcsr_matrix_type
+  use bsr_matrix_type
   use truchas_timers
   implicit none
   private
@@ -39,7 +39,7 @@ module fdme_hiptmair_precon_type
     private
     type(fdme_model), pointer :: model => null() ! unowned reference
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(bcsr_matrix) :: An, Ae
+    type(bsr_matrix) :: An, Ae
     logical, allocatable :: is_ebc_edge(:), is_ebc_node(:)
     ! persistent workspace for apply
     real(r8), allocatable :: un(:,:), rn(:,:), r(:,:), b(:,:)
@@ -177,7 +177,7 @@ contains
   subroutine apply(this, x)
 
     use mimetic_discretization, only: grad, grad_t
-    use msr_matrix_type, only: gs_relaxation
+    use csr_matrix_type, only: gs_relaxation
 
     class(fdme_hiptmair_precon), intent(inout) :: this
     real(r8), intent(inout) :: x(:,:)

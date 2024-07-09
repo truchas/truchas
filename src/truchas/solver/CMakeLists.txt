@@ -4,6 +4,7 @@ target_sources(truchas PRIVATE
   hypre_ext.c
   hypre_pcg_type.F90
   hypre_hybrid_type.F90
+  csr_graph_type.F90
   pcsr_matrix_type.F90
   pcsr_precon_class.F90
   pcsr_precon_ssor_type.F90
@@ -16,8 +17,8 @@ target_sources(truchas PRIVATE
   nlsol_type.F90
   nlk_solver_class.F90
   upper_packed_matrix_procs.F90
-  msr_matrix_type.F90
-  bcsr_matrix_type.F90
+  csr_matrix_type.F90
+  bsr_matrix_type.F90
   cgsol_type.F90
   vector_class.F90
 )

@@ -54,7 +54,6 @@ module pcsr_precon_ssor_type
 
   type, extends(pcsr_precon), public :: pcsr_precon_ssor
     private
-    real(r8), allocatable :: diag(:)
     integer  :: num_iter
     real(r8) :: omega
   contains
@@ -76,7 +75,6 @@ contains
     character(:), allocatable :: context
 
     this%A => A
-    allocate(this%diag(A%nrow_onP))
 
     context = 'processing ' // params%path() // ': '
 
@@ -108,7 +106,7 @@ contains
   subroutine compute(this)
     class(pcsr_precon_ssor), intent(inout) :: this
     call start_timer('ssor-setup')
-    call this%A%get_diag_copy(this%diag)
+    call this%A%kdiag_init
     call stop_timer('ssor-setup')
   end subroutine compute
 
@@ -133,7 +131,7 @@ contains
         do k = this%A%graph%xadj(j), this%A%graph%xadj(j+1)-1
           s = s - this%A%values(k) * u(this%A%graph%adjncy(k))
         end do
-        u(j) = u(j) + this%omega * (s / this%diag(j))
+        u(j) = u(j) + this%omega * (s / this%A%values(this%A%kdiag(j)))
       end do
       call this%A%graph%row_imap%gather_offp(u)
       !! Backward sweep.
@@ -142,7 +140,7 @@ contains
         do k = this%A%graph%xadj(j), this%A%graph%xadj(j+1)-1
           s = s - this%A%values(k) * u(this%A%graph%adjncy(k))
         end do
-        u(j) = u(j) + this%omega * (s / this%diag(j))
+        u(j) = u(j) + this%omega * (s / this%A%values(this%A%kdiag(j)))
       end do
       call this%A%graph%row_imap%gather_offp(u)
     end do

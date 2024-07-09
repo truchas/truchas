@@ -22,7 +22,7 @@ module tdme_cg_solver_type
   use cg_solver_class
   use simpl_mesh_type
   use tdme_model_type
-  use msr_matrix_type
+  use csr_matrix_type
   use mimetic_discretization
   implicit none
   private
@@ -32,7 +32,7 @@ module tdme_cg_solver_type
     type(tdme_model), pointer :: model => null()  ! unowned reference
     !! Hiptmair preconditioner data
     logical, allocatable :: w0mask(:)
-    type(msr_matrix) :: a0, a1
+    type(csr_matrix) :: a0, a1
     real(r8), allocatable :: un(:), rn(:), r(:) ! persistent local workspace for pc
   contains
     procedure :: init
@@ -92,7 +92,7 @@ contains
 
     !! Assemble the edge-based coefficient matrix A1
     block
-      type(msr_graph), pointer :: g
+      type(csr_graph), pointer :: g
       allocate(g)
       call g%init(this%mesh%nedge)
       call g%add_clique(this%mesh%cedge)
@@ -120,7 +120,7 @@ contains
 
     !! Compute and assemble the node-based projected matrix A0.
     block
-      type(msr_graph), pointer :: g
+      type(csr_graph), pointer :: g
       allocate(g)
       call g%init(this%mesh%nnode)
       call g%add_clique(this%mesh%cnode)
