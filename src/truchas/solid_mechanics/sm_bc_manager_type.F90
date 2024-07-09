@@ -46,10 +46,11 @@ module sm_bc_manager_type
     type(sm_bc_box), allocatable :: bcs(:)
   contains
     procedure :: init
+    procedure :: add_graph_links
     procedure :: apply_traction
     procedure :: apply_nontraction
-    procedure :: apply_deriv_diagonal
-    procedure :: apply_deriv_full
+    procedure :: compute_deriv_diagonal
+    procedure :: compute_deriv_full
     procedure :: compute_viz_fields
     final :: delete_sm_bc_manager
   end type sm_bc_manager
@@ -304,7 +305,7 @@ contains
   !! NB: Multi-contact and contact + displacement combo-BCs haven't yet had
   !! their contact-part preconditioner contributions implemented. These are
   !! only applying the displacement-part of the term.
-  subroutine apply_deriv_diagonal(this, t, scaling_factor, displ, force, diag, F)
+  subroutine compute_deriv_diagonal(this, t, scaling_factor, displ, force, diag, F)
 
     class(sm_bc_manager), intent(inout) :: this
     real(r8), intent(in) :: t, scaling_factor(:), displ(:,:), force(:,:), F(:,:,:)
@@ -316,25 +317,39 @@ contains
     ASSERT(size(force,dim=2) == this%mesh%nnode)
 
     do b = 1, size(this%bcs)
-      call this%bcs(b)%p%apply_deriv_diag(t, displ, force, scaling_factor, F, diag)
+      call this%bcs(b)%p%compute_deriv_diag(t, displ, force, scaling_factor, F, diag)
     end do
 
-  end subroutine apply_deriv_diagonal
+  end subroutine compute_deriv_diagonal
 
 
   !! Compute boundary conditions and modify the residual matrix accordingly.
   !!
   !! NB: Contact preconditioner contributions have not been implemented.
-  subroutine apply_deriv_full(this, t, scaling_factor, A)
+  subroutine compute_deriv_full(this, t, scaling_factor, displ, force, Aforce, A)
     use pcsr_matrix_type
     class(sm_bc_manager), intent(inout) :: this
-    real(r8), intent(in) :: t, scaling_factor(:)
+    real(r8), intent(in) :: t, scaling_factor(:), displ(:,:), force(:,:)
+    type(pcsr_matrix), intent(in) :: Aforce
     type(pcsr_matrix), intent(inout) :: A
     integer :: b
     do b = 1, size(this%bcs)
-      call this%bcs(b)%p%apply_deriv_full(t, scaling_factor, A)
+      call this%bcs(b)%p%compute_deriv_full(t, displ, force, scaling_factor, Aforce, A)
     end do
-  end subroutine apply_deriv_full
+  end subroutine compute_deriv_full
+
+
+  !! Add links from contact BCs to the graph
+  subroutine add_graph_links(this, gforce, g)
+    use pcsr_matrix_type
+    class(sm_bc_manager), intent(in) :: this
+    type(pcsr_graph), intent(in) :: gforce
+    type(pcsr_graph), intent(inout) :: g
+    integer :: b
+    do b = 1, size(this%bcs)
+      call this%bcs(b)%p%add_graph_links(gforce, g)
+    end do
+  end subroutine add_graph_links
 
 
   !! Copy gap displacement and gap traction fields into arrays for

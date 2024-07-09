@@ -37,13 +37,13 @@ module sm_bc_c2d1_type
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     integer, allocatable :: linked_node(:,:)
     real(r8) :: penalty, distance, normal_traction
-    real(r8), allocatable :: area(:,:), normal_gap(:,:,:), ortho(:,:,:), alpha(:,:)
+    real(r8), allocatable :: area(:,:), normal_gap(:,:,:), ortho(:,:,:), alpha(:,:), dot(:)
     type(scalar_func_ptr), allocatable :: displf(:)
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv_diag
-    procedure :: apply_deriv_full
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c2d1
 
 contains
@@ -220,7 +220,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c2d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -239,20 +239,54 @@ contains
           &                 - this%penalty * this%normal_d(:,i)**2
     end do
 
-  end subroutine apply_deriv_diag
+  end subroutine compute_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_full(this, time, stress_factor, A)
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type
 
     class(sm_bc_c2d1), intent(inout) :: this
-    real(r8), intent(in) :: time, stress_factor(:)
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
     type(pcsr_matrix), intent(inout) :: A
 
-    ! TODO
+    integer :: i, n, d, ii, jj, n1, n2, n3
+    real(r8) :: stress_penalty
+    real(r8), pointer :: A1(:) => null(), A2(:) => null(), A3(:) => null()
+    integer, pointer :: indices(:) => null()
 
-  end subroutine apply_deriv_full
+    do i = 1, size(this%index)
+      n = this%index(i)
+      n1 = 3*(n-1) + 1
+      n2 = 3*(n-1) + 2
+      n3 = 3*(n-1) + 3
+      stress_penalty = this%penalty !/ stress_factor(n)
+
+      ! It is assumed that the indices for each row here are identical.
+      ! This *should* be the case.
+      call A%get_row_view(n1, A1, indices)
+      call A%get_row_view(n2, A2, indices)
+      call A%get_row_view(n3, A3, indices)
+
+      ! project out displacement direction
+      this%dot = A1 * this%normal_d(1,i) + A2 * this%normal_d(2,i) + A3 * this%normal_d(3,i)
+      A1 = A1 - this%normal_d(1,i) * this%dot
+      A2 = A2 - this%normal_d(2,i) * this%dot
+      A3 = A3 - this%normal_d(3,i) * this%dot
+
+      ! displacement part
+      do ii = 1, 3
+        do jj = 1, 3
+          call A%add_to(3*(n-1) + ii, 3*(n-1) + jj, &
+              -this%penalty * this%normal_d(ii,i) * this%normal_d(jj,i))
+        end do
+      end do
+
+      ! TODO: contact part
+    end do
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c2d1_type

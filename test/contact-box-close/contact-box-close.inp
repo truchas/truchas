@@ -33,7 +33,8 @@
   abs_stress_tol = 1e-15
   abs_displ_tol = 1e100
   rel_displ_tol = 1e100
-  preconditioner_method = "ds"
+  nlk_max_vectors = 15
+  maximum_iterations = 500
 /
 
 &NUMERICS

@@ -37,13 +37,14 @@ module sm_bc_c1d2_type
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     integer, allocatable :: linked_node(:)
     real(r8) :: penalty, distance, normal_traction
-    real(r8), allocatable :: area(:), normal_d(:,:,:), normal_gap(:,:), alpha(:)
+    real(r8), allocatable :: area(:), normal_d(:,:,:), normal_gap(:,:), alpha(:), dot(:)
     type(scalar_func_ptr), allocatable :: displf(:,:)
   contains
     procedure :: init
+    procedure :: add_graph_links
     procedure :: apply
-    procedure :: apply_deriv_diag
-    procedure :: apply_deriv_full
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c1d2
 
 contains
@@ -208,7 +209,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c1d2), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -223,24 +224,137 @@ contains
       do d = 1,3
         x(d) = dot_product(this%tangent(:,i), F(:,d,n))
       end do
-      diag(:,n) = diag(:,n) + this%tangent(:,i) * x &
-          &                 - this%penalty * (1 - this%tangent(:,i)**2)
+      diag(:,n) = this%tangent(:,i) * x &
+          &       - this%penalty * (1 - this%tangent(:,i)**2)
     end do
 
-  end subroutine apply_deriv_diag
+  end subroutine compute_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_full(this, time, stress_factor, A)
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type
 
     class(sm_bc_c1d2), intent(inout) :: this
-    real(r8), intent(in) :: time, stress_factor(:)
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
     type(pcsr_matrix), intent(inout) :: A
 
-    ! TODO
+    integer :: i, n, d, ii, jj, n1, n2, n3
+    real(r8) :: s, x1, x2, tn, l, stress1, stress2
+    real(r8), pointer :: A1(:) => null(), A2(:) => null(), A3(:) => null()
+    integer, pointer :: indices(:) => null()
 
-  end subroutine apply_deriv_full
+    do i = 1, size(this%index)
+      n = this%index(i)
+      if (n > this%mesh%nnode_onP) cycle
+      n1 = 3*(n-1) + 1
+      n2 = 3*(n-1) + 2
+      n3 = 3*(n-1) + 3
+
+      ! It is assumed that the indices for each row here are identical.
+      ! This *should* be the case.
+      call A%get_row_view(n1, A1, indices)
+      call A%get_row_view(n2, A2, indices)
+      call A%get_row_view(n3, A3, indices)
+
+      ! project out displacement directions
+      this%dot = A1 * this%tangent(1,i) + A2 * this%tangent(2,i) + A3 * this%tangent(3,i)
+      A1 = this%tangent(1,i) * this%dot
+      A2 = this%tangent(2,i) * this%dot
+      A3 = this%tangent(3,i) * this%dot
+
+      ! displacement part
+      do ii = 1, 3
+        call A%add_to(3*(n-1) + ii, 3*(n-1) + ii, -this%penalty)
+        do jj = 1, 3
+          call A%add_to(3*(n-1) + ii, 3*(n-1) + jj, &
+              this%penalty * this%tangent(ii,i) * this%tangent(jj,i))
+        end do
+      end do
+
+      ! contact part
+      n1 = this%index(i)
+      n2 = this%linked_node(i)
+
+      stress1 = dot_product(this%normal_gap(:,i), ftot(:,n1))
+      stress2 = dot_product(this%normal_gap(:,i), ftot(:,n2))
+      x1 = dot_product(this%normal_gap(:,i), displ(:,n1))
+      x2 = dot_product(this%normal_gap(:,i), displ(:,n2))
+      s = x2 - x1
+      tn = - stress1 / this%area(i)
+      l = contact_factor(s, tn, this%distance, this%normal_traction)
+
+      do ii = 1, 3
+        do jj = 1, 3
+          call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, &
+              -this%penalty * l * this%tangent(ii,i) * this%tangent(jj,i) * this%alpha(i))
+          call A%add_to(3*(n1-1) + ii, 3*(n2-1) + jj, &
+              this%penalty * l * this%tangent(ii,i) * this%tangent(jj,i) * this%alpha(i))
+        end do
+      end do
+
+      ! linked stress part
+      block
+        real(r8), pointer :: A1(:) => null(), A2(:) => null(), A3(:) => null()
+        integer, pointer :: indices(:) => null()
+        integer :: ix
+
+        ! These indices at the linked node are expected to be identical to each other,
+        ! but not identical to the indices for the local node.
+        ! NB: The stress factor is already taken into account in Aforce.
+        call Aforce%get_row_view(3*(n2-1)+1, A1, indices)
+        call Aforce%get_row_view(3*(n2-1)+2, A2, indices)
+        call Aforce%get_row_view(3*(n2-1)+3, A3, indices)
+        this%dot = this%tangent(1,i) * A1 + this%tangent(2,i) * A2 + this%tangent(3,i) * A3
+
+        do ix = 1, size(indices)
+          do ii = 1, 3
+            call A%add_to(3*(n1-1) + ii, indices(ix), l * this%tangent(ii,i) * this%dot(ix))
+          end do
+        end do
+      end block
+
+      ! Currently neglecting dldu term (only active when the surfaces are barely in contact)
+    end do
+
+  end subroutine compute_deriv_full
+
+
+  subroutine add_graph_links(this, gforce, g)
+
+    use pcsr_matrix_type
+    use sm_bc_utilities, only: alloc_at_least
+
+    class(sm_bc_c1d2), intent(in) :: this
+    type(pcsr_graph), intent(in) :: gforce
+    type(pcsr_graph), intent(inout) :: g
+
+    integer :: i, j, n1, n2, s, clique(6)
+    integer, allocatable :: cliques(:)
+
+    do i = 1, size(this%index)
+      n1 = this%index(i)
+      n2 = this%linked_node(i)
+
+      ! contact-displacement part
+      do j = 1, 3
+        clique(j) = 3*(n1-1) + j
+        clique(3+j) = 3*(n2-1) + j
+      end do
+      call g%add_clique(clique)
+
+      ! contact-stress part
+      s = 3 + gforce%xadj(3*(n2-1) + 2) - gforce%xadj(3*(n2-1) + 1)
+      call alloc_at_least(cliques, s)
+      cliques(1) = 3*(n1 - 1) + 1
+      cliques(2) = 3*(n1 - 1) + 2
+      cliques(3) = 3*(n1 - 1) + 3
+      cliques(4:s) = gforce%adjncy(gforce%xadj(3*(n2-1) + 1):gforce%xadj(3*(n2-1) + 2)-1)
+      call g%add_clique(cliques(:s))
+    end do
+
+  end subroutine add_graph_links
 
 end module sm_bc_c1d2_type

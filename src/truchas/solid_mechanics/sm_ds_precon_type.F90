@@ -180,7 +180,7 @@ contains
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
+    call this%model%bc%compute_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
         this%diag, this%F)
 
     call stop_timer("precon-compute")

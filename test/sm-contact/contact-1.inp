@@ -20,9 +20,9 @@
 /
 
 &SOLID_MECHANICS
-  preconditioner_method = "ds"
   abs_displ_tol = 1e100
   rel_displ_tol = 1e100
+  nlk_max_vectors = 5
   maximum_iterations = 500
 /
 

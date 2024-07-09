@@ -31,6 +31,7 @@ module sm_bc_utilities
   public :: compute_gradient_node_to_cell
   public :: check_if_matching_node
   public :: compute_stress, von_mises_stress, compute_deviatoric_stress
+  public :: alloc_at_least
 
 contains
 
@@ -744,5 +745,19 @@ contains
     deviatoric_stress = stress
     deviatoric_stress(1:3) = deviatoric_stress(1:3) - mean_stress
   end subroutine compute_deviatoric_stress
+
+
+  subroutine alloc_at_least(a, n)
+    integer, allocatable, intent(inout) :: a(:)
+    integer, intent(in) :: n
+    if (allocated(a)) then
+      if (size(a) < n) then
+        deallocate(a)
+      else
+        return
+      end if
+    end if
+    allocate(a(n))
+  end subroutine alloc_at_least
 
 end module sm_bc_utilities

@@ -38,6 +38,7 @@ module sm_hypre_precon_type
     type(sm_bc_manager), pointer, public :: bc => null() ! unowned reference
 
     type(pcsr_matrix), pointer :: A => null()
+    type(pcsr_matrix) :: Aforce
     type(index_map), pointer :: imap => null()
     class(pcsr_precon), allocatable :: precon
 
@@ -74,7 +75,7 @@ contains
     type(parameter_list), intent(inout) :: params
 
     type(parameter_list), pointer :: plist
-    type(pcsr_graph), pointer :: g
+    type(pcsr_graph), pointer :: g, gforce
     type(index_map), pointer :: row_imap
     integer, allocatable :: nvars(:)
     integer :: stat, c, clique(24), nnode
@@ -87,13 +88,14 @@ contains
 
     !! Create a CSR matrix graph for the node-coupled system
     associate(mesh => model%mesh)
-      allocate(g, this%imap, this%A)
+      allocate(g, gforce, this%imap, this%A)
       row_imap => mesh%node_imap
       allocate(nvars(merge(mesh%node_imap%global_size, 0, is_IOP)))
       nvars = 3
       call this%imap%init(row_imap, nvars)
 
       call g%init(this%imap)
+      call gforce%init(this%imap)
       do c = 1, mesh%ncell
         associate (cn => mesh%cnode(mesh%xcnode(c):mesh%xcnode(c+1)-1))
           nnode = size(cn)
@@ -101,10 +103,14 @@ contains
           clique(nnode+1:2*nnode) = 3*(cn - 1) + 2
           clique(2*nnode+1:3*nnode) = 3*(cn - 1) + 3
           call g%add_clique(clique(:3*nnode))
+          call gforce%add_clique(clique(:3*nnode))
         end associate
       end do
+      call gforce%add_complete
+      call this%bc%add_graph_links(gforce, g)
       call g%add_complete
       call this%A%init(g, take_graph=.true.)
+      call this%Aforce%init(gforce, take_graph=.true.)
     end associate
 
     call params%get("abs-lame-tol", this%atol, default=1d-1)
@@ -125,7 +131,7 @@ contains
     real(r8), intent(inout) :: displ(:,:) ! need to update halo
 
     integer :: c, ii, jj, p, n, n1, n2, n3, xp, k, s, nn, nn1, nn2, nn3, i, j, xcn
-    !real(r8) :: force(3,this%model%mesh%nnode)
+    real(r8) :: force(3,this%model%mesh%nnode)
     real(r8) :: strain_matrix(6,9), grad_shape(9,24), tensor_dot(3,6), stress_matrix(6,6)
 
     ASSERT(size(displ,dim=1) == 3 .and. size(displ,dim=2) >= this%model%mesh%nnode)
@@ -135,14 +141,13 @@ contains
     call start_timer("precon-compute")
 
     call this%A%set_all(0.0_r8)
+    call this%Aforce%set_all(0.0_r8)
 
     ! For contact, we need the force.
-    ! force = 0
-    ! call this%model%mesh%node_imap%gather_offp(displ)
-    ! if (this%bc%contact_active) then !.or. this%model%matl_model%viscoplasticity_enabled) then
-    !   call this%model%compute_forces(t, displ, force)
-    !   call this%model%mesh%node_imap%gather_offp(force)
-    ! end if
+    if (this%bc%contact_active) then !.or. this%model%matl_model%viscoplasticity_enabled) then
+      call this%model%compute_forces(t, displ, force)
+      call this%model%mesh%node_imap%gather_offp(force)
+    end if
 
     associate (mesh => this%model%mesh, ig => this%model%ig)
       strain_matrix = 0
@@ -197,6 +202,9 @@ contains
           call this%A%set(n1, n1, this%model%penalty)
           call this%A%set(n2, n2, this%model%penalty)
           call this%A%set(n3, n3, this%model%penalty)
+          call this%Aforce%set(n1, n1, this%model%penalty)
+          call this%Aforce%set(n2, n2, this%model%penalty)
+          call this%Aforce%set(n3, n3, this%model%penalty)
         else
           do xp = ig%xnpoint(n), ig%xnpoint(n+1)-1
             k = xp - ig%xnpoint(n) + 1
@@ -221,6 +229,8 @@ contains
                     jj = 3*(xcn-1) + j - nn1 + 1 ! length-3*size(cn) displacement
                     call this%A%add_to(i, j, s * this%displ_to_force(p)%p(ii, jj) &
                         / this%model%scaling_factor(n))
+                    call this%Aforce%add_to(i, j, s * this%displ_to_force(p)%p(ii, jj) &
+                        / this%model%scaling_factor(n))
                   end do
                 end do
               end do
@@ -230,7 +240,8 @@ contains
       end do
     end associate
 
-    call this%model%bc%apply_deriv_full(t, this%model%scaling_factor, this%A)
+    call this%model%bc%compute_deriv_full(t, this%model%scaling_factor, displ, force, &
+        this%Aforce, this%A)
     ASSERT(all(ieee_is_normal(this%A%values)))
     !print '("A: ", es13.3)', maxval(abs(this%A%values))
     call this%precon%compute

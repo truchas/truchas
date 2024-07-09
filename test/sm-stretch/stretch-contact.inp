@@ -25,11 +25,8 @@ direction.
 /
 
 &SOLID_MECHANICS
-  maximum_iterations = 500
-  preconditioner_method = "ds"
   abs_displ_tol = 1e100
   rel_displ_tol = 1e100
-  abs_stress_tol = 1e-11
 /
 
 &MATERIAL
@@ -54,17 +51,45 @@ direction.
 /
 
 &SOLID_MECHANICS_BC
-  name = 'displx'
+  name = 'displx0'
   face_set_ids = 1
   type = 'displacement-x'
   displacement = 0
 /
 
 &SOLID_MECHANICS_BC
-  name = 'displn'
+  name = 'disply0'
+  face_set_ids = 1
+  type = 'displacement-y'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displz0'
+  face_set_ids = 1
+  type = 'displacement-z'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displx1'
   face_set_ids = 2
   type = 'displacement-x'
   displacement = 1
+/
+
+&SOLID_MECHANICS_BC
+  name = 'disply1'
+  face_set_ids = 2
+  type = 'displacement-y'
+  displacement = 0
+/
+
+&SOLID_MECHANICS_BC
+  name = 'displz1'
+  face_set_ids = 2
+  type = 'displacement-z'
+  displacement = 0
 /
 
 &SOLID_MECHANICS_BC

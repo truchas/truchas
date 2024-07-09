@@ -38,8 +38,8 @@ module sm_bc_c0d3_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv_diag
-    procedure :: apply_deriv_full
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c0d3
 
 contains
@@ -181,7 +181,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d3), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -191,20 +191,20 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
       diag(:,n) = - this%penalty !* stress_factor(n)
     end do
 
-  end subroutine apply_deriv_diag
+  end subroutine compute_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_full(this, time, stress_factor, A)
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type
 
     class(sm_bc_c0d3), intent(inout) :: this
-    real(r8), intent(in) :: time, stress_factor(:)
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
     type(pcsr_matrix), intent(inout) :: A
 
     integer :: i, n, d, ii, n1, n2, n3
@@ -213,7 +213,6 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      if (n > this%mesh%nnode_onP) cycle
       n1 = 3*(n-1) + 1
       n2 = 3*(n-1) + 2
       n3 = 3*(n-1) + 3
@@ -226,6 +225,6 @@ contains
       end do
     end do
 
-  end subroutine apply_deriv_full
+  end subroutine compute_deriv_full
 
 end module sm_bc_c0d3_type

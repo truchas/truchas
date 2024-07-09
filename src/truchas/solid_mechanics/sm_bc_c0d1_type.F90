@@ -38,8 +38,8 @@ module sm_bc_c0d1_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv_diag
-    procedure :: apply_deriv_full
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c0d1
 
 contains
@@ -143,7 +143,7 @@ contains
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -161,22 +161,23 @@ contains
           &                 - this%penalty * this%normal_d(:,i)**2
     end do
 
-  end subroutine apply_deriv_diag
+  end subroutine compute_deriv_diag
 
 
   !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv_full(this, time, stress_factor, A)
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type
 
     class(sm_bc_c0d1), intent(inout) :: this
-    real(r8), intent(in) :: time, stress_factor(:)
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
     type(pcsr_matrix), intent(inout) :: A
 
     integer :: i, n, d, ii, jj, n1, n2, n3
     real(r8) :: stress_penalty
     real(r8), pointer :: A1(:) => null(), A2(:) => null(), A3(:) => null()
-    integer, pointer :: indices(:) => null()
+    integer, pointer :: indices1(:) => null(), indices2(:) => null(), indices3(:) => null()
 
     do i = 1, size(this%index)
       n = this%index(i)
@@ -185,11 +186,11 @@ contains
       n3 = 3*(n-1) + 3
       stress_penalty = this%penalty !/ stress_factor(n)
 
-      ! It is assumed that the indices for each row here are identical.
-      ! This *should* be the case.
-      call A%get_row_view(n1, A1, indices)
-      call A%get_row_view(n2, A2, indices)
-      call A%get_row_view(n3, A3, indices)
+      ! It is assumed that the indices for each row here are identical. This *should* be the case.
+      call A%get_row_view(n1, A1, indices1)
+      call A%get_row_view(n2, A2, indices2)
+      call A%get_row_view(n3, A3, indices3)
+      ASSERT(all(indices1 == indices2) .and. all(indices2 == indices3))
 
       ! project out displacement direction
       this%dot = A1 * this%normal_d(1,i) + A2 * this%normal_d(2,i) + A3 * this%normal_d(3,i)
@@ -206,6 +207,6 @@ contains
       end do
     end do
 
-  end subroutine apply_deriv_full
+  end subroutine compute_deriv_full
 
 end module sm_bc_c0d1_type
