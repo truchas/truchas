@@ -33,7 +33,6 @@ direction.
   nlk_max_vectors = 10
   maximum_iterations = 500
   preconditioning_steps = 32
-  abs_displ_tol = 1e-11
 /
 
 &MATERIAL

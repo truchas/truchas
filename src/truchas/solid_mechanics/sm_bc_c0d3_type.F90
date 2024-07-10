@@ -180,7 +180,6 @@ contains
   end subroutine apply
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
   subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d3), intent(inout) :: this
@@ -191,13 +190,12 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      diag(:,n) = - this%penalty !* stress_factor(n)
+      diag(:,n) = - this%penalty
     end do
 
   end subroutine compute_deriv_diag
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
   subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type

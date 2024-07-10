@@ -24,10 +24,7 @@ direction.
   solid_mechanics = .true.
 /
 
-&SOLID_MECHANICS
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
-/
+&SOLID_MECHANICS /
 
 &MATERIAL
   name = 'stuff'

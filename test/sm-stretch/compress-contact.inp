@@ -28,8 +28,6 @@ direction.
 &SOLID_MECHANICS
   maximum_iterations = 500
   nlk_max_vectors = 5
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
 /
 
 &MATERIAL

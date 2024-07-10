@@ -29,10 +29,7 @@ resulting stress, strain, and displacement.
   nlk_preconditioner = 'hypre_amg'
 /
 
-&SOLID_MECHANICS
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
-/
+&SOLID_MECHANICS /
 
 &NUMERICS
   dt_init = 1e-3

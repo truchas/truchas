@@ -179,67 +179,16 @@ For the NLK method, the maximum number of acceleration vectors to be used.
 :Valid Values: :math:`[0,\infty)`
 
 
-abs_stress_tol
+rel_stress_tol
 ^^^^^^^^^^^^^^
 
-The tolerance for the absolute error of the residual used by the solid mechanics
+The tolerance for the relative error of the residual used by the solid mechanics
 solver.
 
 :Physical Dimension: same as the ‘stress’ variable
 :Type: real
 :Default: 1e-10
 :Valid Values: :math:`\gt 0`
-
-
-abs_displ_tol
-^^^^^^^^^^^^^
-
-The tolerance :math:`\epsilon` for the absolute error component of the
-displacement error norm used by the nonlinear solver. If :math:`\delta u` is a
-displacement field increment with reference displacement field :math:`u`,then
-this error norm is
-
-.. math::
-   |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
-
-The relative error tolerance :math:`\eta` is given by `rel_displ_tol`_.
-
-:Physical Dimension: :math:`\Theta`
-:Type: real
-:Default: 1e-10
-:Valid Values: :math:`\geq 0`
-
-.. note::
-   The error norm is dimensionless and normalized.
-
-.. note::
-   For :math:`u_j` sufficiently small the norm approximates an absolute norm
-   with tolerance :math:`\epsilon`, and for :math:`u_j` sufficiently large the
-   norm approximates a relative norm with tolerance :math:`\eta`. If
-   :math:`\epsilon = 0` then the norm is a pure relative norm and the
-   displacement must be bounded away from 0.
-
-
-rel_displ_tol
-^^^^^^^^^^^^^
-
-The tolerance :math:`\eta` for the relative error component of the displacement
-error norm used by the nonlinear solver. If :math:`\delta u` is a displacement
-field increment with reference displacement field :math:`u`, then this error
-norm is
-
-.. math::
-   |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
-
-The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
-
-:Physcial Dimension: dimensionless
-:Type: real
-:Default: 1e-10
-:Valid Values: (0, 1)
-
-.. note::
-   See the notes for `abs_displ_tol`_.
 
 
 pc_abs_lame_tol
@@ -293,6 +242,58 @@ The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
 
 .. note::
    See the notes for `abs_displ_tol`_.
+
+
+abs_displ_tol (expert)
+^^^^^^^^^^^^^^^^^^^^^^
+
+The tolerance :math:`\epsilon` for the absolute error component of the
+displacement error norm used by the nonlinear solver. If :math:`\delta u` is a
+displacement field increment with reference displacement field :math:`u`,then
+this error norm is
+
+.. math::
+   |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
+
+The relative error tolerance :math:`\eta` is given by `rel_displ_tol`_.
+
+:Physical Dimension: :math:`\Theta`
+:Type: real
+:Default: 1e100
+:Valid Values: :math:`\geq 0`
+
+.. note::
+   The error norm is dimensionless and normalized.
+
+.. note::
+   For :math:`u_j` sufficiently small the norm approximates an absolute norm
+   with tolerance :math:`\epsilon`, and for :math:`u_j` sufficiently large the
+   norm approximates a relative norm with tolerance :math:`\eta`. If
+   :math:`\epsilon = 0` then the norm is a pure relative norm and the
+   displacement must be bounded away from 0.
+
+
+rel_displ_tol (expert)
+^^^^^^^^^^^^^^^^^^^^^^
+
+The tolerance :math:`\eta` for the relative error component of the displacement
+error norm used by the nonlinear solver. If :math:`\delta u` is a displacement
+field increment with reference displacement field :math:`u`, then this error
+norm is
+
+.. math::
+   |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
+
+The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
+
+:Physcial Dimension: dimensionless
+:Type: real
+:Default: 1e100
+:Valid Values: :math:`\geq 0`
+
+.. note::
+   See the notes for `abs_displ_tol`_.
+
 
 nlk_tol (expert)
 ^^^^^^^^^^^^^^^^

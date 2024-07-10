@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 24.06-15-g7fedc5fd-dirty
-   build architecture:  arm64
-   build date/time:     2024-06-18 09:55:20
-   build flags:          -g -O2 -DNDEBUG
-   build host:          pn2405035.lanl.gov
-   run architecture:    Darwin pn2405035.lanl.gov 23.5.0 Darwin Kernel
-   run host:            pn2405035.lanl.gov
-   run date/time:       20 Jun 24 15:25:07
+   code:                Truchas 24.06-24-g08dc6238
+   build architecture:  x86_64
+   build date/time:     2024-07-11 13:04:19
+   build flags:          -g -O3 -DNDEBUG -ffpe-trap=zero,invalid,overflow
+   build host:          samsara
+   run architecture:    Linux samsara 6.6.38-1-lts #1 SMP PREEMPT_DYNAM
+   run host:            samsara
+   run date/time:       11 Jul 24 13:10:22
    processors:          1
 
 ================================================================================
@@ -70,7 +70,7 @@ SM-C0D1 nodes:    121
 SM-C0D3 nodes:    129
 Nodes with requested BCs:    250    Nodes with applied BCs:    250
 SM: Computing initial state...
-  NLK BCE solve succeeded:     41 iterations, error,lnorm_inf =     4.572E-01    9.634E-13
+  NLK BCE solve succeeded:     65 iterations, error,lnorm_inf =     3.362-111    9.924E-11
 
 
 Initializing solution probes ...
@@ -80,7 +80,7 @@ Initializing solution probes ...
 EXECUTION
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E+00
-  NLK BCE solve succeeded:      1 iterations, error,lnorm_inf =     1.116E-02    8.716E-13
+  NLK BCE solve succeeded:      1 iterations, error,lnorm_inf =     8.219-114    3.269E-11
 
 ================================================================================
 
@@ -90,38 +90,40 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  1.819E+00 --- Total
-    4.714E-03 --- Input
-    1.758E+00 --- Initialization
-      5.542E-02 --- mesh-MAIN
-        5.249E-03 --- ghost-cells
-          5.247E-03 --- cell-ghosts
-            4.172E-03 --- node-neighbors
-            3.240E-04 --- ghost-cells
-          1.000E-06 --- link-ghosts
-          1.000E-06 --- assemble-ghosts
-      1.800E-05 --- VOF Initialize
-      1.695E+00 --- solid mechanics
-        2.966E-03 --- properties
-        3.194E-01 --- precon-compute
-          3.418E-03 --- hypre-matrix-copy
-          6.626E-02 --- boomer-setup
-        7.435E-01 --- residual
-          4.018E-01 --- strain
-          3.407E-01 --- stress
-          6.240E-04 --- BCs
-        3.261E-01 --- precon-apply
-          3.261E-01 --- boomer-solve
-    5.549E-02 --- Main Cycle
-      2.210E-04 --- Time Step
-      2.529E-02 --- solid mechanics
-        2.750E-03 --- properties
-        1.439E-02 --- residual
-          1.004E-02 --- strain
-          4.316E-03 --- stress
-          2.000E-05 --- BCs
-        7.960E-03 --- precon-apply
-          7.959E-03 --- boomer-solve
+  4.613E+00 --- Total
+    6.383E-03 --- Input
+    4.499E+00 --- Initialization
+      1.190E-01 --- mesh-MAIN
+        1.224E-02 --- ghost-cells
+          1.223E-02 --- cell-ghosts
+            7.482E-03 --- node-neighbors
+            1.179E-03 --- ghost-cells
+          6.500E-08 --- link-ghosts
+          8.946E-06 --- assemble-ghosts
+      2.537E-05 --- VOF Initialize
+      4.371E+00 --- solid mechanics
+        9.644E-03 --- properties
+        6.966E-01 --- precon-compute
+          7.953E-03 --- hypre-matrix-copy
+          1.070E-01 --- boomer-setup
+        1.933E+00 --- residual
+          9.955E-01 --- strain
+          9.330E-01 --- stress
+          3.513E-03 --- BCs
+        9.114E-01 --- precon-apply
+          9.113E-01 --- boomer-solve
+    1.074E-01 --- Main Cycle
+      1.029E-03 --- Time Step
+      5.214E-02 --- solid mechanics
+        9.134E-03 --- properties
+        2.817E-02 --- residual
+          1.514E-02 --- strain
+          1.296E-02 --- stress
+          5.525E-05 --- BCs
+        1.451E-02 --- precon-apply
+          1.450E-02 --- boomer-solve
 
+                  Process virtual memory used: 1.53E+03 mB
+                                   words/cell: 8571
 
-truchas terminated normally on 20 Jun 24 at 15:25:09
+truchas terminated normally on 11 Jul 24 at 13:10:27

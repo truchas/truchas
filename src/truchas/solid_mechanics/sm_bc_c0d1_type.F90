@@ -142,7 +142,6 @@ contains
   end subroutine apply
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
   subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d1), intent(inout) :: this
@@ -164,7 +163,6 @@ contains
   end subroutine compute_deriv_diag
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
   subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
 
     use pcsr_matrix_type

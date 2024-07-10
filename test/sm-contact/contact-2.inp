@@ -20,9 +20,7 @@
 /
 
 &SOLID_MECHANICS
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
-  abs_stress_tol = 1e-8
+  rel_stress_tol = 1e-8
   nlk_max_vectors = 5
   maximum_iterations = 1000
 /

@@ -23,9 +23,7 @@ direction.
   solid_mechanics = .true.
 /
 
-&SOLID_MECHANICS
-  abs_stress_tol = 5e-10
-/
+&SOLID_MECHANICS /
 &DIFFUSION_SOLVER /
 
 &MATERIAL

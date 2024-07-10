@@ -16,7 +16,7 @@ def run_test(tenv):
 
         sigmat = output.field(sid, "sigma")
         sigmag = golden.field(sid, "sigma")
-        nfail += truchas.compare_max(sigmat, sigmag, 1e3, "stress", output.time(sid))
+        nfail += truchas.compare_max(sigmat, sigmag, 5e3, "stress", output.time(sid))
 
     truchas.report_summary(nfail)
     return nfail

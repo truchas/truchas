@@ -31,9 +31,6 @@ direction.
 
 &SOLID_MECHANICS
   maximum_iterations = 2000
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
-  abs_stress_tol = 1e-10
 /
 
 &MATERIAL

@@ -24,7 +24,7 @@ direction.
 /
 
 &SOLID_MECHANICS
-  abs_stress_tol = 1e-12
+  rel_stress_tol = 1e-12
 /
 &DIFFUSION_SOLVER /
 

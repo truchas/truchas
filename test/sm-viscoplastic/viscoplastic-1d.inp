@@ -48,9 +48,7 @@
 /
 
 &SOLID_MECHANICS
-  abs_stress_tol = 1e-11
-  abs_displ_tol = 1e100
-  rel_displ_tol = 1e100
+  rel_stress_tol = 1e-11
 /
 
 &BODY

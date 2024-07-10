@@ -35,14 +35,14 @@ contains
     character(32) :: preconditioner_method
     real(r8) :: contact_distance, contact_norm_trac, contact_penalty
     real(r8) :: nlk_tol, nlk_vector_tolerance, relaxation_parameter, stress_relaxation_parameter
-    real(r8) :: abs_displ_tol, rel_displ_tol, abs_stress_tol
+    real(r8) :: abs_displ_tol, rel_displ_tol, rel_stress_tol
     real(r8) :: pc_abs_lame_tol, pc_rel_lame_tol
     integer :: maximum_iterations, nlk_max_vectors, preconditioning_steps
     namelist /solid_mechanics/ contact_distance, contact_norm_trac, contact_penalty, &
         nlk_tol, maximum_iterations, nlk_vector_tolerance, &
         preconditioner_method, &
         nlk_max_vectors, preconditioning_steps, relaxation_parameter, stress_relaxation_parameter, &
-        abs_displ_tol, rel_displ_tol, abs_stress_tol, &
+        abs_displ_tol, rel_displ_tol, rel_stress_tol, &
         pc_abs_lame_tol, pc_rel_lame_tol
 
     integer :: ios
@@ -69,7 +69,7 @@ contains
 
     abs_displ_tol = NULL_R
     rel_displ_tol = NULL_R
-    abs_stress_tol = NULL_R
+    rel_stress_tol = NULL_R
     pc_abs_lame_tol = NULL_R
     pc_rel_lame_tol = NULL_R
 
@@ -94,7 +94,7 @@ contains
 
     call broadcast(abs_displ_tol)
     call broadcast(rel_displ_tol)
-    call broadcast(abs_stress_tol)
+    call broadcast(rel_stress_tol)
     call broadcast(pc_abs_lame_tol)
     call broadcast(pc_rel_lame_tol)
 
@@ -129,7 +129,7 @@ contains
     if (contact_penalty /= NULL_R) call plist%set('contact-penalty', contact_penalty)
     if (abs_displ_tol /= NULL_R) call plist%set('abs-displ-tol', abs_displ_tol)
     if (rel_displ_tol /= NULL_R) call plist%set('rel-displ-tol', rel_displ_tol)
-    if (abs_stress_tol /= NULL_R) call plist%set('abs-stress-tol', abs_stress_tol)
+    if (rel_stress_tol /= NULL_R) call plist%set('rel-stress-tol', rel_stress_tol)
     call plist%set('body-force-density', body_force_density)
 
   end subroutine read_solid_mechanics_namelist
