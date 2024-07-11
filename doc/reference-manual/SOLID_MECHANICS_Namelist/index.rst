@@ -153,7 +153,21 @@ maximum_iterations
 Maximum allowed number of iterations of the nonlinear solver.
 
 :Type: integer
-:Default: 100
+:Default: 500
+:Valid Values: :math:`[0,\infty)`
+
+
+maximum_outer_iterations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Maximum allowed number of iterations around the nonlinear solver if contact is
+present. Contact is a nonlinear effect, and convergence depends strongly on a
+good preconditioner. It may be necessary to restart the solver a number of times
+with a recomputed preconditioner for convergence. When contact is not present,
+this is always set to 1.
+
+:Type: integer
+:Default: 5
 :Valid Values: :math:`[0,\infty)`
 
 

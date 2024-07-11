@@ -33,7 +33,6 @@
 &SOLID_MECHANICS
   rel_stress_tol = 1e-15
   nlk_max_vectors = 10
-  maximum_iterations = 500
 /
 
 &NUMERICS

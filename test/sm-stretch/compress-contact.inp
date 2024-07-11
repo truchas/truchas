@@ -26,7 +26,6 @@ direction.
 /
 
 &SOLID_MECHANICS
-  maximum_iterations = 500
   nlk_max_vectors = 5
 /
 

@@ -53,6 +53,7 @@ module solid_mechanics_type
 
     real(r8), allocatable :: displacement(:,:), strain(:,:), stress(:,:)
 
+    integer :: max_outer_iterations = 1
     integer, public :: thermoelastic_niter = 0 ! linear iteration count
     integer, public :: viscoplastic_niter = 0  ! nonlinear iteration count
   contains
@@ -72,6 +73,11 @@ module solid_mechanics_type
 
 contains
 
+  ! Note: Contact is nonlinear and it's very important for convergence for the
+  ! preconditioner to be accurate. We'll use "outer" iterations to drive NKA
+  ! multiple times, recomputing the preconditioner as we drive closer to the
+  ! solution. Without contact, the problem is linear so there's no need to do
+  ! this.
   subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     use parameter_list_type
@@ -116,6 +122,9 @@ contains
 
     plist => params%sublist("nonlinear-solver")
     if (.not.plist%is_parameter("nlk-tol")) call plist%set("nlk-tol", 1.0_r8) ! default
+    if (.not.plist%is_parameter("nlk-max-iter")) call plist%set("nlk-max-iter", 500) ! default
+    if (this%model%bc%contact_active) &
+        call plist%get("max-outer-iter", this%max_outer_iterations, default=5) ! see note
     call this%solver%init(this%solver_model, plist, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS INIT: " // errmsg)
 
@@ -164,6 +173,7 @@ contains
     character(:), intent(out), allocatable :: errmsg
 
     !real(r8) :: displ(size(this%displacement)), displ0(size(this%displacement))
+    integer :: i
     real(r8) :: displ0(size(this%displacement))
     real(r8), pointer :: displ(:)
 
@@ -172,11 +182,18 @@ contains
     displ(1:size(this%displacement)) => this%displacement
     displ0 = displ
     call this%model%update_properties(vof, temperature_cc)
-    call this%solver%solve(t+dt, dt, displ0, displ, stat)
+
+    do i = 1, this%max_outer_iterations
+      call this%solver%solve(t+dt, dt, displ0, displ, stat)
+      if (stat == 0) exit
+      if (i < this%max_outer_iterations) &
+          call TLS_info("SM: retrying with updated preconditioner...")
+    end do
     if (stat /= 0) then
       errmsg = "NLK-SM did not converge"
       return
     end if
+
     call this%model%accept_state
     this%viscoplastic_niter = this%solver%itr
 

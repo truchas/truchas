@@ -37,9 +37,9 @@ contains
     real(r8) :: nlk_tol, nlk_vector_tolerance, relaxation_parameter, stress_relaxation_parameter
     real(r8) :: abs_displ_tol, rel_displ_tol, rel_stress_tol
     real(r8) :: pc_abs_lame_tol, pc_rel_lame_tol
-    integer :: maximum_iterations, nlk_max_vectors, preconditioning_steps
+    integer :: maximum_iterations, maximum_outer_iterations, nlk_max_vectors, preconditioning_steps
     namelist /solid_mechanics/ contact_distance, contact_norm_trac, contact_penalty, &
-        nlk_tol, maximum_iterations, nlk_vector_tolerance, &
+        nlk_tol, maximum_iterations, maximum_outer_iterations, nlk_vector_tolerance, &
         preconditioner_method, &
         nlk_max_vectors, preconditioning_steps, relaxation_parameter, stress_relaxation_parameter, &
         abs_displ_tol, rel_displ_tol, rel_stress_tol, &
@@ -76,6 +76,7 @@ contains
     preconditioner_method = NULL_C
     nlk_tol = NULL_R
     maximum_iterations = NULL_I
+    maximum_outer_iterations = NULL_I
     nlk_vector_tolerance = NULL_R
     nlk_max_vectors = NULL_I
     preconditioning_steps = NULL_I
@@ -100,6 +101,7 @@ contains
 
     call broadcast(preconditioner_method)
     call broadcast(maximum_iterations)
+    call broadcast(maximum_outer_iterations)
     call broadcast(nlk_tol)
     call broadcast(nlk_max_vectors)
     call broadcast(nlk_vector_tolerance)
@@ -109,6 +111,7 @@ contains
 
     plist => params%sublist('nonlinear-solver')
     if (maximum_iterations /= NULL_I) call plist%set('nlk-max-iter', maximum_iterations)
+    if (maximum_outer_iterations /= NULL_I) call plist%set('max-outer-iter', maximum_outer_iterations)
     if (nlk_tol /= NULL_R) call plist%set('nlk-tol', nlk_tol)
     if (nlk_max_vectors /= NULL_I) call plist%set('nlk-max-vec', nlk_max_vectors)
     if (nlk_vector_tolerance /= NULL_R) call plist%set('nlk-vec-tol', nlk_vector_tolerance)
