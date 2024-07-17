@@ -23,6 +23,7 @@ target_sources(truchas PRIVATE
   make_directory.c
   gmv/gmvwrite.c
   serialization_tools.F90
+  gauss_quad_tri75.F90
 )
 
 add_subdirectory(Test)

@@ -77,13 +77,15 @@ contains
 
   subroutine add_complete(this, omit_edge_list)
 
+    use gauss_quad_tri75
+
     class(nxh_bndry_func), intent(inout) :: this
     integer, intent(in), optional :: omit_edge_list(:)
 
-    integer :: j, n, stat
+    integer :: i, j, n, stat
     integer, allocatable :: xgroup(:), index(:), emap(:)
     type(vector_func_box), allocatable :: g(:)
-    real(r8) :: c, p(3)
+    real(r8) :: c, dx(3,3), g_qpt(3), g_dot_dx(7,3), s
 
     ASSERT(allocated(this%builder))
     call this%builder%get_face_groups(this%ngroup, xgroup, index)
@@ -106,36 +108,49 @@ contains
       end do
       associate (face => index(xgroup(n):xgroup(n+1)-1))
         do j = 1, size(face) ! loop over faces in group n
-          associate (edge => emap(this%mesh%fedge(:,face(j))))
+          associate (edge => emap(this%mesh%fedge(:,face(j))), &
+                     x => this%mesh%x(:,this%mesh%fnode(:,face(j))))
             !! Compute integrals of G over face and assemble results to the
             !! edges. Orientation of the face relative to the outward boundary
             !! normal must be accounted for and is inferred from the fcell array.
-            c = merge(1.0_r8, -1.0_r8, this%mesh%fcell(2,face(j)) == 0) / 6.0_r8
-            call project_on_face_edges(this%mesh%x(:,this%mesh%fnode(:,face(j))), g(n), p)
-            if (edge(1) > 0) this%gvalue(edge(1)) = this%gvalue(edge(1)) + c * (p(3) - p(2))
-            if (edge(2) > 0) this%gvalue(edge(2)) = this%gvalue(edge(2)) - c * (p(1) - p(3))
-            if (edge(3) > 0) this%gvalue(edge(3)) = this%gvalue(edge(3)) + c * (p(2) - p(1))
+            c = merge(1.0_r8, -1.0_r8, this%mesh%fcell(2,face(j)) == 0) / 2.0_r8
+
+            dx(:,1) = x(:,3) - x(:,2)
+            dx(:,2) = x(:,1) - x(:,3)
+            dx(:,3) = x(:,2) - x(:,1)
+            do i = 1, 7
+              g_qpt = g(n)%eval(matmul(x, GQTRI75_phi(:,i)))
+              g_dot_dx(i,1) = dot_product(g_qpt, dx(:,1))
+              g_dot_dx(i,2) = dot_product(g_qpt, dx(:,2))
+              g_dot_dx(i,3) = dot_product(g_qpt, dx(:,3))
+            end do
+            if (edge(1) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(2,i)*g_dot_dx(i,3) - GQTRI75_phi(3,i)*g_dot_dx(i,2))
+              end do
+              this%gvalue(edge(1)) = this%gvalue(edge(1)) + c * s
+            end if
+            if (edge(2) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(3,i)*g_dot_dx(i,1) - GQTRI75_phi(1,i)*g_dot_dx(i,3))
+              end do
+              this%gvalue(edge(2)) = this%gvalue(edge(2)) - c * s
+            end if
+            if (edge(3) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(1,i)*g_dot_dx(i,2) - GQTRI75_phi(2,i)*g_dot_dx(i,1))
+              end do
+              this%gvalue(edge(3)) = this%gvalue(edge(3)) + c * s
+            end if
           end associate
         end do
       end associate
     end do
 
   end subroutine add_complete
-
-  !! Length-weighted edge projections using trapezoid rule
-  subroutine project_on_face_edges(x, g, p)
-    real(r8), intent(in) :: x(:,:)
-    type(vector_func_box), intent(in) :: g
-    real(r8), intent(out):: p(:)
-    integer :: k
-    real(r8) :: gv(3,3)
-    do k = 1, 3
-      gv(:,k) = g%eval(x(:,k))
-    end do
-    p(1) = 0.5_r8 * dot_product(x(:,3)-x(:,2), gv(:,3)+gv(:,2))
-    p(2) = 0.5_r8 * dot_product(x(:,1)-x(:,3), gv(:,1)+gv(:,3))
-    p(3) = 0.5_r8 * dot_product(x(:,2)-x(:,1), gv(:,2)+gv(:,1))
-  end subroutine
 
   subroutine compute(this, t)
     class(nxh_bndry_func), intent(inout) :: this
