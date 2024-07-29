@@ -38,7 +38,8 @@ module sm_bc_c0d3_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c0d3
 
 contains
@@ -54,7 +55,7 @@ contains
     real(r8), intent(in) :: penalty, distance, traction
 
     character(32) :: msg
-    integer :: nnode, ni, ncontact, icontact(3), idispl(3), d
+    integer :: nnode, ni, d, ndispl, ibc, xibc
     logical :: matching_node
 
     this%mesh => mesh
@@ -62,35 +63,50 @@ contains
 
     nnode = 0
     do ni = 1, size(nodebc%node)
+      if (nodebc%node(ni) > mesh%nnode_onP) cycle ! only consider owned nodes
       matching_node = .false.
-      do ncontact = 0, 3
-        call check_if_matching_node(ni, nodebc%node(ni), nodebc%bcid, nodebc%xbcid, &
-            mesh%nnode_onP, bc%xcontact, icontact(:ncontact), idispl, matching_node)
-        if (matching_node) exit
-      end do
+      block
+        ndispl = 0
+        do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+          ibc = nodebc%bcid(xibc)
+          if (ibc < bc%xcontact) ndispl = ndispl + 1
+        end do
+        matching_node = ndispl >= 3
+      end block
       if (matching_node) nnode = nnode + 1
     end do
     allocate(this%index(nnode), this%normal_d(3,3,nnode), this%displf(3,nnode))
 
     nnode = 0
     do ni = 1, size(nodebc%node)
+      if (nodebc%node(ni) > mesh%nnode_onP) cycle ! only consider owned nodes
       ! For the 3-displacement BC, we'll also consider nodes with any
       ! number of contact BCs. These nodes are overconstrained, so
       ! contact BCs are neglected.
       matching_node = .false.
-      do ncontact = 0, 3
-        call check_if_matching_node(ni, nodebc%node(ni), nodebc%bcid, nodebc%xbcid, &
-            mesh%nnode_onP, bc%xcontact, icontact(:ncontact), idispl, matching_node)
-        if (matching_node) exit
-      end do
+      block
+        ndispl = 0
+        do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+          ibc = nodebc%bcid(xibc)
+          if (ibc < bc%xcontact) ndispl = ndispl + 1
+        end do
+        matching_node = ndispl >= 3
+      end block
       if (.not.matching_node) cycle
       nnode = nnode + 1
       this%index(nnode) = nodebc%node(ni)
 
-      do d = 1, 3
-        this%displf(d,nnode)%f => bc%displacement(nodebc%bcid(idispl(d)))%f
-        this%normal_d(:,d,nnode) = nodebc%normal(:,idispl(d)) / norm2(nodebc%normal(:,idispl(d)))
+      d = 1
+      do xibc = nodebc%xbcid(ni), nodebc%xbcid(ni+1)-1
+        ibc = nodebc%bcid(xibc)
+        if (ibc >= bc%xcontact) cycle
+        this%displf(d,nnode)%f => bc%displacement(ibc)%f
+        this%normal_d(:,d,nnode) = nodebc%normal(:,xibc) / norm2(nodebc%normal(:,xibc))
+        ! only add BCs orthogonal to already added BCs.
+        if (is_orthogonal(this%normal_d(:,d,nnode), this%normal_d(:,:d-1,nnode))) d = d + 1
+        if (d > 3) exit
       end do
+      INSIST(d > 3)
     end do
 
     nnode = count(this%index <= mesh%nnode_onP)
@@ -102,6 +118,29 @@ contains
     end if
 
   end subroutine init
+
+  ! Check if x is orthogonal to the columns of A.
+  ! TODO: Can probably do this more efficiently with LAPACK.
+  logical function is_orthogonal(x, A)
+
+    real(r8), intent(in) :: x(:), A(:,:)
+
+    real(r8), parameter :: tol = 1d-2
+    real(r8) :: y(size(x)), lenA, leny
+    integer :: i
+
+    is_orthogonal = .true.
+    if (size(A, dim=2) == 0) return
+
+    y = x
+    do i = 1, size(A, dim=2)
+      lenA = norm2(A(:,i))
+      if (lenA > tol) y = y - dot_product(y, A(:,i)) * A(:,i) / lenA
+      is_orthogonal = norm2(y) > tol
+      if (.not.is_orthogonal) exit
+    end do
+
+  end function is_orthogonal
 
 
   !! When given three displacements (d1,d2,d3) associated with linearly
@@ -141,8 +180,7 @@ contains
   end subroutine apply
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d3), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -152,9 +190,39 @@ contains
 
     do i = 1, size(this%index)
       n = this%index(i)
-      diag(:,n) = - this%penalty * stress_factor(n)
+      diag(:,n) = - this%penalty
     end do
 
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
+
+    use pcsr_matrix_type
+
+    class(sm_bc_c0d3), intent(inout) :: this
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
+    type(pcsr_matrix), intent(inout) :: A
+
+    integer :: i, n, d, ii, n1, n2, n3
+    real(r8), pointer :: values(:) => null()
+    integer, pointer :: indices(:) => null()
+
+    do i = 1, size(this%index)
+      n = this%index(i)
+      n1 = 3*(n-1) + 1
+      n2 = 3*(n-1) + 2
+      n3 = 3*(n-1) + 3
+
+      ! displacement part
+      do ii = n1, n3
+        call A%get_row_view(ii, values, indices)
+        values = 0
+        call A%set(ii, ii, -this%penalty)
+      end do
+    end do
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c0d3_type

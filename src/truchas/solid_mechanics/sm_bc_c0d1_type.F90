@@ -33,12 +33,13 @@ module sm_bc_c0d1_type
     private
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     real(r8) :: penalty
-    real(r8), allocatable :: normal_d(:,:)
+    real(r8), allocatable :: normal_d(:,:), dot(:)
     type(scalar_func_ptr), allocatable :: displf(:)
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c0d1
 
 contains
@@ -127,6 +128,7 @@ contains
     args(0) = time
     do i = 1, size(this%index)
       n1 = this%index(i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
       r(:,n1) = r(:,n1) - dot_product(r(:,n1), this%normal_d(:,i)) * this%normal_d(:,i)
 
@@ -140,8 +142,7 @@ contains
   end subroutine apply
 
 
-  !! Only the displacement part is currently implemented in the preconditioner.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
 
     class(sm_bc_c0d1), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
@@ -156,9 +157,54 @@ contains
         x(d) = dot_product(this%normal_d(:,i), F(:,d,n))
       end do
       diag(:,n) = diag(:,n) - this%normal_d(:,i) * x &
-          &                 - this%penalty * stress_factor(n) * this%normal_d(:,i)**2
+          &                 - this%penalty * this%normal_d(:,i)**2
     end do
 
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
+
+    use pcsr_matrix_type
+
+    class(sm_bc_c0d1), intent(inout) :: this
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
+    type(pcsr_matrix), intent(inout) :: A
+
+    integer :: i, n, d, ii, jj, n1, n2, n3
+    real(r8) :: stress_penalty
+    real(r8), pointer :: A1(:) => null(), A2(:) => null(), A3(:) => null()
+    integer, pointer :: indices1(:) => null(), indices2(:) => null(), indices3(:) => null()
+
+    do i = 1, size(this%index)
+      n = this%index(i)
+      n1 = 3*(n-1) + 1
+      n2 = 3*(n-1) + 2
+      n3 = 3*(n-1) + 3
+      stress_penalty = this%penalty !/ stress_factor(n)
+
+      ! It is assumed that the indices for each row here are identical. This *should* be the case.
+      call A%get_row_view(n1, A1, indices1)
+      call A%get_row_view(n2, A2, indices2)
+      call A%get_row_view(n3, A3, indices3)
+      ASSERT(all(indices1 == indices2) .and. all(indices2 == indices3))
+
+      ! project out displacement direction
+      this%dot = A1 * this%normal_d(1,i) + A2 * this%normal_d(2,i) + A3 * this%normal_d(3,i)
+      A1 = A1 - this%normal_d(1,i) * this%dot
+      A2 = A2 - this%normal_d(2,i) * this%dot
+      A3 = A3 - this%normal_d(3,i) * this%dot
+
+      ! displacement part
+      do ii = 1, 3
+        do jj = 1, 3
+          call A%add_to(3*(n-1) + ii, 3*(n-1) + jj, &
+              -this%penalty * this%normal_d(ii,i) * this%normal_d(jj,i))
+        end do
+      end do
+    end do
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c0d1_type

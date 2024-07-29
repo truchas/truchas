@@ -10,6 +10,7 @@ module sm_bc_class
   use unstr_mesh_type
   use sm_bc_node_list_type
   use sm_bc_list_type
+  use pcsr_matrix_type
   implicit none
   private
 
@@ -21,8 +22,10 @@ module sm_bc_class
     real(r8), allocatable :: displacement(:), traction(:)
   contains
     procedure(init), deferred :: init
+    procedure :: add_graph_links
     procedure(apply), deferred :: apply
-    procedure(apply_deriv), deferred :: apply_deriv
+    procedure(compute_deriv_diag), deferred :: compute_deriv_diag
+    procedure(compute_deriv_full), deferred :: compute_deriv_full
   end type sm_bc
 
   type, public :: sm_bc_box
@@ -46,12 +49,30 @@ module sm_bc_class
       real(r8), intent(inout) :: r(:,:)
     end subroutine
 
-    subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+    subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
       import sm_bc, r8
       class(sm_bc), intent(inout) :: this
       real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
       real(r8), intent(inout) :: diag(:,:)
     end subroutine
+
+    subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
+      import sm_bc, r8, pcsr_matrix
+      class(sm_bc), intent(inout) :: this
+      real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+      type(pcsr_matrix), intent(in) :: Aforce
+      type(pcsr_matrix), intent(inout) :: A
+    end subroutine
   end interface
+
+contains
+
+  subroutine add_graph_links(this, gforce, g)
+    use pcsr_matrix_type
+    class(sm_bc), intent(in) :: this
+    type(pcsr_graph), intent(in) :: gforce
+    type(pcsr_graph), intent(inout) :: g
+    ! no-op for displacement BCs
+  end subroutine add_graph_links
 
 end module sm_bc_class

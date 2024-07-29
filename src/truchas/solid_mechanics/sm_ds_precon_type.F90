@@ -15,14 +15,14 @@
 module sm_ds_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use sm_precon_class
   use sm_model_type
   use sm_bc_manager_type
   use truchas_timers
   implicit none
   private
 
-  !! TODO extend a generic sm precon class
-  type, public :: sm_ds_precon
+  type, extends(sm_precon), public :: sm_ds_precon
     private
     type(sm_model), pointer, public :: model => null() ! unowned reference
     type(sm_bc_manager), pointer, public :: bc => null() ! unowned reference
@@ -42,15 +42,18 @@ contains
 
     use parameter_list_type
 
-    class(sm_ds_precon), intent(inout) :: this
+    class(sm_ds_precon), intent(out) :: this
     type(sm_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
+    type(parameter_list), pointer :: plist => null()
+
     this%model => model
     this%bc => model%bc
-    call params%get('num-iter', this%niter, default=1)
+    plist => params%sublist("params")
     call params%get('relaxation-parameter', this%omega, default=1.0_r8)
     call params%get('stress-relaxation-parameter', this%gamma, default=1.0_r8) ! legacy used 16/9
+    call plist%get('num-cycles', this%niter, default=1)
 
     allocate(this%diag(3,model%mesh%nnode_onP))
     this%diag = 0
@@ -147,8 +150,6 @@ contains
     call start_timer("precon-compute")
 
     ! For contact, we need the force.
-    force = 0
-    call this%model%mesh%node_imap%gather_offp(displ)
     if (this%bc%contact_active) then !.or. this%model%matl_model%viscoplasticity_enabled) then
       call this%model%compute_forces(t, displ, force)
       call this%model%mesh%node_imap%gather_offp(force)
@@ -169,22 +170,18 @@ contains
         ! if (this%model%matl_model%viscoplasticity_enabled) &
         !     call this%compute_viscoplasticity_precon_contribution(dt, n, this%F(:,:,n))
 
+        ! under-relaxation & scaling
+        this%F(:,:,n) = (this%gamma / this%model%scaling_factor(n)) * this%F(:,:,n)
+
         this%diag(1,n) = this%F(1,1,n)
         this%diag(2,n) = this%F(2,2,n)
         this%diag(3,n) = this%F(3,3,n)
-
-        ! under-relaxation
-        this%F(:,:,n) = this%gamma * this%F(:,:,n)
-        this%diag(:,n) = this%gamma * this%diag(:,n)
       end if
       ASSERT(all(this%diag(:,n) /= 0))
     end do
 
-    call this%model%bc%apply_deriv_diagonal(t, this%model%scaling_factor, displ, force, this%diag, this%F)
-
-    do n = 1, this%model%mesh%nnode_onP
-      this%diag(:,n) = this%diag(:,n) / this%model%scaling_factor(n)
-    end do
+    call this%model%bc%compute_deriv_diagonal(t, this%model%scaling_factor, displ, force, &
+        this%diag, this%F)
 
     call stop_timer("precon-compute")
 
@@ -194,8 +191,8 @@ contains
   subroutine apply(this, u, f)
 
     class(sm_ds_precon), intent(in), target :: this
-    real(r8), intent(in), contiguous :: u(:,:) ! current displacement guess
-    real(r8), intent(inout), contiguous :: f(:,:) ! in residual, out next displacement guess
+    real(r8), intent(in), contiguous, target :: u(:,:) ! current displacement guess
+    real(r8), intent(inout), contiguous, target :: f(:,:) ! in residual, out next displacement guess
 
     integer :: i, j
     real(r8) :: x(3)

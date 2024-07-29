@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 21.07-33-gae5ff235-dirty
-   build architecture:  x86_64
-   build date/time:     2021-08-13 14:14:24
-   build flags:          -fimplicit-none -ffree-line-length-none -g -O0 -fcheck=bits,bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647
-   build host:          theseus
-   run architecture:    Linux theseus 5.10.55-1-lts #1 SMP Sat, 31 Jul
-   run host:            theseus
-   run date/time:       13 Aug 21 15:13:04
+   code:                Truchas 24.06-15-g7fedc5fd-dirty
+   build architecture:  arm64
+   build date/time:     2024-06-18 09:55:20
+   build flags:          -g -O2 -DNDEBUG
+   build host:          pn2405035.lanl.gov
+   run architecture:    Darwin pn2405035.lanl.gov 23.5.0 Darwin Kernel
+   run host:            pn2405035.lanl.gov
+   run date/time:       20 Jun 24 15:25:00
    processors:          1
 
 ================================================================================
@@ -20,9 +20,11 @@ INPUT
 Opening input file "stretch-wed.inp"
 Reading FUNCTION namelists ...
   none found
-Reading VFUNCTION namelists ...
-  none found
 Reading TOOLPATH namelists ...
+  none found
+Reading TOOLHEAD namelists ...
+  none found
+Reading VFUNCTION namelists ...
   none found
 Reading PHYSICS namelist ...
 Reading MATERIAL namelists ...
@@ -38,10 +40,11 @@ Reading BODY namelists (first pass) ...
 Reading BODY namelists (second pass) ...
   read 1 BODY namelist
 Reading NUMERICS namelist ...
-
 Reading SOLID_MECHANICS namelist ...
-
-Reading SM_BC namelists ...
+Reading VISCOPLASTIC_SOLVER namelist ...
+VISCOPLASTIC_SOLVER namelist not found; using defaults.
+Reading SOLID_MECHANICS_BC namelists ...
+Reading VISCOPLASTIC_MODEL namelists ...
 Reading PROBE namelists ...
   none found
 Input file "stretch-wed.inp" closed
@@ -64,6 +67,7 @@ SM-C0D1 nodes:    121
 SM-C0D3 nodes:    121
 Nodes with requested BCs:    242    Nodes with applied BCs:    242
 SM: Computing initial state...
+  NLK BCE solve succeeded:     58 iterations, error,lnorm_inf =     6.291E-01    7.242E-13
 
 
 Initializing solution probes ...
@@ -73,6 +77,7 @@ Initializing solution probes ...
 EXECUTION
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E+00
+  NLK BCE solve succeeded:      1 iterations, error,lnorm_inf =     3.230E-03    4.619E-13
 
 ================================================================================
 
@@ -82,38 +87,38 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  7.388E+00 --- Total
-    9.268E-04 --- Input
-    7.291E+00 --- Initialization
-      9.605E-02 --- mesh-MAIN
-        3.287E-03 --- ghost-cells
-          3.280E-03 --- cell-ghosts
-            1.999E-03 --- node-neighbors
-            3.840E-04 --- ghost-cells
-          7.100E-07 --- link-ghosts
-          5.580E-06 --- assemble-ghosts
-      2.178E-05 --- VOF Initialize
-      7.056E+00 --- solid mechanics
-        1.091E-02 --- properties
-        7.948E-04 --- precon-compute
-        6.468E+00 --- residual
-          2.959E+00 --- strain
-          3.474E+00 --- stress
-          2.176E-02 --- BCs
-        2.974E-02 --- precon-apply
-    5.420E-06 --- electromagnetics
-    9.411E-02 --- Main Cycle
-      2.489E-04 --- Time Step
-      3.634E-02 --- solid mechanics
-        1.094E-02 --- properties
-        7.370E-04 --- precon-compute
-        2.363E-02 --- residual
-          1.066E-02 --- strain
-          1.283E-02 --- stress
-          9.499E-05 --- BCs
-        1.081E-04 --- precon-apply
+  1.617E+00 --- Total
+    4.747E-03 --- Input
+    1.578E+00 --- Initialization
+      3.140E-02 --- mesh-MAIN
+        1.130E-03 --- ghost-cells
+          1.129E-03 --- cell-ghosts
+            6.690E-04 --- node-neighbors
+            6.500E-05 --- ghost-cells
+          0.000E+00 --- link-ghosts
+          1.000E-06 --- assemble-ghosts
+      8.000E-06 --- VOF Initialize
+      1.544E+00 --- solid mechanics
+        1.647E-03 --- properties
+        2.303E-01 --- precon-compute
+          3.289E-03 --- hypre-matrix-copy
+          4.419E-02 --- boomer-setup
+        6.576E-01 --- residual
+          3.897E-01 --- strain
+          2.667E-01 --- stress
+          8.060E-04 --- BCs
+        4.327E-01 --- precon-apply
+          4.327E-01 --- boomer-solve
+    3.365E-02 --- Main Cycle
+      1.270E-04 --- Time Step
+      1.702E-02 --- solid mechanics
+        1.203E-03 --- properties
+        8.160E-03 --- residual
+          5.911E-03 --- strain
+          2.224E-03 --- stress
+          1.700E-05 --- BCs
+        7.498E-03 --- precon-apply
+          7.497E-03 --- boomer-solve
 
-                  Process virtual memory used: 6.70E+02 mB
-                                   words/cell: 9378
 
-truchas terminated normally on 13 Aug 21 at 15:13:12
+truchas terminated normally on 20 Jun 24 at 15:25:01

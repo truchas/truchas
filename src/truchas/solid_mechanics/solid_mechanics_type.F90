@@ -36,7 +36,7 @@ module solid_mechanics_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use sm_model_type
-  use sm_ds_precon_type
+  use sm_precon_class
   use sm_nlsol_model_type
   use nlsol_type
   use truchas_logging_services
@@ -47,12 +47,13 @@ module solid_mechanics_type
   type, public :: solid_mechanics
     private
     type(sm_model) :: model
-    type(sm_ds_precon) :: precon
+    class(sm_precon), allocatable :: precon
     type(sm_nlsol_model) :: solver_model
     type(nlsol) :: solver
 
     real(r8), allocatable :: displacement(:,:), strain(:,:), stress(:,:)
 
+    integer :: max_outer_iterations = 1
     integer, public :: thermoelastic_niter = 0 ! linear iteration count
     integer, public :: viscoplastic_niter = 0  ! nonlinear iteration count
   contains
@@ -72,12 +73,19 @@ module solid_mechanics_type
 
 contains
 
+  ! Note: Contact is nonlinear and it's very important for convergence for the
+  ! preconditioner to be accurate. We'll use "outer" iterations to drive NKA
+  ! multiple times, recomputing the preconditioner as we drive closer to the
+  ! solution. Without contact, the problem is linear so there's no need to do
+  ! this.
   subroutine init(this, mesh, params, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     use parameter_list_type
     use unstr_mesh_type
     use scalar_func_containers
     use viscoplastic_material_model_types
+    use sm_ds_precon_type
+    use sm_hypre_precon_type
 
     class(solid_mechanics), intent(out), target :: this
     type(unstr_mesh), intent(in), target :: mesh
@@ -88,7 +96,7 @@ contains
     type(viscoplastic_material_model_box), allocatable, intent(inout) :: vp(:)
 
     integer :: stat
-    character(:), allocatable :: errmsg
+    character(:), allocatable :: errmsg, preconditioner_method
     type(parameter_list), pointer :: plist => null()
 
     call start_timer("solid mechanics")
@@ -97,12 +105,26 @@ contains
     call this%model%init(mesh, plist, nmat, lame1f, lame2f, densityf, reference_density, vp)
 
     plist => params%sublist("preconditioner")
+    call plist%get("method", preconditioner_method, default="boomeramg")
+    select case(preconditioner_method)
+    case("ds")
+      allocate(sm_ds_precon :: this%precon)
+      ! The scaling factor may vary by row for DS.
+      this%model%use_uniform_scaling_factor = .false.
+    case("boomeramg", "ssor")
+      allocate(sm_hypre_precon :: this%precon)
+    case default
+      call TLS_fatal("Invalid selection for solid mechanics preconditioner_type")
+    end select
     call this%precon%init(this%model, plist)
 
     call this%solver_model%init(this%model, this%precon)
 
     plist => params%sublist("nonlinear-solver")
     if (.not.plist%is_parameter("nlk-tol")) call plist%set("nlk-tol", 1.0_r8) ! default
+    if (.not.plist%is_parameter("nlk-max-iter")) call plist%set("nlk-max-iter", 500) ! default
+    if (this%model%bc%contact_active) &
+        call plist%get("max-outer-iter", this%max_outer_iterations, default=5) ! see note
     call this%solver%init(this%solver_model, plist, stat, errmsg)
     if (stat /= 0) call tls_fatal("SOLID MECHANICS INIT: " // errmsg)
 
@@ -151,6 +173,7 @@ contains
     character(:), intent(out), allocatable :: errmsg
 
     !real(r8) :: displ(size(this%displacement)), displ0(size(this%displacement))
+    integer :: i
     real(r8) :: displ0(size(this%displacement))
     real(r8), pointer :: displ(:)
 
@@ -159,11 +182,18 @@ contains
     displ(1:size(this%displacement)) => this%displacement
     displ0 = displ
     call this%model%update_properties(vof, temperature_cc)
-    call this%solver%solve(t+dt, dt, displ0, displ, stat)
+
+    do i = 1, this%max_outer_iterations
+      call this%solver%solve(t+dt, dt, displ0, displ, stat)
+      if (stat == 0) exit
+      if (i < this%max_outer_iterations) &
+          call TLS_info("SM: retrying with updated preconditioner...")
+    end do
     if (stat /= 0) then
       errmsg = "NLK-SM did not converge"
       return
     end if
+
     call this%model%accept_state
     this%viscoplastic_niter = this%solver%itr
 

@@ -67,14 +67,6 @@ contains
         ! face set matches on both sides of links
         if (btest(face_set_mask(j),k)) nbc(j) = nbc(j) + 1
       end do
-      ! k = findloc(mesh%link_set_id, bc_list%contact(n)%setid, dim=1)
-      ! ASSERT(k > 0)
-      ! do j = 1, mesh%nlink
-      !   if (btest(mesh%link_set_mask(j),k)) then
-      !     nbc(mesh%lface(1,j)) = nbc(mesh%lface(1,j)) + 1
-      !     nbc(mesh%lface(2,j)) = nbc(mesh%lface(2,j)) + 1
-      !   end if
-      ! end do
     end do
 
     ! 2. Make a list of faces with BCs
@@ -142,6 +134,11 @@ contains
   !! need the new link-faces to be associated with the face set ID that their
   !! sibling faces are associated with.
   !!
+  !! zjibben 6/2024: A second issue is that the mesh's link structure doesn't
+  !! seem to contain a link if both faces are off-process. But, when such faces
+  !! neighbor on-process nodes we still need them in this structure due to their
+  !! integration points' contribution to the BCs.
+  !!
   !! This routine generates such a "regularized" face set mask from the mesh
   !! structure to be used locally.
   subroutine get_regularized_face_set_mask(mesh, face_set_mask)
@@ -152,25 +149,34 @@ contains
     type(unstr_mesh), intent(in) :: mesh
     type(bitfield), intent(out), allocatable :: face_set_mask(:)
 
-    integer :: kl, fid, kf, l
+    integer :: kl, fid, kf, l, j, k
     integer :: face_set_index(size(mesh%link_set_id))
+    logical :: face_set_mask_(size(mesh%face_set_id),mesh%nface)
 
     face_set_mask = mesh%face_set_mask
 
     do kl = 1, size(mesh%link_set_id)
       fid = mesh%link_set_id(kl)
-      kf = findloc(mesh%face_set_id, fid, dim=1)
-      ASSERT(kf > 0)
-      face_set_index(kl) = kf
+      face_set_index(kl) = findloc(mesh%face_set_id, fid, dim=1)
+      ASSERT(face_set_index(kl) > 0)
     end do
 
-    do l = 1, size(mesh%lface,dim=2)
-      do kl = 1, size(face_set_index)
-        if (btest(mesh%link_set_mask(l),kl)) then
-          kf = face_set_index(kl)
-          face_set_mask(mesh%lface(1,l)) = ibset(face_set_mask(mesh%lface(1,l)),kf)
-          face_set_mask(mesh%lface(2,l)) = ibset(face_set_mask(mesh%lface(2,l)),kf)
-        end if
+    face_set_mask_ = .false.
+    do j = 1, mesh%nface
+      do k = 1, size(mesh%face_set_id)
+        if (btest(mesh%face_set_mask(j),k)) face_set_mask_(k,j) = .true.
+      end do
+    end do
+    do l = 1, mesh%nlink
+      do kl = 1, size(mesh%link_set_mask)
+        if (btest(mesh%link_set_mask(l),kl)) &
+            face_set_mask_(face_set_index(kl), mesh%lface(:,l)) = .true.
+      end do
+    end do
+    call mesh%face_imap%gather_offp(face_set_mask_)
+    do j = 1, mesh%nface
+      do k = 1, size(mesh%face_set_id)
+        if (face_set_mask_(k,j)) face_set_mask(j) = ibset(face_set_mask(j),k)
       end do
     end do
 

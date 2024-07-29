@@ -27,6 +27,7 @@
   y_axis%coarse_grid = 0.0, 0.05
   z_axis%coarse_grid = 0.0, 0.05
   x_axis%intervals   = 20
+  !x_axis%intervals   = 100
   y_axis%intervals   = 1
   z_axis%intervals   = 1
   rotation_angles = 45, 45, 45
@@ -46,7 +47,9 @@
   solid_mechanics = .true.
 /
 
-&SOLID_MECHANICS /
+&SOLID_MECHANICS
+  rel_stress_tol = 1e-11
+/
 
 &BODY
   surface_name = 'from mesh file'

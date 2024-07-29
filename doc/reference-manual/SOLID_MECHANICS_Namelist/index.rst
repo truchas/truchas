@@ -153,7 +153,21 @@ maximum_iterations
 Maximum allowed number of iterations of the nonlinear solver.
 
 :Type: integer
-:Default: 100
+:Default: 500
+:Valid Values: :math:`[0,\infty)`
+
+
+maximum_outer_iterations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Maximum allowed number of iterations around the nonlinear solver if contact is
+present. Contact is a nonlinear effect, and convergence depends strongly on a
+good preconditioner. It may be necessary to restart the solver a number of times
+with a recomputed preconditioner for convergence. When contact is not present,
+this is always set to 1.
+
+:Type: integer
+:Default: 5
 :Valid Values: :math:`[0,\infty)`
 
 
@@ -179,10 +193,10 @@ For the NLK method, the maximum number of acceleration vectors to be used.
 :Valid Values: :math:`[0,\infty)`
 
 
-abs_stress_tol
+rel_stress_tol
 ^^^^^^^^^^^^^^
 
-The tolerance for the absolute error of the residual used by the solid mechanics
+The tolerance for the relative error of the residual used by the solid mechanics
 solver.
 
 :Physical Dimension: same as the ‘stress’ variable
@@ -191,8 +205,10 @@ solver.
 :Valid Values: :math:`\gt 0`
 
 
-abs_displ_tol
-^^^^^^^^^^^^^
+pc_abs_lame_tol
+^^^^^^^^^^^^^^^^
+
+The tolerance for the absolute change in the Lame parameters, above which a
 
 The tolerance :math:`\epsilon` for the absolute error component of the
 displacement error norm used by the nonlinear solver. If :math:`\delta u` is a
@@ -220,8 +236,8 @@ The relative error tolerance :math:`\eta` is given by `rel_displ_tol`_.
    displacement must be bounded away from 0.
 
 
-rel_displ_tol
-^^^^^^^^^^^^^
+pc_rel_lame_tol
+^^^^^^^^^^^^^^^^
 
 The tolerance :math:`\eta` for the relative error component of the displacement
 error norm used by the nonlinear solver. If :math:`\delta u` is a displacement
@@ -242,22 +258,22 @@ The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
    See the notes for `abs_displ_tol`_.
 
 
-abs_plastic_strain_tol
+abs_displ_tol (expert)
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The tolerance :math:`\epsilon` for the absolute error component of the plastic
-strain error norm used by the nonlinear solver. If :math:`\delta u` is a plastic
-strain field increment with reference plastic strain field :math:`u`,then this
-error norm is
+The tolerance :math:`\epsilon` for the absolute error component of the
+displacement error norm used by the nonlinear solver. If :math:`\delta u` is a
+displacement field increment with reference displacement field :math:`u`,then
+this error norm is
 
 .. math::
    |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
 
-The relative error tolerance :math:`\eta` is given by `rel_plastic_strain_tol`_.
+The relative error tolerance :math:`\eta` is given by `rel_displ_tol`_.
 
 :Physical Dimension: :math:`\Theta`
 :Type: real
-:Default: 1e-12
+:Default: 1e100
 :Valid Values: :math:`\geq 0`
 
 .. note::
@@ -268,51 +284,29 @@ The relative error tolerance :math:`\eta` is given by `rel_plastic_strain_tol`_.
    with tolerance :math:`\epsilon`, and for :math:`u_j` sufficiently large the
    norm approximates a relative norm with tolerance :math:`\eta`. If
    :math:`\epsilon = 0` then the norm is a pure relative norm and the
-   plastic strain must be bounded away from 0.
+   displacement must be bounded away from 0.
 
 
-rel_plastic_strain_tol
+rel_displ_tol (expert)
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The tolerance :math:`\eta` for the relative error component of the plastic
-strain error norm used by the nonlinear solver. If :math:`\delta u` is a plastic
-strain field increment with reference displacement field :math:`u`, then this
-error norm is
+The tolerance :math:`\eta` for the relative error component of the displacement
+error norm used by the nonlinear solver. If :math:`\delta u` is a displacement
+field increment with reference displacement field :math:`u`, then this error
+norm is
 
 .. math::
    |||\delta u||| \equiv \mathop{{max}_j} |\delta u_j|/(\epsilon + \eta |u_j|)
 
-The absolute error tolerance :math:`\epsilon` is given by `abs_plastic_strain_tol`_.
+The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
 
 :Physcial Dimension: dimensionless
 :Type: real
-:Default: 1e-3
-:Valid Values: (0, 1)
-
-.. note::
-   See the notes for `abs_plastic_strain_tol`_.
-
-
-viscoplastic_strain_limit
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This parameter controls the use of the ODE integrator in the plastic strain
-calculation. When the plastic strain at an integration point is below this
-limit, a single Heun step is taken. When the plastic strain is at or above this
-limit, the solver requested by :ref:`viscoplastic_solver
-<SOLID_MECHANICS_Namelist/index:viscoplastic_solver (expert)>` is invoked with
-an initial step size such that the predicted plastic strain delta does not
-exceed the limit.
-
-:Type: real
-:Default: 1e-10
+:Default: 1e100
 :Valid Values: :math:`\geq 0`
 
-.. tip::
-
-   This should be set to the minimum significant value of the plastic strain
-   increment for a time step. If convergence seems poor when a viscoplastic
-   material model is used, it may help to reduce this value.
+.. note::
+   See the notes for `abs_displ_tol`_.
 
 
 nlk_tol (expert)
@@ -333,6 +327,17 @@ correction is less than this value.
    error for the step, which is roughly 1. Solving to a greater accuracy is
    wasted effort.
 
+
+preconditioner_method (expert)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The preconditioning method to use. The current default is `"boomeramg"`, which
+performs well and generally shouldn't need to be changed. Other options include
+`"ssor"`, and `"ds"` for diagonal scaling (Jacobi).
+
+:Type: string
+:Default: `"boomeramg"`
+:Valid Values: `"boomeramg"`, `"ssor"`, or `"ds"`
 
 relaxation_parameter (expert)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -363,7 +368,7 @@ value unless the `relaxation_parameter (expert)`_ variable is also changed from 
 default.
 
 :Type: integer
-:Default: 1
+:Default: 2 when `preconditioner_method = "boomeramg"` (default) or `preconditioner_method = "ssor"`, and 1 when `preconditioner_method = "ds"`.
 :Valid Values: :math:`\geq 1`
 
 
@@ -377,30 +382,3 @@ Changing this is probably not a good idea in the current version.
 :Type: real
 :Default: 1e3
 :Valid Values: [0, :math:`\infty`)
-
-
-viscoplastic_nlk_tol (expert)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The convergence tolerance for the NLK nonlinear solver for viscoplasticity. The
-nonlinear system is considered solved by the current iterate if the norm of the
-last solution correction is less than this value.
-
-:Type: real
-:Default: 1e-2
-:Valid Values: (0, 1]
-
-
-viscoplastic_solver (expert)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The choice of viscoplastic solver. The default is fast and accurate, and an end
-user won't benefit by changing this option. The default is to use the
-``bdf2_integrator`` backend. The `"jacobian"` option uses an implicit
-NLK-accelerated ``idaesol`` solver. The `"jfree"` option uses a jacobian-free
-algorithm identical to the ``bdf2_integrator``, but implemented on the
-``idaesol`` type.
-
-:Type: string
-:Default: `"bdf2"`
-:Valid Values: `"bdf2"`, `"jacobian"`, or `"jfree"`

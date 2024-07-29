@@ -20,11 +20,8 @@
 /
 
 &SOLID_MECHANICS
-  nlk_max_vectors = 20
-  nlk_vector_tolerance = 1e-2
-  maximum_iterations = 1000
+  nlk_max_vectors = 5
 /
-&DIFFUSION_SOLVER /
 
 &MATERIAL
   name = 'stuff'

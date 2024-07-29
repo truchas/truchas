@@ -31,6 +31,7 @@ module sm_bc_utilities
   public :: compute_gradient_node_to_cell
   public :: check_if_matching_node
   public :: compute_stress, von_mises_stress, compute_deviatoric_stress
+  public :: alloc_at_least
 
 contains
 
@@ -69,12 +70,7 @@ contains
     do fi = 1, nfi
       count = 0
       f = face_index(fi)
-      do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
-        n = mesh%fnode(xn)
-        !if (n <= mesh%nnode_onP) count = count + 1
-        count = count + 1
-      end do
-      xfini(fi+1) = xfini(fi) + count
+      xfini(fi+1) = xfini(fi) + mesh%xfnode(f+1) - mesh%xfnode(f)
     end do
 
     ! count the unique nodes
@@ -84,7 +80,6 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) /= 0) cycle
         count = count + 1
         ni_(n) = count
@@ -100,7 +95,6 @@ contains
       f = face_index(fi)
       do xn = mesh%xfnode(f), mesh%xfnode(f+1)-1
         n = mesh%fnode(xn)
-        !if (n > mesh%nnode_onP) cycle
         if (ni_(n) == 0) then
           count = count + 1
           ni_(n) = count
@@ -112,7 +106,6 @@ contains
     end do
 
     ASSERT(all(fini > 0))
-    !ASSERT(all(fini <= mesh%nnode_onP))
 
   end subroutine compute_index_connectivity
 
@@ -528,6 +521,9 @@ contains
   end function contact_factor
 
 
+  !! Return the derivative of the contact factor with respect to:
+  !!   - The separation s (component 1)
+  !!   - The traction tn (component 2)
   pure function derivative_contact_factor(s, tn, distance, traction) result(dl)
 
     real(r8), intent(in) :: s, tn, distance, traction
@@ -663,6 +659,10 @@ contains
   !! displacements. On output, the routine will provide a logical value
   !! indicating whether the node matches the requested type, and indexes
   !! for those BCs into sm_bc_node_list::bcid.
+  !!
+  !! Note 1: At overconstrained displacement nodes (such as can legitimately
+  !! happen on edges and corners) we only apply the first 3 displacement BCs
+  !! found.
   subroutine check_if_matching_node(ni, n, bcid, xbcid, nnode_onP, xcontact, &
       icontact, idispl, matching_node)
 
@@ -679,9 +679,9 @@ contains
     if (n > nnode_onP) return ! only consider owned nodes
 
     ! Count the BCs applied to this node. If the node doesn't have
-    ! exactly the requested number of BCs, it is disqualified.
+    ! exactly the requested number of BCs, it is disqualified. See note 1.
     nbc = xbcid(ni+1) - xbcid(ni)
-    if (nbc /= size(icontact)+size(idispl)) return
+    if (size(idispl) < 3 .and. nbc /= size(icontact)+size(idispl)) return
 
     do xibc = xbcid(ni), xbcid(ni+1)-1
       ibc = bcid(xibc)
@@ -703,7 +703,7 @@ contains
             exit
           end if
         end do
-        if (b > size(idispl)) return
+        if (b > size(idispl) .and. size(idispl) < 3) return ! see note 1
       end if
     end do
 
@@ -745,5 +745,19 @@ contains
     deviatoric_stress = stress
     deviatoric_stress(1:3) = deviatoric_stress(1:3) - mean_stress
   end subroutine compute_deviatoric_stress
+
+
+  subroutine alloc_at_least(a, n)
+    integer, allocatable, intent(inout) :: a(:)
+    integer, intent(in) :: n
+    if (allocated(a)) then
+      if (size(a) < n) then
+        deallocate(a)
+      else
+        return
+      end if
+    end if
+    allocate(a(n))
+  end subroutine alloc_at_least
 
 end module sm_bc_utilities

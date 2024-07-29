@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 22.04.1-26-g3ed76cf1-dirty
-   build architecture:  x86_64
-   build date/time:     2022-05-31 16:44:16
+   code:                Truchas 24.06-19-gb55f9ab8-dirty
+   build architecture:  arm64
+   build date/time:     2024-06-18 09:55:20
    build flags:          -g -O2 -DNDEBUG
-   build host:          pn2200021.lanl.gov
-   run architecture:    Darwin pn2200021.lanl.gov 20.6.0 Darwin Kernel
-   run host:            pn2200021.lanl.gov
-   run date/time:       01 Jun 22 14:50:15
+   build host:          pn2405035.lanl.gov
+   run architecture:    Darwin pn2405035.lanl.gov 23.5.0 Darwin Kernel
+   run host:            pn2405035.lanl.gov
+   run date/time:       27 Jun 24 18:03:00
    processors:          1
 
 ================================================================================
@@ -20,9 +20,11 @@ INPUT
 Opening input file "viscoplastic-ring.inp"
 Reading FUNCTION namelists ...
   none found
-Reading VFUNCTION namelists ...
-  none found
 Reading TOOLPATH namelists ...
+  none found
+Reading TOOLHEAD namelists ...
+  none found
+Reading VFUNCTION namelists ...
   none found
 Reading PHYSICS namelist ...
 Reading MATERIAL namelists ...
@@ -39,11 +41,10 @@ Reading BODY namelists (first pass) ...
 Reading BODY namelists (second pass) ...
   read 2 BODY namelists
 Reading NUMERICS namelist ...
-
 Reading SOLID_MECHANICS namelist ...
-
+Reading VISCOPLASTIC_SOLVER namelist ...
+VISCOPLASTIC_SOLVER namelist not found; using defaults.
 Reading SOLID_MECHANICS_BC namelists ...
-
 Reading VISCOPLASTIC_MODEL namelists ...
 Reading DIFFUSION_SOLVER namelist ...
   using default STEPPING_METHOD value: "Adaptive BDF2"
@@ -63,10 +64,11 @@ Reading THERMAL_SOURCE namelists ...
   none found
 Reading SPECIES_BC namelists ...
   none found
-Reading DS_SOURCE namelists ...
+Reading SPECIES_SOURCE namelists ...
   none found
 Reading ENCLOSURE_RADIATION namelists ...
   none found
+Reading MICROSTRUCTURE namelists ...
 Reading PROBE namelists ...
   none found
 Input file "viscoplastic-ring.inp" closed
@@ -91,12 +93,13 @@ SM-C1D1 nodes:     30
 SM-C1D2 nodes:      4
 Nodes with requested BCs:    259    Nodes with applied BCs:    259
 SM: Computing initial state...
-  NLK BCE solve succeeded:    180 iterations, error,lnorm_inf =     5.096E-04    7.938E-11
+  NLK BCE solve succeeded:    282 iterations, error,lnorm_inf =     2.655-116    9.323E-14
 
 
 Initializing diffusion solver ...
-  generating external source for "temperature" equation
   generating "scalar_cell_func1" thermal source
+    none specified
+  generating "scalar_cell_func2" thermal source
     none specified
   generating "interface-htc" thermal interface condition
     using THERMAL_BC[plug/ring interface]
@@ -132,27 +135,27 @@ EXECUTION
           1: t =   0.00000E+00, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000002:00001, NNR:NNF:NSR=0000:0000:0000
-  NLK BCE solve succeeded:    110 iterations, error,lnorm_inf =     2.773E-04    7.102E-11
+  NLK BCE solve succeeded:    300 iterations, error,lnorm_inf =     4.020-116    8.444E-14
 
           2: t =   1.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000005:00001, NNR:NNF:NSR=0000:0000:0000
-  NLK BCE solve succeeded:    109 iterations, error,lnorm_inf =     2.463E-04    8.336E-11
+  NLK BCE solve succeeded:    224 iterations, error,lnorm_inf =     1.793-116    7.132E-14
 
           3: t =   2.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000008:00001, NNR:NNF:NSR=0000:0000:0000
-  NLK BCE solve succeeded:    109 iterations, error,lnorm_inf =     4.698E-04    6.463E-11
+  NLK BCE solve succeeded:    280 iterations, error,lnorm_inf =     1.744-115    8.460E-14
 
           4: t =   3.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000011:00001, NNR:NNF:NSR=0000:0000:0000
-  NLK BCE solve succeeded:    107 iterations, error,lnorm_inf =     2.911E-04    9.773E-11
+  NLK BCE solve succeeded:    268 iterations, error,lnorm_inf =     1.493-115    8.672E-14
 
           5: t =   4.00000E-01, dt(constant) =   1.00000E-01
 
 DS: dt=1.000E-01, NFUN:NPC=0000014:00001, NNR:NNF:NSR=0000:0000:0000
-  NLK BCE solve succeeded:    108 iterations, error,lnorm_inf =     2.973E-04    8.429E-11
+  NLK BCE solve succeeded:    252 iterations, error,lnorm_inf =     2.328-115    8.209E-14
 
 ================================================================================
 
@@ -162,62 +165,73 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  5.323E+00 --- Total
-    5.438E-03 --- Input
-    3.505E-01 --- Initialization
-      9.882E-03 --- mesh-MAIN
-        3.340E-04 --- ghost-cells
-          3.190E-04 --- cell-ghosts
-            1.580E-04 --- node-neighbors
-            1.000E-05 --- ghost-cells
-          0.000E+00 --- link-ghosts
-          1.300E-05 --- assemble-ghosts
-      4.470E-04 --- VOF Initialize
-      3.038E-01 --- solid mechanics
-        1.540E-04 --- properties
-        1.337E-03 --- precon-compute
-          1.291E-03 --- residual
-            1.112E-03 --- strain
-            1.690E-04 --- stress
-            5.000E-06 --- BCs
-        2.241E-01 --- residual
-          1.902E-01 --- strain
-          3.105E-02 --- stress
-          2.338E-03 --- BCs
-        4.670E-04 --- precon-apply
-      1.635E-03 --- viscoplasticity
-      6.890E-04 --- HTSD function
-        6.780E-04 --- HT function
-      1.400E-05 --- ssor-setup
-      2.020E-04 --- ssor-solve
-    9.000E-06 --- electromagnetics
-    4.966E+00 --- Main Cycle
-      2.800E-05 --- Time Step
-      8.145E-03 --- Diffusion Solver
-        2.287E-03 --- HTSD precon compute
-          2.550E-04 --- hypre-matrix-copy
-          1.748E-03 --- boomer-setup
-        1.030E-03 --- HTSD function
-          1.002E-03 --- HT function
-        3.878E-03 --- HTSD precon apply
-          3.875E-03 --- HT precon apply
-            3.704E-03 --- boomer-solve
-      4.935E+00 --- solid mechanics
-        5.780E-04 --- properties
-        4.276E-02 --- precon-compute
-          4.263E-02 --- residual
-            5.294E-03 --- strain
-            3.620E-02 --- viscoplasticity
-              2.445E-02 --- integrate
-            1.107E-03 --- stress
-            1.200E-05 --- BCs
-        4.734E+00 --- residual
-          5.473E-01 --- strain
-          4.060E+00 --- viscoplasticity
-            2.852E+00 --- integrate
-          1.152E-01 --- stress
-          9.170E-03 --- BCs
-        1.375E-03 --- precon-apply
+  4.861E+00 --- Total
+    5.480E-03 --- Input
+    1.878E-01 --- Initialization
+      1.434E-03 --- mesh-MAIN
+        4.600E-05 --- ghost-cells
+          4.400E-05 --- cell-ghosts
+            2.600E-05 --- node-neighbors
+            4.000E-06 --- ghost-cells
+          1.000E-06 --- link-ghosts
+          1.000E-06 --- assemble-ghosts
+      1.010E-04 --- VOF Initialize
+      1.816E-01 --- solid mechanics
+        6.000E-05 --- properties
+        4.400E-04 --- compute_precon
+          4.380E-04 --- precon-compute
+            4.290E-04 --- residual
+              3.570E-04 --- strain
+              7.200E-05 --- stress
+              0.000E+00 --- BCs
+        1.108E-01 --- compute_f
+          1.107E-01 --- residual
+            8.709E-02 --- strain
+            2.216E-02 --- stress
+            1.270E-03 --- BCs
+        1.197E-03 --- lnorm
+        9.570E-04 --- apply_precon
+          4.060E-04 --- precon-apply
+        6.341E-02 --- nka
+        2.220E-04 --- du_norm
+      9.100E-04 --- viscoplasticity
+      2.530E-04 --- HTSD function
+        2.430E-04 --- HT function
+      7.000E-06 --- ssor-setup
+      1.150E-04 --- ssor-solve
+    4.667E+00 --- Main Cycle
+      1.100E-05 --- Time Step
+      3.631E-03 --- Diffusion Solver
+        1.070E-03 --- HTSD precon compute
+          4.800E-05 --- hypre-matrix-copy
+          8.800E-04 --- boomer-setup
+        4.340E-04 --- HTSD function
+          3.680E-04 --- HT function
+        1.778E-03 --- HTSD precon apply
+          1.775E-03 --- HT precon apply
+            1.708E-03 --- boomer-solve
+      4.657E+00 --- solid mechanics
+        3.130E-04 --- properties
+        1.607E-02 --- compute_precon
+          1.607E-02 --- precon-compute
+            1.602E-02 --- residual
+              1.688E-03 --- strain
+              1.387E-02 --- viscoplasticity
+                9.097E-03 --- integrate
+              4.580E-04 --- stress
+              3.000E-06 --- BCs
+        4.334E+00 --- compute_f
+          4.334E+00 --- residual
+            4.350E-01 --- strain
+            3.757E+00 --- viscoplasticity
+              2.526E+00 --- integrate
+            1.355E-01 --- stress
+            5.822E-03 --- BCs
+        5.496E-03 --- lnorm
+        4.532E-03 --- apply_precon
+          1.851E-03 --- precon-apply
+        2.908E-01 --- nka
+        1.077E-03 --- du_norm
 
 
-truchas terminated normally on 01 Jun 22 at 14:50:20
+truchas terminated normally on 27 Jun 24 at 18:03:05

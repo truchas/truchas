@@ -40,7 +40,8 @@ module sm_bc_c2d0_type
   contains
     procedure :: init
     procedure :: apply
-    procedure :: apply_deriv
+    procedure :: compute_deriv_diag
+    procedure :: compute_deriv_full
   end type sm_bc_c2d0
 
 contains
@@ -110,6 +111,9 @@ contains
   end subroutine init
 
 
+  !! WARN: There is some small parallel discrepancy here, that is not present in
+  !! the C1 BCs. To replicate: Run contact-2.inp with DS for 1000 iterations,
+  !! disable NKA, compare final errors in serial and parallel.
   subroutine apply(this, time, displ, ftot, stress_factor, r)
 
     class(sm_bc_c2d0), intent(inout) :: this
@@ -123,10 +127,17 @@ contains
       n1 = this%index(i)
       n2 = this%linked_node(1,i)
       n3 = this%linked_node(2,i)
+      ! the stress_factor gets divided out in compute_residual
       stress_penalty = this%penalty * stress_factor(n1)
 
-      call compute_contact_variables(1, i, lambda(1), delta(1), stress2(1))
-      call compute_contact_variables(2, i, lambda(2), delta(2), stress2(2))
+      call compute_contact_variables(this, displ, ftot, 1, i, lambda(1), delta(1), stress2(1))
+      call compute_contact_variables(this, displ, ftot, 2, i, lambda(2), delta(2), stress2(2))
+
+      ! visualization storage
+      ! Last one written is what gets stored to output. See comments in
+      ! sm_bc_type::compute_viz_fields.
+      this%displacement(i) = delta(2)
+      this%traction(i) = stress2(2)
 
       ! Here are all the different cases that can show up... See the
       ! reference manual for details.
@@ -177,43 +188,132 @@ contains
           x = x - this%normal(:,2,i) * dot_product(this%normal(:,2,i), c31)
           r(:,n1) = r(:,n1) + lambda(1)*lambda(2)*x
         end block
-
       end if
     end do
-
-  contains
-
-    subroutine compute_contact_variables(li, i, lambda, delta, stress2)
-      integer, intent(in) :: li, i
-      real(r8), intent(out) :: lambda, delta, stress2
-      integer :: n1, n2
-      real(r8) :: x1, x2, tn, stress1
-      n1 = this%index(i)
-      n2 = this%linked_node(li,i)
-      stress1 = dot_product(this%normal(:,li,i), ftot(:,n1))
-      stress2 = dot_product(this%normal(:,li,i), ftot(:,n2))
-      x1 = dot_product(this%normal(:,li,i), displ(:,n1))
-      x2 = dot_product(this%normal(:,li,i), displ(:,n2))
-      delta = x2 - x1
-      tn = - stress1 / this%area(li,i)
-      lambda = contact_factor(delta, tn, this%distance, this%normal_traction)
-
-      ! visualization storage
-      ! Last one written is what gets stored to output. See comments in
-      ! sm_bc_type::compute_viz_fields.
-      this%displacement(i) = delta
-      this%traction(i) = tn
-    end subroutine compute_contact_variables
 
   end subroutine apply
 
 
+  subroutine compute_contact_variables(this, displ, ftot, li, i, lambda, delta, stress2)
+    type(sm_bc_c2d0), intent(in) :: this
+    real(r8), intent(in) :: displ(:,:), ftot(:,:)
+    integer, intent(in) :: li, i
+    real(r8), intent(out) :: lambda, delta, stress2
+    integer :: n1, n2
+    real(r8) :: x1, x2, tn, stress1
+    n1 = this%index(i)
+    n2 = this%linked_node(li,i)
+    stress1 = dot_product(this%normal(:,li,i), ftot(:,n1))
+    stress2 = dot_product(this%normal(:,li,i), ftot(:,n2))
+    x1 = dot_product(this%normal(:,li,i), displ(:,n1))
+    x2 = dot_product(this%normal(:,li,i), displ(:,n2))
+    delta = x2 - x1
+    tn = - stress1 / this%area(li,i)
+    lambda = contact_factor(delta, tn, this%distance, this%normal_traction)
+  end subroutine compute_contact_variables
+
+
   !! Contact preconditioner contribution currently not implemented.
-  subroutine apply_deriv(this, time, displ, ftot, stress_factor, F, diag)
+  subroutine compute_deriv_diag(this, time, displ, ftot, stress_factor, F, diag)
     class(sm_bc_c2d0), intent(inout) :: this
     real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:), F(:,:,:)
     real(r8), intent(inout) :: diag(:,:)
     ! do nothing
-  end subroutine apply_deriv
+  end subroutine compute_deriv_diag
+
+
+  !! Only the displacement part is currently implemented in the preconditioner.
+  !!
+  !! NB: Neglect dldu term. It's only active when the surfaces are barely in contact.
+  subroutine compute_deriv_full(this, time, displ, ftot, stress_factor, Aforce, A)
+
+    use pcsr_matrix_type
+
+    class(sm_bc_c2d0), intent(inout) :: this
+    real(r8), intent(in) :: time, displ(:,:), ftot(:,:), stress_factor(:)
+    type(pcsr_matrix), intent(in) :: Aforce
+    type(pcsr_matrix), intent(inout) :: A
+
+    integer :: i, n1, n2, n3, li, ii, jj
+    real(r8) :: stress_penalty, v, stress2(2), delta(2), lambda(2), x, c
+
+    do i = 1, size(this%index)
+      n1 = this%index(i)
+      n2 = this%linked_node(1,i)
+      n3 = this%linked_node(2,i)
+
+      call compute_contact_variables(this, displ, ftot, 1, i, lambda(1), delta(1), stress2(1))
+      call compute_contact_variables(this, displ, ftot, 2, i, lambda(2), delta(2), stress2(2))
+
+      ! Here are all the different cases that can show up... See the
+      ! reference manual for details.
+      if (all(this%tangent(:,i) == 0)) then
+        ! Two surfaces, two nodes, but only one normal.
+        do li = 1, 2
+          do ii = 1, 3
+            do jj = 1, 3
+              call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, &
+                  -this%penalty * lambda(li) * this%normal(ii,li,i) * this%normal(jj,li,i))
+            end do
+          end do
+        end do
+
+      else if (any(lambda == 0)) then
+        ! Only in contact with one surface, or no surfaces.
+        li = maxloc(lambda, dim=1)
+        do ii = 1, 3
+          do jj = 1, 3
+            call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, &
+                -this%penalty * lambda(li) * this%normal(ii,li,i) * this%normal(jj,li,i))
+          end do
+        end do
+
+      else if (n2 == n3) then
+        ! Corner contact, two surfaces but one node -- see reference manual.
+        do li = 1, 2
+          do ii = 1, 3
+            do jj = 1, 3
+              call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, &
+                  -this%penalty * lambda(li) * this%normal(ii,li,i) * this%normal(jj,li,i))
+            end do
+          end do
+        end do
+
+        do ii = 1, 3
+          do jj = 1, 3
+            x = - lambda(1) * lambda(2) * this%penalty * (1 &
+                - this%tangent(ii,i) * this%tangent(jj,i) &
+                - this%normal(ii,1,i) * this%normal(jj,1,i) &
+                - this%normal(ii,2,i) * this%normal(jj,2,i))
+            call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, x)
+          end do
+        end do
+
+      else
+        ! Two surfaces, two nodes, two normals
+        do li = 1, 2
+          do ii = 1, 3
+            do jj = 1, 3
+              call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, &
+                  -this%penalty * lambda(li) * this%normal(ii,li,i) * this%normal(jj,li,i))
+            end do
+          end do
+        end do
+
+        ! This term is causing failures in contact-2 for unknown reasons. Disabled for now.
+        ! c = -lambda(1) * lambda(2) * this%penalty
+        ! do ii = 1, 3
+        !   do jj = 1, 3
+        !     x = 2 * c
+        !     x = x - this%tangent(ii,i) * this%tangent(jj,i) * x
+        !     x = x - this%normal(ii,1,i) * this%normal(jj,1,i) * c
+        !     x = x - this%normal(ii,2,i) * this%normal(jj,2,i) * c
+        !     call A%add_to(3*(n1-1) + ii, 3*(n1-1) + jj, x)
+        !   end do
+        ! end do
+      end if
+    end do
+
+  end subroutine compute_deriv_full
 
 end module sm_bc_c2d0_type

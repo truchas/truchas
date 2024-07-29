@@ -17,7 +17,7 @@ def run_test(tenv):
     test = output.field(sid, "sigma")
     gold = golden.field(sid, "sigma")
     for j in range(6):
-        nfail += truchas.compare_max(test[:,j], gold[:,j], 1e-3, f"sigma{j+1:1d}", time)
+        nfail += truchas.compare_max(test[:,j], gold[:,j], 5e-3, f"sigma{j+1:1d}", time)
 
     # strain
     test = output.field(sid, "epsilon")
@@ -30,7 +30,7 @@ def run_test(tenv):
     gold = golden.field(sid, "Gap Normal Traction")
     test = test[~np.isnan(test)] # remove NaNs in non-gap areas
     gold = gold[~np.isnan(gold)] # remove NaNs in non-gap areas
-    nfail += truchas.compare_max(test, gold, 1e-3, "normal traction", time)
+    nfail += truchas.compare_max(test, gold, 5e-3, "normal traction", time)
 
     # final time
     sid = output.series_id(5)

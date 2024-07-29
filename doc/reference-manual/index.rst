@@ -43,5 +43,6 @@ Reference Manual
    TURBULENCE_Namelist/index
    VFUNCTION_Namelist/index
    VISCOPLASTIC_MODEL_Namelist/index
+   VISCOPLASTIC_SOLVER_Namelist/index
    rade/index
    python/index

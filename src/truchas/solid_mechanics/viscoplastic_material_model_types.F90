@@ -69,7 +69,7 @@ module viscoplastic_material_model_types
 
   type, extends(viscoplastic_material_model), public :: viscoplastic_power_law_model
     private
-    real(r8) :: A, n, Q, R
+    real(r8) :: A, n, Q, R, Tref
     real(r8) :: A2
   contains
     procedure :: init => init_pl
@@ -129,6 +129,7 @@ contains
     call params%get('n', this%n)
     call params%get('Q', this%Q)
     call params%get('R', this%R)
+    call params%get('Tref', this%Tref, default=0.0_r8)
 
     if (this%a < 0) call tls_fatal("pwr_law_a must be >= 0")
     if (this%n < 0) call tls_fatal("pwr_law_n must be >= 0")
@@ -139,7 +140,7 @@ contains
     class(viscoplastic_power_law_model), intent(in) :: this
     real(r8), intent(in) :: stress, temperature
     real(r8) :: strain_rate
-    strain_rate = this%A * stress**this%n * exp(-this%Q / (this%R * temperature))
+    strain_rate = this%A * stress**this%n * exp(-this%Q / (this%R * (temperature - this%Tref)))
   end function strain_rate_pl_st
 
 
@@ -150,7 +151,7 @@ contains
     if (this%n == 0) then
       strain_rate_precon = 0
     else
-      strain_rate_precon = this%A * exp(-this%Q / (this%R * temperature)) * (this%n * stress**(this%n-1))
+      strain_rate_precon = this%A * exp(-this%Q / (this%R * (temperature - this%Tref))) * (this%n * stress**(this%n-1))
     end if
   end function strain_rate_precon_pl
 
@@ -158,7 +159,7 @@ contains
   pure subroutine set_temperature_pl(this, temperature)
     class(viscoplastic_power_law_model), intent(inout) :: this
     real(r8), intent(in) :: temperature
-    this%A2 = this%A * exp(-this%Q / (this%R * temperature))
+    this%A2 = this%A * exp(-this%Q / (this%R * (temperature - this%Tref)))
   end subroutine set_temperature_pl
 
   pure function strain_rate_pl_s(this, stress) result(strain_rate)

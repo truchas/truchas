@@ -57,6 +57,7 @@
 
 &SOLID_MECHANICS
   maximum_iterations = 500
+  rel_stress_tol = 1e-13
   nlk_max_vectors = 60
 
   ! Make the contact parameters large to model a sliding interface (no

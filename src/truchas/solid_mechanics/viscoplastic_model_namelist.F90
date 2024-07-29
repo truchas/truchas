@@ -41,15 +41,14 @@ contains
 
     !! Namelist variables
     character(128) :: phase, model
-    real(r8) :: pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r
+    real(r8) :: pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r, pwr_law_tref
     real(r8) :: mts_k, mts_mu_0, mts_sig_a, mts_d, mts_temp_0, mts_b, &
         mts_edot_0i, mts_g_0i, mts_q_i, mts_p_i, mts_sig_i
     namelist /viscoplastic_model/ phase, model, &
-        pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r, &
+        pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r, pwr_law_tref, &
         mts_k, mts_mu_0, mts_sig_a, mts_d, mts_temp_0, mts_b, &
         mts_edot_0i, mts_g_0i, mts_q_i, mts_p_i, mts_sig_i
 
-    call TLS_info('')
     call TLS_info('Reading VISCOPLASTIC_MODEL namelists ...')
 
     if (is_IOP) rewind(lun)
@@ -72,6 +71,7 @@ contains
       pwr_law_n = NULL_R
       pwr_law_q = NULL_R
       pwr_law_r = NULL_R
+      pwr_law_tref = NULL_R
       mts_k = NULL_R
       mts_mu_0 = NULL_R
       mts_sig_a = NULL_R
@@ -94,6 +94,7 @@ contains
       call broadcast(pwr_law_n)
       call broadcast(pwr_law_q)
       call broadcast(pwr_law_r)
+      call broadcast(pwr_law_tref)
       call broadcast(mts_k)
       call broadcast(mts_mu_0)
       call broadcast(mts_sig_a)
@@ -126,6 +127,7 @@ contains
         call plist%set('n', pwr_law_n)
         call plist%set('Q', pwr_law_q)
         call plist%set('R', pwr_law_r)
+        if (pwr_law_tref /= NULL_R) call plist%set('Tref', pwr_law_tref)
 
       case ("MTS")
         if (any([pwr_law_a, pwr_law_n, pwr_law_q, pwr_law_r] /= NULL_R)) &
