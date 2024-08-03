@@ -76,7 +76,7 @@ contains
 
     stat = 0 ! TODO: error handling / argument verification
 
-    call params%get('gmres-krylov-dim', this%krylov_dim, default=5)
+    call params%get('krylov-dim', this%krylov_dim, default=5)
     call params%get('abs-tol', this%atol, default=1d-8)
     call params%get('rel-tol', this%rtol, default=0.0_r8)
     call params%get('max-iter', this%max_iter, default=20)

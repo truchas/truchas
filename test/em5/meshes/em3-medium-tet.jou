@@ -1,0 +1,49 @@
+import acis "em-oball-geom.sat"
+
+webcut volume 1 with cylinder radius 5 axis z
+
+imprint body all
+merge body all
+
+volume 1  size .3
+volume 1  scheme Tetmesh
+mesh volume 1
+
+volume 3  size 1.0
+volume 3  scheme Tetmesh
+set trimesher surface gradation 1.1
+set trimesher volume gradation 1.1
+volume 3 tetmesh growth_factor 1.1
+mesh volume 3
+
+unite volume 1 3 include_mesh
+
+surface 6 size 0.65
+surface 6 scheme trimesh
+mesh surface 6
+
+volume 2  size 2.0
+volume 2  scheme Tetmesh
+set trimesher surface gradation 1.1
+set trimesher volume gradation 1.1
+volume 2 tetmesh growth_factor 1.1
+mesh volume 2
+
+block 1 volume 1  
+block 2 volume 2
+
+sideset 1 add surface with x_coord == 0
+sideset 1 name "x=0 sym plane"
+sideset 2 add surface with y_coord == 0
+sideset 2 name "y=0 sym plane"
+sideset 3 add surface with z_coord == 0
+sideset 3 name "z=0 sym plane"
+sideset 4 add surface 7
+sideset 4 name "top"
+sideset 5 add surface 6
+sideset 5 name "cylinder"
+
+export genesis "em3-medium-tet.gen" overwrite
+
+
+quit

@@ -29,9 +29,23 @@ module fdme_model_type
     procedure :: matvec
     procedure :: residual
     procedure :: compute_heat_source
+    procedure :: compute_b
   end type
 
 contains
+
+  subroutine compute_b(this, e, b)
+    use mimetic_discretization, only: curl
+    class(fdme_model), intent(in) :: this
+    real(r8), intent(in)  :: e(:,:)
+    real(r8), intent(out) :: b(:,:)
+    ASSERT(size(e,1) == 2)
+    ASSERT(size(e,2) == this%mesh%nedge)
+    ASSERT(size(b,1) == 2)
+    ASSERT(size(b,2) == this%mesh%nface)
+    b(1,:) = (-1.0/this%omega) * curl(this%mesh,e(2,:))
+    b(2,:) =  (1.0/this%omega) * curl(this%mesh,e(1,:))
+  end subroutine
 
   subroutine init(this, mesh, bc_fac, params, stat, errmsg)
 

@@ -62,8 +62,6 @@ module fdme_ams_precon_type
     type(pcsr_matrix) :: grad
     type(hypre_obj) :: Ah = hypre_null_obj ! HYPRE_IJMatrix object handle
     type(hypre_obj) :: gradh = hypre_null_obj ! HYPRE_IJMatrix object handle
-
-    real(r8), allocatable :: interior_nodes(:) ! list of nodes in the zero-conductivity region
   contains
     procedure :: init
     procedure :: setup
@@ -108,7 +106,6 @@ contains
     this%ilower = this%mesh%edge_imap%first_gid
     this%iupper = this%mesh%edge_imap%last_gid
     this%rows = [ (i, i = this%ilower, this%iupper) ] ! global row indices for this process
-    allocate(this%interior_nodes(this%mesh%nnode))
 
     call fHYPRE_ClearAllErrors
 
@@ -241,30 +238,27 @@ contains
       end do
     end if
 
-!NNC: I don't think this is necessary, as the AMS system is non-singular,
-!     but if needed, it is a node-based vector not edge-based -- FIXME
-!     But if it is needed, it needs to be fixed
-!    ! List interior nodes for the AMS preconditioner. All nodes inside the
-!    ! 0-conductivity region are marked 1.0.
-!    associate (omega => this%model%omega, epsr => this%model%epsr, epsi => this%model%epsi, sigma => this%model%sigma)
-!    this%interior_nodes = 1
-!    do j = 1, this%mesh%ncell
-!      ! WARN: Which of the following is correct? I think the first.
-!      mtr2 = omega * (epsr(j) + epsi(j)) - sigma(j)
-!      !mtr2 = omega * (epsi(j) - epsr(j)) - sigma(j)
-!      if (mtr2 /= 0) this%interior_nodes(this%mesh%cnode(:,j)) = 0
-!    end do
-!    end associate
-!
-!    call fHYPRE_ClearAllErrors
-!
-!    ! Provide list of nodes inside the 0-conductivity region
-!    call fHYPRE_IJVectorInitialize(this%lh, ierr)
-!    call fHYPRE_IJVectorSetValues(this%lh, this%nrows, this%rows, this%interior_nodes, ierr)
-!    call fHYPRE_IJVectorAssemble(this%lh, ierr)
-!    INSIST(ierr == 0)
-!    call fHYPRE_AMSSetInteriorNodes(this%solver, this%lh, ierr)
-!    INSIST(ierr == 0)
+    !! Provide list of nodes inside the 0-dissipation region (tagged with 1)
+    block
+      integer :: nrow
+      integer, allocatable :: rows(:)
+      real(r8), allocatable :: interior_nodes(:)
+      allocate(interior_nodes(this%mesh%nnode), source=1.0_r8)
+      associate (epsi => this%model%epsi, sigma => this%model%sigma)
+        do j = 1, this%mesh%ncell
+          if (max(sigma(j), epsi(j)) > 0) interior_nodes(this%mesh%cnode(:,j)) = 0
+        end do
+      end associate
+      nrow = this%mesh%node_imap%onp_size
+      rows = [(j, j=this%mesh%node_imap%first_gid, this%mesh%node_imap%last_gid)]
+      call fHYPRE_ClearAllErrors
+      call fHYPRE_IJVectorInitialize(this%lh, ierr)
+      call fHYPRE_IJVectorSetValues(this%lh, nrow, rows, interior_nodes(:nrow), ierr)
+      call fHYPRE_IJVectorAssemble(this%lh, ierr)
+      INSIST(ierr == 0)
+      call fHYPRE_AMSSetInteriorNodes(this%solver, this%lh, ierr)
+      INSIST(ierr == 0)
+    end block
 
     call this%A%copy_to_ijmatrix(this%Ah)
     call fHYPRE_AMSSetup(this%solver, this%Ah, this%bh, this%xh, ierr)

@@ -346,7 +346,7 @@ contains
     type(fdme_model), target :: model
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
-    real(r8) :: t, omega, epsi(mesh%ncell)
+    real(r8) :: t, omega, epsi(mesh%ncell), bfield(2,mesh%nface)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
@@ -370,7 +370,11 @@ contains
     call solver%solve(efield, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
+    call efield%gather_offp
+
     call model%compute_heat_source(efield, q)
+    call model%compute_b(efield%array, bfield)
+    bfield = (1.0_r8 / vacuum_permeability) * bfield
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)
@@ -378,24 +382,27 @@ contains
     if (flag) then
       call params%get('graphics-file', filename, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-      call emfd_vtk_graphics(filename, mesh, q, stat, errmsg)
+      call emfd_vtk_graphics(filename, mesh, q, efield, bfield, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     end if
 
   end subroutine compute_joule_heat_emfd
 
-  subroutine emfd_vtk_graphics(filename, mesh, qfield, stat, errmsg)
+  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, stat, errmsg)
 
     use vtkhdf_file_type
+    use fdme_vector_type
+    use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
 
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: qfield(:)
+    real(r8), intent(in) :: qfield(:), bfield(:,:)
+    type(fdme_vector), intent(inout) :: efield
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(vtkhdf_file) :: viz_file
-    real(r8), allocatable :: g_scalar(:)
+    real(r8), allocatable :: g_scalar(:), g_vector(:,:), l_vector(:,:,:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -412,7 +419,34 @@ contains
     call broadcast(stat)
     INSIST(stat == 0)
 
-    call viz_file%close
+    allocate(g_vector(3,merge(mesh%cell_imap%global_size, 0, is_IOP)))
+    allocate(l_vector(2,3,mesh%ncell))
+
+    l_vector(1,:,:) = w1_vector_on_cells(mesh, efield%array(1,:))
+    call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('E_real', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    l_vector(2,:,:) = w1_vector_on_cells(mesh, efield%array(2,:))
+    call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('E_imag', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    l_vector(1,:,:) = w2_vector_on_cells(mesh, bfield(1,:))
+    call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('B_real', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    l_vector(2,:,:) = w2_vector_on_cells(mesh, bfield(2,:))
+    call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('B_imag', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    if (is_IOP) call viz_file%close
 
   contains
 

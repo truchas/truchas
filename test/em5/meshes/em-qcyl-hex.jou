@@ -1,0 +1,39 @@
+create Cylinder height 1 radius 7
+move volume 1 x 0 y 0 z 0.5 include_merged
+webcut volume 1  with plane xplane noimprint nomerge 
+webcut volume 1  with plane yplane noimprint nomerge 
+delete volume 1 2
+compress volume all
+webcut volume 1  with cylinder radius 5 axis z 
+imprint volume all
+merge volume all
+compress all
+
+block 1 add volume 1 2
+block 1 name "conductor"
+
+sideset 1 add surface 1
+sideset 1 name "outer surface"
+
+sideset 2 add surface with x_coord == 0
+sideset 2 add surface with y_coord == 0
+sideset 2 name "xy symmetry planes"
+
+sideset 3 add surface with z_coord == 0
+sideset 3 add surface with z_coord == 1
+sideset 2 name "z symmetry planes"
+
+curve 7 interval 24
+surface 4 size 0.2
+mesh surface 4
+
+curve 16 17 interval 15
+surface 10 scheme triprimitive
+mesh surface 10
+surface 10 smooth scheme centroid area pull
+smooth surface 10
+
+curve 2 interval 3
+mesh volume 2 1
+
+export mesh "em-qcyl-hex.gen" overwrite
