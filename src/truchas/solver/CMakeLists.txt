@@ -20,7 +20,7 @@ target_sources(truchas PRIVATE
   upper_packed_matrix_procs.F90
   csr_matrix_type.F90
   bsr_matrix_type.F90
-  cgsol_type.F90
+  #cgsol_type.F90 UNUSED + NEEDS UPDATING TO COMPILE
   vector_class.F90
 )
 add_subdirectory(nka)
