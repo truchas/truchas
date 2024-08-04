@@ -156,7 +156,7 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        this%rhs%array(1,n) = this%rhs%array(1,n) + omegar * this%hbc%value(j)
+        this%rhs%array(2,n) = this%rhs%array(2,n) - omegar * this%Z0 * this%hbc%value(j)
       end do
     end if
 
@@ -213,7 +213,7 @@ contains
       associate(efield_r => efield%array(1,this%mesh%cedge(:,j)), &
                 efield_i => efield%array(2,this%mesh%cedge(:,j)))
         m1 = W1_matrix_WE(this%mesh, j)
-        efield2 = this%Z0**2 * (upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i))
+        efield2 = upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i)
       end associate
 
       ! compute heat sources

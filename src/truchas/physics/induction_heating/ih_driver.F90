@@ -374,7 +374,7 @@ contains
 
     call model%compute_heat_source(efield, q)
     call model%compute_b(efield%array, bfield)
-    bfield = (1.0_r8 / vacuum_permeability) * bfield
+    bfield = (1.0_r8 / vacuum_permeability) * bfield !WHY? hack to get H?
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)

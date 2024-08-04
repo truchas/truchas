@@ -14,7 +14,7 @@ subdivision of the hex cells.
 /
 
 &EM_MESH
-  mesh_file = 'meshes/em-qcyl-tet-medium.gen'
+  mesh_file = 'meshes/em-qcyl-tet-small.gen'
   coord_scale_factor = 0.001
 /
 

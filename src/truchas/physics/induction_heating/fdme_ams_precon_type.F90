@@ -62,6 +62,8 @@ module fdme_ams_precon_type
     type(pcsr_matrix) :: grad
     type(hypre_obj) :: Ah = hypre_null_obj ! HYPRE_IJMatrix object handle
     type(hypre_obj) :: gradh = hypre_null_obj ! HYPRE_IJMatrix object handle
+    type(hypre_obj) :: Aalpha = hypre_null_obj
+    type(hypre_obj) :: Abeta = hypre_null_obj
   contains
     procedure :: init
     procedure :: setup
@@ -78,6 +80,8 @@ contains
     call fHYPRE_ClearAllErrors
     if (hypre_associated(this%Ah)) call fHYPRE_IJMatrixDestroy(this%Ah, ierr)
     if (hypre_associated(this%gradh)) call fHYPRE_IJMatrixDestroy(this%gradh, ierr)
+    if (hypre_associated(this%Aalpha)) call fHYPRE_IJMatrixDestroy(this%Aalpha, ierr)
+    if (hypre_associated(this%Abeta)) call fHYPRE_IJMatrixDestroy(this%Abeta, ierr)
     if (hypre_associated(this%bh)) call fHYPRE_IJVectorDestroy(this%bh, ierr)
     if (hypre_associated(this%xh)) call fHYPRE_IJVectorDestroy(this%xh, ierr)
     if (hypre_associated(this%lh)) call fHYPRE_IJVectorDestroy(this%lh, ierr)
@@ -139,6 +143,10 @@ contains
     ! See https://hypre.readthedocs.io/en/latest/solvers-ams.html.
     !call fHYPRE_AMSSetCycleType(this%solver, 8, ierr)
     INSIST(ierr == 0)
+
+    ! This can help, but not clear what it's doing in PC mode
+    !call fHYPRE_AMSSetProjectionFrequency(this%solver, 20, ierr)
+    !INSIST(ierr == 0)
 
     !! Geometry-dependent setup
     call set_gradient
@@ -223,7 +231,7 @@ contains
     class(fdme_ams_precon), intent(inout) :: this
 
     integer :: j, n, ierr
-    real(r8) :: mtr2
+    real(r8) :: alpha(this%mesh%ncell), beta(this%mesh%ncell)
 
     !ASSERT(all(ieee_is_finite(this%A%values)))
 
@@ -260,6 +268,40 @@ contains
       INSIST(ierr == 0)
     end block
 
+    block ! Optional Poisson matrix construction: Aalpha, Abeta
+      integer :: tag(this%mesh%nnode)
+      integer, allocatable :: ebc_nodes(:)
+
+      ! The nxE BC are the essential BC for the edge-based A. The Hypre AMS
+      ! documentation states, "It is assumed that the essential BC of A, Abeta
+      ! and Aalpha are on the same part of the boundary." Now Aalpha and Abeta
+      ! are node-based matrices, and so we choose their essential BC to be
+      ! associated with those nodes that belong to one of the essential BC
+      ! edges of A.
+      tag = 0
+      do j = 1, size(this%model%ebc%index) ! these are the nxE BC
+        associate (enode => this%mesh%enode(:,this%model%ebc%index(j)))
+          tag(enode) = enode
+        end associate
+      end do
+      ebc_nodes = pack(tag, mask=(tag > 0))
+
+      ! NB: Per the Hypre AMS documentation, these coefficients should match
+      ! what goes into A above.
+      associate (model => this%model, kappa => this%model%omega/this%model%c0)
+        do j = 1, this%mesh%ncell
+          alpha(j) = 1.0_r8/model%mu(j)
+          beta(j) = model%sigma(j)*kappa*model%Z0 + model%epsi(j)*kappa**2 - model%epsr(j)*kappa**2
+        end do
+      end associate
+
+      call create_poisson_matrices(this%mesh, ebc_nodes, alpha, beta, this%Aalpha, this%Abeta)
+    end block
+!    call fHYPRE_AMSSetAlphaPoissonMatrix(this%solver, this%Aalpha, ierr)
+!    INSIST(ierr == 0)
+!    call fHYPRE_AMSSetBetaPoissonMatrix(this%solver, this%Abeta, ierr)
+!    INSIST(ierr == 0)
+
     call this%A%copy_to_ijmatrix(this%Ah)
     call fHYPRE_AMSSetup(this%solver, this%Ah, this%bh, this%xh, ierr)
     INSIST(ierr == 0)
@@ -275,7 +317,6 @@ contains
     real(r8), intent(inout) :: x(:,:)
 
     integer :: ierr, stat
-    real(r8) :: bs(this%nrows), xs(this%nrows)
 
     ASSERT(size(x) == 2*this%nrows)
 
@@ -332,6 +373,8 @@ contains
       call stop_timer("AMSSolve")
 
       !! Retrieve the solution vector from HYPRE.
+      !call fHYPRE_AMSProjectOutGradients(this%solver, this%xh, ierr) SEGFAULTS
+      !INSIST(ierr == 0)
       call fHYPRE_IJVectorGetValues(this%xh, this%nrows, this%rows, x, ierr)
       ASSERT(all(ieee_is_finite(x)))
       INSIST(ierr == 0)
@@ -351,5 +394,70 @@ contains
     end subroutine apply_system
 
   end subroutine apply
+
+  !! See https://hypre.readthedocs.io/en/latest/solvers-ams.html#
+  !! for the description of the Poisson matrices that AMS can use.
+
+  subroutine create_poisson_matrices(mesh, ebc_nodes, alpha, beta, A_alpha_h, A_beta_h)
+
+    use simplex_geometry, only: tet_face_normal
+
+    type(simpl_mesh), intent(in) :: mesh
+    integer, intent(in) :: ebc_nodes(:)
+    real(r8), intent(in) :: alpha(:), beta(:)
+    type(hypre_obj), intent(inout) :: A_alpha_h, A_beta_h
+
+    integer :: i, j, k, l, n
+    real(r8) :: p(3,4), tmp1(10), tmp2(10)
+    type(pcsr_graph), pointer :: g
+    type(pcsr_matrix) :: A_alpha, A_beta
+
+    ASSERT(size(alpha) == mesh%ncell)
+    ASSERT(size(beta) == mesh%ncell)
+
+    allocate(g)
+    call g%init(mesh%node_imap)
+    call g%add_clique(mesh%cnode)
+    call g%add_complete
+    call A_alpha%init(g, take_graph=.true.)
+    call A_beta%init(mold=A_alpha)
+
+    do i = 1, mesh%ncell
+      p = tet_face_normal(mesh%x(:,mesh%cnode(:,i)))
+      l = 0
+      do k = 1, 4
+        do j = 1, k
+          l = l + 1
+          tmp1(l) = (alpha(i)/(9*abs(mesh%volume(i)))) * dot_product(p(:,j), p(:,k))
+          tmp2(l) =  (beta(i)/(9*abs(mesh%volume(i)))) * dot_product(p(:,j), p(:,k))
+        end do
+      end do
+      call A_beta%add_to(mesh%cnode(:,i), tmp2)
+
+      l = 0
+      do k = 1, 4
+        do j = 1, k-1
+          l = l + 1
+          tmp1(l) = tmp1(l) + (beta(i)*abs(mesh%volume(i))/20.0_r8)
+        end do
+        l = l + 1
+        tmp1(l) = tmp1(l) + (beta(i)*abs(mesh%volume(i))/10.0_r8)
+      end do
+      call A_alpha%add_to(mesh%cnode(:,i), tmp1)
+    end do
+
+    !! Modifications due to essential BC
+    do i = 1, size(ebc_nodes)
+      n = ebc_nodes(i)
+      call A_alpha%project_out(n)
+      call A_alpha%set(n, n, 1.0_r8)
+      call A_beta%project_out(n)
+      call A_beta%set(n, n, 1.0_r8)
+    end do
+
+    call A_alpha%copy_to_ijmatrix(A_alpha_h)
+    call A_beta%copy_to_ijmatrix(A_beta_h)
+
+  end subroutine create_poisson_matrices
 
 end module fdme_ams_precon_type
