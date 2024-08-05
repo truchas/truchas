@@ -115,7 +115,7 @@ contains
 
     call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%xh, ierr)
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%lh, ierr)
+    call fHYPRE_IJVectorCreate(this%mesh%node_imap%first_gid, this%mesh%node_imap%last_gid, this%lh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%bh, 0, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%xh, 0, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%lh, 0, ierr)
