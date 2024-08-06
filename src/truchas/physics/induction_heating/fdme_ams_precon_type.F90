@@ -402,7 +402,7 @@ contains
 
     use simplex_geometry, only: tet_face_normal
 
-    type(simpl_mesh), intent(in) :: mesh
+    type(simpl_mesh), intent(in), target :: mesh
     integer, intent(in) :: ebc_nodes(:)
     real(r8), intent(in) :: alpha(:), beta(:)
     type(hypre_obj), intent(inout) :: A_alpha_h, A_beta_h
