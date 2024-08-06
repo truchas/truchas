@@ -60,23 +60,23 @@ contains
     this%model => model
     this%mesh => model%mesh
 
-    this%minitr = 1
-    call params%get('cg-max-iter', this%maxitr, stat, errmsg, default=500)
+    this%min_iter = 1
+    call params%get('max-iter', this%max_iter, stat, errmsg, default=500)
     if (stat /= 0) return
-    if (this%maxitr < 1) then
+    if (this%max_iter < 1) then
       stat = 1
-      errmsg = 'cg-max-iter must be > 0'
+      errmsg = 'max-iter must be > 0'
       return
     end if
-    this%tol = 0.0_r8 ! we do not use an absolute residual tolerance
-    call params%get('cg-tol', this%red, stat, errmsg, default=1.0e-8_r8)
+    this%abs_tol = 0.0_r8 ! we do not use an absolute residual tolerance
+    call params%get('rel-tol', this%rel_tol, stat, errmsg, default=1.0e-8_r8)
     if (stat /= 0) return
-    if (this%red <= 0.0_r8 .or. this%red >= 0.1_r8) then
+    if (this%rel_tol <= 0.0_r8 .or. this%rel_tol >= 0.1_r8) then
       stat = 1
-      errmsg = 'cg-tol must be > 0.0 and < 0.1'
+      errmsg = 'rel-tol must be > 0.0 and < 0.1'
       return
     end if
-    call params%get('output-level', this%output_level, stat, errmsg, default=1)
+    call params%get('print-level', this%print_level, stat, errmsg, default=0)
     if (stat /= 0) return
 
     !! Create the node space mask array: true values correspond to nodes not

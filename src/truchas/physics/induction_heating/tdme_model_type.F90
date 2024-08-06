@@ -44,6 +44,9 @@ module tdme_model_type
     procedure :: trap_res
     procedure :: advance_bfield
     procedure :: compute_joule_heat
+    procedure :: get_matrix
+    procedure :: get_ams_alpha
+    procedure :: get_ams_beta
   end type
 
 contains
@@ -96,6 +99,45 @@ contains
     end do
 
   end subroutine init
+
+  subroutine get_matrix(this, A)
+    use pcsr_matrix_type
+    class(tdme_model), intent(in) :: this
+    type(pcsr_matrix), intent(out) :: A
+    type(pcsr_graph), pointer :: g
+    integer :: j, n
+    allocate(g)
+    call g%init(this%mesh%edge_imap)
+    call g%add_clique(this%mesh%cedge)
+    call g%add_complete
+    call A%init(g, take_graph=.true.)
+    do j = 1, this%mesh%ncell
+      call A%add_to(this%mesh%cedge(:,j), this%mtr1(:,j))
+    end do
+    !! Project out the rows and columns corresponding to Dirichlet edges.
+    if (allocated(this%ebc)) then
+      do j = 1, size(this%ebc%index)
+        n = this%ebc%index(j)
+        call A%project_out(n)
+        call A%set(n, n, 1.0_r8)
+      end do
+    end if
+  end subroutine
+
+  subroutine get_ams_alpha(this, alpha)
+    class(tdme_model), intent(in) :: this
+    real(r8), intent(out) :: alpha(:)
+    ASSERT(size(alpha) == this%mesh%ncell)
+    alpha = (0.5_r8*this%dt)**2 / this%mu
+  end subroutine
+
+  subroutine get_ams_beta(this, beta)
+    class(tdme_model), intent(in) :: this
+    real(r8), intent(out) :: beta(:)
+    ASSERT(size(beta) == this%mesh%ncell)
+    beta = this%eps + 0.5_r8*this%dt*this%sigma
+    !beta = 0.5_r8*this%dt*this%sigma
+  end subroutine
 
   !! Compute the residual of the trapezoid rule discretization of Ampere's
   !! equation given the values E0, B0 of the fields at the start of the step

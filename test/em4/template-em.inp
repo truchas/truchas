@@ -76,9 +76,8 @@
   steps_per_cycle = 64
   steady_state_tol = 0.01
   max_source_cycles = 64
-  cg_max_iter = 1000
-  cg_tol = 1.0e-10
-  output_level = 2
+  max_iter = 1000
+  print_level = 2
   graphics_output = T
 /
 

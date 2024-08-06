@@ -45,10 +45,10 @@ the ball are not conforming.
   steps_per_cycle = 12
   steady_state_tol = 0.01
   max_source_cycles = 4
-  cg_tol = 1.0e-10
-  cg_max_iter = 100
+  rel_tol = 1.0e-10
+  max_iter = 100
   c_ratio = 1e-3
-  output_level = 2
+  print_level = 2
   graphics_output = F
 /
 

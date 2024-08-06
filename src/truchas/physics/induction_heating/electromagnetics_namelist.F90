@@ -26,22 +26,41 @@ contains
     character(128) :: iom
     type(parameter_list), pointer :: plist
 
-    !! Namelist variables
-    logical :: use_emfd_solver, use_legacy_bc, graphics_output
-    integer :: steps_per_cycle, max_source_cycles, cg_max_iter, output_level
-    real(r8) :: matl_change_threshold, steady_state_tol, cg_tol, c_ratio
-    character(string_len) :: data_mapper_kind, em_domain_type
-    character :: symmetry_axis
+    !! EM heating model namelist variables
+    real(r8) :: matl_change_threshold
+    character(32) :: data_mapper_kind
+    logical :: use_emfd_solver, graphics_output
     namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, use_emfd_solver, &
-      steps_per_cycle, steady_state_tol, max_source_cycles, cg_max_iter, cg_tol, &
-      output_level, c_ratio, graphics_output, &
-      use_legacy_bc, symmetry_axis, em_domain_type
+        graphics_output
 
-    integer  :: max_iter, krylov_dim, max_vec, max_ams_iter
-    real(r8) :: abs_tol, rel_tol, vec_tol
+    !! Time-domain method namelist variables
+    integer :: steps_per_cycle, max_source_cycles
+    real(r8) :: steady_state_tol, c_ratio
+    character(32) :: td_solver_type
+    namelist /electromagnetics/ steps_per_cycle, steady_state_tol, max_source_cycles, &
+        c_ratio, td_solver_type
+
+    !! Frequency-domain method namelist variables
     character(32) :: fd_solver_type, fd_precon_type
-    namelist /electromagnetics/ fd_solver_type, max_iter, abs_tol, rel_tol, krylov_dim, &
-        max_vec, vec_tol, fd_precon_type, max_ams_iter
+    namelist /electromagnetics/ fd_solver_type, fd_precon_type
+
+    !! Linear solver variables
+    integer :: max_iter, print_level, ams_cycle_type, krylov_dim, max_vec
+    real(r8) :: abs_tol, rel_tol, vec_tol
+    namelist /electromagnetics/ abs_tol, rel_tol, max_iter, print_level, & ! common
+        ams_cycle_type, &   ! Hypre AMS
+        krylov_dim, &       ! GMRES
+        max_vec, vec_tol    ! NLK
+
+    !! Preconditioner variables (FD only)
+    integer  :: max_ams_iter
+    namelist /electromagnetics/max_ams_iter
+
+    !! Legacy EM BC variables
+    logical :: use_legacy_bc
+    character :: symmetry_axis
+    character(32) :: em_domain_type
+    namelist /electromagnetics/ use_legacy_bc, symmetry_axis, em_domain_type
 
     call TLS_info('Reading ELECTROMAGNETICS namelist ...')
 
@@ -55,32 +74,32 @@ contains
 
     matl_change_threshold = NULL_R
     data_mapper_kind = NULL_C
-
     use_emfd_solver = .false.
+    graphics_output = .false.
 
     steps_per_cycle = NULL_I
-    max_source_cycles = NULL_I
     steady_state_tol = NULL_R
-    cg_max_iter = NULL_I
-    cg_tol = NULL_R
+    max_source_cycles = NULL_I
     c_ratio = NULL_R
+    td_solver_type = NULL_C
 
-    output_level = NULL_I
-    graphics_output = .false.
+    fd_solver_type = NULL_C
+    fd_precon_type = NULL_C
+
+    abs_tol = NULL_R
+    rel_tol = NULL_R
+    max_iter = NULL_I
+    print_level = NULL_I
+    ams_cycle_type = NULL_I
+    krylov_dim = NULL_I
+    max_vec = NULL_I
+    vec_tol = NULL_R
+
+    max_ams_iter = NULL_I
 
     use_legacy_bc = .false.
     symmetry_axis  = NULL_C
     em_domain_type = NULL_C
-
-    fd_solver_type = NULL_C
-    max_iter = NULL_I
-    krylov_dim = NULL_I
-    abs_tol = NULL_R
-    rel_tol = NULL_R
-    max_vec = NULL_I
-    vec_tol = NULL_R
-    fd_precon_type = NULL_C
-    max_ams_iter = NULL_I
 
     if (is_IOP) read(lun,nml=electromagnetics,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -88,32 +107,32 @@ contains
 
     call broadcast(matl_change_threshold)
     call broadcast(data_mapper_kind)
-
     call broadcast(use_emfd_solver)
+    call broadcast(graphics_output)
 
     call broadcast(steps_per_cycle)
-    call broadcast(max_source_cycles)
     call broadcast(steady_state_tol)
-    call broadcast(cg_max_iter)
-    call broadcast(cg_tol)
+    call broadcast(max_source_cycles)
     call broadcast(c_ratio)
+    call broadcast(td_solver_type)
 
-    call broadcast(output_level)
-    call broadcast(graphics_output)
+    call broadcast(fd_solver_type)
+    call broadcast(fd_precon_type)
+
+    call broadcast(abs_tol)
+    call broadcast(rel_tol)
+    call broadcast(max_iter)
+    call broadcast(print_level)
+    call broadcast(ams_cycle_type)
+    call broadcast(krylov_dim)
+    call broadcast(max_vec)
+    call broadcast(vec_tol)
+
+    call broadcast(max_ams_iter)
 
     call broadcast(use_legacy_bc)
     call broadcast(symmetry_axis)
     call broadcast(em_domain_type)
-
-    call broadcast(fd_solver_type)
-    call broadcast(max_iter)
-    call broadcast(krylov_dim)
-    call broadcast(abs_tol)
-    call broadcast(rel_tol)
-    call broadcast(max_vec)
-    call broadcast(vec_tol)
-    call broadcast(fd_precon_type)
-    call broadcast(max_ams_iter)
 
     !! Joule heat driver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -122,33 +141,43 @@ contains
       call params%set('matl-change-threshold', matl_change_threshold)
     end if
 
+    if (data_mapper_kind /= NULL_C) then
+      select case (data_mapper_kind)
+      case ('default')
+      case ('portage')
+#ifndef USE_PORTAGE
+        call TLS_fatal('DATA_MAPPER_KIND = "portage" is not supported by this Truchas build')
+#endif
+      case default
+        call TLS_fatal('invalid value for DATA_MAPPER_KIND: ' // trim(data_mapper_kind))
+      end select
+      call params%set('data-mapper-kind', data_mapper_kind)
+    end if
+
     call params%set('frequency-domain-solver', use_emfd_solver)
 
-    if (use_emfd_solver) then
+    if (use_emfd_solver) then ! Frequency-domain solver parameters
 
       plist => params%sublist('emfd-solver')
       call plist%set('graphics-output', graphics_output)
 
+      if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
+      if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
+      if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
+      if (print_level /= NULL_I) call params%set('print-level', print_level)
+
       select case (fd_solver_type)
       case ('nlk')
-        if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
-        if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
-        if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
         if (max_vec /= NULL_I) call plist%set('max-vec', max_vec)
         if (vec_tol /= NULL_R) call plist%set('vec-tol', vec_tol)
       case ('gmres')
-        if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
         if (krylov_dim /= NULL_I) call plist%set('krylov-dim', krylov_dim)
-        if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
-        if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
       case (NULL_C)
         call TLS_fatal('FD_SOLVER_TYPE not specified')
       case default
         call TLS_fatal('invalid FD_SOLVER_TYPE: ' // fd_solver_type)
       end select
       call plist%set('solver-type', fd_solver_type)
-
-      if (output_level /= NULL_I) call plist%set('verbosity', output_level)
 
       plist => plist%sublist('precon')
 
@@ -163,9 +192,9 @@ contains
       end select
       call plist%set('type', fd_precon_type)
 
-    else ! use the time domain solver
+    else ! Time domain solver parameters
 
-      !! Time domain Joule heat solver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      call params%set('graphics-output', graphics_output)
 
       !! All these parameters have default values which are applied, if needed,
       !! when the parameter list is consumed.
@@ -184,61 +213,25 @@ contains
         call params%set('max-source-cycles', max_source_cycles)
       end if
 
-      if (cg_max_iter /= NULL_I) then
-        if (cg_max_iter < 1) call TLS_fatal('CG_MAX_ITER must be > 0')
-        call params%set('cg-max-iter', cg_max_iter)
+      if (c_ratio /= NULL_R) then
+        if (c_ratio <= 0.0_r8 .or. c_ratio > 1.0_r8) call TLS_fatal('C_RATIO must be > 0.0 and <= 1.0')
+        call params%set('c-ratio', c_ratio)
       end if
 
-      if (cg_tol /= NULL_R) then
-        if (cg_tol <= 0.0_r8 .or. cg_tol >= 0.1_r8) call TLS_fatal('CG_TOL must be > 0.0 and < 0.1')
-        call params%set('cg-tol', cg_tol)
-      end if
+      if (rel_tol /= NULL_R) call params%set('rel-tol', rel_tol)
+      if (max_iter /= NULL_I) call params%set('max-iter', max_iter)
+      if (print_level /= NULL_I) call params%set('print-level', print_level)
 
-      if (output_level /= NULL_I) call params%set('output-level', output_level)
-
-      call params%set('graphics-output', graphics_output)
-    end if
-
-    if (steady_state_tol /= NULL_R) then
-      if (steady_state_tol <= 0.0_r8) call TLS_fatal('STEADY_STATE_TOL must be > 0.0')
-      call params%set('steady-state-tol', steady_state_tol)
-    end if
-
-    if (max_source_cycles /= NULL_I) then
-      if (max_source_cycles < 1) call TLS_fatal('MAX_SOURCE_CYCLES must be > 0')
-      call params%set('max-source-cycles', max_source_cycles)
-    end if
-
-    if (cg_max_iter /= NULL_I) then
-      if (cg_max_iter < 1) call TLS_fatal('CG_MAX_ITER must be > 0')
-      call params%set('cg-max-iter', cg_max_iter)
-    end if
-
-    if (cg_tol /= NULL_R) then
-      if (cg_tol <= 0.0_r8 .or. cg_tol >= 0.1_r8) call TLS_fatal('CG_TOL must be > 0.0 and < 0.1')
-      call params%set('cg-tol', cg_tol)
-    end if
-
-    if (c_ratio /= NULL_R) then
-      if (c_ratio <= 0.0_r8 .or. c_ratio > 1.0_r8) call TLS_fatal('C_RATIO must be > 0.0 and <= 1.0')
-      call params%set('c-ratio', c_ratio)
-    end if
-
-    if (output_level /= NULL_I) call params%set('output-level', output_level)
-
-    call params%set('graphics-output', graphics_output)
-
-    if (data_mapper_kind /= NULL_C) then
-      select case (data_mapper_kind)
-      case ('default')
-      case ('portage')
-#ifndef USE_PORTAGE
-        call TLS_fatal('DATA_MAPPER_KIND = "portage" is not supported by this Truchas build')
-#endif
+      if (td_solver_type == NULL_C) td_solver_type = 'pcg'
+      select case (td_solver_type)
+      case ('pcg') ! CG with Hiptmair preconditioning
+      case ('ams') ! Hypre AMS solver
+        if (ams_cycle_type /= NULL_I) call params%set('ams-cycle-type', ams_cycle_type)
       case default
-        call TLS_fatal('invalid value for DATA_MAPPER_KIND: ' // trim(data_mapper_kind))
+        call TLS_fatal('invalid TD_SOLVER_TYPE: ' // td_solver_type)
       end select
-      call params%set('data-mapper-kind', data_mapper_kind)
+      call params%set('td-solver-type', td_solver_type)
+
     end if
 
     !! Parameters for the legacy method of inferring boundary conditions !!!!!!!

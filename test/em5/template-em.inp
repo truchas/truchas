@@ -45,25 +45,32 @@ subdivision of the hex cells.
 /
 
 &ELECTROMAGNETICS
+  graphics_output = T
   use_emfd_solver = {emfd}
+  
+  ! frequency domain solver
   fd_solver_type = 'gmres'
   fd_precon_type = 'ams'
   krylov_dim = 5
+  
   !fd_solver_type = 'nlk'
   !fd_precon_type = 'hiptmair'
-  max_iter = 100
-  abs_tol = 1e-11
-  rel_tol = 1e-13
   max_vec = 5
   
-  steps_per_cycle = 36
+  ! time domain solver
+  steps_per_cycle = 24
   steady_state_tol = 0.01
   max_source_cycles = 4
-  cg_tol = 1.0e-10
-  cg_max_iter = 1000
-  output_level = 2
-  graphics_output = T
   c_ratio = 1e-4
+
+  !td_solver_type = 'pcg'
+  td_solver_type = 'ams'
+  ams_cycle_type = 8
+  
+  abs_tol = 0
+  rel_tol = 1e-8
+  max_iter = 500
+  print_level = 1
 /
 
 &INDUCTION_SOURCE_FIELD

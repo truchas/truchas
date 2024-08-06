@@ -4,6 +4,7 @@ target_sources(truchas PRIVATE
   hypre_ext.c
   hypre_pcg_type.F90
   hypre_hybrid_type.F90
+  hypre_ams_type.F90
   csr_graph_type.F90
   pcsr_matrix_type.F90
   pcsr_precon_class.F90

@@ -21,6 +21,7 @@ module tdme_solver_type
   use simpl_mesh_type
   use tdme_model_type
   use tdme_cg_solver_type
+  use hypre_ams_type
   use state_history_type
   use parallel_communication
   use truchas_logging_services
@@ -33,7 +34,9 @@ module tdme_solver_type
     real(r8) :: t, dt
     type(state_history) :: ehist, bhist
     real(r8), allocatable :: r(:), de(:) ! persistent workspace
-    type(tdme_cg_solver) :: eslv
+    type(tdme_cg_solver), allocatable :: pcg
+    type(hypre_ams), allocatable :: ams
+    integer :: print_level
   contains
     procedure :: init
     procedure :: set_initial_state
@@ -43,17 +46,52 @@ module tdme_solver_type
 contains
 
   subroutine init(this, mesh, model, params, stat, errmsg)
+
     use parameter_list_type
+
     class(tdme_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     type(tdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+
+    character(:), allocatable :: string
+
     this%mesh => mesh
     this%model => model
     allocate(this%r(this%mesh%nedge), this%de(this%mesh%nedge))
-    call this%eslv%init(this%model, params, stat, errmsg)
+
+    call params%get('print-level', this%print_level, stat, errmsg, default=0)
+    if (stat /= 0) return
+    call params%set('print-level', max(0,this%print_level-1))
+
+    call params%get('td-solver-type', string, stat, errmsg, default='pcg')
+    if (stat /= 0) return
+    select case (string)
+    case ('pcg')
+      allocate(this%pcg)
+      call this%pcg%init(this%model, params, stat, errmsg)
+      if (stat /= 0) return
+    case ('ams')
+      block
+        use pcsr_matrix_type
+        type(pcsr_matrix) :: A
+        real(r8) :: alpha(mesh%ncell), beta(mesh%ncell)
+        allocate(this%ams)
+        call this%ams%init(this%mesh, params, stat, errmsg)
+        if (stat /= 0) return
+        call this%model%get_matrix(A)
+        call this%model%get_ams_alpha(alpha)
+        call this%model%get_ams_beta(beta)
+        call this%ams%setup(A, alpha, beta)
+      end block
+    case default
+      stat = 1
+      errmsg = 'invalid "td-solver-type": ' // string
+      return
+    end select
+
   end subroutine
 
   subroutine set_initial_state(this, t, e, b)
@@ -90,7 +128,22 @@ contains
     call this%model%trap_res(this%t, e0, b0, e, this%r)
 
     this%de = 0.0_r8 ! initial guess for the correction
-    call this%eslv%solve(this%r, this%de, this%mesh%nedge_onP, stat, errmsg)
+    if (allocated(this%pcg)) then
+      call this%pcg%solve(this%r, this%de, this%mesh%nedge_onP, stat, errmsg)
+      if (this%print_level > 0) then
+        write(message,fmt="(t6,a,i4,2(a,es10.3))") 'pcg solve:', this%pcg%num_iter, &
+            ' iterations, |r|/|r0|=', this%pcg%rel_rnorm, ', |r0|=', this%pcg%initial_rnorm
+        call TLS_info(message)
+      end if
+    else
+      call this%ams%solve(this%r, this%de, stat)
+      if (this%print_level > 0) then
+        write(message,fmt="(t6,a,i4,1(a,es10.3))") 'ams solve:', this%ams%num_iter, &
+            ' iterations, |r|/|r0|=', this%ams%rel_rnorm
+        call TLS_info(message)
+      end if
+      if (stat /= 0) errmsg = 'AMS solver failed'
+    end if
     if (stat /= 0) return
     call this%mesh%edge_imap%gather_offp(this%de)
     e = e + this%de
@@ -101,7 +154,7 @@ contains
     call this%ehist%record_state(t, e)
     call this%bhist%record_state(t, b)
 
-    if (this%eslv%output_level >= 3) then
+    if (this%print_level > 1) then
       write(message,fmt='(t6,a,es10.3)') 'step |de|_max/|e|_max=', &
           global_maxval(abs(this%de))/global_maxval(abs(e))
       call TLS_info(trim(message))

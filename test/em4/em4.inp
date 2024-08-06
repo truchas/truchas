@@ -80,7 +80,7 @@
   Maximum_CG_Iterations = 100
   CG_Stopping_Tolerance = 1.0e-8
   material_change_threshold = 0.6
-  output_level = 2
+  print_level = 2
   graphics_output = T
 /
 
