@@ -135,8 +135,8 @@ contains
     class(tdme_model), intent(in) :: this
     real(r8), intent(out) :: beta(:)
     ASSERT(size(beta) == this%mesh%ncell)
-    beta = this%eps + 0.5_r8*this%dt*this%sigma
-    !beta = 0.5_r8*this%dt*this%sigma
+    !beta = this%eps + 0.5_r8*this%dt*this%sigma
+    beta = 0.5_r8*this%dt*this%sigma
   end subroutine
 
   !! Compute the residual of the trapezoid rule discretization of Ampere's

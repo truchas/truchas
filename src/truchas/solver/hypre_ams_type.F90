@@ -38,6 +38,8 @@ module hypre_ams_type
     ! HYPRE_IJMatrix object handles
     type(hypre_obj) :: A = hypre_null_obj
     type(hypre_obj) :: grad = hypre_null_obj
+    type(hypre_obj) :: Aalpha = hypre_null_obj
+    type(hypre_obj) :: Abeta = hypre_null_obj
     real(r8), public :: rel_rnorm
     integer, public :: num_iter
   contains
@@ -127,16 +129,22 @@ contains
     call fHYPRE_AMSSetCycleType(this%solver, ipar, ierr)
     INSIST(ierr == 0)
 
+    call params%get('ams-proj-freq', ipar, stat, errmsg, default=5)
+    if (stat /= 0) return
+    call fHYPRE_AMSSetProjectionFrequency(this%solver, ipar, ierr)
+    INSIST(ierr == 0)
+
     stat = 0
 
   end subroutine init
 
 
-  subroutine setup(this, A, alpha, beta)
+  subroutine setup(this, A, alpha, beta, ebc_nodes)
 
     class(hypre_ams), intent(inout) :: this
     type(pcsr_matrix), intent(in) :: A
     real(r8), intent(in) :: alpha(:), beta(:)
+    integer, intent(in) :: ebc_nodes(:)
 
     integer :: ierr
 
@@ -175,7 +183,13 @@ contains
       end block
     end if
 
-    call fHYPRE_AMSSetup(this%solver, this%A, this%b, this%x, ierr)
+    call create_poisson_matrices(this%mesh, ebc_nodes, alpha, beta, this%Aalpha, this%Abeta)
+!    call fHYPRE_AMSSetAlphaPoissonMatrix(this%solver, this%Aalpha, ierr)
+!    INSIST(ierr == 0)
+!    call fHYPRE_AMSSetBetaPoissonMatrix(this%solver, this%Abeta, ierr)
+!    INSIST(ierr == 0)
+
+   call fHYPRE_AMSSetup(this%solver, this%A, this%b, this%x, ierr)
     INSIST(ierr == 0)
 
   end subroutine setup
@@ -290,5 +304,70 @@ contains
     INSIST(ierr == 0)
 
   end subroutine create_coord_vectors
+
+  !! See https://hypre.readthedocs.io/en/latest/solvers-ams.html#
+  !! for the description of the Poisson matrices that AMS can use.
+
+  subroutine create_poisson_matrices(mesh, ebc_nodes, alpha, beta, A_alpha_h, A_beta_h)
+
+    use simplex_geometry, only: tet_face_normal
+
+    type(simpl_mesh), intent(in), target :: mesh
+    integer, intent(in) :: ebc_nodes(:)
+    real(r8), intent(in) :: alpha(:), beta(:)
+    type(hypre_obj), intent(inout) :: A_alpha_h, A_beta_h
+
+    integer :: i, j, k, l, n
+    real(r8) :: p(3,4), tmp1(10), tmp2(10)
+    type(pcsr_graph), pointer :: g
+    type(pcsr_matrix) :: A_alpha, A_beta
+
+    ASSERT(size(alpha) == mesh%ncell)
+    ASSERT(size(beta) == mesh%ncell)
+
+    allocate(g)
+    call g%init(mesh%node_imap)
+    call g%add_clique(mesh%cnode)
+    call g%add_complete
+    call A_alpha%init(g, take_graph=.true.)
+    call A_beta%init(mold=A_alpha)
+
+    do i = 1, mesh%ncell
+      p = tet_face_normal(mesh%x(:,mesh%cnode(:,i)))
+      l = 0
+      do k = 1, 4
+        do j = 1, k
+          l = l + 1
+          tmp1(l) = (alpha(i)/(9*abs(mesh%volume(i)))) * dot_product(p(:,j), p(:,k))
+          tmp2(l) =  (beta(i)/(9*abs(mesh%volume(i)))) * dot_product(p(:,j), p(:,k))
+        end do
+      end do
+      call A_beta%add_to(mesh%cnode(:,i), tmp2)
+
+      l = 0
+      do k = 1, 4
+        do j = 1, k-1
+          l = l + 1
+          tmp1(l) = tmp1(l) + (beta(i)*abs(mesh%volume(i))/20.0_r8)
+        end do
+        l = l + 1
+        tmp1(l) = tmp1(l) + (beta(i)*abs(mesh%volume(i))/10.0_r8)
+      end do
+      call A_alpha%add_to(mesh%cnode(:,i), tmp1)
+    end do
+
+    !! Modifications due to essential BC
+    do i = 1, size(ebc_nodes)
+      n = ebc_nodes(i)
+      call A_alpha%project_out(n)
+      call A_alpha%set(n, n, 1.0_r8)
+      call A_beta%project_out(n)
+      call A_beta%set(n, n, 1.0_r8)
+    end do
+
+    call A_alpha%copy_to_ijmatrix(A_alpha_h)
+    call A_beta%copy_to_ijmatrix(A_beta_h)
+
+  end subroutine create_poisson_matrices
 
 end module hypre_ams_type

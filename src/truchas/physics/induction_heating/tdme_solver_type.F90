@@ -78,13 +78,15 @@ contains
         use pcsr_matrix_type
         type(pcsr_matrix) :: A
         real(r8) :: alpha(mesh%ncell), beta(mesh%ncell)
+        integer, allocatable :: ebc_nodes(:)
         allocate(this%ams)
         call this%ams%init(this%mesh, params, stat, errmsg)
         if (stat /= 0) return
         call this%model%get_matrix(A)
         call this%model%get_ams_alpha(alpha)
         call this%model%get_ams_beta(beta)
-        call this%ams%setup(A, alpha, beta)
+        call get_ebc_nodes(this%model, ebc_nodes)
+        call this%ams%setup(A, alpha, beta, ebc_nodes)
       end block
     case default
       stat = 1
@@ -92,6 +94,26 @@ contains
       return
     end select
 
+  end subroutine
+
+  !TODO: this belongs somewhere else
+  subroutine get_ebc_nodes(model, ebc_nodes)
+    type(tdme_model), intent(in) :: model
+    integer, allocatable :: ebc_nodes(:)
+    integer :: j, tag(model%mesh%nnode)
+      ! The nxE BC are the essential BC for the edge-based A. The Hypre AMS
+      ! documentation states, "It is assumed that the essential BC of A, Abeta
+      ! and Aalpha are on the same part of the boundary." Now Aalpha and Abeta
+      ! are node-based matrices, and so we choose their essential BC to be
+      ! associated with those nodes that belong to one of the essential BC
+      ! edges of A.
+      tag = 0
+      do j = 1, size(model%ebc%index) ! these are the nxE BC
+        associate (enode => model%mesh%enode(:,model%ebc%index(j)))
+          tag(enode) = enode
+        end associate
+      end do
+      ebc_nodes = pack(tag, mask=(tag > 0))
   end subroutine
 
   subroutine set_initial_state(this, t, e, b)

@@ -45,10 +45,10 @@ contains
     namelist /electromagnetics/ fd_solver_type, fd_precon_type
 
     !! Linear solver variables
-    integer :: max_iter, print_level, ams_cycle_type, krylov_dim, max_vec
+    integer :: max_iter, print_level, ams_cycle_type, ams_proj_freq, krylov_dim, max_vec
     real(r8) :: abs_tol, rel_tol, vec_tol
     namelist /electromagnetics/ abs_tol, rel_tol, max_iter, print_level, & ! common
-        ams_cycle_type, &   ! Hypre AMS
+        ams_cycle_type, ams_proj_freq, &   ! Hypre AMS
         krylov_dim, &       ! GMRES
         max_vec, vec_tol    ! NLK
 
@@ -91,6 +91,7 @@ contains
     max_iter = NULL_I
     print_level = NULL_I
     ams_cycle_type = NULL_I
+    ams_proj_freq = NULL_I
     krylov_dim = NULL_I
     max_vec = NULL_I
     vec_tol = NULL_R
@@ -124,6 +125,7 @@ contains
     call broadcast(max_iter)
     call broadcast(print_level)
     call broadcast(ams_cycle_type)
+    call broadcast(ams_proj_freq)
     call broadcast(krylov_dim)
     call broadcast(max_vec)
     call broadcast(vec_tol)
@@ -227,6 +229,7 @@ contains
       case ('pcg') ! CG with Hiptmair preconditioning
       case ('ams') ! Hypre AMS solver
         if (ams_cycle_type /= NULL_I) call params%set('ams-cycle-type', ams_cycle_type)
+        if (ams_proj_freq /= NULL_I) call params%set('ams-proj-freq', ams_proj_freq)
       case default
         call TLS_fatal('invalid TD_SOLVER_TYPE: ' // td_solver_type)
       end select
