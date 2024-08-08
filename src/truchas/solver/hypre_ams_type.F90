@@ -129,10 +129,12 @@ contains
     call fHYPRE_AMSSetCycleType(this%solver, ipar, ierr)
     INSIST(ierr == 0)
 
-    call params%get('ams-proj-freq', ipar, stat, errmsg, default=5)
-    if (stat /= 0) return
-    call fHYPRE_AMSSetProjectionFrequency(this%solver, ipar, ierr)
-    INSIST(ierr == 0)
+    if (params%is_parameter('ams-proj-freq')) then
+      call params%get('ams-proj-freq', ipar, stat, errmsg)
+      if (stat /= 0) return
+      call fHYPRE_AMSSetProjectionFrequency(this%solver, ipar, ierr)
+      INSIST(ierr == 0)
+    end if
 
     stat = 0
 
