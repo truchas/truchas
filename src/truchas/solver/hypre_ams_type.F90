@@ -79,21 +79,22 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: i, ierr, ipar
+    integer :: i, ierr, ipar, comm
     real(r8) :: rpar
 
     this%mesh => mesh
 
+    comm = this%mesh%edge_imap%comm
     this%nrows = this%mesh%edge_imap%onp_size
     this%ilower = this%mesh%edge_imap%first_gid
     this%iupper = this%mesh%edge_imap%last_gid
     this%rows = [(i, i=this%ilower, this%iupper)] ! global row indices for this process
 
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%b, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%b, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%b, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%x, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%x, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%x, 0, ierr)
     INSIST(ierr == 0)
 
@@ -160,7 +161,7 @@ contains
       INSIST(ierr == 0)
     else
       block
-        integer :: nvalues, jlower, jupper, j
+        integer :: comm, nvalues, jlower, jupper, j
         integer, allocatable :: indices(:)
         real(r8), allocatable :: interior_nodes(:)
 
@@ -169,12 +170,13 @@ contains
           if (beta(j) > 0) interior_nodes(this%mesh%cnode(:,j)) = 0
         end do
 
+        comm = this%mesh%node_imap%comm
         nvalues = this%mesh%nnode_onP
         jlower = this%mesh%node_imap%first_gid
         jupper = this%mesh%node_imap%last_gid
         indices = [(j, j=jlower, jupper)]
 
-        call fHYPRE_IJVectorCreate(jlower, jupper, this%interior_nodes, ierr)
+        call fHYPRE_IJVectorCreate(comm, jlower, jupper, this%interior_nodes, ierr)
         call fHYPRE_IJVectorSetMaxOffProcElmts(this%interior_nodes, 0, ierr)
         call fHYPRE_IJVectorInitialize(this%interior_nodes, ierr)
         call fHYPRE_IJVectorSetValues(this%interior_nodes, nvalues, indices, interior_nodes, ierr)
@@ -276,29 +278,30 @@ contains
     type(simpl_mesh), intent(in) :: mesh
     type(hypre_obj) :: x, y, z
 
-    integer :: nvalues, jlower, jupper, j, ierr
+    integer :: comm, nvalues, jlower, jupper, j, ierr
     integer, allocatable :: indices(:)
 
+    comm = mesh%node_imap%comm
     nvalues = mesh%nnode_onP
     jlower = mesh%node_imap%first_gid
     jupper = mesh%node_imap%last_gid
     indices = [(j, j=jlower, jupper)] ! global indices for this process
 
-    call fHYPRE_IJVectorCreate(jlower, jupper, x, ierr)
+    call fHYPRE_IJVectorCreate(comm, jlower, jupper, x, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(x, 0, ierr)
     call fHYPRE_IJVectorInitialize(x, ierr)
     call fHYPRE_IJVectorSetValues(x, nvalues, indices, mesh%x(1,:mesh%nnode_onP), ierr)
     call fHYPRE_IJVectorAssemble(x, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate(jlower, jupper, y, ierr)
+    call fHYPRE_IJVectorCreate(comm, jlower, jupper, y, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(y, 0, ierr)
     call fHYPRE_IJVectorInitialize(y, ierr)
     call fHYPRE_IJVectorSetValues(y, nvalues, indices, mesh%x(2,:mesh%nnode_onP), ierr)
     call fHYPRE_IJVectorAssemble(x, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate(jlower, jupper, z, ierr)
+    call fHYPRE_IJVectorCreate(comm, jlower, jupper, z, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(z, 0, ierr)
     call fHYPRE_IJVectorInitialize(z, ierr)
     call fHYPRE_IJVectorSetValues(z, nvalues, indices, mesh%x(3,:mesh%nnode_onP), ierr)

@@ -64,22 +64,23 @@ contains
     type(pcsr_matrix), intent(in), target :: A
     type(parameter_list), pointer, intent(in) :: params
 
-    integer :: ierr
+    integer :: ierr, comm
 
     this%A => A
     this%params => params
 
+    comm = A%graph%row_imap%comm
     this%nrows  = A%graph%row_imap%onp_size   ! number of on-process rows (if parallel)
     this%ilower = A%graph%row_imap%first_gid ! global index of first on-process row (if parallel)
     this%iupper = A%graph%row_imap%last_gid  ! global index of last on-process row (if parallel)
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorCreate (comm, this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorCreate (comm, this%ilower, this%iupper, this%xh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
     INSIST(ierr == 0)
 

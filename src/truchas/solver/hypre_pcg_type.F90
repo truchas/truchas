@@ -26,7 +26,7 @@ module hypre_pcg_type
   type, public :: hypre_pcg
     private
     type(pcsr_matrix), pointer :: A => null()
-    integer :: nrows = 0, ilower = 0, iupper = 0
+    integer :: comm, nrows = 0, ilower = 0, iupper = 0
     integer, allocatable :: rows(:)
     type(hypre_obj) :: solver = hypre_null_obj ! HYPRE_Solver object handle
     type(hypre_obj) :: precon = hypre_null_obj ! HYPRE_Solver object handle
@@ -70,6 +70,7 @@ contains
     this%A => A
     this%params => params
 
+    this%comm = A%graph%row_imap%comm
     this%nrows  = A%graph%row_imap%onp_size
     this%ilower = A%graph%row_imap%first_gid
     this%iupper = A%graph%row_imap%last_gid
@@ -78,11 +79,11 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorCreate (this%comm, this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorCreate (this%comm, this%ilower, this%iupper, this%xh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
     INSIST(ierr == 0)
 
@@ -127,7 +128,7 @@ contains
     !! has been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it.  VERIFY THIS.
     if (hypre_associated(this%solver)) call fHYPRE_PCGDestroy (this%solver, ierr)
-    call fHYPRE_PCGCreate (this%solver, ierr)
+    call fHYPRE_PCGCreate (this%comm, this%solver, ierr)
     INSIST(ierr == 0)
 
     !! Print level (optional, default is no output)

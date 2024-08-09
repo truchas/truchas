@@ -28,9 +28,6 @@
 !!  TYPE(HYPRE_OBJ) arguments in the Fortran interface, and should be regarded
 !!  as opaque handles.  Specific procedure differences follow.
 !!
-!!  * The MPI communicator argument has been omitted from IJVectorCreate,
-!!    IJMatrixCreate, and ParCSRPCGCreate; MPI_COMM_WORLD will be used.
-!!
 !!  * IJVectorCreate and IJMatrixCreate create HYPRE_PARCSR type objects.
 !!    A second call is required in the C interface to set the object type.
 !!
@@ -211,11 +208,11 @@ contains
 
   !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
-    integer, intent(in) :: jlower, jupper
+  subroutine fHYPRE_IJVectorCreate (comm, jlower, jupper, vector, ierr)
+    integer, intent(in) :: comm, jlower, jupper
     type(c_ptr), intent(inout) :: vector
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJVectorCreate(jlower, jupper, vector)
+    ierr = HYPRE_IJVectorCreate_Fcomm(comm, jlower, jupper, vector)
   end subroutine
 
   subroutine fHYPRE_IJVectorDestroy (vector, ierr)
@@ -270,11 +267,11 @@ contains
 
   !!!! IJMATRIX INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJMatrixCreate (ilower, iupper, jlower, jupper, matrix, ierr)
-    integer, intent(in) :: ilower, iupper, jlower, jupper
+  subroutine fHYPRE_IJMatrixCreate (comm, ilower, iupper, jlower, jupper, matrix, ierr)
+    integer, intent(in) :: comm, ilower, iupper, jlower, jupper
     type(c_ptr), intent(inout) :: matrix
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix)
+    ierr = HYPRE_IJMatrixCreate_Fcomm(comm, ilower, iupper, jlower, jupper, matrix)
   end subroutine
 
   subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
@@ -466,10 +463,11 @@ contains
 
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_PCGCreate (solver, ierr)
+  subroutine fHYPRE_PCGCreate (comm, solver, ierr)
+    integer, intent(in) :: comm
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_ParCSRPCGCreate(solver)
+    ierr = HYPRE_ParCSRPCGCreate_Fcomm(comm, solver)
   end subroutine
 
   subroutine fHYPRE_PCGDestroy (solver, ierr)

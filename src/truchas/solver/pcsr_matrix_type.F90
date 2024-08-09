@@ -247,6 +247,7 @@ contains
   subroutine copy_to_ijmatrix(src, matrix)
 
     use fhypre
+    use parallel_communication, only: comm
 
     class(pcsr_matrix), intent(in) :: src
     type(hypre_obj), intent(inout) :: matrix
@@ -264,7 +265,7 @@ contains
     call fHYPRE_ClearAllErrors
 
     if (.not.hypre_associated(matrix)) then
-      call fHYPRE_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix, ierr)
+      call fHYPRE_IJMatrixCreate(comm, ilower, iupper, jlower, jupper, matrix, ierr)
       !! For each row we know how many column entries are on-process and how many
       !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
       !! if it knows this info up front.

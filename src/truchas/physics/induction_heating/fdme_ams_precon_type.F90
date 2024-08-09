@@ -100,12 +100,13 @@ contains
     type(fdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
 
-    integer :: ipar, i, ierr
+    integer :: ipar, i, ierr, comm
     real(r8) :: rpar
 
     this%model => model
     this%mesh => model%mesh
     call this%A%init(model%A%graph, take_graph=.false.)
+    comm = this%mesh%edge_imap%comm
     this%nrows = this%mesh%edge_imap%onp_size
     this%ilower = this%mesh%edge_imap%first_gid
     this%iupper = this%mesh%edge_imap%last_gid
@@ -113,9 +114,9 @@ contains
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%bh, ierr)
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%xh, ierr)
-    call fHYPRE_IJVectorCreate(this%mesh%node_imap%first_gid, this%mesh%node_imap%last_gid, this%lh, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%mesh%node_imap%first_gid, this%mesh%node_imap%last_gid, this%lh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%bh, 0, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%xh, 0, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%lh, 0, ierr)
@@ -198,9 +199,9 @@ contains
       y = this%mesh%x(2,:this%mesh%nnode_onP)
       z = this%mesh%x(3,:this%mesh%nnode_onP)
 
-      call fHYPRE_IJVectorCreate(ilower, iupper, this%xnh, ierr)
-      call fHYPRE_IJVectorCreate(ilower, iupper, this%ynh, ierr)
-      call fHYPRE_IJVectorCreate(ilower, iupper, this%znh, ierr)
+      call fHYPRE_IJVectorCreate(comm, ilower, iupper, this%xnh, ierr)
+      call fHYPRE_IJVectorCreate(comm, ilower, iupper, this%ynh, ierr)
+      call fHYPRE_IJVectorCreate(comm, ilower, iupper, this%znh, ierr)
       call fHYPRE_IJVectorSetMaxOffProcElmts(this%xnh, 0, ierr)
       call fHYPRE_IJVectorSetMaxOffProcElmts(this%ynh, 0, ierr)
       call fHYPRE_IJVectorSetMaxOffProcElmts(this%znh, 0, ierr)

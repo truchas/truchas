@@ -93,22 +93,23 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: ierr
+    integer :: ierr, comm
     character(:), allocatable :: context
 
     this%A => A
 
+    comm = A%graph%row_imap%comm
     this%nrows  = A%graph%row_imap%onp_size
     this%ilower = A%graph%row_imap%first_gid
     this%iupper = A%graph%row_imap%last_gid
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate(this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorCreate(comm, this%ilower, this%iupper, this%xh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts(this%xh, 0, ierr)
     INSIST(ierr == 0)
 

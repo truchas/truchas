@@ -155,11 +155,11 @@ module hypre_c_binding
   public :: HYPRE_Finalize
 
   !! Functions from hypre_ext.c
-  public :: HYPRE_Ext_IJVectorCreate
-  public :: HYPRE_Ext_IJMatrixCreate
+  public :: HYPRE_IJVectorCreate_Fcomm
+  public :: HYPRE_IJMatrixCreate_Fcomm
   public :: HYPRE_Ext_BoomerAMGSetup
   public :: HYPRE_Ext_BoomerAMGSolve
-  public :: HYPRE_Ext_ParCSRPCGCreate
+  public :: HYPRE_ParCSRPCGCreate_Fcomm
   public :: HYPRE_Ext_PCGSetup
   public :: HYPRE_Ext_PCGSolve
   public :: HYPRE_Ext_PCGSetBoomerAMGPrecond
@@ -421,7 +421,7 @@ module hypre_c_binding
  !!
 
   interface
-    ! See HYPRE_Ext_ParCSRPCGCreate below; wraps HYPRE_ParCSRPCGCreate.
+    ! See HYPRE_ParCSRPCGCreate_Fcom below; wraps HYPRE_ParCSRPCGCreate.
     function HYPRE_PCGDestroy (solver) &
         result(ierr) bind(c, name="HYPRE_ParCSRPCGDestroy")
       import c_ptr, c_int
@@ -791,16 +791,18 @@ module hypre_c_binding
   !!
 
   interface
-    function HYPRE_Ext_IJVectorCreate(jlower, jupper, vector) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJVectorCreate")
+    function HYPRE_IJVectorCreate_Fcomm(fcomm, jlower, jupper, vector) &
+        result(ierr) bind(c, name="HYPRE_IJVectorCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: jlower, jupper
       type(c_ptr) :: vector
       integer(c_int) :: ierr
     end function
-    function HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJMatrixCreate")
+    function HYPRE_IJMatrixCreate_Fcomm(fcomm, ilower, iupper, jlower, jupper, matrix) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: ilower, iupper, jlower, jupper
       type(c_ptr) :: matrix
       integer(c_int) :: ierr
@@ -818,9 +820,10 @@ module hypre_c_binding
       integer(c_int) :: ierr
     end function
     !! PCG Interfaces
-    function HYPRE_Ext_ParCSRPCGCreate(solver) &
-        result(ierr) bind(c, name="HYPRE_Ext_ParCSRPCGCreate")
+    function HYPRE_ParCSRPCGCreate_Fcomm(fcomm, solver) &
+        result(ierr) bind(c, name="HYPRE_ParCSRPCGCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       type(c_ptr), intent(inout) :: solver
       integer(c_int) :: ierr
     end function

@@ -6,13 +6,13 @@
 
 /*
  *  This is a completely reworked version of fhypre_c.c, which contained
- *  C glue code between the Hypre package's C API and the Fortran API
- *  found in fhypre.F90.  The C interoperability features of Fortran 2003
- *  have rendered most of that unnecessary.  What remains here are a few
- *  high-level extensions that are more easily implemented in C than Fortran.
- *  There are wrappers for some object creation functions that hardwire the
- *  MPI communicator to MPI_COM_WORLD.  The rest wrap boiler plate calls
- *  required by the solvers.
+ *  C glue code between the Hypre package's C API and the Fortran API found
+ *  in fhypre.F90. The C interoperability features of Fortran 2003 have
+ *  rendered most of that unnecessary.  What remains here are a few extensions
+ *  that are more easily implemented in C than Fortran. There are wrappers for
+ *  some object creation functions that handle the conversion of a Fortran
+ *  communicator to a C communicator, which must be done on the C side. The
+ *  rest wrap boiler plate calls required by the solvers.
  *
  *  Neil N. Carlson <nnc@lanl.gov> March 2014
  */
@@ -22,20 +22,24 @@
 #include "_hypre_parcsr_ls.h"
 
 int
-HYPRE_Ext_IJMatrixCreate(int ilower, int iupper, int jlower, int jupper, HYPRE_IJMatrix *matrix)
+HYPRE_IJMatrixCreate_Fcomm(MPI_Fint *Fcomm, int ilower, int iupper, int jlower, int jupper, HYPRE_IJMatrix *matrix)
 {
   int ierr;
-  ierr = HYPRE_IJMatrixCreate(MPI_COMM_WORLD, ilower, iupper, jlower, jupper, matrix);
+  MPI_Comm comm;
+  comm = MPI_Comm_f2c(*Fcomm);
+  ierr = HYPRE_IJMatrixCreate(comm, ilower, iupper, jlower, jupper, matrix);
   if (ierr) return ierr;
   ierr = HYPRE_IJMatrixSetObjectType(*matrix, HYPRE_PARCSR);
   return ierr;
 }
 
 int
-HYPRE_Ext_IJVectorCreate(int jlower, int jupper, HYPRE_IJVector *vector)
+HYPRE_IJVectorCreate_Fcomm(MPI_Fint *Fcomm, int jlower, int jupper, HYPRE_IJVector *vector)
 {
   int ierr;
-  ierr = HYPRE_IJVectorCreate(MPI_COMM_WORLD, jlower, jupper, vector);
+  MPI_Comm comm;
+  comm = MPI_Comm_f2c(*Fcomm);
+  ierr = HYPRE_IJVectorCreate(comm, jlower, jupper, vector);
   if (ierr) return ierr;
   ierr = HYPRE_IJVectorSetObjectType(*vector, HYPRE_PARCSR);
   return ierr;
@@ -64,9 +68,11 @@ HYPRE_Ext_BoomerAMGSolve(HYPRE_Solver solver, HYPRE_IJMatrix A, HYPRE_IJVector b
 }
 
 int
-HYPRE_Ext_ParCSRPCGCreate(HYPRE_Solver *solver)
+HYPRE_ParCSRPCGCreate_Fcomm(MPI_Fint *Fcomm, HYPRE_Solver *solver)
 {
-  return HYPRE_ParCSRPCGCreate(MPI_COMM_WORLD, solver);
+  MPI_Comm comm;
+  comm = MPI_Comm_f2c(*Fcomm);
+  return HYPRE_ParCSRPCGCreate(comm, solver);
 }
 
 /* NNC: I don't recall the background for the next two functions and how they
