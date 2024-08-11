@@ -166,7 +166,7 @@ contains
       if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
       if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
       if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
-      if (print_level /= NULL_I) call params%set('print-level', print_level)
+      if (print_level /= NULL_I) call plist%set('print-level', print_level)
 
       select case (fd_solver_type)
       case ('nlk')

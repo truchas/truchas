@@ -22,9 +22,7 @@ module nlk_solver_class
     real(r8) :: abs_tol, rel_tol
     type(nka_vec), allocatable :: nka
     class(vector), allocatable :: r
-
-    !! Diagnostics
-    integer :: verbose = 1
+    integer :: print_level
   contains
     procedure :: init
     procedure :: solve
@@ -126,7 +124,7 @@ contains
       return
     end if
 
-    call params%get('verbosity', this%verbose, default=1, stat=stat, errmsg=errmsg)
+    call params%get('print-level', this%print_level, stat, errmsg, default=1)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -171,16 +169,16 @@ contains
 
     integer :: iter
     real(r8) :: r0norm, rnorm
-    character(256) :: msg
+    character(80) :: message
 
     stat = 0
 
     call this%compute_f(u, this%r)
     r0norm = this%r%norm2()
 
-    if (this%verbose >= 2) then
-      write(msg,fmt=3) 0, r0norm
-      call tls_info(trim(msg))
+    if (this%print_level >= 2) then
+      write(message,fmt=3) 0, r0norm
+      call tls_info(trim(message))
     end if
 
     ! convergence check?
@@ -196,9 +194,9 @@ contains
       call this%compute_f(u, this%r)
       rnorm = this%r%norm2()
 
-      if (this%verbose >= 2) then
-        write(msg,fmt=3) iter, rnorm
-        call tls_info(trim(msg))
+      if (this%print_level > 0) then
+        write(message,'(t8,a,i4,*(a,es10.3))') 'nlk iterate', iter, ': |r|=', rnorm
+        call tls_info(trim(message))
       end if
 
       !! Check for convergence.
@@ -211,13 +209,13 @@ contains
     end if
     this%num_iter = iter ! expose the number of iterations performed
 
-    if (this%verbose >= 1) then
+    if (this%print_level >= 1) then
       if (stat == 0) then
-        write(msg,fmt=2) iter, rnorm
+        write(message,fmt=2) iter, rnorm
       else
-        write(msg,fmt=1) iter, rnorm
+        write(message,fmt=1) iter, rnorm
       end if
-      call tls_info(trim(msg))
+      call tls_info(trim(message))
     end if
 
 1   format(2x,'nlk_solver: convergence failure: ',i0,' iterations (max), 2-norm =',es10.3)

@@ -43,6 +43,7 @@ module emfd_nlsol_solver_type
     type(fdme_nlk_solver),   allocatable :: nlk
 
     type(fdme_vector) :: efield ! electric field (real and imaginary parts)
+    integer :: print_level
   contains
     procedure :: init
     procedure :: solve
@@ -69,6 +70,10 @@ contains
     type(parameter_list), pointer :: plist
     integer :: ierr
     character(:), allocatable :: solver_type, choice
+
+    call params%get('print-level', this%print_level, stat, errmsg, default=0)
+    if (stat /= 0) return
+    call params%set('print-level', max(0,this%print_level-1))
 
     call params%get('solver-type', solver_type, stat, errmsg)
     if (stat /= 0) return
@@ -118,9 +123,16 @@ contains
     type(fdme_vector), intent(inout) :: efield
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    character(72) :: message
     call this%precon%setup ! assume that the model has changed
     if (allocated(this%gmres)) then
       call this%gmres%solve(efield, stat)
+      if (this%print_level > 0) then
+        write(message,'(t8,a,i4,*(a,es10.3))') 'gmres solve:', this%gmres%gmres%num_iter, &
+            ' iterations, |r|/|r0|=', this%gmres%gmres%rel_rnorm, &
+            ', |r0|=', this%gmres%gmres%r0norm
+        call TLS_info(message)
+      end if
     else if (allocated(this%nlk)) then
       call this%nlk%solve(efield, stat)
     else

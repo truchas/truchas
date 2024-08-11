@@ -31,7 +31,9 @@ module gmres_left_solver_class
 
   type, abstract, public :: gmres_left_solver
     private
-    integer :: krylov_dim, max_iter
+    integer, public :: num_iter = 0
+    real(r8), public :: r0norm, rel_rnorm
+    integer :: krylov_dim, max_iter, print_level
     real(r8) :: atol, rtol
     integer, public :: iter, iter_pc
     real(r8), public :: res_norm
@@ -71,7 +73,6 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    character(:), allocatable :: context
     integer :: lwork
 
     stat = 0 ! TODO: error handling / argument verification
@@ -79,7 +80,8 @@ contains
     call params%get('krylov-dim', this%krylov_dim, default=5)
     call params%get('abs-tol', this%atol, default=1d-8)
     call params%get('rel-tol', this%rtol, default=0.0_r8)
-    call params%get('max-iter', this%max_iter, default=20)
+    call params%get('max-iter', this%max_iter, default=100)
+    call params%get('print-level', this%print_level, default=0)
 
     call vec%clone(this%r)
     call vec%clone(this%w)
@@ -106,29 +108,34 @@ contains
 
   subroutine solve(this, b, x, stat)
 
+    use truchas_logging_services
+
     class(gmres_left_solver), intent(inout) :: this
     class(vector), intent(in) :: b
     class(vector), intent(inout) :: x
     integer,  intent(out) :: stat
 
     integer :: iter, i, j
-    real(r8) :: y(this%krylov_dim), r0norm, rnorm
+    real(r8) :: y(this%krylov_dim), rnorm
+    character(80) :: message
 
     stat = 0
-    this%iter_pc = 0
     this%h = 0
 
     !! Initial residual
     call this%matvec(x, this%r)
     call this%r%update(1.0_r8, b, -1.0_r8) ! r = b - r
-    r0norm = this%r%norm2()
+    this%r0norm = this%r%norm2()
 
     !! Preconditioned initial residual
     call this%apply_precon(this%r)
     this%res_norm = this%r%norm2()
-    print '(i0,": |r|_2, |Pr|_2 =",2(es10.3,:,","))', 0, r0norm, this%res_norm
+    if (this%print_level > 0) then
+      write(message,'(i0,": |r|_2, |Pr|_2 =",2(es10.3,:,","))') 0, this%r0norm, this%res_norm
+      call TLS_info(message)
+    end if
 
-    do iter = 1, this%max_iter+1
+    do iter = this%krylov_dim, this%max_iter, this%krylov_dim
 
       !this%v(:,1) = this%r / this%res_norm
       call this%v(1)%update(1.0_r8/this%res_norm, this%r, 0.0_r8)
@@ -136,7 +143,6 @@ contains
       do j = 1, this%krylov_dim
         call this%matvec(this%v(j), this%w)
         call this%apply_precon(this%w)
-        this%iter_pc = this%iter_pc + 1
 
         do i = 1, j
           this%h(i,j) = this%w%dot(this%v(i))
@@ -169,14 +175,19 @@ contains
       call this%apply_precon(this%r)
       this%res_norm = this%r%norm2()
 
-      !TODO: proper output that will work in parallel
-      print '(i0,": |r|_2, |Pr|_2 =",2(es10.3,:,","))', this%iter_pc, rnorm, this%res_norm
-      if (rnorm < max(this%atol, this%rtol * r0norm)) exit
+      if (this%print_level > 0) then
+        write(message,'(t8,a,i4,*(a,es10.3))') 'gmres iterate', iter, &
+            ': |r|=', rnorm, ', |Pr|=', this%res_norm
+        call TLS_info(message)
+      end if
+
+      if (rnorm < max(this%atol, this%rtol * this%r0norm)) exit
       ! drop the norm on the preconditioned r in order for comparison to NLK
     end do
 
-    this%iter = iter
-    if (stat == 0 .and. iter > this%max_iter+1) stat = 1
+    this%num_iter = iter
+    this%rel_rnorm = rnorm/this%r0norm
+    if (stat == 0 .and. iter > this%max_iter) stat = 1
 
   end subroutine solve
 
@@ -201,15 +212,5 @@ contains
     y = b(:size(y))
 
   end subroutine argmin
-
-
-  pure function metrics_string(this) result(string)
-    class(gmres_left_solver), intent(in) :: this
-    character(:), allocatable :: string
-    character(128) :: buffer
-    write(buffer,'(i4," (PC), ",i4," (GMRES_LEFT), ",es14.4," (|r|)")') &
-        this%iter_pc, this%iter, this%res_norm
-    string = trim(buffer)
-  end function metrics_string
 
 end module gmres_left_solver_class

@@ -2,7 +2,6 @@
 
 module fdme_gmres_solver_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use gmres_left_solver_class
   use fdme_vector_type
   use fdme_model_type

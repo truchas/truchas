@@ -63,8 +63,8 @@ subdivision of the hex cells.
   max_source_cycles = 4
   c_ratio = 1e-4
 
-  !td_solver_type = 'pcg'
-  td_solver_type = 'ams'
+  td_solver_type = 'pcg'
+  !td_solver_type = 'ams'
   ams_cycle_type = 8
   
   abs_tol = 0
