@@ -52,6 +52,10 @@ contains
         krylov_dim, &       ! GMRES
         max_vec, vec_tol    ! NLK
 
+    !! Preconditioner variables (TD only)
+    integer :: relax_type
+    namelist /electromagnetics/ relax_type
+
     !! Preconditioner variables (FD only)
     integer  :: max_ams_iter
     namelist /electromagnetics/max_ams_iter
@@ -96,6 +100,8 @@ contains
     max_vec = NULL_I
     vec_tol = NULL_R
 
+    relax_type = NULL_I
+
     max_ams_iter = NULL_I
 
     use_legacy_bc = .false.
@@ -129,6 +135,8 @@ contains
     call broadcast(krylov_dim)
     call broadcast(max_vec)
     call broadcast(vec_tol)
+
+    call broadcast(relax_type)
 
     call broadcast(max_ams_iter)
 
@@ -228,6 +236,7 @@ contains
       if (td_solver_type == NULL_C) td_solver_type = 'pcg'
       select case (td_solver_type)
       case ('pcg') ! CG with Hiptmair preconditioning
+        if (relax_type /= NULL_I) call params%set('relax-type', relax_type)
       case ('ams') ! Hypre AMS solver
         if (ams_cycle_type /= NULL_I) call params%set('ams-cycle-type', ams_cycle_type)
         if (ams_proj_freq /= NULL_I) call params%set('ams-proj-freq', ams_proj_freq)

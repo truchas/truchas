@@ -23,6 +23,7 @@ module tdme_cg_solver_type
   use simpl_mesh_type
   use tdme_model_type
   use csr_matrix_type
+  use csr_precon_boomer_type
   use mimetic_discretization
   implicit none
   private
@@ -34,6 +35,8 @@ module tdme_cg_solver_type
     logical, allocatable :: w0mask(:)
     type(csr_matrix) :: a0, a1
     real(r8), allocatable :: un(:), rn(:), r(:) ! persistent local workspace for pc
+    integer :: relax_type = 0
+    type(csr_precon_boomer) :: a0_pc, a1_pc
   contains
     procedure :: init
     procedure :: ax
@@ -78,6 +81,16 @@ contains
     end if
     call params%get('print-level', this%print_level, stat, errmsg, default=0)
     if (stat /= 0) return
+
+    call params%get('relax-type', this%relax_type, stat, errmsg, default=0)
+    if (stat /= 0) return
+    select case (this%relax_type)
+    case (0,1) ! valid choices
+    case default
+      stat = 1
+      errmsg = 'invalid relax-type value'
+      return
+    end select
 
     !! Create the node space mask array: true values correspond to nodes not
     !! belonging to any E-field Dirichlet edge. TODO: replace by node list
@@ -147,6 +160,21 @@ contains
     end if
     !ASSERT(this%a0%is_symmetric()) ! will generally fail due to order-of-operation differences
 
+    if (this%relax_type == 1) then
+      block
+        type(csr_matrix) :: submatrix
+        call this%a0%create_submatrix(this%mesh%nnode_onP, submatrix)
+        call this%a0_pc%init(submatrix, params, stat, errmsg)
+        call this%a0_pc%compute(submatrix)
+        if (stat /= 0) return
+
+        call this%a1%create_submatrix(this%mesh%nedge_onP, submatrix)
+        call this%a1_pc%init(submatrix, params, stat, errmsg)
+        call this%a1_pc%compute(submatrix)
+        if (stat /= 0) return
+      end block
+    end if
+
     allocate(this%un(this%mesh%nnode), this%rn(this%mesh%nnode), this%r(this%mesh%nedge))
 
   end subroutine init
@@ -177,31 +205,59 @@ contains
     real(r8), intent(out) :: u(:)
 
     integer :: nedge_onP, nnode_onP
+    real(r8) :: du(this%mesh%nedge)
 
     nedge_onP = this%mesh%nedge_onP
     nnode_onP = this%mesh%nnode_onP
 
     !ASSERT(all(f(this%model%ebc%index) == 0.0_r8))
 
-    !! Forward Gauss-Seidel relaxation on the on-process edge system.
-    u = 0.0_r8
-    call gs_relaxation(this%a1, f(:nedge_onP), u, pattern='f')
+    !! Relaxation on the on-process edge system.
+    select case (this%relax_type)
+    case (1) ! BoomerAMG
+      call this%a1_pc%apply(f(:nedge_onP), u(:nedge_onP))
+      u(nedge_onP+1:) = 0.0_r8
+    case default ! forward Gauss-Seidel
+      u = 0.0_r8
+      call gs_relaxation(this%a1, f(:nedge_onP), u, pattern='f')
+      !call gs_relaxation(this%a1_sub, f, u, pattern='f')
+    end select
 
     !! Update the local residual and project it to the nodes.
     this%r(:) = f - this%a1%matvec(u)
     call grad_t(this%mesh, this%r, this%rn)
     if (allocated(this%w0mask)) where (.not.this%w0mask) this%rn = 0.0_r8
 
-    !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
-    this%un = 0.0_r8
-    call gs_relaxation(this%a0, this%rn(:nnode_onP), this%un, pattern='fb')
+    !! Relaxation on the projected on-process node system.
+    select case (this%relax_type)
+    case (1) ! BoomerAMG
+      call this%a0_pc%apply(this%rn(:nnode_onP), this%un(:nnode_onP))
+      this%un(nnode_onP+1:) = 0.0_r8
+    case default ! symmetric Gauss-Seidel
+      this%un = 0.0_r8
+      call gs_relaxation(this%a0, this%rn(:nnode_onP), this%un, pattern='fb')
+      !call gs_relaxation(this%a0_sub, this%rn, this%un, pattern='fb')
+    end select
 
     !! Update the the solution with the node-based correction.
     call grad(this%mesh, this%un, u, increment=.true.)
 
-    !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%a1, f(:nedge_onP), u, pattern='b')
+    !! Relaxation on the on-process edge system.
+    select case (this%relax_type)
+    case (1) ! BoomerAMG
+      this%r(:) = f - this%a1%matvec(u)
+      call this%a1_pc%apply(this%r(:nedge_onP))
+      u(:nedge_onP) = u(:nedge_onP) + this%r(:nedge_onP)
+    case default ! backward Gauss-Seidel
+      call gs_relaxation(this%a1, f(:nedge_onP), u, pattern='b')
+      ! single call above is equivalent to this generic form:
+      ! this%r(:) = f - this%a1%matvec(u)
+      ! du = 0.0_r8
+      ! call gs_relaxation(this%a1_sub, this%r, du, pattern='b')
+      ! u = u + du
+    end select
 
+    !! Merge the subdomain solutions.
     call this%mesh%edge_imap%scatter_offp_sum(u)
     call this%mesh%edge_imap%gather_offp(u)
 

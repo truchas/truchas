@@ -40,6 +40,7 @@ module csr_matrix_type
     procedure :: matvec
     procedure :: kdiag_init
     procedure :: is_symmetric
+    procedure :: create_submatrix
     final :: csr_matrix_delete
   end type
 
@@ -244,17 +245,18 @@ contains
     real(r8), intent(inout) :: u(:)
     character(*), intent(in) :: pattern
 
-    integer :: i, i1, i2, di, j, k
+    integer :: i, i1, i2, di, j, k, n
     real(r8) :: s
 
     ASSERT(a%nrow == a%ncol)
-    ASSERT(size(f) <= a%nrow)
     ASSERT(size(u) >= a%ncol)
+
+    n = min(a%nrow, size(f))
 
     if (.not.allocated(a%kdiag)) call a%kdiag_init
 
     do j = 1, len(pattern)
-      call loop_range(pattern(j:j), size(f), i1, i2, di)
+      call loop_range(pattern(j:j), n, i1, i2, di)
       do i = i1, i2, di
         s = f(i)
         do k = a%graph%xadj(i), a%graph%xadj(i+1)-1
@@ -283,5 +285,61 @@ contains
       INSIST(.false.)
     end select
   end subroutine
+
+  !! This creates a new CSR matrix from the leading (square) submatrix portion
+  !! of the given CSR matrix.
+
+  subroutine create_submatrix(matrix, nrow, submatrix)
+
+    class(csr_matrix), intent(in) :: matrix
+    integer, intent(in) :: nrow
+    type(csr_matrix), intent(out) :: submatrix
+
+    integer :: j, k, n
+    type(csr_graph), pointer :: g
+
+    INSIST(nrow <= min(matrix%ncol, matrix%nrow))
+
+    !! Manually generate the graph of the leading submatrix
+    associate (xadj => matrix%graph%xadj, adjncy => matrix%graph%adjncy)
+      n = xadj(nrow+1)-1  ! count of submatrix elements
+      do j = 1, nrow
+        do k = xadj(j+1)-1, xadj(j), -1  !NB: cols are ordered in each row
+          if (adjncy(k) <= nrow) exit
+          n = n - 1
+        end do
+      end do
+
+      allocate(g)
+      g%nrow = nrow
+      g%ncol = nrow
+      allocate(g%xadj(g%nrow+1),g%adjncy(n))
+      n = 1
+      g%xadj(1) = 1
+      do j = 1, nrow
+        do k = xadj(j), xadj(j+1)-1
+          if (adjncy(k) > nrow) exit
+          g%adjncy(n) = adjncy(k)
+          n = n + 1
+        end do
+        g%xadj(j+1) = n
+      end do
+    end associate
+
+    call submatrix%init(g, take_graph=.true.)
+
+    !! Copy matrix values to the submatrix
+    associate (xadj => matrix%graph%xadj, adjncy => matrix%graph%adjncy)
+      n = 1
+      do j = 1, nrow
+        do k = xadj(j), xadj(j+1)-1
+          if (adjncy(k) > nrow) exit
+          submatrix%values(n) = matrix%values(k)
+          n = n + 1
+        end do
+      end do
+    end associate
+
+  end subroutine create_submatrix
 
 end module csr_matrix_type

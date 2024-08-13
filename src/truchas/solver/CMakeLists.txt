@@ -2,6 +2,7 @@ target_sources(truchas PRIVATE
   hypre_c_binding.F90
   fhypre.F90
   hypre_ext.c
+  hypre_utilities.F90
   hypre_pcg_type.F90
   hypre_hybrid_type.F90
   hypre_ams_type.F90
@@ -20,6 +21,7 @@ target_sources(truchas PRIVATE
   nlk_solver_class.F90
   upper_packed_matrix_procs.F90
   csr_matrix_type.F90
+  csr_precon_boomer_type.F90
   bsr_matrix_type.F90
   #cgsol_type.F90 UNUSED + NEEDS UPDATING TO COMPILE
   vector_class.F90
