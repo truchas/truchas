@@ -45,6 +45,7 @@ contains
     ASSERT(size(b,2) == this%mesh%nface)
     b(1,:) = (-1.0/this%omega) * curl(this%mesh,e(2,:))
     b(2,:) =  (1.0/this%omega) * curl(this%mesh,e(1,:))
+    call this%mesh%face_imap%gather_offp(b)
   end subroutine
 
   subroutine init(this, mesh, bc_fac, params, stat, errmsg)
@@ -158,6 +159,7 @@ contains
         n = this%hbc%index(j)
         this%rhs%array(2,n) = this%rhs%array(2,n) - omegar * this%Z0 * this%hbc%value(j)
       end do
+      call this%rhs%gather_offp ! necessary?
     end if
 
     ! Apply nxE boundary conditions to the system matrix

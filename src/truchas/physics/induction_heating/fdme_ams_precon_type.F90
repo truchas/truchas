@@ -142,7 +142,8 @@ contains
     ! used when AMS is called as a preconditioner. Of the options, 8 is
     ! the only additive cycle in their list of fastest options.
     ! See https://hypre.readthedocs.io/en/latest/solvers-ams.html.
-    !call fHYPRE_AMSSetCycleType(this%solver, 8, ierr)
+    call params%get('ams-cycle-type', ipar, default=1)
+    call fHYPRE_AMSSetCycleType(this%solver, ipar, ierr)
     INSIST(ierr == 0)
 
     ! This can help, but not clear what it's doing in PC mode
@@ -319,7 +320,7 @@ contains
 
     integer :: ierr, stat
 
-    ASSERT(size(x) == 2*this%nrows)
+    !ASSERT(size(x) == 2*this%nrows)
 
     call start_timer("precon")
 

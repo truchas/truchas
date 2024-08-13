@@ -186,6 +186,7 @@ contains
       select case (fd_precon_type)
       case ('ams')
         if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)
+        if (ams_cycle_type /= NULL_I) call plist%set('ams-cycle-type', ams_cycle_type)
       case ('hiptmair')
       case (NULL_C)
         call TLS_fatal('FD_PRECON_TYPE not specified')
