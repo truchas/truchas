@@ -132,7 +132,7 @@ contains
       a(1,1,:) = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
       a(2,2,:) = -a(1,1,:)
 
-      a(1,2,:) = -(omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
+      a(1,2,:) = (omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
       a(2,1,:) = a(1,2,:)
 
       call this%A%add_to(this%mesh%cedge(:,j), a)
@@ -157,7 +157,7 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        this%rhs%array(2,n) = this%rhs%array(2,n) - omegar * this%Z0 * this%hbc%value(j)
+        this%rhs%array(2,n) = this%rhs%array(2,n) + omegar * this%Z0 * this%hbc%value(j)
       end do
       call this%rhs%gather_offp ! necessary?
     end if

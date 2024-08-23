@@ -240,7 +240,7 @@ contains
     call start_timer("precon")
 
     !! Preconditioner matrix
-    this%A%values(:) = this%model%A%values(1,1,:) - this%model%A%values(1,2,:)
+    this%A%values(:) = this%model%A%values(1,1,:) + this%model%A%values(1,2,:)
     if (allocated(this%model%ebc)) then
       do j = 1, size(this%model%ebc%index)
         n = this%model%ebc%index(j)

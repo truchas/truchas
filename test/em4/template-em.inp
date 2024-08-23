@@ -69,13 +69,13 @@
   use_emfd_solver = {emfd}
   fd_solver_type = 'gmres'
   fd_precon_type = 'ams'
-  abs_tol = 1e-8
-  rel_tol = 1e-13
+  abs_tol = 0
+  rel_tol = 1e-10
   max_vec = 20
   matl_change_threshold = 0.6
-  steps_per_cycle = 64
+  steps_per_cycle = 36
   steady_state_tol = 0.01
-  max_source_cycles = 64
+  max_source_cycles = 5
   max_iter = 1000
   print_level = 2
   graphics_output = T

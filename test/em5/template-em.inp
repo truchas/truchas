@@ -60,15 +60,16 @@ subdivision of the hex cells.
   ! time domain solver
   steps_per_cycle = 24
   steady_state_tol = 0.01
-  max_source_cycles = 4
+  max_source_cycles = 5
   c_ratio = 1e-4
 
   td_solver_type = 'pcg'
   !td_solver_type = 'ams'
-  ams_cycle_type = 8
+  !ams_cycle_type = 1
+  relax_type = 1
   
   abs_tol = 0
-  rel_tol = 1e-8
+  rel_tol = 1e-10
   max_iter = 500
   print_level = 1
 /
