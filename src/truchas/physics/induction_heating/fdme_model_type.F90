@@ -124,16 +124,22 @@ contains
     call this%A%set_all(0.0_r8)
 
     ! Raw system matrix ignoring boundary condtions
-    do j = 1, this%mesh%ncell_onP !TODO: this should run over ALL cells
+    do j = 1, this%mesh%ncell
       m1 = W1_matrix_WE(this%mesh, j)
       m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
 
       a(1,1,:) = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
-      a(2,2,:) = -a(1,1,:)
+      a(2,2,:) = a(1,1,:)
 
       a(1,2,:) = (omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
-      a(2,1,:) = a(1,2,:)
+      a(2,1,:) = -a(1,2,:)
+
+#define SYMMETRIZE
+#ifdef SYMMETRIZE
+      a(2,1,:) = -a(2,1,:)
+      a(2,2,:) = -a(2,2,:)
+#endif
 
       call this%A%add_to(this%mesh%cedge(:,j), a)
     end do
@@ -157,7 +163,11 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
+#ifdef SYMMETRIZE
         this%rhs%array(2,n) = this%rhs%array(2,n) + omegar * this%Z0 * this%hbc%value(j)
+#else
+        this%rhs%array(2,n) = this%rhs%array(2,n) - omegar * this%Z0 * this%hbc%value(j)
+#endif
       end do
       call this%rhs%gather_offp ! necessary?
     end if

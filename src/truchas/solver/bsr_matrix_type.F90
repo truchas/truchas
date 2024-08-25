@@ -44,8 +44,8 @@ module bsr_matrix_type
 
   public :: gs_relaxation
   interface gs_relaxation
-    module procedure gs_relaxation_bsr
-    !module procedure test_gs_relaxation
+    !module procedure gs_relaxation_bsr_new
+    module procedure test_gs_relaxation
   end interface
 
 contains
@@ -237,14 +237,18 @@ contains
     real(r8), intent(inout) :: u(:,:)
     character(len=*), intent(in) :: pattern
 
-    integer :: i, i1, i2, di, j, k, ld
+    integer :: i, i1, i2, di, j, k, n
     real(r8) :: s(a%bsize)
+
+    ASSERT(a%bsize == 2)
 
     ASSERT(a%nrow == a%ncol)
     ASSERT(size(f,1) == a%bsize)
     ASSERT(size(f,2) <= a%nrow)
     ASSERT(size(u,1) == a%bsize)
     ASSERT(size(u,2) >= a%ncol)
+
+    n = min(a%nrow, size(f,2))
 
     if (.not.allocated(a%kdiag)) call a%kdiag_init
 
@@ -273,6 +277,60 @@ contains
 
   end subroutine test_gs_relaxation
 
+  !! Perform the specified Gauss-Seidel sweeps for the block CSR matrix.
+  !! This differs from the the following version in that the diagonal
+  !! blocks are inverted rather that performing dense GS sweeps on the
+  !! diagonal blocks.
+
+  subroutine gs_relaxation_bsr_new(a, f, u, pattern)
+
+    type(bsr_matrix), intent(inout) :: a
+    real(r8), intent(in) :: f(:,:)
+    real(r8), intent(inout) :: u(:,:)
+    character(len=*), intent(in) :: pattern
+
+    integer :: i, i1, i2, di, j, k, n
+    real(r8) :: s(a%bsize)
+
+    real(r8) :: dinv(2,2)
+    ASSERT(a%bsize == 2)
+
+    ASSERT(a%nrow == a%ncol)
+    ASSERT(size(u,1) == a%bsize)
+    ASSERT(size(u,2) >= a%ncol)
+    ASSERT(size(f,1) == a%bsize)
+
+    n = min(a%nrow, size(f,2))
+
+    if (.not.allocated(a%kdiag)) call a%kdiag_init
+
+    do j = 1, len(pattern)
+      call loop_range(pattern(j:j), n, i1, i2, di)
+      do i = i1, i2, di
+        s = f(:,i)
+        do k = a%graph%xadj(i), a%graph%xadj(i+1)-1
+          s = s - matmul(a%values(:,:,k), u(:,a%graph%adjncy(k)))
+        end do
+        !TODO: these need to be pre-computed and saved
+        !TODO: we only care about block size 2, but in general we should
+        !      pre-compute the LU factorization and replace matvec with
+        !      forward and backward solves.
+        associate (diag => a%values(:,:,a%kdiag(i)))
+          dinv(1,1) = diag(2,2)
+          dinv(2,1) = -diag(2,1)
+          dinv(1,2) = -diag(1,2)
+          dinv(2,2) = diag(1,1)
+          dinv = dinv / (diag(1,1)*diag(2,2) - diag(2,1)*diag(1,2))
+        end associate
+        u(:,i) = u(:,i) + matmul(dinv, s)
+      end do
+    end do
+
+  end subroutine gs_relaxation_bsr_new
+
+  !! Perform the specified Gauss-Seidel sweep for the flattened block CSR
+  !! matrix.
+
   subroutine gs_relaxation_bsr(a, f, u, pattern)
 
     type(bsr_matrix), intent(inout) :: a
@@ -280,19 +338,20 @@ contains
     real(r8), intent(inout) :: u(:,:)
     character(len=*), intent(in) :: pattern
 
-    integer :: i, i1, i2, di, j, k, m1, m2, dm
+    integer :: i, i1, i2, di, j, k, n, m1, m2, dm
     real(r8) :: s(a%bsize)
 
     ASSERT(a%nrow == a%ncol)
-    ASSERT(size(f,1) == a%bsize)
-    ASSERT(size(f,2) <= a%nrow)
     ASSERT(size(u,1) == a%bsize)
     ASSERT(size(u,2) >= a%ncol)
+    ASSERT(size(f,1) == a%bsize)
+
+    n = min(a%nrow, size(f,2))
 
     if (.not.allocated(a%kdiag)) call a%kdiag_init
 
     do j = 1, len(pattern)
-      call loop_range(pattern(j:j), size(f,2), i1, i2, di)
+      call loop_range(pattern(j:j), n, i1, i2, di)
       call loop_range(pattern(j:j), a%bsize, m1, m2, dm)
       do i = i1, i2, di
         s = f(:,i)

@@ -19,8 +19,6 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#define ORIGINAL
-
 #include "f90_assert.fpp"
 
 module fdme_hiptmair_precon_type
@@ -121,6 +119,9 @@ contains
     call this%Ae%set_all(0.0_r8)
     call this%An%set_all(0.0_r8)
 
+!#define ORIGINAL
+#define SYMMETRIZE
+
     do j = 1, this%mesh%ncell
       ! non-dimensionalized
       c1 = 1.0_r8 / this%model%mu(j)
@@ -138,21 +139,25 @@ contains
       gtm1g = upm_cong_prod(6, 4, m1, cell_grad)
 
       etmp(1,1,:) = (c1 * ctm2c - c2 * m1)
-      etmp(2,2,:) = -(c1 * ctm2c - c2 * m1)
-      etmp(1,2,:) = c3 * m1
+      etmp(2,2,:) = (c1 * ctm2c - c2 * m1)
+      etmp(1,2,:) = -c3 * m1
       etmp(2,1,:) = c3 * m1
-      ! Multiply imaginary equation by -1
-      !etmp(2,1,:) = -etmp(2,1,:)
-      !etmp(2,2,:) = -etmp(2,2,:)
+#ifdef SYMMETRIZE
+      ! Symmetrize the matrix by multiplying the imaginary equation by -1
+      etmp(2,1,:) = -etmp(2,1,:)
+      etmp(2,2,:) = -etmp(2,2,:)
+#endif
       call this%Ae%add_to(this%mesh%cedge(:,j), etmp)
 
       ntmp(1,1,:) = -(c2 * gtm1g)
-      ntmp(2,2,:) =  (c2 * gtm1g)
-      ntmp(1,2,:) =  (c3 * gtm1g)
+      ntmp(2,2,:) = -(c2 * gtm1g)
+      ntmp(1,2,:) = -(c3 * gtm1g)
       ntmp(2,1,:) =  (c3 * gtm1g)
+#ifdef SYMMETRIZE
       ! Multiply imaginary equation by -1
-      !ntmp(2,1,:) = -ntmp(2,1,:)
-      !ntmp(2,2,:) = -ntmp(2,2,:)
+      ntmp(2,1,:) = -ntmp(2,1,:)
+      ntmp(2,2,:) = -ntmp(2,2,:)
+#endif
       call this%An%add_to(this%mesh%cnode(:,j), ntmp)
     end do
 
@@ -182,19 +187,22 @@ contains
     class(fdme_hiptmair_precon), intent(inout) :: this
     real(r8), intent(inout) :: x(:,:)
 
-    integer :: j
+    integer :: j, nedge_onP, nnode_onP
 
-    ASSERT(size(x,2) == this%mesh%edge_imap%onp_size) !FIXME?
+    nedge_onP = this%mesh%nedge_onP
+    nnode_onP = this%mesh%nnode_onP
+
+    ASSERT(size(x,2) == this%mesh%nedge)
     ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
     ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
     call start_timer('precon')
 
     this%b(:,:) = x
-    x = 0.0_r8
 
     !! Forward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Ae, this%b, x, 'f')
+    x = 0.0_r8
+    call gs_relaxation(this%Ae, this%b(:,:nedge_onP), x, 'f')
 
     !! Update the local residual and project it to the nodes.
     this%r = this%b - this%Ae%matvec(x)
@@ -206,14 +214,14 @@ contains
 
     !! Symmetric Gauss-Seidel relaxation on the projected on-process node system.
     this%un = 0.0_r8
-    call gs_relaxation(this%An, this%rn, this%un, 'fb')
+    call gs_relaxation(this%An, this%rn(:,:nnode_onP), this%un, 'fb')
 
     !! Update the the solution with the node-based correction.
     call grad(this%mesh, this%un(1,:), x(1,:), increment=.true.)
     call grad(this%mesh, this%un(2,:), x(2,:), increment=.true.)
 
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
-    call gs_relaxation(this%Ae, this%b, x, 'b')
+    call gs_relaxation(this%Ae, this%b(:,:nedge_onP), x, 'b')
 
     !TODO: Fix this parallel step
     !call this%mesh%edge_imap%scatter_offp_sum(x)
