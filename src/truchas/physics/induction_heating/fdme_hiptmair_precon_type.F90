@@ -120,7 +120,7 @@ contains
     call this%An%set_all(0.0_r8)
 
 !#define ORIGINAL
-#define SYMMETRIZE
+!#define SYMMETRIZE
 
     do j = 1, this%mesh%ncell
       ! non-dimensionalized
@@ -138,10 +138,10 @@ contains
       ctm2c = upm_cong_prod(4, 6, W2_matrix_WE(this%mesh, j), cell_curl)
       gtm1g = upm_cong_prod(6, 4, m1, cell_grad)
 
-      etmp(1,1,:) = (c1 * ctm2c - c2 * m1)
-      etmp(2,2,:) = (c1 * ctm2c - c2 * m1)
+      etmp(1,1,:) = (c1 * ctm2c + c2 * m1)
+      etmp(2,2,:) = etmp(1,1,:)
       etmp(1,2,:) = -c3 * m1
-      etmp(2,1,:) = c3 * m1
+      etmp(2,1,:) = -etmp(1,2,:)
 #ifdef SYMMETRIZE
       ! Symmetrize the matrix by multiplying the imaginary equation by -1
       etmp(2,1,:) = -etmp(2,1,:)
@@ -150,9 +150,9 @@ contains
       call this%Ae%add_to(this%mesh%cedge(:,j), etmp)
 
       ntmp(1,1,:) = -(c2 * gtm1g)
-      ntmp(2,2,:) = -(c2 * gtm1g)
+      ntmp(2,2,:) = ntmp(1,1,:)
       ntmp(1,2,:) = -(c3 * gtm1g)
-      ntmp(2,1,:) =  (c3 * gtm1g)
+      ntmp(2,1,:) = -ntmp(1,2,:)
 #ifdef SYMMETRIZE
       ! Multiply imaginary equation by -1
       ntmp(2,1,:) = -ntmp(2,1,:)
@@ -199,6 +199,7 @@ contains
     call start_timer('precon')
 
     this%b(:,:) = x
+    call this%mesh%edge_imap%gather_offp(this%b)
 
     !! Forward Gauss-Seidel relaxation on the on-process edge system.
     x = 0.0_r8
@@ -223,9 +224,10 @@ contains
     !! Backward Gauss-Seidel relaxation on the on-process edge system.
     call gs_relaxation(this%Ae, this%b(:,:nedge_onP), x, 'b')
 
-    !TODO: Fix this parallel step
-    !call this%mesh%edge_imap%scatter_offp_sum(x)
-    !call this%mesh%edge_imap%gather_offp(x)
+    !TODO: add missing rank-2 version of scatter_offp_sum
+    call this%mesh%edge_imap%scatter_offp_sum(x(1,:))
+    call this%mesh%edge_imap%scatter_offp_sum(x(2,:))
+    call this%mesh%edge_imap%gather_offp(x)
 
     call stop_timer('precon')
 

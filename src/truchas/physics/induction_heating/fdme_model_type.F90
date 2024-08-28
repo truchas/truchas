@@ -135,7 +135,7 @@ contains
       a(1,2,:) = (omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
       a(2,1,:) = -a(1,2,:)
 
-#define SYMMETRIZE
+!#define SYMMETRIZE
 #ifdef SYMMETRIZE
       a(2,1,:) = -a(2,1,:)
       a(2,2,:) = -a(2,2,:)
