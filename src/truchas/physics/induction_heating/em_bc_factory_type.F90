@@ -20,7 +20,7 @@ module em_bc_factory_type
   use ih_source_factory_type
   use parameter_list_type
   use scalar_func_class
-  use vector_func_class
+  use vector_func_factories
   use string_utilities, only: lower_case
   use truchas_logging_services
   implicit none
@@ -38,6 +38,7 @@ module em_bc_factory_type
     procedure :: alloc_nxE_bc
     procedure :: alloc_nxH_bc
     procedure :: alloc_fd_nxH_bc
+    procedure :: alloc_robin_bc
     procedure, private :: iterate_list
   end type
 
@@ -250,6 +251,104 @@ contains
     end subroutine
 
   end subroutine alloc_fd_nxH_bc
+
+  subroutine alloc_robin_bc(this, lhs_bc, rhs_bc, stat, errmsg)
+
+    use bndry_cfunc1_class
+    use bndry_face_cfunc_type
+    use fd_robin_bndry_func_type
+
+    class(em_bc_factory), intent(in) :: this
+    class(bndry_cfunc1), allocatable, intent(out) :: lhs_bc, rhs_bc
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(bndry_face_cfunc), allocatable :: lhs
+    type(fd_robin_bndry_func), allocatable :: rhs
+
+    call TLS_info('  generating "robin" electromagnetic boundary condition')
+
+    call this%iterate_list('robin', proc, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(lhs)) then
+      call lhs%add_complete
+    end if
+    if (allocated(rhs)) then
+      call rhs%add_complete
+    end if
+    call move_alloc(lhs, lhs_bc)
+    call move_alloc(rhs, rhs_bc)
+    call TLS_info('  done')
+
+  contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to the robin BC specification and incrementally builds the BC objects
+    !! accordingly. NB: The LHS, RHS and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine proc(plist, setids, stat, errmsg)
+      use complex_scalar_func_class
+      use complex_vector_func_class
+      use fptr_complex_vector_func_type
+      use const_complex_scalar_func_type
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(complex_scalar_func), allocatable :: f
+      class(complex_vector_func), allocatable :: g
+      ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
+      !call alloc_vector_func(plist, 'alpha', f, stat, errmsg)
+      !if (stat /= 0) return
+      call alloc_const_complex_scalar_func(f, alpha())
+      if (.not.allocated(lhs)) then
+        allocate(lhs)
+        !TODO: bndry_face_vfunc allows overlapping specifications; need to
+        !      expose the no_overlap argument to the init procedure.
+        call lhs%init(this%mesh)
+      end if
+      call lhs%add(f, setids, stat, errmsg)
+      if (stat /= 0) return
+      ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
+      !call alloc_vector_func(plist, 'g', g, stat, errmsg)
+      call alloc_fptr_complex_vector_func(g, 3, test_te01_mode)
+      if (stat /= 0) return
+      if (.not. allocated(rhs)) then
+        allocate(rhs)
+        call rhs%init(this%mesh)
+      end if
+      call rhs%add(g, setids, stat, errmsg)
+    end subroutine
+
+  end subroutine alloc_robin_bc
+
+  complex(r8) function alpha()
+    use physical_constants, only: vacuum_permittivity, vacuum_permeability
+    real(r8), parameter :: PI = 3.1415926535897932385_r8
+    real(r8), parameter :: omega = 2*PI*2.45e9_r8
+    real(r8), parameter :: a = 3.4_r8 * 0.0254_r8
+    real(r8) :: c, h0
+    c = 1.0_r8 / sqrt(vacuum_permittivity*vacuum_permeability)
+    h0 = sqrt((omega/c)**2 - (PI/a)**2)
+    alpha%re = 0.0_r8
+    alpha%im = h0
+  end function
+
+  function test_te01_mode(x, p, dim) result(fx)
+    use physical_constants, only: vacuum_permittivity, vacuum_permeability
+    real(r8), intent(in) :: x(*), p(*)
+    integer, value :: dim
+    complex(r8) :: fx(dim)
+    real(r8), parameter :: PI = 3.1415926535897932385_r8
+    real(r8), parameter :: omega = 2*PI*2.45e9_r8
+    real(r8), parameter :: a = 3.4_r8 * 0.0254_r8, E0 = 1.0_r8
+    real(r8) :: c, h0
+    c = 1.0_r8 / sqrt(vacuum_permittivity*vacuum_permeability)
+    h0 = sqrt((omega/c)**2 - (PI/a)**2)
+    fx = 0.0_r8
+    fx(2)%im = 2*h0*E0*cos(PI*x(1)/a)
+  end function
 
   !! This auxiliary subroutine iterates over the parameter list and for each BC
   !! sublist that matches the given TYPE, it calls the supplied subroutine

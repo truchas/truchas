@@ -1,0 +1,12 @@
+#{a = 3.4 * 0.0254}
+#{b = a/2}
+#{d = 0.2}
+
+playback "wg1-geom.jou"
+
+#volume all size 0.005
+volume all size 0.01
+volume all scheme tetmesh
+mesh volume all
+
+export mesh "wg1-tet.gen" overwrite

@@ -43,7 +43,7 @@ module ih_driver
     ! EM properties
     logical :: const_eps=.false., const_mu=.false., const_sigma=.false.
     real(r8) :: matl_change_threshold
-    real(r8), allocatable :: eps(:), mu(:), sigma(:)  ! on EM mesh
+    real(r8), allocatable :: eps(:), epsi(:), mu(:), sigma(:)  ! on EM mesh
     ! Computed Joule heat and the variable inputs used
     real(r8), allocatable :: q(:) ! on HT mesh
     real(r8), allocatable :: q_data(:), q_eps(:), q_mu(:), q_sigma(:)
@@ -140,9 +140,10 @@ contains
     call this%ht2em%init(this%ht_mesh, this%em_mesh)
 
     n = this%em_mesh%ncell
-    allocate(this%eps(n), this%mu(n), this%sigma(n))
+    allocate(this%eps(n), this%epsi(n), this%mu(n), this%sigma(n))
 
     allocate(this%q(this%ht_mesh%ncell_onP))
+    !TODO: NEED TO ADD Q_EPSI AND INCLUDE WITH RESTART DATA
     allocate(this%q_eps(n), this%q_mu(n), this%q_sigma(n))
     !NB: the allocation status of Q_DATA indicates whether Q contains data
 
@@ -258,7 +259,7 @@ contains
     if (this%use_emfd_solver) then
       plist => params%sublist('emfd-solver')
       call plist%set('graphics-file', trim(output_dir)//'fdme-'//i_to_c(sim_num)//'.vtkhdf')
-      call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, plist, q)
+      call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%epsi, this%mu, this%sigma, bc_fac, plist, q)
     else
       call compute_joule_heat_emtd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
     end if
@@ -327,7 +328,7 @@ contains
 
   !! Compute Joule heat using the frequency domain EM solver
 
-  subroutine compute_joule_heat_emfd(mesh, freq, eps, mu, sigma, bc_fac, params, q)
+  subroutine compute_joule_heat_emfd(mesh, freq, eps, epsi, mu, sigma, bc_fac, params, q)
 
     use simpl_mesh_type
     use em_bc_factory_type
@@ -338,7 +339,7 @@ contains
     use emfd_nlsol_solver_type
 
     type(simpl_mesh), intent(inout), target :: mesh
-    real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
+    real(r8), intent(in) :: freq, eps(:), epsi(:), mu(:), sigma(:)
     type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
@@ -346,7 +347,7 @@ contains
     type(fdme_model), target :: model
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
-    real(r8) :: t, omega, epsi(mesh%ncell), bfield(2,mesh%nface)
+    real(r8) :: t, omega, bfield(2,mesh%nface)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
@@ -359,11 +360,10 @@ contains
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
     t = 0 ! dummy time
-    epsi = 0 ! TODO: Currently not exposed to user input. Needed for dielectric heating.
     omega = 2 * PI * freq
 
     !TODO? rework solver to use absolute eps and mu?
-    call model%setup(t, eps/vacuum_permittivity, epsi, mu/vacuum_permeability, sigma, omega)
+    call model%setup(t, eps/vacuum_permittivity, epsi/vacuum_permittivity, mu/vacuum_permeability, sigma, omega)
 
     call efield%init(mesh)
     call efield%setval(0.0_r8) ! initial guess
@@ -525,7 +525,9 @@ contains
     if (.not.this%const_eps) then
       call get_permittivity(value)
       call set_permittivity(this, value)
-      this%const_eps = permittivity_is_const()
+      call get_permittivity_im(value)
+      call set_permittivity_im(this, value)
+      this%const_eps = permittivity_is_const() .and. permittivity_im_is_const()
     end if
     if (.not.this%const_mu) then
       call get_permeability(value)
@@ -546,6 +548,16 @@ contains
     call start_timer('mesh-to-mesh mapping')
     call this%ht2em%map_field(values, this%eps(:this%em_mesh%ncell_onP), defval=vacuum_permittivity, map_type=LOCALLY_BOUNDED)
     call this%em_mesh%cell_imap%gather_offp(this%eps)
+    call stop_timer('mesh-to-mesh mapping')
+  end subroutine
+
+  subroutine set_permittivity_im(this, values)
+    use physical_constants, only: vacuum_permittivity
+    class(ih_driver_data), intent(inout) :: this
+    real(r8), intent(in) :: values(:)
+    call start_timer('mesh-to-mesh mapping')
+    call this%ht2em%map_field(values, this%epsi(:this%em_mesh%ncell_onP), defval=0.0_r8, map_type=LOCALLY_BOUNDED)
+    call this%em_mesh%cell_imap%gather_offp(this%epsi)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine
 
@@ -582,6 +594,9 @@ contains
   !! term is an insignificant perturbation to the system in the low
   !! frequency, quasi-magnetostatic regime where induction heating occurs.
   !! In fact the permittivity may be modified for numerical purposes.
+  !!
+  !! TODO: In the high frequency regime we need to consider changes to the
+  !! complex permittivity for the frequency domain solver.
 
   logical function matl_prop_differ(this) result(differ)
 

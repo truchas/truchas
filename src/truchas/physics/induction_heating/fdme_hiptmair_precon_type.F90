@@ -119,7 +119,7 @@ contains
     call this%Ae%set_all(0.0_r8)
     call this%An%set_all(0.0_r8)
 
-!#define ORIGINAL
+#define ORIGINAL
 !#define SYMMETRIZE
 
     do j = 1, this%mesh%ncell
@@ -127,6 +127,7 @@ contains
       c1 = 1.0_r8 / this%model%mu(j)
       c2 = this%model%epsr(j) * omegar**2
       c3 = -(this%model%epsi(j) * omegar**2 + omegar * this%model%sigma(j) * this%model%Z0)
+print *, c2, -c3
 #ifdef ORIGINAL
       !NB: This results in a different matrix than the actual matrix of the edge-based system.
       !TODO: What is the rationale for the following modification?
@@ -138,9 +139,9 @@ contains
       ctm2c = upm_cong_prod(4, 6, W2_matrix_WE(this%mesh, j), cell_curl)
       gtm1g = upm_cong_prod(6, 4, m1, cell_grad)
 
-      etmp(1,1,:) = (c1 * ctm2c + c2 * m1)
+      etmp(1,1,:) = (c1 * ctm2c - c2 * m1)
       etmp(2,2,:) = etmp(1,1,:)
-      etmp(1,2,:) = -c3 * m1
+      etmp(1,2,:) = -c3 * m1 !+ c2 * m1 ! from Elmer doc
       etmp(2,1,:) = -etmp(1,2,:)
 #ifdef SYMMETRIZE
       ! Symmetrize the matrix by multiplying the imaginary equation by -1
@@ -151,7 +152,7 @@ contains
 
       ntmp(1,1,:) = -(c2 * gtm1g)
       ntmp(2,2,:) = ntmp(1,1,:)
-      ntmp(1,2,:) = -(c3 * gtm1g)
+      ntmp(1,2,:) = -(c3 * gtm1g) !+ (c2 * gtm1g) ! from Elmer doc
       ntmp(2,1,:) = -ntmp(1,2,:)
 #ifdef SYMMETRIZE
       ! Multiply imaginary equation by -1
@@ -160,6 +161,46 @@ contains
 #endif
       call this%An%add_to(this%mesh%cnode(:,j), ntmp)
     end do
+
+    ! LHS contribution from Robin boundary conditions
+    !FIXME? contribution to node-based subspace matrix is missing
+    !FIXME: ONLY CORRECT FOR MU=1
+    if (allocated(this%model%robin_lhs)) then
+      block
+        use mimetic_discretization, only: w1_face_matrix
+        integer :: n
+        real(r8) :: m(6), a(2,2,6), gtmg(6)
+        real(r8), parameter :: g(3,3) = reshape([0,-1,1,0,-1,0,1,-1,1,0],shape=[3,3])
+        !call this%model%robin_lhs%compute(t=0.0_r8)
+        do j = 1, size(this%model%robin_lhs%index)
+          n = this%model%robin_lhs%index(j)
+          m = w1_face_matrix(this%mesh, n)
+          a(1,1,:) = -(this%model%robin_lhs%value(j)%re) * m
+          a(1,2,:) =  (this%model%robin_lhs%value(j)%im) * m
+#ifdef SYMMETRIZE
+          a(2,1,:) = a(1,2,:)
+          a(2,2,:) = -a(1,1,:)
+#else
+          a(2,1,:) = -a(1,2,:)
+          a(2,2,:) = a(1,1,:)
+#endif
+          call this%Ae%add_to(this%mesh%fedge(:,n), a)
+          
+          !NB: This needs to be checked for correctness.
+          gtmg = upm_cong_prod(3, 3, m, g)
+          a(1,1,:) = -(this%model%robin_lhs%value(j)%re) * gtmg
+          a(1,2,:) =  (this%model%robin_lhs%value(j)%im) * gtmg
+#ifdef SYMMETRIZE
+          a(2,1,:) = a(1,2,:)
+          a(2,2,:) = -a(1,1,:)
+#else
+          a(2,1,:) = -a(1,2,:)
+          a(2,2,:) = a(1,1,:)
+#endif
+          call this%An%add_to(this%mesh%fnode(:,n), a)
+        end do
+      end block
+    end if
 
     do j = 1, this%mesh%nedge
       if (this%is_ebc_edge(j)) then
@@ -193,8 +234,8 @@ contains
     nnode_onP = this%mesh%nnode_onP
 
     ASSERT(size(x,2) == this%mesh%nedge)
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
     call start_timer('precon')
 
@@ -231,8 +272,8 @@ contains
 
     call stop_timer('precon')
 
-    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
-    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(1,:) == 0))
+!    ASSERT(all(.not.this%is_ebc_edge .or. x(2,:) == 0))
 
   end subroutine apply
 

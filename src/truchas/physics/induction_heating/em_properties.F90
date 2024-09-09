@@ -24,8 +24,9 @@ module em_properties
   private
 
   public :: define_default_em_properties
-  public :: get_permittivity, get_permeability, get_conductivity
-  public :: permittivity_is_const, permeability_is_const, conductivity_is_const
+  public :: get_permittivity, get_permittivity_im, get_permeability, get_conductivity
+  public :: permittivity_is_const, permittivity_im_is_const, permeability_is_const, &
+      conductivity_is_const
 
 contains
 
@@ -36,10 +37,11 @@ contains
     use material_utilities, only: define_property_default
     call define_property_default(matl_model, 'electrical-conductivity', 0.0_r8)
     call define_property_default(matl_model, 'electric-susceptibility', 0.0_r8)
+    call define_property_default(matl_model, 'electric-susceptibility-im', 0.0_r8)
     call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_r8)
   end subroutine
 
-  !! Returns the electric permittivity at the current temperature.
+  !! Returns the real part of the electric permittivity at the current temperature.
   subroutine get_permittivity(value)
     use physical_constants, only: vacuum_permittivity
     use zone_module, only: zone
@@ -48,14 +50,33 @@ contains
     value = vacuum_permittivity*(1.0_r8 + value)
   end subroutine
 
-  !! Returns true of the electric permittivity is constant with respect to
-  !! time/temperature; otherwise it returns false.
+  !! Returns the imaginary part of the electric permittivity at the current temperature.
+  subroutine get_permittivity_im(value)
+    use physical_constants, only: vacuum_permittivity
+    use zone_module, only: zone
+    real(r8), intent(out) :: value(:)
+    call compute_cell_property('electric-susceptibility-im', zone%temp, value)
+    value = vacuum_permittivity*value
+  end subroutine
+
+  !! Returns true if the real part of the electric permittivity is constant
+  !! with respect to time/temperature; otherwise it returns false.
   logical function permittivity_is_const()
     use material_utilities, only: constant_property_check
     integer :: stat
     character(:), allocatable :: errmsg
     call constant_property_check(matl_model, 'electric-susceptibility', stat, errmsg)
     permittivity_is_const = (stat == 0)
+  end function
+
+  !! Returns true if the imaginary part of the electric permittivity is
+  !! constant with respect to time/temperature; otherwise it returns false.
+  logical function permittivity_im_is_const()
+    use material_utilities, only: constant_property_check
+    integer :: stat
+    character(:), allocatable :: errmsg
+    call constant_property_check(matl_model, 'electric-susceptibility-im', stat, errmsg)
+    permittivity_im_is_const = (stat == 0)
   end function
 
   !! Returns the magnetic permeability at the current temperature.

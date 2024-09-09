@@ -21,6 +21,12 @@ target_sources(truchas PRIVATE
   fptr_vector_func_type.F90
   vector_func_factories.F90
   inverse_func_class.F90
+  complex_scalar_func_class.F90
+  complex_scalar_func_containers.F90
+  complex_vector_func_class.F90
+  complex_vector_func_containers.F90
+  fptr_complex_vector_func_type.F90
+  const_complex_scalar_func_type.F90
 )
 
 if(ENABLE_DYNAMIC_LOADING)

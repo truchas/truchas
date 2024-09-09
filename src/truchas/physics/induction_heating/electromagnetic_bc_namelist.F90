@@ -95,6 +95,8 @@ contains
         ! no parameters
       case ('ih-hfield')
         ! no parameters
+      case ('robin')
+        ! no parameters yet
       case default
         call TLS_fatal(label // ': unknown TYPE: ' // trim(type))
       end select

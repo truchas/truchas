@@ -1,0 +1,121 @@
+################################################################################
+# 
+# AXISYMMETRIC INDUCTION HEATING OF UNIFORM CORE
+# 
+# Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
+# one quarter of a thin cross-sectional slab, surrounded by some free-space.
+# The EM permeability and conductivity are temperature dependent.  The hex mesh
+# does not include any free space region.  The tet mesh conforms to the hex
+# mesh in the conductor, being obtained by subdivision of the hex cells.
+#
+################################################################################
+
+&MESH
+  mesh_file = 'wg2-hex.gen'
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0e-6
+  output_dt = 1.0e-6
+/
+
+&NUMERICS /
+
+&PHYSICS
+  materials = 'dielectric', 'VOID'
+  heat_transport = T
+  electromagnetics = T
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-4
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-4
+  verbose_stepping = T
+/
+
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'from mesh file'
+  mesh_material_number = 2
+  material_name = 'dielectric'
+  temperature = 300.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'VOID'
+  temperature = 300.0
+/
+
+### BOUNDARY CONDITIONS #######################################################
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 3
+  !face_set_ids = 2, 3
+  flux = 0.0
+/
+
+
+### INDUCTION HEATING ##########################################################
+
+&EM_MESH
+  mesh_file = 'wg2-tet.gen'
+/
+
+&ELECTROMAGNETICS
+  use_emfd_solver = T
+  fd_solver_type = 'gmres'
+  fd_precon_type = 'hiptmair'
+  krylov_dim = 20
+  ams_cycle_type = 1
+  abs_tol = 0
+  rel_tol = 1e-10
+  max_vec = 5
+  matl_change_threshold = 0.6
+  steps_per_cycle = 36
+  steady_state_tol = 0.01
+  max_source_cycles = 5
+  max_iter = 1000
+  print_level = 3
+  graphics_output = T
+/
+
+Frequency is specified here :/
+&INDUCTION_SOURCE_FIELD
+  frequency = 2.45d9
+  uniform_strength = 1
+  orientation = 'z'
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'walls'
+  type = 'pec'
+  face_set_ids = 2, 3
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'waveguide port'
+  type = 'robin'
+  face_set_ids = 1
+/
+
+### MATERIALS ##################################################################
+
+### STUFF ###
+
+&MATERIAL
+  name = 'dielectric'
+  density = 100.0
+  specific_heat = 100.0
+  conductivity = 1.0
+  electric_susceptibility = 3.0
+  electric_susceptibility_im = 0.8
+  magnetic_susceptibility = 0
+/
+

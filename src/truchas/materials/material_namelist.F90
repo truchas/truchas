@@ -55,19 +55,20 @@ contains
     !! Additional property variables (almost the same as for PHASE)
     logical :: is_fluid
     real(r8) :: density, specific_heat, ref_temp, ref_enthalpy, conductivity, viscosity, &
-        electrical_conductivity, electric_susceptibility, magnetic_susceptibility, &
-        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), tm_ref_density, &
-        tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
+        electrical_conductivity, electric_susceptibility, electric_susceptibility_im, &
+        magnetic_susceptibility, diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
+        tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: specific_enthalpy_func, specific_heat_func, conductivity_func, &
         density_delta_func, viscosity_func, electrical_conductivity_func, &
-        electric_susceptibility_func, magnetic_susceptibility_func, &
-        diffusivity_func(MAX_SPECIES), soret_coef_func(MAX_SPECIES), &
-        tm_linear_cte_func, tm_lame1_func, tm_lame2_func
+        electric_susceptibility_func, electric_susceptibility_im_func, &
+        magnetic_susceptibility_func, diffusivity_func(MAX_SPECIES), &
+        soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /material/ is_fluid, density, ref_temp, ref_enthalpy, specific_heat, &
         specific_heat_func, specific_enthalpy_func, conductivity, conductivity_func, &
         density_delta_func, viscosity, viscosity_func, &
         electrical_conductivity, electrical_conductivity_func, &
         electric_susceptibility, electric_susceptibility_func, &
+        electric_susceptibility_im, electric_susceptibility_im_func, &
         magnetic_susceptibility, magnetic_susceptibility_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
@@ -114,7 +115,9 @@ contains
       electrical_conductivity = NULL_R
       electrical_conductivity_func = NULL_C
       electric_susceptibility = NULL_R
+      electric_susceptibility_im = NULL_R
       electric_susceptibility_func = NULL_C
+      electric_susceptibility_im_func = NULL_C
       magnetic_susceptibility = NULL_R
       magnetic_susceptibility_func = NULL_C
       diffusivity = NULL_R
@@ -153,7 +156,9 @@ contains
       call broadcast(electrical_conductivity)
       call broadcast(electrical_conductivity_func)
       call broadcast(electric_susceptibility)
+      call broadcast(electric_susceptibility_im)
       call broadcast(electric_susceptibility_func)
+      call broadcast(electric_susceptibility_im_func)
       call broadcast(magnetic_susceptibility)
       call broadcast(magnetic_susceptibility_func)
       call broadcast(diffusivity)
@@ -236,6 +241,7 @@ contains
       !! Process electromagnetic properties
       call process2(plist, electrical_conductivity, electrical_conductivity_func, 'ELECTRICAL_CONDUCTIVITY', 'electrical-conductivity', label)
       call process2(plist, electric_susceptibility, electric_susceptibility_func, 'ELECTRIC_SUSCEPTIBILITY', 'electric-susceptibility', label)
+      call process2(plist, electric_susceptibility_im, electric_susceptibility_im_func, 'ELECTRIC_SUSCEPTIBILITY_IM', 'electric-susceptibility-im', label)
       call process2(plist, magnetic_susceptibility, magnetic_susceptibility_func, 'MAGNETIC_SUSCEPTIBILITY', 'magnetic-susceptibility', label)
 
       !! Process solid mechanics variables
@@ -267,19 +273,20 @@ contains
     !! Namelist variables
     logical :: is_fluid
     real(r8) :: specific_heat, conductivity, viscosity, &
-        electrical_conductivity, electric_susceptibility, magnetic_susceptibility, &
-        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), tm_ref_density, &
-        tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
+        electrical_conductivity, electric_susceptibility, electric_susceptibility_im, &
+        magnetic_susceptibility, diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
+        tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: name, specific_heat_func, specific_enthalpy_func, conductivity_func, &
         density_delta_func, viscosity_func, electrical_conductivity_func, &
-        electric_susceptibility_func, magnetic_susceptibility_func, &
-        diffusivity_func(MAX_SPECIES), soret_coef_func(MAX_SPECIES), &
-        tm_linear_cte_func, tm_lame1_func, tm_lame2_func
+        electric_susceptibility_func, electric_susceptibility_im_func, &
+        magnetic_susceptibility_func, diffusivity_func(MAX_SPECIES), &
+        soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /phase/ name, is_fluid, &
         specific_heat, specific_heat_func, specific_enthalpy_func, conductivity, &
         conductivity_func, density_delta_func, viscosity, viscosity_func, &
         electrical_conductivity, electrical_conductivity_func, &
         electric_susceptibility, electric_susceptibility_func, &
+        electric_susceptibility_im, electric_susceptibility_im_func, &
         magnetic_susceptibility, magnetic_susceptibility_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
@@ -321,7 +328,9 @@ contains
       electrical_conductivity = NULL_R
       electrical_conductivity_func = NULL_C
       electric_susceptibility = NULL_R
+      electric_susceptibility_im = NULL_R
       electric_susceptibility_func = NULL_C
+      electric_susceptibility_im_func = NULL_C
       magnetic_susceptibility = NULL_R
       magnetic_susceptibility_func = NULL_C
       diffusivity = NULL_R
@@ -354,7 +363,9 @@ contains
       call broadcast(electrical_conductivity)
       call broadcast(electrical_conductivity_func)
       call broadcast(electric_susceptibility)
+      call broadcast(electric_susceptibility_im)
       call broadcast(electric_susceptibility_func)
+      call broadcast(electric_susceptibility_im_func)
       call broadcast(magnetic_susceptibility)
       call broadcast(magnetic_susceptibility_func)
       call broadcast(diffusivity)

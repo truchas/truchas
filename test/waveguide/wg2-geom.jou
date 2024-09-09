@@ -1,0 +1,23 @@
+brick x {a} y {b} z {d}
+move volume 1 x 0 y 0 z {d/2}
+brick x {a} y {b} z {c}
+move volume 2 x 0 y 0 z {-c/2}
+
+imprint volume all
+merge volume all
+compress all
+
+sideset 1 add surface with z_coord {-c}
+sideset 1 name "left end"
+sideset 2 add surface with z_coord {d}
+sideset 2 name "right end"
+sideset 3 add surface with x_coord {-a/2}
+sideset 3 add surface with x_coord {a/2}
+sideset 3 add surface with y_coord {-b/2}
+sideset 3 add surface with y_coord {b/2}
+sideset 3 name "walls"
+
+block 1 add volume 2
+block 1 name "left half"
+block 2 add volume 1
+block 2 name "right half"

@@ -19,6 +19,7 @@ module mimetic_discretization
   !! Inner product matrices
   public :: W1_matrix_HS, W2_matrix_HS
   public :: W1_matrix_WE, W2_matrix_WE
+  public :: w1_face_matrix
 
   !! Interpolation procedures
   public :: w1_vector_on_cells, w2_vector_on_cells, w3_scalar_on_cells
@@ -580,5 +581,21 @@ contains
     index(1) = cell
 
   end subroutine eval_w3_interp_coef
+
+
+  function w1_face_matrix(mesh, face) result(matrix)
+    type(simpl_mesh), intent(in) :: mesh
+    integer, intent(in) :: face
+    real(r8) :: matrix(6)
+    real(r8) :: c, lsq(3)
+    c = 1.0_r8 / (48.0_r8 * mesh%area(face))
+    lsq = mesh%length(mesh%fedge(:,face))**2
+    matrix(1) = c*(lsq(2) + lsq(3) - lsq(1))
+    matrix(3) = c*(lsq(1) + lsq(3) - lsq(2))
+    matrix(6) = c*(lsq(1) + lsq(2) - lsq(3))
+    matrix(2) = -c*(lsq(1) + lsq(2) - 3*lsq(3))
+    matrix(4) =  c*(lsq(1) + lsq(3) - 3*lsq(2))
+    matrix(5) = -c*(lsq(2) + lsq(3) - 3*lsq(1))
+  end function
 
 end module mimetic_discretization

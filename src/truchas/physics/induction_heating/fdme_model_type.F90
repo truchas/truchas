@@ -9,6 +9,8 @@ module fdme_model_type
   use complex_pcsr_matrix_type
   use pbsr_matrix_type
   use bndry_func1_class
+  use bndry_vfunc_class
+  use bndry_cfunc1_class
   use truchas_timers
   implicit none
   private
@@ -23,6 +25,7 @@ module fdme_model_type
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
     class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
+    class(bndry_cfunc1), allocatable :: robin_lhs, robin_rhs
     ! Non-dimensionalization parameters
     real(r8) :: Z0 ! vacuum impedance
     real(r8) :: c0 ! speed of light
@@ -81,6 +84,9 @@ contains
     end if
     if (stat /= 0) return
 
+    call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg)
+    if (stat /= 0) return
+
     block
       type(pcsr_graph), pointer :: g
       allocate(g)
@@ -100,7 +106,7 @@ contains
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
-    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_curl
+    use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_curl, w1_face_matrix
     use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(fdme_model), intent(inout) :: this
@@ -135,6 +141,22 @@ contains
       call this%AA%add_to(this%mesh%cedge(:,j), AA)
     end do
 
+    ! LHS contribution from Robin boundary conditions
+    !FIXME: ONLY CORRECT FOR MU=1
+    if (allocated(this%robin_lhs)) then
+print *, 'fdme_model%setup: start robin'
+      block
+        complex(r8) ::a(6)
+        call this%robin_lhs%compute(t)
+        do j = 1, size(this%robin_lhs%index)
+          n = this%robin_lhs%index(j)
+          a = -this%robin_lhs%value(j) * w1_face_matrix(this%mesh, n)
+          call this%AA%add_to(this%mesh%fedge(:,n), a)
+        end do
+      end block
+print *, 'fdme_model%setup: end robin'
+    end if
+
     ! RHS contribution from nxE boundary conditions
     if (allocated(this%ebc)) then
       block
@@ -147,6 +169,20 @@ contains
         this%crhs = efield - this%crhs
         call this%mesh%edge_imap%gather_offp(this%crhs)
       end block
+    end if
+
+    ! RHS contribution from Robin boundary conditions
+    !FIXME: only correct for uniform mu = 1 (relative). For other mu, it needs to
+    !be incorporated into the computation of robin_rhs.
+    if (allocated(this%robin_rhs)) then
+print *, 'fdme_model%setup: start robin'
+      call this%robin_rhs%compute(t)
+      do j = 1, size(this%robin_rhs%index)
+        n = this%robin_rhs%index(j)
+        this%crhs%array(n) = this%crhs%array(n) - this%robin_rhs%value(j)
+      end do
+      call this%mesh%edge_imap%gather_offp(this%crhs) ! necessary?
+print *, 'fdme_model%setup: end robin'
     end if
 
     !! Apply the nxE boundary conditions to the system matrix
