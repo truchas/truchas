@@ -122,6 +122,18 @@ contains
       call imap%scatter_offp_sum(array)
       call write_result(all(array == output), 'test_sum_rank1_real64')
     end block
+    block
+      complex(real32), allocatable :: array(:)
+      array = (1,-1)*input
+      call imap%scatter_offp_sum(array)
+      call write_result(all(array == (1,-1)*output), 'test_sum_rank1_complex32')
+    end block
+    block
+      complex(real64), allocatable :: array(:)
+      array = (1,-1)*input
+      call imap%scatter_offp_sum(array)
+      call write_result(all(array == (1,-1)*output), 'test_sum_rank1_complex64')
+    end block
   end subroutine
 
   subroutine test_min_rank1

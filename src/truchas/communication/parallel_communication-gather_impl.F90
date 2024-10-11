@@ -53,6 +53,22 @@ contains
     call MPI_Gather(src, 1, MPI_REAL8, dest, 1, MPI_REAL8, root, comm, ierr)
   end subroutine
 
+  module subroutine gath_c4_0(src, dest)
+    complex(r4), intent(in) :: src
+    complex(r4), intent(inout) :: dest(:)
+    integer :: ierr
+    ASSERT(size(dest) >= merge(npe,0,is_iop))
+    call MPI_Gather(src, 1, MPI_COMPLEX8, dest, 1, MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine gath_c8_0(src, dest)
+    complex(r8), intent(in) :: src
+    complex(r8), intent(inout) :: dest(:)
+    integer :: ierr
+    ASSERT(size(dest) >= merge(npe,0,is_iop))
+    call MPI_Gather(src, 1, MPI_COMPLEX16, dest, 1, MPI_COMPLEX16, root, comm, ierr)
+  end subroutine
+
   module subroutine gath_dl_0(src, dest)
     logical, intent(in) :: src
     logical, intent(inout) :: dest(:)
@@ -202,6 +218,18 @@ contains
     call gath_aux1(size(src), size(dest), MPI_REAL8, src, dest)
   end subroutine
 
+  module subroutine gath_c4_1(src, dest)
+    complex(r4), intent(in) :: src(:)
+    complex(r4), intent(inout) :: dest(:)
+    call gath_aux1(size(src), size(dest), MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine gath_c8_1(src, dest)
+    complex(r8), intent(in) :: src(:)
+    complex(r8), intent(inout) :: dest(:)
+    call gath_aux1(size(src), size(dest), MPI_COMPLEX16, src, dest)
+  end subroutine
+
   module subroutine gath_dl_1(src, dest)
     logical, intent(in) :: src(:)
     logical, intent(inout) :: dest(:)
@@ -266,6 +294,26 @@ contains
     destlen = size(dest, dim=2)
     if (is_iop) block_size = size(dest(:,1))
     call gath_aux2(srclen, destlen, block_size, MPI_REAL8, src, dest)
+  end subroutine
+
+  module subroutine gath_c4_2(src, dest)
+    complex(r4), intent(in) :: src(:,:)
+    complex(r4), intent(inout) :: dest(:,:)
+    integer :: srclen, destlen, block_size
+    srclen = size(src, dim=2)
+    destlen = size(dest, dim=2)
+    if (is_iop) block_size = size(dest(:,1))
+    call gath_aux2(srclen, destlen, block_size, MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine gath_c8_2(src, dest)
+    complex(r8), intent(in) :: src(:,:)
+    complex(r8), intent(inout) :: dest(:,:)
+    integer :: srclen, destlen, block_size
+    srclen = size(src, dim=2)
+    destlen = size(dest, dim=2)
+    if (is_iop) block_size = size(dest(:,1))
+    call gath_aux2(srclen, destlen, block_size, MPI_COMPLEX16, src, dest)
   end subroutine
 
   module subroutine gath_dl_2(src, dest)

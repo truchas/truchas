@@ -71,6 +71,48 @@ contains
     end do
   end subroutine
 
+  module subroutine scat1_sum_c4_1(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(inout) :: local_data(:)
+    call scat2_sum_c4_1(this, local_data(:this%onp_size), local_data(this%onp_size+1:))
+  end subroutine
+
+  module subroutine scat2_sum_c4_1(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(inout) :: onp_data(:)
+    complex(r4), intent(in) :: offp_data(:)
+    integer :: j, ierr
+    complex(r4), allocatable :: onp_buf(:)
+    if (.not.allocated(this%offp_index)) return
+    allocate(onp_buf(size(this%onp_index)))
+    call MPI_Neighbor_alltoallv(offp_data, this%offp_counts, this%offp_displs, MPI_COMPLEX8, &
+        onp_buf, this%onp_counts, this%onp_displs, MPI_COMPLEX8, this%scatter_comm, ierr)
+    do j = 1, size(onp_buf) !NB: must be sequential; ONP_INDEX is many-to-one
+      onp_data(this%onp_index(j)) = onp_data(this%onp_index(j)) + onp_buf(j)
+    end do
+  end subroutine
+
+  module subroutine scat1_sum_c8_1(this, local_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(inout) :: local_data(:)
+    call scat2_sum_c8_1(this, local_data(:this%onp_size), local_data(this%onp_size+1:))
+  end subroutine
+
+  module subroutine scat2_sum_c8_1(this, onp_data, offp_data)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(inout) :: onp_data(:)
+    complex(r8), intent(in) :: offp_data(:)
+    integer :: j, ierr
+    complex(r8), allocatable :: onp_buf(:)
+    if (.not.allocated(this%offp_index)) return
+    allocate(onp_buf(size(this%onp_index)))
+    call MPI_Neighbor_alltoallv(offp_data, this%offp_counts, this%offp_displs, MPI_COMPLEX16, &
+        onp_buf, this%onp_counts, this%onp_displs, MPI_COMPLEX16, this%scatter_comm, ierr)
+    do j = 1, size(onp_buf) !NB: must be sequential; ONP_INDEX is many-to-one
+      onp_data(this%onp_index(j)) = onp_data(this%onp_index(j)) + onp_buf(j)
+    end do
+  end subroutine
+
   module subroutine scat1_min_i4_1(this, local_data)
     class(index_map), intent(in) :: this
     integer(i4), intent(inout) :: local_data(:)

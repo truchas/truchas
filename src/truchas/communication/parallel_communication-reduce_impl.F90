@@ -116,6 +116,20 @@ contains
     call MPI_Allreduce(a, s, 1, MPI_REAL8, MPI_SUM, comm, ierr)
   end function
 
+  module function sum_c4_0(a) result(s)
+    complex(r4), intent(in) :: a
+    complex(r4) :: s
+    integer :: ierr
+    call MPI_Allreduce(a, s, 1, MPI_COMPLEX8, MPI_SUM, comm, ierr)
+  end function
+
+  module function sum_c8_0(a) result(s)
+    complex(r8), intent(in) :: a
+    complex(r8) :: s
+    integer :: ierr
+    call MPI_Allreduce(a, s, 1, MPI_COMPLEX16, MPI_SUM, comm, ierr)
+  end function
+
   module function sum_i4_1(a, mask) result(s)
     integer(i4), intent(in) :: a(:)
     logical, intent(in), optional :: mask(:)
@@ -146,6 +160,22 @@ contains
     real(r8) :: s
     integer :: ierr
     call MPI_Allreduce(sum(a,mask), s, 1, MPI_REAL8, MPI_SUM, comm, ierr)
+  end function
+
+  module function sum_c4_1(a, mask) result(s)
+    complex(r4), intent(in) :: a(:)
+    logical, intent(in), optional :: mask(:)
+    complex(r4) :: s
+    integer :: ierr
+    call MPI_Allreduce(sum(a,mask), s, 1, MPI_COMPLEX8, MPI_SUM, comm, ierr)
+  end function
+
+  module function sum_c8_1(a, mask) result(s)
+    complex(r8), intent(in) :: a(:)
+    logical, intent(in), optional :: mask(:)
+    complex(r8) :: s
+    integer :: ierr
+    call MPI_Allreduce(sum(a,mask), s, 1, MPI_COMPLEX16, MPI_SUM, comm, ierr)
   end function
 
 !!!! GLOBAL MINVAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -286,6 +316,20 @@ contains
     real(r8) :: dp
     integer :: ierr
     call MPI_Allreduce(dot_product(a,b), dp, 1, MPI_REAL8, MPI_SUM, comm, ierr)
+  end function
+
+  module function dot_prod_c4(a, b) result(dp)
+    complex(r4), intent(in) :: a(:), b(:)
+    complex(r4) :: dp
+    integer :: ierr
+    call MPI_Allreduce(dot_product(a,b), dp, 1, MPI_COMPLEX8, MPI_SUM, comm, ierr)
+  end function
+
+  module function dot_prod_c8(a, b) result(dp)
+    complex(r8), intent(in) :: a(:), b(:)
+    complex(r8) :: dp
+    integer :: ierr
+    call MPI_Allreduce(dot_product(a,b), dp, 1, MPI_COMPLEX16, MPI_SUM, comm, ierr)
   end function
 
 end submodule reduce_impl
