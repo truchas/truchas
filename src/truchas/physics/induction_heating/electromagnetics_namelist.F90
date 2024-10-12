@@ -182,6 +182,7 @@ contains
         if (vec_tol /= NULL_R) call plist%set('vec-tol', vec_tol)
       case ('gmres')
         if (krylov_dim /= NULL_I) call plist%set('krylov-dim', krylov_dim)
+      case ('minres')
       case (NULL_C)
         call TLS_fatal('FD_SOLVER_TYPE not specified')
       case default

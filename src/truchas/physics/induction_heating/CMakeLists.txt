@@ -29,5 +29,6 @@ target_sources(truchas PRIVATE
   fdme_hiptmair_precon_type.F90
   fdme_nlk_solver_type.F90
   fdme_gmres_solver_type.F90
+  fdme_minres_solver_type.F90
   emfd_nlsol_solver_type.F90
 )

@@ -26,6 +26,7 @@ module emfd_nlsol_solver_type
   use fdme_hiptmair_precon_type
   use fdme_nlk_solver_type
   use fdme_gmres_solver_type
+  use fdme_minres_solver_type
   use simpl_mesh_type
   use parameter_list_type
   use truchas_logging_services
@@ -40,6 +41,7 @@ module emfd_nlsol_solver_type
     type(fdme_model), pointer :: model => null()
     class(fdme_precon), pointer :: precon => null()
     type(fdme_gmres_solver), allocatable :: gmres
+    type(fdme_minres_solver), allocatable :: minres
     type(fdme_nlk_solver),   allocatable :: nlk
 
     type(fdme_vector) :: efield ! electric field (real and imaginary parts)
@@ -81,6 +83,8 @@ contains
     select case (solver_type)
     case ('gmres')
       allocate(this%gmres)
+    case ('minres')
+      allocate(this%minres)
     case ('nlk')
       allocate(this%nlk)
     case default
@@ -108,6 +112,8 @@ contains
 
     if (allocated(this%gmres)) then
       call this%gmres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
+    else if (allocated(this%minres)) then
+      call this%minres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%nlk)) then
       call this%nlk%init(this%efield, this%model, this%precon, params, ierr, errmsg)
     else
@@ -133,6 +139,8 @@ contains
             ', |r0|=', this%gmres%gmres%r0norm
         call TLS_info(message)
       end if
+    else if (allocated(this%minres)) then
+      call this%minres%solve(efield, stat)
     else if (allocated(this%nlk)) then
       call this%nlk%solve(efield, stat)
     else

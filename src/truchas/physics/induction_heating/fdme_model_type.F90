@@ -27,6 +27,7 @@ module fdme_model_type
     procedure :: init
     procedure :: setup
     procedure :: matvec
+    procedure :: matvec2
     procedure :: residual
     procedure :: compute_heat_source
     procedure :: compute_b
@@ -199,6 +200,13 @@ contains
     class(fdme_model), intent(in) :: this
     type(fdme_vector), intent(inout) :: x, ax
     call this%A%matvec(x%array, ax%array)
+  end subroutine
+
+  subroutine matvec2(this, x, ax)
+    class(fdme_model), intent(in) :: this
+    real(r8), intent(in)  :: x(:,:)
+    real(r8), intent(out) :: ax(:,:)
+    call this%A%matvec(x, ax)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)
