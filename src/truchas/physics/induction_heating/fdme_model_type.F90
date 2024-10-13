@@ -6,6 +6,7 @@ module fdme_model_type
   use simpl_mesh_type
   use vector_class
   use fdme_vector_type
+  use complex_pcsr_matrix_type
   use pbsr_matrix_type
   use bndry_func1_class
   use truchas_timers
@@ -14,8 +15,10 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
+    type(complex_pcsr_matrix) :: AA
     type(pbsr_matrix) :: A
     type(fdme_vector) :: rhs
+    complex(r8), allocatable :: crhs(:)
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
@@ -84,12 +87,13 @@ contains
       call g%init(this%mesh%edge_imap)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
-      call this%A%init(2, g, take_graph=.true.)
+      call this%AA%init(g, take_graph=.true.)
     end block
 
     n = this%mesh%ncell
     allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
 
+    allocate(this%crhs(this%mesh%nedge))
     call this%rhs%init(this%mesh)
 
   end subroutine init
@@ -103,8 +107,8 @@ contains
     real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
 
     integer :: j, n
-    real(r8) :: m1(21), m2(10), ctm2c(21), a(2,2,21), omegar
-    real(r8), parameter :: ID2(2,2) = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape=[2,2])
+    real(r8) :: m1(21), m2(10), ctm2c(21), k0
+    complex(r8) :: AA(21)
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -113,50 +117,45 @@ contains
 
     call start_timer("setup")
 
-    this%epsr(:) = epsr
-    this%epsi(:) = epsi
-    this%mu(:) = mu
-    this%sigma(:) = sigma
-
-    ! non-dimensionalization
+    k0 = omega / this%c0 ! free-space angular wave number
     this%omega = omega
-    omegar = omega / this%c0
 
-    call this%A%set_all(0.0_r8)
+    this%mu(:) = mu
+    this%epsr(:) = epsr
+    this%epsi(:) = epsi + sigma*(this%Z0/k0) ! fold cond into complex perm
+    this%sigma(:) = 0.0_r8 ! it's been folded into the complex permittivity
 
     ! Raw system matrix ignoring boundary condtions
     do j = 1, this%mesh%ncell
       m1 = W1_matrix_WE(this%mesh, j)
       m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
-
-      a(1,1,:) = (1.0_r8/mu(j)) * ctm2c - (omegar**2 * epsr(j)) * m1
-      a(2,2,:) = a(1,1,:)
-
-      a(1,2,:) = (omegar**2 * epsi(j) + omegar * sigma(j) * this%Z0) * m1
-      a(2,1,:) = -a(1,2,:)
-
-!#define SYMMETRIZE
-#ifdef SYMMETRIZE
-      a(2,1,:) = -a(2,1,:)
-      a(2,2,:) = -a(2,2,:)
-#endif
-
-      call this%A%add_to(this%mesh%cedge(:,j), a)
+      AA%re = (1.0_r8/mu(j)) * ctm2c - (epsr(j)*k0**2) * m1
+      AA%im = (-this%epsi(j)*k0**2) * m1
+      call this%AA%add_to(this%mesh%cedge(:,j), AA)
     end do
 
     ! RHS contribution from nxE boundary conditions
     if (allocated(this%ebc)) then
       block
-        real(r8), allocatable :: efield(:,:)
-        allocate(efield(2,this%mesh%nedge), source=0.0_r8)
+        complex(r8) :: efield(this%mesh%nedge)
+        efield = 0.0_r8
         do j = 1, size(this%ebc%index)
-          efield(1,this%ebc%index(j)) = this%ebc%value(j)
+          efield(this%ebc%index(j))%re = this%ebc%value(j)
         end do
-        call this%A%matvec(efield, this%rhs%array)
-        this%rhs%array = efield - this%rhs%array
-        call this%rhs%gather_offp ! necessary?
+        call this%AA%matvec(efield, this%crhs)
+        this%crhs = efield - this%crhs
+        call this%mesh%edge_imap%gather_offp(this%crhs)
       end block
+    end if
+
+    !! Apply the nxE boundary conditions to the system matrix
+    if (allocated(this%ebc)) then
+      do j = 1, size(this%ebc%index)
+        n = this%ebc%index(j)
+        call this%AA%project_out(n)
+        call this%AA%set(n, n, cmplx(1,0,kind=r8))
+      end do
     end if
 
     ! RHS contribution from nxH source boundary conditions
@@ -164,23 +163,21 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-#ifdef SYMMETRIZE
-        this%rhs%array(2,n) = this%rhs%array(2,n) + omegar * this%Z0 * this%hbc%value(j)
-#else
-        this%rhs%array(2,n) = this%rhs%array(2,n) - omegar * this%Z0 * this%hbc%value(j)
-#endif
+        this%crhs(n)%im = this%crhs(n)%im - k0 * this%Z0 * this%hbc%value(j)
       end do
-      call this%rhs%gather_offp ! necessary?
+      call this%mesh%edge_imap%gather_offp(this%crhs)
     end if
 
-    ! Apply nxE boundary conditions to the system matrix
-    if (allocated(this%ebc)) then
-      do j = 1, size(this%ebc%index)
-        n = this%ebc%index(j)
-        call this%A%project_out(n)
-        call this%A%set(n, n, ID2)
-      end do
-    end if
+    !! Copy the complex CSR matrix to an equivalent real 2x2 block CSR matrix
+    call this%A%init(2, this%AA%graph, take_graph=.false.)
+    this%A%values(1,1,:) =  this%AA%values%re
+    this%A%values(2,1,:) =  this%AA%values%im
+    this%A%values(1,2,:) = -this%AA%values%im
+    this%A%values(2,2,:) =  this%AA%values%re
+
+    !! Copy the complex RHS vector to an equivalent real RHS vector
+    this%rhs%array(1,:) = this%crhs%re
+    this%rhs%array(2,:) = this%crhs%im
 
     call stop_timer("setup")
 
@@ -204,9 +201,9 @@ contains
 
   subroutine matvec2(this, x, ax)
     class(fdme_model), intent(in) :: this
-    real(r8), intent(in)  :: x(:,:)
-    real(r8), intent(out) :: ax(:,:)
-    call this%A%matvec(x, ax)
+    complex(r8), intent(in) :: x(:)
+    complex(r8), intent(out) :: ax(:)
+    call this%AA%matvec(x, ax)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)

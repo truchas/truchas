@@ -27,6 +27,7 @@ target_sources(truchas PRIVATE
   vector_class.F90
   complex_lin_op_class.F90
   cs_minres_solver_type.F90
+  complex_pcsr_matrix_type.F90
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)

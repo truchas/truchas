@@ -15,6 +15,7 @@ module fdme_minres_solver_type
   type, extends(complex_lin_op) :: fdme_lin_op
     type(fdme_model), pointer :: model => null() ! unowned reference
     class(fdme_precon), pointer :: my_precon => null() ! unowned reference
+    real(r8), allocatable :: dinv(:)
   contains
     procedure :: matvec
     procedure :: precon
@@ -34,22 +35,33 @@ contains
   subroutine matvec(this, x, y)
     class(fdme_lin_op), intent(inout) :: this
     complex(r8) :: x(:), y(:)
-    real(r8) :: xarray(2,size(x)), yarray(2,size(y))
     call this%model%mesh%edge_imap%gather_offp(x)
-    xarray(1,:) = x%re; xarray(2,:) = x%im
-    call this%model%matvec2(xarray, yarray)
-    y%re = yarray(1,:); y%im = yarray(2,:)
+    call this%model%matvec2(x, y)
   end subroutine
 
   subroutine precon(this, x, y)
     class(fdme_lin_op), intent(inout) :: this
     complex(r8) :: x(:), y(:)
-    real(r8) :: xarray(2,size(x))
-    y = x ! no preconditioning
-    !call this%model%mesh%edge_imap%gather_offp(x)
-    !xarray(1,:) = x%re; xarray(2,:) = x%im
-    !call this%my_precon%apply(xarray)
-    !y%re = xarray(1,:); y%im = xarray(2,:)
+    if (.not.allocated(this%dinv)) then
+      block
+        integer :: j
+        associate (A => this%model%AA)
+          call A%kdiag_init
+          allocate(this%dinv(A%nrow))
+          do j = 1, A%nrow
+            this%dinv(j) = 1.0_r8 / A%values(A%kdiag(j))%re
+          end do
+        end associate
+      end block
+    end if
+    !y = x ! no preconditioning
+    y = this%dinv*x ! diagonal preconditioning
+    !block ! doesn't work with hiptmair (doesn't satisfy requirements)
+    !  real(r8) :: xarray(2,size(x))
+    !  xarray(1,:) = x%re; xarray(2,:) = x%im
+    !  call this%my_precon%apply(xarray)
+    !  y%re = xarray(1,:); y%im = xarray(2,:)
+    !end block
   end subroutine
 
   subroutine init(this, vec, model, precon, params, stat, errmsg)
@@ -72,11 +84,10 @@ contains
     class(fdme_minres_solver), intent(inout) :: this
     type(fdme_vector), intent(inout) :: efield
     integer, intent(out) :: stat
-    complex(r8), allocatable :: x(:), b(:)
+    complex(r8), allocatable :: x(:)!, b(:)
     integer :: n
-    allocate(x(size(efield%array,dim=2)), b(size(this%model%rhs%array,dim=2)))
-    b%re = this%model%rhs%array(1,:); b%im = this%model%rhs%array(2,:)
-    call this%minres%solve(this%lin_op, b, x)
+    allocate(x(size(efield%array,dim=2)))!, b(size(this%model%rhs%array,dim=2)))
+    call this%minres%solve(this%lin_op, this%model%crhs, x)
     efield%array(1,:) = x%re; efield%array(2,:) = x%im
   end subroutine
 

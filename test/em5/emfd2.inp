@@ -43,15 +43,15 @@ the ball are not conforming.
 
 &ELECTROMAGNETICS
   use_emfd_solver = T
-  fd_solver_type = 'gmres'
+  fd_solver_type = 'minres'
   fd_precon_type = 'hiptmair'
   krylov_dim = 5
 
   steps_per_cycle = 12
   steady_state_tol = 0.01
   max_source_cycles = 4
-  rel_tol = 1.0e-8
-  max_iter = 50000
+  rel_tol = 1.0e-10
+  max_iter = 1000000
   c_ratio = 1e-3
   print_level = 2
   graphics_output = T
