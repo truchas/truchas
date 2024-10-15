@@ -42,6 +42,7 @@ contains
   subroutine precon(this, x, y)
     class(fdme_lin_op), intent(inout) :: this
     complex(r8) :: x(:), y(:)
+    integer :: nedge_onP
     if (.not.allocated(this%dinv)) then
       block
         integer :: j
@@ -55,13 +56,70 @@ contains
       end block
     end if
     !y = x ! no preconditioning
-    y = this%dinv*x ! diagonal preconditioning
+    !y = this%dinv*x ! diagonal preconditioning
     !block ! doesn't work with hiptmair (doesn't satisfy requirements)
     !  real(r8) :: xarray(2,size(x))
     !  xarray(1,:) = x%re; xarray(2,:) = x%im
     !  call this%my_precon%apply(xarray)
     !  y%re = xarray(1,:); y%im = xarray(2,:)
     !end block
+    nedge_onP = this%model%mesh%nedge_onP
+    call this%model%mesh%edge_imap%gather_offp(x)
+    y = 0.0_r8
+    call gs_relaxation(this%model%AA, x(:nedge_onP), y, 'fb')
+    call this%model%mesh%edge_imap%scatter_offp_sum(y)
+    call this%model%mesh%edge_imap%gather_offp(y)
+  end subroutine
+
+  subroutine gs_relaxation(a, f, u, pattern)
+
+    use complex_pcsr_matrix_type
+
+    type(complex_pcsr_matrix), intent(inout) :: a
+    complex(r8), intent(in) :: f(:)
+    complex(r8), intent(inout) :: u(:)
+    character(*), intent(in) :: pattern
+
+    integer :: i, i1, i2, di, j, k, n
+    complex(r8) :: s
+
+    ASSERT(a%nrow == a%ncol)
+    ASSERT(size(u) >= a%ncol)
+
+    n = min(a%nrow, size(f))
+
+    if (.not.allocated(a%kdiag)) call a%kdiag_init
+
+    do j = 1, len(pattern)
+      call loop_range(pattern(j:j), n, i1, i2, di)
+      do i = i1, i2, di
+        s = f(i)
+        do k = a%graph%xadj(i), a%graph%xadj(i+1)-1
+          s = s - a%values(k)%re * u(a%graph%adjncy(k))
+        end do
+        u(i) = u(i) + s / a%values(a%kdiag(i))%re
+      end do
+    end do
+
+  end subroutine gs_relaxation
+
+  subroutine loop_range(direction, len, i1, i2, di)
+    character(1), intent(in) :: direction
+    integer, intent(in) :: len
+    integer, intent(out) :: i1, i2, di
+    select case (direction)
+    case ('f', 'F') ! forward sweep
+      i1 = 1
+      i2 = len
+      di = 1
+    case ('b', 'B') ! backward sweep
+      i1 = len
+      i2 = 1
+      di = -1
+    case default
+      INSIST(.false.)
+    end select
+
   end subroutine
 
   subroutine init(this, vec, model, precon, params, stat, errmsg)

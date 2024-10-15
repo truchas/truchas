@@ -43,6 +43,11 @@ module complex_pcsr_matrix_type
     final :: complex_pcsr_matrix_delete
   end type
 
+  !public :: gs_relaxation
+  interface gs_relaxation
+    module procedure gs_relaxation
+  end interface
+
 contains
 
   !! Final subroutine for COMPLEX_PCSR_MATRIX type objects.
@@ -229,6 +234,59 @@ contains
     ASSERT(row >= 1 .and. row <= this%nrow)
     values => this%values(this%graph%xadj(row):this%graph%xadj(row+1)-1)
     indices => this%graph%adjncy(this%graph%xadj(row):this%graph%xadj(row+1)-1)
+  end subroutine
+
+  !!
+  !! Gauss-Seidel relaxation
+  !!
+
+  subroutine gs_relaxation(a, f, u, pattern)
+
+    type(complex_pcsr_matrix), intent(inout) :: a
+    complex(r8), intent(in) :: f(:)
+    complex(r8), intent(inout) :: u(:)
+    character(*), intent(in) :: pattern
+
+    integer :: i, i1, i2, di, j, k, n
+    complex(r8) :: s
+
+    ASSERT(a%nrow == a%ncol)
+    ASSERT(size(u) >= a%ncol)
+
+    n = min(a%nrow, size(f))
+
+    if (.not.allocated(a%kdiag)) call a%kdiag_init
+
+    do j = 1, len(pattern)
+      call loop_range(pattern(j:j), n, i1, i2, di)
+      do i = i1, i2, di
+        s = f(i)
+        do k = a%graph%xadj(i), a%graph%xadj(i+1)-1
+          s = s - a%values(k) * u(a%graph%adjncy(k))
+        end do
+        u(i) = u(i) + s / a%values(a%kdiag(i))
+      end do
+    end do
+
+  end subroutine gs_relaxation
+
+  subroutine loop_range(direction, len, i1, i2, di)
+    character(1), intent(in) :: direction
+    integer, intent(in) :: len
+    integer, intent(out) :: i1, i2, di
+    select case (direction)
+    case ('f', 'F') ! forward sweep
+      i1 = 1
+      i2 = len
+      di = 1
+    case ('b', 'B') ! backward sweep
+      i1 = len
+      i2 = 1
+      di = -1
+    case default
+      INSIST(.false.)
+    end select
+
   end subroutine
 
 end module complex_pcsr_matrix_type
