@@ -415,7 +415,7 @@ contains
 
     allocate(g_scalar(merge(mesh%cell_imap%global_size, 0, is_IOP)))
     call gather(qfield(:mesh%ncell_onP), g_scalar)
-    if (is_IOP) call viz_file%write_cell_dataset('EM_heat', g_scalar, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('Q_EM', g_scalar, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
@@ -424,25 +424,43 @@ contains
 
     l_vector(1,:,:) = w1_vector_on_cells(mesh, efield%array(1,:))
     call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('E_real', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
+    if (is_IOP) g_scalar(:) = sum(g_vector*g_vector,dim=1)
+
     l_vector(2,:,:) = w1_vector_on_cells(mesh, efield%array(2,:))
     call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('E_imag', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('E_im', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    if (is_IOP) then
+      g_scalar(:) = sqrt(g_scalar + sum(g_vector*g_vector,dim=1))
+      call viz_file%write_cell_dataset('|E|', g_scalar, stat, errmsg)
+    end if
     call broadcast(stat)
     INSIST(stat == 0)
 
     l_vector(1,:,:) = w2_vector_on_cells(mesh, bfield(1,:))
     call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('B_real', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('B_re', g_vector, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
+    if (is_IOP) g_scalar(:) = sum(g_vector*g_vector,dim=1)
+
     l_vector(2,:,:) = w2_vector_on_cells(mesh, bfield(2,:))
     call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('B_imag', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('B_im', g_vector, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    if (is_IOP) then
+      g_scalar(:) = sqrt(g_scalar + sum(g_vector*g_vector,dim=1))
+      call viz_file%write_cell_dataset('|B|', g_scalar, stat, errmsg)
+    end if
     call broadcast(stat)
     INSIST(stat == 0)
 

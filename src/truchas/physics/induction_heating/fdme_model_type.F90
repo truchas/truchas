@@ -144,7 +144,6 @@ contains
     ! LHS contribution from Robin boundary conditions
     !FIXME: ONLY CORRECT FOR MU=1
     if (allocated(this%robin_lhs)) then
-print *, 'fdme_model%setup: start robin'
       block
         complex(r8) ::a(6)
         call this%robin_lhs%compute(t)
@@ -154,7 +153,6 @@ print *, 'fdme_model%setup: start robin'
           call this%AA%add_to(this%mesh%fedge(:,n), a)
         end do
       end block
-print *, 'fdme_model%setup: end robin'
     end if
 
     ! RHS contribution from nxE boundary conditions
@@ -175,14 +173,12 @@ print *, 'fdme_model%setup: end robin'
     !FIXME: only correct for uniform mu = 1 (relative). For other mu, it needs to
     !be incorporated into the computation of robin_rhs.
     if (allocated(this%robin_rhs)) then
-print *, 'fdme_model%setup: start robin'
       call this%robin_rhs%compute(t)
       do j = 1, size(this%robin_rhs%index)
         n = this%robin_rhs%index(j)
-        this%crhs%array(n) = this%crhs%array(n) - this%robin_rhs%value(j)
+        this%crhs(n) = this%crhs(n) - this%robin_rhs%value(j)
       end do
       call this%mesh%edge_imap%gather_offp(this%crhs) ! necessary?
-print *, 'fdme_model%setup: end robin'
     end if
 
     !! Apply the nxE boundary conditions to the system matrix

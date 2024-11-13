@@ -127,7 +127,6 @@ contains
       c1 = 1.0_r8 / this%model%mu(j)
       c2 = this%model%epsr(j) * omegar**2
       c3 = -(this%model%epsi(j) * omegar**2 + omegar * this%model%sigma(j) * this%model%Z0)
-print *, c2, -c3
 #ifdef ORIGINAL
       !NB: This results in a different matrix than the actual matrix of the edge-based system.
       !TODO: What is the rationale for the following modification?

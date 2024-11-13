@@ -1,17 +1,7 @@
-################################################################################
-# 
-# AXISYMMETRIC INDUCTION HEATING OF UNIFORM CORE
-# 
-# Cylindrical conductor in a uniform, alternating magnetic field.  Domain is
-# one quarter of a thin cross-sectional slab, surrounded by some free-space.
-# The EM permeability and conductivity are temperature dependent.  The hex mesh
-# does not include any free space region.  The tet mesh conforms to the hex
-# mesh in the conductor, being obtained by subdivision of the hex cells.
-#
-################################################################################
+ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &MESH
-  mesh_file = 'wg2-hex.gen'
+  mesh_file = 'wg1-hex-05.gen'
 /
 
 &OUTPUTS
@@ -51,7 +41,7 @@
   temperature = 300.0
 /
 
-### BOUNDARY CONDITIONS #######################################################
+### BOUNDARY CONDITIONS ########################################################
 
 &THERMAL_BC
   name = 'adiabatic'
@@ -62,28 +52,21 @@
 /
 
 
-### INDUCTION HEATING ##########################################################
+### EM HEATING #################################################################
 
 &EM_MESH
-  mesh_file = 'wg2-tet.gen'
+  mesh_file = 'wg1-tet-05.gen'
 /
 
 &ELECTROMAGNETICS
   use_emfd_solver = T
-  fd_solver_type = 'gmres'
-  fd_precon_type = 'hiptmair'
-  krylov_dim = 20
-  ams_cycle_type = 1
-  abs_tol = 0
+  fd_solver_type = 'minres'
+  fd_precon_type = 'hiptmair' ! ignored for minres but needs some value
   rel_tol = 1e-10
-  max_vec = 5
-  matl_change_threshold = 0.6
-  steps_per_cycle = 36
-  steady_state_tol = 0.01
-  max_source_cycles = 5
-  max_iter = 1000
+  max_iter = 10000
   print_level = 3
   graphics_output = T
+  matl_change_threshold = 0.6
 /
 
 Frequency is specified here :/
