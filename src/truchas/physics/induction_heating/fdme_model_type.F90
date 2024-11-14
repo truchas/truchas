@@ -155,6 +155,8 @@ contains
       end block
     end if
 
+    this%crhs = 0.0_r8
+
     ! RHS contribution from nxE boundary conditions
     if (allocated(this%ebc)) then
       block
