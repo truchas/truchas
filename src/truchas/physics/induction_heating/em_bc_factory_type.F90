@@ -252,7 +252,7 @@ contains
 
   end subroutine alloc_fd_nxH_bc
 
-  subroutine alloc_robin_bc(this, lhs_bc, rhs_bc, stat, errmsg)
+  subroutine alloc_robin_bc(this, lhs_bc, rhs_bc, stat, errmsg, omit_edge_list)
 
     use bndry_cfunc1_class
     use bndry_face_cfunc_type
@@ -262,6 +262,7 @@ contains
     class(bndry_cfunc1), allocatable, intent(out) :: lhs_bc, rhs_bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer, intent(in), optional :: omit_edge_list(:)
 
     type(bndry_face_cfunc), allocatable :: lhs
     type(fd_robin_bndry_func), allocatable :: rhs
@@ -274,7 +275,7 @@ contains
       call lhs%add_complete
     end if
     if (allocated(rhs)) then
-      call rhs%add_complete
+      call rhs%add_complete(omit_edge_list)
     end if
     call move_alloc(lhs, lhs_bc)
     call move_alloc(rhs, rhs_bc)

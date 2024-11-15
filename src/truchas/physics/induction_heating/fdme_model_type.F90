@@ -84,7 +84,11 @@ contains
     end if
     if (stat /= 0) return
 
-    call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg)
+    if (allocated(this%ebc)) then
+      call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg, omit_edge_list=this%ebc%index)
+    else
+      call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg)
+    end if
     if (stat /= 0) return
 
     block

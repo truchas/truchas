@@ -49,11 +49,12 @@ contains
     call this%glist%append(g)
   end subroutine
 
-  subroutine add_complete(this)
+  subroutine add_complete(this, omit_edge_list)
 
     use integer_map_type
 
     class(fd_robin_bndry_func), intent(inout) :: this
+    integer, intent(in), optional :: omit_edge_list(:)
 
     integer :: i, j, n
     type(integer_map) :: edge_map
@@ -72,6 +73,12 @@ contains
       end do
     end do
 
+    if (present(omit_edge_list)) then
+      do j = 1, size(omit_edge_list)
+        call edge_map%remove(omit_edge_list(j))
+      end do
+    end if
+
     n = edge_map%size()
     allocate(this%index(n), this%value(n))
 
@@ -85,6 +92,12 @@ contains
         call edge_map%set(j, n)
       end if
     end do
+
+    if (present(omit_edge_list)) then
+      do j = 1, size(omit_edge_list)
+        call edge_map%set(omit_edge_list(j), 0)
+      end do
+    end if
 
     !! Extract the section of the mesh%fedge array for the specified boundary
     !! faces and re-index the values to point to the tagged edges.
@@ -129,31 +142,37 @@ contains
           end do
 
           ! contribution to face edge 1 (23)
-          s = 0.0_r8
-          do k = 1, 7
-            s = s + GQTRI75_wgt(k)*&
-                (GQTRI75_phi(2,k)*g_dot_nxq(k,3) - GQTRI75_phi(3,k)*g_dot_nxq(k,2))
-          end do
-          j = this%fedge(1,i)
-          this%value(j) = this%value(j) + 0.5_r8 * s
+          if (this%fedge(1,i) > 0) then
+            s = 0.0_r8
+            do k = 1, 7
+              s = s + GQTRI75_wgt(k)*&
+                  (GQTRI75_phi(2,k)*g_dot_nxq(k,3) - GQTRI75_phi(3,k)*g_dot_nxq(k,2))
+            end do
+            j = this%fedge(1,i)
+            this%value(j) = this%value(j) + 0.5_r8 * s
+          end if
 
           ! contribution to face edge 2 (13)
-          s = 0.0_r8
-          do k = 1, 7
-            s = s + GQTRI75_wgt(k)*&
-                (GQTRI75_phi(1,k)*g_dot_nxq(k,3) - GQTRI75_phi(3,k)*g_dot_nxq(k,1))
-          end do
-          j = this%fedge(2,i)
-          this%value(j) = this%value(j) + 0.5_r8 * s
+          if (this%fedge(2,i) > 0) then
+            s = 0.0_r8
+            do k = 1, 7
+              s = s + GQTRI75_wgt(k)*&
+                  (GQTRI75_phi(1,k)*g_dot_nxq(k,3) - GQTRI75_phi(3,k)*g_dot_nxq(k,1))
+            end do
+            j = this%fedge(2,i)
+            this%value(j) = this%value(j) + 0.5_r8 * s
+          end if
 
           ! contribution to face edge 3 (12)
-          s = 0.0_r8
-          do k = 1, 7
-            s = s + GQTRI75_wgt(k)*&
-                (GQTRI75_phi(1,k)*g_dot_nxq(k,2) - GQTRI75_phi(2,k)*g_dot_nxq(k,1))
-          end do
-          j = this%fedge(3,i)
-          this%value(j) = this%value(j) + 0.5_r8 * s
+          if (this%fedge(3,i) > 0) then
+            s = 0.0_r8
+            do k = 1, 7
+              s = s + GQTRI75_wgt(k)*&
+                  (GQTRI75_phi(1,k)*g_dot_nxq(k,2) - GQTRI75_phi(2,k)*g_dot_nxq(k,1))
+            end do
+            j = this%fedge(3,i)
+            this%value(j) = this%value(j) + 0.5_r8 * s
+          end if
         end associate
       end do
     end do
