@@ -17,7 +17,7 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(complex_pcsr_matrix) :: AA
+    type(complex_pcsr_matrix) :: AA, B
     type(pbsr_matrix) :: A
     type(fdme_vector) :: rhs
     complex(r8), allocatable :: crhs(:)
@@ -29,6 +29,7 @@ module fdme_model_type
     ! Non-dimensionalization parameters
     real(r8) :: Z0 ! vacuum impedance
     real(r8) :: c0 ! speed of light
+    logical :: use_mixed_form = .false.
   contains
     procedure :: init
     procedure :: setup
@@ -37,6 +38,9 @@ module fdme_model_type
     procedure :: residual
     procedure :: compute_heat_source
     procedure :: compute_b
+    procedure :: compute_div
+    procedure, private :: init_div_matrix
+    procedure, private :: setup_div_matrix
   end type
 
 contains
@@ -106,7 +110,36 @@ contains
     allocate(this%crhs(this%mesh%nedge))
     call this%rhs%init(this%mesh)
 
+    call this%init_div_matrix ! currently used for diagnostics regardless of solver
+
   end subroutine init
+
+  subroutine init_div_matrix(this)
+
+    class(fdme_model), intent(inout) :: this
+
+    integer :: j, xn, n, xe, e
+    type(pcsr_graph), pointer :: g
+
+    call start_timer("div")
+
+    allocate(g)
+    call g%init(this%mesh%node_imap, this%mesh%edge_imap)
+    do j = 1, this%mesh%ncell
+      do xn = 1, size(this%mesh%cnode(:,j))
+        n = this%mesh%cnode(xn,j)
+        do xe = 1, size(this%mesh%cedge(:,j))
+          e = this%mesh%cedge(xe,j)
+          call g%add_edge(n, e)
+        end do
+      end do
+    end do
+    call g%add_complete
+    call this%B%init(g, take_graph=.true.)
+
+    call stop_timer("div")
+
+  end subroutine init_div_matrix
 
   subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
 
@@ -217,9 +250,55 @@ contains
     this%rhs%array(1,:) = this%crhs%re
     this%rhs%array(2,:) = this%crhs%im
 
+    call this%setup_div_matrix(epsr, epsi) ! currently used for diagnostics regardless of system
+
     call stop_timer("setup")
 
   end subroutine setup
+
+
+  subroutine setup_div_matrix(this, epsr, epsi)
+
+    use mimetic_discretization, only: w1_matrix_we, cell_grad
+    use upper_packed_matrix_procs, only: sym_matmul
+
+    class(fdme_model), intent(inout) :: this
+    real(r8), intent(in) :: epsr(:), epsi(:)
+
+    real(r8) :: bT(6, 4), b(4, 6), m1(21)
+    integer :: j, xn, n, xe, e
+
+    call this%B%set_all(complex(0.0_r8, 0.0_r8))
+
+    do j = 1, this%mesh%ncell
+      m1 = W1_matrix_WE(this%mesh, j)
+      bT = sym_matmul(m1, cell_grad)
+      b = transpose(bT)
+      do xn = 1, size(this%mesh%cnode(:,j))
+        n = this%mesh%cnode(xn,j)
+        do xe = 1, size(this%mesh%cedge(:,j))
+          e = this%mesh%cedge(xe,j)
+          call this%B%add_to(n, e, b(xn, xe) * complex(epsr(j), epsi(j)))
+        end do
+      end do
+    end do
+
+    ! zero Lagrange multipliers on nxE BCs
+    block
+      integer :: xj, nb, xnb, Nn
+      if (allocated(this%ebc)) then
+        do xj = 1, size(this%ebc%index)
+          j = this%ebc%index(xj)
+          where (j == this%B%graph%adjncy) this%B%values = 0
+          do xnb = 1, 2
+            nb = this%mesh%enode(xnb, j)
+            this%B%values(this%B%graph%xadj(nb):this%B%graph%xadj(nb+1)-1) = 0
+          end do
+        end do
+      end if
+    end block
+
+  end subroutine setup_div_matrix
 
 
   subroutine residual(this, e, r)
@@ -280,5 +359,19 @@ contains
     end do
 
   end subroutine compute_heat_source
+
+  subroutine compute_div(this, efield, div_efield)
+    class(fdme_model), intent(inout) :: this
+    class(fdme_vector), intent(inout) :: efield ! inout for gather_offp
+    class(fdme_vector), intent(inout) :: div_efield
+    complex(r8) :: ef(size(efield%array,dim=2)), def(size(efield%array,dim=2))
+    call efield%gather_offp
+    ef(:)%re = efield%array(1,:)
+    ef(:)%im = efield%array(2,:)
+    def = 0
+    call this%B%matvec(ef, def)
+    div_efield%array(1,:) = def(:)%re
+    div_efield%array(2,:) = def(:)%im
+  end subroutine compute_div
 
 end module fdme_model_type

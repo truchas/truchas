@@ -114,6 +114,12 @@ else()
   message(FATAL_ERROR "Could NOT find a suitable HDF5 installation")
 endif()
 
+# MUMPS library
+option(USE_MUMPS "Build with support for the MUMPS direct solver library" ON)
+if (USE_MUMPS)
+  find_package(MUMPS 5.7 REQUIRED)
+endif()
+
 # NetCDF library
 find_package(NetCDF "4.1.3")
 if(NETCDF_FOUND)
@@ -246,6 +252,10 @@ endif()
 
 if(ENABLE_DYNAMIC_LOADING)
   add_compile_definitions(ENABLE_DYNAMIC_LOADING)
+endif()
+
+if(USE_MUMPS)
+  add_compile_definitions(USE_MUMPS)
 endif()
 
 if(USE_PORTAGE)

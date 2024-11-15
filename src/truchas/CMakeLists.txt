@@ -64,6 +64,9 @@ target_link_libraries(truchas PUBLIC
 if(USE_PORTAGE)
   target_link_libraries(truchas PUBLIC portage::portage)
 endif()
+if(USE_MUMPS)
+  target_link_libraries(truchas PUBLIC mumps)
+endif()
 
 target_include_directories(truchas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/utilities>

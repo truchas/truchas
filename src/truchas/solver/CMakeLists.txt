@@ -28,6 +28,10 @@ target_sources(truchas PRIVATE
   complex_lin_op_class.F90
   cs_minres_solver_type.F90
   complex_pcsr_matrix_type.F90
+  dmumps_serial_solver_type.F90
+  zmumps_serial_solver_type.F90
+  dmumps_solver_type.F90
+  zmumps_solver_type.F90
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)

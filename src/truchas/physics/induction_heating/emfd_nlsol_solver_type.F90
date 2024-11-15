@@ -27,6 +27,7 @@ module emfd_nlsol_solver_type
   use fdme_nlk_solver_type
   use fdme_gmres_solver_type
   use fdme_minres_solver_type
+  use fdme_mumps_solver_type
   use simpl_mesh_type
   use parameter_list_type
   use truchas_logging_services
@@ -43,6 +44,7 @@ module emfd_nlsol_solver_type
     type(fdme_gmres_solver), allocatable :: gmres
     type(fdme_minres_solver), allocatable :: minres
     type(fdme_nlk_solver),   allocatable :: nlk
+    type(fdme_mumps_solver), allocatable :: mumps
 
     type(fdme_vector) :: efield ! electric field (real and imaginary parts)
     integer :: print_level
@@ -87,6 +89,8 @@ contains
       allocate(this%minres)
     case ('nlk')
       allocate(this%nlk)
+    case ('mumps')
+      allocate(this%mumps)
     case default
       stat = 1
       errmsg = 'invalid solver-type value: ' // solver_type
@@ -98,17 +102,19 @@ contains
     this%mesh => model%mesh
     call this%efield%init(this%mesh)
 
-    plist => params%sublist('precon')
-    call plist%get('type', choice)
-    select case (choice)
-    case ('ams', 'AMS')
-      allocate(fdme_ams_precon :: this%precon)
-    case ('hiptmair')
-      allocate(fdme_hiptmair_precon :: this%precon)
-    case default
-      call tls_fatal('unknown preconditioner type: ' // choice)
-    end select
-    call this%precon%init(this%model, plist)
+    if (.not.allocated(this%mumps)) then
+      plist => params%sublist('precon')
+      call plist%get('type', choice)
+      select case (choice)
+      case ('ams', 'AMS')
+        allocate(fdme_ams_precon :: this%precon)
+      case ('hiptmair')
+        allocate(fdme_hiptmair_precon :: this%precon)
+      case default
+        call tls_fatal('unknown preconditioner type: ' // choice)
+      end select
+      call this%precon%init(this%model, plist)
+    end if
 
     if (allocated(this%gmres)) then
       call this%gmres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
@@ -116,6 +122,8 @@ contains
       call this%minres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%nlk)) then
       call this%nlk%init(this%efield, this%model, this%precon, params, ierr, errmsg)
+    else if (allocated(this%mumps)) then
+      call this%mumps%init(this%efield, this%model, params, ierr, errmsg)
     else
       INSIST(.false.)
     end if
@@ -130,7 +138,8 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     character(72) :: message
-    call this%precon%setup ! assume that the model has changed
+    call start_timer("solve")
+    if (associated(this%precon)) call this%precon%setup ! assume that the model has changed
     if (allocated(this%gmres)) then
       call this%gmres%solve(efield, stat)
       if (this%print_level > 0) then
@@ -143,10 +152,29 @@ contains
       call this%minres%solve(efield, stat)
     else if (allocated(this%nlk)) then
       call this%nlk%solve(efield, stat)
+    else if (allocated(this%mumps)) then
+      call this%mumps%solve(efield, stat)
     else
       INSIST(.false.)
     end if
     if (stat /= 0) errmsg = 'FDME convergence failure'
+
+    block
+      type(fdme_vector) :: r, div_efield
+      real(r8) :: r_norm2, d_norm2
+      character(128) :: msg
+      call r%init(this%model%rhs)
+      call this%model%residual(efield, r)
+      call div_efield%init(efield)
+      call this%model%compute_div(efield, div_efield)
+      r_norm2 = r%norm2()
+      d_norm2 = div_efield%norm2()
+      write (msg,'(a,2es14.4)') "EMFD solve complete. Residual, divE: ", r_norm2, d_norm2
+      call tls_info(msg)
+      !INSIST(.false.)
+    end block
+
+    call stop_timer("solve")
   end subroutine
 
 end module emfd_nlsol_solver_type

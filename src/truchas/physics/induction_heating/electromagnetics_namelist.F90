@@ -183,6 +183,7 @@ contains
       case ('gmres')
         if (krylov_dim /= NULL_I) call plist%set('krylov-dim', krylov_dim)
       case ('minres')
+      case ('mumps')
       case (NULL_C)
         call TLS_fatal('FD_SOLVER_TYPE not specified')
       case default
@@ -192,17 +193,19 @@ contains
 
       plist => plist%sublist('precon')
 
-      select case (fd_precon_type)
-      case ('ams')
-        if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)
-        if (ams_cycle_type /= NULL_I) call plist%set('ams-cycle-type', ams_cycle_type)
-      case ('hiptmair')
-      case (NULL_C)
-        call TLS_fatal('FD_PRECON_TYPE not specified')
-      case default
-        call TLS_fatal('invalid FD_PRECON_TYPE: ' // fd_precon_type)
-      end select
-      call plist%set('type', fd_precon_type)
+      if (fd_solver_type /= 'mumps') then
+        select case (fd_precon_type)
+        case ('ams')
+          if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)
+          if (ams_cycle_type /= NULL_I) call plist%set('ams-cycle-type', ams_cycle_type)
+        case ('hiptmair')
+        case (NULL_C)
+          call TLS_fatal('FD_PRECON_TYPE not specified')
+        case default
+          call TLS_fatal('invalid FD_PRECON_TYPE: ' // fd_precon_type)
+        end select
+        call plist%set('type', fd_precon_type)
+      end if
 
     else ! Time domain solver parameters
 
