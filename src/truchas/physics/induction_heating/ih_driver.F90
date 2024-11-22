@@ -402,7 +402,8 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(vtkhdf_file) :: viz_file
-    real(r8), allocatable :: g_scalar(:), g_vector(:,:), l_vector(:,:,:)
+    real(r8), allocatable :: g_scalar(:)
+    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -420,49 +421,33 @@ contains
     INSIST(stat == 0)
 
     allocate(g_vector(3,merge(mesh%cell_imap%global_size, 0, is_IOP)))
-    allocate(l_vector(2,3,mesh%ncell))
+    allocate(l_vector(3,mesh%ncell))
 
-    l_vector(1,:,:) = w1_vector_on_cells(mesh, efield%array(1,:))
-    call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector, stat, errmsg)
+    l_vector(:,:)%re = w1_vector_on_cells(mesh, efield%array(1,:))
+    l_vector(:,:)%im = w1_vector_on_cells(mesh, efield%array(2,:))
+    call gather(l_vector(:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
-    if (is_IOP) g_scalar(:) = sum(g_vector*g_vector,dim=1)
-
-    l_vector(2,:,:) = w1_vector_on_cells(mesh, efield%array(2,:))
-    call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('E_im', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('E_im', g_vector%im, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
-    if (is_IOP) then
-      g_scalar(:) = sqrt(g_scalar + sum(g_vector*g_vector,dim=1))
-      call viz_file%write_cell_dataset('|E|', g_scalar, stat, errmsg)
-    end if
+    if (is_IOP) call viz_file%write_cell_dataset('|E|', abs(g_vector), stat, errmsg)
+
+    l_vector(:,:)%re = w2_vector_on_cells(mesh, bfield(1,:))
+    l_vector(:,:)%im = w2_vector_on_cells(mesh, bfield(2,:))
+    call gather(l_vector(:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('B_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
-    l_vector(1,:,:) = w2_vector_on_cells(mesh, bfield(1,:))
-    call gather(l_vector(1,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('B_re', g_vector, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('B_im', g_vector%im, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
-    if (is_IOP) g_scalar(:) = sum(g_vector*g_vector,dim=1)
-
-    l_vector(2,:,:) = w2_vector_on_cells(mesh, bfield(2,:))
-    call gather(l_vector(2,:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('B_im', g_vector, stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    if (is_IOP) then
-      g_scalar(:) = sqrt(g_scalar + sum(g_vector*g_vector,dim=1))
-      call viz_file%write_cell_dataset('|B|', g_scalar, stat, errmsg)
-    end if
-    call broadcast(stat)
-    INSIST(stat == 0)
+    if (is_IOP) call viz_file%write_cell_dataset('|B|', abs(g_vector), stat, errmsg)
 
     if (is_IOP) call viz_file%close
 
