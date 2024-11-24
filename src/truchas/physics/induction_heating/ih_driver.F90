@@ -449,6 +449,12 @@ contains
 
     if (is_IOP) call viz_file%write_cell_dataset('|B|', abs(g_vector), stat, errmsg)
 
+    !! Output the mesh partition
+    call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=mesh%ncell_onP), g_scalar)
+    if (is_IOP) call viz_file%write_cell_dataset('MPI rank', g_scalar, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
     if (is_IOP) call viz_file%close
 
   contains
