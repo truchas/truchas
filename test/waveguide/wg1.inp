@@ -63,7 +63,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   fd_solver_type = 'minres'
   fd_precon_type = 'hiptmair' ! ignored for minres but needs some value
   rel_tol = 1e-10
-  max_iter = 10000
+  max_iter = 100000
   print_level = 3
   graphics_output = T
   matl_change_threshold = 0.6
@@ -98,7 +98,7 @@ Frequency is specified here :/
   specific_heat = 100.0
   conductivity = 1.0
   electric_susceptibility = 3.0
-  electric_susceptibility_im = 0.8
+  electric_susceptibility_im = 0.1
   magnetic_susceptibility = 0
 /
 

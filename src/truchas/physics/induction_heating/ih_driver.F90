@@ -430,7 +430,11 @@ contains
     call broadcast(stat)
     INSIST(stat == 0)
 
+#ifdef GNU_PR117774
+    if (is_IOP) call viz_file%write_cell_dataset('E_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
+#else
     if (is_IOP) call viz_file%write_cell_dataset('E_im', g_vector%im, stat, errmsg)
+#endif
     call broadcast(stat)
     INSIST(stat == 0)
 
@@ -443,7 +447,11 @@ contains
     call broadcast(stat)
     INSIST(stat == 0)
 
+#ifdef GNU_PR117774
+    if (is_IOP) call viz_file%write_cell_dataset('B_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
+#else
     if (is_IOP) call viz_file%write_cell_dataset('B_im', g_vector%im, stat, errmsg)
+#endif
     call broadcast(stat)
     INSIST(stat == 0)
 
