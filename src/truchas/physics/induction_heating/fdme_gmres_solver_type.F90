@@ -2,6 +2,7 @@
 
 module fdme_gmres_solver_type
 
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use gmres_left_solver_class
   use fdme_vector_type
   use fdme_model_type
@@ -21,6 +22,7 @@ module fdme_gmres_solver_type
   type, public :: fdme_gmres_solver
     type(fdme_model), pointer :: model => null() ! unowned reference
     type(my_gmres_solver) :: gmres
+    type(fdme_vector) :: efield, rhs
   contains
     procedure :: init
     procedure :: solve
@@ -28,26 +30,31 @@ module fdme_gmres_solver_type
 
 contains
 
-  subroutine init(this, vec, model, precon, params, stat, errmsg)
+  subroutine init(this, model, precon, params, stat, errmsg)
     use parameter_list_type
     class(fdme_gmres_solver), intent(out) :: this
-    type(fdme_vector), intent(in) :: vec
     type(fdme_model), pointer :: model !TODO: don't make a pointer
     class(fdme_precon), intent(in), target :: precon
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     this%model => model
-    call this%gmres%init(vec, params, stat, errmsg)
+    call this%efield%init(model%mesh) ! initialized to 0
+    call this%rhs%init(model%mesh)
+    call this%gmres%init(this%efield, params, stat, errmsg)
     this%gmres%model => model
     this%gmres%precon => precon
   end subroutine
 
   subroutine solve(this, efield, stat)
     class(fdme_gmres_solver), intent(inout) :: this
-    type(fdme_vector), intent(inout) :: efield
+    complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
-    call this%gmres%solve(this%model%rhs, efield, stat)
+    this%rhs%array(1,:) = this%model%rhs%re
+    this%rhs%array(2,:) = this%model%rhs%im
+    call this%gmres%solve(this%rhs, this%efield, stat)
+    efield%re = this%efield%array(1,:)
+    efield%im = this%efield%array(2,:)
   end subroutine
 
   subroutine matvec(this, x, Ax)
@@ -57,7 +64,7 @@ contains
     type is (fdme_vector)
       select type (Ax)
       type is (fdme_vector)
-        call this%model%matvec(x, Ax)
+        call this%model%A2%matvec(x%array, Ax%array)
       end select
     end select
   end subroutine

@@ -25,8 +25,11 @@ target_sources(truchas PRIVATE
   bsr_matrix_type.F90
   #cgsol_type.F90 UNUSED + NEEDS UPDATING TO COMPILE
   vector_class.F90
+  zvector_class.F90
   complex_lin_op_class.F90
+  complex_lin_op2_class.F90
   cs_minres_solver_type.F90
+  cs_minres_solver2_type.F90
   complex_pcsr_matrix_type.F90
   dmumps_serial_solver_type.F90
   zmumps_serial_solver_type.F90
@@ -35,7 +38,7 @@ target_sources(truchas PRIVATE
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  set_source_files_properties(cs_minres_solver_type.F90
+  set_source_files_properties(cs_minres_solver_type.F90 dmumps_solver_type.F90 zmumps_solver_type.F90
     TARGET_DIRECTORY truchas PROPERTIES COMPILE_OPTIONS "-mismatch")
 endif()
 

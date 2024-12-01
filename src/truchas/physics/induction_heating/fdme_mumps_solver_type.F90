@@ -16,6 +16,7 @@ module fdme_mumps_solver_type
     type(fdme_model), pointer :: model => null() ! unowned reference
     type(zmumps_solver) :: zmumps
     type(dmumps_solver) :: dmumps
+    type(fdme_vector) :: efield, rhs
 
     ! used for converting pbsr to pcsr
     type(index_map), pointer :: imap => null()
@@ -39,16 +40,17 @@ contains
   end subroutine fdme_mumps_solver_delete
 
 
-  subroutine init(this, vec, model, params, stat, errmsg)
+  subroutine init(this, model, params, stat, errmsg)
     use parameter_list_type
     class(fdme_mumps_solver), intent(out) :: this
-    type(fdme_vector), intent(in) :: vec
     type(fdme_model), pointer :: model !TODO: don't make a pointer
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     stat = 0
     this%model => model
+    call this%efield%init(model%mesh) ! initialized to 0
+    call this%rhs%init(model%mesh)
     if (this%use_complex_mumps) then
       call this%zmumps%init(0, stat) !, 3)
     else
@@ -58,23 +60,27 @@ contains
 
   subroutine solve(this, efield, stat)
     class(fdme_mumps_solver), intent(inout) :: this
-    type(fdme_vector), intent(inout) :: efield
+    complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
+    this%rhs%array(1,:) = this%model%rhs%re
+    this%rhs%array(2,:) = this%model%rhs%im
     if (this%model%use_mixed_form) then
-      call this%solve_mixed(efield, stat)
+      call this%solve_mixed(this%rhs, this%efield, stat)
     else
-      call this%solve_nonmixed(efield, stat)
+      call this%solve_nonmixed(this%rhs, this%efield, stat)
     end if
+    efield%re = this%efield%array(1,:)
+    efield%im = this%efield%array(2,:)
   end subroutine solve
 
 
   ! Solves the mixed formulation
-  subroutine solve_mixed(this, efield, stat)
+  subroutine solve_mixed(this, rhs, efield, stat)
 
     use truchas_logging_services
 
     class(fdme_mumps_solver), intent(inout) :: this
-    type(fdme_vector), intent(inout) :: efield
+    type(fdme_vector), intent(inout) :: rhs, efield
     integer, intent(out) :: stat
 
     integer :: Ne, Nn
@@ -120,8 +126,8 @@ contains
     ! !   !       if (e1 > this%model%mesh%nedge_onp) cycle
     ! !   !       do xe2 = 1, 6
     ! !   !         e2 = this%model%mesh%cedge(xe2,j)
-    ! !   !         ! xi = this%model%A%graph%index(e1, e2)
-    ! !   !         ! if (xi > 0) print *, "debugA: ", e1, e2, this%model%A%values(xi)
+    ! !   !         ! xi = this%model%A2%graph%index(e1, e2)
+    ! !   !         ! if (xi > 0) print *, "debugA: ", e1, e2, this%model%A2%values(xi)
     ! !   !         xi = this%model%Am%graph%index(this%model%ic%eval(e1,1), this%model%ic%eval(e2,1))
     ! !   !         if (xi > 0) print *, "debugAm: ", e1, e2, this%model%Am%values(xi)
     ! !   !       end do
@@ -148,8 +154,8 @@ contains
     ! call stop_timer("mumps-setup")
 
     ! call start_timer("mumps-solve")
-    ! this%bc(1:Ne) = this%model%rhs%array(1,1:Ne)
-    ! this%bc(Ne+1:2*Ne) = this%model%rhs%array(2,1:Ne)
+    ! this%bc(1:Ne) = rhs%array(1,1:Ne)
+    ! this%bc(Ne+1:2*Ne) = rhs%array(2,1:Ne)
     ! this%bc(2*Ne+1:) = 0
     ! !call tls_info("mumps solve")
     ! call this%mumps%solve(this%bc, this%xc, stat)
@@ -215,13 +221,13 @@ contains
   end subroutine pbsr_to_pcsr
 
 
-  subroutine solve_nonmixed(this, efield, stat)
+  subroutine solve_nonmixed(this, rhs, efield, stat)
 
     use pbsr_matrix_type
     use pcsr_matrix_type
 
     class(fdme_mumps_solver), intent(inout) :: this
-    type(fdme_vector), intent(inout) :: efield
+    type(fdme_vector), intent(inout) :: rhs, efield
     integer, intent(out) :: stat
 
     type(pcsr_matrix) :: Ac
@@ -232,9 +238,9 @@ contains
 
     call start_timer("mumps-setup")
     if (this%use_complex_mumps) then
-      call this%zmumps%setup(this%model%AA, stat)
+      call this%zmumps%setup(this%model%A, stat)
     else
-      call this%pbsr_to_pcsr(this%model%A, Ac)
+      call this%pbsr_to_pcsr(this%model%A2, Ac)
       call this%dmumps%setup(Ac, stat)
     end if
     if (stat /= 0) return
@@ -264,28 +270,28 @@ contains
 
     call start_timer("mumps-solve")
     if (this%use_complex_mumps) then
-      if (.not.allocated(this%xc)) allocate(this%xc(this%model%AA%nrow))
+      if (.not.allocated(this%xc)) allocate(this%xc(this%model%A%nrow))
       this%xc(:)%re = efield%array(1,:)
       this%xc(:)%im = efield%array(2,:)
-      call this%zmumps%solve(this%model%crhs, this%xc, stat)
+      call this%zmumps%solve(this%model%rhs, this%xc, stat)
       efield%array(1,:) = this%xc(:)%re
       efield%array(2,:) = this%xc(:)%im
     else
-      if (.not.allocated(this%br)) allocate(this%br(this%model%A%bsize*this%model%A%nrow))
-      if (.not.allocated(this%xr)) allocate(this%xr(this%model%A%bsize*this%model%A%nrow))
+      if (.not.allocated(this%br)) allocate(this%br(this%model%A2%bsize*this%model%A2%nrow))
+      if (.not.allocated(this%xr)) allocate(this%xr(this%model%A2%bsize*this%model%A2%nrow))
 
-      do i = 1, this%model%A%nrow
-        do ii = 1, this%model%A%bsize
-          ic = this%model%A%bsize * (i - 1) + ii
-          this%br(ic) = this%model%rhs%array(ii, i)
+      do i = 1, this%model%A2%nrow
+        do ii = 1, this%model%A2%bsize
+          ic = this%model%A2%bsize * (i - 1) + ii
+          this%br(ic) = rhs%array(ii, i)
         end do
       end do
 
       call this%dmumps%solve(this%br, this%xr, stat)
 
-      do i = 1, this%model%A%nrow
-        do ii = 1, this%model%A%bsize
-          ic = this%model%A%bsize * (i - 1) + ii
+      do i = 1, this%model%A2%nrow
+        do ii = 1, this%model%A2%bsize
+          ic = this%model%A2%bsize * (i - 1) + ii
           efield%array(ii, i) = this%xr(ic)
         end do
       end do

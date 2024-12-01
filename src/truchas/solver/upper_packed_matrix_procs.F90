@@ -36,7 +36,7 @@ module upper_packed_matrix_procs
   end interface
 
   interface upm_quad_form
-    procedure upm_quad_form_f77, upm_quad_form_f90
+    procedure upm_quad_form_f77, upm_quad_form_f90, upm_zquad_form_f90
   end interface
 
   interface upm_inner_prod
@@ -351,6 +351,30 @@ contains
         l = l + 1
       end do
       s = s + a(l)*x(i)*x(i)
+      l = l + 1
+    end do
+    xtax = s
+  end function
+
+  !! Compute the quadratic form x^H A x where A is a real symmetric matrix
+  !! in upper packed storage format and x is a complex vector.
+
+  pure function upm_zquad_form_f90(a, x) result(xtax)
+    !use,intrinsic :: iso_fortran_env, only: r16 => real128
+    real(r8), intent(in) :: a(:)
+    complex(r8), intent(in) :: x(:)
+    real(r8) :: xtax
+    integer :: i, j, l
+    !real(r16) :: s ! quad precision accumulator
+    real(r8) :: s
+    s = 0.0_r8
+    l = 1
+    do i = 1, size(x)
+      do j = 1, i-1
+        s = s + 2*a(l)*(x(i)%re*x(j)%re + x(i)%im*x(j)%im)
+        l = l + 1
+      end do
+      s = s + a(l)*(x(i)%re*x(i)%re + x(i)%im*x(i)%im)
       l = l + 1
     end do
     xtax = s

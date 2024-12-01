@@ -4,8 +4,6 @@ module fdme_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
-  use vector_class
-  use fdme_vector_type
   use complex_pcsr_matrix_type
   use pbsr_matrix_type
   use bndry_func1_class
@@ -17,10 +15,9 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(complex_pcsr_matrix) :: AA, B
-    type(pbsr_matrix) :: A
-    type(fdme_vector) :: rhs
-    complex(r8), allocatable :: crhs(:)
+    type(complex_pcsr_matrix) :: A, B, BT
+    complex(r8), allocatable :: rhs(:)
+    type(pbsr_matrix) :: A2
     real(r8) :: omega
     real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
@@ -33,31 +30,15 @@ module fdme_model_type
   contains
     procedure :: init
     procedure :: setup
-    procedure :: matvec
-    procedure :: matvec2
     procedure :: residual
+    procedure :: compute_bfield
     procedure :: compute_heat_source
-    procedure :: compute_b
     procedure :: compute_div
     procedure, private :: init_div_matrix
     procedure, private :: setup_div_matrix
   end type
 
 contains
-
-  subroutine compute_b(this, e, b)
-    use mimetic_discretization, only: curl
-    class(fdme_model), intent(in) :: this
-    real(r8), intent(in)  :: e(:,:)
-    real(r8), intent(out) :: b(:,:)
-    ASSERT(size(e,1) == 2)
-    ASSERT(size(e,2) == this%mesh%nedge)
-    ASSERT(size(b,1) == 2)
-    ASSERT(size(b,2) == this%mesh%nface)
-    b(1,:) = (-1.0/this%omega) * curl(this%mesh,e(2,:))
-    b(2,:) =  (1.0/this%omega) * curl(this%mesh,e(1,:))
-    call this%mesh%face_imap%gather_offp(b)
-  end subroutine
 
   subroutine init(this, mesh, bc_fac, params, stat, errmsg)
 
@@ -101,14 +82,13 @@ contains
       call g%init(this%mesh%edge_imap)
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
-      call this%AA%init(g, take_graph=.true.)
+      call this%A%init(g, take_graph=.true.)
     end block
 
     n = this%mesh%ncell
     allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
 
-    allocate(this%crhs(this%mesh%nedge))
-    call this%rhs%init(this%mesh)
+    allocate(this%rhs(this%mesh%nedge))
 
     call this%init_div_matrix ! currently used for diagnostics regardless of solver
 
@@ -119,23 +99,27 @@ contains
     class(fdme_model), intent(inout) :: this
 
     integer :: j, xn, n, xe, e
-    type(pcsr_graph), pointer :: g
+    type(pcsr_graph), pointer :: g1, g2
 
     call start_timer("div")
 
-    allocate(g)
-    call g%init(this%mesh%node_imap, this%mesh%edge_imap)
+    allocate(g1, g2)
+    call g1%init(this%mesh%node_imap, this%mesh%edge_imap)
+    call g2%init(this%mesh%edge_imap, this%mesh%node_imap)
     do j = 1, this%mesh%ncell
       do xn = 1, size(this%mesh%cnode(:,j))
         n = this%mesh%cnode(xn,j)
         do xe = 1, size(this%mesh%cedge(:,j))
           e = this%mesh%cedge(xe,j)
-          call g%add_edge(n, e)
+          call g1%add_edge(n, e)
+          call g2%add_edge(e, n)
         end do
       end do
     end do
-    call g%add_complete
-    call this%B%init(g, take_graph=.true.)
+    call g1%add_complete
+    call g2%add_complete
+    call this%B%init(g1, take_graph=.true.)
+    call this%BT%init(g2, take_graph=.true.)
 
     call stop_timer("div")
 
@@ -151,7 +135,7 @@ contains
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), k0
-    complex(r8) :: AA(21)
+    complex(r8) :: Aj(21)
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -173,9 +157,9 @@ contains
       m1 = W1_matrix_WE(this%mesh, j)
       m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
-      AA%re = (1.0_r8/mu(j)) * ctm2c - (epsr(j)*k0**2) * m1
-      AA%im = (-this%epsi(j)*k0**2) * m1
-      call this%AA%add_to(this%mesh%cedge(:,j), AA)
+      Aj%re = (1.0_r8/mu(j)) * ctm2c - (epsr(j)*k0**2) * m1
+      Aj%im = (-this%epsi(j)*k0**2) * m1
+      call this%A%add_to(this%mesh%cedge(:,j), Aj)
     end do
 
     ! LHS contribution from Robin boundary conditions
@@ -187,12 +171,12 @@ contains
         do j = 1, size(this%robin_lhs%index)
           n = this%robin_lhs%index(j)
           a = -this%robin_lhs%value(j) * w1_face_matrix(this%mesh, n)
-          call this%AA%add_to(this%mesh%fedge(:,n), a)
+          call this%A%add_to(this%mesh%fedge(:,n), a)
         end do
       end block
     end if
 
-    this%crhs = 0.0_r8
+    this%rhs = 0.0_r8
 
     ! RHS contribution from nxE boundary conditions
     if (allocated(this%ebc)) then
@@ -202,9 +186,9 @@ contains
         do j = 1, size(this%ebc%index)
           efield(this%ebc%index(j))%re = this%ebc%value(j)
         end do
-        call this%AA%matvec(efield, this%crhs)
-        this%crhs = efield - this%crhs
-        call this%mesh%edge_imap%gather_offp(this%crhs)
+        call this%A%matvec(efield, this%rhs)
+        this%rhs = efield - this%rhs
+        call this%mesh%edge_imap%gather_offp(this%rhs)
       end block
     end if
 
@@ -215,17 +199,17 @@ contains
       call this%robin_rhs%compute(t)
       do j = 1, size(this%robin_rhs%index)
         n = this%robin_rhs%index(j)
-        this%crhs(n) = this%crhs(n) - this%robin_rhs%value(j)
+        this%rhs(n) = this%rhs(n) - this%robin_rhs%value(j)
       end do
-      call this%mesh%edge_imap%gather_offp(this%crhs) ! necessary?
+      call this%mesh%edge_imap%gather_offp(this%rhs) ! necessary?
     end if
 
     !! Apply the nxE boundary conditions to the system matrix
     if (allocated(this%ebc)) then
       do j = 1, size(this%ebc%index)
         n = this%ebc%index(j)
-        call this%AA%project_out(n)
-        call this%AA%set(n, n, cmplx(1,0,kind=r8))
+        call this%A%project_out(n)
+        call this%A%set(n, n, cmplx(1,0,kind=r8))
       end do
     end if
 
@@ -234,21 +218,17 @@ contains
       call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        this%crhs(n)%im = this%crhs(n)%im - k0 * this%Z0 * this%hbc%value(j)
+        this%rhs(n)%im = this%rhs(n)%im - k0 * this%Z0 * this%hbc%value(j)
       end do
-      call this%mesh%edge_imap%gather_offp(this%crhs)
+      call this%mesh%edge_imap%gather_offp(this%rhs)
     end if
 
     !! Copy the complex CSR matrix to an equivalent real 2x2 block CSR matrix
-    call this%A%init(2, this%AA%graph, take_graph=.false.)
-    this%A%values(1,1,:) =  this%AA%values%re
-    this%A%values(2,1,:) =  this%AA%values%im
-    this%A%values(1,2,:) = -this%AA%values%im
-    this%A%values(2,2,:) =  this%AA%values%re
-
-    !! Copy the complex RHS vector to an equivalent real RHS vector
-    this%rhs%array(1,:) = this%crhs%re
-    this%rhs%array(2,:) = this%crhs%im
+    call this%A2%init(2, this%A%graph, take_graph=.false.)
+    this%A2%values(1,1,:) =  this%A%values%re
+    this%A2%values(2,1,:) =  this%A%values%im
+    this%A2%values(1,2,:) = -this%A%values%im
+    this%A2%values(2,2,:) =  this%A%values%re
 
     call this%setup_div_matrix(epsr, epsi) ! currently used for diagnostics regardless of system
 
@@ -267,18 +247,21 @@ contains
 
     real(r8) :: bT(6, 4), b(4, 6), m1(21)
     integer :: j, xn, n, xe, e
+    complex(r8) :: c
 
-    call this%B%set_all(complex(0.0_r8, 0.0_r8))
+    call this%B%set_all(cmplx(0, 0, kind=r8))
 
     do j = 1, this%mesh%ncell
       m1 = W1_matrix_WE(this%mesh, j)
       bT = sym_matmul(m1, cell_grad)
       b = transpose(bT)
+      c = cmplx(epsr(j), epsi(j), kind=r8)
       do xn = 1, size(this%mesh%cnode(:,j))
         n = this%mesh%cnode(xn,j)
         do xe = 1, size(this%mesh%cedge(:,j))
           e = this%mesh%cedge(xe,j)
-          call this%B%add_to(n, e, b(xn, xe) * complex(epsr(j), epsi(j)))
+          call this%B%add_to(n, e, c*b(xn, xe))
+          call this%BT%add_to(e, n, c*bT(xe, xn))
         end do
       end do
     end do
@@ -303,24 +286,22 @@ contains
 
   subroutine residual(this, e, r)
     class(fdme_model), intent(in) :: this
-    class(fdme_vector), intent(inout) :: e, r
-    call e%gather_offp
-    call this%A%matvec(e%array, r%array)
-    r%array = this%rhs%array - r%array
-    !call r%gather_offp ! not necessary
+    complex(r8), intent(inout) :: e(:), r(:)
+    call this%mesh%edge_imap%gather_offp(e)
+    call this%A%matvec(e, r)
+    r = this%rhs - r
+    !call this%mesh%edge_imap%gather_offp(r) ! not necessary?
   end subroutine
 
-  subroutine matvec(this, x, ax)
+  subroutine compute_bfield(this, efield, bfield)
+    use mimetic_discretization, only: curl
     class(fdme_model), intent(in) :: this
-    type(fdme_vector), intent(inout) :: x, ax
-    call this%A%matvec(x%array, ax%array)
-  end subroutine
-
-  subroutine matvec2(this, x, ax)
-    class(fdme_model), intent(in) :: this
-    complex(r8), intent(in) :: x(:)
-    complex(r8), intent(out) :: ax(:)
-    call this%AA%matvec(x, ax)
+    complex(r8), intent(in)  :: efield(:)
+    complex(r8), intent(out) :: bfield(:)
+    ASSERT(size(efield) == this%mesh%nedge)
+    ASSERT(size(bfield) == this%mesh%nface)
+    bfield%re = (-1.0/this%omega) * curl(this%mesh,efield%im)
+    bfield%im =  (1.0/this%omega) * curl(this%mesh,efield%re)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)
@@ -329,12 +310,13 @@ contains
     use upper_packed_matrix_procs, only: upm_quad_form
 
     class(fdme_model), intent(in) :: this
-    type(fdme_vector), intent(in) :: efield
+    complex(r8), intent(in) :: efield(:)
     real(r8), intent(out) :: q(:)
 
-    real(r8) :: efield2, q_joule, q_dielectric, m1(21)
+    real(r8) :: efield2, q_joule, q_dielectric
     integer :: j
 
+    ASSERT(size(efield) == this%mesh%nedge)
     ASSERT(size(q) <= this%mesh%ncell)
 
     do j = 1, size(q)
@@ -344,11 +326,7 @@ contains
       end if
 
       ! compute |E|^2 on cell j
-      associate(efield_r => efield%array(1,this%mesh%cedge(:,j)), &
-                efield_i => efield%array(2,this%mesh%cedge(:,j)))
-        m1 = W1_matrix_WE(this%mesh, j)
-        efield2 = upm_quad_form(m1, efield_r) + upm_quad_form(m1, efield_i)
-      end associate
+      efield2 = upm_quad_form(W1_matrix_WE(this%mesh,j), efield(this%mesh%cedge(:,j)))
 
       ! compute heat sources
       q_joule = this%sigma(j) * efield2 / 2
@@ -362,16 +340,13 @@ contains
 
   subroutine compute_div(this, efield, div_efield)
     class(fdme_model), intent(inout) :: this
-    class(fdme_vector), intent(inout) :: efield ! inout for gather_offp
-    class(fdme_vector), intent(inout) :: div_efield
-    complex(r8) :: ef(size(efield%array,dim=2)), def(size(efield%array,dim=2))
-    call efield%gather_offp
-    ef(:)%re = efield%array(1,:)
-    ef(:)%im = efield%array(2,:)
-    def = 0
-    call this%B%matvec(ef, def)
-    div_efield%array(1,:) = def(:)%re
-    div_efield%array(2,:) = def(:)%im
+    complex(r8), intent(inout) :: efield(:) ! inout for gather_offp
+    complex(r8), intent(out) :: div_efield(:)
+    ASSERT(size(efield) == this%mesh%nedge)
+    ASSERT(size(div_efield) == this%mesh%nnode)
+    call this%mesh%edge_imap%gather_offp(efield)
+    call this%B%matvec(efield, div_efield)
+    call this%mesh%node_imap%gather_offp(div_efield)
   end subroutine compute_div
 
 end module fdme_model_type

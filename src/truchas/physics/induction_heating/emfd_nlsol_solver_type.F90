@@ -18,8 +18,6 @@
 module emfd_nlsol_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
-  use fdme_vector_type
   use fdme_model_type
   use fdme_precon_class
   use fdme_ams_precon_type
@@ -27,6 +25,7 @@ module emfd_nlsol_solver_type
   use fdme_nlk_solver_type
   use fdme_gmres_solver_type
   use fdme_minres_solver_type
+  use fdme_minres_solver2_type
   use fdme_mumps_solver_type
   use simpl_mesh_type
   use parameter_list_type
@@ -42,11 +41,11 @@ module emfd_nlsol_solver_type
     type(fdme_model), pointer :: model => null()
     class(fdme_precon), pointer :: precon => null()
     type(fdme_gmres_solver), allocatable :: gmres
-    type(fdme_minres_solver), allocatable :: minres
+    !type(fdme_minres_solver), allocatable :: minres
+    type(fdme_minres_solver2), allocatable :: minres
     type(fdme_nlk_solver),   allocatable :: nlk
     type(fdme_mumps_solver), allocatable :: mumps
 
-    type(fdme_vector) :: efield ! electric field (real and imaginary parts)
     integer :: print_level
   contains
     procedure :: init
@@ -98,9 +97,7 @@ contains
     end select
 
     this%model => model
-
     this%mesh => model%mesh
-    call this%efield%init(this%mesh)
 
     if (.not.allocated(this%mumps)) then
       plist => params%sublist('precon')
@@ -117,13 +114,13 @@ contains
     end if
 
     if (allocated(this%gmres)) then
-      call this%gmres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
+      call this%gmres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%minres)) then
-      call this%minres%init(this%efield, this%model, this%precon, params, ierr, errmsg)
+      call this%minres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%nlk)) then
-      call this%nlk%init(this%efield, this%model, this%precon, params, ierr, errmsg)
+      call this%nlk%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%mumps)) then
-      call this%mumps%init(this%efield, this%model, params, ierr, errmsg)
+      call this%mumps%init(this%model, params, ierr, errmsg)
     else
       INSIST(.false.)
     end if
@@ -133,11 +130,13 @@ contains
 
 
   subroutine solve(this, efield, stat, errmsg)
+
     class(emfd_nlsol_solver), intent(inout) :: this
-    type(fdme_vector), intent(inout) :: efield
+    complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     character(72) :: message
+
     call start_timer("solve")
     if (associated(this%precon)) call this%precon%setup ! assume that the model has changed
     if (allocated(this%gmres)) then
@@ -160,15 +159,16 @@ contains
     if (stat /= 0) errmsg = 'FDME convergence failure'
 
     block
-      type(fdme_vector) :: r, div_efield
+      use parallel_communication, only: global_sum
+      complex(r8) :: r(this%mesh%nedge), div_efield(this%mesh%nnode)
       real(r8) :: r_norm2, d_norm2
       character(128) :: msg
-      call r%init(this%model%rhs)
       call this%model%residual(efield, r)
-      call div_efield%init(efield)
       call this%model%compute_div(efield, div_efield)
-      r_norm2 = r%norm2()
-      d_norm2 = div_efield%norm2()
+      r_norm2 = dot_product(r, r)
+      r_norm2 = sqrt(global_sum(r_norm2))
+      d_norm2 = dot_product(div_efield, div_efield)
+      d_norm2 = sqrt(global_sum(d_norm2))
       write (msg,'(a,2es14.4)') "EMFD solve complete. Residual, divE: ", r_norm2, d_norm2
       call tls_info(msg)
       !INSIST(.false.)

@@ -333,7 +333,7 @@ contains
     use simpl_mesh_type
     use em_bc_factory_type
     use fdme_model_type
-    use fdme_vector_type
+    use fdme_zvector_type
     use parameter_list_type
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
     use emfd_nlsol_solver_type
@@ -347,11 +347,11 @@ contains
     type(fdme_model), target :: model
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
-    real(r8) :: t, omega, bfield(2,mesh%nface)
+    real(r8) :: t, omega
+    complex(r8) :: efield(mesh%nedge), bfield(mesh%nface)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
-    type(fdme_vector) :: efield
 
     call model%init(mesh, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
@@ -365,15 +365,13 @@ contains
     !TODO? rework solver to use absolute eps and mu?
     call model%setup(t, eps/vacuum_permittivity, epsi/vacuum_permittivity, mu/vacuum_permeability, sigma, omega)
 
-    call efield%init(mesh)
-    call efield%setval(0.0_r8) ! initial guess
+    efield = 0 ! initial guess
     call solver%solve(efield, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-
-    call efield%gather_offp
+    call mesh%edge_imap%gather_offp(efield)
 
     call model%compute_heat_source(efield, q)
-    call model%compute_b(efield%array, bfield)
+    call model%compute_bfield(efield, bfield)
     bfield = (1.0_r8 / vacuum_permeability) * bfield !WHY? hack to get H?
 
     !! Graphics output
@@ -391,13 +389,12 @@ contains
   subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, stat, errmsg)
 
     use vtkhdf_file_type
-    use fdme_vector_type
     use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
 
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: qfield(:), bfield(:,:)
-    type(fdme_vector), intent(inout) :: efield
+    real(r8), intent(in) :: qfield(:)
+    complex(r8), intent(inout) :: efield(:), bfield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -423,8 +420,8 @@ contains
     allocate(g_vector(3,merge(mesh%cell_imap%global_size, 0, is_IOP)))
     allocate(l_vector(3,mesh%ncell))
 
-    l_vector(:,:)%re = w1_vector_on_cells(mesh, efield%array(1,:))
-    l_vector(:,:)%im = w1_vector_on_cells(mesh, efield%array(2,:))
+    l_vector(:,:)%re = w1_vector_on_cells(mesh, efield%re)
+    l_vector(:,:)%im = w1_vector_on_cells(mesh, efield%im)
     call gather(l_vector(:,:mesh%ncell_onP), g_vector)
     if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
@@ -440,8 +437,8 @@ contains
 
     if (is_IOP) call viz_file%write_cell_dataset('|E|', abs(g_vector), stat, errmsg)
 
-    l_vector(:,:)%re = w2_vector_on_cells(mesh, bfield(1,:))
-    l_vector(:,:)%im = w2_vector_on_cells(mesh, bfield(2,:))
+    l_vector(:,:)%re = w2_vector_on_cells(mesh, bfield%re)
+    l_vector(:,:)%im = w2_vector_on_cells(mesh, bfield%im)
     call gather(l_vector(:,:mesh%ncell_onP), g_vector)
     if (is_IOP) call viz_file%write_cell_dataset('B_re', g_vector%re, stat, errmsg)
     call broadcast(stat)

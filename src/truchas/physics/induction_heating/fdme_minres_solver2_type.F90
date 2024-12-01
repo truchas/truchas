@@ -1,17 +1,18 @@
 #include "f90_assert.fpp"
 
-module fdme_minres_solver_type
+module fdme_minres_solver2_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use complex_lin_op_class
+  use complex_lin_op2_class
+  use fdme_zvector_type
   use fdme_model_type
   use fdme_precon_class
-  use vector_class
-  use cs_minres_solver_type
+  use zvector_class
+  use cs_minres_solver2_type
   implicit none
   private
 
-  type, extends(complex_lin_op) :: fdme_lin_op
+  type, extends(complex_lin_op2) :: fdme_lin_op
     type(fdme_model), pointer :: model => null() ! unowned reference
     class(fdme_precon), pointer :: my_precon => null() ! unowned reference
     real(r8), allocatable :: dinv(:)
@@ -20,10 +21,11 @@ module fdme_minres_solver_type
     procedure :: precon
   end type
 
-  type, public :: fdme_minres_solver
+  type, public :: fdme_minres_solver2
     type(fdme_model), pointer :: model => null() ! unowned reference
-    type(cs_minres_solver) :: minres
+    type(cs_minres_solver2) :: minres
     type(fdme_lin_op) :: lin_op
+    type(fdme_zvector) :: efield, rhs
   contains
     procedure :: init
     procedure :: solve
@@ -31,16 +33,49 @@ module fdme_minres_solver_type
 
 contains
 
+  subroutine init(this, model, precon, params, stat, errmsg)
+    use parameter_list_type
+    class(fdme_minres_solver2), intent(out) :: this
+    type(fdme_model), pointer :: model !TODO: don't make a pointer
+    class(fdme_precon), intent(in), target :: precon
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    this%model => model
+    call this%efield%init(model%mesh) ! initialized to 0
+    call this%rhs%init(model%mesh)
+    call this%minres%init(params)
+    this%lin_op%model => model
+    this%lin_op%my_precon => precon
+    stat = 0
+  end subroutine
+
+  subroutine solve(this, efield, stat)
+    class(fdme_minres_solver2), intent(inout) :: this
+    complex(r8), intent(inout) :: efield(:)
+    integer, intent(out) :: stat
+    this%rhs%u(:) = this%model%rhs
+    call this%minres%solve(this%lin_op, this%rhs, this%efield)
+    efield(:) = this%efield%u
+    stat = 0 !FIXME: need to extract from minres
+  end subroutine
+
   subroutine matvec(this, x, y)
     class(fdme_lin_op), intent(inout) :: this
-    complex(r8) :: x(:), y(:)
-    call this%model%mesh%edge_imap%gather_offp(x)
-    call this%model%A%matvec(x, y)
+    class(zvector) :: x, y
+    select type (x)
+    type is (fdme_zvector)
+      select type (y)
+      type is (fdme_zvector)
+        call x%gather_offp
+        call this%model%A%matvec(x%u, y%u)
+      end select
+    end select
   end subroutine
 
   subroutine precon(this, x, y)
     class(fdme_lin_op), intent(inout) :: this
-    complex(r8) :: x(:), y(:)
+    class(zvector) :: x, y
     integer :: nedge_onP
     if (.not.allocated(this%dinv)) then
       block
@@ -62,12 +97,18 @@ contains
     !  call this%my_precon%apply(xarray)
     !  y%re = xarray(1,:); y%im = xarray(2,:)
     !end block
-    nedge_onP = this%model%mesh%nedge_onP
-    call this%model%mesh%edge_imap%gather_offp(x)
-    y = 0.0_r8
-    call gs_relaxation(this%model%A, x(:nedge_onP), y, 'fb')
-    call this%model%mesh%edge_imap%scatter_offp_sum(y)
-    call this%model%mesh%edge_imap%gather_offp(y)
+    select type (x)
+    type is (fdme_zvector)
+      select type (y)
+      type is (fdme_zvector)
+        nedge_onP = this%model%mesh%nedge_onP
+        call x%gather_offp
+        y%u = 0
+        call gs_relaxation(this%model%A, x%u(:nedge_onP), y%u, 'fb')
+        call this%model%mesh%edge_imap%scatter_offp_sum(y%u)
+        call y%gather_offp ! necessary?
+      end select
+    end select
   end subroutine
 
   subroutine gs_relaxation(A, f, u, pattern)
@@ -121,27 +162,4 @@ contains
 
   end subroutine
 
-  subroutine init(this, model, precon, params, stat, errmsg)
-    use parameter_list_type
-    class(fdme_minres_solver), intent(out) :: this
-    type(fdme_model), pointer :: model !TODO: don't make a pointer
-    class(fdme_precon), intent(in), target :: precon
-    type(parameter_list), intent(inout) :: params
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-    this%model => model
-    call this%minres%init(model%mesh%nedge_onP, params)
-    this%lin_op%model => model
-    this%lin_op%my_precon => precon
-    stat = 0
-  end subroutine
-
-  subroutine solve(this, efield, stat)
-    class(fdme_minres_solver), intent(inout) :: this
-    complex(r8), intent(inout) :: efield(:)
-    integer, intent(out) :: stat
-    call this%minres%solve(this%lin_op, this%model%rhs, efield)
-    stat = 0 !FIXME: need to extract from minres
-  end subroutine
-
-end module fdme_minres_solver_type
+end module fdme_minres_solver2_type
