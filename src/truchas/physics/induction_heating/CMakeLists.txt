@@ -25,6 +25,7 @@ target_sources(truchas PRIVATE
   fdme_model_type.F90
   fdme_vector_type.F90
   fdme_zvector_type.F90
+  fdme_mixed_zvector_type.F90
   fdme_precon_class.F90
   fdme_ams_precon_type.F90
   fdme_hiptmair_precon_type.F90
@@ -32,6 +33,7 @@ target_sources(truchas PRIVATE
   fdme_gmres_solver_type.F90
   fdme_minres_solver_type.F90
   fdme_minres_solver2_type.F90
+  fdme_mixed_minres_solver_type.F90
   fdme_mumps_solver_type.F90
   emfd_nlsol_solver_type.F90
   fd_robin_bndry_func_type.F90

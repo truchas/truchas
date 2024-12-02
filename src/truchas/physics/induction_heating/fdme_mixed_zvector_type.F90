@@ -10,14 +10,15 @@ module fdme_mixed_zvector_type
 
   type, extends(zvector), public :: fdme_mixed_zvector
     type(simpl_mesh), pointer :: mesh => null()
-    complex(r8), allocatable :: u(:)  ! edge-based unknowns
-    complex(r8), allocatable :: p(:)  ! node-based lagrange multipliers
+    complex(r8), allocatable :: w1(:)  ! edge-based unknowns (W^1 space)
+    complex(r8), allocatable :: w0(:)  ! node-based lagrange multipliers (W^0 space)
   contains
     !! Deferred base class procedures
     procedure :: clone1
     procedure :: clone2
     procedure :: copy_
     procedure :: setval
+    procedure :: setzero
     procedure :: conjg1_
     procedure :: conjg2_
     procedure :: scale
@@ -45,8 +46,8 @@ contains
     class(fdme_mixed_zvector), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     this%mesh => mesh
-    allocate(this%u(mesh%nedge), source=cmplx(0,0,kind=r8))
-    allocate(this%p(mesh%nnode), source=cmplx(0,0,kind=r8))
+    allocate(this%w1(mesh%nedge), source=cmplx(0,0,kind=r8))
+    allocate(this%w0(mesh%nnode), source=cmplx(0,0,kind=r8))
   end subroutine
 
   !! Specific subroutine for the generic INIT. Initialize a FDME_MIXED_ZVECTOR
@@ -60,8 +61,8 @@ contains
 
   subroutine gather_offp(this)
     class(fdme_mixed_zvector), intent(inout) :: this
-    call this%mesh%edge_imap%gather_offp(this%u)
-    call this%mesh%node_imap%gather_offp(this%p)
+    call this%mesh%edge_imap%gather_offp(this%w1)
+    call this%mesh%node_imap%gather_offp(this%w0)
   end subroutine
 
   subroutine clone1(this, clone)
@@ -82,26 +83,32 @@ contains
     class(zvector), intent(in) :: src
     select type (src)
     class is (fdme_mixed_zvector)
-      dest%u(:) = src%u
-      dest%p(:) = src%p
+      dest%w1(:) = src%w1
+      dest%w0(:) = src%w0
     end select
   end subroutine
 
   subroutine setval(this, val)
     class(fdme_mixed_zvector), intent(inout) :: this
     complex(r8), intent(in) :: val
-    this%u = val
-    this%p = val
+    this%w1 = val
+    this%w0 = val
+  end subroutine
+
+  subroutine setzero(this)
+    class(fdme_mixed_zvector), intent(inout) :: this
+    this%w1 = 0
+    this%w0 = 0
   end subroutine
 
   subroutine conjg1_(this)
     class(fdme_mixed_zvector), intent(inout) :: this
     integer :: j
     do j = 1, this%mesh%nedge_onP
-      this%u(j)%im = -this%u(j)%im
+      this%w1(j)%im = -this%w1(j)%im
     end do
     do j = 1, this%mesh%nnode_onP
-      this%p(j)%im = -this%p(j)%im
+      this%w0(j)%im = -this%w0(j)%im
     end do
   end subroutine
 
@@ -112,12 +119,12 @@ contains
     select type (src)
     type is (fdme_mixed_zvector)
       do j = 1, this%mesh%nedge_onP
-        this%u(j) = conjg(src%u(j))
+        this%w1(j) = conjg(src%w1(j))
       end do
       do j = 1, this%mesh%nnode_onP
-        this%p(j) = conjg(src%p(j))
+        this%w0(j) = conjg(src%w0(j))
       end do
-    end do
+    end select
   end subroutine
 
   subroutine scale(this, a)
@@ -125,10 +132,10 @@ contains
     complex(r8), intent(in) :: a
     integer :: j
     do j = 1, this%mesh%nedge_onP
-      this%u(j) = a * this%u(j)
+      this%w1(j) = a * this%w1(j)
     end do
     do j = 1, this%mesh%nnode_onP
-      this%p(j) = a * this%p(j)
+      this%w0(j) = a * this%w0(j)
     end do
   end subroutine
 
@@ -141,10 +148,10 @@ contains
     select type (x)
     class is (fdme_mixed_zvector)
       do j = 1, this%mesh%nedge_onP
-        this%u(j) = a * x%u(j) + this%u(j)
+        this%w1(j) = a * x%w1(j) + this%w1(j)
       end do
       do j = 1, this%mesh%nnode_onP
-        this%p(j) = a * x%p(j) + this%p(j)
+        this%w0(j) = a * x%w0(j) + this%w0(j)
       end do
     end select
   end subroutine
@@ -159,17 +166,17 @@ contains
     class is (fdme_mixed_zvector)
       if (b == 0) then
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j)
+          this%w1(j) = a * x%w1(j)
         end do
         do j = 1, this%mesh%nnode_onP
-          this%p(j) = a * x%p(j)
+          this%w0(j) = a * x%w0(j)
         end do
       else
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j) + b * this%u(j)
+          this%w1(j) = a * x%w1(j) + b * this%w1(j)
         end do
         do j = 1, this%mesh%nnode_onP
-          this%p(j) = a * x%p(j) + b * this%p(j)
+          this%w0(j) = a * x%w0(j) + b * this%w0(j)
         end do
       end if
     end select
@@ -180,15 +187,16 @@ contains
     class(fdme_mixed_zvector), intent(inout) :: this
     class(zvector), intent(in) :: x, y
     complex(r8), intent(in) :: a, b
+    integer :: j
     select type (x)
     class is (fdme_mixed_zvector)
       select type (y)
       class is (fdme_mixed_zvector)
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j) + b * y%u(j) + this%u(j)
+          this%w1(j) = a * x%w1(j) + b * y%w1(j) + this%w1(j)
         end do
         do j = 1, this%mesh%nnode_onP
-          this%p(j) = a * x%p(j) + b * y%p(j) + this%p(j)
+          this%w0(j) = a * x%w0(j) + b * y%w0(j) + this%w0(j)
         end do
       end select
     end select
@@ -199,23 +207,24 @@ contains
     class(fdme_mixed_zvector), intent(inout) :: this
     class(zvector), intent(in) :: x, y
     complex(r8), intent(in) :: a, b, c
+    integer :: j
     select type (x)
     class is (fdme_mixed_zvector)
       select type (y)
       class is (fdme_mixed_zvector)
         if (c == 0) then
           do j = 1, this%mesh%nedge_onP
-            this%u(j) = a * x%u(j) + b * y%u(j)
+            this%w1(j) = a * x%w1(j) + b * y%w1(j)
           end do
           do j = 1, this%mesh%nnode_onP
-            this%p(j) = a * x%p(j) + b * y%p(j)
+            this%w0(j) = a * x%w0(j) + b * y%w0(j)
           end do
         else
           do j = 1, this%mesh%nedge_onP
-            this%u(j) = a * x%u(j) + b * y%u(j) + c * this%u(j)
+            this%w1(j) = a * x%w1(j) + b * y%w1(j) + c * this%w1(j)
           end do
           do j = 1, this%mesh%nnode_onP
-            this%p(j) = a * x%p(j) + b * y%p(j) + c * this%p(j)
+            this%w0(j) = a * x%w0(j) + b * y%w0(j) + c * this%w0(j)
           end do
         end if
       end select
@@ -231,10 +240,10 @@ contains
     class is (fdme_mixed_zvector)
       dp = 0
       do j = 1, x%mesh%nedge_onP
-        dp = dp + conjg(x%u(j)) * y%u(j)
+        dp = dp + conjg(x%w1(j)) * y%w1(j)
       end do
       do j = 1, x%mesh%nnode_onP
-        dp = dp + conjg(x%p(j)) * y%p(j)
+        dp = dp + conjg(x%w0(j)) * y%w0(j)
       end do
       dp = global_sum(dp)
     end select
@@ -246,10 +255,10 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = norm + abs(this%u(j))
+      norm = norm + abs(this%w1(j))
     end do
     do j = 1, this%mesh%nnode_onP
-      norm = norm + abs(this%p(j))
+      norm = norm + abs(this%w0(j))
     end do
     norm = global_sum(norm)
   end function
@@ -260,10 +269,10 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = norm + this%u(j)%re**2 + this%u(j)%im**2
+      norm = norm + this%w1(j)%re**2 + this%w1(j)%im**2
     end do
     do j = 1, this%mesh%nnode_onP
-      norm = norm + this%p(j)%re**2 + this%p(j)%im**2
+      norm = norm + this%w0(j)%re**2 + this%w0(j)%im**2
     end do
     norm = sqrt(global_sum(norm))
   end function
@@ -274,10 +283,10 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = max(norm, abs(this%u(j))
+      norm = max(norm, abs(this%w1(j)))
     end do
     do j = 1, this%mesh%nnode_onP
-      norm = max(norm, abs(this%p(j))
+      norm = max(norm, abs(this%w0(j)))
     end do
     norm = global_maxval(norm)
   end function
@@ -293,15 +302,15 @@ contains
     if (present(full)) strict = .not.full
     if (strict) then
       !NB: newer versions of md5_hash_type support complex data directly
-      call hash%update(this%u(:this%mesh%nedge_onP)%re)
-      call hash%update(this%u(:this%mesh%nedge_onP)%im)
-      call hash%update(this%p(:this%mesh%nnode_onP)%re)
-      call hash%update(this%p(:this%mesh%nnode_onP)%im)
+      call hash%update(this%w1(:this%mesh%nedge_onP)%re)
+      call hash%update(this%w1(:this%mesh%nedge_onP)%im)
+      call hash%update(this%w0(:this%mesh%nnode_onP)%re)
+      call hash%update(this%w0(:this%mesh%nnode_onP)%im)
     else
-      call hash%update(this%u%re)
-      call hash%update(this%u%im)
-      call hash%update(this%p%re)
-      call hash%update(this%p%im)
+      call hash%update(this%w1%re)
+      call hash%update(this%w1%im)
+      call hash%update(this%w0%re)
+      call hash%update(this%w0%im)
     end if
     string = hash%hexdigest()
   end function
