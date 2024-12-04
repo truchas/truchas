@@ -372,7 +372,6 @@ contains
 
     call model%compute_heat_source(efield, q)
     call model%compute_bfield(efield, bfield)
-    bfield = (1.0_r8 / vacuum_permeability) * bfield !WHY? hack to get H?
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)
@@ -380,24 +379,25 @@ contains
     if (flag) then
       call params%get('graphics-file', filename, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-      call emfd_vtk_graphics(filename, mesh, q, efield, bfield, stat, errmsg)
+      call emfd_vtk_graphics(filename, mesh, q, efield, bfield, mu, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     end if
 
   end subroutine compute_joule_heat_emfd
 
-  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, stat, errmsg)
+  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, stat, errmsg)
 
     use vtkhdf_file_type
     use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
 
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: qfield(:)
+    real(r8), intent(in) :: qfield(:), mu(:)
     complex(r8), intent(inout) :: efield(:), bfield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    integer :: j
     type(vtkhdf_file) :: viz_file
     real(r8), allocatable :: g_scalar(:)
     complex(r8), allocatable :: g_vector(:,:), l_vector(:,:)
@@ -439,20 +439,23 @@ contains
 
     l_vector(:,:)%re = w2_vector_on_cells(mesh, bfield%re)
     l_vector(:,:)%im = w2_vector_on_cells(mesh, bfield%im)
+    do j = 1, size(mu) ! convert cell-centered B to H
+      l_vector(:,j) = l_vector(:,j) / mu(j)
+    end do
     call gather(l_vector(:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('B_re', g_vector%re, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('H_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 
 #ifdef GNU_PR117774
-    if (is_IOP) call viz_file%write_cell_dataset('B_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('H_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
 #else
-    if (is_IOP) call viz_file%write_cell_dataset('B_im', g_vector%im, stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('H_im', g_vector%im, stat, errmsg)
 #endif
     call broadcast(stat)
     INSIST(stat == 0)
 
-    if (is_IOP) call viz_file%write_cell_dataset('|B|', abs(g_vector), stat, errmsg)
+    if (is_IOP) call viz_file%write_cell_dataset('|H|', abs(g_vector), stat, errmsg)
 
     !! Output the mesh partition
     call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=mesh%ncell_onP), g_scalar)

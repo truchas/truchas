@@ -300,8 +300,8 @@ contains
     complex(r8), intent(out) :: bfield(:)
     ASSERT(size(efield) == this%mesh%nedge)
     ASSERT(size(bfield) == this%mesh%nface)
-    bfield%re = (-1.0/this%omega) * curl(this%mesh,efield%im)
-    bfield%im =  (1.0/this%omega) * curl(this%mesh,efield%re)
+    bfield%re =  (1.0/this%omega) * curl(this%mesh,efield%im)
+    bfield%im = (-1.0/this%omega) * curl(this%mesh,efield%re)
   end subroutine
 
   subroutine compute_heat_source(this, efield, q)
