@@ -120,9 +120,9 @@ module zvector_class
     procedure(update3), deferred :: update3_
     procedure(update4), deferred :: update4_
     procedure(dotc), deferred :: dotc_
+#endif
     procedure(conjg1), deferred :: conjg1_
     procedure(conjg2), deferred :: conjg2_
-#endif
   end type zvector
 
   abstract interface
