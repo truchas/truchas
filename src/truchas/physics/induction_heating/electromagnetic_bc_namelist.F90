@@ -95,7 +95,7 @@ contains
         ! no parameters
       case ('ih-hfield')
         ! no parameters
-      case ('robin')
+      case ('wg-port')
         ! no parameters yet
       case default
         call TLS_fatal(label // ': unknown TYPE: ' // trim(type))

@@ -267,9 +267,9 @@ contains
     type(bndry_face_cfunc), allocatable :: lhs
     type(fd_robin_bndry_func), allocatable :: rhs
 
-    call TLS_info('  generating "robin" electromagnetic boundary condition')
+    call TLS_info('  generating "wg-port" electromagnetic boundary condition')
 
-    call this%iterate_list('robin', proc, stat, errmsg)
+    call this%iterate_list('wg-port', wg_port_proc, stat, errmsg)
     if (stat /= 0) return
     if (allocated(lhs)) then
       call lhs%add_complete
@@ -284,11 +284,11 @@ contains
   contains
 
     !! This call-back subroutine processes parameter list data that is specific
-    !! to the robin BC specification and incrementally builds the BC objects
+    !! to the wg-port BC specification and incrementally builds the BC objects
     !! accordingly. NB: The LHS, RHS and MESH objects are accessed from the parent
     !! subroutine through host association.
 
-    subroutine proc(plist, setids, stat, errmsg)
+    subroutine wg_port_proc(plist, setids, stat, errmsg)
       use complex_scalar_func_class
       use complex_vector_func_class
       use fptr_complex_vector_func_type
@@ -320,7 +320,7 @@ contains
         call rhs%init(this%mesh)
       end if
       call rhs%add(g, setids, stat, errmsg)
-    end subroutine
+    end subroutine wg_port_proc
 
   end subroutine alloc_robin_bc
 
