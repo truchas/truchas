@@ -1,6 +1,5 @@
 target_sources(truchas PRIVATE
-  scalar_func_table.F90
-  vector_func_table.F90
+  func_table.F90
   function_namelist.F90
   vfunction_namelist.F90
   scalar_func_class.F90

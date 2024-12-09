@@ -28,7 +28,7 @@ module material_namelist
   use input_utilities
   use string_utilities, only: i_to_c
   use parameter_list_type
-  use scalar_func_table
+  use func_table
   use truchas_logging_services
   implicit none
   private
@@ -602,7 +602,7 @@ contains
     else if (const /= NULL_R) then
       call plist%set(pname, const)
     else if (fname /= NULL_C) then
-      if (known_func(fname)) then
+      if (known_scalar_func(fname)) then
         call plist%set(pname, trim(fname))
       else
         call TLS_fatal(label // ': unknown function for ' // bname // '_FUNC: ' // trim(fname))
@@ -633,7 +633,7 @@ contains
     else if (const /= NULL_R) then
       call plist%set(pname // i_to_c(index), const)
     else if (fname /= NULL_C) then
-      if (known_func(fname)) then
+      if (known_scalar_func(fname)) then
         call plist%set(pname // i_to_c(index), trim(fname))
       else
         call TLS_fatal(label // ': unknown function for ' // bname // &

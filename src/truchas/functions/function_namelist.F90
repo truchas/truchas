@@ -34,7 +34,7 @@ module function_namelist
   use string_utilities, only: lower_case, raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
   use scalar_func_factories
-  use scalar_func_table, only: known_func, insert_func
+  use func_table, only: known_scalar_func, insert_func
   use truchas_logging_services
   implicit none
   private
@@ -137,7 +137,7 @@ contains
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal (label // ': NAME must be assigned a nonempty value')
-      if (known_func(name)) then
+      if (known_scalar_func(name)) then
         call TLS_fatal (label // ': another FUNCTION namelist has this NAME: ' // trim(name))
       end if
 

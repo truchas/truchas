@@ -34,7 +34,7 @@ module vfunction_namelist
   use string_utilities, only: raise_case, i_to_c
   use input_utilities, only: seek_to_namelist
   use vector_func_factories
-  use vector_func_table, only: known_func, insert_func
+  use func_table, only: known_vector_func, insert_func
   use toolhead_driver, only: table
   use truchas_logging_services
   implicit none
@@ -121,7 +121,7 @@ contains
 
       !! Check the user-supplied name.
       if (name == NULL_C .or. name == '') call TLS_fatal(label // ': NAME must be assigned a nonempty value')
-      if (known_func(name)) then
+      if (known_vector_func(name)) then
         call TLS_fatal(label // ': another VFUNCTION namelist has this NAME: ' // trim(name))
       end if
 
