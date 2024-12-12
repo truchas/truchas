@@ -100,7 +100,7 @@ contains
     allocate(this%rhs(this%mesh%nedge))
 
     call params%get('use-mixed-form', this%use_mixed_form, stat, errmsg, default=.false.)
-    if (stat /= 0) call TLS_fatal('FDME_MODEL_INIT: ' // errmsg)
+    if (stat /= 0) return
     call this%init_div_matrix ! currently used for diagnostics regardless of solver
     if (this%use_mixed_form) call this%init_mixed_matrix
 
