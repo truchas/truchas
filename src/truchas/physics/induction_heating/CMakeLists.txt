@@ -37,4 +37,5 @@ target_sources(truchas PRIVATE
   fdme_mumps_solver_type.F90
   emfd_nlsol_solver_type.F90
   fd_robin_bndry_func_type.F90
+  index_corrector_type.F90
 )

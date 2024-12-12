@@ -60,8 +60,9 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &ELECTROMAGNETICS
   use_emfd_solver = T
+  !use_mixed_form = T
   fd_solver_type = 'minres'
-  fd_precon_type = 'hiptmair' ! ignored for minres but needs some value
+  !fd_solver_type = 'mumps'
   rel_tol = 1e-10
   max_iter = 100000
   print_level = 3
@@ -71,6 +72,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 
 Frequency is specified here :/
 &INDUCTION_SOURCE_FIELD
+  !frequency = 500.0
   frequency = 2.45d9
   uniform_strength = 1
   orientation = 'z'

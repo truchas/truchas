@@ -29,9 +29,9 @@ contains
     !! EM heating model namelist variables
     real(r8) :: matl_change_threshold
     character(32) :: data_mapper_kind
-    logical :: use_emfd_solver, graphics_output
+    logical :: use_emfd_solver, graphics_output, use_mixed_form
     namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, use_emfd_solver, &
-        graphics_output
+        use_mixed_form, graphics_output
 
     !! Time-domain method namelist variables
     integer :: steps_per_cycle, max_source_cycles
@@ -79,6 +79,7 @@ contains
     matl_change_threshold = NULL_R
     data_mapper_kind = NULL_C
     use_emfd_solver = .false.
+    use_mixed_form = .false.
     graphics_output = .false.
 
     steps_per_cycle = NULL_I
@@ -115,6 +116,7 @@ contains
     call broadcast(matl_change_threshold)
     call broadcast(data_mapper_kind)
     call broadcast(use_emfd_solver)
+    call broadcast(use_mixed_form)
     call broadcast(graphics_output)
 
     call broadcast(steps_per_cycle)
@@ -169,6 +171,7 @@ contains
     if (use_emfd_solver) then ! Frequency-domain solver parameters
 
       plist => params%sublist('emfd-solver')
+      call plist%set('use-mixed-form', use_mixed_form)
       call plist%set('graphics-output', graphics_output)
 
       if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
@@ -193,7 +196,7 @@ contains
 
       plist => plist%sublist('precon')
 
-      if (fd_solver_type /= 'mumps') then
+      if (fd_solver_type /= 'mumps' .and. fd_solver_type /= 'minres') then
         select case (fd_precon_type)
         case ('ams')
           if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)

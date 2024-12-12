@@ -26,6 +26,7 @@ module emfd_nlsol_solver_type
   use fdme_gmres_solver_type
   use fdme_minres_solver_type
   use fdme_minres_solver2_type
+  use fdme_mixed_minres_solver_type
   use fdme_mumps_solver_type
   use simpl_mesh_type
   use parameter_list_type
@@ -43,6 +44,7 @@ module emfd_nlsol_solver_type
     type(fdme_gmres_solver), allocatable :: gmres
     !type(fdme_minres_solver), allocatable :: minres
     type(fdme_minres_solver2), allocatable :: minres
+    type(fdme_mixed_minres_solver), allocatable :: mixed_minres
     type(fdme_nlk_solver),   allocatable :: nlk
     type(fdme_mumps_solver), allocatable :: mumps
 
@@ -85,7 +87,11 @@ contains
     case ('gmres')
       allocate(this%gmres)
     case ('minres')
-      allocate(this%minres)
+      if (model%use_mixed_form) then
+        allocate(this%mixed_minres)
+      else
+        allocate(this%minres)
+      end if
     case ('nlk')
       allocate(this%nlk)
     case ('mumps')
@@ -99,7 +105,8 @@ contains
     this%model => model
     this%mesh => model%mesh
 
-    if (.not.allocated(this%mumps)) then
+    if (.not.allocated(this%mumps) .and. .not.allocated(this%minres) &
+        .and. .not.allocated(this%mixed_minres)) then
       plist => params%sublist('precon')
       call plist%get('type', choice)
       select case (choice)
@@ -117,6 +124,8 @@ contains
       call this%gmres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%minres)) then
       call this%minres%init(this%model, this%precon, params, ierr, errmsg)
+    else if (allocated(this%mixed_minres)) then
+      call this%mixed_minres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%nlk)) then
       call this%nlk%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%mumps)) then
@@ -149,6 +158,8 @@ contains
       end if
     else if (allocated(this%minres)) then
       call this%minres%solve(efield, stat)
+    else if (allocated(this%mixed_minres)) then
+      call this%mixed_minres%solve(efield, stat)
     else if (allocated(this%nlk)) then
       call this%nlk%solve(efield, stat)
     else if (allocated(this%mumps)) then
@@ -165,10 +176,8 @@ contains
       character(128) :: msg
       call this%model%residual(efield, r)
       call this%model%compute_div(efield, div_efield)
-      r_norm2 = dot_product(r, r)
-      r_norm2 = sqrt(global_sum(r_norm2))
-      d_norm2 = dot_product(div_efield, div_efield)
-      d_norm2 = sqrt(global_sum(d_norm2))
+      r_norm2 = global_norm2(r(:this%mesh%nedge_onP))
+      d_norm2 = global_norm2(div_efield(:this%mesh%nnode_onP))
       write (msg,'(a,2es14.4)') "EMFD solve complete. Residual, divE: ", r_norm2, d_norm2
       call tls_info(msg)
       !INSIST(.false.)
@@ -176,5 +185,12 @@ contains
 
     call stop_timer("solve")
   end subroutine
+
+  real(r8) function global_norm2(f)
+    use parallel_communication, only: global_sum
+    complex(r8), intent(in) :: f(:)
+    global_norm2 = dot_product(f, f)
+    global_norm2 = sqrt(global_sum(global_norm2))
+  end function
 
 end module emfd_nlsol_solver_type

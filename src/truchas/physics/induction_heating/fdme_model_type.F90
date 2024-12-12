@@ -5,11 +5,14 @@ module fdme_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
   use complex_pcsr_matrix_type
+  use pcsr_matrix_type
   use pbsr_matrix_type
   use bndry_func1_class
   use bndry_vfunc_class
   use bndry_cfunc1_class
   use truchas_timers
+  use index_map_type
+  use index_corrector_type
   implicit none
   private
 
@@ -26,7 +29,11 @@ module fdme_model_type
     ! Non-dimensionalization parameters
     real(r8) :: Z0 ! vacuum impedance
     real(r8) :: c0 ! speed of light
-    logical :: use_mixed_form = .false.
+
+    logical :: use_mixed_form
+    type(pcsr_matrix) :: Am
+    type(complex_pcsr_matrix) :: cAm
+    type(index_corrector) :: icr, icc
   contains
     procedure :: init
     procedure :: setup
@@ -36,6 +43,8 @@ module fdme_model_type
     procedure :: compute_div
     procedure, private :: init_div_matrix
     procedure, private :: setup_div_matrix
+    procedure, private :: init_mixed_matrix
+    procedure, private :: setup_mixed_matrix
   end type
 
 contains
@@ -90,7 +99,10 @@ contains
 
     allocate(this%rhs(this%mesh%nedge))
 
+    call params%get('use-mixed-form', this%use_mixed_form, stat, errmsg, default=.false.)
+    if (stat /= 0) call TLS_fatal('FDME_MODEL_INIT: ' // errmsg)
     call this%init_div_matrix ! currently used for diagnostics regardless of solver
+    if (this%use_mixed_form) call this%init_mixed_matrix
 
   end subroutine init
 
@@ -231,6 +243,7 @@ contains
     this%A2%values(2,2,:) =  this%A%values%re
 
     call this%setup_div_matrix(epsr, epsi) ! currently used for diagnostics regardless of system
+    if (this%use_mixed_form) call this%setup_mixed_matrix
 
     call stop_timer("setup")
 
@@ -348,5 +361,136 @@ contains
     call this%B%matvec(efield, div_efield)
     call this%mesh%node_imap%gather_offp(div_efield)
   end subroutine compute_div
+
+
+  !!! MIXED FORMULATION ROUTINES !!!!!!!!!!!!!!!!!
+  subroutine init_mixed_matrix(this)
+
+    class(fdme_model), intent(inout) :: this
+
+    integer :: i, xj, j, xnb, nb
+    type(pcsr_graph), pointer :: gr => null(), gc => null()
+
+    call start_timer("mixed")
+
+    !! Set up a new imap for the 4-variable system: 2 edge-centered variables
+    !! (real and imaginary E-field) and 2 node-centered variables (real and
+    !! imaginary Lagrange multiplier).
+    call this%icr%init([this%mesh%edge_imap, this%mesh%edge_imap, &
+        this%mesh%node_imap, this%mesh%node_imap])
+    call this%icc%init([this%mesh%edge_imap, this%mesh%node_imap])
+
+    allocate(gr, gc)
+    call gr%init(this%icr%imap)
+    call gc%init(this%icc%imap)
+
+    do i = 1, this%A%nrow
+      do xj = this%A%graph%xadj(i), this%A%graph%xadj(i+1)-1
+        j = this%A%graph%adjncy(xj)
+
+        call gr%add_edge(this%icr%eval(i,1), this%icr%eval(j,1))
+        call gr%add_edge(this%icr%eval(i,1), this%icr%eval(j,2))
+        call gr%add_edge(this%icr%eval(i,2), this%icr%eval(j,1))
+        call gr%add_edge(this%icr%eval(i,2), this%icr%eval(j,2))
+
+        call gc%add_edge(this%icc%eval(i,1), this%icc%eval(j,1))
+      end do
+    end do
+
+    do i = 1, this%B%nrow ! nnode
+      do xj = this%B%graph%xadj(i), this%B%graph%xadj(i+1)-1
+        j = this%B%graph%adjncy(xj) ! nedge
+
+        call gr%add_edge(this%icr%eval(i,3), this%icr%eval(j,1))
+        call gr%add_edge(this%icr%eval(i,4), this%icr%eval(j,2))
+        call gr%add_edge(this%icr%eval(j,1), this%icr%eval(i,3))
+        call gr%add_edge(this%icr%eval(j,2), this%icr%eval(i,4))
+
+        call gr%add_edge(this%icr%eval(i,3), this%icr%eval(j,2))
+        call gr%add_edge(this%icr%eval(i,4), this%icr%eval(j,1))
+        call gr%add_edge(this%icr%eval(j,1), this%icr%eval(i,4))
+        call gr%add_edge(this%icr%eval(j,2), this%icr%eval(i,3))
+
+        call gc%add_edge(this%icc%eval(i,2), this%icc%eval(j,1))
+        call gc%add_edge(this%icc%eval(j,1), this%icc%eval(i,2))
+      end do
+      call gc%add_edge(this%icc%eval(i,2), this%icc%eval(i,2)) ! used only for kdiag in minres
+    end do
+
+    ! for BCs
+    do xj = 1, size(this%ebc%index)
+      j = this%ebc%index(xj)
+      do xnb = 1, 2
+        nb = this%mesh%enode(xnb, j)
+        call gr%add_edge(this%icr%eval(nb,3), this%icr%eval(nb,3))
+        call gr%add_edge(this%icr%eval(nb,4), this%icr%eval(nb,4))
+        call gc%add_edge(this%icc%eval(nb,2), this%icc%eval(nb,2))
+      end do
+    end do
+
+    call gr%add_complete
+    call gc%add_complete
+    call this%Am%init(gr, take_graph=.true.)
+    call this%cAm%init(gc, take_graph=.true.)
+
+    call stop_timer("mixed")
+
+  end subroutine init_mixed_matrix
+
+
+  subroutine setup_mixed_matrix(this)
+
+    class(fdme_model), intent(inout) :: this
+
+    integer :: i, xj, j, xnb, nb
+
+    call this%Am%set_all(0.0_r8)
+    call this%cAm%set_all(cmplx(0, 0, kind=r8))
+
+    do i = 1, this%A%nrow ! nedge
+      do xj = this%A%graph%xadj(i), this%A%graph%xadj(i+1)-1
+        j = this%A%graph%adjncy(xj) ! nedge
+        call this%Am%set(this%icr%eval(i,1), this%icr%eval(j,1),  this%A%values(xj)%re)
+        call this%Am%set(this%icr%eval(i,1), this%icr%eval(j,2), -this%A%values(xj)%im)
+        call this%Am%set(this%icr%eval(i,2), this%icr%eval(j,1),  this%A%values(xj)%im)
+        call this%Am%set(this%icr%eval(i,2), this%icr%eval(j,2),  this%A%values(xj)%re)
+        call this%cAm%set(this%icc%eval(i,1), this%icc%eval(j,1),  this%A%values(xj))
+      end do
+    end do
+
+    do i = 1, this%B%nrow ! nnode
+      do xj = this%B%graph%xadj(i), this%B%graph%xadj(i+1)-1
+        j = this%B%graph%adjncy(xj) ! nedge
+
+        call this%Am%set(this%icr%eval(i,3), this%icr%eval(j,1),  this%B%values(xj)%re)
+        call this%Am%set(this%icr%eval(i,4), this%icr%eval(j,2), -this%B%values(xj)%re)
+        call this%Am%set(this%icr%eval(j,1), this%icr%eval(i,3),  this%B%values(xj)%re) ! B^T
+        call this%Am%set(this%icr%eval(j,2), this%icr%eval(i,4), -this%B%values(xj)%re) ! B^T
+
+        call this%Am%set(this%icr%eval(i,3), this%icr%eval(j,2), -this%B%values(xj)%im)
+        call this%Am%set(this%icr%eval(i,4), this%icr%eval(j,1), -this%B%values(xj)%im)
+        call this%Am%set(this%icr%eval(j,1), this%icr%eval(i,4), -this%B%values(xj)%im) ! B^T
+        call this%Am%set(this%icr%eval(j,2), this%icr%eval(i,3), -this%B%values(xj)%im) ! B^T
+
+        call this%cAm%set(this%icc%eval(i,2), this%icc%eval(j,1),  this%B%values(xj))
+        call this%cAm%set(this%icc%eval(j,1), this%icc%eval(i,2),  this%B%values(xj)) ! B^T
+      end do
+    end do
+
+    ! Apply nxE boundary conditions to the system matrix
+    if (allocated(this%ebc)) then
+      do xj = 1, size(this%ebc%index)
+        j = this%ebc%index(xj)
+        do xnb = 1, 2
+          nb = this%mesh%enode(xnb, j)
+          call this%Am%set(this%icr%eval(nb,3), this%icr%eval(nb,3), 1.0_r8)
+          call this%Am%set(this%icr%eval(nb,4), this%icr%eval(nb,4), 1.0_r8)
+          call this%cAm%set(this%icc%eval(nb,2), this%icc%eval(nb,2), cmplx(1,1,kind=r8))
+        end do
+      end do
+    end if
+
+  end subroutine setup_mixed_matrix
+
 
 end module fdme_model_type
