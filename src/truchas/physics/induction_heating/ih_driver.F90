@@ -472,7 +472,11 @@ contains
     call gather(div_dfield(:mesh%nnode_onP), g_zscalar)
     if (is_IOP) call viz_file%write_point_dataset('div_D_re', g_zscalar%re, stat, errmsg)
     call broadcast(stat)
+#ifdef GNU_PR117774
+    if (is_IOP) call viz_file%write_point_dataset('div_D_im', [g_zscalar%im], stat, errmsg)
+#else
     if (is_IOP) call viz_file%write_point_dataset('div_D_im', g_zscalar%im, stat, errmsg)
+#endif
     call broadcast(stat)
     if (is_IOP) call viz_file%write_point_dataset('|div_D|', abs(g_zscalar), stat, errmsg)
     call broadcast(stat)
