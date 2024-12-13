@@ -196,7 +196,7 @@ contains
 
       plist => plist%sublist('precon')
 
-      if (fd_solver_type /= 'mumps' .and. fd_solver_type /= 'minres') then
+      if (fd_solver_type /= 'mumps') then
         select case (fd_precon_type)
         case ('ams')
           if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)

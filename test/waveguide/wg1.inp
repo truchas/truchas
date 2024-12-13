@@ -63,6 +63,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
+  fd_precon_type = 'hiptmair' ! ignored for minres but needs some valid value
   rel_tol = 1e-10
   max_iter = 100000
   print_level = 3

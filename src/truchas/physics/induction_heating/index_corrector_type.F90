@@ -24,7 +24,7 @@ module index_corrector_type
 
   type, public :: index_corrector
     private
-    type(index_map), pointer, public :: imap ! new imap for combined indices
+    type(index_map), pointer, public :: imap => null() ! new imap for combined indices
     logical :: imap_owned = .false.
 
     integer :: total_onp_size

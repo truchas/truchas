@@ -105,8 +105,8 @@ contains
     this%model => model
     this%mesh => model%mesh
 
-    if (.not.allocated(this%mumps) .and. .not.allocated(this%minres) &
-        .and. .not.allocated(this%mixed_minres)) then
+    !NB: precon is ignored by minres and mixed_minres (but can't be null)
+    if (.not.allocated(this%mumps)) then
       plist => params%sublist('precon')
       call plist%get('type', choice)
       select case (choice)

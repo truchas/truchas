@@ -302,7 +302,7 @@ contains
     complex(r8), intent(inout) :: e(:), r(:)
     call this%mesh%edge_imap%gather_offp(e)
     call this%A%matvec(e, r)
-    r = this%rhs - r
+    r(:this%mesh%nedge_onP) = this%rhs(:this%mesh%nedge_onP) - r(:this%mesh%nedge_onP)
     !call this%mesh%edge_imap%gather_offp(r) ! not necessary?
   end subroutine
 
