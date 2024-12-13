@@ -348,7 +348,7 @@ contains
     type(emfd_nlsol_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8) :: t, omega
-    complex(r8) :: efield(mesh%nedge), bfield(mesh%nface)
+    complex(r8) :: efield(mesh%nedge)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
@@ -371,21 +371,25 @@ contains
     call mesh%edge_imap%gather_offp(efield)
 
     call model%compute_heat_source(efield, q)
-    call model%compute_bfield(efield, bfield)
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     if (flag) then
-      call params%get('graphics-file', filename, stat, errmsg)
-      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-      call emfd_vtk_graphics(filename, mesh, q, efield, bfield, mu, stat, errmsg)
-      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+      block
+        complex(r8) :: bfield(mesh%nface), div_dfield(mesh%nnode)
+        call model%compute_bfield(efield, bfield)
+        call model%compute_div(efield, div_dfield)
+        call params%get('graphics-file', filename, stat, errmsg)
+        if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+        call emfd_vtk_graphics(filename, mesh, q, efield, bfield, mu, div_dfield, stat, errmsg)
+        if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+      end block
     end if
 
   end subroutine compute_joule_heat_emfd
 
-  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, stat, errmsg)
+  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, div_dfield, stat, errmsg)
 
     use vtkhdf_file_type
     use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
@@ -393,14 +397,14 @@ contains
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
     real(r8), intent(in) :: qfield(:), mu(:)
-    complex(r8), intent(inout) :: efield(:), bfield(:)
+    complex(r8), intent(inout) :: efield(:), bfield(:), div_dfield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: j
     type(vtkhdf_file) :: viz_file
     real(r8), allocatable :: g_scalar(:)
-    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:)
+    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -460,6 +464,17 @@ contains
     !! Output the mesh partition
     call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=mesh%ncell_onP), g_scalar)
     if (is_IOP) call viz_file%write_cell_dataset('MPI rank', g_scalar, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    !! Divergence of the electric flux
+    allocate(g_zscalar(merge(mesh%node_imap%global_size, 0, is_IOP)))
+    call gather(div_dfield(:mesh%nnode_onP), g_zscalar)
+    if (is_IOP) call viz_file%write_point_dataset('div_D_re', g_zscalar%re, stat, errmsg)
+    call broadcast(stat)
+    if (is_IOP) call viz_file%write_point_dataset('div_D_im', g_zscalar%im, stat, errmsg)
+    call broadcast(stat)
+    if (is_IOP) call viz_file%write_point_dataset('|div_D|', abs(g_zscalar), stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 

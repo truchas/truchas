@@ -1,0 +1,10 @@
+#{a = 0.05}
+#{d = 0.2}
+
+playback "pw1-geom.jou"
+
+volume all size 0.003
+mesh volume all
+
+export mesh "pw1-hex-03.gen" overwrite
+quit

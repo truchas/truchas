@@ -16,7 +16,8 @@
 !!
 !! This essentially defines a private singleton of type UMAP wrapped by the
 !! following public procedures which limit and customize access to the various
-!! function classes: SCALAR_FUNC and VECTOR_FUNC.
+!! function classes: SCALAR_FUNC, VECTOR_FUNC, COMPLEX_SCALAR_FUNC, and
+!! COMPLEX_VECTOR_FUNC.
 !!
 !!  CALL INSERT_FUNC(NAME, F) adds the function object F to the table and
 !!    associates it with NAME. If a function with this name already exists,
@@ -30,6 +31,8 @@
 !!
 !!  KNOWN_SCALAR_FUNC(NAME)
 !!  KNOWN_VECTOR_FUNC(NAME)
+!!  KNOWN_COMPLEX_SCALAR_FUNC(NAME)
+!!  KNOWN_COMPLEX_VECTOR_FUNC(NAME)
 !!    Return the value .TRUE. if the table contains the function of the
 !!    indicated class with the given NAME; otherwise it returns .FALSE.
 !!
@@ -39,25 +42,25 @@ module func_table
   use umap_type
   use scalar_func_class
   use vector_func_class
-  !use complex_scalar_func_class
-  !use complex_vector_func_class
+  use complex_scalar_func_class
+  use complex_vector_func_class
   implicit none
   private
 
-  public :: insert_func, lookup_func
+  public :: insert_func, lookup_func, known_func
   public :: known_scalar_func, known_vector_func
-  !public :: known_complex_scalar_func, known_complex_vector_func
+  public :: known_complex_scalar_func, known_complex_vector_func
 
   type(umap) :: ftable
 
   interface insert_func
     procedure insert_scalar_func, insert_vector_func
-    !procedure insert_complex_scalar_func, insert_complex_vector_func
+    procedure insert_complex_scalar_func, insert_complex_vector_func
   end interface
 
   interface lookup_func
     procedure lookup_scalar_func, lookup_vector_func
-    !procedure lookup_complex_scalar_func, lookup_complex_vector_func
+    procedure lookup_complex_scalar_func, lookup_complex_vector_func
   end interface
 
 contains
@@ -78,21 +81,21 @@ contains
     call ftable%insert(name, tmp) ! tmp returned unallocated
   end subroutine
 
-!  subroutine insert_complex_scalar_func(name, f)
-!    character(*), intent(in) :: name
-!    class(complex_scalar_func), allocatable, intent(inout) :: f
-!    class(*), allocatable :: tmp
-!    call move_alloc(f, tmp)
-!    call ftable%insert(name, tmp) ! tmp returned unallocated
-!  end subroutine
-!
-!  subroutine insert_complex_vector_func(name, f)
-!    character(*), intent(in) :: name
-!    class(complex_vector_func), allocatable, intent(inout) :: f
-!    class(*), allocatable :: tmp
-!    call move_alloc(f, tmp)
-!    call ftable%insert(name, tmp) ! tmp returned unallocated
-!  end subroutine
+  subroutine insert_complex_scalar_func(name, f)
+    character(*), intent(in) :: name
+    class(complex_scalar_func), allocatable, intent(inout) :: f
+    class(*), allocatable :: tmp
+    call move_alloc(f, tmp)
+    call ftable%insert(name, tmp) ! tmp returned unallocated
+  end subroutine
+
+  subroutine insert_complex_vector_func(name, f)
+    character(*), intent(in) :: name
+    class(complex_vector_func), allocatable, intent(inout) :: f
+    class(*), allocatable :: tmp
+    call move_alloc(f, tmp)
+    call ftable%insert(name, tmp) ! tmp returned unallocated
+  end subroutine
 
   subroutine lookup_scalar_func(name, f)
     character(*), intent(in) :: name
@@ -118,29 +121,34 @@ contains
     end select
   end subroutine
 
-!  subroutine lookup_complex_scalar_func(name, f)
-!    character(*), intent(in) :: name
-!    class(complex_scalar_func), allocatable, intent(out) :: f
-!    class(*), pointer :: uptr
-!    call ftable%lookup(name, uptr)
-!    if (.not.associated(uptr)) return
-!    select type (uptr)
-!    class is (complex_scalar_func)
-!      allocate(f, source=uptr)
-!    end select
-!  end subroutine
-!
-!  subroutine lookup_vector_func(name, f)
-!    character(*), intent(in) :: name
-!    class(complex_vector_func), allocatable, intent(out) :: f
-!    class(*), pointer :: uptr
-!    call ftable%lookup(name, uptr)
-!    if (.not.associated(uptr)) return
-!    select type (uptr)
-!    class is (complex_vector_func)
-!      allocate(f, source=uptr)
-!    end select
-!  end subroutine
+  subroutine lookup_complex_scalar_func(name, f)
+    character(*), intent(in) :: name
+    class(complex_scalar_func), allocatable, intent(out) :: f
+    class(*), pointer :: uptr
+    call ftable%lookup(name, uptr)
+    if (.not.associated(uptr)) return
+    select type (uptr)
+    class is (complex_scalar_func)
+      allocate(f, source=uptr)
+    end select
+  end subroutine
+
+  subroutine lookup_complex_vector_func(name, f)
+    character(*), intent(in) :: name
+    class(complex_vector_func), allocatable, intent(out) :: f
+    class(*), pointer :: uptr
+    call ftable%lookup(name, uptr)
+    if (.not.associated(uptr)) return
+    select type (uptr)
+    class is (complex_vector_func)
+      allocate(f, source=uptr)
+    end select
+  end subroutine
+
+  logical function known_func(name) result(known)
+    character(*), intent(in) :: name
+    known = ftable%mapped(name)
+  end function
 
   logical function known_scalar_func(name) result(known)
     character(*), intent(in) :: name
@@ -170,32 +178,32 @@ contains
     end if
   end function
 
-!  logical function known_complex_scalar_func(name) result(known)
-!    character(*), intent(in) :: name
-!    class(*), pointer :: uptr
-!    call ftable%lookup(name, uptr)
-!    known = associated(uptr)
-!    if (known) then
-!      select type (uptr)
-!      class is (complex_scalar_func)
-!      class default
-!        known = .false.
-!      end select
-!    end if
-!  end function
-!
-!  logical function known_complex_vector_func(name) result(known)
-!    character(*), intent(in) :: name
-!    class(*), pointer :: uptr
-!    call ftable%lookup(name, uptr)
-!    known = associated(uptr)
-!    if (known) then
-!      select type (uptr)
-!      class is (complex_vector_func)
-!      class default
-!        known = .false.
-!      end select
-!    end if
-!  end function
+  logical function known_complex_scalar_func(name) result(known)
+    character(*), intent(in) :: name
+    class(*), pointer :: uptr
+    call ftable%lookup(name, uptr)
+    known = associated(uptr)
+    if (known) then
+      select type (uptr)
+      class is (complex_scalar_func)
+      class default
+        known = .false.
+      end select
+    end if
+  end function
+
+  logical function known_complex_vector_func(name) result(known)
+    character(*), intent(in) :: name
+    class(*), pointer :: uptr
+    call ftable%lookup(name, uptr)
+    known = associated(uptr)
+    if (known) then
+      select type (uptr)
+      class is (complex_vector_func)
+      class default
+        known = .false.
+      end select
+    end if
+  end function
 
 end module func_table

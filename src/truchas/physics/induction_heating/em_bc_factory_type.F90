@@ -266,11 +266,20 @@ contains
 
     type(bndry_face_cfunc), allocatable :: lhs
     type(fd_robin_bndry_func), allocatable :: rhs
+    logical :: found
 
     call TLS_info('  generating "wg-port" electromagnetic boundary condition')
-
+    found = .false.
     call this%iterate_list('wg-port', wg_port_proc, stat, errmsg)
     if (stat /= 0) return
+    if (.not.found) call TLS_info('    none specified.')
+
+    call TLS_info('  generating "robin" electromagnetic boundary condition')
+    found = .false.
+    call this%iterate_list('robin', robin_proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.found) call TLS_info('    none specified.')
+
     if (allocated(lhs)) then
       call lhs%add_complete
     end if
@@ -282,6 +291,42 @@ contains
     call TLS_info('  done')
 
   contains
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to the robin BC specification and incrementally builds the BC objects
+    !! accordingly. NB: The LHS, RHS and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine robin_proc(plist, setids, stat, errmsg)
+      use complex_scalar_func_factories
+      use complex_vector_func_factories
+      use fptr_complex_vector_func_type
+      use const_complex_scalar_func_type
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(complex_scalar_func), allocatable :: f
+      class(complex_vector_func), allocatable :: g
+      found = .true.
+      call alloc_complex_scalar_func(plist, 'alpha', f, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(lhs)) then
+        allocate(lhs)
+        !TODO: bndry_face_vfunc allows overlapping specifications; need to
+        !      expose the no_overlap argument to the init procedure.
+        call lhs%init(this%mesh)
+      end if
+      call lhs%add(f, setids, stat, errmsg)
+      if (stat /= 0) return
+      call alloc_complex_vector_func(plist, 'g', g, stat, errmsg)
+      if (stat /= 0) return
+      if (.not. allocated(rhs)) then
+        allocate(rhs)
+        call rhs%init(this%mesh)
+      end if
+      call rhs%add(g, setids, stat, errmsg)
+    end subroutine robin_proc
 
     !! This call-back subroutine processes parameter list data that is specific
     !! to the wg-port BC specification and incrementally builds the BC objects
@@ -299,6 +344,7 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(complex_scalar_func), allocatable :: f
       class(complex_vector_func), allocatable :: g
+      found = .true.
       ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
       !call alloc_vector_func(plist, 'alpha', f, stat, errmsg)
       !if (stat /= 0) return

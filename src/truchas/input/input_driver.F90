@@ -48,6 +48,8 @@ contains
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
+    use complex_function_namelist, only: read_complex_function_namelists
+    use complex_vfunction_namelist,only: read_complex_vfunction_namelists
     use material_namelist,         only: read_material_namelists
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
@@ -86,10 +88,12 @@ contains
     call broadcast (title)
      
     call read_function_namelists (lun)
+    call read_complex_function_namelists (lun)
     call read_physical_constants (lun)
     call read_toolpath_namelists (lun)
     call read_toolhead_namelists (lun)
     call read_vfunction_namelists (lun)
+    call read_complex_vfunction_namelists (lun)
 
     ! read current physics data
     call physics_input (lun)

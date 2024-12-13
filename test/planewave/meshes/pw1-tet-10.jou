@@ -1,0 +1,11 @@
+#{a = 0.05}
+#{d = 0.2}
+
+playback "pw1-geom.jou"
+
+volume all size 0.01
+volume all scheme tetmesh
+mesh volume all
+
+export mesh "pw1-tet-10.gen" overwrite
+quit
