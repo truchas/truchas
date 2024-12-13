@@ -29,7 +29,7 @@ module parallel_communication
   public :: init_parallel_communication, halt_parallel_communication, abort_parallel_communication
   public :: broadcast, scatter, gather
   public :: global_any, global_all, global_count
-  public :: global_sum, global_minval, global_maxval, global_dot_product
+  public :: global_sum, global_minval, global_maxval, global_dot_product, global_norm2
   public :: global_minloc, global_maxloc, global_maxloc_sub
 
   integer, parameter :: root = 0
@@ -589,6 +589,25 @@ module parallel_communication
     module function dot_prod_c8(a, b) result(dp)
       complex(r8), intent(in) :: a(:), b(:)
       complex(r8) :: dp
+    end function
+  end interface
+
+  interface global_norm2
+    module function norm2_r4(a) result(nrm2)
+      real(r4), intent(in) :: a(:)
+      real(r4) :: nrm2
+    end function
+    module function norm2_r8(a) result(nrm2)
+      real(r8), intent(in) :: a(:)
+      real(r8) :: nrm2
+    end function
+    module function norm2_c4(a) result(nrm2)
+      complex(r4), intent(in) :: a(:)
+      real(r4) :: nrm2
+    end function
+    module function norm2_c8(a) result(nrm2)
+      complex(r8), intent(in) :: a(:)
+      real(r8) :: nrm2
     end function
   end interface
 

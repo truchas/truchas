@@ -332,4 +332,40 @@ contains
     call MPI_Allreduce(dot_product(a,b), dp, 1, MPI_COMPLEX16, MPI_SUM, comm, ierr)
   end function
 
+!!!! GLOBAL NORM2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  module function norm2_r4(a) result(nrm2)
+    real(r4), intent(in) :: a(:)
+    real(r4) :: nrm2
+    integer :: ierr
+    call MPI_Allreduce(norm2(a)**2, nrm2, 1, MPI_REAL4, MPI_SUM, comm, ierr)
+    nrm2 = sqrt(nrm2)
+  end function
+
+  module function norm2_r8(a) result(nrm2)
+    real(r8), intent(in) :: a(:)
+    real(r8) :: nrm2
+    integer :: ierr
+    call MPI_Allreduce(norm2(a)**2, nrm2, 1, MPI_REAL8, MPI_SUM, comm, ierr)
+    nrm2 = sqrt(nrm2)
+  end function
+
+  module function norm2_c4(a) result(nrm2)
+    complex(r4), intent(in) :: a(:)
+    real(r4) :: nrm2, tmp
+    integer :: ierr
+    tmp = norm2(a%re)**2 + norm2(a%im)**2
+    call MPI_Allreduce(tmp, nrm2, 1, MPI_REAL4, MPI_SUM, comm, ierr)
+    nrm2 = sqrt(nrm2)
+  end function
+
+  module function norm2_c8(a) result(nrm2)
+    complex(r8), intent(in) :: a(:)
+    real(r8) :: nrm2, tmp
+    integer :: ierr
+    tmp = norm2(a%re)**2 + norm2(a%im)**2
+    call MPI_Allreduce(tmp, nrm2, 1, MPI_REAL8, MPI_SUM, comm, ierr)
+    nrm2 = sqrt(nrm2)
+  end function
+
 end submodule reduce_impl

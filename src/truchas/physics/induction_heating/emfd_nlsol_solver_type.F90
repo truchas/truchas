@@ -170,7 +170,7 @@ contains
     if (stat /= 0) errmsg = 'FDME convergence failure'
 
     block
-      use parallel_communication, only: global_sum
+      use parallel_communication, only: global_norm2
       complex(r8) :: r(this%mesh%nedge), div_efield(this%mesh%nnode)
       real(r8) :: r_norm2, d_norm2
       character(128) :: msg
@@ -185,12 +185,5 @@ contains
 
     call stop_timer("solve")
   end subroutine
-
-  real(r8) function global_norm2(f)
-    use parallel_communication, only: global_sum
-    complex(r8), intent(in) :: f(:)
-    global_norm2 = dot_product(f, f)
-    global_norm2 = sqrt(global_sum(global_norm2))
-  end function
 
 end module emfd_nlsol_solver_type
