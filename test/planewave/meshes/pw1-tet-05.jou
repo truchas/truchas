@@ -1,5 +1,5 @@
 #{a = 0.05}
-#{d = 0.2}
+#{d = 0.1}
 
 playback "pw1-geom.jou"
 

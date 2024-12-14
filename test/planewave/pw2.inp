@@ -71,7 +71,9 @@ Frequency is specified here :/
   orientation = 'z'
 /
 
-Open artificial boundary
+Open artificial boundary. This should introduce the right moving
+wave and pass a left moving wave (there shouldn't be one).
+
 &ELECTROMAGNETIC_BC
   name = 'artificial boundary'
   type = 'robin'
@@ -79,6 +81,9 @@ Open artificial boundary
   alpha = (0.0, 51.3482)
   g = (0.0, 0.0) (0.0, 102.6964) (0.0, 0.0)
 /
+
+Open artificial boundary. This should pass the right moving wave
+and not introduce a left moving wave.
 
 &ELECTROMAGNETIC_BC
   name = 'open'

@@ -71,13 +71,16 @@ Frequency is specified here :/
   orientation = 'z'
 /
 
-Open artificial boundary
+Open artificial boundary. This should introduce the right moving
+wave and pass the reflected left moving wave.
+
 &ELECTROMAGNETIC_BC
-  name = 'artificial boundary'
+  name = 'left open boundary'
   type = 'robin'
   face_set_ids = 1
   alpha = (0.0,51.3482)
-  g = (0.0, 0.0) (0.0, -102.6964) (0.0, 0.0)
+  !g = (0.0, 0.0) (0.0, 102.6964) (0.0, 0.0)
+  g = (0.0, 0.0) (-93.6689, 42.1034) (0.0, 0.0)
 /
 
 Reflecting wall
