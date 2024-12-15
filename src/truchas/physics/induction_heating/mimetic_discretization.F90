@@ -590,9 +590,9 @@ contains
     real(r8) :: c, lsq(3)
     c = 1.0_r8 / (48.0_r8 * mesh%area(face))
     lsq = mesh%length(mesh%fedge(:,face))**2
-    matrix(1) = c*(lsq(2) + lsq(3) - lsq(1))
-    matrix(3) = c*(lsq(1) + lsq(3) - lsq(2))
-    matrix(6) = c*(lsq(1) + lsq(2) - lsq(3))
+    matrix(1) = c*(3*lsq(2) + 3*lsq(3) - lsq(1))
+    matrix(3) = c*(3*lsq(1) + 3*lsq(3) - lsq(2))
+    matrix(6) = c*(3*lsq(1) + 3*lsq(2) - lsq(3))
     matrix(2) = -c*(lsq(1) + lsq(2) - 3*lsq(3))
     matrix(4) =  c*(lsq(1) + lsq(3) - 3*lsq(2))
     matrix(5) = -c*(lsq(2) + lsq(3) - 3*lsq(1))
