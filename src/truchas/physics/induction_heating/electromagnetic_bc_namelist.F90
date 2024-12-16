@@ -42,8 +42,9 @@ contains
     character(128) :: name, type
     integer :: face_set_ids(128)
     complex(r8) :: alpha, g(3)
+    character(32) :: g_func
 
-    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g
+    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func
 
     call TLS_info('Reading ELECTROMAGNETIC_BC namelists ...')
 
@@ -66,6 +67,7 @@ contains
       face_set_ids = NULL_I
       alpha = NULL_R
       g = NULL_R
+      g_func = NULL_C
 
       if (is_IOP) read(lun, nml=electromagnetic_bc, iostat=ios, iomsg=iom)
       call broadcast(ios)
@@ -76,6 +78,7 @@ contains
       call broadcast(face_set_ids)
       call broadcast(alpha)
       call broadcast(g)
+      call broadcast(g_func)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -103,10 +106,24 @@ contains
       case ('wg-port')
         ! no parameters yet
       case ('robin')
-        if (alpha == NULL_R) call TLS_fatal(label // ': ALPHA not specified')
-        if (any(g == NULL_R)) call TLS_fatal(label // ': G not specified')
-        call plist%set('alpha', alpha)
-        call plist%set('g', g)
+        if (alpha == NULL_R) then
+          call TLS_fatal(label // ': ALPHA not specified')
+        else
+          call plist%set('alpha', alpha)
+        end if
+        if (any(g /= NULL_R) .and. g_func /= NULL_C) then
+          call TLS_fatal(label // ': both G and G_FUNC specified')
+        else if (any(g /= NULL_R)) then
+          if (any(g == NULL_R)) then
+            call TLS_fatal(label // ': G not fully specified')
+          else
+            call plist%set('g', g)
+          end if
+        else if (g_func /= NULL_C) then
+          call plist%set('g', g_func)
+        else
+          call TLS_fatal(label // ': neither G nor G_FUNC specified')
+        end if
       case default
         call TLS_fatal(label // ': unknown TYPE: ' // trim(type))
       end select

@@ -114,7 +114,7 @@ contains
       !! Create the specified function and add it to the function table
       select case (lower_case(type))
 #ifdef ENABLE_DYNAMIC_LOADING
-      case ('LIBRARY')
+      case ('library')
         !! Identify the number of parameters
         do npar = size(parameters), 1, -1
           if (parameters(npar) /= NULL_R) exit
