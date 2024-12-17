@@ -92,6 +92,7 @@ contains
       call g%add_clique(this%mesh%cedge)
       call g%add_complete
       call this%A%init(g, take_graph=.true.)
+      call this%A2%init(2, this%A%graph, take_graph=.false.) ! used by AMS initialization
     end block
 
     n = this%mesh%ncell
@@ -236,7 +237,6 @@ contains
     end if
 
     !! Copy the complex CSR matrix to an equivalent real 2x2 block CSR matrix
-    call this%A2%init(2, this%A%graph, take_graph=.false.)
     this%A2%values(1,1,:) =  this%A%values%re
     this%A2%values(2,1,:) =  this%A%values%im
     this%A2%values(1,2,:) = -this%A%values%im
