@@ -21,7 +21,9 @@ option(DOCUMENTATION_ONLY "Build stripped-down Python packages for documentation
 
 set(PYTHON_SCRIPT_FILES
   truchas/__init__.py
+  truchas/truchas_geometry.py
   truchas/TruchasData.py
+  truchas/TruchasEMData.py
   truchas/TruchasEnvironment.py
   truchas/TruchasTest.py
   truchas/TruchasDatabase.py
