@@ -293,7 +293,7 @@ contains
       associate (model => this%model, kappa => this%model%omega/this%model%c0)
         do j = 1, this%mesh%ncell
           alpha(j) = 1.0_r8/model%mu(j)
-          beta(j) = model%sigma(j)*kappa*model%Z0 + model%epsi(j)*kappa**2 - model%epsr(j)*kappa**2
+          beta(j) = model%k(j)%im - model%k(j)%re
         end do
       end associate
 

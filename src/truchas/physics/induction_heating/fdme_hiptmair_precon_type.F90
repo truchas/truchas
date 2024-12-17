@@ -107,14 +107,12 @@ contains
     class(fdme_hiptmair_precon), intent(inout) :: this
 
     integer :: j
-    real(r8) :: omegar, c1, c2, c3
+    real(r8) :: c1, c2, c3
     real(r8) :: m1(21), ctm2c(21), etmp(2,2,21), gtm1g(10), ntmp(2,2,10)
     real(r8), parameter :: ID2(2,2) = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape=[2,2])
     real(r8), parameter :: relaxation = 1.0_r8
 
     call start_timer("precon")
-
-    omegar = this%model%omega/this%model%c0
 
     call this%Ae%set_all(0.0_r8)
     call this%An%set_all(0.0_r8)
@@ -125,8 +123,8 @@ contains
     do j = 1, this%mesh%ncell
       ! non-dimensionalized
       c1 = 1.0_r8 / this%model%mu(j)
-      c2 = this%model%epsr(j) * omegar**2
-      c3 = -(this%model%epsi(j) * omegar**2 + omegar * this%model%sigma(j) * this%model%Z0)
+      c2 = this%model%k(j)%re
+      c3 = -this%model%k(j)%im
 #ifdef ORIGINAL
       !NB: This results in a different matrix than the actual matrix of the edge-based system.
       !TODO: What is the rationale for the following modification?
@@ -184,7 +182,7 @@ contains
           a(2,2,:) = a(1,1,:)
 #endif
           call this%Ae%add_to(this%mesh%fedge(:,n), a)
-          
+
           !NB: This needs to be checked for correctness.
           gtmg = upm_cong_prod(3, 3, m, g)
           a(1,1,:) = -(this%model%robin_lhs%value(j)%re) * gtmg

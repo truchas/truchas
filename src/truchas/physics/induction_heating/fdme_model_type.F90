@@ -22,7 +22,8 @@ module fdme_model_type
     complex(r8), allocatable :: rhs(:)
     type(pbsr_matrix) :: A2
     real(r8) :: omega
-    real(r8), allocatable :: epsi(:), epsr(:), mu(:), sigma(:)
+    real(r8), allocatable :: mu(:), sigma(:), epsi(:)
+    complex(r8), allocatable :: k(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
     class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
     class(bndry_cfunc1), allocatable :: robin_lhs, robin_rhs
@@ -96,7 +97,8 @@ contains
     end block
 
     n = this%mesh%ncell
-    allocate(this%epsr(n), this%epsi(n), this%mu(n), this%sigma(n), source=0.0_r8)
+    allocate(this%epsi(n), this%sigma(n), this%mu(n), source=0.0_r8)
+    allocate(this%k(n), source=cmplx(0,0,kind=r8))
 
     allocate(this%rhs(this%mesh%nedge))
 
@@ -149,6 +151,7 @@ contains
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), k0
     complex(r8) :: Aj(21)
+    complex(r8), allocatable :: eps(:), k(:)
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -160,18 +163,21 @@ contains
     k0 = omega / this%c0 ! free-space angular wave number
     this%omega = omega
 
+    ! stored for preconditioner use
     this%mu(:) = mu
-    this%epsr(:) = epsr
-    this%epsi(:) = epsi + sigma*(this%Z0/k0) ! fold cond into complex perm
-    this%sigma(:) = 0.0_r8 ! it's been folded into the complex permittivity
+    this%k(:)%re = k0**2 * epsr
+    this%k(:)%im = k0**2 * epsi + sigma*(k0*this%Z0)
+
+    ! stored for heat calculation
+    this%epsi(:) = epsi
+    this%sigma(:) = sigma
 
     ! Raw system matrix ignoring boundary condtions
     do j = 1, this%mesh%ncell
       m1 = W1_matrix_WE(this%mesh, j)
       m2 = W2_matrix_WE(this%mesh, j)
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
-      Aj%re = (1.0_r8/mu(j)) * ctm2c - (epsr(j)*k0**2) * m1
-      Aj%im = (-this%epsi(j)*k0**2) * m1
+      Aj = (1.0_r8/mu(j)) * ctm2c - this%k(j) * m1
       call this%A%add_to(this%mesh%cedge(:,j), Aj)
     end do
 
