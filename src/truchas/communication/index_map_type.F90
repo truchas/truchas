@@ -982,8 +982,16 @@ contains
       onp_data(j) = global_index(this, j)
     end do
     call this%gather_offp(onp_data, offp_data)
+#ifdef AVOID_MPI_IN_PLACE
+    block
+      logical :: pass_loc
+      pass_loc = all(offp_data == this%offp_index)
+      call MPI_Allreduce(pass_loc, pass, 1, MPI_LOGICAL, MPI_LAND, this%comm, ierr)
+    end block
+#else
     pass = all(offp_data == this%offp_index)
     call MPI_Allreduce(MPI_IN_PLACE, pass, 1, MPI_LOGICAL, MPI_LAND, this%comm, ierr)
+#endif
   end function
 
   logical function defined(this)

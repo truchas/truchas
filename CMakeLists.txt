@@ -251,6 +251,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   endif()
 endif()
 
+if(APPLE)
+  add_compile_definitions(AVOID_MPI_IN_PLACE)
+endif()
+
 if(ENABLE_DYNAMIC_LOADING)
   add_compile_definitions(ENABLE_DYNAMIC_LOADING)
 endif()
