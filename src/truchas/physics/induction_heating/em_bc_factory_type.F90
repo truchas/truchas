@@ -13,6 +13,8 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#include "f90_assert.fpp"
+
 module em_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -33,6 +35,7 @@ module em_bc_factory_type
     type(parameter_list), pointer :: params => null() ! unowned reference
     logical :: use_legacy_bc = .true.
     integer, allocatable :: pec_setid(:), nxH_setid(:)
+    real(r8) :: epsilon0, mu0, omega
   contains
     procedure :: init
     procedure :: alloc_nxE_bc
@@ -63,6 +66,9 @@ contains
     type(ih_source_factory), intent(in), target :: src_fac
     type(parameter_list), intent(inout), target :: params
 
+    integer :: stat
+    character(:), allocatable :: errmsg
+
     this%mesh => mesh
     this%src_fac => src_fac
     this%params => params%sublist('bc') !TODO: eliminate the need to dig deeper
@@ -75,6 +81,14 @@ contains
         call create_ih_face_sets(this%mesh, params, this%pec_setid, this%nxH_setid)
       end block
     end if
+
+    call params%get('epsilon_0', this%epsilon0, stat, errmsg, default=8.8541878188e-12_r8)
+    ASSERT(stat == 0)
+    call params%get('mu_0', this%mu0, stat, errmsg, default=1.25663706127e-6_r8)
+    ASSERT(stat == 0)
+
+    call params%get('omega', this%omega, stat, errmsg)
+    ASSERT(stat == 0)
 
   end subroutine
 
@@ -257,6 +271,8 @@ contains
     use bndry_cfunc1_class
     use bndry_face_cfunc_type
     use fd_robin_bndry_func_type
+    use complex_scalar_func_factories
+    use complex_vector_func_factories
 
     class(em_bc_factory), intent(in) :: this
     class(bndry_cfunc1), allocatable, intent(out) :: lhs_bc, rhs_bc
@@ -271,6 +287,12 @@ contains
     call TLS_info('  generating "wg-port" electromagnetic boundary condition')
     found = .false.
     call this%iterate_list('wg-port', wg_port_proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.found) call TLS_info('    none specified.')
+
+    call TLS_info('  generating "impedance" electromagnetic boundary condition')
+    found = .false.
+    call this%iterate_list('impedance', impedance_proc, stat, errmsg)
     if (stat /= 0) return
     if (.not.found) call TLS_info('    none specified.')
 
@@ -298,27 +320,26 @@ contains
     !! subroutine through host association.
 
     subroutine robin_proc(plist, setids, stat, errmsg)
-      use complex_scalar_func_factories
-      use complex_vector_func_factories
-      use fptr_complex_vector_func_type
-      use const_complex_scalar_func_type
+
       type(parameter_list), intent(inout) :: plist
       integer, intent(in) :: setids(:)
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
+
       class(complex_scalar_func), allocatable :: f
       class(complex_vector_func), allocatable :: g
+
       found = .true.
+
       call alloc_complex_scalar_func(plist, 'alpha', f, stat, errmsg)
       if (stat /= 0) return
       if (.not.allocated(lhs)) then
         allocate(lhs)
-        !TODO: bndry_face_vfunc allows overlapping specifications; need to
-        !      expose the no_overlap argument to the init procedure.
         call lhs%init(this%mesh)
       end if
       call lhs%add(f, setids, stat, errmsg)
       if (stat /= 0) return
+
       call alloc_complex_vector_func(plist, 'g', g, stat, errmsg)
       if (stat /= 0) return
       if (.not. allocated(rhs)) then
@@ -326,7 +347,52 @@ contains
         call rhs%init(this%mesh)
       end if
       call rhs%add(g, setids, stat, errmsg)
+
     end subroutine robin_proc
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to the impedance BC specification and incrementally builds the BC objects
+    !! accordingly. NB: The LHS, RHS and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine impedance_proc(plist, setids, stat, errmsg)
+
+      use complex_scalar_func_factories
+      !use complex_vector_func_factories
+
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      real(r8) :: sigma
+      complex(r8) :: alpha
+      class(complex_scalar_func), allocatable :: f
+      class(complex_vector_func), allocatable :: g
+
+      found = .true.
+
+      call plist%get('sigma', sigma, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(lhs)) then
+        allocate(lhs)
+        call lhs%init(this%mesh)
+      end if
+      alpha = (-1.0_r8, 1.0_r8) * sqrt(this%mu0 * this%omega * sigma / 2)
+      call alloc_const_complex_scalar_func(f, alpha)
+      call lhs%add(f, setids, stat, errmsg)
+      if (stat /= 0) return
+
+      ! This is superfluous
+      !call alloc_const_complex_vector_func(g, spread((0.0_r8,0.0_r8),dim=1,ncopies=3))
+      !if (stat /= 0) return
+      !if (.not. allocated(rhs)) then
+      !  allocate(rhs)
+      !  call rhs%init(this%mesh)
+      !end if
+      !call rhs%add(g, setids, stat, errmsg)
+
+    end subroutine impedance_proc
 
     !! This call-back subroutine processes parameter list data that is specific
     !! to the wg-port BC specification and incrementally builds the BC objects
@@ -334,29 +400,30 @@ contains
     !! subroutine through host association.
 
     subroutine wg_port_proc(plist, setids, stat, errmsg)
-      use complex_scalar_func_class
-      use complex_vector_func_class
+
       use fptr_complex_vector_func_type
-      use const_complex_scalar_func_type
+
       type(parameter_list), intent(inout) :: plist
       integer, intent(in) :: setids(:)
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
+
       class(complex_scalar_func), allocatable :: f
       class(complex_vector_func), allocatable :: g
+
       found = .true.
+
       ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
       !call alloc_vector_func(plist, 'alpha', f, stat, errmsg)
       !if (stat /= 0) return
       call alloc_const_complex_scalar_func(f, alpha())
       if (.not.allocated(lhs)) then
         allocate(lhs)
-        !TODO: bndry_face_vfunc allows overlapping specifications; need to
-        !      expose the no_overlap argument to the init procedure.
         call lhs%init(this%mesh)
       end if
       call lhs%add(f, setids, stat, errmsg)
       if (stat /= 0) return
+
       ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
       !call alloc_vector_func(plist, 'g', g, stat, errmsg)
       call alloc_fptr_complex_vector_func(g, 3, test_te01_mode)
@@ -366,6 +433,7 @@ contains
         call rhs%init(this%mesh)
       end if
       call rhs%add(g, setids, stat, errmsg)
+
     end subroutine wg_port_proc
 
   end subroutine alloc_robin_bc

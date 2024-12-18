@@ -1,4 +1,4 @@
-ANDREY'S WAVEGUIDE TEST PROBLEM
+ANDREY'S WAVEGUIDE TEST PROBLEM WITH IMPEDANCE BC
 
 &MESH
   mesh_file = 'meshes/wg1-hex-05.gen'
@@ -81,8 +81,9 @@ Frequency is specified here :/
 
 &ELECTROMAGNETIC_BC
   name = 'walls'
-  type = 'pec'
+  type = 'impedance'
   face_set_ids = 2, 3
+  sigma = 1.45e6
 /
 
 &ELECTROMAGNETIC_BC

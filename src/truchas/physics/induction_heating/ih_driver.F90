@@ -236,6 +236,7 @@ contains
     use em_bc_factory_type
     use string_utilities, only: i_to_c
     use truchas_env, only: output_dir
+    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     class(ih_driver_data), intent(inout), target :: this
     real(r8), intent(in) :: t
@@ -246,6 +247,7 @@ contains
     real(r8) :: freq
     type(parameter_list), pointer :: plist
     integer, save :: sim_num = 0  ! global counter for the number of calls
+    real(r8), parameter :: PI = 3.1415926535897932385_r8
 
     call start_timer('simulation')
 
@@ -255,6 +257,9 @@ contains
     allocate(q(this%em_mesh%ncell_onP))
     call this%src_fac%set_time(t)
     freq = this%src_fac%H_freq()
+    call params%set('omega', 2*PI*freq)
+    call params%set('epsilon_0', vacuum_permittivity)
+    call params%set('mu_0', vacuum_permeability)
     call bc_fac%init(this%em_mesh, this%src_fac, params)
     if (this%use_emfd_solver) then
       plist => params%sublist('emfd-solver')
