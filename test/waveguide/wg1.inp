@@ -1,7 +1,7 @@
 ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &MESH
-  mesh_file = 'meshes/wg1-hex-05.gen'
+  mesh_file = 'meshes/wg1-hex-10.gen'
 /
 
 &OUTPUTS
@@ -55,7 +55,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 ### EM HEATING #################################################################
 
 &EM_MESH
-  mesh_file = 'meshes/wg1-tet-05.gen'
+  mesh_file = 'meshes/wg1-tet-10.gen'
 /
 
 &ELECTROMAGNETICS

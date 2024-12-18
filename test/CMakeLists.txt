@@ -91,6 +91,14 @@ add_pytruchas_test(em4 em4/em.py
                    PROCESSORS 1
                    LABELS ELECTROMAGNETICS)
 
+# add_pytruchas_test(em5 em5/test-small.py
+#                    PROCESSORS 4
+#                    LABELS ELECTROMAGNETICS)
+
+add_pytruchas_test(wg1 waveguide/test.py
+                   PROCESSORS 4
+                   LABELS ELECTROMAGNETICS)
+
 add_pytruchas_test(ds1 ds1/testDS1.py
                    PROCESSORS 4
                    LABELS DIFFUSION)
