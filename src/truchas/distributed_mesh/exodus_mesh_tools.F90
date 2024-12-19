@@ -59,7 +59,8 @@ module exodus_mesh_tools
 
   public :: convert_cells_to_links
   public :: create_internal_interfaces
-  
+  public :: refine_hex_to_tet
+
 contains
 
   subroutine convert_cells_to_links (mesh, ebid, stat, errmsg)
@@ -94,13 +95,13 @@ contains
       call mesh%set_no_links
       return
     end if
-    
+
     if (mesh%nlink /= 0) then
       stat = -1
       errmsg = 'CONVERT_CELLS_TO_LINKS: found pre-existing links'
       return
     end if
-    
+
     !! Tag the element blocks whose elements are to be converted into links.
     allocate(link_eblk(mesh%num_eblk))
     link_eblk = .false.
@@ -171,7 +172,7 @@ contains
     allocate(xbin(0:n))
 
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
-    offset = 0    
+    offset = 0
     xbin = 0
     do i = 1, mesh%num_eblk
       if (.not.link_eblk(i)) then
@@ -199,7 +200,7 @@ contains
     end do
 
     !! Fill the table; use XBIN as a temporary to hold the next free location for each bin.
-    offset = 0    
+    offset = 0
     do i = 1, mesh%num_eblk
       if (.not.link_eblk(i)) then
         associate (connect => mesh%eblk(i)%connect)
@@ -386,8 +387,8 @@ contains
  !! case a link can be regarded as a special 0-thickness cell bridging the
  !! pair of faces:
  !!                                                              6
- !!                        8-----7                              /:\ 
- !!                       /:    /:                 +           / : \ 
+ !!                        8-----7                              /:\
+ !!                       /:    /:                 +           / : \
  !!       +-----+        5-----6 :                / \         4-----5
  !!      /     /   ==>   : :   : :      and      /   \   ==>  :  :  :
  !!     +-----+          : 4---:-3              +-----+       :  3  :
@@ -469,7 +470,7 @@ contains
     type(table_entry), pointer :: table(:)
     integer, allocatable :: xbin(:)
     type(facet_hash) :: hpar
-    
+
     !! Data structure to hold working data about active cells
     type :: active_elem
       integer :: cnum, nmask, smask, nface
@@ -522,7 +523,7 @@ contains
       end do
     end do
     ASSERT(n == size(active_cell))
-    
+
     !! Generate the structure array ACELL of active cell data.  The components
     !! of an element are:
     !!  - the cell index CNUM
@@ -597,13 +598,13 @@ contains
    !! closer to the lower bound.  Setting N equal to the number of active sides
    !! is generous.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     !! Allocate space for the bin table, and initialize the hash function.
     n = sum(popcnt(acell%smask))  ! number of active sides
     allocate(table(n))
     call hpar%init (n, mesh%num_node)  ! adjusts N up to a power of 2
     allocate(xbin(0:n))
-    
+
     !! Count the number of hits to each bin; store the count for bin N in XBIN(N+1).
     xbin = 0
     do j = 1, size(acell)
@@ -904,7 +905,7 @@ contains
         end do
       end associate
     end do
-    
+
     deallocate(link_jnbr, link_knbr)
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1094,7 +1095,7 @@ contains
         end do
       end associate
     end do
-    
+
     !! Renumber the link nodes.
     do i = 1, size(mesh%lnode)
       mesh%lnode(i) = map(mesh%lnode(i))
@@ -1164,5 +1165,83 @@ contains
     end function rep_node
 
   end subroutine create_internal_interfaces
+
+
+  subroutine refine_hex_to_tet(mesh, stat, errmsg)
+
+    type(exodus_mesh), intent(inout) :: mesh
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    !! The subdivision of a hex cell into 6 tet subcells.
+    integer, parameter :: subcell(4,6) = &
+        reshape([1,2,4,5,  2,4,5,6,  4,5,6,8,  7,4,6,8,  2,7,4,6,  3,2,7,4], shape=[4,6])
+
+    !! Map a hex face to the two faces of the two subscells that span the face;
+    integer, parameter :: subface(2,6) = &
+        reshape([1,3,  1,4,  1,3,  3,1,  4,1,  2,3], shape=[2,6])
+
+    !! and map a hex face to the two corresponding subcells.
+    integer, parameter :: subelem(2,6) = &
+        reshape([1,2,  5,6,  4,6,  1,3,  1,6,  3,4], shape=[2,6])
+
+    integer :: i, j, k, n
+    integer, allocatable :: hex_connect(:,:), hex_face(:), hex_elem(:)
+
+    if (mesh%num_dim /= 3) then
+      stat = 1
+      errmsg = 'input mesh is not 3D'
+      return
+    end if
+
+    do i = 1, mesh%num_eblk
+      if (mesh%eblk(i)%elem_type(1:3) /= 'HEX' .or. &
+          mesh%eblk(i)%num_nodes_per_elem /= 8) then
+        stat = 1
+        errmsg = 'input mesh element type limited to 8-node hex'
+        return
+      end if
+    end do
+
+
+    !! Generate the new set of tet elements.
+    !! Each original hex cell is replaced by 6 tet cells.
+    mesh%num_elem = 6 * mesh%num_elem
+    do i = 1, mesh%num_eblk
+      mesh%eblk(i)%num_elem = 6*mesh%eblk(i)%num_elem
+      mesh%eblk(i)%num_nodes_per_elem = 4
+      mesh%eblk(i)%elem_type = 'TETRA'
+      call move_alloc(mesh%eblk(i)%connect, hex_connect)
+      allocate(mesh%eblk(i)%connect(4,mesh%eblk(i)%num_elem))
+      n = 0
+      do j = 1, size(hex_connect,dim=2)
+        do k = 1, 6
+          n = n + 1
+          mesh%eblk(i)%connect(:,n) = hex_connect(subcell(:,k),j)
+        end do
+      end do
+    end do
+
+    !! Generate the new side sets.
+    !! Each original hex face is replaced by a pair of tet faces.
+    do i = 1, mesh%num_sset
+      mesh%sset(i)%num_side = 2*mesh%sset(i)%num_side
+      call move_alloc(mesh%sset(i)%elem, hex_elem)
+      call move_alloc(mesh%sset(i)%face, hex_face)
+      n = mesh%sset(i)%num_side
+      allocate(mesh%sset(i)%elem(n), mesh%sset(i)%face(n))
+      n = 0
+      do j = 1, size(hex_elem)
+        do k = 1, 2
+          n = n + 1
+          mesh%sset(i)%elem(n) = 6*(hex_elem(j)-1) + subelem(k,hex_face(j))
+          mesh%sset(i)%face(n) = subface(k,hex_face(j))
+        end do
+      end do
+    end do
+
+    stat = 0
+
+  end subroutine refine_hex_to_tet
 
 end module exodus_mesh_tools

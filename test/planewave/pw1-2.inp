@@ -1,7 +1,12 @@
 PLANE WAVE NORMALLY INCIDENT ON WALL
 
-&MESH
-  mesh_file = 'meshes/pw1-hex-03.gen'
+&MESH ! 5mm resolution in z -- coarser than the EM mesh
+  x_axis%coarse_grid = -0.025, 0.025
+  x_axis%intervals = 5
+  y_axis%coarse_grid = -0.025, 0.025
+  y_axis%intervals = 5
+  z_axis%coarse_grid = -0.1, 0.1
+  z_axis%intervals = 40
 /
 
 &OUTPUTS
@@ -39,15 +44,19 @@ PLANE WAVE NORMALLY INCIDENT ON WALL
 &THERMAL_BC
   name = 'adiabatic'
   type = 'flux'
-  face_set_ids = 1, 2, 3, 4
-  !face_set_ids = 2, 3
+  face_set_ids = 1, 2, 3, 4, 5, 6
   flux = 0.0
 /
 
 ### EM HEATING #################################################################
 
-&EM_MESH
-  mesh_file = 'meshes/pw1-tet-03.gen'
+&EM_MESH ! 2mm resolution in z
+  x_axis%coarse_grid = -0.025, 0.025
+  x_axis%intervals = 5
+  y_axis%coarse_grid = -0.025, 0.025
+  y_axis%intervals = 5
+  z_axis%coarse_grid = -0.1, 0.1
+  z_axis%intervals = 100
 /
 
 &ELECTROMAGNETICS
@@ -77,7 +86,7 @@ wave and pass the reflected left moving wave.
 &ELECTROMAGNETIC_BC
   name = 'left open boundary'
   type = 'robin'
-  face_set_ids = 1
+  face_set_ids = 5
   alpha = (0.0,51.3482)
   !g = (0.0, 0.0) (0.0, 102.6964) (0.0, 0.0)
   g = (0.0, 0.0) (-93.6689, 42.1034) (0.0, 0.0)
@@ -87,17 +96,17 @@ Reflecting wall
 &ELECTROMAGNETIC_BC
   name = 'wall'
   type = 'pec'
-  face_set_ids = 2
+  face_set_ids = 6
 /
 
-x-normal symmetry planes: nxH=0 on side set 3
+x-normal symmetry planes: nxH=0 on side set 1, 2
 This is the default BC -- no need to specify
 
 y-normal symmetry planes: nxE=0
 &ELECTROMAGNETIC_BC
   name = 'y=const'
   type = 'pec'
-  face_set_ids = 4
+  face_set_ids = 3, 4
 /
 
 ### MATERIALS ##################################################################
