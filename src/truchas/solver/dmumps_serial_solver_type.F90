@@ -19,9 +19,12 @@ module dmumps_serial_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use index_map_type
-  implicit none
 #ifdef USE_MUMPS
+  use,intrinsic :: iso_fortran_env, only: int64, real64
+  implicit none
   include 'dmumps_struc.h'
+#else
+  implicit none
 #endif
   private
 
