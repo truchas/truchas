@@ -117,7 +117,8 @@ endif()
 # MUMPS library
 option(USE_MUMPS "Build with support for the MUMPS direct solver library" ON)
 if (USE_MUMPS)
-  find_package(MUMPS 5.7 REQUIRED)
+	find_package(MUMPS 5.7 REQUIRED CONFIG)
+  message(STATUS "Found MUMPS: ${MUMPS_FOUND}")
 endif()
 
 # NetCDF library
