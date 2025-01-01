@@ -123,7 +123,11 @@ contains
     else
       call TLS_info('    none specified')
     end if
+#ifdef INTEL_BUG20241231
+    if (allocated(nxE_bc)) call move_alloc(nxE_bc, bc)
+#else
     call move_alloc(nxE_bc, bc)
+#endif
 
   contains
 
@@ -182,7 +186,11 @@ contains
       else
         call TLS_info('    none specified')
       end if
+#ifdef INTEL_BUG2024131
+      if (allocated(nxh_bc) call move_alloc(nxh_bc, bc)
+#else
       call move_alloc(nxh_bc, bc)
+#endif
     end if
 
   contains
@@ -239,7 +247,11 @@ contains
     else
       call TLS_info('    none specified')
     end if
+#ifdef INTEL_BUG20241231
+    if (allocated(nxh_bc)) call move_alloc(nxh_bc, bc)
+#else
     call move_alloc(nxh_bc, bc)
+#endif
 
   contains
 
@@ -304,12 +316,12 @@ contains
 
     if (allocated(lhs)) then
       call lhs%add_complete
+      call move_alloc(lhs, lhs_bc)
     end if
     if (allocated(rhs)) then
       call rhs%add_complete(omit_edge_list)
+      call move_alloc(rhs, rhs_bc)
     end if
-    call move_alloc(lhs, lhs_bc)
-    call move_alloc(rhs, rhs_bc)
     call TLS_info('  done')
 
   contains
