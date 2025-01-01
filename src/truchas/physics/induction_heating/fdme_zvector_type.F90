@@ -257,12 +257,9 @@ contains
     strict = .true.
     if (present(full)) strict = .not.full
     if (strict) then
-      !NB: newer versions of md5_hash_type support complex data directly
-      call hash%update(this%u(:this%mesh%nedge_onP)%re)
-      call hash%update(this%u(:this%mesh%nedge_onP)%im)
+      call hash%update(this%u(:this%mesh%nedge_onP))
     else
-      call hash%update(this%u%re)
-      call hash%update(this%u%im)
+      call hash%update(this%u)
     end if
     string = hash%hexdigest()
   end function

@@ -301,16 +301,11 @@ contains
     strict = .true.
     if (present(full)) strict = .not.full
     if (strict) then
-      !NB: newer versions of md5_hash_type support complex data directly
-      call hash%update(this%w1(:this%mesh%nedge_onP)%re)
-      call hash%update(this%w1(:this%mesh%nedge_onP)%im)
-      call hash%update(this%w0(:this%mesh%nnode_onP)%re)
-      call hash%update(this%w0(:this%mesh%nnode_onP)%im)
+      call hash%update(this%w1(:this%mesh%nedge_onP))
+      call hash%update(this%w0(:this%mesh%nnode_onP))
     else
-      call hash%update(this%w1%re)
-      call hash%update(this%w1%im)
-      call hash%update(this%w0%re)
-      call hash%update(this%w0%im)
+      call hash%update(this%w1)
+      call hash%update(this%w0)
     end if
     string = hash%hexdigest()
   end function
