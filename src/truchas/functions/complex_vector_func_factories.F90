@@ -50,18 +50,7 @@ contains
     call params%get('type', ftype)
     select case (ftype)
     case ('constant')
-      !TODO: in Petaca 24.12 the next call can replace the following block
-      !call params%get('value', const)
-      block
-        class(*), allocatable :: tmp(:)
-        call params%get_any('value', tmp)
-        select type (tmp)
-        type is (complex(r8))
-          const = tmp
-        class default
-          INSIST(.false.)
-        end select
-      end block
+      call params%get('value', const)
       call alloc_const_complex_vector_func(f, const)
     case default
       INSIST(.false.) !TODO: need proper error handling
@@ -116,20 +105,7 @@ contains
         return
       end if
     else if (plist%is_vector(param)) then
-      !TODO: in Petaca 24.12 the next call can replace the following block
-      !call plist%get(param, const, stat, errmsg)
-      block
-        class(*), allocatable :: tmp(:)
-        call plist%get_any(param, tmp, stat, errmsg)
-        if (stat /= 0) return
-        select type (tmp)
-        type is (complex(r8))
-          const = tmp
-        class default
-          stat = 1
-          errmsg = 'not a complex(real64) parameter'
-        end select
-      end block
+      call plist%get(param, const, stat, errmsg)
       if (stat /= 0) return
       call alloc_const_complex_vector_func(f, const)
     else
