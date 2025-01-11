@@ -94,7 +94,6 @@ contains
   function new_simpl_mesh_internal(params, stat, errmsg) result(this)
 
     use exodus_mesh_factory
-    use exodus_mesh_tools, only: refine_hex_to_tet
     use parallel_communication
     use truchas_logging_services
 
