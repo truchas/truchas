@@ -102,7 +102,7 @@ contains
       !! Check the required TYPE value.
       if (type == NULL_C) call TLS_fatal(label // ': TYPE not specified')
       select case (lower_case(type))
-      case ('pec')
+      case ('pec', 'pmc')
         ! no parameters
       case ('ih-hfield')
         ! no parameters
