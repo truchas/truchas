@@ -221,8 +221,6 @@ contains
 
     use bndry_func1_class
     use nxH_bndry_func_type
-    class(scalar_func), allocatable :: f
-    class(vector_func), allocatable :: g
 
     class(em_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
@@ -233,39 +231,75 @@ contains
 
     type(nxH_bndry_func), allocatable :: nxH_bc
     type(parameter_list) :: unused_plist
-
-    call TLS_info('  generating "nxH" electromagnetic boundary condition')
+    logical :: found
 
     if (this%use_legacy_bc) then
-      call proc(unused_plist, this%nxH_setid, stat, errmsg)
+      call TLS_info('  generating "nxH" electromagnetic boundary condition')
+      found = .false.
+      call ih_proc(unused_plist, this%nxH_setid, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.found) call TLS_info('    none specified.')
     else
-      call this%iterate_list('ih-hfield', proc, stat, errmsg)
+      call TLS_info('  generating "pmc" electromagnetic boundary condition')
+      found = .false.
+      call this%iterate_list('pmc', pmc_proc, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.found) call TLS_info('    none specified.')
+
+      call TLS_info('  generating "nxH" electromagnetic boundary condition')
+      found = .false.
+      call this%iterate_list('ih-hfield', ih_proc, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.found) call TLS_info('    none specified.')
     end if
-    if (stat /= 0) return
+
     if (allocated(nxH_bc)) then
       call nxH_bc%add_complete(omit_edge_list)
-    else
-      call TLS_info('    none specified')
+      call move_alloc(nxH_bc, bc)
     end if
-#ifdef INTEL_BUG20241231
-    if (allocated(nxh_bc)) call move_alloc(nxh_bc, bc)
-#else
-    call move_alloc(nxh_bc, bc)
-#endif
 
   contains
+
+    !TODO: These should be taking/using complex-valued data ala Robin BC.
+
+    !! This call-back subroutine processes parameter list data that is specific
+    !! to the "pmc" BC specification and incrementally builds the BC object
+    !! accordingly. NB: The NXH_BC and MESH objects are accessed from the parent
+    !! subroutine through host association.
+
+    subroutine pmc_proc(plist, setids, stat, errmsg)
+      use scalar_func_factories, only: alloc_const_scalar_func
+      use vector_func_factories, only: alloc_const_vector_func
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f
+      class(vector_func), allocatable :: g
+      found = .true.
+      if (.not.allocated(nxH_bc)) then
+        allocate(nxH_bc)
+        call nxH_bc%init(this%mesh)
+      end if
+      call alloc_const_scalar_func(f, 0.0_r8)
+      call alloc_const_vector_func(g, [0.0_r8, 0.0_r8, 0.0_r8])
+      call nxH_bc%add(f, g, setids, stat, errmsg)
+    end subroutine
 
     !! This call-back subroutine processes parameter list data that is specific
     !! to the ih-hfield BC specification and incrementally builds the BC object
     !! accordingly. NB: The NXH_BC and MESH objects are accessed from the parent
     !! subroutine through host association.
 
-    subroutine proc(plist, setids, stat, errmsg)
+    subroutine ih_proc(plist, setids, stat, errmsg)
       use scalar_func_factories, only: alloc_const_scalar_func
       type(parameter_list), intent(inout) :: plist
       integer, intent(in) :: setids(:)
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f
+      class(vector_func), allocatable :: g
+      found = .true.
       if (.not.allocated(nxH_bc)) then
         allocate(nxH_bc)
         call nxH_bc%init(this%mesh)
@@ -273,7 +307,6 @@ contains
       call alloc_const_scalar_func(f, 1.0_r8)
       call this%src_fac%alloc_H_profile_func(g, scale_factor)
       call nxH_bc%add(f, g, setids, stat, errmsg)
-      if (stat /= 0) return
     end subroutine
 
   end subroutine alloc_fd_nxH_bc

@@ -1,0 +1,130 @@
+ANDREY'S WAVEGUIDE TEST PROBLEM
+
+&MESH
+  !mesh_file = 'meshes/wg1-hex-10.gen'
+  x_axis%coarse_grid = 0.0, 0.04318
+  x_axis%intervals = 8
+  y_axis%coarse_grid = 0.0, 0.02159
+  y_axis%intervals = 4
+  z_axis%coarse_grid = -0.2, 0.0, 0.2
+  z_axis%intervals = 40, 40
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0e-6
+  output_dt = 1.0e-6
+/
+
+&NUMERICS /
+
+&PHYSICS
+  materials = 'dielectric', 'VOID'
+  heat_transport = T
+  electromagnetics = T
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-4
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-4
+  verbose_stepping = T
+/
+
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'plane'
+  axis = 'z'
+  material_name = 'dielectric'
+  temperature = 300.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'VOID'
+  temperature = 300.0
+/
+
+### BOUNDARY CONDITIONS ########################################################
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  flux = 0.0
+/
+
+
+### EM HEATING #################################################################
+
+&EM_MESH
+  !mesh_file = 'meshes/wg1-tet-10.gen'
+  x_axis%coarse_grid = 0.0, 0.04318
+  x_axis%intervals = 8
+  y_axis%coarse_grid = 0.0, 0.02159
+  y_axis%intervals = 4
+  z_axis%coarse_grid = -0.2, 0.0, 0.2
+  z_axis%intervals = 40, 40
+/
+
+&ELECTROMAGNETICS
+  use_emfd_solver = T
+  !use_mixed_form = T
+  fd_solver_type = 'minres'
+  !fd_solver_type = 'mumps'
+  fd_precon_type = 'hiptmair' ! ignored for minres but needs some valid value
+  rel_tol = 1e-10
+  max_iter = 100000
+  print_level = 3
+  graphics_output = T
+  matl_change_threshold = 0.6
+/
+
+Frequency is specified here :/
+&INDUCTION_SOURCE_FIELD
+  !frequency = 500.0
+  frequency = 2.45d9
+  uniform_strength = 1
+  orientation = 'z'
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'walls'
+  type = 'pec'
+  face_set_ids = 2, 4, 6
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x=0 symmetry'
+  type = 'pmc'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'y=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 3
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'waveguide port'
+  type = 'wg-port'
+  face_set_ids = 5
+/
+
+### MATERIALS ##################################################################
+
+### STUFF ###
+
+&MATERIAL
+  name = 'dielectric'
+  density = 100.0
+  specific_heat = 100.0
+  conductivity = 1.0
+  electric_susceptibility = 3.0
+  electric_susceptibility_im = 0.1
+  magnetic_susceptibility = 0
+/
+
