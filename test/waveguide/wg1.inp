@@ -1,7 +1,13 @@
 ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &MESH
-  mesh_file = 'meshes/wg1-hex-10.gen'
+  !mesh_file = 'meshes/wg1-hex-10.gen'
+  x_axis%coarse_grid = -0.04318, 0.04318
+  y_axis%coarse_grid = -0.02159, 0.02159
+  z_axis%coarse_grid = -0.2, 0.2
+  x_axis%intervals = 9
+  y_axis%intervals = 4
+  z_axis%intervals = 40
 /
 
 &OUTPUTS
@@ -30,9 +36,12 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &BODY
   surface_name = 'from mesh file'
-  mesh_material_number = 2
   material_name = 'dielectric'
   temperature = 300.0
+
+  !mesh_material_number = 2
+  surface_name = 'plane'
+  axis = 'z'
 /
 
 &BODY
@@ -46,8 +55,8 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 &THERMAL_BC
   name = 'adiabatic'
   type = 'flux'
-  face_set_ids = 1, 2, 3
-  !face_set_ids = 2, 3
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  !face_set_ids = 1, 2, 3
   flux = 0.0
 /
 
@@ -55,7 +64,13 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 ### EM HEATING #################################################################
 
 &EM_MESH
-  mesh_file = 'meshes/wg1-tet-10.gen'
+  !mesh_file = 'meshes/wg1-tet-10.gen'
+  x_axis%coarse_grid = -0.04318, 0.04318
+  y_axis%coarse_grid = -0.02159, 0.02159
+  z_axis%coarse_grid = -0.2, 0.2
+  x_axis%intervals = 9
+  y_axis%intervals = 6
+  z_axis%intervals = 50
 /
 
 &ELECTROMAGNETICS
@@ -82,13 +97,15 @@ Frequency is specified here :/
 &ELECTROMAGNETIC_BC
   name = 'walls'
   type = 'pec'
-  face_set_ids = 2, 3
+  face_set_ids = 1, 2, 3, 4, 6
+  !face_set_ids = 2, 3
 /
 
 &ELECTROMAGNETIC_BC
   name = 'waveguide port'
   type = 'wg-port'
-  face_set_ids = 1
+  face_set_ids = 5
+  !face_set_ids = 1
 /
 
 ### MATERIALS ##################################################################

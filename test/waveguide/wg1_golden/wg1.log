@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 24.07-67-gaf03f4fb-dirty
+   code:                Truchas 24.07-72-gb1077d2f-dirty
    build architecture:  arm64
-   build date/time:     2024-12-17 15:45:14
+   build date/time:     2025-01-09 15:29:40
    build flags:          -g -O2 -DNDEBUG
    build host:          pn2405035.lanl.gov
    run architecture:    Darwin pn2405035.lanl.gov 23.6.0 Darwin Kernel
    run host:            pn2405035.lanl.gov
-   run date/time:       17 Dec 24 15:45:59
+   run date/time:       14 Jan 25 17:02:48
    processors:          1
 
 ================================================================================
@@ -39,7 +39,9 @@ Reading PHASE_CHANGE namelists ...
   none found
 Reading OUTPUTS namelist ...
 Reading MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
 Reading EM_MESH namelist ...
+  MESH_FILE not specified; using inputs for an internally generated mesh
 Reading BODY namelists (first pass) ...
   read 2 BODY namelists
 Reading BODY namelists (second pass) ...
@@ -80,10 +82,10 @@ Input file "wg1.inp" closed
 INITIALIZATION
 
 Initializing mesh "MAIN" ...
-  reading ExodusII mesh file "./meshes/wg1-hex-10.gen"
+  generating an internal ExodusII mesh
 
 Initializing mesh "EM" ...
-  reading ExodusII mesh file "./meshes/wg1-tet-10.gen"
+  generating an internal ExodusII mesh
 
 Computing initial volume fractions ...
 
@@ -125,15 +127,19 @@ EXECUTION
 computing the Joule heat ...
   generating "nxE" electromagnetic boundary condition
     using ELECTROMAGNETICS_BC[walls]
+  generating "pmc" electromagnetic boundary condition
+    none specified.
   generating "nxH" electromagnetic boundary condition
-    none specified
+    none specified.
   generating "wg-port" electromagnetic boundary condition
     using ELECTROMAGNETICS_BC[waveguide port]
+  generating "impedance" electromagnetic boundary condition
+    none specified.
   generating "robin" electromagnetic boundary condition
     none specified.
   done
-EMFD solve complete. Residual, divE:     1.0514E-08    1.2342E-05
-|Q|_max= 1.4562E+00, Q_total= 2.5894E-04
+EMFD solve complete. Residual, divE:     1.0201E-08    5.5515E-06
+|Q|_max= 1.4936E+00, Q_total= 2.7052E-04
   writing EM restart data for EM001
 
 ================================================================================
@@ -144,30 +150,30 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  1.745E+00 --- Total
-    1.960E-03 --- Input
-    2.202E-01 --- Initialization
-      6.239E-03 --- mesh-MAIN
-        2.380E-04 --- ghost-cells
-          2.370E-04 --- cell-ghosts
-            1.260E-04 --- node-neighbors
-            1.400E-05 --- ghost-cells
+  2.751E+00 --- Total
+    4.869E-03 --- Input
+    1.255E-01 --- Initialization
+      9.632E-03 --- mesh-MAIN
+        2.260E-04 --- ghost-cells
+          2.250E-04 --- cell-ghosts
+            1.320E-04 --- node-neighbors
+            1.500E-05 --- ghost-cells
           0.000E+00 --- link-ghosts
           1.000E-06 --- assemble-ghosts
-      1.504E-02 --- mesh-EM
-      5.700E-04 --- VOF Initialize
-      3.180E-04 --- HTSD function
-        3.140E-04 --- HT function
-    1.522E+00 --- Main Cycle
-      1.516E+00 --- joule heat
-        4.850E-04 --- mesh-to-mesh mapping
-        1.515E+00 --- simulation
-          2.053E-02 --- div
-          2.281E-01 --- setup
-          1.221E+00 --- solve
-            1.832E-02 --- precon
-          1.210E-04 --- mesh-to-mesh mapping
+      1.767E-02 --- mesh-EM
+      3.943E-03 --- VOF Initialize
+      4.670E-04 --- HTSD function
+        4.630E-04 --- HT function
+    2.619E+00 --- Main Cycle
+      2.612E+00 --- joule heat
+        2.580E-04 --- mesh-to-mesh mapping
+        2.612E+00 --- simulation
+          1.627E-02 --- div
+          3.561E-01 --- setup
+          2.200E+00 --- solve
+            1.656E-02 --- precon
+          7.800E-05 --- mesh-to-mesh mapping
       5.000E-06 --- Time Step
 
 
-truchas terminated normally on 17 Dec 24 at 15:46:01
+truchas terminated normally on 14 Jan 25 at 17:02:51
