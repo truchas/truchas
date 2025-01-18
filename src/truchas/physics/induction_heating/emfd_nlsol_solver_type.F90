@@ -112,18 +112,20 @@ contains
       select case (choice)
       case ('ams', 'AMS')
         allocate(fdme_ams_precon :: this%precon)
+        call this%precon%init(this%model, plist)
       case ('hiptmair')
         allocate(fdme_hiptmair_precon :: this%precon)
+        call this%precon%init(this%model, plist)
+      case ('gs', 'boomer') ! do nothing -- for minres
       case default
         call tls_fatal('unknown preconditioner type: ' // choice)
       end select
-      call this%precon%init(this%model, plist)
     end if
 
     if (allocated(this%gmres)) then
       call this%gmres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%minres)) then
-      call this%minres%init(this%model, this%precon, params, ierr, errmsg)
+      call this%minres%init(this%model, params, ierr, errmsg)
     else if (allocated(this%mixed_minres)) then
       call this%mixed_minres%init(this%model, this%precon, params, ierr, errmsg)
     else if (allocated(this%nlk)) then
