@@ -45,20 +45,14 @@ contains
     namelist /electromagnetics/ fd_solver_type, fd_precon_type
 
     !! Linear solver variables
-    integer :: max_iter, print_level, ams_cycle_type, ams_proj_freq, krylov_dim, max_vec
-    real(r8) :: abs_tol, rel_tol, vec_tol
+    integer :: max_iter, print_level, ams_cycle_type, ams_proj_freq
+    real(r8) :: abs_tol, rel_tol
     namelist /electromagnetics/ abs_tol, rel_tol, max_iter, print_level, & ! common
-        ams_cycle_type, ams_proj_freq, &   ! Hypre AMS
-        krylov_dim, &       ! GMRES
-        max_vec, vec_tol    ! NLK
+        ams_cycle_type, ams_proj_freq   ! Hypre AMS
 
     !! Preconditioner variables (TD only)
     integer :: relax_type
     namelist /electromagnetics/ relax_type
-
-    !! Preconditioner variables (FD only)
-    integer  :: max_ams_iter
-    namelist /electromagnetics/max_ams_iter
 
     !! Legacy EM BC variables
     logical :: use_legacy_bc
@@ -97,13 +91,8 @@ contains
     print_level = NULL_I
     ams_cycle_type = NULL_I
     ams_proj_freq = NULL_I
-    krylov_dim = NULL_I
-    max_vec = NULL_I
-    vec_tol = NULL_R
 
     relax_type = NULL_I
-
-    max_ams_iter = NULL_I
 
     use_legacy_bc = .false.
     symmetry_axis  = NULL_C
@@ -134,13 +123,8 @@ contains
     call broadcast(print_level)
     call broadcast(ams_cycle_type)
     call broadcast(ams_proj_freq)
-    call broadcast(krylov_dim)
-    call broadcast(max_vec)
-    call broadcast(vec_tol)
 
     call broadcast(relax_type)
-
-    call broadcast(max_ams_iter)
 
     call broadcast(use_legacy_bc)
     call broadcast(symmetry_axis)
@@ -180,11 +164,6 @@ contains
       if (print_level /= NULL_I) call plist%set('print-level', print_level)
 
       select case (fd_solver_type)
-      case ('nlk')
-        if (max_vec /= NULL_I) call plist%set('max-vec', max_vec)
-        if (vec_tol /= NULL_R) call plist%set('vec-tol', vec_tol)
-      case ('gmres')
-        if (krylov_dim /= NULL_I) call plist%set('krylov-dim', krylov_dim)
       case ('minres')
       case ('mumps')
       case (NULL_C)
@@ -196,10 +175,6 @@ contains
 
       if (fd_solver_type /= 'mumps') then
         select case (fd_precon_type)
-        case ('ams')
-          if (max_ams_iter /= NULL_I) call plist%set('max-iter', max_ams_iter)
-          if (ams_cycle_type /= NULL_I) call plist%set('ams-cycle-type', ams_cycle_type)
-        case ('hiptmair')
         case ('gs','boomer')
         case (NULL_C)
           call TLS_fatal('FD_PRECON_TYPE not specified')
