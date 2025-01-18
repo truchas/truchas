@@ -6,7 +6,6 @@ module fdme_mixed_minres_solver_type
   use complex_lin_op2_class
   use fdme_mixed_zvector_type
   use fdme_model_type
-  use fdme_precon_class
   use zvector_class
   use cs_minres_solver2_type
   implicit none
@@ -14,7 +13,6 @@ module fdme_mixed_minres_solver_type
 
   type, extends(complex_lin_op2) :: fdme_lin_op
     type(fdme_model), pointer :: model => null() ! unowned reference
-    class(fdme_precon), pointer :: my_precon => null() ! unowned reference
     real(r8), allocatable :: dinv(:)
   contains
     procedure :: matvec
@@ -33,11 +31,10 @@ module fdme_mixed_minres_solver_type
 
 contains
 
-  subroutine init(this, model, precon, params, stat, errmsg)
+  subroutine init(this, model, params, stat, errmsg)
     use parameter_list_type
     class(fdme_mixed_minres_solver), intent(out) :: this
     type(fdme_model), pointer :: model !TODO: don't make a pointer
-    class(fdme_precon), intent(in), target :: precon
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -46,7 +43,6 @@ contains
     call this%rhs%init(model%mesh)
     call this%minres%init(params)
     this%lin_op%model => model
-    this%lin_op%my_precon => precon
     stat = 0
   end subroutine
 
