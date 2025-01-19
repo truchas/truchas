@@ -78,7 +78,11 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
-  fd_precon_type = 'gs'
+  fd_precon_type = 'gs' ! minres(none, gs, boomer)
+  boomer_num_cycles = 1
+  !boomer_interp_type = 6
+  !boomer_relax_down_type = 13
+  !boomer_relax_up_type = 14
   rel_tol = 1e-10
   max_iter = 100000
   print_level = 3

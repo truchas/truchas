@@ -1,13 +1,12 @@
-ANDREY'S WAVEGUIDE TEST PROBLEM
+PLANE WAVE NORMALLY INCIDENT ON WALL
 
-&MESH
-  !mesh_file = 'meshes/wg1-hex-10.gen'
-  x_axis%coarse_grid = 0.0, 0.04318
-  x_axis%intervals = 8
-  y_axis%coarse_grid = 0.0, 0.02159
-  y_axis%intervals = 4
-  z_axis%coarse_grid = -0.2, 0.0, 0.2
-  z_axis%intervals = 40, 40
+&MESH ! 5mm resolution in z -- coarser than the EM mesh
+  x_axis%coarse_grid = -0.025, 0.025
+  x_axis%intervals = 5
+  y_axis%coarse_grid = -0.025, 0.025
+  y_axis%intervals = 5
+  z_axis%coarse_grid = -0.1, 0.1
+  z_axis%intervals = 40
 /
 
 &OUTPUTS
@@ -31,19 +30,12 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   verbose_stepping = T
 /
 
-
 ### BODIES #####################################################################
 
 &BODY
-  surface_name = 'plane'
-  axis = 'z'
+  surface_name = 'from mesh file'
+  mesh_material_number = 1
   material_name = 'dielectric'
-  temperature = 300.0
-/
-
-&BODY
-  surface_name = 'background'
-  material_name = 'VOID'
   temperature = 300.0
 /
 
@@ -56,17 +48,15 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   flux = 0.0
 /
 
-
 ### EM HEATING #################################################################
 
-&EM_MESH
-  !mesh_file = 'meshes/wg1-tet-10.gen'
-  x_axis%coarse_grid = 0.0, 0.04318
-  x_axis%intervals = 8
-  y_axis%coarse_grid = 0.0, 0.02159
-  y_axis%intervals = 4
-  z_axis%coarse_grid = -0.2, 0.0, 0.2
-  z_axis%intervals = 40, 40
+&EM_MESH ! 1mm resolution in z
+  x_axis%coarse_grid = -0.025, 0.025
+  x_axis%intervals = 10
+  y_axis%coarse_grid = -0.025, 0.025
+  y_axis%intervals = 10
+  z_axis%coarse_grid = -0.1, 0.1
+  z_axis%intervals = 200
 /
 
 &ELECTROMAGNETICS
@@ -74,12 +64,12 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
-  fd_precon_type = 'gs' ! minres(none, gs, boomer)
-  boomer_num_cycles = 1
+  fd_precon_type = 'boomer' ! minres(none, gs, boomer)
+  boomer_num_cycles = 2
   !boomer_interp_type = 6
   !boomer_relax_down_type = 13
   !boomer_relax_up_type = 14
-  rel_tol = 1e-10
+  rel_tol = 1e-12
   max_iter = 100000
   print_level = 3
   graphics_output = T
@@ -94,28 +84,33 @@ Frequency is specified here :/
   orientation = 'z'
 /
 
-&ELECTROMAGNETIC_BC
-  name = 'walls'
-  type = 'pec'
-  face_set_ids = 2, 4, 6
-/
+Open artificial boundary. This should introduce the right moving
+wave and pass the reflected left moving wave.
 
 &ELECTROMAGNETIC_BC
-  name = 'x=0 symmetry'
-  type = 'pmc'
-  face_set_ids = 1
-/
-
-&ELECTROMAGNETIC_BC
-  name = 'y=0 symmetry plane'
-  type = 'pec'
-  face_set_ids = 3
-/
-
-&ELECTROMAGNETIC_BC
-  name = 'waveguide port'
-  type = 'wg-port'
+  name = 'left open boundary'
+  type = 'robin'
   face_set_ids = 5
+  alpha = (0.0,51.3482)
+  !g = (0.0, 0.0) (0.0, 102.6964) (0.0, 0.0)
+  g = (0.0, 0.0) (-93.6689, 42.1034) (0.0, 0.0)
+/
+
+Reflecting wall
+&ELECTROMAGNETIC_BC
+  name = 'wall'
+  type = 'pec'
+  face_set_ids = 6
+/
+
+x-normal symmetry planes: nxH=0 on side set 1, 2
+This is the default BC -- no need to specify
+
+y-normal symmetry planes: nxE=0
+&ELECTROMAGNETIC_BC
+  name = 'y=const'
+  type = 'pec'
+  face_set_ids = 3, 4
 /
 
 ### MATERIALS ##################################################################
@@ -127,8 +122,8 @@ Frequency is specified here :/
   density = 100.0
   specific_heat = 100.0
   conductivity = 1.0
-  electric_susceptibility = 3.0
-  electric_susceptibility_im = 0.1
-  magnetic_susceptibility = 0
+  !electric_susceptibility = 3.0
+  !electric_susceptibility_im = 0.1
+  !magnetic_susceptibility = 0
 /
 
