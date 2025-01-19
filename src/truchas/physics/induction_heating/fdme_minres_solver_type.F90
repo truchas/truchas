@@ -6,7 +6,7 @@ module fdme_minres_solver2_type
   use complex_lin_op2_class
   use fdme_zvector_type
   use fdme_model_type
-  use new_fdme_precon_class
+  use fdme_precon_class
   use cs_minres_solver2_type
   implicit none
   private
@@ -72,10 +72,10 @@ contains
     class(fdme_minres_solver2), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
-    this%rhs%u(:) = this%model%rhs
+    this%rhs%w1(:) = this%model%rhs
     call this%lin_op%my_precon%setup
     call this%minres%solve(this%lin_op, this%rhs, this%efield)
-    efield(:) = this%efield%u
+    efield(:) = this%efield%w1
     stat = 0 !FIXME: need to extract from minres
   end subroutine
 
@@ -88,7 +88,7 @@ contains
       select type (y)
       type is (fdme_zvector)
         call x%gather_offp
-        call this%model%A%matvec(x%u, y%u)
+        call this%model%A%matvec(x%w1, y%w1)
       end select
     end select
   end subroutine
@@ -102,7 +102,7 @@ contains
       select type (y)
       type is (fdme_zvector)
         call x%gather_offp
-        call this%my_precon%apply(x%u, y%u)
+        call this%my_precon%apply(x%w1, y%w1)
         call y%gather_offp ! necessary?
       end select
     end select

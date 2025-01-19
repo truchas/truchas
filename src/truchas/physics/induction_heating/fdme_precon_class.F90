@@ -1,4 +1,4 @@
-module new_fdme_precon_class
+module fdme_precon_class
 
   use fdme_model_type
   implicit none
@@ -35,4 +35,4 @@ module new_fdme_precon_class
     end subroutine
   end interface
 
-end module new_fdme_precon_class
+end module fdme_precon_class
