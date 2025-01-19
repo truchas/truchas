@@ -43,6 +43,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    type(parameter_list), pointer :: plist
     character(:), allocatable :: precon_type
 
     this%model => model
@@ -51,19 +52,22 @@ contains
     call this%minres%init(params)
     this%lin_op%model => model
 
-    call params%get('precon-type', precon_type, stat, errmsg, default='gs')
+    plist => params%sublist('precon')
+    call plist%get('type', precon_type, stat, errmsg, default='gs')
     if (stat /= 0) return
     select case (precon_type)
     case ('gs') ! block Gauss-Seidel
       allocate(fdme_precon_gs :: this%lin_op%my_precon)
+      call this%lin_op%my_precon%init(model, plist, stat, errmsg)
     case ('boomer') ! Hypre BoomerAMG
       allocate(fdme_precon_boomer :: this%lin_op%my_precon)
+      call this%lin_op%my_precon%init(model, plist, stat, errmsg)
+    case ('none')
     case default
       stat = 1
-      errmsg = 'invalid precon-type value: ' // precon_type
+      errmsg = 'invalid type value: ' // precon_type
       return
     end select
-    call this%lin_op%my_precon%init(model, params, stat, errmsg)
     if (stat /= 0) return
 
   end subroutine
@@ -73,7 +77,7 @@ contains
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     this%rhs%w1(:) = this%model%rhs
-    call this%lin_op%my_precon%setup
+    if (allocated(this%lin_op%my_precon)) call this%lin_op%my_precon%setup
     call this%minres%solve(this%lin_op, this%rhs, this%efield)
     efield(:) = this%efield%w1
     stat = 0 !FIXME: need to extract from minres
@@ -97,15 +101,19 @@ contains
     use zvector_class
     class(fdme_lin_op), intent(inout) :: this
     class(zvector) :: x, y
-    select type (x)
-    type is (fdme_zvector)
-      select type (y)
+    if (allocated(this%my_precon)) then
+      select type (x)
       type is (fdme_zvector)
-        call x%gather_offp
-        call this%my_precon%apply(x%w1, y%w1)
-        call y%gather_offp ! necessary?
+        select type (y)
+        type is (fdme_zvector)
+          call x%gather_offp
+          call this%my_precon%apply(x%w1, y%w1)
+          call y%gather_offp ! necessary?
+        end select
       end select
-    end select
+    else ! no preconditioning
+      call y%copy(x)
+    end if
   end subroutine
 
 end module fdme_minres_solver2_type

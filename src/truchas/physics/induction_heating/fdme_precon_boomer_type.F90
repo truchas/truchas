@@ -38,16 +38,12 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist
-
     this%model => model
 
     allocate(this%matrix)
     call this%matrix%init(this%model%A%graph, take_graph=.false.)
 
-    plist => params%sublist('boomer') !FIXME
-    call plist%set('num-cycles', 1) !HACK
-    call this%boomer%init(this%matrix, plist, stat, errmsg)
+    call this%boomer%init(this%matrix, params, stat, errmsg)
     if (stat /= 0) return
     
   end subroutine

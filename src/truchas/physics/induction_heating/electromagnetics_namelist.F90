@@ -54,6 +54,16 @@ contains
     integer :: relax_type
     namelist /electromagnetics/ relax_type
 
+    !! HYPRE BoomerAMG preconditioner variables (FD only)
+    integer  :: boomer_num_cycles
+    real(r8) :: boomer_strong_threshold
+    integer  :: boomer_coarsen_type, boomer_interp_type
+    integer  :: boomer_relax_down_type, boomer_relax_up_type
+    integer  :: boomer_print_level, boomer_debug_level, boomer_logging_level
+    namelist /electromagnetics/ boomer_num_cycles, boomer_strong_threshold, boomer_coarsen_type, &
+        boomer_interp_type, boomer_relax_down_type, boomer_relax_up_type, boomer_print_level, &
+        boomer_debug_level, boomer_logging_level
+
     !! Legacy EM BC variables
     logical :: use_legacy_bc
     character :: symmetry_axis
@@ -94,6 +104,16 @@ contains
 
     relax_type = NULL_I
 
+    boomer_num_cycles = NULL_I
+    boomer_strong_threshold = NULL_R
+    boomer_coarsen_type = NULL_I
+    boomer_interp_type = NULL_I
+    boomer_relax_down_type = NULL_I
+    boomer_relax_up_type = NULL_I
+    boomer_print_level = NULL_I
+    boomer_debug_level = NULL_I
+    boomer_logging_level = NULL_I
+
     use_legacy_bc = .false.
     symmetry_axis  = NULL_C
     em_domain_type = NULL_C
@@ -125,6 +145,16 @@ contains
     call broadcast(ams_proj_freq)
 
     call broadcast(relax_type)
+
+    call broadcast(boomer_num_cycles)
+    call broadcast(boomer_strong_threshold)
+    call broadcast(boomer_coarsen_type)
+    call broadcast(boomer_interp_type)
+    call broadcast(boomer_relax_down_type)
+    call broadcast(boomer_relax_up_type)
+    call broadcast(boomer_print_level)
+    call broadcast(boomer_debug_level)
+    call broadcast(boomer_logging_level)
 
     call broadcast(use_legacy_bc)
     call broadcast(symmetry_axis)
@@ -174,15 +204,24 @@ contains
       call plist%set('solver-type', fd_solver_type)
 
       if (fd_solver_type /= 'mumps') then
+        plist => plist%sublist('precon')
         select case (fd_precon_type)
-        case ('gs','boomer')
+        case ('gs', 'none')
+        case ('boomer')
+          if (boomer_num_cycles /= NULL_I)  call plist%set('num-cycles', boomer_num_cycles)
+          if (boomer_strong_threshold /= NULL_R)  call plist%set('strong-threshold', boomer_strong_threshold)
+          if (boomer_coarsen_type /= NULL_I)  call plist%set('coarsen-type', boomer_coarsen_type)
+          if (boomer_interp_type /= NULL_I)  call plist%set('interp-type', boomer_interp_type)
+          if (boomer_relax_down_type /= NULL_I)  call plist%set('relax-down-type', boomer_relax_down_type)
+          if (boomer_relax_up_type /= NULL_I)  call plist%set('relax-up-type', boomer_relax_up_type)
+          if (boomer_print_level /= NULL_I)  call plist%set('print-level', boomer_print_level)
+          if (boomer_debug_level /= NULL_I)  call plist%set('debug-level', boomer_debug_level)
+          if (boomer_logging_level /= NULL_I)  call plist%set('logging-level', boomer_logging_level)
         case (NULL_C)
           call TLS_fatal('FD_PRECON_TYPE not specified')
         case default
           call TLS_fatal('invalid FD_PRECON_TYPE: ' // fd_precon_type)
         end select
-        call plist%set('precon-type', fd_precon_type)
-        plist => plist%sublist('precon')
         call plist%set('type', fd_precon_type)
       end if
 
