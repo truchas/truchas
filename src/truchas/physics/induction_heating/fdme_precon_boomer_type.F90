@@ -3,7 +3,7 @@
 module fdme_precon_boomer_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use new_fdme_precon_class
+  use fdme_precon_class
   use fdme_model_type
   use pcsr_matrix_type
   use pcsr_precon_boomer_type

@@ -9,7 +9,7 @@ module fdme_zvector_type
 
   type, extends(zvector), public :: fdme_zvector
     type(simpl_mesh), pointer :: mesh => null()
-    complex(r8), allocatable :: u(:)  ! edge-based unknowns
+    complex(r8), allocatable :: w1(:)  ! edge-based unknowns (W^1 space)
   contains
     !! Deferred base class procedures
     procedure :: clone1
@@ -44,8 +44,8 @@ contains
     class(fdme_zvector), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     this%mesh => mesh
-    allocate(this%u(mesh%nedge))
-    this%u = 0
+    allocate(this%w1(mesh%nedge))
+    this%w1 = 0
   end subroutine
 
   !! Specific subroutine for the generic INIT. Initialize a FDME_VECTOR object
@@ -59,7 +59,7 @@ contains
 
   subroutine gather_offp(this)
     class(fdme_zvector), intent(inout) :: this
-    call this%mesh%edge_imap%gather_offp(this%u)
+    call this%mesh%edge_imap%gather_offp(this%w1)
   end subroutine
 
   subroutine clone1(this, clone)
@@ -80,26 +80,26 @@ contains
     class(zvector), intent(in) :: src
     select type (src)
     class is (fdme_zvector)
-      dest%u(:) = src%u
+      dest%w1(:) = src%w1
     end select
   end subroutine
 
   subroutine setval(this, val)
     class(fdme_zvector), intent(inout) :: this
     complex(r8), intent(in) :: val
-    this%u = val
+    this%w1 = val
   end subroutine
 
   subroutine setzero(this)
     class(fdme_zvector), intent(inout) :: this
-    this%u = 0
+    this%w1 = 0
   end subroutine
 
   subroutine conjg1_(this)
     class(fdme_zvector), intent(inout) :: this
     integer :: j
     do j = 1, this%mesh%nedge_onP
-      this%u(j)%im = -this%u(j)%im
+      this%w1(j)%im = -this%w1(j)%im
     end do
   end subroutine
 
@@ -110,7 +110,7 @@ contains
     select type (src)
     type is (fdme_zvector)
       do j = 1, this%mesh%nedge_onP
-        this%u(j) = conjg(src%u(j))
+        this%w1(j) = conjg(src%w1(j))
       end do
     end select
   end subroutine
@@ -120,7 +120,7 @@ contains
     complex(r8), intent(in) :: a
     integer :: j
     do j = 1, this%mesh%nedge_onP
-      this%u(j) = a * this%u(j)
+      this%w1(j) = a * this%w1(j)
     end do
   end subroutine
 
@@ -133,7 +133,7 @@ contains
     select type (x)
     class is (fdme_zvector)
       do j = 1, this%mesh%nedge_onP
-        this%u(j) = a * x%u(j) + this%u(j)
+        this%w1(j) = a * x%w1(j) + this%w1(j)
       end do
     end select
   end subroutine
@@ -148,11 +148,11 @@ contains
     class is (fdme_zvector)
       if (b == 0) then
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j)
+          this%w1(j) = a * x%w1(j)
         end do
       else
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j) + b * this%u(j)
+          this%w1(j) = a * x%w1(j) + b * this%w1(j)
         end do
       end if
     end select
@@ -169,7 +169,7 @@ contains
       select type (y)
       class is (fdme_zvector)
         do j = 1, this%mesh%nedge_onP
-          this%u(j) = a * x%u(j) + b * y%u(j) + this%u(j)
+          this%w1(j) = a * x%w1(j) + b * y%w1(j) + this%w1(j)
         end do
       end select
     end select
@@ -187,11 +187,11 @@ contains
       class is (fdme_zvector)
         if (c == 0) then
           do j = 1, this%mesh%nedge_onP
-            this%u(j) = a * x%u(j) + b * y%u(j)
+            this%w1(j) = a * x%w1(j) + b * y%w1(j)
           end do
         else
           do j = 1, this%mesh%nedge_onP
-            this%u(j) = a * x%u(j) + b * y%u(j) + c * this%u(j)
+            this%w1(j) = a * x%w1(j) + b * y%w1(j) + c * this%w1(j)
           end do
         end if
       end select
@@ -208,7 +208,7 @@ contains
     class is (fdme_zvector)
       dp = 0.0_r8
       do j = 1, x%mesh%nedge_onP
-        dp = dp + conjg(x%u(j)) * y%u(j)
+        dp = dp + conjg(x%w1(j)) * y%w1(j)
       end do
       dp = global_sum(dp)
     end select
@@ -220,7 +220,7 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = norm + abs(this%u(j))
+      norm = norm + abs(this%w1(j))
     end do
     norm = global_sum(norm)
   end function
@@ -231,7 +231,7 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = norm + this%u(j)%re**2 + this%u(j)%im**2
+      norm = norm + this%w1(j)%re**2 + this%w1(j)%im**2
     end do
     norm = sqrt(global_sum(norm))
   end function
@@ -242,7 +242,7 @@ contains
     integer :: j
     norm = 0
     do j = 1, this%mesh%nedge_onP
-      norm = max(norm, abs(this%u(j)))
+      norm = max(norm, abs(this%w1(j)))
     end do
     norm = global_maxval(norm)
   end function
@@ -258,11 +258,11 @@ contains
     if (present(full)) strict = .not.full
     if (strict) then
       !NB: newer versions of md5_hash_type support complex data directly
-      call hash%update(this%u(:this%mesh%nedge_onP)%re)
-      call hash%update(this%u(:this%mesh%nedge_onP)%im)
+      call hash%update(this%w1(:this%mesh%nedge_onP)%re)
+      call hash%update(this%w1(:this%mesh%nedge_onP)%im)
     else
-      call hash%update(this%u%re)
-      call hash%update(this%u%im)
+      call hash%update(this%w1%re)
+      call hash%update(this%w1%im)
     end if
     string = hash%hexdigest()
   end function
