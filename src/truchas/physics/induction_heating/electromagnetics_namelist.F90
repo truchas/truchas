@@ -24,7 +24,7 @@ contains
     integer :: n, ios
     logical :: found
     character(128) :: iom
-    type(parameter_list), pointer :: plist
+    type(parameter_list), pointer :: plist, sublist
 
     !! EM heating model namelist variables
     real(r8) :: matl_change_threshold
@@ -206,23 +206,25 @@ contains
       if (fd_solver_type /= 'mumps') then
         plist => plist%sublist('precon')
         select case (fd_precon_type)
-        case ('gs', 'none')
+        case ('ilu', 'gs', 'none')
         case ('boomer')
-          if (boomer_num_cycles /= NULL_I)  call plist%set('num-cycles', boomer_num_cycles)
-          if (boomer_strong_threshold /= NULL_R)  call plist%set('strong-threshold', boomer_strong_threshold)
-          if (boomer_coarsen_type /= NULL_I)  call plist%set('coarsen-type', boomer_coarsen_type)
-          if (boomer_interp_type /= NULL_I)  call plist%set('interp-type', boomer_interp_type)
-          if (boomer_relax_down_type /= NULL_I)  call plist%set('relax-down-type', boomer_relax_down_type)
-          if (boomer_relax_up_type /= NULL_I)  call plist%set('relax-up-type', boomer_relax_up_type)
-          if (boomer_print_level /= NULL_I)  call plist%set('print-level', boomer_print_level)
-          if (boomer_debug_level /= NULL_I)  call plist%set('debug-level', boomer_debug_level)
-          if (boomer_logging_level /= NULL_I)  call plist%set('logging-level', boomer_logging_level)
+          sublist => plist%sublist('params')
+          if (boomer_num_cycles /= NULL_I)  call sublist%set('num-cycles', boomer_num_cycles)
+          if (boomer_strong_threshold /= NULL_R)  call sublist%set('strong-threshold', boomer_strong_threshold)
+          if (boomer_coarsen_type /= NULL_I)  call sublist%set('coarsen-type', boomer_coarsen_type)
+          if (boomer_interp_type /= NULL_I)  call sublist%set('interp-type', boomer_interp_type)
+          if (boomer_relax_down_type /= NULL_I)  call sublist%set('relax-down-type', boomer_relax_down_type)
+          if (boomer_relax_up_type /= NULL_I)  call sublist%set('relax-up-type', boomer_relax_up_type)
+          if (boomer_print_level /= NULL_I)  call sublist%set('print-level', boomer_print_level)
+          if (boomer_debug_level /= NULL_I)  call sublist%set('debug-level', boomer_debug_level)
+          if (boomer_logging_level /= NULL_I)  call sublist%set('logging-level', boomer_logging_level)
         case (NULL_C)
           call TLS_fatal('FD_PRECON_TYPE not specified')
         case default
           call TLS_fatal('invalid FD_PRECON_TYPE: ' // fd_precon_type)
         end select
         call plist%set('type', fd_precon_type)
+        call plist%set('method', fd_precon_type) ! for pcsr_precon_factory (FIXME)
       end if
 
     else ! Time domain solver parameters

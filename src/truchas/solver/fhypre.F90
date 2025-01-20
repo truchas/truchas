@@ -190,6 +190,20 @@ module fhypre
   public :: fHYPRE_AMSGetNumIterations
   public :: fHYPRE_AMSGetFinalRelativeResidualNorm
 
+  !!ILU interface procedures
+  public :: fHYPRE_ILUCreate
+  public :: fHYPRE_ILUSetType
+  public :: fHYPRE_ILUSetMaxIter
+  public :: fHYPRE_ILUSetTol
+  public :: fHYPRE_ILUSetLocalReordering
+  public :: fHYPRE_ILUSetPrintLevel
+  public :: fHYPRE_ILUSetLevelOfFill
+  public :: fHYPRE_ILUSetMaxNnzPerRow
+  public :: fHYPRE_ILUSetDropThreshold
+  public :: fHYPRE_ILUSetup
+  public :: fHYPRE_ILUSolve
+  public :: fHYPRE_ILUDestroy
+
   !! Miscellaneous procedures
   public :: fHYPRE_ClearAllErrors
   public :: fHYPRE_Initialize
@@ -827,6 +841,87 @@ contains
     ierr = HYPRE_AMSGetFinalRelativeResidualNorm(solver, rel_resid_norm)
   end subroutine
 
+  !!!! ILU INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_ILUCreate(solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUCreate(solver)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetType(solver, ilu_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: ilu_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetType(solver, ilu_type)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetMaxIter(solver, max_iter, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: max_iter
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetMaxIter(solver, max_iter)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetTol(solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetTol(solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLocalReordering(solver, reordering_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: reordering_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLocalReordering(solver, reordering_type)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetPrintLevel(solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetPrintLevel(solver, print_level)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLevelOfFill(solver, lfil, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: lfil
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLevelOfFill(solver, lfil)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetMaxNnzPerRow(solver, nzmax, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: nzmax
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetMaxNnzPerRow(solver, nzmax)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetDropThreshold(solver, threshold, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in)  :: threshold
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetDropThreshold(solver, threshold)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetup(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_ILUSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ILUSolve(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_ILUSolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ILUDestroy(solver, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUDestroy(solver)
+  end subroutine
 
   !!!! MISCELLANEOUS PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
