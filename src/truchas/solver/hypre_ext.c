@@ -205,3 +205,25 @@ HYPRE_Ext_AMSSetInteriorNodes(HYPRE_Solver solver, HYPRE_IJVector interior_nodes
   HYPRE_IJVectorGetObject(interior_nodes, (void**) &par_interior_nodes);
   return HYPRE_AMSSetInteriorNodes(solver, par_interior_nodes);
 }
+
+int
+HYPRE_Ext_ILUSetup(HYPRE_Solver solver, HYPRE_IJMatrix A, HYPRE_IJVector b, HYPRE_IJVector x)
+{
+  HYPRE_ParCSRMatrix par_A;
+  HYPRE_ParVector par_b, par_x;
+  HYPRE_IJMatrixGetObject(A, (void**) &par_A);
+  HYPRE_IJVectorGetObject(b, (void**) &par_b);
+  HYPRE_IJVectorGetObject(x, (void**) &par_x);
+  return HYPRE_ILUSetup(solver, par_A, par_b, par_x);
+}
+
+int
+HYPRE_Ext_ILUSolve(HYPRE_Solver solver, HYPRE_IJMatrix A, HYPRE_IJVector b, HYPRE_IJVector x)
+{
+  HYPRE_ParCSRMatrix par_A;
+  HYPRE_ParVector par_b, par_x;
+  HYPRE_IJMatrixGetObject(A, (void**) &par_A);
+  HYPRE_IJVectorGetObject(b, (void**) &par_b);
+  HYPRE_IJVectorGetObject(x, (void**) &par_x);
+  return HYPRE_ILUSolve(solver, par_A, par_b, par_x);
+}

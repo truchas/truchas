@@ -20,6 +20,7 @@ contains
 
     use pcsr_precon_ssor_type
     use pcsr_precon_boomer_type
+    use pcsr_precon_ilu_type
     use string_utilities, only: raise_case
 
     class(pcsr_precon), allocatable, intent(out) :: this
@@ -42,21 +43,18 @@ contains
     select case (raise_case(method))
     case ('SSOR')
       allocate (pcsr_precon_ssor :: this)
-    case ('BOOMERAMG')
+    case ('BOOMERAMG', 'BOOMER')
       allocate (pcsr_precon_boomer :: this)
+    case ('ILU')
+      allocate(pcsr_precon_ilu :: this)
     case default
       stat = 1
       errmsg = context // 'unknown "method": ' // method
       return
     end select
 
-    if (params%is_sublist('params')) then
-      plist => params%sublist('params')
-      call this%init(A, plist, stat, errmsg)
-    else
-      stat = 1
-      errmsg = context // 'missing "params" sublist parameter'
-    end if
+    plist => params%sublist('params')
+    call this%init(A, plist, stat, errmsg)
 
   end subroutine alloc_pcsr_precon
 

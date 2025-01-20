@@ -1,38 +1,38 @@
 #include "f90_assert.fpp"
 
-module fdme_precon_boomer_type
+module fdme_precon_pcsr_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fdme_precon_class
   use fdme_model_type
   use pcsr_matrix_type
-  use pcsr_precon_boomer_type
+  use pcsr_precon_class
   implicit none
   private
 
-  type, extends(fdme_precon), public :: fdme_precon_boomer
+  type, extends(fdme_precon), public :: fdme_precon_pcsr
     type(pcsr_matrix), pointer :: matrix => null()  ! pointer to avoid dangling pointer
-    type(pcsr_precon_boomer) :: boomer
+    class(pcsr_precon), allocatable :: precon
   contains
     procedure :: init
     procedure :: setup
     procedure :: apply
-    final :: fdme_precon_boomer_delete
+    final :: fdme_precon_pcsr_delete
   end type
 
 contains
 
-  subroutine fdme_precon_boomer_delete(this)
-    type(fdme_precon_boomer), intent(inout) :: this
+  subroutine fdme_precon_pcsr_delete(this)
+    type(fdme_precon_pcsr), intent(inout) :: this
     if (associated(this%matrix)) deallocate(this%matrix)
   end subroutine
-
 
   subroutine init(this, model, params, stat, errmsg)
 
     use parameter_list_type
+    use pcsr_precon_factory, only: alloc_pcsr_precon
 
-    class(fdme_precon_boomer), intent(out) :: this
+    class(fdme_precon_pcsr), intent(out) :: this
     type(fdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -43,24 +43,24 @@ contains
     allocate(this%matrix)
     call this%matrix%init(this%model%A%graph, take_graph=.false.)
 
-    call this%boomer%init(this%matrix, params, stat, errmsg)
+    call alloc_pcsr_precon(this%precon, this%matrix, params, stat, errmsg)
     if (stat /= 0) return
-    
+
   end subroutine
 
   subroutine setup(this)
-    class(fdme_precon_boomer), intent(inout) :: this
-    this%matrix%values(:) = this%model%A%values%re
-    call this%boomer%compute
+    class(fdme_precon_pcsr), intent(inout) :: this
+    this%matrix%values(:) = this%model%A%values%re !- this%model%A%values%im
+    call this%precon%compute
   end subroutine
 
   subroutine apply(this, x, y)
-    class(fdme_precon_boomer), intent(inout) :: this
+    class(fdme_precon_pcsr), intent(inout) :: this
     complex(r8), intent(in)  :: x(:)
     complex(r8), intent(out) :: y(:)
     y = x
-    call this%boomer%apply(y%re)
-    call this%boomer%apply(y%im)
+    call this%precon%apply(y%re)
+    call this%precon%apply(y%im)
   end subroutine
 
-end module fdme_precon_boomer_type
+end module fdme_precon_pcsr_type

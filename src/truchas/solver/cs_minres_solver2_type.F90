@@ -402,6 +402,7 @@ contains
   call lin_op%precon(r2, r3)
   !beta1 = this%global_dotc(r3, r2)  ! dotc value should be real
   beta1 = r3%dotc(r2) ! dotc value should be real
+print *, 'beta1=', beta1, r3%dotc(r2)
   beta1 = sqrt(beta1)
 
 !!!%% Initialize other quantities.

@@ -11,6 +11,7 @@ target_sources(truchas PRIVATE
   pcsr_precon_class.F90
   pcsr_precon_ssor_type.F90
   pcsr_precon_boomer_type.F90
+  pcsr_precon_ilu_type.F90
   pcsr_precon_factory.F90
   pbsr_matrix_type.F90
   cg_solver_class.F90

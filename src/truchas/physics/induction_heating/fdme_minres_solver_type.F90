@@ -35,7 +35,7 @@ contains
 
     use parameter_list_type
     use fdme_precon_gs_type
-    use fdme_precon_boomer_type
+    use fdme_precon_pcsr_type
 
     class(fdme_minres_solver2), intent(out) :: this
     type(fdme_model), pointer :: model !TODO: don't make a pointer
@@ -59,8 +59,8 @@ contains
     case ('gs') ! block Gauss-Seidel
       allocate(fdme_precon_gs :: this%lin_op%my_precon)
       call this%lin_op%my_precon%init(model, plist, stat, errmsg)
-    case ('boomer') ! Hypre BoomerAMG
-      allocate(fdme_precon_boomer :: this%lin_op%my_precon)
+    case ('boomer', 'ilu') ! Hypre BoomerAMG and ILU
+      allocate(fdme_precon_pcsr :: this%lin_op%my_precon)
       call this%lin_op%my_precon%init(model, plist, stat, errmsg)
     case ('none')
     case default
