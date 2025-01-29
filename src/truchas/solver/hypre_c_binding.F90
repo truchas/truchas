@@ -40,7 +40,7 @@ module hypre_c_binding
   use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
   implicit none
   private
-  
+
   integer(c_int), parameter, public :: HYPRE_ERROR_GENERIC = 1
   integer(c_int), parameter, public :: HYPRE_ERROR_MEMORY  = 2
   integer(c_int), parameter, public :: HYPRE_ERROR_ARG     = 4
@@ -84,6 +84,18 @@ module hypre_c_binding
   public :: HYPRE_BoomerAMGSetLogging
   public :: HYPRE_BoomerAMGSetOldDefault
 
+  !! Functions from the FSAI interface
+  public :: HYPRE_FSAICreate
+  public :: HYPRE_FSAIDestroy
+  public :: HYPRE_FSAISetAlgoType
+  public :: HYPRE_FSAISetMaxSteps
+  public :: HYPRE_FSAISetMaxStepSize
+  public :: HYPRE_FSAISetKapTolerance
+  public :: HYPRE_FSAISetTolerance
+  public :: HYPRE_FSAISetZeroGuess
+  public :: HYPRE_FSAISetMaxIterations
+  public :: HYPRE_FSAISetPrintLevel
+
   !! Functions from the PCG interface
   public :: HYPRE_PCGDestroy
   public :: HYPRE_PCGSetMaxIter
@@ -124,11 +136,13 @@ module hypre_c_binding
   public :: HYPRE_Finalize
 
   !! Functions from hypre_ext.c
-  public :: HYPRE_Ext_IJVectorCreate
-  public :: HYPRE_Ext_IJMatrixCreate
+  public :: HYPRE_IJVectorCreate_Fcomm
+  public :: HYPRE_IJMatrixCreate_Fcomm
   public :: HYPRE_Ext_BoomerAMGSetup
   public :: HYPRE_Ext_BoomerAMGSolve
-  public :: HYPRE_Ext_ParCSRPCGCreate
+  public :: HYPRE_Ext_FSAISetup
+  public :: HYPRE_Ext_FSAISolve
+  public :: HYPRE_ParCSRPCGCreate_Fcomm
   public :: HYPRE_Ext_PCGSetup
   public :: HYPRE_Ext_PCGSolve
   public :: HYPRE_Ext_PCGSetBoomerAMGPrecond
@@ -386,11 +400,88 @@ module hypre_c_binding
   end interface
 
  !!
+ !! FSAI INTERFACES
+ !!
+
+  interface
+    function HYPRE_FSAICreate(solver) &
+        result(ierr) bind(c, name="HYPRE_FSAICreate")
+      import c_ptr, c_int
+      type(c_ptr) :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAIDestroy(solver) &
+        result(ierr) bind(c, name="HYPRE_FSAIDestroy")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+    ! See HYPRE_Ext_FSAISetup below; wraps HYPRE_FSAISetup.
+    ! See HYPRE_Ext_FSAISolve below; wraps HYPRE_FSAISolve.
+    function HYPRE_FSAISetAlgoType(solver, algo_type) &
+        result(ierr) bind(c, name="HYPRE_FSAISetAlgoType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: algo_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetMaxSteps(solver, max_steps) &
+        result(ierr) bind(c, name="HYPRE_FSAISetMaxSteps")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: max_steps
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetMaxStepSize(solver, max_step_size) &
+        result(ierr) bind(c, name="HYPRE_FSAISetMaxStepSize")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: max_step_size
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetKapTolerance(solver, kap_tolerance) &
+        result(ierr) bind(c, name="HYPRE_FSAISetKapTolerance")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: kap_tolerance
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetMaxIterations(solver, max_iterations) &
+        result(ierr) bind(c, name="HYPRE_FSAISetMaxIterations")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: max_iterations
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetZeroGuess(solver, zero_guess) &
+        result(ierr) bind(c, name="HYPRE_FSAISetZeroGuess")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: zero_guess
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetTolerance(solver, tolerance) &
+        result(ierr) bind(c, name="HYPRE_FSAISetTolerance")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: tolerance
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_FSAISetPrintLevel(solver, print_level) &
+        result(ierr) bind(c, name="HYPRE_FSAISetPrintLevel")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: print_level
+      integer(c_int) :: ierr
+    end function
+  end interface
+
+ !!
  !! PCG INTERFACES
  !!
 
   interface
-    ! See HYPRE_Ext_ParCSRPCGCreate below; wraps HYPRE_ParCSRPCGCreate.
+    ! See HYPRE_ParCSRPCGCreate_Fcom below; wraps HYPRE_ParCSRPCGCreate.
     function HYPRE_PCGDestroy (solver) &
         result(ierr) bind(c, name="HYPRE_ParCSRPCGDestroy")
       import c_ptr, c_int
@@ -638,16 +729,18 @@ module hypre_c_binding
   !!
 
   interface
-    function HYPRE_Ext_IJVectorCreate(jlower, jupper, vector) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJVectorCreate")
+    function HYPRE_IJVectorCreate_Fcomm(fcomm, jlower, jupper, vector) &
+        result(ierr) bind(c, name="HYPRE_IJVectorCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: jlower, jupper
       type(c_ptr) :: vector
       integer(c_int) :: ierr
     end function
-    function HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJMatrixCreate")
+    function HYPRE_IJMatrixCreate_Fcomm(fcomm, ilower, iupper, jlower, jupper, matrix) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: ilower, iupper, jlower, jupper
       type(c_ptr) :: matrix
       integer(c_int) :: ierr
@@ -664,10 +757,24 @@ module hypre_c_binding
       type(c_ptr), value :: solver, A, b, x
       integer(c_int) :: ierr
     end function
-    !! PCG Interfaces
-    function HYPRE_Ext_ParCSRPCGCreate(solver) &
-        result(ierr) bind(c, name="HYPRE_Ext_ParCSRPCGCreate")
+    !! FSAI Interfaces
+    function HYPRE_Ext_FSAISetup(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_FSAISetup")
       import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_FSAISolve(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_FSAISolve")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    !! PCG Interfaces
+    function HYPRE_ParCSRPCGCreate_Fcomm(fcomm, solver) &
+        result(ierr) bind(c, name="HYPRE_ParCSRPCGCreate_Fcomm")
+      import c_ptr, c_int
+      integer, intent(in) :: fcomm
       type(c_ptr), intent(inout) :: solver
       integer(c_int) :: ierr
     end function

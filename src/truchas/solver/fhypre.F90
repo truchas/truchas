@@ -28,9 +28,6 @@
 !!  TYPE(HYPRE_OBJ) arguments in the Fortran interface, and should be regarded
 !!  as opaque handles.  Specific procedure differences follow.
 !!
-!!  * The MPI communicator argument has been omitted from IJVectorCreate,
-!!    IJMatrixCreate, and ParCSRPCGCreate; MPI_COMM_WORLD will be used.
-!!
 !!  * IJVectorCreate and IJMatrixCreate create HYPRE_PARCSR type objects.
 !!    A second call is required in the C interface to set the object type.
 !!
@@ -73,7 +70,7 @@ module fhypre
 #endif
   implicit none
   private
-  
+
   !! Error codes
   public :: HYPRE_ERROR_GENERIC, HYPRE_ERROR_MEMORY, HYPRE_ERROR_ARG, HYPRE_ERROR_CONV
 
@@ -121,6 +118,20 @@ module fhypre
   public :: fHYPRE_BoomerAMGSetDebugFlag
   public :: fHYPRE_BoomerAMGSetLogging
   public :: fHYPRE_BoomerAMGSetOldDefault
+
+  !! FSAI interface procedures
+  public :: fHYPRE_FSAICreate
+  public :: fHYPRE_FSAIDestroy
+  public :: fHYPRE_FSAISetup
+  public :: fHYPRE_FSAISolve
+  public :: fHYPRE_FSAISetAlgoType
+  public :: fHYPRE_FSAISetMaxSteps
+  public :: fHYPRE_FSAISetMaxStepSize
+  public :: fHYPRE_FSAISetKapTolerance
+  public :: fHYPRE_FSAISetMaxIterations
+  public :: fHYPRE_FSAISetTolerance
+  public :: fHYPRE_FSAISetZeroGuess
+  public :: fHYPRE_FSAISetPrintLevel
 
   !! PCG interface procedures
   public :: fHYPRE_PCGCreate
@@ -180,11 +191,11 @@ contains
 
   !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
-    integer, intent(in) :: jlower, jupper
+  subroutine fHYPRE_IJVectorCreate (comm, jlower, jupper, vector, ierr)
+    integer, intent(in) :: comm, jlower, jupper
     type(c_ptr), intent(inout) :: vector
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJVectorCreate(jlower, jupper, vector)
+    ierr = HYPRE_IJVectorCreate_Fcomm(comm, jlower, jupper, vector)
   end subroutine
 
   subroutine fHYPRE_IJVectorDestroy (vector, ierr)
@@ -239,11 +250,11 @@ contains
 
   !!!! IJMATRIX INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJMatrixCreate (ilower, iupper, jlower, jupper, matrix, ierr)
-    integer, intent(in) :: ilower, iupper, jlower, jupper
+  subroutine fHYPRE_IJMatrixCreate (comm, ilower, iupper, jlower, jupper, matrix, ierr)
+    integer, intent(in) :: comm, ilower, iupper, jlower, jupper
     type(c_ptr), intent(inout) :: matrix
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix)
+    ierr = HYPRE_IJMatrixCreate_Fcomm(comm, ilower, iupper, jlower, jupper, matrix)
   end subroutine
 
   subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
@@ -433,12 +444,96 @@ contains
     ierr = HYPRE_BoomerAMGSetOldDefault(solver)
   end subroutine fHYPRE_BoomerAMGSetOldDefault
 
-  !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!! FSAI INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_PCGCreate (solver, ierr)
+  subroutine fHYPRE_FSAICreate(solver, ierr)
+    type(c_ptr), intent(out) :: solver
+    integer, intent(out) :: ierr
+    ierr =  HYPRE_FSAICreate(solver)
+  end subroutine
+
+  subroutine fHYPRE_FSAIDestroy(solver, ierr)
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_ParCSRPCGCreate(solver)
+    ierr = HYPRE_FSAIDestroy(solver)
+    solver = c_null_ptr
+  end subroutine
+
+  subroutine fHYPRE_FSAISetup(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_FSAISetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_FSAISolve(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_FSAISolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetAlgoType(solver, algo_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: algo_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetAlgoType(solver, algo_type)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetMaxSteps(solver, max_steps, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: max_steps
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetMaxSteps(solver, max_steps)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetMaxStepSize(solver, max_step_size, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: max_step_size
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetMaxStepSize(solver, max_step_size)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetKapTolerance(solver, kap_tolerance, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: kap_tolerance
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetKapTolerance(solver, kap_tolerance)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetMaxIterations(solver, max_iterations, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: max_iterations
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetMaxIterations(solver, max_iterations)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetTolerance(solver, tolerance, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tolerance
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetTolerance(solver, tolerance)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetZeroGuess(solver, zero_guess, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: zero_guess
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetZeroGuess(solver, zero_guess)
+  end subroutine
+
+  subroutine fHYPRE_FSAISetPrintLevel(solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in) :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_FSAISetPrintLevel(solver, print_level)
+  end subroutine
+
+  !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_PCGCreate (comm, solver, ierr)
+    integer, intent(in) :: comm
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ParCSRPCGCreate_Fcomm(comm, solver)
   end subroutine
 
   subroutine fHYPRE_PCGDestroy (solver, ierr)
