@@ -49,6 +49,7 @@ contains
     integer :: ds_nlk_pc = 0
     integer, parameter :: DS_NLK_PC_SSOR = 1
     integer, parameter :: DS_NLK_PC_HYPRE_AMG = 2
+    integer, parameter :: DS_NLK_PC_HYPRE_ILU = 3
 
     !! Preconditioner parameters
     integer  :: pc_ssor_sweeps, pc_amg_cycles
@@ -56,6 +57,7 @@ contains
     integer  :: hypre_amg_print_level, hypre_amg_debug_level, hypre_amg_logging_level
     integer  :: hypre_amg_coarsen_type, hypre_amg_interp_type
     integer  :: hypre_amg_relax_down_type, hypre_amg_relax_up_type
+    integer  :: hypre_ilu_level
 
     !! Error tolerances
     real(r8) :: abs_conc_tol, abs_temp_tol, abs_enthalpy_tol
@@ -76,7 +78,7 @@ contains
         nlk_preconditioner, pc_amg_cycles, hypre_amg_print_level, &
         hypre_amg_debug, hypre_amg_logging_level, &
         hypre_amg_coarsen_type, hypre_amg_interp_type, hypre_amg_strong_threshold, &
-        hypre_amg_relax_down_type, hypre_amg_relax_up_type, &
+        hypre_amg_relax_down_type, hypre_amg_relax_up_type, hypre_ilu_level, &
         cond_vfrac_threshold, residual_atol, residual_rtol, &
         use_new_mfd, void_temperature, cutvof
 
@@ -119,6 +121,7 @@ contains
     hypre_amg_strong_threshold = NULL_R
     hypre_amg_relax_down_type = NULL_I
     hypre_amg_relax_up_type = NULL_I
+    hypre_ilu_level = NULL_I
     verbose_stepping = .false.
     stepping_method = NULL_C
     cond_vfrac_threshold = NULL_R
@@ -157,6 +160,7 @@ contains
     call broadcast(hypre_amg_strong_threshold)
     call broadcast(hypre_amg_relax_down_type)
     call broadcast(hypre_amg_relax_up_type)
+    call broadcast(hypre_ilu_level)
     call broadcast(verbose_stepping)
     call broadcast(stepping_method)
     call broadcast(cond_vfrac_threshold)
@@ -404,6 +408,9 @@ contains
     case ('HYPRE_AMG', NULL_C)
       ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
       call plist%set('method', 'BoomerAMG')
+    case ('HYPRE_ILU')
+      ds_nlk_pc = DS_NLK_PC_HYPRE_ILU
+      call plist%set('method', 'ILU')
     case default
       call TLS_fatal ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
     end select
@@ -498,6 +505,12 @@ contains
         call TLS_info ('  ignoring HYPRE_AMG_LOGGING_LEVEL value; unused when NLK_PRECONDITIONER /= "HYPRE_AMG"')
       end if
 
+    end if
+
+    if (ds_nlk_pc == DS_NLK_PC_HYPRE_ILU) then
+      if (hypre_ilu_level /= NULL_I) call plist%set('fill-level', hypre_ilu_level)
+      if (hypre_amg_print_level /= NULL_I) call plist%set('print-level', hypre_amg_print_level)
+      if (hypre_amg_logging_level /= NULL_I) call plist%set('logging-level', hypre_amg_logging_level)
     end if
 
     if (integrator == DS_NONADAPTIVE_BDF1) then

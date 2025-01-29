@@ -40,7 +40,7 @@ module hypre_c_binding
   use,intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
   implicit none
   private
-  
+
   integer(c_int), parameter, public :: HYPRE_ERROR_GENERIC = 1
   integer(c_int), parameter, public :: HYPRE_ERROR_MEMORY  = 2
   integer(c_int), parameter, public :: HYPRE_ERROR_ARG     = 4
@@ -118,22 +118,39 @@ module hypre_c_binding
   public :: HYPRE_ParCSRHybridGetPCGNumIterations
   public :: HYPRE_ParCSRHybridGetFinalRelativeResidualNorm
 
+  !! Functions from the ILU interface
+  public :: HYPRE_ILUCreate
+  public :: HYPRE_ILUSetType
+  public :: HYPRE_ILUSetMaxIter
+  public :: HYPRE_ILUSetTol
+  public :: HYPRE_ILUSetLocalReordering
+  public :: HYPRE_ILUSetPrintLevel
+  public :: HYPRE_ILUSetLogging
+  public :: HYPRE_ILUSetLevelOfFill
+  public :: HYPRE_ILUSetMaxNnzPerRow
+  public :: HYPRE_ILUSetDropThreshold
+  public :: HYPRE_ILUSetLowerJacobiIters
+  public :: HYPRE_ILUSetUpperJacobiIters
+  public :: HYPRE_ILUDestroy
+
   !! Miscelaneous functions
   public :: HYPRE_ClearAllErrors
   public :: HYPRE_Initialize
   public :: HYPRE_Finalize
 
   !! Functions from hypre_ext.c
-  public :: HYPRE_Ext_IJVectorCreate
-  public :: HYPRE_Ext_IJMatrixCreate
+  public :: HYPRE_IJVectorCreate_Fcomm
+  public :: HYPRE_IJMatrixCreate_Fcomm
   public :: HYPRE_Ext_BoomerAMGSetup
   public :: HYPRE_Ext_BoomerAMGSolve
-  public :: HYPRE_Ext_ParCSRPCGCreate
+  public :: HYPRE_ParCSRPCGCreate_Fcomm
   public :: HYPRE_Ext_PCGSetup
   public :: HYPRE_Ext_PCGSolve
   public :: HYPRE_Ext_PCGSetBoomerAMGPrecond
   public :: HYPRE_Ext_HybridSetup
   public :: HYPRE_Ext_HybridSolve
+  public :: HYPRE_Ext_ILUSetup
+  public :: HYPRE_Ext_ILUSolve
 
  !!
  !! IJVECTOR INTERFACES
@@ -390,7 +407,7 @@ module hypre_c_binding
  !!
 
   interface
-    ! See HYPRE_Ext_ParCSRPCGCreate below; wraps HYPRE_ParCSRPCGCreate.
+    ! See HYPRE_ParCSRPCGCreate_Fcom below; wraps HYPRE_ParCSRPCGCreate.
     function HYPRE_PCGDestroy (solver) &
         result(ierr) bind(c, name="HYPRE_ParCSRPCGDestroy")
       import c_ptr, c_int
@@ -612,6 +629,104 @@ module hypre_c_binding
   end interface
 
  !!
+ !! ILU SOLVER INTERFACES
+ !!
+
+  interface
+    function HYPRE_ILUCreate(solver) &
+        result(ierr) bind(c, name="HYPRE_ILUCreate")
+      import c_ptr, c_int
+      type(c_ptr) :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetType(solver, ilu_type) &
+        result(ierr) bind(c, name="HYPRE_ILUSetType")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: ilu_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetMaxIter(solver, max_iter) &
+        result(ierr) bind(c, name="HYPRE_ILUSetMaxIter")
+      import c_ptr, c_int
+      integer(c_int), value :: max_iter
+      type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetTol(solver, tol) &
+        result(ierr) bind(c, name="HYPRE_ILUSetTol")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: tol
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetLocalReordering(solver, reordering_type) &
+        result(ierr) bind(c, name="HYPRE_ILUSetLocalReordering")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: reordering_type
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetPrintLevel(solver, print_level) &
+        result(ierr) bind(c, name="HYPRE_ILUSetPrintLevel")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: print_level
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetLogging (solver, logging) &
+        result(ierr) bind(c, name="HYPRE_ILUSetLogging")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: logging
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetLevelOfFill(solver, lfil) &
+        result(ierr) bind(c, name="HYPRE_ILUSetLevelOfFill")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: lfil
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetMaxNnzPerRow(solver, nzmax) &
+        result(ierr) bind(c, name="HYPRE_ILUSetMaxNnzPerRow")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: nzmax
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetDropThreshold(solver, threshold) &
+        result(ierr) bind(c, name="HYPRE_ILUSetDropThreshold")
+      import c_ptr, c_int, c_double
+      type(c_ptr), value :: solver
+      real(c_double), value :: threshold
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetLowerJacobiIters(solver, lower_jacobi_iterations) &
+        result(ierr) bind(c, name="HYPRE_ILUSetLowerJacobiIters")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: lower_jacobi_iterations
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_ILUSetUpperJacobiIters(solver, upper_jacobi_iterations) &
+        result(ierr) bind(c, name="HYPRE_ILUSetUpperJacobiIters")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int), value :: upper_jacobi_iterations
+      integer(c_int) :: ierr
+    end function
+    ! See HYPRE_Ext_ILUSetup below; wraps HYPRE_ILUSetup.
+    ! See HYPRE_Ext_ILUSolve below; wraps HYPRE_ILUSolve.
+    function HYPRE_ILUDestroy(solver) &
+        result(ierr) bind(c, name="HYPRE_ILUDestroy")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver
+      integer(c_int) :: ierr
+    end function
+ end interface
+
+ !!
  !! HYPRE UTILITIES
  !!
 
@@ -638,16 +753,18 @@ module hypre_c_binding
   !!
 
   interface
-    function HYPRE_Ext_IJVectorCreate(jlower, jupper, vector) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJVectorCreate")
+    function HYPRE_IJVectorCreate_Fcomm(fcomm, jlower, jupper, vector) &
+        result(ierr) bind(c, name="HYPRE_IJVectorCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: jlower, jupper
       type(c_ptr) :: vector
       integer(c_int) :: ierr
     end function
-    function HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix) &
-        result(ierr) bind(c, name="HYPRE_Ext_IJMatrixCreate")
+    function HYPRE_IJMatrixCreate_Fcomm(fcomm, ilower, iupper, jlower, jupper, matrix) &
+        result(ierr) bind(c, name="HYPRE_IJMatrixCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       integer(c_int), value :: ilower, iupper, jlower, jupper
       type(c_ptr) :: matrix
       integer(c_int) :: ierr
@@ -665,9 +782,10 @@ module hypre_c_binding
       integer(c_int) :: ierr
     end function
     !! PCG Interfaces
-    function HYPRE_Ext_ParCSRPCGCreate(solver) &
-        result(ierr) bind(c, name="HYPRE_Ext_ParCSRPCGCreate")
+    function HYPRE_ParCSRPCGCreate_Fcomm(fcomm, solver) &
+        result(ierr) bind(c, name="HYPRE_ParCSRPCGCreate_Fcomm")
       import c_ptr, c_int
+      integer, intent(in) :: fcomm
       type(c_ptr), intent(inout) :: solver
       integer(c_int) :: ierr
     end function
@@ -698,6 +816,19 @@ module hypre_c_binding
     end function
     function HYPRE_Ext_HybridSolve(solver, A, b, x) &
         result(ierr) bind(c, name="HYPRE_Ext_HybridSolve")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    !! ILU Interfaces
+    function HYPRE_Ext_ILUSetup(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_ILUSetup")
+      import c_ptr, c_int
+      type(c_ptr), value :: solver, A, b, x
+      integer(c_int) :: ierr
+    end function
+    function HYPRE_Ext_ILUSolve(solver, A, b, x) &
+        result(ierr) bind(c, name="HYPRE_Ext_ILUSolve")
       import c_ptr, c_int
       type(c_ptr), value :: solver, A, b, x
       integer(c_int) :: ierr

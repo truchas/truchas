@@ -28,9 +28,6 @@
 !!  TYPE(HYPRE_OBJ) arguments in the Fortran interface, and should be regarded
 !!  as opaque handles.  Specific procedure differences follow.
 !!
-!!  * The MPI communicator argument has been omitted from IJVectorCreate,
-!!    IJMatrixCreate, and ParCSRPCGCreate; MPI_COMM_WORLD will be used.
-!!
 !!  * IJVectorCreate and IJMatrixCreate create HYPRE_PARCSR type objects.
 !!    A second call is required in the C interface to set the object type.
 !!
@@ -73,7 +70,7 @@ module fhypre
 #endif
   implicit none
   private
-  
+
   !! Error codes
   public :: HYPRE_ERROR_GENERIC, HYPRE_ERROR_MEMORY, HYPRE_ERROR_ARG, HYPRE_ERROR_CONV
 
@@ -162,6 +159,23 @@ module fhypre
   public :: fHYPRE_ParCSRHybridGetPCGNumIterations
   public :: fHYPRE_ParCSRHybridGetFinalRelativeResidualNorm
 
+  !! ILU interface procedures
+  public :: fHYPRE_ILUCreate
+  public :: fHYPRE_ILUSetType
+  public :: fHYPRE_ILUSetMaxIter
+  public :: fHYPRE_ILUSetTol
+  public :: fHYPRE_ILUSetLocalReordering
+  public :: fHYPRE_ILUSetPrintLevel
+  public :: fHYPRE_ILUSetLogging
+  public :: fHYPRE_ILUSetLevelOfFill
+  public :: fHYPRE_ILUSetMaxNnzPerRow
+  public :: fHYPRE_ILUSetDropThreshold
+  public :: fHYPRE_ILUSetLowerJacobiIters
+  public :: fHYPRE_ILUSetUpperJacobiIters
+  public :: fHYPRE_ILUSetup
+  public :: fHYPRE_ILUSolve
+  public :: fHYPRE_ILUDestroy
+
   !! Miscellaneous procedures
   public :: fHYPRE_ClearAllErrors
   public :: fHYPRE_Initialize
@@ -180,11 +194,11 @@ contains
 
   !!!! IJVECTOR INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJVectorCreate (jlower, jupper, vector, ierr)
-    integer, intent(in) :: jlower, jupper
+  subroutine fHYPRE_IJVectorCreate (comm, jlower, jupper, vector, ierr)
+    integer, intent(in) :: comm, jlower, jupper
     type(c_ptr), intent(inout) :: vector
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJVectorCreate(jlower, jupper, vector)
+    ierr = HYPRE_IJVectorCreate_Fcomm(comm, jlower, jupper, vector)
   end subroutine
 
   subroutine fHYPRE_IJVectorDestroy (vector, ierr)
@@ -239,11 +253,11 @@ contains
 
   !!!! IJMATRIX INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_IJMatrixCreate (ilower, iupper, jlower, jupper, matrix, ierr)
-    integer, intent(in) :: ilower, iupper, jlower, jupper
+  subroutine fHYPRE_IJMatrixCreate (comm, ilower, iupper, jlower, jupper, matrix, ierr)
+    integer, intent(in) :: comm, ilower, iupper, jlower, jupper
     type(c_ptr), intent(inout) :: matrix
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_IJMatrixCreate(ilower, iupper, jlower, jupper, matrix)
+    ierr = HYPRE_IJMatrixCreate_Fcomm(comm, ilower, iupper, jlower, jupper, matrix)
   end subroutine
 
   subroutine fHYPRE_IJMatrixDestroy (matrix, ierr)
@@ -435,10 +449,11 @@ contains
 
   !!!! PCG INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine fHYPRE_PCGCreate (solver, ierr)
+  subroutine fHYPRE_PCGCreate (comm, solver, ierr)
+    integer, intent(in) :: comm
     type(c_ptr), intent(inout) :: solver
     integer, intent(out) :: ierr
-    ierr = HYPRE_Ext_ParCSRPCGCreate(solver)
+    ierr = HYPRE_ParCSRPCGCreate_Fcomm(comm, solver)
   end subroutine
 
   subroutine fHYPRE_PCGDestroy (solver, ierr)
@@ -679,6 +694,109 @@ contains
     real(r8), intent(out) :: norm
     integer, intent(out) :: ierr
     ierr = HYPRE_ParCSRHybridGetFinalRelativeResidualNorm (solver, norm)
+  end subroutine
+
+  !!!! ILU INTERFACE PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine fHYPRE_ILUCreate(solver, ierr)
+    type(c_ptr), intent(inout) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUCreate(solver)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetType(solver, ilu_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: ilu_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetType(solver, ilu_type)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetMaxIter(solver, max_iter, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: max_iter
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetMaxIter(solver, max_iter)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetTol(solver, tol, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in) :: tol
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetTol(solver, tol)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLocalReordering(solver, reordering_type, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: reordering_type
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLocalReordering(solver, reordering_type)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetPrintLevel(solver, print_level, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: print_level
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetPrintLevel(solver, print_level)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLogging (solver, logging, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: logging
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLogging(solver, logging)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLevelOfFill(solver, lfil, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: lfil
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLevelOfFill(solver, lfil)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetMaxNnzPerRow(solver, nzmax, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: nzmax
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetMaxNnzPerRow(solver, nzmax)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetDropThreshold(solver, threshold, ierr)
+    type(c_ptr), intent(in) :: solver
+    real(r8), intent(in)  :: threshold
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetDropThreshold(solver, threshold)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetLowerJacobiIters(solver, lower_jacobi_iterations, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: lower_jacobi_iterations
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetLowerJacobiIters(solver, lower_jacobi_iterations)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetUpperJacobiIters(solver, upper_jacobi_iterations, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(in)  :: upper_jacobi_iterations
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUSetUpperJacobiIters(solver, upper_jacobi_iterations)
+  end subroutine
+
+  subroutine fHYPRE_ILUSetup(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_ILUSetup(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ILUSolve(solver, A, b, x, ierr)
+    type(c_ptr), intent(in) :: solver, A, b, x
+    integer, intent(out) :: ierr
+    ierr = HYPRE_Ext_ILUSolve(solver, A, b, x)
+  end subroutine
+
+  subroutine fHYPRE_ILUDestroy(solver, ierr)
+    type(c_ptr), intent(in) :: solver
+    integer, intent(out) :: ierr
+    ierr = HYPRE_ILUDestroy(solver)
   end subroutine
 
   !!!! MISCELLANEOUS PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
