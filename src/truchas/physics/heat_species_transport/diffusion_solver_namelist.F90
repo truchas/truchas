@@ -404,8 +404,6 @@ contains
     case ('HYPRE_AMG', NULL_C)
       ds_nlk_pc = DS_NLK_PC_HYPRE_AMG
       call plist%set('method', 'BoomerAMG')
-    case ('ILU')
-      call plist%set('method', 'ILU')
     case default
       call TLS_fatal ('unknown value for NLK_PRECONDITIONER: ' // trim(nlk_preconditioner))
     end select
