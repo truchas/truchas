@@ -206,7 +206,7 @@ contains
       if (fd_solver_type /= 'mumps') then
         plist => plist%sublist('precon')
         select case (fd_precon_type)
-        case ('ilu', 'gs', 'none')
+        case ('gs', 'none')
         case ('boomer')
           sublist => plist%sublist('params')
           if (boomer_num_cycles /= NULL_I)  call sublist%set('num-cycles', boomer_num_cycles)

@@ -20,7 +20,6 @@ contains
 
     use pcsr_precon_ssor_type
     use pcsr_precon_boomer_type
-    use pcsr_precon_ilu_type
     use string_utilities, only: raise_case
 
     class(pcsr_precon), allocatable, intent(out) :: this
@@ -45,8 +44,6 @@ contains
       allocate (pcsr_precon_ssor :: this)
     case ('BOOMERAMG', 'BOOMER')
       allocate (pcsr_precon_boomer :: this)
-    case ('ILU')
-      allocate(pcsr_precon_ilu :: this)
     case default
       stat = 1
       errmsg = context // 'unknown "method": ' // method

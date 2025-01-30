@@ -59,7 +59,7 @@ contains
     case ('gs') ! block Gauss-Seidel
       allocate(fdme_precon_gs :: this%lin_op%my_precon)
       call this%lin_op%my_precon%init(model, plist, stat, errmsg)
-    case ('boomer', 'ilu') ! Hypre BoomerAMG and ILU
+    case ('boomer') ! Hypre BoomerAMG
       allocate(fdme_precon_pcsr :: this%lin_op%my_precon)
       call this%lin_op%my_precon%init(model, plist, stat, errmsg)
     case ('none')
