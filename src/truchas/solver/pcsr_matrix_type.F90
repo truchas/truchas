@@ -41,6 +41,7 @@ module pcsr_matrix_type
     procedure :: matvec
     procedure :: kdiag_init
     procedure :: get_row_view !TODO? eliminate
+    procedure :: get_diag_copy
     procedure :: copy_to_ijmatrix
     final :: pcsr_matrix_delete
   end type pcsr_matrix
@@ -231,6 +232,23 @@ contains
     ASSERT(row >= 1 .and. row <= this%nrow)
     values => this%values(this%graph%xadj(row):this%graph%xadj(row+1)-1)
     indices => this%graph%adjncy(this%graph%xadj(row):this%graph%xadj(row+1)-1)
+  end subroutine
+
+  !! Return a copy of the matrix diagonal. The size of DIAG may be less than the
+  !! size of the diagonal, in which case only the leading elements are copied.
+  !! Elements of DIAG beyond the size of the diagonal are unchanged.
+  subroutine get_diag_copy(this, diag)
+    class(pcsr_matrix), intent(in) :: this
+    real(r8), intent(inout) :: diag(:)
+    integer :: i, n
+    do i = 1, min(this%nrow, this%ncol, size(diag))
+      n = this%graph%index(i,i)
+      if (n > 0) then
+        diag(i) = this%values(n)
+      else
+        diag(i) = 0.0_r8
+      end if
+    end do
   end subroutine
 
   !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
