@@ -57,12 +57,13 @@ contains
     !! HYPRE BoomerAMG preconditioner variables (FD only)
     integer  :: boomer_num_cycles
     real(r8) :: boomer_strong_threshold
+    real(r8) :: ssor_omega
     integer  :: boomer_coarsen_type, boomer_interp_type
     integer  :: boomer_relax_down_type, boomer_relax_up_type
     integer  :: boomer_print_level, boomer_debug_level, boomer_logging_level
     namelist /electromagnetics/ boomer_num_cycles, boomer_strong_threshold, boomer_coarsen_type, &
         boomer_interp_type, boomer_relax_down_type, boomer_relax_up_type, boomer_print_level, &
-        boomer_debug_level, boomer_logging_level
+        boomer_debug_level, boomer_logging_level, ssor_omega
 
     !! Legacy EM BC variables
     logical :: use_legacy_bc
@@ -113,6 +114,7 @@ contains
     boomer_print_level = NULL_I
     boomer_debug_level = NULL_I
     boomer_logging_level = NULL_I
+    ssor_omega = NULL_R
 
     use_legacy_bc = .false.
     symmetry_axis  = NULL_C
@@ -155,6 +157,7 @@ contains
     call broadcast(boomer_print_level)
     call broadcast(boomer_debug_level)
     call broadcast(boomer_logging_level)
+    call broadcast(ssor_omega)
 
     call broadcast(use_legacy_bc)
     call broadcast(symmetry_axis)
@@ -207,9 +210,10 @@ contains
         plist => plist%sublist('precon')
         select case (fd_precon_type)
         case ('gs', 'none')
-        case ('boomer')
+        case ('boomer','ssor')
           sublist => plist%sublist('params')
           if (boomer_num_cycles /= NULL_I)  call sublist%set('num-cycles', boomer_num_cycles)
+          if (ssor_omega /= NULL_R)  call sublist%set('omega', ssor_omega)
           if (boomer_strong_threshold /= NULL_R)  call sublist%set('strong-threshold', boomer_strong_threshold)
           if (boomer_coarsen_type /= NULL_I)  call sublist%set('coarsen-type', boomer_coarsen_type)
           if (boomer_interp_type /= NULL_I)  call sublist%set('interp-type', boomer_interp_type)
