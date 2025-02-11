@@ -57,13 +57,17 @@ contains
     !! HYPRE BoomerAMG preconditioner variables (FD only)
     integer  :: boomer_num_cycles
     real(r8) :: boomer_strong_threshold
-    real(r8) :: ssor_omega
     integer  :: boomer_coarsen_type, boomer_interp_type
     integer  :: boomer_relax_down_type, boomer_relax_up_type
     integer  :: boomer_print_level, boomer_debug_level, boomer_logging_level
     namelist /electromagnetics/ boomer_num_cycles, boomer_strong_threshold, boomer_coarsen_type, &
         boomer_interp_type, boomer_relax_down_type, boomer_relax_up_type, boomer_print_level, &
-        boomer_debug_level, boomer_logging_level, ssor_omega
+        boomer_debug_level, boomer_logging_level
+
+    !! Built-in SSOR preconditioner
+    integer  :: ssor_num_cycles
+    real(r8) :: ssor_omega
+    namelist /electromagnetics/ ssor_num_cycles, ssor_omega
 
     !! Legacy EM BC variables
     logical :: use_legacy_bc
@@ -114,6 +118,7 @@ contains
     boomer_print_level = NULL_I
     boomer_debug_level = NULL_I
     boomer_logging_level = NULL_I
+    ssor_num_cycles = NULL_I
     ssor_omega = NULL_R
 
     use_legacy_bc = .false.
@@ -157,6 +162,7 @@ contains
     call broadcast(boomer_print_level)
     call broadcast(boomer_debug_level)
     call broadcast(boomer_logging_level)
+    call broadcast(ssor_num_cycles)
     call broadcast(ssor_omega)
 
     call broadcast(use_legacy_bc)
@@ -210,10 +216,9 @@ contains
         plist => plist%sublist('precon')
         select case (fd_precon_type)
         case ('gs', 'none')
-        case ('boomer','ssor')
+        case ('boomer')
           sublist => plist%sublist('params')
           if (boomer_num_cycles /= NULL_I)  call sublist%set('num-cycles', boomer_num_cycles)
-          if (ssor_omega /= NULL_R)  call sublist%set('omega', ssor_omega)
           if (boomer_strong_threshold /= NULL_R)  call sublist%set('strong-threshold', boomer_strong_threshold)
           if (boomer_coarsen_type /= NULL_I)  call sublist%set('coarsen-type', boomer_coarsen_type)
           if (boomer_interp_type /= NULL_I)  call sublist%set('interp-type', boomer_interp_type)
@@ -222,6 +227,10 @@ contains
           if (boomer_print_level /= NULL_I)  call sublist%set('print-level', boomer_print_level)
           if (boomer_debug_level /= NULL_I)  call sublist%set('debug-level', boomer_debug_level)
           if (boomer_logging_level /= NULL_I)  call sublist%set('logging-level', boomer_logging_level)
+        case ('ssor')
+          sublist => plist%sublist('params')
+          if (ssor_omega /= NULL_R)  call sublist%set('omega', ssor_omega)
+          if (ssor_num_cycles /= NULL_I) call sublist%set('num-cycles', ssor_num_cycles)
         case (NULL_C)
           call TLS_fatal('FD_PRECON_TYPE not specified')
         case default
