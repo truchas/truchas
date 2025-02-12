@@ -327,6 +327,7 @@ contains
 
     use mimetic_discretization, only: w1_matrix_we
     use upper_packed_matrix_procs, only: upm_quad_form
+    use physical_constants, only: vacuum_permittivity
 
     class(fdme_model), intent(in) :: this
     complex(r8), intent(in) :: efield(:)
@@ -349,7 +350,7 @@ contains
 
       ! compute heat sources
       q_joule = this%sigma(j) * efield2 / 2
-      q_dielectric = (this%omega/this%c0) * this%epsi(j) * efield2 / 2
+      q_dielectric = this%omega*vacuum_permittivity*this%epsi(j) * efield2 / 2
 
       ! want a source density
       q(j) = (q_joule + q_dielectric) / abs(this%mesh%volume(j))

@@ -64,7 +64,8 @@ PLANE WAVE NORMALLY INCIDENT ON WALL
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
-  fd_precon_type = 'boomer' ! minres(none, gs, boomer)
+  fd_precon_type = 'ssor' ! minres(none, gs, boomer, ssor)
+  ssor_num_cycles = 2
   boomer_num_cycles = 1
   !boomer_interp_type = 6
   !boomer_relax_down_type = 13
