@@ -10,6 +10,7 @@ module fdme_precon_gs_type
 
   type, extends(fdme_precon), public :: fdme_precon_gs
     real(r8), allocatable :: dinv(:)
+    integer :: num_iter
   contains
     procedure :: init
     procedure :: setup
@@ -25,8 +26,19 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    character(:), allocatable :: context
     this%model => model
     stat = 0
+    call params%get('num-cycles', this%num_iter, stat, errmsg, default=1)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
+    end if
+    if (this%num_iter <= 0) then
+      stat = 1
+      errmsg = context // '"num-cycles" must be > 0'
+      return
+    end if
   end subroutine
 
   subroutine setup(this)
@@ -48,11 +60,11 @@ contains
     integer :: nedge_onP
     nedge_onP = this%model%mesh%nedge_onP
     y = 0
-    call gs_relaxation(this%model%A, x(:nedge_onP), y, 'fb')
+    call gs_relaxation(this%model%A, x(:nedge_onP), y, 'fb', this%num_iter)
   end subroutine
 
 
-  subroutine gs_relaxation(A, f, u, pattern)
+  subroutine gs_relaxation(A, f, u, pattern, num_iter)
 
     use complex_pcsr_matrix_type
 
@@ -60,8 +72,9 @@ contains
     complex(r8), intent(in) :: f(:)
     complex(r8), intent(inout) :: u(:)
     character(*), intent(in) :: pattern
+    integer, intent(in) :: num_iter
 
-    integer :: i, i1, i2, di, j, k, n
+    integer :: i, i1, i2, di, j, k, n, iter
     complex(r8) :: s
 
     ASSERT(A%nrow == A%ncol)
@@ -71,14 +84,17 @@ contains
 
     if (.not.allocated(A%kdiag)) call A%kdiag_init
 
-    do j = 1, len(pattern)
-      call loop_range(pattern(j:j), n, i1, i2, di)
-      do i = i1, i2, di
-        s = f(i)
-        do k = A%graph%xadj(i), A%graph%xadj(i+1)-1
-          s = s - A%values(k)%re * u(A%graph%adjncy(k))
+    do iter = 1, num_iter
+      do j = 1, len(pattern)
+        call loop_range(pattern(j:j), n, i1, i2, di)
+        do i = i1, i2, di
+          s = f(i)
+          do k = A%graph%xadj(i), A%graph%xadj(i+1)-1
+            s = s - A%values(k)%re * u(A%graph%adjncy(k))
+          end do
+          u(i) = u(i) + s / A%values(A%kdiag(i))%re
         end do
-        u(i) = u(i) + s / A%values(A%kdiag(i))%re
+        call A%graph%row_imap%gather_offp(u)
       end do
     end do
 

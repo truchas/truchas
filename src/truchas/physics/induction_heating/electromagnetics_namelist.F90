@@ -69,6 +69,10 @@ contains
     real(r8) :: ssor_omega
     namelist /electromagnetics/ ssor_num_cycles, ssor_omega
 
+    !! Built-in Gauss-Seidel preconditioner
+    integer  :: gs_num_cycles
+    namelist /electromagnetics/ gs_num_cycles
+
     !! Legacy EM BC variables
     logical :: use_legacy_bc
     character :: symmetry_axis
@@ -120,6 +124,7 @@ contains
     boomer_logging_level = NULL_I
     ssor_num_cycles = NULL_I
     ssor_omega = NULL_R
+    gs_num_cycles = NULL_I
 
     use_legacy_bc = .false.
     symmetry_axis  = NULL_C
@@ -164,6 +169,7 @@ contains
     call broadcast(boomer_logging_level)
     call broadcast(ssor_num_cycles)
     call broadcast(ssor_omega)
+    call broadcast(gs_num_cycles)
 
     call broadcast(use_legacy_bc)
     call broadcast(symmetry_axis)
@@ -215,7 +221,9 @@ contains
       if (fd_solver_type /= 'mumps') then
         plist => plist%sublist('precon')
         select case (fd_precon_type)
-        case ('gs', 'none')
+        case ('none')
+        case ('gs')
+          if (gs_num_cycles /= NULL_I) call plist%set('num-cycles', gs_num_cycles)
         case ('boomer')
           sublist => plist%sublist('params')
           if (boomer_num_cycles /= NULL_I)  call sublist%set('num-cycles', boomer_num_cycles)
