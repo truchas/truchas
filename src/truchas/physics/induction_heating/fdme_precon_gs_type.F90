@@ -28,7 +28,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     character(:), allocatable :: context
     this%model => model
-    stat = 0
+    context = 'processing ' // params%path() // ': '
     call params%get('num-cycles', this%num_iter, stat, errmsg, default=1)
     if (stat /= 0) then
       errmsg = context // errmsg
