@@ -43,9 +43,9 @@ contains
     integer :: face_set_ids(128)
     complex(r8) :: alpha, g(3)
     character(32) :: g_func
-    real(r8) :: sigma
+    real(r8) :: sigma, power
 
-    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func, sigma
+    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func, sigma, power
 
     call TLS_info('Reading ELECTROMAGNETIC_BC namelists ...')
 
@@ -70,6 +70,7 @@ contains
       g = NULL_R
       g_func = NULL_C
       sigma = NULL_R
+      power = NULL_R
 
       if (is_IOP) read(lun, nml=electromagnetic_bc, iostat=ios, iomsg=iom)
       call broadcast(ios)
@@ -82,6 +83,7 @@ contains
       call broadcast(g)
       call broadcast(g_func)
       call broadcast(sigma)
+      call broadcast(power)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -107,7 +109,7 @@ contains
       case ('ih-hfield')
         ! no parameters
       case ('wg-port')
-        ! no parameters yet
+        if (power /= NULL_R) call plist%set('power', power)
       case ('robin')
         if (alpha == NULL_R) then
           call TLS_fatal(label // ': ALPHA not specified')

@@ -78,7 +78,8 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
-  fd_precon_type = 'gs' ! minres(none, gs, boomer)
+  fd_precon_type = 'ssor' ! minres(none, gs, boomer, ssor)
+  ssor_num_cycles = 1
   boomer_num_cycles = 1
   !boomer_interp_type = 6
   !boomer_relax_down_type = 13
@@ -110,6 +111,7 @@ Frequency is specified here :/
   type = 'wg-port'
   face_set_ids = 5
   !face_set_ids = 1
+  !power = 500.0  ! if not defined, |E| is set to 1
 /
 
 ### MATERIALS ##################################################################

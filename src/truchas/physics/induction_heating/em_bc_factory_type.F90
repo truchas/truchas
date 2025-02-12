@@ -453,6 +453,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
+      real(r8) :: power
       class(complex_scalar_func), allocatable :: f
       class(complex_vector_func), allocatable :: g
 
@@ -470,8 +471,9 @@ contains
       if (stat /= 0) return
 
       ! HACK IN HARDWIRED FUNCTION FOR WAVEGUIDE TEST PROBLEM
-      !call alloc_vector_func(plist, 'g', g, stat, errmsg)
-      call alloc_fptr_complex_vector_func(g, 3, test_te01_mode)
+      call plist%get('power', power, stat, errmsg, default=0.0_r8)
+      if (stat /= 0) return
+      call alloc_fptr_complex_vector_func(g, 3, test_te01_mode, [power])
       if (stat /= 0) return
       if (.not. allocated(rhs)) then
         allocate(rhs)
@@ -497,15 +499,22 @@ contains
 
   function test_te01_mode(x, p, dim) result(fx)
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
-    real(r8), intent(in) :: x(*), p(*)
+    real(r8), intent(in) :: x(*), p(*) ! p = [power]
     integer, value :: dim
     complex(r8) :: fx(dim)
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8), parameter :: omega = 2*PI*2.45e9_r8
-    real(r8), parameter :: a = 3.4_r8 * 0.0254_r8, E0 = 1.0_r8
-    real(r8) :: c, h0
+    real(r8), parameter :: a = 3.4_r8 * 0.0254_r8, b = a/2
+    real(r8) :: c, Z0, k0, h0, E0
     c = 1.0_r8 / sqrt(vacuum_permittivity*vacuum_permeability)
-    h0 = sqrt((omega/c)**2 - (PI/a)**2)
+    k0 = omega/c
+    h0 = sqrt(k0**2 - (PI/a)**2)
+    if (p(1) == 0.0_r8) then ! set unit magnitude for plane wave testing
+      E0 = 1.0_r8
+    else ! set magnitude corresponding to power
+      Z0 = sqrt(vacuum_permeability/vacuum_permittivity)
+      E0 = sqrt((4*p(1)/(a*b))*(k0*Z0/h0))
+    end if
     fx = 0.0_r8
     fx(2)%im = 2*h0*E0*cos(PI*x(1)/a)
   end function
