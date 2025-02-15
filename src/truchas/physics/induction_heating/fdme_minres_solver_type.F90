@@ -72,15 +72,36 @@ contains
 
   end subroutine
 
-  subroutine solve(this, efield, stat)
+  subroutine solve(this, efield, stat, errmsg)
+    use string_utilities, only: i_to_c
     class(fdme_minres_solver2), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
     this%rhs%w1(:) = this%model%rhs
     if (allocated(this%lin_op%my_precon)) call this%lin_op%my_precon%setup
     call this%minres%solve(this%lin_op, this%rhs, this%efield)
     efield(:) = this%efield%w1
-    stat = 0 !FIXME: need to extract from minres
+    select case (this%minres%flag)
+    case (0,1,3) ! conventional success cases
+      stat = 0
+      return
+    case (-3) ! preconditioner is not positive definite
+      stat = 1
+      errmsg = 'CS-MINRES solve failed: preconditioner not positive definite'
+      return
+    case (2,4) ! "successful" in some sense, but with an incompatible system
+      stat = 1
+    case (-1,5) ! found an eigenvector instead
+      stat = 1
+    case (6:8) ! Gave up iteration due to limits
+      stat = 1
+    case (9) ! system is singular
+      stat = 1
+    case default
+      stat = 1
+    end select
+    errmsg = 'CS-MINRES solve failed: stat=' // i_to_c(this%minres%flag)
   end subroutine
 
   subroutine matvec(this, x, y)

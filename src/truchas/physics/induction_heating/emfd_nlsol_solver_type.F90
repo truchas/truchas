@@ -99,6 +99,8 @@ contains
 
   subroutine solve(this, efield, stat, errmsg)
 
+    use string_utilities, only: i_to_c
+
     class(emfd_nlsol_solver), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
@@ -107,15 +109,16 @@ contains
 
     call start_timer("solve")
     if (allocated(this%minres)) then
-      call this%minres%solve(efield, stat)
+      call this%minres%solve(efield, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
       call this%mixed_minres%solve(efield, stat)
+      if (stat /= 0) errmsg = 'CS-MINRES solve failed'
     else if (allocated(this%mumps)) then
       call this%mumps%solve(efield, stat)
+      if (stat /= 0) errmsg = 'MUMPS solve failed: stat=' // i_to_c(stat)
     else
       INSIST(.false.)
     end if
-    if (stat /= 0) errmsg = 'FDME convergence failure'
 
     block
       use parallel_communication, only: global_norm2

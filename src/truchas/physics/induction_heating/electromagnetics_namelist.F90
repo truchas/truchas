@@ -41,8 +41,9 @@ contains
         c_ratio, td_solver_type
 
     !! Frequency-domain method namelist variables
+    real(r8) :: minres_pc_damping
     character(32) :: fd_solver_type, fd_precon_type
-    namelist /electromagnetics/ fd_solver_type, fd_precon_type
+    namelist /electromagnetics/ fd_solver_type, fd_precon_type, minres_pc_damping
 
     !! Linear solver variables
     integer :: max_iter, print_level, ams_cycle_type, ams_proj_freq
@@ -103,6 +104,7 @@ contains
 
     fd_solver_type = NULL_C
     fd_precon_type = NULL_C
+    minres_pc_damping = NULL_R
 
     abs_tol = NULL_R
     rel_tol = NULL_R
@@ -148,6 +150,7 @@ contains
 
     call broadcast(fd_solver_type)
     call broadcast(fd_precon_type)
+    call broadcast(minres_pc_damping)
 
     call broadcast(abs_tol)
     call broadcast(rel_tol)
@@ -246,6 +249,10 @@ contains
         end select
         call plist%set('type', fd_precon_type)
         call plist%set('method', fd_precon_type) ! for pcsr_precon_factory (FIXME)
+        select case (fd_solver_type)
+        case ('minres')
+          if (minres_pc_damping /= NULL_R) call plist%set('beta', minres_pc_damping)
+        end select
       end if
 
     else ! Time domain solver parameters
