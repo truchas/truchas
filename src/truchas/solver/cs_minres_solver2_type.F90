@@ -402,6 +402,10 @@ contains
   call lin_op%precon(r2, r3)
   !beta1 = this%global_dotc(r3, r2)  ! dotc value should be real
   beta1 = r3%dotc(r2) ! dotc value should be real
+  if (beta1 < 0.0_r8) then
+    this%flag = -3  ! previously unused value
+    return
+  end if
   beta1 = sqrt(beta1)
 
 !!!%% Initialize other quantities.
@@ -590,6 +594,10 @@ contains
   call lin_op%precon(r2, r3)
   !betan = this%global_dotc(r2, r3) ! dotc value should be real
   betan = r2%dotc(r3) ! dotc value should be real
+  if (betan < 0.0_r8) then
+    this%flag = -3  ! previously unused value
+    return
+  end if
   betan = sqrt(betan)
   pnorm = sqrt(betal**2 + abs(alfa)**2 + betan**2)
 

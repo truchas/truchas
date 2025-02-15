@@ -35,6 +35,8 @@ module fdme_model_type
     type(pcsr_matrix) :: Am
     type(complex_pcsr_matrix) :: cAm
     type(index_corrector) :: icr, icc
+    !FOR MINRES PC EXPERIMENTATION
+    type(complex_pcsr_matrix) :: M
   contains
     procedure :: init
     procedure :: setup
@@ -94,6 +96,8 @@ contains
       call g%add_complete
       call this%A%init(g, take_graph=.true.)
       call this%A2%init(2, this%A%graph, take_graph=.false.) ! used by AMS initialization
+      !FOR MINRES PC EXPERIMENTATION
+      call this%M%init(this%A%graph, take_graph=.false.)
     end block
 
     n = this%mesh%ncell
@@ -179,6 +183,8 @@ contains
       ctm2c = upm_cong_prod(4, 6, m2, cell_curl)
       Aj = (1.0_r8/mu(j)) * ctm2c - this%k(j) * m1
       call this%A%add_to(this%mesh%cedge(:,j), Aj)
+      !FOR MINRES PC EXPERIMENTATION
+      call this%M%add_to(this%mesh%cedge(:,j), this%k(j)*m1)
     end do
 
     ! LHS contribution from Robin boundary conditions
@@ -191,6 +197,8 @@ contains
           n = this%robin_lhs%index(j)
           a = -this%robin_lhs%value(j) * w1_face_matrix(this%mesh, n)
           call this%A%add_to(this%mesh%fedge(:,n), a)
+          !FOR MINRES PC EXPERIMENTATION
+          call this%M%add_to(this%mesh%fedge(:,n), -a)
         end do
       end block
     end if
@@ -229,6 +237,8 @@ contains
         n = this%ebc%index(j)
         call this%A%project_out(n)
         call this%A%set(n, n, cmplx(1,0,kind=r8))
+        !FOR MINRES PC EXPERIMENTATION
+        call this%M%project_out(n)
       end do
     end if
 

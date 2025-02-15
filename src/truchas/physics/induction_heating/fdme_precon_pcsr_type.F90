@@ -13,6 +13,7 @@ module fdme_precon_pcsr_type
   type, extends(fdme_precon), public :: fdme_precon_pcsr
     type(pcsr_matrix), pointer :: matrix => null()  ! pointer to avoid dangling pointer
     class(pcsr_precon), allocatable :: precon
+    real(r8) :: beta
   contains
     procedure :: init
     procedure :: setup
@@ -43,6 +44,9 @@ contains
     allocate(this%matrix)
     call this%matrix%init(this%model%A%graph, take_graph=.false.)
 
+    call params%get('beta', this%beta, stat, errmsg, default=0.0_r8)
+    if (stat /= 0) return
+
     call alloc_pcsr_precon(this%precon, this%matrix, params, stat, errmsg)
     if (stat /= 0) return
 
@@ -50,7 +54,7 @@ contains
 
   subroutine setup(this)
     class(fdme_precon_pcsr), intent(inout) :: this
-    this%matrix%values(:) = this%model%A%values%re !- this%model%A%values%im
+    this%matrix%values(:) = this%model%A%values%re + this%beta*this%model%M%values%re
     call this%precon%compute
   end subroutine
 
