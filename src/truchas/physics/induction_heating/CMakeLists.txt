@@ -16,6 +16,7 @@ target_sources(truchas PRIVATE
   solenoid_fields.F90
   elliptic_integrals.F90
   em_bc_factory_type.F90
+  port_feed_func_factory.F90
   nxh_bndry_func_type.F90
   pec_bndry_func_type.F90
   tdme_model_type.F90

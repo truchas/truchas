@@ -43,9 +43,13 @@ contains
     integer :: face_set_ids(128)
     complex(r8) :: alpha, g(3)
     character(32) :: g_func
-    real(r8) :: sigma, power
+    real(r8) :: sigma
 
-    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func, sigma, power
+    namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func, sigma
+
+    !! Waveguide port feed BC parameters
+    real(r8) :: center(3), x_axis(3), y_axis(3), x_width, y_width, power, e_mag
+    namelist /electromagnetic_bc/ center, x_axis, y_axis, x_width, y_width, power, e_mag
 
     call TLS_info('Reading ELECTROMAGNETIC_BC namelists ...')
 
@@ -70,7 +74,14 @@ contains
       g = NULL_R
       g_func = NULL_C
       sigma = NULL_R
+
+      center = NULL_R
+      x_axis = NULL_R
+      y_axis = NULL_R
+      x_width = NULL_R
+      y_width = NULL_R
       power = NULL_R
+      e_mag = NULL_R
 
       if (is_IOP) read(lun, nml=electromagnetic_bc, iostat=ios, iomsg=iom)
       call broadcast(ios)
@@ -83,7 +94,14 @@ contains
       call broadcast(g)
       call broadcast(g_func)
       call broadcast(sigma)
+
+      call broadcast(center)
+      call broadcast(x_axis)
+      call broadcast(y_axis)
+      call broadcast(x_width)
+      call broadcast(y_width)
       call broadcast(power)
+      call broadcast(e_mag)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
@@ -109,7 +127,43 @@ contains
       case ('ih-hfield')
         ! no parameters
       case ('wg-port')
-        if (power /= NULL_R) call plist%set('power', power)
+        if (all(center == NULL_R)) call TLS_fatal(label // ': CENTER not specified')
+        if (any(center == NULL_R)) call TLS_fatal(label // ': 3-vector CENTER not completely specified')
+        call plist%set('center', center)
+        if (all(x_axis == NULL_R)) then
+          call TLS_fatal(label // ': X_AXIS not specified')
+        else if (any(x_axis == NULL_R)) then
+          call TLS_fatal(label // ': 3-vector X_AXIS not completely specified')
+        else
+          call plist%set('x-axis', x_axis)
+        end if
+        if (all(y_axis == NULL_R)) then
+          call TLS_fatal(label // ': Y_AXIS not specified')
+        else if (any(y_axis == NULL_R)) then
+          call TLS_fatal(label // ': 3-vector Y_AXIS not completely specified')
+        else
+          call plist%set('y-axis', y_axis)
+        end if
+        if (x_width == NULL_R) then
+          call TLS_fatal(label // ': X_WIDTH not specified')
+        else if (x_width <= 0) then
+          call TLS_fatal(label // ': X_WIDTH <= 0.0')
+        else
+          call plist%set('x-width', x_width)
+        end if
+        if (y_width == NULL_R) then
+          call TLS_fatal(label // ': Y_WIDTH not specified')
+        else if (y_width <= 0) then
+          call TLS_fatal(label // ': Y_WIDTH <= 0.0')
+        else
+          call plist%set('y-width', y_width)
+        end if
+        if (power /= NULL_R) then
+          call plist%set('power', power)
+          if (e_mag /= NULL_R) call TLS_fatal(label // ': POWER and E_MAG both specified')
+        else
+          if (e_mag /= NULL_R) call plist%set('e-mag', e_mag)
+        end if
       case ('robin')
         if (alpha == NULL_R) then
           call TLS_fatal(label // ': ALPHA not specified')
