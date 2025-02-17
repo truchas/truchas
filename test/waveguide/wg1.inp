@@ -111,6 +111,11 @@ Frequency is specified here :/
   type = 'wg-port'
   face_set_ids = 5
   !face_set_ids = 1
+  center = 0.0, 0.0, -0.2
+  x_axis = 1.0, 0.0, 0.0
+  y_axis = 0.0, 1.0, 0.0
+  x_width = 0.08636 ! 3.4"
+  y_width = 0.04318 ! 1.7"
   !power = 500.0  ! if not defined, |E| is set to 1
 /
 
