@@ -473,6 +473,7 @@ contains
       call lhs%add(f, setids, stat, errmsg)
       if (stat /= 0) return
 
+      if (.not. allocated(g)) return
       if (.not. allocated(rhs)) then
         allocate(rhs)
         call rhs%init(this%mesh)
