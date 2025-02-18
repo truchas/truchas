@@ -108,6 +108,7 @@ contains
       if (stat /= 0) return
     end if
 
+    if (E0 == 0) return ! no g function
     p = [x0, (PI/a)*x_axis, y_axis, 2*h0*E0] ! function parameter array
     call alloc_fptr_complex_vector_func(g, 3, te01_mode, p)
 
