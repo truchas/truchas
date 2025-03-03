@@ -446,7 +446,7 @@ contains
 
     subroutine wg_port_proc(plist, setids, stat, errmsg)
 
-      use port_feed_func_factory, only: alloc_te01_port_feed_func
+      use port_feed_func_factory, only: alloc_te10_port_feed_func
 
       type(parameter_list), intent(inout) :: plist
       integer, intent(in) :: setids(:)
@@ -460,7 +460,7 @@ contains
       found = .true.
       context = 'processing ' // plist%path() // ': '
 
-      call alloc_te01_port_feed_func(this%omega, plist, f, g, stat, errmsg)
+      call alloc_te10_port_feed_func(this%omega, plist, f, g, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return

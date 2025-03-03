@@ -8,13 +8,13 @@ module port_feed_func_factory
   implicit none
   private
 
-  public :: alloc_te01_port_feed_func
+  public :: alloc_te10_port_feed_func
 
   real(r8), parameter :: PI = 3.1415926535897932385_r8
 
 contains
 
-  subroutine alloc_te01_port_feed_func(omega, params, alpha, g, stat, errmsg)
+  subroutine alloc_te10_port_feed_func(omega, params, alpha, g, stat, errmsg)
 
     use const_complex_scalar_func_type
     use fptr_complex_vector_func_type
@@ -28,7 +28,7 @@ contains
 
     real(r8), allocatable :: rvec(:)
     real(r8) :: x0(3), x_axis(3), y_axis(3), a, b, power
-    real(r8) :: k0, Z0, h0, E0, p(10)
+    real(r8) :: k0, Z0, h0, E0, phase, p(11)
 
     call params%get('center', rvec, stat, errmsg)
     if (stat /= 0) return
@@ -108,18 +108,24 @@ contains
       if (stat /= 0) return
     end if
 
+    call params%get('phase', phase, stat, errmsg, default=0.0_r8)
+    if (stat /= 0) return
+    phase = (PI/180)*phase ! convert degrees to radians
+
     if (E0 == 0) return ! no g function
-    p = [x0, (PI/a)*x_axis, y_axis, 2*h0*E0] ! function parameter array
-    call alloc_fptr_complex_vector_func(g, 3, te01_mode, p)
+    p = [x0, (PI/a)*x_axis, y_axis, 2*h0*E0, phase] ! function parameter array
+    call alloc_fptr_complex_vector_func(g, 3, te10_mode, p)
 
-  end subroutine alloc_te01_port_feed_func
+  end subroutine alloc_te10_port_feed_func
 
-  function te01_mode(x, p, dim) result(fx)
+  function te10_mode(x, p, dim) result(fx)
     real(r8), intent(in) :: x(*), p(*)
     integer, value :: dim
     complex(r8) :: fx(dim)
-    fx%re = 0.0_r8
-    fx%im = (p(10) * cos(dot_product(x(1:3)-p(1:3),p(4:6)))) * p(7:9)
+    real(r8) :: tmp(3)
+    tmp = (p(10) * cos(dot_product(x(1:3)-p(1:3),p(4:6)))) * p(7:9)
+    fx%re = -sin(p(11)) * tmp
+    fx%im =  cos(p(11)) * tmp
   end function
 
 end module port_feed_func_factory

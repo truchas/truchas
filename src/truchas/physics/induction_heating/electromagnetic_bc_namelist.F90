@@ -48,8 +48,8 @@ contains
     namelist /electromagnetic_bc/ name, type, face_set_ids, alpha, g, g_func, sigma
 
     !! Waveguide port feed BC parameters
-    real(r8) :: center(3), x_axis(3), y_axis(3), x_width, y_width, power, e_mag
-    namelist /electromagnetic_bc/ center, x_axis, y_axis, x_width, y_width, power, e_mag
+    real(r8) :: center(3), x_axis(3), y_axis(3), x_width, y_width, power, phase, e_mag
+    namelist /electromagnetic_bc/ center, x_axis, y_axis, x_width, y_width, power, phase, e_mag
 
     call TLS_info('Reading ELECTROMAGNETIC_BC namelists ...')
 
@@ -81,6 +81,7 @@ contains
       x_width = NULL_R
       y_width = NULL_R
       power = NULL_R
+      phase = NULL_R
       e_mag = NULL_R
 
       if (is_IOP) read(lun, nml=electromagnetic_bc, iostat=ios, iomsg=iom)
@@ -101,6 +102,7 @@ contains
       call broadcast(x_width)
       call broadcast(y_width)
       call broadcast(power)
+      call broadcast(phase)
       call broadcast(e_mag)
 
       !! A unique NAME is required; becomes the BC sublist parameter name.
@@ -164,6 +166,7 @@ contains
         else
           if (e_mag /= NULL_R) call plist%set('e-mag', e_mag)
         end if
+        if (phase /= NULL_R) call plist%set('phase', phase)
       case ('robin')
         if (alpha == NULL_R) then
           call TLS_fatal(label // ': ALPHA not specified')
