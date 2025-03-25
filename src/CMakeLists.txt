@@ -6,3 +6,6 @@ add_subdirectory(tools)
 
 message(STATUS "Configuring src/python")
 add_subdirectory(python)
+
+message(STATUS "Configuring src/th-electrostatics")
+add_subdirectory(th-electrostatics)
