@@ -82,7 +82,7 @@ contains
     else if (params%is_parameter('x-axis')) then
       this => new_simpl_mesh_internal(params, stat, errmsg)
     else
-      stat = 0
+      stat = 1
       errmsg = 'invalid mesh specification'
       this => null()
     end if

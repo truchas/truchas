@@ -1,0 +1,18 @@
+{
+  "mesh":{
+    "x-axis": {"coarse-grid":[0.0, 1.0], "intervals":[10]},
+    "y-axis": {"coarse-grid":[0.0, 1.0], "intervals":[10]},
+    "z-axis": {"coarse-grid":[0.0, 0.1], "intervals":[1]}
+  },
+  "materials":{
+    "default":{
+      "properties":{
+        "permittivity": 1.0,
+        "permeability": 1.0
+      }
+    }
+  },
+  "bodies":{
+    "body1": {"type":"element-block", "blockids":[1], "material":"default"}
+  }
+}
