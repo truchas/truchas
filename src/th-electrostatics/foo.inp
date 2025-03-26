@@ -10,9 +10,17 @@
         "permittivity": 1.0,
         "permeability": 1.0
       }
+    },
+    "SiC":{
+      "properties":{
+        "permittivity": 4.0,
+        "permeability": 1.0
+      }
     }
   },
   "bodies":{
-    "body1": {"type":"element-block", "blockids":[1], "material":"default"}
+    "body1": {"type": "plane", "normal":[1.0,0.0,0.0], "point-on-plane": [0.5, 0.5, 0.0], "material":"VOID"},
+    "body3": {"type": "plane", "normal":[0.0,0.0,1.0], "point-on-plane": [0.5, 0.5, 0.05], "material":"VOID"},
+    "body2": {"type": "background", "material": "SiC"}
   }
 }

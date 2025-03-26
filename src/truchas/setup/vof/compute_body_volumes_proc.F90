@@ -82,11 +82,11 @@ contains
   ! calculate the volume fractions given an interface.
   subroutine compute_body_volumes(mesh, recursion_limit, plist, vof, stat, errmsg)
 
-    use unstr_mesh_type
+    use base_mesh_class
     use parameter_list_type
     use timer_tree_type
 
-    type(unstr_mesh), intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     integer, intent(in) :: recursion_limit
     type(parameter_list), intent(inout) :: plist
     real(r8), intent(out), allocatable :: vof(:,:)
@@ -116,14 +116,14 @@ contains
         if (stat /= 0) exit
         vof(:,i) = cell%volumes(stat, errmsg) !/ cell%volume
         if (stat /= 0) exit
-        vof(:,i) = (vof(:,i)/sum(vof(:,i))) * mesh%volume(i) ! correct for errors in planar assumption
+        vof(:,i) = (vof(:,i)/sum(vof(:,i))) * abs(mesh%volume(i)) ! correct for errors in planar assumption
       end do
 
       ! handle errors across ranks
       call error_consolidate(stat, errmsg)
     else
       ! If there's only one body, do something faster.
-      vof(1,:mesh%ncell_onP) = mesh%volume(:mesh%ncell_onP)
+      vof(1,:mesh%ncell_onP) = abs(mesh%volume(:mesh%ncell_onP))
     end if
     call stop_timer("VOF Initialize")
 
@@ -177,11 +177,13 @@ contains
 
   subroutine dnc_cell_init(this, i, mesh, body_id, recursion_limit, stat, errmsg)
 
+    use base_mesh_class
     use unstr_mesh_type
+    use simpl_mesh_type
     use cell_topology
 
     class(dnc_cell), intent(out) :: this
-    class(unstr_mesh), intent(in) :: mesh
+    class(base_mesh), intent(in) :: mesh
     integer, intent(in) :: i, recursion_limit
     type(body_identifier), target, intent(in) :: body_id
     integer, intent(out) :: stat
@@ -194,60 +196,77 @@ contains
     this%recursion_height = recursion_limit
     this%cellid = i
     this%is_subtet = .false.
-    this%volume = mesh%volume(i)
-    
-    associate (cn => mesh%cnode(mesh%xcnode(i):mesh%xcnode(i+1)-1))
-      this%nnode = size(cn)
-      nface = num_cell_faces(cn)
-      
-      select case(this%nnode)
-      case (4)
-        this%to_tet => tet4_to_tet
-        allocate(this%x(3,this%nnode+6))
-        this%x(:,:this%nnode) = mesh%x(:,cn)
-        do j = 1, 6
-          this%x(:,4+j) = sum(this%x(:,tet4_edges(:,j)), dim=2) / 2
-        end do
-      case (5)
-        this%to_tet => pyr5_to_tet
-        allocate(this%x(3,this%nnode+1))
-        this%x(:,:this%nnode) = mesh%x(:,cn)
-        ! split the only potentially non-planar face (5)
-        this%x(:,this%nnode+1) = sum(this%x(:,pyr5_faces(pyr5_xface(5):pyr5_xface(6)-1)),dim=2) / pyr5_fsize(5)
-      case (6)
-        this%to_tet => wed6_to_tet
-        allocate(this%x(3,this%nnode+nface))
-        this%x(:,:this%nnode) = mesh%x(:,cn)
-        do j = 1, nface
-          this%x(:,this%nnode+j) = sum(this%x(:,wed6_faces(wed6_xface(j):wed6_xface(j+1)-1)),dim=2) / wed6_fsize(j)
-        end do
-      case (8)
-        this%to_tet => hex8_to_tet
+    this%volume = abs(mesh%volume(i)) !NB: some simpl_mesh cells will be inverted
 
-        ! ! htet+
-        ! allocate(this%x(3,this%nnode+nface+12+1))
-        ! this%x(:,:this%nnode) = mesh%x(:,cn)
-        ! do j = 1, nface
-        !   this%x(:,this%nnode+j) = sum(this%x(:,hex8_faces(hex8_xface(j):hex8_xface(j+1)-1)),dim=2) / hex8_fsize(j)
-        ! end do
-        ! do j = 1, 12
-        !   this%x(:,this%nnode+nface+j) = sum(this%x(:,hex8_edges(:,j)), dim=2) / 2
-        ! end do
-        ! this%x(:,this%nnode+nface+13) = sum(this%x(:,:this%nnode),dim=2) / this%nnode
+    select type (mesh)
+    class is (unstr_mesh)
 
-        ! htet & mine
-        allocate(this%x(3,this%nnode+nface+1))
-        this%x(:,:this%nnode) = mesh%x(:,cn)
-        do j = 1, nface
-          this%x(:,this%nnode+j) = sum(this%x(:,hex8_faces(hex8_xface(j):hex8_xface(j+1)-1)),dim=2) / hex8_fsize(j)
-        end do
-        this%x(:,this%nnode+nface+1) = sum(this%x(:,:this%nnode),dim=2) / this%nnode
-      case default
-        INSIST(.false.)
-      end select
+      associate (cn => mesh%cnode(mesh%xcnode(i):mesh%xcnode(i+1)-1))
+        this%nnode = size(cn)
+        nface = num_cell_faces(cn)
 
-      this%ntet = size(this%to_tet,dim=2)
-    end associate
+        select case(this%nnode)
+        case (4)
+          this%to_tet => tet4_to_tet
+          allocate(this%x(3,this%nnode+6))
+          this%x(:,:this%nnode) = mesh%x(:,cn)
+          do j = 1, 6
+            this%x(:,4+j) = sum(this%x(:,tet4_edges(:,j)), dim=2) / 2
+          end do
+        case (5)
+          this%to_tet => pyr5_to_tet
+          allocate(this%x(3,this%nnode+1))
+          this%x(:,:this%nnode) = mesh%x(:,cn)
+          ! split the only potentially non-planar face (5)
+          this%x(:,this%nnode+1) = sum(this%x(:,pyr5_faces(pyr5_xface(5):pyr5_xface(6)-1)),dim=2) / pyr5_fsize(5)
+        case (6)
+          this%to_tet => wed6_to_tet
+          allocate(this%x(3,this%nnode+nface))
+          this%x(:,:this%nnode) = mesh%x(:,cn)
+          do j = 1, nface
+            this%x(:,this%nnode+j) = sum(this%x(:,wed6_faces(wed6_xface(j):wed6_xface(j+1)-1)),dim=2) / wed6_fsize(j)
+          end do
+        case (8)
+          this%to_tet => hex8_to_tet
+
+          ! ! htet+
+          ! allocate(this%x(3,this%nnode+nface+12+1))
+          ! this%x(:,:this%nnode) = mesh%x(:,cn)
+          ! do j = 1, nface
+          !   this%x(:,this%nnode+j) = sum(this%x(:,hex8_faces(hex8_xface(j):hex8_xface(j+1)-1)),dim=2) / hex8_fsize(j)
+          ! end do
+          ! do j = 1, 12
+          !   this%x(:,this%nnode+nface+j) = sum(this%x(:,hex8_edges(:,j)), dim=2) / 2
+          ! end do
+          ! this%x(:,this%nnode+nface+13) = sum(this%x(:,:this%nnode),dim=2) / this%nnode
+
+          ! htet & mine
+          allocate(this%x(3,this%nnode+nface+1))
+          this%x(:,:this%nnode) = mesh%x(:,cn)
+          do j = 1, nface
+            this%x(:,this%nnode+j) = sum(this%x(:,hex8_faces(hex8_xface(j):hex8_xface(j+1)-1)),dim=2) / hex8_fsize(j)
+          end do
+          this%x(:,this%nnode+nface+1) = sum(this%x(:,:this%nnode),dim=2) / this%nnode
+        case default
+          INSIST(.false.)
+        end select
+      end associate
+
+    class is (simpl_mesh)
+
+      this%nnode = 4
+      this%to_tet => tet4_to_tet
+      allocate(this%x(3,10))
+      this%x(:,:4) = mesh%x(:,mesh%cnode(:,i))
+      do j = 1, 6
+        this%x(:,4+j) = sum(this%x(:,tet4_edges(:,j)), dim=2) / 2
+      end do
+
+    class default
+      INSIST(.false.)
+    end select
+
+    this%ntet = size(this%to_tet,dim=2)
 
     allocate(this%body_at_node(size(this%x,dim=2)))
     do j = 1, this%nnode

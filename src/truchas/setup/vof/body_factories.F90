@@ -93,9 +93,9 @@ contains
 
   subroutine alloc_element_block_body(r, mesh, cblockids, fill_inside)
     use element_block_body_type
-    use unstr_mesh_type
+    use base_mesh_class
     class(body), allocatable, intent(out) :: r
-    type(unstr_mesh), target, intent(in) :: mesh
+    class(base_mesh), target, intent(in) :: mesh
     integer, intent(in) :: cblockids(:)
     logical, intent(in) :: fill_inside
     allocate(r, source=element_block_body(mesh, cblockids, fill_inside))
@@ -111,11 +111,11 @@ contains
 
   subroutine alloc_body(mesh, params, r, stat, errmsg)
 
-    use unstr_mesh_type
+    use base_mesh_class
     use parameter_list_type
     use cell_geometry, only: normalized
 
-    type(unstr_mesh), target, intent(in) :: mesh
+    class(base_mesh), target, intent(in) :: mesh
     type(parameter_list), intent(inout) :: params
     class(body), allocatable, intent(out) :: r
     integer, intent(out) :: stat
