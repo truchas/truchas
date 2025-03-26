@@ -13,6 +13,7 @@ module th_electrostatics_sim_type
     private
     type(simpl_mesh), pointer :: mesh => null()
     type(material_model) :: matl_model
+    real(r8), allocatable :: vol_frac(:,:)
   contains
     procedure :: init
     procedure :: run
@@ -26,17 +27,15 @@ contains
     use simpl_mesh_factory, only: new_simpl_mesh
     use material_database_type
     use material_factory, only: load_material_database
-    use compute_body_volumes_proc, only: compute_body_volumes
 
     class(th_electrostatics_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist
+    type(parameter_list), pointer :: plist, bodies_plist
     type(material_database) :: matl_db
-    character(:), allocatable :: context
-    real(r8), allocatable :: vof(:,:)
+    character(:), allocatable :: context, matl_names(:)
 
     !! Create the mesh
     if (params%is_sublist('mesh')) then
@@ -62,57 +61,193 @@ contains
     end if
     if (stat /= 0) return
 
-    !! Initialize the material model
-    !TODO: input name instead of hardwiring it
-    call this%matl_model%init(['default'], matl_db, stat, errmsg)
-    if (stat /= 0) errmsg = context // errmsg
-
+    !!
     if (params%is_sublist('bodies')) then
-      plist => params%sublist('bodies')
-      call compute_body_volumes(this%mesh, 5, plist, vof, stat, errmsg)
-      context = 'processing ' // plist%path() // ': '
-      if (stat /= 0) errmsg = context // errmsg
+      bodies_plist => params%sublist('bodies')
     else
       stat = 1
       errmsg = 'missing "bodies" sublist parameter'
+      if (stat /= 0) return
     end if
+
+    !! Extract the material names from the body sublists and initialize the material model
+    call get_matl_names(bodies_plist, matl_names, stat, errmsg, unique=.true.)
     if (stat /= 0) return
+    call this%matl_model%init(matl_names, matl_db, stat, errmsg)
+    if (stat /= 0) return
+
+    !! Initialize the material volume fraction array
+    call get_matl_vol_frac(this%mesh, this%matl_model, bodies_plist, this%vol_frac, stat, errmsg)
+
+  contains
+
+    !! Return the array of body material names appearing in the bodies parameter
+    !! list and an array of the unique material names.
+
+    subroutine get_matl_names(bodies, matl_names, stat, errmsg, unique)
+
+      type(parameter_list), intent(inout) :: bodies
+      character(:), allocatable, intent(out) :: matl_names(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      logical, intent(in), optional :: unique
+
+      type(parameter_list_iterator) :: piter
+      type(parameter_list), pointer :: plist
+      type(parameter_list) :: matl_list
+      character(:), allocatable :: name
+      logical :: unique_
+      integer :: n
+
+      unique_ = .false.
+      if (present(unique)) unique_= unique
+
+      !! Scan the material names found in the body sublists and verify that
+      !! they appear in the material database. Also find the length of the
+      !! longest name, which will be used to allocate the arrays. If returning
+      !! an array of the unique names, we use a temporary parameter list to
+      !! generate a list of the unique names.
+
+      piter = parameter_list_iterator(bodies, sublists_only=.true.)
+      n = 0 ! max name length
+      do while (.not.piter%at_end())
+        plist => piter%sublist()
+        context = 'processing ' // plist%path() // ': '
+        call plist%get('material', name, stat, errmsg)
+        if (stat /= 0) then
+          errmsg = context // errmsg
+          return
+        else if (name /= 'VOID' .and. .not.matl_db%has_matl(name)) then
+          stat = 1
+          errmsg = context // 'unknown "material": ' // name
+          return
+        end if
+        n = max(n, len(name))
+        if (unique_) call matl_list%set(name, 1)
+        call piter%next
+      end do
+
+      if (unique_) then ! copy the list of unique material names into the array
+
+        piter = parameter_list_iterator(matl_list)
+        allocate(character(n) :: matl_names(piter%count()))
+        n = 0
+        do while (.not.piter%at_end())
+          n = n + 1
+          matl_names(n) = piter%name()
+          call piter%next
+        end do
+
+      else ! copy the body material names in order into the array
+
+        piter = parameter_list_iterator(bodies, sublists_only=.true.)
+        allocate(character(n) :: matl_names(piter%count()))
+        n = 0
+        do while (.not.piter%at_end())
+          plist => piter%sublist()
+          call plist%get('material', name)
+          n = n + 1
+          matl_names(n) = name
+          call piter%next
+        end do
+
+      end if
+
+    end subroutine get_matl_names
+
+    !! Return the cell material volume fraction array that is defined by the
+    !! body sublists of the bodies parameter list.
+
+    subroutine get_matl_vol_frac(mesh, matl_model, bodies, vol_frac, stat, errmsg)
+
+      use compute_body_volumes_proc, only: compute_body_volumes
+
+      type(simpl_mesh), intent(in) :: mesh
+      type(material_model), intent(in) :: matl_model
+      type(parameter_list), intent(inout) :: bodies
+      real(r8), allocatable :: vol_frac(:,:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      integer :: num_matl, num_body, j, m
+      real(r8), allocatable :: body_vol(:,:)
+      integer, allocatable :: matl_index(:)
+      logical, allocatable :: body_matl_mask(:,:)
+      character(:), allocatable :: matl_names(:)
+
+      call compute_body_volumes(this%mesh, 3, bodies, body_vol, stat, errmsg)
+      context = 'processing ' // bodies%path() // ': '
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
+
+      num_matl = matl_model%nmatl
+      num_body = size(body_vol,dim=1)
+
+      !! BODY_MATL_MASK(b,m) is true if body b is material m.
+      call get_matl_names(bodies, matl_names, stat, errmsg)
+      if (stat /= 0) return
+      matl_index = matl_model%matl_index(matl_names)
+      allocate(body_matl_mask(num_body,num_matl), source=.false.)
+      do j = 1, num_body
+        body_matl_mask(j, matl_index(j)) = .true.
+      end do
+
+      !! Initialize the material volume fraction array.
+      allocate(vol_frac(num_matl,mesh%ncell))
+      do j = 1, mesh%ncell_onP
+        do m = 1, num_matl
+          vol_frac(m,j) = sum(body_vol(:,j), mask=body_matl_mask(:,m)) / abs(mesh%volume(j))
+        end do
+      end do
+      call mesh%cell_imap%gather_offp(vol_frac)
+
+    end subroutine get_matl_vol_frac
 
   end subroutine init
 
   subroutine run(this, stat, errmsg)
-  
+
     class(th_electrostatics_sim), intent(inout) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-  
-    call write_vtk_graphics('out.vtkhdf', this%mesh, stat, errmsg)
+
+    call write_vtk_graphics('out.vtkhdf', this%mesh, this%vol_frac, stat, errmsg)
 
   end subroutine run
-  
 
-  subroutine write_vtk_graphics(filename, mesh, stat, errmsg)
-  
+
+  subroutine write_vtk_graphics(filename, mesh, vof, stat, errmsg)
+
     use vtkhdf_file_type
-    
+
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: vof(:,:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    
+
     type(vtkhdf_file) :: viz_file
-    
+    real(r8), allocatable :: g_vector(:,:)
+
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
     if (stat /= 0) then
       call broadcast(errmsg)
       return
     end if
-    
+
     call write_mesh
-    
+
+    allocate(g_vector(size(vof,dim=1),merge(mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(vof(:,:mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('vof', g_vector, stat, errmsg)
+    call broadcast(stat)
+    if (stat /= 0) call broadcast(errmsg)
+
   contains
-  
+
     subroutine write_mesh
 
       use,intrinsic :: iso_fortran_env, only: int8
@@ -141,5 +276,5 @@ contains
     end subroutine write_mesh
 
   end subroutine write_vtk_graphics
-    
+
 end module th_electrostatics_sim_type

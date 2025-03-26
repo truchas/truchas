@@ -10,13 +10,13 @@ module element_block_body_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use body_class
-  use unstr_mesh_type
+  use base_mesh_class
   implicit none
   private
 
   type, extends(body), public :: element_block_body
     private
-    type(unstr_mesh), pointer :: mesh => null() ! do not own
+    class(base_mesh), pointer :: mesh => null() ! do not own
     integer, allocatable :: cblockids(:)
     logical :: fill_outside
   contains
@@ -32,7 +32,7 @@ contains
 
   !! constructor for ELEMENT_BLOCK_BODY objects
   function element_block_body_value(mesh, cblockids, fill_inside) result(r)
-    type(unstr_mesh), target, intent(in) :: mesh
+    class(base_mesh), target, intent(in) :: mesh
     integer, intent(in) :: cblockids(:)
     logical, intent(in) :: fill_inside
     type(element_block_body) :: r
