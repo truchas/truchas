@@ -33,15 +33,15 @@ module avg_phase_prop_type
     private
     type(scalar_func_box), allocatable :: phase(:)
   contains
-    generic :: init => init_list
+    generic :: init => init_list, init_all
     generic :: compute_value => compute_value_1
-    procedure, private :: init_list
+    procedure, private :: init_list, init_all
     procedure, private :: compute_value_1
   end type
 
 contains
 
-  subroutine init_list(this, name, pids, model, stat, errmsg)
+  subroutine init_list(this, name, pids, model, stat, errmsg, void_value)
     use material_model_type
     use scalar_func_factories, only: alloc_const_scalar_func
     class(avg_phase_prop), intent(out) :: this
@@ -50,12 +50,17 @@ contains
     type(material_model), intent(in) :: model
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: void_value
     integer :: n
     stat = 0
     allocate(this%phase(size(pids)))
     do n = 1, size(pids)
       if (pids(n) == model%void_index) then
-        call alloc_const_scalar_func(this%phase(n)%func, 0.0_r8)
+        if (present(void_value)) then
+          call alloc_const_scalar_func(this%phase(n)%func, void_value)
+        else
+          call alloc_const_scalar_func(this%phase(n)%func, 0.0_r8)
+        end if
       else
         call model%get_phase_prop(pids(n), name, this%phase(n)%func)
         if (.not.allocated(this%phase(n)%func)) then
@@ -65,6 +70,19 @@ contains
         end if
       end if
     end do
+  end subroutine
+
+  subroutine init_all(this, name, model, stat, errmsg, void_value)
+    use material_model_type
+    use scalar_func_factories, only: alloc_const_scalar_func
+    class(avg_phase_prop), intent(out) :: this
+    character(*), intent(in) :: name
+    type(material_model), intent(in) :: model
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(in), optional :: void_value
+    integer :: n
+    call init_list(this, name, [(n, n=1,model%nphase)], model, stat, errmsg, void_value)
   end subroutine
 
   subroutine compute_value_1(this, w, state, value)

@@ -94,15 +94,19 @@ type(avg_phase_prop) :: prop
 character(*) :: name
 integer :: pids(:)
 type(material_model) :: model
-call prop%init(name, pids, model, stat, errmsg)
+call prop%init(name, pids, model, stat, errmsg [,void_value])
 ```
 This initializes the `avg_phase_prop` object `prop` to compute the linear
 combination of the functions $f_i$ that are associated with property `name`
 and phase indices given by `pids` from the material `model`. The index for the
-void phase *is allowed* for this procedure, with 0 taken for the value of its
-property. If an error is encountered, the integer `stat` is assigned a nonzero
-value and the deferred-length allocatable character `errmsg` is assigned an
-explanatory message; otherwise `stat` is assigned the value 0.
+void phase *is allowed* for this procedure, with `void_value` taken for the
+value of its property if specified, otherwise 0. If an error is encountered,
+the integer `stat` is assigned a nonzero value and the deferred-length
+allocatable character `errmsg` is assigned an explanatory message; otherwise
+`stat` is assigned the value 0.
+
+A second form of this generic function omits the pids argument and behaves as
+if all phases, including void if present, were specified in phase index order.
 
 #### compute_value
 ```Fortran
