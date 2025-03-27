@@ -6,6 +6,7 @@ module th_electrostatics_sim_type
   use parallel_communication
   use simpl_mesh_type
   use material_model_type
+  use avg_phase_prop_type
   implicit none
   private
 
@@ -14,6 +15,8 @@ module th_electrostatics_sim_type
     type(simpl_mesh), pointer :: mesh => null()
     type(material_model) :: matl_model
     real(r8), allocatable :: vol_frac(:,:)
+    type(avg_phase_prop) :: eps_prop, eps_im_prop
+    complex(r8), allocatable :: eps(:)
   contains
     procedure :: init
     procedure :: run
@@ -27,6 +30,7 @@ contains
     use simpl_mesh_factory, only: new_simpl_mesh
     use material_database_type
     use material_factory, only: load_material_database
+    use material_utilities, only: define_property_default
 
     class(th_electrostatics_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
@@ -36,6 +40,13 @@ contains
     type(parameter_list), pointer :: plist, bodies_plist
     type(material_database) :: matl_db
     character(:), allocatable :: context, matl_names(:)
+    real(r8) :: eps0
+    integer :: j
+
+    !! Read physical constants (optional)
+    plist => params%sublist('physical-constants', stat, errmsg)
+    if (stat /= 0) return
+    call plist%get('vacuum-permittivity', eps0, stat, errmsg, default= 8.854188e-12_r8)
 
     !! Create the mesh
     if (params%is_sublist('mesh')) then
@@ -75,10 +86,41 @@ contains
     if (stat /= 0) return
     call this%matl_model%init(matl_names, matl_db, stat, errmsg)
     if (stat /= 0) return
+    
+    !! Only single-phase materials are currently supported
+    do j = 1, this%matl_model%nmatl_real
+      if (this%matl_model%num_matl_phase(j) /= 1) then
+        stat = 1
+        errmsg = 'found unsupported multiphase material: ' // this%matl_model%matl_name(j)
+        return
+      end if
+    end do
 
     !! Initialize the material volume fraction array
     call get_matl_vol_frac(this%mesh, this%matl_model, bodies_plist, this%vol_frac, stat, errmsg)
 
+    !! Initialize the cell-based permittivity array
+
+    !! Set the default permittivity value if not specified by input
+    call define_property_default(this%matl_model, 'relative-permittivity', 1.0_r8)
+    call define_property_default(this%matl_model, 'relative-permittivity-im', 0.0_r8)
+
+    call this%eps_prop%init('relative-permittivity', this%matl_model, stat, errmsg, void_value=1.0_r8)
+    if (stat /= 0) return
+    
+    call this%eps_im_prop%init('relative-permittivity-im', this%matl_model, stat, errmsg)
+    if (stat /= 0) return
+    
+    block
+      real(r8) :: state(0) ! state variables e.g. (T, x, y, z) would go here
+      allocate(this%eps(this%mesh%ncell))
+      do j = 1, this%mesh%ncell
+        call this%eps_prop%compute_value(this%vol_frac(:,j), state, this%eps(j)%re)
+        call this%eps_im_prop%compute_value(this%vol_frac(:,j), state, this%eps(j)%im)
+        this%eps(j) = eps0 * this%eps(j)
+      end do
+    end block
+    
   contains
 
     !! Return the array of body material names appearing in the bodies parameter
@@ -213,23 +255,23 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    call write_vtk_graphics('out.vtkhdf', this%mesh, this%vol_frac, stat, errmsg)
+    call write_vtk_graphics(this, 'out.vtkhdf', stat, errmsg)
 
   end subroutine run
 
 
-  subroutine write_vtk_graphics(filename, mesh, vof, stat, errmsg)
+  subroutine write_vtk_graphics(this, filename, stat, errmsg)
 
     use vtkhdf_file_type
 
+    class(th_electrostatics_sim), intent(in) :: this
     character(*), intent(in) :: filename
-    type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: vof(:,:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(vtkhdf_file) :: viz_file
     real(r8), allocatable :: g_vector(:,:)
+    complex(r8), allocatable :: g_zscalar(:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -240,11 +282,29 @@ contains
 
     call write_mesh
 
-    allocate(g_vector(size(vof,dim=1),merge(mesh%cell_imap%global_size, 0, is_IOP)))
-    call gather(vof(:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('vof', g_vector, stat, errmsg)
+    allocate(g_vector(size(this%vol_frac,dim=1),merge(this%mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(this%vol_frac(:,:this%mesh%ncell_onP), g_vector)
+    if (is_IOP) call viz_file%write_cell_dataset('vol-frac', g_vector, stat, errmsg)
     call broadcast(stat)
-    if (stat /= 0) call broadcast(errmsg)
+    if (stat /= 0) then
+      call broadcast(errmsg)
+      return
+    end if
+
+    allocate(g_zscalar(merge(this%mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(this%eps(:this%mesh%ncell_onP), g_zscalar)
+    if (is_IOP) call viz_file%write_cell_dataset('eps_re', g_zscalar%re, stat, errmsg)
+    call broadcast(stat)
+    if (stat /= 0) then
+      call broadcast(errmsg)
+      return
+    end if
+    if (is_IOP) call viz_file%write_cell_dataset('eps_im', [g_zscalar%im], stat, errmsg)
+    call broadcast(stat)
+    if (stat /= 0) then
+      call broadcast(errmsg)
+      return
+    end if
 
   contains
 
@@ -261,8 +321,8 @@ contains
       character(:), allocatable :: errmsg
 
       !! Collate the mesh data structure onto the IO process
-      call mesh%get_global_cnode_array(cnode)
-      call mesh%get_global_x_array(x)
+      call this%mesh%get_global_cnode_array(cnode)
+      call this%mesh%get_global_x_array(x)
 
       if (is_IOP) then
         xcnode = [(1+4*j, j=0, size(cnode,dim=2))]
