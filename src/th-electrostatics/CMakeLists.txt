@@ -24,6 +24,6 @@ include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 #target_link_libraries(ht2d truchas truchas-extra ${Truchas_LINK_LIBS})
 
 # --- driver program binary
-add_executable(prog th_electrostatics_sim_type.F90 main.F90)
+add_executable(prog th_electrostatics_sim_type.F90 th_electrostatics_solver_type.F90 main.F90)
 target_link_libraries(prog truchas ${Truchas_LINK_LIBS})
 set_target_properties(prog PROPERTIES OUTPUT_NAME th-electrostatics)

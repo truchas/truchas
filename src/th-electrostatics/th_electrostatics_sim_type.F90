@@ -7,6 +7,7 @@ module th_electrostatics_sim_type
   use simpl_mesh_type
   use material_model_type
   use avg_phase_prop_type
+  use th_electrostatics_solver_type
   implicit none
   private
 
@@ -16,7 +17,8 @@ module th_electrostatics_sim_type
     type(material_model) :: matl_model
     real(r8), allocatable :: vol_frac(:,:)
     type(avg_phase_prop) :: eps_prop, eps_im_prop
-    complex(r8), allocatable :: eps(:)
+    complex(r8), allocatable :: eps(:), phi(:)
+    type(th_electrostatics_solver) :: solver
   contains
     procedure :: init
     procedure :: run
@@ -86,7 +88,7 @@ contains
     if (stat /= 0) return
     call this%matl_model%init(matl_names, matl_db, stat, errmsg)
     if (stat /= 0) return
-    
+
     !! Only single-phase materials are currently supported
     do j = 1, this%matl_model%nmatl_real
       if (this%matl_model%num_matl_phase(j) /= 1) then
@@ -107,10 +109,10 @@ contains
 
     call this%eps_prop%init('relative-permittivity', this%matl_model, stat, errmsg, void_value=1.0_r8)
     if (stat /= 0) return
-    
+
     call this%eps_im_prop%init('relative-permittivity-im', this%matl_model, stat, errmsg)
     if (stat /= 0) return
-    
+
     block
       real(r8) :: state(0) ! state variables e.g. (T, x, y, z) would go here
       allocate(this%eps(this%mesh%ncell))
@@ -120,7 +122,12 @@ contains
         this%eps(j) = eps0 * this%eps(j)
       end do
     end block
-    
+
+    call this%solver%init(this%mesh, this%eps, params, stat, errmsg)
+    if (stat /= 0) return
+
+    allocate(this%phi(this%mesh%nnode))
+
   contains
 
     !! Return the array of body material names appearing in the bodies parameter
@@ -255,6 +262,9 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    call this%solver%solve(this%phi, stat, errmsg)
+    if (stat /= 0) return
+
     call write_vtk_graphics(this, 'out.vtkhdf', stat, errmsg)
 
   end subroutine run
@@ -275,10 +285,7 @@ contains
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast(errmsg)
-      return
-    end if
+    if (stat /= 0) return !NB: errmsg only set on IOP
 
     call write_mesh
 
@@ -286,25 +293,27 @@ contains
     call gather(this%vol_frac(:,:this%mesh%ncell_onP), g_vector)
     if (is_IOP) call viz_file%write_cell_dataset('vol-frac', g_vector, stat, errmsg)
     call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast(errmsg)
-      return
-    end if
+    INSIST(stat == 0)
 
     allocate(g_zscalar(merge(this%mesh%cell_imap%global_size, 0, is_IOP)))
     call gather(this%eps(:this%mesh%ncell_onP), g_zscalar)
     if (is_IOP) call viz_file%write_cell_dataset('eps_re', g_zscalar%re, stat, errmsg)
     call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast(errmsg)
-      return
-    end if
+    INSIST(stat == 0)
     if (is_IOP) call viz_file%write_cell_dataset('eps_im', [g_zscalar%im], stat, errmsg)
     call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast(errmsg)
-      return
-    end if
+    INSIST(stat == 0)
+
+    deallocate(g_zscalar)
+    allocate(g_zscalar(merge(this%mesh%node_imap%global_size, 0, is_IOP)))
+    call gather(this%phi(:this%mesh%nnode_onP), g_zscalar)
+    if (is_IOP) call viz_file%write_point_dataset('phi_re', g_zscalar%re, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+    if (is_IOP) call viz_file%write_point_dataset('phi_im', [g_zscalar%im], stat, errmsg)
+    call broadcast(stat)
+    if (is_IOP) call viz_file%write_point_dataset('|phi|', abs(g_zscalar), stat, errmsg)
+    INSIST(stat == 0)
 
   contains
 

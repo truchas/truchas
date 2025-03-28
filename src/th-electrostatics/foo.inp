@@ -19,8 +19,7 @@
     }
   },
   "bodies":{
-    "body1": {"type": "plane", "normal":[1.0,0.0,0.0], "point-on-plane": [0.5, 0.5, 0.0], "material":"foo"},
-    "body3": {"type": "plane", "normal":[0.0,1.0,0.0], "point-on-plane": [0.5, 0.5, 0.0], "material":"bar"},
-    "body2": {"type": "background", "material": "VOID"}
-  }
+    "body1": {"type": "element-block", "blockids":[1], "material": "VOID"}
+  },
+  "preconditioner": {"params":{"num-cycles": 1}}
 }
