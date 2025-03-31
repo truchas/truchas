@@ -128,6 +128,25 @@ contains
         if (stat /= 0) return
         call alloc_const_complex_scalar_func(f, const)
       end if
+    else if (plist%is_vector(param)) then ! it might be complex constant as a 2-vector
+      block
+        class(*), allocatable :: tmp(:)
+        call plist%get_any(param, tmp, stat, errmsg)
+        if (stat /= 0) return
+        stat = 1
+        if (size(tmp) == 2) then
+          select type (tmp)
+          type is (real(r8))
+            const = cmplx(tmp(1),tmp(2),kind=r8)
+            stat = 0
+          end select
+        end if
+        if (stat /= 0) then
+          errmsg = 'not a complex(real64) parameter'
+          return
+        end if
+        call alloc_const_complex_scalar_func(f, const)
+      end block
     else
       stat = 1
       errmsg = 'invalid parameter value'

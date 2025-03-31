@@ -3,7 +3,8 @@
   "mesh":{
     "x-axis": {"coarse-grid":[0.0, 1.0], "intervals":[10]},
     "y-axis": {"coarse-grid":[0.0, 1.0], "intervals":[10]},
-    "z-axis": {"coarse-grid":[0.0, 0.1], "intervals":[1]}
+    "z-axis": {"coarse-grid":[0.0, 0.1], "intervals":[1]},
+    "coord-scale-factor": 1e-2
   },
   "materials":{
     "foo":{
@@ -21,5 +22,7 @@
   "bodies":{
     "body1": {"type": "element-block", "blockids":[1], "material": "VOID"}
   },
+  "bc":{"left":{"type":"potential", "face-set-ids":[1], "phi":[1.0,0.0]},
+        "right":{"type":"potential", "face-set-ids":[2], "phi":[0.0,0.0]}},
   "preconditioner": {"params":{"num-cycles": 1}}
 }

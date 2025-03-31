@@ -26,6 +26,8 @@ target_sources(truchas PRIVATE
   bndry_edge_group_builder_type.F90
   bndry_cfunc1_class.F90
   bndry_face_cfunc_type.F90
+  bndry_node_group_builder_type.F90
+  bndry_node_cfunc_type.F90
 )
 
 #TODO?
