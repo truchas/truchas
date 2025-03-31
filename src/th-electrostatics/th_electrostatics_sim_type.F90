@@ -33,6 +33,7 @@ contains
     use material_database_type
     use material_factory, only: load_material_database
     use material_utilities, only: define_property_default
+    use thes_bc_type
 
     class(th_electrostatics_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
@@ -42,6 +43,7 @@ contains
     type(parameter_list), pointer :: plist, bodies_plist
     type(material_database) :: matl_db
     character(:), allocatable :: context, matl_names(:)
+    type(thes_bc) :: bc
     real(r8) :: eps0
     integer :: j
 
@@ -123,7 +125,20 @@ contains
       end do
     end block
 
-    call this%solver%init(this%mesh, this%eps, params, stat, errmsg)
+    !! Initialize the boundary condition data
+    if (params%is_sublist('bc')) then
+      plist => params%sublist('bc')
+      call bc%init(this%mesh, plist, stat, errmsg)
+      context = 'processing ' // plist%path() // ': '
+      if (stat /= 0) errmsg = context // errmsg
+      call bc%compute(t=0.0_r8)
+    else
+      stat = 1
+      errmsg = 'missing "bc" sublist parameter'
+    end if
+    if (stat /= 0) return
+    
+    call this%solver%init(this%mesh, this%eps, bc, params, stat, errmsg)
     if (stat /= 0) return
 
     allocate(this%phi(this%mesh%nnode))

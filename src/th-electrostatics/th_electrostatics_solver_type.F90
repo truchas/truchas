@@ -47,11 +47,14 @@ contains
     call this%mesh%node_imap%gather_offp(y) ! necessary?
   end subroutine
 
-  subroutine init(this, mesh, eps, params, stat, errmsg)
+  subroutine init(this, mesh, eps, bc, params, stat, errmsg)
+
+    use thes_bc_type
 
     class(th_electrostatics_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     complex(r8), intent(in) :: eps(:)
+    type(thes_bc), intent(in) :: bc
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -85,8 +88,33 @@ contains
     this%rhs = 0.0_r8
 
     !TODO: RHS contribution from Dirichlet conditions
+    if (allocated(bc%dirichlet)) then
+      block
+        complex(r8) :: r(this%mesh%nnode)
+        associate (index => bc%dirichlet%index, value => bc%dirichlet%value)
+          do j = 1, size(index)
+            this%rhs(index(j)) = value(j)
+          end do
+          call mesh%node_imap%gather_offp(this%rhs)
+          call this%A%matvec(this%rhs, r)
+          do j = 1, size(index)
+            r(index(j)) = 0.0_r8
+          end do
+        end associate
+        this%rhs(:this%mesh%nnode_onp) = this%rhs(:this%mesh%nnode_onp) - r(:this%mesh%nnode_onp)
+        call mesh%node_imap%gather_offp(this%rhs)
+      end block
+    end if
 
     !TODO: modify system matrix for Dirichlet conditions
+    if (allocated(bc%dirichlet)) then
+      associate (index => bc%dirichlet%index)
+        do j = 1, size(index)
+          call this%A%project_out(index(j))
+          call this%A%set(index(j), index(j), cmplx(1,0,kind=r8))
+        end do
+      end associate
+    end if
 
     !! Initialize the preconditioner; based on real part of the system matrix
     block
