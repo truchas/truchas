@@ -8,14 +8,14 @@ program main
   use parameter_list_type
   use parameter_list_json
   use timer_tree_type
-  use th_electrostatics_sim_type
+  use thes_sim_type
   implicit none
 
   integer :: n, num_arg, inlun, stat
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
-  type(th_electrostatics_sim) :: sim
+  type(thes_sim) :: sim
 
   !! Initialize MPI
   call init_parallel_communication

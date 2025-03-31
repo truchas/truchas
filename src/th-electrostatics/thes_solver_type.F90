@@ -1,6 +1,6 @@
 #include "f90_assert.fpp"
 
-module th_electrostatics_solver_type
+module thes_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use complex_lin_op_class
@@ -13,7 +13,7 @@ module th_electrostatics_solver_type
   implicit none
   private
 
-  type, extends(complex_lin_op), public :: th_electrostatics_solver
+  type, extends(complex_lin_op), public :: thes_solver
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(complex_pcsr_matrix) :: A
     complex(r8), allocatable :: rhs(:)
@@ -31,14 +31,14 @@ module th_electrostatics_solver_type
 contains
 
   subroutine matvec(this, x, y)
-    class(th_electrostatics_solver), intent(inout) :: this
+    class(thes_solver), intent(inout) :: this
     complex(r8) :: x(:), y(:)
     call this%mesh%node_imap%gather_offp(x)
     call this%A%matvec(x, y)
   end subroutine
 
   subroutine precon(this, x, y)
-    class(th_electrostatics_solver), intent(inout) :: this
+    class(thes_solver), intent(inout) :: this
     complex(r8) :: x(:), y(:)
     call this%mesh%node_imap%gather_offp(x)
     y = x
@@ -51,7 +51,7 @@ contains
 
     use thes_bc_type
 
-    class(th_electrostatics_solver), intent(out) :: this
+    class(thes_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     complex(r8), intent(in) :: eps(:)
     type(thes_bc), intent(in) :: bc
@@ -138,7 +138,7 @@ contains
 
     use string_utilities, only: i_to_c
 
-    class(th_electrostatics_solver), intent(inout) :: this
+    class(thes_solver), intent(inout) :: this
     complex(r8), intent(out) :: phi(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -166,4 +166,4 @@ contains
     errmsg = 'CS-MINRES solve failed: stat=' // i_to_c(this%minres%flag)
   end subroutine
 
-end module th_electrostatics_solver_type
+end module thes_solver_type
