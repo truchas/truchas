@@ -1,24 +1,24 @@
 #include "f90_assert.fpp"
 
-module th_electrostatics_sim_type
+module thes_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use simpl_mesh_type
   use material_model_type
   use avg_phase_prop_type
-  use th_electrostatics_solver_type
+  use thes_solver_type
   implicit none
   private
 
-  type, public :: th_electrostatics_sim
+  type, public :: thes_sim
     private
     type(simpl_mesh), pointer :: mesh => null()
     type(material_model) :: matl_model
     real(r8), allocatable :: vol_frac(:,:)
     type(avg_phase_prop) :: eps_prop, eps_im_prop
     complex(r8), allocatable :: eps(:), phi(:)
-    type(th_electrostatics_solver) :: solver
+    type(thes_solver) :: solver
   contains
     procedure :: init
     procedure :: run
@@ -35,7 +35,7 @@ contains
     use material_utilities, only: define_property_default
     use thes_bc_type
 
-    class(th_electrostatics_sim), intent(out) :: this
+    class(thes_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -138,7 +138,14 @@ contains
     end if
     if (stat /= 0) return
     
-    call this%solver%init(this%mesh, this%eps, bc, params, stat, errmsg)
+    !! Initialize the solver
+    if (params%is_sublist('solver')) then
+      plist => params%sublist('solver')
+      call this%solver%init(this%mesh, this%eps, bc, plist, stat, errmsg)
+    else
+      stat = 1
+      errmsg = 'missing "solver" sublist parameter'
+    end if
     if (stat /= 0) return
 
     allocate(this%phi(this%mesh%nnode))
@@ -273,7 +280,7 @@ contains
 
   subroutine run(this, stat, errmsg)
 
-    class(th_electrostatics_sim), intent(inout) :: this
+    class(thes_sim), intent(inout) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -289,7 +296,7 @@ contains
 
     use vtkhdf_file_type
 
-    class(th_electrostatics_sim), intent(in) :: this
+    class(thes_sim), intent(in) :: this
     character(*), intent(in) :: filename
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -361,4 +368,4 @@ contains
 
   end subroutine write_vtk_graphics
 
-end module th_electrostatics_sim_type
+end module thes_sim_type
