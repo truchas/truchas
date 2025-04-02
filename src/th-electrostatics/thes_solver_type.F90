@@ -90,7 +90,6 @@ contains
     !TODO: RHS contribution from Dirichlet conditions
     if (allocated(bc%dirichlet)) then
       block
-        !complex(r8) :: r(this%mesh%nnode)
         complex(r8) :: r(mesh%nnode)
         associate (index => bc%dirichlet%index, value => bc%dirichlet%value)
           do j = 1, size(index)
