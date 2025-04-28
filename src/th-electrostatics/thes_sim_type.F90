@@ -337,6 +337,35 @@ contains
     if (is_IOP) call viz_file%write_point_dataset('|phi|', abs(g_zscalar), stat, errmsg)
     INSIST(stat == 0)
 
+    block ! Gradient of phi
+      use mimetic_discretization, only: grad, w1_vector_on_cells
+      real(r8) :: w1(this%mesh%nedge), grad_phi(3,this%mesh%ncell)
+      if (allocated(g_vector)) deallocate(g_vector)
+      allocate(g_vector(3,merge(this%mesh%cell_imap%global_size,0,is_IOP)))
+      !! Real part of grad(phi)
+#ifdef GNU_PR119986
+      call grad(this%mesh, (this%phi%re), w1)
+#else
+      call grad(this%mesh, this%phi%re, w1)
+#endif
+      grad_phi = w1_vector_on_cells(this%mesh, w1)
+      call gather(grad_phi(:,:this%mesh%ncell_onP), g_vector)
+      if (is_IOP) call viz_file%write_cell_dataset('grad phi_re', g_vector, stat, errmsg)
+      call broadcast(stat)
+      INSIST(stat == 0)
+      !! Imaginary part of grad(phi)
+#ifdef GNU_PR119986
+      call grad(this%mesh, (this%phi%im), w1)
+#else
+      call grad(this%mesh, this%phi%im, w1)
+#endif
+      grad_phi = w1_vector_on_cells(this%mesh, w1)
+      call gather(grad_phi(:,:this%mesh%ncell_onP), g_vector)
+      if (is_IOP) call viz_file%write_cell_dataset('grad phi_im', g_vector, stat, errmsg)
+      call broadcast(stat)
+      INSIST(stat == 0)
+    end block
+
   contains
 
     subroutine write_mesh
