@@ -84,7 +84,7 @@ module sm_model_type
 
 contains
 
-  elemental subroutine sm_model_finalize(this)
+  impure elemental subroutine sm_model_finalize(this)
     type(sm_model), intent(inout) :: this
     if (associated(this%matl_model)) deallocate(this%matl_model)
     if (associated(this%ig)) deallocate(this%ig)
