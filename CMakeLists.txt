@@ -115,9 +115,9 @@ else()
 endif()
 
 # MUMPS library
-option(USE_MUMPS "Build with support for the MUMPS direct solver library" ON)
+option(USE_MUMPS "Build with support for the MUMPS direct solver library" OFF)
 if (USE_MUMPS)
-	find_package(MUMPS 5.7 REQUIRED CONFIG)
+  find_package(MUMPS 5.7 REQUIRED CONFIG)
   message(STATUS "Found MUMPS: ${MUMPS_FOUND}")
 endif()
 
