@@ -338,7 +338,6 @@ contains
     use simpl_mesh_type
     use em_bc_factory_type
     use fdme_model_type
-    use fdme_zvector_type
     use parameter_list_type
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
     use emfd_nlsol_solver_type

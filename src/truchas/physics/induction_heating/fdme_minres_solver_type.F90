@@ -1,32 +1,27 @@
 #include "f90_assert.fpp"
 
-module fdme_minres_solver2_type
+module fdme_minres_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use complex_lin_op2_class
-  use fdme_zvector_type
+  use complex_lin_op_class
+  use imap_zvector_type
   use fdme_model_type
   use fdme_precon_class
-  use cs_minres_solver2_type
+  use cs_minres_solver_type
   implicit none
   private
 
-  type, extends(complex_lin_op2) :: fdme_lin_op
+  type, extends(complex_lin_op), public :: fdme_minres_solver
     type(fdme_model), pointer :: model => null() ! unowned reference
     class(fdme_precon), allocatable :: my_precon
-  contains
-    procedure :: matvec
-    procedure :: precon
-  end type
-
-  type, public :: fdme_minres_solver2
-    type(fdme_model), pointer :: model => null() ! unowned reference
-    type(cs_minres_solver2) :: minres
-    type(fdme_lin_op) :: lin_op
-    type(fdme_zvector) :: efield, rhs
+    type(cs_minres_solver) :: minres
+    type(imap_zvector) :: efield, rhs
   contains
     procedure :: init
     procedure :: solve
+    ! deferred procedures from complex_lin_op class
+    procedure :: matvec
+    procedure :: precon
   end type
 
 contains
@@ -37,7 +32,7 @@ contains
     use fdme_precon_gs_type
     use fdme_precon_pcsr_type
 
-    class(fdme_minres_solver2), intent(out) :: this
+    class(fdme_minres_solver), intent(out) :: this
     type(fdme_model), pointer :: model !TODO: don't make a pointer
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -47,21 +42,20 @@ contains
     character(:), allocatable :: precon_type
 
     this%model => model
-    call this%efield%init(model%mesh) ! initialized to 0
-    call this%rhs%init(model%mesh)
+    call this%efield%init(model%mesh%edge_imap) ! initialized to 0
+    call this%rhs%init(model%mesh%edge_imap)
     call this%minres%init(params)
-    this%lin_op%model => model
 
     plist => params%sublist('precon')
     call plist%get('type', precon_type, stat, errmsg, default='gs')
     if (stat /= 0) return
     select case (precon_type)
     case ('gs') ! block Gauss-Seidel
-      allocate(fdme_precon_gs :: this%lin_op%my_precon)
-      call this%lin_op%my_precon%init(model, plist, stat, errmsg)
+      allocate(fdme_precon_gs :: this%my_precon)
+      call this%my_precon%init(model, plist, stat, errmsg)
     case ('boomer','ssor') ! Hypre BoomerAMG
-      allocate(fdme_precon_pcsr :: this%lin_op%my_precon)
-      call this%lin_op%my_precon%init(model, plist, stat, errmsg)
+      allocate(fdme_precon_pcsr :: this%my_precon)
+      call this%my_precon%init(model, plist, stat, errmsg)
     case ('none')
     case default
       stat = 1
@@ -74,61 +68,45 @@ contains
 
   subroutine solve(this, efield, stat, errmsg)
     use string_utilities, only: i_to_c
-    class(fdme_minres_solver2), intent(inout) :: this
+    class(fdme_minres_solver), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    this%rhs%w1(:) = this%model%rhs
-    if (allocated(this%lin_op%my_precon)) call this%lin_op%my_precon%setup
-    call this%minres%solve(this%lin_op, this%rhs, this%efield)
-    efield(:) = this%efield%w1
-    select case (this%minres%flag)
-    case (0,1,3) ! conventional success cases
-      stat = 0
-      return
-    case (-3) ! preconditioner is not positive definite
-      stat = 1
-      errmsg = 'CS-MINRES solve failed: preconditioner not positive definite'
-      return
-    case (2,4) ! "successful" in some sense, but with an incompatible system
-      stat = 1
-    case (-1,5) ! found an eigenvector instead
-      stat = 1
-    case (6:8) ! Gave up iteration due to limits
-      stat = 1
-    case (9) ! system is singular
-      stat = 1
-    case default
-      stat = 1
-    end select
-    errmsg = 'CS-MINRES solve failed: stat=' // i_to_c(this%minres%flag)
+    character(:), allocatable :: msg
+    this%rhs%v(:) = this%model%rhs
+    if (allocated(this%my_precon)) call this%my_precon%setup
+    call this%minres%solve(this, this%rhs, this%efield, stat, msg)
+    !TODO: add solver summary output
+    stat = merge(0, 1, stat >= 0) ! for minres stat >= 0 is success and < 0 failure
+    if (stat /= 0) errmsg = msg
+    efield(:) = this%efield%v
   end subroutine
 
   subroutine matvec(this, x, y)
     use zvector_class
-    class(fdme_lin_op), intent(inout) :: this
+    class(fdme_minres_solver), intent(inout) :: this
     class(zvector) :: x, y
     select type (x)
-    type is (fdme_zvector)
+    type is (imap_zvector)
       select type (y)
-      type is (fdme_zvector)
+      type is (imap_zvector)
         call x%gather_offp
-        call this%model%A%matvec(x%w1, y%w1)
+        call this%model%A%matvec(x%v, y%v)
       end select
     end select
   end subroutine
 
   subroutine precon(this, x, y)
     use zvector_class
-    class(fdme_lin_op), intent(inout) :: this
+    class(fdme_minres_solver), intent(inout) :: this
     class(zvector) :: x, y
     if (allocated(this%my_precon)) then
       select type (x)
-      type is (fdme_zvector)
+      type is (imap_zvector)
         select type (y)
-        type is (fdme_zvector)
+        type is (imap_zvector)
           call x%gather_offp
-          call this%my_precon%apply(x%w1, y%w1)
+          call this%my_precon%apply(x%v, y%v)
           call y%gather_offp ! necessary?
         end select
       end select
@@ -137,4 +115,4 @@ contains
     end if
   end subroutine
 
-end module fdme_minres_solver2_type
+end module fdme_minres_solver_type

@@ -1,6 +1,9 @@
 !!
 !! ZVECTOR_CLASS
 !!
+!! This defines an abstract complex vector class used by linear and nonlinear
+!! solvers.
+!!
 !! Neil N. Carlson <nnc@lanl.gov>
 !! March 2020
 !!
@@ -31,9 +34,11 @@
 !!    Subclasses implement the private deferred procedure COPY_ and are
 !!    assured that SRC and V will have the same dynamic type.
 !!
-!!  CALL V%SETVAL(VAL) sets the vector element values to the complex scalar VAL.
+!!  CALL V%SETVAL(VAL) sets the vector element values to the real or complex
+!!  scalar VAL
 !!
-!!    This is a deferred procedure implemented by subclasses.
+!!    This is a generic procedure with deferred specific procedures implemented
+!!    by subclasses.
 !!
 !!  CALL V%SCALE(A) multiplies the vector elements of V by the complex scalar A.
 !!
@@ -56,7 +61,14 @@
 !!  V%DOTC(Y) is the dot product of the conjugate of V with the CLASS(ZVECTOR)
 !!  variable Y. V and Y must have the same dynamic type and be compatibly
 !!  defined. Note that this form matches the behavior of DOT_PRODUCT in the
-!!  case of complex arguments, and the behavior of the BLAS CDOTC function.
+!!  case of complex arguments, and the behavior of the BLAS ZDOTC function.
+!!
+!!    This is a deferred procedure implemented by subclasses.
+!!
+!!  V%DOTU(Y) is the dot product of the V with the CLASS(ZVECTOR) variable Y.
+!!  V and Y must have the same dynamic type and be compatibly defined. Note
+!!  that this form matches the behavior of the BLAS ZDOTU functions, but not
+!!  the intrinsic DOT_PRODUCT function in the case of complex arguments.
 !!
 !!    This is a deferred procedure implemented by subclasses.
 !!
@@ -94,13 +106,12 @@ module zvector_class
     procedure(clone1), deferred :: clone1 ! private except to subclass
     procedure(clone2), deferred :: clone2 ! private except to subclass
     procedure :: copy
-    procedure(setval), deferred :: setval
-    procedure(setzero), deferred :: setzero
+    generic :: setval => setvalr_, setvalc_
     procedure :: conjg
     procedure(scale), deferred :: scale
     generic :: update => update1, update2, update3, update4
     procedure, private :: update1, update2, update3, update4
-    procedure :: dotc
+    procedure :: dotc, dotu
     procedure(norm), deferred :: norm1
     procedure(norm), deferred :: norm2
     procedure(norm), deferred :: norm_max
@@ -112,15 +123,17 @@ module zvector_class
     procedure(upd2), deferred :: update2_
     procedure(upd3), deferred :: update3_
     procedure(upd4), deferred :: update4_
-    procedure(dt), deferred :: dotc_
+    procedure(dt), deferred :: dotc_, dotu_
 #else
     procedure(copy), deferred :: copy_
     procedure(update1), deferred :: update1_
     procedure(update2), deferred :: update2_
     procedure(update3), deferred :: update3_
     procedure(update4), deferred :: update4_
-    procedure(dotc), deferred :: dotc_
+    procedure(dotc), deferred :: dotc_, dotu_
 #endif
+    procedure(setvalr_), deferred :: setvalr_
+    procedure(setvalc_), deferred :: setvalc_
     procedure(conjg1), deferred :: conjg1_
     procedure(conjg2), deferred :: conjg2_
   end type zvector
@@ -140,14 +153,15 @@ module zvector_class
   end interface
 
   abstract interface
-    subroutine setval(this, val)
+    subroutine setvalr_(this, val)
+      import zvector, r8
+      class(zvector), intent(inout) :: this
+      real(r8), intent(in) :: val
+    end subroutine
+    subroutine setvalc_(this, val)
       import zvector, r8
       class(zvector), intent(inout) :: this
       complex(r8), intent(in) :: val
-    end subroutine
-    subroutine setzero(this)
-      import zvector
-      class(zvector), intent(inout) :: this
     end subroutine
   end interface
 
@@ -260,6 +274,16 @@ contains
       dotc = x%dotc_(y)
     else
       error stop 'incompatible arguments to ZVECTOR%DOTC'
+    end if
+  end function
+
+  recursive function dotu(x, y)
+    class(zvector), intent(in) :: x, y
+    complex(r8) :: dotu
+    if (same_type_as(x, y)) then
+      dotu = x%dotu_(y)
+    else
+      error stop 'incompatible arguments to ZVECTOR%DOTU'
     end if
   end function
 

@@ -17,8 +17,7 @@ module fdme_mixed_zvector_type
     procedure :: clone1
     procedure :: clone2
     procedure :: copy_
-    procedure :: setval
-    procedure :: setzero
+    procedure :: setvalr_, setvalc_
     procedure :: conjg1_
     procedure :: conjg2_
     procedure :: scale
@@ -26,7 +25,7 @@ module fdme_mixed_zvector_type
     procedure :: update2_
     procedure :: update3_
     procedure :: update4_
-    procedure :: dotc_
+    procedure :: dotc_, dotu_
     procedure :: norm1 => norm1_
     procedure :: norm2 => norm2_
     procedure :: norm_max => norm_max_
@@ -88,17 +87,18 @@ contains
     end select
   end subroutine
 
-  subroutine setval(this, val)
+  subroutine setvalr_(this, val)
     class(fdme_mixed_zvector), intent(inout) :: this
-    complex(r8), intent(in) :: val
+    real(r8), intent(in) :: val
     this%w1 = val
     this%w0 = val
   end subroutine
 
-  subroutine setzero(this)
+  subroutine setvalc_(this, val)
     class(fdme_mixed_zvector), intent(inout) :: this
-    this%w1 = 0
-    this%w0 = 0
+    complex(r8), intent(in) :: val
+    this%w1 = val
+    this%w0 = val
   end subroutine
 
   subroutine conjg1_(this)
@@ -244,6 +244,24 @@ contains
       end do
       do j = 1, x%mesh%nnode_onP
         dp = dp + conjg(x%w0(j)) * y%w0(j)
+      end do
+      dp = global_sum(dp)
+    end select
+  end function
+
+  function dotu_(x, y) result(dp)
+    class(fdme_mixed_zvector), intent(in) :: x
+    class(zvector), intent(in) :: y
+    complex(r8) :: dp
+    integer :: j
+    select type (y)
+    class is (fdme_mixed_zvector)
+      dp = 0
+      do j = 1, x%mesh%nedge_onP
+        dp = dp + x%w1(j) * y%w1(j)
+      end do
+      do j = 1, x%mesh%nnode_onP
+        dp = dp + x%w0(j) * y%w0(j)
       end do
       dp = global_sum(dp)
     end select

@@ -26,10 +26,9 @@ target_sources(truchas PRIVATE
   #cgsol_type.F90 UNUSED + NEEDS UPDATING TO COMPILE
   vector_class.F90
   zvector_class.F90
+  imap_zvector_type.F90
   complex_lin_op_class.F90
-  complex_lin_op2_class.F90
   cs_minres_solver_type.F90
-  cs_minres_solver2_type.F90
   complex_pcsr_matrix_type.F90
   dmumps_serial_solver_type.F90
   zmumps_serial_solver_type.F90

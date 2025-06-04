@@ -19,7 +19,7 @@ module emfd_nlsol_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use fdme_model_type
-  use fdme_minres_solver2_type
+  use fdme_minres_solver_type
   use fdme_mixed_minres_solver_type
   use fdme_mumps_solver_type
   use simpl_mesh_type
@@ -34,7 +34,7 @@ module emfd_nlsol_solver_type
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
 
     type(fdme_model), pointer :: model => null()
-    type(fdme_minres_solver2), allocatable :: minres
+    type(fdme_minres_solver), allocatable :: minres
     type(fdme_mixed_minres_solver), allocatable :: mixed_minres
     type(fdme_mumps_solver), allocatable :: mumps
 
@@ -107,12 +107,13 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     character(72) :: message
 
-    call start_timer("solve")
+    call start_timer('solve')
     if (allocated(this%minres)) then
       call this%minres%solve(efield, stat, errmsg)
+      if (stat /= 0) errmsg = 'CS-MINRES: ' // errmsg
     else if (allocated(this%mixed_minres)) then
-      call this%mixed_minres%solve(efield, stat)
-      if (stat /= 0) errmsg = 'CS-MINRES solve failed'
+      call this%mixed_minres%solve(efield, stat, errmsg)
+      if (stat /= 0) errmsg = 'CS-MINRES: ' // errmsg
     else if (allocated(this%mumps)) then
       call this%mumps%solve(efield, stat)
       if (stat /= 0) errmsg = 'MUMPS solve failed: stat=' // i_to_c(stat)
@@ -134,7 +135,7 @@ contains
       !INSIST(.false.)
     end block
 
-    call stop_timer("solve")
+    call stop_timer('solve')
   end subroutine
 
 end module emfd_nlsol_solver_type

@@ -3,30 +3,25 @@
 module fdme_mixed_minres_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use complex_lin_op2_class
+  use complex_lin_op_class
   use fdme_mixed_zvector_type
   use fdme_model_type
   use zvector_class
-  use cs_minres_solver2_type
+  use cs_minres_solver_type
   implicit none
   private
 
-  type, extends(complex_lin_op2) :: fdme_lin_op
+  type, extends(complex_lin_op), public :: fdme_mixed_minres_solver
     type(fdme_model), pointer :: model => null() ! unowned reference
     real(r8), allocatable :: dinv(:)
-  contains
-    procedure :: matvec
-    procedure :: precon
-  end type
-
-  type, public :: fdme_mixed_minres_solver
-    type(fdme_model), pointer :: model => null() ! unowned reference
-    type(cs_minres_solver2) :: minres
-    type(fdme_lin_op) :: lin_op
+    type(cs_minres_solver) :: minres
     type(fdme_mixed_zvector) :: efield, rhs
   contains
     procedure :: init
     procedure :: solve
+    ! deferred procedures from complex_lin_op class
+    procedure :: matvec
+    procedure :: precon
   end type
 
 contains
@@ -42,24 +37,27 @@ contains
     call this%efield%init(model%mesh) ! initialized to 0
     call this%rhs%init(model%mesh)
     call this%minres%init(params)
-    this%lin_op%model => model
     stat = 0
   end subroutine
 
-  subroutine solve(this, efield, stat)
+  subroutine solve(this, efield, stat, errmsg)
     class(fdme_mixed_minres_solver), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    character(:), allocatable :: msg
     this%rhs%w1(:) = this%model%rhs
     this%rhs%w0(:) = 0 !FIXME?
-    call this%minres%solve(this%lin_op, this%rhs, this%efield)
+    call this%minres%solve(this, this%rhs, this%efield, stat, msg)
+    !TODO: add solver summary output
+    stat = merge(0, 1, stat>=0) ! for minres stat >= 0 is success and < 0 failure
+    if (stat /= 0) errmsg = msg
     efield(:) = this%efield%w1
     ! this%efield%w0 are the Lagrange multipliers
-    stat = 0 !FIXME: need to extract from minres
   end subroutine
 
   subroutine matvec(this, x, y)
-    class(fdme_lin_op), intent(inout) :: this
+    class(fdme_mixed_minres_solver), intent(inout) :: this
     class(zvector) :: x, y
     select type (x)
     type is (fdme_mixed_zvector)
@@ -74,7 +72,7 @@ contains
   end subroutine
 
   subroutine precon(this, x, y)
-    class(fdme_lin_op), intent(inout) :: this
+    class(fdme_mixed_minres_solver), intent(inout) :: this
     class(zvector) :: x, y
     integer :: nedge_onP
     if (.not.allocated(this%dinv)) then

@@ -1,6 +1,6 @@
 module complex_lin_op_class
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use zvector_class
   implicit none
   private
 
@@ -12,9 +12,9 @@ module complex_lin_op_class
 
   abstract interface
     subroutine matvec(this, x, y)
-      import complex_lin_op, r8
+      import complex_lin_op, zvector
       class(complex_lin_op), intent(inout) :: this
-      complex(r8) :: x(:), y(:)
+      class(zvector) :: x, y
     end subroutine
   end interface
 

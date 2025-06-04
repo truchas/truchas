@@ -4,6 +4,8 @@ module thes_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use complex_lin_op_class
+  use zvector_class
+  use imap_zvector_type
   use simpl_mesh_type
   use complex_pcsr_matrix_type
   use pcsr_matrix_type
@@ -16,7 +18,7 @@ module thes_solver_type
   type, extends(complex_lin_op), public :: thes_solver
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(complex_pcsr_matrix) :: A
-    complex(r8), allocatable :: rhs(:)
+    type(imap_zvector) :: rhs, phi
     type(pcsr_matrix), pointer :: M => null() ! pointer to avoid dangling pointer
     class(pcsr_precon), allocatable :: pc
     type(cs_minres_solver) :: minres
@@ -32,19 +34,31 @@ contains
 
   subroutine matvec(this, x, y)
     class(thes_solver), intent(inout) :: this
-    complex(r8) :: x(:), y(:)
-    call this%mesh%node_imap%gather_offp(x)
-    call this%A%matvec(x, y)
+    class(zvector) :: x, y
+    select type (x)
+    type is (imap_zvector)
+      select type (y)
+      type is (imap_zvector)
+        call x%gather_offp
+        call this%A%matvec(x%v, y%v)
+      end select
+    end select
   end subroutine
 
   subroutine precon(this, x, y)
     class(thes_solver), intent(inout) :: this
-    complex(r8) :: x(:), y(:)
-    call this%mesh%node_imap%gather_offp(x)
-    y = x
-    call this%pc%apply(y%re)
-    call this%pc%apply(y%im)
-    call this%mesh%node_imap%gather_offp(y) ! necessary?
+    class(zvector) :: x, y
+    select type (x)
+    type is (imap_zvector)
+      select type (y)
+      type is (imap_zvector)
+        call y%copy(x)
+        call y%gather_offp
+        call this%pc%apply(y%v%re)
+        call this%pc%apply(y%v%im)
+        call y%gather_offp ! necessary?
+      end select
+    end select
   end subroutine
 
   subroutine init(this, mesh, eps, bc, params, stat, errmsg)
@@ -84,8 +98,8 @@ contains
     end block
 
     !! RHS vector
-    allocate(this%rhs(this%mesh%nnode))
-    this%rhs = 0.0_r8
+    call this%rhs%init(this%mesh%node_imap)
+    call this%phi%init(mold=this%rhs)
 
     !TODO: RHS contribution from Dirichlet conditions
     if (allocated(bc%dirichlet)) then
@@ -93,16 +107,16 @@ contains
         complex(r8) :: r(mesh%nnode)
         associate (index => bc%dirichlet%index, value => bc%dirichlet%value)
           do j = 1, size(index)
-            this%rhs(index(j)) = value(j)
+            this%rhs%v(index(j)) = value(j)
           end do
-          call mesh%node_imap%gather_offp(this%rhs)
-          call this%A%matvec(this%rhs, r)
+          call this%rhs%gather_offp
+          call this%A%matvec(this%rhs%v, r)
           do j = 1, size(index)
             r(index(j)) = 0.0_r8
           end do
         end associate
-        this%rhs(:this%mesh%nnode_onp) = this%rhs(:this%mesh%nnode_onp) - r(:this%mesh%nnode_onp)
-        call mesh%node_imap%gather_offp(this%rhs)
+        this%rhs%v(:this%mesh%nnode_onp) = this%rhs%v(:this%mesh%nnode_onp) - r(:this%mesh%nnode_onp)
+        call this%rhs%gather_offp
       end block
     end if
 
@@ -130,7 +144,7 @@ contains
       call this%pc%compute
     end block
 
-    call this%minres%init(this%mesh%nnode_onp, params)
+    call this%minres%init(params)
 
   end subroutine init
 
@@ -143,27 +157,14 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    call this%minres%solve(this, this%rhs, phi)
-    select case (this%minres%flag)
-    case (0,1,3) ! conventional success cases
-      stat = 0
-      return
-    case (-3) ! preconditioner is not positive definite
-      stat = 1
-      errmsg = 'CS-MINRES solve failed: preconditioner not positive definite'
-      return
-    case (2,4) ! "successful" in some sense, but with an incompatible system
-      stat = 1
-    case (-1,5) ! found an eigenvector instead
-      stat = 1
-    case (6:8) ! Gave up iteration due to limits
-      stat = 1
-    case (9) ! system is singular
-      stat = 1
-    case default
-      stat = 1
-    end select
-    errmsg = 'CS-MINRES solve failed: stat=' // i_to_c(this%minres%flag)
+    character(:), allocatable :: msg
+
+    call this%minres%solve(this, this%rhs, this%phi, stat, msg)
+    !TODO: add solver summary output
+    stat = merge(0, 1, stat >= 0) ! for minres stat >= 0 is success and < 0 failure
+    if (stat /= 0) errmsg = msg
+    phi = this%phi%v
+ 
   end subroutine
 
 end module thes_solver_type
