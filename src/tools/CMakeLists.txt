@@ -1,8 +1,5 @@
-# Mesh processing
-add_subdirectory(mesh_processors)
-
 # Radiation enclosure
 add_subdirectory(RadE)
 
-# TH Electrostatics solver
+# Time harmonic electrostatics solver
 add_subdirectory(th-electrostatics)
