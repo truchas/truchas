@@ -54,30 +54,23 @@ contains
       type is (imap_zvector)
         call y%copy(x)
         call y%gather_offp
-#ifdef INTEL_BUG20250605
-        block
-          real(r8) :: tmp(size(y%v))
-          tmp = y%v%re
-          call this%pc%apply(tmp)
-          y%v%re = tmp
-          tmp = y%v%im
-          call this%pc%apply(tmp)
-          y%v%im = tmp
-        end block
-#else
-#ifdef GNU_PR119986
-        associate (v => y%v)
-          call this%pc%apply(v%re)
-          call this%pc%apply(v%im)
-        end associate
+#if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
+        call workaround(y%v)
 #else
         call this%pc%apply(y%v%re)
         call this%pc%apply(y%v%im)
 #endif
-#endif
         call y%gather_offp ! necessary?
       end select
     end select
+#if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
+  contains
+    subroutine workaround(z)
+      complex(r8), intent(inout) :: z(:)
+      call this%pc%apply(z%re)
+      call this%pc%apply(z%im)
+    end subroutine
+#endif
   end subroutine
 
   subroutine init(this, mesh, eps, bc, params, stat, errmsg)
