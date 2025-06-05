@@ -29,7 +29,6 @@ contains
   subroutine init(this, model, params, stat, errmsg)
 
     use parameter_list_type
-    use fdme_precon_gs_type
     use fdme_precon_pcsr_type
 
     class(fdme_minres_solver), intent(out) :: this
@@ -50,9 +49,6 @@ contains
     call plist%get('type', precon_type, stat, errmsg, default='gs')
     if (stat /= 0) return
     select case (precon_type)
-    case ('gs') ! block Gauss-Seidel
-      allocate(fdme_precon_gs :: this%my_precon)
-      call this%my_precon%init(model, plist, stat, errmsg)
     case ('boomer','ssor') ! Hypre BoomerAMG
       allocate(fdme_precon_pcsr :: this%my_precon)
       call this%my_precon%init(model, plist, stat, errmsg)
