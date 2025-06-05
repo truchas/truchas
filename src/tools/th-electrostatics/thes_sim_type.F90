@@ -118,11 +118,21 @@ contains
     block
       real(r8) :: state(0) ! state variables e.g. (T, x, y, z) would go here
       allocate(this%eps(this%mesh%ncell))
+#if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
+      associate (eps => this%eps) ! works around an ifx 2025.1 bug
+        do j = 1, this%mesh%ncell
+          call this%eps_prop%compute_value(this%vol_frac(:,j), state, eps(j)%re)
+          call this%eps_im_prop%compute_value(this%vol_frac(:,j), state, eps(j)%im)
+          eps(j) = eps0 * eps(j)
+        end do
+      end associate
+#else
       do j = 1, this%mesh%ncell
         call this%eps_prop%compute_value(this%vol_frac(:,j), state, this%eps(j)%re)
         call this%eps_im_prop%compute_value(this%vol_frac(:,j), state, this%eps(j)%im)
         this%eps(j) = eps0 * this%eps(j)
       end do
+#endif
     end block
 
     !! Initialize the boundary condition data
