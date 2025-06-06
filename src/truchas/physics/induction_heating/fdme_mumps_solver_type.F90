@@ -1,3 +1,11 @@
+!!
+!! FDME_MUMPS_SOLVER
+!!
+!! A solver for thefrequency-domain Maxwell equations that solves the linear
+!! system directly using the MUMPS library.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 module fdme_mumps_solver_type

@@ -1,3 +1,13 @@
+!!
+!! FDME_MODEL_TYPE
+!!
+!! This module provides a derived type that encapsulates data and methods
+!! for a discrete form of the frequency-domain Maxwell equations. The
+!! discretization uses the mimetic Whitney finite element complex on a 3D
+!! simplicial mesh.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 module fdme_model_type

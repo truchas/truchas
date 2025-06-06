@@ -29,8 +29,8 @@ contains
     !! EM heating model namelist variables
     real(r8) :: matl_change_threshold
     character(32) :: data_mapper_kind
-    logical :: use_emfd_solver, graphics_output, use_mixed_form
-    namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, use_emfd_solver, &
+    logical :: use_fd_solver, graphics_output, use_mixed_form
+    namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, use_fd_solver, &
         use_mixed_form, graphics_output
 
     !! Time-domain method namelist variables
@@ -88,7 +88,7 @@ contains
 
     matl_change_threshold = NULL_R
     data_mapper_kind = NULL_C
-    use_emfd_solver = .false.
+    use_fd_solver = .false.
     use_mixed_form = .false.
     graphics_output = .false.
 
@@ -133,7 +133,7 @@ contains
 
     call broadcast(matl_change_threshold)
     call broadcast(data_mapper_kind)
-    call broadcast(use_emfd_solver)
+    call broadcast(use_fd_solver)
     call broadcast(use_mixed_form)
     call broadcast(graphics_output)
 
@@ -192,11 +192,11 @@ contains
       call params%set('data-mapper-kind', data_mapper_kind)
     end if
 
-    call params%set('frequency-domain-solver', use_emfd_solver)
+    call params%set('use-fd-solver', use_fd_solver)
 
-    if (use_emfd_solver) then ! Frequency-domain solver parameters
+    if (use_fd_solver) then ! Frequency-domain solver parameters
 
-      plist => params%sublist('emfd-solver')
+      plist => params%sublist('fd-solver')
       call plist%set('use-mixed-form', use_mixed_form)
       call plist%set('graphics-output', graphics_output)
 

@@ -38,7 +38,7 @@ module ih_driver
     type(simpl_mesh), pointer :: em_mesh => null() ! unowned reference
     class(data_mapper), allocatable :: ht2em
     type(ih_source_factory) :: src_fac
-    logical :: use_emfd_solver
+    logical :: use_fd_solver
     character(32) :: coil_md5sum  ! fingerprint of the fixed coil geometry
     ! EM properties
     logical :: const_eps=.false., const_mu=.false., const_sigma=.false.
@@ -159,7 +159,7 @@ contains
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
     if (this%matl_change_threshold <= 0.0_r8) call TLS_fatal('IH_DRIVER_INIT: matl-change-threshold must be > 0.0')
 
-    call params%get('frequency-domain-solver', this%use_emfd_solver, stat=stat, errmsg=errmsg, default=.false.)
+    call params%get('use-fd-solver', this%use_fd_solver, stat=stat, errmsg=errmsg, default=.false.)
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
 
   end subroutine ih_driver_init
@@ -261,12 +261,12 @@ contains
     call params%set('epsilon_0', vacuum_permittivity)
     call params%set('mu_0', vacuum_permeability)
     call bc_fac%init(this%em_mesh, this%src_fac, params)
-    if (this%use_emfd_solver) then
-      plist => params%sublist('emfd-solver')
+    if (this%use_fd_solver) then
+      plist => params%sublist('fd-solver')
       call plist%set('graphics-file', trim(output_dir)//'fdme-'//i_to_c(sim_num)//'.vtkhdf')
-      call compute_joule_heat_emfd(this%em_mesh, freq, this%eps, this%epsi, this%mu, this%sigma, bc_fac, plist, q)
+      call compute_joule_heat_fdme(this%em_mesh, freq, this%eps, this%epsi, this%mu, this%sigma, bc_fac, plist, q)
     else
-      call compute_joule_heat_emtd(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
+      call compute_joule_heat_tdme(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
     end if
     call set_joule_power_density(q)
     this%q_data = this%src_fac%source_data(t)
@@ -303,7 +303,7 @@ contains
   !! steady state is achieved, and calculating the time-averaged Joule heat
   !! over one period.
 
-  subroutine compute_joule_heat_emtd(mesh, freq, eps, mu, sigma, bc_fac, params, q)
+  subroutine compute_joule_heat_tdme(mesh, freq, eps, mu, sigma, bc_fac, params, q)
 
     use simpl_mesh_type
     use parameter_list_type
@@ -329,18 +329,18 @@ contains
       call TLS_warn('COMPUTE_JOULE_HEAT: ' // errmsg // '; continuing anyway.')
     end if
 
-  end subroutine compute_joule_heat_emtd
+  end subroutine compute_joule_heat_tdme
 
   !! Compute Joule heat using the frequency domain EM solver
 
-  subroutine compute_joule_heat_emfd(mesh, freq, eps, epsi, mu, sigma, bc_fac, params, q)
+  subroutine compute_joule_heat_fdme(mesh, freq, eps, epsi, mu, sigma, bc_fac, params, q)
 
     use simpl_mesh_type
     use em_bc_factory_type
     use fdme_model_type
     use parameter_list_type
     use physical_constants, only: vacuum_permittivity, vacuum_permeability
-    use emfd_nlsol_solver_type
+    use fdme_solver_type
 
     type(simpl_mesh), intent(inout), target :: mesh
     real(r8), intent(in) :: freq, eps(:), epsi(:), mu(:), sigma(:)
@@ -349,7 +349,7 @@ contains
     real(r8), intent(out) :: q(:)
 
     type(fdme_model), target :: model
-    type(emfd_nlsol_solver) :: solver
+    type(fdme_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8) :: t, omega
     complex(r8) :: efield(mesh%nedge)
@@ -386,14 +386,14 @@ contains
         call model%compute_div(efield, div_dfield)
         call params%get('graphics-file', filename, stat, errmsg)
         if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-        call emfd_vtk_graphics(filename, mesh, q, efield, bfield, mu, div_dfield, stat, errmsg)
+        call fdme_vtk_graphics(filename, mesh, q, efield, bfield, mu, div_dfield, stat, errmsg)
         if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
       end block
     end if
 
-  end subroutine compute_joule_heat_emfd
+  end subroutine compute_joule_heat_fdme
 
-  subroutine emfd_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, div_dfield, stat, errmsg)
+  subroutine fdme_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, div_dfield, stat, errmsg)
 
     use vtkhdf_file_type
     use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
@@ -517,7 +517,7 @@ contains
 
     end subroutine export_mesh
 
-  end subroutine emfd_vtk_graphics
+  end subroutine fdme_vtk_graphics
 
   !! Set the Joule heat to 0. Used when the magnetic source is 0 and
   !! the actual computation is unnecessary.

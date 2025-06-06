@@ -1,5 +1,5 @@
 !!
-!! emfd_nlsol_solver_type
+!! FDME_SOLVER_TYPE
 !!
 !! This module provides a type for solving the frequency-domain Maxwell
 !! Equations.
@@ -15,47 +15,43 @@
 
 #include "f90_assert.fpp"
 
-module emfd_nlsol_solver_type
+module fdme_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simpl_mesh_type
   use fdme_model_type
   use fdme_minres_solver_type
   use fdme_mixed_minres_solver_type
   use fdme_mumps_solver_type
-  use simpl_mesh_type
-  use parameter_list_type
-  use truchas_logging_services
-  use truchas_timers
   implicit none
   private
 
-  type, public :: emfd_nlsol_solver
+  type, public :: fdme_solver
     private
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-
     type(fdme_model), pointer :: model => null()
     type(fdme_minres_solver), allocatable :: minres
     type(fdme_mixed_minres_solver), allocatable :: mixed_minres
     type(fdme_mumps_solver), allocatable :: mumps
-
     integer :: print_level
   contains
     procedure :: init
     procedure :: solve
-  end type emfd_nlsol_solver
+  end type fdme_solver
 
 contains
 
   subroutine init(this, model, params, stat, errmsg)
 
-    class(emfd_nlsol_solver), intent(out) :: this
+    use parameter_list_type
+
+    class(fdme_solver), intent(out) :: this
     type(fdme_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: plist
-    integer :: ierr
     character(:), allocatable :: solver_type, choice
 
     call params%get('print-level', this%print_level, stat, errmsg, default=0)
@@ -84,15 +80,14 @@ contains
     this%mesh => model%mesh
 
     if (allocated(this%minres)) then
-      call this%minres%init(this%model, params, ierr, errmsg)
+      call this%minres%init(this%model, params, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
-      call this%mixed_minres%init(this%model, params, ierr, errmsg)
+      call this%mixed_minres%init(this%model, params, stat, errmsg)
     else if (allocated(this%mumps)) then
-      call this%mumps%init(this%model, params, ierr, errmsg)
+      call this%mumps%init(this%model, params, stat, errmsg)
     else
       INSIST(.false.)
     end if
-    if (ierr /= 0) call tls_fatal("EMFD_NLSOL INIT: " // errmsg)
 
   end subroutine init
 
@@ -101,19 +96,15 @@ contains
 
     use string_utilities, only: i_to_c
 
-    class(emfd_nlsol_solver), intent(inout) :: this
+    class(fdme_solver), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    character(72) :: message
 
-    call start_timer('solve')
     if (allocated(this%minres)) then
       call this%minres%solve(efield, stat, errmsg)
-      if (stat /= 0) errmsg = 'CS-MINRES: ' // errmsg
     else if (allocated(this%mixed_minres)) then
       call this%mixed_minres%solve(efield, stat, errmsg)
-      if (stat /= 0) errmsg = 'CS-MINRES: ' // errmsg
     else if (allocated(this%mumps)) then
       call this%mumps%solve(efield, stat)
       if (stat /= 0) errmsg = 'MUMPS solve failed: stat=' // i_to_c(stat)
@@ -123,19 +114,20 @@ contains
 
     block
       use parallel_communication, only: global_norm2
+      use truchas_logging_services
       complex(r8) :: r(this%mesh%nedge), div_efield(this%mesh%nnode)
-      real(r8) :: r_norm2, d_norm2
+      real(r8) :: rnorm, bnorm, dnorm
       character(128) :: msg
       call this%model%residual(efield, r)
       call this%model%compute_div(efield, div_efield)
-      r_norm2 = global_norm2(r(:this%mesh%nedge_onP))
-      d_norm2 = global_norm2(div_efield(:this%mesh%nnode_onP))
-      write (msg,'(a,2es14.4)') "EMFD solve complete. Residual, divE: ", r_norm2, d_norm2
-      call tls_info(msg)
-      !INSIST(.false.)
+      rnorm = global_norm2(r(:this%mesh%nedge_onP))
+      bnorm = global_norm2(this%model%rhs(:this%mesh%nedge_onP))
+      dnorm = global_norm2(div_efield(:this%mesh%nnode_onP))
+      write(msg,'(*(a,es8.2))') 'FDME_SOLVE: |r|=', rnorm, &
+          ', |b|=', bnorm, ', |r|/|b|=', rnorm/bnorm, ', |Div E|=', dnorm
+      call TLS_info(msg)
     end block
 
-    call stop_timer('solve')
   end subroutine
 
-end module emfd_nlsol_solver_type
+end module fdme_solver_type

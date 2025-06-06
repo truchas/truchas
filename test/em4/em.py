@@ -15,14 +15,14 @@ import matplotlib.pyplot as plt
 import truchas
 
 
-def run_truchas(input_parameters, emfd=False):
-    input_parameters["emfd"] = "T" if emfd else "F"
-    input_file = "emfd.inp" if emfd else "emtd.inp"
+def run_truchas(input_parameters, fdme=False):
+    input_parameters["fdme"] = "T" if fdme else "F"
+    input_file = "fdme.inp" if fdme else "tdme.inp"
     tenv.generate_input_deck(input_parameters, "template-em.inp", input_file)
     t_elapsed = -time.time()
     stdout, tdata = tenv.truchas(1, input_file)
     t_elapsed += time.time()
-    solver = "EMFD" if emfd else "EMTD"
+    solver = "FDME" if fdme else "TDME"
     print(f"{solver} elapsed {t_elapsed:.2f} seconds.")
     return tdata
 
@@ -94,15 +94,15 @@ def plot_results(r, Q, Emag, tdata, title):
 
     ax[0].set_xlabel("r")
     ax[0].set_ylabel("Q")
-    if len(tdata) > 1: ax[0].semilogy(r_td, Q_td, 'x', label="EMTD")
-    ax[0].semilogy(r_fd, Q_fd, '+', label="EMFD")
+    if len(tdata) > 1: ax[0].semilogy(r_td, Q_td, 'x', label="TDME")
+    ax[0].semilogy(r_fd, Q_fd, '+', label="FDME")
     ax[0].semilogy(r, Q, '-', label="analytic")
     ax[0].legend(loc="upper left")
 
     ax[1].set_xlabel("r")
     ax[1].set_ylabel("|E|")
-    #if len(tdata) > 1: ax[1].semilogy(r_td, Q_td, 'x', label="EMTD")
-    ax[1].semilogy(r_fd_em, Emag_fd, '+', label="EMFD")
+    #if len(tdata) > 1: ax[1].semilogy(r_td, Q_td, 'x', label="TDME")
+    ax[1].semilogy(r_fd_em, Emag_fd, '+', label="FDME")
     ax[1].semilogy(r, Emag, '-', label="analytic")
 
     fig.tight_layout()
@@ -117,8 +117,8 @@ def test(tenv, H_bc, source_frequency, sigma, R,
                         "electric_susceptibility": electric_susceptibility,
                         "magnetic_susceptibility": magnetic_susceptibility,
                         }
-    tdata = [run_truchas(input_parameters, emfd=True),
-             run_truchas(input_parameters, emfd=False),
+    tdata = [run_truchas(input_parameters, fdme=True),
+             run_truchas(input_parameters, fdme=False),
              ]
 
     r_fd, Q_fd = get_heat_source(tdata[0])
@@ -189,8 +189,8 @@ def plot_comparison(tenv):
                         "electric_susceptibility": electric_susceptibility,
                         "magnetic_susceptibility": magnetic_susceptibility,
                         }
-    tdata = [run_truchas(input_parameters, emfd=True),
-             run_truchas(input_parameters, emfd=False),
+    tdata = [run_truchas(input_parameters, fdme=True),
+             run_truchas(input_parameters, fdme=False),
              ]
 
     r, Q, Emag = heat_analytic(H_bc, source_frequency, sigma, R,

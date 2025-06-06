@@ -10,6 +10,7 @@
 !! thus is not as well suited to very badly conditioned systems.
 !!
 !! Neil N. Carlson <neil.n.carlson@gmail.com>
+!! June 2025
 !!
 !! [1] Sou-Cheng Choi, "Minimal Residual Methods for Complex Symmetric,
 !!     Skew Symmetric, and Skew Hermitian Systems", arXiv:1304.6782, (2014)
@@ -26,13 +27,14 @@ module cs_minres_solver_type
   private
 
   type, public :: cs_minres_solver
+    private
     integer :: comm = MPI_COMM_WORLD, nproc, rank, lun
     integer :: max_iter
     real(r8) :: rel_tol
     logical :: verbose
     ! solver info
-    integer :: num_iter
-    real(r8) :: rel_rnorm, rnorm, Anorm, xnorm
+    integer,  public :: num_iter
+    real(r8), public :: rel_rnorm, rnorm, Anorm, xnorm
   contains
     procedure :: init
     procedure :: solve

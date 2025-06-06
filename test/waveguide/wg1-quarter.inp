@@ -70,7 +70,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 /
 
 &ELECTROMAGNETICS
-  use_emfd_solver = T
+  use_fd_solver = T
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'

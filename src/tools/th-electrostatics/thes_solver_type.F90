@@ -18,7 +18,7 @@ module thes_solver_type
   type, extends(complex_lin_op), public :: thes_solver
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(complex_pcsr_matrix) :: A
-    type(imap_zvector) :: rhs, phi
+    type(imap_zvector) :: rhs, phi, res
     type(pcsr_matrix), pointer :: M => null() ! pointer to avoid dangling pointer
     class(pcsr_precon), allocatable :: pc
     type(cs_minres_solver) :: minres
@@ -112,6 +112,7 @@ contains
     !! RHS vector
     call this%rhs%init(this%mesh%node_imap)
     call this%phi%init(mold=this%rhs)
+    call this%res%init(mold=this%rhs)
 
     !TODO: RHS contribution from Dirichlet conditions
     if (allocated(bc%dirichlet)) then
@@ -163,6 +164,7 @@ contains
   subroutine solve(this, phi, stat, errmsg)
 
     use string_utilities, only: i_to_c
+    use truchas_logging_services
 
     class(thes_solver), intent(inout) :: this
     complex(r8), intent(out) :: phi(:)
@@ -170,13 +172,34 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     character(:), allocatable :: msg
+    real(r8) :: rnorm, bnorm, dnorm
 
     call this%minres%solve(this, this%rhs, this%phi, stat, msg)
-    !TODO: add solver summary output
     stat = merge(0, 1, stat >= 0) ! for minres stat >= 0 is success and < 0 failure
     if (stat /= 0) errmsg = msg
     phi = this%phi%v
- 
+
+    !! CS-MINRES summary
+    if (allocated(msg)) deallocate(msg)
+    allocate(character(80)::msg)
+    if (stat == 0) then
+      write(msg,'(a,i0,a)') 'CS-MINRES converged: ', this%minres%num_iter, ' iterations'
+      call TLS_info(msg)
+    else
+      write(msg,'(a,": ",i0,a)') 'CS-MINRES failed: '//errmsg, this%minres%num_iter, ' iterations'
+      call TLS_info(msg)
+      errmsg = 'CS-MINRES: ' // errmsg
+    end if
+
+    !! Output final residual norms
+    call this%matvec(this%phi, this%res)
+    this%res%v = this%rhs%v - this%res%v
+    rnorm = this%res%norm2()
+    bnorm = this%rhs%norm2()
+    write(msg,'(*(a,es8.2))') 'THES_SOLVER: |r|=', rnorm, &
+        ', |b|=', bnorm, ', |r|/|b|=', rnorm/merge(bnorm,1d-10,bnorm > 0)
+    call TLS_info(msg)
+
   end subroutine
 
 end module thes_solver_type

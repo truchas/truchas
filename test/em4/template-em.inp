@@ -66,7 +66,7 @@
 /
 
 &ELECTROMAGNETICS
-  use_emfd_solver = {emfd}
+  use_fd_solver = {fdme}
   !use_mixed_form = T
   fd_solver_type = 'minres'
   fd_precon_type = 'ssor'

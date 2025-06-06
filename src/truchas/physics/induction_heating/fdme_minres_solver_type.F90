@@ -101,6 +101,19 @@ contains
     call this%efield%gather_offp
     efield(:) = this%efield%v
 
+    block
+      use truchas_logging_services
+      character(80) :: msg
+      if (stat == 0) then
+        write(msg,'(a,i0,a)') 'CS-MINRES converged: ', this%minres%num_iter, ' iterations'
+        call TLS_info(msg)
+      else
+        write(msg,'(a,": ",i0,a)') 'CS-MINRES failed: '//errmsg, this%minres%num_iter, ' iterations'
+        call TLS_info(msg)
+        errmsg = 'CS-MINRES: ' // errmsg
+      end if
+    end block
+
   end subroutine solve
 
   subroutine matvec(this, x, y)

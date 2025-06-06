@@ -1,3 +1,12 @@
+!!
+!! FDME_MIXED_MINRES_SOLVER
+!!
+!! A solver for the mixed formulation of the frequency-domain Maxwell equations
+!! that solves the linear system iteratively using the preconditioned CS-MINRES
+!! method for complex symmetric systems.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 #include "f90_assert.fpp"
 
 module fdme_mixed_minres_solver_type
@@ -41,19 +50,36 @@ contains
   end subroutine
 
   subroutine solve(this, efield, stat, errmsg)
+
     class(fdme_mixed_minres_solver), intent(inout) :: this
     complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+
     character(:), allocatable :: msg
+
     this%rhs%w1(:) = this%model%rhs
     this%rhs%w0(:) = 0 !FIXME?
+
     call this%minres%solve(this, this%rhs, this%efield, stat, msg)
-    !TODO: add solver summary output
     stat = merge(0, 1, stat>=0) ! for minres stat >= 0 is success and < 0 failure
     if (stat /= 0) errmsg = msg
     efield(:) = this%efield%w1
     ! this%efield%w0 are the Lagrange multipliers
+
+    block
+      use truchas_logging_services
+      character(80) :: msg
+      if (stat == 0) then
+        write(msg,'(a,i0,a)') 'CS-MINRES converged: ', this%minres%num_iter, ' iterations'
+        call TLS_info(msg)
+      else
+        write(msg,'(a,": ",i0,a)') 'CS-MINRES failed: '//errmsg, this%minres%num_iter, ' iterations'
+        call TLS_info(msg)
+        errmsg = 'CS-MINRES: ' // errmsg
+      end if
+    end block
+
   end subroutine
 
   subroutine matvec(this, x, y)
