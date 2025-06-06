@@ -28,7 +28,10 @@ target_sources(truchas PRIVATE
   fdme_minres_solver_type.F90
   fdme_mixed_minres_solver_type.F90
   fdme_mixed_zvector_type.F90
-  fdme_mumps_solver_type.F90
   fd_robin_bndry_func_type.F90
   index_corrector_type.F90
 )
+
+if(USE_MUMPS)
+  target_sources(truchas PRIVATE fdme_mumps_solver_type.F90)
+endif()

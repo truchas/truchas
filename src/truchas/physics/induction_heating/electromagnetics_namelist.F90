@@ -208,6 +208,9 @@ contains
       select case (fd_solver_type)
       case ('minres')
       case ('mumps')
+#ifndef USE_MUMPS
+        call TLS_fatal('FD_SOLVER_TYPE = "mumps" is not supported by this Truchas build')
+#endif
       case (NULL_C)
         call TLS_fatal('FD_SOLVER_TYPE not specified')
       case default

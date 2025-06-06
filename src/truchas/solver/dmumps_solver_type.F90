@@ -19,21 +19,15 @@ module dmumps_solver_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use index_map_type
   use dmumps_serial_solver_type
-#ifdef USE_MUMPS
   use,intrinsic :: iso_fortran_env, only: int64, real64
   implicit none
   include 'dmumps_struc.h'
-#else
-  implicit none
-#endif
   private
 
   type, public :: dmumps_solver
     private
     type(dmumps_serial_solver) :: serial
-#ifdef USE_MUMPS
     type(dmumps_struc), pointer :: mumps => null()
-#endif
     type(index_map), pointer :: imap => null() ! unowned reference
     integer :: nrow, bsize
     integer :: verbosity = 0
@@ -48,7 +42,6 @@ contains
 
   subroutine mumps_solver_delete(this)
     type(dmumps_solver), intent(inout) :: this
-#ifdef USE_MUMPS
     if (associated(this%mumps)) then
       this%mumps%job = -2
       call dmumps(this%mumps)
@@ -61,7 +54,6 @@ contains
       if (associated(this%mumps%sol_loc)) deallocate(this%mumps%sol_loc)
       deallocate(this%mumps)
     end if
-#endif
   end subroutine mumps_solver_delete
 
 
@@ -79,9 +71,6 @@ contains
     integer, intent(out) :: stat
     integer, intent(in), optional :: verbosity
 
-#ifndef USE_MUMPS
-    call tls_fatal("MUMPS requested, but Truchas wasn't compiled with MUMPS support.")
-#else
     if (present(verbosity)) this%verbosity = verbosity
 
     if (this%verbosity > 2) then
@@ -121,7 +110,6 @@ contains
     case default
       INSIST(.false.)
     end select
-#endif
 
   end subroutine init
 
@@ -138,7 +126,6 @@ contains
 
     integer :: i, nnz_loc
 
-#ifdef USE_MUMPS
     if (this%verbosity > 2) then
       call this%serial%setup(A, stat)
       return
@@ -194,7 +181,6 @@ contains
     !this%mumps%irhs_loc(:) = [ (i, i = A%graph%row_imap%first_gid, A%graph%row_imap%last_gid) ]
     this%mumps%lsol_loc = this%mumps%info(23)
     allocate(this%mumps%isol_loc(this%mumps%lsol_loc), this%mumps%sol_loc(this%mumps%lsol_loc))
-#endif
 
   end subroutine setup
 
@@ -226,7 +212,6 @@ contains
     integer :: xi, ig, il
     character(64) :: msg
 
-#ifdef USE_MUMPS
     if (this%verbosity > 2) then
       call this%serial%solve(b, x, stat)
       return
@@ -250,7 +235,6 @@ contains
 
     ! write (msg,"(a,es13.3)") "MUMPS solve complete: ", this%mumps%rinfog(5)
     ! call tls_info(msg)
-#endif
 
   end subroutine solve
 

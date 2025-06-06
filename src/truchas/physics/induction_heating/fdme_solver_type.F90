@@ -22,7 +22,9 @@ module fdme_solver_type
   use fdme_model_type
   use fdme_minres_solver_type
   use fdme_mixed_minres_solver_type
+#ifdef USE_MUMPS
   use fdme_mumps_solver_type
+#endif
   implicit none
   private
 
@@ -32,7 +34,9 @@ module fdme_solver_type
     type(fdme_model), pointer :: model => null()
     type(fdme_minres_solver), allocatable :: minres
     type(fdme_mixed_minres_solver), allocatable :: mixed_minres
+#ifdef USE_MUMPS
     type(fdme_mumps_solver), allocatable :: mumps
+#endif
     integer :: print_level
   contains
     procedure :: init
@@ -69,7 +73,13 @@ contains
         allocate(this%minres)
       end if
     case ('mumps')
+#ifdef USE_MUMPS
       allocate(this%mumps)
+#else
+      stat = 1
+      errmsg = 'executable compiled without support for solver-type "mumps"'
+      return
+#endif
     case default
       stat = 1
       errmsg = 'invalid solver-type value: ' // solver_type
@@ -83,8 +93,10 @@ contains
       call this%minres%init(this%model, params, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
       call this%mixed_minres%init(this%model, params, stat, errmsg)
+#ifdef USE_MUMPS
     else if (allocated(this%mumps)) then
       call this%mumps%init(this%model, params, stat, errmsg)
+#endif
     else
       INSIST(.false.)
     end if
@@ -105,9 +117,11 @@ contains
       call this%minres%solve(efield, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
       call this%mixed_minres%solve(efield, stat, errmsg)
+#ifdef USE_MUMPS
     else if (allocated(this%mumps)) then
       call this%mumps%solve(efield, stat)
       if (stat /= 0) errmsg = 'MUMPS solve failed: stat=' // i_to_c(stat)
+#endif
     else
       INSIST(.false.)
     end if

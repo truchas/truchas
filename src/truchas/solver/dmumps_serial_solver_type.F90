@@ -19,20 +19,14 @@ module dmumps_serial_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use index_map_type
-#ifdef USE_MUMPS
   use,intrinsic :: iso_fortran_env, only: int64, real64
   implicit none
   include 'dmumps_struc.h'
-#else
-  implicit none
-#endif
   private
 
   type, public :: dmumps_serial_solver
     private
-#ifdef USE_MUMPS
     type(dmumps_struc), pointer :: mumps => null()
-#endif
     type(index_map), pointer :: imap => null() ! potentially unowned reference
     logical :: imap_owned = .false.
     integer :: nrow, bsize
@@ -47,7 +41,6 @@ contains
 
   subroutine mumps_solver_delete(this)
     type(dmumps_serial_solver), intent(inout) :: this
-#ifdef USE_MUMPS
     if (associated(this%mumps)) then
       this%mumps%job = -2
       call dmumps(this%mumps)
@@ -57,7 +50,6 @@ contains
       if (associated(this%mumps%rhs)) deallocate(this%mumps%rhs)
       deallocate(this%mumps)
     end if
-#endif
     if (this%imap_owned) deallocate(this%imap)
   end subroutine mumps_solver_delete
 
@@ -75,9 +67,6 @@ contains
     integer, intent(in) :: symmetry
     integer, intent(out) :: stat
 
-#ifndef USE_MUMPS
-    call tls_fatal("MUMPS requested, but Truchas wasn't compiled with MUMPS support.")
-#else
     allocate(this%mumps)
 
     INSIST(npe == 1)
@@ -90,7 +79,6 @@ contains
     this%mumps%icntl(4) = 4 ! verbosity
     call dmumps(this%mumps)
     stat = this%mumps%infog(1)
-#endif
 
   end subroutine init
 
@@ -107,7 +95,6 @@ contains
 
     integer :: i, ii
 
-#ifdef USE_MUMPS
     INSIST(associated(this%mumps))
 
     if (.not.associated(this%imap)) this%imap => A%graph%row_imap
@@ -150,7 +137,6 @@ contains
     print *, "DONE SETUP"
     stat = this%mumps%infog(1)
     print *, '1 setup pcsr', stat, this%mumps%info(23), A%nrow_onP, A%nrow
-#endif
 
   end subroutine setup
 
@@ -164,7 +150,6 @@ contains
 
     integer :: xi, ig, il
 
-#ifdef USE_MUMPS
     INSIST(associated(this%mumps))
     ASSERT(size(b) >= this%mumps%nloc_rhs)
     ASSERT(size(x) >= this%mumps%lsol_loc)
@@ -180,7 +165,6 @@ contains
     do xi = 1, this%mumps%lrhs
       x(xi) = this%mumps%rhs(xi)
     end do
-#endif
 
   end subroutine solve
 
