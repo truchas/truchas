@@ -309,6 +309,7 @@ contains
     use parameter_list_type
     use tdme_joule_heat_sim_type
     use em_bc_factory_type
+    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
@@ -320,7 +321,7 @@ contains
     integer :: stat
     character(:), allocatable :: errmsg
 
-    call sim%init(mesh, freq, eps, mu, sigma, bc_fac, params, stat, errmsg)
+    call sim%init(mesh, freq, vacuum_permittivity*eps, vacuum_permeability*mu, sigma, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     call sim%compute(q, stat, errmsg)
     if (stat < 0) then
@@ -337,9 +338,7 @@ contains
 
     use simpl_mesh_type
     use em_bc_factory_type
-    use fdme_model_type
     use parameter_list_type
-    use physical_constants, only: vacuum_permittivity, vacuum_permeability
     use fdme_solver_type
 
     type(simpl_mesh), intent(inout), target :: mesh
@@ -348,67 +347,50 @@ contains
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
 
-    type(fdme_model), target :: model
     type(fdme_solver) :: solver
     real(r8), parameter :: PI = 3.1415926535897932385_r8
     real(r8) :: t, omega
-    complex(r8) :: efield(mesh%nedge)
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
 
-    call model%init(mesh, bc_fac, params, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-
-    call solver%init(model, params, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-
-    t = 0 ! dummy time
     omega = 2 * PI * freq
 
-    !TODO? rework solver to use absolute eps and mu?
-    call model%setup(t, eps/vacuum_permittivity, epsi/vacuum_permittivity, mu/vacuum_permeability, sigma, omega)
-
-    efield = 0 ! initial guess
-    call solver%solve(efield, stat, errmsg)
+    call solver%init(mesh, omega, eps, epsi, mu, sigma, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-    call mesh%edge_imap%gather_offp(efield)
 
-    call model%compute_heat_source(efield, q)
+    call solver%solve(stat, errmsg)
+    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+
+    call solver%get_heat_source(q)
 
     !! Graphics output
     call params%get('graphics-output', flag, stat, errmsg, default=.false.)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     if (flag) then
-      block
-        complex(r8) :: bfield(mesh%nface), div_dfield(mesh%nnode)
-        call model%compute_bfield(efield, bfield)
-        call model%compute_div(efield, div_dfield)
-        call params%get('graphics-file', filename, stat, errmsg)
-        if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-        call fdme_vtk_graphics(filename, mesh, q, efield, bfield, mu, div_dfield, stat, errmsg)
-        if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-      end block
+      call params%get('graphics-file', filename, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+      call fdme_vtk_graphics(solver, filename, mesh, q, stat, errmsg)
+      if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     end if
 
   end subroutine compute_joule_heat_fdme
 
-  subroutine fdme_vtk_graphics(filename, mesh, qfield, efield, bfield, mu, div_dfield, stat, errmsg)
+  subroutine fdme_vtk_graphics(solver, filename, mesh, qfield, stat, errmsg)
 
+    use fdme_solver_type
     use vtkhdf_file_type
-    use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
 
+    type(fdme_solver), intent(in) :: solver
     character(*), intent(in) :: filename
     type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: qfield(:), mu(:)
-    complex(r8), intent(inout) :: efield(:), bfield(:), div_dfield(:)
+    real(r8), intent(in) :: qfield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: j
     type(vtkhdf_file) :: viz_file
     real(r8), allocatable :: g_scalar(:)
-    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:)
+    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:), l_zscalar(:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -428,8 +410,7 @@ contains
     allocate(g_vector(3,merge(mesh%cell_imap%global_size, 0, is_IOP)))
     allocate(l_vector(3,mesh%ncell))
 
-    l_vector(:,:)%re = w1_vector_on_cells(mesh, efield%re)
-    l_vector(:,:)%im = w1_vector_on_cells(mesh, efield%im)
+    call solver%get_cell_efield(l_vector)
     call gather(l_vector(:,:mesh%ncell_onP), g_vector)
     if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
@@ -445,11 +426,7 @@ contains
 
     if (is_IOP) call viz_file%write_cell_dataset('|E|', abs(g_vector), stat, errmsg)
 
-    l_vector(:,:)%re = w2_vector_on_cells(mesh, bfield%re)
-    l_vector(:,:)%im = w2_vector_on_cells(mesh, bfield%im)
-    do j = 1, size(mu) ! convert cell-centered B to H
-      l_vector(:,j) = l_vector(:,j) / mu(j)
-    end do
+    call solver%get_cell_hfield(l_vector)
     call gather(l_vector(:,:mesh%ncell_onP), g_vector)
     if (is_IOP) call viz_file%write_cell_dataset('H_re', g_vector%re, stat, errmsg)
     call broadcast(stat)
@@ -473,7 +450,9 @@ contains
 
     !! Divergence of the electric flux
     allocate(g_zscalar(merge(mesh%node_imap%global_size, 0, is_IOP)))
-    call gather(div_dfield(:mesh%nnode_onP), g_zscalar)
+    allocate(l_zscalar(mesh%nnode))
+    call solver%get_div_dfield(l_zscalar)
+    call gather(l_zscalar(:mesh%nnode_onP), g_zscalar)
     if (is_IOP) call viz_file%write_point_dataset('div_D_re', g_zscalar%re, stat, errmsg)
     call broadcast(stat)
 #ifdef GNU_PR117774
@@ -582,17 +561,15 @@ contains
   end subroutine
 
   subroutine set_permittivity(this, values)
-    use physical_constants, only: vacuum_permittivity
     class(ih_driver_data), intent(inout) :: this
     real(r8), intent(in) :: values(:)
     call start_timer('mesh-to-mesh mapping')
-    call this%ht2em%map_field(values, this%eps(:this%em_mesh%ncell_onP), defval=vacuum_permittivity, map_type=LOCALLY_BOUNDED)
+    call this%ht2em%map_field(values, this%eps(:this%em_mesh%ncell_onP), defval=1.0_r8, map_type=LOCALLY_BOUNDED)
     call this%em_mesh%cell_imap%gather_offp(this%eps)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine
 
   subroutine set_permittivity_im(this, values)
-    use physical_constants, only: vacuum_permittivity
     class(ih_driver_data), intent(inout) :: this
     real(r8), intent(in) :: values(:)
     call start_timer('mesh-to-mesh mapping')
@@ -602,11 +579,10 @@ contains
   end subroutine
 
   subroutine set_permeability(this, values)
-    use physical_constants, only: vacuum_permeability
     class(ih_driver_data), intent(inout) :: this
     real(r8), intent(in) :: values(:)
     call start_timer('mesh-to-mesh mapping')
-    call this%ht2em%map_field(values, this%mu(:this%em_mesh%ncell_onP), defval=vacuum_permeability, map_type=LOCALLY_BOUNDED)
+    call this%ht2em%map_field(values, this%mu(:this%em_mesh%ncell_onP), defval=1.0_r8, map_type=LOCALLY_BOUNDED)
     call this%em_mesh%cell_imap%gather_offp(this%mu)
     call stop_timer('mesh-to-mesh mapping')
   end subroutine

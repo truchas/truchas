@@ -54,6 +54,7 @@ module fdme_model_type
     procedure :: compute_bfield
     procedure :: compute_heat_source
     procedure :: compute_div
+    procedure :: cell_avg_efield, cell_avg_hfield
     procedure, private :: init_div_matrix
     procedure, private :: setup_div_matrix
     procedure, private :: init_mixed_matrix
@@ -343,6 +344,33 @@ contains
     bfield%im = (-1.0/this%omega) * curl(this%mesh,efield%re)
   end subroutine
 
+  subroutine cell_avg_efield(this, efield, avg_efield)
+    use mimetic_discretization, only: w1_vector_cell_avg
+    class(fdme_model), intent(in) :: this
+    complex(r8), intent(in)  :: efield(:)
+    complex(r8), intent(out) :: avg_efield(:,:)
+    ASSERT(size(efield) == this%mesh%nedge)
+    ASSERT(size(avg_efield,1) == 3)
+    ASSERT(size(avg_efield,2) >= this%mesh%ncell_onp)
+    call w1_vector_cell_avg(this%mesh, efield, avg_efield)
+  end subroutine
+
+  subroutine cell_avg_hfield(this, bfield, avg_hfield)
+    use mimetic_discretization, only: w2_vector_cell_avg
+    use physical_constants, only: vacuum_permeability
+    class(fdme_model), intent(in) :: this
+    complex(r8), intent(in)  :: bfield(:)
+    complex(r8), intent(out) :: avg_hfield(:,:)
+    integer :: j
+    ASSERT(size(bfield) == this%mesh%nface)
+    ASSERT(size(avg_hfield,1) == 3)
+    ASSERT(size(avg_hfield,2) >= this%mesh%ncell_onp)
+    call w2_vector_cell_avg(this%mesh, bfield, avg_hfield)
+    do j = 1, size(avg_hfield,2)
+      avg_hfield(:,j) = avg_hfield(:,j) / (vacuum_permeability * this%mu(j))
+    end do
+  end subroutine
+
   subroutine compute_heat_source(this, efield, q)
 
     use mimetic_discretization, only: w1_matrix_we
@@ -380,14 +408,13 @@ contains
 
   subroutine compute_div(this, efield, div_efield)
     class(fdme_model), intent(inout) :: this
-    complex(r8), intent(inout) :: efield(:) ! inout for gather_offp
+    complex(r8), intent(in)  :: efield(:) ! inout for gather_offp
     complex(r8), intent(out) :: div_efield(:)
     ASSERT(size(efield) == this%mesh%nedge)
     ASSERT(size(div_efield) == this%mesh%nnode)
-    call this%mesh%edge_imap%gather_offp(efield)
     call this%B%matvec(efield, div_efield)
     call this%mesh%node_imap%gather_offp(div_efield)
-  end subroutine compute_div
+  end subroutine
 
 
   !!! MIXED FORMULATION ROUTINES !!!!!!!!!!!!!!!!!
@@ -518,6 +545,5 @@ contains
     end if
 
   end subroutine setup_mixed_matrix
-
 
 end module fdme_model_type

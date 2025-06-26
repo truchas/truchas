@@ -43,20 +43,18 @@ contains
 
   !! Returns the real part of the electric permittivity at the current temperature.
   subroutine get_permittivity(value)
-    use physical_constants, only: vacuum_permittivity
     use zone_module, only: zone
     real(r8), intent(out) :: value(:)
     call compute_cell_property('electric-susceptibility', zone%temp, value)
-    value = vacuum_permittivity*(1.0_r8 + value)
+    value = (1.0_r8 + value)
   end subroutine
 
   !! Returns the imaginary part of the electric permittivity at the current temperature.
   subroutine get_permittivity_im(value)
-    use physical_constants, only: vacuum_permittivity
     use zone_module, only: zone
     real(r8), intent(out) :: value(:)
     call compute_cell_property('electric-susceptibility-im', zone%temp, value)
-    value = vacuum_permittivity*value
+    value = value
   end subroutine
 
   !! Returns true if the real part of the electric permittivity is constant
@@ -81,11 +79,10 @@ contains
 
   !! Returns the magnetic permeability at the current temperature.
   subroutine get_permeability(value)
-    use physical_constants, only: vacuum_permeability
     use zone_module, only: zone
     real(r8) :: value(:)
     call compute_cell_property('magnetic-susceptibility', zone%temp, value)
-    value = vacuum_permeability*(1.0_r8 + value)
+    value = (1.0_r8 + value)
   end subroutine
 
 

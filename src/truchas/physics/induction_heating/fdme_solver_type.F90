@@ -38,25 +38,43 @@ module fdme_solver_type
     type(fdme_mumps_solver), allocatable :: mumps
 #endif
     integer :: print_level
+    complex(r8), allocatable, public :: efield(:), bfield(:)
   contains
     procedure :: init
     procedure :: solve
+    procedure :: get_heat_source
+    procedure :: get_cell_efield, get_cell_hfield, get_div_dfield
   end type fdme_solver
 
 contains
 
-  subroutine init(this, model, params, stat, errmsg)
+  !TODO: make bc_fac a local variable. Requires refactoring em_bc_factory to not take
+  !TODO: an ih_source_factory object as input
 
+  subroutine init(this, mesh, omega, epsr, epsi, mu, sigma, bc_fac, params, stat, errmsg)
+
+    use em_bc_factory_type
     use parameter_list_type
 
     class(fdme_solver), intent(out) :: this
-    type(fdme_model), intent(in), target :: model
+    type(simpl_mesh), intent(in), target :: mesh
+    real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
+    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: plist
     character(:), allocatable :: solver_type, choice
+
+    !this%model => model
+    this%mesh => mesh
+
+    allocate(this%model)
+    call this%model%init(mesh, bc_fac, params, stat, errmsg)
+    if (stat /= 0) return
+
+    call this%model%setup(0.0_r8, epsr, epsi, mu, sigma, omega)
 
     call params%get('print-level', this%print_level, stat, errmsg, default=0)
     if (stat /= 0) return
@@ -67,7 +85,7 @@ contains
 
     select case (solver_type)
     case ('minres')
-      if (model%use_mixed_form) then
+      if (this%model%use_mixed_form) then
         allocate(this%mixed_minres)
       else
         allocate(this%minres)
@@ -86,9 +104,6 @@ contains
       return
     end select
 
-    this%model => model
-    this%mesh => model%mesh
-
     if (allocated(this%minres)) then
       call this%minres%init(this%model, params, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
@@ -101,25 +116,26 @@ contains
       INSIST(.false.)
     end if
 
+    allocate(this%efield(this%mesh%nedge), this%bfield(this%mesh%nface))
+
   end subroutine init
 
 
-  subroutine solve(this, efield, stat, errmsg)
+  subroutine solve(this, stat, errmsg)
 
     use string_utilities, only: i_to_c
 
     class(fdme_solver), intent(inout) :: this
-    complex(r8), intent(inout) :: efield(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     if (allocated(this%minres)) then
-      call this%minres%solve(efield, stat, errmsg)
+      call this%minres%solve(this%efield, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
-      call this%mixed_minres%solve(efield, stat, errmsg)
+      call this%mixed_minres%solve(this%efield, stat, errmsg)
 #ifdef USE_MUMPS
     else if (allocated(this%mumps)) then
-      call this%mumps%solve(efield, stat)
+      call this%mumps%solve(this%efield, stat)
       if (stat /= 0) errmsg = 'MUMPS solve failed: stat=' // i_to_c(stat)
 #endif
     else
@@ -132,8 +148,8 @@ contains
       complex(r8) :: r(this%mesh%nedge), div_efield(this%mesh%nnode)
       real(r8) :: rnorm, bnorm, dnorm
       character(128) :: msg
-      call this%model%residual(efield, r)
-      call this%model%compute_div(efield, div_efield)
+      call this%model%residual(this%efield, r)
+      call this%model%compute_div(this%efield, div_efield)
       rnorm = global_norm2(r(:this%mesh%nedge_onP))
       bnorm = global_norm2(this%model%rhs(:this%mesh%nedge_onP))
       dnorm = global_norm2(div_efield(:this%mesh%nnode_onP))
@@ -142,6 +158,42 @@ contains
       call TLS_info(msg)
     end block
 
+    call this%mesh%edge_imap%gather_offp(this%efield)
+    call this%model%compute_bfield(this%efield, this%bfield)
+    call this%mesh%face_imap%gather_offp(this%bfield)
+
+  end subroutine
+
+  subroutine get_heat_source(this, q)
+    class(fdme_solver), intent(in) :: this
+    real(r8), intent(out) :: q(:)
+    ASSERT(size(q) >= this%mesh%ncell_onp)
+    call this%model%compute_heat_source(this%efield, q)
+  end subroutine
+
+  subroutine get_cell_efield(this, efield)
+    use mimetic_discretization, only: w1_vector_cell_avg
+    class(fdme_solver), intent(in) :: this
+    complex(r8), intent(out) :: efield(:,:)
+    ASSERT(size(efield,1) == 3)
+    ASSERT(size(efield,2) >= this%mesh%ncell_onp)
+    call this%model%cell_avg_efield(this%efield, efield)
+  end subroutine
+
+  subroutine get_cell_hfield(this, hfield)
+    use mimetic_discretization, only: w1_vector_cell_avg
+    class(fdme_solver), intent(in) :: this
+    complex(r8), intent(out) :: hfield(:,:)
+    ASSERT(size(hfield,1) == 3)
+    ASSERT(size(hfield,2) >= this%mesh%ncell_onp)
+    call this%model%cell_avg_hfield(this%bfield, hfield)
+  end subroutine
+
+  subroutine get_div_dfield(this, div_dfield)
+    class(fdme_solver), intent(in) :: this
+    complex(r8), intent(out) :: div_dfield(:)
+    ASSERT(size(div_dfield) ==  this%mesh%nnode)
+    call this%model%compute_div(this%efield, div_dfield)
   end subroutine
 
 end module fdme_solver_type

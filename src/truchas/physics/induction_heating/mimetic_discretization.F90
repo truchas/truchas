@@ -22,6 +22,7 @@ module mimetic_discretization
   public :: w1_face_matrix
 
   !! Interpolation procedures
+  public :: w1_vector_cell_avg, w2_vector_cell_avg
   public :: w1_vector_on_cells, w2_vector_on_cells, w3_scalar_on_cells
   public :: eval_w0_interp_coef, eval_w1_interp_coef, eval_w2_interp_coef, eval_w3_interp_coef
 
@@ -40,6 +41,16 @@ module mimetic_discretization
                1,  0,  0,  1, &
               -1,  0,  1,  0, &
                1,  1,  0,  0], shape=shape(cell_curl))
+
+  interface w1_vector_cell_avg
+    procedure w1_vector_cell_avg_r8
+    procedure w1_vector_cell_avg_z8
+  end interface
+
+  interface w2_vector_cell_avg
+    procedure w2_vector_cell_avg_r8
+    procedure w2_vector_cell_avg_z8
+  end interface
 
 contains
 
@@ -439,6 +450,134 @@ contains
     end do
 
   end function w2_vector_on_cells
+
+
+  subroutine w1_vector_cell_avg_r8(mesh, w1, w1_avg)
+
+    use simplex_geometry, only: tet_face_normal
+
+    type(simpl_mesh), intent(in) :: mesh
+    real(r8), intent(in)  :: w1(:)
+    real(r8), intent(out) :: w1_avg(:,:)
+
+    integer :: j, k, n, m
+    real(r8) :: p(3,4), t(3)
+
+    ASSERT(size(w1) == mesh%nedge)
+    ASSERT(size(w1_avg,1) == 3)
+    ASSERT(size(w1_avg,2) <= mesh%ncell)
+
+    do j = 1, size(w1_avg,2)
+      !! Area-weighted outer face normals
+      p = tet_face_normal(mesh%x(:,mesh%cnode(:,j)))
+      t = 0.0_r8
+      k = 0
+      do m = 1, 4       !! NB: run through edges mn in order (index k)
+        do n = m+1, 4
+          k = k + 1
+          t = t + (p(:,m) - p(:,n)) * w1(mesh%cedge(k,j))
+        end do
+      end do
+      w1_avg(:,j) = t / (12.0_r8 * mesh%volume(j))
+    end do
+
+  end subroutine w1_vector_cell_avg_r8
+
+
+  subroutine w1_vector_cell_avg_z8(mesh, w1, w1_avg)
+
+    use simplex_geometry, only: tet_face_normal
+
+    type(simpl_mesh), intent(in) :: mesh
+    complex(r8), intent(in)  :: w1(:)
+    complex(r8), intent(out) :: w1_avg(:,:)
+
+    integer :: j, k, n, m
+    real(r8) :: p(3,4)
+    complex(r8) :: t(3)
+
+    ASSERT(size(w1) == mesh%nedge)
+    ASSERT(size(w1_avg,1) == 3)
+    ASSERT(size(w1_avg,2) <= mesh%ncell)
+
+    do j = 1, size(w1_avg,2)
+      !! Area-weighted outer face normals
+      p = tet_face_normal(mesh%x(:,mesh%cnode(:,j)))
+      t = 0.0_r8
+      k = 0
+      do m = 1, 4       !! NB: run through edges mn in order (index k)
+        do n = m+1, 4
+          k = k + 1
+          t = t + (p(:,m) - p(:,n)) * w1(mesh%cedge(k,j))
+        end do
+      end do
+      w1_avg(:,j) = t / (12.0_r8 * mesh%volume(j))
+    end do
+
+  end subroutine w1_vector_cell_avg_z8
+
+
+  subroutine w2_vector_cell_avg_r8(mesh, w2, w2_avg)
+
+    type(simpl_mesh), intent(in) :: mesh
+    real(r8), intent(in)  :: w2(:)
+    real(r8), intent(out) :: w2_avg(:,:)
+
+    integer :: j, m, n
+    real(r8) :: f(4), t(3), x(3,4)
+
+    ASSERT(size(w2) == mesh%nface)
+    ASSERT(size(w2_avg,1) == 3)
+    ASSERT(size(w2_avg,2) <= mesh%ncell)
+
+    do j = 1, size(w2_avg,2)
+      !! Face fluxes (all outward or all inward depending on sign of volume)
+      f = w2(mesh%cface(:,j))
+      f(2) = -f(2)
+      f(4) = -f(4)
+      x = mesh%x(:,mesh%cnode(:,j))
+      t = 0.0_r8
+      do m = 1, 4
+        do n = m+1, 4
+          t = t + (f(m) - f(n)) * (x(:,n) - x(:,m))
+        end do
+      end do
+      w2_avg(:,j) = t / (12.0_r8 * mesh%volume(j))
+    end do
+
+  end subroutine w2_vector_cell_avg_r8
+
+
+  subroutine w2_vector_cell_avg_z8(mesh, w2, w2_avg)
+
+    type(simpl_mesh), intent(in) :: mesh
+    complex(r8), intent(in)  :: w2(:)
+    complex(r8), intent(out) :: w2_avg(:,:)
+
+    integer :: j, m, n
+    complex(r8) :: f(4), t(3)
+    real(r8) :: x(3,4)
+
+    ASSERT(size(w2) == mesh%nface)
+    ASSERT(size(w2_avg,1) == 3)
+    ASSERT(size(w2_avg,2) <= mesh%ncell)
+
+    do j = 1, size(w2_avg,2)
+      !! Face fluxes (all outward or all inward depending on sign of volume)
+      f = w2(mesh%cface(:,j))
+      f(2) = -f(2)
+      f(4) = -f(4)
+      x = mesh%x(:,mesh%cnode(:,j))
+      t = 0.0_r8
+      do m = 1, 4
+        do n = m+1, 4
+          t = t + (f(m) - f(n)) * (x(:,n) - x(:,m))
+        end do
+      end do
+      w2_avg(:,j) = t / (12.0_r8 * mesh%volume(j))
+    end do
+
+  end subroutine w2_vector_cell_avg_z8
 
 
   function w3_scalar_on_cells (mesh, u) result (v)
