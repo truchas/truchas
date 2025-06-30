@@ -41,7 +41,6 @@ module tdme_joule_heat_sim_type
   use simpl_mesh_type
   use tdme_model_type
   use tdme_solver_type
-  use ih_source_factory_type
   use scalar_func_class
   use vtkhdf_file_type
   implicit none
@@ -106,12 +105,16 @@ contains
     this%bscf = freq
     this%qscf = freq**3
 
+    !NB: scaling of nxE BC data moved inside the model.
+    !FIXME: Get rid of the scaling entirely as it creates sticky problems
+    !FIXME: with nxH BC handling.
+
     call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
     if (stat /= 0) return !TODO: augment errmsg?
     if (allocated(ebc)) then
-      call bc_fac%alloc_nxH_bc(hbc, stat, errmsg, omit_edge_list=ebc%index, scale_factor=(1.0_r8/freq))
+      call bc_fac%alloc_nxH_bc(hbc, stat, errmsg, omit_edge_list=ebc%index)
     else
-      call bc_fac%alloc_nxH_bc(hbc, stat, errmsg, scale_factor=(1.0_r8/freq))
+      call bc_fac%alloc_nxH_bc(hbc, stat, errmsg)
     end if
     if (stat /= 0) return !TODO: augment errmsg?
 
@@ -170,7 +173,7 @@ contains
     !! Create and initialize the time-discretized model and solver.
     dt = 1.0_r8 / this%steps_per_cycle
     allocate(this%model)
-    call this%model%init(this%mesh, model_eps, mu, model_sigma, dt, ebc, hbc)
+    call this%model%init(this%mesh, model_eps, mu, model_sigma, dt, ebc, hbc, this%bscf)
     call this%solver%init(this%mesh, this%model, params, stat, errmsg)
     if (stat /= 0) return
 

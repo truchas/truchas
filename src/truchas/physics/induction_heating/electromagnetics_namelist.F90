@@ -193,12 +193,12 @@ contains
     end if
 
     call params%set('use-fd-solver', use_fd_solver)
+    call params%set('graphics-output', graphics_output)
 
     if (use_fd_solver) then ! Frequency-domain solver parameters
 
       plist => params%sublist('fd-solver')
       call plist%set('use-mixed-form', use_mixed_form)
-      call plist%set('graphics-output', graphics_output)
 
       if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
       if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
@@ -251,8 +251,6 @@ contains
       end if
 
     else ! Time domain solver parameters
-
-      call params%set('graphics-output', graphics_output)
 
       !! All these parameters have default values which are applied, if needed,
       !! when the parameter list is consumed.

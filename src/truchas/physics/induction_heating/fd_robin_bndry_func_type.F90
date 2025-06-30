@@ -17,7 +17,6 @@ module fd_robin_bndry_func_type
     integer, allocatable :: xgroup(:), face_index(:), fedge(:,:)
     type(complex_vector_func_box), allocatable :: g(:)
     logical :: computed = .false.
-    real(r8) :: tlast = -huge(1.0_r8)
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
     type(complex_vector_func_list) :: glist
@@ -25,7 +24,7 @@ module fd_robin_bndry_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
-    procedure :: compute
+    procedure :: compute ! called by add_complete; no need to call directly
   end type
 
 contains
@@ -108,6 +107,8 @@ contains
       end do
     end do
 
+    call this%compute(0.0_r8) ! No time dependence
+
   end subroutine add_complete
 
 
@@ -117,15 +118,13 @@ contains
     use gauss_quad_tri75
 
     class(fd_robin_bndry_func), intent(inout) :: this
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t ! unused dummy
 
     integer :: i, j, k, n
     real(r8) :: nxq(3,3)
     complex(r8) :: g(3), g_dot_nxq(7,3), s
 
-    if (this%computed .and. t == this%tlast) return ! value already set for this T
-
-    this%tlast = t
+    if (this%computed) return
     this%computed = .true.
 
     this%value = 0.0_r8
@@ -137,7 +136,7 @@ contains
           nxq = -tri_edge_normal(x)
 
           do k = 1, 7
-            g = this%g(n)%eval([matmul(x, GQTRI75_phi(:,k)), t])
+            g = this%g(n)%eval(matmul(x, GQTRI75_phi(:,k)))
             g_dot_nxq(k,:) = matmul(g, nxq)
           end do
 

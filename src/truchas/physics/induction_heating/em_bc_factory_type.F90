@@ -19,7 +19,6 @@ module em_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
-  use ih_source_factory_type
   use parameter_list_type
   use scalar_func_class
   use vector_func_factories
@@ -31,9 +30,8 @@ module em_bc_factory_type
   type, public :: em_bc_factory
     private
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(ih_source_factory), pointer :: src_fac => null() ! unowned reference
     type(parameter_list), pointer :: params => null() ! unowned reference
-    logical :: use_legacy_bc = .true.
+    logical :: use_legacy_bc = .false.
     integer, allocatable :: pec_setid(:), nxH_setid(:)
     real(r8) :: epsilon0, mu0, omega
   contains
@@ -59,36 +57,34 @@ module em_bc_factory_type
 
 contains
 
-  subroutine init(this, mesh, src_fac, params)
+  subroutine init(this, mesh, omega, params, use_legacy_bc)
 
     class(em_bc_factory), intent(out) :: this
     type(simpl_mesh), intent(inout), target :: mesh
-    type(ih_source_factory), intent(in), target :: src_fac
+    real(r8), intent(in) :: omega
     type(parameter_list), intent(inout), target :: params
+    logical, intent(in), optional :: use_legacy_bc
 
     integer :: stat
     character(:), allocatable :: errmsg
 
     this%mesh => mesh
-    this%src_fac => src_fac
-    this%params => params%sublist('bc') !TODO: eliminate the need to dig deeper
+    this%omega = omega
+    this%params => params
 
-    call params%get('use-legacy-bc', this%use_legacy_bc, default=.true.)
+    block
+      use physical_constants
+      this%epsilon0 = vacuum_permittivity
+      this%mu0 = vacuum_permeability
+    end block
 
-    if (this%use_legacy_bc) then  ! legacy data in the top level parameter list !FIXME
+    if (present(use_legacy_bc)) this%use_legacy_bc = use_legacy_bc
+    if (this%use_legacy_bc) then
       block
         use ih_legacy_bc, only: create_ih_face_sets
         call create_ih_face_sets(this%mesh, params, this%pec_setid, this%nxH_setid)
       end block
     end if
-
-    call params%get('epsilon_0', this%epsilon0, stat, errmsg, default=8.8541878188e-12_r8)
-    ASSERT(stat == 0)
-    call params%get('mu_0', this%mu0, stat, errmsg, default=1.25663706127e-6_r8)
-    ASSERT(stat == 0)
-
-    call params%get('omega', this%omega, stat, errmsg)
-    ASSERT(stat == 0)
 
   end subroutine
 
@@ -155,6 +151,7 @@ contains
 
     use bndry_func1_class
     use nxH_bndry_func_type
+    use func_table, only: lookup_func
     class(scalar_func), allocatable :: f
     class(vector_func), allocatable :: g
 
@@ -170,8 +167,10 @@ contains
     call TLS_info('  generating "nxH" electromagnetic boundary condition')
 
     if (this%use_legacy_bc) then
-      call this%src_fac%alloc_H_waveform_func(f)
-      call this%src_fac%alloc_H_profile_func(g, scale_factor)
+      call lookup_func('_ih_waveform', f)
+      INSIST(allocated(f))
+      call lookup_func('_ih_profile', g)
+      INSIST(allocated(g))
       allocate(nxH_bc)
       call nxH_bc%init(this%mesh)
       call nxH_bc%add(f, g, this%nxH_setid, stat, errmsg)
@@ -209,8 +208,10 @@ contains
         allocate(nxH_bc)
         call nxH_bc%init(this%mesh)
       end if
-      call this%src_fac%alloc_H_waveform_func(f)
-      call this%src_fac%alloc_H_profile_func(g, scale_factor)
+      call lookup_func('_ih_waveform', f)
+      INSIST(allocated(f))
+      call lookup_func('_ih_profile', g)
+      INSIST(allocated(g))
       call nxH_bc%add(f, g, setids, stat, errmsg)
       if (stat /= 0) return
     end subroutine
@@ -292,6 +293,7 @@ contains
     !! subroutine through host association.
 
     subroutine ih_proc(plist, setids, stat, errmsg)
+      use func_table, only: lookup_func
       use scalar_func_factories, only: alloc_const_scalar_func
       type(parameter_list), intent(inout) :: plist
       integer, intent(in) :: setids(:)
@@ -305,7 +307,8 @@ contains
         call nxH_bc%init(this%mesh)
       end if
       call alloc_const_scalar_func(f, 1.0_r8)
-      call this%src_fac%alloc_H_profile_func(g, scale_factor)
+      call lookup_func('_ih_profile', g)
+      INSIST(allocated(g))
       call nxH_bc%add(f, g, setids, stat, errmsg)
     end subroutine
 

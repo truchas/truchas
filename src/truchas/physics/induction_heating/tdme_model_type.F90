@@ -31,7 +31,7 @@ module tdme_model_type
 
   type, public :: tdme_model
     type(simpl_mesh), pointer :: mesh => null() ! spatial discretization
-    real(r8) :: dt
+    real(r8) :: dt, bscf
     real(r8), allocatable :: eps(:), mu(:), sigma(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
     class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
@@ -51,7 +51,7 @@ module tdme_model_type
 
 contains
 
-  subroutine init(this, mesh, eps, mu, sigma, dt, ebc, hbc)
+  subroutine init(this, mesh, eps, mu, sigma, dt, ebc, hbc, bscf)
 
     use upper_packed_matrix_procs, only: sym_matmul, upm_cong_prod
 
@@ -60,6 +60,7 @@ contains
     real(r8), intent(in) :: eps(:), mu(:), sigma(:)
     real(r8), intent(in) :: dt
     class(bndry_func1), allocatable, intent(inout) :: ebc, hbc
+    real(r8), intent(in) :: bscf
 
     integer :: j
     real(r8) :: ctm2c(21), m1(21), m2(10)
@@ -70,6 +71,7 @@ contains
 
     this%mesh => mesh
     this%dt = dt
+    this%bscf = bscf
 
     call move_alloc(ebc, this%ebc)
     call move_alloc(hbc, this%hbc)
@@ -196,7 +198,7 @@ contains
       call this%hbc%compute(t)
       associate (index => this%hbc%index, g0 => this%g0, g => this%hbc%value)
         do j = 1, size(index)
-          r(index(j)) = r(index(j)) + (0.5_r8*this%dt)*(g0(j) + g(j))
+          r(index(j)) = r(index(j)) + (0.5_r8*this%dt/this%bscf)*(g0(j) + g(j))
         end do
       end associate
     end if

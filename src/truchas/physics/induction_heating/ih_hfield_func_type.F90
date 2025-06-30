@@ -1,5 +1,5 @@
 !!
-!! IH_SOURCE_FUNC_TYPE
+!! IH_HFIELD_FUNC_TYPE
 !!
 !! This module defines an extension of the VECTOR_FUNC class that implements
 !! the external magnetic field source profile for induction heating simulations.
@@ -19,14 +19,14 @@
 
 #include "f90_assert.fpp"
 
-module ih_source_func_type
+module ih_hfield_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use vector_func_class
   implicit none
   private
 
-  type, extends(vector_func), public :: ih_source_func
+  type, extends(vector_func), public :: ih_hfield_func
     private
     type(induction_coil), allocatable :: coil(:)
     real(r8), allocatable :: current(:)
@@ -47,7 +47,7 @@ contains
 
   subroutine init(this, axis, const, coil, current, scf)
 
-    class(ih_source_func), intent(out) :: this
+    class(ih_hfield_func), intent(out) :: this
     character, intent(in) :: axis
     real(r8), intent(in) :: const
     type(induction_coil), intent(in) :: coil(:)
@@ -87,7 +87,7 @@ contains
 
     use solenoid_fields, only: H_coil
 
-    class(ih_source_func), intent(in) :: this
+    class(ih_hfield_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     real(r8) :: fx(this%dim)
 
@@ -121,7 +121,7 @@ contains
 
   ! Not implemented
   function eval_comp(this, i, x) result(fx)
-    class(ih_source_func), intent(in) :: this
+    class(ih_hfield_func), intent(in) :: this
     integer, intent(in) :: i
     real(r8), intent(in) :: x(:)
     real(r8) :: fx
@@ -129,4 +129,4 @@ contains
     fx = 0
   end function
 
-end module ih_source_func_type
+end module ih_hfield_func_type

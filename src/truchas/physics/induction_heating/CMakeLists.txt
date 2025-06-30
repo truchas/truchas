@@ -11,8 +11,8 @@ target_sources(truchas PRIVATE
   electromagnetics_namelist.F90
   electromagnetic_bc_namelist.F90
   induction_source_field_namelist.F90
-  ih_source_factory_type.F90
-  ih_source_func_type.F90
+  ih_hfield_factory_type.F90
+  ih_hfield_func_type.F90
   solenoid_fields.F90
   elliptic_integrals.F90
   em_bc_factory_type.F90

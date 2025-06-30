@@ -99,6 +99,12 @@ contains
     end if
     if (stat /= 0) return
 
+    !! Precompute the BC data at a dummy time
+    if (allocated(this%ebc)) call this%ebc%compute(0.0_r8)
+    if (allocated(this%hbc)) call this%hbc%compute(0.0_r8)
+    if (allocated(this%robin_lhs)) call this%robin_lhs%compute(0.0_r8)
+    if (allocated(this%robin_rhs)) call this%robin_rhs%compute(0.0_r8)
+
     block
       type(pcsr_graph), pointer :: g
       allocate(g)
@@ -155,18 +161,17 @@ contains
 
   end subroutine init_div_matrix
 
-  subroutine setup(this, t, epsr, epsi, mu, sigma, omega)
+  subroutine setup(this, omega, epsr, epsi, mu, sigma)
 
     use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_curl, w1_face_matrix
     use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(fdme_model), intent(inout) :: this
-    real(r8), intent(in) :: t, epsr(:), epsi(:), mu(:), sigma(:), omega
+    real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), k0
     complex(r8) :: Aj(21)
-    complex(r8), allocatable :: eps(:), k(:)
 
     ASSERT(size(epsr) == this%mesh%ncell)
     ASSERT(size(epsi) == this%mesh%ncell)
@@ -203,7 +208,6 @@ contains
     if (allocated(this%robin_lhs)) then
       block
         complex(r8) ::a(6)
-        call this%robin_lhs%compute(t)
         do j = 1, size(this%robin_lhs%index)
           n = this%robin_lhs%index(j)
           a = -this%robin_lhs%value(j) * w1_face_matrix(this%mesh, n)
@@ -234,7 +238,6 @@ contains
     !FIXME: only correct for uniform mu = 1 (relative). For other mu, it needs to
     !be incorporated into the computation of robin_rhs.
     if (allocated(this%robin_rhs)) then
-      call this%robin_rhs%compute(t)
       do j = 1, size(this%robin_rhs%index)
         n = this%robin_rhs%index(j)
         this%rhs(n) = this%rhs(n) - this%robin_rhs%value(j)
@@ -255,7 +258,6 @@ contains
 
     ! RHS contribution from nxH source boundary conditions
     if (allocated(this%hbc)) then
-      call this%hbc%compute(t)
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
         this%rhs(n)%im = this%rhs(n)%im - k0 * this%Z0 * this%hbc%value(j)
@@ -308,7 +310,7 @@ contains
 
     ! zero Lagrange multipliers on nxE BCs
     block
-      integer :: xj, nb, xnb, Nn
+      integer :: xj, nb, xnb
       if (allocated(this%ebc)) then
         do xj = 1, size(this%ebc%index)
           j = this%ebc%index(xj)

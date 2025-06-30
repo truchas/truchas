@@ -21,7 +21,7 @@ module ih_driver
   use base_mesh_class
   use simpl_mesh_type
   use data_mapper_class
-  use ih_source_factory_type
+  use ih_hfield_factory_type
   use parameter_list_type
   use parallel_communication
   use truchas_logging_services
@@ -37,7 +37,7 @@ module ih_driver
     class(base_mesh), pointer :: ht_mesh => null() ! unowned reference
     type(simpl_mesh), pointer :: em_mesh => null() ! unowned reference
     class(data_mapper), allocatable :: ht2em
-    type(ih_source_factory) :: src_fac
+    type(ih_hfield_factory) :: hfield_fac
     logical :: use_fd_solver
     character(32) :: coil_md5sum  ! fingerprint of the fixed coil geometry
     ! EM properties
@@ -149,9 +149,9 @@ contains
 
     !! Initialize the external H-field source factory
     plist => params%sublist('external-field')
-    call this%src_fac%init(plist, t, stat, errmsg)
+    call this%hfield_fac%init(plist, stat, errmsg)
     if (stat /= 0) call TLS_fatal('IH_DRIVER_INIT: ' // errmsg)
-    this%coil_md5sum = this%src_fac%coil_geom_fingerprint()
+    this%coil_md5sum = this%hfield_fac%coil_geom_fingerprint()
 
     call define_default_em_properties
 
@@ -188,16 +188,16 @@ contains
     if (allocated(this%q_data)) then ! there is an existing Q that may be usable
 
       !! Determine if the restart Joule heat is usable; if not, compute it.
-      if (this%src_fac%source_is_zero(t)) then
-        if (this%src_fac%source_differs(this%q_data, t)) then
+      if (this%hfield_fac%hfield_is_zero(t)) then
+        if (this%hfield_fac%hfield_differs(this%q_data, t)) then
           call TLS_info('magnetic source field changed to zero; Joule heat set to zero.')
           call zero_joule_power_density(this, t)
         end if
       else if (matl_prop_differ(this)) then
         call TLS_info('EM properties have changed; computing the Joule heat ...')
         call compute_joule_heat(this, t, params)
-      else if (this%src_fac%source_differs(this%q_data, t)) then
-        if (this%src_fac%source_is_scaled(this%q_data, t, s)) then
+      else if (this%hfield_fac%hfield_differs(this%q_data, t)) then
+        if (this%hfield_fac%hfield_is_scaled(this%q_data, t, s)) then
           write(ss,fmt='(es9.3)') s
           call TLS_info('magnetic source field was scaled by ' // trim(ss) // '; Joule heat scaled accordingly.')
           call scale_joule_power_density(this, t, s)
@@ -209,7 +209,7 @@ contains
 
     else ! just compute the Joule heat
 
-      if (this%src_fac%source_is_zero(t)) then
+      if (this%hfield_fac%hfield_is_zero(t)) then
         call TLS_info('no magnetic source field; setting the Joule heat to zero.')
         call zero_joule_power_density(this, t)
       else
@@ -236,40 +236,31 @@ contains
     use em_bc_factory_type
     use string_utilities, only: i_to_c
     use truchas_env, only: output_dir
-    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     class(ih_driver_data), intent(inout), target :: this
     real(r8), intent(in) :: t
     type(parameter_list), intent(inout) :: params
 
     real(r8), allocatable :: q(:)
-    type(em_bc_factory) :: bc_fac
     real(r8) :: freq
-    type(parameter_list), pointer :: plist
     integer, save :: sim_num = 0  ! global counter for the number of calls
-    real(r8), parameter :: PI = 3.1415926535897932385_r8
 
     call start_timer('simulation')
 
     sim_num = sim_num + 1
-    call params%set('graphics-file', trim(output_dir)//'tdme-'//i_to_c(sim_num)//'.vtkhdf')
 
     allocate(q(this%em_mesh%ncell_onP))
-    call this%src_fac%set_time(t)
-    freq = this%src_fac%H_freq()
-    call params%set('omega', 2*PI*freq)
-    call params%set('epsilon_0', vacuum_permittivity)
-    call params%set('mu_0', vacuum_permeability)
-    call bc_fac%init(this%em_mesh, this%src_fac, params)
+    call this%hfield_fac%update_ih_hfield_func(t)
+    freq = this%hfield_fac%frequency(t)
     if (this%use_fd_solver) then
-      plist => params%sublist('fd-solver')
-      call plist%set('graphics-file', trim(output_dir)//'fdme-'//i_to_c(sim_num)//'.vtkhdf')
-      call compute_joule_heat_fdme(this%em_mesh, freq, this%eps, this%epsi, this%mu, this%sigma, bc_fac, plist, q)
+      call params%set('graphics-file', trim(output_dir)//'fdme-'//i_to_c(sim_num)//'.vtkhdf')
+      call compute_joule_heat_fdme(this%em_mesh, freq, this%eps, this%epsi, this%mu, this%sigma, params, q)
     else
-      call compute_joule_heat_tdme(this%em_mesh, freq, this%eps, this%mu, this%sigma, bc_fac, params, q)
+      call params%set('graphics-file', trim(output_dir)//'tdme-'//i_to_c(sim_num)//'.vtkhdf')
+      call compute_joule_heat_tdme(this%em_mesh, freq, this%eps, this%mu, this%sigma, params, q)
     end if
     call set_joule_power_density(q)
-    this%q_data = this%src_fac%source_data(t)
+    this%q_data = this%hfield_fac%hfield_data(t)
     this%q_eps = this%eps
     this%q_mu = this%mu
     this%q_sigma = this%sigma
@@ -303,7 +294,7 @@ contains
   !! steady state is achieved, and calculating the time-averaged Joule heat
   !! over one period.
 
-  subroutine compute_joule_heat_tdme(mesh, freq, eps, mu, sigma, bc_fac, params, q)
+  subroutine compute_joule_heat_tdme(mesh, freq, eps, mu, sigma, params, q)
 
     use simpl_mesh_type
     use parameter_list_type
@@ -313,13 +304,22 @@ contains
 
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
-    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
 
+    type(em_bc_factory) :: bc_fac
     type(tdme_joule_heat_sim) :: sim
     integer :: stat
     character(:), allocatable :: errmsg
+    type(parameter_list), pointer :: plist
+    real(r8) :: omega
+    logical :: flag
+
+    omega = 8*atan(1.0_r8)*freq
+    call params%get('use-legacy-bc', flag, stat, errmsg, default=.false.)
+    if (stat /= 0) return
+    plist => params%sublist('bc')
+    call bc_fac%init(this%em_mesh, omega, plist, use_legacy_bc=flag)
 
     call sim%init(mesh, freq, vacuum_permittivity*eps, vacuum_permeability*mu, sigma, bc_fac, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
@@ -334,29 +334,26 @@ contains
 
   !! Compute Joule heat using the frequency domain EM solver
 
-  subroutine compute_joule_heat_fdme(mesh, freq, eps, epsi, mu, sigma, bc_fac, params, q)
+  subroutine compute_joule_heat_fdme(mesh, freq, eps, epsi, mu, sigma, params, q)
 
     use simpl_mesh_type
-    use em_bc_factory_type
     use parameter_list_type
     use fdme_solver_type
 
     type(simpl_mesh), intent(inout), target :: mesh
     real(r8), intent(in) :: freq, eps(:), epsi(:), mu(:), sigma(:)
-    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     real(r8), intent(out) :: q(:)
 
     type(fdme_solver) :: solver
-    real(r8), parameter :: PI = 3.1415926535897932385_r8
-    real(r8) :: t, omega
+    real(r8) :: omega
     logical :: flag
     integer :: stat
     character(:), allocatable :: errmsg, filename
 
-    omega = 2 * PI * freq
+    omega = 8*atan(1.0_r8)*freq
 
-    call solver%init(mesh, omega, eps, epsi, mu, sigma, bc_fac, params, stat, errmsg)
+    call solver%init(mesh, omega, eps, epsi, mu, sigma, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
     call solver%solve(stat, errmsg)
@@ -505,7 +502,7 @@ contains
     class(ih_driver_data), intent(inout) :: this
     real(r8), intent(in) :: t
     this%q = 0.0_r8
-    this%q_data = this%src_fac%source_data(t)
+    this%q_data = this%hfield_fac%hfield_data(t)
     this%q_eps = this%eps
     this%q_mu = this%mu
     this%q_sigma = this%sigma
@@ -522,7 +519,7 @@ contains
     class(ih_driver_data), intent(inout) :: this
     real(r8), intent(in) :: t, s
     this%q = s**2 * this%q
-    this%q_data = this%src_fac%source_data(t)
+    this%q_data = this%hfield_fac%hfield_data(t)
     !NB: we do not overwrite q_eps, q_mu, and q_sigma
     this%q_written = .false.
     this%q_restart = .false.
@@ -778,7 +775,7 @@ contains
     call sim%write_attr('TIME', t)
     call TLS_info('  writing EM restart data for ' // trim(sim_name))
     call sim%write_attr('COIL_MD5SUM', this%coil_md5sum)
-    call sim%write_repl_data('SOURCE_DATA', this%q_data)
+    call sim%write_repl_data('HFIELD_DATA', this%q_data)
     call sim%write_repl_data('MU', col_mu)
     call sim%write_repl_data('SIGMA', col_sigma)
     call sim%write_dist_array('JOULE', this%q, global_sum(size(this%q)))

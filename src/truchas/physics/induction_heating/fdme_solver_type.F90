@@ -48,10 +48,7 @@ module fdme_solver_type
 
 contains
 
-  !TODO: make bc_fac a local variable. Requires refactoring em_bc_factory to not take
-  !TODO: an ih_source_factory object as input
-
-  subroutine init(this, mesh, omega, epsr, epsi, mu, sigma, bc_fac, params, stat, errmsg)
+  subroutine init(this, mesh, omega, epsr, epsi, mu, sigma, params, stat, errmsg)
 
     use em_bc_factory_type
     use parameter_list_type
@@ -59,28 +56,35 @@ contains
     class(fdme_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
-    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    logical :: flag
+    type(em_bc_factory) :: bc_fac
     type(parameter_list), pointer :: plist
-    character(:), allocatable :: solver_type, choice
+    character(:), allocatable :: solver_type
 
-    !this%model => model
     this%mesh => mesh
 
+    call params%get('use-legacy-bc', flag, stat, errmsg, default=.false.)
+    if (stat /= 0) return
+    plist => params%sublist('bc')
+    call bc_fac%init(this%mesh, omega, plist, use_legacy_bc=flag)
+
+    plist => params%sublist('fd-solver')
+
     allocate(this%model)
-    call this%model%init(mesh, bc_fac, params, stat, errmsg)
+    call this%model%init(mesh, bc_fac, plist, stat, errmsg)
     if (stat /= 0) return
 
-    call this%model%setup(0.0_r8, epsr, epsi, mu, sigma, omega)
+    call this%model%setup(omega, epsr, epsi, mu, sigma)
 
-    call params%get('print-level', this%print_level, stat, errmsg, default=0)
+    call plist%get('print-level', this%print_level, stat, errmsg, default=0)
     if (stat /= 0) return
-    call params%set('print-level', max(0,this%print_level-1))
+    call plist%set('print-level', max(0,this%print_level-1))
 
-    call params%get('solver-type', solver_type, stat, errmsg)
+    call plist%get('solver-type', solver_type, stat, errmsg)
     if (stat /= 0) return
 
     select case (solver_type)
@@ -105,12 +109,12 @@ contains
     end select
 
     if (allocated(this%minres)) then
-      call this%minres%init(this%model, params, stat, errmsg)
+      call this%minres%init(this%model, plist, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
-      call this%mixed_minres%init(this%model, params, stat, errmsg)
+      call this%mixed_minres%init(this%model, plist, stat, errmsg)
 #ifdef USE_MUMPS
     else if (allocated(this%mumps)) then
-      call this%mumps%init(this%model, params, stat, errmsg)
+      call this%mumps%init(this%model, plist, stat, errmsg)
 #endif
     else
       INSIST(.false.)
@@ -172,7 +176,6 @@ contains
   end subroutine
 
   subroutine get_cell_efield(this, efield)
-    use mimetic_discretization, only: w1_vector_cell_avg
     class(fdme_solver), intent(in) :: this
     complex(r8), intent(out) :: efield(:,:)
     ASSERT(size(efield,1) == 3)
@@ -181,7 +184,6 @@ contains
   end subroutine
 
   subroutine get_cell_hfield(this, hfield)
-    use mimetic_discretization, only: w1_vector_cell_avg
     class(fdme_solver), intent(in) :: this
     complex(r8), intent(out) :: hfield(:,:)
     ASSERT(size(hfield,1) == 3)
