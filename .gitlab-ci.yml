@@ -17,7 +17,7 @@ build truchas binary:
     - bash ci/version.sh
     - bash ci/build.sh
     - cd build/inst/bin/
-    - export INTELDIR=/opt/intel/oneapi/2024.0
+    - export INTELDIR=/opt/intel/oneapi/2025.2
     - export LD_LIBRARY_PATH=$INTELDIR/lib
     - export PATH="${HOME}/ext/python-install/bin:$PATH"
     - ../../../ci/make_dist.py
@@ -40,7 +40,7 @@ test truchas intel (Release):
     - git config --global --add safe.directory '*'
     - bash ci/build.sh
     - cd build
-    - export INTELDIR=/opt/intel/oneapi/2024.0
+    - export INTELDIR=/opt/intel/oneapi/2025.2
     - export LD_LIBRARY_PATH=$INTELDIR/lib
     - ctest --repeat until-pass:2 --output-on-failure
   artifacts:
@@ -57,7 +57,7 @@ test truchas intel (Debug):
     - git config --global --add safe.directory '*'
     - bash ci/build.sh Debug
     - cd build
-    - export INTELDIR=/opt/intel/oneapi/2024.0
+    - export INTELDIR=/opt/intel/oneapi/2025.2
     - export LD_LIBRARY_PATH=$INTELDIR/lib
     - ctest --repeat until-pass:2 --output-on-failure
   artifacts:

@@ -9,7 +9,7 @@ else
 fi
 
 # Set Intel compilers env variables
-export INTELDIR=/opt/intel/oneapi/2024.0
+export INTELDIR=/opt/intel/oneapi/2025.2
 export PATH=$INTELDIR/bin/:$PATH
 export LD_LIBRARY_PATH=$INTELDIR/lib
 export FC=ifx
