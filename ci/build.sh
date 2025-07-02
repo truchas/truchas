@@ -29,7 +29,7 @@ mkdir build
 cd build
 cmake --version
 cmake \
-    -C ../config/linux-intel-llvm.cmake \
+    -C ../config/linux-intel.cmake \
     -DCMAKE_BUILD_TYPE=${build_type} \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
