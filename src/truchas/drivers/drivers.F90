@@ -122,7 +122,7 @@ call hijack_truchas ()
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
     use edit_module,              only: edit_short
-    use ih_driver,                only: ih_enabled, update_joule_heat
+    use em_heat_driver,           only: em_heat_enabled, update_em_heat
     use parallel_communication,   only: global_any
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
@@ -144,6 +144,7 @@ call hijack_truchas ()
     use truchas_timers
     use probes_driver, only: probes_write
     use physics_module, only: heat_transport
+    use zone_module, only: zone
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
@@ -159,9 +160,9 @@ call hijack_truchas ()
 
     call start_timer('Main Cycle')
 
-    ! Compute the initial value of Joule heat here before the main loop
+    ! Compute the initial value of EM heat source here before the main loop
     ! so that the result will be output along with the initial solutions.
-    if (ih_enabled()) call update_joule_heat(t)
+    if (em_heat_enabled()) call update_em_heat(t, zone%temp)
 
     if (cycle_max == 0) then
       call TLS_info('')
@@ -211,9 +212,9 @@ call hijack_truchas ()
 
         call cycle_output_pre
 
-        ! Evaluate the Joule heat source for the enthalpy calculation.
+        ! Evaluate the EM heat source for the enthalpy calculation.
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before induction heating:')
-        if (ih_enabled()) call update_joule_heat(t1)
+        if (em_heat_enabled()) call update_em_heat(t1, zone%temp)
 
         do num_try = 1, MAX_TRY
 
@@ -372,7 +373,7 @@ call hijack_truchas ()
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
-    use ih_driver, only: ih_driver_final
+    use em_heat_driver, only: em_heat_driver_final
     use truchas_logging_services
     use truchas_timers
 
@@ -389,7 +390,7 @@ call hijack_truchas ()
 
     ! free the diffusion solver resources
     call ds_delete ()
-    call ih_driver_final
+    call em_heat_driver_final
 
     ! end of run; print out diagnostics
     Write (message, 1) t, cycle_number

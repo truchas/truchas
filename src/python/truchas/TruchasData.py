@@ -655,8 +655,8 @@ class TruchasData:
                     fw.write_i4x0(ustruc_comp.shape[1])
                     fw.write_i8x2(ustruc_comp)
 
-        # JOULE HEAT SEGMENT
-        if "joule_heat" in features:
+        # ELECTROMAGNETIC HEAT SEGMENT
+        if "em_heat" in features:
             t = self.time(series_id)
 
             # scan through the EM simulations, in order, looking for
@@ -676,22 +676,27 @@ class TruchasData:
             em_sim = self._root["Simulations/" + name + "/Non-series Data"]
             print("Using EM simulation {:s} (t = {:f})".format(name, t_em))
 
-            md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
-            fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
+            em_kind = self._root["Simulations/" + name].attrs["EM-KIND"]
+            fw.write_i4x0(em_kind)
 
-            array = em_sim["SOURCE_DATA"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+            match em_kind:
+                case 1: # induction heating
+                    md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
+                    fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
 
-            array = em_sim["MU"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+                    array = em_sim["SOURCE_DATA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
-            array = em_sim["SIGMA"][:]
-            fw.write_i4x0(array.size)
-            fw.write_r8x1(array)
+                    array = em_sim["MU"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
-            array = em_sim["JOULE"][:][self._cellmap]
+                    array = em_sim["SIGMA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+            array = em_sim["HEAT"][:][self._cellmap]
             fw.write_i4x0(self.ncell)
             fw.write_r8x1(array)
 
@@ -711,6 +716,6 @@ class TruchasData:
             features.append("solid_mechanics")
 
         if "phi1" in fields: features.append("species")
-        if "Joule_P" in fields and not self.mapped: features.append("joule_heat")
+        if "Joule_P" in fields and not self.mapped: features.append("em_heat")
         if "CP-USTRUC-1-MAP" in fields and not self.mapped: features.append("microstructure")
         return features

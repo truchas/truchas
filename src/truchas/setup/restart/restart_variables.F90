@@ -32,7 +32,7 @@ module restart_variables
   logical, public :: ignore_t  = .false.
   logical, public :: ignore_dt = .false.
   logical, public :: ignore_legacy_solid_mechanics = .false.
-  logical, public :: ignore_joule_heat = .false.
+  logical, public :: ignore_em_heat = .false.
 
   !! Common data read by OPEN_RESTART_FILE.
   integer, public :: restart_cycle_number, restart_ncells, restart_nnodes
@@ -40,7 +40,7 @@ module restart_variables
 
   !! Optional restart file data segments; redefined by OPEN_RESTART_FILE.
   logical, public :: have_fluid_flow_data = .false.
-  logical, public :: have_joule_heat_data = .false.
+  logical, public :: have_em_heat_data = .false.
   logical, public :: have_solid_mechanics_data = .false.
   logical, public :: have_legacy_solid_mechanics_data = .false.
   logical, public :: have_species_data = .false.
@@ -55,7 +55,7 @@ contains
 
     integer, intent(in) :: lun
 
-    namelist /restart/ ignore_t, ignore_dt, ignore_legacy_solid_mechanics, ignore_joule_heat
+    namelist /restart/ ignore_t, ignore_dt, ignore_legacy_solid_mechanics, ignore_em_heat
 
     logical :: found
     integer :: ios
@@ -80,7 +80,7 @@ contains
     call broadcast (ignore_t)
     call broadcast (ignore_dt)
     call broadcast (ignore_legacy_solid_mechanics)
-    call broadcast (ignore_joule_heat)
+    call broadcast (ignore_em_heat)
 
   contains
 

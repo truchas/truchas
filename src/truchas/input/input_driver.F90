@@ -44,7 +44,7 @@ contains
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
     use solid_mechanics_driver,    only: read_solid_mechanics_namelists
-    use ih_driver,                 only: read_ih_namelists
+    use em_heat_driver,            only: read_em_heat_namelists
     use physical_constants,        only: read_physical_constants
     use function_namelist,         only: read_function_namelists
     use vfunction_namelist,        only: read_vfunction_namelists
@@ -127,7 +127,7 @@ contains
     if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
     ! read namelists for induction heating
-    if (electromagnetics) call read_ih_namelists(lun)
+    if (electromagnetics) call read_em_heat_namelists(lun)
 
     ! Read diffusion solver namelists
     if (ds_enabled) then

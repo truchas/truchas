@@ -1,5 +1,6 @@
 target_sources(truchas PRIVATE
-  ih_driver.F90
+  em_heat_driver.F90
+  induction_heat_solver_type.F90
   ih_legacy_bc.F90
   geometry_model_type.F90
   em_properties.F90

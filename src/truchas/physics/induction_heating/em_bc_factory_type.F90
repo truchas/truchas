@@ -60,7 +60,7 @@ contains
   subroutine init(this, mesh, omega, params, use_legacy_bc)
 
     class(em_bc_factory), intent(out) :: this
-    type(simpl_mesh), intent(inout), target :: mesh
+    type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: omega
     type(parameter_list), intent(inout), target :: params
     logical, intent(in), optional :: use_legacy_bc

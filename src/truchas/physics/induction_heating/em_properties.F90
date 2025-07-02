@@ -42,18 +42,18 @@ contains
   end subroutine
 
   !! Returns the real part of the electric permittivity at the current temperature.
-  subroutine get_permittivity(value)
-    use zone_module, only: zone
+  subroutine get_permittivity(temp, value)
+    real(r8), intent(in) :: temp(:)
     real(r8), intent(out) :: value(:)
-    call compute_cell_property('electric-susceptibility', zone%temp, value)
+    call compute_cell_property('electric-susceptibility', temp, value)
     value = (1.0_r8 + value)
   end subroutine
 
   !! Returns the imaginary part of the electric permittivity at the current temperature.
-  subroutine get_permittivity_im(value)
-    use zone_module, only: zone
+  subroutine get_permittivity_im(temp, value)
+    real(r8), intent(in) :: temp(:)
     real(r8), intent(out) :: value(:)
-    call compute_cell_property('electric-susceptibility-im', zone%temp, value)
+    call compute_cell_property('electric-susceptibility-im', temp, value)
     value = value
   end subroutine
 
@@ -78,10 +78,10 @@ contains
   end function
 
   !! Returns the magnetic permeability at the current temperature.
-  subroutine get_permeability(value)
-    use zone_module, only: zone
+  subroutine get_permeability(temp, value)
+    real(r8), intent(in) :: temp(:)
     real(r8) :: value(:)
-    call compute_cell_property('magnetic-susceptibility', zone%temp, value)
+    call compute_cell_property('magnetic-susceptibility', temp, value)
     value = (1.0_r8 + value)
   end subroutine
 
@@ -97,10 +97,10 @@ contains
   end function
 
   !! Returns the electrical conductivity at the current temperature.
-  subroutine get_conductivity(value)
-    use zone_module, only: zone
+  subroutine get_conductivity(temp, value)
+    real(r8), intent(in) :: temp(:)
     real(r8) :: value(:)
-    call compute_cell_property('electrical-conductivity', zone%temp, value)
+    call compute_cell_property('electrical-conductivity', temp, value)
   end subroutine
 
   !! Returns true if the electrical conductivity is constant with respect to
