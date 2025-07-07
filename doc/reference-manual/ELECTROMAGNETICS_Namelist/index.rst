@@ -56,7 +56,7 @@ Namelist Variables
 General Varibles
 +++++++++++++++++++++++++++++++++
 
-matl_change_threshold
+prop_change_threshold
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This controls, at each heat transfer time step, whether the Joule heat is
 recomputed in response to temperature-induced changes in the EM material

@@ -37,7 +37,8 @@ module ih_hfield_factory_type
 
   type, public :: ih_hfield_factory
     private
-    real(r8), allocatable :: times(:), freq(:), const_src(:), current(:,:)
+    real(r8), allocatable, public :: times(:)
+    real(r8), allocatable :: freq(:), const_src(:), current(:,:)
     type(induction_coil), allocatable :: coil(:)
     character(1) :: axis
   contains

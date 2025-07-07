@@ -42,6 +42,7 @@ subdivision of the hex cells.
 
 &NUMERICS
   dt_constant = 5.0
+  dt_init = 5.0
 /
 
 &ELECTROMAGNETICS

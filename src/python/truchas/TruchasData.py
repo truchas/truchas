@@ -681,10 +681,8 @@ class TruchasData:
 
             match em_kind:
                 case 1: # induction heating
-                    md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
-                    fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
 
-                    array = em_sim["SOURCE_DATA"][:]
+                    array = em_sim["Q"][:]
                     fw.write_i4x0(array.size)
                     fw.write_r8x1(array)
 
@@ -696,9 +694,34 @@ class TruchasData:
                     fw.write_i4x0(array.size)
                     fw.write_r8x1(array)
 
-            array = em_sim["HEAT"][:][self._cellmap]
-            fw.write_i4x0(self.ncell)
-            fw.write_r8x1(array)
+                    md5sum = self._root["Simulations/" + name].attrs["COIL_MD5SUM"]
+                    fw.write_str("{:32s}".format(bytearray(md5sum).decode('ascii')))
+
+                    array = em_sim["QDATA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                case 2: # microwave heating
+
+                    array = em_sim["Q"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["EPS"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["EPSI"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["MU"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
+
+                    array = em_sim["QDATA"][:]
+                    fw.write_i4x0(array.size)
+                    fw.write_r8x1(array)
 
         fw.close()
 

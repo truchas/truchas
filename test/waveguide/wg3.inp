@@ -1,0 +1,131 @@
+MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
+
+&MESH
+  x_axis%coarse_grid = -0.3, -0.1, 0.1, 0.3
+  y_axis%coarse_grid = -0.04318, 0.04318
+  z_axis%coarse_grid = -0.02159, 0.02159
+  x_axis%intervals = 5, 36, 5
+  y_axis%intervals = 13
+  z_axis%intervals = 4
+/
+
+&OUTPUTS
+  output_t = 0.0, 20.0
+  output_dt = 2
+/
+
+&NUMERICS
+  dt_init = 1e-6
+  dt_grow = 5
+  dt_min = 1e-8
+/
+
+&PHYSICS
+  materials = 'dielectric', 'VOID'
+  heat_transport = T
+  electromagnetics = T
+/
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'box'
+  length = 0.2, 1, 1
+  material_name = 'dielectric'
+  temperature = 0.0
+/
+
+&MATERIAL
+  name = 'dielectric'
+  density = 1e3
+  specific_heat = 2e3
+  conductivity = 1e2
+  electric_susceptibility = 3.0
+  electric_susceptibility_im = 0.2
+  magnetic_susceptibility = 0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'VOID'
+  temperature = 0.0
+/
+
+### HEAT CONDUCTION ############################################################
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-3
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-3
+  verbose_stepping = F
+/
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  flux = 0.0
+/
+
+### EM HEATING #################################################################
+
+&EM_MESH
+  x_axis%coarse_grid = -0.3, -0.1, 0.1, 0.3
+  y_axis%coarse_grid = -0.04318, 0.04318
+  z_axis%coarse_grid = -0.02159, 0.02159
+  x_axis%intervals = 15, 36, 15
+  y_axis%intervals = 13
+  z_axis%intervals = 4
+/
+
+&ELECTROMAGNETICS
+  use_mw_solver = T
+  wg_port_bc = 'left port', 'right port'
+  times = 4.0, 8.0, 12.0, 16.0
+  powers(:,1) = 1000.0, 0.0
+  powers(:,2) = 1000.0, 1000.0
+  powers(:,3) =  500.0,  500.0
+  powers(:,4) =    0.0,    0.0
+  powers(:,5) =  750.0,  750.0
+  frequency = 2.45d9
+  fd_solver_type = 'minres'
+  fd_precon_type = 'ssor'
+  ssor_num_cycles = 1
+  rel_tol = 1e-10
+  max_iter = 10000
+  print_level = 3
+  graphics_output = T
+  !prop_change_threshold = 0.6
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'waveguide walls'
+  type = 'pec'
+  face_set_ids = 3, 4, 5, 6
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'left port'
+  type = 'wg-port'
+  face_set_ids = 1
+  center = 0.0, 0.0, -0.3
+  x_axis = 0.0, 1.0, 0.0
+  y_axis = 0.0, 0.0, 1.0
+  x_width = 0.08636 ! 3.4"
+  y_width = 0.04318 ! 1.7"
+  !power set automatically by ELECTROMAGNETICS namelist
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'right port'
+  type = 'wg-port'
+  face_set_ids = 2
+  center = 0.0, 0.0, 0.3
+  x_axis = 0.0, 1.0, 0.0
+  y_axis = 0.0, 0.0, 0.1
+  x_width = 0.08636 ! 3.4"
+  y_width = 0.04318 ! 1.7"
+  !power set automatically by ELECTROMAGNETICS namelist
+/
+

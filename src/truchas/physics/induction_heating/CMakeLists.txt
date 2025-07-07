@@ -4,9 +4,6 @@ target_sources(truchas PRIVATE
   ih_legacy_bc.F90
   geometry_model_type.F90
   em_properties.F90
-  EM_graphics_output.F90
-  data_explorer.F90
-  field_probes.F90
   mimetic_discretization.F90
   em_mesh_namelist.F90
   electromagnetics_namelist.F90
@@ -31,6 +28,8 @@ target_sources(truchas PRIVATE
   fdme_mixed_zvector_type.F90
   fd_robin_bndry_func_type.F90
   index_corrector_type.F90
+  microwave_heat_solver_type.F90
+  wg_port_bc_plist_factory_type.F90
 )
 
 if(USE_MUMPS)

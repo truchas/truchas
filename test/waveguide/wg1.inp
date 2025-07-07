@@ -74,11 +74,15 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 /
 
 &ELECTROMAGNETICS
+  use_mw_solver = T
+  wg_port_bc = 'waveguide port'
+  powers = 100.0
+  frequency = 2.45d9
   use_fd_solver = T
   !use_mixed_form = T
   fd_solver_type = 'minres'
   !fd_solver_type = 'mumps'
-  fd_precon_type = 'ssor' ! minres(none, gs, boomer, ssor)
+  fd_precon_type = 'ssor' ! minres(none, boomer, ssor)
   ssor_num_cycles = 1
   boomer_num_cycles = 1
   !boomer_interp_type = 6
@@ -88,7 +92,7 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   max_iter = 100000
   print_level = 3
   graphics_output = T
-  matl_change_threshold = 0.6
+  prop_change_threshold = 0.6
 /
 
 Frequency is specified here :/

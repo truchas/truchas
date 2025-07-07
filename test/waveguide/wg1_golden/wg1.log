@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 24.07-72-gb1077d2f-dirty
-   build architecture:  arm64
-   build date/time:     2025-01-09 15:29:40
-   build flags:          -g -O2 -DNDEBUG
-   build host:          pn2405035.lanl.gov
-   run architecture:    Darwin pn2405035.lanl.gov 23.6.0 Darwin Kernel
-   run host:            pn2405035.lanl.gov
-   run date/time:       14 Jan 25 17:02:48
+   code:                Truchas 24.07-119-gb6fd8238-dirty
+   build architecture:  x86_64
+   build date/time:     2025-07-03 21:43:54
+   build flags:          -u -O3 -DNDEBUG -f2018 -w=uda
+   build host:          thelio2.indiana
+   run architecture:    Linux thelio2.indiana 6.11.9-100.fc39.x86_64 #1
+   run host:            thelio2.indiana
+   run date/time:       04 Jul 25 06:50:35
    processors:          1
 
 ================================================================================
@@ -48,7 +48,6 @@ Reading BODY namelists (second pass) ...
   read 2 BODY namelists
 Reading NUMERICS namelist ...
 Reading ELECTROMAGNETICS namelist ...
-Reading INDUCTION_SOURCE_FIELD namelist ...
 Reading ELECTROMAGNETIC_BC namelists ...
   read namelist "walls"
   read namelist "waveguide port"
@@ -116,7 +115,7 @@ Computing consistent initial state for HT/SD solver ...
 Computing consistent initial state derivative for HT/SD solver ...
   computing consistent face temperatures and radiosities ...
 
-Initializing induction heating solver ...
+Initializing electromagnetic heat solver ...
 creating kuprat mesh-to-mesh mapper ...
 
 Initializing solution probes ...
@@ -124,7 +123,6 @@ Initializing solution probes ...
 ================================================================================
 
 EXECUTION
-computing the Joule heat ...
   generating "nxE" electromagnetic boundary condition
     using ELECTROMAGNETICS_BC[walls]
   generating "pmc" electromagnetic boundary condition
@@ -138,8 +136,9 @@ computing the Joule heat ...
   generating "robin" electromagnetic boundary condition
     none specified.
   done
-EMFD solve complete. Residual, divE:     1.0201E-08    5.5515E-06
-|Q|_max= 1.4936E+00, Q_total= 2.7052E-04
+CS-MINRES converged: 2276 iterations
+FDME_SOLVE: |r|=8.06E-06, |b|=2.19E+04, |r|/|b|=3.68E-10, |Div E|=4.20E-02
+|Q|_max= 2.2701E+05, Q_total= 4.1115E+01
   writing EM restart data for EM001
 
 ================================================================================
@@ -150,30 +149,30 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  2.751E+00 --- Total
-    4.869E-03 --- Input
-    1.255E-01 --- Initialization
-      9.632E-03 --- mesh-MAIN
-        2.260E-04 --- ghost-cells
-          2.250E-04 --- cell-ghosts
-            1.320E-04 --- node-neighbors
-            1.500E-05 --- ghost-cells
-          0.000E+00 --- link-ghosts
-          1.000E-06 --- assemble-ghosts
-      1.767E-02 --- mesh-EM
-      3.943E-03 --- VOF Initialize
-      4.670E-04 --- HTSD function
-        4.630E-04 --- HT function
-    2.619E+00 --- Main Cycle
-      2.612E+00 --- joule heat
-        2.580E-04 --- mesh-to-mesh mapping
-        2.612E+00 --- simulation
-          1.627E-02 --- div
-          3.561E-01 --- setup
-          2.200E+00 --- solve
-            1.656E-02 --- precon
-          7.800E-05 --- mesh-to-mesh mapping
+  3.185E+00 --- Total
+    1.101E-03 --- Input
+    1.568E-01 --- Initialization
+      6.122E-03 --- mesh-MAIN
+        1.730E-04 --- ghost-cells
+          1.540E-04 --- cell-ghosts
+            1.120E-04 --- node-neighbors
+            2.600E-05 --- ghost-cells
+          1.000E-06 --- link-ghosts
+          1.500E-05 --- assemble-ghosts
+      1.796E-02 --- mesh-EM
+      3.529E-03 --- VOF Initialize
+      5.500E-04 --- HTSD function
+        5.430E-04 --- HT function
+    3.027E+00 --- Main Cycle
+      3.022E+00 --- EM heat
+        5.190E-04 --- mesh-to-mesh mapping
+        1.337E-02 --- div
+        2.346E-01 --- setup
+        1.820E-04 --- ssor-setup
+        2.060E+00 --- ssor-solve
       5.000E-06 --- Time Step
 
+                  Process virtual memory used: 2.62E+02 mB
+                                   words/cell: 23826
 
-truchas terminated normally on 14 Jan 25 at 17:02:51
+truchas terminated normally on 04 Jul 25 at 06:50:38

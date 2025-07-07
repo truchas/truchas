@@ -67,15 +67,16 @@ module simulation_event_queue
 
 contains
 
-  subroutine init_sim_event_queue(dt_min)
+  subroutine init_sim_event_queue(dt_min, dt_init)
 
     use toolhead_driver, only: add_toolhead_events
+    use em_heat_driver, only: em_heat_enabled, get_em_heat_event_times
     use diffusion_solver_data, only: ds_enabled
     use diffusion_solver, only: add_moving_vf_events
     use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
-    real(r8), intent(in) :: dt_min
+    real(r8), intent(in) :: dt_min, dt_init
 
     integer :: i, j, n, dt_policy
     real(r8) :: c, t
@@ -91,6 +92,14 @@ contains
     if (ds_enabled) call add_moving_vf_events(event_queue)
     call add_toolhead_events(event_queue)
     call add_output_events(event_queue) ! only for part_path right now
+
+    !! Events involving discontinuous EM heat source changes
+    if (em_heat_enabled()) then
+      call get_em_heat_event_times(array)
+      do j = 1, size(array)
+        call event_queue%add_event(array(j), phase_event(DT_POLICY_VALUE, dt_init))
+      end do
+    end if
 
     !! Add user-specified phase start times
     if (params%is_parameter('phase-start-times')) then

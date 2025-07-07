@@ -69,7 +69,7 @@ contains
     if (associated(this%model)) deallocate(this%model)
   end subroutine
 
-  subroutine init(this, mesh, freq, eps, mu, sigma, bc_fac, params, stat, errmsg)
+  subroutine init(this, mesh, freq, eps, mu, sigma, params, stat, errmsg)
 
     use em_bc_factory_type
     use parameter_list_type
@@ -78,15 +78,17 @@ contains
     class(tdme_joule_heat_sim), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
-    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    type(em_bc_factory) :: bc_fac
     class(bndry_func1), allocatable :: ebc, hbc
-    real(r8) :: dt, eps_scf, sigma_scf, c_ratio
+    real(r8) :: dt, eps_scf, sigma_scf, c_ratio, omega
     real(r8), allocatable :: model_eps(:), model_sigma(:)
     character(:), allocatable :: filename
+    type(parameter_list), pointer :: plist
+    logical :: flag
 
     ASSERT(size(eps) == mesh%ncell)
     ASSERT(size(mu)  == mesh%ncell)
@@ -108,6 +110,12 @@ contains
     !NB: scaling of nxE BC data moved inside the model.
     !FIXME: Get rid of the scaling entirely as it creates sticky problems
     !FIXME: with nxH BC handling.
+
+    omega = 8*atan(1.0_r8)*freq
+    call params%get('use-legacy-bc', flag, stat, errmsg, default=.false.)
+    if (stat /= 0) return
+    plist => params%sublist('bc')
+    call bc_fac%init(this%mesh, omega, plist, use_legacy_bc=flag)
 
     call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
     if (stat /= 0) return !TODO: augment errmsg?

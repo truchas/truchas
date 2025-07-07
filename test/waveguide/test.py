@@ -15,7 +15,9 @@ def E_analytic(x, z):
     f = 2.45e9 # [Hz] driving frequency
     d = 0.2 # [m] waveguide half-length
     a = 3.4 * 0.0254 # [m] WR340 waveguide dimension, long side
+    b = 1.7 * 0.0254 # waveguide dimension, short side
     epsr = 4 + 0.1j # relative permittivity
+    p = 100.0 # waveguide power
 
     # physical constants
     c = 299792458 # [m/s]
@@ -33,11 +35,12 @@ def E_analytic(x, z):
     r = r01 - t01 * t10 * np.exp(2j*h1*d) / (1 + r10 * np.exp(2j*h1*d)) # total reflection coefficient
     A = (1 + r) / (1 - np.exp(2j*h1*d))  # amplitude of mode propagating into +z-dir in dielectric
     B = (1 + r) / (1 - np.exp(-2j*h1*d)) # amplitude of mode propagating into -z-dir in dielectric
+    E0 = np.sqrt((4*p/(a*b))*(k0*mu0*c/h0)) # incoming amplitude
 
     print(f"The absolute value of the reflection coefficient is {np.abs(r)}.")
 
-    Eyl = np.cos(np.pi * x / a) * (np.exp(1j * h0 * z) + r * np.exp(-1j * h0 * z))
-    Eyr = np.cos(np.pi * x / a) * (A * np.exp(1j * h1 * z) + B * np.exp(-1j * h1 * z))
+    Eyl = E0 * np.cos(np.pi * x / a) * (np.exp(1j * h0 * z) + r * np.exp(-1j * h0 * z))
+    Eyr = E0 * np.cos(np.pi * x / a) * (A * np.exp(1j * h1 * z) + B * np.exp(-1j * h1 * z))
     Ey = step(-z) * Eyl + step(z) * Eyr
 
     return np.abs(Ey)
@@ -111,16 +114,18 @@ def run_test(tenv):
     output = output_base.em_data()
     golden = golden_base.em_data()
 
-    test = output.field("|E|")
-    gold = golden.field("|E|")
-    nfail += truchas.compare_max(test, gold, 5e-7, "E-golden", 0.0)
-
     x = output.centroids()
     Ey_gold = E_analytic(x[:,0], x[:,2])
+    Emax = np.max(np.abs(Ey_gold)) # reference for error measurement
+
+    test = output.field("|E|")
+    gold = golden.field("|E|")
+    nfail += truchas.compare_max(test, gold, 1e-9*Emax, "E-golden", 0.0)
+
     Ey_test = test[:,1]
-    nfail += truchas.compare_max(Ey_test, Ey_gold, 0.3, "Ey-analytic", 0.0)
-    nfail += truchas.compare_max(test[:,0], 0.0, 0.3, "Ex-analytic", 0.0)
-    nfail += truchas.compare_max(test[:,2], 0.0, 0.3, "Ez-analytic", 0.0)
+    nfail += truchas.compare_max(Ey_test, Ey_gold, 0.15*Emax, "Ey-analytic", 0.0)
+    nfail += truchas.compare_max(test[:,0], 0.0,  0.15*Emax, "Ex-analytic", 0.0)
+    nfail += truchas.compare_max(test[:,2], 0.0, 0.15*Emax, "Ez-analytic", 0.0)
 
     #plot_results(x, Ey_test)
 

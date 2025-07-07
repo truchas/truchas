@@ -72,7 +72,7 @@
   fd_precon_type = 'ssor'
   abs_tol = 0
   rel_tol = 1e-12
-  matl_change_threshold = 0.6
+  prop_change_threshold = 0.6
   steps_per_cycle = 36
   steady_state_tol = 0.01
   max_source_cycles = 5

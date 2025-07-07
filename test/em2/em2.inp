@@ -42,7 +42,7 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 /
 
 &ELECTROMAGNETICS
-  matl_change_threshold = 0.6
+  prop_change_threshold = 0.6
   steps_per_cycle = 12
   steady_state_tol = 0.1
   max_source_cycles = 4

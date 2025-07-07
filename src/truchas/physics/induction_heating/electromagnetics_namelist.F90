@@ -21,17 +21,17 @@ contains
 
     integer, parameter :: string_len = 256
 
-    integer :: n, ios
+    integer :: n, ios, n1, n2
     logical :: found
     character(128) :: iom
     type(parameter_list), pointer :: plist, sublist
 
     !! EM heating model namelist variables
-    real(r8) :: matl_change_threshold
+    real(r8) :: prop_change_threshold
     character(32) :: data_mapper_kind
-    logical :: use_fd_solver, graphics_output, use_mixed_form
-    namelist /electromagnetics/ matl_change_threshold, data_mapper_kind, use_fd_solver, &
-        use_mixed_form, graphics_output
+    logical :: use_fd_solver, graphics_output, use_mixed_form, use_mw_solver
+    namelist /electromagnetics/ prop_change_threshold, data_mapper_kind, use_fd_solver, &
+        use_mixed_form, graphics_output, use_mw_solver
 
     !! Time-domain method namelist variables
     integer :: steps_per_cycle, max_source_cycles
@@ -76,6 +76,10 @@ contains
     character(32) :: em_domain_type
     namelist /electromagnetics/ use_legacy_bc, symmetry_axis, em_domain_type
 
+    real(r8) :: times(32), powers(8,33), frequency
+    character(32) :: wg_port_bc(8)
+    namelist /electromagnetics/ wg_port_bc, times, powers, frequency
+
     call TLS_info('Reading ELECTROMAGNETICS namelist ...')
 
     if (is_IOP) rewind(lun)
@@ -86,11 +90,12 @@ contains
     call broadcast(found)
     if (.not.found) call TLS_fatal('ELECTROMAGNETICS namelist not found')
 
-    matl_change_threshold = NULL_R
+    prop_change_threshold = NULL_R
     data_mapper_kind = NULL_C
     use_fd_solver = .false.
     use_mixed_form = .false.
     graphics_output = .false.
+    use_mw_solver = .false.
 
     steps_per_cycle = NULL_I
     steady_state_tol = NULL_R
@@ -127,15 +132,21 @@ contains
     symmetry_axis  = NULL_C
     em_domain_type = NULL_C
 
+    wg_port_bc = NULL_C
+    times = NULL_R
+    powers = NULL_R
+    frequency = NULL_R
+
     if (is_IOP) read(lun,nml=electromagnetics,iostat=ios,iomsg=iom)
     call broadcast(ios)
     if (ios /= 0) call TLS_fatal('error reading ELECTROMAGNETICS namelist: ' // trim(iom))
 
-    call broadcast(matl_change_threshold)
+    call broadcast(prop_change_threshold)
     call broadcast(data_mapper_kind)
     call broadcast(use_fd_solver)
     call broadcast(use_mixed_form)
     call broadcast(graphics_output)
+    call broadcast(use_mw_solver)
 
     call broadcast(steps_per_cycle)
     call broadcast(steady_state_tol)
@@ -172,11 +183,16 @@ contains
     call broadcast(symmetry_axis)
     call broadcast(em_domain_type)
 
+    call broadcast(wg_port_bc)
+    call broadcast(times)
+    call broadcast(powers)
+    call broadcast(frequency)
+
     !! Joule heat driver parameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    if (matl_change_threshold /= NULL_R) then
-      if (matl_change_threshold <= 0.0_r8) call TLS_fatal('MATL_CHANGE_THRESHOLD must be > 0.0')
-      call params%set('matl-change-threshold', matl_change_threshold)
+    if (prop_change_threshold /= NULL_R) then
+      if (prop_change_threshold <= 0.0_r8) call TLS_fatal('PROP_CHANGE_THRESHOLD must be > 0.0')
+      call params%set('prop-change-threshold', prop_change_threshold)
     end if
 
     if (data_mapper_kind /= NULL_C) then
@@ -193,9 +209,27 @@ contains
     end if
 
     call params%set('use-fd-solver', use_fd_solver)
+    call params%set('use-mw-solver', use_mw_solver)
     call params%set('graphics-output', graphics_output)
 
-    if (use_fd_solver) then ! Frequency-domain solver parameters
+    if (use_fd_solver .or. use_mw_solver) then ! Frequency-domain solver parameters
+
+      if (use_mw_solver) then
+        n1 = findloc(wg_port_bc, NULL_C, dim=1)
+        n1 = modulo(n1-1, 1+size(wg_port_bc))
+        if (n1 == 0) call TLS_fatal('WG_PORT_BC not specified')
+        call params%set('wg-port-bc', wg_port_bc(:n1))
+        
+        n2 = findloc(times, NULL_R, dim=1)
+        n2 = modulo(n2-1, 1+size(times))
+        if (n2 > 0) call params%set('times', times(:n2))
+
+        if (any(powers(:n1,:1+n2) == NULL_R)) call TLS_fatal('POWERS incompletely specified')
+        call params%set('powers', powers(:n1,:1+n2))
+        
+        if (frequency == NULL_R) call TLS_fatal('FREQUENCY not specified')
+        call params%set('frequency', frequency)
+      end if
 
       plist => params%sublist('fd-solver')
       call plist%set('use-mixed-form', use_mixed_form)
