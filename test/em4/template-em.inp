@@ -115,6 +115,6 @@
   specific_heat = 100.0
   conductivity = 1.0
   electrical_conductivity = {sigma}
-  electric_susceptibility = {electric_susceptibility}
-  magnetic_susceptibility = {magnetic_susceptibility}
+  relative_permittivity = {relative_permittivity}
+  relative_permeability = {relative_permeability}
 /

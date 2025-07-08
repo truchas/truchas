@@ -123,8 +123,5 @@ y-normal symmetry planes: nxE=0
   density = 100.0
   specific_heat = 100.0
   conductivity = 1.0
-  !electric_susceptibility = 3.0
-  !electric_susceptibility_im = 0.1
-  !magnetic_susceptibility = 0
 /
 

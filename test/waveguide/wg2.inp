@@ -107,8 +107,7 @@ Frequency is specified here :/
   density = 100.0
   specific_heat = 100.0
   conductivity = 1.0
-  electric_susceptibility = 3.0
-  electric_susceptibility_im = 0.1
-  magnetic_susceptibility = 0
+  relative_permittivity = 4.0
+  dielectric_loss_tangent = 0.025
 /
 

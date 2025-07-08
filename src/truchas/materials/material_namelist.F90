@@ -55,24 +55,26 @@ contains
     !! Additional property variables (almost the same as for PHASE)
     logical :: is_fluid
     real(r8) :: density, specific_heat, ref_temp, ref_enthalpy, conductivity, viscosity, &
-        electrical_conductivity, electric_susceptibility, electric_susceptibility_im, &
-        magnetic_susceptibility, diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
+        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: specific_enthalpy_func, specific_heat_func, conductivity_func, &
-        density_delta_func, viscosity_func, electrical_conductivity_func, &
-        electric_susceptibility_func, electric_susceptibility_im_func, &
-        magnetic_susceptibility_func, diffusivity_func(MAX_SPECIES), &
+        density_delta_func, viscosity_func, diffusivity_func(MAX_SPECIES), &
         soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /material/ is_fluid, density, ref_temp, ref_enthalpy, specific_heat, &
         specific_heat_func, specific_enthalpy_func, conductivity, conductivity_func, &
         density_delta_func, viscosity, viscosity_func, &
-        electrical_conductivity, electrical_conductivity_func, &
-        electric_susceptibility, electric_susceptibility_func, &
-        electric_susceptibility_im, electric_susceptibility_im_func, &
-        magnetic_susceptibility, magnetic_susceptibility_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
         tm_lame1, tm_lame1_func, tm_lame2, tm_lame2_func
+
+    !! EM properties
+    real(r8) :: relative_permittivity, dielectric_loss_tangent, relative_permeability, &
+        electrical_conductivity
+    character(32) :: relative_permittivity_func, dielectric_loss_tangent_func, &
+        relative_permeability_func, electrical_conductivity_func
+    namelist /material/ relative_permittivity, relative_permittivity_func, &
+        dielectric_loss_tangent, dielectric_loss_tangent_func, relative_permeability, &
+        relative_permeability_func, electrical_conductivity, electrical_conductivity_func
 
     logical :: found
     integer :: i, n, ios, num_phases
@@ -114,12 +116,12 @@ contains
       viscosity_func = NULL_C
       electrical_conductivity = NULL_R
       electrical_conductivity_func = NULL_C
-      electric_susceptibility = NULL_R
-      electric_susceptibility_im = NULL_R
-      electric_susceptibility_func = NULL_C
-      electric_susceptibility_im_func = NULL_C
-      magnetic_susceptibility = NULL_R
-      magnetic_susceptibility_func = NULL_C
+      relative_permittivity = NULL_R
+      dielectric_loss_tangent = NULL_R
+      relative_permittivity_func = NULL_C
+      dielectric_loss_tangent_func = NULL_C
+      relative_permeability = NULL_R
+      relative_permeability_func = NULL_C
       diffusivity = NULL_R
       diffusivity_func = NULL_C
       soret_coef = NULL_R
@@ -155,12 +157,12 @@ contains
       call broadcast(viscosity_func)
       call broadcast(electrical_conductivity)
       call broadcast(electrical_conductivity_func)
-      call broadcast(electric_susceptibility)
-      call broadcast(electric_susceptibility_im)
-      call broadcast(electric_susceptibility_func)
-      call broadcast(electric_susceptibility_im_func)
-      call broadcast(magnetic_susceptibility)
-      call broadcast(magnetic_susceptibility_func)
+      call broadcast(relative_permittivity)
+      call broadcast(dielectric_loss_tangent)
+      call broadcast(relative_permittivity_func)
+      call broadcast(dielectric_loss_tangent_func)
+      call broadcast(relative_permeability)
+      call broadcast(relative_permeability_func)
       call broadcast(diffusivity)
       call broadcast(diffusivity_func)
       call broadcast(soret_coef)
@@ -240,9 +242,9 @@ contains
 
       !! Process electromagnetic properties
       call process2(plist, electrical_conductivity, electrical_conductivity_func, 'ELECTRICAL_CONDUCTIVITY', 'electrical-conductivity', label)
-      call process2(plist, electric_susceptibility, electric_susceptibility_func, 'ELECTRIC_SUSCEPTIBILITY', 'electric-susceptibility', label)
-      call process2(plist, electric_susceptibility_im, electric_susceptibility_im_func, 'ELECTRIC_SUSCEPTIBILITY_IM', 'electric-susceptibility-im', label)
-      call process2(plist, magnetic_susceptibility, magnetic_susceptibility_func, 'MAGNETIC_SUSCEPTIBILITY', 'magnetic-susceptibility', label)
+      call process2(plist, relative_permittivity, relative_permittivity_func, 'RELATIVE_PERMITTIVITY', 'relative-permittivity', label)
+      call process2(plist, dielectric_loss_tangent, dielectric_loss_tangent_func, 'DIELECTRIC_LOSS_TANGENT', 'dielectric-loss-tangent', label)
+      call process2(plist, relative_permeability, relative_permeability_func, 'RELATIVE_PERMEABILITY', 'relative-permeability', label)
 
       !! Process solid mechanics variables
       call process2(plist, tm_ref_temp, NULL_C, 'TM_REF_TEMP', 'tm-ref-temp', label)
@@ -273,24 +275,26 @@ contains
     !! Namelist variables
     logical :: is_fluid
     real(r8) :: specific_heat, conductivity, viscosity, &
-        electrical_conductivity, electric_susceptibility, electric_susceptibility_im, &
-        magnetic_susceptibility, diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
+        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: name, specific_heat_func, specific_enthalpy_func, conductivity_func, &
-        density_delta_func, viscosity_func, electrical_conductivity_func, &
-        electric_susceptibility_func, electric_susceptibility_im_func, &
-        magnetic_susceptibility_func, diffusivity_func(MAX_SPECIES), &
+        density_delta_func, viscosity_func, diffusivity_func(MAX_SPECIES), &
         soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /phase/ name, is_fluid, &
         specific_heat, specific_heat_func, specific_enthalpy_func, conductivity, &
         conductivity_func, density_delta_func, viscosity, viscosity_func, &
-        electrical_conductivity, electrical_conductivity_func, &
-        electric_susceptibility, electric_susceptibility_func, &
-        electric_susceptibility_im, electric_susceptibility_im_func, &
-        magnetic_susceptibility, magnetic_susceptibility_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
         tm_lame1, tm_lame1_func, tm_lame2, tm_lame2_func
+
+    !! EM properties
+    real(r8) :: relative_permittivity, dielectric_loss_tangent, relative_permeability, &
+        electrical_conductivity
+    character(32) :: relative_permittivity_func, dielectric_loss_tangent_func, &
+        relative_permeability_func, electrical_conductivity_func
+    namelist /phase/ relative_permittivity, relative_permittivity_func, &
+        dielectric_loss_tangent, dielectric_loss_tangent_func, relative_permeability, &
+        relative_permeability_func, electrical_conductivity, electrical_conductivity_func
 
     integer :: n, i, ios
     logical :: found
@@ -327,12 +331,12 @@ contains
       viscosity_func = NULL_C
       electrical_conductivity = NULL_R
       electrical_conductivity_func = NULL_C
-      electric_susceptibility = NULL_R
-      electric_susceptibility_im = NULL_R
-      electric_susceptibility_func = NULL_C
-      electric_susceptibility_im_func = NULL_C
-      magnetic_susceptibility = NULL_R
-      magnetic_susceptibility_func = NULL_C
+      relative_permittivity = NULL_R
+      dielectric_loss_tangent = NULL_R
+      relative_permittivity_func = NULL_C
+      dielectric_loss_tangent_func = NULL_C
+      relative_permeability = NULL_R
+      relative_permeability_func = NULL_C
       diffusivity = NULL_R
       diffusivity_func = NULL_C
       soret_coef = NULL_R
@@ -362,12 +366,12 @@ contains
       call broadcast(viscosity_func)
       call broadcast(electrical_conductivity)
       call broadcast(electrical_conductivity_func)
-      call broadcast(electric_susceptibility)
-      call broadcast(electric_susceptibility_im)
-      call broadcast(electric_susceptibility_func)
-      call broadcast(electric_susceptibility_im_func)
-      call broadcast(magnetic_susceptibility)
-      call broadcast(magnetic_susceptibility_func)
+      call broadcast(relative_permittivity)
+      call broadcast(dielectric_loss_tangent)
+      call broadcast(relative_permittivity_func)
+      call broadcast(dielectric_loss_tangent_func)
+      call broadcast(relative_permeability)
+      call broadcast(relative_permeability_func)
       call broadcast(diffusivity)
       call broadcast(diffusivity_func)
       call broadcast(soret_coef)
@@ -414,8 +418,9 @@ contains
 
       !! Process electromagnetic properties
       call process2(plist, electrical_conductivity, electrical_conductivity_func, 'ELECTRICAL_CONDUCTIVITY', 'electrical-conductivity', label)
-      call process2(plist, electric_susceptibility, electric_susceptibility_func, 'ELECTRIC_SUSCEPTIBILITY', 'electric-susceptibility', label)
-      call process2(plist, magnetic_susceptibility, magnetic_susceptibility_func, 'MAGNETIC_SUSCEPTIBILITY', 'magnetic-susceptibility', label)
+      call process2(plist, relative_permittivity, relative_permittivity_func, 'RELATIVE_PERMITTIVITY', 'relative-permittivity', label)
+      call process2(plist, dielectric_loss_tangent, dielectric_loss_tangent_func, 'DIELECTRIC_LOSS_TANGENT', 'dielectric-loss-tangent', label)
+      call process2(plist, relative_permeability, relative_permeability_func, 'RELATIVE_PERMEABILITY', 'relative-permeability', label)
 
       !! Process solid mechanics variables
       call process2(plist, tm_ref_temp, NULL_C, 'TM_REF_TEMP', 'tm-ref-temp', label)

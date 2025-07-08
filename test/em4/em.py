@@ -45,19 +45,19 @@ def get_Emag(tdata):
 
 
 def heat_analytic(H_bc, source_frequency, sigma, R,
-                  electric_susceptibility, magnetic_susceptibility):
+                  relative_permittivity, relative_permeability):
     r = np.linspace(0, R, 100)
     Q, Emag = analytic_soln(r, H_bc, source_frequency, sigma, R,
-                            electric_susceptibility, magnetic_susceptibility,
+                            relative_permittivity, relative_permeability,
                             verbose=True)
     return r, Q, Emag
 
 
 def analytic_soln(r, H_bc, source_frequency, sigma, R,
-                  electric_susceptibility, magnetic_susceptibility,
+                  relative_permittivity, relative_permeability,
                   verbose=False):
-    mu = sp.constants.mu_0 * (1 + magnetic_susceptibility)
-    epsilon = sp.constants.epsilon_0 * (1 + electric_susceptibility)
+    mu = sp.constants.mu_0 * relative_permeability
+    epsilon = sp.constants.epsilon_0 * relative_permittivity
     omega = 2 * np.pi * source_frequency
     B_bc = mu * H_bc
 
@@ -110,12 +110,12 @@ def plot_results(r, Q, Emag, tdata, title):
 
 
 def test(tenv, H_bc, source_frequency, sigma, R,
-         electric_susceptibility, magnetic_susceptibility, tol):
+         relative_permittivity, relative_permeability, tol):
     input_parameters = {"H_bc": H_bc,
                         "source_frequency": source_frequency,
                         "sigma": sigma,
-                        "electric_susceptibility": electric_susceptibility,
-                        "magnetic_susceptibility": magnetic_susceptibility,
+                        "relative_permittivity": relative_permittivity,
+                        "relative_permeability": relative_permeability,
                         }
     tdata = [run_truchas(input_parameters, fdme=True),
              run_truchas(input_parameters, fdme=False),
@@ -132,9 +132,9 @@ def test(tenv, H_bc, source_frequency, sigma, R,
     r_fd = np.extract(r_fd > cutoff, r_fd)
 
     Qex, _ = analytic_soln(r_fd, H_bc, source_frequency, sigma, R,
-                           electric_susceptibility, magnetic_susceptibility)
+                           relative_permittivity, relative_permeability)
     _, Emagex = analytic_soln(r_fd_em, H_bc, source_frequency, sigma, R,
-                              electric_susceptibility, magnetic_susceptibility)
+                              relative_permittivity, relative_permeability)
 
     nfail = 0
     nfail += truchas.compare_max_rel(Q_fd, Qex, tol, "Q-FD", 0.0)
@@ -147,8 +147,8 @@ def test(tenv, H_bc, source_frequency, sigma, R,
 
 def run_test(tenv):
     R = 2e-2 # currently hard-coded via cubit
-    electric_susceptibility = 0
-    magnetic_susceptibility = 0
+    relative_permittivity = 1
+    relative_permeability = 1
     H_bc = 1
     frequencies = [500.0, 2.45e9]
     tols = [5e-2, 1.0]
@@ -157,7 +157,7 @@ def run_test(tenv):
     nfail = 0
     for f, tol in zip(frequencies, tols):
         nfail += test(tenv, H_bc, f, sigma, R,
-                      electric_susceptibility, magnetic_susceptibility, tol)
+                      relative_permittivity, relative_permeability, tol)
 
     return nfail
 
@@ -180,21 +180,21 @@ def plot_comparison(tenv):
     #sigma = 0
 
     R = 2e-2 # currently hard-coded via cubit
-    electric_susceptibility = 0
-    magnetic_susceptibility = 0
+    relative_permittivity = 1
+    relative_permeability = 1
 
     input_parameters = {"H_bc": H_bc,
                         "source_frequency": source_frequency,
                         "sigma": sigma,
-                        "electric_susceptibility": electric_susceptibility,
-                        "magnetic_susceptibility": magnetic_susceptibility,
+                        "relative_permittivity": relative_permittivity,
+                        "relative_permeability": relative_permeability,
                         }
     tdata = [run_truchas(input_parameters, fdme=True),
              run_truchas(input_parameters, fdme=False),
              ]
 
     r, Q, Emag = heat_analytic(H_bc, source_frequency, sigma, R,
-                               electric_susceptibility, magnetic_susceptibility)
+                               relative_permittivity, relative_permeability)
     plot_results(r, Q, Emag, tdata,
                  f"uniform_source = {H_bc:.1e}, source_frequency = {source_frequency:.1e}, sigma = {sigma:.1e}")
 

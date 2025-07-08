@@ -36,55 +36,55 @@ contains
   subroutine define_default_em_properties
     use material_utilities, only: define_property_default
     call define_property_default(matl_model, 'electrical-conductivity', 0.0_r8)
-    call define_property_default(matl_model, 'electric-susceptibility', 0.0_r8)
-    call define_property_default(matl_model, 'electric-susceptibility-im', 0.0_r8)
-    call define_property_default(matl_model, 'magnetic-susceptibility', 0.0_r8)
+    call define_property_default(matl_model, 'relative-permittivity',   1.0_r8)
+    call define_property_default(matl_model, 'dielectric-loss-tangent', 0.0_r8)
+    call define_property_default(matl_model, 'relative-permeability',   1.0_r8)
   end subroutine
 
-  !! Returns the real part of the electric permittivity at the current temperature.
+  !! Returns the real part of the relative permittivity at the current temperature.
   subroutine get_permittivity(temp, value)
     real(r8), intent(in) :: temp(:)
     real(r8), intent(out) :: value(:)
-    call compute_cell_property('electric-susceptibility', temp, value)
-    value = (1.0_r8 + value)
+    call compute_cell_property('relative-permittivity', temp, value, void_value=1.0_r8)
   end subroutine
 
-  !! Returns the imaginary part of the electric permittivity at the current temperature.
-  subroutine get_permittivity_im(temp, value)
-    real(r8), intent(in) :: temp(:)
-    real(r8), intent(out) :: value(:)
-    call compute_cell_property('electric-susceptibility-im', temp, value)
-    value = value
-  end subroutine
-
-  !! Returns true if the real part of the electric permittivity is constant
+  !! Returns true if the real part of the relative permittivity is constant
   !! with respect to time/temperature; otherwise it returns false.
   logical function permittivity_is_const()
     use material_utilities, only: constant_property_check
     integer :: stat
     character(:), allocatable :: errmsg
-    call constant_property_check(matl_model, 'electric-susceptibility', stat, errmsg)
+    call constant_property_check(matl_model, 'relative-permittivity', stat, errmsg)
     permittivity_is_const = (stat == 0)
   end function
+
+  !! Returns the imaginary part of the relative permittivity at the current temperature.
+  subroutine get_permittivity_im(temp, value)
+    real(r8), intent(in) :: temp(:)
+    real(r8), intent(out) :: value(:)
+    real(r8) :: value2(size(value))
+    call compute_cell_property('relative-permittivity', temp, value, void_value=1.0_r8)
+    call compute_cell_property('dielectric-loss-tangent', temp, value2)
+    value = value * value2
+  end subroutine
 
   !! Returns true if the imaginary part of the electric permittivity is
   !! constant with respect to time/temperature; otherwise it returns false.
   logical function permittivity_im_is_const()
     use material_utilities, only: constant_property_check
-    integer :: stat
+    integer :: stat, stat2
     character(:), allocatable :: errmsg
-    call constant_property_check(matl_model, 'electric-susceptibility-im', stat, errmsg)
-    permittivity_im_is_const = (stat == 0)
+    call constant_property_check(matl_model, 'relative-permittivity', stat, errmsg)
+    call constant_property_check(matl_model, 'dielectric-loss-tangent', stat2, errmsg)
+    permittivity_im_is_const = (stat == 0) .and. (stat2 == 0)
   end function
 
   !! Returns the magnetic permeability at the current temperature.
   subroutine get_permeability(temp, value)
     real(r8), intent(in) :: temp(:)
     real(r8) :: value(:)
-    call compute_cell_property('magnetic-susceptibility', temp, value)
-    value = (1.0_r8 + value)
+    call compute_cell_property('relative-permeability', temp, value, void_value=1.0_r8)
   end subroutine
-
 
   !! Returns true of the magnetic permeability is constant with respect to
   !! time/temperature; otherwise it returns false.
@@ -92,7 +92,7 @@ contains
     use material_utilities, only: constant_property_check
     integer :: stat
     character(:), allocatable :: errmsg
-    call constant_property_check(matl_model, 'magnetic-susceptibility', stat, errmsg)
+    call constant_property_check(matl_model, 'relative-permeability', stat, errmsg)
     permeability_is_const = (stat == 0)
   end function
 
@@ -115,14 +115,11 @@ contains
 
   !! This computes the specified property for the cells on the heat transfer
   !! mesh. The routine handles the material averaging of the property over a
-  !! cell using the volume fraction data.
-  !!
-  !! NB: VOID material is ignored in this computation, which is suitable for
-  !! the electrical conductivity and electric and magnetic susceptibilities
-  !! which are all zero for void/vacuum. This would not be the case for the
-  !! electric permittivity, for example.
+  !! cell using the volume fraction data. The optional argument VOID_VALUE
+  !! specifies the value of the property to use for VOID material. If not
+  !! specified, 0 is used.
 
-  subroutine compute_cell_property(prop, temp, value)
+  subroutine compute_cell_property(prop, temp, value, void_value)
 
     use scalar_func_class
     use scalar_func_tools, only: is_const
@@ -131,6 +128,7 @@ contains
     character(*), intent(in) :: prop
     real(r8), intent(in) :: temp(:)
     real(r8), intent(out) :: value(:)
+    real(r8), intent(in), optional :: void_value
 
     integer :: m, j
     real(r8) :: vofm (size(temp)), state(1), mval
@@ -156,6 +154,14 @@ contains
         end do
       end if
     end do
+    
+    if (present(void_value) .and. matl_model%have_void) then
+      if (void_value /= 0) then
+        m = matl_model%void_index
+        call gather_vof(m, vofm)
+        value = value + void_value*vofm
+      end if
+    end if
 
   end subroutine compute_cell_property
 

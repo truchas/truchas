@@ -106,7 +106,7 @@ Outer layer of the conducting cylinder
   specific_heat = 150.0
   conductivity = 0.1
   electrical_conductivity_func = 'sigma'
-  magnetic_susceptibility_func = 'mag-susc'
+  relative_permeability_func = 'rel-perm'
 /
 
 &FUNCTION
@@ -118,9 +118,9 @@ Outer layer of the conducting cylinder
 /
 
 &FUNCTION
-  name = 'mag-susc'
+  name = 'rel-perm'
   type = 'polynomial'
-  poly_coefficients   = 1.0, -4.0e-2, 6.0e-4, -4.0e-6, 1.0e-8
+  poly_coefficients   = 2.0, -4.0e-2, 6.0e-4, -4.0e-6, 1.0e-8
   poly_exponents(1,:) =   0,       1,      2,       3,      4
   poly_refvars = 300.0
 /

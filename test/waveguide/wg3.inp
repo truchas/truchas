@@ -40,9 +40,8 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
   density = 1e3
   specific_heat = 2e3
   conductivity = 1e2
-  electric_susceptibility = 3.0
-  electric_susceptibility_im = 0.2
-  magnetic_susceptibility = 0
+  relative_permittivity = 4.0
+  dielectric_loss_tangent = 0.05
 /
 
 &BODY
