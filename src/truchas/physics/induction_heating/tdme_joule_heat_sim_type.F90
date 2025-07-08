@@ -51,9 +51,8 @@ module tdme_joule_heat_sim_type
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(tdme_model), pointer :: model => null()  ! owned
     type(tdme_solver) :: solver
-    real(r8) :: escf, bscf, qscf
+    real(r8) :: freq, ss_tol
     integer :: steps_per_cycle, max_cycles
-    real(r8) :: ss_tol
     logical :: graphics_output
     type(vtkhdf_file) :: viz_file
   contains
@@ -84,7 +83,7 @@ contains
 
     type(em_bc_factory) :: bc_fac
     class(bndry_func1), allocatable :: ebc, hbc
-    real(r8) :: dt, eps_scf, sigma_scf, c_ratio, omega
+    real(r8) :: eps0, mu0, dt, c_ratio, omega
     real(r8), allocatable :: model_eps(:), model_sigma(:)
     character(:), allocatable :: filename
     type(parameter_list), pointer :: plist
@@ -92,25 +91,17 @@ contains
     ASSERT(size(eps) == mesh%ncell)
     ASSERT(size(mu)  == mesh%ncell)
     ASSERT(size(sigma) == mesh%ncell)
-    !TODO? use property mesh function for eps, mu, sigma, like HT instead of bare arrays?
 
     this%mesh => mesh
+    this%freq = freq
 
-    !! Scale time for a unit forcing period: t' = freq * t. This is handled
-    !! as a change of time units which is reflected in a change of units of
-    !! the equation coefficients and variables. Note that mu has no time unit.
-    eps_scf = freq**2
-    sigma_scf = freq
-    ! Physical var = scale factor * computational var
-    this%escf = freq**2
-    this%bscf = freq
-    this%qscf = freq**3
+    call params%get('vacuum-permittivity', eps0, stat, errmsg, default=8.854188e-12_r8)
+    if (stat /= 0) return
 
-    !NB: scaling of nxE BC data moved inside the model.
-    !FIXME: Get rid of the scaling entirely as it creates sticky problems
-    !FIXME: with nxH BC handling.
+    call params%get('vacuum-permeability', mu0, stat, errmsg, default=1.256637e-6_r8)
+    if (stat /= 0) return
 
-    omega = 8*atan(1.0_r8)*freq
+    omega = 8*atan(1.0_r8)*this%freq
     plist => params%sublist('bc')
     call bc_fac%init(this%mesh, omega, plist)
 
@@ -161,7 +152,7 @@ contains
       call export_scalar_cell_field(this, sigma, 'conductivity')
     end if
 
-    model_eps = eps_scf*eps
+    model_eps = eps0*eps
     if (params%is_parameter('c-ratio')) then ! apply a numerical regularization in void cells
       call params%get('c-ratio', c_ratio, stat, errmsg)
       if (stat /= 0) return
@@ -173,12 +164,10 @@ contains
       where (sigma == 0.0_r8) model_eps = model_eps / c_ratio**2
     end if
 
-    model_sigma = sigma_scf*sigma
-
     !! Create and initialize the time-discretized model and solver.
-    dt = 1.0_r8 / this%steps_per_cycle
+    dt = 1.0_r8 / (this%freq*this%steps_per_cycle)
     allocate(this%model)
-    call this%model%init(this%mesh, model_eps, mu, model_sigma, dt, ebc, hbc, this%bscf)
+    call this%model%init(this%mesh, model_eps, mu0*mu, sigma, dt, ebc, hbc)
     call this%solver%init(this%mesh, this%model, params, stat, errmsg)
     if (stat /= 0) return
 
@@ -210,11 +199,9 @@ contains
     efield = 0.0_r8
     bfield = 0.0_r8
     call this%solver%set_initial_state(t, efield, bfield)
-    !NB: scaling client-provided fields would normally be necessary:
-    !call this%solver%set_initial_state(t, efield/this%escf, bfield/this%bscf)
     q = 0.0_r8  ! assuming efield == 0
 
-    if (this%graphics_output) call export_fields(this, t, this%escf*efield, this%bscf*bfield, q)
+    if (this%graphics_output) call export_fields(this, t, efield, bfield, q)
 
     do n = 1, this%max_cycles
       !! Time step through one source cycle while integrating the joule heat
@@ -228,9 +215,8 @@ contains
           return
         end if
         call this%model%compute_joule_heat(efield, q)
-        q = this%qscf * q
         q_avg = q_avg + 0.5_r8 * q
-        if (this%graphics_output) call export_fields(this, t, this%escf*efield, this%bscf*bfield, q)
+        if (this%graphics_output) call export_fields(this, t, efield, bfield, q)
       end do
 
       !! Time-averaged Joule power density over the last source cycle.
@@ -358,7 +344,7 @@ contains
     integer :: stat
     character(:), allocatable :: errmsg
 
-    if (is_IOP) call this%viz_file%write_time_step(t)
+    if (is_IOP) call this%viz_file%write_time_step(this%freq*t) ! induction field cycle number
 
     allocate(g_v(3,merge(this%mesh%cell_imap%global_size,0,is_iop)))
     allocate(g_s(merge(this%mesh%cell_imap%global_size,0,is_iop)))

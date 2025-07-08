@@ -58,6 +58,7 @@ module ih_hfield_factory_type
   !! Custom SCALAR_FUNC extension that implements the time-periodic
   !! waveform factor for the magnetic field source.
   type, extends(scalar_func), private :: waveform_func
+    real(r8) :: freq
   contains
     procedure :: eval => waveform
   end type
@@ -213,7 +214,7 @@ contains
     type(ih_hfield_func), allocatable :: gtmp
 
     i = this%data_index(t)
-    allocate(waveform_func :: f)
+    allocate(f, source=waveform_func(this%freq(i)))
     call insert_func('_ih_waveform', f)
 
     allocate(gtmp)
@@ -353,26 +354,26 @@ contains
   end function
 
   !! The type-bound EVAL function for the WAVEFORM_FUNC extension of the
-  !! SCALAR_FUNC class. This is a 1-periodic waveform function with initial
-  !! fade-in to full strength. There are several potential options for the
-  !! waveform, but it is currently hardwired to a simple sinusoid.
+  !! SCALAR_FUNC class. This is a (1/freq)-periodic waveform function with
+  !! initial fade-in to full strength. There are several potential options
+  !! for the waveform, but it is currently hardwired to a simple sinusoid.
 
   function waveform(this, x) result(fx)
     class(waveform_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
-    real(r8) :: fx
-    real(r8), parameter :: PI =    3.1415926535897932385_r8
-    real(r8), parameter :: TWOPI = 6.2831853071795864769_r8
+    real(r8) :: fx, wt
+    real(r8), parameter :: PI = 4*atan(1.0_r8)
     associate (t => x(1))
+      wt = 2*PI*this%freq*t
       select case (0)
       case (1)  ! Truncated l2 fit to a square wave
-        fx = (sin(TWOPI*t)+sin(3*TWOPI*t)/3.0+sin(5*TWOPI*t)/5.0+sin(7*TWOPI*t)/7.0)*(4.0/PI)
+        fx = (sin(wt)+sin(3*wt)/3.0+sin(5*wt)/5.0+sin(7*wt)/7.0)*(4.0/PI)
       case (2)  ! Non-oscillatory 'square' wave
-        fx = (1225*sin(TWOPI*t)+245*sin(3*TWOPI*t)+49*sin(5*TWOPI*t)+5*sin(7*TWOPI*t))/1024.0
+        fx = (1225*sin(wt)+245*sin(3*wt)+49*sin(5*wt)+5*sin(7*wt))/1024.0
       case default ! Basic sinusoidal wave form.
-        fx = sin(TWOPI*t)
+        fx = sin(wt)
       end select
-      fx = (1.0_r8 - exp(-2.0_r8*t**2))*fx
+      fx = (1.0_r8 - exp(-2.0_r8*(this%freq*t)**2))*fx
     end associate
   end function
 

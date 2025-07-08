@@ -31,16 +31,12 @@ module fdme_model_type
     type(complex_pcsr_matrix) :: A, B, BT
     complex(r8), allocatable :: rhs(:)
     type(pbsr_matrix) :: A2
-    real(r8) :: omega
+    real(r8) :: omega, eps0, mu0
     real(r8), allocatable :: mu(:), sigma(:), epsi(:)
     complex(r8), allocatable :: k(:)
     class(bndry_func1), allocatable :: ebc  ! tangential E condition (nxE)
     class(bndry_func1), allocatable :: hbc  ! tangential H condition (nxH)
     class(bndry_cfunc1), allocatable :: robin_lhs, robin_rhs
-    ! Non-dimensionalization parameters
-    real(r8) :: Z0 ! vacuum impedance
-    real(r8) :: c0 ! speed of light
-
     logical :: use_mixed_form
     type(pcsr_matrix) :: Am
     type(complex_pcsr_matrix) :: cAm
@@ -67,7 +63,6 @@ contains
 
     use em_bc_factory_type
     use parameter_list_type
-    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     class(fdme_model), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
@@ -78,8 +73,12 @@ contains
 
     integer :: n
 
-    this%Z0 = sqrt(vacuum_permeability/vacuum_permittivity)
-    this%c0 = 1.0_r8/sqrt(vacuum_permittivity*vacuum_permeability)
+    call params%get('vacuum-permittivity', this%eps0, stat, errmsg, default=8.854188e-12_r8) ! SI unit default
+    if (stat /= 0) return
+
+    call params%get('vacuum-permeability', this%mu0, stat, errmsg, default=1.256637e-6_r8) ! SI unit default
+    if (stat /= 0) return
+
     this%mesh => mesh
 
     !! Boundary condition data
@@ -170,7 +169,7 @@ contains
     real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
 
     integer :: j, n
-    real(r8) :: m1(21), m2(10), ctm2c(21), k0
+    real(r8) :: m1(21), m2(10), ctm2c(21), k0, Z0
     complex(r8) :: Aj(21)
 
     ASSERT(size(epsr) == this%mesh%ncell)
@@ -180,13 +179,14 @@ contains
 
     call start_timer("setup")
 
-    k0 = omega / this%c0 ! free-space angular wave number
+    k0 = omega*sqrt(this%eps0*this%mu0) ! free-space angular wave number
+    Z0 = sqrt(this%mu0/this%eps0) ! free-space impedance
     this%omega = omega
 
     ! stored for preconditioner use
     this%mu(:) = mu
     this%k(:)%re = k0**2 * epsr
-    this%k(:)%im = k0**2 * epsi + sigma*(k0*this%Z0)
+    this%k(:)%im = k0**2 * epsi + sigma*(k0*Z0)
 
     ! stored for heat calculation
     this%epsi(:) = epsi
@@ -260,7 +260,7 @@ contains
     if (allocated(this%hbc)) then
       do j = 1, size(this%hbc%index)
         n = this%hbc%index(j)
-        this%rhs(n)%im = this%rhs(n)%im - k0 * this%Z0 * this%hbc%value(j)
+        this%rhs(n)%im = this%rhs(n)%im - k0 * Z0 * this%hbc%value(j)
       end do
       call this%mesh%edge_imap%gather_offp(this%rhs)
     end if
@@ -359,7 +359,6 @@ contains
 
   subroutine cell_avg_hfield(this, bfield, avg_hfield)
     use mimetic_discretization, only: w2_vector_cell_avg
-    use physical_constants, only: vacuum_permeability
     class(fdme_model), intent(in) :: this
     complex(r8), intent(in)  :: bfield(:)
     complex(r8), intent(out) :: avg_hfield(:,:)
@@ -369,7 +368,7 @@ contains
     ASSERT(size(avg_hfield,2) >= this%mesh%ncell_onp)
     call w2_vector_cell_avg(this%mesh, bfield, avg_hfield)
     do j = 1, size(avg_hfield,2)
-      avg_hfield(:,j) = avg_hfield(:,j) / (vacuum_permeability * this%mu(j))
+      avg_hfield(:,j) = avg_hfield(:,j) / (this%mu0 * this%mu(j))
     end do
   end subroutine
 
@@ -377,7 +376,6 @@ contains
 
     use mimetic_discretization, only: w1_matrix_we
     use upper_packed_matrix_procs, only: upm_quad_form
-    use physical_constants, only: vacuum_permittivity
 
     class(fdme_model), intent(in) :: this
     complex(r8), intent(in) :: efield(:)
@@ -400,7 +398,7 @@ contains
 
       ! compute heat sources
       q_joule = this%sigma(j) * efield2 / 2
-      q_dielectric = this%omega*vacuum_permittivity*this%epsi(j) * efield2 / 2
+      q_dielectric = this%omega*this%eps0*this%epsi(j) * efield2 / 2
 
       ! want a source density
       q(j) = (q_joule + q_dielectric) / abs(this%mesh%volume(j))

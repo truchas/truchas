@@ -254,7 +254,6 @@ contains
     use simpl_mesh_type
     use parameter_list_type
     use tdme_joule_heat_sim_type
-    use physical_constants, only: vacuum_permittivity, vacuum_permeability
 
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: freq, eps(:), mu(:), sigma(:)
@@ -265,7 +264,7 @@ contains
 
     type(tdme_joule_heat_sim) :: sim
 
-    call sim%init(mesh, freq, vacuum_permittivity*eps, vacuum_permeability*mu, sigma, params, stat, errmsg)
+    call sim%init(mesh, freq, eps, mu, sigma, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     call sim%compute(q, stat, errmsg)
     if (stat < 0) then
