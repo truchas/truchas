@@ -31,8 +31,6 @@ module em_bc_factory_type
     private
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(parameter_list), pointer :: params => null() ! unowned reference
-    logical :: use_legacy_bc = .false.
-    integer, allocatable :: pec_setid(:), nxH_setid(:)
     real(r8) :: epsilon0, mu0, omega
   contains
     procedure :: init
@@ -57,13 +55,12 @@ module em_bc_factory_type
 
 contains
 
-  subroutine init(this, mesh, omega, params, use_legacy_bc)
+  subroutine init(this, mesh, omega, params)
 
     class(em_bc_factory), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     real(r8), intent(in) :: omega
     type(parameter_list), intent(inout), target :: params
-    logical, intent(in), optional :: use_legacy_bc
 
     integer :: stat
     character(:), allocatable :: errmsg
@@ -77,14 +74,6 @@ contains
       this%epsilon0 = vacuum_permittivity
       this%mu0 = vacuum_permeability
     end block
-
-    if (present(use_legacy_bc)) this%use_legacy_bc = use_legacy_bc
-    if (this%use_legacy_bc) then
-      block
-        use ih_legacy_bc, only: create_ih_face_sets
-        call create_ih_face_sets(this%mesh, params, this%pec_setid, this%nxH_setid)
-      end block
-    end if
 
   end subroutine
 
@@ -104,11 +93,7 @@ contains
 
     call TLS_info('  generating "nxE" electromagnetic boundary condition')
 
-    if (this%use_legacy_bc) then
-      call proc(unused_plist, this%pec_setid, stat, errmsg)
-    else
-      call this%iterate_list('PEC', proc, stat, errmsg)
-    end if
+    call this%iterate_list('PEC', proc, stat, errmsg)
     if (stat /= 0) return
     if (allocated(nxE_bc)) then
       call nxE_bc%add_complete(stat)
@@ -166,31 +151,18 @@ contains
 
     call TLS_info('  generating "nxH" electromagnetic boundary condition')
 
-    if (this%use_legacy_bc) then
-      call lookup_func('_ih_waveform', f)
-      INSIST(allocated(f))
-      call lookup_func('_ih_profile', g)
-      INSIST(allocated(g))
-      allocate(nxH_bc)
-      call nxH_bc%init(this%mesh)
-      call nxH_bc%add(f, g, this%nxH_setid, stat, errmsg)
-      if (stat /= 0) return !TODO: does info need to be added to errmsg?
+    call this%iterate_list('ih-hfield', proc, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(nxH_bc)) then
       call nxH_bc%add_complete(omit_edge_list)
-      call move_alloc(nxH_bc, bc)
     else
-      call this%iterate_list('ih-hfield', proc, stat, errmsg)
-      if (stat /= 0) return
-      if (allocated(nxH_bc)) then
-        call nxH_bc%add_complete(omit_edge_list)
-      else
-        call TLS_info('    none specified')
-      end if
-#ifdef INTEL_BUG2024131
-      if (allocated(nxh_bc) call move_alloc(nxh_bc, bc)
-#else
-      call move_alloc(nxh_bc, bc)
-#endif
+      call TLS_info('    none specified')
     end if
+#ifdef INTEL_BUG2024131
+    if (allocated(nxh_bc) call move_alloc(nxh_bc, bc)
+#else
+    call move_alloc(nxh_bc, bc)
+#endif
 
   contains
 
@@ -234,25 +206,17 @@ contains
     type(parameter_list) :: unused_plist
     logical :: found
 
-    if (this%use_legacy_bc) then
-      call TLS_info('  generating "nxH" electromagnetic boundary condition')
-      found = .false.
-      call ih_proc(unused_plist, this%nxH_setid, stat, errmsg)
-      if (stat /= 0) return
-      if (.not.found) call TLS_info('    none specified.')
-    else
-      call TLS_info('  generating "pmc" electromagnetic boundary condition')
-      found = .false.
-      call this%iterate_list('pmc', pmc_proc, stat, errmsg)
-      if (stat /= 0) return
-      if (.not.found) call TLS_info('    none specified.')
+    call TLS_info('  generating "pmc" electromagnetic boundary condition')
+    found = .false.
+    call this%iterate_list('pmc', pmc_proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.found) call TLS_info('    none specified.')
 
-      call TLS_info('  generating "nxH" electromagnetic boundary condition')
-      found = .false.
-      call this%iterate_list('ih-hfield', ih_proc, stat, errmsg)
-      if (stat /= 0) return
-      if (.not.found) call TLS_info('    none specified.')
-    end if
+    call TLS_info('  generating "nxH" electromagnetic boundary condition')
+    found = .false.
+    call this%iterate_list('ih-hfield', ih_proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.found) call TLS_info('    none specified.')
 
     if (allocated(nxH_bc)) then
       call nxH_bc%add_complete(omit_edge_list)

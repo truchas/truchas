@@ -60,17 +60,14 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    logical :: flag
     type(em_bc_factory) :: bc_fac
     type(parameter_list), pointer :: plist
     character(:), allocatable :: solver_type
 
     this%mesh => mesh
 
-    call params%get('use-legacy-bc', flag, stat, errmsg, default=.false.)
-    if (stat /= 0) return
     plist => params%sublist('bc')
-    call bc_fac%init(this%mesh, omega, plist, use_legacy_bc=flag)
+    call bc_fac%init(this%mesh, omega, plist)
 
     plist => params%sublist('fd-solver')
 

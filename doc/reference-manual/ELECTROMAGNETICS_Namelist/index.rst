@@ -19,8 +19,7 @@ A properly configured model will include
 a periodic boundary condition with a forcing function defined by the
 :ref:`INDUCTION_SOURCE_FIELD<INDUCTION_SOURCE_FIELD_Namelist>` namelist.
 EM boundary conditions are defined using
-:ref:`ELECTROMAGNETIC_BC<ELECTROMAGNETIC_BC_Namelist>` namelists (but see
-:ref:`legacy boundary conditions<legacy_em_bc>` below.)
+:ref:`ELECTROMAGNETIC_BC<ELECTROMAGNETIC_BC_Namelist>` namelists.
 
 The time scale of the forced EM equations is assumed to be very short compared
 to the fundamental time scale of heat transfer (see the INDUCTION_SOURCE_FIELD
@@ -242,73 +241,3 @@ Controls the verbosity of the time-domain Joule heat solver.
   and if noise is accumulating in the system it will be seen here; see
   `cg_tol`_. Level 4 adds convergence info for each CG iterate. Levels 1
   and 2 are typical.
-
-
-.. _legacy_em_bc:
-
-Legacy Boundary Conditions (deprecated)
-+++++++++++++++++++++++++++++++++++++++
-
-When the induction heating model was originally introduced, it did not require
-a specification of the EM boundary conditions, but inferred them for a small
-number of cylinder-like EM mesh domain shapes. This feature is deprecated, but
-still supported for the present. Users should migrate to defining the boundary
-conditions explicitly using the :ref:`ELECTROMAGNETIC_BC
-<ELECTROMAGNETIC_BC_Namelist>` namelist.
-
-
-use_legacy_bc
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When this flag is enabled, the boundary conditions will be automatically
-assigned based on hints given by the following parameters. Note that any
-boundary condition specified by a :ref:`ELECTROMAGNETIC_BC
-<ELECTROMAGNETIC_BC_Namelist>` namelist will be ignored in this case.
-
-:Type: logical
-:Default: `.false.`
-
-
-symmetry_axis
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Specifies which axis is the symmetry axis of the EM domain when
-`use_legacy_bc`_ is enabled.
-
-:Type: string
-:Default: `"z"`
-:Valid Values: `"x"`, `"y"`, or `"z"`
-:Notes: The value assigned here should match the value assigned to the
-   :ref:`orientation<INDUCTION_SOURCE_FIELD_Namelist/index:orientation>`
-   parameter of the INDUCTION_SOURCE_FIELD namelist.
-
-
-em_domain_type
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Specifies the type of domain that is discretized by the EM mesh when
-`use_legacy_bc`_ is enabled. The allowed values and corresponding domain when
-`symmetry_axis`_ is `"z"` are given in the following table. The domains for
-the other axis options are defined similarly and obtained by the appropriate
-cyclic permutation of the coordinates.
-
-.. csv-table::
-   :header: "Value", "Domain"
-   :class: tight-table
-   :widths: auto
-
-   `"full_cylinder"`,":math:`\Omega = \{(x,y,z) \,|\, x^2+y^2 \leq r^2, z_1\leq z\leq z_2 \}`"
-   `"half_cylinder"`, ":math:`\Omega = \{(x,y,z) \,|\, x^2+y^2 \leq r^2, x\geq 0, z_1\leq z \leq z_2 \}`"
-   `"quarter_cylinder"`, ":math:`\Omega = \{(x,y,z) \,|\, x^2+y^2 \leq r^2, x, y\geq 0, z_1\leq z \leq z_2 \}`"
-
-:Type: string
-:Default: none
-:Notes:
-   The values :math:`r>0` and :math:`z_1\gt z_2` are inferred from the mesh
-   and are not specified directly.
-
-   When `symmetry_axis`_ is `"z"`, the boundary condition
-   :math:`\hat{n}\times\vec{H} = \hat{n}\times\vec{H}_\text{ext}` is imposed
-   on the boundaries :math:`\{x^2+y^2=r^2\}` and :math:`\{z=z_1,z_2\}`, where
-   :math:`\vec{H}_\text{ext}` is defined by the
-   :ref:`INDUCTION_SOURCE_FIELD<INDUCTION_SOURCE_FIELD_Namelist>` namelist,
-   and the boundary condition :math:`\hat{n}\times\vec{E}=0` is imposed on
-   the symmetry planes :math:`\{x=0\}` and :math:`\{y=0\}` if present. And
-   analogously for the other axis options.

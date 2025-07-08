@@ -70,12 +70,6 @@ contains
     real(r8) :: ssor_omega
     namelist /electromagnetics/ ssor_num_cycles, ssor_omega
 
-    !! Legacy EM BC variables
-    logical :: use_legacy_bc
-    character :: symmetry_axis
-    character(32) :: em_domain_type
-    namelist /electromagnetics/ use_legacy_bc, symmetry_axis, em_domain_type
-
     real(r8) :: times(32), powers(8,33), frequency
     character(32) :: wg_port_bc(8)
     namelist /electromagnetics/ wg_port_bc, times, powers, frequency
@@ -128,10 +122,6 @@ contains
     ssor_num_cycles = NULL_I
     ssor_omega = NULL_R
 
-    use_legacy_bc = .false.
-    symmetry_axis  = NULL_C
-    em_domain_type = NULL_C
-
     wg_port_bc = NULL_C
     times = NULL_R
     powers = NULL_R
@@ -178,10 +168,6 @@ contains
     call broadcast(boomer_logging_level)
     call broadcast(ssor_num_cycles)
     call broadcast(ssor_omega)
-
-    call broadcast(use_legacy_bc)
-    call broadcast(symmetry_axis)
-    call broadcast(em_domain_type)
 
     call broadcast(wg_port_bc)
     call broadcast(times)
@@ -324,37 +310,6 @@ contains
       end select
       call params%set('td-solver-type', td_solver_type)
 
-    end if
-
-    !! Parameters for the legacy method of inferring boundary conditions !!!!!!!
-
-    call params%set('use-legacy-bc', use_legacy_bc)
-    if (use_legacy_bc) then
-      symmetry_axis = raise_case(trim(adjustl(symmetry_axis)))
-      select case (symmetry_axis)
-      case ('X', 'Y', 'Z')
-      case (NULL_C)
-        call TLS_info('  using default value "Z" for SYMMETRY_AXIS')
-        symmetry_axis = 'Z'
-      case default
-        call TLS_fatal('invalid SYMMETRY_AXIS: ' // trim(symmetry_axis))
-      end select
-      call params%set('symmetry-axis', symmetry_axis)
-
-      em_domain_type = raise_case(trim(adjustl(em_domain_type)))
-      select case (em_domain_type)
-      case ('FULL_CYLINDER')
-      case ('HALF_CYLINDER')
-      case ('QUARTER_CYLINDER')
-      case ('CYLINDER')
-      case ('FRUSTUM')
-      case ('VERIFICATION1')
-      case (NULL_C)
-        call TLS_fatal('EM_DOMAIN_TYPE must be assigned a value when USE_LEGACY_BC is true')
-      case default
-        call TLS_fatal('invalid EM_DOMAIN_TYPE: ' // trim(em_domain_type))
-      end select
-      call params%set('em-domain-type', em_domain_type)
     end if
 
   end subroutine read_electromagnetics_namelist

@@ -88,7 +88,6 @@ contains
     real(r8), allocatable :: model_eps(:), model_sigma(:)
     character(:), allocatable :: filename
     type(parameter_list), pointer :: plist
-    logical :: flag
 
     ASSERT(size(eps) == mesh%ncell)
     ASSERT(size(mu)  == mesh%ncell)
@@ -112,10 +111,8 @@ contains
     !FIXME: with nxH BC handling.
 
     omega = 8*atan(1.0_r8)*freq
-    call params%get('use-legacy-bc', flag, stat, errmsg, default=.false.)
-    if (stat /= 0) return
     plist => params%sublist('bc')
-    call bc_fac%init(this%mesh, omega, plist, use_legacy_bc=flag)
+    call bc_fac%init(this%mesh, omega, plist)
 
     call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
     if (stat /= 0) return !TODO: augment errmsg?
