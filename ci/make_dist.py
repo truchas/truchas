@@ -111,7 +111,8 @@ for b in [tbin, "genre", "vizre", "mpiexec", "hydra_pmi_proxy"]:
     os.system("patchelf --set-rpath '$ORIGIN/../lib' %s/bin/%s" % (dist, b))
 
 # Remove libraries that we need to use from the system
-for lib in ["libc", "libm", "libpthread", "libdl", "librt"]:
+for lib in ["libc", "libm", "libpthread", "libdl", "librt", "libcrypto", "libssl", "libselinux"
+            "libkrb5support", "libcrypt"]:
     run("rm -f %s/lib/%s.so.*" % (dist, lib))
 
 # Create a distribution tarball
