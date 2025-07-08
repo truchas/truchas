@@ -48,7 +48,7 @@ module em_heat_driver
   end type
 
   type(em_heat_driver_data), allocatable, target :: this
-  type(parameter_list), pointer :: params
+  type(parameter_list), pointer :: params => null()
 
 contains
 
