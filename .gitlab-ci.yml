@@ -7,7 +7,7 @@ stages:
 build truchas binary:
   stage: build
   needs: []
-  tags: []
+  tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
@@ -83,7 +83,7 @@ test truchas intel (Debug):
 test truchas GFortran (Debug):
   stage: build
   needs: []
-  tags: []
+  tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   script:
     - source /opt/rh/gcc-toolset-12/enable
@@ -103,7 +103,7 @@ test truchas GFortran (Debug):
 test truchas GFortran (Release):
   stage: build
   needs: []
-  tags: []
+  tags: ["intel"]
   image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   script:
     - source /opt/rh/gcc-toolset-12/enable
