@@ -3,7 +3,7 @@
 import os
 
 # Name of the main executable
-tbin="t-linux.x86_64.intelllvm"
+tbin="t-linux.x86_64.gnu"
 
 # mpich root directory
 mpich_root="/home/swuser/ext"

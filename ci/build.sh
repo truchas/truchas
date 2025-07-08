@@ -2,38 +2,21 @@
 
 set -ex
 
-if [[ $1 == "Debug" ]]; then
-    build_type="Debug"
+build_type="$1"
+
+if [[ $CC == "icx" ]]; then
+    compiler="intel"
 else
-    build_type="Release"
+    compiler="gcc"
 fi
 
-# Set Intel compilers env variables
-export INTELDIR=/opt/intel/oneapi/2025.2
-export PATH=$INTELDIR/bin/:$PATH
-export LD_LIBRARY_PATH=$INTELDIR/lib
-export FC=ifx
-export CC=icx
-export CXX=icpx
-
-# Add openmpi executables into path
-export PATH=$HOME/ext/bin/:$PATH
-export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
-
-# Prepend our `python` executable into path
-export PATH="${HOME}/ext/python-install/bin:$PATH"
-
-
-# Install Truchas
-mkdir build
-cd build
 cmake --version
-cmake \
-    -C ../config/linux-intel.cmake \
+cmake -S. -Bbuild \
+    -C config/linux-${compiler}.cmake \
     -DCMAKE_BUILD_TYPE=${build_type} \
     -DTRUCHAS_TPL_DIR=$HOME/ext \
     -DCMAKE_INSTALL_PREFIX=inst \
-    -DUSE_PORTAGE=Yes \
-    ..
+    -DUSE_PORTAGE=Yes
+cd build
 make -j8
 make install
