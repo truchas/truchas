@@ -238,7 +238,15 @@ contains
               type is (real(r8))
                 call obc%set(pname, pval)
               type is (character(*))
+#ifdef INTEL_BUG20250709
+                block
+                  character(:), allocatable :: tmp
+                  tmp = pval
+                  call obc%set(pname, tmp)
+                end block
+#else
                 call obc%set(pname, pval)
+#endif
               class default
                 INSIST(.false.)
               end select
