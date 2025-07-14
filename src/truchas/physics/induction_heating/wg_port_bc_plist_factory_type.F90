@@ -59,8 +59,8 @@ contains
 
     !! Check that the specified wg-port BC are actually defined
     do n = 1, size(this%wg_port_bc)
-      if (bc_params%is_sublist(this%wg_port_bc(n))) then
-        plist => bc_params%sublist(this%wg_port_bc(n))
+      if (bc_params%is_sublist(trim(this%wg_port_bc(n)))) then
+        plist => bc_params%sublist(trim(this%wg_port_bc(n)))
         call plist%get('type', bc_type, stat, errmsg)
         if (stat /= 0) return
         if (bc_type /= 'wg-port') then

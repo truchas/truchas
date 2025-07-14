@@ -45,7 +45,7 @@
   - `wg_port_bc_plist_factory_type.F90` manages the step-wise, time-dependent
     waveguide input power and the creation of BC parameter list input for the
     waveguide port BC.
-  - `fdme_heat_solver_type.F90` is a frequency-domain Maxwell equation solver
+  - `fdme_solver_type.F90` is a frequency-domain Maxwell equation solver
     for when actual computation is necessary.
 
 * `tdme_joule_heat_sim_type.F90` computes the Joule heat by solving the time
@@ -82,6 +82,10 @@
     frequency-domain Maxwell equations. Its dependencies are:
     - `fdme_mixed_zvector_type.F90` is an abstract vector type that holds
       the double-sized vector of the mixed formulation.
+
+* `fdme_vtk_graphics_proc` provides a procedure that writes a VTKHDF graphics
+  file of the solution and derived quantitites computed by the frequency-
+  domain Maxwell equation solver.
 
 * `mimetic_discretization.F90` provides discrete operators and inner product
   matrices for the Whitney edge and face finite element spaces on tetrahedral

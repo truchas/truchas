@@ -31,13 +31,13 @@ module em_bc_factory_type
     private
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
     type(parameter_list), pointer :: params => null() ! unowned reference
-    real(r8) :: epsilon0, mu0, omega
+    real(r8) :: eps0, mu0
   contains
     procedure :: init
     procedure :: alloc_nxE_bc
     procedure :: alloc_nxH_bc
     procedure :: alloc_fd_nxH_bc
-    procedure :: alloc_robin_bc
+    procedure :: alloc_fd_robin_bc
     procedure, private :: iterate_list
   end type
 
@@ -55,25 +55,21 @@ module em_bc_factory_type
 
 contains
 
-  subroutine init(this, mesh, omega, params)
+  subroutine init(this, mesh, params, stat, errmsg)
 
     class(em_bc_factory), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
-    real(r8), intent(in) :: omega
     type(parameter_list), intent(inout), target :: params
-
-    integer :: stat
-    character(:), allocatable :: errmsg
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     this%mesh => mesh
-    this%omega = omega
     this%params => params
 
-    block
-      use physical_constants
-      this%epsilon0 = vacuum_permittivity
-      this%mu0 = vacuum_permeability
-    end block
+    call params%get('vacuum-permittivity', this%eps0, stat, errmsg)
+    if (stat /= 0) return
+    call params%get('vacuum-permeability', this%mu0, stat, errmsg)
+    if (stat /= 0) return
 
   end subroutine
 
@@ -278,7 +274,7 @@ contains
 
   end subroutine alloc_fd_nxH_bc
 
-  subroutine alloc_robin_bc(this, lhs_bc, rhs_bc, stat, errmsg, omit_edge_list)
+  subroutine alloc_fd_robin_bc(this, omega, lhs_bc, rhs_bc, stat, errmsg, omit_edge_list)
 
     use bndry_cfunc1_class
     use bndry_face_cfunc_type
@@ -287,6 +283,7 @@ contains
     use complex_vector_func_factories
 
     class(em_bc_factory), intent(in) :: this
+    real(r8), intent(in) :: omega
     class(bndry_cfunc1), allocatable, intent(out) :: lhs_bc, rhs_bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -390,7 +387,7 @@ contains
         allocate(lhs)
         call lhs%init(this%mesh)
       end if
-      alpha = (-1.0_r8, 1.0_r8) * sqrt(this%mu0 * this%omega * sigma / 2)
+      alpha = (-1.0_r8, 1.0_r8) * sqrt(this%mu0 * omega * sigma / 2)
       call alloc_const_complex_scalar_func(f, alpha)
       call lhs%add(f, setids, stat, errmsg)
       if (stat /= 0) return
@@ -427,7 +424,7 @@ contains
       found = .true.
       context = 'processing ' // plist%path() // ': '
 
-      call alloc_te10_port_feed_func(this%omega, plist, f, g, stat, errmsg)
+      call alloc_te10_port_feed_func(omega, this%eps0, this%mu0, plist, f, g, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return
@@ -449,7 +446,7 @@ contains
 
     end subroutine wg_port_proc
 
-  end subroutine alloc_robin_bc
+  end subroutine alloc_fd_robin_bc
 
   !! This auxiliary subroutine iterates over the parameter list and for each BC
   !! sublist that matches the given TYPE, it calls the supplied subroutine

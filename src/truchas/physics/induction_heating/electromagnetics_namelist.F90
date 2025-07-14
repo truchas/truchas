@@ -217,13 +217,12 @@ contains
         call params%set('frequency', frequency)
       end if
 
-      plist => params%sublist('fd-solver')
-      call plist%set('use-mixed-form', use_mixed_form)
+      call params%set('use-mixed-form', use_mixed_form)
 
-      if (abs_tol /= NULL_R) call plist%set('abs-tol', abs_tol)
-      if (rel_tol /= NULL_R) call plist%set('rel-tol', rel_tol)
-      if (max_iter /= NULL_I) call plist%set('max-iter', max_iter)
-      if (print_level /= NULL_I) call plist%set('print-level', print_level)
+      if (abs_tol /= NULL_R) call params%set('abs-tol', abs_tol)
+      if (rel_tol /= NULL_R) call params%set('rel-tol', rel_tol)
+      if (max_iter /= NULL_I) call params%set('max-iter', max_iter)
+      if (print_level /= NULL_I) call params%set('print-level', print_level)
 
       select case (fd_solver_type)
       case ('minres')
@@ -236,10 +235,10 @@ contains
       case default
         call TLS_fatal('invalid FD_SOLVER_TYPE: ' // fd_solver_type)
       end select
-      call plist%set('solver-type', fd_solver_type)
+      call params%set('solver-type', fd_solver_type)
 
       if (fd_solver_type /= 'mumps') then
-        plist => plist%sublist('precon')
+        plist => params%sublist('precon')
         select case (fd_precon_type)
         case ('none')
         case ('boomer')

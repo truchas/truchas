@@ -162,6 +162,12 @@ contains
 
     call define_default_em_properties
 
+    block
+      use physical_constants
+      call params%set('vacuum-permittivity', vacuum_permittivity)
+      call params%set('vacuum-permeability', vacuum_permeability)
+    end block
+
     call params%get('use-mw-solver', this%use_mw_solver)
     if (this%use_mw_solver) then
       allocate(this%mh_solver)

@@ -4,7 +4,6 @@ module port_feed_func_factory
   use parameter_list_type
   use complex_scalar_func_class
   use complex_vector_func_class
-  use physical_constants, only: vacuum_permittivity, vacuum_permeability
   implicit none
   private
 
@@ -14,12 +13,12 @@ module port_feed_func_factory
 
 contains
 
-  subroutine alloc_te10_port_feed_func(omega, params, alpha, g, stat, errmsg)
+  subroutine alloc_te10_port_feed_func(omega, eps0, mu0, params, alpha, g, stat, errmsg)
 
     use const_complex_scalar_func_type
     use fptr_complex_vector_func_type
 
-    real(r8), intent(in) :: omega
+    real(r8), intent(in) :: omega, eps0, mu0
     type(parameter_list), intent(inout) :: params
     class(complex_scalar_func), allocatable, intent(out) :: alpha
     class(complex_vector_func), allocatable, intent(out) :: g
@@ -84,7 +83,7 @@ contains
       return
     end if
 
-    k0 = omega * sqrt(vacuum_permittivity*vacuum_permeability)
+    k0 = omega * sqrt(eps0*mu0)
     h0 = sqrt(k0**2 - (PI/a)**2)
     call alloc_const_complex_scalar_func(alpha, cmplx(0.0_r8, h0, kind=r8))
 
@@ -101,7 +100,7 @@ contains
         errmsg = 'power is < 0.0'
         return
       end if
-      Z0 = sqrt(vacuum_permeability/vacuum_permittivity)
+      Z0 = sqrt(mu0/eps0)
       E0 = sqrt((4*power/(a*b)) * (k0*Z0/h0))
     else
       call params%get('e-mag', E0, stat, errmsg, default=1.0_r8)

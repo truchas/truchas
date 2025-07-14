@@ -83,7 +83,7 @@ contains
 
     type(em_bc_factory) :: bc_fac
     class(bndry_func1), allocatable :: ebc, hbc
-    real(r8) :: eps0, mu0, dt, c_ratio, omega
+    real(r8) :: eps0, mu0, dt, c_ratio
     real(r8), allocatable :: model_eps(:), model_sigma(:)
     character(:), allocatable :: filename
     type(parameter_list), pointer :: plist
@@ -101,9 +101,11 @@ contains
     call params%get('vacuum-permeability', mu0, stat, errmsg, default=1.256637e-6_r8)
     if (stat /= 0) return
 
-    omega = 8*atan(1.0_r8)*this%freq
     plist => params%sublist('bc')
-    call bc_fac%init(this%mesh, omega, plist)
+    call plist%set('vacuum-permittivity', eps0)
+    call plist%set('vacuum-permeability', mu0)
+    call bc_fac%init(this%mesh, plist, stat, errmsg)
+    if (stat /= 0) return
 
     call bc_fac%alloc_nxE_bc(ebc, stat, errmsg)
     if (stat /= 0) return !TODO: augment errmsg?

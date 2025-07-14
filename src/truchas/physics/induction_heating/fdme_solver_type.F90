@@ -30,8 +30,8 @@ module fdme_solver_type
 
   type, public :: fdme_solver
     private
-    type(simpl_mesh), pointer :: mesh => null() ! unowned reference
-    type(fdme_model), pointer :: model => null()
+    type(simpl_mesh), pointer, public :: mesh => null() ! unowned reference
+    type(fdme_model), pointer, public :: model => null()
     type(fdme_minres_solver), allocatable :: minres
     type(fdme_mixed_minres_solver), allocatable :: mixed_minres
 #ifdef USE_MUMPS
@@ -41,6 +41,7 @@ module fdme_solver_type
     complex(r8), allocatable, public :: efield(:), bfield(:)
   contains
     procedure :: init
+    procedure :: setup
     procedure :: solve
     procedure :: get_heat_source
     procedure :: get_cell_efield, get_cell_hfield, get_div_dfield
@@ -48,40 +49,29 @@ module fdme_solver_type
 
 contains
 
-  subroutine init(this, mesh, omega, epsr, epsi, mu, sigma, params, stat, errmsg)
+  subroutine init(this, mesh, params, stat, errmsg)
 
-    use em_bc_factory_type
     use parameter_list_type
 
     class(fdme_solver), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
-    real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(em_bc_factory) :: bc_fac
-    type(parameter_list), pointer :: plist
     character(:), allocatable :: solver_type
 
     this%mesh => mesh
 
-    plist => params%sublist('bc')
-    call bc_fac%init(this%mesh, omega, plist)
-
-    plist => params%sublist('fd-solver')
-
     allocate(this%model)
-    call this%model%init(mesh, bc_fac, plist, stat, errmsg)
+    call this%model%init(mesh, params, stat, errmsg)
     if (stat /= 0) return
 
-    call this%model%setup(omega, epsr, epsi, mu, sigma)
-
-    call plist%get('print-level', this%print_level, stat, errmsg, default=0)
+    call params%get('print-level', this%print_level, stat, errmsg, default=0)
     if (stat /= 0) return
-    call plist%set('print-level', max(0,this%print_level-1))
+    call params%set('print-level', max(0,this%print_level-1))
 
-    call plist%get('solver-type', solver_type, stat, errmsg)
+    call params%get('solver-type', solver_type, stat, errmsg)
     if (stat /= 0) return
 
     select case (solver_type)
@@ -106,12 +96,12 @@ contains
     end select
 
     if (allocated(this%minres)) then
-      call this%minres%init(this%model, plist, stat, errmsg)
+      call this%minres%init(this%model, params, stat, errmsg)
     else if (allocated(this%mixed_minres)) then
-      call this%mixed_minres%init(this%model, plist, stat, errmsg)
+      call this%mixed_minres%init(this%model, params, stat, errmsg)
 #ifdef USE_MUMPS
     else if (allocated(this%mumps)) then
-      call this%mumps%init(this%model, plist, stat, errmsg)
+      call this%mumps%init(this%model, params, stat, errmsg)
 #endif
     else
       INSIST(.false.)
@@ -121,6 +111,17 @@ contains
 
   end subroutine init
 
+  subroutine setup(this, omega, epsr, epsi, mu, sigma, stat, errmsg)
+
+    class(fdme_solver), intent(inout) :: this
+    real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    call this%model%setup(omega, epsr, epsi, mu, sigma, stat, errmsg)
+    if (stat /= 0) return
+
+  end subroutine setup
 
   subroutine solve(this, stat, errmsg)
 
@@ -146,14 +147,14 @@ contains
     block
       use parallel_communication, only: global_norm2
       use truchas_logging_services
-      complex(r8) :: r(this%mesh%nedge), div_efield(this%mesh%nnode)
+      complex(r8) :: r(this%mesh%nedge_onp), div_efield(this%mesh%nnode_onp)
       real(r8) :: rnorm, bnorm, dnorm
       character(128) :: msg
       call this%model%residual(this%efield, r)
       call this%model%compute_div(this%efield, div_efield)
-      rnorm = global_norm2(r(:this%mesh%nedge_onP))
+      rnorm = global_norm2(r)
       bnorm = global_norm2(this%model%rhs(:this%mesh%nedge_onP))
-      dnorm = global_norm2(div_efield(:this%mesh%nnode_onP))
+      dnorm = global_norm2(div_efield)
       write(msg,'(*(a,es8.2))') 'FDME_SOLVE: |r|=', rnorm, &
           ', |b|=', bnorm, ', |r|/|b|=', rnorm/bnorm, ', |Div E|=', dnorm
       call TLS_info(msg)
@@ -191,7 +192,7 @@ contains
   subroutine get_div_dfield(this, div_dfield)
     class(fdme_solver), intent(in) :: this
     complex(r8), intent(out) :: div_dfield(:)
-    ASSERT(size(div_dfield) ==  this%mesh%nnode)
+    ASSERT(size(div_dfield) >=  this%mesh%nnode_onp)
     call this%model%compute_div(this%efield, div_dfield)
   end subroutine
 

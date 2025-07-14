@@ -55,12 +55,16 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    integer :: n
     type(parameter_list), pointer :: plist
     character(:), allocatable :: precon_type
 
     this%model => model
     call this%efield%init(model%mesh%edge_imap) ! initialized to 0
     call this%rhs%init(mold=this%efield)
+    call params%get('print-level', n, stat, errmsg, default=0)
+    if (stat /= 0) return
+    call params%set('verbose', n > 0)
     call this%minres%init(params)
 
     plist => params%sublist('precon')

@@ -283,6 +283,7 @@ contains
     use simpl_mesh_type
     use parameter_list_type
     use fdme_solver_type
+    use fdme_vtk_graphics_proc
 
     type(simpl_mesh), intent(inout), target :: mesh
     real(r8), intent(in) :: freq, eps(:), epsi(:), mu(:), sigma(:)
@@ -298,10 +299,13 @@ contains
 
     omega = 8*atan(1.0_r8)*freq
 
-    !TODO: use previous solution as initial guess (residual correction)
-    call solver%init(mesh, omega, eps, epsi, mu, sigma, params, stat, errmsg)
+    call solver%init(mesh, params, stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
+    call solver%setup(omega, eps, epsi, mu, sigma, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
+
+    !TODO: use previous solution as initial guess (residual correction)
     call solver%solve(stat, errmsg)
     if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
 
@@ -313,7 +317,7 @@ contains
     if (flag) then
       call params%get('graphics-file', filename, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
-      call fdme_vtk_graphics(solver, filename, mesh, q, stat, errmsg)
+      call fdme_vtk_graphics(solver, filename, stat, errmsg)
       if (stat /= 0) call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     end if
 
@@ -482,129 +486,5 @@ contains
     integer, intent(in) :: unit, version
     call skip_records(unit, 7, 'INDUCTION_HEAT_SOLVER: error skipping the restart data')
   end subroutine
-
-  !FIXME: following procedure is replicated in microwave_heat_solver_type
-
-  subroutine fdme_vtk_graphics(solver, filename, mesh, qfield, stat, errmsg)
-
-    use fdme_solver_type
-    use vtkhdf_file_type
-
-    type(fdme_solver), intent(in) :: solver
-    character(*), intent(in) :: filename
-    type(simpl_mesh), intent(in) :: mesh
-    real(r8), intent(in) :: qfield(:)
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    type(vtkhdf_file) :: viz_file
-    real(r8), allocatable :: g_scalar(:)
-    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:), l_zscalar(:)
-
-    if (is_IOP) call viz_file%create(filename, stat, errmsg)
-    call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast(errmsg)
-      return
-    end if
-
-    call export_mesh
-
-    allocate(g_scalar(merge(mesh%cell_imap%global_size, 0, is_IOP)))
-    call gather(qfield(:mesh%ncell_onP), g_scalar)
-    if (is_IOP) call viz_file%write_cell_dataset('Q_EM', g_scalar, stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    allocate(g_vector(3,merge(mesh%cell_imap%global_size, 0, is_IOP)))
-    allocate(l_vector(3,mesh%ncell))
-
-    call solver%get_cell_efield(l_vector)
-    call gather(l_vector(:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('E_re', g_vector%re, stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-#ifdef GNU_PR117774
-    if (is_IOP) call viz_file%write_cell_dataset('E_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
-#else
-    if (is_IOP) call viz_file%write_cell_dataset('E_im', g_vector%im, stat, errmsg)
-#endif
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    if (is_IOP) call viz_file%write_cell_dataset('|E|', abs(g_vector), stat, errmsg)
-
-    call solver%get_cell_hfield(l_vector)
-    call gather(l_vector(:,:mesh%ncell_onP), g_vector)
-    if (is_IOP) call viz_file%write_cell_dataset('H_re', g_vector%re, stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-#ifdef GNU_PR117774
-    if (is_IOP) call viz_file%write_cell_dataset('H_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
-#else
-    if (is_IOP) call viz_file%write_cell_dataset('H_im', g_vector%im, stat, errmsg)
-#endif
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    if (is_IOP) call viz_file%write_cell_dataset('|H|', abs(g_vector), stat, errmsg)
-
-    !! Output the mesh partition
-    call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=mesh%ncell_onP), g_scalar)
-    if (is_IOP) call viz_file%write_cell_dataset('MPI rank', g_scalar, stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    !! Divergence of the electric flux
-    allocate(g_zscalar(merge(mesh%node_imap%global_size, 0, is_IOP)))
-    allocate(l_zscalar(mesh%nnode))
-    call solver%get_div_dfield(l_zscalar)
-    call gather(l_zscalar(:mesh%nnode_onP), g_zscalar)
-    if (is_IOP) call viz_file%write_point_dataset('div_D_re', g_zscalar%re, stat, errmsg)
-    call broadcast(stat)
-#ifdef GNU_PR117774
-    if (is_IOP) call viz_file%write_point_dataset('div_D_im', [g_zscalar%im], stat, errmsg)
-#else
-    if (is_IOP) call viz_file%write_point_dataset('div_D_im', g_zscalar%im, stat, errmsg)
-#endif
-    call broadcast(stat)
-    if (is_IOP) call viz_file%write_point_dataset('|div_D|', abs(g_zscalar), stat, errmsg)
-    call broadcast(stat)
-    INSIST(stat == 0)
-
-    if (is_IOP) call viz_file%close
-
-  contains
-
-    subroutine export_mesh
-
-      use,intrinsic :: iso_fortran_env, only: int8
-
-      integer, allocatable, target :: cnode(:,:)
-      integer, allocatable :: xcnode(:)
-      integer(int8), allocatable :: types(:)
-      real(r8), allocatable :: x(:,:)
-      integer, pointer :: connectivity(:)
-      integer :: j, stat
-      character(:), allocatable :: errmsg
-
-      !! Collate the mesh data structure onto the IO process
-      call mesh%get_global_cnode_array(cnode)
-      call mesh%get_global_x_array(x)
-
-      if (is_IOP) then
-        xcnode = [(1+4*j, j=0, size(cnode,dim=2))]
-        connectivity(1:size(cnode)) => cnode ! flattened view
-        types = spread(VTK_TETRA, dim=1, ncopies=size(cnode,dim=2))
-        call viz_file%write_mesh(x, connectivity, xcnode, types, stat, errmsg)
-      end if
-      call broadcast(stat)
-      INSIST(stat == 0)
-
-    end subroutine export_mesh
-
-  end subroutine fdme_vtk_graphics
 
 end module induction_heat_solver_type

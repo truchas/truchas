@@ -14,6 +14,7 @@ module fdme_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simpl_mesh_type
+  use em_bc_factory_type
   use complex_pcsr_matrix_type
   use pcsr_matrix_type
   use pbsr_matrix_type
@@ -28,6 +29,7 @@ module fdme_model_type
 
   type, public :: fdme_model
     type(simpl_mesh), pointer :: mesh => null() ! unowned reference
+    type(em_bc_factory) :: bc_fac
     type(complex_pcsr_matrix) :: A, B, BT
     complex(r8), allocatable :: rhs(:)
     type(pbsr_matrix) :: A2
@@ -51,6 +53,7 @@ module fdme_model_type
     procedure :: compute_heat_source
     procedure :: compute_div
     procedure :: cell_avg_efield, cell_avg_hfield
+    procedure, private :: setup_bc_data
     procedure, private :: init_div_matrix
     procedure, private :: setup_div_matrix
     procedure, private :: init_mixed_matrix
@@ -59,19 +62,18 @@ module fdme_model_type
 
 contains
 
-  subroutine init(this, mesh, bc_fac, params, stat, errmsg)
+  subroutine init(this, mesh, params, stat, errmsg)
 
-    use em_bc_factory_type
     use parameter_list_type
 
     class(fdme_model), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
-    type(em_bc_factory), intent(in) :: bc_fac
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: n
+    type(parameter_list), pointer :: plist
 
     call params%get('vacuum-permittivity', this%eps0, stat, errmsg, default=8.854188e-12_r8) ! SI unit default
     if (stat /= 0) return
@@ -81,28 +83,12 @@ contains
 
     this%mesh => mesh
 
-    !! Boundary condition data
-    call bc_fac%alloc_nxE_bc(this%ebc, stat, errmsg)
+    !! Initialize the BC factory
+    plist => params%sublist('bc')
+    call plist%set('vacuum-permittivity', this%eps0)
+    call plist%set('vacuum-permeability', this%mu0)
+    call this%bc_fac%init(this%mesh, plist, stat, errmsg)
     if (stat /= 0) return
-    if (allocated(this%ebc)) then
-      call bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg, omit_edge_list=this%ebc%index)
-    else
-      call bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg)
-    end if
-    if (stat /= 0) return
-
-    if (allocated(this%ebc)) then
-      call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg, omit_edge_list=this%ebc%index)
-    else
-      call bc_fac%alloc_robin_bc(this%robin_lhs, this%robin_rhs, stat, errmsg)
-    end if
-    if (stat /= 0) return
-
-    !! Precompute the BC data at a dummy time
-    if (allocated(this%ebc)) call this%ebc%compute(0.0_r8)
-    if (allocated(this%hbc)) call this%hbc%compute(0.0_r8)
-    if (allocated(this%robin_lhs)) call this%robin_lhs%compute(0.0_r8)
-    if (allocated(this%robin_rhs)) call this%robin_rhs%compute(0.0_r8)
 
     block
       type(pcsr_graph), pointer :: g
@@ -160,13 +146,15 @@ contains
 
   end subroutine init_div_matrix
 
-  subroutine setup(this, omega, epsr, epsi, mu, sigma)
+  subroutine setup(this, omega, epsr, epsi, mu, sigma, stat, errmsg)
 
     use mimetic_discretization, only: w1_matrix_we, w2_matrix_we, cell_curl, w1_face_matrix
     use upper_packed_matrix_procs, only: upm_cong_prod
 
     class(fdme_model), intent(inout) :: this
     real(r8), intent(in) :: omega, epsr(:), epsi(:), mu(:), sigma(:)
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
 
     integer :: j, n
     real(r8) :: m1(21), m2(10), ctm2c(21), k0, Z0
@@ -178,6 +166,9 @@ contains
     ASSERT(size(sigma) == this%mesh%ncell)
 
     call start_timer("setup")
+
+    call this%setup_bc_data(omega, stat, errmsg)
+    if (stat /= 0) return
 
     k0 = omega*sqrt(this%eps0*this%mu0) ! free-space angular wave number
     Z0 = sqrt(this%mu0/this%eps0) ! free-space impedance
@@ -278,6 +269,36 @@ contains
 
   end subroutine setup
 
+  subroutine setup_bc_data(this, omega, stat, errmsg)
+
+    class(fdme_model), intent(inout) :: this
+    real(r8), intent(in) :: omega
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    call this%bc_fac%alloc_nxE_bc(this%ebc, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(this%ebc)) then
+      call this%bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg, omit_edge_list=this%ebc%index)
+    else
+      call this%bc_fac%alloc_fd_nxH_bc(this%hbc, stat, errmsg)
+    end if
+    if (stat /= 0) return
+
+    if (allocated(this%ebc)) then
+      call this%bc_fac%alloc_fd_robin_bc(omega, this%robin_lhs, this%robin_rhs, stat, errmsg, omit_edge_list=this%ebc%index)
+    else
+      call this%bc_fac%alloc_fd_robin_bc(omega, this%robin_lhs, this%robin_rhs, stat, errmsg)
+    end if
+    if (stat /= 0) return
+
+    !! Compute the BC data at a dummy time
+    if (allocated(this%ebc)) call this%ebc%compute(0.0_r8)
+    if (allocated(this%hbc)) call this%hbc%compute(0.0_r8)
+    if (allocated(this%robin_lhs)) call this%robin_lhs%compute(0.0_r8)
+    if (allocated(this%robin_rhs)) call this%robin_rhs%compute(0.0_r8)
+
+  end subroutine setup_bc_data
 
   subroutine setup_div_matrix(this, epsr, epsi)
 
@@ -329,10 +350,11 @@ contains
   subroutine residual(this, e, r)
     class(fdme_model), intent(in) :: this
     complex(r8), intent(inout) :: e(:), r(:)
+    ASSERT(size(e) == this%mesh%nedge)
+    ASSERT(size(r) >= this%mesh%ncell_onp)
     call this%mesh%edge_imap%gather_offp(e)
     call this%A%matvec(e, r)
     r(:this%mesh%nedge_onP) = this%rhs(:this%mesh%nedge_onP) - r(:this%mesh%nedge_onP)
-    !call this%mesh%edge_imap%gather_offp(r) ! not necessary?
   end subroutine
 
   subroutine compute_bfield(this, efield, bfield)
@@ -411,9 +433,8 @@ contains
     complex(r8), intent(in)  :: efield(:) ! inout for gather_offp
     complex(r8), intent(out) :: div_efield(:)
     ASSERT(size(efield) == this%mesh%nedge)
-    ASSERT(size(div_efield) == this%mesh%nnode)
+    ASSERT(size(div_efield) >= this%mesh%nnode_onp)
     call this%B%matvec(efield, div_efield)
-    call this%mesh%node_imap%gather_offp(div_efield)
   end subroutine
 
 
@@ -468,18 +489,10 @@ contains
         call gc%add_edge(this%icc%eval(i,2), this%icc%eval(j,1))
         call gc%add_edge(this%icc%eval(j,1), this%icc%eval(i,2))
       end do
+      ! add diagonal of node-node blocks for BC
+      call gr%add_edge(this%icr%eval(i,3), this%icr%eval(i,3))
+      call gr%add_edge(this%icr%eval(i,4), this%icr%eval(i,4))
       call gc%add_edge(this%icc%eval(i,2), this%icc%eval(i,2)) ! used only for kdiag in minres
-    end do
-
-    ! for BCs
-    do xj = 1, size(this%ebc%index)
-      j = this%ebc%index(xj)
-      do xnb = 1, 2
-        nb = this%mesh%enode(xnb, j)
-        call gr%add_edge(this%icr%eval(nb,3), this%icr%eval(nb,3))
-        call gr%add_edge(this%icr%eval(nb,4), this%icr%eval(nb,4))
-        call gc%add_edge(this%icc%eval(nb,2), this%icc%eval(nb,2))
-      end do
     end do
 
     call gr%add_complete
@@ -529,6 +542,10 @@ contains
         call this%cAm%set(this%icc%eval(i,2), this%icc%eval(j,1),  this%B%values(xj))
         call this%cAm%set(this%icc%eval(j,1), this%icc%eval(i,2),  this%B%values(xj)) ! B^T
       end do
+      ! zero diagonal of node-node blocks
+      call this%Am%set(this%icr%eval(i,3), this%icr%eval(i,3), 0.0_r8)
+      call this%Am%set(this%icr%eval(i,4), this%icr%eval(i,4), 0.0_r8)
+      call this%cAm%set(this%icc%eval(i,2), this%icc%eval(i,2), cmplx(0,0,kind=r8))
     end do
 
     ! Apply nxE boundary conditions to the system matrix

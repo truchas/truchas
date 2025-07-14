@@ -108,7 +108,7 @@ contains
       !! A unique NAME is required; becomes the BC sublist parameter name.
       if (name == NULL_C) then
         call TLS_fatal(label // ': NAME not specified')
-      else if (params%is_sublist(name)) then
+      else if (params%is_sublist(trim(name))) then
         call TLS_fatal(label // ': another ELECTROMAGNETIC_BC namelist has this NAME: ' // trim(name))
       else
         plist => params%sublist(trim(name))
@@ -182,7 +182,7 @@ contains
             call plist%set('g', g)
           end if
         else if (g_func /= NULL_C) then
-          call plist%set('g', g_func)
+          call plist%set('g', trim(g_func))
         else
           call TLS_fatal(label // ': neither G nor G_FUNC specified')
         end if
