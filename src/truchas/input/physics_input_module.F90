@@ -32,7 +32,7 @@ contains
 
     namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
                        body_force_density, prescribed_flow, &
-                       electromagnetics, solid_mechanics, materials
+                       electromagnetics, solid_mechanics, materials, alloy_solidification
 
     call TLS_info ('Reading PHYSICS namelist ...')
 
@@ -57,6 +57,7 @@ contains
       body_force_density = 0.0_r8
       prescribed_flow = .false.
       materials = NULL_C
+      alloy_solidification = .false.
       read(lun,nml=physics,iostat=ios,iomsg=iom)
     end if
     call broadcast(ios)
@@ -72,6 +73,7 @@ contains
     call broadcast(electromagnetics)
     call broadcast(prescribed_flow)
     call broadcast(materials)
+    call broadcast(alloy_solidification)
 
     ! flow and prescribed_flow are mutually exclusive
 
@@ -80,6 +82,11 @@ contains
     else
       number_of_species = 0
     end if
+
+    if (alloy_solidification) heat_transport = .true.
+
+    if (alloy_solidification .and. species_transport) &
+        call TLS_fatal('alloy_solidification is not compatible with species_transport')
 
     !NNC: temporary test code
     if (prescribed_flow .and. (heat_transport .or. species_transport &

@@ -1,0 +1,24 @@
+{
+    "alloy":{
+        "phases":{"solid":{},"liquid":{}},
+        "properties":{"specific-heat":0.25, "density":4.0},
+        "phase-changes":{"solid:liquid":{
+            "solidus-temp": 10.0, // ignored
+            "liquidus-temp": 11.0, // ignored
+            "latent-heat": 10.0}}},
+    "phase-diagram":{
+        "material": "alloy",
+        "num-comp": 2,
+        "temp-fusion": 12.0,
+        "temp-eutectic": 8.0,
+        "liq-slope": [-8.0, -8.0],
+        "part-coef": [0.5, 0.5],
+        "gamma": 2.0},
+    "C0": [0.0625, 0.0625],
+    "Hdot": -1.0,
+    "T0": 12.0,
+    "T1": 7.0,
+    "dt": 0.5,
+    "tol": 1e-6,
+    "max-iter": 10
+}

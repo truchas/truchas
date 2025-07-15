@@ -76,6 +76,7 @@ module scalar_func_map_type
     procedure :: lookup
     procedure :: mapped
     procedure :: clear
+    procedure :: copy
     final :: scalar_func_map_delete
     procedure :: dump
   end type scalar_func_map
@@ -221,6 +222,20 @@ contains
     character(*), intent(in) :: key
     mapped = associated(find_list_item(this, key))
   end function mapped
+
+  !! Copy the elements of map SRC to DEST.
+  subroutine copy(src, dest)
+    class(scalar_func_map), intent(in) :: src
+    type(scalar_func_map), intent(inout) :: dest
+    type(scalar_func_map_iterator) :: iter
+    class(scalar_func), allocatable :: f
+    iter = scalar_func_map_iterator(src)
+    do while (.not.iter%at_end())
+      call iter%get_func(f)
+      call dest%insert(iter%name(), f)
+      call iter%next
+    end do
+  end subroutine
 
   !!!! SCALAR_FUNC_MAP_ITERATOR TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!
 

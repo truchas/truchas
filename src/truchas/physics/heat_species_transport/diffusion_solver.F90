@@ -25,6 +25,8 @@ module diffusion_solver
   use mesh_interop
   use ht_model_type
   use ht_solver_type
+  use alloy_model_type
+  use alloy_solver_type
   use FHT_model_type
   use FHT_solver_type
   use HTSD_model_type, only: htsd_model, htsd_model_delete
@@ -48,6 +50,7 @@ module diffusion_solver
   !! These return cell-centered results relative to the old Truchas mesh.
   public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
   public :: ds_get_temp_grad
+  public :: ds_get_alloy_conc_view, ds_get_alloy_liquid_conc, ds_get_alloy_solid_conc
 
   !! These return results relative to the new distributed mesh.
   public :: ds_get_cell_temp, ds_get_face_temp
@@ -76,17 +79,20 @@ module diffusion_solver
     !! New prototype HT-only solver
     type(ht_model),  pointer :: mod3 => null()
     type(ht_solver), pointer :: sol3 => null()
+    type(alloy_model),  pointer :: mod4 => null()
+    type(alloy_solver), pointer :: sol4 => null()
     class(enthalpy_advector), allocatable :: hadv
     type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
     type(parameter_list) :: ds_params, bc_params, thermal_source_params, &
-        species_bc_params, species_source_params
+        species_bc_params, species_source_params, alloy_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
   integer, parameter :: SOLVER1 = 1 ! the standard solver
   integer, parameter :: SOLVER2 = 2 ! special solver that works with transient void
   integer, parameter :: SOLVER3 = 3 ! new HT prototype
+  integer, parameter :: SOLVER4 = 4 ! prototype alloy solidification
 
 contains
 
@@ -99,19 +105,29 @@ contains
     use enclosure_radiation_namelist
     use diffusion_solver_namelist
     use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
+    use physics_module, only: alloy_solidification
+    use alloy_namelist
 
     integer, intent(in) :: lun
+    type(parameter_list), pointer :: plist
 
     call ds_data_init
-    call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
-    call read_thermal_bc_namelists(lun, this%bc_params)
-    call read_thermal_source_namelists(lun, this%thermal_source_params)
-    call read_species_bc_namelists(lun, this%species_bc_params)
-    call read_species_source_namelists(lun, this%species_source_params)
-
-    call read_enclosure_radiation_namelists(lun)
-
-    call this%ds_params%get('void-temperature', void_temperature)
+    if (alloy_solidification) then
+      call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%alloy_params)
+      call read_alloy_namelist(lun, this%alloy_params)
+      plist => this%alloy_params%sublist('sources')
+      call read_thermal_source_namelists(lun, plist)
+      plist => this%alloy_params%sublist('bc')
+      call read_thermal_bc_namelists(lun, plist)
+    else
+      call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
+      call read_thermal_bc_namelists(lun, this%bc_params)
+      call read_thermal_source_namelists(lun, this%thermal_source_params)
+      call read_species_bc_namelists(lun, this%species_bc_params)
+      call read_species_source_namelists(lun, this%species_source_params)
+      call read_enclosure_radiation_namelists(lun)
+      call this%ds_params%get('void-temperature', void_temperature)
+    end if
 
   end subroutine read_ds_namelists
 
@@ -132,8 +148,13 @@ contains
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
-    if (allocated(this%cadv)) then  ! necessarily using SOLVER1
-      t = HTSD_solver_last_time(this%sol1)
+    if (allocated(this%cadv)) then
+      select case (this%solver_type)
+      case (SOLVER4)
+        t = this%sol4%last_time()
+      case default ! necessarily using SOLVER1
+        t = HTSD_solver_last_time(this%sol1)
+      end select
       call update_adv_conc
     end if
 
@@ -148,6 +169,9 @@ contains
     case (SOLVER3)  ! new HT prototype
       t = h + this%sol3%last_time()
       call this%sol3%step(t, hnext, errc)
+    case (SOLVER4)  ! alloy solidification
+      t = h + this%sol4%last_time()
+      call this%sol4%step(t, hnext, errc)
     case default
       INSIST(.false.)
     end select
@@ -188,6 +212,8 @@ contains
           call this%mod2%set_ht_adv_source(q_ds)
         case (SOLVER3)
           call this%mod3%set_ht_adv_source(q_ds)
+        case (SOLVER4)
+          call this%sol4%set_adv_heat(q_ds)
         end select
         deallocate(q_ds)
       end if
@@ -199,14 +225,28 @@ contains
       integer :: i
       real(r8) :: phi(this%mesh%ncell), dphi(this%mesh%ncell)
 
-      do i = 1, num_species
-        call ds_get_phi(i, phi)
-        call this%mesh%cell_imap%gather_offp(phi)
-        call this%cadv(i)%get_advected_scalar(t, phi, dphi)
-        call this%mesh%cell_imap%gather_offp(dphi)
-        dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
-        call this%mod1%set_sd_adv_source(i, dphi)
-      end do
+      select case (this%solver_type)
+      case (SOLVER1)
+        do i = 1, num_species
+          call ds_get_phi(i, phi)
+          call this%mesh%cell_imap%gather_offp(phi)
+          call this%cadv(i)%get_advected_scalar(t, phi, dphi)
+          call this%mesh%cell_imap%gather_offp(dphi)
+          dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+          call this%mod1%set_sd_adv_source(i, dphi)
+        end do
+      case (SOLVER4)
+        do i = 1, this%sol4%num_comp
+          call this%sol4%get_C_liq(i, phi)
+          call this%mesh%cell_imap%gather_offp(phi)
+          call this%cadv(i)%get_advected_scalar(t, phi, dphi)
+          call this%mesh%cell_imap%gather_offp(dphi)
+          dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+          call this%sol4%set_cdot(i, dphi)
+        end do
+      case default
+        INSIST(.false.)
+      end select
 
     end subroutine update_adv_conc
 
@@ -230,12 +270,31 @@ contains
       call FHT_solver_commit_pending_state(this%sol2)
     case (SOLVER3)  ! new HT prototype
       call this%sol3%commit_pending_state
+    case (SOLVER4)  ! new HT prototype
+      call this%sol4%commit_pending_state
     case default
       INSIST(.false.)
     end select
 
     !! Update MATL in contexts that can modify the phase distribution.
-    if (this%have_phase_change) then
+    if (this%solver_type == SOLVER4) then
+      !FIXME: AWFUL UGLY HACK -- ASSUMES A SINGLE 2_PHASE MATERIAL
+      block
+        use legacy_matl_api, only: define_matl
+        real(r8) :: vof(2,this%mesh%ncell_onp)
+        real(r8), pointer :: lfrac(:)
+        integer ::i
+        call this%sol4%get_liq_frac_view(lfrac)
+        vof(1,:) = 1 - lfrac(:this%mesh%ncell_onp)
+        vof(2,:) = lfrac(:this%mesh%ncell_onp)
+        call define_matl(vof)
+        INSIST(allocated(zone%phi))
+        INSIST(size(zone%phi,dim=1) == this%sol4%num_comp)
+        do i = 1, this%sol4%num_comp
+          call this%sol4%get_C_liq(i, zone%phi(i,:))
+        end do
+      end block
+    else if (this%have_phase_change) then
       call create_state_array(state)
       call update_matl_from_mmf(this%mmf, state)
       deallocate(state)
@@ -261,6 +320,10 @@ contains
     case (SOLVER3)
       hlast = this%sol3%last_step_size()
       call this%sol3%get_stepping_stats(counters)
+      write(message,1) hlast, counters(1:2), counters(4:6)
+    case (SOLVER4)
+      hlast = this%sol4%last_step_size()
+      call this%sol4%get_stepping_stats(counters)
       write(message,1) hlast, counters(1:2), counters(4:6)
     case default
       INSIST(.false.)
@@ -292,6 +355,8 @@ contains
         call FHT_solver_get_cell_temp_copy(this%sol2, state(:,0))
       case (SOLVER3)
         call this%sol3%get_cell_temp_copy(state(:,0))
+      case (SOLVER4)
+        call this%sol4%get_cell_temp_copy(state(:,0))
       case default
         INSIST(.false.)
       end select
@@ -310,6 +375,8 @@ contains
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -326,6 +393,8 @@ contains
       call FHT_solver_get_cell_heat_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_heat_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_heat_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -344,6 +413,38 @@ contains
     end select
   end subroutine ds_get_phi
 
+  subroutine ds_get_alloy_conc_view(view)
+    real(r8), pointer, intent(out) :: view(:,:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_cell_conc_view(view)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
+  subroutine ds_get_alloy_liquid_conc(n, array)
+    integer, intent(in) :: n
+    real(r8), intent(inout) :: array(:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_C_liq(n, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
+  subroutine ds_get_alloy_solid_conc(n, array)
+    integer, intent(in) :: n
+    real(r8),intent(inout) :: array(:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_C_sol(n, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
   subroutine ds_get_temp_grad (array)
     real(r8), intent(inout) :: array(:,:)
     ASSERT(size(array,dim=2) >= this%mesh%ncell_onP)
@@ -356,6 +457,8 @@ contains
       call FHT_solver_get_cell_temp_grad (this%sol2, array(:,:this%mesh%ncell_onP))
     case (SOLVER3)
       call this%sol3%get_cell_temp_grad(array(:,:this%mesh%ncell_onP))
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_grad(array(:,:this%mesh%ncell_onP))
     case default
       INSIST(.false.)
     end select
@@ -374,6 +477,8 @@ contains
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -391,6 +496,8 @@ contains
       call FHT_solver_get_face_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_face_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_face_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -407,6 +514,8 @@ contains
       call FHT_solver_get_face_temp_view (this%sol2, view)
     case (SOLVER3)
       call this%sol3%get_face_temp_view(view)
+    case (SOLVER4)
+      call this%sol4%get_face_temp_view(view)
     case default
       INSIST(.false.)
     end select
@@ -425,7 +534,8 @@ contains
     use HTSD_solver_factory
     use ht_model_factory
     use ht_solver_factory
-    use physics_module, only: flow
+    use alloy_solver_factory
+    use physics_module, only: flow, alloy_solidification
     use enthalpy_advector1_type
     use thermal_bc_factory1_type
     use species_bc_factory1_type
@@ -433,10 +543,9 @@ contains
     use species_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
-    integer :: i
     real(r8), intent(in) :: tinit
 
-    integer :: stat
+    integer :: stat, i, n
     character(len=200) :: errmsg
     type(enthalpy_advector1), allocatable :: hadv1
     character(:), allocatable :: integrator, errmsg2
@@ -477,13 +586,27 @@ contains
         allocate(this%cadv(num_species))
         do i = 1, num_species
           call this%cadv(i)%init(this%mesh, i, stat, errmsg2)
-          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
+          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing concentration advection: ' // errmsg2)
+        end do
+      else if (alloy_solidification) then
+        call this%alloy_params%get('num-comp', n)
+        allocate(this%cadv(n))
+        do i = 1, n
+          call this%cadv(i)%init(this%mesh, i, stat, errmsg2)
+          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing concentration advection: ' // errmsg2)
         end do
       end if
     end if
 
     call this%ds_params%get('cutvof', this%cutvof, default=0.0_r8)
-    call this%ds_params%get('integrator', integrator)
+    if (alloy_solidification) then
+      call this%alloy_params%get('integrator', integrator)
+    else
+      call this%ds_params%get('integrator', integrator)
+    end if
+
+    if (alloy_solidification .and. this%have_void) &
+        call TLS_fatal('DS_INIT: alloy solidification does not support presence of VOID')
 
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
@@ -501,6 +624,8 @@ contains
       !! Void (if any) is fixed; use standard solver
       if (this%have_species_diffusion) then
         this%solver_type = SOLVER1
+      else if (alloy_solidification) then
+        this%solver_Type = SOLVER4
       else
         this%solver_Type = SOLVER3
       end if
@@ -548,6 +673,25 @@ contains
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       this%sol3 => create_ht_solver(this%mmf, this%mod3, this%ds_params, stat, errmsg2)
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
+
+    case (SOLVER4)
+      block
+        use material_model_driver, only: matl_model
+        use material_class
+        integer :: n
+        class(material), pointer :: matl
+        character(:), allocatable :: name
+        call this%alloy_params%get('material', name, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
+        n = matl_model%matl_index(name)
+        if (n == 0) call TLS_fatal('DS_INIT: unknown material: ' // name)
+        call matl_model%get_matl_ref(n, matl)
+        allocate(this%mod4)
+        call this%mod4%init(this%mesh, matl, this%alloy_params, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
+        this%sol4 => create_alloy_solver(this%mod4, this%alloy_params, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
+      end block
     case default
       INSIST(.false.)
     end select
@@ -619,9 +763,23 @@ contains
       call FHT_solver_set_initial_state (this%sol2, t, temp)
     case (SOLVER3)
       call this%sol3%set_initial_state(t, temp, dt)
+    case (SOLVER4)
+      call this%sol4%set_initial_state(t, temp, dt)
     case default
       INSIST(.false.)
     end select
+
+    if (this%solver_type == SOLVER4) then
+      block
+        use zone_module
+        integer :: i
+        INSIST(.not.allocated(zone%phi))
+        allocate(zone%phi(this%sol4%num_comp, this%mesh%ncell_onp))
+        do i = 1, size(zone%phi,dim=1)
+          call this%sol4%get_C_liq(i, zone%phi(i,:))
+        end do
+      end block
+    end if
 
   end subroutine ds_set_initial_state
 
@@ -644,6 +802,8 @@ contains
       ! nothing to do here yet
     case (SOLVER3)
       call this%sol3%restart(dt)
+    case (SOLVER4)
+      call this%sol4%restart(dt)
     case default
       INSIST(.false.)
     end select
@@ -806,6 +966,8 @@ contains
       call this%mod2%update_moving_vf
     case (SOLVER3)
       call this%mod3%update_moving_vf
+    case (SOLVER4)
+      ! nothing
     case default
       INSIST(.false.)
     end select
@@ -821,6 +983,8 @@ contains
       call this%mod2%add_moving_vf_events(eventq)
     case (SOLVER3)
       call this%mod3%add_moving_vf_events(eventq)
+    case (SOLVER4)
+      ! nothing
     case default
       INSIST(.false.)
     end select

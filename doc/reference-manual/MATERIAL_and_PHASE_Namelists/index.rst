@@ -52,10 +52,24 @@ The following attribute and property variables are used by the fluid flow model:
 
 * **is_fluid**
 * **density**
+* **thermal_expan_coef**
+* **expan_ref_temp**
 * **density_delta_func**
 * **viscosity**, **viscosity_func**
 
-The boolean attribute **is_fluid** is used to indicate whether or not the material or phase is a fluid. Its default value is :math:`F` (or :math:`.false.`) Materials and phases marked as fluid are included in the fluid flow model. The constant reference density :math:`\rho_o` of a fluid material or phase is specified by **density**. This is the same density value used for heat transport. A temperature-dependent fluid density :math:`\rho(T)` can be defined by giving its deviation from the reference density, :math:`\delta\rho(T) = \rho(T)−\rho_0` using the variable **density_delta_func**. This is used only to compute the buoyancy body force of the Boussinesq approximation in the flow model. If not specified, no deviation from the reference density is assumed.
+The boolean attribute **is_fluid** indicates whether or not the material
+or phase is a fluid. It is false by default. Materials and phases marked as
+fluid are included in the fluid flow model. The constant reference density
+:math:`\rho_\text{ref}` of a fluid material or phase is specified by
+**density**. This density value is also used for heat transfer. Buoyancy
+forces due to density variation with temperature are modeled using the
+Boussinesq approximation. The density variation is defined by specifying
+the thermal expansion coefficient **thermal_expan_coef** and reference
+temperature **expan_ref_temp**. Alternatively, the variation can be specified
+explicitly by defining the deviation from reference density,
+:math:`\delta\rho(T) = \rho(T) - \rho_\text{ref}`, using the variable
+**density_delta_func**. If neither is specified, no buoyancy forces will be
+included.
 
 The dynamic viscosity (mass per length per time) of a material or phase is specified by **viscosity** for a constant or **viscosity_func** for a function of temperature. This is required for viscous flow problems (:ref:`FLOW<FLOW_Namelist>` namelist variable **inviscid = F**).
 
