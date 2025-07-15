@@ -47,6 +47,16 @@ target_sources(truchas PRIVATE
   thermal_source_factory_type.F90
   species_source_namelist.F90
   species_source_factory_type.F90
+  alloy_lever_rule_type.F90
+  alloy_back_diff_type.F90
+  alloy_vector_type.F90
+  alloy_model_type.F90
+  alloy_norm_type.F90
+  alloy_precon_type.F90
+  alloy_solver_type.F90
+  alloy_solver_factory.F90
+  alloy_ic_solver_type.F90
+  alloy_namelist.F90
 )
 
 add_subdirectory(Test)

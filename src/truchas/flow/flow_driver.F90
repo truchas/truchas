@@ -72,6 +72,7 @@ module flow_driver
   use scalar_func_tools
   use scalar_func_containers
   use flow_operators, only: flow_operators_init
+  use zone_module
   implicit none
   private
 
@@ -90,7 +91,7 @@ module flow_driver
     type(flow_props) :: props
     ! The flow driver shouldn't logically need this but temperature is currently
     ! stored in Zone%Temp so we need to keep a version on the new mesh as well
-    real(r8), allocatable :: temperature_cc(:)
+    real(r8), allocatable :: state_cc(:,:) ! cell-centered temperature, concentration
 
     ! a copy of the diffusion solver's variable for surface tension to hold as a reference
     real(r8), allocatable :: temperature_fc(:)
@@ -183,7 +184,7 @@ contains
     use flow_namelist, only: params
     use material_model_driver, only: matl_model
     use physics_module, only: prescribed_flow
-    use scalar_func_factories, only: alloc_const_scalar_func
+    use scalar_func_factories, only: alloc_const_scalar_func, alloc_poly_scalar_func
     use vtrack_driver, only: vtrack_driver_init, vtrack_set_inflow_bc
     use flow_bc_type
     use truchas_logging_services
@@ -211,7 +212,7 @@ contains
     call this%mesh%init_face_centroid
     call this%mesh%init_face_normal_dist
 
-    allocate(this%temperature_cc(this%mesh%ncell), this%temperature_fc(this%mesh%nface))
+    allocate(this%temperature_fc(this%mesh%nface))
 
     ! Some duplication here from vtrack_driver.  This should all be subsumed and handled
     ! properly by a sufficiently intelligent physics driver at some point
@@ -249,6 +250,17 @@ contains
     allocate(density_delta(size(fluids)))
     do i = 1, size(fluids)
       call matl_model%get_phase_prop(fluids(i), 'density-delta', density_delta(i)%f)
+      if (.not.allocated(density_delta(i)%f)) then
+        if (matl_model%has_const_phase_prop(fluids(i), 'thermal-expan-coef') .and. &
+            matl_model%has_const_phase_prop(fluids(i), 'expan-ref-temp')) then
+          block ! create the function if the coefficient of thermal expansion is defined
+            real(r8) :: alpha, Tref
+            alpha = matl_model%const_phase_prop(fluids(i), 'thermal-expan-coef')
+            Tref  = matl_model%const_phase_prop(fluids(i), 'expan-ref-temp')
+            call alloc_poly_scalar_func(density_delta(i)%f, [-density(i)*alpha], [1], Tref)
+          end block
+        end if
+      end if
       if (.not.allocated(density_delta(i)%f)) call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
     end do
 
@@ -278,11 +290,17 @@ contains
     real(r8), intent(in), pointer :: temperature_fc(:)
     real(r8), intent(in), optional :: vel_fn(:)
 
-    integer :: j
+    integer :: n
     real(r8) :: vcell(3,this%mesh%ncell_onP)
     real(r8), pointer :: vof(:,:)
 
     call start_timer('Flow')
+
+    if (.not.allocated(this%state_cc)) then
+      n = 1
+      if (allocated(zone%phi)) n = 1 + size(zone%phi,dim=1)
+      allocate(this%state_cc(n,this%mesh%ncell))
+    end if
 
     if (prescribed_flow) then
       block
@@ -300,20 +318,20 @@ contains
         end do
       end block
       ! This will be needed by timestep
-      this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
+      this%state_cc(1,1:this%mesh%ncell_onP) = zone%temp
+      if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onP) = zone%phi
+      call this%mesh%cell_imap%gather_offp(this%state_cc)
       vof => vtrack_vof_view()
-      call this%mesh%cell_imap%gather_offp(this%temperature_cc)
-      call this%props%set_initial_state(vof, this%temperature_cc)
+      call this%props%set_initial_state(vof, this%state_cc)
       call stop_timer('Flow')
       return
     end if
 
-    do j = 1, this%mesh%ncell_onP
-      vcell(:,j) = zone(j)%vc
-    end do
+    vcell(:,:this%mesh%ncell_onP) = zone%vc
 
-    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
+    this%state_cc(1,1:this%mesh%ncell_onp) = zone%temp
+    if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onp) = zone%phi
+    call this%mesh%cell_imap%gather_offp(this%state_cc)
 
     if (associated(temperature_fc)) then
       this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
@@ -323,9 +341,9 @@ contains
     vof => vtrack_vof_view()
 
     if (present(vel_fn)) then ! RESTART
-      call this%flow%set_initial_state(t, zone%p, vcell, vel_fn, vof, this%temperature_cc)
+      call this%flow%set_initial_state(t, zone%p, vcell, vel_fn, vof, this%state_cc)
     else
-      call this%flow%set_initial_state(t, dt, vcell, vof, this%temperature_cc)
+      call this%flow%set_initial_state(t, dt, vcell, vof, this%state_cc)
     end if
 
     call stop_timer('Flow')
@@ -345,11 +363,12 @@ contains
 
     call start_timer('Flow')
 
-    this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
-    call this%mesh%cell_imap%gather_offp(this%temperature_cc)
+    this%state_cc(1,1:this%mesh%ncell_onp) = zone%temp
+    if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onp) = zone%phi
+    call this%mesh%cell_imap%gather_offp(this%state_cc)
 
     if (prescribed_flow) then
-      call this%props%update_cc(vof, this%temperature_cc)
+      call this%props%update_cc(vof, this%state_cc)
       block
         integer :: j
         real(r8) :: args(0:3)
@@ -369,7 +388,7 @@ contains
         this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
         call this%mesh%face_imap%gather_offp(this%temperature_fc)
       end if
-      call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
+      call this%flow%step(t, dt, vof, flux_vol, this%state_cc)
     end if
 
     call stop_timer('Flow')

@@ -352,7 +352,7 @@ CONTAINS
       if (stat /= 0) call TLS_fatal(errmsg)
       do j = 1, mesh%ncell_onP
         call matl_get_cell_vof(j, vfrac)
-        call func%compute_value(vfrac, [zone(j)%temp], zone(j)%rho)
+        call func%compute_value(vfrac, [zone%temp(j)], zone%rho(j))
       end do
       zone%rho_old = zone%rho
 
@@ -361,7 +361,7 @@ CONTAINS
       if (stat /= 0) call TLS_fatal(errmsg)
       do j = 1, mesh%ncell_onP
         call matl_get_cell_vof(j, vfrac)
-        call func%compute_value(vfrac, [zone(j)%temp], zone(j)%enthalpy)
+        call func%compute_value(vfrac, [zone%temp(j)], zone%enthalpy(j))
       end do
       zone%enthalpy_old = zone%enthalpy
 
@@ -656,12 +656,12 @@ CONTAINS
 
        ! Compute the center of mass velocity
        where (Mass > 0)
-          Zone%Vc(n) = Massc / Mass
+          Zone%Vc(n,:) = Massc / Mass
        elsewhere
-          Zone%Vc(n) = 0.0_r8
+          Zone%Vc(n,:) = 0.0_r8
        end where
 
-       Zone%Vc_old(n) = Zone%Vc(n)
+       Zone%Vc_old(n,:) = Zone%Vc(n,:)
 
     end do
 

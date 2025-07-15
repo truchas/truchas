@@ -153,7 +153,7 @@ contains
     use unstr_mesh_type
     use mesh_manager, only: unstr_mesh_ptr
     use time_step_module, only: t, dt, cycle_number
-    use physics_module, only: heat_transport, species_transport
+    use physics_module, only: heat_transport, species_transport, alloy_solidification
     use em_heat_driver, only: em_heat_enabled
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
@@ -200,6 +200,9 @@ contains
 
     !! Microstructure analysis data (if enabled)
     call ustruc_output (seq)
+
+    !! Additional alloy solute concentration data
+    if (alloy_solidification) call write_alloy_solidification_data
 
     call outfile%close()
 
@@ -368,6 +371,26 @@ contains
       end do
 
     end subroutine write_species_data
+
+    !! Write the alloy solute concentration fields. Other alloy solidification
+    !! model fields (liquid/solid fraction, enthalpy, temperature) are written
+    !! elsewhere.
+
+    subroutine write_alloy_solidification_data
+      use diffusion_solver, only: ds_get_alloy_conc_view, ds_get_alloy_liquid_conc, ds_get_alloy_solid_conc
+      use string_utilities, only: i_to_c
+      integer :: n
+      real(r8), pointer :: conc(:,:)
+      real(r8) :: array(ncells)
+      call ds_get_alloy_conc_view(conc)
+      do n = 1, size(conc,1)
+        call write_seq_cell_field(seq, conc(n,:ncells), 'C'//i_to_c(n), for_viz=.true.)
+        call ds_get_alloy_liquid_conc(n, array)
+        call write_seq_cell_field(seq, array, 'C'//i_to_c(n)//'_liq', for_viz=.true.)
+        call ds_get_alloy_solid_conc(n, array)
+        call write_seq_cell_field(seq, array, 'C'//i_to_c(n)//'_sol', for_viz=.true.)
+      end do
+    end subroutine
 
   end subroutine TDO_write_timestep
 

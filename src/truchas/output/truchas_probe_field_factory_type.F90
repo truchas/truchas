@@ -75,7 +75,7 @@ contains
     class(probe_field_zone_vc), intent(in) :: this
     integer, intent(in) :: index
     real(r8), allocatable :: value_zone_vc(:)
-    value_zone_vc = zone(index)%vc
+    value_zone_vc = zone%vc(:,index)
   end function
 
   function value_vfrac(this, index)

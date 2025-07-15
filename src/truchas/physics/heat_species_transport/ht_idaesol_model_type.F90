@@ -85,13 +85,16 @@ contains
     end select
   end subroutine
 
-  subroutine compute_precon(this, t, u, dt)
+  subroutine compute_precon(this, t, u, udot, dt)
     class(ht_idaesol_model) :: this
     real(r8), intent(in) :: t, dt
-    class(vector), intent(inout) :: u
+    class(vector), intent(inout) :: u, udot
     select type (u)
     class is (ht_vector)
-      call this%precon%compute(t, u, dt)
+      select type (udot)
+      class is (ht_vector)
+        call this%precon%compute(t, u, dt)
+      end select
     end select
   end subroutine
 

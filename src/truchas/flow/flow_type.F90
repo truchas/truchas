@@ -173,12 +173,12 @@ contains
   !! external state variables are supplied. The remaining state variables are
   !! computed/derived from them. This is indicated for starting a simulation.
 
-  subroutine set_initial_state_start(this, t, dt, vcell, vof, tcell)
+  subroutine set_initial_state_start(this, t, dt, vcell, vof, state)
 
     class(flow), intent(inout) :: this
 
     real(r8), intent(in) :: t, dt
-    real(r8), intent(in) :: vcell(:,:), vof(:,:), tcell(:)
+    real(r8), intent(in) :: vcell(:,:), vof(:,:), state(:,:)
 
     integer :: i, j
     real(r8) :: vel(3)
@@ -189,7 +189,7 @@ contains
     call TLS_info('')
     call TLS_info('Computing initial flow pressures and fluxing velocities ...')
 
-    call this%props%set_initial_state(vof, tcell)
+    call this%props%set_initial_state(vof, state)
 
     this%vel_cc(:,:this%mesh%ncell_onP) = vcell(:,:this%mesh%ncell_onP)
     call this%mesh%cell_imap%gather_offp(this%vel_cc)
@@ -238,10 +238,10 @@ contains
   !! state data. NB: The current restart file format does not contain data for
   !! the cell-centered dynamic pressure gradient, so it is computed.
 
-  subroutine set_initial_state_restart(this, t, pcell, vcell, vface, vof, tcell)
+  subroutine set_initial_state_restart(this, t, pcell, vcell, vface, vof, state)
 
     class(flow), intent(inout) :: this
-    real(r8), intent(in) :: t, pcell(:), vcell(:,:), vface(:), tcell(:), vof(:,:)
+    real(r8), intent(in) :: t, pcell(:), vcell(:,:), vface(:), state(:,:), vof(:,:)
 
     ASSERT(size(vcell,dim=1)==3)
     ASSERT(size(vcell,dim=2)>=this%mesh%ncell_onP)
@@ -260,7 +260,7 @@ contains
     this%vel_fn_n = this%vel_fn
 
     call this%bc%compute_initial(t)
-    call this%props%set_initial_state(vof, tcell)
+    call this%props%set_initial_state(vof, state)
     call this%proj%get_dyn_press_grad(this%props, this%p_cc, this%body_force, this%grad_p_rho_cc_n)
 
     !call this%dump_state
@@ -333,12 +333,12 @@ contains
   end subroutine correct_non_regular_cells
 
 
-  subroutine step(this, t, dt, vof, flux_volumes, tcell)
+  subroutine step(this, t, dt, vof, flux_volumes, state)
 
     class(flow), intent(inout) :: this
-    real(r8), intent(in) :: t, dt, vof(:,:), flux_volumes(:,:), tcell(:)
+    real(r8), intent(in) :: t, dt, vof(:,:), flux_volumes(:,:), state(:,:)
 
-    call this%props%update_cc(vof, tcell)
+    call this%props%update_cc(vof, state)
 
     if (.not.this%props%any_real_fluid) then
       this%vel_cc = 0

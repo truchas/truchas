@@ -55,6 +55,7 @@ module material_model_type
     procedure :: get_matl_phase_frac
     procedure :: get_phase_ref
     procedure :: get_matl_ref
+    procedure :: has_const_phase_prop
     procedure :: const_phase_prop
     procedure :: get_phase_prop
     procedure :: get_matl_prop
@@ -290,6 +291,15 @@ contains
     type(phase), pointer :: phi
     phi => this%plist(pid)%phi
   end subroutine
+
+  !! Return true if phase PID has the constant property NAME. PID must be in
+  !! [1, NUM_REAL_PHASE] (unchecked).
+  logical function has_const_phase_prop(this, pid, name)
+    class(material_model), intent(in) :: this
+    integer, intent(in) :: pid
+    character(*), intent(in) :: name
+    has_const_phase_prop = this%plist(pid)%phi%has_const_prop(name)
+  end function
 
   !! Return the value of the constant property NAME of phase PID. PID must be in
   !! [1, NUM_REAL_PHASE] (unchecked). The property must exist and be constant

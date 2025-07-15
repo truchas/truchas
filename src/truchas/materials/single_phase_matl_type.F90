@@ -35,7 +35,7 @@ module single_phase_matl_type
     procedure :: add_enthalpy_prop
   end type
 
-  type, extends(matl_prop) :: single_phase_prop
+  type, extends(matl_prop), public :: single_phase_prop ! public only for multiphase_matl_type
     class(scalar_func), allocatable :: func
   contains
     ! Deferred procedure from MATL_PROP
@@ -160,12 +160,13 @@ contains
 
   end subroutine add_enthalpy_prop
 
-  subroutine alloc_matl_prop(this, name, prop, errmsg)
+  subroutine alloc_matl_prop(this, name, prop, errmsg, n)
 
     class(single_phase_matl), intent(in), target :: this
     character(*), intent(in) :: name
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
+    integer, intent(in), optional :: n ! ignored phase index
 
     type(single_phase_prop), allocatable :: p
     allocate(p)

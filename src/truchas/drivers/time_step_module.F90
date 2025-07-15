@@ -97,9 +97,7 @@ CONTAINS
     ! ZJIBBEN 5/16/22: This subroutine is called after fields have already been
     !   updated. The temp_old field is needed for output during the current cycle,
     !   so it is instead updated in ds_accept.
-    do n = 1, 3
-       Zone%Vc_Old(n) = Zone%Vc(n)
-    end do
+    Zone%Vc_Old = Zone%Vc
     Zone%Rho_Old      = Zone%Rho
     !Zone%Temp_Old     = Zone%Temp
     Zone%Enthalpy_Old = Zone%Enthalpy

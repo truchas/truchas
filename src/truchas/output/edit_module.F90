@@ -112,7 +112,7 @@ CONTAINS
  
     ! Zone kinetic energy density
     do n = 1,ndim
-       KE = KE + Zone%Vc(n)**2
+       KE = KE + Zone%Vc(n,:)**2
     end do
     KE = 0.5_r8*KE
 
@@ -138,7 +138,7 @@ CONTAINS
 
        ! Compute material momentum.
        MOMENTUM: do n = 1,ndim
-          Material_Momentum(n,m) = global_sum(Matl_Mass*Zone%Vc(n))
+          Material_Momentum(n,m) = global_sum(Matl_Mass*Zone%Vc(n,:))
           !if (ABS(Material_Momentum(n,m)) <= alittle .or. .not.matl_model%is_fluid(m)) Material_Momentum(n,m) = 0.0_r8
           Total_Momentum(n) = Total_Momentum(n) + Material_Momentum(n,m)
        end do MOMENTUM
@@ -151,7 +151,7 @@ CONTAINS
        ! Get the material enthalpy.
        call matl_model%get_phase_prop(m, 'enthalpy', f)
        ENTHALPY_LOOP: do n=1,mesh%ncell_onP
-         Tmp(n) = Matl_Vol(n) * f%eval([Zone(n)%Temp])
+         Tmp(n) = Matl_Vol(n) * f%eval([Zone%Temp(n)])
        end do ENTHALPY_LOOP
 
        ! Accumulate the material enthalpy.
@@ -194,7 +194,7 @@ CONTAINS
        select case (i)
           case (1:ndim)
              ! Velocity
-             Tmp = Zone%Vc(i)
+             Tmp = Zone%Vc(i,:)
              if (i == 1) then
                 string = 'X-Velocity'
              else if (i == 2) then
@@ -205,7 +205,7 @@ CONTAINS
           case (ndim+1:2*ndim)
              ! Momentum
              n = i - ndim
-             Tmp = Mass*Zone%Vc(n)
+             Tmp = Mass*Zone%Vc(n,:)
              if (n == 1) then
                 string = 'X-Momentum'
              else if (n == 2) then

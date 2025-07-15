@@ -342,6 +342,8 @@ contains
     if (plist%is_sublist(param)) then
       func_params => plist%sublist(param)
       call alloc_scalar_func(f, func_params)  !TODO: should return stat, errmsg
+      stat = 0
+      return
     else if (plist%is_scalar(param)) then
 #ifdef GNU_PR93762
       block
