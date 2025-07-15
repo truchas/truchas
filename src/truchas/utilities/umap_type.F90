@@ -60,8 +60,25 @@ module umap_type
     procedure :: lookup
     procedure :: mapped
     procedure :: clear
+    procedure :: copy
     final :: umap_delete
   end type
+
+  type, public :: umap_iterator
+    private
+    class(list_item), pointer :: item => null()
+  contains
+    procedure :: next => iter_next
+    procedure :: at_end => iter_at_end
+    procedure :: name => iter_name
+    procedure :: get_value => iter_get_value
+    procedure :: value_ref => iter_value_ref
+  end type
+
+  !! User-defined UMAP_ITERATOR structure constructor
+  interface umap_iterator
+    procedure umap_begin
+  end interface
 
 contains
 
@@ -194,6 +211,64 @@ contains
     class(umap), intent(in) :: this
     character(*), intent(in) :: key
     mapped = associated(find_list_item(this, key))
+  end function
+
+  !! Copy the elements of map SRC to DEST.
+  subroutine copy(src, dest)
+    class(umap), intent(in) :: src
+    type(umap), intent(inout) :: dest
+    type(umap_iterator) :: iter
+    class(*), allocatable :: val
+    iter = umap_iterator(src)
+    do while (.not.iter%at_end())
+      call iter%get_value(val)
+      call dest%insert(iter%name(), val)
+      call iter%next
+    end do
+  end subroutine
+
+!!!! UMAP_ITERATOR TYPE-BOUND PROCEDURES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  !! Defined UMAP_ITERATOR constructor that is positioned
+  !! to the beginning element of the specified UMAP object.
+  function umap_begin(map) result(iter)
+    class(umap), intent(in) :: map
+    type(umap_iterator) :: iter
+    iter%item => map%first
+  end function
+
+  !! Advances iterator to the next element in the map.
+  subroutine iter_next(this)
+    class(umap_iterator), intent(inout) :: this
+    if (associated(this%item)) this%item => this%item%next
+  end subroutine
+
+  !! Returns true if the iterator as reached the end; that is, it has
+  !! gone past the last element of the map.
+  pure logical function iter_at_end(this)
+    class(umap_iterator), intent(in) :: this
+    iter_at_end = .not.associated(this%item)
+  end function
+
+  !! Returns the name of the current element.
+  function iter_name(this)
+    class(umap_iterator), intent(in) :: this
+    character(:), allocatable :: iter_name
+    iter_name = this%item%key
+  end function
+
+  !! Returns a copy of the value for the current element.
+  subroutine iter_get_value(this, val)
+    class(umap_iterator), intent(in) :: this
+    class(*), allocatable, intent(out) :: val
+    if (allocated(this%item%value)) allocate(val, source=this%item%value)
+  end subroutine
+
+  !! Returns a reference to the value for the current element.
+  function iter_value_ref(this) result(ref)
+    class(umap_iterator), intent(in) :: this
+    class(*), pointer :: ref
+    ref => this%item%value
   end function
 
 end module umap_type

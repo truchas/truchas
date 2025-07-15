@@ -55,14 +55,14 @@ contains
     !! Additional property variables (almost the same as for PHASE)
     logical :: is_fluid
     real(r8) :: density, specific_heat, ref_temp, ref_enthalpy, conductivity, viscosity, &
-        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
+        thermal_expan_coef, expan_ref_temp, diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: specific_enthalpy_func, specific_heat_func, conductivity_func, &
         density_delta_func, viscosity_func, diffusivity_func(MAX_SPECIES), &
         soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /material/ is_fluid, density, ref_temp, ref_enthalpy, specific_heat, &
         specific_heat_func, specific_enthalpy_func, conductivity, conductivity_func, &
-        density_delta_func, viscosity, viscosity_func, &
+        density_delta_func, thermal_expan_coef, expan_ref_temp, viscosity, viscosity_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
         tm_lame1, tm_lame1_func, tm_lame2, tm_lame2_func
@@ -112,6 +112,8 @@ contains
       conductivity = NULL_R
       conductivity_func = NULL_C
       density_delta_func = NULL_C
+      thermal_expan_coef = NULL_R
+      expan_ref_temp = NULL_R
       viscosity = NULL_R
       viscosity_func = NULL_C
       electrical_conductivity = NULL_R
@@ -153,6 +155,8 @@ contains
       call broadcast(conductivity)
       call broadcast(conductivity_func)
       call broadcast(density_delta_func)
+      call broadcast(thermal_expan_coef)
+      call broadcast(expan_ref_temp)
       call broadcast(viscosity)
       call broadcast(viscosity_func)
       call broadcast(electrical_conductivity)
@@ -238,6 +242,8 @@ contains
 
       !! Process fluid flow properties
       call process2(plist, NULL_R, density_delta_func, 'DENSITY_DELTA', 'density-delta', label)
+      call process2(plist, thermal_expan_coef, NULL_C, 'THERMAL_EXPAN_COEF', 'thermal-expan-coef', label)
+      call process2(plist, expan_ref_temp, NULL_C, 'EXPAN_REF_TEMP', 'expan-ref-temp', label)
       call process2(plist, viscosity, viscosity_func, 'VISCOSITY', 'viscosity', label)
 
       !! Process electromagnetic properties
@@ -274,15 +280,16 @@ contains
 
     !! Namelist variables
     logical :: is_fluid
-    real(r8) :: specific_heat, conductivity, viscosity, &
-        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), &
-        tm_ref_density, tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
+    real(r8) :: specific_heat, conductivity, viscosity, thermal_expan_coef, expan_ref_temp, &
+        diffusivity(MAX_SPECIES), soret_coef(MAX_SPECIES), tm_ref_density, &
+        tm_ref_temp, tm_linear_cte, tm_lame1, tm_lame2
     character(32) :: name, specific_heat_func, specific_enthalpy_func, conductivity_func, &
         density_delta_func, viscosity_func, diffusivity_func(MAX_SPECIES), &
         soret_coef_func(MAX_SPECIES), tm_linear_cte_func, tm_lame1_func, tm_lame2_func
     namelist /phase/ name, is_fluid, &
         specific_heat, specific_heat_func, specific_enthalpy_func, conductivity, &
-        conductivity_func, density_delta_func, viscosity, viscosity_func, &
+        conductivity_func, density_delta_func, thermal_expan_coef, expan_ref_temp, &
+        viscosity, viscosity_func, &
         diffusivity, diffusivity_func, soret_coef, soret_coef_func, &
         tm_ref_density, tm_ref_temp, tm_linear_cte, tm_linear_cte_func, &
         tm_lame1, tm_lame1_func, tm_lame2, tm_lame2_func
@@ -327,6 +334,8 @@ contains
       conductivity = NULL_R
       conductivity_func = NULL_C
       density_delta_func = NULL_C
+      thermal_expan_coef = NULL_R
+      expan_ref_temp = NULL_R
       viscosity = NULL_R
       viscosity_func = NULL_C
       electrical_conductivity = NULL_R
@@ -362,6 +371,8 @@ contains
       call broadcast(conductivity)
       call broadcast(conductivity_func)
       call broadcast(density_delta_func)
+      call broadcast(thermal_expan_coef)
+      call broadcast(expan_ref_temp)
       call broadcast(viscosity)
       call broadcast(viscosity_func)
       call broadcast(electrical_conductivity)
@@ -414,6 +425,8 @@ contains
 
       !! Process fluid flow properties
       call process2(plist, NULL_R, density_delta_func, 'DENSITY_DELTA', 'density-delta', label)
+      call process2(plist, thermal_expan_coef, NULL_C, 'THERMAL_EXPAN_COEF', 'thermal-expan-coef', label)
+      call process2(plist, expan_ref_temp, NULL_C, 'EXPAN_REF_TEMP', 'expan-ref-temp', label)
       call process2(plist, viscosity, viscosity_func, 'VISCOSITY', 'viscosity', label)
 
       !! Process electromagnetic properties

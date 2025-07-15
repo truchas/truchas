@@ -68,6 +68,7 @@ module scalar_func_map_type
     procedure :: lookup
     procedure :: mapped
     procedure :: clear
+    procedure :: copy
   end type
 
 contains
@@ -109,6 +110,12 @@ contains
   subroutine clear(this)
     class(scalar_func_map), intent(inout) :: this
     call this%map%clear
+  end subroutine
+
+  subroutine copy(src, dest)
+    class(scalar_func_map), intent(in) :: src
+    type(scalar_func_map), intent(inout) :: dest
+    call src%map%copy(dest%map)
   end subroutine
 
 end module scalar_func_map_type

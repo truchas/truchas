@@ -100,6 +100,7 @@ module new_idaesol_type
     procedure(apply_precon), deferred :: apply_precon
     procedure(compute_precon), deferred :: compute_precon
     procedure(du_norm), deferred :: du_norm
+    procedure :: normalize
   end type
 
   abstract interface
@@ -122,11 +123,11 @@ module new_idaesol_type
       class(vector), intent(inout) :: u
       class(vector), intent(inout) :: f
     end subroutine
-    subroutine compute_precon(this, t, u, dt)
+    subroutine compute_precon(this, t, u, udot, dt)
       import idaesol_model, vector, r8
       class(idaesol_model) :: this
       real(r8), intent(in) :: t, dt
-      class(vector), intent(inout) :: u
+      class(vector), intent(inout) :: u, udot
     end subroutine
     subroutine du_norm(this, t, u, du, error)
       import :: idaesol_model, vector, r8
@@ -442,6 +443,8 @@ contains
       call this%uhist%interp_state(t,  this%up, order=2)
       call this%uhist%interp_state(t0, this%u0, order=1)
     end if
+    call this%model%normalize(this%up)
+    call this%model%normalize(this%u0)
 
     fresh_pc = .false.
 
@@ -462,7 +465,10 @@ contains
       !! Update the preconditioner if necessary.
       if (.not.this%usable_pc) then
         this%updpc_calls = this%updpc_calls + 1
-        call this%model%compute_precon(t, this%up, etah)
+        call this%udot%copy(this%up)
+        call this%udot%update(-1.0_r8, this%u0)
+        call this%udot%scale(1.0_r8/etah)
+        call this%model%compute_precon(t, this%up, this%udot, etah)
         if (this%verbose) write(this%unit,fmt=3) t
         this%hpc = etah
         this%usable_pc = .true.
@@ -657,6 +663,7 @@ contains
       end if
 
     end do
+    call this%model%normalize(u)
 
     1 format(2x,'NLK BCE solve FAILED: ',i3,' iterations (max), error=',es22.15)
     2 format(2x,'NLK BCE solve succeeded: ',i3,' iterations, error=',es22.15)
@@ -737,6 +744,12 @@ contains
     counters(4) = this%retried_bce
     counters(5) = this%failed_bce
     counters(6) = this%rejected_steps
+  end subroutine
+
+  !! Default iterate normalization procedure does nothing.
+  subroutine normalize(this, u)
+    class(idaesol_model), intent(in) :: this
+    class(vector), intent(inout) :: u
   end subroutine
 
 end module new_idaesol_type

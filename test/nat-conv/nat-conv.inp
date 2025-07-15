@@ -157,7 +157,9 @@ cells at each long_edit interval.
   density = 1.2180
   specific_heat = 1.006
   conductivity = 25.470e-6
-  density_delta_func = 'air-drho'
+  !density_delta_func = 'air-drho'
+  thermal_expan_coef = 0.0032841
+  expan_ref_temp = 0.0
   viscosity = 17.975845e-6
 /
 

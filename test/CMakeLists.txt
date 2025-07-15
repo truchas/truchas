@@ -4,6 +4,9 @@ set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(AddPytruchasTest)
 
+add_pytruchas_test(alloy1 alloy/test1.py PROCESSORS 4 LABELS ALLOY)
+add_pytruchas_test(alloy2 alloy/test2.py PROCESSORS 4 LABELS ALLOY)
+
 add_pytruchas_test(enthalpy1 enthalpy/test1.py PROCESSORS 1 LABELS CONDUCTION)
 add_pytruchas_test(enthalpy2 enthalpy/test2.py PROCESSORS 1 LABELS CONDUCTION)
 add_pytruchas_test(enthalpy3 enthalpy/test3.py PROCESSORS 1 LABELS CONDUCTION)
