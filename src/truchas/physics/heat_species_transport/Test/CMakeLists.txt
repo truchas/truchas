@@ -11,3 +11,6 @@ add_test(mfd_polygon_matrix_inv ${SERIAL_COMMAND_PREFACE}
 
 set_tests_properties(mfd_polygon_matrix_inv PROPERTIES PROCESSORS 1)
 set_property(TEST mfd_polygon_matrix_inv PROPERTY LABELS UNIT)
+
+add_executable(test_multicomp_lever_type test_multicomp_lever_type.F90)
+target_link_libraries(test_multicomp_lever_type truchas)

@@ -47,6 +47,7 @@ target_sources(truchas PRIVATE
   thermal_source_factory_type.F90
   species_source_namelist.F90
   species_source_factory_type.F90
+  multicomp_lever_type.F90
 )
 
 add_subdirectory(Test)
