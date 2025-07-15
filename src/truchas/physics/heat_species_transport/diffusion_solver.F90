@@ -25,6 +25,8 @@ module diffusion_solver
   use mesh_interop
   use ht_model_type
   use ht_solver_type
+  use alloy_model_type
+  use alloy_solver_type
   use FHT_model_type
   use FHT_solver_type
   use HTSD_model_type, only: htsd_model, htsd_model_delete
@@ -76,6 +78,8 @@ module diffusion_solver
     !! New prototype HT-only solver
     type(ht_model),  pointer :: mod3 => null()
     type(ht_solver), pointer :: sol3 => null()
+    type(alloy_model),  pointer :: mod4 => null()
+    type(alloy_solver), pointer :: sol4 => null()
     class(enthalpy_advector), allocatable :: hadv
     type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
@@ -87,6 +91,7 @@ module diffusion_solver
   integer, parameter :: SOLVER1 = 1 ! the standard solver
   integer, parameter :: SOLVER2 = 2 ! special solver that works with transient void
   integer, parameter :: SOLVER3 = 3 ! new HT prototype
+  integer, parameter :: SOLVER4 = 4 ! prototype alloy solidification
 
 contains
 
@@ -148,6 +153,9 @@ contains
     case (SOLVER3)  ! new HT prototype
       t = h + this%sol3%last_time()
       call this%sol3%step(t, hnext, errc)
+    case (SOLVER4)  ! alloy solidification
+      t = h + this%sol4%last_time()
+      call this%sol4%step(t, hnext, errc)
     case default
       INSIST(.false.)
     end select
@@ -188,6 +196,8 @@ contains
           call this%mod2%set_ht_adv_source(q_ds)
         case (SOLVER3)
           call this%mod3%set_ht_adv_source(q_ds)
+        case (SOLVER4)
+          call this%mod4%set_alloy_adv_source(q_ds)
         end select
         deallocate(q_ds)
       end if
@@ -230,6 +240,8 @@ contains
       call FHT_solver_commit_pending_state(this%sol2)
     case (SOLVER3)  ! new HT prototype
       call this%sol3%commit_pending_state
+    case (SOLVER4)  ! new HT prototype
+      call this%sol4%commit_pending_state
     case default
       INSIST(.false.)
     end select
@@ -262,6 +274,10 @@ contains
       hlast = this%sol3%last_step_size()
       call this%sol3%get_stepping_stats(counters)
       write(message,1) hlast, counters(1:2), counters(4:6)
+    case (SOLVER4)
+      hlast = this%sol4%last_step_size()
+      call this%sol4%get_stepping_stats(counters)
+      write(message,1) hlast, counters(1:2), counters(4:6)
     case default
       INSIST(.false.)
     end select
@@ -292,6 +308,8 @@ contains
         call FHT_solver_get_cell_temp_copy(this%sol2, state(:,0))
       case (SOLVER3)
         call this%sol3%get_cell_temp_copy(state(:,0))
+      case (SOLVER4)
+        call this%sol4%get_cell_temp_copy(state(:,0))
       case default
         INSIST(.false.)
       end select
@@ -310,6 +328,8 @@ contains
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -326,6 +346,8 @@ contains
       call FHT_solver_get_cell_heat_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_heat_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_heat_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -356,6 +378,8 @@ contains
       call FHT_solver_get_cell_temp_grad (this%sol2, array(:,:this%mesh%ncell_onP))
     case (SOLVER3)
       call this%sol3%get_cell_temp_grad(array(:,:this%mesh%ncell_onP))
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_grad(array(:,:this%mesh%ncell_onP))
     case default
       INSIST(.false.)
     end select
@@ -374,6 +398,8 @@ contains
       call FHT_solver_get_cell_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_cell_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_cell_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -391,6 +417,8 @@ contains
       call FHT_solver_get_face_temp_copy (this%sol2, array)
     case (SOLVER3)
       call this%sol3%get_face_temp_copy(array)
+    case (SOLVER4)
+      call this%sol4%get_face_temp_copy(array)
     case default
       INSIST(.false.)
     end select
@@ -407,6 +435,8 @@ contains
       call FHT_solver_get_face_temp_view (this%sol2, view)
     case (SOLVER3)
       call this%sol3%get_face_temp_view(view)
+    case (SOLVER4)
+      call this%sol4%get_face_temp_view(view)
     case default
       INSIST(.false.)
     end select
@@ -425,7 +455,9 @@ contains
     use HTSD_solver_factory
     use ht_model_factory
     use ht_solver_factory
-    use physics_module, only: flow
+    use alloy_model_factory
+    use alloy_solver_factory
+    use physics_module, only: flow, alloy_solidification
     use enthalpy_advector1_type
     use thermal_bc_factory1_type
     use species_bc_factory1_type
@@ -485,6 +517,9 @@ contains
     call this%ds_params%get('cutvof', this%cutvof, default=0.0_r8)
     call this%ds_params%get('integrator', integrator)
 
+    if (alloy_solidification .and. this%have_void) &
+        call TLS_fatal('DS_INIT: alloy solidification does not support presence of VOID')
+
     !! Figure out which diffusion solver we should be running, and ensure
     !! that the user has selected a compatible integration method.
     if (this%have_void .and. this%have_fluid_flow) then
@@ -501,6 +536,8 @@ contains
       !! Void (if any) is fixed; use standard solver
       if (this%have_species_diffusion) then
         this%solver_type = SOLVER1
+      else if (alloy_solidification) then
+        this%solver_Type = SOLVER4
       else
         this%solver_Type = SOLVER3
       end if
@@ -547,6 +584,18 @@ contains
       end block
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       this%sol3 => create_ht_solver(this%mmf, this%mod3, this%ds_params, stat, errmsg2)
+      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
+
+    case (SOLVER4)
+      block
+        type(thermal_bc_factory1)    :: tbc_fac
+        type(thermal_source_factory) :: tsrc_fac
+        call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
+        call tsrc_fac%init(this%mesh, this%thermal_source_params)
+        this%mod4 => create_alloy_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, stat, errmsg2)
+      end block
+      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
+      this%sol4 => create_alloy_solver(this%mmf, this%mod4, this%ds_params, stat, errmsg2)
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
     case default
       INSIST(.false.)
@@ -619,6 +668,8 @@ contains
       call FHT_solver_set_initial_state (this%sol2, t, temp)
     case (SOLVER3)
       call this%sol3%set_initial_state(t, temp, dt)
+    case (SOLVER4)
+      call this%sol4%set_initial_state(t, temp, dt)
     case default
       INSIST(.false.)
     end select
@@ -644,6 +695,8 @@ contains
       ! nothing to do here yet
     case (SOLVER3)
       call this%sol3%restart(dt)
+    case (SOLVER4)
+      call this%sol4%restart(dt)
     case default
       INSIST(.false.)
     end select
@@ -806,6 +859,8 @@ contains
       call this%mod2%update_moving_vf
     case (SOLVER3)
       call this%mod3%update_moving_vf
+    case (SOLVER4)
+      ! nothing
     case default
       INSIST(.false.)
     end select
@@ -821,6 +876,8 @@ contains
       call this%mod2%add_moving_vf_events(eventq)
     case (SOLVER3)
       call this%mod3%add_moving_vf_events(eventq)
+    case (SOLVER4)
+      ! nothing
     case default
       INSIST(.false.)
     end select

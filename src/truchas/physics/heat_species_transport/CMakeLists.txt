@@ -48,6 +48,15 @@ target_sources(truchas PRIVATE
   species_source_namelist.F90
   species_source_factory_type.F90
   multicomp_lever_type.F90
+  alloy_vector_type.F90
+  alloy_model_type.F90
+  alloy_model_factory.F90
+  alloy_norm_type.F90
+  alloy_precon_type.F90
+  alloy_idaesol_model_type.F90
+  alloy_solver_type.F90
+  alloy_solver_factory.F90
+  alloy_ic_solver_type.F90
 )
 
 add_subdirectory(Test)

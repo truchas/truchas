@@ -1,0 +1,85 @@
+
+&MESH
+  x_axis%coarse_grid = 0.0, 1.0
+  x_axis%intervals   = 40
+  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%intervals   = 10
+  z_axis%coarse_grid = 0.0, 0.1
+  z_axis%intervals   = 1
+/
+
+&OUTPUTS
+  Output_T = 0.0, 5.0, 10.0, 30.0
+  Output_Dt = 3*20.0
+/
+
+&PHYSICS
+  materials = 'alloy'
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_preconditioner = 'hypre_amg'
+  pc_amg_cycles      = 2
+  nlk_tol = 0.01
+/
+
+&NUMERICS
+  dt_init = 1.0d-4
+  dt_min  = 1.0d-9
+  dt_grow = 10.0
+/
+
+&THERMAL_BC
+  name = 'left end'
+  type = 'temperature'
+  face_set_ids = 1
+  temp_func = 'left-temp'
+/
+
+&FUNCTION
+  name = 'left-temp'
+  type = 'tabular'
+  tabular_data = 0.0, 12.0
+                 1.0, 1.0
+/
+
+&THERMAL_BC
+  name = 'right end'
+  type = 'flux'
+  face_set_ids = 2
+  flux = 0.0
+/
+
+&THERMAL_BC
+  name = 'symmetry planes'
+  type = 'flux'
+  face_set_ids = 3, 4, 5, 6
+  flux = 0.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'liquid'
+  temperature = 12.0
+/
+
+&MATERIAL
+  name = 'alloy'
+  density = 4.0  ! g/cm^3
+  specific_heat = 0.25 ! J/g-K
+  conductivity = 0.1  ! W/cm-K
+  phases = 'solid', 'liquid'
+/
+
+&PHASE_CHANGE
+  low_temp_phase = 'solid'
+  high_temp_phase = 'liquid'
+  solidus_temp  = 10.0
+  liquidus_temp = 11.0
+  latent_heat = 10.0 ! J
+/
