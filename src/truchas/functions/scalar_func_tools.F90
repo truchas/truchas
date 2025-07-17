@@ -51,6 +51,14 @@ module scalar_func_tools
 
   public :: is_const
   public :: alloc_scalar_func_antideriv, alloc_scalar_func_product
+  public :: alloc_scalar_func_deriv
+
+  type, extends(scalar_func) :: scalar_func_deriv
+    class(scalar_func), allocatable :: f
+    integer :: n
+  contains
+    procedure :: eval => scalar_func_deriv_eval
+  end type
 
 contains
 
@@ -176,5 +184,28 @@ contains
     stat = 0
 
   end subroutine alloc_scalar_func_product
+
+  subroutine alloc_scalar_func_deriv(f, n, df)
+    class(scalar_func), intent(in) :: f
+    integer, intent(in) :: n
+    class(scalar_func), allocatable :: df
+    allocate(df, source=scalar_func_deriv(f, n))
+  end subroutine
+
+  function scalar_func_deriv_eval(this, x) result(dfdx)
+    class(scalar_func_deriv), intent(in) :: this
+    real(r8), intent(in) :: x(:)
+    real(r8) :: dfdx
+    real(r8) :: fdinc, f1, f2, xp(size(x))
+    ASSERT(this%n <= size(x))
+    fdinc = max(1.0_r8, abs(x(this%n))) * sqrt(epsilon(1.0_r8))
+    fdinc = scale(1.0_r8, exponent(fdinc))
+    xp = x
+    xp(this%n) = x(this%n) - fdinc
+    f1 = this%f%eval(xp)
+    xp(this%n) = x(this%n) + fdinc
+    f2 = this%f%eval(xp)
+    dfdx = (f2 - f1) / (2*fdinc)
+  end function
 
 end module scalar_func_tools

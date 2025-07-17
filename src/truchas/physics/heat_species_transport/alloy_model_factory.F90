@@ -24,7 +24,7 @@ module alloy_model_factory
 
 contains
 
-  function create_alloy_model(tinit, disc, mmf, bc_fac, src_fac, stat, errmsg) result(model)
+  function create_alloy_model(tinit, disc, mmf, bc_fac, src_fac, params, stat, errmsg) result(model)
 
     use enclosure_radiation_namelist, only: er_params => params
 
@@ -33,6 +33,7 @@ contains
     type(matl_mesh_func), intent(in), target :: mmf
     class(thermal_bc_factory), intent(inout) :: bc_fac
     type(thermal_source_factory), intent(inout) :: src_fac
+    type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable , intent(out):: errmsg
     type(alloy_model), pointer :: model
@@ -48,6 +49,26 @@ contains
     !! Defines the boundary condition components of MODEL.
     call define_system_bc(disc%mesh, model, stat, errmsg)
     if (stat /= 0) return
+
+    !! Define the alloy component of MODEL
+    block
+      use material_model_driver, only: matl_model
+      use material_class
+      integer :: n
+      class(material), pointer :: matl
+      character(:), allocatable :: name
+      call params%get('material', name, stat, errmsg)
+      if (stat /= 0) return
+      n = matl_model%matl_index(name)
+      if (n == 0) then
+        stat = 1
+        errmsg = 'unknown material: ' // name
+        return
+      end if
+      call matl_model%get_matl_ref(n, matl)
+      call model%alloy%init(matl, params, stat, errmsg)
+      if (stat /= 0) return
+    end block
 
   contains
 

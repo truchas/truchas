@@ -41,6 +41,7 @@ module alloy_solver_type
     procedure :: get_cell_heat_copy, get_cell_heat_view
     procedure :: get_cell_temp_copy, get_cell_temp_view
     procedure :: get_face_temp_copy, get_face_temp_view
+    procedure :: get_liq_frac_view
     procedure :: get_cell_temp_grad
     procedure :: get_stepping_stats
     procedure :: last_step_size
@@ -124,6 +125,13 @@ contains
     end block
 
   end subroutine init
+
+  !! Get a reference to the pending/current liquid fractions
+  subroutine get_liq_frac_view(this, view)
+    class(alloy_solver), intent(in), target :: this
+    real(r8), pointer :: view(:)
+    view => this%u%lf
+  end subroutine
 
   !! Get a reference to the pending/current cell temperatures
   subroutine get_cell_temp_view(this, view)

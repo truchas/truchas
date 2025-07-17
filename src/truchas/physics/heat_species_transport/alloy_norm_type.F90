@@ -107,18 +107,20 @@ contains
     real(r8), intent(out) :: du_norm
 
     integer :: n
-    real(r8) :: qerror
+    real(r8) :: comp_err(4)
     real(r8), allocatable :: res(:)
     integer :: ncell, nface
 
     ncell = this%model%mesh%ncell_onP
     nface = this%model%mesh%nface_onP
 
-    du_norm = 0.0_r8
-    du_norm = max(du_norm, maxerr(u%hc(:ncell), du%hc(:ncell), this%enth_atol, this%enth_rtol))
-    du_norm = max(du_norm, maxerr(u%tc(:ncell), du%tc(:ncell), this%temp_atol, this%temp_rtol))
-    du_norm = max(du_norm, maxerr(u%tf(:nface), du%tf(:nface), this%temp_atol, this%temp_rtol))
+    comp_err(1) = maxerr(u%lf(:ncell), du%lf(:ncell), 1d-3, 0.0_r8)
+    comp_err(2) = maxerr(u%hc(:ncell), du%hc(:ncell), this%enth_atol, this%enth_rtol)
+    comp_err(3) = maxerr(u%tc(:ncell), du%tc(:ncell), this%temp_atol, this%temp_rtol)
+    comp_err(4) = maxerr(u%tf(:nface), du%tf(:nface), this%temp_atol, this%temp_rtol)
+    du_norm = maxval(comp_err)
     du_norm = global_maxval(du_norm)
+    !write(*,'(4(a,es8.2))') 'err norm: lf=', comp_err(1), ', hc=', comp_err(2), ', tc=', comp_err(3), ', tf=', comp_err(4)
 
   contains
 

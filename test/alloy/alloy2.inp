@@ -34,13 +34,22 @@
   rel_enthalpy_tol   = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
   pc_amg_cycles      = 2
+  !max_nlk_itr = 20
   nlk_tol = 0.01
+  verbose_stepping = T
 /
 
 &NUMERICS
   dt_init = 1.0d-4
   dt_min  = 1.0d-9
   dt_grow = 10.0
+/
+
+x&THERMAL_BC
+  name = 'left end'
+  type = 'flux'
+  face_set_ids = 1
+  flux = 2
 /
 
 &THERMAL_BC

@@ -22,7 +22,7 @@ module alloy_precon_type
     type(alloy_model), pointer :: model => null()
     type(unstr_mesh), pointer :: mesh  => null()
     real(r8) :: dt
-    real(r8), allocatable :: dHdT(:)
+    real(r8), allocatable :: dHdT(:), dHdg(:), dgdT(:)
     type(mfd_diff_precon) :: pc
   contains
     procedure :: init
@@ -47,7 +47,7 @@ contains
     this%model => model
     this%mesh  => model%mesh
 
-    allocate(this%dHdT(this%mesh%ncell))
+    allocate(this%dHdT(this%mesh%ncell), this%dHdg(this%mesh%ncell), this%dgdT(this%mesh%ncell))
     allocate(matrix)
     call matrix%init(model%disc)
     call this%pc%init(matrix, params, stat, errmsg)
@@ -77,13 +77,20 @@ contains
     !      state array. This is a workaround until prop_mesh_func is redesigned.
     state(1:this%mesh%ncell,1:1) => u%tc
 
+    call this%mesh%cell_imap%gather_offp(u%lf)
     call this%mesh%cell_imap%gather_offp(u%tc)
     call this%mesh%face_imap%gather_offp(u%tf)
+
+    call this%model%alloy%compute_dHdg(u%tc, u%lf, this%dHdg)
+    call this%model%alloy%compute_dHdT(u%tc, u%lf, this%dHdT)
+    call this%model%alloy%compute_dgdT(u%tc, this%dgdT)
+
+    this%dHdT = this%dHdT + this%dHdg * this%dgdT
 
     this%dt = dt
 
     !! Hardwired assumption that T is the first component of state -- FIXME!
-    call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
+    !call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
     call this%model%conductivity%compute_value(state, D)
     A = this%mesh%volume * this%dHdT / dt
 
@@ -164,29 +171,18 @@ contains
 
     call start_timer('alloy-precon-apply')
 
-    !! Heat equation cell residual with the H/T relation residual eliminated.
-    !call HTSD_model_get_cell_heat_view (this%model, f, f0)
-    !call HTSD_model_get_cell_temp_view (this%model, f, f1)
-    !f1x(:this%mesh%ncell_onP) = f1 - (this%mesh%volume(:this%mesh%ncell_onP)/this%dt)*f0
-    !f%tc = f%tc - (this%mesh%volume/dt)*f%hc
-
+    ! Elimination of algebraic constraints
+    f%hc = f%hc + this%dHdg * f%lf
     f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc
+
+    ! Precondition the heat equation
     call this%mesh%cell_imap%gather_offp(f%tc)
-
-    !! Heat equation face residual (with radiosity residuals optionally eliminated).
-    !call HTSD_model_get_face_temp_copy (this%model, f, f2x)
-    !this%mesh%face_imap%gather_offp(f2x)
     call this%mesh%face_imap%gather_offp(f%tf)
-
-    !! Precondition the heat equation.
-    !call diff_precon_apply (this%hcprecon, f1x, f2x)
     call this%pc%apply(f%tc, f%tf)
-    !call HTSD_model_set_cell_temp (this%model, f1x, f)
-    !call HTSD_model_set_face_temp (this%model, f2x, f)
 
-    !! Backsubstitute to obtain the preconditioned H/T-relation residual.
-    !f0 = f0 + this%dHdT(:this%mesh%ncell_onP)*f1
+    !! Back-substitute to precondition the algebraic constraints
     f%hc = f%hc + this%dHdT*f%tc
+    f%lf = f%lf + this%dgdT*f%tc
 
     call stop_timer('alloy-precon-apply')
 

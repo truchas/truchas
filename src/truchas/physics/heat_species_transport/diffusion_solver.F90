@@ -84,7 +84,7 @@ module diffusion_solver
     type(conc_advector), allocatable :: cadv(:)
     real(r8) :: cutvof
     type(parameter_list) :: ds_params, bc_params, thermal_source_params, &
-        species_bc_params, species_source_params
+        species_bc_params, species_source_params, alloy_params
   end type ds_driver
   type(ds_driver), save, target :: this
 
@@ -104,6 +104,8 @@ contains
     use enclosure_radiation_namelist
     use diffusion_solver_namelist
     use diffusion_solver_data, only: ds_sys_type, num_species, void_temperature
+    use physics_module, only: alloy_solidification
+    use alloy_namelist
 
     integer, intent(in) :: lun
 
@@ -117,6 +119,8 @@ contains
     call read_enclosure_radiation_namelists(lun)
 
     call this%ds_params%get('void-temperature', void_temperature)
+
+    if (alloy_solidification) call read_alloy_namelist(lun, this%alloy_params)
 
   end subroutine read_ds_namelists
 
@@ -156,6 +160,13 @@ contains
     case (SOLVER4)  ! alloy solidification
       t = h + this%sol4%last_time()
       call this%sol4%step(t, hnext, errc)
+!block
+!  real(r8), pointer :: view(:)
+!  call this%sol4%get_cell_temp_view(view)
+!  print '(a,*(f8.4))', 'temp:', view
+!  call this%sol4%get_liq_frac_view(view)
+!  print '(a,*(f8.4))', 'lfrac:', view
+!end block
     case default
       INSIST(.false.)
     end select
@@ -592,7 +603,7 @@ contains
         type(thermal_source_factory) :: tsrc_fac
         call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
         call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod4 => create_alloy_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, stat, errmsg2)
+        this%mod4 => create_alloy_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, this%alloy_params, stat, errmsg2)
       end block
       if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       this%sol4 => create_alloy_solver(this%mmf, this%mod4, this%ds_params, stat, errmsg2)

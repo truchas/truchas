@@ -11,6 +11,7 @@ module alloy_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use alloy_vector_type
+  use multicomp_lever_type
   use mfd_disc_type
   use prop_mesh_func_type
   use scalar_mesh_multifunc_type
@@ -28,6 +29,7 @@ module alloy_model_type
     type(unstr_mesh), pointer :: mesh => null()
     type(mfd_disc),   pointer :: disc => null()
     !! Equation parameters
+    type(multicomp_lever) :: alloy
     type(prop_mesh_func) :: conductivity ! thermal conductivity
     type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
     type(TofH) :: T_of_H
@@ -101,6 +103,7 @@ contains
 
     call start_timer('ht-function')
 
+    call this%mesh%cell_imap%gather_offp(u%lf)
     call this%mesh%cell_imap%gather_offp(u%tc)
     call this%mesh%face_imap%gather_offp(u%tf)
 
@@ -109,10 +112,13 @@ contains
     state(1:this%mesh%ncell,1:1) => u%tc
 
 
-  !!!! RESIDUAL OF THE ALGEBRAIC ENTHALPY-TEMPERATURE RELATION !!!!!!!!!!!!!!!!!
+    !! Residual of the liquid fraction relation
+    call this%alloy%compute_g(u%tc, f%lf)
+    f%lf = u%lf - f%lf
 
-    call this%H_of_T%compute_value(state, value)
-    f%hc = u%hc - value
+    ! Residual of the algebraic enthalpy-temperature relation
+    call this%alloy%compute_H(u%tc, u%lf, f%hc)
+    f%hc = u%hc - f%hc
 
   !!!! RESIDUAL OF THE HEAT EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

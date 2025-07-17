@@ -10,7 +10,7 @@ module alloy_vector_type
 
   type, extends(vector), public :: alloy_vector
     type(unstr_mesh), pointer :: mesh => null()
-    real(r8), allocatable :: hc(:), tc(:), tf(:)
+    real(r8), allocatable :: lf(:), hc(:), tc(:), tf(:)
   contains
     !! Deferred base class procedures
     procedure :: clone1
@@ -39,9 +39,8 @@ contains
   subroutine init_mesh(this, mesh)
     class(alloy_vector), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
-    integer :: n
     this%mesh => mesh
-    allocate(this%hc(mesh%ncell), this%tc(mesh%ncell), this%tf(mesh%nface))
+    allocate(this%lf(mesh%ncell), this%hc(mesh%ncell), this%tc(mesh%ncell), this%tf(mesh%nface))
     call this%setval(0.0_r8)
   end subroutine
 
@@ -56,6 +55,7 @@ contains
 
   subroutine gather_offp(this)
     class(alloy_vector), intent(inout) :: this
+    call this%mesh%cell_imap%gather_offp(this%lf)
     call this%mesh%cell_imap%gather_offp(this%hc)
     call this%mesh%cell_imap%gather_offp(this%tc)
     call this%mesh%face_imap%gather_offp(this%tf)
@@ -70,7 +70,6 @@ contains
   subroutine clone2(this, clone, n)
     class(alloy_vector), intent(in)  :: this
     class(vector), allocatable, intent(out) :: clone(:)
-    type(alloy_vector), allocatable :: tmp(:)
     integer, intent(in) :: n
     allocate(clone(n), source=this) ! easy, but with unwanted copy of data too
   end subroutine
@@ -78,9 +77,9 @@ contains
   subroutine copy_(dest, src)
     class(alloy_vector), intent(inout) :: dest
     class(vector), intent(in) :: src
-    integer :: n
     select type (src)
     class is (alloy_vector)
+      dest%lf(:) = src%lf
       dest%hc(:) = src%hc
       dest%tc(:) = src%tc
       dest%tf(:) = src%tf
@@ -90,7 +89,7 @@ contains
   subroutine setval(this, val)
     class(alloy_vector), intent(inout) :: this
     real(r8), intent(in) :: val
-    integer :: n
+    this%lf = val
     this%hc = val
     this%tc = val
     this%tf = val
@@ -99,7 +98,7 @@ contains
   subroutine scale(this, a)
     class(alloy_vector), intent(inout) :: this
     real(r8), intent(in) :: a
-    integer :: n
+    this%lf = a * this%lf
     this%hc = a * this%hc
     this%tc = a * this%tc
     this%tf = a * this%tf
@@ -110,9 +109,9 @@ contains
     class(alloy_vector), intent(inout) :: this
     class(vector), intent(in) :: x
     real(r8), intent(in) :: a
-    integer :: n
     select type (x)
     class is (alloy_vector)
+      this%lf = a * x%lf + this%lf
       this%hc = a * x%hc + this%hc
       this%tc = a * x%tc + this%tc
       this%tf = a * x%tf + this%tf
@@ -124,9 +123,9 @@ contains
     class(alloy_vector), intent(inout) :: this
     class(vector), intent(in) :: x
     real(r8), intent(in) :: a, b
-    integer :: n
     select type (x)
     class is (alloy_vector)
+      this%lf = a * x%lf + b * this%lf
       this%hc = a * x%hc + b * this%hc
       this%tc = a * x%tc + b * this%tc
       this%tf = a * x%tf + b * this%tf
@@ -138,11 +137,11 @@ contains
     class(alloy_vector), intent(inout) :: this
     class(vector), intent(in) :: x, y
     real(r8), intent(in) :: a, b
-    integer :: n
     select type (x)
     class is (alloy_vector)
       select type (y)
       class is (alloy_vector)
+        this%lf = a * x%lf + b * y%lf + this%lf
         this%hc = a * x%hc + b * y%hc + this%hc
         this%tc = a * x%tc + b * y%tc + this%tc
         this%tf = a * x%tf + b * y%tf + this%tf
@@ -155,11 +154,11 @@ contains
     class(alloy_vector), intent(inout) :: this
     class(vector), intent(in) :: x, y
     real(r8), intent(in) :: a, b, c
-    integer :: n
     select type (x)
     class is (alloy_vector)
       select type (y)
       class is (alloy_vector)
+        this%lf = a * x%lf + b * y%lf + c * this%lf
         this%hc = a * x%hc + b * y%hc + c * this%hc
         this%tc = a * x%tc + b * y%tc + c * this%tc
         this%tf = a * x%tf + b * y%tf + c * this%tf
@@ -171,10 +170,13 @@ contains
     class(alloy_vector), intent(in) :: x
     class(vector), intent(in) :: y
     real(r8) :: dp
-    integer :: j, n
+    integer :: j
     select type (y)
     class is (alloy_vector)
       dp = 0
+      do j = 1, x%mesh%ncell_onP
+        dp = dp + x%lf(j) * y%lf(j)
+      end do
       do j = 1, x%mesh%ncell_onP
         dp = dp + x%hc(j) * y%hc(j)
       end do
@@ -192,8 +194,8 @@ contains
     use parallel_communication, only: global_sum
     class(alloy_vector), intent(in) :: this
     real(r8) :: norm2_
-    integer :: n
-    norm2_ = norm2(this%hc(:this%mesh%ncell_onP))**2 + &
+    norm2_ = norm2(this%lf(:this%mesh%ncell_onP))**2 + &
+             norm2(this%hc(:this%mesh%ncell_onP))**2 + &
              norm2(this%tc(:this%mesh%ncell_onP))**2 + &
              norm2(this%tf(:this%mesh%nface_onP))**2
     norm2_ = sqrt(global_sum(norm2_))
@@ -204,16 +206,17 @@ contains
     class(alloy_vector), intent(in) :: this
     logical, intent(in), optional :: full ! default is FALSE
     character(:), allocatable :: string
-    integer :: n
     type(md5_hash) :: hash
     logical :: strict
     strict = .true.
     if (present(full)) strict = .not.full
     if (strict) then
+      call hash%update(this%lf(:this%mesh%ncell_onP))
       call hash%update(this%hc(:this%mesh%ncell_onP))
       call hash%update(this%tc(:this%mesh%ncell_onP))
       call hash%update(this%tf(:this%mesh%nface_onP))
     else
+      call hash%update(this%lf(:this%mesh%ncell))
       call hash%update(this%hc(:this%mesh%ncell))
       call hash%update(this%tc(:this%mesh%ncell))
       call hash%update(this%tf(:this%mesh%nface))

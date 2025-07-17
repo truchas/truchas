@@ -77,6 +77,8 @@ contains
     !! Compute the cell enthalpy density (U%HC)
     call this%model%H_of_T%compute_value(state, u%hc)
 
+    call this%model%alloy%compute_g(u%tc, u%lf)
+
     call compute_udot(this, t, u, udot)
 
   end subroutine compute
@@ -125,6 +127,8 @@ contains
     !! Set consistent advanced face temps.  Use their initial
     !! conditions as the initial guess for the solution procedure.
     call compute_face_temp(this%model, t+dt, state, udot, this%params)
+
+    call this%model%alloy%compute_g(udot%tc, udot%lf)
 
     !! Forward Euler approximation to the time derivative at T.
     !f = (f - u) / dt

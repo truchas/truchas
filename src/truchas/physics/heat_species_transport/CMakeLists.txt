@@ -57,6 +57,7 @@ target_sources(truchas PRIVATE
   alloy_solver_type.F90
   alloy_solver_factory.F90
   alloy_ic_solver_type.F90
+  alloy_namelist.F90
 )
 
 add_subdirectory(Test)
