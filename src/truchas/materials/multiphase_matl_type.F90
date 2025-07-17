@@ -45,6 +45,8 @@ module multiphase_matl_type
     procedure :: get_phase_frac
     procedure :: add_enthalpy_prop
     procedure :: write_solid_frac_plotfile
+    ! New procedure to this type
+    procedure :: alloc_phase_matl
   end type multiphase_matl
 
   type :: scalar_func_box
@@ -325,29 +327,44 @@ contains
 
   end subroutine add_enthalpy_prop
 
-  subroutine alloc_matl_prop(this, name, prop, errmsg)
+  subroutine alloc_matl_prop(this, name, prop, errmsg, n)
 
     class(multiphase_matl), intent(in), target :: this
     character(*), intent(in) :: name
     class(matl_prop), allocatable, intent(out) :: prop
     character(:), allocatable, intent(out) :: errmsg
+    integer, intent(in), optional :: n
 
-    integer :: n
-    type(multiphase_prop), allocatable :: p
-
-    allocate(p)
-    n = size(this%phi)
-    allocate(p%farray(n))
-    p%matl => this
-
-    do n = 1, size(this%phi)
-      call this%phi(n)%get_prop(name, p%farray(n)%func)
-      if (.not.allocated(p%farray(n)%func)) then
-        errmsg = name // ' not defined for phase ' // this%phi(n)%name
-        return
-      end if
-    end do
-    call move_alloc(p, prop)
+    if (present(n)) then
+      block
+        use single_phase_matl_type, only: single_phase_prop
+        type(single_phase_prop), allocatable :: p
+        allocate(p)
+        call this%phi(n)%get_prop(name, p%func)
+        if (.not.allocated(p%func)) then
+          errmsg = name // ' not defined for phase ' // this%phi(n)%name
+          return
+        end if
+        call move_alloc(p, prop)
+      end block
+    else
+      block
+        integer :: n
+        type(multiphase_prop), allocatable :: p
+        allocate(p)
+        n = size(this%phi)
+        allocate(p%farray(n))
+        p%matl => this
+        do n = 1, size(this%phi)
+          call this%phi(n)%get_prop(name, p%farray(n)%func)
+          if (.not.allocated(p%farray(n)%func)) then
+            errmsg = name // ' not defined for phase ' // this%phi(n)%name
+            return
+          end if
+        end do
+        call move_alloc(p, prop)
+      end block
+    end if
 
   end subroutine alloc_matl_prop
 
@@ -380,6 +397,20 @@ contains
     integer, intent(out) :: iostat
     ASSERT(n > 0 .and. n <= size(this%pc_seq))
     call this%pc_seq(n)%pc%write_solid_frac_plotfile(filename, digits, npoints, iostat)
+  end subroutine
+
+  !! Allocate a single-phase material that corresponds to the Nth phase.
+  subroutine alloc_phase_matl(this, n, matl)
+    use single_phase_matl_type
+    class(multiphase_matl), intent(in) :: this
+    integer, intent(in) :: n
+    class(material), allocatable, intent(out) :: matl
+    type(single_phase_matl), allocatable :: tmp_matl
+    allocate(tmp_matl)
+    call this%copy(tmp_matl)
+    call this%phi(n)%copy(tmp_matl) ! phase-specific properties/attributes
+    tmp_matl%name = this%phi(n)%name
+    call move_alloc(tmp_matl, matl)
   end subroutine
 
 end module multiphase_matl_type
