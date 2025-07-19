@@ -258,7 +258,18 @@ contains
     end select
 
     !! Update MATL in contexts that can modify the phase distribution.
-    if (this%have_phase_change) then
+    if (this%solver_type == SOLVER4) then
+      !FIXME: AWFUL UGLY HACK -- ASSUMES A SINGLE 2_PHASE MATERIAL
+      block
+        use legacy_matl_api, only: define_matl
+        real(r8) :: vof(2,this%mesh%ncell_onp)
+        real(r8), pointer :: lfrac(:)
+        call this%sol4%get_liq_frac_view(lfrac)
+        vof(1,:) = 1 - lfrac(:this%mesh%ncell_onp)
+        vof(2,:) = lfrac(:this%mesh%ncell_onp)
+        call define_matl(vof)
+      end block
+    else if (this%have_phase_change) then
       call create_state_array(state)
       call update_matl_from_mmf(this%mmf, state)
       deallocate(state)

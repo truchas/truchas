@@ -74,10 +74,8 @@ contains
     state(1:this%mesh%ncell,1:1) => u%tc
     call compute_face_temp(this%model, t, state, u, this%params)
 
-    !! Compute the cell enthalpy density (U%HC)
-    call this%model%H_of_T%compute_value(state, u%hc)
-
-    call this%model%alloy%compute_g(u%tc, u%lf)
+    u%lf = 1 !FIXME: assumes pure liquid
+    call this%model%alloy%compute_H(u%tc, u%lf, u%hc)
 
     call compute_udot(this, t, u, udot)
 
@@ -128,7 +126,8 @@ contains
     !! conditions as the initial guess for the solution procedure.
     call compute_face_temp(this%model, t+dt, state, udot, this%params)
 
-    call this%model%alloy%compute_g(udot%tc, udot%lf)
+    udot%lf = 1 !FIXME: assumes perturbation is pure liquid
+    call this%model%alloy%compute_H(udot%tc, udot%lf, udot%hc)
 
     !! Forward Euler approximation to the time derivative at T.
     !f = (f - u) / dt

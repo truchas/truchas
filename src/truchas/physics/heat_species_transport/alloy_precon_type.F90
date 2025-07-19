@@ -23,6 +23,7 @@ module alloy_precon_type
     type(unstr_mesh), pointer :: mesh  => null()
     real(r8) :: dt
     real(r8), allocatable :: dHdT(:), dHdg(:), dgdT(:)
+    real(r8), allocatable :: drdg(:), drdH(:), b(:)
     type(mfd_diff_precon) :: pc
   contains
     procedure :: init
@@ -48,6 +49,7 @@ contains
     this%mesh  => model%mesh
 
     allocate(this%dHdT(this%mesh%ncell), this%dHdg(this%mesh%ncell), this%dgdT(this%mesh%ncell))
+    allocate(this%drdg(this%mesh%ncell), this%drdH(this%mesh%ncell), this%b(this%mesh%ncell))
     allocate(matrix)
     call matrix%init(model%disc)
     call this%pc%init(matrix, params, stat, errmsg)
@@ -77,22 +79,25 @@ contains
     !      state array. This is a workaround until prop_mesh_func is redesigned.
     state(1:this%mesh%ncell,1:1) => u%tc
 
-    call this%mesh%cell_imap%gather_offp(u%lf)
-    call this%mesh%cell_imap%gather_offp(u%tc)
-    call this%mesh%face_imap%gather_offp(u%tf)
+    !call this%mesh%cell_imap%gather_offp(u%lf)
+    !call this%mesh%cell_imap%gather_offp(u%hc)
+    !call this%mesh%cell_imap%gather_offp(u%tc)
+    !call this%mesh%face_imap%gather_offp(u%tf)
+    call u%gather_offp
 
     call this%model%alloy%compute_dHdg(u%tc, u%lf, this%dHdg)
     call this%model%alloy%compute_dHdT(u%tc, u%lf, this%dHdT)
-    call this%model%alloy%compute_dgdT(u%tc, this%dgdT)
+    call this%model%alloy%compute_drdg(u%hc, u%lf, this%drdg)
+    call this%model%alloy%compute_drdH(u%hc, u%lf, this%drdH)
 
-    this%dHdT = this%dHdT + this%dHdg * this%dgdT
+    this%B = 1 + this%dHdg*this%drdH/this%drdg
 
     this%dt = dt
 
     !! Hardwired assumption that T is the first component of state -- FIXME!
     !call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
     call this%model%conductivity%compute_value(state, D)
-    A = this%mesh%volume * this%dHdT / dt
+    A = this%mesh%volume * (this%dHdT/this%B) / dt
 
     !! Jacobian of the basic heat equation that ignores nonlinearities
     !! in the conductivity.  This has the H/T relation eliminated.
@@ -172,8 +177,8 @@ contains
     call start_timer('alloy-precon-apply')
 
     ! Elimination of algebraic constraints
-    f%hc = f%hc + this%dHdg * f%lf
-    f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc
+    f%hc = f%hc + (this%dHdg/this%drdg) * f%lf
+    f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc/this%B
 
     ! Precondition the heat equation
     call this%mesh%cell_imap%gather_offp(f%tc)
@@ -181,8 +186,8 @@ contains
     call this%pc%apply(f%tc, f%tf)
 
     !! Back-substitute to precondition the algebraic constraints
-    f%hc = f%hc + this%dHdT*f%tc
-    f%lf = f%lf + this%dgdT*f%tc
+    f%hc = (f%hc + this%dHdT*f%tc)/this%B
+    f%lf = (f%lf - this%drdH*f%hc)/this%drdg
 
     call stop_timer('alloy-precon-apply')
 

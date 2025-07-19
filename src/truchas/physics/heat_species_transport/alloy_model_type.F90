@@ -103,18 +103,18 @@ contains
 
     call start_timer('ht-function')
 
-    call this%mesh%cell_imap%gather_offp(u%lf)
-    call this%mesh%cell_imap%gather_offp(u%tc)
-    call this%mesh%face_imap%gather_offp(u%tf)
+    !call this%mesh%cell_imap%gather_offp(u%lf)
+    !call this%mesh%cell_imap%gather_offp(u%hc)
+    !call this%mesh%cell_imap%gather_offp(u%tc)
+    !call this%mesh%face_imap%gather_offp(u%tf)
+    call u%gather_offp
 
     !TODO: The existing prop_mesh_func%compute_value function expects a rank-2
     !      state array. This is a workaround until prop_mesh_func is redesigned.
     state(1:this%mesh%ncell,1:1) => u%tc
 
-
     !! Residual of the liquid fraction relation
-    call this%alloy%compute_g(u%tc, f%lf)
-    f%lf = u%lf - f%lf
+    call this%alloy%compute_r(u%hc, u%lf, f%lf)
 
     ! Residual of the algebraic enthalpy-temperature relation
     call this%alloy%compute_H(u%tc, u%lf, f%hc)
