@@ -24,7 +24,7 @@ module multicomp_lever_type
 
   type, public :: multicomp_lever
     real(r8), allocatable :: liq_slope(:), part_coef(:), C0(:)
-    real(r8) :: T_f, Teut
+    real(r8) :: T_f, Teut, dHdTmax
     integer :: num_comp
     class(scalar_func), allocatable :: h_sol, h_liq
     class(scalar_func), allocatable :: h_sol_deriv, h_liq_deriv
@@ -36,7 +36,7 @@ module multicomp_lever_type
     procedure, private :: temp
     procedure :: solve
     procedure :: compute_H, compute_dHdT, compute_dHdg
-    procedure :: compute_r, compute_drdH, compute_drdg
+    procedure :: compute_r => compute_r2, compute_drdH => compute_drdH2, compute_drdg => compute_drdg2
   end type
 
 contains
@@ -145,6 +145,9 @@ contains
       return
     end if
 
+    call params%get('dhdtmax', this%dHdTmax, stat, errmsg, default = 200.0_r8)
+    if (stat /= 0) return
+
     !! Ridders solver to invert functions
     call this%my_invf%init(eps=1d-9,maxadj=10)
 
@@ -199,7 +202,7 @@ contains
     integer,  intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8) :: Tmax, Hmax, Tmin, Hmin, hsol, hliq
+    real(r8) :: Tmax, Hmax, Tmin, Hmin
 
     Tmax = this%temp(1.0_r8, C)
     Hmax = this%H_liq%eval([Tmax, C])
@@ -261,7 +264,6 @@ contains
 
     real(r8) function H_of_g(x) result(H)
       real(r8), intent(in) :: x
-      real(r8) :: hsol, hliq
       H = (1-x)*this%H_sol%eval([this%temp(x,C),C]) + x*this%H_liq%eval([this%temp(x,C),C])
     end function
 
@@ -369,6 +371,71 @@ contains
 
   end subroutine
 
+  subroutine compute_r2(this, H, g, r)
+
+    class(multicomp_lever), intent(inout) :: this
+    real(r8), intent(in)  :: H(:), g(:)
+    real(r8), intent(out) :: r(:)
+
+    integer :: j, stat
+    character(:), allocatable :: errmsg
+    real(r8) :: Tmax, Hmax, Tmin, Hmin, Heut, geut, dT, arg(0:this%num_comp)
+
+    ASSERT(size(H) == size(r))
+    ASSERT(size(g) == size(r))
+
+    arg(1:) = this%C0
+
+    do j = 1, size(r)
+      Tmax = this%temp(1.0_r8, this%C0)
+      Hmax = this%H_liq%eval([Tmax, this%C0])
+      if (H(j) >= Hmax) then ! pure liquid
+        r(j) = g(j) - 1
+        cycle
+      end if
+
+      Tmin = this%temp(0.0_r8, this%C0)
+      if (Tmin < this%Teut) then ! eutectic transformation may be in play
+        !solve this%Teut = this%temp(geut, this%C0) for geut
+        this%my_invf%func => T_of_g
+        call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
+        INSIST(stat == 0)
+        arg(0) = this%Teut
+        dT = geut * (this%H_liq%eval(arg)-this%H_sol%eval(arg)) / this%dHdTmax
+        Tmin = this%Teut - dT
+      end if
+
+      Hmin = this%H_sol%eval([Tmin, this%C0])
+      if (H(j) <= Hmin) then ! pure solid
+        r(j) = g(j)
+        cycle
+      end if
+
+      if (Tmin < this%Teut) then
+        arg(0) = this%Teut
+        Heut = (1-geut)*this%H_sol%eval(arg) + geut*this%H_liq%eval(arg)
+        Hmin = Heut
+      end if
+
+      if (H(j) >= Hmin) then ! 2-phase region
+        arg(0) = this%temp(g(j),this%C0)
+        r(j) = (1-g(j))*this%H_sol%eval(arg) + g(j)*this%H_liq%eval(arg) - H(j)
+      else ! eutectic transformation over small temperature interval
+        Hmin = this%H_sol%eval([Tmin, this%C0])
+        arg(0) = this%Teut - dT*(Heut - H(j))/(Heut - Hmin)
+        r(j) = (1-g(j))*this%H_sol%eval(arg) + g(j)*this%H_liq%eval(arg) - H(j)
+      end if
+    end do
+
+  contains
+
+    real(r8) function T_of_g(x) result(T)
+      real(r8), intent(in) :: x
+      T = this%temp(x, this%C0)
+    end function
+
+  end subroutine
+
   subroutine compute_drdH(this, H, g, drdH)
 
     class(multicomp_lever), intent(inout) :: this
@@ -377,10 +444,12 @@ contains
 
     integer :: j, stat
     character(:), allocatable :: errmsg
-    real(r8) :: Tmax, Hmax, Tmin, Hmin, geut, arg(1+this%num_comp)
+    real(r8) :: Tmax, Hmax, Tmin, Hmin, geut, arg(0:this%num_comp)
 
     ASSERT(size(H) == size(drdH))
     ASSERT(size(g) == size(drdH))
+
+    arg(1:) = this%C0
 
     do j = 1, size(drdH)
 
@@ -399,15 +468,77 @@ contains
         this%my_invf%func => T_of_g
         call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
         INSIST(stat == 0)
-        arg = [this%Teut, this%C0]
+        arg(0) = this%Teut
         Hmin = (1-geut)*this%H_sol%eval(arg) + geut*this%H_liq%eval(arg)
       end if
 
       if (H(j) >= Hmin) then ! 2-phase region
         drdH(j) = -1
       else ! eutectic transformation at constant temperature
-        arg = [this%Teut, this%C0]
+        arg(0) = this%Teut
         drdH(j) = - 1.0_r8 / (this%H_liq%eval(arg) - this%H_sol%eval(arg))
+      end if
+    end do
+
+  contains
+
+    real(r8) function T_of_g(x) result(T)
+      real(r8), intent(in) :: x
+      T = this%temp(x, this%C0)
+    end function
+
+  end subroutine
+
+  subroutine compute_drdH2(this, H, g, drdH)
+
+    class(multicomp_lever), intent(inout) :: this
+    real(r8), intent(in)  :: H(:), g(:)
+    real(r8), intent(out) :: drdH(:)
+
+    integer :: j, stat
+    character(:), allocatable :: errmsg
+    real(r8) :: Tmax, Hmax, Tmin, Hmin, Heut, geut, dT, arg(0:this%num_comp)
+
+    ASSERT(size(H) == size(drdH))
+    ASSERT(size(g) == size(drdH))
+
+    arg(1:) = this%C0
+
+    do j = 1, size(drdH)
+
+      drdH(j) = 0 ! default
+
+      Tmax = this%temp(1.0_r8, this%C0)
+      Hmax = this%H_liq%eval([Tmax, this%C0])
+      if (H(j) >= Hmax) cycle ! pure liquid
+
+      Tmin = this%temp(0.0_r8, this%C0)
+      if (Tmin < this%Teut) then ! eutectic transformation may be in play
+        !solve this%Teut = this%temp(geut, this%C0) for geut
+        this%my_invf%func => T_of_g
+        call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
+        INSIST(stat == 0)
+        arg(0) = this%Teut
+        dT = geut * (this%H_liq%eval(arg)-this%H_sol%eval(arg)) / this%dHdTmax
+        Tmin = this%Teut - dT
+      end if
+
+      Hmin = this%H_sol%eval([Tmin, this%C0])
+      if (H(j) <= Hmin) cycle ! pure solid
+
+      if (Tmin < this%Teut) then
+        arg(0) = this%Teut
+        Heut = (1-geut)*this%H_sol%eval(arg) + geut*this%H_liq%eval(arg)
+        Hmin = Heut
+      end if
+
+      if (H(j) >= Hmin) then ! 2-phase region
+        drdH(j) = -1
+      else ! eutectic transformation at constant temperature
+        Hmin = this%H_sol%eval([Tmin, this%C0])
+        arg(0) = this%Teut - dT*(Heut - H(j))/(Heut - Hmin)
+        drdH(j) = ((1-g(j))*this%H_sol_deriv%eval(arg) + g(j)*this%H_liq_deriv%eval(arg)) * &
+                  (dT/(Heut-Hmin)) - 1
       end if
     end do
 
@@ -428,10 +559,12 @@ contains
 
     integer :: j, stat
     character(:), allocatable :: errmsg
-    real(r8) :: Tmax, Hmax, Tmin, Hmin, geut, arg(1+this%num_comp)
+    real(r8) :: Tmax, Hmax, Tmin, Hmin, geut, arg(0:this%num_comp)
 
     ASSERT(size(H) == size(drdg))
     ASSERT(size(g) == size(drdg))
+
+    arg(1:) = this%C0
 
     do j = 1, size(drdg)
       Tmax = this%temp(1.0_r8, this%C0)
@@ -453,16 +586,82 @@ contains
         this%my_invf%func => T_of_g
         call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
         INSIST(stat == 0)
-        arg = [this%Teut, this%C0]
+        arg(0) = this%Teut
         Hmin = (1-geut)*this%H_sol%eval(arg) + geut*this%H_liq%eval(arg)
       end if
 
       if (H(j) >= Hmin) then ! 2-phase region
-        arg = [this%temp(g(j),this%C0), this%C0]
+        arg(0) = this%temp(g(j),this%C0)
         drdg(j) = ((1-g(j))*this%H_sol_deriv%eval(arg) + g(j)*this%H_liq_deriv%eval(arg)) &
                 * temp_deriv(this, g(j), this%C0) + (this%H_liq%eval(arg) - this%H_sol%eval(arg))
       else ! eutectic transformation at constant temperature
         drdg(j) = 1
+      end if
+    end do
+
+  contains
+
+    real(r8) function T_of_g(x) result(T)
+      real(r8), intent(in) :: x
+      T = this%temp(x, this%C0)
+    end function
+
+  end subroutine
+
+  subroutine compute_drdg2(this, H, g, drdg)
+
+    class(multicomp_lever), intent(inout) :: this
+    real(r8), intent(in)  :: H(:), g(:)
+    real(r8), intent(out) :: drdg(:)
+
+    integer :: j, stat
+    character(:), allocatable :: errmsg
+    real(r8) :: Tmax, Hmax, Tmin, Hmin, Heut, geut, dT, arg(0:this%num_comp)
+
+    ASSERT(size(H) == size(drdg))
+    ASSERT(size(g) == size(drdg))
+
+    arg(1:) = this%C0
+
+    do j = 1, size(drdg)
+      Tmax = this%temp(1.0_r8, this%C0)
+      Hmax = this%H_liq%eval([Tmax, this%C0])
+      if (H(j) >= Hmax) then ! pure liquid
+        drdg(j) = 1
+        cycle
+      end if
+
+      Tmin = this%temp(0.0_r8, this%C0)
+      if (Tmin < this%Teut) then ! eutectic transformation may be in play
+        !solve this%Teut = this%temp(geut, this%C0) for geut
+        this%my_invf%func => T_of_g
+        call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
+        INSIST(stat == 0)
+        arg(0) = this%Teut
+        dT = geut * (this%H_liq%eval(arg)-this%H_sol%eval(arg)) / this%dHdTmax
+        Tmin = this%Teut - dT
+      end if
+
+      Hmin = this%H_sol%eval([Tmin, this%C0])
+      if (H(j) <= Hmin) then ! pure solid
+        drdg(j) = 1
+        cycle
+      end if
+
+      if (Tmin < this%Teut) then
+        arg(0) = this%Teut
+        Heut = (1-geut)*this%H_sol%eval(arg) + geut*this%H_liq%eval(arg)
+        Hmin = Heut
+      end if
+
+      if (H(j) >= Hmin) then ! 2-phase region
+        arg(0) = this%temp(g(j),this%C0)
+        drdg(j) = ((1-g(j))*this%H_sol_deriv%eval(arg) + g(j)*this%H_liq_deriv%eval(arg)) &
+                * temp_deriv(this, g(j), this%C0) + (this%H_liq%eval(arg) - this%H_sol%eval(arg))
+      else ! eutectic transformation at constant temperature
+        Hmin = this%H_sol%eval([Tmin, this%C0])
+        arg(0) = this%Teut - dT*(Heut - H(j))/(Heut - Hmin)
+        drdg(j) = this%H_liq%eval(arg) - this%H_sol%eval(arg)
       end if
     end do
 
