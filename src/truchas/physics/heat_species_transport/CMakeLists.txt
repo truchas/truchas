@@ -50,7 +50,6 @@ target_sources(truchas PRIVATE
   multicomp_lever_type.F90
   alloy_vector_type.F90
   alloy_model_type.F90
-  alloy_model_factory.F90
   alloy_norm_type.F90
   alloy_precon_type.F90
   alloy_idaesol_model_type.F90

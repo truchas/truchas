@@ -108,19 +108,23 @@ contains
     use alloy_namelist
 
     integer, intent(in) :: lun
+    type(parameter_list), pointer :: plist
 
     call ds_data_init
-    call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
-    call read_thermal_bc_namelists(lun, this%bc_params)
-    call read_thermal_source_namelists(lun, this%thermal_source_params)
-    call read_species_bc_namelists(lun, this%species_bc_params)
-    call read_species_source_namelists(lun, this%species_source_params)
-
-    call read_enclosure_radiation_namelists(lun)
-
-    call this%ds_params%get('void-temperature', void_temperature)
-
-    if (alloy_solidification) call read_alloy_namelist(lun, this%alloy_params)
+    if (alloy_solidification) then
+      call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%alloy_params)
+      call read_alloy_namelist(lun, this%alloy_params)
+      plist => this%alloy_params%sublist('bc')
+      call read_thermal_bc_namelists(lun, plist)
+    else
+      call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%ds_params)
+      call read_thermal_bc_namelists(lun, this%bc_params)
+      call read_thermal_source_namelists(lun, this%thermal_source_params)
+      call read_species_bc_namelists(lun, this%species_bc_params)
+      call read_species_source_namelists(lun, this%species_source_params)
+      call read_enclosure_radiation_namelists(lun)
+      call this%ds_params%get('void-temperature', void_temperature)
+    end if
 
   end subroutine read_ds_namelists
 
@@ -477,7 +481,6 @@ contains
     use HTSD_solver_factory
     use ht_model_factory
     use ht_solver_factory
-    use alloy_model_factory
     use alloy_solver_factory
     use physics_module, only: flow, alloy_solidification
     use enthalpy_advector1_type
@@ -537,7 +540,11 @@ contains
     end if
 
     call this%ds_params%get('cutvof', this%cutvof, default=0.0_r8)
-    call this%ds_params%get('integrator', integrator)
+    if (alloy_solidification) then
+      call this%alloy_params%get('integrator', integrator)
+    else
+      call this%ds_params%get('integrator', integrator)
+    end if
 
     if (alloy_solidification .and. this%have_void) &
         call TLS_fatal('DS_INIT: alloy solidification does not support presence of VOID')
@@ -610,15 +617,22 @@ contains
 
     case (SOLVER4)
       block
-        type(thermal_bc_factory1)    :: tbc_fac
-        type(thermal_source_factory) :: tsrc_fac
-        call tbc_fac%init(this%mesh, stefan_boltzmann, absolute_zero, this%bc_params)
-        call tsrc_fac%init(this%mesh, this%thermal_source_params)
-        this%mod4 => create_alloy_model(tinit, this%disc, this%mmf, tbc_fac, tsrc_fac, this%alloy_params, stat, errmsg2)
+        use material_model_driver, only: matl_model
+        use material_class
+        integer :: n
+        class(material), pointer :: matl
+        character(:), allocatable :: name
+        call this%alloy_params%get('material', name, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
+        n = matl_model%matl_index(name)
+        if (n == 0) call TLS_fatal('DS_INIT: unknown material: ' // name)
+        call matl_model%get_matl_ref(n, matl)
+        allocate(this%mod4)
+        call this%mod4%init(this%mesh, matl, this%alloy_params, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
+        this%sol4 => create_alloy_solver(this%mmf, this%mod4, this%alloy_params, stat, errmsg2)
+        if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       end block
-      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
-      this%sol4 => create_alloy_solver(this%mmf, this%mod4, this%ds_params, stat, errmsg2)
-      if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
     case default
       INSIST(.false.)
     end select

@@ -54,51 +54,26 @@ contains
       stop 4
     end if
 
-    call foo%solve(4.0_r8, [0.5_r8], 0.0_r8, 1.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(4.0_r8, [0.5_r8], 0.0_r8, 1.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(1.5_r8, [0.1_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(1.5_r8, [0.1_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(2.5_r8, [0.375_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(2.5_r8, [0.375_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(2.0_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(2.0_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(1.5_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(1.5_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(0.5_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(0.5_r8, [0.75_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
   
   !  do j = 0, 32
-  !    call foo%solve(0.125_r8*j, [1.0_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-  !    if (stat /= 0) stop 1
+  !    call foo%solve(0.125_r8*j, [1.0_r8], 0.0_r8, 5.0_r8, T, g)
   !    write(*,*) T, g
   !  end do
 
@@ -121,33 +96,17 @@ contains
       stop 4
     end if
 
-    call foo%solve(4.0_r8, [0.25_r8, 0.25_r8], 0.0_r8, 1.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(4.0_r8, [0.25_r8, 0.25_r8], 0.0_r8, 1.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(2.5_r8, [0.375_r8,0.0_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(2.5_r8, [0.375_r8,0.0_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(2.5_r8, [0.0_r8, 0.375_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(2.5_r8, [0.0_r8, 0.375_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
-    call foo%solve(2.5_r8, [0.1875_r8, 0.1875_r8], 0.0_r8, 5.0_r8, T, g, stat, errmsg)
-    if (stat /= 0) then
-      write(*,*) errmsg
-    else
-      write(*,*) T, g
-    end if
+    call foo%solve(2.5_r8, [0.1875_r8, 0.1875_r8], 0.0_r8, 5.0_r8, T, g)
+    write(*,*) T, g
 
   end subroutine
   

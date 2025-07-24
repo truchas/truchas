@@ -2,7 +2,7 @@
 &MESH
   x_axis%coarse_grid = 0.0, 1.0
   x_axis%intervals   = 80
-  y_axis%coarse_grid = 0.0, 1.0
+  y_axis%coarse_grid = 0.0, 0.1
   y_axis%intervals   = 10
   z_axis%coarse_grid = 0.0, 0.1
   z_axis%intervals   = 1
@@ -61,7 +61,7 @@
   temp_eutectic = 8.0
   liq_slope = -8.0
   part_coef = 0.5
-  concentration = 0.375
+  concentration = 0.25
 /
 
 &DIFFUSION_SOLVER

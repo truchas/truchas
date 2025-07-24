@@ -52,8 +52,6 @@ contains
     type(alloy_vector), intent(inout) :: u, udot ! data is intent(out)
     target :: u
 
-    real(r8), pointer :: state(:,:)
-
     call TLS_info('')
     call TLS_info('Computing consistent initial state for HT solver ...')
 
@@ -64,6 +62,8 @@ contains
     u%tc(:this%mesh%ncell_onP) = temp(:this%mesh%ncell_onP)
     call this%mesh%cell_imap%gather_offp(u%tc)
 
+    call this%model%alloy%solve_for_H_g(u%tc, u%hc, u%lf)
+
     !! Solve for consistent face temperatures.
     !! Averaging adjacent cell temps provides a cheap initial guess.
     call average_to_faces(this%mesh, u%tc, u%tf)
@@ -71,11 +71,7 @@ contains
       call this%model%bc_dir%compute(t)
       u%tf(this%model%bc_dir%index) = this%model%bc_dir%value
     end if
-    state(1:this%mesh%ncell,1:1) => u%tc
-    call compute_face_temp(this%model, t, state, u, this%params)
-
-    u%lf = 1 !FIXME: assumes pure liquid
-    call this%model%alloy%compute_H(u%tc, u%lf, u%hc)
+    call compute_face_temp(this%model, t, u, this%params)
 
     call compute_udot(this, t, u, udot)
 
@@ -91,17 +87,12 @@ contains
     target :: u, udot
 
     integer :: j, n
-    real(r8), pointer :: state(:,:)
     real(r8) :: dt, Tmin, Tmax
 
     type(alloy_vector), target :: f
 
     call TLS_info('')
     call TLS_info('Computing consistent initial state derivative for HT solver ...')
-
-    !TODO: The existing prop_mesh_func%compute_value function expects a rank-2
-    !      state array. This is a workaround until prop_mesh_func is redesigned.
-    state(1:this%mesh%ncell,1:1) => u%tc
 
     call udot%setval(0.0_r8)
     call f%init(u)
@@ -114,20 +105,16 @@ contains
     call this%params%get('dt', dt)
     call udot%update(1.0_r8, u, dt) ! udot = u + dt*udot
 
-    !! Compute the advanced cell temps from the advanced cell enthalpies
+    !! Compute the advanced cell temps and liquid fractions from the advanced cell enthalpies
     do j = 1, size(u%tc)
       Tmin = u%tc(j) - 1
       Tmax = u%tc(j) + 1
-      call this%model%T_of_H%compute(j, udot%hc(j), Tmin, Tmax, udot%tc(j))
+      call this%model%alloy%solve(udot%hc(j), this%model%alloy%C0, Tmin, Tmax, udot%tc(j), udot%lf(j))
     end do
-    state(1:this%mesh%ncell,1:1) => udot%tc ! at advanced solution
 
     !! Set consistent advanced face temps.  Use their initial
     !! conditions as the initial guess for the solution procedure.
-    call compute_face_temp(this%model, t+dt, state, udot, this%params)
-
-    udot%lf = 1 !FIXME: assumes perturbation is pure liquid
-    call this%model%alloy%compute_H(udot%tc, udot%lf, udot%hc)
+    call compute_face_temp(this%model, t+dt, udot, this%params)
 
     !! Forward Euler approximation to the time derivative at T.
     !f = (f - u) / dt
@@ -174,7 +161,7 @@ contains
   !! This auxillary procedure solves for the consistent face temperatures given
   !! cell temperatures.
 
-  subroutine compute_face_temp(this, t, state, u, params)
+  subroutine compute_face_temp(this, t, u, params)
 
     use mfd_diff_matrix_type
     use pcsr_precon_class
@@ -184,7 +171,7 @@ contains
     use parallel_communication, only: global_sum, global_maxval, global_all
 
     type(alloy_model), intent(inout) :: this
-    real(r8), intent(in) :: t, state(:,:) ! lower bound is now 1
+    real(r8), intent(in) :: t
     type(alloy_vector), intent(inout) :: u
     type(parameter_list) :: params
 
@@ -288,11 +275,9 @@ contains
       real(r8) :: D(this%mesh%ncell)
       real(r8), allocatable :: values(:)
 
-      !! Compute the diffusion coefficient.
-      call this%conductivity%compute_value(state, D)
-
       !! Compute the basic diffusion matrix
-      call matrix%compute (D)
+      call this%get_conductivity(u%lf, u%tc, D)
+      call matrix%compute(D)
 
       !! Dirichlet boundary condition fixups.
       if (allocated(this%bc_dir)) then
@@ -306,42 +291,6 @@ contains
         associate (index => this%bc_htc%index, &
                    deriv => this%bc_htc%deriv)
           call matrix%incr_face_diag(index, deriv)
-        end associate
-      end if
-
-      !! Simple radiation boundary condition contribution.
-      if (allocated(this%bc_rad)) then
-        call this%bc_rad%compute(t, u%tf)
-        associate (index => this%bc_rad%index, &
-                   deriv => this%bc_rad%deriv)
-          call matrix%incr_face_diag(index, deriv)
-        end associate
-      end if
-
-      !! Experimental evaporation heat flux contribution.
-      if (allocated(this%evap_flux)) then
-        call this%evap_flux%compute_deriv(t, u%tf)
-        associate (index => this%evap_flux%index, &
-                   deriv => this%evap_flux%deriv)
-          call matrix%incr_face_diag(index, this%mesh%area(index)*deriv)
-        end associate
-      endif
-
-      !! Internal HTC interface condition contribution.
-      if (allocated(this%ic_htc)) then
-        call this%ic_htc%compute(t, u%tf)
-        associate (index => this%ic_htc%index, &
-                   deriv => this%ic_htc%deriv)
-          call matrix%incr_interface_flux3(index, deriv) !TODO: rename these methods
-        end associate
-      end if
-
-      !! Internal gap radiation condition contribution.
-      if (allocated(this%ic_rad)) then
-        call this%ic_rad%compute(t, u%tf)
-        associate (index => this%ic_rad%index, &
-                   deriv => this%ic_rad%deriv)
-          call matrix%incr_interface_flux3(index, deriv) !TODO: rename these methods
         end associate
       end if
 

@@ -64,8 +64,6 @@ contains
     type(alloy_vector), intent(inout) :: u
     target :: u
 
-    real(r8), pointer :: state(:,:) => null()
-
     integer :: index, j, n, n1, n2
     real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), term
     real(r8), allocatable :: values(:), values2(:,:)
@@ -75,29 +73,16 @@ contains
 
     call start_timer('alloy-precon-compute')
 
-    !TODO: The existing prop_mesh_func%compute_value function expects a rank-2
-    !      state array. This is a workaround until prop_mesh_func is redesigned.
-    state(1:this%mesh%ncell,1:1) => u%tc
-
-    !call this%mesh%cell_imap%gather_offp(u%lf)
-    !call this%mesh%cell_imap%gather_offp(u%hc)
-    !call this%mesh%cell_imap%gather_offp(u%tc)
-    !call this%mesh%face_imap%gather_offp(u%tf)
     call u%gather_offp
 
-    call this%model%alloy%compute_dHdg(u%tc, u%lf, this%dHdg)
-    call this%model%alloy%compute_dHdT(u%tc, u%lf, this%dHdT)
-    call this%model%alloy%compute_drdg(u%hc, u%lf, this%drdg)
-    call this%model%alloy%compute_drdH(u%hc, u%lf, this%drdH)
-
-    this%B = 1 + this%dHdg*this%drdH/this%drdg
+    call this%model%alloy%compute_g_jac(u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
+    call this%model%alloy%compute_H_jac(u%lf, u%hc, u%tc, this%dHdg, this%B, this%dHdT)
+    this%B = this%B - this%dHdg*this%drdH/this%drdg
 
     this%dt = dt
 
-    !! Hardwired assumption that T is the first component of state -- FIXME!
-    !call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
-    call this%model%conductivity%compute_value(state, D)
-    A = this%mesh%volume * (this%dHdT/this%B) / dt
+    call this%model%get_conductivity(u%lf, u%tc, D)
+    A = -this%mesh%volume * (this%dHdT/this%B) / dt
 
     !! Jacobian of the basic heat equation that ignores nonlinearities
     !! in the conductivity.  This has the H/T relation eliminated.
@@ -117,42 +102,6 @@ contains
       associate (index => this%model%bc_htc%index, &
                  deriv => this%model%bc_htc%deriv)
         call dm%incr_face_diag(index, deriv)
-      end associate
-    end if
-
-    !! Simple radiation boundary condition contribution.
-    if (allocated(this%model%bc_rad)) then
-      call this%model%bc_rad%compute(t, u%tf)
-      associate (index => this%model%bc_rad%index, &
-                 deriv => this%model%bc_rad%deriv)
-        call dm%incr_face_diag(index, deriv)
-      end associate
-    end if
-
-    !! Experimental evaporation heat flux contribution.
-    if (allocated(this%model%evap_flux)) then
-      call this%model%evap_flux%compute_deriv(t, u%tf)
-      associate (index => this%model%evap_flux%index, &
-                 deriv => this%model%evap_flux%deriv)
-        call dm%incr_face_diag(index, this%mesh%area(index)*deriv)
-      end associate
-    endif
-
-    !! Internal HTC interface condition contribution.
-    if (allocated(this%model%ic_htc)) then
-      call this%model%ic_htc%compute(t, u%tf)
-      associate (index => this%model%ic_htc%index, &
-                 deriv => this%model%ic_htc%deriv)
-        call dm%incr_interface_flux3(index, deriv) !TODO: rename these methods
-      end associate
-    end if
-
-    !! Internal gap radiation condition contribution.
-    if (allocated(this%model%ic_rad)) then
-      call this%model%ic_rad%compute(t, u%tf)
-      associate (index => this%model%ic_rad%index, &
-                 deriv => this%model%ic_rad%deriv)
-        call dm%incr_interface_flux3(index, deriv) !TODO: rename these methods
       end associate
     end if
 
@@ -177,7 +126,7 @@ contains
     call start_timer('alloy-precon-apply')
 
     ! Elimination of algebraic constraints
-    f%hc = f%hc + (this%dHdg/this%drdg) * f%lf
+    f%hc = f%hc - (this%dHdg/this%drdg) * f%lf
     f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc/this%B
 
     ! Precondition the heat equation
@@ -186,7 +135,7 @@ contains
     call this%pc%apply(f%tc, f%tf)
 
     !! Back-substitute to precondition the algebraic constraints
-    f%hc = (f%hc + this%dHdT*f%tc)/this%B
+    f%hc = (f%hc - this%dHdT*f%tc)/this%B
     f%lf = (f%lf - this%drdH*f%hc)/this%drdg
 
     call stop_timer('alloy-precon-apply')

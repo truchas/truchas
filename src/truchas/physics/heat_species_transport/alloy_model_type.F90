@@ -13,41 +13,30 @@ module alloy_model_type
   use alloy_vector_type
   use multicomp_lever_type
   use mfd_disc_type
-  use prop_mesh_func_type
-  use scalar_mesh_multifunc_type
+  use scalar_func_class
   use bndry_func1_class
   use bndry_func2_class
-  use intfc_func2_class
-!  use index_partitioning
-  use TofH_type
   use truchas_timers
   use parameter_list_type
   implicit none
   private
 
   type, public :: alloy_model
-    type(unstr_mesh), pointer :: mesh => null()
-    type(mfd_disc),   pointer :: disc => null()
+    type(unstr_mesh), pointer :: mesh => null() ! unowned reference
+    type(mfd_disc) :: disc
     !! Equation parameters
     type(multicomp_lever) :: alloy
-    type(prop_mesh_func) :: conductivity ! thermal conductivity
-    type(prop_mesh_func) :: H_of_T       ! enthalpy as a function of temperature
-    type(TofH) :: T_of_H
+    class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
-    type(scalar_mesh_multifunc), allocatable :: src ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
-    class(bndry_func2), allocatable :: bc_vflux ! oriented flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC
-    class(bndry_func2), allocatable :: bc_rad  ! simple radiation
-    class(intfc_func2), allocatable :: ic_htc  ! internal HTC
-    class(intfc_func2), allocatable :: ic_rad  ! internal gap radiation
-    class(bndry_func2), allocatable :: evap_flux
   contains
     procedure :: init
     procedure :: init_vector
     procedure :: compute_f
+    procedure :: get_conductivity
     procedure :: set_alloy_adv_source
   end type alloy_model
 
@@ -59,22 +48,109 @@ contains
     call vec%init(this%mesh)
   end subroutine
 
-  subroutine init(this, disc)
+  subroutine init(this, mesh, matl, params, stat, errmsg)
+
+    use thermal_bc_factory1_type
+    use material_class
+
     class(alloy_model), intent(out), target :: this
-    type(mfd_disc), intent(in), target :: disc
-    this%disc => disc
-    this%mesh => disc%mesh
-    block
-      !TODO: pass parameters
-      !TODO: redesign the TofH type after redesign of prop_mesh_func type
-      real(r8) :: eps, delta
-      integer  :: max_try
-      type(parameter_list) :: params
-      call params%get('tofh-tol', eps, default=0.0_r8)
-      call params%get('tofh-max-try', max_try, default=50)
-      call params%get('tofh-delta', delta, default=1.0_r8)
-      call this%T_of_H%init(this%H_of_T, eps=eps, max_try=max_try, delta=delta)
-    end block
+    type(unstr_mesh), intent(in), target :: mesh
+    class(material), intent(in) :: matl
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable :: errmsg
+
+    type(phase), pointer :: phi
+
+    this%mesh => mesh
+    call this%disc%init(this%mesh, use_new_mfd=.true.)
+
+    call this%alloy%init(matl, params, stat, errmsg)
+    if (stat /= 0) return
+
+    if (matl%has_prop('conductivity')) then
+      phi => matl%phase_ref(1)
+      call phi%get_prop('conductivity', this%k_sol)
+      phi => matl%phase_ref(2)
+      call phi%get_prop('conductivity', this%k_liq)
+    else
+      stat = 1
+      errmsg = 'conductivity property is undefined for material "' // matl%name // '"'
+      return
+    end if
+
+    !! Defines the boundary condition components of MODEL.
+    call define_system_bc(stat, errmsg)
+    if (stat /= 0) return
+
+  contains
+
+    subroutine define_system_bc(stat, errmsg)
+
+      use bitfield_type
+      use parallel_communication, only: global_any, global_count
+      use string_utilities, only: i_to_c
+
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      integer :: j, n
+      logical, allocatable :: mask(:)
+      integer, allocatable :: setids(:)
+      character(160) :: string
+      type(bitfield) :: bitmask
+      type(parameter_list), pointer :: plist
+      type(thermal_bc_factory1) :: bc_fac
+
+      plist => params%sublist('bc')
+      call bc_fac%init(this%mesh, 0.0_r8, 0.0_r8, plist) ! dummy values for stefan_boltzmann and absolute_zero
+
+      allocate(mask(this%mesh%nface))
+      mask = .false.
+
+      !! Simple flux boundary conditions
+      call bc_fac%alloc_flux_bc(this%bc_flux, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(this%bc_flux)) mask(this%bc_flux%index) = .true.
+
+      !! External HTC boundary conditions
+      call bc_fac%alloc_htc_bc(this%bc_htc, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(this%bc_htc)) mask(this%bc_htc%index) = .true.
+
+      !! Dirichlet boundary conditions
+      call bc_fac%alloc_dir_bc(this%bc_dir, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(this%bc_dir)) then
+        if (global_any(mask(this%bc_dir%index))) then
+          stat = -1
+          errmsg = 'temperature dirichlet boundary condition overlaps with other conditions'
+          return
+        end if
+        mask(this%bc_dir%index) = .true. ! mark the dirichlet faces
+      end if
+
+      !! Finally verify that a condition has been applied to every boundary face.
+      mask = mask .neqv. btest(this%mesh%face_set_mask,0)
+      if (global_any(mask)) then
+        call this%mesh%get_face_set_ids(pack([(j,j=1,this%mesh%nface)], mask), setids)
+        if (size(setids) == 0) then
+          string = '(none)'
+        else
+          write(string,'(i0,*(:,", ",i0))') setids
+        end if
+        errmsg = 'incomplete temperature boundary specification;' // &
+            ' remaining boundary faces belong to face sets ' // trim(string)
+        bitmask = ibset(ZERO_BITFIELD, 0)
+        mask = mask .and. (this%mesh%face_set_mask == bitmask)
+        n = global_count(mask(:this%mesh%nface_onP))
+        if (n > 0) errmsg = errmsg // '; ' // i_to_c(n) // ' faces belong to none'
+        stat = -1
+        return
+      end if
+
+    end subroutine define_system_bc
+
   end subroutine
 
   subroutine set_alloy_adv_source(this, q_adv)
@@ -99,26 +175,20 @@ contains
     real(r8), pointer :: qrad(:)
     real(r8), dimension(this%mesh%ncell) :: value
     real(r8), allocatable :: Tdir(:)
-    real(r8), pointer :: state(:,:)
 
     call start_timer('ht-function')
 
-    !call this%mesh%cell_imap%gather_offp(u%lf)
-    !call this%mesh%cell_imap%gather_offp(u%hc)
-    !call this%mesh%cell_imap%gather_offp(u%tc)
-    !call this%mesh%face_imap%gather_offp(u%tf)
     call u%gather_offp
 
-    !TODO: The existing prop_mesh_func%compute_value function expects a rank-2
-    !      state array. This is a workaround until prop_mesh_func is redesigned.
-    state(1:this%mesh%ncell,1:1) => u%tc
+!    !! Residual of the liquid fraction relation
+!    call this%alloy%compute_r(u%hc, u%lf, f%lf)
+!
+!    ! Residual of the algebraic enthalpy-temperature relation
+!    call this%alloy%compute_H(u%tc, u%lf, f%hc)
+!    f%hc = u%hc - f%hc
 
-    !! Residual of the liquid fraction relation
-    call this%alloy%compute_r(u%hc, u%lf, f%lf)
-
-    ! Residual of the algebraic enthalpy-temperature relation
-    call this%alloy%compute_H(u%tc, u%lf, f%hc)
-    f%hc = u%hc - f%hc
+    call this%alloy%compute_g_res(u%lf, u%hc, f%lf)
+    call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
 
   !!!! RESIDUAL OF THE HEAT EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -135,19 +205,13 @@ contains
     end if
 
     !! Compute the generic heat equation residual.
-    call this%conductivity%compute_value(state, value)
+    call this%get_conductivity(u%lf, u%tc, value)
     call this%disc%apply_diff(value, u%tc, u%tf, f%tc, f%tf)
     call this%mesh%cell_imap%gather_offp(udot%hc)
     if (allocated(this%q_adv)) then
       f%tc = f%tc + this%mesh%volume*(udot%hc - this%q_adv)
     else
       f%tc = f%tc + this%mesh%volume*udot%hc
-    end if
-
-    !! Additional heat source
-    if (allocated(this%src)) then
-      call this%src%compute(t, u%tc)
-      f%tc = f%tc - this%mesh%volume*this%src%value
     end if
 
     !! Overwrite face residuals with the Dirichlet BC residual and
@@ -170,61 +234,12 @@ contains
       end do
     end if
 
-    !! Oriented flux BC contribution.
-    if (allocated(this%bc_vflux)) then
-      call this%bc_vflux%compute(t, u%tf)
-      do j = 1, size(this%bc_vflux%index)
-        n = this%bc_vflux%index(j)
-        f%tf(n) = f%tf(n) + this%bc_vflux%value(j)
-      end do
-    end if
-
     !! External HTC flux contribution.
     if (allocated(this%bc_htc)) then
       call this%bc_htc%compute(t, u%tf)
       do j = 1, size(this%bc_htc%index)
         n = this%bc_htc%index(j)
         f%tf(n) = f%tf(n) + this%bc_htc%value(j)
-      end do
-    end if
-
-    !! Ambient radiation BC flux contribution.
-    if (allocated(this%bc_rad)) then
-      call this%bc_rad%compute(t, u%tf)
-      do j = 1, size(this%bc_rad%index)
-        n = this%bc_rad%index(j)
-        f%tf(n) = f%tf(n) + this%bc_rad%value(j)
-      end do
-    end if
-
-    !! Experimental evaporation heat flux
-    if (allocated(this%evap_flux)) then
-      call this%evap_flux%compute_value(t, u%tf)
-      do j = 1, size(this%evap_flux%index)
-        n = this%evap_flux%index(j)
-        f%tf(n) = f%tf(n) + this%mesh%area(n)*this%evap_flux%value(j)
-      end do
-    end if
-
-    !! Internal HTC flux contribution.
-    if (allocated(this%ic_htc)) then
-      call this%ic_htc%compute(t, u%tf)
-      do j = 1, size(this%ic_htc%index,2)
-        n1 = this%ic_htc%index(1,j)
-        n2 = this%ic_htc%index(2,j)
-        f%tf(n1) = f%tf(n1) + this%ic_htc%value(j)
-        f%tf(n2) = f%tf(n2) - this%ic_htc%value(j)
-      end do
-    end if
-
-    !! Internal gap radiation contribution.
-    if (allocated(this%ic_rad)) then
-      call this%ic_rad%compute(t, u%tf)
-      do j = 1, size(this%ic_rad%index,2)
-        n1 = this%ic_rad%index(1,j)
-        n2 = this%ic_rad%index(2,j)
-        f%tf(n1) = f%tf(n1) + this%ic_rad%value(j)
-        f%tf(n2) = f%tf(n2) - this%ic_rad%value(j)
       end do
     end if
 
@@ -235,5 +250,16 @@ contains
     call stop_timer('ht-function')
 
   end subroutine compute_f
+
+  !! This auxiliary subroutine computes the phase-averaged thermal conductivity
+  subroutine get_conductivity(this, lfrac, temp, k_avg)
+    class(alloy_model), intent(in) :: this
+    real(r8), intent(in)  :: lfrac(:), temp(:)
+    real(r8), intent(out) :: k_avg(:)
+    integer :: j
+    do j = 1, size(k_avg)
+      k_avg(j) = (1-lfrac(j))*this%k_sol%eval([temp(j)]) + lfrac(j)*this%k_liq%eval([temp(j)])
+    end do
+  end subroutine
 
 end module alloy_model_type
