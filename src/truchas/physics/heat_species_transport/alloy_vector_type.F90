@@ -11,6 +11,8 @@ module alloy_vector_type
   type, extends(vector), public :: alloy_vector
     type(unstr_mesh), pointer :: mesh => null()
     real(r8), allocatable :: lf(:), hc(:), tc(:), tf(:)
+    real(r8), allocatable :: lsf(:,:)
+    integer :: num_comp
   contains
     !! Deferred base class procedures
     procedure :: clone1
@@ -36,11 +38,15 @@ contains
   !! Specific subroutine for the generic INIT. Initialize a alloy_vector object
   !! for the given unstructured MESH. The elements are initialized to 0.
 
-  subroutine init_mesh(this, mesh)
+  subroutine init_mesh(this, mesh, num_comp)
     class(alloy_vector), intent(out) :: this
     type(unstr_mesh), intent(in), target :: mesh
+    integer, intent(in), optional :: num_comp
     this%mesh => mesh
     allocate(this%lf(mesh%ncell), this%hc(mesh%ncell), this%tc(mesh%ncell), this%tf(mesh%nface))
+    this%num_comp = 0
+    if (present(num_comp)) this%num_comp = num_comp
+    if (this%num_comp > 0) allocate(this%lsf(this%num_comp,mesh%ncell))
     call this%setval(0.0_r8)
   end subroutine
 
@@ -50,7 +56,7 @@ contains
   subroutine init_mold(this, mold)
     class(alloy_vector), intent(out) :: this
     class(alloy_vector), intent(in)  :: mold
-    call init_mesh(this, mold%mesh)
+    call init_mesh(this, mold%mesh, mold%num_comp)
   end subroutine
 
   subroutine gather_offp(this)
@@ -59,6 +65,7 @@ contains
     call this%mesh%cell_imap%gather_offp(this%hc)
     call this%mesh%cell_imap%gather_offp(this%tc)
     call this%mesh%face_imap%gather_offp(this%tf)
+    if (allocated(this%lsf)) call this%mesh%cell_imap%gather_offp(this%lsf)
   end subroutine
 
   subroutine clone1(this, clone)
@@ -83,6 +90,7 @@ contains
       dest%hc(:) = src%hc
       dest%tc(:) = src%tc
       dest%tf(:) = src%tf
+      if (allocated(dest%lsf)) dest%lsf(:,:) = src%lsf
     end select
   end subroutine
 
@@ -93,6 +101,7 @@ contains
     this%hc = val
     this%tc = val
     this%tf = val
+    if (allocated(this%lsf)) this%lsf = val
   end subroutine
 
   subroutine scale(this, a)
@@ -102,6 +111,7 @@ contains
     this%hc = a * this%hc
     this%tc = a * this%tc
     this%tf = a * this%tf
+    if (allocated(this%lsf)) this%lsf = a * this%lsf
   end subroutine
 
   !! Conventional SAXPY procedure: y <-- a*x + y
@@ -115,6 +125,7 @@ contains
       this%hc = a * x%hc + this%hc
       this%tc = a * x%tc + this%tc
       this%tf = a * x%tf + this%tf
+      if (allocated(this%lsf)) this%lsf = a * x%lsf + this%lsf
     end select
   end subroutine
 
@@ -129,6 +140,7 @@ contains
       this%hc = a * x%hc + b * this%hc
       this%tc = a * x%tc + b * this%tc
       this%tf = a * x%tf + b * this%tf
+      if (allocated(this%lsf)) this%lsf = a * x%lsf + b * this%lsf
     end select
   end subroutine
 
@@ -145,6 +157,7 @@ contains
         this%hc = a * x%hc + b * y%hc + this%hc
         this%tc = a * x%tc + b * y%tc + this%tc
         this%tf = a * x%tf + b * y%tf + this%tf
+        if (allocated(this%lsf)) this%lsf = a * x%lsf + b * y%lsf + this%lsf
       end select
     end select
   end subroutine
@@ -162,6 +175,7 @@ contains
         this%hc = a * x%hc + b * y%hc + c * this%hc
         this%tc = a * x%tc + b * y%tc + c * this%tc
         this%tf = a * x%tf + b * y%tf + c * this%tf
+        if (allocated(this%lsf)) this%lsf = a * x%lsf + b * y%lsf + c * this%lsf
       end select
     end select
   end subroutine
@@ -186,6 +200,11 @@ contains
       do j = 1, x%mesh%nface_onP
         dp = dp + x%tf(j) * y%tf(j)
       end do
+      if (allocated(x%lsf)) then
+        do j = 1, x%mesh%ncell_onP
+          dp = dp + dot_product(x%lsf(:,j), y%lsf(:,j))
+        end do
+      end if
       dp = global_sum(dp)
     end select
   end function
@@ -198,6 +217,9 @@ contains
              norm2(this%hc(:this%mesh%ncell_onP))**2 + &
              norm2(this%tc(:this%mesh%ncell_onP))**2 + &
              norm2(this%tf(:this%mesh%nface_onP))**2
+    if (allocated(this%lsf)) then
+      norm2_ = norm2_ + norm2(this%lsf(:,:this%mesh%ncell_onP))**2
+    end if
     norm2_ = sqrt(global_sum(norm2_))
   end function
 
@@ -215,11 +237,13 @@ contains
       call hash%update(this%hc(:this%mesh%ncell_onP))
       call hash%update(this%tc(:this%mesh%ncell_onP))
       call hash%update(this%tf(:this%mesh%nface_onP))
+      if (allocated(this%lsf)) call hash%update(this%lsf(:,:this%mesh%ncell_onP))
     else
       call hash%update(this%lf(:this%mesh%ncell))
       call hash%update(this%hc(:this%mesh%ncell))
       call hash%update(this%tc(:this%mesh%ncell))
       call hash%update(this%tf(:this%mesh%nface))
+      if (allocated(this%lsf)) call hash%update(this%lsf)
     end if
     string = hash%hexdigest()
   end function
