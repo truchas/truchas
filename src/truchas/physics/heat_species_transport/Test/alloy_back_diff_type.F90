@@ -32,6 +32,7 @@ module alloy_back_diff_type
   contains
     procedure :: init
     procedure :: compute_f1, compute_f1_jac
+    procedure :: compute_f2, compute_f2_jac
     procedure, private :: T_sol, T_liq
   end type
 
@@ -232,7 +233,7 @@ contains
     associate (v => u(1:n), g => u(n+1), H => u(n+2), T => u(n+3), gdot => udot(n+1))
 
       jac = 0
-      
+
       Tmax = this%T_liq(this%C0)
       Hmax = this%H_liq%eval([Tmax])
       if (H >= Hmax) then
@@ -245,7 +246,7 @@ contains
         jac(n+3,n+2) = 1/dt
         return
       end if
-      
+
       !Tmin = this%T_sol(this%C0)
       !Hmin = this%H_sol%eval([Tmin])
       !if (H <= Hmin) then
@@ -259,7 +260,7 @@ contains
         jac(n+3,n+2) = 1/dt
         return
       end if
-      
+
       do k = 1, n
         jac(k,k) = 1/dt - this%part_coef(k)*(1/g)*gdot + &
                    this%gamma*(this%part_coef(k)*(1/g) + 1/(1-g+1d-10))
@@ -274,16 +275,132 @@ contains
                           (-dot_product(this%liq_slope, v)/g**2) &
                      + (this%H_liq%eval([this%T_liq(v/g)]) - this%H_sol%eval([this%T_liq(v/g)]))
       jac(n+1,n+2) = -1
-      
+
       jac(n+2,n+1) = this%H_liq%eval([T]) - this%H_sol%eval([T])
       jac(n+2,n+2) = -1
       jac(n+2,n+3) = (1-g)*this%H_sol_deriv%eval([T]) + g*this%H_liq_deriv%eval([T])
 
       jac(n+3,n+2) = 1/dt
- 
+
     end associate
 
   end subroutine compute_f1_jac
+
+  subroutine compute_f2(this, u, udot, f)
+
+    class(alloy_back_diff), intent(inout) :: this
+    real(r8), intent(in)  :: u(:), udot(:)
+    real(r8), intent(out) :: f(:)
+
+    integer  :: n
+    real(r8) :: Tmin, Tmax, Hmin, Hmax
+
+    n = this%num_comp
+    associate (v => u(1:n), g => u(n+1), H => u(n+2), T => u(n+3), &
+               vdot => udot(1:n), gdot => udot(n+1), Hdot => udot(n+2))
+
+      Tmax = this%T_liq(this%C0)
+      Hmax = this%H_liq%eval([Tmax])
+      if (H >= Hmax) then
+        f(1:n) = v - this%C0
+        f(n+1) = g - 1
+        f(n+2) = this%H_liq%eval([T]) - H
+        f(n+3) = Hdot - this%Hdot
+        return
+      end if
+
+      !Tmin = this%T_sol(this%C0)
+      !Hmin = this%H_sol%eval([Tmin])
+      !if (H <= Hmin) then
+      if (g <= 0) then
+        f(1:n) = v
+        f(n+1) = g
+        f(n+2) = this%H_sol%eval([T]) - H
+        f(n+3) = Hdot - this%Hdot
+        return
+      end if
+
+      f(1:n) = vdot - this%part_coef*(v/g)*gdot + &
+               this%gamma*(this%part_coef*(v/g) - (this%C0 - v)/(1-g + 1.0d-10))
+      !f(n+1) = (1-g)*this%H_sol%eval([this%T_liq(v/g)]) + g*this%H_liq%eval([this%T_liq(v/g)]) - H
+      f(n+1) = g*(T-this%T_f) - dot_product(this%liq_slope, v)
+      f(n+2) = (1-g)*this%H_sol%eval([T]) + g*this%H_liq%eval([T]) - H
+      f(n+3) = Hdot - this%Hdot
+
+    end associate
+
+  end subroutine compute_f2
+
+  subroutine compute_f2_jac(this, u, udot, dt, jac)
+
+    class(alloy_back_diff), intent(inout) :: this
+    real(r8), intent(in)  :: u(:), udot(:), dt
+    real(r8), intent(out) :: jac(:,:)
+
+    integer  :: n, k
+    real(r8) :: Tmin, Tmax, Hmin, Hmax
+
+    n = this%num_comp
+    associate (v => u(1:n), g => u(n+1), H => u(n+2), T => u(n+3), gdot => udot(n+1))
+
+      jac = 0
+
+      Tmax = this%T_liq(this%C0)
+      Hmax = this%H_liq%eval([Tmax])
+      if (H >= Hmax) then
+        do k = 1, n
+          jac(k,k) = 1
+        end do
+        jac(n+1,n+1) = 1
+        jac(n+2,n+2) = -1
+        jac(n+2,n+3) = this%H_liq_deriv%eval([T])
+        jac(n+3,n+2) = 1/dt
+        return
+      end if
+
+      !Tmin = this%T_sol(this%C0)
+      !Hmin = this%H_sol%eval([Tmin])
+      !if (H <= Hmin) then
+      if (g <= 0) then
+        do k = 1, n
+          jac(k,k) = 1
+        end do
+        jac(n+1,n+1) = 1
+        jac(n+2,n+2) = -1
+        jac(n+2,n+3) = this%H_sol_deriv%eval([T])
+        jac(n+3,n+2) = 1/dt
+        return
+      end if
+
+      do k = 1, n
+        jac(k,k) = 1/dt - this%part_coef(k)*(1/g)*gdot + &
+                   this%gamma*(this%part_coef(k)*(1/g) + 1/(1-g+1d-10))
+      end do
+      jac(:n,n+1) = - this%part_coef*(v/g)/dt - this%part_coef*gdot*(-v/g**2) &
+                    + this%gamma*(this%part_coef*(-v/g**2) - (this%C0 - v)/(1-g+1d-10)**2)
+
+      !jac(n+1,:n) = ((1-g)*this%H_sol_deriv%eval([this%T_liq(v/g)]) + &
+      !                   g*this%H_liq_deriv%eval([this%T_liq(v/g)])) * (this%liq_slope/g)
+      !jac(n+1,n+1) = ((1-g)*this%H_sol_deriv%eval([this%T_liq(v/g)]) + &
+      !                    g*this%H_liq_deriv%eval([this%T_liq(v/g)])) * &
+      !                    (-dot_product(this%liq_slope, v)/g**2) &
+      !               + (this%H_liq%eval([this%T_liq(v/g)]) - this%H_sol%eval([this%T_liq(v/g)]))
+      !jac(n+1,n+2) = -1
+
+      jac(n+1,:n) = -this%liq_slope
+      jac(n+1,n+1) = T - this%T_f
+      jac(n+1,n+3) = g
+
+      jac(n+2,n+1) = this%H_liq%eval([T]) - this%H_sol%eval([T])
+      jac(n+2,n+2) = -1
+      jac(n+2,n+3) = (1-g)*this%H_sol_deriv%eval([T]) + g*this%H_liq_deriv%eval([T])
+
+      jac(n+3,n+2) = 1/dt
+
+    end associate
+
+  end subroutine compute_f2_jac
+
 !
 !  subroutine compute_f1(this, u, udot, f)
 !
@@ -341,7 +458,7 @@ contains
 !    associate (v => u(1:n), g => u(n+1), H => u(n+2), T => u(n+3), gdot => udot(n+1))
 !
 !      jac = 0
-!      
+!
 !      Tmax = this%T_liq(this%C0)
 !      Hmax = this%H_liq%eval([Tmax])
 !      if (H >= Hmax) then
@@ -354,7 +471,7 @@ contains
 !        jac(n+3,n+2) = 1/dt
 !        return
 !      end if
-!      
+!
 !      Tmin = this%T_sol(this%C0)
 !      Hmin = this%H_sol%eval([Tmin])
 !      if (H <= Hmin) then
@@ -367,7 +484,7 @@ contains
 !        jac(n+3,n+2) = 1/dt
 !        return
 !      end if
-!      
+!
 !      do k = 1, n
 !        jac(k,k) = 1/dt - this%part_coef(k)*(1/g)*gdot + &
 !                   this%gamma*(this%part_coef(k)*(1/g) + 1/(1-g+1d-10))
@@ -382,13 +499,13 @@ contains
 !                          (-dot_product(this%liq_slope, v)/g**2) &
 !                     + (this%H_liq%eval([this%T_liq(v/g)]) - this%H_sol%eval([this%T_liq(v/g)]))
 !      jac(n+1,n+2) = -1
-!      
+!
 !      jac(n+2,n+1) = this%H_liq%eval([T]) - this%H_sol%eval([T])
 !      jac(n+2,n+2) = -1
 !      jac(n+2,n+3) = (1-g)*this%H_sol_deriv%eval([T]) + g*this%H_liq_deriv%eval([T])
 !
 !      jac(n+3,n+2) = 1/dt
-! 
+!
 !    end associate
 !
 !  end subroutine compute_f1_jac

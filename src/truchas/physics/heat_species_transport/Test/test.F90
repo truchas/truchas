@@ -100,13 +100,15 @@ contains
       u0 = u
       call uhist%interp_state(t, u, order=1) ! linear extrapolation
       
-      call pd%compute_f1_jac(u, udot, dt, jac)
+      !call pd%compute_f1_jac(u, udot, dt, jac)
+      call pd%compute_f2_jac(u, udot, dt, jac)
       call fct(jac)
 
       call accel%restart
       do iter = 1, max_iter
         udot = (u - u0)/dt
-        call pd%compute_f1(u, udot, du)
+        !call pd%compute_f1(u, udot, du)
+        call pd%compute_f2(u, udot, du)
         
         ! apply preconditioner to du
         call slv(jac, du)
@@ -128,7 +130,7 @@ contains
           if (u(n+1) < 1) then
             C_sol = (pd%C0 - u(1:n)) / (1-u(n+1))
           else
-            C_sol = pd%C0
+            C_sol = 0
           end if
           write(output_unit,'(*(es12.5,:,1x))') u(n+3), u(n+1), u(1:n), C_liq, C_sol, u(n+2)
           exit
