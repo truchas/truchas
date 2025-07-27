@@ -101,14 +101,14 @@ contains
       call uhist%interp_state(t, u, order=1) ! linear extrapolation
       
       !call pd%compute_f1_jac(u, udot, dt, jac)
-      call pd%compute_f2_jac(u, udot, dt, jac)
+      call pd%compute_f3_jac(u, udot, dt, jac)
       call fct(jac)
 
       call accel%restart
       do iter = 1, max_iter
         udot = (u - u0)/dt
         !call pd%compute_f1(u, udot, du)
-        call pd%compute_f2(u, udot, du)
+        call pd%compute_f3(u, udot, du)
         
         ! apply preconditioner to du
         call slv(jac, du)
