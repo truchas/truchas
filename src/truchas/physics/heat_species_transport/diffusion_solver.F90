@@ -114,6 +114,8 @@ contains
     if (alloy_solidification) then
       call read_diffusion_solver_namelist(lun, ds_sys_type, num_species, this%alloy_params)
       call read_alloy_namelist(lun, this%alloy_params)
+      plist => this%alloy_params%sublist('sources')
+      call read_thermal_source_namelists(lun, plist)
       plist => this%alloy_params%sublist('bc')
       call read_thermal_bc_namelists(lun, plist)
     else

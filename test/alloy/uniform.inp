@@ -1,52 +1,29 @@
 
 &MESH
   x_axis%coarse_grid = 0.0, 1.0
-  x_axis%intervals   = 80
-  y_axis%coarse_grid = 0.0, 0.1
+  x_axis%intervals   = 10
+  y_axis%coarse_grid = 0.0, 1.0
   y_axis%intervals   = 10
   z_axis%coarse_grid = 0.0, 0.1
   z_axis%intervals   = 1
 /
 
+&PROBE
+  coord = 0.05 0.05 0.05
+  data = 'temperature'
+  data_file = 'temp.dat'
+/
+
+&PROBE
+  coord = 0.05 0.05 0.05
+  data = 'vol-frac-liquid'
+  data_file = 'lfrac.dat'
+/
+
+
 &OUTPUTS
   Output_T = 0.0, 5.0, 10.0, 30.0
   Output_Dt = 3*1.0
-/
-
-&PROBE
-  coord = 0.1 0.5 0.05
-  data = 'temperature'
-  data_file = 'temp1.dat'
-/
-
-&PROBE
-  coord = 0.3 0.5 0.05
-  data = 'temperature'
-  data_file = 'temp2.dat'
-/
-
-&PROBE
-  coord = 0.5 0.5 0.05
-  data = 'temperature'
-  data_file = 'temp3.dat'
-/
-
-&PROBE
-  coord = 0.1 0.5 0.05
-  data = 'vol-frac-liquid'
-  data_file = 'lfrac1.dat'
-/
-
-&PROBE
-  coord = 0.3 0.5 0.05
-  data = 'vol-frac-liquid'
-  data_file = 'lfrac2.dat'
-/
-
-&PROBE
-  coord = 0.5 0.5 0.05
-  data = 'vol-frac-liquid'
-  data_file = 'lfrac3.dat'
 /
 
 &PHYSICS
@@ -81,41 +58,20 @@
 &NUMERICS
   dt_init = 1.0d-4
   dt_min  = 1.0d-9
+  dt_max = 1.0d-2
   dt_grow = 10.0
 /
 
-x&THERMAL_BC
-  name = 'left end'
-  type = 'flux'
-  face_set_ids = 1
-  flux = 2
+&THERMAL_SOURCE
+  name = 'Hdot'
+  cell_set_ids = 1
+  source = -1.0
 /
 
 &THERMAL_BC
-  name = 'left end'
-  type = 'temperature'
-  face_set_ids = 1
-  temp_func = 'left-temp'
-/
-
-&FUNCTION
-  name = 'left-temp'
-  type = 'tabular'
-  tabular_data = 0.0, 12.0
-                 1.0, 1.0
-/
-
-&THERMAL_BC
-  name = 'right end'
+  name = 'adiabatic walls'
   type = 'flux'
-  face_set_ids = 2
-  flux = 0.0
-/
-
-&THERMAL_BC
-  name = 'symmetry planes'
-  type = 'flux'
-  face_set_ids = 3, 4, 5, 6
+  face_set_ids = 1, 2, 3, 4, 5, 6
   flux = 0.0
 /
 

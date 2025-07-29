@@ -17,6 +17,7 @@ module alloy_model_type
   use scalar_func_class
   use bndry_func1_class
   use bndry_func2_class
+  use scalar_mesh_multifunc_type
   use truchas_timers
   use parameter_list_type
   implicit none
@@ -30,6 +31,7 @@ module alloy_model_type
     type(alloy_back_diff) :: pd
     class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
+    type(scalar_mesh_multifunc), allocatable :: src ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -94,6 +96,17 @@ contains
       errmsg = 'conductivity property is undefined for material "' // matl%name // '"'
       return
     end if
+
+    !! External heat source.
+    block
+      use thermal_source_factory_type
+      type(thermal_source_factory) :: src_fac
+      type(parameter_list), pointer :: plist
+      plist => params%sublist('sources')
+      call src_fac%init(this%mesh, plist)
+      call src_fac%alloc_source_funcs(this%src, stat, errmsg)
+      if (stat /= 0) return
+    end block
 
     !! Defines the boundary condition components of MODEL.
     call define_system_bc(stat, errmsg)
@@ -237,6 +250,12 @@ contains
       f%tc = f%tc + this%mesh%volume*(udot%hc - this%q_adv)
     else
       f%tc = f%tc + this%mesh%volume*udot%hc
+    end if
+
+    !! Additional heat source
+    if (allocated(this%src)) then
+      call this%src%compute(t, u%tc)
+      f%tc = f%tc - this%mesh%volume*this%src%value
     end if
 
     !! Overwrite face residuals with the Dirichlet BC residual and
