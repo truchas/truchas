@@ -12,6 +12,7 @@ module alloy_model_type
   use unstr_mesh_type
   use alloy_vector_type
   use multicomp_lever_type
+  use alloy_back_diff_type
   use mfd_disc_type
   use scalar_func_class
   use bndry_func1_class
@@ -26,12 +27,14 @@ module alloy_model_type
     type(mfd_disc) :: disc
     !! Equation parameters
     type(multicomp_lever) :: alloy
+    type(alloy_back_diff) :: pd
     class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC
+    integer :: model_type
   contains
     procedure :: init
     procedure :: init_vector
@@ -45,7 +48,12 @@ contains
   subroutine init_vector(this, vec)
     class(alloy_model), intent(in) :: this
     type(alloy_vector), intent(out) :: vec
-    call vec%init(this%mesh)
+    select case (this%model_type)
+    case (1) ! lever rule
+      call vec%init(this%mesh)
+    case (2) ! Wang-Beckermann
+      call vec%init(this%mesh, num_comp=this%pd%num_comp)
+    end select
   end subroutine
 
   subroutine init(this, mesh, matl, params, stat, errmsg)
@@ -65,8 +73,16 @@ contains
     this%mesh => mesh
     call this%disc%init(this%mesh, use_new_mfd=.true.)
 
-    call this%alloy%init(matl, params, stat, errmsg)
-    if (stat /= 0) return
+    this%model_type = merge(2, 1, params%is_parameter('gamma'))
+
+    select case (this%model_type)
+    case (1) ! lever rule
+      call this%alloy%init(matl, params, stat, errmsg)
+      if (stat /= 0) return
+    case (2) ! Wang-Beckermann
+      call this%pd%init(matl, params, stat, errmsg)
+      if (stat /= 0) return
+    end select
 
     if (matl%has_prop('conductivity')) then
       phi => matl%phase_ref(1)
@@ -171,14 +187,14 @@ contains
     type(alloy_vector), intent(inout) :: f       ! data is intent(out)
     target :: u
 
-    integer :: j, n, n1, n2
-    real(r8), pointer :: qrad(:)
+    integer :: j, n
     real(r8), dimension(this%mesh%ncell) :: value
     real(r8), allocatable :: Tdir(:)
 
     call start_timer('ht-function')
 
     call u%gather_offp
+    call udot%gather_offp
 
 !    !! Residual of the liquid fraction relation
 !    call this%alloy%compute_r(u%hc, u%lf, f%lf)
@@ -187,8 +203,17 @@ contains
 !    call this%alloy%compute_H(u%tc, u%lf, f%hc)
 !    f%hc = u%hc - f%hc
 
-    call this%alloy%compute_g_res(u%lf, u%hc, f%lf)
-    call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
+    select case (this%model_type)
+    case (1) ! lever rule
+      call this%alloy%compute_g_res(u%lf, u%hc, f%lf)
+      call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell
+        call this%pd%compute_f(u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
+                               udot%lsf(:,j), udot%lf(j), udot%hc(j), &
+                               f%lsf(:,j), f%lf(j), f%hc(j))
+      end do
+    end select
 
   !!!! RESIDUAL OF THE HEAT EQUATION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

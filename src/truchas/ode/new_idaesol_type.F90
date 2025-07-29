@@ -122,11 +122,11 @@ module new_idaesol_type
       class(vector), intent(inout) :: u
       class(vector), intent(inout) :: f
     end subroutine
-    subroutine compute_precon(this, t, u, dt)
+    subroutine compute_precon(this, t, u, udot, dt)
       import idaesol_model, vector, r8
       class(idaesol_model) :: this
       real(r8), intent(in) :: t, dt
-      class(vector), intent(inout) :: u
+      class(vector), intent(inout) :: u, udot
     end subroutine
     subroutine du_norm(this, t, u, du, error)
       import :: idaesol_model, vector, r8
@@ -462,7 +462,10 @@ contains
       !! Update the preconditioner if necessary.
       if (.not.this%usable_pc) then
         this%updpc_calls = this%updpc_calls + 1
-        call this%model%compute_precon(t, this%up, etah)
+        call this%udot%copy(this%up)
+        call this%udot%update(-1.0_r8, this%u0)
+        call this%udot%scale(1.0_r8/etah)
+        call this%model%compute_precon(t, this%up, this%udot, etah)
         if (this%verbose) write(this%unit,fmt=3) t
         this%hpc = etah
         this%usable_pc = .true.

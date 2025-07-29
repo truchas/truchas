@@ -1,11 +1,11 @@
-program test_multicomp_lever_type
+program test_alloy_back_diff_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   use parameter_list_json
   use alloy_back_diff_type
   
-  integer :: inlun, stat
+  integer :: inlun, stat, n
   character(128) :: arg
   character(:), allocatable :: infile
   type(parameter_list), pointer :: params, plist
@@ -57,19 +57,26 @@ contains
     use block_linear_solver
     use iso_fortran_env
 
-    real(r8) :: T0, T1, tlast, t, dt, tol, error
+    real(r8) :: T0, T1, Hdot, t, dt, tol, error
     real(r8), allocatable :: u0(:), u(:), udot(:), du(:), jac(:,:), C_sol(:), C_liq(:), C_liq_max(:)
     type(state_history) :: uhist
     type(nka) :: accel
-    integer :: n, iter, max_iter
+    integer :: iter, max_iter
+    type(alloy_back_diff_jac) :: newjac
+    real(r8) :: dfTdH, dFTdT
+    real(r8), allocatable :: dfpdp(:), dfpdg(:), dfgdp(:)
 
     n = pd%num_comp + 3
     allocate(u0(n), u(n), udot(n), du(n), jac(n,n))
     n = pd%num_comp
     allocate(C_sol(n), C_liq(n), C_liq_max(n))
+    allocate(dfpdp(n), dfpdg(n), dfgdp(n))
+
+    call newjac%init(pd%num_comp)
 
     call params%get('T0', T0)
     call params%get('T1', T1)
+    call params%get('Hdot', Hdot)
 
     !! Starting state (pure liquid
     u(1:n) = pd%C0
@@ -79,8 +86,8 @@ contains
 
     udot(1:n) = 0
     udot(n+1) = 0
-    udot(n+2) = pd%Hdot
-    udot(n+3) = pd%Hdot ! assumes unit heat capacity (per unit volume)
+    udot(n+2) = Hdot
+    udot(n+3) = Hdot ! assumes unit heat capacity (per unit volume)
     
     t = 0
     call uhist%init(2, t, u, udot) ! maintain 2 solution vectors
@@ -92,26 +99,35 @@ contains
 
     C_liq_max = 0
     
-    do while (u(4) > T1)
+    do while (u(n+3) > T1)
     
-      tlast = t
       t = t+dt
       
       u0 = u
       call uhist%interp_state(t, u, order=1) ! linear extrapolation
       
-      !call pd%compute_f1_jac(u, udot, dt, jac)
-      call pd%compute_f3_jac(u, udot, dt, jac)
-      call fct(jac)
+      block ! truchas-like
+        call pd%compute_f_jac(u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), dt, newjac)
+        call newjac%lu_factor
+        dfTdH = 1/dt
+        dfTdH = dfTdH/newjac%dfHdH
+        dfTdT = -dFTdH*newjac%dFHdT
+      end block
 
       call accel%restart
       do iter = 1, max_iter
         udot = (u - u0)/dt
-        !call pd%compute_f1(u, udot, du)
-        call pd%compute_f3(u, udot, du)
+        call pd%compute_f(u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), udot(n+2), &
+            du(1:n), du(n+1), du(n+2))
+        du(n+3) = udot(n+2) - Hdot
         
         ! apply preconditioner to du
-        call slv(jac, du)
+        block ! truchas-like
+          call newjac%lower_solve(du(1:n), du(n+1), du(n+2))
+          du(n+3) = du(n+3) - dfTdH * du(n+2)
+          du(n+3) = du(n+3) / dfTdT
+          call newjac%upper_solve(du(1:n), du(n+1), du(n+2), du(n+3))
+        end block
         
         call accel%accel_update(du)
         u = u - du
@@ -136,9 +152,9 @@ contains
           exit
         end if        
       end do
-      
+ 
       if (iter > max_iter) then
-        stop 1
+        stop 10
       end if
       call uhist%record_state(t, u)
       

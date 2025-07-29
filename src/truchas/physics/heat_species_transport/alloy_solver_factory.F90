@@ -8,7 +8,6 @@
 
 module alloy_solver_factory
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
   use alloy_model_type
   use alloy_solver_type
   use matl_mesh_func_type
@@ -22,7 +21,6 @@ contains
 
   function create_alloy_solver(mmf, model, params, stat, errmsg) result(solver)
 
-    use enclosure_radiation_namelist, only: er_params => params
     use parallel_communication
     use truchas_env, only: output_file_name
 
@@ -33,12 +31,8 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: j, n, lun
-    type(parameter_list_iterator) :: piter
+    integer :: lun
     type(parameter_list), pointer :: plist
-    character(:), allocatable :: string
-    character(16), allocatable :: vfr_precon_coupling(:)
-    real(r8), allocatable :: rad_tol(:)
     logical :: verbose_stepping
 
     call params%get('verbose-stepping', verbose_stepping)

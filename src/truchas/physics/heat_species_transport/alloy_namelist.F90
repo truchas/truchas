@@ -26,8 +26,8 @@ contains
     !! Namelist variables
     character(32) :: material
     integer :: num_comp
-    real(r8) :: temp_fusion, temp_eutectic, liq_slope(16), part_coef(16), concentration(16)
-    namelist /alloy/ material, num_comp, temp_fusion, temp_eutectic, liq_slope, part_coef, concentration
+    real(r8) :: temp_fusion, temp_eutectic, liq_slope(16), part_coef(16), concentration(16), gamma
+    namelist /alloy/ material, num_comp, temp_fusion, temp_eutectic, liq_slope, part_coef, concentration, gamma
 
     if (is_IOP) rewind(lun)
 
@@ -47,6 +47,7 @@ contains
     liq_slope = NULL_R
     part_coef = NULL_R
     concentration = NULL_R
+    gamma = NULL_R
 
     if (is_IOP) read(lun,nml=alloy,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -59,6 +60,7 @@ contains
     call broadcast(liq_slope)
     call broadcast(part_coef)
     call broadcast(concentration)
+    call broadcast(gamma)
 
     if (material == NULL_C) then
       call tls_fatal('MATERIAL not specified')
@@ -105,6 +107,8 @@ contains
     else
       call params%set('concentration', concentration(:num_comp))
     end if
+
+    if (gamma /= NULL_R) call params%set('gamma', gamma)
 
   end subroutine read_alloy_namelist
 

@@ -15,5 +15,5 @@ set_property(TEST mfd_polygon_matrix_inv PROPERTY LABELS UNIT)
 add_executable(test_multicomp_lever_type test_multicomp_lever_type.F90)
 target_link_libraries(test_multicomp_lever_type truchas)
 
-add_executable(run test.F90 alloy_back_diff_type.F90 block_linear_solver.F90)
+add_executable(run test.F90 block_linear_solver.F90)
 target_link_libraries(run truchas)

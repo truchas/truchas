@@ -92,7 +92,8 @@ contains
     call this%precon%init(model, plist, stat, errmsg)
     if (stat /= 0) return
 
-    call this%u%init(this%mesh)
+    call this%model%init_vector(this%u)
+    !call this%u%init(this%mesh)
 
     call this%integ_model%init(this%model, this%precon, this%norm)
 
@@ -254,14 +255,12 @@ contains
   subroutine set_initial_state(this, t, temp, dt)
 
     use alloy_ic_solver_type
-    use parallel_communication, only: global_count
 
     class(alloy_solver), intent(inout) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: temp(:)
     real(r8), intent(in) :: dt
 
-    integer :: j
     type(alloy_vector) :: udot
     type(alloy_ic_solver) :: ic
 

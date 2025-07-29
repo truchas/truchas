@@ -11,6 +11,7 @@ module alloy_precon_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use alloy_vector_type
   use alloy_model_type
+  use alloy_back_diff_type, only: alloy_back_diff_jac
   use unstr_mesh_type
   use mfd_diff_precon_type
   use mfd_diff_matrix_type
@@ -25,6 +26,7 @@ module alloy_precon_type
     real(r8), allocatable :: dHdT(:), dHdg(:), dgdT(:)
     real(r8), allocatable :: drdg(:), drdH(:), b(:)
     type(mfd_diff_precon) :: pc
+    type(alloy_back_diff_jac), allocatable :: jac(:)
   contains
     procedure :: init
     procedure :: compute
@@ -54,19 +56,29 @@ contains
     call matrix%init(model%disc)
     call this%pc%init(matrix, params, stat, errmsg)
 
+    select case (this%model%model_type)
+    case (2) ! Wang-Beckermann
+      block !FIXME: THIS DATA STRUCTURE IS AWFUL!
+        integer :: j
+        allocate(this%jac(this%mesh%ncell))
+        do j = 1, this%mesh%ncell
+          call this%jac(j)%init(this%model%pd%num_comp)
+        end do
+      end block
+    end select
+
   end subroutine init
 
 
-  subroutine compute(this, t, u, dt)
+  subroutine compute(this, t, u, udot, dt)
 
     class(alloy_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
-    type(alloy_vector), intent(inout) :: u
+    type(alloy_vector), intent(inout) :: u, udot
     target :: u
 
-    integer :: index, j, n, n1, n2
-    real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell), term
-    real(r8), allocatable :: values(:), values2(:,:)
+    integer :: j
+    real(r8) :: D(this%mesh%ncell), A(this%mesh%ncell)
     type(mfd_diff_matrix), pointer :: dm
 
     ASSERT(dt > 0.0_r8)
@@ -74,15 +86,26 @@ contains
     call start_timer('alloy-precon-compute')
 
     call u%gather_offp
+    call udot%gather_offp
 
-    call this%model%alloy%compute_g_jac(u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
-    call this%model%alloy%compute_H_jac(u%lf, u%hc, u%tc, this%dHdg, this%B, this%dHdT)
-    this%B = this%B - this%dHdg*this%drdH/this%drdg
+    select case (this%model%model_type)
+    case (1) ! lever rule
+      call this%model%alloy%compute_g_jac(u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
+      call this%model%alloy%compute_H_jac(u%lf, u%hc, u%tc, this%dHdg, this%B, this%dHdT)
+      this%B = this%B - this%dHdg*this%drdH/this%drdg
+      A = -this%mesh%volume * (this%dHdT/this%B) / dt
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell
+        call this%model%pd%compute_f_jac(u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac(j))
+        call this%jac(j)%lu_factor
+        this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac(j)%dfHdH
+        A(j) = -this%B(j)*this%jac(j)%dfHdT
+      end do
+    end select
 
     this%dt = dt
 
     call this%model%get_conductivity(u%lf, u%tc, D)
-    A = -this%mesh%volume * (this%dHdT/this%B) / dt
 
     !! Jacobian of the basic heat equation that ignores nonlinearities
     !! in the conductivity.  This has the H/T relation eliminated.
@@ -120,14 +143,21 @@ contains
     type(alloy_vector), intent(inout) :: u   ! data is intent(in)
     type(alloy_vector), intent(inout) :: f   ! data is intent(inout)
 
-    integer :: index, j, n
-    real(r8), allocatable :: z(:)
+    integer :: j
 
     call start_timer('alloy-precon-apply')
 
     ! Elimination of algebraic constraints
-    f%hc = f%hc - (this%dHdg/this%drdg) * f%lf
-    f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc/this%B
+    select case (this%model%model_type)
+    case (1) ! lever rule
+      f%hc = f%hc - (this%dHdg/this%drdg) * f%lf
+      f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc/this%B
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell
+        call this%jac(j)%lower_solve(f%lsf(:,j), f%lf(j), f%hc(j))
+        f%tc(j) = f%tc(j) - this%B(j) * f%hc(j)
+      end do
+    end select
 
     ! Precondition the heat equation
     call this%mesh%cell_imap%gather_offp(f%tc)
@@ -135,8 +165,15 @@ contains
     call this%pc%apply(f%tc, f%tf)
 
     !! Back-substitute to precondition the algebraic constraints
-    f%hc = (f%hc - this%dHdT*f%tc)/this%B
-    f%lf = (f%lf - this%drdH*f%hc)/this%drdg
+    select case (this%model%model_type)
+    case (1) ! lever rule
+      f%hc = (f%hc - this%dHdT*f%tc)/this%B
+      f%lf = (f%lf - this%drdH*f%hc)/this%drdg
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell
+        call this%jac(j)%upper_solve(f%lsf(:,j), f%lf(j), f%hc(j), f%tc(j))
+      end do
+    end select
 
     call stop_timer('alloy-precon-apply')
 

@@ -62,7 +62,19 @@ contains
     u%tc(:this%mesh%ncell_onP) = temp(:this%mesh%ncell_onP)
     call this%mesh%cell_imap%gather_offp(u%tc)
 
-    call this%model%alloy%solve_for_H_g(u%tc, u%hc, u%lf)
+    select case (this%model%model_type)
+    case (1)
+      call this%model%alloy%solve_for_H_g(u%tc, u%hc, u%lf)
+    case (2) ! assumes temperature is consistent with a pure liquid state
+      block
+        integer :: j
+        u%lf = 1
+        do j = 1, this%mesh%ncell
+          u%lsf(:,j) = this%model%pd%C0
+          u%hc(j) = this%model%pd%H_of_g_T(u%lf(j), u%tc(j))
+        end do
+      end block
+    end select
 
     !! Solve for consistent face temperatures.
     !! Averaging adjacent cell temps provides a cheap initial guess.
@@ -86,7 +98,7 @@ contains
     type(alloy_vector), intent(inout) :: udot ! data is intent(out)
     target :: u, udot
 
-    integer :: j, n
+    integer :: j
     real(r8) :: dt, Tmin, Tmax
 
     type(alloy_vector), target :: f
@@ -106,11 +118,22 @@ contains
     call udot%update(1.0_r8, u, dt) ! udot = u + dt*udot
 
     !! Compute the advanced cell temps and liquid fractions from the advanced cell enthalpies
-    do j = 1, size(u%tc)
-      Tmin = u%tc(j) - 1
-      Tmax = u%tc(j) + 1
-      call this%model%alloy%solve(udot%hc(j), this%model%alloy%C0, Tmin, Tmax, udot%tc(j), udot%lf(j))
-    end do
+    select case (this%model%model_type)
+    case (1)
+      do j = 1, size(u%tc)
+        Tmin = u%tc(j) - 1
+        Tmax = u%tc(j) + 1
+        call this%model%alloy%solve(udot%hc(j), this%model%alloy%C0, Tmin, Tmax, udot%tc(j), udot%lf(j))
+      end do
+    case (2) ! Assumes the advanced enthalpies are consistent with a pure liquid
+      udot%lf = u%lf
+      udot%lsf = u%lsf
+      do j = 1, size(u%tc)
+        Tmin = u%tc(j) - 1
+        Tmax = u%tc(j) + 1
+        udot%tc(j) = this%model%pd%T_of_g_H(udot%lf(j), udot%hc(j), Tmin, Tmax)
+      end do
+    end select
 
     !! Set consistent advanced face temps.  Use their initial
     !! conditions as the initial guess for the solution procedure.
@@ -170,14 +193,14 @@ contains
     use nka_type
     use parallel_communication, only: global_sum, global_maxval, global_all
 
-    type(alloy_model), intent(inout) :: this
+    type(alloy_model), intent(inout), target :: this
     real(r8), intent(in) :: t
     type(alloy_vector), intent(inout) :: u
     type(parameter_list) :: params
 
-    integer :: n, j, stat, num_itr, max_iter, iter
+    integer :: stat, max_iter, iter
     type(mfd_diff_matrix), target :: matrix
-    real(r8) :: atol, rtol, error, r0_err, r_err, dT_max
+    real(r8) :: atol, rtol, r0_err, r_err, dT_max
     real(r8), allocatable :: z(:)
     type(alloy_vector) :: udot, f
     type(nka) :: nka_obj
@@ -271,9 +294,7 @@ contains
 
       type(mfd_diff_matrix), intent(inout) :: matrix
 
-      integer :: n, index
       real(r8) :: D(this%mesh%ncell)
-      real(r8), allocatable :: values(:)
 
       !! Compute the basic diffusion matrix
       call this%get_conductivity(u%lf, u%tc, D)
