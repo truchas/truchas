@@ -32,11 +32,12 @@ module alloy_model_type
     class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
     type(scalar_mesh_multifunc), allocatable :: src ! external heat source
+    real(r8), allocatable :: C(:,:), Cdot(:,:) ! set externally
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
     class(bndry_func2), allocatable :: bc_htc  ! external HTC
-    integer :: model_type
+    integer :: model_type, num_comp
   contains
     procedure :: init
     procedure :: init_vector
@@ -70,7 +71,9 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable :: errmsg
 
+    integer :: j
     type(phase), pointer :: phi
+    real(r8), allocatable :: C0(:)
 
     this%mesh => mesh
     call this%disc%init(this%mesh, use_new_mfd=.true.)
@@ -81,10 +84,32 @@ contains
     case (1) ! lever rule
       call this%alloy%init(matl, params, stat, errmsg)
       if (stat /= 0) return
+      this%num_comp = this%alloy%num_comp
     case (2) ! Wang-Beckermann
       call this%pd%init(matl, params, stat, errmsg)
       if (stat /= 0) return
+      this%num_comp = this%pd%num_comp
     end select
+
+    !! Initial solute concentration
+    call params%get('concentration', C0, stat, errmsg)
+    if (stat /= 0) return
+    if (size(C0) /= this%num_comp) then
+      stat = 1
+      errmsg = 'invalid concentration size'
+      return
+    else if (any(C0 < 0) .or. sum(C0) >= 1) then
+      stat = 1
+      errmsg = 'invalid concentration values'
+      return
+    end if
+
+    allocate(this%C(this%num_comp,this%mesh%ncell))
+    allocate(this%Cdot, mold=this%C)
+    do j = 1, this%mesh%ncell
+      this%C(:,j) = C0
+    end do
+    this%Cdot = 0
 
     if (matl%has_prop('conductivity')) then
       phi => matl%phase_ref(1)
@@ -218,11 +243,12 @@ contains
 
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_g_res(u%lf, u%hc, f%lf)
+      call this%alloy%compute_g_res(this%C, u%lf, u%hc, f%lf)
       call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%pd%compute_f(u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
+        call this%pd%compute_f(this%C(:,j), this%Cdot(:,j), &
+                               u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
                                udot%lsf(:,j), udot%lf(j), udot%hc(j), &
                                f%lsf(:,j), f%lf(j), f%hc(j))
       end do

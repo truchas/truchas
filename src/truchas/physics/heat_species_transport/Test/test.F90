@@ -58,28 +58,30 @@ contains
     use iso_fortran_env
 
     real(r8) :: T0, T1, Hdot, t, dt, tol, error
-    real(r8), allocatable :: u0(:), u(:), udot(:), du(:), jac(:,:), C_sol(:), C_liq(:), C_liq_max(:)
+    real(r8), allocatable :: u0(:), u(:), udot(:), du(:), jac(:,:)
+    real(r8), allocatable :: C0(:), C_sol(:), C_liq(:), C_liq_max(:)
     type(state_history) :: uhist
     type(nka) :: accel
     integer :: iter, max_iter
     type(alloy_back_diff_jac) :: newjac
     real(r8) :: dfTdH, dFTdT
-    real(r8), allocatable :: dfpdp(:), dfpdg(:), dfgdp(:)
+    real(r8), allocatable :: dfpdp(:), dfpdg(:), dfgdp(:), Cdot(:)
 
     n = pd%num_comp + 3
     allocate(u0(n), u(n), udot(n), du(n), jac(n,n))
     n = pd%num_comp
-    allocate(C_sol(n), C_liq(n), C_liq_max(n))
+    allocate(Cdot(n), C_sol(n), C_liq(n), C_liq_max(n))
     allocate(dfpdp(n), dfpdg(n), dfgdp(n))
 
     call newjac%init(pd%num_comp)
 
+    call params%get('C0', C0)
     call params%get('T0', T0)
     call params%get('T1', T1)
     call params%get('Hdot', Hdot)
 
     !! Starting state (pure liquid
-    u(1:n) = pd%C0
+    u(1:n) = C0
     u(n+1) = 1
     u(n+2) = pd%H_liq%eval([T0])
     u(n+3) = T0
@@ -98,6 +100,7 @@ contains
     call params%get('max-iter', max_iter)
 
     C_liq_max = 0
+    Cdot = 0
     
     do while (u(n+3) > T1)
     
@@ -107,7 +110,7 @@ contains
       call uhist%interp_state(t, u, order=1) ! linear extrapolation
       
       block ! truchas-like
-        call pd%compute_f_jac(u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), dt, newjac)
+        call pd%compute_f_jac(C0, Cdot, u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), dt, newjac)
         call newjac%lu_factor
         dfTdH = 1/dt
         dfTdH = dfTdH/newjac%dfHdH
@@ -117,7 +120,7 @@ contains
       call accel%restart
       do iter = 1, max_iter
         udot = (u - u0)/dt
-        call pd%compute_f(u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), udot(n+2), &
+        call pd%compute_f(C0, Cdot, u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), udot(n+2), &
             du(1:n), du(n+1), du(n+2))
         du(n+3) = udot(n+2) - Hdot
         
@@ -144,7 +147,7 @@ contains
             C_liq = C_liq_max
           end if
           if (u(n+1) < 1) then
-            C_sol = (pd%C0 - u(1:n)) / (1-u(n+1))
+            C_sol = (C0 - u(1:n)) / (1-u(n+1))
           else
             C_sol = 0
           end if

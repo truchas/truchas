@@ -23,7 +23,7 @@ module alloy_back_diff_type
   end interface
 
   type, public :: alloy_back_diff
-    real(r8), allocatable :: liq_slope(:), part_coef(:), C0(:)
+    real(r8), allocatable :: liq_slope(:), part_coef(:)
     real(r8) :: T_f, Teut, dHdTmax, gamma, Hdot
     integer :: num_comp
     class(scalar_func), allocatable :: h_sol, h_liq
@@ -137,19 +137,6 @@ contains
       end if
     end do
 
-    !! Solute concentrations (uniform, no advection); TODO: spatially variable
-    call params%get('concentration', this%C0, stat, errmsg)
-    if (stat /= 0) return
-    if (size(this%C0) /= this%num_comp) then
-      stat = 1
-      errmsg = 'invalid concentration size'
-      return
-    else if (any(this%C0 < 0) .or. sum(this%C0) >= 1) then
-      stat = 1
-      errmsg = 'invalid concentration values'
-      return
-    end if
-
     call params%get('dhdtmax', this%dHdTmax, stat, errmsg, default = 100.0_r8)
     if (stat /= 0) return
 
@@ -205,24 +192,25 @@ contains
     end function
   end function
 
-  subroutine compute_f(this, p, g, H, T, pdot, gdot, Hdot, fp, fg, fH)
+  subroutine compute_f(this, C, Cdot, p, g, H, T, pdot, gdot, Hdot, fp, fg, fH)
 
     class(alloy_back_diff), intent(inout) :: this
+    real(r8), intent(in)  :: C(:), Cdot(:) ! parameters
     real(r8), intent(in)  :: p(:), g, H, T, pdot(:), gdot, Hdot
     real(r8), intent(out) :: fp(:), fg, fH
 
     real(r8) :: Tmax, Hmax
 
-    Tmax = this%T_liq(this%C0)
+    Tmax = this%T_liq(C)
     Hmax = this%H_liq%eval([Tmax])
     if (H >= Hmax) then
-      fp = p - this%C0
+      fp = p - C
       fg = g - 1
       fH = this%H_liq%eval([T]) - H
       return
     end if
 
-    !Tmin = this%T_sol(this%C0)
+    !Tmin = this%T_sol(this%C)
     !Hmin = this%H_sol%eval([Tmin])
     !if (H <= Hmin) then
     if (g <= 0) then
@@ -232,21 +220,22 @@ contains
       return
     end if
 
-    fp = g*pdot - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(this%C0 - p))
+    fp = g*(pdot - Cdot) - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(C - p))
     fg = g*(T-this%T_f) - dot_product(this%liq_slope, p)
     fH = (1-g)*this%H_sol%eval([T]) + g*this%H_liq%eval([T]) - H
 
   end subroutine compute_f
 
-  subroutine compute_f_jac(this, p, g, H, T, pdot, gdot, dt, jac)
+  subroutine compute_f_jac(this, C, Cdot, p, g, H, T, pdot, gdot, dt, jac)
 
     class(alloy_back_diff), intent(inout) :: this
+    real(r8), intent(in) :: C(:), Cdot(:) ! parameters
     real(r8), intent(in) :: p(:), g, H, T, pdot(:), gdot, dt
     type(alloy_back_diff_jac), intent(inout) :: jac
 
     real(r8) :: Tmax, Hmax
 
-    Tmax = this%T_liq(this%C0)
+    Tmax = this%T_liq(C)
     Hmax = this%H_liq%eval([Tmax])
     if (H >= Hmax) then
       jac%dfpdp = 1
@@ -260,7 +249,7 @@ contains
       return
     end if
 
-    !Tmin = this%T_sol(this%C0)
+    !Tmin = this%T_sol(C)
     !Hmin = this%H_sol%eval([Tmin])
     !if (H <= Hmin) then
     if (g <= 0) then
@@ -276,7 +265,7 @@ contains
     end if
 
     jac%dfpdp = g/dt - this%part_coef*gdot + this%gamma*(this%part_coef + g/(1-g+1d-6))
-    jac%dfpdg = pdot - this%part_coef*p/dt - this%gamma*(this%C0 - p)/(1-g+1d-6)**2
+    jac%dfpdg = (pdot - Cdot) - this%part_coef*p/dt - this%gamma*(C - p)/(1-g+1d-6)**2
 
     jac%dfgdp = -this%liq_slope
     jac%dfgdg = T - this%T_f

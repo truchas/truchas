@@ -23,7 +23,7 @@ module multicomp_lever_type
   end interface
 
   type, public :: multicomp_lever
-    real(r8), allocatable :: liq_slope(:), part_coef(:), C0(:)
+    real(r8), allocatable :: liq_slope(:), part_coef(:)
     real(r8) :: T_f, Teut, dHdTmax
     integer :: num_comp
     class(scalar_func), allocatable :: h_sol, h_liq
@@ -131,19 +131,6 @@ contains
       end if
     end do
 
-    !! Solute concentrations (uniform, no advection); TODO: spatially variable
-    call params%get('concentration', this%C0, stat, errmsg)
-    if (stat /= 0) return
-    if (size(this%C0) /= this%num_comp) then
-      stat = 1
-      errmsg = 'invalid concentration size'
-      return
-    else if (any(this%C0 < 0) .or. sum(this%C0) >= 1) then
-      stat = 1
-      errmsg = 'invalid concentration values'
-      return
-    end if
-
     call params%get('dhdtmax', this%dHdTmax, stat, errmsg, default = 100.0_r8)
     if (stat /= 0) return
 
@@ -208,9 +195,9 @@ contains
       return
     end if
 
-    Tmin = this%temp(0.0_r8, this%C0)
+    Tmin = this%temp(0.0_r8, C)
     if (Tmin < this%Teut) then ! eutectic transformation may be in play
-      !solve this%Teut = this%temp(geut, this%C0) for geut
+      !solve this%Teut = this%temp(geut, C) for geut
       this%my_invf%func => T_of_g
       call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
       INSIST(stat == 0)
@@ -264,70 +251,62 @@ contains
 
   end subroutine solve
 
-  !! Given the temperature T, this solves for the consistent enthalpy H and
-  !! liquid volume fraction according to the lever rule assuming a given
-  !! uniform solute concentration THIS%C0.
+  !! Given the temperature T and solute concentrations C, this solves for
+  !! the consistent enthalpy H and liquid volume fraction according to the
+  !! lever rule.
 
-  subroutine solve_for_H_g(this, T, H, g)
+  subroutine solve_for_H_g(this, C, T, H, g)
 
     class(multicomp_lever), intent(inout) :: this
-    real(r8), intent(in)  :: T(:)
+    real(r8), intent(in)  :: C(:,:), T(:)
     real(r8), intent(out) :: H(:), g(:)
 
     integer  :: j, stat
-    real(r8) :: Tmin, Tmax, dT, geut, Hmin, Heut, state(0:this%num_comp)
+    real(r8) :: Tmin, Tmax, dT, geut, Hmin, Heut
     character(:), allocatable :: errmsg
 
     ASSERT(size(H) == size(T))
     ASSERT(size(g) == size(T))
 
-    state(1:) = this%C0
-
     do j = 1, size(T)
-      Tmax = this%temp(1.0_r8, this%C0)
+      Tmax = this%temp(1.0_r8, C(:,j))
       if (T(j) >= Tmax) then ! pure liquid
-        state(0) = T(j)
-        H(j) = this%H_liq%eval(state)
+        H(j) = this%H_liq%eval([T(j)])
         g(j) = 1
         cycle
       end if
 
-      Tmin = this%temp(0.0_r8, this%C0)
+      Tmin = this%temp(0.0_r8, C(:,j))
       if (Tmin < this%Teut) then ! eutectic transformation may be in play
-        !solve this%Teut = this%temp(geut, this%C0) for geut
+        !solve this%Teut = this%temp(geut, C) for geut
         this%my_invf%func => T_of_g
         call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
         INSIST(stat == 0)
-        state(0) = this%Teut
-        dT = geut * (this%H_liq%eval(state)-this%H_sol%eval(state)) / this%dHdTmax
+        dT = geut * (this%H_liq%eval([this%Teut])-this%H_sol%eval([this%Teut])) / this%dHdTmax
         Tmin = this%Teut - dT
-        Heut = (1-geut)*this%H_sol%eval(state) + geut*this%H_liq%eval(state)
+        Heut = (1-geut)*this%H_sol%eval([this%Teut]) + geut*this%H_liq%eval([this%Teut])
       end if
 
       if (T(j) <= Tmin) then ! pure solid
-        state(0) = T(j)
-        H(j) = this%H_sol%eval(state)
+        H(j) = this%H_sol%eval([T(j)])
         g(j) = 0
         cycle
       end if
 
       if (Tmin < this%Teut) then
-        state(0) = Tmin
-        Hmin = this%H_sol%eval(state)
+        Hmin = this%H_sol%eval([Tmin])
         Tmin = this%Teut
       end if
 
       if (T(j) > Tmin) then ! 2-phase region
-        ! solve T = this%temp(g, this%C0) for g
+        ! solve T = this%temp(g, C(:,j)) for g
         this%my_invf%func => T_of_g
         call this%my_invf%compute(T(j), 0.0_r8, 1.0_r8, g(j), stat, errmsg)
         INSIST(stat == 0)
-        state(0) = T(j)
-        H(j) = (1-g(j))*this%H_sol%eval(state) + g(j)*this%H_liq%eval(state)
+        H(j) = (1-g(j))*this%H_sol%eval([T(j)]) + g(j)*this%H_liq%eval([T(j)])
       else ! smeared eutectic transformation
         H(j) = Heut + (T(j) - this%Teut) * ((Heut - Hmin)/dT)
-        state(0) = T(j)
-        g(j) = (H(j) - this%H_sol%eval(state)) / (this%H_liq%eval(state) - this%H_sol%eval(state))
+        g(j) = (H(j) - this%H_sol%eval([T(j)])) / (this%H_liq%eval([T(j)]) - this%H_sol%eval([T(j)]))
       end if
     end do
 
@@ -335,7 +314,7 @@ contains
 
     real(r8) function T_of_g(x) result(T)
       real(r8), intent(in) :: x
-      T = this%temp(x, this%C0)
+      T = this%temp(x, C(:,j))
     end function
 
   end subroutine solve_for_H_g
@@ -371,10 +350,10 @@ contains
   !! Compute the residual of the algebraic liquid volume fraction relation
   !! given the liquid volume fraction g and enthalpy H.
 
-  subroutine compute_g_res(this, g, H, r)
+  subroutine compute_g_res(this, C, g, H, r)
 
     class(multicomp_lever), intent(inout) :: this
-    real(r8), intent(in)  :: g(:), H(:)
+    real(r8), intent(in)  :: C(:,:), g(:), H(:)
     real(r8), intent(out) :: r(:)
 
     integer :: j, stat
@@ -385,16 +364,16 @@ contains
     ASSERT(size(g) == size(r))
 
     do j = 1, size(r)
-      Tmax = this%temp(1.0_r8, this%C0)
+      Tmax = this%temp(1.0_r8, C(:,j))
       Hmax = this%H_liq%eval([Tmax])
       if (H(j) >= Hmax) then ! pure liquid
         r(j) = g(j) - 1
         cycle
       end if
 
-      Tmin = this%temp(0.0_r8, this%C0)
+      Tmin = this%temp(0.0_r8, C(:,j))
       if (Tmin < this%Teut) then ! eutectic transformation may be in play
-        !solve this%Teut = this%temp(geut, this%C0) for geut
+        !solve this%Teut = this%temp(geut, C) for geut
         this%my_invf%func => T_of_g
         call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
         INSIST(stat == 0)
@@ -410,7 +389,7 @@ contains
       end if
 
       if (H(j) > merge(Heut, Hmin, Tmin < this%Teut)) then ! 2-phase region
-        T = this%temp(g(j),this%C0)
+        T = this%temp(g(j),C(:,j))
         r(j) = (1-g(j))*this%H_sol%eval([T]) + g(j)*this%H_liq%eval([T]) - H(j)
       else ! smeared eutectic transformation
         T = this%Teut - dT*(Heut - H(j))/(Heut - Hmin)
@@ -422,7 +401,7 @@ contains
 
     real(r8) function T_of_g(x) result(T)
       real(r8), intent(in) :: x
-      T = this%temp(x, this%C0)
+      T = this%temp(x, C(:,j))
     end function
 
   end subroutine compute_g_res
@@ -430,10 +409,10 @@ contains
   !! Compute the derivatives of the algebraic liquid volume fraction relation
   !! with respect to the liquid volume fraction g and enthalpy H.
 
-  subroutine compute_g_jac(this, g, H, drdg, drdH)
+  subroutine compute_g_jac(this, C, g, H, drdg, drdH)
 
     class(multicomp_lever), intent(inout) :: this
-    real(r8), intent(in)  :: g(:), H(:)
+    real(r8), intent(in)  :: C(:,:), g(:), H(:)
     real(r8), intent(out) :: drdg(:), drdH(:)
 
     integer :: j, stat
@@ -445,7 +424,7 @@ contains
 
     do j = 1, size(drdH)
 
-      Tmax = this%temp(1.0_r8, this%C0)
+      Tmax = this%temp(1.0_r8, C(:,j))
       Hmax = this%H_liq%eval([Tmax])
       if (H(j) >= Hmax) then ! pure liquid
         drdg(j) = 1
@@ -453,9 +432,9 @@ contains
         cycle
       end if
 
-      Tmin = this%temp(0.0_r8, this%C0)
+      Tmin = this%temp(0.0_r8, C(:,j))
       if (Tmin < this%Teut) then ! eutectic transformation may be in play
-        !solve this%Teut = this%temp(geut, this%C0) for geut
+        !solve this%Teut = this%temp(geut, C) for geut
         this%my_invf%func => T_of_g
         call this%my_invf%compute(this%Teut, 0.0_r8, 1.0_r8, geut, stat, errmsg)
         INSIST(stat == 0)
@@ -472,9 +451,9 @@ contains
       end if
 
       if (H(j) > merge(Heut, Hmin, Tmin < this%Teut)) then ! 2-phase region
-        T = this%temp(g(j),this%C0)
+        T = this%temp(g(j),C(:,j))
         drdg(j) = ((1-g(j))*this%H_sol_deriv%eval([T]) + g(j)*this%H_liq_deriv%eval([T])) &
-                * temp_deriv(this, g(j), this%C0) + (this%H_liq%eval([T]) - this%H_sol%eval([T]))
+                * temp_deriv(this, g(j), C(:,j)) + (this%H_liq%eval([T]) - this%H_sol%eval([T]))
         drdH(j) = -1
       else ! smeared eutectic transformation
         T = this%Teut - dT*(Heut - H(j))/(Heut - Hmin)
@@ -488,7 +467,7 @@ contains
 
     real(r8) function T_of_g(x) result(T)
       real(r8), intent(in) :: x
-      T = this%temp(x, this%C0)
+      T = this%temp(x, C(:,j))
     end function
 
   end subroutine

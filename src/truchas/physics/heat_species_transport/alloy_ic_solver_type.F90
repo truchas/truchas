@@ -64,13 +64,13 @@ contains
 
     select case (this%model%model_type)
     case (1)
-      call this%model%alloy%solve_for_H_g(u%tc, u%hc, u%lf)
+      call this%model%alloy%solve_for_H_g(this%model%C, u%tc, u%hc, u%lf)
     case (2) ! assumes temperature is consistent with a pure liquid state
       block
         integer :: j
         u%lf = 1
+        u%lsf = this%model%C
         do j = 1, this%mesh%ncell
-          u%lsf(:,j) = this%model%pd%C0
           u%hc(j) = this%model%pd%H_of_g_T(u%lf(j), u%tc(j))
         end do
       end block
@@ -123,7 +123,7 @@ contains
       do j = 1, size(u%tc)
         Tmin = u%tc(j) - 1
         Tmax = u%tc(j) + 1
-        call this%model%alloy%solve(udot%hc(j), this%model%alloy%C0, Tmin, Tmax, udot%tc(j), udot%lf(j))
+        call this%model%alloy%solve(udot%hc(j), this%model%C(:,j), Tmin, Tmax, udot%tc(j), udot%lf(j))
       end do
     case (2) ! Assumes the advanced enthalpies are consistent with a pure liquid
       udot%lf = u%lf

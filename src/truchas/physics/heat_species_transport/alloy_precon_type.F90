@@ -90,13 +90,14 @@ contains
 
     select case (this%model%model_type)
     case (1) ! lever rule
-      call this%model%alloy%compute_g_jac(u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
+      call this%model%alloy%compute_g_jac(this%model%C, u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
       call this%model%alloy%compute_H_jac(u%lf, u%hc, u%tc, this%dHdg, this%B, this%dHdT)
       this%B = this%B - this%dHdg*this%drdH/this%drdg
       A = -this%mesh%volume * (this%dHdT/this%B) / dt
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%model%pd%compute_f_jac(u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac(j))
+        call this%model%pd%compute_f_jac(this%model%C(:,j), this%model%Cdot(:,j), &
+            u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac(j))
         call this%jac(j)%lu_factor
         this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac(j)%dfHdH
         A(j) = -this%B(j)*this%jac(j)%dfHdT

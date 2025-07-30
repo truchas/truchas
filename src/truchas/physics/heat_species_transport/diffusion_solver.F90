@@ -226,14 +226,27 @@ contains
       integer :: i
       real(r8) :: phi(this%mesh%ncell), dphi(this%mesh%ncell)
 
-      do i = 1, num_species
-        call ds_get_phi(i, phi)
-        call this%mesh%cell_imap%gather_offp(phi)
-        call this%cadv(i)%get_advected_scalar(t, phi, dphi)
-        call this%mesh%cell_imap%gather_offp(dphi)
-        dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
-        call this%mod1%set_sd_adv_source(i, dphi)
-      end do
+      select case (this%solver_type)
+      case (SOLVER1)
+        do i = 1, num_species
+          call ds_get_phi(i, phi)
+          call this%mesh%cell_imap%gather_offp(phi)
+          call this%cadv(i)%get_advected_scalar(t, phi, dphi)
+          call this%mesh%cell_imap%gather_offp(dphi)
+          dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+          call this%mod1%set_sd_adv_source(i, dphi)
+        end do
+      case (SOLVER4)
+        do i = 1, this%mod4%num_comp
+          call this%sol4%get_C_liq(i, phi)
+          call this%mesh%cell_imap%gather_offp(phi)
+          call this%cadv(i)%get_advected_scalar(t, phi, dphi)
+          call this%mesh%cell_imap%gather_offp(dphi)
+          dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+        end do
+      case default
+        INSIST(.false.)
+      end select
 
     end subroutine update_adv_conc
 

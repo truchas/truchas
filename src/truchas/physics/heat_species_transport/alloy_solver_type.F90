@@ -34,6 +34,7 @@ module alloy_solver_type
     type(alloy_precon), pointer :: precon => null()
     type(alloy_norm),   pointer :: norm   => null()
     type(parameter_list), pointer :: ic_params => null()
+    real(r8), allocatable :: Clast(:,:)
   contains
     procedure :: init
     procedure :: step
@@ -41,6 +42,7 @@ module alloy_solver_type
     procedure :: get_cell_heat_copy, get_cell_heat_view
     procedure :: get_cell_temp_copy, get_cell_temp_view
     procedure :: get_face_temp_copy, get_face_temp_view
+    procedure :: get_C_liq
     procedure :: get_liq_frac_view
     procedure :: get_cell_temp_grad
     procedure :: get_stepping_stats
@@ -81,6 +83,8 @@ contains
     this%mmf   => mmf
     this%model => model
     this%mesh  => model%mesh
+
+    allocate(this%Clast, source=this%model%C)
 
     allocate(this%norm)
     plist => params%sublist('norm')
@@ -233,6 +237,11 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(out) :: hnext
     integer, intent(out) :: stat
+
+!    ! Update the average solute volume fractions
+!    this%model%C = this%C + hnext*Cdot
+!    this%model%Cdot = Cdot
+
     call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
       this%t = t
@@ -250,6 +259,21 @@ contains
       call this%integ%commit_state(this%t, this%u)
       this%state_is_pending = .false.
     end if
+  end subroutine
+
+  subroutine get_C_liq(this, n, C_liq)
+    class(alloy_solver), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8) :: C_liq(:)
+    integer :: j
+    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
+    do j = 1, this%mesh%ncell_onp
+      if (this%u%lf(j) > 1d-8) then
+        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
+      else
+        C_liq(j) = 0.0_r8 ! really undefined
+      end if
+    end do
   end subroutine
 
   subroutine set_initial_state(this, t, temp, dt)
