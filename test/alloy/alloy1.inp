@@ -61,7 +61,7 @@
   temp_eutectic = 8.0
   liq_slope = -8.0
   part_coef = 0.5
-  concentration = 0.25
+  concentration = 0.125
 /
 
 &DIFFUSION_SOLVER
