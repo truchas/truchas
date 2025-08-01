@@ -19,12 +19,11 @@ module alloy_solver_factory
 
 contains
 
-  function create_alloy_solver(mmf, model, params, stat, errmsg) result(solver)
+  function create_alloy_solver(model, params, stat, errmsg) result(solver)
 
     use parallel_communication
     use truchas_env, only: output_file_name
 
-    type(matl_mesh_func), intent(in), target :: mmf
     type(alloy_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     type(alloy_solver), pointer :: solver
@@ -45,7 +44,7 @@ contains
     end if
 
     allocate(solver)
-    call solver%init(mmf, model, params, stat, errmsg)
+    call solver%init(model, params, stat, errmsg)
 
   end function create_alloy_solver
 

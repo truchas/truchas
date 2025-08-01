@@ -44,16 +44,15 @@ contains
   end subroutine init
 
 
-  subroutine compute(this, t, temp, u, udot)
+  subroutine compute(this, t, C, Cdot, temp, u, udot)
 
     class(alloy_ic_solver), intent(inout) :: this
-    real(r8), intent(in) :: t
-    real(r8), intent(in) :: temp(:)
+    real(r8), intent(in) :: t, C(:,:), Cdot(:,:), temp(:)
     type(alloy_vector), intent(inout) :: u, udot ! data is intent(out)
     target :: u
 
     call TLS_info('')
-    call TLS_info('Computing consistent initial state for HT solver ...')
+    call TLS_info('Computing consistent initial state for thermal conduction ...')
 
     call u%setval(0.0_r8)
 
@@ -64,12 +63,13 @@ contains
 
     select case (this%model%model_type)
     case (1)
-      call this%model%alloy%solve_for_H_g(this%model%C, u%tc, u%hc, u%lf)
+      call this%model%alloy%solve_for_H_g(C, u%tc, u%hc, u%lf)
     case (2) ! assumes temperature is consistent with a pure liquid state
       block
         integer :: j
+        u%lsf(:,:this%mesh%ncell_onp) = C(:,:this%mesh%ncell_onp)
+        call this%mesh%cell_imap%gather_offp(u%lsf)
         u%lf = 1
-        u%lsf = this%model%C
         do j = 1, this%mesh%ncell
           u%hc(j) = this%model%pd%H_of_g_T(u%lf(j), u%tc(j))
         end do
@@ -83,17 +83,17 @@ contains
       call this%model%bc_dir%compute(t)
       u%tf(this%model%bc_dir%index) = this%model%bc_dir%value
     end if
-    call compute_face_temp(this%model, t, u, this%params)
+    call compute_face_temp(this%model, t, C, Cdot, u, this%params)
 
-    call compute_udot(this, t, u, udot)
+    call compute_udot(this, t, C, Cdot, u, udot)
 
   end subroutine compute
 
 
-  subroutine compute_udot (this, t, u, udot)
+  subroutine compute_udot(this, t, C, Cdot, u, udot)
 
     class(alloy_ic_solver), intent(inout) :: this
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, C(:,:), Cdot(:,:)
     type(alloy_vector), intent(inout) :: u    ! data is intent(in)
     type(alloy_vector), intent(inout) :: udot ! data is intent(out)
     target :: u, udot
@@ -104,11 +104,11 @@ contains
     type(alloy_vector), target :: f
 
     call TLS_info('')
-    call TLS_info('Computing consistent initial state derivative for HT solver ...')
+    call TLS_info('Computing consistent initial state derivative for thermal conduction ...')
 
     call udot%setval(0.0_r8)
     call f%init(u)
-    call this%model%compute_f(t, u, udot, f)  ! only care about f%tc
+    call this%model%compute_f(C, Cdot, t, u, udot, f)  ! only care about f%tc
 
     !! Compute Hdot
     udot%hc = -f%tc/this%mesh%volume
@@ -120,11 +120,13 @@ contains
     !! Compute the advanced cell temps and liquid fractions from the advanced cell enthalpies
     select case (this%model%model_type)
     case (1)
-      do j = 1, size(u%tc)
+      do j = 1, this%mesh%ncell_onp
         Tmin = u%tc(j) - 1
         Tmax = u%tc(j) + 1
-        call this%model%alloy%solve(udot%hc(j), this%model%C(:,j), Tmin, Tmax, udot%tc(j), udot%lf(j))
+        call this%model%alloy%solve(udot%hc(j), C(:,j), Tmin, Tmax, udot%tc(j), udot%lf(j))
       end do
+      call this%mesh%cell_imap%gather_offp(udot%tc)
+      call this%mesh%cell_imap%gather_offp(udot%lf)
     case (2) ! Assumes the advanced enthalpies are consistent with a pure liquid
       udot%lf = u%lf
       udot%lsf = u%lsf
@@ -137,7 +139,7 @@ contains
 
     !! Set consistent advanced face temps.  Use their initial
     !! conditions as the initial guess for the solution procedure.
-    call compute_face_temp(this%model, t+dt, udot, this%params)
+    call compute_face_temp(this%model, t+dt, C, Cdot, udot, this%params)
 
     !! Forward Euler approximation to the time derivative at T.
     !f = (f - u) / dt
@@ -184,7 +186,7 @@ contains
   !! This auxillary procedure solves for the consistent face temperatures given
   !! cell temperatures.
 
-  subroutine compute_face_temp(this, t, u, params)
+  subroutine compute_face_temp(this, t, C, Cdot, u, params)
 
     use mfd_diff_matrix_type
     use pcsr_precon_class
@@ -194,7 +196,7 @@ contains
     use parallel_communication, only: global_sum, global_maxval, global_all
 
     type(alloy_model), intent(inout), target :: this
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, C(:,:), Cdot(:,:)
     type(alloy_vector), intent(inout) :: u
     type(parameter_list) :: params
 
@@ -215,7 +217,7 @@ contains
     call udot%init(u)
     call udot%setval(0.0_r8)
     call f%init(u)
-    call this%compute_f(t, u, udot, f)
+    call this%compute_f(C, Cdot, t, u, udot, f) ! we only use f%tf
     associate (r => f%tf(1:this%mesh%nface_onP))
       r0_err = sqrt(global_sum(norm2(r)**2))
     end associate
@@ -260,7 +262,7 @@ contains
         dT_max = global_maxval(abs(z))
 
         !! Recompute the face temp residual.
-        call this%compute_f(t, u, udot, f)
+        call this%compute_f(C, Cdot, t, u, udot, f) ! we only use f%tf
         r_err = sqrt(global_dot_product(r,r))
         if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
           write(string,'(4x,a,i0,2(a,es9.2))') &

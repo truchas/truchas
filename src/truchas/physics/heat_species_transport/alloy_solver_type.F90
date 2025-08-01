@@ -13,18 +13,16 @@ module alloy_solver_type
   use alloy_model_type
   use alloy_precon_type
   use alloy_norm_type
-  use matl_mesh_func_type
   use unstr_mesh_type
-  use alloy_idaesol_model_type
+  !use alloy_idaesol_model_type
   use new_idaesol_type
   use parameter_list_type
   implicit none
   private
 
-  type, public :: alloy_solver
-    type(matl_mesh_func), pointer :: mmf => null()
+  type, extends(idaesol_model), public :: alloy_solver
     type(unstr_mesh), pointer :: mesh => null()
-    type(alloy_idaesol_model) :: integ_model
+    !type(alloy_idaesol_model) :: integ_model
     type(idaesol) :: integ
     logical :: state_is_pending = .false.
     !! Pending state
@@ -34,7 +32,8 @@ module alloy_solver_type
     type(alloy_precon), pointer :: precon => null()
     type(alloy_norm),   pointer :: norm   => null()
     type(parameter_list), pointer :: ic_params => null()
-    real(r8), allocatable :: Clast(:,:)
+    real(r8), allocatable :: Clast(:,:), C(:,:), Cdot(:,:)
+    integer :: num_comp
   contains
     procedure :: init
     procedure :: step
@@ -42,7 +41,8 @@ module alloy_solver_type
     procedure :: get_cell_heat_copy, get_cell_heat_view
     procedure :: get_cell_temp_copy, get_cell_temp_view
     procedure :: get_face_temp_copy, get_face_temp_view
-    procedure :: get_C_liq
+    procedure :: get_cell_conc_view
+    procedure :: get_C_liq, get_C_sol
     procedure :: get_liq_frac_view
     procedure :: get_cell_temp_grad
     procedure :: get_stepping_stats
@@ -50,6 +50,15 @@ module alloy_solver_type
     procedure :: last_time
     procedure :: set_initial_state
     procedure :: restart
+    procedure :: set_adv_heat
+    generic   :: set_cdot => set_cdot_one, set_cdot_all
+    procedure, private :: set_cdot_one, set_cdot_all
+    !! Deferred procedures from IDAESOL_MODEL
+    procedure :: alloc_vector
+    procedure :: compute_f
+    procedure :: apply_precon
+    procedure :: compute_precon
+    procedure :: du_norm
     final :: alloy_solver_delete
   end type
 
@@ -63,28 +72,47 @@ contains
     if (associated(this%ic_params)) deallocate(this%ic_params)
   end subroutine
 
-!TODO: model should hold a reference to mmf
-
-  subroutine init(this, mmf, model, params, stat, errmsg)
+  subroutine init(this, model, params, stat, errmsg)
 
     use parallel_communication, only: is_IOP
 
     class(alloy_solver), intent(out), target :: this
-    type(matl_mesh_func), intent(in), target :: mmf
     type(alloy_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: output_unit
+    integer :: j, output_unit
     type(parameter_list), pointer :: plist
     logical :: verbose_stepping
+    real(r8), allocatable :: C0(:)
 
-    this%mmf   => mmf
     this%model => model
     this%mesh  => model%mesh
 
-    allocate(this%Clast, source=this%model%C)
+    this%num_comp = this%model%num_comp
+
+    allocate(this%C(this%num_comp,this%mesh%ncell))
+    allocate(this%Clast, this%Cdot, mold=this%C)
+
+    !! Initial uniform solute concentration
+    call params%get('concentration', C0, stat, errmsg)
+    if (stat /= 0) return
+    if (size(C0) /= this%num_comp) then
+      stat = 1
+      errmsg = 'invalid concentration size'
+      return
+    else if (any(C0 < 0) .or. sum(C0) >= 1) then
+      stat = 1
+      errmsg = 'invalid concentration values'
+      return
+    end if
+
+    do j = 1, this%mesh%ncell
+      this%C(:,j) = C0
+      this%Clast(:,j) = C0
+    end do
+    this%Cdot = 0
 
     allocate(this%norm)
     plist => params%sublist('norm')
@@ -97,14 +125,11 @@ contains
     if (stat /= 0) return
 
     call this%model%init_vector(this%u)
-    !call this%u%init(this%mesh)
-
-    call this%integ_model%init(this%model, this%precon, this%norm)
 
     block
       integer :: stat
       character(:), allocatable :: errmsg
-      call this%integ%init(this%integ_model, params, stat, errmsg)
+      call this%integ%init(this, params, stat, errmsg)
       INSIST(stat == 0)
     end block
 
@@ -130,6 +155,29 @@ contains
     end block
 
   end subroutine init
+
+  !! Set the rate of change of solute concentration due to advection
+  subroutine set_cdot_one(this, n, cdot)
+    class(alloy_solver), intent(inout) :: this
+    integer, intent(in) :: n
+    real(r8), intent(in) :: cdot(:)
+    ASSERT(n > 0 .and. n <= size(this%cdot,1))
+    ASSERT(size(cdot) == size(this%cdot,2))
+    this%cdot(n,:) = cdot
+  end subroutine
+
+  subroutine set_cdot_all(this, cdot)
+    class(alloy_solver), intent(inout) :: this
+    real(r8), intent(in) :: cdot(:,:)
+    ASSERT(all(shape(cdot) == shape(this%cdot)))
+    this%cdot(:,:) = cdot
+  end subroutine
+
+  subroutine set_adv_heat(this, q)
+    class(alloy_solver), intent(inout) :: this
+    real(r8), intent(in) :: q(:)
+    call this%model%set_heat_source(q)
+  end subroutine
 
   !! Get a reference to the pending/current liquid fractions
   subroutine get_liq_frac_view(this, view)
@@ -186,6 +234,46 @@ contains
     copy(1:n) = this%u%hc(1:n)
   end subroutine
 
+  !! Get a copy of the Nth solute concentration in the liquid phase
+  subroutine get_C_liq(this, n, C_liq)
+    class(alloy_solver), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), intent(inout) :: C_liq(:)
+    integer :: j
+    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
+    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
+    do j = 1, this%mesh%ncell_onp
+      if (this%u%lf(j) > 1d-6) then
+        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
+      else
+        C_liq(j) = 0.0_r8 ! really undefined
+      end if
+    end do
+  end subroutine
+
+  !! Get a copy of the Nth solute concentration in the solid phase
+  subroutine get_C_sol(this, n, C_sol)
+    class(alloy_solver), intent(in) :: this
+    integer, intent(in) :: n
+    real(r8), intent(inout) :: C_sol(:)
+    integer :: j
+    ASSERT(size(C_sol) >= this%mesh%ncell_onp)
+    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
+    do j = 1, this%mesh%ncell_onp
+      if (1 - this%u%lf(j) > 1d-6) then
+        C_sol(j) = (this%C(n,j) - this%u%lsf(n,j)) / (1 - this%u%lf(j))
+      else
+        C_sol(j) = 0.0_r8 ! really undefined
+      end if
+    end do
+  end subroutine
+
+  subroutine get_cell_conc_view(this, view)
+    class(alloy_solver), intent(in), target :: this
+    real(r8), pointer, intent(out) :: view(:,:)
+    view => this%C
+  end subroutine
+
   !! Compute a cell-based approximation to the gradient of the pending/current
   !! cell temperatures. Note that this derived quantity is not used in the
   !! discretization of the heat equation.
@@ -238,9 +326,8 @@ contains
     real(r8), intent(out) :: hnext
     integer, intent(out) :: stat
 
-!    ! Update the average solute volume fractions
-!    this%model%C = this%C + hnext*Cdot
-!    this%model%Cdot = Cdot
+    ! Update the average solute concentration (mass or volume fraction)
+    this%C = this%Clast + (t - this%t)*this%Cdot
 
     call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
@@ -256,24 +343,10 @@ contains
   subroutine commit_pending_state(this)
     class(alloy_solver), intent(inout) :: this
     if (this%state_is_pending) then
+      this%Clast = this%C
       call this%integ%commit_state(this%t, this%u)
       this%state_is_pending = .false.
     end if
-  end subroutine
-
-  subroutine get_C_liq(this, n, C_liq)
-    class(alloy_solver), intent(in) :: this
-    integer, intent(in) :: n
-    real(r8) :: C_liq(:)
-    integer :: j
-    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
-    do j = 1, this%mesh%ncell_onp
-      if (this%u%lf(j) > 1d-8) then
-        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
-      else
-        C_liq(j) = 0.0_r8 ! really undefined
-      end if
-    end do
   end subroutine
 
   subroutine set_initial_state(this, t, temp, dt)
@@ -290,10 +363,11 @@ contains
 
     INSIST(associated(this%model))
 
+    this%t = t
     call udot%init(this%u)
     call this%ic_params%set('dt', dt)
     call ic%init(this%model, this%ic_params)
-    call ic%compute(t, temp, this%u, udot)
+    call ic%compute(t, this%C, this%Cdot, temp, this%u, udot)
     call this%integ%set_initial_state(t, this%u, udot)
 
   end subroutine set_initial_state
@@ -313,9 +387,83 @@ contains
     call udot%init(this%u)
     call this%ic_params%set('dt', dt)
     call ic%init(this%model, this%ic_params)
-    call ic%compute_udot(this%t, this%u, udot)
+    call ic%compute_udot(this%t, this%C, this%Cdot, this%u, udot)
     call this%integ%set_initial_state(this%t, this%u, udot)
 
+  end subroutine
+
+!!!! DEFERRED PROCEDURES FROM IDAESOL_MODEL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine alloc_vector(this, vec)
+    use vector_class
+    class(alloy_solver), intent(in) :: this
+    class(vector), allocatable, intent(out) :: vec
+    type(alloy_vector), allocatable :: tmp
+    allocate(tmp)
+    call this%model%init_vector(tmp)
+    call move_alloc(tmp, vec)
+  end subroutine
+
+  subroutine compute_f(this, t, u, udot, f)
+    use vector_class
+    class(alloy_solver) :: this
+    real(r8), intent(in) :: t
+    class(vector), intent(inout) :: u, udot ! data is intent(in)
+    class(vector), intent(inout) :: f       ! data is intent(out)
+    select type (u)
+    class is (alloy_vector)
+      select type (udot)
+      class is (alloy_vector)
+        select type (f)
+        class is (alloy_vector)
+          call this%model%compute_f(this%C, this%Cdot, t, u, udot, f)
+        end select
+      end select
+    end select
+  end subroutine
+
+  subroutine apply_precon(this, t, u, f)
+    use vector_class
+    class(alloy_solver) :: this
+    real(r8), intent(in) :: t
+    class(vector), intent(inout) :: u  ! data is intent(in)
+    class(vector), intent(inout) :: f  ! data is intent(inout)
+    select type (u)
+    class is (alloy_vector)
+      select type (f)
+      class is (alloy_vector)
+        call this%precon%apply(t, u, f)
+      end select
+    end select
+  end subroutine
+
+  subroutine compute_precon(this, t, u, udot, dt)
+    use vector_class
+    class(alloy_solver) :: this
+    real(r8), intent(in) :: t, dt
+    class(vector), intent(inout) :: u, udot
+    select type (u)
+    class is (alloy_vector)
+      select type (udot)
+      class is (alloy_vector)
+        call this%precon%compute(this%C, this%Cdot, t, u, udot, dt)
+      end select
+    end select
+  end subroutine
+
+  subroutine du_norm(this, t, u, du, error)
+    use vector_class
+    class(alloy_solver) :: this
+    real(r8), intent(in) :: t
+    class(vector), intent(in) :: u, du
+    real(r8), intent(out) :: error
+    select type (u)
+    class is (alloy_vector)
+      select type (du)
+      class is (alloy_vector)
+        call this%norm%compute(t, u, du, error)
+      end select
+    end select
   end subroutine
 
 end module alloy_solver_type

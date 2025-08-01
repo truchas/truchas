@@ -32,7 +32,6 @@ module alloy_model_type
     class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
     type(scalar_mesh_multifunc), allocatable :: src ! external heat source
-    real(r8), allocatable :: C(:,:), Cdot(:,:) ! set externally
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir  ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux ! simple flux
@@ -43,7 +42,7 @@ module alloy_model_type
     procedure :: init_vector
     procedure :: compute_f
     procedure :: get_conductivity
-    procedure :: set_alloy_adv_source
+    procedure :: set_heat_source
   end type alloy_model
 
 contains
@@ -90,26 +89,6 @@ contains
       if (stat /= 0) return
       this%num_comp = this%pd%num_comp
     end select
-
-    !! Initial solute concentration
-    call params%get('concentration', C0, stat, errmsg)
-    if (stat /= 0) return
-    if (size(C0) /= this%num_comp) then
-      stat = 1
-      errmsg = 'invalid concentration size'
-      return
-    else if (any(C0 < 0) .or. sum(C0) >= 1) then
-      stat = 1
-      errmsg = 'invalid concentration values'
-      return
-    end if
-
-    allocate(this%C(this%num_comp,this%mesh%ncell))
-    allocate(this%Cdot, mold=this%C)
-    do j = 1, this%mesh%ncell
-      this%C(:,j) = C0
-    end do
-    this%Cdot = 0
 
     if (matl%has_prop('conductivity')) then
       phi => matl%phase_ref(1)
@@ -207,20 +186,21 @@ contains
 
   end subroutine
 
-  subroutine set_alloy_adv_source(this, q_adv)
+  subroutine set_heat_source(this, q)
     class(alloy_model), intent(inout) :: this
-    real(r8), intent(in) :: q_adv(:)
-    ASSERT(size(q_adv) == this%mesh%ncell)
+    real(r8), intent(in) :: q(:)
+    ASSERT(size(q) == this%mesh%ncell)
     if (.not.allocated(this%q_adv)) allocate(this%q_adv(this%mesh%ncell))
-    this%q_adv = q_adv
+    this%q_adv = q
   end subroutine
 
-  subroutine compute_f(this, t, u, udot, f)
+  subroutine compute_f(this, C, Cdot, t, u, udot, f)
 
     use mfd_disc_type
 
     class(alloy_model), intent(inout) :: this
     real(r8), intent(in) :: t
+    real(r8), intent(in) :: C(:,:), Cdot(:,:)
     type(alloy_vector), intent(inout) :: u, udot ! data is intent(in)
     type(alloy_vector), intent(inout) :: f       ! data is intent(out)
     target :: u
@@ -243,11 +223,11 @@ contains
 
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_g_res(this%C, u%lf, u%hc, f%lf)
+      call this%alloy%compute_g_res(C, u%lf, u%hc, f%lf)
       call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%pd%compute_f(this%C(:,j), this%Cdot(:,j), &
+        call this%pd%compute_f(C(:,j), Cdot(:,j), &
                                u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
                                udot%lsf(:,j), udot%lf(j), udot%hc(j), &
                                f%lsf(:,j), f%lf(j), f%hc(j))

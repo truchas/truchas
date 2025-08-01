@@ -50,6 +50,7 @@ module diffusion_solver
   !! These return cell-centered results relative to the old Truchas mesh.
   public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
   public :: ds_get_temp_grad
+  public :: ds_get_alloy_conc_view, ds_get_alloy_liquid_conc, ds_get_alloy_solid_conc
 
   !! These return results relative to the new distributed mesh.
   public :: ds_get_cell_temp, ds_get_face_temp
@@ -147,8 +148,13 @@ contains
     end if
 
     if (this%have_heat_transfer) call update_adv_heat
-    if (allocated(this%cadv)) then  ! necessarily using SOLVER1
-      t = HTSD_solver_last_time(this%sol1)
+    if (allocated(this%cadv)) then
+      select case (this%solver_type)
+      case (SOLVER4)
+        t = this%sol4%last_time()
+      case default ! necessarily using SOLVER1
+        t = HTSD_solver_last_time(this%sol1)
+      end select
       call update_adv_conc
     end if
 
@@ -214,7 +220,7 @@ contains
         case (SOLVER3)
           call this%mod3%set_ht_adv_source(q_ds)
         case (SOLVER4)
-          call this%mod4%set_alloy_adv_source(q_ds)
+          call this%sol4%set_adv_heat(q_ds)
         end select
         deallocate(q_ds)
       end if
@@ -237,12 +243,13 @@ contains
           call this%mod1%set_sd_adv_source(i, dphi)
         end do
       case (SOLVER4)
-        do i = 1, this%mod4%num_comp
+        do i = 1, this%sol4%num_comp
           call this%sol4%get_C_liq(i, phi)
           call this%mesh%cell_imap%gather_offp(phi)
           call this%cadv(i)%get_advected_scalar(t, phi, dphi)
           call this%mesh%cell_imap%gather_offp(dphi)
           dphi = dphi / (h*this%mesh%volume) ! turn into a source (per unit volume-time)
+          call this%sol4%set_cdot(i, dphi)
         end do
       case default
         INSIST(.false.)
@@ -407,6 +414,38 @@ contains
     end select
   end subroutine ds_get_phi
 
+  subroutine ds_get_alloy_conc_view(view)
+    real(r8), pointer, intent(out) :: view(:,:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_cell_conc_view(view)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
+  subroutine ds_get_alloy_liquid_conc(n, array)
+    integer, intent(in) :: n
+    real(r8), intent(inout) :: array(:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_C_liq(n, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
+  subroutine ds_get_alloy_solid_conc(n, array)
+    integer, intent(in) :: n
+    real(r8),intent(inout) :: array(:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      call this%sol4%get_C_sol(n, array)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine
+
   subroutine ds_get_temp_grad (array)
     real(r8), intent(inout) :: array(:,:)
     ASSERT(size(array,dim=2) >= this%mesh%ncell_onP)
@@ -505,10 +544,9 @@ contains
     use species_source_factory_type
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
-    integer :: i
     real(r8), intent(in) :: tinit
 
-    integer :: stat
+    integer :: stat, i, n
     character(len=200) :: errmsg
     type(enthalpy_advector1), allocatable :: hadv1
     character(:), allocatable :: integrator, errmsg2
@@ -549,7 +587,14 @@ contains
         allocate(this%cadv(num_species))
         do i = 1, num_species
           call this%cadv(i)%init(this%mesh, i, stat, errmsg2)
-          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing enthalpy advection: ' // errmsg2)
+          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing concentration advection: ' // errmsg2)
+        end do
+      else if (alloy_solidification) then
+        call this%alloy_params%get('num-comp', n)
+        allocate(this%cadv(n))
+        do i = 1, n
+          call this%cadv(i)%init(this%mesh, i, stat, errmsg2)
+          if (stat /= 0) call TLS_fatal('DS_INIT: error initializing concentration advection: ' // errmsg2)
         end do
       end if
     end if
@@ -645,7 +690,7 @@ contains
         allocate(this%mod4)
         call this%mod4%init(this%mesh, matl, this%alloy_params, stat, errmsg2)
         if (stat /= 0) call TLS_fatal('DS_INIT: ' // errmsg2)
-        this%sol4 => create_alloy_solver(this%mmf, this%mod4, this%alloy_params, stat, errmsg2)
+        this%sol4 => create_alloy_solver(this%mod4, this%alloy_params, stat, errmsg2)
         if (stat /= 0) call TLS_fatal('DS_INIT: ' // trim(errmsg2))
       end block
     case default

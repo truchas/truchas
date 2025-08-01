@@ -53,7 +53,6 @@ target_sources(truchas PRIVATE
   alloy_model_type.F90
   alloy_norm_type.F90
   alloy_precon_type.F90
-  alloy_idaesol_model_type.F90
   alloy_solver_type.F90
   alloy_solver_factory.F90
   alloy_ic_solver_type.F90

@@ -62,7 +62,7 @@
   liq_slope = -8.0
   part_coef = 0.5
   concentration = 0.125
-  gamma = 0.05
+  gamma = 2.0
 /
 
 &DIFFUSION_SOLVER
