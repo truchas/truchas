@@ -240,7 +240,7 @@ contains
     !! Generate the format for writing the probe data.
     call params%get('digits', n, stat, errmsg, default=6)
     if (stat /= 0) return
-    write(rfmt,'("es",i0,".",i0,"e3")') n+7, n-1
+    write(rfmt,'("es",i0,".",i0,"e3")') n+8, n-1
     this%fmt = '(' // trim(rfmt) // ',*(' // trim(rfmt) // '))'
 
   end subroutine point_probe_init

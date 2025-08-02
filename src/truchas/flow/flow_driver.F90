@@ -183,7 +183,7 @@ contains
     use flow_namelist, only: params
     use material_model_driver, only: matl_model
     use physics_module, only: prescribed_flow
-    use scalar_func_factories, only: alloc_const_scalar_func
+    use scalar_func_factories, only: alloc_const_scalar_func, alloc_poly_scalar_func
     use vtrack_driver, only: vtrack_driver_init, vtrack_set_inflow_bc
     use flow_bc_type
     use truchas_logging_services
@@ -249,6 +249,17 @@ contains
     allocate(density_delta(size(fluids)))
     do i = 1, size(fluids)
       call matl_model%get_phase_prop(fluids(i), 'density-delta', density_delta(i)%f)
+      if (.not.allocated(density_delta(i)%f)) then
+        if (matl_model%has_const_phase_prop(fluids(i), 'thermal-expan-coef') .and. &
+            matl_model%has_const_phase_prop(fluids(i), 'expan-ref-temp')) then
+          block ! create the function if the coefficient of thermal expansion is defined
+            real(r8) :: alpha, Tref
+            alpha = matl_model%const_phase_prop(fluids(i), 'thermal-expan-coef')
+            Tref  = matl_model%const_phase_prop(fluids(i), 'expan-ref-temp')
+            call alloc_poly_scalar_func(density_delta(i)%f, [-density(i)*alpha], [1], Tref)
+          end block
+        end if
+      end if
       if (.not.allocated(density_delta(i)%f)) call alloc_const_scalar_func(density_delta(i)%f, 0.0_r8)
     end do
 
