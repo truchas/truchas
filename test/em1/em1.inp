@@ -20,8 +20,7 @@ subdivision of the hex cells.
 
 &PHYSICS
   materials = 'conductor1', 'conductor2', 'VOID'
-  heat_transport = .true.
-  electromagnetics = .true.
+  induction_heating = T
 /
 
 &DIFFUSION_SOLVER
@@ -45,7 +44,9 @@ subdivision of the hex cells.
   dt_init = 5.0
 /
 
-&ELECTROMAGNETICS
+&INDUCTION_HEATING / ! accept defaults
+
+&TDME_JOULE_SOLVER
   steps_per_cycle = 12
   steady_state_tol = 0.01
   max_source_cycles = 4

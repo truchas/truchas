@@ -1,7 +1,6 @@
 ANDREY'S WAVEGUIDE TEST PROBLEM
 
 &MESH
-  !mesh_file = 'meshes/wg1-hex-10.gen'
   x_axis%coarse_grid = -0.04318, 0.04318
   y_axis%coarse_grid = -0.02159, 0.02159
   z_axis%coarse_grid = -0.2, 0.2
@@ -18,9 +17,8 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
 &NUMERICS /
 
 &PHYSICS
+  microwave_heating = T
   materials = 'dielectric', 'VOID'
-  heat_transport = T
-  electromagnetics = T
 /
 
 &DIFFUSION_SOLVER
@@ -31,17 +29,13 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   verbose_stepping = T
 /
 
-
 ### BODIES #####################################################################
 
 &BODY
-  surface_name = 'from mesh file'
-  material_name = 'dielectric'
-  temperature = 300.0
-
-  !mesh_material_number = 2
   surface_name = 'plane'
   axis = 'z'
+  material_name = 'dielectric'
+  temperature = 300.0
 /
 
 &BODY
@@ -56,15 +50,12 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   name = 'adiabatic'
   type = 'flux'
   face_set_ids = 1, 2, 3, 4, 5, 6
-  !face_set_ids = 1, 2, 3
   flux = 0.0
 /
-
 
 ### EM HEATING #################################################################
 
 &EM_MESH
-  !mesh_file = 'meshes/wg1-tet-10.gen'
   x_axis%coarse_grid = -0.04318, 0.04318
   y_axis%coarse_grid = -0.02159, 0.02159
   z_axis%coarse_grid = -0.2, 0.2
@@ -73,59 +64,48 @@ ANDREY'S WAVEGUIDE TEST PROBLEM
   z_axis%intervals = 50
 /
 
-&ELECTROMAGNETICS
-  use_mw_solver = T
+&MICROWAVE_HEATING
   wg_port_bc = 'waveguide port'
   powers = 100.0
   frequency = 2.45d9
-  use_fd_solver = T
-  !use_mixed_form = T
-  fd_solver_type = 'minres'
-  !fd_solver_type = 'mumps'
-  fd_precon_type = 'ssor' ! minres(none, boomer, ssor)
-  ssor_num_cycles = 1
-  boomer_num_cycles = 1
-  !boomer_interp_type = 6
-  !boomer_relax_down_type = 13
-  !boomer_relax_up_type = 14
-  rel_tol = 1e-10
-  max_iter = 100000
-  print_level = 3
-  graphics_output = T
   prop_change_threshold = 0.6
 /
 
-Frequency is specified here :/
-&INDUCTION_SOURCE_FIELD
-  !frequency = 500.0
-  frequency = 2.45d9
-  uniform_strength = 1
-  orientation = 'z'
+&FDME_SOLVER
+  !use_mixed_form = T
+  solver_type = 'minres'
+  !solver_type = 'mumps'
+  rel_tol = 1e-10
+  max_iter = 100000
+  precon_type = 'ssor' ! minres(none, boomer, ssor)
+  ssor_num_cycles = 1
+  !boomer_num_cycles = 1
+  !boomer_interp_type = 6
+  !boomer_relax_down_type = 13
+  !boomer_relax_up_type = 14
+  print_level = 1
+  graphics_output = T
 /
 
 &ELECTROMAGNETIC_BC
   name = 'walls'
   type = 'pec'
   face_set_ids = 1, 2, 3, 4, 6
-  !face_set_ids = 2, 3
 /
 
 &ELECTROMAGNETIC_BC
   name = 'waveguide port'
   type = 'wg-port'
   face_set_ids = 5
-  !face_set_ids = 1
   center = 0.0, 0.0, -0.2
   x_axis = 1.0, 0.0, 0.0
   y_axis = 0.0, 1.0, 0.0
   x_width = 0.08636 ! 3.4"
   y_width = 0.04318 ! 1.7"
-  !power = 500.0  ! if not defined, |E| is set to 1
+  !power = 500.0  ! set/overwritten by microwave_heating namelist
 /
 
 ### MATERIALS ##################################################################
-
-### STUFF ###
 
 &MATERIAL
   name = 'dielectric'

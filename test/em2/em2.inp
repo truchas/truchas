@@ -17,9 +17,8 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
 /
 
 &PHYSICS
+  induction_heating = T
   materials = 'conductor'
-  heat_transport = .true.
-  electromagnetics = .true.
 /
 
 &DIFFUSION_SOLVER
@@ -41,8 +40,11 @@ mesh in the conductor, being obtained by subdivision of the hex cells.
   dt_constant = 5.0
 /
 
-&ELECTROMAGNETICS
+&INDUCTION_HEATING
   prop_change_threshold = 0.6
+/
+
+&TDME_JOULE_SOLVER
   steps_per_cycle = 12
   steady_state_tol = 0.1
   max_source_cycles = 4

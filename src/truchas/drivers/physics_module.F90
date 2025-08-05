@@ -27,6 +27,8 @@ module physics_module
   logical, public, save :: prescribed_flow = .false.
   real(r8), public,save :: body_force_density(3)
   logical, public, save :: solid_mechanics = .false.
-  logical, public, save :: electromagnetics = .false.
+  logical, public, save :: em_heating = .false.
+  logical, public, save :: induction_heating = .false.
+  logical, public, save :: microwave_heating = .false.
 
 end module physics_module

@@ -32,7 +32,7 @@ contains
 
     namelist /physics/ heat_transport, species_transport, number_of_species, flow, &
                        body_force_density, prescribed_flow, &
-                       electromagnetics, solid_mechanics, materials
+                       induction_heating, microwave_heating, solid_mechanics, materials
 
     call TLS_info ('Reading PHYSICS namelist ...')
 
@@ -52,7 +52,8 @@ contains
       heat_transport = .false.
       species_transport = .false.
       number_of_species = 0
-      electromagnetics = .false.
+      induction_heating = .false.
+      microwave_heating = .false.
       solid_mechanics = .false.
       body_force_density = 0.0_r8
       prescribed_flow = .false.
@@ -69,7 +70,8 @@ contains
     call broadcast(species_transport)
     call broadcast(number_of_species)
     call broadcast(solid_mechanics)
-    call broadcast(electromagnetics)
+    call broadcast(induction_heating)
+    call broadcast(microwave_heating)
     call broadcast(prescribed_flow)
     call broadcast(materials)
 
@@ -81,9 +83,14 @@ contains
       number_of_species = 0
     end if
 
+    if (induction_heating .and. microwave_heating) &
+        call TLS_fatal('induction_heating and microwave_heating are mutually exclusive')
+    em_heating = induction_heating .or. microwave_heating
+    heat_transport = heat_transport .or. em_heating
+
     !NNC: temporary test code
-    if (prescribed_flow .and. (heat_transport .or. species_transport &
-                                        .or. solid_mechanics .or. electromagnetics)) then
+    if (prescribed_flow .and. (heat_transport .or. species_transport .or. &
+        solid_mechanics .or. induction_heating .or. microwave_heating)) then
        call TLS_fatal('prescribed_flow is not compatible with any other physics')
     end if
 

@@ -12,9 +12,8 @@ PLANE WAVE
 &NUMERICS /
 
 &PHYSICS
+  microwave_heating = T
   materials = 'dielectric', 'VOID'
-  heat_transport = T
-  electromagnetics = T
 /
 
 &DIFFUSION_SOLVER
@@ -50,30 +49,21 @@ PLANE WAVE
   mesh_file = 'meshes/pw1-tet-03.gen'
 /
 
-&ELECTROMAGNETICS
-  use_emfd_solver = T
-  !use_mixed_form = T
-  fd_solver_type = 'minres'
-  !fd_solver_type = 'mumps'
-  fd_precon_type = 'ssor' ! minres(none, gs, boomer, ssor)
-  ssor_num_cycles = 4
-  boomer_num_cycles = 2
-  !boomer_interp_type = 6
-  !boomer_relax_down_type = 13
-  !boomer_relax_up_type = 14
-  rel_tol = 1e-12
-  max_iter = 100000
-  print_level = 3
-  graphics_output = T
-  matl_change_threshold = 0.6
+&MICROWAVE_HEATING
+  frequency = 2.45d9
+  prop_change_threshold = 0.6
 /
 
-Frequency is specified here :/
-&INDUCTION_SOURCE_FIELD
-  !frequency = 500.0
-  frequency = 2.45d9
-  uniform_strength = 1
-  orientation = 'z'
+&FDME_SOLVER
+  !use_mixed_form = T
+  solver_type = 'minres'
+  precon_type = 'ssor'
+  rel_tol = 1e-12
+  max_iter = 100000
+  ssor_num_cycles = 2
+  ssor_omega = 0.9
+  print_level = 2
+  graphics_output = T
 /
 
 Open artificial boundary. This should introduce the right moving

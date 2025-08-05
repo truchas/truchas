@@ -14,6 +14,15 @@
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! NB: At present Truchas provides no way of doing a standalone frequency
+!! domain EM simulation, but only in connection to a microwave heating
+!! simulation which assumes the presence of one or more wg_port boundary
+!! conditions managed by an object of this type. As a workaround for this
+!! limitation, this type is extended to manage no such BC, with methods that
+!! return results that in the context of a microwave heating simulation
+!! conspire to trigger a single EM simulation defined by the specified EM BC.
+!!
 
 module wg_port_bc_plist_factory_type
 
@@ -53,6 +62,11 @@ contains
     type(parameter_list), pointer :: plist
 
     this%bc_params => bc_params
+
+    if (.not.params%is_parameter('wg-port-bc')) then
+      allocate(character(8) :: this%wg_port_bc(0))
+      return
+    end if
 
     call params%get('wg-port-bc', this%wg_port_bc, stat, errmsg)
     if (stat /= 0) return
@@ -106,12 +120,11 @@ contains
   subroutine set_plist_power(this, t)
     class(wg_port_bc_plist_factory), intent(in) :: this
     real(r8), intent(in) :: t
-    integer :: n, i
+    integer :: i
     type(parameter_list), pointer :: plist
-    n = this%data_index(t)
     do i = 1, size(this%wg_port_bc)
       plist => this%bc_params%sublist(trim(this%wg_port_bc(i)))
-      call plist%set('power', this%powers(i,n))
+      call plist%set('power', this%powers(i,this%data_index(t)))
     end do
   end subroutine
 
@@ -119,7 +132,11 @@ contains
     class(wg_port_bc_plist_factory), intent(in) :: this
     real(r8), intent(in) :: t
     real(r8), allocatable :: power(:)
-    power = this%powers(:,this%data_index(t))
+    if (size(this%wg_port_bc) > 0) then
+      power = this%powers(:,this%data_index(t))
+    else
+      allocate(power(0))
+    end if
   end function
 
   !! Return true if any of the powers at time T2 differ from P1.
@@ -128,10 +145,14 @@ contains
     class(wg_port_bc_plist_factory), intent(in) :: this
     real(r8), intent(in) :: p1(:), t2
     integer :: n2
-    n2 = this%data_index(t2)
-    associate (p2 => this%powers(:,n2))
-      differs = any(p1 /= p2)
-    end associate
+    if (size(this%wg_port_bc) > 0) then
+      n2 = this%data_index(t2)
+      associate (p2 => this%powers(:,n2))
+        differs = any(p1 /= p2)
+      end associate
+    else
+      differs = .false.
+    end if
   end function
 
   !! Return true if the powers at time T2 are a multiple of P1
@@ -143,18 +164,22 @@ contains
     real(r8), intent(out) :: scf
     integer :: n2
     real(r8) :: a, err
-    n2 = this%data_index(t2)
-    associate (p2 => this%powers(:,n2))
-      ! Best scale factor in least square sense
-      a = norm2(p1)
-      if (a > 0) then
-        scf = dot_product(p1, p2) / a**2
-      else
-        scf = 0.0_r8
-      end if
-      err = norm2(p2 - scf*p1)  ! l2 error in best scaling
-      scaled = (err <= a*1.0d-6)
-    end associate
+    if (size(this%wg_port_bc) > 0) then
+      n2 = this%data_index(t2)
+      associate (p2 => this%powers(:,n2))
+        ! Best scale factor in least square sense
+        a = norm2(p1)
+        if (a > 0) then
+          scf = dot_product(p1, p2) / a**2
+        else
+          scf = 0.0_r8
+        end if
+        err = norm2(p2 - scf*p1)  ! l2 error in best scaling
+        scaled = (err <= a*1.0d-6)
+      end associate
+    else
+      scaled = .false.
+    end if
   end function
 
   !! Return true if the powers are 0 at the given time T.
@@ -163,8 +188,12 @@ contains
     class(wg_port_bc_plist_factory), intent(in) :: this
     real(r8), intent(in) :: t
     integer :: n
-    n = this%data_index(t)
-    power_is_zero = all(this%powers(:,n) == 0.0_r8)
+    if (size(this%wg_port_bc) > 0) then
+      n = this%data_index(t)
+      power_is_zero = all(this%powers(:,n) == 0.0_r8)
+    else
+      power_is_zero = .false.
+    end if
   end function
 
   !! Auxiliary function that locates the time interval containing time T.

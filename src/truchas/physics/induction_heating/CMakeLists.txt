@@ -25,7 +25,10 @@ target_sources(truchas PRIVATE
   wg_port_bc_plist_factory_type.F90
   mimetic_discretization.F90
   index_corrector_type.F90
-  electromagnetics_namelist.F90
+  induction_heating_namelist.F90
+  microwave_heating_namelist.F90
+  tdme_joule_solver_namelist.F90
+  fdme_solver_namelist.F90
   electromagnetic_bc_namelist.F90
   induction_source_field_namelist.F90
   em_mesh_namelist.F90

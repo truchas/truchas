@@ -54,7 +54,7 @@ contains
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
-    use physics_module,            only: heat_transport, flow, solid_mechanics, electromagnetics
+    use physics_module,            only: heat_transport, flow, solid_mechanics, em_heating
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers
@@ -127,7 +127,7 @@ contains
     if (solid_mechanics) call read_solid_mechanics_namelists (lun)
 
     ! read namelists for induction heating
-    if (electromagnetics) call read_em_heat_namelists(lun)
+    if (em_heating) call read_em_heat_namelists(lun)
 
     ! Read diffusion solver namelists
     if (ds_enabled) then

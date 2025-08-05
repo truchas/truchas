@@ -72,7 +72,7 @@ CONTAINS
     use flow_driver, only: flow_driver_init, flow_driver_set_initial_state
     use solid_mechanics_driver, only: solid_mechanics_init
     use em_heat_driver,         only: em_heat_driver_init
-    use physics_module,         only: flow, solid_mechanics, electromagnetics, heat_transport
+    use physics_module,         only: flow, solid_mechanics, em_heating, heat_transport
     use toolhead_driver,        only: toolhead_init
     use mesh_manager,           only: unstr_mesh_ptr
     use body_namelist,          only: bodies_params
@@ -181,7 +181,7 @@ CONTAINS
     if (restart) call restart_ustruc
 
     ! Initialize electromagnetics.
-    if (electromagnetics) call em_heat_driver_init
+    if (em_heating) call em_heat_driver_init
     if (restart) call restart_em_heat
 
     ! Initialize probes.

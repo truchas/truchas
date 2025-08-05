@@ -23,9 +23,8 @@
 &NUMERICS /
 
 &PHYSICS
+  induction_heating = T
   materials = 'stuff'
-  heat_transport = T
-  electromagnetics = T
 /
 
 &DIFFUSION_SOLVER
@@ -65,17 +64,25 @@
   coord_scale_factor = 0.01
 /
 
-&ELECTROMAGNETICS
+&INDUCTION_HEATING
   use_fd_solver = {fdme}
-  !use_mixed_form = T
-  fd_solver_type = 'minres'
-  fd_precon_type = 'ssor'
-  abs_tol = 0
+/
+
+&TDME_JOULE_SOLVER
   rel_tol = 1e-12
-  prop_change_threshold = 0.6
   steps_per_cycle = 36
   steady_state_tol = 0.01
   max_source_cycles = 5
+  max_iter = 100000
+  print_level = 1
+  graphics_output = T
+/
+
+&FDME_SOLVER
+  !use_mixed_form = T
+  solver_type = 'minres'
+  precon_type = 'ssor'
+  rel_tol = 1e-12
   max_iter = 100000
   print_level = 2
   graphics_output = T

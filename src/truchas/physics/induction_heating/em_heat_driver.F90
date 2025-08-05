@@ -53,8 +53,8 @@ module em_heat_driver
 contains
 
   logical function em_heat_enabled()
-    use physics_module, only: electromagnetics
-    em_heat_enabled = electromagnetics
+    use physics_module, only: em_heating
+    em_heat_enabled = em_heating
   end function
 
   subroutine em_heat_driver_final
@@ -73,19 +73,22 @@ contains
   !! private module variable.
 
   subroutine read_em_heat_namelists(lun)
-    use electromagnetics_namelist
+    use physics_module, only: induction_heating, microwave_heating
+    use induction_heating_namelist
+    use microwave_heating_namelist
     use induction_source_field_namelist
     use electromagnetic_bc_namelist
     use mesh_manager, only: enable_mesh
     integer, intent(in) :: lun
-    logical :: exists, flag
+    logical :: exists
     type(parameter_list), pointer :: plist
     allocate(params)
-    call read_electromagnetics_namelist(lun, params)
-    call params%get('use-mw-solver', flag, default=.false.)
-    if (.not.flag) then
+    if (induction_heating) then
+      call read_induction_heating_namelist(lun, params)
       plist => params%sublist('external-field')
       call read_induction_source_field_namelist(lun, plist)
+    else if (microwave_heating) then
+      call read_microwave_heating_namelist(lun, params)
     end if
     plist => params%sublist('bc')
     call read_electromagnetic_bc_namelists(lun, plist)
@@ -113,6 +116,7 @@ contains
 
   subroutine em_heat_driver_init
 
+    use physics_module, only: induction_heating, microwave_heating
     use mesh_manager, only: named_mesh_ptr, simpl_mesh_ptr
     use em_properties
 
@@ -168,7 +172,8 @@ contains
       call params%set('vacuum-permeability', vacuum_permeability)
     end block
 
-    call params%get('use-mw-solver', this%use_mw_solver)
+    INSIST(induction_heating .neqv. microwave_heating)
+    this%use_mw_solver = microwave_heating
     if (this%use_mw_solver) then
       allocate(this%mh_solver)
       call this%mh_solver%init(this%em_mesh, params, stat, errmsg)

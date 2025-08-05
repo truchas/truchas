@@ -21,9 +21,8 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
 /
 
 &PHYSICS
+  microwave_heating = T
   materials = 'dielectric', 'VOID'
-  heat_transport = T
-  electromagnetics = T
 /
 
 ### BODIES #####################################################################
@@ -78,8 +77,7 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
   z_axis%intervals = 4
 /
 
-&ELECTROMAGNETICS
-  use_mw_solver = T
+&MICROWAVE_HEATING
   wg_port_bc = 'left port', 'right port'
   times = 4.0, 8.0, 12.0, 16.0
   powers(:,1) = 1000.0, 0.0
@@ -88,14 +86,17 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
   powers(:,4) =    0.0,    0.0
   powers(:,5) =  750.0,  750.0
   frequency = 2.45d9
-  fd_solver_type = 'minres'
-  fd_precon_type = 'ssor'
+  !prop_change_threshold = 0.6
+/
+
+&FDME_SOLVER
+  solver_type = 'minres'
+  precon_type = 'ssor'
   ssor_num_cycles = 1
   rel_tol = 1e-10
   max_iter = 10000
   print_level = 3
   graphics_output = T
-  !prop_change_threshold = 0.6
 /
 
 &ELECTROMAGNETIC_BC
@@ -113,7 +114,7 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
   y_axis = 0.0, 0.0, 1.0
   x_width = 0.08636 ! 3.4"
   y_width = 0.04318 ! 1.7"
-  !power set automatically by ELECTROMAGNETICS namelist
+  !power set automatically by MICROWAVE_HEATING namelist
 /
 
 &ELECTROMAGNETIC_BC
@@ -125,6 +126,6 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
   y_axis = 0.0, 0.0, 0.1
   x_width = 0.08636 ! 3.4"
   y_width = 0.04318 ! 1.7"
-  !power set automatically by ELECTROMAGNETICS namelist
+  !power set automatically by MICROWAVE_HEATING namelist
 /
 

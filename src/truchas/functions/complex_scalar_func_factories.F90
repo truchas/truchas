@@ -76,7 +76,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    complex(r8), allocatable :: const
+    complex(r8) :: const
     character(:), allocatable :: fname
     type(parameter_list), pointer :: func_params
 
