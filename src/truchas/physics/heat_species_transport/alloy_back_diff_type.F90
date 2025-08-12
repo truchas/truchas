@@ -24,7 +24,7 @@ module alloy_back_diff_type
 
   type, public :: alloy_back_diff
     real(r8), allocatable :: liq_slope(:), part_coef(:)
-    real(r8) :: T_f, Teut, dHdTmax, gamma, Hdot
+    real(r8) :: T_f, Teut, dHdTmax, gamma, dgdT_eut, Hdot
     integer :: num_comp
     class(scalar_func), allocatable :: h_sol, h_liq
     class(scalar_func), allocatable :: h_sol_deriv, h_liq_deriv
@@ -91,13 +91,21 @@ contains
     if (stat /= 0) return
 
     !! Eutectic temperature (or 0)
-    call params%get('temp-eutectic', this%Teut, stat, errmsg, default=-huge(1.0_r8))
-    if (stat /= 0) return
-    if (this%Teut >= this%T_f) then
-      stat = 1
-      errmsg = 'temp-eutectic is >= temp-fusion'
-      return
+    if (params%is_parameter('temp-eutectic')) then
+      call params%get('temp-eutectic', this%Teut, stat, errmsg)
+      if (stat /= 0) return
+      if (this%Teut >= this%T_f) then
+        stat = 1
+        errmsg = 'temp-eutectic is >= temp-fusion'
+        return
+      end if
+      call params%get('eutectic-dg/dT', this%dgdT_eut, stat, errmsg)
+      if (stat /= 0) return
+    else
+      this%Teut = -huge(1.0_r8)
+      this%dgdT_eut = huge(1.0_r8)
     end if
+
 
     !! Component liquidus slopes
     call params%get('liq-slope', this%liq_slope, stat, errmsg)
@@ -192,11 +200,11 @@ contains
     end function
   end function
 
-  subroutine compute_f(this, C, Cdot, p, g, H, T, pdot, gdot, Hdot, fp, fg, fH)
+  subroutine compute_f(this, C, Cdot, p, g, H, T, pdot, gdot, Hdot, Tdot, fp, fg, fH)
 
     class(alloy_back_diff), intent(inout) :: this
     real(r8), intent(in)  :: C(:), Cdot(:) ! parameters
-    real(r8), intent(in)  :: p(:), g, H, T, pdot(:), gdot, Hdot
+    real(r8), intent(in)  :: p(:), g, H, T, pdot(:), gdot, Hdot, Tdot
     real(r8), intent(out) :: fp(:), fg, fH
 
     real(r8) :: Tmax, Hmax
@@ -213,15 +221,20 @@ contains
     !Tmin = this%T_sol(this%C)
     !Hmin = this%H_sol%eval([Tmin])
     !if (H <= Hmin) then
-    if (g <= 0) then
+    if (g <= 1e-6) then
       fp = p
       fg = g
       fH = this%H_sol%eval([T]) - H
       return
     end if
 
-    fp = g*(pdot - Cdot) - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(C - p))
-    fg = g*(T-this%T_f) - dot_product(this%liq_slope, p)
+    if (T <= this%Teut) then
+      fp = g*(pdot - Cdot) - p*gdot
+      fg = gdot - this%dgdT_eut*Tdot
+    else
+      fp = g*(pdot - Cdot) - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(C - p))
+      fg = g*(T-this%T_f) - dot_product(this%liq_slope, p)
+    end if
     fH = (1-g)*this%H_sol%eval([T]) + g*this%H_liq%eval([T]) - H
 
   end subroutine compute_f
@@ -238,6 +251,7 @@ contains
     Tmax = this%T_liq(C)
     Hmax = this%H_liq%eval([Tmax])
     if (H >= Hmax) then
+!print *, 'LIQUID'
       jac%dfpdp = 1
       jac%dfpdg = 0
       jac%dfgdp = 0
@@ -252,7 +266,8 @@ contains
     !Tmin = this%T_sol(C)
     !Hmin = this%H_sol%eval([Tmin])
     !if (H <= Hmin) then
-    if (g <= 0) then
+    if (g <= 1e-6) then
+!print *, 'SOLID'
       jac%dfpdp = 1
       jac%dfpdg = 0
       jac%dfgdp = 0
@@ -264,12 +279,24 @@ contains
       return
     end if
 
-    jac%dfpdp = g/dt - this%part_coef*gdot + this%gamma*(this%part_coef + g/(1-g+1d-6))
-    jac%dfpdg = (pdot - Cdot) - this%part_coef*p/dt - this%gamma*(C - p)/(1-g+1d-6)**2
+    if (T < this%Teut) then
+!print *, g, dt, g/dt, gdot, jac%dfpdp
+      jac%dfpdp = g/dt - gdot
+print *, 'EUTECTIC: dfpdp', jac%dfpdp, g, dt, gdot
+      jac%dfpdg = pdot - Cdot - p/dt
 
-    jac%dfgdp = -this%liq_slope
-    jac%dfgdg = T - this%T_f
-    jac%dfgdT = g
+      jac%dfgdp = 0
+      jac%dfgdg = 1/dt
+      jac%dfgdT = -this%dgdT_eut/dt
+    else
+!print *, 'TWO-PhASE'
+      jac%dfpdp = g/dt - this%part_coef*gdot + this%gamma*(this%part_coef + g/(1-g+1d-6))
+      jac%dfpdg = (pdot - Cdot) - this%part_coef*p/dt - this%gamma*(C - p)/(1-g+1d-6)**2
+
+      jac%dfgdp = -this%liq_slope
+      jac%dfgdg = T - this%T_f
+      jac%dfgdT = g
+    end if
 
     jac%dfHdg = this%H_liq%eval([T]) - this%H_sol%eval([T])
     jac%dfHdH = -1
@@ -285,6 +312,7 @@ contains
 
   subroutine lu_factor(this)
     class(alloy_back_diff_jac), intent(inout) :: this
+!print *, 'FOO', this%dfgdp, this%dfpdp
     this%dfgdp = this%dfgdp/this%dfpdp
     this%dfgdg = this%dfgdg - dot_product(this%dfgdp, this%dfpdg)
     this%dfHdg = this%dfHdg/this%dfgdg

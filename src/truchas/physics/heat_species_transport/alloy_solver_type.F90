@@ -59,6 +59,7 @@ module alloy_solver_type
     procedure :: apply_precon
     procedure :: compute_precon
     procedure :: du_norm
+    procedure :: normalize
     final :: alloy_solver_delete
   end type
 
@@ -102,7 +103,7 @@ contains
       stat = 1
       errmsg = 'invalid concentration size'
       return
-    else if (any(C0 < 0) .or. sum(C0) >= 1) then
+    else if (any(C0 < 0)) then
       stat = 1
       errmsg = 'invalid concentration values'
       return
@@ -239,16 +240,17 @@ contains
     class(alloy_solver), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(inout) :: C_liq(:)
-    integer :: j
-    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
-    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
-    do j = 1, this%mesh%ncell_onp
-      if (this%u%lf(j) > 1d-6) then
-        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
-      else
-        C_liq(j) = 0.0_r8 ! really undefined
-      end if
-    end do
+!    integer :: j
+!    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
+!    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
+!    do j = 1, this%mesh%ncell_onp
+!      if (this%u%lf(j) > 1d-6) then
+!        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
+!      else
+!        C_liq(j) = 0.0_r8 ! really undefined
+!      end if
+!    end do
+    call this%model%get_liq_conc(this%C, this%u, n, C_liq)
   end subroutine
 
   !! Get a copy of the Nth solute concentration in the solid phase
@@ -256,16 +258,17 @@ contains
     class(alloy_solver), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(inout) :: C_sol(:)
-    integer :: j
-    ASSERT(size(C_sol) >= this%mesh%ncell_onp)
-    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
-    do j = 1, this%mesh%ncell_onp
-      if (1 - this%u%lf(j) > 1d-6) then
-        C_sol(j) = (this%C(n,j) - this%u%lsf(n,j)) / (1 - this%u%lf(j))
-      else
-        C_sol(j) = 0.0_r8 ! really undefined
-      end if
-    end do
+!    integer :: j
+!    ASSERT(size(C_sol) >= this%mesh%ncell_onp)
+!    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
+!    do j = 1, this%mesh%ncell_onp
+!      if (1 - this%u%lf(j) > 1d-6) then
+!        C_sol(j) = (this%C(n,j) - this%u%lsf(n,j)) / (1 - this%u%lf(j))
+!      else
+!        C_sol(j) = 0.0_r8 ! really undefined
+!      end if
+!    end do
+    call this%model%get_sol_conc(this%C, this%u, n, C_sol)
   end subroutine
 
   subroutine get_cell_conc_view(this, view)
@@ -327,7 +330,7 @@ contains
     integer, intent(out) :: stat
 
     ! Update the average solute concentration (mass or volume fraction)
-    this%C = this%Clast + (t - this%t)*this%Cdot
+    this%C = this%Clast + (t - this%integ%last_time())*this%Cdot
 
     call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
@@ -466,4 +469,17 @@ contains
     end select
   end subroutine
 
+  subroutine normalize(this, u)
+    use vector_class
+    class(alloy_solver), intent(in) :: this
+    class(vector), intent(inout) :: u
+    integer :: j
+    select type (u)
+    class is (alloy_vector)
+      do j = 1, this%mesh%ncell
+        if (u%lf(j) > 1) u%lf(j) = 1
+        if (u%lf(j) < 0) u%lf(j) = 0
+      end do
+    end select
+  end subroutine
 end module alloy_solver_type

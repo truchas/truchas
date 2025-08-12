@@ -121,7 +121,7 @@ contains
       do iter = 1, max_iter
         udot = (u - u0)/dt
         call pd%compute_f(C0, Cdot, u(1:n), u(n+1), u(n+2), u(n+3), udot(1:n), udot(n+1), udot(n+2), &
-            du(1:n), du(n+1), du(n+2))
+            udot(n+3), du(1:n), du(n+1), du(n+2))
         du(n+3) = udot(n+2) - Hdot
         
         ! apply preconditioner to du
@@ -157,6 +157,7 @@ contains
       end do
  
       if (iter > max_iter) then
+        write(error_unit,*) 'error=', error
         stop 10
       end if
       call uhist%record_state(t, u)

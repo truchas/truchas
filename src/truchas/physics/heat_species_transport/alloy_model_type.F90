@@ -43,6 +43,7 @@ module alloy_model_type
     procedure :: compute_f
     procedure :: get_conductivity
     procedure :: set_heat_source
+    procedure :: get_liq_conc, get_sol_conc
   end type alloy_model
 
 contains
@@ -229,7 +230,7 @@ contains
       do j = 1, this%mesh%ncell
         call this%pd%compute_f(C(:,j), Cdot(:,j), &
                                u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
-                               udot%lsf(:,j), udot%lf(j), udot%hc(j), &
+                               udot%lsf(:,j), udot%lf(j), udot%hc(j), udot%tc(j), &
                                f%lsf(:,j), f%lf(j), f%hc(j))
       end do
     end select
@@ -310,6 +311,50 @@ contains
     do j = 1, size(k_avg)
       k_avg(j) = (1-lfrac(j))*this%k_sol%eval([temp(j)]) + lfrac(j)*this%k_liq%eval([temp(j)])
     end do
+  end subroutine
+
+  subroutine get_liq_conc(this, C, u, n, C_liq)
+    class(alloy_model), intent(inout) :: this
+    real(r8), intent(in) :: C(:,:)
+    type(alloy_vector), intent(in) :: u
+    integer, intent(in) :: n
+    real(r8), intent(out) :: C_liq(:)
+    integer :: j
+    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
+    select case (this%model_type)
+    case (1) ! lever rule
+      call this%alloy%compute_C_liq(C, u%hc, n, C_liq)
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell_onp
+        if (u%lf(j) > 1d-6) then
+          C_liq(j) = u%lsf(n,j) / u%lf(j)
+        else
+          C_liq(j) = 0.0_r8 ! really undefined
+        end if
+      end do
+    end select
+  end subroutine
+
+  subroutine get_sol_conc(this, C, u, n, C_sol)
+    class(alloy_model), intent(inout) :: this
+    real(r8), intent(in) :: C(:,:)
+    type(alloy_vector), intent(in) :: u
+    integer, intent(in) :: n
+    real(r8), intent(out) :: C_sol(:)
+    integer :: j
+    ASSERT(size(C_sol) >= this%mesh%ncell_onp)
+    select case (this%model_type)
+    case (1) ! lever rule
+      call this%alloy%compute_C_sol(C, u%hc, n, C_sol)
+    case (2) ! Wang-Beckermann
+      do j = 1, this%mesh%ncell_onp
+        if (1 - u%lf(j) > 1d-6) then
+          C_sol(j) = (C(n,j) - u%lsf(n,j)) / (1 - u%lf(j))
+        else
+          C_sol(j) = 0.0_r8 ! really undefined
+        end if
+      end do
+    end select
   end subroutine
 
 end module alloy_model_type

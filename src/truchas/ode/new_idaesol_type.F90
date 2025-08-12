@@ -100,6 +100,7 @@ module new_idaesol_type
     procedure(apply_precon), deferred :: apply_precon
     procedure(compute_precon), deferred :: compute_precon
     procedure(du_norm), deferred :: du_norm
+    procedure :: normalize
   end type
 
   abstract interface
@@ -442,6 +443,8 @@ contains
       call this%uhist%interp_state(t,  this%up, order=2)
       call this%uhist%interp_state(t0, this%u0, order=1)
     end if
+    call this%model%normalize(this%up)
+    call this%model%normalize(this%u0)
 
     fresh_pc = .false.
 
@@ -660,6 +663,7 @@ contains
       end if
 
     end do
+    call this%model%normalize(u)
 
     1 format(2x,'NLK BCE solve FAILED: ',i3,' iterations (max), error=',es22.15)
     2 format(2x,'NLK BCE solve succeeded: ',i3,' iterations, error=',es22.15)
@@ -740,6 +744,12 @@ contains
     counters(4) = this%retried_bce
     counters(5) = this%failed_bce
     counters(6) = this%rejected_steps
+  end subroutine
+
+  !! Default iterate normalization procedure does nothing.
+  subroutine normalize(this, u)
+    class(idaesol_model), intent(in) :: this
+    class(vector), intent(inout) :: u
   end subroutine
 
 end module new_idaesol_type

@@ -59,8 +59,9 @@
   num_comp = 1
   temp_fusion = 12.0
   temp_eutectic = 8.0
+  eutectic_dgdT = 0.1
   liq_slope = -8.0
-  part_coef = 0.5
+  part_coef = 0.02
   concentration = 0.125
 /
 

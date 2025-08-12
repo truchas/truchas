@@ -116,6 +116,7 @@ contains
     call broadcast(void_collapse)
     call broadcast(void_collapse_relaxation)
 
+    call broadcast(porous_drag)
     call broadcast(drag_coef)
     call broadcast(drag_implicitness)
 

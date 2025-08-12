@@ -13,12 +13,13 @@
         "temp-eutectic": 8.0,
         "liq-slope": [-8.0],
         "part-coef": [0.5],
-        "gamma": 0.1},
+        "eutectic-dg/dT": 0.1,
+        "gamma": 0.002},
     "C0": [0.125],
     "Hdot": -1.0,
     "T0": 12.0,
     "T1": 7.0,
-    "dt": 5.0e-2,
+    "dt": 1.0e-3,
     "tol": 1e-6,
-    "max-iter": 10
+    "max-iter": 100
 }
