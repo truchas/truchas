@@ -175,21 +175,21 @@ contains
 
   end subroutine init
 
-  subroutine set_initial_state(this, vof, temperature_cc)
+  subroutine set_initial_state(this, vof, temperature_cc, state_cc)
     class(flow_props), intent(inout) :: this
-    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:), state_cc(:,:)
     this%vof_n = 0.0_r8
     this%vof_novoid_n = 0.0_r8
-    call update_cc(this, vof, temperature_cc)
+    call update_cc(this, vof, temperature_cc, state_cc)
     call update_fc(this)
     call accept(this)
     this%void_delta_cc = 0.0_r8
   end subroutine set_initial_state
 
-  subroutine update_cc(this, vof, temperature_cc)
+  subroutine update_cc(this, vof, temperature_cc, state_cc)
 
     class(flow_props), intent(inout) :: this
-    real(r8), intent(in) :: vof(:,:), temperature_cc(:)
+    real(r8), intent(in) :: vof(:,:), temperature_cc(:), state_cc(:,:)
 
     integer :: m, i, j
     real(r8) :: minrho, state(1)
@@ -208,8 +208,10 @@ contains
         this%rho_cc(i) = this%rho_cc(i) + vof(m,i)*this%density(m)
         this%mu_cc(i) = this%mu_cc(i) + &
             vof(m,i)*this%viscosity(m)%f%eval(state)
+!new            vof(m,i)*this%viscosity(m)%f%eval(state_cc(:,i))
         this%rho_delta_cc(i) = this%rho_delta_cc(i) + &
             vof(m,i)*this%density_delta(m)%f%eval(state)
+!new            vof(m,i)*this%density_delta(m)%f%eval(state_cc(:,i))
       end do
 
       this%vof(i) = sum(vof(:this%nfluid,i))

@@ -72,6 +72,7 @@ module flow_driver
   use scalar_func_tools
   use scalar_func_containers
   use flow_operators, only: flow_operators_init
+  use zone_module
   implicit none
   private
 
@@ -91,6 +92,7 @@ module flow_driver
     ! The flow driver shouldn't logically need this but temperature is currently
     ! stored in Zone%Temp so we need to keep a version on the new mesh as well
     real(r8), allocatable :: temperature_cc(:)
+    real(r8), allocatable :: state_cc(:,:) ! cell-centered temperature, concentration
 
     ! a copy of the diffusion solver's variable for surface tension to hold as a reference
     real(r8), allocatable :: temperature_fc(:)
@@ -211,7 +213,13 @@ contains
     call this%mesh%init_face_centroid
     call this%mesh%init_face_normal_dist
 
-    allocate(this%temperature_cc(this%mesh%ncell), this%temperature_fc(this%mesh%nface))
+    n = 1
+    if (allocated(zone%phi)) n = 1 + size(zone%phi,dim=1)
+    allocate(this%state_cc(n,this%mesh%ncell))
+
+    allocate(this%temperature_cc(this%mesh%ncell))
+
+    allocate(this%temperature_fc(this%mesh%nface))
 
     ! Some duplication here from vtrack_driver.  This should all be subsumed and handled
     ! properly by a sufficiently intelligent physics driver at some point
@@ -311,15 +319,22 @@ contains
         end do
       end block
       ! This will be needed by timestep
+      this%state_cc(1,1:this%mesh%ncell_onP) = zone%temp
+      if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onP) = zone%phi
+      call this%mesh%cell_imap%gather_offp(this%state_cc)
       this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
       vof => vtrack_vof_view()
       call this%mesh%cell_imap%gather_offp(this%temperature_cc)
-      call this%props%set_initial_state(vof, this%temperature_cc)
+      call this%props%set_initial_state(vof, this%temperature_cc, this%state_cc)
       call stop_timer('Flow')
       return
     end if
 
     vcell(:,:this%mesh%ncell_onP) = zone%vc
+
+    this%state_cc(1,1:this%mesh%ncell_onp) = zone%temp
+    if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onp) = zone%phi
+    call this%mesh%cell_imap%gather_offp(this%state_cc)
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call this%mesh%cell_imap%gather_offp(this%temperature_cc)
@@ -332,9 +347,9 @@ contains
     vof => vtrack_vof_view()
 
     if (present(vel_fn)) then ! RESTART
-      call this%flow%set_initial_state(t, zone%p, vcell, vel_fn, vof, this%temperature_cc)
+      call this%flow%set_initial_state(t, zone%p, vcell, vel_fn, vof, this%temperature_cc, this%state_cc)
     else
-      call this%flow%set_initial_state(t, dt, vcell, vof, this%temperature_cc)
+      call this%flow%set_initial_state(t, dt, vcell, vof, this%temperature_cc, this%state_cc)
     end if
 
     call stop_timer('Flow')
@@ -354,11 +369,15 @@ contains
 
     call start_timer('Flow')
 
+    this%state_cc(1,1:this%mesh%ncell_onp) = zone%temp
+    if (allocated(zone%phi)) this%state_cc(2:,1:this%mesh%ncell_onp) = zone%phi
+    call this%mesh%cell_imap%gather_offp(this%state_cc)
+
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call this%mesh%cell_imap%gather_offp(this%temperature_cc)
 
     if (prescribed_flow) then
-      call this%props%update_cc(vof, this%temperature_cc)
+      call this%props%update_cc(vof, this%temperature_cc, this%state_cc)
       block
         integer :: j
         real(r8) :: args(0:3)
@@ -378,7 +397,7 @@ contains
         this%temperature_fc(:this%mesh%nface_onP) = temperature_fc(:this%mesh%nface_onP)
         call this%mesh%face_imap%gather_offp(this%temperature_fc)
       end if
-      call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc)
+      call this%flow%step(t, dt, vof, flux_vol, this%temperature_cc, this%state_cc)
     end if
 
     call stop_timer('Flow')

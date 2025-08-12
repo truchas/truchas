@@ -24,6 +24,7 @@ module zone_module
      real(r8), allocatable :: p(:)         ! current pressure
      real(r8), allocatable :: vc(:,:)      ! current cell-centered velocity
      real(r8), allocatable :: vc_old(:,:)  ! past cell-centered velocity
+     real(r8), allocatable :: phi(:,:)     ! solutal species concentration
   end type
   type(zone_type), target, public :: zone
 
@@ -40,6 +41,7 @@ CONTAINS
     allocate(zone%p(ncell), source=0.0_r8)
     allocate(zone%vc(3,ncell), source=0.0_r8)
     allocate(zone%vc_old(3,ncell), source=0.0_r8)
+    !NB: zone%phi is allocated elsewere if needed
   end subroutine zone_init
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
