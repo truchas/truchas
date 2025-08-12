@@ -367,7 +367,6 @@ call hijack_truchas ()
     !
     !   clean up prior to termination, print reports
     !---------------------------------------------------------------------------
-    use zone_module, only: zone_free
     use legacy_matl_api, only: matl_free
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
@@ -384,7 +383,6 @@ call hijack_truchas ()
 !NNC    call flow_destroy()
 
     ! deallocate the base types
-    call zone_free
     call matl_free
 
     ! free the diffusion solver resources

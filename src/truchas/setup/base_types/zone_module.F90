@@ -12,45 +12,35 @@ module zone_module
   implicit none
   private
 
-  public :: zone_init, zone_free, read_zone_data
+  public :: zone_init, read_zone_data
 
-  ! physical state variables on a cell
-  type, public :: cell_avg
-     real(r8) :: rho       ! current cell average density
-     real(r8) :: rho_old   ! past cell average density
-     real(r8) :: temp      ! current temperature
-     real(r8) :: temp_old  ! past temperature
-     real(r8) :: enthalpy      ! current enthalpy
-     real(r8) :: enthalpy_old  ! past enthalpy
-     real(r8) :: p         ! current pressure
-     real(r8) :: vc(3)     ! current cell-centered velocity
-     real(r8) :: vc_old(3) ! past cell-centered velocity
-  end type cell_avg
-
-  type(cell_avg), allocatable, target, public :: zone(:)
+  type :: zone_type
+     real(r8), allocatable :: rho(:)       ! current cell average density
+     real(r8), allocatable :: rho_old(:)   ! past cell average density
+     real(r8), allocatable :: temp(:)      ! current temperature
+     real(r8), allocatable :: temp_old(:)  ! past temperature
+     real(r8), allocatable :: enthalpy(:)      ! current enthalpy
+     real(r8), allocatable :: enthalpy_old(:)  ! past enthalpy
+     real(r8), allocatable :: p(:)         ! current pressure
+     real(r8), allocatable :: vc(:,:)      ! current cell-centered velocity
+     real(r8), allocatable :: vc_old(:,:)  ! past cell-centered velocity
+  end type
+  type(zone_type), target, public :: zone
 
 CONTAINS
 
   subroutine zone_init(ncell)
     integer, intent(in) :: ncell
-    integer :: n
-    allocate(zone(ncell))
-    zone%rho          = 0.0_r8
-    zone%rho_old      = 0.0_r8
-    zone%temp         = 0.0_r8
-    zone%temp_old     = 0.0_r8
-    zone%enthalpy     = 0.0_r8
-    zone%enthalpy_old = 0.0_r8
-    zone%p            = 0.0_r8
-    do n = 1, 3
-      zone%vc(n)      = 0.0_r8
-      zone%vc_old(n)  = 0.0_r8
-    end do
+    allocate(zone%rho(ncell), source=0.0_r8)
+    allocate(zone%rho_old(ncell), source=0.0_r8)
+    allocate(zone%temp(ncell), source=0.0_r8)
+    allocate(zone%temp_old(ncell), source=0.0_r8)
+    allocate(zone%enthalpy(ncell), source=0.0_r8)
+    allocate(zone%enthalpy_old(ncell), source=0.0_r8)
+    allocate(zone%p(ncell), source=0.0_r8)
+    allocate(zone%vc(3,ncell), source=0.0_r8)
+    allocate(zone%vc_old(3,ncell), source=0.0_r8)
   end subroutine zone_init
-
-  subroutine zone_free
-    if (allocated(zone)) deallocate(zone)
-  end subroutine
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
@@ -95,8 +85,8 @@ CONTAINS
       zone%enthalpy_old = zone%enthalpy
 
       do n = 1, 3
-        call read_dist_array (unit, zone%vc(n), pcell, 'READ_ZONE_DATA: error reading VC records')
-        zone%vc_old(n) = zone%vc(n)
+        call read_dist_array (unit, zone%vc(n,:), pcell, 'READ_ZONE_DATA: error reading VC records')
+        zone%vc_old(n,:) = zone%vc(n,:)
       end do
     end associate
 

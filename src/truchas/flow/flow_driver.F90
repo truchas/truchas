@@ -319,9 +319,7 @@ contains
       return
     end if
 
-    do j = 1, this%mesh%ncell_onP
-      vcell(:,j) = zone(j)%vc
-    end do
+    vcell(:,:this%mesh%ncell_onP) = zone%vc
 
     this%temperature_cc(1:this%mesh%ncell_onP) = Zone%Temp
     call this%mesh%cell_imap%gather_offp(this%temperature_cc)
