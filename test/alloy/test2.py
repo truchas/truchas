@@ -5,7 +5,7 @@ import truchas
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "alloy2.inp")
-    golden = tenv.output("alloy1_golden/alloy1.h5")
+    golden = tenv.output("alloy2_golden/alloy2.h5")
 
     for j in range(4):
         test = output.field(j+1, "Z_TEMP")

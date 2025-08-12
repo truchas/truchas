@@ -1,16 +1,62 @@
+ALLOY SOLIDIFICATION WITH BACK DIFFUSION
+----------------------------------------
+1D solidification problem with a binary eutectic phase diagram
+that uses the Wang-Beckermann back-diffusion model for evolving
+the liquid fraction and solute concentration. No flow, so the
+initial uniform solute concentration remains uniform. Initial
+concentration and back-diffusion coefficient is such that the
+the eutectic transformation is NOT encountered, except perhaps
+at the region immediately adjacent to the chill. The eutectic
+transformation model is not robust at this time.
 
 &MESH
   x_axis%coarse_grid = 0.0, 1.0
-  x_axis%intervals   = 40
-  y_axis%coarse_grid = 0.0, 1.0
-  y_axis%intervals   = 10
-  z_axis%coarse_grid = 0.0, 0.1
+  x_axis%intervals   = 80
+  y_axis%coarse_grid = 0.0, 0.05
+  y_axis%intervals   = 5
+  z_axis%coarse_grid = 0.0, 0.01
   z_axis%intervals   = 1
 /
 
 &OUTPUTS
-  Output_T = 0.0, 5.0, 10.0, 30.0
-  Output_Dt = 3*20
+  Output_T = 0.0, 2.0, 5.0, 10.0
+  Output_Dt = 3*5.0
+/
+
+&PROBE
+  coord = 0.1 0.5 0.05
+  data = 'temperature'
+  data_file = 'temp1.dat'
+/
+
+&PROBE
+  coord = 0.3 0.5 0.05
+  data = 'temperature'
+  data_file = 'temp2.dat'
+/
+
+&PROBE
+  coord = 0.5 0.5 0.05
+  data = 'temperature'
+  data_file = 'temp3.dat'
+/
+
+&PROBE
+  coord = 0.1 0.5 0.05
+  data = 'vol-frac-liquid'
+  data_file = 'lfrac1.dat'
+/
+
+&PROBE
+  coord = 0.3 0.5 0.05
+  data = 'vol-frac-liquid'
+  data_file = 'lfrac2.dat'
+/
+
+&PROBE
+  coord = 0.5 0.5 0.05
+  data = 'vol-frac-liquid'
+  data_file = 'lfrac3.dat'
 /
 
 &PHYSICS
@@ -21,10 +67,14 @@
 &ALLOY
   material = 'alloy'
   num_comp = 1
-  temp_fusion = 1.0
-  !temp_eutectic = 0.0
-  liq_slope = -0.5
+  temp_fusion = 12.0
+  temp_eutectic = 8.0
+  eutectic_dgdT = 0.1 ! ignored for lever
+  !dHdTmax = 100.0
+  liq_slope = -8.0
   part_coef = 0.5
+  concentration = 0.03125
+  gamma = 0.05 ! comment out for lever
 /
 
 &DIFFUSION_SOLVER
@@ -33,23 +83,17 @@
   abs_enthalpy_tol   = 0.0
   rel_enthalpy_tol   = 1.0e-3
   nlk_preconditioner = 'hypre_amg'
-  pc_amg_cycles      = 2
-  !max_nlk_itr = 20
-  nlk_tol = 0.01
+  pc_amg_cycles = 2
+  max_nlk_itr = 5
+  nlk_tol = 0.1
   verbose_stepping = T
+  pc_freq = 1
 /
 
 &NUMERICS
   dt_init = 1.0d-4
   dt_min  = 1.0d-9
   dt_grow = 10.0
-/
-
-x&THERMAL_BC
-  name = 'left end'
-  type = 'flux'
-  face_set_ids = 1
-  flux = 2
 /
 
 &THERMAL_BC

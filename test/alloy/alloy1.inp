@@ -1,16 +1,23 @@
+LEVER RULE ALLOY SOLIDIFICATION
+-------------------------------
+1D solidification problem with a binary eutectic phase diagram
+that uses the lever rule for evolving the liquid fraction. No
+flow, so the initial uniform solute concentration remains
+uniform. Initial concentration is such that the latter portion
+of the solidification is the eutectic transformation.
 
 &MESH
   x_axis%coarse_grid = 0.0, 1.0
   x_axis%intervals   = 80
-  y_axis%coarse_grid = 0.0, 0.1
-  y_axis%intervals   = 10
-  z_axis%coarse_grid = 0.0, 0.1
+  y_axis%coarse_grid = 0.0, 0.05
+  y_axis%intervals   = 5
+  z_axis%coarse_grid = 0.0, 0.01
   z_axis%intervals   = 1
 /
 
 &OUTPUTS
-  Output_T = 0.0, 5.0, 10.0, 30.0
-  Output_Dt = 3*1.0
+  Output_T = 0.0, 2.0, 5.0, 10.0
+  Output_Dt = 3*5.0
 /
 
 &PROBE
@@ -59,10 +66,12 @@
   num_comp = 1
   temp_fusion = 12.0
   temp_eutectic = 8.0
-  eutectic_dgdT = 0.1
+  eutectic_dgdT = 0.1 ! ignored for lever
+  dHdTmax = 100.0
   liq_slope = -8.0
-  part_coef = 0.02
-  concentration = 0.125
+  part_coef = 0.5
+  concentration = 0.3125
+  !gamma = ! comment out for lever
 /
 
 &DIFFUSION_SOLVER
