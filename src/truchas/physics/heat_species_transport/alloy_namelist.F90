@@ -26,9 +26,9 @@ contains
     !! Namelist variables
     character(32) :: material
     integer :: num_comp
-    real(r8) :: temp_fusion, temp_eutectic, liq_slope(16), part_coef(16), concentration(16), gamma, eutectic_dgdT
+    real(r8) :: temp_fusion, temp_eutectic, liq_slope(16), part_coef(16), concentration(16), gamma, eutectic_dgdT, dHdTmax
     namelist /alloy/ material, num_comp, temp_fusion, temp_eutectic, liq_slope, part_coef, concentration, &
-        gamma, eutectic_dgdT
+        gamma, eutectic_dgdT, dHdTmax
 
     if (is_IOP) rewind(lun)
 
@@ -50,6 +50,7 @@ contains
     concentration = NULL_R
     gamma = NULL_R
     eutectic_dgdT = NULL_R
+    dHdTmax = NULL_R
 
     if (is_IOP) read(lun,nml=alloy,iostat=ios,iomsg=iom)
     call broadcast(ios)
@@ -64,6 +65,7 @@ contains
     call broadcast(concentration)
     call broadcast(gamma)
     call broadcast(eutectic_dgdT)
+    call broadcast(dHdTmax)
 
     if (material == NULL_C) then
       call tls_fatal('MATERIAL not specified')
@@ -92,6 +94,7 @@ contains
       else
         call params%set('eutectic-dg/dT', eutectic_dgdT)
       end if
+      if (dHdTmax /= NULL_R) call params%set('dhdtmax', dHdTmax)
     end if
 
     if (all(liq_slope == NULL_R)) then
