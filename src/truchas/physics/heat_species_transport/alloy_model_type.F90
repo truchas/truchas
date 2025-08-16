@@ -215,17 +215,9 @@ contains
     call u%gather_offp
     call udot%gather_offp
 
-!    !! Residual of the liquid fraction relation
-!    call this%alloy%compute_r(u%hc, u%lf, f%lf)
-!
-!    ! Residual of the algebraic enthalpy-temperature relation
-!    call this%alloy%compute_H(u%tc, u%lf, f%hc)
-!    f%hc = u%hc - f%hc
-
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_g_res(C, u%lf, u%hc, f%lf)
-      call this%alloy%compute_H_res(u%lf, u%hc, u%tc, f%hc)
+      call this%alloy%compute_f(C, u%lf, u%hc, u%tc, f%lf, f%hc)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
         call this%pd%compute_f(C(:,j), Cdot(:,j), &

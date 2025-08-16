@@ -67,7 +67,7 @@ of the solidification is the eutectic transformation.
   temp_fusion = 12.0
   temp_eutectic = 8.0
   eutectic_dgdT = 0.1 ! ignored for lever
-  dHdTmax = 100.0
+  eutectic_eps = 0.5
   liq_slope = -8.0
   part_coef = 0.5
   concentration = 0.3125

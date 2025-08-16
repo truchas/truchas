@@ -240,16 +240,6 @@ contains
     class(alloy_solver), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(inout) :: C_liq(:)
-!    integer :: j
-!    ASSERT(size(C_liq) >= this%mesh%ncell_onp)
-!    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
-!    do j = 1, this%mesh%ncell_onp
-!      if (this%u%lf(j) > 1d-6) then
-!        C_liq(j) = this%u%lsf(n,j) / this%u%lf(j)
-!      else
-!        C_liq(j) = 0.0_r8 ! really undefined
-!      end if
-!    end do
     call this%model%get_liq_conc(this%C, this%u, n, C_liq)
   end subroutine
 
@@ -258,16 +248,6 @@ contains
     class(alloy_solver), intent(in) :: this
     integer, intent(in) :: n
     real(r8), intent(inout) :: C_sol(:)
-!    integer :: j
-!    ASSERT(size(C_sol) >= this%mesh%ncell_onp)
-!    INSIST(allocated(this%u%lsf)) ! FIXME: not yet implemented for lever
-!    do j = 1, this%mesh%ncell_onp
-!      if (1 - this%u%lf(j) > 1d-6) then
-!        C_sol(j) = (this%C(n,j) - this%u%lsf(n,j)) / (1 - this%u%lf(j))
-!      else
-!        C_sol(j) = 0.0_r8 ! really undefined
-!      end if
-!    end do
     call this%model%get_sol_conc(this%C, this%u, n, C_sol)
   end subroutine
 

@@ -212,10 +212,6 @@ contains
     call this%mesh%init_face_centroid
     call this%mesh%init_face_normal_dist
 
-    n = 1
-    if (allocated(zone%phi)) n = 1 + size(zone%phi,dim=1)
-    allocate(this%state_cc(n,this%mesh%ncell))
-
     allocate(this%temperature_fc(this%mesh%nface))
 
     ! Some duplication here from vtrack_driver.  This should all be subsumed and handled
@@ -294,10 +290,17 @@ contains
     real(r8), intent(in), pointer :: temperature_fc(:)
     real(r8), intent(in), optional :: vel_fn(:)
 
+    integer :: n
     real(r8) :: vcell(3,this%mesh%ncell_onP)
     real(r8), pointer :: vof(:,:)
 
     call start_timer('Flow')
+
+    if (.not.allocated(this%state_cc)) then
+      n = 1
+      if (allocated(zone%phi)) n = 1 + size(zone%phi,dim=1)
+      allocate(this%state_cc(n,this%mesh%ncell))
+    end if
 
     if (prescribed_flow) then
       block

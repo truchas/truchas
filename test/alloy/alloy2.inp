@@ -69,8 +69,8 @@ transformation model is not robust at this time.
   num_comp = 1
   temp_fusion = 12.0
   temp_eutectic = 8.0
-  eutectic_dgdT = 0.1 ! ignored for lever
-  !dHdTmax = 100.0
+  eutectic_dgdT = 0.1
+  eutectic_eps = 0.1 ! ignored for wang-beckermann
   liq_slope = -8.0
   part_coef = 0.5
   concentration = 0.03125

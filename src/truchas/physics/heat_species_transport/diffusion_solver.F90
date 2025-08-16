@@ -290,10 +290,16 @@ contains
         use legacy_matl_api, only: define_matl
         real(r8) :: vof(2,this%mesh%ncell_onp)
         real(r8), pointer :: lfrac(:)
+        integer ::i
         call this%sol4%get_liq_frac_view(lfrac)
         vof(1,:) = 1 - lfrac(:this%mesh%ncell_onp)
         vof(2,:) = lfrac(:this%mesh%ncell_onp)
         call define_matl(vof)
+        INSIST(allocated(zone%phi))
+        INSIST(size(zone%phi,dim=1) == this%sol4%num_comp)
+        do i = 1, this%sol4%num_comp
+          call this%sol4%get_C_liq(i, zone%phi(i,:))
+        end do
       end block
     else if (this%have_phase_change) then
       call create_state_array(state)
@@ -769,6 +775,18 @@ contains
     case default
       INSIST(.false.)
     end select
+
+    if (this%solver_type == SOLVER4) then
+      block
+        use zone_module
+        integer :: i
+        INSIST(.not.allocated(zone%phi))
+        allocate(zone%phi(this%sol4%num_comp, this%mesh%ncell_onp))
+        do i = 1, size(zone%phi,dim=1)
+          call this%sol4%get_C_liq(i, zone%phi(i,:))
+        end do
+      end block
+    end if
 
   end subroutine ds_set_initial_state
 

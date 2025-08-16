@@ -12,6 +12,7 @@ module alloy_precon_type
   use alloy_vector_type
   use alloy_model_type
   use alloy_back_diff_type, only: alloy_back_diff_jac
+  use multicomp_lever_type, only: multicomp_lever_jac
   use unstr_mesh_type
   use mfd_diff_precon_type
   use mfd_diff_matrix_type
@@ -23,10 +24,10 @@ module alloy_precon_type
     type(alloy_model), pointer :: model => null()
     type(unstr_mesh), pointer :: mesh  => null()
     real(r8) :: dt
-    real(r8), allocatable :: dHdT(:), dHdg(:), dgdT(:)
-    real(r8), allocatable :: drdg(:), drdH(:), b(:)
+    real(r8), allocatable :: b(:)
     type(mfd_diff_precon) :: pc
     type(alloy_back_diff_jac), allocatable :: jac(:)
+    type(multicomp_lever_jac), allocatable :: jac1(:)
   contains
     procedure :: init
     procedure :: compute
@@ -50,13 +51,14 @@ contains
     this%model => model
     this%mesh  => model%mesh
 
-    allocate(this%dHdT(this%mesh%ncell), this%dHdg(this%mesh%ncell), this%dgdT(this%mesh%ncell))
-    allocate(this%drdg(this%mesh%ncell), this%drdH(this%mesh%ncell), this%b(this%mesh%ncell))
+    allocate(this%b(this%mesh%ncell))
     allocate(matrix)
     call matrix%init(model%disc)
     call this%pc%init(matrix, params, stat, errmsg)
 
     select case (this%model%model_type)
+    case (1) ! lever rule
+      allocate(this%jac1(this%mesh%ncell))
     case (2) ! Wang-Beckermann
       block !FIXME: THIS DATA STRUCTURE IS AWFUL!
         integer :: j
@@ -91,10 +93,12 @@ contains
 
     select case (this%model%model_type)
     case (1) ! lever rule
-      call this%model%alloy%compute_g_jac(C, u%lf, u%hc, this%drdg, this%drdH) !TODO: rename result arrays
-      call this%model%alloy%compute_H_jac(u%lf, u%hc, u%tc, this%dHdg, this%B, this%dHdT)
-      this%B = this%B - this%dHdg*this%drdH/this%drdg
-      A = -this%mesh%volume * (this%dHdT/this%B) / dt
+      call this%model%alloy%compute_f_jac(C, u%lf, u%hc, u%tc, this%jac1)
+      do j = 1, this%mesh%ncell
+        call this%jac1(j)%lu_factor
+        this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac1(j)%dfHdH
+        A(j) = -this%B(j)*this%jac1(j)%dfHdT
+      end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
         call this%model%pd%compute_f_jac(C(:,j), Cdot(:,j), &
@@ -152,8 +156,10 @@ contains
     ! Elimination of algebraic constraints
     select case (this%model%model_type)
     case (1) ! lever rule
-      f%hc = f%hc - (this%dHdg/this%drdg) * f%lf
-      f%tc = f%tc - (this%mesh%volume/this%dt)*f%hc/this%B
+      do j = 1, this%mesh%ncell
+        call this%jac1(j)%lower_solve(f%lf(j), f%hc(j))
+        f%tc(j) = f%tc(j) - this%B(j) * f%hc(j)
+      end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
         call this%jac(j)%lower_solve(f%lsf(:,j), f%lf(j), f%hc(j))
@@ -169,8 +175,9 @@ contains
     !! Back-substitute to precondition the algebraic constraints
     select case (this%model%model_type)
     case (1) ! lever rule
-      f%hc = (f%hc - this%dHdT*f%tc)/this%B
-      f%lf = (f%lf - this%drdH*f%hc)/this%drdg
+      do j = 1, this%mesh%ncell
+        call this%jac1(j)%upper_solve(f%lf(j), f%hc(j), f%tc(j))
+      end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
         call this%jac(j)%upper_solve(f%lsf(:,j), f%lf(j), f%hc(j), f%tc(j))
