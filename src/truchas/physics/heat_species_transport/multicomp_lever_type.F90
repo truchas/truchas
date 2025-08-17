@@ -196,7 +196,7 @@ contains
     if (H >= Hmax) then ! pure liquid
       !solve H = this%H_liq([T]) for T
       this%my_invf%func => H_liq_of_T
-      call this%my_invf%compute(H, T1, T2, T, stat, errmsg) !TODO: [T1,T2] bracket
+      call this%my_invf%compute(H, max(T2,Tmax), T2, T, stat, errmsg) !TODO: [T1,T2] bracket
       INSIST(stat == 0)
       g = 1
       return
@@ -217,7 +217,7 @@ contains
     if (H <= Hmin) then ! pure solid
       !solve H = this%H_sol([T]) for T
       this%my_invf%func => H_sol_of_T
-      call this%my_invf%compute(H, T1, T2, T, stat, errmsg) !TODO: [T1,T2] bracket
+      call this%my_invf%compute(H, T1, min(T2,Tmin), T, stat, errmsg) !TODO: [T1,T2] bracket
       INSIST(stat == 0)
       g = 0
       return
@@ -279,7 +279,7 @@ contains
     real(r8), intent(out) :: H(:), g(:)
 
     integer  :: j, stat
-    real(r8) :: Tmin, Tmax, dT, geut, Hmin, Heut
+    real(r8) :: Tmin, Tmax, dT, geut
     character(:), allocatable :: errmsg
 
     ASSERT(size(H) == size(T))
@@ -288,8 +288,8 @@ contains
     do j = 1, size(T)
       Tmax = this%temp(1.0_r8, C(:,j))
       if (T(j) >= Tmax) then ! pure liquid
-        H(j) = this%H_liq%eval([T(j)])
         g(j) = 1
+        H(j) = this%H_liq%eval([T(j)])
         cycle
       end if
 
@@ -301,27 +301,25 @@ contains
         INSIST(stat == 0)
         dT = geut * this%eutectic_eps
         Tmin = this%Teut - dT
-        Heut = (1-geut)*this%H_sol%eval([this%Teut]) + geut*this%H_liq%eval([this%Teut])
       end if
 
       if (T(j) <= Tmin) then ! pure solid
-        H(j) = this%H_sol%eval([T(j)])
         g(j) = 0
+        H(j) = this%H_sol%eval([T(j)])
         cycle
       end if
 
       if (Tmin < this%Teut) then
-        Hmin = this%H_sol%eval([Tmin])
         Tmin = this%Teut
       end if
 
-      if (T(j) > Tmin) then ! 2-phase region !FIXME: I don't think this is right
+      if (T(j) >= this%Teut) then ! 2-phase region
         ! solve T = this%temp(g, C(:,j)) for g
         this%my_invf%func => T_of_g
         call this%my_invf%compute(T(j), 0.0_r8, 1.0_r8, g(j), stat, errmsg)
         INSIST(stat == 0)
         H(j) = (1-g(j))*this%H_sol%eval([T(j)]) + g(j)*this%H_liq%eval([T(j)])
-      else ! smeared eutectic transformation
+      else ! eutectic transformation
         g(j) = (geut/dT)*(T(j) - Tmin)
         H(j) = (1-g(j))*this%H_sol%eval([T(j)]) + g(j)*this%H_liq%eval([T(j)])
       end if
@@ -381,7 +379,7 @@ contains
         call this%my_invf%compute(H(j), 0.0_r8, 1.0_r8, g, stat, errmsg)
         INSIST(stat == 0)
         C_liq(j) = C(n,j) / ((1-g)*this%part_coef(n) + g)
-      else ! smeared eutectic transformation
+      else ! eutectic transformation
         C_liq(j) = Ceut
       end if
     end do
@@ -445,7 +443,7 @@ contains
         call this%my_invf%compute(H(j), 0.0_r8, 1.0_r8, g, stat, errmsg)
         INSIST(stat == 0)
         C_sol(j) = this%part_coef(n)*C(n,j) / ((1-g)*this%part_coef(n) + g)
-      else ! smeared eutectic transformation
+      else ! eutectic transformation
         !solve H = (1-g(T))*this%H_sol%eval([T]) + g(T)*this%H_liq%eval([T]) for T
         this%my_invf%func => H_of_T
         call this%my_invf%compute(H(j), Tmin, this%Teut, T, stat, errmsg)
@@ -515,9 +513,8 @@ contains
       end if
 
       if (H(j) > merge(Heut, Hmin, Tmin < this%Teut)) then ! 2-phase region
-        TT = this%temp(g(j),C(:,j))
-        fg(j) = (1-g(j))*this%H_sol%eval([TT]) + g(j)*this%H_liq%eval([TT]) - H(j)
-      else ! smeared eutectic transformation
+        fg(j) = T(j) - this%temp(g(j),C(:,j))
+      else ! eutectic transformation
         fg(j) = g(j) - (geut/dT)*(T(j) - Tmin)
       end if
     end do
@@ -579,15 +576,13 @@ contains
       end if
 
       if (H(j) > merge(Heut, Hmin, Tmin < this%Teut)) then ! 2-phase region
-        TT = this%temp(g(j),C(:,j))
-        jac(j)%dfgdg = ((1-g(j))*this%H_sol_deriv%eval([TT]) + g(j)*this%H_liq_deriv%eval([TT])) &
-                     * temp_deriv(this, g(j), C(:,j)) + (this%H_liq%eval([TT]) - this%H_sol%eval([TT]))
-        jac(j)%dfgdH = -1
-        jac(j)%dfgdT = 0
-      else ! smeared eutectic transformation
+        jac(j)%dfgdg = -temp_deriv(this, g(j), C(:,j))
+        jac(j)%dfgdH = 0
+        jac(j)%dfgdT = 1
+      else ! eutectic transformation
         jac(j)%dfgdg = 1
         jac(j)%dfgdH = 0
-        jac(j)%dfgdT = -1/dT
+        jac(j)%dfgdT = -geut/dT
       end if
     end do
 
