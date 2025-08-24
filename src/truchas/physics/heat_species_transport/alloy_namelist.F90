@@ -27,9 +27,9 @@ contains
     character(32) :: material
     integer :: num_comp
     real(r8) :: temp_fusion, temp_eutectic, liq_slope(16), part_coef(16), concentration(16), &
-        gamma, eutectic_dgdT, eutectic_eps
+        gamma, eutectic_eps
     namelist /alloy/ material, num_comp, temp_fusion, temp_eutectic, liq_slope, part_coef, &
-        concentration, gamma, eutectic_dgdT, eutectic_eps
+        concentration, gamma, eutectic_eps
 
     if (is_IOP) rewind(lun)
 
@@ -50,7 +50,6 @@ contains
     part_coef = NULL_R
     concentration = NULL_R
     gamma = NULL_R
-    eutectic_dgdT = NULL_R
     eutectic_eps = NULL_R
 
     if (is_IOP) read(lun,nml=alloy,iostat=ios,iomsg=iom)
@@ -65,7 +64,6 @@ contains
     call broadcast(part_coef)
     call broadcast(concentration)
     call broadcast(gamma)
-    call broadcast(eutectic_dgdT)
     call broadcast(eutectic_eps)
 
     if (material == NULL_C) then
@@ -90,11 +88,6 @@ contains
 
     if (temp_eutectic /= NULL_R) then
       call params%set('temp-eutectic', temp_eutectic)
-      if (eutectic_dgdT == NULL_R) then
-        call tls_fatal('EUTECTIC_DGDT not specified')
-      else
-        call params%set('eutectic-dg/dT', eutectic_dgdT)
-      end if
       if (eutectic_eps == NULL_R) then
         call tls_fatal('EUTECTIC_EPS not specified')
       else

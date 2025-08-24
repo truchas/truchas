@@ -196,7 +196,7 @@ contains
     if (H >= Hmax) then ! pure liquid
       !solve H = this%H_liq([T]) for T
       this%my_invf%func => H_liq_of_T
-      call this%my_invf%compute(H, max(T2,Tmax), T2, T, stat, errmsg) !TODO: [T1,T2] bracket
+      call this%my_invf%compute(H, max(T1,Tmax), T2, T, stat, errmsg) !TODO: [T1,T2] bracket
       INSIST(stat == 0)
       g = 1
       return
