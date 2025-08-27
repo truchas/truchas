@@ -239,6 +239,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   add_compile_definitions(GNU_PR98141)
   add_compile_definitions(GNU_ISSUE437)
   add_compile_definitions(GNU_PR103394)
+  add_compile_definitions(GNU_PR121683)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.3.0")
     add_compile_definitions(NO_2008_LHS_POLY_REALLOC) # see issue 475
   endif()

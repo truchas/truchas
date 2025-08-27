@@ -189,7 +189,15 @@ contains
     class(scalar_func), intent(in) :: f
     integer, intent(in) :: n
     class(scalar_func), allocatable :: df
+#ifdef GNU_PR121683
+    type(scalar_func_deriv), allocatable :: tmp
+    allocate(tmp)
+    tmp%f = f
+    tmp%n = n
+    call move_alloc(tmp, df)
+#else
     allocate(df, source=scalar_func_deriv(f, n))
+#endif
   end subroutine
 
   function scalar_func_deriv_eval(this, x) result(dfdx)

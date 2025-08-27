@@ -172,13 +172,6 @@ contains
     case (SOLVER4)  ! alloy solidification
       t = h + this%sol4%last_time()
       call this%sol4%step(t, hnext, errc)
-!block
-!  real(r8), pointer :: view(:)
-!  call this%sol4%get_cell_temp_view(view)
-!  print '(a,*(f8.4))', 'temp:', view
-!  call this%sol4%get_liq_frac_view(view)
-!  print '(a,*(f8.4))', 'lfrac:', view
-!end block
     case default
       INSIST(.false.)
     end select
