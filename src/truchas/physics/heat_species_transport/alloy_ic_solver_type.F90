@@ -63,7 +63,7 @@ contains
 
     select case (this%model%model_type)
     case (1)
-      call this%model%alloy%solve_for_H_g(C, u%tc, u%hc, u%lf)
+      call this%model%lever%solve_for_H_g(C, u%tc, u%hc, u%lf)
     case (2) ! assumes temperature is consistent with a pure liquid state
       block
         integer :: j
@@ -71,7 +71,7 @@ contains
         call this%mesh%cell_imap%gather_offp(u%lsf)
         u%lf = 1
         do j = 1, this%mesh%ncell
-          u%hc(j) = this%model%pd%H_of_g_T(u%lf(j), u%tc(j))
+          u%hc(j) = this%model%back_diff%H_of_g_T(u%lf(j), u%tc(j))
         end do
       end block
     end select
@@ -123,7 +123,7 @@ contains
       do j = 1, this%mesh%ncell_onp
         Tmin = u%tc(j) - 1
         Tmax = u%tc(j) + 1
-        call this%model%alloy%solve(udot%hc(j), C(:,j), Tmin, Tmax, udot%tc(j), udot%lf(j))
+        call this%model%lever%solve(udot%hc(j), C(:,j), Tmin, Tmax, udot%tc(j), udot%lf(j))
       end do
       call this%mesh%cell_imap%gather_offp(udot%tc)
       call this%mesh%cell_imap%gather_offp(udot%lf)
@@ -133,7 +133,7 @@ contains
       do j = 1, size(u%tc)
         Tmin = u%tc(j) - 1
         Tmax = u%tc(j) + 1
-        udot%tc(j) = this%model%pd%T_of_g_H(udot%lf(j), udot%hc(j), Tmin, Tmax)
+        udot%tc(j) = this%model%back_diff%T_of_g_H(udot%lf(j), udot%hc(j), Tmin, Tmax)
       end do
     end select
 

@@ -12,7 +12,7 @@ module alloy_precon_type
   use alloy_vector_type
   use alloy_model_type
   use alloy_back_diff_type, only: alloy_back_diff_jac
-  use multicomp_lever_type, only: multicomp_lever_jac
+  use alloy_lever_rule_type, only: alloy_lever_rule_jac
   use unstr_mesh_type
   use mfd_diff_precon_type
   use mfd_diff_matrix_type
@@ -26,8 +26,8 @@ module alloy_precon_type
     real(r8) :: dt
     real(r8), allocatable :: b(:)
     type(mfd_diff_precon) :: pc
-    type(alloy_back_diff_jac), allocatable :: jac(:)
-    type(multicomp_lever_jac), allocatable :: jac1(:)
+    type(alloy_lever_rule_jac), allocatable :: jac1(:)
+    type(alloy_back_diff_jac), allocatable :: jac2(:)
   contains
     procedure :: init
     procedure :: compute
@@ -62,9 +62,9 @@ contains
     case (2) ! Wang-Beckermann
       block !FIXME: THIS DATA STRUCTURE IS AWFUL!
         integer :: j
-        allocate(this%jac(this%mesh%ncell))
+        allocate(this%jac2(this%mesh%ncell))
         do j = 1, this%mesh%ncell
-          call this%jac(j)%init(this%model%pd%num_comp)
+          call this%jac2(j)%init(this%model%back_diff%num_comp)
         end do
       end block
     end select
@@ -93,7 +93,7 @@ contains
 
     select case (this%model%model_type)
     case (1) ! lever rule
-      call this%model%alloy%compute_f_jac(C, u%lf, u%hc, u%tc, this%jac1)
+      call this%model%lever%compute_f_jac(C, u%lf, u%hc, u%tc, this%jac1)
       do j = 1, this%mesh%ncell
         call this%jac1(j)%lu_factor
         this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac1(j)%dfHdH
@@ -101,11 +101,11 @@ contains
       end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%model%pd%compute_f_jac(C(:,j), Cdot(:,j), &
-            u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac(j))
-        call this%jac(j)%lu_factor
-        this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac(j)%dfHdH
-        A(j) = -this%B(j)*this%jac(j)%dfHdT
+        call this%model%back_diff%compute_f_jac(C(:,j), Cdot(:,j), &
+            u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac2(j))
+        call this%jac2(j)%lu_factor
+        this%B(j) = (1/dt)*this%mesh%volume(j)/this%jac2(j)%dfHdH
+        A(j) = -this%B(j)*this%jac2(j)%dfHdT
       end do
     end select
 
@@ -162,7 +162,7 @@ contains
       end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%jac(j)%lower_solve(f%lsf(:,j), f%lf(j), f%hc(j))
+        call this%jac2(j)%lower_solve(f%lsf(:,j), f%lf(j), f%hc(j))
         f%tc(j) = f%tc(j) - this%B(j) * f%hc(j)
       end do
     end select
@@ -180,7 +180,7 @@ contains
       end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%jac(j)%upper_solve(f%lsf(:,j), f%lf(j), f%hc(j), f%tc(j))
+        call this%jac2(j)%upper_solve(f%lsf(:,j), f%lf(j), f%hc(j), f%tc(j))
       end do
     end select
 

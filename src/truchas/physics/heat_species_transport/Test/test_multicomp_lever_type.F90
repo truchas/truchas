@@ -1,15 +1,15 @@
-program test_multicomp_lever_type
+program test_alloy_lever_rule_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   use parameter_list_json
   use material_class
-  use multicomp_lever_type
+  use alloy_lever_rule_type
   
   type(parameter_list), pointer :: matl_params, foo_params
   character(:), allocatable :: errmsg
   class(material), allocatable :: matl
-  type(multicomp_lever) :: foo
+  type(alloy_lever_rule) :: foo
   integer :: stat, j
   real(r8) :: T, g
   

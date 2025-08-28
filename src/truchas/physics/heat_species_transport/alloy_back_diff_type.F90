@@ -68,9 +68,11 @@ contains
 
     if (matl%num_phase() == 2) then
       phi => matl%phase_ref(1)
-      call phi%get_prop('enthalpy', this%h_sol)
+      call phi%get_prop('enthalpy', this%h_sol, strict=.true.)
+      INSIST(allocated(this%h_sol))
       phi => matl%phase_ref(2)
-      call phi%get_prop('enthalpy', this%h_liq)
+      call phi%get_prop('enthalpy', this%h_liq, strict=.true.)
+      INSIST(allocated(this%h_liq))
     else
       stat = 1
       errmsg = 'not a 2-phase material'
@@ -213,7 +215,7 @@ use parallel_communication
     Tmax = this%T_liq(C)
     Hmax = this%H_liq%eval([Tmax])
     if (H >= Hmax) then
-if (is_IOP) print *, 'LIQUID'
+!if (is_IOP) print *, 'LIQUID'
       fp = p - C
       fg = g - 1
       fH = this%H_liq%eval([T]) - H
@@ -224,7 +226,7 @@ if (is_IOP) print *, 'LIQUID'
     !Hmin = this%H_sol%eval([Tmin])
     !if (H <= Hmin) then
     if (g <= 1e-6) then
-if (is_IOP) print *, 'SOLID'
+!if (is_IOP) print *, 'SOLID'
       fp = p
       fg = g
       fH = this%H_sol%eval([T]) - H
@@ -232,17 +234,17 @@ if (is_IOP) print *, 'SOLID'
     end if
 
     if (T <= this%Teut) then
-if (is_IOP) print *, 'EUTECTIC'
+!if (is_IOP) print *, 'EUTECTIC'
       fp = g*(pdot - Cdot) - p*gdot
       fg = gdot - Tdot/this%eutectic_eps
     else
-if (is_IOP) print *, '2-PHASE:', (this%part_coef*p - (g/(1-g+1d-6))*(C - p))
+!if (is_IOP) print *, '2-PHASE:', (this%part_coef*p - (g/(1-g+1d-6))*(C - p))
       fp = g*(pdot - Cdot) - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(C - p))
       fg = g*(T-this%T_f) - dot_product(this%liq_slope, p)
     end if
     fH = (1-g)*this%H_sol%eval([T]) + g*this%H_liq%eval([T]) - H
 
-if (is_IOP) print *, 'p,g,H,Tdot=', pdot, gdot, Hdot, Tdot
+!if (is_IOP) print *, 'p,g,H,Tdot=', pdot, gdot, Hdot, Tdot
 
   end subroutine compute_f
 

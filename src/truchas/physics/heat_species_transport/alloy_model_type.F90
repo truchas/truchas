@@ -11,7 +11,7 @@ module alloy_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
   use alloy_vector_type
-  use multicomp_lever_type
+  use alloy_lever_rule_type
   use alloy_back_diff_type
   use mfd_disc_type
   use scalar_func_class
@@ -27,8 +27,8 @@ module alloy_model_type
     type(unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(mfd_disc) :: disc
     !! Equation parameters
-    type(multicomp_lever) :: alloy
-    type(alloy_back_diff) :: pd
+    type(alloy_lever_rule) :: lever
+    type(alloy_back_diff) :: back_diff
     class(scalar_func), allocatable :: k_sol, k_liq ! thermal conductivity
     real(r8), allocatable :: q_adv(:) ! advective source
     type(scalar_mesh_multifunc), allocatable :: src ! external heat source
@@ -55,7 +55,7 @@ contains
     case (1) ! lever rule
       call vec%init(this%mesh)
     case (2) ! Wang-Beckermann
-      call vec%init(this%mesh, num_comp=this%pd%num_comp)
+      call vec%init(this%mesh, num_comp=this%back_diff%num_comp)
     end select
   end subroutine
 
@@ -82,13 +82,13 @@ contains
 
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%init(matl, params, stat, errmsg)
+      call this%lever%init(matl, params, stat, errmsg)
       if (stat /= 0) return
-      this%num_comp = this%alloy%num_comp
+      this%num_comp = this%lever%num_comp
     case (2) ! Wang-Beckermann
-      call this%pd%init(matl, params, stat, errmsg)
+      call this%back_diff%init(matl, params, stat, errmsg)
       if (stat /= 0) return
-      this%num_comp = this%pd%num_comp
+      this%num_comp = this%back_diff%num_comp
     end select
 
     if (matl%has_prop('conductivity')) then
@@ -217,10 +217,10 @@ contains
 
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_f(C, u%lf, u%hc, u%tc, f%lf, f%hc)
+      call this%lever%compute_f(C, u%lf, u%hc, u%tc, f%lf, f%hc)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
-        call this%pd%compute_f(C(:,j), Cdot(:,j), &
+        call this%back_diff%compute_f(C(:,j), Cdot(:,j), &
                                u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), &
                                udot%lsf(:,j), udot%lf(j), udot%hc(j), udot%tc(j), &
                                f%lsf(:,j), f%lf(j), f%hc(j))
@@ -315,7 +315,7 @@ contains
     ASSERT(size(C_liq) >= this%mesh%ncell_onp)
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_C_liq(C, u%hc, n, C_liq)
+      call this%lever%compute_C_liq(C, u%hc, n, C_liq)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell_onp
         if (u%lf(j) > 1d-6) then
@@ -337,7 +337,7 @@ contains
     ASSERT(size(C_sol) >= this%mesh%ncell_onp)
     select case (this%model_type)
     case (1) ! lever rule
-      call this%alloy%compute_C_sol(C, u%hc, n, C_sol)
+      call this%lever%compute_C_sol(C, u%hc, n, C_sol)
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell_onp
         if (1 - u%lf(j) > 1d-6) then

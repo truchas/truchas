@@ -1,7 +1,6 @@
 #include "f90_assert.fpp"
-!#define OLD_EUTECTIC
 
-module multicomp_lever_type
+module alloy_lever_rule_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
@@ -23,7 +22,7 @@ module multicomp_lever_type
     end function
   end interface
 
-  type, public :: multicomp_lever
+  type, public :: alloy_lever_rule
     real(r8), allocatable :: liq_slope(:), part_coef(:)
     real(r8) :: T_f, Teut, eutectic_eps
     integer :: num_comp
@@ -39,7 +38,7 @@ module multicomp_lever_type
     procedure, private :: temp
   end type
 
-  type, public :: multicomp_lever_jac
+  type, public :: alloy_lever_rule_jac
     real(r8) :: dfgdg, dfgdH, dfgdT, dfHdg, dfHdH, dfHdT
   contains
     procedure :: lu_factor, lower_solve, upper_solve
@@ -58,7 +57,7 @@ contains
     use material_class
     use parameter_list_type
 
-    class(multicomp_lever), intent(out) :: this
+    class(alloy_lever_rule), intent(out) :: this
     class(material), intent(in) :: matl
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -69,9 +68,11 @@ contains
 
     if (matl%num_phase() == 2) then
       phi => matl%phase_ref(1)
-      call phi%get_prop('enthalpy', this%h_sol)
+      call phi%get_prop('enthalpy', this%h_sol, strict=.true.)
+      INSIST(allocated(this%h_sol))
       phi => matl%phase_ref(2)
-      call phi%get_prop('enthalpy', this%h_liq)
+      call phi%get_prop('enthalpy', this%h_liq, strict=.true.)
+      INSIST(allocated(this%h_liq))
     else
       stat = 1
       errmsg = 'not a 2-phase material'
@@ -147,7 +148,7 @@ contains
   end subroutine init
 
   subroutine get_liq_conc(this, c, g, c_liq)
-    type(multicomp_lever), intent(in) :: this
+    type(alloy_lever_rule), intent(in) :: this
     real(r8), intent(in)  :: c(:), g
     real(r8), intent(out) :: c_liq(:)
     ASSERT(size(c) == this%num_comp)
@@ -157,7 +158,7 @@ contains
   end subroutine
 
   pure real(r8) function temp(this, g, c)
-    class(multicomp_lever), intent(in) :: this
+    class(alloy_lever_rule), intent(in) :: this
     real(r8), intent(in) :: g, c(:)
     integer :: k
     temp = this%T_f
@@ -167,7 +168,7 @@ contains
   end function
 
   pure real(r8) function temp_deriv(this, g, c)
-    class(multicomp_lever), intent(in) :: this
+    class(alloy_lever_rule), intent(in) :: this
     real(r8), intent(in) :: g, c(:)
     integer :: k
     temp_deriv = 0
@@ -183,7 +184,7 @@ contains
 
   subroutine solve(this, H, C, T1, T2, T, g)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in)  :: h, C(:), T1, T2
     real(r8), intent(out) :: g, T
 
@@ -274,7 +275,7 @@ contains
 
   subroutine solve_for_H_g(this, C, T, H, g)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in)  :: C(:,:), T(:)
     real(r8), intent(out) :: H(:), g(:)
 
@@ -336,7 +337,7 @@ contains
 
   subroutine compute_C_liq(this, C, H, n, C_liq)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in) :: C(:,:), H(:)
     integer, intent(in) :: n
     real(r8), intent(out) :: C_liq(:)
@@ -400,7 +401,7 @@ contains
 
   subroutine compute_C_sol(this, C, H, n, C_sol)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in) :: C(:,:), H(:)
     integer, intent(in) :: n
     real(r8), intent(out) :: C_sol(:)
@@ -479,7 +480,7 @@ contains
 
   subroutine compute_f(this, C, g, H, T, fg, fH)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in)  :: C(:,:), g(:), H(:), T(:)
     real(r8), intent(out) :: fg(:), fH(:)
 
@@ -537,9 +538,9 @@ contains
 
   subroutine compute_f_jac(this, C, g, H, T, jac)
 
-    class(multicomp_lever), intent(inout) :: this
+    class(alloy_lever_rule), intent(inout) :: this
     real(r8), intent(in)  :: C(:,:), g(:), H(:), T(:)
-    type(multicomp_lever_jac), intent(out) :: jac(:)
+    type(alloy_lever_rule_jac), intent(out) :: jac(:)
 
     integer :: j, stat
     character(:), allocatable :: errmsg
@@ -602,21 +603,21 @@ contains
   end subroutine compute_f_jac
 
   subroutine lu_factor(this)
-    class(multicomp_lever_jac), intent(inout) :: this
+    class(alloy_lever_rule_jac), intent(inout) :: this
     this%dfHdg = this%dfHdg/this%dfgdg
     this%dfHdH = this%dfHdH - this%dfHdg*this%dfgdH
     this%dfHdT = this%dfHdT - this%dfHdg*this%dfgdT
   end subroutine
 
   subroutine lower_solve(this, fg, fH)
-    class(multicomp_lever_jac), intent(in) :: this
+    class(alloy_lever_rule_jac), intent(in) :: this
     real(r8), intent(in) :: fg
     real(r8), intent(inout) :: fH
     fH = fH - this%dfHdg * fg
   end subroutine
 
   subroutine upper_solve(this, fg, fH, fT)
-    class(multicomp_lever_jac), intent(in) :: this
+    class(alloy_lever_rule_jac), intent(in) :: this
     real(r8), intent(inout) :: fg, fH
     real(r8), intent(in) :: fT
     fH = (fH - this%dfHdT*fT) / this%dfHdH
