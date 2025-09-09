@@ -68,6 +68,7 @@ CONTAINS
     use process_info_module,    only: get_process_size
     use parallel_communication
     use flow_driver, only: flow_enabled, flow_vel_cc_view
+    use physics_module, only: alloy_solidification
 
     ! Local variables.
     integer :: vmsize, rssize, dsize
@@ -95,6 +96,14 @@ CONTAINS
 98    format(12x,'Max Velocity: (',1p,e11.4,', ',e11.4,', ',e11.4,')')
       call TLS_info (string)
     endif
+
+    if (alloy_solidification) then
+      block
+        use diffusion_solver, only: ds_avg_conc
+        write(string,'(12x,"Avg Solute Conc:",*(es12.5,:,","))') ds_avg_conc()
+        call tls_info(string)
+      end block
+    end if
 
     ! If debug, write out additional memory usage info.
     if (TLS_verbosity >= TLS_VERB_NOISY) then
