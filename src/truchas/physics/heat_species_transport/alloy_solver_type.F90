@@ -42,6 +42,7 @@ module alloy_solver_type
     procedure :: get_cell_temp_copy, get_cell_temp_view
     procedure :: get_face_temp_copy, get_face_temp_view
     procedure :: get_cell_conc_view
+    procedure :: avg_conc
     procedure :: get_C_liq, get_C_sol
     procedure :: get_liq_frac_view
     procedure :: get_cell_temp_grad
@@ -257,6 +258,20 @@ contains
     view => this%C
   end subroutine
 
+  function avg_conc(this) result(C_avg)
+    use parallel_communication, only: global_sum
+    class(alloy_solver), intent(in) :: this
+    real(r8), allocatable :: C_avg(:)
+    integer :: i
+    associate (n => this%mesh%ncell_onp)
+      C_avg = matmul(this%C(:,:n), this%mesh%volume(:n))
+      do i = 1, size(C_avg)
+        C_avg(i) = global_sum(C_avg(i))
+      end do
+      C_avg = C_avg / global_sum(this%mesh%volume(:n))
+    end associate
+  end function
+
   !! Compute a cell-based approximation to the gradient of the pending/current
   !! cell temperatures. Note that this derived quantity is not used in the
   !! discretization of the heat equation.
@@ -318,6 +333,7 @@ contains
       this%state_is_pending = .true.
       call this%u%gather_offp !TODO: Can the be made unnecessary?
     else
+      this%C = this%Clast
       call this%integ%get_last_state_copy(this%u)
       this%state_is_pending = .false.
     end if

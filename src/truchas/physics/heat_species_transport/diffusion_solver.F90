@@ -51,6 +51,7 @@ module diffusion_solver
   public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
   public :: ds_get_temp_grad
   public :: ds_get_alloy_conc_view, ds_get_alloy_liquid_conc, ds_get_alloy_solid_conc
+  public :: ds_avg_conc ! for alloy_solidification only
 
   !! These return results relative to the new distributed mesh.
   public :: ds_get_cell_temp, ds_get_face_temp
@@ -444,6 +445,16 @@ contains
       INSIST(.false.)
     end select
   end subroutine
+
+  function ds_avg_conc() result(C_avg)
+    real(r8), allocatable :: C_avg(:)
+    select case (this%solver_type)
+    case (SOLVER4)
+      C_avg = this%sol4%avg_conc()
+    case default
+      INSIST(.false.)
+    end select
+  end function
 
   subroutine ds_get_temp_grad (array)
     real(r8), intent(inout) :: array(:,:)

@@ -485,6 +485,7 @@ contains
         this%failed_bce = this%failed_bce + 1
         hnext = 0.5_r8 * h
         this%freeze_count = 1
+        this%usable_pc = .false.
         errc = 1
         return
       else ! update the preconditioner and retry the nonlinear solve.
