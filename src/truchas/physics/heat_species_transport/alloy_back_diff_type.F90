@@ -1,5 +1,7 @@
 #include "f90_assert.fpp"
 
+#define FG_SCALED
+
 module alloy_back_diff_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -240,7 +242,11 @@ use parallel_communication
     else
 !if (is_IOP) print *, '2-PHASE:', (this%part_coef*p - (g/(1-g+1d-6))*(C - p))
       fp = g*(pdot - Cdot) - this%part_coef*p*gdot + this%gamma*(this%part_coef*p - (g/(1-g+1d-6))*(C - p))
+#ifdef FG_SCALED
       fg = g*(T-this%T_f) - dot_product(this%liq_slope, p)
+#else
+      fg = (T-this%T_f) - dot_product(this%liq_slope, p)/g
+#endif
     end if
     fH = (1-g)*this%H_sol%eval([T]) + g*this%H_liq%eval([T]) - H
 
@@ -298,13 +304,19 @@ use parallel_communication
       jac%dfgdg = 1/dt
       jac%dfgdT = -dt/this%eutectic_eps
     else
-!print *, 'TWO-PhASE'
+!print *, 'TWO-PHASE'
       jac%dfpdp = g/dt - this%part_coef*gdot + this%gamma*(this%part_coef + g/(1-g+1d-6))
       jac%dfpdg = (pdot - Cdot) - this%part_coef*p/dt - this%gamma*(C - p)/(1-g+1d-6)**2
 
+#ifdef FG_SCALED
       jac%dfgdp = -this%liq_slope
       jac%dfgdg = T - this%T_f
       jac%dfgdT = g
+#else
+      jac%dfgdp = -this%liq_slope/g
+      jac%dfgdg = dot_product(this%liq_slope,p)/g**2
+      jac%dfgdT = 1
+#endif
     end if
 
     jac%dfHdg = this%H_liq%eval([T]) - this%H_sol%eval([T])
