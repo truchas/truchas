@@ -211,7 +211,7 @@ contains
 
       call this%wg_port_fac%set_plist_power(t)
 
-      call start_timer('simulation')
+      call start_timer('microwave heat solver')
       comp: block
 
         use fdme_solver_type
@@ -251,7 +251,7 @@ contains
         end if
 
       end block comp
-      call stop_timer('simulation')
+      call stop_timer('microwave heat solver')
 
       if (stat /= 0) then ! solver failure
         stat = -1

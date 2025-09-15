@@ -203,7 +203,7 @@ contains
       call this%hfield_fac%update_ih_hfield_func(t)
       freq = this%hfield_fac%frequency(t)
 
-      call start_timer('simulation')
+      call start_timer('induction heat solver')
       comp: block
         use string_utilities, onlY: i_to_c
         use truchas_env, only: output_dir
@@ -231,7 +231,7 @@ contains
         this%q_mu = mu
         this%q_sigma = sigma
       end block comp
-      call stop_timer('simulation')
+      call stop_timer('induction heat solver')
 
       if (stat /= 0) then ! solver failure
         stat = -1

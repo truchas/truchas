@@ -21,7 +21,6 @@ module fdme_model_type
   use bndry_func1_class
   use bndry_vfunc_class
   use bndry_cfunc1_class
-  use truchas_timers
   use index_map_type
   use index_corrector_type
   implicit none
@@ -122,8 +121,6 @@ contains
     integer :: j, xn, n, xe, e
     type(pcsr_graph), pointer :: g1, g2
 
-    call start_timer("div")
-
     allocate(g1, g2)
     call g1%init(this%mesh%node_imap, this%mesh%edge_imap)
     call g2%init(this%mesh%edge_imap, this%mesh%node_imap)
@@ -141,8 +138,6 @@ contains
     call g2%add_complete
     call this%B%init(g1, take_graph=.true.)
     call this%BT%init(g2, take_graph=.true.)
-
-    call stop_timer("div")
 
   end subroutine init_div_matrix
 
@@ -164,8 +159,6 @@ contains
     ASSERT(size(epsi) == this%mesh%ncell)
     ASSERT(size(mu) == this%mesh%ncell)
     ASSERT(size(sigma) == this%mesh%ncell)
-
-    call start_timer("setup")
 
     call this%setup_bc_data(omega, stat, errmsg)
     if (stat /= 0) return
@@ -264,8 +257,6 @@ contains
 
     call this%setup_div_matrix(epsr, epsi) ! currently used for diagnostics regardless of system
     if (this%use_mixed_form) call this%setup_mixed_matrix
-
-    call stop_timer("setup")
 
   end subroutine setup
 
@@ -446,8 +437,6 @@ contains
     integer :: i, xj, j, xnb, nb
     type(pcsr_graph), pointer :: gr => null(), gc => null()
 
-    call start_timer("mixed")
-
     !! Set up a new imap for the 4-variable system: 2 edge-centered variables
     !! (real and imaginary E-field) and 2 node-centered variables (real and
     !! imaginary Lagrange multiplier).
@@ -499,8 +488,6 @@ contains
     call gc%add_complete
     call this%Am%init(gr, take_graph=.true.)
     call this%cAm%init(gc, take_graph=.true.)
-
-    call stop_timer("mixed")
 
   end subroutine init_mixed_matrix
 

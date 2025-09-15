@@ -201,14 +201,12 @@ contains
 
     integer :: ierr
 
-    call start_timer('hypre-matrix-copy')
+    call start_timer('boomer-setup')
     call this%A%copy_to_ijmatrix(this%Ah)
-    call stop_timer('hypre-matrix-copy')
 
     !! Create the Hypre solver object.  Note that once the solver has
     !! been setup, it is not possible to change the matrix values without
     !! completely destroying the solver and recreating it from scratch.
-    call start_timer('boomer-setup')
     if (hypre_associated(this%solver)) call fHYPRE_BoomerAMGDestroy(this%solver, ierr)
     call fHYPRE_BoomerAMGCreate(this%solver, ierr)
     INSIST(ierr == 0)
@@ -247,7 +245,7 @@ contains
 
     ASSERT(size(x) >= this%nrows)
 
-    call start_timer('boomer-solve')
+    call start_timer('boomer-cycles')
 
     call fHYPRE_ClearAllErrors
 
@@ -275,7 +273,7 @@ contains
     call fHYPRE_IJVectorGetValues(this%xh, this%nrows, rows, x, ierr)
     INSIST(ierr == 0)
 
-    call stop_timer('boomer-solve')
+    call stop_timer('boomer-cycles')
 
   end subroutine apply
 

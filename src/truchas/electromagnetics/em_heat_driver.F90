@@ -125,6 +125,8 @@ contains
 
     ASSERT(.not.allocated(this))
 
+    call start_timer('EM heat')
+
     call tls_info('')
     call tls_info('Initializing the EM heat solver ...')
 
@@ -184,6 +186,8 @@ contains
       if (stat /= 0) call tls_fatal('EM_HEAT_DRIVER_INIT: error creating induction solver: ' // errmsg)
     end if
 
+    call stop_timer('EM heat')
+
   end subroutine em_heat_driver_init
 
   !! Update the EM heat source array referenced by EM_HEAT_PTR() for the given
@@ -229,10 +233,10 @@ contains
 
     subroutine set_joule_power_density(values)
       real(r8), intent(in) :: values(:)
-      call start_timer('mesh-to-mesh mapping')
+      !call start_timer('mesh-to-mesh mapping')
       call this%ht2em%map_field(values(:this%em_mesh%ncell_onP), this%q_ht, defval=0.0_r8, &
                            map_type=GLOBALLY_CONSERVATIVE, pullback=.true.)
-      call stop_timer('mesh-to-mesh mapping')
+      !call stop_timer('mesh-to-mesh mapping')
     end subroutine
 
   end subroutine update_em_heat

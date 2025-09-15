@@ -123,7 +123,7 @@ contains
 
     ASSERT(size(x) >= this%A%nrow_onP)
 
-    call start_timer('ssor-solve')
+    call start_timer('ssor-cycles')
 
     u = 0.0_r8
     do n = 1, this%num_iter
@@ -150,7 +150,7 @@ contains
     !! Copy solution to return array.
     x(:this%A%nrow_onP) = u(:this%A%nrow_onP)
 
-    call stop_timer('ssor-solve')
+    call stop_timer('ssor-cycles')
 
   end subroutine apply
 

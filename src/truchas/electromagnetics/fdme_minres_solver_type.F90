@@ -18,6 +18,7 @@ module fdme_minres_solver_type
   use pcsr_precon_class
   use pcsr_matrix_type
   use imap_zvector_type
+  use truchas_timers
   implicit none
   private
 
@@ -59,6 +60,8 @@ contains
     type(parameter_list), pointer :: plist
     character(:), allocatable :: precon_type
 
+    call start_timer('cs-minres-solver')
+
     this%model => model
     call this%efield%init(model%mesh%edge_imap) ! initialized to 0
     call this%rhs%init(mold=this%efield)
@@ -73,12 +76,16 @@ contains
     if (precon_type == 'none') return
 
     !! Create the preconditioner
+    call start_timer('preconditioner')
     allocate(this%pc_mtx)
     call this%pc_mtx%init(this%model%A%graph, take_graph=.false.)
     call plist%get('beta', this%beta, stat, errmsg, default=0.0_r8)
     if (stat /= 0) return
     call alloc_pcsr_precon(this%pc, this%pc_mtx, plist, stat, errmsg)
     if (stat /= 0) return
+    call stop_timer('preconditioner')
+
+    call stop_timer('cs-minres-solver')
 
   end subroutine init
 
@@ -91,10 +98,14 @@ contains
 
     character(:), allocatable :: msg
 
+    call start_timer('cs-minres-solver')
+
     !! Setup the preconditioner
     if (allocated(this%pc)) then
+      call start_timer('preconditioner')
       this%pc_mtx%values(:) = this%model%A%values%re + this%beta * this%model%M%values%re
       call this%pc%compute
+      call stop_timer('preconditioner')
     end if
 
     this%rhs%v(:) = this%model%rhs
@@ -117,6 +128,8 @@ contains
         errmsg = 'CS-MINRES: ' // errmsg
       end if
     end block
+
+    call stop_timer('cs-minres-solver')
 
   end subroutine solve
 
@@ -148,6 +161,8 @@ contains
     call y%copy(x)
     if (.not.allocated(this%pc)) return
 
+    call start_timer('preconditioner')
+
     select type (x)
     type is (imap_zvector)
       select type (y)
@@ -161,6 +176,8 @@ contains
 #endif
       end select
     end select
+
+    call stop_timer('preconditioner')
 
 #if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
   contains
