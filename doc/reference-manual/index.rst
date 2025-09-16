@@ -9,21 +9,25 @@ Reference Manual
 
    introduction/index
    BODY_Namelist/index
+   complex_function_namelist
+   complex_vfunction_namelist
    DIFFUSION_Solver_Namelist/index
-   ELECTROMAGNETICS_Namelist/index
    ELECTROMAGNETIC_BC_Namelist/index
    EM_MESH_Namelist/index
    ENCLOSURE_RADIATION_Namelist/index
    ENCLOSURE_SURFACE_Namelist/index
    EVAPORATION_Namelist/index
+   fdme_solver_namelist
    FLOW_Namelist/index
    FLOW_BC_Namelist/index
    FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists/index
    FUNCTION_Namelist/index
+   induction_heating_namelist
    INDUCTION_SOURCE_FIELD_Namelist/index
    MATERIAL_and_PHASE_Namelists/index
    MESH_Namelist/index
    MICROSTRUCTURE_Namelist/index
+   microwave_heating_namelist
    NUMERICS_Namelist/index
    OUTPUTS_Namelist/index
    PHASE_CHANGE_Namelist/index
@@ -36,6 +40,7 @@ Reference Manual
    SOLID_MECHANICS_BC_Namelist/index
    SPECIES_BC_Namelist/index
    SPECIES_SOURCE_Namelist/index
+   tdme_joule_solver_namelist
    THERMAL_BC_Namelist/index
    THERMAL_SOURCE_Namelist/index
    TOOLHEAD_Namelist/index
