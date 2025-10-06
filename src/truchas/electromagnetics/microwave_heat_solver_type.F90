@@ -116,6 +116,7 @@ contains
   subroutine get_event_times(this, times)
     class(microwave_heat_solver), intent(in) :: this
     real(r8), allocatable, intent(out) :: times(:)
+    INSIST(allocated(this%wg_port_fac%times))
     times = this%wg_port_fac%times
   end subroutine
 
