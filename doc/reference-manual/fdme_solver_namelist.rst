@@ -87,10 +87,24 @@ Controls the verbosity of the solver.
   written at level 1, and level 2 adds periodic convergence information during
   the iteration.
 
-.. TODO
-   use_mixed_form (experimental)
-   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   If enabled, this flag ...
+
+use_mixed_form (experimental)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Change the solver from the default formulation to the mixed formulation. The
+mixed formulation enforces :math:`\nabla\cdot D = 0` using Lagrange multipliers,
+expanding the system size. This ensures the system remains well posed as the
+frequency becomes small :footcite:`greif_preconditioners_2007,li_parallel_2012`.
+
+:Type: logical
+:Default: ``.false.``
+
+.. tip::
+
+   This should be disabled for microwave problems, but enabled when using the
+   FDME solver for induction heating problems, since those use low frequencies
+   where the frequency-domain Maxwell equations are no longer coercive.
+
 
 MINRES Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
