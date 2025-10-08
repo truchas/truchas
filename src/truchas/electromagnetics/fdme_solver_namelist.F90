@@ -120,7 +120,7 @@ contains
       call TLS_fatal('SOLVER_TYPE = "mumps" is not supported by this Truchas build')
 #endif
     case (NULL_C)
-      call TLS_fatal('SOLVER_TYPE not specified')
+      solver_type = 'minres'
     case default
       call TLS_fatal('invalid SOLVER_TYPE: ' // solver_type)
     end select

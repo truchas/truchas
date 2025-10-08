@@ -71,7 +71,7 @@ contains
     if (stat /= 0) return
     call params%set('print-level', max(0,this%print_level-1))
 
-    call params%get('solver-type', solver_type, stat, errmsg)
+    call params%get('solver-type', solver_type, stat, errmsg, default='minres')
     if (stat /= 0) return
 
     select case (solver_type)
