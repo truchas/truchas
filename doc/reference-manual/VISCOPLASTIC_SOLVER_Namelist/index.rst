@@ -2,12 +2,15 @@ VISCOPLASTIC_SOLVER Namelist
 ============================
 
 The ``VISCOPLASTIC_SOLVER`` namelist sets parameters that are specific to the
-viscoplasticity solver. This namelist is read whenever the PHYSICS namelist
-option :ref:`solid_mechanics<physics-sm>` is enabled and a
-:ref:`VISCOPLASTIC_MODEL<VISCOPLASTIC_MODEL_Namelist>` namelist exists.
+viscoplasticity solver. This namelist is read whenever the :ref:`PHYSICS
+Namelist<PHYSICS_Namelist/index:PHYSICS Namelist>` option
+:ref:`solid_mechanics<PHYSICS_Namelist/index:solid_mechanics>` is enabled and a
+:ref:`VISCOPLASTIC_MODEL
+Namelist<VISCOPLASTIC_MODEL_Namelist/index:VISCOPLASTIC_MODEL Namelist>` exists.
 
 :Required/Optional: Required when viscoplasticity is enabled (i.e., when a
-   :ref:`VISCOPLASTIC_MODEL<VISCOPLASTIC_MODEL_Namelist>` namelist exists).
+   :ref:`VISCOPLASTIC_MODEL<VISCOPLASTIC_MODEL_Namelist/index:VISCOPLASTIC_MODEL Namelist>`
+   namelist exists).
 :Single/Multiple Instances: Single
 
 .. contents:: Components
@@ -20,8 +23,8 @@ strain_limit
 This parameter controls the use of the ODE integrator in the plastic strain
 calculation. When the plastic strain at an integration point is below this
 limit, a single Heun step is taken. When the plastic strain is at or above this
-limit, the solver requested by :ref:`viscoplastic_solver
-<SOLID_MECHANICS_Namelist/index:viscoplastic_solver (expert)>` is invoked with
+limit, the solver requested by :ref:`solver
+<VISCOPLASTIC_SOLVER_Namelist/index:solver (expert)>` is invoked with
 an initial step size such that the predicted plastic strain delta does not
 exceed the limit.
 
@@ -113,8 +116,8 @@ This parameter controls the use of the ODE integrator in the plastic strain
 calculation. When the relative rate of change of the plastic strain at an
 integration point is below this limit, a single Heun step is taken. Otherwise,
 (and if the `strain_limit`_ is met), the solver requested by
-:ref:`viscoplastic_solver <SOLID_MECHANICS_Namelist/index:viscoplastic_solver
-(expert)>` is invoked with an initial step size such that the predicted plastic
+:ref:`solver<VISCOPLASTIC_SOLVER_Namelist/index:solver (expert)>` is invoked
+with an initial step size such that the predicted plastic
 strain delta does not exceed the limit.
 
 :Type: real

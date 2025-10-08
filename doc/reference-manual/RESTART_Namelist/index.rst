@@ -43,9 +43,9 @@ Ignore_Dt
 Ignore_EM_Heat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : If this flag is true, the electromagnetic heat data in the
-restart file (if any) will be ignored when initializing the code. This variable
-is only relevant for restart calculations with
-:ref:`induction_heating<physics-ih>` or :ref:`microwave_heating<physics-mwh>`
-enabled in the PHYSICS namelist.
+   restart file (if any) will be ignored when initializing the code. This variable
+   is only relevant for restart calculations with
+   :ref:`induction_heating<physics-ih>` or :ref:`microwave_heating<physics-mwh>`
+   enabled in the PHYSICS namelist.
 | **Type**        : logical
 | **Default**     : false

@@ -1,12 +1,12 @@
 SOLID_MECHANICS Namelist
 ========================
 
-The SOLID_MECHANICS namelist sets parameters that are specific to the solid
-mechanics model and algorithm. This namelist is read whenever the PHYSICS
-namelist option :ref:`solid_mechanics<physics-sm>` is enabled. Solid
-mechanics boundary conditions are defined using
-:ref:`SOLID_MECHANICS_BC<SOLID_MECHANICS_BC_Namelist/index:SOLID_MECHANICS_BC Namelist>`
-namelists.
+The ``SOLID_MECHANICS`` namelist sets parameters that are specific to the solid
+mechanics model and algorithm. This namelist is read whenever the :ref:`PHYSICS
+Namelist<PHYSICS_Namelist/index:PHYSICS Namelist>` option
+:ref:`solid_mechanics<PHYSICS_Namelist/index:solid_mechanics>` is enabled. Solid
+mechanics boundary conditions are defined using :ref:`SOLID_MECHANICS_BC
+Namelists<SOLID_MECHANICS_BC_Namelist/index:SOLID_MECHANICS_BC Namelist>`.
 
 :Required/Optional: Required when solid mechanics physics is enabled.
 :Single/Multiple Instances: Single
