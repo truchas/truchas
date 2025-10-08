@@ -125,6 +125,7 @@ Enables the simulation of induction heating.
 :Type: logical
 :Default: false
 
+.. _physics-ht:
 
 heat_transport
 ^^^^^^^^^^^^^^^^^^
@@ -134,6 +135,7 @@ heat/species transport physics solver.
 :Type: logical
 :Default: false
 
+.. _physics-f:
 
 flow
 ^^^^^^^^^^^^^^^^^^
@@ -142,13 +144,14 @@ Enables the simulation of fluid flow.
 :Type: logical
 :Default: false
 
+.. _physics-mat:
 
 materials
 ^^^^^^^^^^^^^^^^^^
 A list of materials to include in the simulation. These are material names
 defined in :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelists. The list
 must include all materials assigned to a region in a :ref:`BODY<BODY_Namelist>`
-namelist, or specified as an :ref:`inflow_material<FLOW_BC_IM>` in a fluid flow
+namelist, or specified as an :ref:`inflow_material<flow_bc_im>` in a fluid flow
 boundary condition, but it need not include all materials defined in the input
 file. Use the reserved name **"VOID"** to refer to the built-in void
 pseudo-material.
@@ -165,6 +168,7 @@ Enables the simulation of microwave heating.
 :Type: logical
 :Default: false
 
+.. _physics-nos:
 
 number_of_species
 ^^^^^^^^^^^^^^^^^^
@@ -174,6 +178,7 @@ The number of species components. Required when `species_transport`_ is enabled.
 :Default: 0
 :Valid Values: > 0
 
+.. _physics-sm:
 
 solid_mechanics
 ^^^^^^^^^^^^^^^^^^
@@ -182,6 +187,7 @@ Enables the calculation of solid material stresses and strains.
 :Type: logical
 :Default: false
 
+.. _physics-st:
 
 species_transport
 ^^^^^^^^^^^^^^^^^^

@@ -28,7 +28,7 @@ The index of the species component to which this source applies.
 :Type: integer
 :Default: 1
 :Note: The number of species components is defined by the PHYSICS namelist
-       variable :ref:`number_of_species<PHYSICS_NOS>`.
+       variable :ref:`number_of_species<physics-nos>`.
 
 
 cell_set_ids

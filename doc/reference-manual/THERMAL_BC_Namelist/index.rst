@@ -192,6 +192,7 @@ A unique name used to identify a particular instance of this namelist.
 :Type: string
 :Default: none
 
+.. _tbc-fsi:
 
 face_set_ids
 +++++++++++++++++++++++++++++++++
@@ -209,6 +210,7 @@ The type of boundary condition.
 :Type: string
 :Default: none
 :Valid values:
+
 .. csv-table::
    :header: "Value", "Description", "Associated variables"
    :class: tight-table

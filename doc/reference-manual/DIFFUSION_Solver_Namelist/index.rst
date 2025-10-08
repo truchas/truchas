@@ -8,20 +8,44 @@ DIFFUSION Solver Namelist
 
 Overview
 ------------
-The DIFFUSION_SOLVER namelist sets the parameters that are specific to the heat and species transport solver. The namelist is read when either of the :ref:`PHYSICS<PHYSICS_Namelist>` namelist options :ref:`Heat_Transport<PHYSICS_HT>` or :ref:`Species_Transport<PHYSICS_ST>` are enabled.
+The DIFFUSION_SOLVER namelist sets the parameters that are specific to the
+heat and species transport solver. The namelist is read when either of the
+:ref:`PHYSICS<PHYSICS_Namelist>` namelist options
+:ref:`heat_transport<physics-ht>` or :ref:`species_transport<physics-st>`
+are enabled.
 
-The solver has two time integration methods which are selected by the variable :ref:`Stepping_Method<DIFF_SOL_SM>`. The default is a variable step-size, implicit second-order BDF2 method that controls the local truncation error of each step to a user-defined tolerance by adaptively adjusting the step size. The step size is chosen so that an a priori estimate of the error will be within tolerance, and steps are rejected when the actual erroris too large. A failed step may be retried with successively smaller step sizes.
+The solver has two time integration methods which are selected by the variable
+:ref:`Stepping_Method<DIFF_SOL_SM>`. The default is a variable step-size,
+implicit second-order BDF2 method that controls the local truncation error of
+each step to a user-defined tolerance by adaptively adjusting the step size.
+The step size is chosen so that an a priori estimate of the error will be
+within tolerance, and steps are rejected when the actual erroris too large.
+A failed step may be retried with successively smaller step sizes.
 
-The other integration method is a non-adaptive, implicit first-order BDF1 method specifically designed to handle the exceptional difficulties that arise when heat transfer is coupled to a fluid flow system that includes void. In this context the heat transfer domain changes from one step to the next because of the moving void region, and mesh cells may only be partially filled with material. For this method the timestep is controlled by flow or other physics models.
+The other integration method is a non-adaptive, implicit first-order BDF1
+method specifically designed to handle the exceptional difficulties that
+arise when heat transfer is coupled to a fluid flow system that includes
+void. In this context the heat transfer domain changes from one step to the
+next because of the moving void region, and mesh cells may only be partially
+filled with material. For this method the timestep is controlled by flow or
+other physics models.
 
 Both methods share a common nonlinear solver and preconditioning options.
 
-The initial step size and upper and lower bounds for the step size are set in the :ref:`NUMERICS<NUMERICS_Namelist>` namelist. In addition, the step size selected by the adaptive solver may be further limited by other physics models or by the :ref:`NUMERICS<NUMERICS_Namelist>` variables :ref:`Dt_Grow<NUMERICS_DTG>` and :ref:`Dt_Constant<NUMERICS_DTC>`. When only diffusion solver physics are enabled, it isimportant that these variables be set appropriately so as not to unnecessarily impede the normal functioning of the diffusion solver.
+The initial step size and upper and lower bounds for the step size are set
+in the :ref:`NUMERICS<NUMERICS_Namelist>` namelist. In addition, the step
+size selected by the adaptive solver may be further limited by other physics
+models or by the :ref:`NUMERICS<NUMERICS_Namelist>` variables
+:ref:`Dt_Grow<NUMERICS_DTG>` and :ref:`Dt_Constant<NUMERICS_DTC>`. When only
+diffusion solver physics are enabled, it isimportant that these variables be
+set appropriately so as not to unnecessarily impede the normal functioning of
+the diffusion solver.
 
-DIFFUSION_Solver Namelist Features
--------------------------------------
-| **Required/Optional        :** Required when :ref:`heat_transport<PHYSICS_HT>` and/or :ref:`species_transport<PHYSICS_ST>` physics is enabled.
-| **Single/Multiple Instances:** Single
+.. admonition:: Namelist Usage
+
+   :Required/Optional: Required when :ref:`heat_transport<physics-ht>` and/or
+      :ref:`species_transport<physics-st>` physics is enabled.
+   :Single/Multiple Instances: Single
 
 Components
 ------------

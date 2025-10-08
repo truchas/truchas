@@ -8,9 +8,10 @@ EM_MESH Namelist
 The EM_MESH namelist specifies the mesh used by the induction heating solver.
 This is a 3D tetrahedral mesh imported from an ExodusII format disk file.
 
-.. note::
+.. admonition:: Namelist Usage
 
-   :Required/Optional: Required when :ref:`electromagnetics<PHYSICS_EM>` is true.
+   :Required/Optional: Required when :ref:`induction_heating<physics-ih>` or
+      :ref:`microwave_heating<physics-mwh>` PHYSICS options are enabled.
    :Single/Multiple Instances: Single
 
 Namelist Variables

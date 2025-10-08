@@ -7,7 +7,7 @@ MATERIAL and PHASE Namelists
 =============================
 Overview
 ------------
-A database of materials, their properties and attributes are defined using the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>`, :ref:`PHASE<MATERIAL_and_PHASE_Namelists>`, and :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelists. Not all materials are necessarily included in the simulation, but only those specified by the :ref:`PHYSICS<PHYSICS_Namelist>` namelist variable :ref:`materials<PHYSICS_M>`. This allows one to reuse material input blocks without needing to prune out unused materials which would otherwise negatively impact performance. In Truchas usage, one or more phases comprise a material. A single-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist, and the namelist specifies all properties and attributes of the material. A multi-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist and an optional :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for each of the material phases. Properties and attributes that apply to all phases can be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist. Properties and attributes specific to a given phase are defined in the :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for the phase, and these superced eany that might be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for the phase. Additional information that defines the transformation between phases is specified using the :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelist.
+A database of materials, their properties and attributes are defined using the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>`, :ref:`PHASE<MATERIAL_and_PHASE_Namelists>`, and :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelists. Not all materials are necessarily included in the simulation, but only those specified by the PHYSICS namelist variable :ref:`materials<physics-mat>`. This allows one to reuse material input blocks without needing to prune out unused materials which would otherwise negatively impact performance. In Truchas usage, one or more phases comprise a material. A single-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist, and the namelist specifies all properties and attributes of the material. A multi-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist and an optional :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for each of the material phases. Properties and attributes that apply to all phases can be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist. Properties and attributes specific to a given phase are defined in the :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for the phase, and these superced eany that might be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for the phase. Additional information that defines the transformation between phases is specified using the :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelist.
 
 The MATERIAL Namelist
 ----------------------------
@@ -68,12 +68,13 @@ The following property variables are used by the electromagnetic models:
 * **dielectric_loss_tangent**, **dielectric_loss_tangent_func**
 * **electrical_conductivity**, **electrical_conductivity_func**
 
-The relative permittivity :math:`\epsilon_r` of a material or phase is
-specified using either **relative_permittivity** for a constant, or
+The (real) relative permittivity :math:`\epsilon_r` of a material or phase
+is specified using either **relative_permittivity** for a constant, or
 **relative_permittivity_func** for a function of temperature. Its default
-value is 1. In the case of complex permittivity :math:`\epsilon_r =
-\epsilon' + i \epsilon''` the dielectric loss tangent, :math:`\tan\delta=
-\epsilon''/\epsilon'`, is specified using either **dielectric_loss_tangent**
+value is 1. Frequency-domain models use a complex permittivity
+:math:`\epsilon_r = \epsilon' + i\epsilon''` where the additional complex
+part is specified via the dielectric loss tangent, :math:`\tan\delta=
+\epsilon''/\epsilon'`, using either **dielectric_loss_tangent**
 for a constant, or **dielectric_loss_tangent_func** for a function of
 temperature. Its default value is 0.
 

@@ -53,7 +53,15 @@ gap_element_blocks (deprecated)
 | **Type**        : integer list
 | **Default**     : An empty list of element block IDs.
 | **Valid Values**: Any element block ID.
-| **Notes**       : Any element block ID in the mesh file can be specified, but elements that are not connected such that they can function as gap elements or are not consistent with side set definitions will almost certainly result in incorrect behavior. The code does not check for these inconsistencies. The heat/species transport solver drops these elements from its view of the mesh and treats them instead as an internal interface; see the notes to :ref:`interface_side_sets<M_ISS>`. The block IDs specified here can be used as values for :ref:`face_set_ids<TB_FSI>` from the :ref:`THERMAL_BC<THERMAL_BC_Namelist>` namelist.
+| **Notes**       : Any element block ID in the mesh file can be specified,
+but elements that are not connected such that they can function as gap
+elements or are not consistent with side set definitions will almost certainly
+result in incorrect behavior. The code does not check for these inconsistencies.
+The heat/species transport solver drops these elements from its view of the
+mesh and treats them instead as an internal interface; see the notes to
+:ref:`interface_side_sets<M_ISS>`. The block IDs specified here can be used as
+values for :ref:`face_set_ids<tbc-fsi>` from the
+:ref:`THERMAL_BC<THERMAL_BC_Namelist>` namelist.
 
 .. _M_EBM:
 

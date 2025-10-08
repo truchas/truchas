@@ -28,7 +28,8 @@ those times.
 
 .. admonition:: Namelist Usage
 
-   :Required/Optional: Required when :ref:`electromagnetics<PHYSICS_EM>` is enabled.
+   :Required/Optional: Required when the :ref:`induction_heating<physics-ih>`
+      PHYSICS option is enabled.
    :Single/Multiple Instances: Single
 
 Namelist Variables
@@ -124,7 +125,9 @@ by the `orientation`_ parameter above and is common to all coils.
      - A 3-vector giving the position of the center :math:`x_0` of the coil;
        the default is `0, 0, 0`.
    * -
+
        .. _coil_current:
+
        **%current**
      - The amplitude :math:`c_i` of the sinusoidally-varying current in each
        coil loop. A negative value essentially shifts the phase by 180 degrees.

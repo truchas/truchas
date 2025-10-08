@@ -94,7 +94,8 @@ use_mixed_form (experimental)
 Change the solver from the default formulation to the mixed formulation. The
 mixed formulation enforces :math:`\nabla\cdot D = 0` using Lagrange multipliers,
 expanding the system size. This ensures the system remains well posed as the
-frequency becomes small :footcite:`greif_preconditioners_2007,li_parallel_2012`.
+frequency becomes small :footcite:`greif_preconditioners_2007`
+:footcite:`li_parallel_2012`.
 
 :Type: logical
 :Default: ``.false.``

@@ -16,7 +16,7 @@ that the mesh in view here is the one specified by the :ref:`EM_MESH
 <EM_Mesh_Namelist>` namelist. Also note that ExodusII mesh side sets are
 imported into Truchas as face sets with the same IDs.
 
-.. admonishment:: Namelist Usage
+.. admonition:: Namelist Usage
 
    :Required/Optional: Required
    :Single/Multiple Instances: Multiple
@@ -77,12 +77,33 @@ domain model. Set `type`_ to **"impedance"** to select this condition.
 
 Waveguide port feed
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-This special form of a Robin condition models the entry and exit of the
+This special form of a Robin condition simulates an entry/exit port for the
 fundamental TE\ :sub:`10` mode at the boundary of a truncated rectangular
-waveguide. The geometry of the rectangular boundary is specified by variables
-`center`_, `x_axis`_, `y_axis`_, `x_width`_, and `y_width`_, and the power of
-the injected mode by `power`_. Set `type`_ to **"wg-port"** to select this
-condition.
+waveguide. The shape and orientation of the waveguide cross-section, assumed
+rectangular, is specified by variables `center`_, `x_axis`_, `y_axis`_,
+`x_width`_, and `y_width`_, and the power of the injected mode by `power`_;
+see :numref:`Figure %s <wg-port-fig>`.
+Set `type`_ to **"wg-port"** to select this condition.
+
+.. note::
+   The ''wg-port'' condition requires that the TE\ :sub:`10` mode is the only
+   mode supported by the waveguide. The propagation of electromagnetic waves
+   through a conducting rectangular waveguide with dimensions :math:`a>b`
+   (see :numref:`Figure %s<wg-port-fig>`) can only occur
+   for frequencies :math:`f\ge f_c = \tfrac{c}{2a}`. This constrains the
+   frequency :math:`f` for the validity of the "wg-port" condition to
+   :math:`f_c \le f \le \min(2, a/b)f_c`.
+
+.. _wg-port-fig:
+.. figure:: images/wg-port.png
+   :width: 220px
+   :align: center
+
+   The shape and orientation of the of rectangular waveguide port boundary.
+   The blue arrows depict the :math:`\vec{y}`-direction and relative strength
+   of the electric field's linear polarization in the TE\ :sub:`10` mode
+   within the rectangular waveguide.
+
 
 Namelist Variables
 ------------------ 
@@ -114,6 +135,7 @@ domain (FD) model as noted. The available options are:
 :Type: string
 :Default: none
 :Valid values:
+
 .. list-table::
    :class: tight-table
    :header-rows: 1
@@ -182,7 +204,7 @@ condition.
 
 power
 ^^^^^^^^^^^^^^^^^^
-The power of the input TE\ :sub:`10` mode in the waveguide port feed boundary
+The power of the injected TE\ :sub:`10` mode in the waveguide port feed boundary
 condition.
 
 :Type: real

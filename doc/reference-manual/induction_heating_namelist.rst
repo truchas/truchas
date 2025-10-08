@@ -73,15 +73,15 @@ the Joule heat source based
 :Default: 0.3
 :Valid Values: > 0
 :Notes: The electrical conductivity and magnetic susceptibility are the only
-        properties whose changes are monitored. The electric susceptibility
-        only enters the equations through the displacement current term,
-        which is an exceedingly small perturbation in the quasi-magnetostatic
-        regime, and has essentially no effect on the Joule heat.
+properties whose changes are monitored. The electric susceptibility
+only enters the equations through the displacement current term,
+which is an exceedingly small perturbation in the quasi-magnetostatic
+regime, and has essentially no effect on the Joule heat.
 
-        For electric conductivity, only the conducting region (where the
-        value is positive) is considered when computing the difference.
-        An underlying assumption is that this region remains fixed throughout
-        the simulation.
+For electric conductivity, only the conducting region (where the
+value is positive) is considered when computing the difference.
+An underlying assumption is that this region remains fixed throughout
+the simulation.
 
 
 data_mapper_kind (experimental)

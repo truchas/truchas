@@ -20,7 +20,7 @@ Components
 ------------
 * :ref:`Ignore_T<R_IT>`
 * :ref:`Ignore_Dt<R_ID>`
-* :ref:`Ignore_Joule_Heat<R_IJH>`
+* :ref:`Ignore_EM_Heat<R_IJH>`
 
 .. _R_IT:
 
@@ -40,8 +40,12 @@ Ignore_Dt
 
 .. _R_IJH:
 
-Ignore_Joule_Heat
+Ignore_EM_Heat
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : If this flag is true, the Joule heat data in the restart file (if any) will be ignored when initializing the code. This variable is only relevant for restart calculations with :ref:`Electromagnetics<PHYSICS_EM>` enabled in the :ref:`PHYSICS<PHYSICS_Namelist>` namelist.
+| **Description** : If this flag is true, the electromagnetic heat data in the
+restart file (if any) will be ignored when initializing the code. This variable
+is only relevant for restart calculations with
+:ref:`induction_heating<physics-ih>` or :ref:`microwave_heating<physics-mwh>`
+enabled in the PHYSICS namelist.
 | **Type**        : logical
 | **Default**     : false
