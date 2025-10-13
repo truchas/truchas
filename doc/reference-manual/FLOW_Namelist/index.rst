@@ -8,7 +8,15 @@ FLOW Namelist
 
 Overview
 ------------
-The :ref:`FLOW<FLOW_Namelist>` namelist specifies the parameters for the fluid flow model and algorithm. This namelist is read whenever the :ref:`PHYSICS<PHYSICS_Namelist>` namelist option :ref:`Flow<PHYSICS_F>` is enabled. Parameters for the linear solvers employed by the algorithm are specified using :ref:`FLOW_VISCOUS_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>` and :ref:`FLOW_PRESSURE_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>` namelists. Flow boundary conditions are defined using :ref:`FLOW_BC<FLOW_BC_Namelist>` namelists.
+The FLOW namelist specifies the parameters for the fluid flow model and
+algorithm. This namelist is read whenever the PHYSICS namelist option
+:ref:`flow<physics-f>` is enabled. Parameters for the linear solvers employed
+by the algorithm are specified using
+:ref:`FLOW_VISCOUS_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>`
+and
+:ref:`FLOW_PRESSURE_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>`
+namelists. Flow boundary conditions are defined using
+:ref:`FLOW_BC<FLOW_BC_Namelist>` namelists.
 
 FLOW Namelist Features
 ----------------------------
@@ -68,6 +76,7 @@ courant_number
 porous_drag
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : This option enables a modification\ :footcite:p:`voller1987fixed` to the momentum equation that adds a drag force in the two-phase mushy zone of solidification problems. Flow in the mushy zone is viewed as flow of the liquid fraction through a porous medium formed by a fixed solid matrix. The added drag force is
+
 .. math::
    \mathbf{F}_d = - \mu D_0 \frac{(1-\lambda)^2}{\lambda^3} \mathbf{u},
 
@@ -78,6 +87,7 @@ where :math:`\lambda` is the local liquid fraction and :math:`\mu` is the liquid
 
 
 .. _FLOW_DC:
+
 drag_coef
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The coefficient :math:`D_0` in the porous drag force :math:`\mathbf{F}_d`.
@@ -88,6 +98,7 @@ drag_coef
 
 
 .. _FLOW_DI:
+
 drag_implicitness
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 | **Description** : The degree of time implicitness :math:`\theta` used for the velocity field in the discretization of the porous drag force in the fluid momentum equation. The discretized velocity is given by the :math:`\theta`-method, :math:`\mathbf{u} = (1-\theta)\mathbf{u}_n + \theta\mathbf{u}_{n+1}`: :math:`\theta = 0` gives an explicit discretization and :math:`\theta = 1` a fully implicit discretization. In practice only the values :math:`1, \frac{1}{2}` (trapezoid method), and 0 are useful, and use of the latter explicit discretization is generally not recommended. Note that an implicit discretization, :math:`\theta > 0`, will require the solution of a linear system; see :ref:`FLOW_VISCOUS_SOLVER<FLOW_PRESSURE_SOLVER_and_FLOW_VISCOUS_SOLVER_Namelists>`.

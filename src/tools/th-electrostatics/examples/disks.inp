@@ -1,0 +1,31 @@
+// parallel disks separated by dielectric
+// phi = 1 on left and phi = -1 on right
+
+{
+  // "physical-constants": {"vacuum-permittivity": 8.854188e-12}, // SI default
+  "mesh":{
+      "mesh-file": "disks.gen",
+      "coord-scale-factor": 1e-2
+      },
+  "materials": {
+      "foo":{
+          "properties":{
+              "relative-permittivity": 4.0,
+              "relative-permittivity-im": 0.8
+              }
+          }
+      },
+  "bodies":{
+      "body1": {"type": "element-block", "blockids": [2], "material": "foo"},
+      "body2": {"type": "background", "material": "VOID"}
+      },
+  "bc": {
+      "left-disk": {"type":"potential", "face-set-ids":[1], "phi":[1.0,0.0]},
+      "right-disk":{"type":"potential", "face-set-ids":[2], "phi":[-1.0,0.0]},
+      "wall": {"type":"potential", "face-set-ids":[3], "phi":[0.0,0.0]}
+      },
+  "solver": {
+      "rel-tol": 1e-12, "max-iter": 100,
+      "preconditioner": {"method": "boomeramg", "params":{"num-cycles": 1}}
+      }
+}

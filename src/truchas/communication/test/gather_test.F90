@@ -100,6 +100,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'gath_scalar_real64')
     end block
+    block
+      complex(real32) :: dest(size(adest)), src
+      src = (1,-1)*asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_scalar_complex32')
+    end block
+    block
+      complex(real64) :: dest(size(adest)), src
+      src = (1,-1)*asrc
+      dest = 0
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_scalar_complex64')
+    end block
   end subroutine
 
   ! generic rank-1 vector case
@@ -153,6 +169,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'gath_rank1_real64')
     end block
+    block
+      complex(real32), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank1_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank1_complex64')
+    end block
   end subroutine
 
   ! Rank-1 vector case with a 0-sized vector
@@ -205,6 +237,22 @@ contains
       call gather(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'gath_rank1_zero_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank1_zero_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:), dest(:)
+      src = (1,-1)*asrc
+      allocate(dest(size(adest)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank1_zero_complex64')
     end block
   end subroutine
 
@@ -262,6 +310,22 @@ contains
       call gather(src, dest)
       pass = all(dest == adest)
       call write_result(pass, 'gath_rank2_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank2_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank2_complex64')
     end block
   end subroutine
 
@@ -321,6 +385,22 @@ contains
       pass = all(dest == adest)
       call write_result(pass, 'gath_rank2_zero_real64')
     end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank2_zero_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(2,size(adest,2)))
+      call gather(src, dest)
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_rank2_zero_complex64')
+    end block
   end subroutine
 
   ! generic rank-2 vector case
@@ -378,6 +458,22 @@ contains
       call gather(src(1::2,1::2), dest(1::2,1::2))
       pass = all(dest == adest)
       call write_result(pass, 'gath_array_section_real64')
+    end block
+    block
+      complex(real32), allocatable :: src(:,:), dest(:,:)
+      src =(1,-1)* asrc
+      allocate(dest(3,size(adest,2)), source=cmplx(0,kind=real32))
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_array_section_complex32')
+    end block
+    block
+      complex(real64), allocatable :: src(:,:), dest(:,:)
+      src = (1,-1)*asrc
+      allocate(dest(3,size(adest,2)), source=cmplx(0,kind=real64))
+      call gather(src(1::2,1::2), dest(1::2,1::2))
+      pass = all(dest == (1,-1)*adest)
+      call write_result(pass, 'gath_array_section_complex64')
     end block
   end subroutine
 

@@ -10,7 +10,7 @@ module body_identifier_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use body_class
-  use unstr_mesh_type
+  use base_mesh_class
   use truchas_logging_services
   implicit none
   private
@@ -19,7 +19,7 @@ module body_identifier_type
     private
     integer, public :: nbody
     class(body_box), allocatable :: body(:)
-    type(unstr_mesh), pointer :: mesh => null() ! do not own
+    class(base_mesh), pointer :: mesh => null() ! do not own
   contains
     procedure :: init
     procedure :: body_at_point
@@ -35,7 +35,7 @@ contains
     use background_body_type
 
     class(body_identifier), intent(out) :: this
-    type(unstr_mesh), target, intent(in) :: mesh
+    class(base_mesh), target, intent(in) :: mesh
     type(parameter_list), intent(inout) :: plist
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

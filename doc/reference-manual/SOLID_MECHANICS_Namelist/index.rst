@@ -257,6 +257,7 @@ The absolute error tolerance :math:`\epsilon` is given by `abs_displ_tol`_.
 .. note::
    See the notes for `abs_displ_tol`_.
 
+.. _abs_displ_tol:
 
 abs_displ_tol (expert)
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -286,6 +287,7 @@ The relative error tolerance :math:`\eta` is given by `rel_displ_tol`_.
    :math:`\epsilon = 0` then the norm is a pure relative norm and the
    displacement must be bounded away from 0.
 
+.. _rel_displ_tol:
 
 rel_displ_tol (expert)
 ^^^^^^^^^^^^^^^^^^^^^^

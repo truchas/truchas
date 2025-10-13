@@ -1,0 +1,205 @@
+#include "f90_assert.fpp"
+
+module thes_solver_type
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use complex_lin_op_class
+  use zvector_class
+  use imap_zvector_type
+  use simpl_mesh_type
+  use complex_pcsr_matrix_type
+  use pcsr_matrix_type
+  use pcsr_precon_class
+  use cs_minres_solver_type
+  use parameter_list_type
+  implicit none
+  private
+
+  type, extends(complex_lin_op), public :: thes_solver
+    type(simpl_mesh), pointer :: mesh => null() ! unowned reference
+    type(complex_pcsr_matrix) :: A
+    type(imap_zvector) :: rhs, phi, res
+    type(pcsr_matrix), pointer :: M => null() ! pointer to avoid dangling pointer
+    class(pcsr_precon), allocatable :: pc
+    type(cs_minres_solver) :: minres
+  contains
+    procedure :: init
+    procedure :: solve
+    ! deferred procedures from complex_lin_op class
+    procedure :: matvec
+    procedure :: precon
+  end type
+
+contains
+
+  subroutine matvec(this, x, y)
+    class(thes_solver), intent(inout) :: this
+    class(zvector) :: x, y
+    select type (x)
+    type is (imap_zvector)
+      select type (y)
+      type is (imap_zvector)
+        call x%gather_offp
+        call this%A%matvec(x%v, y%v)
+      end select
+    end select
+  end subroutine
+
+  subroutine precon(this, x, y)
+    class(thes_solver), intent(inout) :: this
+    class(zvector) :: x, y
+    select type (x)
+    type is (imap_zvector)
+      select type (y)
+      type is (imap_zvector)
+        call y%copy(x)
+        call y%gather_offp
+#if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
+        call workaround(y%v)
+#else
+        call this%pc%apply(y%v%re)
+        call this%pc%apply(y%v%im)
+#endif
+        call y%gather_offp ! necessary?
+      end select
+    end select
+#if defined(INTEL_BUG20250605) || defined(GNU_PR119986)
+  contains
+    subroutine workaround(z)
+      complex(r8), intent(inout) :: z(:)
+      call this%pc%apply(z%re)
+      call this%pc%apply(z%im)
+    end subroutine
+#endif
+  end subroutine
+
+  subroutine init(this, mesh, eps, bc, params, stat, errmsg)
+
+    use thes_bc_type
+
+    class(thes_solver), intent(out) :: this
+    type(simpl_mesh), intent(in), target :: mesh
+    complex(r8), intent(in) :: eps(:)
+    type(thes_bc), intent(in) :: bc
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    integer :: j
+
+    ASSERT(size(eps) == mesh%ncell)
+
+    this%mesh => mesh
+
+    !! Raw system matrix ignoring boundary conditions
+    block
+      use mimetic_discretization, only: W1_matrix_WE, cell_grad
+      use upper_packed_matrix_procs, only: upm_cong_prod
+      type(pcsr_graph), pointer :: g
+      real(r8) :: m1(21), gtm1g(10)
+      allocate(g)
+      call g%init(this%mesh%node_imap)
+      call g%add_clique(this%mesh%cnode)
+      call g%add_complete
+      call this%A%init(g, take_graph=.true.)
+      do j = 1, this%mesh%ncell
+        m1 = W1_matrix_WE(this%mesh, j)
+        gtm1g = upm_cong_prod(6, 4, m1, cell_grad)
+        call this%A%add_to(this%mesh%cnode(:,j), eps(j)*gtm1g)
+      end do
+    end block
+
+    !! RHS vector
+    call this%rhs%init(this%mesh%node_imap)
+    call this%phi%init(mold=this%rhs)
+    call this%res%init(mold=this%rhs)
+
+    !TODO: RHS contribution from Dirichlet conditions
+    if (allocated(bc%dirichlet)) then
+      block
+        complex(r8) :: r(mesh%nnode)
+        associate (index => bc%dirichlet%index, value => bc%dirichlet%value)
+          do j = 1, size(index)
+            this%rhs%v(index(j)) = value(j)
+          end do
+          call this%rhs%gather_offp
+          call this%A%matvec(this%rhs%v, r)
+          do j = 1, size(index)
+            r(index(j)) = 0.0_r8
+          end do
+        end associate
+        this%rhs%v(:this%mesh%nnode_onp) = this%rhs%v(:this%mesh%nnode_onp) - r(:this%mesh%nnode_onp)
+        call this%rhs%gather_offp
+      end block
+    end if
+
+    !TODO: modify system matrix for Dirichlet conditions
+    if (allocated(bc%dirichlet)) then
+      associate (index => bc%dirichlet%index)
+        do j = 1, size(index)
+          call this%A%project_out(index(j))
+          call this%A%set(index(j), index(j), cmplx(1,0,kind=r8))
+        end do
+      end associate
+    end if
+
+    !! Initialize the preconditioner; based on real part of the system matrix
+    block
+      use pcsr_precon_factory, only: alloc_pcsr_precon
+      type(parameter_list), pointer :: plist
+      allocate(this%M)
+      call this%M%init(this%A%graph, take_graph=.false.)
+      this%M%values = this%A%values%re
+      plist => params%sublist('preconditioner', stat, errmsg)
+      if (stat /= 0) return
+      call alloc_pcsr_precon(this%pc, this%M, plist, stat, errmsg)
+      if (stat /= 0) return
+      call this%pc%compute
+    end block
+
+    call this%minres%init(params)
+
+  end subroutine init
+
+  subroutine solve(this, phi, stat, errmsg)
+
+    use string_utilities, only: i_to_c
+    use truchas_logging_services
+
+    class(thes_solver), intent(inout) :: this
+    complex(r8), intent(out) :: phi(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    character(:), allocatable :: msg
+    real(r8) :: rnorm, bnorm, dnorm
+
+    call this%minres%solve(this, this%rhs, this%phi, stat, msg)
+    stat = merge(0, 1, stat >= 0) ! for minres stat >= 0 is success and < 0 failure
+    if (stat /= 0) errmsg = msg
+    phi = this%phi%v
+
+    !! CS-MINRES summary
+    if (allocated(msg)) deallocate(msg)
+    allocate(character(80)::msg)
+    if (stat == 0) then
+      write(msg,'(a,i0,a)') 'CS-MINRES converged: ', this%minres%num_iter, ' iterations'
+      call TLS_info(msg)
+    else
+      write(msg,'(a,": ",i0,a)') 'CS-MINRES failed: '//errmsg, this%minres%num_iter, ' iterations'
+      call TLS_info(msg)
+      errmsg = 'CS-MINRES: ' // errmsg
+    end if
+
+    !! Output final residual norms
+    call this%matvec(this%phi, this%res)
+    this%res%v = this%rhs%v - this%res%v
+    rnorm = this%res%norm2()
+    bnorm = this%rhs%norm2()
+    write(msg,'(*(a,es8.2))') 'THES_SOLVER: |r|=', rnorm, &
+        ', |b|=', bnorm, ', |r|/|b|=', rnorm/merge(bnorm,1d-10,bnorm > 0)
+    call TLS_info(msg)
+
+  end subroutine
+
+end module thes_solver_type

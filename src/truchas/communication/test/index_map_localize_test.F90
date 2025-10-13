@@ -35,7 +35,15 @@ contains
   subroutine write_result(pass, name)
     logical, value :: pass
     character(*), intent(in) :: name
+#ifdef AVOID_MPI_IN_PLACE
+    block
+      logical :: pass_loc
+      pass_loc = pass
+      call MPI_Allreduce(pass_loc, pass, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierr)
+    end block
+#else
     call MPI_Allreduce(MPI_IN_PLACE, pass, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierr)
+#endif
     if (pass) then
       if (is_root) write(output_unit,'(a)') 'Passed: ' //  name
     else

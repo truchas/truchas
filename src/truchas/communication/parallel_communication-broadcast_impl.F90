@@ -42,6 +42,18 @@ contains
     call MPI_Bcast(scalar, 1, MPI_REAL8, root, comm, ierr)
   end subroutine
 
+  module subroutine bcast_c4_0(scalar)
+    complex(r4), intent(inout) :: scalar
+    integer :: ierr
+    call MPI_Bcast(scalar, 1, MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c8_0(scalar)
+    complex(r8), intent(inout) :: scalar
+    integer :: ierr
+    call MPI_Bcast(scalar, 1, MPI_COMPLEX16, root, comm, ierr)
+  end subroutine
+
   module subroutine bcast_dl_0(scalar)
     logical, intent(inout) :: scalar
     integer :: ierr
@@ -84,6 +96,18 @@ contains
     real(r8), intent(inout) :: vector(:)
     integer :: ierr
     call MPI_Bcast(vector, size(vector), MPI_REAL8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c4_1(vector)
+    complex(r4), intent(inout) :: vector(:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c8_1(vector)
+    complex(r8), intent(inout) :: vector(:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX16, root, comm, ierr)
   end subroutine
 
   module subroutine bcast_dl_1(vector)
@@ -130,6 +154,18 @@ contains
     call MPI_Bcast(vector, size(vector), MPI_REAL8, root, comm, ierr)
   end subroutine
 
+  module subroutine bcast_c4_2(vector)
+    complex(r4), intent(inout) :: vector(:,:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c8_2(vector)
+    complex(r8), intent(inout) :: vector(:,:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX16, root, comm, ierr)
+  end subroutine
+
   module subroutine bcast_dl_2(vector)
     logical, intent(inout) :: vector(:,:)
     integer :: ierr
@@ -172,6 +208,18 @@ contains
     real(r8), intent(inout) :: vector(:,:,:)
     integer :: ierr
     call MPI_Bcast(vector, size(vector), MPI_REAL8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c4_3(vector)
+    complex(r4), intent(inout) :: vector(:,:,:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX8, root, comm, ierr)
+  end subroutine
+
+  module subroutine bcast_c8_3(vector)
+    complex(r8), intent(inout) :: vector(:,:,:)
+    integer :: ierr
+    call MPI_Bcast(vector, size(vector), MPI_COMPLEX16, root, comm, ierr)
   end subroutine
 
   module subroutine bcast_dl_3(vector)

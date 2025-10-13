@@ -8,22 +8,26 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
   script:
+    - source /opt/rh/gcc-toolset-12/enable
+    - export FC=gfortran
+    - export CC=gcc
+    - export CXX=g++
+    - export PATH=$HOME/ext/bin/:$PATH
+    - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+    - export PATH="${HOME}/ext/python-install/bin:$PATH"
     - git config --global --add safe.directory '*'
     - bash ci/version.sh
-    - bash ci/build.sh
-    - cd build/inst/bin/
-    - export INTELDIR=/opt/intel/oneapi/2024.0
-    - export LD_LIBRARY_PATH=$INTELDIR/lib
-    - export PATH="${HOME}/ext/python-install/bin:$PATH"
-    - ../../../ci/make_dist.py
-    - cd ../../..
+    - bash ci/build.sh Release
+    - cd inst/bin/
+    - ../../ci/make_dist.py
+    - cd ../..
     - mkdir dist
-    - cp build/inst/bin/truchas-*.tar.bz2 dist/
+    - cp inst/bin/truchas-*.tar.bz2 dist/
     - cp version dist/
   artifacts:
     paths:
@@ -35,13 +39,19 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.14.1
   script:
-    - git config --global --add safe.directory '*'
-    - bash ci/build.sh
-    - cd build
-    - export INTELDIR=/opt/intel/oneapi/2024.0
+    - export INTELDIR=/opt/intel/oneapi/2025.2
+    - export PATH=$INTELDIR/bin/:$PATH
     - export LD_LIBRARY_PATH=$INTELDIR/lib
+    - export FC=ifx
+    - export CC=icx
+    - export CXX=icpx
+    - export PATH=$HOME/ext/bin/:$PATH
+    - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+    - export PATH="${HOME}/ext/python-install/bin:$PATH"
+    - bash ci/build.sh Release
+    - cd build
     - ctest --repeat until-pass:2 --output-on-failure
   artifacts:
     untracked: false
@@ -51,14 +61,20 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.13.0
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.14.1
   script:
   script:
-    - git config --global --add safe.directory '*'
+    - export INTELDIR=/opt/intel/oneapi/2025.2
+    - export PATH=$INTELDIR/bin/:$PATH
+    - export LD_LIBRARY_PATH=$INTELDIR/lib
+    - export FC=ifx
+    - export CC=icx
+    - export CXX=icpx
+    - export PATH=$HOME/ext/bin/:$PATH
+    - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
+    - export PATH="${HOME}/ext/python-install/bin:$PATH"
     - bash ci/build.sh Debug
     - cd build
-    - export INTELDIR=/opt/intel/oneapi/2024.0
-    - export LD_LIBRARY_PATH=$INTELDIR/lib
     - ctest --repeat until-pass:2 --output-on-failure
   artifacts:
     untracked: false
@@ -67,31 +83,19 @@ test truchas intel (Debug):
 test truchas GFortran (Debug):
   stage: build
   needs: []
-  tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.13.0
+  tags: ["intel"]
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   script:
     - source /opt/rh/gcc-toolset-12/enable
-      # Add mpich executables into path
+    - export FC=gfortran
+    - export CC=gcc
+    - export CXX=g++
     - export PATH=$HOME/ext/bin/:$PATH
     - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
-      # Prepend our `python` executable into path
     - export PATH="${HOME}/ext/python-install/bin:$PATH"
-      # Make all tests run in serial
-    - patch -p1 < ci/tests_serial.patch
-      # Install Truchas
-    - mkdir build
+    - bash ci/build.sh Debug
     - cd build
-    - cmake --version
-    - cmake
-        -C ../config/linux-gcc.cmake
-        -DCMAKE_BUILD_TYPE=Debug
-        -DTRUCHAS_TPL_DIR=$HOME/ext
-        -DCMAKE_INSTALL_PREFIX=inst
-        -DUSE_PORTAGE=Yes
-        ..
-    - make
-    - make install
-    - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+    - ctest --repeat until-pass:2 --output-on-failure
   artifacts:
     untracked: false
     expire_in: 1 week
@@ -99,31 +103,19 @@ test truchas GFortran (Debug):
 test truchas GFortran (Release):
   stage: build
   needs: []
-  tags: []
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.13.0
+  tags: ["intel"]
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
   script:
     - source /opt/rh/gcc-toolset-12/enable
-      # Add mpich executables into path
+    - export FC=gfortran
+    - export CC=gcc
+    - export CXX=g++
     - export PATH=$HOME/ext/bin/:$PATH
     - export LD_LIBRARY_PATH=$HOME/ext/lib:$LD_LIBRARY_PATH
-      # Prepend our `python` executable into path
     - export PATH="${HOME}/ext/python-install/bin:$PATH"
-      # Make all tests run in serial
-    - patch -p1 < ci/tests_serial.patch
-      # Install Truchas
-    - mkdir build
+    - bash ci/build.sh Release
     - cd build
-    - cmake --version
-    - cmake
-        -C ../config/linux-gcc.cmake
-        -DCMAKE_BUILD_TYPE=Release
-        -DTRUCHAS_TPL_DIR=$HOME/ext
-        -DCMAKE_INSTALL_PREFIX=inst
-        -DUSE_PORTAGE=Yes
-        ..
-    - make
-    - make install
-    - ctest --repeat until-pass:2 --output-on-failure -E "RestartSuite|remap|ds2|ds7|free-surf-flow-2"
+    - ctest --repeat until-pass:2 --output-on-failure
   artifacts:
     untracked: false
     expire_in: 1 week

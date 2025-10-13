@@ -170,6 +170,7 @@ coefficient.
 :Default: none
 :Type: real
 
+.. _flow_bc_im:
 
 inflow_material
 ^^^^^^^^^^^^^^^^
@@ -190,7 +191,7 @@ function that gives the inflow material volume fractions for an inflow
 boundary condition. The function is expected to be a function of
 :math:`(t,x,y,z)`, and return a vector of length equal to the number of
 liquid phases, plus void (if present). The order of the output components
-is the same as the input file ordering provided by :ref:`materials<PHYSICS_M>`.
+is the same as the input file ordering provided by :ref:`materials<physics-mat>`.
 
 :Type: string
 

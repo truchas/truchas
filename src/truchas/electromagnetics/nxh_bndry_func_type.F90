@@ -1,0 +1,171 @@
+!!
+!! NXH_BNDRY_FUNC_TYPE
+!!
+!! This module defines an implementation of the base class BNDRY_FUNC1 that
+!! implements the tangential H-field (nxH) EM boundary condition on a
+!! SIMPL_MESH type mesh. The discretization of this boundary condition appears
+!! in the equations for the edge-based electric field unknowns through a
+!! boundary integral term (similar to a flux condition) and is thus somewhat
+!! more complex than essential nxE type conditions that apply directly to the
+!! electric field unknowns. This implementation considers H-field boundary data
+!! Hb(t,x) that is expressed in separable form: Hb(t,x) = f(t) g(x) where f is
+!! a scalar function and g is a 3-vector function.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!! February 2024
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#include "f90_assert.fpp"
+
+module nxh_bndry_func_type
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use bndry_func1_class
+  use simpl_mesh_type
+  use scalar_func_containers
+  use vector_func_containers
+  use bndry_edge_group_builder_type
+  implicit none
+  private
+
+  type, extends(bndry_func1), public :: nxh_bndry_func
+    type(simpl_mesh), pointer :: mesh => null()
+    integer :: ngroup = 0
+    integer, allocatable :: xgroup(:)
+    real(r8), allocatable :: gvalue(:)
+    type(scalar_func_box), allocatable :: f(:)
+    logical :: computed = .false.
+    real(r8) :: tlast = -huge(1.0_r8)
+    ! temporaries used during construction
+    type(bndry_edge_group_builder), allocatable :: builder
+    type(scalar_func_list) :: flist
+    type(vector_func_list) :: glist
+  contains
+    procedure :: init
+    procedure :: add
+    procedure :: add_complete
+    procedure :: compute
+  end type
+
+contains
+
+  subroutine init(this, mesh)
+    class(nxh_bndry_func), intent(out) :: this
+    type(simpl_mesh), intent(in), target :: mesh
+    this%mesh => mesh
+    allocate(this%builder)
+    call this%builder%init(mesh, no_overlap=.false.)
+  end subroutine
+
+  subroutine add(this, f, g, setids, stat, errmsg)
+    class(nxh_bndry_func), intent(inout) :: this
+    class(scalar_func), allocatable, intent(inout) :: f
+    class(vector_func), allocatable, intent(inout) :: g
+    integer, intent(in) :: setids(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    call this%builder%add_face_group(setids, stat, errmsg) ! TODO: onP only?
+    if (stat /= 0) return
+    call this%flist%append(f)
+    call this%glist%append(g)
+  end subroutine
+
+  subroutine add_complete(this, omit_edge_list)
+
+    use gauss_quad_tri75
+
+    class(nxh_bndry_func), intent(inout) :: this
+    integer, intent(in), optional :: omit_edge_list(:)
+
+    integer :: i, j, n, stat
+    integer, allocatable :: xgroup(:), index(:), emap(:)
+    type(vector_func_box), allocatable :: g(:)
+    real(r8) :: c, dx(3,3), g_qpt(3), g_dot_dx(7,3), s
+
+    ASSERT(allocated(this%builder))
+    call this%builder%get_face_groups(this%ngroup, xgroup, index)
+    call this%builder%get_edge_groups(this%ngroup, this%xgroup, this%index, stat, omit_edge_list)
+    INSIST(stat == 0)
+    deallocate(this%builder)
+
+    !! Flatten function lists to arrays
+    call scalar_func_list_to_box_array(this%flist, this%f)
+    call vector_func_list_to_box_array(this%glist, g)
+
+    allocate(this%value(size(this%index)), this%gvalue(size(this%index)), emap(this%mesh%nedge))
+
+    this%gvalue = 0.0_r8
+    do n = 1, this%ngroup
+      !! EMAP maps on-process edge indices to their group index, or 0 if not in a group.
+      emap = 0  !TODO: replace by more efficient algorithm/structure?
+      do j = this%xgroup(n), this%xgroup(n+1)-1
+        emap(this%index(j)) = j
+      end do
+      associate (face => index(xgroup(n):xgroup(n+1)-1))
+        do j = 1, size(face) ! loop over faces in group n
+          associate (edge => emap(this%mesh%fedge(:,face(j))), &
+                     x => this%mesh%x(:,this%mesh%fnode(:,face(j))))
+            !! Compute integrals of G over face and assemble results to the
+            !! edges. Orientation of the face relative to the outward boundary
+            !! normal must be accounted for and is inferred from the fcell array.
+            c = merge(1.0_r8, -1.0_r8, this%mesh%fcell(2,face(j)) == 0) / 2.0_r8
+
+            dx(:,1) = x(:,3) - x(:,2)
+            dx(:,2) = x(:,1) - x(:,3)
+            dx(:,3) = x(:,2) - x(:,1)
+            do i = 1, 7
+              g_qpt = g(n)%eval(matmul(x, GQTRI75_phi(:,i)))
+              g_dot_dx(i,1) = dot_product(g_qpt, dx(:,1))
+              g_dot_dx(i,2) = dot_product(g_qpt, dx(:,2))
+              g_dot_dx(i,3) = dot_product(g_qpt, dx(:,3))
+            end do
+            if (edge(1) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(2,i)*g_dot_dx(i,3) - GQTRI75_phi(3,i)*g_dot_dx(i,2))
+              end do
+              this%gvalue(edge(1)) = this%gvalue(edge(1)) + c * s
+            end if
+            if (edge(2) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(3,i)*g_dot_dx(i,1) - GQTRI75_phi(1,i)*g_dot_dx(i,3))
+              end do
+              this%gvalue(edge(2)) = this%gvalue(edge(2)) - c * s
+            end if
+            if (edge(3) > 0) then
+              s = 0.0_r8
+              do i = 1, 7
+                s = s + GQTRI75_wgt(i)*(GQTRI75_phi(1,i)*g_dot_dx(i,2) - GQTRI75_phi(2,i)*g_dot_dx(i,1))
+              end do
+              this%gvalue(edge(3)) = this%gvalue(edge(3)) + c * s
+            end if
+          end associate
+        end do
+      end associate
+    end do
+
+  end subroutine add_complete
+
+  subroutine compute(this, t)
+    class(nxh_bndry_func), intent(inout) :: this
+    real(r8), intent(in) :: t
+    integer :: j, n
+    real(r8) :: s
+    if (this%computed .and. t == this%tlast) return ! value already set for this T
+    do n = 1, this%ngroup
+      s = this%f(n)%eval([t])
+      do j = this%xgroup(n), this%xgroup(n+1)-1
+        this%value(j) = s*this%gvalue(j)
+      end do
+    end do
+    this%tlast = t
+    this%computed = .true.
+  end subroutine
+
+end module nxh_bndry_func_type

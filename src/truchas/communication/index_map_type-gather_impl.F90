@@ -56,6 +56,28 @@ contains
         dest, this%counts, this%displs, MPI_REAL8, this%root, this%comm, ierr)
   end subroutine
 
+  module subroutine gath_c4_1(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: src(:)
+    complex(r4), intent(inout) :: dest(:)
+    integer :: ierr
+    ASSERT(size(dest) >= merge(this%global_size,0,this%is_root))
+    ASSERT(size(src) >= this%onp_size)
+    call MPI_Gatherv(src, this%onp_size, MPI_COMPLEX8, &
+        dest, this%counts, this%displs, MPI_COMPLEX8, this%root, this%comm, ierr)
+  end subroutine
+
+  module subroutine gath_c8_1(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: src(:)
+    complex(r8), intent(inout) :: dest(:)
+    integer :: ierr
+    ASSERT(size(dest) >= merge(this%global_size,0,this%is_root))
+    ASSERT(size(src) >= this%onp_size)
+    call MPI_Gatherv(src, this%onp_size, MPI_COMPLEX16, &
+        dest, this%counts, this%displs, MPI_COMPLEX16, this%root, this%comm, ierr)
+  end subroutine
+
   module subroutine gath_dl_1(this, src, dest)
     class(index_map), intent(in) :: this
     logical, intent(in) :: src(:)
@@ -153,6 +175,30 @@ contains
     call gath_aux2(this, block_size, MPI_REAL8, src, dest)
   end subroutine
 
+  module subroutine gath_c4_2(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: src(:,:)
+    complex(r4), intent(inout) :: dest(:,:)
+    integer :: block_size
+    ASSERT(size(src,2) >= this%onp_size)
+    ASSERT(size(dest,2) >= merge(this%global_size,0,this%is_root))
+    if (this%global_size == 0) return ! nothing to do
+    if (this%is_root) block_size = size(dest(:,1))
+    call gath_aux2(this, block_size, MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine gath_c8_2(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: src(:,:)
+    complex(r8), intent(inout) :: dest(:,:)
+    integer :: block_size
+    ASSERT(size(src,2) >= this%onp_size)
+    ASSERT(size(dest,2) >= merge(this%global_size,0,this%is_root))
+    if (this%global_size == 0) return ! nothing to do
+    if (this%is_root) block_size = size(dest(:,1))
+    call gath_aux2(this, block_size, MPI_COMPLEX16, src, dest)
+  end subroutine
+
   module subroutine gath_dl_2(this, src, dest)
     class(index_map), intent(in) :: this
     logical, intent(in) :: src(:,:)
@@ -213,6 +259,30 @@ contains
     if (this%global_size == 0) return ! nothing to do
     if (this%is_root) block_size = size(dest(:,:,1))
     call gath_aux2(this, block_size, MPI_REAL8, src, dest)
+  end subroutine
+
+  module subroutine gath_c4_3(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r4), intent(in) :: src(:,:,:)
+    complex(r4), intent(inout) :: dest(:,:,:)
+    integer :: block_size
+    ASSERT(size(src,3) >= this%onp_size)
+    ASSERT(size(dest,3) >= merge(this%global_size,0,this%is_root))
+    if (this%global_size == 0) return ! nothing to do
+    if (this%is_root) block_size = size(dest(:,:,1))
+    call gath_aux2(this, block_size, MPI_COMPLEX8, src, dest)
+  end subroutine
+
+  module subroutine gath_c8_3(this, src, dest)
+    class(index_map), intent(in) :: this
+    complex(r8), intent(in) :: src(:,:,:)
+    complex(r8), intent(inout) :: dest(:,:,:)
+    integer :: block_size
+    ASSERT(size(src,3) >= this%onp_size)
+    ASSERT(size(dest,3) >= merge(this%global_size,0,this%is_root))
+    if (this%global_size == 0) return ! nothing to do
+    if (this%is_root) block_size = size(dest(:,:,1))
+    call gath_aux2(this, block_size, MPI_COMPLEX16, src, dest)
   end subroutine
 
   module subroutine gath_dl_3(this, src, dest)

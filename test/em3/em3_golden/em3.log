@@ -3,14 +3,14 @@
 
 PROGRAM INFORMATION
 
-   code:                Truchas 23.12-25-g711f3f54-dirty
+   code:                Truchas 24.06-19-gba5adb4a-dirty
    build architecture:  x86_64
-   build date/time:     2024-02-24 11:03:20
+   build date/time:     2024-07-17 13:17:40
    build flags:          -u -O0 -C -C=dangling -gline -nan -f2018 -w=uda
-   build host:          thelio.indiana
-   run architecture:    Linux thelio.indiana 6.5.12-100.fc37.x86_64 #1
-   run host:            thelio.indiana
-   run date/time:       24 Feb 24 13:31:37
+   build host:          thelio2.indiana
+   run architecture:    Linux thelio2.indiana 6.9.6-100.fc39.x86_64 #1
+   run host:            thelio2.indiana
+   run date/time:       17 Jul 24 13:18:05
    processors:          1
 
 ================================================================================
@@ -35,19 +35,18 @@ Reading PHASE_CHANGE namelists ...
   none found
 Reading OUTPUTS namelist ...
 Reading MESH namelist ...
-Reading ALTMESH namelist ...
+Reading EM_MESH namelist ...
 Reading BODY namelists (first pass) ...
   read 1 BODY namelist
 Reading BODY namelists (second pass) ...
   read 1 BODY namelist
 Reading NUMERICS namelist ...
 Reading ELECTROMAGNETICS namelist ...
-  using default value "Z" for SYMMETRY_AXIS
-  using default value 0.3 for MATERIAL_CHANGE_THRESHOLD
-Reading INDUCTION_COIL namelists ...
-  read 1 INDUCTION_COIL namelist
-Reading ELECTROMAGNETICS_BC namelists ...
-  read namelist "x==0"
+Reading INDUCTION_SOURCE_FIELD namelist ...
+Reading ELECTROMAGNETIC_BC namelists ...
+  read namelist "x=0 symmetry plane"
+  read namelist "y=0 symmetry plane"
+  read namelist "applied H field"
 Reading DIFFUSION_SOLVER namelist ...
   using default STEPPING_METHOD value: "Adaptive BDF2"
   using default MAX_NLK_ITR value: 5
@@ -64,7 +63,7 @@ Reading THERMAL_SOURCE namelists ...
   none found
 Reading SPECIES_BC namelists ...
   none found
-Reading DS_SOURCE namelists ...
+Reading SPECIES_SOURCE namelists ...
   none found
 Reading ENCLOSURE_RADIATION namelists ...
   none found
@@ -80,14 +79,15 @@ INITIALIZATION
 Initializing mesh "MAIN" ...
   reading ExodusII mesh file "./em-oball-hex.gen"
 
-Initializing mesh "ALT" ...
+Initializing mesh "EM" ...
   reading ExodusII mesh file "./em-oball-tet.gen"
 
 Computing initial volume fractions ...
 
 Initializing diffusion solver ...
-  generating external source for "temperature" equation
   generating "scalar_cell_func1" thermal source
+    none specified
+  generating "scalar_cell_func2" thermal source
     none specified
   generating "interface-htc" thermal interface condition
     none specified
@@ -111,74 +111,74 @@ Computing consistent initial state for HT/SD solver ...
 Computing consistent initial state derivative for HT/SD solver ...
   computing consistent face temperatures and radiosities ...
 
-Initializing solution probes ...
+Initializing induction heating solver ...
+creating kuprat mesh-to-mesh mapper ...
 
-Initializing electromagnetics ...
-  Creating Kuprat mesh-to-mesh mapper ...
-    mesh-to-mesh mapper created
-  Computing the Joule heat ...
-  generating "PEC" electromagnetic boundary condition
-    using ELECTROMAGNETICS_BC[x==0]
-  generating "nxH" electromagnetic boundary condition
-     step this summary:  43 iterations, |r|= 1.201E-12, |r0|= 1.514E-02
-     step this summary:  40 iterations, |r|= 9.367E-12, |r0|= 1.027E-01
-     step this summary:  41 iterations, |r|= 1.289E-11, |r0|= 1.400E-01
-     step this summary:  43 iterations, |r|= 2.108E-12, |r0|= 3.289E-02
-     step this summary:  38 iterations, |r|= 1.763E-11, |r0|= 2.117E-01
-     step this summary:  39 iterations, |r|= 3.715E-11, |r0|= 4.423E-01
-     step this summary:  36 iterations, |r|= 4.051E-11, |r0|= 4.856E-01
-     step this summary:  40 iterations, |r|= 1.926E-11, |r0|= 2.557E-01
-     step this summary:  40 iterations, |r|= 1.034E-11, |r0|= 1.764E-01
-     step this summary:  35 iterations, |r|= 5.687E-11, |r0|= 6.350E-01
-     step this summary:  38 iterations, |r|= 8.661E-11, |r0|= 8.985E-01
-     step this summary:  36 iterations, |r|= 7.149E-11, |r0|= 8.390E-01
-   Source cycle   1: |Q|_max= 8.7445E+03, Q_total= 9.4725E-01
-     step this summary:  38 iterations, |r|= 4.374E-11, |r0|= 4.577E-01
-     step this summary:  40 iterations, |r|= 9.768E-12, |r0|= 1.167E-01
-     step this summary:  35 iterations, |r|= 6.442E-11, |r0|= 6.626E-01
-     step this summary:  37 iterations, |r|= 1.020E-10, |r0|= 1.037E+00
-     step this summary:  35 iterations, |r|= 1.076E-10, |r0|= 1.088E+00
-     step this summary:  39 iterations, |r|= 6.320E-11, |r0|= 8.364E-01
-     step this summary:  38 iterations, |r|= 2.597E-11, |r0|= 3.116E-01
-     step this summary:  37 iterations, |r|= 2.600E-11, |r0|= 2.686E-01
-     step this summary:  38 iterations, |r|= 6.297E-11, |r0|= 7.929E-01
-     step this summary:  35 iterations, |r|= 9.615E-11, |r0|= 1.098E+00
-     step this summary:  37 iterations, |r|= 9.757E-11, |r0|= 1.094E+00
-     step this summary:  34 iterations, |r|= 6.733E-11, |r0|= 8.162E-01
-   Source cycle   2: |Q|_max= 3.7181E+04, Q_total= 4.2571E+00
-     step this summary:  39 iterations, |r|= 2.521E-11, |r0|= 2.844E-01
-     step this summary:  39 iterations, |r|= 2.853E-11, |r0|= 2.922E-01
-     step this summary:  35 iterations, |r|= 6.600E-11, |r0|= 8.024E-01
-     step this summary:  38 iterations, |r|= 8.398E-11, |r0|= 1.096E+00
-     step this summary:  36 iterations, |r|= 7.105E-11, |r0|= 1.096E+00
-     step this summary:  38 iterations, |r|= 7.770E-11, |r0|= 8.065E-01
-     step this summary:  38 iterations, |r|= 2.584E-11, |r0|= 2.902E-01
-     step this summary:  38 iterations, |r|= 2.184E-11, |r0|= 2.917E-01
-     step this summary:  38 iterations, |r|= 7.227E-11, |r0|= 8.031E-01
-     step this summary:  35 iterations, |r|= 9.972E-11, |r0|= 1.100E+00
-     step this summary:  38 iterations, |r|= 9.742E-11, |r0|= 1.095E+00
-     step this summary:  34 iterations, |r|= 5.905E-11, |r0|= 8.112E-01
-   Source cycle   3: |Q|_max= 3.9919E+04, Q_total= 4.6029E+00
-     step this summary:  39 iterations, |r|= 2.395E-11, |r0|= 2.840E-01
-     step this summary:  39 iterations, |r|= 2.601E-11, |r0|= 2.943E-01
-     step this summary:  36 iterations, |r|= 4.976E-11, |r0|= 7.914E-01
-     step this summary:  37 iterations, |r|= 9.356E-11, |r0|= 1.102E+00
-     step this summary:  35 iterations, |r|= 1.004E-10, |r0|= 1.095E+00
-     step this summary:  38 iterations, |r|= 5.354E-11, |r0|= 8.082E-01
-     step this summary:  38 iterations, |r|= 2.357E-11, |r0|= 2.896E-01
-     step this summary:  38 iterations, |r|= 2.620E-11, |r0|= 2.926E-01
-     step this summary:  38 iterations, |r|= 6.103E-11, |r0|= 8.008E-01
-     step this summary:  36 iterations, |r|= 8.150E-11, |r0|= 1.099E+00
-     step this summary:  37 iterations, |r|= 1.046E-10, |r0|= 1.097E+00
-     step this summary:  37 iterations, |r|= 4.607E-11, |r0|= 8.126E-01
-   Source cycle   4: |Q|_max= 3.9925E+04, Q_total= 4.6037E+00
-  Joule heat computation completed.
-  writing EM restart data for EM001
-  electromagnetics initialized
+Initializing solution probes ...
 
 ================================================================================
 
 EXECUTION
+computing the Joule heat ...
+  generating "nxE" electromagnetic boundary condition
+    using ELECTROMAGNETICS_BC[x=0 symmetry plane]
+    using ELECTROMAGNETICS_BC[y=0 symmetry plane]
+  generating "nxH" electromagnetic boundary condition
+    using ELECTROMAGNETICS_BC[applied H field]
+     cg solve:  60 iterations, |r|= 7.897E-17, |r0|= 1.126E-06
+     cg solve:  60 iterations, |r|= 1.992E-16, |r0|= 3.145E-06
+     cg solve:  60 iterations, |r|= 4.944E-16, |r0|= 6.646E-06
+     cg solve:  60 iterations, |r|= 8.940E-17, |r0|= 1.207E-06
+     cg solve:  60 iterations, |r|= 1.813E-16, |r0|= 2.527E-06
+     cg solve:  60 iterations, |r|= 5.317E-16, |r0|= 6.694E-06
+     cg solve:  59 iterations, |r|= 3.324E-16, |r0|= 3.449E-06
+     cg solve:  60 iterations, |r|= 4.673E-16, |r0|= 7.139E-06
+     cg solve:  61 iterations, |r|= 1.489E-16, |r0|= 2.472E-06
+     cg solve:  60 iterations, |r|= 1.187E-16, |r0|= 1.616E-06
+     cg solve:  60 iterations, |r|= 6.690E-16, |r0|= 9.436E-06
+     cg solve:  59 iterations, |r|= 3.963E-16, |r0|= 4.354E-06
+   Source cycle   1: |Q|_max= 8.6614E+03, Q_total= 9.4693E-01
+     cg solve:  60 iterations, |r|= 4.040E-16, |r0|= 6.570E-06
+     cg solve:  60 iterations, |r|= 3.072E-16, |r0|= 3.082E-06
+     cg solve:  60 iterations, |r|= 1.210E-16, |r0|= 1.710E-06
+     cg solve:  60 iterations, |r|= 6.346E-16, |r0|= 9.005E-06
+     cg solve:  59 iterations, |r|= 3.716E-16, |r0|= 4.282E-06
+     cg solve:  60 iterations, |r|= 4.740E-16, |r0|= 7.504E-06
+     cg solve:  60 iterations, |r|= 1.571E-16, |r0|= 1.582E-06
+     cg solve:  60 iterations, |r|= 1.221E-16, |r0|= 1.293E-06
+     cg solve:  60 iterations, |r|= 5.369E-16, |r0|= 7.085E-06
+     cg solve:  59 iterations, |r|= 3.213E-16, |r0|= 3.730E-06
+     cg solve:  60 iterations, |r|= 5.709E-16, |r0|= 8.683E-06
+     cg solve:  59 iterations, |r|= 2.240E-16, |r0|= 2.392E-06
+   Source cycle   2: |Q|_max= 3.6821E+04, Q_total= 4.2556E+00
+     cg solve:  60 iterations, |r|= 2.779E-16, |r0|= 4.288E-06
+     cg solve:  60 iterations, |r|= 3.801E-16, |r0|= 4.322E-06
+     cg solve:  60 iterations, |r|= 1.359E-16, |r0|= 2.088E-06
+     cg solve:  60 iterations, |r|= 5.977E-16, |r0|= 8.625E-06
+     cg solve:  59 iterations, |r|= 3.338E-16, |r0|= 3.743E-06
+     cg solve:  60 iterations, |r|= 4.478E-16, |r0|= 7.046E-06
+     cg solve:  61 iterations, |r|= 9.787E-17, |r0|= 1.671E-06
+     cg solve:  60 iterations, |r|= 1.232E-16, |r0|= 1.318E-06
+     cg solve:  60 iterations, |r|= 5.294E-16, |r0|= 7.023E-06
+     cg solve:  59 iterations, |r|= 3.201E-16, |r0|= 3.667E-06
+     cg solve:  60 iterations, |r|= 5.659E-16, |r0|= 8.638E-06
+     cg solve:  59 iterations, |r|= 2.264E-16, |r0|= 2.382E-06
+   Source cycle   3: |Q|_max= 3.9528E+04, Q_total= 4.6013E+00
+     cg solve:  60 iterations, |r|= 2.758E-16, |r0|= 4.296E-06
+     cg solve:  60 iterations, |r|= 3.782E-16, |r0|= 4.323E-06
+     cg solve:  60 iterations, |r|= 1.360E-16, |r0|= 2.099E-06
+     cg solve:  60 iterations, |r|= 5.956E-16, |r0|= 8.625E-06
+     cg solve:  59 iterations, |r|= 3.332E-16, |r0|= 3.748E-06
+     cg solve:  60 iterations, |r|= 4.455E-16, |r0|= 7.051E-06
+     cg solve:  60 iterations, |r|= 1.668E-16, |r0|= 1.682E-06
+     cg solve:  60 iterations, |r|= 1.247E-16, |r0|= 1.342E-06
+     cg solve:  60 iterations, |r|= 5.279E-16, |r0|= 7.026E-06
+     cg solve:  59 iterations, |r|= 3.204E-16, |r0|= 3.673E-06
+     cg solve:  60 iterations, |r|= 5.641E-16, |r0|= 8.641E-06
+     cg solve:  59 iterations, |r|= 2.297E-16, |r0|= 2.389E-06
+   Source cycle   4: |Q|_max= 3.9533E+04, Q_total= 4.6021E+00
+|Q|_max= 3.9533E+04, Q_total= 4.6021E+00
+  writing EM restart data for EM001
 
           1: t =   0.00000E+00, dt(initial) =   1.00000E-02
 
@@ -196,109 +196,109 @@ DS: dt=1.000E-02, NFUN:NPC=0000007:00001, NNR:NNF:NSR=0000:0000:0000
 
 DS: dt=1.000E-02, NFUN:NPC=0000009:00001, NNR:NNF:NSR=0000:0000:0000
 
-          5: t =   4.00000E-02, dt(diffusion solver) =   3.61672E-02
+          5: t =   4.00000E-02, dt(diffusion solver) =   3.62968E-02
 
-DS: dt=3.617E-02, NFUN:NPC=0000011:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.630E-02, NFUN:NPC=0000011:00002, NNR:NNF:NSR=0000:0000:0000
 
-          6: t =   7.61672E-02, dt(diffusion solver) =   4.91541E-02
+          6: t =   7.62968E-02, dt(diffusion solver) =   4.93358E-02
 
-DS: dt=4.915E-02, NFUN:NPC=0000013:00002, NNR:NNF:NSR=0000:0000:0000
+DS: dt=4.934E-02, NFUN:NPC=0000013:00002, NNR:NNF:NSR=0000:0000:0000
 
-          7: t =   1.25321E-01, dt(diffusion solver) =   1.47130E-01
+          7: t =   1.25633E-01, dt(diffusion solver) =   1.47916E-01
 
-DS: dt=1.471E-01, NFUN:NPC=0000015:00003, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.479E-01, NFUN:NPC=0000015:00003, NNR:NNF:NSR=0000:0000:0000
 
-          8: t =   2.72451E-01, dt(diffusion solver) =   2.68765E-01
+          8: t =   2.73549E-01, dt(diffusion solver) =   2.70279E-01
 
-DS: dt=2.688E-01, NFUN:NPC=0000017:00003, NNR:NNF:NSR=0000:0000:0000
+DS: dt=2.703E-01, NFUN:NPC=0000017:00003, NNR:NNF:NSR=0000:0000:0000
 
-          9: t =   5.41216E-01, dt(diffusion solver) =   7.15424E-01
+          9: t =   5.43828E-01, dt(diffusion solver) =   7.19957E-01
 
-DS: dt=7.154E-01, NFUN:NPC=0000019:00004, NNR:NNF:NSR=0000:0000:0000
+DS: dt=7.200E-01, NFUN:NPC=0000019:00004, NNR:NNF:NSR=0000:0000:0000
 
-         10: t =   1.25664E+00, dt(diffusion solver) =   1.55002E+00
+         10: t =   1.26378E+00, dt(diffusion solver) =   1.56023E+00
 
-DS: dt=1.550E+00, NFUN:NPC=0000022:00004, NNR:NNF:NSR=0000:0000:0000
+DS: dt=1.560E+00, NFUN:NPC=0000022:00004, NNR:NNF:NSR=0000:0000:0000
 
-         11: t =   2.80666E+00, dt(diffusion solver) =   2.40303E+00
+         11: t =   2.82401E+00, dt(diffusion solver) =   2.40155E+00
 
-DS: dt=2.403E+00, NFUN:NPC=0000025:00004, NNR:NNF:NSR=0000:0000:0000
+DS: dt=2.402E+00, NFUN:NPC=0000025:00004, NNR:NNF:NSR=0000:0000:0000
 
-         12: t =   5.20968E+00, dt(diffusion solver) =   2.63166E+00
+         12: t =   5.22557E+00, dt(diffusion solver) =   2.63773E+00
 
-DS: dt=2.632E+00, NFUN:NPC=0000027:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=2.638E+00, NFUN:NPC=0000027:00005, NNR:NNF:NSR=0000:0000:0000
 
-         13: t =   7.84134E+00, dt(diffusion solver) =   3.35175E+00
+         13: t =   7.86330E+00, dt(diffusion solver) =   3.32282E+00
 
-DS: dt=3.352E+00, NFUN:NPC=0000030:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.323E+00, NFUN:NPC=0000030:00005, NNR:NNF:NSR=0000:0000:0000
 
-         14: t =   1.11931E+01, dt(diffusion solver) =   3.13860E+00
+         14: t =   1.11861E+01, dt(diffusion solver) =   3.12970E+00
 
-DS: dt=3.139E+00, NFUN:NPC=0000033:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.130E+00, NFUN:NPC=0000033:00005, NNR:NNF:NSR=0000:0000:0000
 
-         15: t =   1.43317E+01, dt(diffusion solver) =   3.57302E+00
+         15: t =   1.43158E+01, dt(diffusion solver) =   3.54812E+00
 
-DS: dt=3.573E+00, NFUN:NPC=0000036:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.548E+00, NFUN:NPC=0000036:00005, NNR:NNF:NSR=0000:0000:0000
 
-         16: t =   1.79047E+01, dt(diffusion solver) =   3.63094E+00
+         16: t =   1.78639E+01, dt(diffusion solver) =   3.61342E+00
 
-DS: dt=3.631E+00, NFUN:NPC=0000039:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.613E+00, NFUN:NPC=0000039:00005, NNR:NNF:NSR=0000:0000:0000
 
-         17: t =   2.15356E+01, dt(diffusion solver) =   3.96884E+00
+         17: t =   2.14774E+01, dt(diffusion solver) =   3.95999E+00
 
-DS: dt=3.969E+00, NFUN:NPC=0000042:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=3.960E+00, NFUN:NPC=0000042:00005, NNR:NNF:NSR=0000:0000:0000
 
-         18: t =   2.55045E+01, dt(diffusion solver) =   4.15787E+00
+         18: t =   2.54373E+01, dt(diffusion solver) =   4.14884E+00
 
-DS: dt=4.158E+00, NFUN:NPC=0000045:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=4.149E+00, NFUN:NPC=0000045:00005, NNR:NNF:NSR=0000:0000:0000
 
-         19: t =   2.96624E+01, dt(diffusion solver) =   4.46307E+00
+         19: t =   2.95862E+01, dt(diffusion solver) =   4.45372E+00
 
-DS: dt=4.463E+00, NFUN:NPC=0000048:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=4.454E+00, NFUN:NPC=0000048:00005, NNR:NNF:NSR=0000:0000:0000
 
-         20: t =   3.41254E+01, dt(diffusion solver) =   4.72784E+00
+         20: t =   3.40399E+01, dt(diffusion solver) =   4.71656E+00
 
-DS: dt=4.728E+00, NFUN:NPC=0000051:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=4.717E+00, NFUN:NPC=0000051:00005, NNR:NNF:NSR=0000:0000:0000
 
-         21: t =   3.88533E+01, dt(diffusion solver) =   5.03720E+00
+         21: t =   3.87565E+01, dt(diffusion solver) =   5.02459E+00
 
-DS: dt=5.037E+00, NFUN:NPC=0000054:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.025E+00, NFUN:NPC=0000054:00005, NNR:NNF:NSR=0000:0000:0000
 
-         22: t =   4.38905E+01, dt(diffusion solver) =   5.34384E+00
+         22: t =   4.37811E+01, dt(diffusion solver) =   5.33002E+00
 
-DS: dt=5.344E+00, NFUN:NPC=0000057:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.330E+00, NFUN:NPC=0000057:00005, NNR:NNF:NSR=0000:0000:0000
 
-         23: t =   4.92343E+01, dt(diffusion solver) =   5.66990E+00
+         23: t =   4.91111E+01, dt(diffusion solver) =   5.65516E+00
 
-DS: dt=5.670E+00, NFUN:NPC=0000060:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.655E+00, NFUN:NPC=0000060:00005, NNR:NNF:NSR=0000:0000:0000
 
-         24: t =   5.49042E+01, dt(diffusion solver) =   6.00269E+00
+         24: t =   5.47662E+01, dt(diffusion solver) =   5.98719E+00
 
-DS: dt=6.003E+00, NFUN:NPC=0000063:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=5.987E+00, NFUN:NPC=0000063:00005, NNR:NNF:NSR=0000:0000:0000
 
-         25: t =   6.09069E+01, dt(diffusion solver) =   6.34603E+00
+         25: t =   6.07534E+01, dt(diffusion solver) =   6.32990E+00
 
-DS: dt=6.346E+00, NFUN:NPC=0000066:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.330E+00, NFUN:NPC=0000066:00005, NNR:NNF:NSR=0000:0000:0000
 
-         26: t =   6.72529E+01, dt(time) =   6.62130E+00
+         26: t =   6.70833E+01, dt(time) =   6.64288E+00
 
-DS: dt=6.621E+00, NFUN:NPC=0000069:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.643E+00, NFUN:NPC=0000069:00005, NNR:NNF:NSR=0000:0000:0000
 
-         27: t =   7.38742E+01, dt(time) =   6.58516E+00
+         27: t =   7.37262E+01, dt(time) =   6.61297E+00
 
-DS: dt=6.585E+00, NFUN:NPC=0000072:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.613E+00, NFUN:NPC=0000072:00005, NNR:NNF:NSR=0000:0000:0000
 
-         28: t =   8.04594E+01, dt(time) =   6.54922E+00
+         28: t =   8.03392E+01, dt(time) =   6.58320E+00
 
-DS: dt=6.549E+00, NFUN:NPC=0000075:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.583E+00, NFUN:NPC=0000075:00005, NNR:NNF:NSR=0000:0000:0000
 
-         29: t =   8.70086E+01, dt(time) =   6.51347E+00
+         29: t =   8.69224E+01, dt(time) =   6.55356E+00
 
-DS: dt=6.513E+00, NFUN:NPC=0000078:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.554E+00, NFUN:NPC=0000078:00005, NNR:NNF:NSR=0000:0000:0000
 
-         30: t =   9.35221E+01, dt(time) =   6.47791E+00
+         30: t =   9.34759E+01, dt(time) =   6.52405E+00
 
-DS: dt=6.478E+00, NFUN:NPC=0000081:00005, NNR:NNF:NSR=0000:0000:0000
+DS: dt=6.524E+00, NFUN:NPC=0000081:00005, NNR:NNF:NSR=0000:0000:0000
 
 ================================================================================
 
@@ -308,39 +308,37 @@ TERMINATION
 
 TIMING SUMMARY
 --------------
-  1.900E+01 --- Total
-    3.006E-03 --- Input
-    1.256E-01 --- Initialization
-      1.553E-02 --- mesh-MAIN
-        5.071E-03 --- ghost-cells
-          5.035E-03 --- cell-ghosts
-            3.013E-03 --- node-neighbors
-            4.610E-04 --- ghost-cells
-          3.000E-06 --- link-ghosts
-          2.400E-05 --- assemble-ghosts
-      6.485E-02 --- mesh-ALT
-      5.800E-05 --- VOF Initialize
-      1.752E-03 --- HTSD function
-        1.678E-03 --- HT function
-    1.875E+01 --- electromagnetics
-      1.521E+00 --- initialization
-      1.723E+01 --- joule heat
-        2.649E-03 --- mesh-to-mesh mapping
-        1.723E+01 --- simulation
-          7.370E-04 --- mesh-to-mesh mapping
-    1.221E-01 --- Main Cycle
-      1.400E-04 --- Time Step
-      1.039E-01 --- Diffusion Solver
-        2.800E-02 --- HTSD precon compute
-          1.816E-03 --- hypre-matrix-copy
-          5.300E-03 --- boomer-setup
-        3.926E-02 --- HTSD function
-          3.859E-02 --- HT function
-        2.631E-02 --- HTSD precon apply
-          2.630E-02 --- HT precon apply
-            1.438E-02 --- boomer-solve
+  1.685E+01 --- Total
+    2.364E-03 --- Input
+    8.828E-01 --- Initialization
+      8.894E-03 --- mesh-MAIN
+        2.821E-03 --- ghost-cells
+          2.795E-03 --- cell-ghosts
+            1.584E-03 --- node-neighbors
+            2.560E-04 --- ghost-cells
+          2.000E-06 --- link-ghosts
+          2.100E-05 --- assemble-ghosts
+      3.504E-02 --- mesh-EM
+      3.400E-05 --- VOF Initialize
+      1.004E-03 --- HTSD function
+        9.700E-04 --- HT function
+    1.597E+01 --- Main Cycle
+      1.590E+01 --- joule heat
+        1.184E-03 --- mesh-to-mesh mapping
+        1.590E+01 --- simulation
+          4.340E-04 --- mesh-to-mesh mapping
+      8.000E-05 --- Time Step
+      5.915E-02 --- Diffusion Solver
+        1.488E-02 --- HTSD precon compute
+          1.027E-03 --- hypre-matrix-copy
+          3.679E-03 --- boomer-setup
+        2.263E-02 --- HTSD function
+          2.229E-02 --- HT function
+        1.565E-02 --- HTSD precon apply
+          1.565E-02 --- HT precon apply
+            8.745E-03 --- boomer-solve
 
-                  Process virtual memory used: 1.38E+02 mB
-                                   words/cell: 51544
+                  Process virtual memory used: 1.58E+02 mB
+                                   words/cell: 58903
 
-truchas terminated normally on 24 Feb 24 at 13:31:56
+truchas terminated normally on 17 Jul 24 at 13:18:22

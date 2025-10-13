@@ -156,3 +156,67 @@ keywords = {parallel computations, finite element computations, graph partitioni
   year={1987},
   publisher={Elsevier}
 }
+
+@online{choi2014,
+  title={Minimal residual methods for complex symmetric, skew symmetric, and 
+         skew hermitian systems},
+  author={Choi, Sou-Cheng T.},
+  date={2014-01-13},
+  eprint={1304.6782},
+  eprinttype={arxiv},
+  eprintclass={cs.MS},
+  version={2},
+  url={https://arxiv.org/abs/1304.6782},
+  doi={10.48550/arXiv.1304.6782}
+}
+
+@misc{MUMPS,
+  title={{MUMPS: A MUltifrontal Massively Parallel Sparse direct Solver}},
+  url={http://mumps-solver.org},
+  note={Version 5.7.3}
+}
+ 
+@manual{hypre-manual,
+  title={{h}ypre: High Performance Preconditioners. User Manual},
+  organization={{Center for Applied Scientific Computing, Lawrence Livermore National Laboratory}},
+  year={2024},
+  note={Version 2.31.0},
+  url={https://hypre.readthedocs.io/en/latest/}
+}
+
+
+@article{greif_preconditioners_2007,
+	title = {Preconditioners for the discretized time-harmonic {Maxwell} equations in mixed form},
+	volume = {14},
+	copyright = {Copyright © 2007 John Wiley \& Sons, Ltd.},
+	issn = {1099-1506},
+	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nla.515},
+	doi = {10.1002/nla.515},
+	abstract = {We introduce a new preconditioning technique for iteratively solving linear systems arising from finite element discretization of the mixed formulation of the time-harmonic Maxwell equations. The preconditioners are motivated by spectral equivalence properties of the discrete operators, but are augmentation free and Schur complement free. We provide a complete spectral analysis, and show that the eigenvalues of the preconditioned saddle point matrix are strongly clustered. The analytical observations are accompanied by numerical results that demonstrate the scalability of the proposed approach. Copyright © 2007 John Wiley \& Sons, Ltd.},
+	language = {en},
+	number = {4},
+	urldate = {2023-12-19},
+	journal = {Numerical Linear Algebra with Applications},
+	author = {Greif, Chen and Schötzau, Dominik},
+	year = {2007},
+	keywords = {electromagnetics},
+	pages = {281--297},
+	file = {Greif_Schötzau_2007_Preconditioners for the discretized time-harmonic Maxwell equations in mixed.pdf:/Users/zjibben/sync/library/Zotero/Greif_Schötzau_2007_Preconditioners for the discretized time-harmonic Maxwell equations in mixed.pdf:application/pdf},
+}
+
+@article{li_parallel_2012,
+	title = {Parallel numerical solution of the time-harmonic {Maxwell} equations in mixed form},
+	volume = {19},
+	issn = {1099-1506},
+	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/nla.782},
+	doi = {10.1002/nla.782},
+	abstract = {We develop a fully scalable parallel implementation of an iterative solver for the time-harmonic Maxwell equations with vanishing wave numbers. We use a mixed finite element discretization on tetrahedral meshes, based on the lowest order Nédélec finite element pair of the first kind. We apply the block diagonal preconditioning approach of Greif and Schötzau (Numer. Linear Algebra Appl. 2007; 14(4):281–297), and use the nodal auxiliary space preconditioning technique of Hiptmair and Xu (SIAM J. Numer. Anal. 2007; 45(6):2483–2509) as the inner iteration for the shifted curl–curl operator. Algebraic multigrid is employed to solve the resulting sequence of discrete elliptic problems. We demonstrate the performance of our parallel solver on problems with constant and variable coefficients. Our numerical results indicate good scalability with the mesh size on uniform, unstructured, and locally refined meshes. Copyright © 2011 John Wiley \& Sons, Ltd.},
+	language = {de},
+	number = {3},
+	urldate = {2023-04-22},
+	journal = {Numerical Linear Algebra with Applications},
+	author = {Li, Dan and Greif, Chen and Schötzau, Dominik},
+	year = {2012},
+	pages = {525--539},
+	file = {Li et al_2012_Parallel numerical solution of the time-harmonic Maxwell equations in mixed form.pdf:/Users/zjibben/sync/library/Zotero/Li et al_2012_Parallel numerical solution of the time-harmonic Maxwell equations in mixed form.pdf:application/pdf},
+}

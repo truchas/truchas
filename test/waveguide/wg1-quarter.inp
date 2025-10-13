@@ -1,0 +1,130 @@
+ANDREY'S WAVEGUIDE TEST PROBLEM
+
+&MESH
+  x_axis%coarse_grid = 0.0, 0.04318
+  x_axis%intervals = 8
+  y_axis%coarse_grid = 0.0, 0.02159
+  y_axis%intervals = 4
+  z_axis%coarse_grid = -0.2, 0.0, 0.2
+  z_axis%intervals = 40, 40
+/
+
+&OUTPUTS
+  output_t = 0.0, 1.0e-6
+  output_dt = 1.0e-6
+/
+
+&NUMERICS /
+
+&PHYSICS
+  microwave_heating = T
+  materials = 'dielectric', 'VOID'
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol = 0
+  rel_temp_tol = 1e-4
+  abs_enthalpy_tol = 0
+  rel_enthalpy_tol = 1e-4
+  verbose_stepping = T
+/
+
+### BODIES #####################################################################
+
+&BODY
+  surface_name = 'plane'
+  axis = 'z'
+  material_name = 'dielectric'
+  temperature = 300.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'VOID'
+  temperature = 300.0
+/
+
+### BOUNDARY CONDITIONS ########################################################
+
+&THERMAL_BC
+  name = 'adiabatic'
+  type = 'flux'
+  face_set_ids = 1, 2, 3, 4, 5, 6
+  flux = 0.0
+/
+
+### EM HEATING #################################################################
+
+&EM_MESH
+  x_axis%coarse_grid = 0.0, 0.04318
+  x_axis%intervals = 8
+  y_axis%coarse_grid = 0.0, 0.02159
+  y_axis%intervals = 4
+  z_axis%coarse_grid = -0.2, 0.0, 0.2
+  z_axis%intervals = 40, 40
+/
+
+&MICROWAVE_HEATING
+  wg_port_bc = 'waveguide port'
+  powers = 100.0
+  frequency = 2.45d9
+  prop_change_threshold = 0.6
+/
+
+&FDME_SOLVER
+  !use_mixed_form = T
+  solver_type = 'minres'
+  !solver_type = 'mumps'
+  rel_tol = 1e-10
+  max_iter = 100000
+  precon_type = 'ssor' ! minres(none, boomer, ssor)
+  ssor_num_cycles = 1
+  !boomer_num_cycles = 1
+  !boomer_interp_type = 6
+  !boomer_relax_down_type = 13
+  !boomer_relax_up_type = 14
+  print_level = 1
+  graphics_output = T
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'walls'
+  type = 'pec'
+  face_set_ids = 2, 4, 6
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'x=0 symmetry'
+  type = 'pmc'
+  face_set_ids = 1
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'y=0 symmetry plane'
+  type = 'pec'
+  face_set_ids = 3
+/
+
+&ELECTROMAGNETIC_BC
+  name = 'waveguide port'
+  type = 'wg-port'
+  face_set_ids = 5
+  center = 0.0, 0.0, -0.2
+  x_axis = 1.0, 0.0, 0.0
+  y_axis = 0.0, 1.0, 0.0
+  x_width = 0.08636 ! 3.4"
+  y_width = 0.04318 ! 1.7"
+  !power = 500.0  ! set/overwritten by microwave_heating namelist
+/
+
+### MATERIALS ##################################################################
+
+&MATERIAL
+  name = 'dielectric'
+  density = 100.0
+  specific_heat = 100.0
+  conductivity = 1.0
+  relative_permittivity = 4.0
+  dielectric_loss_tangent = 0.025
+/
+

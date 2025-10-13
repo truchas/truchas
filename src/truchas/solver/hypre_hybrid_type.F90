@@ -64,22 +64,23 @@ contains
     type(pcsr_matrix), intent(in), target :: A
     type(parameter_list), pointer, intent(in) :: params
 
-    integer :: ierr
+    integer :: ierr, comm
 
     this%A => A
     this%params => params
 
+    comm = A%graph%row_imap%comm
     this%nrows  = A%graph%row_imap%onp_size   ! number of on-process rows (if parallel)
     this%ilower = A%graph%row_imap%first_gid ! global index of first on-process row (if parallel)
     this%iupper = A%graph%row_imap%last_gid  ! global index of last on-process row (if parallel)
 
     call fHYPRE_ClearAllErrors
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%bh, ierr)
+    call fHYPRE_IJVectorCreate (comm, this%ilower, this%iupper, this%bh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%bh, 0, ierr)
     INSIST(ierr == 0)
 
-    call fHYPRE_IJVectorCreate (this%ilower, this%iupper, this%xh, ierr)
+    call fHYPRE_IJVectorCreate (comm, this%ilower, this%iupper, this%xh, ierr)
     call fHYPRE_IJVectorSetMaxOffProcElmts (this%xh, 0, ierr)
     INSIST(ierr == 0)
 
@@ -269,7 +270,7 @@ contains
 
     !! Initialize the Hypre matrix.
     ASSERT(associated(this%A))
-    call copy_to_ijmatrix (this%A, this%Ah)
+    call this%A%copy_to_ijmatrix(this%Ah)
 
     !! Initialize the Hypre solution and RHS vectors.  These are passed to the
     !! solver setup but are apparently ignored for the hybrid solver.
@@ -333,71 +334,4 @@ contains
 
   end subroutine solve
 
- !!
- !! This auxillary routine copies a PCSR_MATRIX object SRC to an equivalent
- !! HYPRE_IJMatrix object.  The HYPRE matrix is created if it does not exist.
- !! Otherwise the elements of the existing HYPRE matrix are overwritten with
- !! the values from SRC.  In the latter case the sparsity pattern of the two
- !! matrices must be identical.
- !!
- !! The parallel CSR matrix is defined over local indices, both on-process
- !! and off-process.  By nature of our particular construction, the on-process
- !! rows of this matrix are complete and describe a partitioning of the global
- !! matrix by rows.  The off-process rows, however, are partial and extraneous
- !! and should be ignored.
- !!
-
-  subroutine copy_to_ijmatrix (src, matrix)
-
-    type(pcsr_matrix), intent(in) :: src
-    type(hypre_obj), intent(inout) :: matrix
-
-    integer :: j, ierr, ilower, iupper, nrows, nnz
-    integer, allocatable :: ncols_onP(:), ncols_offP(:), ncols(:), rows(:), cols(:)
-
-    nrows  = src%graph%row_imap%onp_size
-    ilower = src%graph%row_imap%first_gid
-    iupper = src%graph%row_imap%last_gid
-
-    call fHYPRE_ClearAllErrors
-
-    if (.not.hypre_associated(matrix)) then
-      call fHYPRE_IJMatrixCreate (ilower, iupper, ilower, iupper, matrix, ierr)
-      !! For each row we know how many column entries are on-process and how many
-      !! are off-process.  HYPRE is allegedly much faster at forming its CSR matrix
-      !! if it knows this info up front.
-      allocate(ncols_onP(nrows), ncols_offP(nrows))
-      do j = 1, nrows
-        ncols_offP(j) = count(src%graph%adjncy(src%graph%xadj(j):src%graph%xadj(j+1)-1) > nrows)
-        ncols_onP(j)  = src%graph%xadj(j+1) - src%graph%xadj(j) - ncols_offP(j)
-      end do
-      call fHYPRE_IJMatrixSetDiagOffdSizes (matrix, ncols_onP, ncols_offP, ierr)
-      deallocate(ncols_onP, ncols_offP)
-      !! Let HYPRE know that we won't be setting any off-process matrix values.
-      call fHYPRE_IJMatrixSetMaxOffProcElmts (matrix, 0, ierr)
-      INSIST(ierr == 0)
-    end if
-
-    !! After initialization the HYPRE matrix elements can be set.
-    call fHYPRE_IJMatrixInitialize (matrix, ierr)
-    INSIST(ierr == 0)
-
-    !! Copy the matrix elements into the HYPRE matrix.  This defines both the
-    !! nonzero structure of the matrix and the values of those elements. HYPRE
-    !! expects global row and column indices.
-    nnz = src%graph%xadj(nrows+1) - src%graph%xadj(1)
-    allocate(ncols(nrows), rows(nrows), cols(nnz))
-    rows = [ (j, j = ilower, iupper) ]
-    ncols = src%graph%xadj(2:nrows+1) - src%graph%xadj(1:nrows)
-    cols = src%graph%row_imap%global_index(src%graph%adjncy(src%graph%xadj(1):src%graph%xadj(nrows+1)-1))
-    call fHYPRE_IJMatrixSetValues (matrix, nrows, ncols, rows, cols, src%values, ierr)
-    deallocate(ncols, rows, cols)
-    INSIST(ierr == 0)
-
-    !! After assembly the HYPRE matrix is ready to use.
-    call fHYPRE_IJMatrixAssemble (matrix, ierr)
-    INSIST(ierr == 0)
-
-  end subroutine copy_to_ijmatrix
-
-end module hypre_hybrid_type
+ end module hypre_hybrid_type

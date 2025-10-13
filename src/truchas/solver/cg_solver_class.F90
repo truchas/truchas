@@ -16,11 +16,10 @@ module cg_solver_class
   private
 
   type, abstract, public :: cg_solver
-    integer :: minitr, maxitr ! min and max number of CG iterations
-    integer :: output_level
-    real(r8) :: tol  ! CG stopping tolerance on the residual error
-    real(r8) :: red  ! CG stopping tolerance on the residual error reduction
-    !! Pointers to the system matvec and PC procedures belong here...
+    integer :: num_iter, min_iter, max_iter, print_level
+    real(r8) :: abs_tol  ! CG stopping tolerance on the residual error
+    real(r8) :: rel_tol  ! CG stopping tolerance on the residual error reduction
+    real(r8) :: initial_rnorm, rel_rnorm
   contains
     procedure :: solve
     procedure(matvec), deferred :: ax
@@ -52,7 +51,7 @@ contains
 
     real(r8) :: r(size(x)), p(size(x)), q(size(x))
     real(r8) :: rho, rho_init, rho_last, s
-    integer :: itr, n, j
+    integer :: iter, n, j
     character(80) :: message
 
     ASSERT(size(x) == size(b))
@@ -70,6 +69,7 @@ contains
 
     rho = global_dot_product(r(:dim), p(:dim))
     rho_init = rho
+    this%initial_rnorm = sqrt(rho_init)
     if (rho_init < 0.0_r8) then
       stat = -2
       errmsg = 'non-symmetric preconditioner'
@@ -81,14 +81,14 @@ contains
       return
     end if
 
-    do itr = 1, this%maxitr
+    do iter = 1, this%max_iter
 
       call this%ax(p, q)
       s = rho / global_dot_product(p(:dim), q(:dim))
       if (s < 0.0_r8) then
         stat = -1
         errmsg = 'non-symmetric matrix'
-        return
+        exit
       end if
       do j = 1, n
         x(j) = x(j) + s * p(j)
@@ -101,36 +101,34 @@ contains
       if (rho < 0.0_r8) then
         stat = -2
         errmsg = 'non-symmetric preconditioner'
-        return
+        exit
       end if
       s = rho / rho_last
       do j = 1, n
         p(j) = q(j) + s * p(j)
       end do
 
-      if (this%output_level >= 4) then
-        write(message,fmt="(t6,a,i4,2(a,es10.3))") 'cg iterate', itr, &
+      if (this%print_level > 0) then
+        write(message,fmt="(t6,a,i4,2(a,es10.3))") 'cg iterate', iter, &
             ': |r|=', sqrt(rho), ', |r|/|r_prev|=', sqrt(s)
         call TLS_info(message)
       end if
 
-      if (itr >= this%minitr .and. (rho < this%tol**2 .or. rho < this%red**2 * rho_init)) then
+      if (iter >= this%min_iter .and. &
+          (rho < this%abs_tol**2 .or. rho < this%rel_tol**2 * rho_init)) then
         stat = 0
         exit
       end if
 
     end do
 
-    if (itr > this%maxitr) then
+    if (iter > this%max_iter) then
       stat = 1
       errmsg = 'failed to converge'
     end if
 
-    if (this%output_level >= 2) then
-      write(message,fmt="(t6,a,i4,2(a,es10.3))") 'cg solve:', itr, &
-          ' iterations, |r|=', sqrt(rho), ', |r0|=', sqrt(rho_init)
-      call TLS_info(message)
-    end if
+    this%num_iter = min(iter, this%max_iter)
+    this%rel_rnorm = sqrt(rho/rho_init)
 
   end subroutine solve
 

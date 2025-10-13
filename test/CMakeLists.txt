@@ -87,6 +87,18 @@ add_pytruchas_test(em3 em3/testEM3.py
                    PROCESSORS 4
                    LABELS ELECTROMAGNETICS)
 
+add_pytruchas_test(em4 em4/em.py
+                   PROCESSORS 1
+                   LABELS ELECTROMAGNETICS)
+
+# add_pytruchas_test(em5 em5/test-small.py
+#                    PROCESSORS 4
+#                    LABELS ELECTROMAGNETICS)
+
+add_pytruchas_test(wg1 waveguide/test.py
+                   PROCESSORS 4
+                   LABELS ELECTROMAGNETICS)
+
 add_pytruchas_test(ds1 ds1/testDS1.py
                    PROCESSORS 4
                    LABELS DIFFUSION)
@@ -316,7 +328,7 @@ add_pytruchas_test(ustruc-gl-frac
 add_pytruchas_test(ustruc-gl-both
                    ustruc/test-gl-both.py
                    PROCESSORS 4
-		   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
 add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)

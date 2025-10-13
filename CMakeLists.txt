@@ -114,6 +114,13 @@ else()
   message(FATAL_ERROR "Could NOT find a suitable HDF5 installation")
 endif()
 
+# MUMPS library
+option(USE_MUMPS "Build with support for the MUMPS direct solver library" OFF)
+if (USE_MUMPS)
+  find_package(MUMPS 5.7 REQUIRED CONFIG)
+  message(STATUS "Found MUMPS: ${MUMPS_FOUND}")
+endif()
+
 # NetCDF library
 find_package(NetCDF "4.1.3")
 if(NETCDF_FOUND)
@@ -223,6 +230,9 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel OR CMAKE_Fortran_COMPILER_ID MATCHES 
   add_compile_definitions(INTEL_BUG20191228)
   add_compile_definitions(INTEL_BUG20210619)
   add_compile_definitions(INTEL_BUG20240327)
+  add_compile_definitions(INTEL_BUG20241231)
+  add_compile_definitions(INTEL_BUG20250605)
+  add_compile_definitions(INTEL_BUG20250709)
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
@@ -239,13 +249,23 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   add_compile_definitions(GNU_PR98141)
   add_compile_definitions(GNU_ISSUE437)
   add_compile_definitions(GNU_PR103394)
+  add_compile_definitions(GNU_PR117774)
+  add_compile_definitions(GNU_PR119986)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "10.3.0")
     add_compile_definitions(NO_2008_LHS_POLY_REALLOC) # see issue 475
   endif()
 endif()
 
+if(APPLE)
+  add_compile_definitions(AVOID_MPI_IN_PLACE)
+endif()
+
 if(ENABLE_DYNAMIC_LOADING)
   add_compile_definitions(ENABLE_DYNAMIC_LOADING)
+endif()
+
+if(USE_MUMPS)
+  add_compile_definitions(USE_MUMPS)
 endif()
 
 if(USE_PORTAGE)

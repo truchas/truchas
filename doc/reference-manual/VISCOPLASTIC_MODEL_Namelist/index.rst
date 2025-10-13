@@ -30,7 +30,7 @@ where :math:`\dot{\epsilon_{0i}}`, :math:`\dot{g_{0i}}`, b, k, D, :math:`\mu_0`,
 
 VISCOPLASTIC_MODEL Namelist Features
 ----------------------------------------
-| **Required/Optional        :** Optional; only relevant when :ref:`Solid_Mechanics<SOLID_MECHANICS_Namelist>` is true.
+| **Required/Optional        :** Optional; only relevant when the :ref:`solid_mechanics<physics-sm>` PHYSICS option is enabled.
 | **Single/Multiple Instances:** Multiple; at most one per solid material phase.
 
 Components
@@ -52,7 +52,7 @@ Components
 * :ref:`Pwr_Law_N <VPM_PLN>`
 * :ref:`Pwr_Law_Q <VPM_PLQ>`
 * :ref:`Pwr_Law_R <VPM_PLR>`
-* :ref:`Pwr_Law_Tref <VPM_PLT>`
+* :ref:`Pwr_Law_Tref <VPM_PLTref>`
 
 .. _VPM_Phase:
 

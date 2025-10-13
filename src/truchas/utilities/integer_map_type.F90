@@ -25,6 +25,7 @@ module integer_map_type
     procedure :: val => map_val
     procedure :: remove => map_remove
     procedure :: contains => map_contains
+    procedure :: size => map_size
     final :: integer_map_delete
     !! Primarily testing procedures
   end type
@@ -58,6 +59,12 @@ contains
     end subroutine
   end subroutine
 
+  !! Returns the map domain size (i.e., number of tree nodes)
+  integer function map_size(this)
+    class(integer_map), intent(in) :: this
+    map_size = rbt_size(this%root)
+  end function
+
   !! Returns true if the map contains an element for the given key
   logical function map_contains(this, key)
     class(integer_map), intent(in) :: this
@@ -87,6 +94,16 @@ contains
     integer, intent(in) :: key, val
     call rbt_insert(this%root, key, val)
   end subroutine
+
+  !! Return the number of nodes in the tree at ROOT.
+  recursive integer function rbt_size(root) result(n)
+    type(rbt_node), pointer, intent(in) :: root
+    if (associated(root)) then
+      n = 1 + rbt_size(root%left) + rbt_size(root%right)
+    else
+      n = 0
+    end if
+  end function
 
   !! Insert the given (key, val) element into the subtree at ROOT. If an
   !! element with the given key already exists, overwrite its value with

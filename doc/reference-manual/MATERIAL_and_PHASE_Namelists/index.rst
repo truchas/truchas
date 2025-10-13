@@ -7,7 +7,7 @@ MATERIAL and PHASE Namelists
 =============================
 Overview
 ------------
-A database of materials, their properties and attributes are defined using the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>`, :ref:`PHASE<MATERIAL_and_PHASE_Namelists>`, and :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelists. Not all materials are necessarily included in the simulation, but only those specified by the :ref:`PHYSICS<PHYSICS_Namelist>` namelist variable :ref:`materials<PHYSICS_M>`. This allows one to reuse material input blocks without needing to prune out unused materials which would otherwise negatively impact performance. In Truchas usage, one or more phases comprise a material. A single-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist, and the namelist specifies all properties and attributes of the material. A multi-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist and an optional :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for each of the material phases. Properties and attributes that apply to all phases can be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist. Properties and attributes specific to a given phase are defined in the :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for the phase, and these superced eany that might be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for the phase. Additional information that defines the transformation between phases is specified using the :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelist.
+A database of materials, their properties and attributes are defined using the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>`, :ref:`PHASE<MATERIAL_and_PHASE_Namelists>`, and :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelists. Not all materials are necessarily included in the simulation, but only those specified by the PHYSICS namelist variable :ref:`materials<physics-mat>`. This allows one to reuse material input blocks without needing to prune out unused materials which would otherwise negatively impact performance. In Truchas usage, one or more phases comprise a material. A single-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist, and the namelist specifies all properties and attributes of the material. A multi-phase material is defined by a :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist and an optional :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for each of the material phases. Properties and attributes that apply to all phases can be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist. Properties and attributes specific to a given phase are defined in the :ref:`PHASE<MATERIAL_and_PHASE_Namelists>` namelist for the phase, and these superced eany that might be defined in the :ref:`MATERIAL<MATERIAL_and_PHASE_Namelists>` namelist for the phase. Additional information that defines the transformation between phases is specified using the :ref:`PHASE_CHANGE<PHASE_CHANGE_Namelist>` namelist.
 
 The MATERIAL Namelist
 ----------------------------
@@ -59,17 +59,37 @@ The boolean attribute **is_fluid** is used to indicate whether or not the materi
 
 The dynamic viscosity (mass per length per time) of a material or phase is specified by **viscosity** for a constant or **viscosity_func** for a function of temperature. This is required for viscous flow problems (:ref:`FLOW<FLOW_Namelist>` namelist variable **inviscid = F**).
 
-Electromagentic Properties
+Electromagnetic Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The following property variables are used by the induction heating model:
+The following property variables are used by the electromagnetic models:
 
+* **relative_permittivity**, **relative_permittivity_func**
+* **relative_permeability**, **relative_permeability_func**
+* **dielectric_loss_tangent**, **dielectric_loss_tangent_func**
 * **electrical_conductivity**, **electrical_conductivity_func**
-* **electric_susceptibility**, **electric_susceptibility_func**
-* **magnetic_susceptibility**, **magnetic_susceptibility_func**
 
-The electrical conductivity of a material or phase is specified using either **electrical_conductivity** for aconstant, or **electrical_conductivity_func** for a function of temperature. The default value is :math:`0`. The electromagnetics solver assumes SI units by default and the units of electrical conductivity are :math:`Siemens\:per\:meter`. To use different units, the values for the :ref:`PHYSICAL_CONSTANTS<PHYSICAL_CONSTANTS_Namelist>` namelist variables **vacuum_permeability** and **vacuum_permittivity** must be redefined appropriately.
+The (real) relative permittivity :math:`\epsilon_r` of a material or phase
+is specified using either **relative_permittivity** for a constant, or
+**relative_permittivity_func** for a function of temperature. Its default
+value is 1. Frequency-domain models use a complex permittivity
+:math:`\epsilon_r = \epsilon' + i\epsilon''` where the additional complex
+part is specified via the dielectric loss tangent, :math:`\tan\delta=
+\epsilon''/\epsilon'`, using either **dielectric_loss_tangent**
+for a constant, or **dielectric_loss_tangent_func** for a function of
+temperature. Its default value is 0.
 
-The electric susceptibility :math:`\chi_e` of a material or phase is specified using either **electric_susceptibility** fora constant, or **electric_susceptibility_func** for a function of temperature. The relative permittivity is :math:`1 +\chi_e`. This property has a default value of zero, which is appropriate in most cases.
+The relative permeability :math:`\mu_r` of a material or phase is
+specified using either **relative_permeability** for a constant, or
+**relative_permeability_func** for a function of temperature. Its default
+value is 1.
+
+The electrical conductivity of a material or phase is specified using either
+**electrical_conductivity** for a constant, or **electrical_conductivity_func**
+for a function of temperature. Its default value is 0. Note that the
+electromagnetics solvers assume SI units by default and the units of electrical
+conductivity are Siemens per meter. To use different units, the
+PHYSICAL_CONSTANTS namelist variables :ref:`vacuum_permittivity<PhyCo_VPt>` and
+:ref:`vacuum_permeability<PhyCo_VPm>` must be redefined appropriately.
 
 Thermomechanical Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
