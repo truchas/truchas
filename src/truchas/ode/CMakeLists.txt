@@ -6,7 +6,6 @@ target_sources(truchas PRIVATE
   bdf2/bdf2_profiling.F90
   bdf2/solution_history.F90
   idaesol_type.F90
-  vector_class.F90
   new_nka_type.F90
   new_state_history_type.F90
   new_idaesol_type.F90

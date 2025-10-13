@@ -28,7 +28,9 @@ module ht_vector_type
     procedure :: update3_
     procedure :: update4_
     procedure :: dot_
+    procedure :: norm1 => norm1_
     procedure :: norm2 => norm2_
+    procedure :: norm_max => norm_max_
     procedure :: checksum
     !! Additional procedures specific to this type
     generic :: init => init_mesh, init_mold
@@ -247,20 +249,76 @@ contains
     end select
   end function
 
-  function norm2_(this)
+  real(r8) function norm1_(this) result(norm)
     use parallel_communication, only: global_sum
     class(ht_vector), intent(in) :: this
-    real(r8) :: norm2_
-    integer :: n
-    norm2_ = norm2(this%hc(:this%mesh%ncell_onP))**2 + &
-             norm2(this%tc(:this%mesh%ncell_onP))**2 + &
-             norm2(this%tf(:this%mesh%nface_onP))**2
+    integer :: j, n
+    norm = 0
+    do j = 1, this%mesh%ncell_onP
+      norm = norm + abs(this%hc(j))
+    end do
+    do j = 1, this%mesh%ncell_onP
+      norm = norm + abs(this%tc(j))
+    end do
+    do j = 1, this%mesh%nface_onP
+      norm = norm + abs(this%tf(j))
+    end do
     if (allocated(this%encl)) then
       do n = 1, size(this%encl)
-        norm2_ = norm2_ + norm2(this%encl(n)%qrad)**2
+        do j = 1, size(this%encl(n)%qrad)
+          norm = norm + abs(this%encl(n)%qrad(j))
+        end do
       end do
     end if
-    norm2_ = sqrt(global_sum(norm2_))
+    norm = global_sum(norm)
+  end function
+
+  real(r8) function norm2_(this) result(norm)
+    use parallel_communication, only: global_sum
+    class(ht_vector), intent(in) :: this
+    integer :: j, n
+    norm = 0
+    do j = 1, this%mesh%ncell_onP
+      norm = norm + this%hc(j)**2
+    end do
+    do j = 1, this%mesh%ncell_onP
+      norm = norm + this%tc(j)**2
+    end do
+    do j = 1, this%mesh%nface_onP
+      norm = norm + this%tf(j)**2
+    end do
+    if (allocated(this%encl)) then
+      do n = 1, size(this%encl)
+        do j = 1, size(this%encl(n)%qrad)
+          norm = norm + this%encl(n)%qrad(j)**2
+        end do
+      end do
+    end if
+    norm = sqrt(global_sum(norm))
+  end function
+
+  real(r8) function norm_max_(this) result(norm)
+    use parallel_communication, only: global_maxval
+    class(ht_vector), intent(in) :: this
+    integer :: j, n
+    norm = 0
+    do j = 1, this%mesh%ncell_onP
+      norm = max(norm, abs(this%hc(j)))
+    end do
+    do j = 1, this%mesh%ncell_onP
+      norm = max(norm, abs(this%tc(j)))
+    end do
+    do j = 1, this%mesh%nface_onP
+      norm = max(norm, abs(this%tf(j)))
+    end do
+    if (allocated(this%encl)) then
+      do n = 1, size(this%encl)
+        do j = 1, size(this%encl(n)%qrad)
+          norm = max(norm, abs(this%encl(n)%qrad(j)))
+        end do
+      end do
+    end if
+    norm = global_maxval(norm)
   end function
 
   function checksum(this, full) result(string)
