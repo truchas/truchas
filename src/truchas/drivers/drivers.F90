@@ -158,17 +158,17 @@ call hijack_truchas ()
     character(:), allocatable :: errmsg
     !---------------------------------------------------------------------------
 
-    call start_timer('Main Cycle')
-
     ! Compute the initial value of EM heat source here before the main loop
     ! so that the result will be output along with the initial solutions.
     if (em_heat_enabled()) call update_em_heat(t, zone%temp)
 
     if (cycle_max == 0) then
       call TLS_info('')
-      call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
+      call TLS_info('Maximum number of cycles completed; terminating')
       return
     end if
+
+    call start_timer('Main Cycle')
 
     if (mem_on) call mem_diag_open
 
