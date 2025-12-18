@@ -54,13 +54,13 @@ module vtkhdf_file_type
     procedure :: create
     procedure :: write_mesh
     procedure :: write_time_step
-    generic :: write_cell_dataset  => write_cell_dataset_real64
+    generic :: write_cell_dataset  => write_cell_dataset_real64, write_cell_dataset_int32
     generic :: write_point_dataset => write_point_dataset_real64
     generic :: register_temporal_cell_dataset  => register_temporal_cell_dataset_real64
     generic :: register_temporal_point_dataset => register_temporal_point_dataset_real64
     generic :: write_temporal_cell_dataset  => write_temporal_cell_dataset_real64
     generic :: write_temporal_point_dataset => write_temporal_point_dataset_real64
-    procedure, private :: write_cell_dataset_real64
+    procedure, private :: write_cell_dataset_real64, write_cell_dataset_int32
     procedure, private :: write_point_dataset_real64
     procedure, private :: register_temporal_cell_dataset_real64
     procedure, private :: register_temporal_point_dataset_real64
@@ -236,6 +236,19 @@ contains
     class(vtkhdf_file), intent(in) :: this
     character(*), intent(in) :: name
     real(real64), intent(in) :: array(..)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    integer, allocatable :: dims(:)
+    dims = shape(array)
+    INSIST(size(dims) >= 1 .and. size(dims) <= 3)
+    INSIST(dims(size(dims)) == this%ncell)
+    call h5_write_dataset(this%cgrp_id, name, array, stat, errmsg)
+  end subroutine
+
+  subroutine write_cell_dataset_int32(this, name, array, stat, errmsg)
+    class(vtkhdf_file), intent(in) :: this
+    character(*), intent(in) :: name
+    integer(int32), intent(in) :: array(..)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     integer, allocatable :: dims(:)

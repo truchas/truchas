@@ -286,12 +286,12 @@ contains
   subroutine export_mesh(this)
 
     use,intrinsic :: iso_fortran_env, only: int8
-    use parallel_communication, only: is_IOP, broadcast
+    use parallel_communication, only: is_IOP, this_PE, broadcast, gather
 
     class(tdme_joule_heat_sim), intent(inout) :: this
 
     integer, allocatable, target :: cnode(:,:)
-    integer, allocatable :: xcnode(:)
+    integer, allocatable :: xcnode(:), g_iscalar(:)
     integer(int8), allocatable :: types(:)
     real(r8), allocatable :: x(:,:)
     integer, pointer :: connectivity(:)
@@ -308,6 +308,19 @@ contains
       types = spread(VTK_TETRA, dim=1, ncopies=size(cnode,dim=2))
       call this%viz_file%write_mesh(x, connectivity, xcnode, types, stat, errmsg)
     end if
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    !! Output the mesh partition
+    allocate(g_iscalar(merge(this%mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(spread(this_PE, dim=1, ncopies=this%mesh%ncell_onP), g_iscalar)
+    if (is_IOP) call this%viz_file%write_cell_dataset('MPI rank', g_iscalar, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    !! Output the cell block decomposition
+    call gather(this%mesh%cblock(:this%mesh%ncell_onP), g_iscalar)
+    if (is_IOP) call this%viz_file%write_cell_dataset('Block', g_iscalar, stat, errmsg)
     call broadcast(stat)
     INSIST(stat == 0)
 

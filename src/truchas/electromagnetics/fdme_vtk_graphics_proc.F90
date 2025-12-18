@@ -39,6 +39,7 @@ contains
     type(vtkhdf_file) :: viz_file
     real(r8), allocatable :: g_scalar(:), l_scalar(:)
     complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:), l_zscalar(:)
+    integer, allocatable :: g_iscalar(:)
 
     if (is_IOP) call viz_file%create(filename, stat, errmsg)
     call broadcast(stat)
@@ -93,8 +94,16 @@ contains
     if (is_IOP) call viz_file%write_cell_dataset('|H|', abs(g_vector), stat, errmsg)
 
     !! Output the mesh partition
-    call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=solver%mesh%ncell_onP), g_scalar)
-    if (is_IOP) call viz_file%write_cell_dataset('MPI rank', g_scalar, stat, errmsg)
+    allocate(g_iscalar(merge(solver%mesh%cell_imap%global_size, 0, is_IOP)))
+    call gather(spread(this_PE, dim=1, ncopies=solver%mesh%ncell_onP), g_iscalar)
+    if (is_IOP) call viz_file%write_cell_dataset('MPI rank', g_iscalar, stat, errmsg)
+    call broadcast(stat)
+    INSIST(stat == 0)
+
+    !! Output the cell block decomposition
+    call gather(solver%mesh%cblock(:solver%mesh%ncell_onP), g_iscalar)
+    if (is_IOP) call viz_file%write_cell_dataset('Block', g_iscalar, stat, errmsg)
+    deallocate(g_iscalar)
     call broadcast(stat)
     INSIST(stat == 0)
 
