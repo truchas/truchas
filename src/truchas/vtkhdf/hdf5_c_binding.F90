@@ -54,7 +54,7 @@ module hdf5_c_binding
   integer(hid_t), parameter :: H5P_DEFAULT = 0
 
   !! Header file constants from H5Tpublic.h
-  integer(c_int), parameter :: H5T_STR_SPACE_PAD = 2
+  integer(c_int), parameter :: H5T_STR_SPACEPAD = 2
 
   !! Object IDs that are run-time *copies* of objects on the C side.
   !! These need to be initialized by a call to init_hdf5.
@@ -66,6 +66,13 @@ module hdf5_c_binding
   integer(hid_t), protected :: H5P_GROUP_CREATE
   integer(hid_t), protected :: H5P_CRT_ORDER_TRACKED
   integer(hid_t), protected :: H5P_CRT_ORDER_INDEXED
+  integer(hid_t), protected :: H5P_DATASET_XFER
+  integer(hid_t), protected :: H5P_FILE_ACCESS
+
+  enum, bind(c) ! H5FD_mpio_xfer_t from H5FDmpi.h
+    enumerator :: H5FD_MPIO_INDEPENDENT = 0 ! Use independent I/O access
+    enumerator :: H5FD_MPIO_COLLECTIVE      ! Use collective I/O access
+  end enum
 
   !!!! H5F functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -75,9 +82,16 @@ module hdf5_c_binding
       integer(hid_t), value :: file_id
       integer(c_int) :: h5err
     end function
+
+    function H5Fget_access_plist(file_id) &
+        result(plist_id) bind(c,name='H5Fget_access_plist')
+      import :: hid_t
+      integer(hid_t), value :: file_id
+      integer(hid_t) :: plist_id
+    end function
   end interface
 
-  public :: H5Fclose
+  public :: H5Fclose, H5Fget_access_plist
 
   !!!! H5G functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -91,6 +105,18 @@ module hdf5_c_binding
 
   public :: H5Gclose
   public :: H5Gcreate ! module procedure
+
+  !!!! H5I functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  interface
+    function H5Iget_file_id(id) result(file_id) bind(c,name='H5Iget_file_id')
+      import :: hid_t
+      integer(hid_t), value :: id
+      integer(hid_t) :: file_id
+    end function
+  end interface
+
+  public :: H5Iget_file_id
 
   !!!! H5A functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -138,8 +164,7 @@ module hdf5_c_binding
         result(ndim) bind(c,name='H5Sget_simple_extent_dims')
       import :: hid_t, hsize_t, c_int
       integer(hid_t), value :: space_id
-      integer(hsize_t), intent(out) :: dims(*)
-      integer(hsize_t), intent(out) :: maxdims(*)
+      integer(hsize_t), optional :: dims(*), maxdims(*)
       integer(c_int) :: ndim
     end function
 
@@ -162,7 +187,7 @@ module hdf5_c_binding
 
   public :: H5Sget_simple_extent_ndims, H5Sget_simple_extent_dims, H5Sselect_elements, H5Sclose
   public :: H5Screate, H5Sselect_hyperslab ! module procedures
-  
+
   interface H5Screate
     module procedure H5Screate_scalar, H5Screate_array
   end interface
@@ -195,9 +220,15 @@ module hdf5_c_binding
       integer(hid_t), value :: type_id
       integer(c_int) :: h5err
     end function
+
+    function H5Tequal(type1_id, type2_id) result(htri) bind(c,name='H5Tequal')
+      import :: hid_t, c_int
+      integer(hid_t), value :: type1_id, type2_id
+      integer(c_int) :: htri ! >0, true; ==0, false; <0, failure
+    end function
   end interface
 
-  public :: H5Tcopy, H5Tset_size, H5Tset_strpad, H5Tclose
+  public :: H5Tcopy, H5Tset_size, H5Tset_strpad, H5Tclose, H5Tequal
 
   !!!! H5D functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -220,9 +251,15 @@ module hdf5_c_binding
       integer(hid_t), value :: dset_id
       integer(c_int) :: h5err
     end function
+
+    function H5Dget_type(dset_id) result(type_id) bind(c,name='H5Dget_type')
+      import :: hid_t
+      integer(hid_t), value :: dset_id
+      integer :: type_id
+    end function
   end interface
 
-  public :: H5Dget_space, H5Dset_extent, H5Dclose
+  public :: H5Dget_space, H5Dset_extent, H5Dclose, H5Dget_type
   public :: H5Dopen, H5Dcreate, H5Dwrite  ! module procedures
 
   !!!! H5P functions that can be used as-is !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -250,6 +287,29 @@ module hdf5_c_binding
       integer(c_int) :: hdferr
     end function
 
+    function H5Pset_all_coll_metadata_ops(plist_id, is_collective) &
+        result(hdferr) bind(c,name='H5Pset_all_coll_metadata_ops')
+      import :: hid_t, c_int, c_bool
+      integer(hid_t), value :: plist_id
+      logical(c_bool), value :: is_collective
+      integer(c_int) :: hdferr
+    end function
+
+    function H5Pset_coll_metadata_write(plist_id, is_collective) &
+        result(hdferr) bind(c,name='H5Pset_coll_metadata_write')
+      import :: hid_t, c_int, c_bool
+      integer(hid_t), value :: plist_id
+      logical(c_bool), value :: is_collective
+      integer(c_int) :: hdferr
+    end function
+
+    function H5Pset_dxpl_mpio(dxpl_id, xfer_mode) result(hdferr) bind(c,name='H5Pset_dxpl_mpio')
+      import hid_t, c_int
+      integer(hid_t), value :: dxpl_id
+      integer(c_int), value :: xfer_mode
+      integer(c_int) :: hdferr
+    end function
+
     function H5Pclose(prp_id) result(h5err) bind(c,name='H5Pclose')
       import :: hid_t, c_int
       integer(hid_t), value :: prp_id
@@ -257,7 +317,28 @@ module hdf5_c_binding
     end function
   end interface
 
-  public :: H5Pcreate, H5Pset_chunk, H5Pset_link_creation_order, H5Pclose
+  public :: H5Pcreate, H5Pclose, H5Pset_chunk, H5Pset_link_creation_order, &
+            H5Pset_all_coll_metadata_ops, H5Pset_coll_metadata_write, H5Pset_dxpl_mpio
+
+  interface ! to wrapper functions that take Fortran comm instead of C comm
+    function H5Pset_fapl_mpio(fapl_id, comm) &
+        result(hdferr) bind(c,name='H5Pset_fapl_mpio_Fcomm')
+      import :: hid_t, c_int
+      integer(hid_t), value :: fapl_id
+      integer, value :: comm
+      integer(c_int) :: hdferr
+    end function
+
+    function H5Pget_fapl_mpio(fapl, comm) &
+        result(hdferr) bind(c,name='H5Pget_fapl_mpio_Fcomm')
+      import :: hid_t, c_int
+      integer(hid_t), value :: fapl
+      integer :: comm
+      integer(c_int) :: hdferr
+    end function
+  end interface
+
+  public :: H5Pset_fapl_mpio, H5Pget_fapl_mpio
 
   !!!! H5L functions
 
@@ -283,6 +364,14 @@ contains
         import :: hid_t
         integer(hid_t) :: flag
       end function
+      function H5P_DATASET_XFER_value() result(flag) bind(c,name='H5P_DATASET_XFER_value')
+        import :: hid_t
+        integer(hid_t) :: flag
+      end function
+      function H5P_FILE_ACCESS_value() result(flag) bind(c,name='H5P_FILE_ACCESS_value')
+        import :: hid_t
+        integer(hid_t) :: flag
+      end function
       function H5T_NATIVE_INTEGER_value() result(flag) bind(c,name='H5T_NATIVE_INTEGER_value')
         import :: hid_t
         integer(hid_t) :: flag
@@ -304,6 +393,8 @@ contains
     H5P_GROUP_CREATE = H5P_GROUP_CREATE_value()
     H5P_CRT_ORDER_TRACKED = H5P_CRT_ORDER_TRACKED_value()
     H5P_CRT_ORDER_INDEXED = H5P_CRT_ORDER_INDEXED_value()
+    H5P_DATASET_XFER = H5P_DATASET_XFER_value()
+    H5P_FILE_ACCESS = H5P_FILE_ACCESS_value()
     H5T_NATIVE_INTEGER = H5T_NATIVE_INTEGER_value()
     H5T_NATIVE_DOUBLE = H5T_NATIVE_DOUBLE_value()
     H5T_NATIVE_CHARACTER = H5T_NATIVE_CHARACTER_value()

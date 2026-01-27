@@ -64,7 +64,7 @@ module vtkhdf_file_type
     procedure, private :: write_temporal_point_dataset_real64
     procedure :: close
     procedure, private :: get_block_ptr
-    final :: vtkhdf_file_delete
+    !final :: vtkhdf_file_delete
   end type
 
   type :: pdc_block
@@ -97,24 +97,34 @@ contains
     if (associated(this%next)) deallocate(this%next)
   end subroutine
 
-  subroutine create(this, filename, stat, errmsg)
+  subroutine create(this, filename, comm, stat, errmsg)
+
+    use,intrinsic :: iso_c_binding, only: c_bool
 
     class(vtkhdf_file), intent(out) :: this
     character(*), intent(in) :: filename
+    integer, intent(in) :: comm
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer(hid_t) :: crt_prop
+    integer(hid_t) :: fapl, crt_prop
     integer(c_int) :: flag
+    integer :: istat ! ignored status result
 
     call init_hdf5
 
-    this%file_id = H5Fcreate(filename, H5F_ACC_TRUNC)
+    fapl = H5Pcreate(H5P_FILE_ACCESS)
+    stat = H5Pset_fapl_mpio(fapl, comm)
+    stat = H5Pset_all_coll_metadata_ops(fapl, is_collective=.true._c_bool)
+    stat = H5Pset_coll_metadata_write(fapl, is_collective=.true._c_bool)
+    this%file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, fapl)
     if (this%file_id < 0) then
       stat = 1
       errmsg = 'h5fcreate error'  !TODO: refine msg
       return
     end if
+    istat = H5Pclose(fapl)
+    INSIST(istat == 0)
 
     crt_prop = H5Pcreate(H5P_GROUP_CREATE)
     flag = ior(H5P_CRT_ORDER_TRACKED, H5P_CRT_ORDER_INDEXED)
@@ -134,6 +144,7 @@ contains
 
     this%ass_id = H5Gcreate(this%vtk_id, 'Assembly', gcpl_id=crt_prop)
     INSIST(this%ass_id > 0)
+    istat = H5Pclose(crt_prop)
 
   end subroutine create
 
@@ -199,9 +210,10 @@ contains
     class(vtkhdf_file), intent(inout) :: this
     integer :: istat
     if (associated(this%blocks)) deallocate(this%blocks)
+    if (this%ass_id > 0) istat = H5Gclose(this%ass_id)
     if (this%vtk_id > 0) istat = H5Gclose(this%vtk_id)
     if (this%file_id > 0) istat = H5Fclose(this%file_id)
-    call default_initialize(this)
+    !call default_initialize(this)
   contains
     subroutine default_initialize(this)
       class(vtkhdf_file), intent(out) :: this

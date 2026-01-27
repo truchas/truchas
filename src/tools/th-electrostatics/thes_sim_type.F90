@@ -147,7 +147,7 @@ contains
       errmsg = 'missing "bc" sublist parameter'
     end if
     if (stat /= 0) return
-    
+
     !! Initialize the solver
     if (params%is_sublist('solver')) then
       plist => params%sublist('solver')
@@ -297,6 +297,7 @@ contains
     call this%solver%solve(this%phi, stat, errmsg)
     if (stat /= 0) return
 
+    call this%mesh%node_imap%gather_offp(this%phi)
     call write_vtk_graphics(this, 'out.vtkhdf', stat, errmsg)
 
   end subroutine run
@@ -313,19 +314,15 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(vtkhdf_file) :: viz_file
-    real(r8), allocatable :: x(:,:), l_vector(:,:), g_vector(:,:)
-    complex(r8), allocatable :: l_zscalar(:), g_zscalar(:), l_zvector(:,:), g_zvector(:,:)
+    real(r8), allocatable :: x(:,:), vector(:,:)
+    complex(r8), allocatable :: zscalar(:), zvector(:,:)
     complex(r8) :: grad_phi(3,this%mesh%ncell)
     integer, allocatable :: xcnode(:), cnode(:), block_cells(:), block_nodes(:)
-    integer :: n, bitmask, ncell_tot, nnode_tot
+    integer :: n, bitmask
     integer(int8), allocatable :: types(:)
 
-    if (is_IOP) call viz_file%create(filename, stat, errmsg)
-    call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast_alloc_char(errmsg)
-      return
-    end if
+    call viz_file%create(filename, comm, stat, errmsg)
+    if (stat /= 0) return
 
     block ! Cell averaged electric field phasor
       use mimetic_discretization, only: grad, w1_vector_on_cells
@@ -346,83 +343,60 @@ contains
 
     do n = 1, size(this%mesh%cell_set_name)
       associate (name => this%mesh%cell_set_name(n)%s)
-        if (is_IOP) call viz_file%create_block(name, stat, errmsg)
-        call broadcast(stat)
-        if (stat /= 0) then
-          call broadcast_alloc_char(errmsg)
-          return
-        end if
+        call viz_file%create_block(name, stat, errmsg)
+        if (stat /= 0) return
         bitmask = ibset(0,pos=n)
-        call this%mesh%get_global_mesh_block(bitmask, x, xcnode, cnode, block_cells, block_nodes)
-        if (is_IOP) then
-          types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-          call viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        end if
-        call broadcast(stat)
+        call this%mesh%get_mesh_block(bitmask, x, xcnode, cnode, block_cells, block_nodes)
+        types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
+        call viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
         INSIST(stat == 0)
-
-        ncell_tot = global_sum(size(block_cells))
-        nnode_tot = global_sum(size(block_nodes))
 
         !! Cell-based material volume fractions
-        l_vector = this%vol_frac(:,block_cells)
-        allocate(g_vector(size(l_vector,dim=1),merge(ncell_tot,0,is_IOP)))
-        call gather(l_vector, g_vector)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'vol-frac', g_vector, stat, errmsg)
-        call broadcast(stat)
+        vector = this%vol_frac(:,block_cells)
+        call viz_file%write_cell_dataset(name, 'vol-frac', vector, stat, errmsg)
         INSIST(stat == 0)
-        deallocate(g_vector, l_vector)
 
         !! Cell-based complex permittivities
-        l_zscalar = this%eps(block_cells)
-        allocate(g_zscalar(merge(ncell_tot,0,is_IOP)))
-        call gather(l_zscalar, g_zscalar)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'eps_re', g_zscalar%re, stat, errmsg)
-        call broadcast(stat)
+        zscalar = this%eps(block_cells)
+        call viz_file%write_cell_dataset(name, 'eps_re', zscalar%re, stat, errmsg)
         INSIST(stat == 0)
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'eps_im', [g_zscalar%im], stat, errmsg)
+        call viz_file%write_cell_dataset(name, 'eps_im', [zscalar%im], stat, errmsg)
 #else
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'eps_im', g_zscalar%im, stat, errmsg)
+        call viz_file%write_cell_dataset(name, 'eps_im', zscalar%im, stat, errmsg)
 #endif
-        call broadcast(stat)
         INSIST(stat == 0)
-        deallocate(g_zscalar, l_zscalar)
 
         !! Node-based complex electric potential phasor
-        l_zscalar = this%phi(block_nodes)
-        allocate(g_zscalar(merge(nnode_tot, 0, is_IOP)))
-        call gather(l_zscalar, g_zscalar)
-        if (is_IOP) call viz_file%write_point_dataset(name, 'phi_re', g_zscalar%re, stat, errmsg)
-        call broadcast(stat)
+        zscalar = this%phi(block_nodes)
+        call viz_file%write_point_dataset(name, 'phi_re', zscalar%re, stat, errmsg)
         INSIST(stat == 0)
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_point_dataset(name, 'phi_im', [g_zscalar%im], stat, errmsg)
+        call viz_file%write_point_dataset(name, 'phi_im', [zscalar%im], stat, errmsg)
 #else
-        if (is_IOP) call viz_file%write_point_dataset(name, 'phi_im', g_zscalar%im, stat, errmsg)
+        call viz_file%write_point_dataset(name, 'phi_im', zscalar%im, stat, errmsg)
 #endif
-        call broadcast(stat)
-        if (is_IOP) call viz_file%write_point_dataset(name, '|phi|', abs(g_zscalar), stat, errmsg)
         INSIST(stat == 0)
-        deallocate(g_zscalar, l_zscalar)
+        call viz_file%write_point_dataset(name, '|phi|', abs(zscalar), stat, errmsg)
+        INSIST(stat == 0)
 
         !! Cell-averaged electric field, grad(phi)
-        l_zvector = grad_phi(:,block_cells)
-        allocate(g_zvector(3,merge(ncell_tot, 0, is_IOP)))
-        call gather(l_zvector, g_zvector)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'grad phi_re', g_zvector%re, stat, errmsg)
-        call broadcast(stat)
+        zvector = grad_phi(:,block_cells)
+        call viz_file%write_cell_dataset(name, 'grad phi_re', zvector%re, stat, errmsg)
         INSIST(stat == 0)
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'grad phi_im', reshape([g_zvector%im],shape(g_vector)), stat, errmsg)
+        call viz_file%write_cell_dataset(name, 'grad phi_im', reshape([zvector%im],shape(zvector)), stat, errmsg)
 #else
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'grad phi_im', g_zvector%im, stat, errmsg)
+        call viz_file%write_cell_dataset(name, 'grad phi_im', zvector%im, stat, errmsg)
 #endif
-        call broadcast(stat)
         INSIST(stat == 0)
-        deallocate(g_zvector, l_zvector)
+
+        call viz_file%write_cell_dataset(name, 'MPI rank', spread(this_PE,dim=1,ncopies=size(block_cells)), stat, errmsg)
+        INSIST(stat == 0)
       end associate
     end do
+
+    call viz_file%close
 
   end subroutine write_vtk_graphics
 

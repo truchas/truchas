@@ -147,6 +147,7 @@ module simpl_mesh_type
     procedure :: get_global_fnode_array
     procedure :: get_global_cblock_array
     procedure :: get_global_mesh_block
+    procedure :: get_mesh_block
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: write_faces_vtk
@@ -444,5 +445,72 @@ contains
     call gather(this%x(:,block_nodes), x)
 
   end subroutine get_global_mesh_block
+
+  subroutine get_mesh_block(this, bitmask, x, xcnode, cnode, block_cells, block_nodes)
+
+    class(simpl_mesh), intent(in) :: this
+    integer(kind(this%cell_set_mask)), intent(in) :: bitmask
+    real(r8), allocatable, intent(out) :: x(:,:)
+    integer, allocatable, intent(out) :: xcnode(:), cnode(:), block_cells(:), block_nodes(:)
+
+    integer :: j, n, ncell, nnode, offset
+    integer, allocatable ::  nmap(:)
+
+    !! Count of the on-process block cells.
+    ncell = 0
+    do j = 1, this%ncell_onp
+      if (popcnt(iand(bitmask, this%cell_set_mask(j))) /= 0) ncell = ncell + 1
+    end do
+
+    if (ncell == 0) then ! empty mesh
+      allocate(x(size(this%x,dim=1),0), xcnode(1), cnode(0), block_cells(0), block_nodes(0))
+      xcnode(1) = 1
+      return
+    end if
+
+    !! List of on-process block cells and their connectivity info.
+    allocate(block_cells(ncell), cnode(4*ncell), xcnode(ncell+1))
+    n = 0
+    offset = 0
+    do j = 1, this%ncell_onP
+      if (popcnt(iand(bitmask, this%cell_set_mask(j))) == 0) cycle
+      n = n + 1
+      block_cells(n) = j
+      cnode(offset+1:offset+4) = this%cnode(:,j)
+      offset = offset + 4
+    end do
+
+    !! Tag all nodes belonging to the block cells.
+    allocate(nmap(this%nnode), source=0)
+    do j = 1, size(cnode)
+      nmap(cnode(j)) = 1
+    end do
+
+    !! List of on-process block nodes, and the mapping from local
+    !! node indices to a sequential numbering of block nodes;
+    !! non-block nodes are mapped to 0.
+    nnode = count(nmap /= 0)
+    allocate(block_nodes(nnode))
+    n = 0
+    do j = 1, this%nnode
+      if (nmap(j) == 0) cycle
+      n = n + 1
+      block_nodes(n) = j
+      nmap(j) = n
+    end do
+
+    !! Map block connectivity info to block node numbering.
+    do j = 1, size(cnode)
+      cnode(j) = nmap(cnode(j))
+    end do
+
+    xcnode(1) = 1
+    do j = 1, ncell
+      xcnode(j+1) = xcnode(j) + 4 ! all tet cells
+    end do
+
+    x = this%x(:,block_nodes)
+
+  end subroutine get_mesh_block
 
 end module simpl_mesh_type

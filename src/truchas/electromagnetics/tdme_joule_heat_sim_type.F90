@@ -255,7 +255,7 @@ contains
 
   subroutine graphics_output_init(this, filename, stat, errmsg)
 
-    use parallel_communication, only: is_IOP, broadcast, broadcast_alloc_char
+    use parallel_communication, only: comm
     use,intrinsic :: iso_fortran_env, only: int8
 
     class(tdme_joule_heat_sim), intent(inout) :: this
@@ -269,44 +269,30 @@ contains
     integer(int8), allocatable :: types(:)
     real(r8) :: vec_mold(3,0), sca_mold(0)
 
-    if (is_IOP) call this%viz_file%create(filename, stat, errmsg)
-    call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast_alloc_char(errmsg)
-      return
-    end if
+    call this%viz_file%create(filename, comm, stat, errmsg)
+    if (stat /= 0) return
 
     !! Create and write the block meshes
     allocate(this%vblock(size(this%mesh%cell_set_name)))
     do n = 1, size(this%vblock)
       associate (name => this%mesh%cell_set_name(n)%s)
         this%vblock(n)%name = name
-        if (is_IOP) call this%viz_file%create_block(name, stat, errmsg, temporal=.true.)
-        call broadcast(stat)
-        if (stat /= 0) then
-          call broadcast_alloc_char(errmsg)
-          return
-        end if
+        call this%viz_file%create_block(name, stat, errmsg, temporal=.true.)
+        if (stat /= 0) return
         bitmask = ibset(0,pos=n)
-        call this%mesh%get_global_mesh_block(bitmask, x, xcnode, cnode, &
+        call this%mesh%get_mesh_block(bitmask, x, xcnode, cnode, &
             this%vblock(n)%block_cells, this%vblock(n)%block_nodes)
-        if (is_IOP) then
-          types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-          call this%viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        end if
-        call broadcast(stat)
+        types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
+        call this%viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
         INSIST(stat == 0)
 
-        if (is_IOP) call this%viz_file%register_temporal_cell_dataset(name, 'E-field', vec_mold, stat, errmsg)
-        call broadcast(stat)
+        call this%viz_file%register_temporal_cell_dataset(name, 'E-field', vec_mold, stat, errmsg)
         INSIST(stat == 0)
 
-        if (is_IOP) call this%viz_file%register_temporal_cell_dataset(name, 'B-field', vec_mold, stat, errmsg)
-        call broadcast(stat)
+        call this%viz_file%register_temporal_cell_dataset(name, 'B-field', vec_mold, stat, errmsg)
         INSIST(stat == 0)
 
-        if (is_IOP) call this%viz_file%register_temporal_cell_dataset(name, 'Joule', sca_mold, stat, errmsg)
-        call broadcast(stat)
+        call this%viz_file%register_temporal_cell_dataset(name, 'Joule', sca_mold, stat, errmsg)
         INSIST(stat == 0)
       end associate
     end do
@@ -317,23 +303,17 @@ contains
   !! time-independent dataset with the given name.
 
   subroutine export_scalar_cell_field(this, field, name)
-    use parallel_communication, only: is_IOP, broadcast, gather, global_sum
     class(tdme_joule_heat_sim), intent(in) :: this
     real(r8), intent(in) :: field(:)
     character(*), intent(in) :: name
     integer :: stat
     character(:), allocatable :: errmsg
     integer :: j, n
-    real(r8), allocatable :: l_field(:), g_field(:)
+    real(r8), allocatable :: b_field(:)
     do j = 1, size(this%vblock)
-      l_field = field(this%vblock(j)%block_cells)
-      n = global_sum(size(l_field))
-      allocate(g_field(merge(n, 0, is_IOP)))
-      call gather(l_field, g_field)
-      if (is_IOP) call this%viz_file%write_cell_dataset(this%vblock(j)%name, name, g_field, stat, errmsg)
-      call broadcast(stat)
+      b_field = field(this%vblock(j)%block_cells)
+      call this%viz_file%write_cell_dataset(this%vblock(j)%name, name, b_field, stat, errmsg)
       INSIST(stat == 0)
-      deallocate(g_field)
     end do
   end subroutine
 
@@ -341,7 +321,6 @@ contains
 
   subroutine export_fields(this, t, efield, bfield, qfield)
 
-    use parallel_communication, only: is_IOP, broadcast, gather, global_sum
     use mimetic_discretization, only: w1_vector_on_cells, w2_vector_on_cells
 
     class(tdme_joule_heat_sim), intent(inout) :: this
@@ -349,49 +328,34 @@ contains
 
     integer :: j, n
     real(r8) :: v(3,this%mesh%ncell)
-    real(r8), allocatable :: g_v(:,:), g_s(:), l_v(:,:), l_s(:)
+    real(r8), allocatable :: b_v(:,:), b_s(:)
     integer :: stat
     character(:), allocatable :: errmsg
 
-    if (is_IOP) call this%viz_file%write_time_step(this%freq*t) ! induction field cycle number
+    call this%viz_file%write_time_step(this%freq*t) ! induction field cycle number
 
     !! Interpolate cell average E-field from the primitive E-field edge circulations.
     v = w1_vector_on_cells(this%mesh, efield)
 
     do j = 1, size(this%vblock)
-      n = global_sum(size(this%vblock(j)%block_cells))
-      allocate(g_v(3,merge(n,0,is_iop)))
-      l_v = v(:,this%vblock(j)%block_cells)
-      call gather(l_v, g_v)
-      if (is_IOP) call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'E-field', g_v, stat, errmsg)
-      call broadcast(stat)
+      b_v = v(:,this%vblock(j)%block_cells)
+      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'E-field', b_v, stat, errmsg)
       INSIST(stat == 0)
-      deallocate(g_v)
     end do
 
     !! Interpolate cell average B-field from the primitive B-field face fluxes.
     v = w2_vector_on_cells(this%mesh, bfield)
 
     do j = 1, size(this%vblock)
-      n = global_sum(size(this%vblock(j)%block_cells))
-      allocate(g_v(3,merge(n,0,is_iop)))
-      l_v = v(:,this%vblock(j)%block_cells)
-      call gather(l_v, g_v)
-      if (is_IOP) call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'B-field', g_v, stat, errmsg)
-      call broadcast(stat)
+      b_v = v(:,this%vblock(j)%block_cells)
+      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'B-field', b_v, stat, errmsg)
       INSIST(stat == 0)
-      deallocate(g_v)
     end do
 
     do j = 1, size(this%vblock)
-      n = global_sum(size(this%vblock(j)%block_cells))
-      allocate(g_s(merge(n,0,is_iop)))
-      l_s = qfield(this%vblock(j)%block_cells)
-      call gather(l_s, g_s)
-      if (is_IOP) call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'Joule', g_s, stat, errmsg)
-      call broadcast(stat)
+      b_s = qfield(this%vblock(j)%block_cells)
+      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'Joule', b_s, stat, errmsg)
       INSIST(stat == 0)
-      deallocate(g_s)
     end do
 
   end subroutine
