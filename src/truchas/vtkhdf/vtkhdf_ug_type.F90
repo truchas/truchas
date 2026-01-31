@@ -174,6 +174,8 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    integer :: idum(0)
+
     INSIST(this%root_id > 0)
 
     this%nnode = size(x, dim=2)
@@ -198,32 +200,36 @@ contains
     if (this%ncell > 0) then
       call h5_write_dataset(this%root_id, 'NumberOfPoints', this%nnode, stat, errmsg)
     else ! see NB above
-      call h5_write_dataset(this%root_id, 'NumberOfPoints', [integer::], stat, errmsg)
+      call h5_write_dataset(this%root_id, 'NumberOfPoints', idum, stat, errmsg)
     end if
     INSIST(stat == 0)
 
     if (this%ncell > 0) then
       call h5_write_dataset(this%root_id, 'NumberOfCells',  this%ncell, stat, errmsg)
     else ! see NB above
-      call h5_write_dataset(this%root_id, 'NumberOfCells',  [integer::], stat, errmsg)
+      call h5_write_dataset(this%root_id, 'NumberOfCells',  idum, stat, errmsg)
     end if
     INSIST(stat == 0)
 
     if (this%ncell > 0) then
       call h5_write_dataset(this%root_id, 'NumberOfConnectivityIds', size(cnode), stat, errmsg)
     else ! see NB above
-      call h5_write_dataset(this%root_id, 'NumberOfConnectivityIds', [integer::], stat, errmsg)
+      call h5_write_dataset(this%root_id, 'NumberOfConnectivityIds', idum, stat, errmsg)
     end if
     INSIST(stat == 0)
 
     if (this%ncell > 0) then
       call h5_write_dataset(this%root_id, 'Offsets', xcnode-1, stat, errmsg) ! offsets instead of starting indices
     else ! see NB above
-      call h5_write_dataset(this%root_id, 'Offsets', [integer::], stat, errmsg) ! offsets instead of starting indices
+      call h5_write_dataset(this%root_id, 'Offsets', idum, stat, errmsg)
     end if
     INSIST(stat == 0)
 
-    call h5_write_dataset(this%root_id, 'Connectivity', cnode-1, stat, errmsg)  ! 0-based indexing
+    if (this%ncell > 0) then
+      call h5_write_dataset(this%root_id, 'Connectivity', cnode-1, stat, errmsg)  ! 0-based indexing
+    else ! workaround for gfortran bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=123899
+      call h5_write_dataset(this%root_id, 'Connectivity', idum, stat, errmsg)
+    endif
     INSIST(stat == 0)
     call h5_write_dataset(this%root_id, 'Types', types, stat, errmsg)
     INSIST(stat == 0)
