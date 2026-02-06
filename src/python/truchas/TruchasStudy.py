@@ -9,8 +9,16 @@
 import time
 import os
 import multiprocessing
+import copy
+import itertools
 
 from .TruchasDatabase import TruchasDatabase
+
+
+def _write_basic_restart(output, restart_filename):
+    sid = output.num_series()
+    output.write_restart(restart_filename, sid)
+
 
 class TruchasStudy:
     """A class for performing Truchas parameter studies which vary in one
@@ -53,15 +61,21 @@ class TruchasStudy:
         used for all runs.
 
     :type restart_file: str, optional (default None)
+
+    :param generate_only: Only generate inputs. Intended for subsequent runs on
+        HPC.
+
+    :type generate_only: bool, optional (default False)
     """
 
-    def __init__(self, tenv, tdb, nprocs, njobs=1, restart_file=None):
+    def __init__(self, tenv, tdb, nprocs, njobs=1, restart_file=None, generate_only=False):
         self._tenv = tenv
         self._tdb = tdb
         self._nprocs = nprocs
         self._njobs = njobs
         self._restart_file = restart_file
         self._working_dir = "parameter_study_inputs"
+        self._generate_only = generate_only
 
 
     def do_1d_parameter_study(self, template_input_file, initial_parameters, variable, points,
@@ -162,17 +176,83 @@ class TruchasStudy:
         print("done.")
 
 
-    def run_inputs(self, template_input_file, replacements):
+    def write_restarts(self, replacements, restart_filename_generator="{}.restart",
+                       restart_writer=_write_basic_restart):
+        """Generate restart files from the database.
+
+        :param restart_writer: An optional function to write the restart. Can pass in a function
+        that handles mapping or running from some sid other than the last.
+
+        :type restart_writer: function of TruchasData and filename, optional (default
+        _write_basic_restart). Must be global (not lambda) so Multiprocessing can see it.
+
+        """
+        assert all(self._tdb.exists(r) for r in replacements)
+
+
+        restart_filenames = [restart_filename_generator.format(self._tdb.identifier(r))
+                             for r in replacements]
+        args = [(self, r,
+                 restart_filename,
+                 restart_writer)
+                for r, restart_filename in zip(replacements, restart_filenames)
+                if not os.path.isfile(restart_filename)]
+
+        print(f"Generating {len(args)} restart files ... ")
+        with multiprocessing.Pool(self._njobs * self._nprocs) as pool:
+            pool.starmap(_write_restart, args)
+        print("done generating restart files.\n")
+
+
+    def run_inputs(self, template_input_file, replacements,
+                   restart_filename_generator=None):
         # Generate list of replacements and new input files (those not already in the database)
         print("Generating input decks ... ", end="", flush=True)
         new_replacements = [r for r in replacements if not self._tdb.exists(r)]
         new_input_files = self.generate_inputs(template_input_file, new_replacements)
         print(f"done. {len(new_input_files)} new input files.\n")
 
-        # Run Truchas on all new inputs
-        args = [(self, i, r) for i, r in zip(new_input_files, new_replacements)]
-        with multiprocessing.Pool(self._njobs) as pool:
-            pool.starmap(_run, args)
+        if not self._generate_only:
+            # Run Truchas on all new inputs
+            if restart_filename_generator is None: restart_filename_generator = self._restart_file
+            args = [(self, i, r,
+                     (restart_filename_generator.format(self._tdb.identifier(r)))
+                     if restart_filename_generator is not None else None)
+                    for i, r in zip(new_input_files, new_replacements)]
+            with multiprocessing.Pool(self._njobs) as pool:
+                pool.starmap(_run, args)
+
+
+    def run_if(self, template_input, replacements, restart=None):
+        if self._tdb.exists(replacements):
+            output = self._tdb.truchas_output(replacements)
+            return output.stdout, output
+
+        input_file = self.generate_input_deck(template_input, replacements)
+        stdout, output = self._tenv.truchas(self._nprocs, input_file,
+                                            restart_file=restart,
+                                            overwrite_output=True)
+        self._tdb.donate(replacements, input_file, output.directory)
+
+        output = self._tdb.truchas_output(replacements)
+        return output.stdout, output
+
+
+    @staticmethod
+    def replacements_from_variation(params_default, params_variation):
+        """Given a default parameter set, and the a dictionary of variations for some/all of those
+        parameters, return a single list of all unique replacements.
+
+        """
+        param_set = {}
+        for v, x in params_variation.items():
+            pvi = copy.deepcopy(params_default)
+            pvi[v] = x
+            psi = [inputs for inputs in _dict_product(pvi)]
+            for p in psi:
+                param_set[frozenset(p.items())] = copy.deepcopy(p)
+
+        return param_set.values()
 
 
     def generate_inputs(self, template_input_file, replacements, use_working_dir=False):
@@ -322,11 +402,20 @@ class TruchasStudy:
         return replacements
 
 
+def _dict_product(d):
+    """
+    Yield one dict per combination of the values in d.
+    """
+    keys = d.keys()
+    for combo in itertools.product(*d.values()):
+        yield dict(zip(keys, combo))
+
+
 ### Multiprocessing variables & routines need to be global ###
 _lock = multiprocessing.Lock()
-def _run(self, input_file, replacements):
+def _run(self, input_file, replacements, restart_file):
     elapsed = time.time()
-    stdout, output = self._tenv.truchas(self._nprocs, input_file, restart_file=self._restart_file)
+    stdout, output = self._tenv.truchas(self._nprocs, input_file, restart_file=restart_file)
     elapsed = time.time() - elapsed
     print(f"Finished {input_file}. Elapsed {elapsed:.0f} seconds.")
     _lock.acquire()
@@ -334,3 +423,11 @@ def _run(self, input_file, replacements):
         self._tdb.donate(replacements, input_file, output.directory)
     finally:
         _lock.release()
+
+
+def _write_restart(self, replacements, restart_filename, restart_writer):
+    elapsed = time.time()
+    output = self._tdb.truchas_output(replacements)
+    restart_writer(output, restart_filename)
+    elapsed = time.time() - elapsed
+    print(f"    Finished {restart_filename}. Elapsed {elapsed:.0f} seconds.")

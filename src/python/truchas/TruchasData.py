@@ -188,7 +188,7 @@ class TruchasData:
         """
         field = self.field(series_id, field_name)
         blockids = self.blockid()
-        if ((type(value) == list or type(value) == np.array)
+        if ((isinstance(value, list) or isinstance(value, np.ndarray))
             and len(value) > 1 and len(value) == field.shape[1]):
             for i in range(len(field)):
                 if (blockid == blockids[i]):
