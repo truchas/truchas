@@ -306,14 +306,16 @@ contains
   subroutine write_vtk_graphics(this, filename, stat, errmsg)
 
     use,intrinsic :: iso_fortran_env, only: int8
-    use vtkhdf_file_type
+    use vtkhdf_mb_file_type
+    use vtkhdf_vtk_cell_types, only: VTK_TETRA
 
     class(thes_sim), intent(in) :: this
     character(*), intent(in) :: filename
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(vtkhdf_file) :: viz_file
+    type(vtkhdf_mb_file) :: viz_file
+    type(vtkhdf_block_handle) :: handle
     real(r8), allocatable :: x(:,:), vector(:,:)
     complex(r8), allocatable :: zscalar(:), zvector(:,:)
     complex(r8) :: grad_phi(3,this%mesh%ncell)
@@ -343,56 +345,45 @@ contains
 
     do n = 1, size(this%mesh%cell_set_name)
       associate (name => this%mesh%cell_set_name(n)%s)
-        call viz_file%create_block(name, stat, errmsg)
-        if (stat /= 0) return
+        handle = viz_file%add_block(name, mode=UG_STATIC)
         bitmask = ibset(0,pos=n)
         call this%mesh%get_mesh_block(bitmask, x, xcnode, cnode, block_cells, block_nodes)
         types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-        call viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_mesh(handle, x, cnode, xcnode, types)
 
         !! Cell-based material volume fractions
         vector = this%vol_frac(:,block_cells)
-        call viz_file%write_cell_dataset(name, 'vol-frac', vector, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(handle, 'vol-frac', vector)
 
         !! Cell-based complex permittivities
         zscalar = this%eps(block_cells)
-        call viz_file%write_cell_dataset(name, 'eps_re', zscalar%re, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(handle, 'eps_re', zscalar%re)
 #ifdef GNU_PR117774
-        call viz_file%write_cell_dataset(name, 'eps_im', [zscalar%im], stat, errmsg)
+        call viz_file%write_cell_data(handle, 'eps_im', [zscalar%im])
 #else
-        call viz_file%write_cell_dataset(name, 'eps_im', zscalar%im, stat, errmsg)
+        call viz_file%write_cell_data(handle, 'eps_im', zscalar%im)
 #endif
-        INSIST(stat == 0)
 
         !! Node-based complex electric potential phasor
         zscalar = this%phi(block_nodes)
-        call viz_file%write_point_dataset(name, 'phi_re', zscalar%re, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_point_data(handle, 'phi_re', zscalar%re)
 #ifdef GNU_PR117774
-        call viz_file%write_point_dataset(name, 'phi_im', [zscalar%im], stat, errmsg)
+        call viz_file%write_point_data(handle, 'phi_im', [zscalar%im])
 #else
-        call viz_file%write_point_dataset(name, 'phi_im', zscalar%im, stat, errmsg)
+        call viz_file%write_point_data(handle, 'phi_im', zscalar%im)
 #endif
-        INSIST(stat == 0)
-        call viz_file%write_point_dataset(name, '|phi|', abs(zscalar), stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_point_data(handle, '|phi|', abs(zscalar))
 
         !! Cell-averaged electric field, grad(phi)
         zvector = grad_phi(:,block_cells)
-        call viz_file%write_cell_dataset(name, 'grad phi_re', zvector%re, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(handle, 'grad phi_re', zvector%re)
 #ifdef GNU_PR117774
-        call viz_file%write_cell_dataset(name, 'grad phi_im', reshape([zvector%im],shape(zvector)), stat, errmsg)
+        call viz_file%write_cell_data(handle, 'grad phi_im', reshape([zvector%im],shape(zvector)))
 #else
-        call viz_file%write_cell_dataset(name, 'grad phi_im', zvector%im, stat, errmsg)
+        call viz_file%write_cell_data(handle, 'grad phi_im', zvector%im)
 #endif
-        INSIST(stat == 0)
 
-        call viz_file%write_cell_dataset(name, 'MPI rank', spread(this_PE,dim=1,ncopies=size(block_cells)), stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(handle, 'MPI rank', spread(this_PE,dim=1,ncopies=size(block_cells)))
       end associate
     end do
 

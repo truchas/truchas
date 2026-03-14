@@ -56,10 +56,9 @@ add_subdirectory(solver)
 add_subdirectory(utilities)
 add_subdirectory(toolpath)
 add_subdirectory(truchasio)
-add_subdirectory(vtkhdf)
 
 target_link_libraries(truchas PUBLIC
-    LAPACK::LAPACK exodus hypre petaca hdf5::hdf5 METIS::METIS scorpio MPI::MPI_Fortran netcdf
+    LAPACK::LAPACK exodus hypre petaca hdf5::hdf5 fVTKHDF::fvtkhdf METIS::METIS scorpio MPI::MPI_Fortran netcdf
     ${CMAKE_DL_LIBS} # to pick up the dlopen and dlclose symbols
 )
 if(USE_PORTAGE)

@@ -42,7 +42,7 @@ module tdme_joule_heat_sim_type
   use tdme_model_type
   use tdme_solver_type
   use scalar_func_class
-  use vtkhdf_file_type
+  use vtkhdf_mb_file_type
   implicit none
   private
 
@@ -54,7 +54,7 @@ module tdme_joule_heat_sim_type
     real(r8) :: freq, ss_tol
     integer :: steps_per_cycle, max_cycles
     logical :: graphics_output
-    type(vtkhdf_file) :: viz_file
+    type(vtkhdf_mb_file) :: viz_file
     type(viz_block), allocatable :: vblock(:)
   contains
     procedure :: init
@@ -63,8 +63,9 @@ module tdme_joule_heat_sim_type
   end type
 
   type :: viz_block
-    character(:), allocatable :: name
-    integer, allocatable :: block_cells(:), block_nodes(:)
+    type(vtkhdf_block_handle) :: handle
+    type(vtkhdf_cell_data_handle) :: Evar, Bvar, Qvar
+    integer, allocatable :: cells(:), nodes(:)
   end type
 
 contains
@@ -257,6 +258,7 @@ contains
 
     use parallel_communication, only: comm
     use,intrinsic :: iso_fortran_env, only: int8
+    use vtkhdf_vtk_cell_types, only: VTK_TETRA
 
     class(tdme_joule_heat_sim), intent(inout) :: this
     character(*), intent(in) :: filename
@@ -267,7 +269,7 @@ contains
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:)
     integer(int8), allocatable :: types(:)
-    real(r8) :: vec_mold(3,0), sca_mold(0)
+    real(r8) :: vec_mold(3), sca_mold
 
     call this%viz_file%create(filename, comm, stat, errmsg)
     if (stat /= 0) return
@@ -275,25 +277,16 @@ contains
     !! Create and write the block meshes
     allocate(this%vblock(size(this%mesh%cell_set_name)))
     do n = 1, size(this%vblock)
-      associate (name => this%mesh%cell_set_name(n)%s)
-        this%vblock(n)%name = name
-        call this%viz_file%create_block(name, stat, errmsg, temporal=.true.)
-        if (stat /= 0) return
+      associate (name => this%mesh%cell_set_name(n)%s, handle => this%vblock(n)%handle)
+        handle = this%viz_file%add_block(name, mode=UG_FIXED_MESH)
         bitmask = ibset(0,pos=n)
         call this%mesh%get_mesh_block(bitmask, x, xcnode, cnode, &
-            this%vblock(n)%block_cells, this%vblock(n)%block_nodes)
+            this%vblock(n)%cells, this%vblock(n)%nodes)
         types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-        call this%viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        INSIST(stat == 0)
-
-        call this%viz_file%register_temporal_cell_dataset(name, 'E-field', vec_mold, stat, errmsg)
-        INSIST(stat == 0)
-
-        call this%viz_file%register_temporal_cell_dataset(name, 'B-field', vec_mold, stat, errmsg)
-        INSIST(stat == 0)
-
-        call this%viz_file%register_temporal_cell_dataset(name, 'Joule', sca_mold, stat, errmsg)
-        INSIST(stat == 0)
+        call this%viz_file%write_mesh(handle, x, cnode, xcnode, types)
+        this%vblock(n)%Evar = this%viz_file%register_temporal_cell_data(handle, 'E-field', vec_mold)
+        this%vblock(n)%Bvar = this%viz_file%register_temporal_cell_data(handle, 'B-field', vec_mold)
+        this%vblock(n)%Qvar = this%viz_file%register_temporal_cell_data(handle, 'Joule',   sca_mold)
       end associate
     end do
 
@@ -303,7 +296,7 @@ contains
   !! time-independent dataset with the given name.
 
   subroutine export_scalar_cell_field(this, field, name)
-    class(tdme_joule_heat_sim), intent(in) :: this
+    class(tdme_joule_heat_sim), intent(inout) :: this
     real(r8), intent(in) :: field(:)
     character(*), intent(in) :: name
     integer :: stat
@@ -311,9 +304,8 @@ contains
     integer :: j, n
     real(r8), allocatable :: b_field(:)
     do j = 1, size(this%vblock)
-      b_field = field(this%vblock(j)%block_cells)
-      call this%viz_file%write_cell_dataset(this%vblock(j)%name, name, b_field, stat, errmsg)
-      INSIST(stat == 0)
+      b_field = field(this%vblock(j)%cells)
+      call this%viz_file%write_cell_data(this%vblock(j)%handle, name, b_field)
     end do
   end subroutine
 
@@ -332,31 +324,30 @@ contains
     integer :: stat
     character(:), allocatable :: errmsg
 
-    call this%viz_file%write_time_step(this%freq*t) ! induction field cycle number
+    call this%viz_file%start_time_step(this%freq*t) ! induction field cycle number
 
     !! Interpolate cell average E-field from the primitive E-field edge circulations.
     v = w1_vector_on_cells(this%mesh, efield)
 
     do j = 1, size(this%vblock)
-      b_v = v(:,this%vblock(j)%block_cells)
-      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'E-field', b_v, stat, errmsg)
-      INSIST(stat == 0)
+      b_v = v(:,this%vblock(j)%cells)
+      call this%viz_file%write_cell_data(this%vblock(j)%handle, this%vblock(j)%Evar, b_v)
     end do
 
     !! Interpolate cell average B-field from the primitive B-field face fluxes.
     v = w2_vector_on_cells(this%mesh, bfield)
 
     do j = 1, size(this%vblock)
-      b_v = v(:,this%vblock(j)%block_cells)
-      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'B-field', b_v, stat, errmsg)
-      INSIST(stat == 0)
+      b_v = v(:,this%vblock(j)%cells)
+      call this%viz_file%write_cell_data(this%vblock(j)%handle, this%vblock(j)%Bvar, b_v)
     end do
 
     do j = 1, size(this%vblock)
-      b_s = qfield(this%vblock(j)%block_cells)
-      call this%viz_file%write_temporal_cell_dataset(this%vblock(j)%name, 'Joule', b_s, stat, errmsg)
-      INSIST(stat == 0)
+      b_s = qfield(this%vblock(j)%cells)
+      call this%viz_file%write_cell_data(this%vblock(j)%handle, this%vblock(j)%Qvar, b_s)
     end do
+
+    call this%viz_file%finalize_time_step
 
   end subroutine
 

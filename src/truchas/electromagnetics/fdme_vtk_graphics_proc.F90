@@ -19,7 +19,8 @@ module fdme_vtk_graphics_proc
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, int8
   use fdme_solver_type
-  use vtkhdf_file_type
+  use vtkhdf_mb_file_type
+  use vtkhdf_vtk_cell_types, only: VTK_TETRA
   use parallel_communication
   use string_utilities, only: i_to_c
   implicit none
@@ -37,7 +38,8 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(vtkhdf_file) :: viz_file
+    type(vtkhdf_mb_file) :: viz_file
+    type(vtkhdf_block_handle) :: blk
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), block_cells(:), block_nodes(:)
     integer(int8), allocatable :: types(:)
@@ -59,66 +61,60 @@ contains
 
     do j = 1, size(solver%mesh%cell_set_name)
       associate (name => solver%mesh%cell_set_name(j)%s)
-        call viz_file%create_block(name, stat, errmsg)
+        blk = viz_file%add_block(name, mode=UG_STATIC)
         if (stat /= 0) return
         bitmask = ibset(0,pos=j)
         call solver%mesh%get_mesh_block(bitmask, x, xcnode, cnode, block_cells, block_nodes)
         types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-        call viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_mesh(blk, x, cnode, xcnode, types)
 
         ncell = size(block_cells) ! number of local cells in block
 
         scalar = q(block_cells)
-        call viz_file%write_cell_dataset(name, 'Q_EM', scalar, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, 'Q_EM', scalar)
 
         zvector = e(:,block_cells)
-        call viz_file%write_cell_dataset(name, 'E_re', zvector%re, stat, errmsg)
+        call viz_file%write_cell_data(blk, 'E_re', zvector%re)
         INSIST(stat == 0)
 
 #ifdef GNU_PR117774
-        call viz_file%write_cell_dataset(name, 'E_im', reshape([zvector%im],shape(zvector)), stat, errmsg)
+        call viz_file%write_cell_data(blk, 'E_im', reshape([zvector%im],shape(zvector)))
 #else
-        call viz_file%write_cell_dataset(name, 'E_im', zvector%im, stat, errmsg)
+        call viz_file%write_cell_data(blk, 'E_im', zvector%im)
 #endif
-        INSIST(stat == 0)
 
-        call viz_file%write_cell_dataset(name, '|E|', abs(zvector), stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, '|E|', abs(zvector))
 
         zvector = h(:,block_cells)
-        call viz_file%write_cell_dataset(name, 'H_re', zvector%re, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, 'H_re', zvector%re)
 
 #ifdef GNU_PR117774
-        call viz_file%write_cell_dataset(name, 'H_im', reshape([zvector%im],shape(zvector)), stat, errmsg)
+        call viz_file%write_cell_data(blk, 'H_im', reshape([zvector%im],shape(zvector)))
 #else
-        call viz_file%write_cell_dataset(name, 'H_im', zvector%im, stat, errmsg)
+        call viz_file%write_cell_data(blk, 'H_im', zvector%im)
 #endif
         INSIST(stat == 0)
 
-        call viz_file%write_cell_dataset(name, '|H|', abs(zvector), stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, '|H|', abs(zvector))
 
-        !! Output the mesh partition
+        !! Output the mesh partition FIXME: output integer; name "ProcessIds" ???
         scalar = spread(real(this_PE,kind=r8), dim=1, ncopies=ncell)
-        call viz_file%write_cell_dataset(name, 'MPI rank', scalar, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, 'MPI rank', scalar)
 
         zscalar = dd(block_nodes)
-        call viz_file%write_point_dataset(name, 'div_D_re', zscalar%re, stat, errmsg)
-        INSIST(stat == 0)
+        call viz_file%write_point_data(blk, 'div_D_re', zscalar%re)
 
 #ifdef GNU_PR117774
-        call viz_file%write_point_dataset(name, 'div_D_im', [zscalar%im], stat, errmsg)
+        call viz_file%write_point_data(blk, 'div_D_im', [zscalar%im])
 #else
-        call viz_file%write_point_dataset(name, 'div_D_im', zscalar%im, stat, errmsg)
+        call viz_file%write_point_data(blk, 'div_D_im', zscalar%im)
 #endif
+
+        call viz_file%write_point_data(blk, '|div_D|', abs(zscalar))
         INSIST(stat == 0)
 
-        call viz_file%write_point_dataset(name, '|div_D|', abs(zscalar), stat, errmsg)
-        INSIST(stat == 0)
+        !SPECULATIVE!
+        !call viz_file%write_point_data(blk, 'vtkGlobalPointIds', solver%mesh%xnode(block_nodes))
       end associate
     end do
 
