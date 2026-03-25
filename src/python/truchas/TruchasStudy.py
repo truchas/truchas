@@ -189,19 +189,35 @@ class TruchasStudy:
         """
         assert all(self._tdb.exists(r) for r in replacements)
 
-
-        restart_filenames = [restart_filename_generator.format(self._tdb.identifier(r))
-                             for r in replacements]
+        restart_filenames = (restart_filename_generator.format(self._tdb.identifier(r))
+                             for r in replacements)
         args = [(self, r,
                  restart_filename,
                  restart_writer)
                 for r, restart_filename in zip(replacements, restart_filenames)
-                if not os.path.isfile(restart_filename)]
+                if self._fresh_restart_needed(r, restart_filename)]
 
         print(f"Generating {len(args)} restart files ... ")
         with multiprocessing.Pool(self._njobs * self._nprocs) as pool:
             pool.starmap(_write_restart, args)
         print("done generating restart files.\n")
+
+
+    def _fresh_restart_needed(self, r, restart_filename):
+        """Check if a fresh restart file is needed for the given replacements and restart filename.
+        If the given restart filename is not an existing file on the system, then a new restart is
+        needed. If there already is such a file on the system, then check if it is older than the H5
+        file corresponding to the given replacements r.
+
+        """
+        if not os.path.isfile(restart_filename):
+            return True
+
+        # TODO: Construct filename without opening HDF5 file.
+        output_filename = self._tdb.truchas_output(r).filename
+        output_write_time = os.path.getmtime(output_filename)
+        restart_write_time = os.path.getmtime(restart_filename)
+        return restart_write_time < output_write_time
 
 
     def run_inputs(self, template_input_file, replacements,
@@ -221,6 +237,7 @@ class TruchasStudy:
                     for i, r in zip(new_input_files, new_replacements)]
             with multiprocessing.Pool(self._njobs) as pool:
                 pool.starmap(_run, args)
+            print("Completed all simulations.\n")
 
 
     def run_if(self, template_input, replacements, restart=None):
