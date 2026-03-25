@@ -265,7 +265,7 @@ class TruchasStudy:
         for v, x in params_variation.items():
             pvi = copy.deepcopy(params_default)
             pvi[v] = x
-            psi = [inputs for inputs in _dict_product(pvi)]
+            psi = [inputs for inputs in dict_product(pvi)]
             for p in psi:
                 # frozenset appears to distinguish int from float,
                 # while identifier doesn't, preventing collisions.
@@ -422,9 +422,24 @@ class TruchasStudy:
         return replacements
 
 
-def _dict_product(d):
+def dict_product(d):
     """
-    Yield one dict per combination of the values in d.
+    Given a dictionary where each key maps to an iterable of values,
+    this function yields dictionaries representing the Cartesian product
+    of those values.
+
+    Example:
+        >>> d = {"color": ["red", "blue"], "size": ["S", "M"]}
+        >>> list(dict_product(d))
+        [
+            {"color": "red", "size": "S"},
+            {"color": "red", "size": "M"},
+            {"color": "blue", "size": "S"},
+            {"color": "blue", "size": "M"},
+        ]
+
+    :param d: A dictionary mapping keys to iterables of values.
+    :yield: Dictionaries containing one value per key for each combination.
     """
     keys = d.keys()
     for combo in itertools.product(*d.values()):
