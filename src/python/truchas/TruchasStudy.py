@@ -267,7 +267,10 @@ class TruchasStudy:
             pvi[v] = x
             psi = [inputs for inputs in _dict_product(pvi)]
             for p in psi:
-                param_set[frozenset(p.items())] = copy.deepcopy(p)
+                # frozenset appears to distinguish int from float,
+                # while identifier doesn't, preventing collisions.
+                identifier = TruchasDatabase.identifier(p) #frozenset(p.items())
+                param_set[identifier] = copy.deepcopy(p)
 
         return param_set.values()
 
