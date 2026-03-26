@@ -1,0 +1,35 @@
+playback "geom2.jou"
+
+# free-space wavelength = 122 mm
+# wavelength in potato (eps_r = 65) = 15 mm
+# wavelength in glass  (eps_r = 2.55) = 76 mm
+
+#{ppwl = 10} # points per wavelength
+#{fs_size = 122/ppwl}
+#{g_size = 76/ppwl}
+#{p_size = 15/ppwl}
+#{wg_size = 4.5}
+
+# Waveguide
+volume 1 size {wg_size}
+mesh volume 1
+htet volume 1 structured
+
+# glass plate: include surfaces to avoid geometry sizing there
+volume 2 size {g_size}
+surface 9 15 size {g_size}
+
+# potato: include surfaces to avoid geometry sizing there
+volume 3 size {p_size}
+surface 12 13 size {p_size}
+
+# oven: element size grading happens here
+volume 4 size {fs_size}
+
+volume 2 to 4 scheme tetmesh
+mesh volume 3 2 4
+
+set exodus netcdf4 off
+set large exodus file on
+export mesh "em-mesh2-10.gen" overwrite
+quit

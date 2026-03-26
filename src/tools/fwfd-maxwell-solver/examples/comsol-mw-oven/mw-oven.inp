@@ -1,0 +1,59 @@
+// COMSOL Microwave Oven Example
+
+{
+  "mesh":{
+      "mesh-file": "meshes/em-mesh2-10.gen",
+      "coord-scale-factor": 1e-3
+      },
+  "materials": {
+      "potato":{
+          "properties":{
+              "relative-permittivity": 65.0,
+              "dielectric-loss-tangent": 0.30769
+              }
+          },
+      "glass":{
+          "properties":{
+              "relative-permittivity": 2.55
+              }
+          }
+      },
+  "bodies":{
+      "body1": {"type": "element-block", "blockids": [3], "material": "glass"},
+      "body2": {"type": "element-block", "blockids": [4], "material": "potato"},
+      "body3": {"type": "background", "material": "VOID"}
+      },
+  "solver": {
+     "frequency":  2.45000E+09,
+     "use-mixed-form": false,
+     "solver-type": "minres",
+     "rel-tol":  1e-10,
+     "max-iter": 100000,
+     "print-level": 2,
+     "precon": {
+       "type": "ssor", "method": "ssor",
+       "params": {"omega": 0.95, "num-cycles": 6}
+     },
+     "bc": {
+       "y=0 symmetry": {
+         "face-set-ids": [1],
+         "type": "pmc"
+       },
+       "walls": {
+         "face-set-ids": [2],
+         "sigma":  5.80000E+07,
+         "type": "impedance"
+       },
+       "waveguide port": {
+         "face-set-ids": [3],
+         "center": [-1.83500E-01,  0.00000E+00,  1.79000E-01],
+         "x-axis": [ 0.00000E+00,  1.00000E+00,  0.00000E+00],
+         "y-axis": [ 0.00000E+00,  0.00000E+00,  1.00000E+00],
+         "x-width":  7.80000E-02,
+         "y-width":  1.80000E-02,
+         "type": "wg-port",
+         "power":  1.00000E+03
+       }
+     }
+   }
+}

@@ -1,0 +1,71 @@
+#{wo = 267} # Oven width
+#{do = 270} # Oven depth
+#{ho = 188} # Oven height
+#{wg = 50} # Waveguide width
+#{dg = 78} # Waveguide depth
+#{hg = 18} # Waveguide height
+#{rp = 113.5} # Glass plate radius
+#{hp = 6} # Glass plate height
+#{bp = 15} # Glass plate base
+#{rpot = 31.5} # Potato radius
+#{dpot = 1}
+
+# Oven; bottom at z=0
+brick x {wo} y {do} z {ho}
+move surface 2 location 0 0 0 include_merged
+
+# Waveguide
+brick x {wg} y {dg} z {hg}
+move curve 13 midpoint location curve 3 except y include_merged
+
+# Glass plate
+create cylinder height {hp} radius {rp}
+move surface 14 location 0 0 0 include_merged
+move surface 14 x 0 y 0 z {bp} include_merged
+remove overlap volume 1 3 modify volume 1
+compress all
+
+# Potato
+create sphere radius {rpot}
+move volume 4 location surface 18 except x y include_merged
+move volume 4 x 0 y 0 z {rpot-dpot} include_merged
+remove overlap volume 4 2 modify volume 4
+remove overlap volume 3 4 modify volume 3
+compress all
+
+# Cut in half, keep y>0
+webcut volume all with plane yplane offset 0
+delete volume 1 to 4
+compress all
+
+imprint volume all
+merge volume all
+compress all
+
+block 1 volume 1
+block 1 name "waveguide"
+
+block 2 volume 4
+block 2 name "oven"
+
+block 3 volume 2
+block 3 name "plate"
+
+block 4 volume 3
+block 4 name "potato"
+
+group "xz_plane" add surface with y_coord == 0
+group "wg_port" add surface 7
+
+group "walls" add surface with not is_merged
+group "walls" remove surface in wg_port
+group "walls" remove surface in xz_plane
+
+sideset 1 add xz_plane
+sideset 1 name "y=0"
+
+sideset 2 add walls
+sideset 2 name "walls"
+
+sideset 3 add wg_port
+sideset 3 name "wg_port"
