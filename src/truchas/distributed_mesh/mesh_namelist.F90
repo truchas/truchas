@@ -43,9 +43,11 @@ contains
 
     !! Metis parameters
     integer :: metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
-               metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+               metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl, &
+               metis_major_partitions
     namelist /mesh/ metis_ptype, metis_iptype, metis_ctype, metis_ncuts, metis_niter, &
-                    metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl
+                    metis_ufactor, metis_minconn, metis_contig, metis_seed, metis_dbglvl, &
+                    metis_major_partitions
 
     !! Namelist variables for the internal mesh
     type :: coord_grid
@@ -99,6 +101,7 @@ contains
       metis_contig  = NULL_I
       metis_seed    = -314159
       metis_dbglvl  = NULL_I
+      metis_major_partitions = NULL_I
 
       !! Read the MESH namelist
       if (is_IOP) read(lun,nml=mesh,iostat=ios,iomsg=iom)
@@ -131,6 +134,7 @@ contains
       call broadcast(metis_contig)
       call broadcast(metis_seed)
       call broadcast(metis_dbglvl)
+      call broadcast(metis_major_partitions)
 
 
       if (mesh_type == NULL_C) then
@@ -309,6 +313,7 @@ contains
       select case (lower_case(partitioner))
       case ('metis')
         plist => params%sublist('metis-options')
+        if (metis_major_partitions /= NULL_I) call plist%set('major-partitions', metis_major_partitions)
         if (metis_ptype   /= NULL_I) call plist%set('ptype',   metis_ptype)
         if (metis_iptype  /= NULL_I) call plist%set('iptype',  metis_iptype)
         if (metis_ctype   /= NULL_I) call plist%set('ctype',   metis_ctype)

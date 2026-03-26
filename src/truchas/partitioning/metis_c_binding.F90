@@ -200,8 +200,8 @@ module metis_c_binding
             !! The weights of the edges as describe in Section 5.5 of the [manual](http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf).
         integer(kind=idx_t) , intent(in) :: nparts
             !! The number of parts to partition the graph.
-        type(c_ptr), value :: tpwgts ! pass C_NULL_PTR or an array matching the following declaration
-        !real(kind=real_t), intent(in), optional :: tpwgts(nparts*ncon)
+        !type(c_ptr), value :: tpwgts ! pass C_NULL_PTR or an array matching the following declaration
+        real(kind=real_t), intent(in), optional :: tpwgts(nparts*ncon)
             !! An array of size `nparts*ncon` that specifies the desired weight for each partition and constraint.
             !! If not present, the graph is divided equally among the partitions. More in the description.
         type(c_ptr), value :: ubvec ! pass C_NULL_PTR or an array matching the following declaration
@@ -265,8 +265,8 @@ module metis_c_binding
             !! The weights of the edges as describe in Section 5.5 of the [manual](http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf).
         integer(kind=idx_t), intent(in) :: nparts
             !! The number of parts to partition the graph.
-        type(c_ptr), value :: tpwgts ! pass C_NULL_PTR or an array matching the following declaration
-        !real(kind=real_t), intent(in), optional :: tpwgts(nparts*ncon)
+        !type(c_ptr), value :: tpwgts ! pass C_NULL_PTR or an array matching the following declaration
+        real(kind=real_t), intent(in), optional :: tpwgts(nparts*ncon)
             !! An array of size `nparts*ncon` that specifies the desired weight for each partition and constraint.
             !! If not present, the graph is divided equally among the partitions. More in the description.
         type(c_ptr), value :: ubvec ! pass C_NULL_PTR or an array matching the following declaration

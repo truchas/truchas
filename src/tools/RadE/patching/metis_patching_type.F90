@@ -292,11 +292,11 @@ contains
     select case (ptype)
     case (METIS_PTYPE_RB)
     ierr = METIS_PartGraphRecursive(this%e%nface, 1, this%xfnhbr, this%fnhbr, &
-        vwgt, c_null_ptr, ewgt, this%npatch_init, c_null_ptr, c_null_ptr, &
+        vwgt, c_null_ptr, ewgt, this%npatch_init, null(), c_null_ptr, &
         c_loc(options), objval, this%f2p_map)
     case (METIS_PTYPE_KWAY)
     ierr = METIS_PartGraphKway(this%e%nface, 1, this%xfnhbr, this%fnhbr, &
-        vwgt, c_null_ptr, ewgt, this%npatch_init, c_null_ptr, c_null_ptr, &
+        vwgt, c_null_ptr, ewgt, this%npatch_init, null(), c_null_ptr, &
         c_loc(options), objval, this%f2p_map)
     case default
       stat = 1

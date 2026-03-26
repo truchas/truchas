@@ -25,6 +25,7 @@ module metis_partitioner_type
   type, extends(graph_partitioner), public :: metis_partitioner
     private
     type(parameter_list), pointer :: params => null()
+    integer :: npart_major
   contains
     procedure :: compute
   end type
@@ -56,6 +57,81 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    integer(idx_t) :: p, offset, npart_major, npart_minor, nvrtx_minor
+    real(real_t), allocatable :: tpwgts(:), ewgt_minor(:)
+    integer(idx_t), allocatable :: part_major(:), part_minor(:)
+    integer(idx_t), allocatable :: sub_xadj(:), sub_adjncy(:)
+    logical, allocatable :: mask(:)
+    integer :: j, n
+
+    call this%params%get('major-partitions', npart_major, stat, errmsg, default=1_idx_t)
+
+    if (npart_major == 1) then
+
+      !allocate(tpwgts(npart), source=1.0_real_t/npart)
+      call compute_core(this, nvrtx, xadj, adjncy, ewgt, npart, null(), part, stat, errmsg)
+
+    else
+
+      !! First-level, major partitions
+
+      ! Target major-partition weights
+      tpwgts = npart / npart_major + merge(1, 0, [(p, p=1, npart_major)] <= modulo(npart, npart_major))
+      tpwgts = tpwgts / npart ! must sum to 1
+
+      allocate(part_major, mold=part)
+      call compute_core(this, nvrtx, xadj, adjncy, ewgt, npart_major, tpwgts, part_major, stat, errmsg)
+      if (stat /= 0) return
+
+      INSIST(minval(part_major) == 1 .and. maxval(part_major) == npart_major)
+
+      part = 0
+      !! Second-level, minor partitions
+      offset = 0
+      do p = 1, npart_major
+        ! Subgraph of major partition p.
+        mask = (part_major == p)
+        call get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy)
+
+        ! Partition major partition p.
+        nvrtx_minor = size(sub_xadj) - 1
+        !ewgt_minor = pack(ewgt, mask)
+        ewgt_minor = spread(1.0_real_t, dim=1, ncopies=size(sub_adjncy))
+        if (allocated(part_minor)) deallocate(part_minor)
+        allocate(part_minor(nvrtx_minor))
+        npart_minor = npart / npart_major
+        if (p <= modulo(npart, npart_major)) npart_minor = npart_minor + 1
+        !tpwgts = spread(1.0_real_t/npart_minor, dim=1, ncopies=npart_minor)
+        call compute_core(this, nvrtx_minor, sub_xadj, sub_adjncy, ewgt_minor, npart_minor, null(), part_minor, stat, errmsg)
+        if (stat /= 0) return
+
+        INSIST(minval(part_minor) == 1)
+        INSIST(maxval(part_minor) == npart_minor)
+
+        !! Assign partition ids for the minor partitions in major partition p.
+        part = unpack(offset+part_minor, mask, part)
+        offset = offset + npart_minor
+      end do
+      INSIST(minval(part) == 1 .and. maxval(part) == npart)
+    end if
+
+  end subroutine compute
+
+  subroutine compute_core(this, nvrtx, xadj, adjncy, ewgt, npart, tpwgts, part, stat, errmsg)
+
+    use metis_c_binding
+    use string_utilities, only: i_to_c
+    use,intrinsic :: iso_c_binding, only: c_loc, c_null_ptr
+
+    class(metis_partitioner), intent(inout) :: this
+    integer(idx_t), intent(in)  :: nvrtx, xadj(:), adjncy(:) ! the graph
+    real(real_t),   intent(in)  :: ewgt(:) ! edge weights
+    real(real_t),   intent(in), optional  :: tpwgts(:) ! target partition weights
+    integer(idx_t), intent(in)  :: npart   ! number of parts
+    integer(idx_t), intent(out) :: part(:) ! graph vertex partition vector
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
     integer(idx_t) :: ierr, objval
     integer(idx_t), target :: options(0:METIS_NOPTIONS-1)
     integer :: ptype
@@ -66,6 +142,7 @@ contains
     ASSERT(size(ewgt) == size(adjncy))
     ASSERT(npart >= 1)
     ASSERT(size(part) == nvrtx)
+    !ASSERT(size(tpwgts) == npart)
 
     ierr = METIS_SetDefaultOptions(options)
     INSIST(ierr == METIS_OK)  ! really this should never fail
@@ -106,11 +183,11 @@ contains
     select case (ptype)
     case (METIS_PTYPE_RB)
       ierr = METIS_PartGraphRecursive(nvrtx, 1, xadj, adjncy, &
-          c_null_ptr, c_null_ptr, c_null_ptr, npart, c_null_ptr, c_null_ptr, &
+          c_null_ptr, c_null_ptr, c_null_ptr, npart, tpwgts, c_null_ptr, &
           c_loc(options), objval, part)
     case (METIS_PTYPE_KWAY)
       ierr = METIS_PartGraphKway(nvrtx, 1, xadj, adjncy, &
-          c_null_ptr, c_null_ptr, c_null_ptr, npart, c_null_ptr, c_null_ptr, &
+          c_null_ptr, c_null_ptr, c_null_ptr, npart, tpwgts, c_null_ptr, &
           c_loc(options), objval, part)
     case default
       stat = 1
@@ -131,6 +208,47 @@ contains
       return
     end if
 
-  end subroutine compute
+  end subroutine compute_core
+
+  !! Return the subgraph corresponding to the nodes with true mask value.
+  subroutine get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy)
+
+    use metis_c_binding
+
+    integer(idx_t), intent(in) :: xadj(:), adjncy(:)
+    logical, intent(in) :: mask(:)
+    integer(idx_t), allocatable, intent(out) :: sub_xadj(:), sub_adjncy(:)
+
+    integer(idx_t) :: i, j, n
+    integer(idx_t), allocatable :: map(:)
+
+    allocate(map(size(mask)), sub_xadj(count(mask)+1))
+
+    n = 0
+    map = 0
+    sub_xadj(1) = 1
+    do j = 1, size(mask)
+      if (.not.mask(j)) cycle
+      n = n + 1
+      map(j) = n
+      sub_xadj(n+1) = sub_xadj(n)
+      do i = xadj(j), xadj(j+1)-1
+        if (mask(adjncy(i))) sub_xadj(n+1) = sub_xadj(n+1) + 1
+      end do
+    end do
+    allocate(sub_adjncy(sub_xadj(n+1)-1))
+
+    n = 0
+    do j = 1, size(mask)
+      if(.not.mask(j)) cycle
+      do i = xadj(j), xadj(j+1)-1
+        if (mask(adjncy(i))) then
+          n = n + 1
+          sub_adjncy(n) = map(adjncy(i))
+        end if
+      end do
+    end do
+
+  end subroutine get_subgraph
 
 end module metis_partitioner_type
