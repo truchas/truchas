@@ -290,8 +290,22 @@ from the METIS library is used to partition the dual graph of the mesh. This
 is the graph whose nodes are the mesh cells and edges are the faces shared by
 cells. The partitioning procedures have the following integer-valued options
 that may be specified, though all have reasonable defaults so that none must
-be specified. See the METIS documentation :footcite:`karypis1998fast` for more
-details on these options.
+be specified.
+
+metis_major_partitions
+^^^^^^^^^^^^^^^^^^^^^^
+The number of major partitions in a 2-level partitioning strategy. For values
+N > 1, the mesh is first partitioned into N major parts, and then each part
+is further partitioned into NPROC/N or NPROC/N + 1 minor parts, such that the
+total number of (minor) parts equals NPROC -- one part per MPI rank. The major
+parts are weighted such that the minor parts have equal size, so it isn't
+necessary that N divide NPROC evenly to obtain load balancing. The minor parts
+are assigned to ranks in major order: all minor parts deriving from a major
+part are assigned consecutively before moving to the next major part.
+The default is 1, which reduces to the usual single-level partitioning.
+
+The following options are provided by the METIS library; see its documentation
+:footcite:`karypis1998fast` for more details.
 
 metis_ptype
 ^^^^^^^^^^^^
