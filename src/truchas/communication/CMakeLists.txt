@@ -32,8 +32,10 @@ set(MPI_USERS
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
-  set_source_files_properties(${MPI_USERS}
-    TARGET_DIRECTORY truchas PROPERTIES COMPILE_OPTIONS "-mismatch;-w")
+    set_property(SOURCE ${MPI_USERS}
+        TARGET_DIRECTORY truchas
+	APPEND
+	PROPERTY COMPILE_OPTIONS "-mismatch" "-w")
 endif()
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)

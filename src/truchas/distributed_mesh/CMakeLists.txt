@@ -22,6 +22,7 @@ target_sources(truchas PRIVATE
   simpl_mesh_factory.F90
   simpl_mesh_tools.F90
   simpl_mesh_gmv.F90
+  morton_order.F90
 )
 
 # not needed?

@@ -97,10 +97,6 @@ contains
 
         call viz_file%write_cell_data(blk, '|H|', abs(zvector))
 
-        !! Output the mesh partition FIXME: output integer; name "ProcessIds" ???
-        scalar = spread(real(this_PE,kind=r8), dim=1, ncopies=ncell)
-        call viz_file%write_cell_data(blk, 'MPI rank', scalar)
-
         zscalar = dd(block_nodes)
         call viz_file%write_point_data(blk, 'div_D_re', zscalar%re)
 
@@ -113,8 +109,14 @@ contains
         call viz_file%write_point_data(blk, '|div_D|', abs(zscalar))
         INSIST(stat == 0)
 
-        !SPECULATIVE!
-        !call viz_file%write_point_data(blk, 'vtkGlobalPointIds', solver%mesh%xnode(block_nodes))
+        block
+          integer, allocatable :: iscalar(:)
+          iscalar = solver%mesh%cell_imap%global_index(block_cells)
+          call viz_file%write_cell_data(blk, 'vtkGlobalCellIds', iscalar)
+
+          iscalar = spread(this_PE, dim=1, ncopies=ncell)
+          call viz_file%write_cell_data(blk, 'vtkProcessId', iscalar)
+        end block
       end associate
     end do
 

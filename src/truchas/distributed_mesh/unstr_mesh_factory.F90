@@ -274,6 +274,12 @@ contains
     if (is_IOP) then
       !! Compute the partition sizes and the permutation making this a block partition.
       call blocked_partition(part, cell_psize, cell_perm)
+    end if
+
+    if (.not.is_IOP) allocate(mesh%coord(3,0))
+    call morton_cell_order(xcnode, cnode, mesh%coord, cell_psize, cell_perm)
+
+    if (is_IOP) then
       !! Reorder cell-based arrays.
       call reorder(xcnode, cnode, cell_perm)
       call reorder(xcnhbr, cnhbr, cell_perm)
@@ -437,8 +443,6 @@ contains
         stat = 1
         errmsg = '3 rotation angles required'
       end if
-    else
-      allocate(mesh%coord(3,0))
     end if
     call broadcast_status(stat, errmsg)
     if (stat /= 0) return
@@ -1593,5 +1597,116 @@ contains
       call broadcast(errmsg)
     end if
   end subroutine broadcast_status
+
+  subroutine morton_cell_order(xcnode, cnode, x, bsizes, perm)
+
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
+    use index_map_type
+    use parallel_communication, only: nPE, is_IOP
+    use morton_order
+
+    !! Arguments are only meaningful on the I/O process (rank 0)
+    integer, intent(in) :: xcnode(:), cnode(:)
+    real(r8), intent(in) :: x(:,:)
+    integer, intent(in) :: bsizes(:)
+    integer, intent(inout) :: perm(:)
+
+    integer :: j, k, n
+    real(r8), allocatable :: xc(:,:), z(:,:)
+    integer, allocatable :: p(:), q(:), new_p(:)
+    type(index_map) :: imap
+
+    !! Compute the cell centroids (globally on rank 0)
+    if (is_IOP) then
+      ASSERT(size(xcnode)-1 == size(perm))
+      ASSERT(size(bsizes) == nPE)
+      allocate(xc(3,size(perm)))
+      do j = 1, size(perm)
+        n = perm(j)
+        associate (node_list => cnode(xcnode(n):xcnode(n+1)-1))
+          xc(:,j) = sum(x(:,node_list),dim=2) / size(node_list)
+        end associate
+      end do
+    else
+      allocate(xc(3,0))
+    end if
+
+    !! Distribute the centroids and permutation according to the block
+    !! partitioning -- one block per rank. On each rank PERM is just the
+    !! list of global indices (ordered) of the cells comprising the block.
+    call imap%init(bsizes)
+    allocate(z(3,imap%local_size), p(imap%local_size))
+    call imap%scatter(xc, z)
+    call imap%scatter(perm, p)
+
+    !! Apply the Morton ordering locally.
+    allocate(q, new_p, mold=p)
+    call get_morton_permutation(z, q)
+    do j = 1, size(p)
+      new_p(j) = p(q(j))
+    end do
+
+    !! Collate the per-block reorderings to rank 0
+    call imap%gather(new_p, perm)
+
+  end subroutine morton_cell_order
+
+!  subroutine get_morton_permutation(xc, p)
+!
+!    use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
+!    use sort_utilities, only: heap_sort
+!
+!    real(r8), intent(in) :: xc(:,:)
+!    integer, intent(out) :: p(:)
+!
+!    integer(i8), allocatable :: keys(:)
+!    real(r8) :: xmin(3), xmax(3), xscale(3)
+!    integer(i8) :: ix, iy, iz
+!    integer :: i
+!
+!    INSIST(size(xc,dim=2) == size(p))
+!
+!    allocate(keys(size(p)))
+!
+!    ! 1. Find Bounding Box
+!    xmin = [minval(xc(1,:)), minval(xc(2,:)), minval(xc(3,:))]
+!    xmax = [maxval(xc(1,:)), maxval(xc(2,:)), maxval(xc(3,:))]
+!
+!    ! Prevent division by zero for 2D or flat meshes
+!    where (abs(xmax - xmin) < 1.0d-12) xmax = xmin + 1.0d-6
+!    xscale = (2.0d0**21 - 1.0d0) / (xmax - xmin)
+!
+!    ! 2. Generate Morton Keys
+!    !!$OMP PARALLEL DO PRIVATE(ix, iy, iz) ! Use those 32 cores!
+!    do i = 1, size(xc,dim=2)
+!        ! Normalize to 21-bit integers
+!        ix = int((xc(1,i) - xmin(1)) * xscale(1), i8)
+!        iy = int((xc(2,i) - xmin(2)) * xscale(2), i8)
+!        iz = int((xc(3,i) - xmin(3)) * xscale(3), i8)
+!
+!        ! Interleave bits: ZYX ZYX ZYX...
+!        keys(i) = ior(ior(spread_bits(ix), ishft(spread_bits(iy), 1)), &
+!                         ishft(spread_bits(iz), 2))
+!    end do
+!
+!    ! 4. Indirect Sort
+!    ! keys is sorted, and p is rearranged to match
+!    call heap_sort(keys, p)
+!
+!    deallocate(keys)
+!  end subroutine
+!
+!  pure function spread_bits(x_in) result(x)
+!    use,intrinsic :: iso_fortran_env, only: int64
+!      integer(int64), intent(in) :: x_in
+!      integer(int64) :: x
+!      x = iand(x_in, z'1FFFFF') ! Limit to 21 bits
+!      ! Magic bit-shifting sequence
+!      x = iand(ior(x, ishft(x, 32)), z'1F00000000FFFF')
+!      x = iand(ior(x, ishft(x, 16)), z'1F0000FF0000FF')
+!      x = iand(ior(x, ishft(x, 8)),  z'100F00F00F00F00F')
+!      x = iand(ior(x, ishft(x, 4)),  z'10C30C30C30C30C3')
+!      x = iand(ior(x, ishft(x, 2)),  z'1249249249249249')
+!  end function spread_bits
 
 end module unstr_mesh_factory
