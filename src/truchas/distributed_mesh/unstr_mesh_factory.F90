@@ -276,8 +276,18 @@ contains
       call blocked_partition(part, cell_psize, cell_perm)
     end if
 
+    !! Reorder the cells of each partition for good cache locality
+    call params%get('partition-cell-order', string, default='as-is')
     if (.not.is_IOP) allocate(mesh%coord(3,0))
-    call morton_cell_order(xcnode, cnode, mesh%coord, cell_psize, cell_perm)
+    select case (string)
+    case ('as-is')
+      ! Do nothing; order is inherited from the exodus mesh file order.
+    case ('morton')
+      call morton_cell_order(xcnode, cnode, mesh%coord, cell_psize, cell_perm)
+    case default
+      stat = 1
+      errmsg = 'invalid partition-cell-order value: ' // string
+    end select
 
     if (is_IOP) then
       !! Reorder cell-based arrays.

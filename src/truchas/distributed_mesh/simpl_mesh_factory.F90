@@ -198,6 +198,7 @@ contains
     integer, allocatable :: side_map(:), perm(:), offP_size(:), offP_index(:), cblock(:)
     real(r8) :: csf
     real(r8), allocatable :: angle(:)
+    character(:), allocatable :: string
 
     this => null()
 
@@ -228,8 +229,18 @@ contains
     if (stat /= 0) return
 
     !! Reorder the cells of each partition for good cache locality
+
+    call params%get('partition-cell-order', string, default='as-is')
     if (.not.is_IOP) allocate(mesh%coord(3,0))
-    call morton_cell_order(cnode, mesh%coord, cell_bsize, cell_perm)
+    select case (string)
+    case ('as-is')
+      ! Do nothing; order is inherited from the exodus mesh file order.
+    case ('morton')
+      call morton_cell_order(cnode, mesh%coord, cell_bsize, cell_perm)
+    case default
+      stat = 1
+      errmsg = 'invalid partition-cell-order value: ' // string
+    end select
 
     if (is_IOP) then
       !! Reorder the cell-based arrays.

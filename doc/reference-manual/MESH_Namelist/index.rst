@@ -129,6 +129,24 @@ used in the partition file. Either 0-based (default) or 1-based numbering is
 allowed.
 
 
+partition_cell_order
+^^^^^^^^^^^^^^^^^^^^
+Specifies how the cells within an individual partition are ordered.
+
+:Type: string
+:Default: "as-is"
+:Valid Values: "as-is", "morton"
+
+.. csv-table::
+   :header: "Option", "Description"
+   :class: tight-table
+   :widths: 1 5
+
+   "**as-is**","Maintains the original relative sequence of cells from the \
+   mesh file, bypassing any additional reordering logic within each partition."
+   "**morton**","Reorders cells using a Z-order space-filling curve to improve \
+   cache hits by keeping spatially ""near"" cells close together in memory."
+
 External Mesh File
 ----------------------
 In typical usage, the mesh will be read from a specified ExodusII mesh file.
@@ -295,14 +313,15 @@ be specified.
 metis_major_partitions
 ^^^^^^^^^^^^^^^^^^^^^^
 The number of major partitions in a 2-level partitioning strategy. For values
-N > 1, the mesh is first partitioned into N major parts, and then each part
-is further partitioned into NPROC/N or NPROC/N + 1 minor parts, such that the
-total number of (minor) parts equals NPROC -- one part per MPI rank. The major
-parts are weighted such that the minor parts have equal size, so it isn't
-necessary that N divide NPROC evenly to obtain load balancing. The minor parts
+`n` > 1, the mesh is first partitioned into `n` major parts, and then each part
+is further partitioned into `nproc/n` or `nproc/n` + 1 minor parts, such that
+the total number of (minor) parts equals `nproc` -- one part per MPI rank. The
+major parts are weighted such that the minor parts have equal size, so it isn't
+necessary that `n` divide `nproc` evenly to obtain load balancing. The minor parts
 are assigned to ranks in major order: all minor parts deriving from a major
 part are assigned consecutively before moving to the next major part.
-The default is 1, which reduces to the usual single-level partitioning.
+The default for this parameter is 1, which reduces to the usual
+single-level partitioning.
 
 The following options are provided by the METIS library; see its documentation
 :footcite:`karypis1998fast` for more details.

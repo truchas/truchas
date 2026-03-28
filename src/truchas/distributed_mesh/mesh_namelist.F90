@@ -34,11 +34,11 @@ contains
 
     !! Namelist variables
     character(32) :: name, mesh_type, partitioner
-    character(511) :: mesh_file, partition_file
+    character(511) :: mesh_file, partition_cell_order, partition_file
     real(r8) :: coord_scale_factor, rotation_angles(3)
     integer :: exodus_block_modulus, interface_side_sets(127), first_partition
     namelist /mesh/ name, mesh_file, mesh_type, coord_scale_factor, rotation_angles, &
-        exodus_block_modulus, interface_side_sets, &
+        exodus_block_modulus, interface_side_sets, partition_cell_order, &
         partitioner, partition_file, first_partition
 
     !! Metis parameters
@@ -86,6 +86,7 @@ contains
       partitioner = NULL_C
       partition_file = NULL_C
       first_partition = NULL_I
+      partition_cell_order = NULL_C
       call coord_grid_default(x_axis)
       call coord_grid_default(y_axis)
       call coord_grid_default(z_axis)
@@ -119,6 +120,7 @@ contains
       call broadcast(partitioner)
       call broadcast(partition_file)
       call broadcast(first_partition)
+      call broadcast(partition_cell_order)
       call coord_grid_broadcast(x_axis)
       call coord_grid_broadcast(y_axis)
       call coord_grid_broadcast(z_axis)
@@ -181,6 +183,15 @@ contains
       if (any(rotation_angles /= NULL_R)) then
         if (any(rotation_angles == NULL_R)) call TLS_fatal('ROTATION_ANGLES requires 3 values')
         call plist%set('rotation-angles', rotation_angles)
+      end if
+
+      if (partition_cell_order /= NULL_C) then
+        select case (partition_cell_order)
+        case ('as-is', 'morton')
+        case default
+          call TLS_fatal('invalid partition_cell_order: ' // trim(partition_cell_order)) 
+        end select
+        call plist%set('partition-cell-order', partition_cell_order)
       end if
 
       call TLS_info('  read namelist "' // trim(name) // '"')
