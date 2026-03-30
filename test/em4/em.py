@@ -36,7 +36,7 @@ def get_heat_source(tdata):
 
 
 def get_Emag(tdata):
-    temdata = tdata.em_data("Group_0")
+    temdata = tdata.em_data("stuff")
     xc = temdata.centroids()
     r = np.sqrt(xc[:,0]**2 + xc[:,1]**2)
     Emagv = temdata.field("|E|")
