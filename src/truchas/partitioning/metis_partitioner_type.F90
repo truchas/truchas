@@ -61,17 +61,28 @@ contains
     real(real_t), allocatable :: tpwgts(:), ewgt_minor(:)
     integer(idx_t), allocatable :: part_major(:), part_minor(:)
     integer(idx_t), allocatable :: sub_xadj(:), sub_adjncy(:)
-    logical, allocatable :: mask(:)
+    logical, allocatable :: mask(:), emask(:)
     integer :: j, n
 
     call this%params%get('major-partitions', npart_major, stat, errmsg, default=1_idx_t)
+    if (stat /= 0) return
+    if (npart_major < 1) then
+      stat = 1
+      errmsg = 'major-partitions must be >= 1'
+      return
+    end if
 
     if (npart_major == 1) then
 
-      !allocate(tpwgts(npart), source=1.0_real_t/npart)
       call compute_core(this, nvrtx, xadj, adjncy, ewgt, npart, null(), part, stat, errmsg)
 
     else
+
+      if (npart_major > npart) then
+        stat = 1
+        errmsg = 'major-partitions exceeds the number of partitions'
+        return
+      end if
 
       !! First-level, major partitions
 
@@ -82,34 +93,28 @@ contains
       allocate(part_major, mold=part)
       call compute_core(this, nvrtx, xadj, adjncy, ewgt, npart_major, tpwgts, part_major, stat, errmsg)
       if (stat /= 0) return
-
       INSIST(minval(part_major) == 1 .and. maxval(part_major) == npart_major)
 
-      part = 0
       !! Second-level, minor partitions
+      part = 0
       offset = 0
       do p = 1, npart_major
-        ! Subgraph of major partition p.
         mask = (part_major == p)
-        call get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy)
-
-        ! Partition major partition p.
-        nvrtx_minor = size(sub_xadj) - 1
-        !ewgt_minor = pack(ewgt, mask)
-        ewgt_minor = spread(1.0_real_t, dim=1, ncopies=size(sub_adjncy))
-        if (allocated(part_minor)) deallocate(part_minor)
-        allocate(part_minor(nvrtx_minor))
         npart_minor = npart / npart_major
         if (p <= modulo(npart, npart_major)) npart_minor = npart_minor + 1
-        !tpwgts = spread(1.0_real_t/npart_minor, dim=1, ncopies=npart_minor)
-        call compute_core(this, nvrtx_minor, sub_xadj, sub_adjncy, ewgt_minor, npart_minor, null(), part_minor, stat, errmsg)
-        if (stat /= 0) return
-
-        INSIST(minval(part_minor) == 1)
-        INSIST(maxval(part_minor) == npart_minor)
-
-        !! Assign partition ids for the minor partitions in major partition p.
-        part = unpack(offset+part_minor, mask, part)
+        if (npart_minor > 1) then ! partition the major partition
+          call get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy, emask)
+          nvrtx_minor = size(sub_xadj) - 1
+          ewgt_minor = pack(ewgt, emask)
+          allocate(part_minor(nvrtx_minor))
+          call compute_core(this, nvrtx_minor, sub_xadj, sub_adjncy, ewgt_minor, npart_minor, null(), part_minor, stat, errmsg)
+          if (stat /= 0) return
+          INSIST(minval(part_minor) == 1 .and. maxval(part_minor) == npart_minor)
+          part = unpack(offset+part_minor, mask, part)
+          deallocate(part_minor)
+        else
+          where (mask) part = offset + 1
+        end if
         offset = offset + npart_minor
       end do
       INSIST(minval(part) == 1 .and. maxval(part) == npart)
@@ -211,13 +216,15 @@ contains
   end subroutine compute_core
 
   !! Return the subgraph corresponding to the nodes with true mask value.
-  subroutine get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy)
+  !! Also return the associated edge mask
+  subroutine get_subgraph(xadj, adjncy, mask, sub_xadj, sub_adjncy, emask)
 
     use metis_c_binding
 
     integer(idx_t), intent(in) :: xadj(:), adjncy(:)
     logical, intent(in) :: mask(:)
     integer(idx_t), allocatable, intent(out) :: sub_xadj(:), sub_adjncy(:)
+    logical, allocatable, intent(out) :: emask(:)
 
     integer(idx_t) :: i, j, n
     integer(idx_t), allocatable :: map(:)
@@ -239,15 +246,18 @@ contains
     allocate(sub_adjncy(sub_xadj(n+1)-1))
 
     n = 0
+    allocate(emask(size(adjncy)), source=.false.)
     do j = 1, size(mask)
       if(.not.mask(j)) cycle
       do i = xadj(j), xadj(j+1)-1
         if (mask(adjncy(i))) then
           n = n + 1
           sub_adjncy(n) = map(adjncy(i))
+          emask(i) = .true.
         end if
       end do
     end do
+    INSIST(size(sub_adjncy) == count(emask))
 
   end subroutine get_subgraph
 
