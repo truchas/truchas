@@ -184,15 +184,11 @@ contains
       allocate(buffer(1000))
       inquire(lun,pos=last_pos)  ! starting position in stream
       do
-#ifdef INTEL_BUG20121013A
         !! Fill buffer a character at a time
         do buflen = 1, size(buffer)
           read(lun,iostat=ios) buffer(buflen)
           if (ios /= 0) exit
         end do
-#else
-        read(lun,iostat=ios) buffer
-#endif
         if (ios /= 0 .and. ios /= iostat_end) then
           errmsg = 'read error: iostat=' // i_to_c(ios)
           stat = -1
