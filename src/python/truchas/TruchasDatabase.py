@@ -15,10 +15,10 @@ import hashlib
 import truchas
 
 _TruchasRun = collections.namedtuple("_TruchasRun", ("parameters",
-                                                   "input_file",
-                                                   "dump_dir",
-                                                   "dump_file",
-                                                   ))
+                                                     "input_file",
+                                                     "dump_dir",
+                                                     "dump_file",
+                                                     ))
 
 
 class TruchasDatabase:

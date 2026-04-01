@@ -58,6 +58,7 @@ contains
       use_portage_backend) &
     result(mesh_map) bind(c)
 
+    use truchas_logging_services
     use kuprat_mapper_type
 #ifdef USE_PORTAGE
     use portage_mapper_type
@@ -74,15 +75,16 @@ contains
     type(mapper_switch), pointer :: this => null()
 
     if (.not.mpi_initialized) call mpi_init
+    call TLS_set_verbosity(TLS_VERB_SILENT)
 
     allocate(this)
 
 #ifdef USE_PORTAGE
     if (use_portage_backend) then
-      print "(a)", "Using Portage mapper..."
+      call TLS_info("Using Portage mapper...")
       allocate(portage_mapper :: this%mapper)
     else
-      print "(a)", "Using Kuprat mapper..."
+      call TLS_info("Using Kuprat mapper...")
       allocate(kuprat_mapper :: this%mapper)
     end if
 #else
@@ -90,7 +92,7 @@ contains
       write(error_unit,"(a)") "ERROR: Portage is not supported in the build of Truchas. Aborting."
       error stop
     end if
-    print "(a)", "Using Kuprat mapper..."
+    call TLS_info("Using Kuprat mapper...")
     allocate(kuprat_mapper :: this%mapper)
 #endif
 

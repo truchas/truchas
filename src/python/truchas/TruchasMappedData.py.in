@@ -59,8 +59,10 @@ class TruchasMappedData(TruchasData):
         self._centroid = None
 
 
-    def __del__(self):
-        self.finalize()
+    # NB: Deactivating finalizer. Don't want MPI finalized at every instantiation when the
+    # restart writer might be running in parallel.
+    # def __del__(self):
+    #     self.finalize()
 
 
     def _field(self, series_id, field_name):
