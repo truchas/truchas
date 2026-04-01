@@ -114,6 +114,8 @@ else()
   message(FATAL_ERROR "Could NOT find a suitable HDF5 installation")
 endif()
 
+find_package(fVTKHDF REQUIRED)
+
 # MUMPS library
 option(USE_MUMPS "Build with support for the MUMPS direct solver library" OFF)
 if (USE_MUMPS)

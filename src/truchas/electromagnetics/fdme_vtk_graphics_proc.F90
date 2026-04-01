@@ -19,7 +19,8 @@ module fdme_vtk_graphics_proc
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, int8
   use fdme_solver_type
-  use vtkhdf_file_type
+  use vtkhdf_mb_file_type
+  use vtkhdf_vtk_cell_types, only: VTK_TETRA
   use parallel_communication
   use string_utilities, only: i_to_c
   implicit none
@@ -37,123 +38,87 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(vtkhdf_file) :: viz_file
+    type(vtkhdf_mb_file) :: viz_file
+    type(vtkhdf_block_handle) :: blk
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), block_cells(:), block_nodes(:)
     integer(int8), allocatable :: types(:)
-    real(r8), allocatable :: g_scalar(:), l_scalar(:)
-    complex(r8), allocatable :: g_vector(:,:), l_vector(:,:), g_zscalar(:), l_zscalar(:)
+    real(r8), allocatable :: scalar(:)
+    complex(r8), allocatable :: zvector(:,:), zscalar(:)
     integer, allocatable :: g_iscalar(:)
     real(r8) :: q(solver%mesh%ncell)
     complex(r8) :: e(3,solver%mesh%ncell), h(3,solver%mesh%ncell), dd(solver%mesh%nnode)
     integer :: j, n, bitmask, ncell, nnode
 
-    if (is_IOP) call viz_file%create(filename, stat, errmsg)
-    call broadcast(stat)
-    if (stat /= 0) then
-      call broadcast_alloc_char(errmsg)
-      return
-    end if
+    call viz_file%create(filename, comm, stat, errmsg)
+    if (stat /= 0) return
 
     call solver%get_heat_source(q)
     call solver%get_cell_efield(e)
     call solver%get_cell_hfield(h)
     call solver%get_div_dfield(dd)
+    call solver%mesh%node_imap%gather_offp(dd)
 
     do j = 1, size(solver%mesh%cell_set_name)
       associate (name => solver%mesh%cell_set_name(j)%s)
-        if (is_IOP) call viz_file%create_block(name, stat, errmsg)
-        call broadcast(stat)
-        if (stat /= 0) then
-          call broadcast_alloc_char(errmsg)
-          return
-        end if
+        blk = viz_file%add_block(name, mode=UG_STATIC)
+        if (stat /= 0) return
         bitmask = ibset(0,pos=j)
-        call solver%mesh%get_global_mesh_block(bitmask, x, xcnode, cnode, &
-            block_cells, block_nodes)
-        if (is_IOP) then
-          types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
-          call viz_file%write_block_mesh(name, x, cnode, xcnode, types, stat, errmsg)
-        end if
-        call broadcast(stat)
-        INSIST(stat == 0)
+        call solver%mesh%get_mesh_block(bitmask, x, xcnode, cnode, block_cells, block_nodes)
+        types = spread(VTK_TETRA, dim=1, ncopies=size(xcnode)-1)
+        call viz_file%write_mesh(blk, x, cnode, xcnode, types)
 
         ncell = size(block_cells) ! number of local cells in block
-        n = global_sum(ncell)
-        allocate(g_scalar(merge(n, 0, is_IOP)))
-        allocate(g_vector(3,merge(n, 0, is_IOP)))
 
-        l_scalar = q(block_cells)
-        call gather(l_scalar, g_scalar)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'Q_EM', g_scalar, stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
+        scalar = q(block_cells)
+        call viz_file%write_cell_data(blk, 'Q_EM', scalar)
 
-        l_vector = e(:,block_cells)
-        call gather(l_vector, g_vector)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'E_re', g_vector%re, stat, errmsg)
-        call broadcast(stat)
+        zvector = e(:,block_cells)
+        call viz_file%write_cell_data(blk, 'E_re', zvector%re)
         INSIST(stat == 0)
 
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'E_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
+        call viz_file%write_cell_data(blk, 'E_im', reshape([zvector%im],shape(zvector)))
 #else
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'E_im', g_vector%im, stat, errmsg)
+        call viz_file%write_cell_data(blk, 'E_im', zvector%im)
 #endif
-        call broadcast(stat)
-        INSIST(stat == 0)
 
-        if (is_IOP) call viz_file%write_cell_dataset(name, '|E|', abs(g_vector), stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, '|E|', abs(zvector))
 
-        l_vector = h(:,block_cells)
-        call gather(l_vector, g_vector)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'H_re', g_vector%re, stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
+        zvector = h(:,block_cells)
+        call viz_file%write_cell_data(blk, 'H_re', zvector%re)
 
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'H_im', reshape([g_vector%im],shape(g_vector)), stat, errmsg)
+        call viz_file%write_cell_data(blk, 'H_im', reshape([zvector%im],shape(zvector)))
 #else
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'H_im', g_vector%im, stat, errmsg)
+        call viz_file%write_cell_data(blk, 'H_im', zvector%im)
 #endif
-        call broadcast(stat)
         INSIST(stat == 0)
 
-        if (is_IOP) call viz_file%write_cell_dataset(name, '|H|', abs(g_vector), stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
+        call viz_file%write_cell_data(blk, '|H|', abs(zvector))
 
-        !! Output the mesh partition
-        call gather(spread(real(this_PE,kind=r8), dim=1, ncopies=ncell), g_scalar)
-        if (is_IOP) call viz_file%write_cell_dataset(name, 'MPI rank', g_scalar, stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
+        !! Output the mesh partition FIXME: output integer; name "ProcessIds" ???
+        scalar = spread(real(this_PE,kind=r8), dim=1, ncopies=ncell)
+        call viz_file%write_cell_data(blk, 'MPI rank', scalar)
 
-        l_zscalar = dd(block_nodes)
-        n = global_sum(size(l_zscalar))
-        allocate(g_zscalar(merge(n, 0, is_IOP)))
-        call gather(l_zscalar, g_zscalar)
-        if (is_IOP) call viz_file%write_point_dataset(name, 'div_D_re', g_zscalar%re, stat, errmsg)
-        call broadcast(stat)
+        zscalar = dd(block_nodes)
+        call viz_file%write_point_data(blk, 'div_D_re', zscalar%re)
+
 #ifdef GNU_PR117774
-        if (is_IOP) call viz_file%write_point_dataset(name, 'div_D_im', [g_zscalar%im], stat, errmsg)
+        call viz_file%write_point_data(blk, 'div_D_im', [zscalar%im])
 #else
-        if (is_IOP) call viz_file%write_point_dataset(name, 'div_D_im', g_zscalar%im, stat, errmsg)
+        call viz_file%write_point_data(blk, 'div_D_im', zscalar%im)
 #endif
-        call broadcast(stat)
+
+        call viz_file%write_point_data(blk, '|div_D|', abs(zscalar))
         INSIST(stat == 0)
 
-        if (is_IOP) call viz_file%write_point_dataset(name, '|div_D|', abs(g_zscalar), stat, errmsg)
-        call broadcast(stat)
-        INSIST(stat == 0)
-
-        deallocate(g_scalar, g_vector, g_zscalar)
+        !SPECULATIVE!
+        !call viz_file%write_point_data(blk, 'vtkGlobalPointIds', solver%mesh%xnode(block_nodes))
       end associate
     end do
 
-    if (is_IOP) call viz_file%close
+    call viz_file%close
 
   end subroutine fdme_vtk_graphics
 
