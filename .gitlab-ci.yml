@@ -8,7 +8,7 @@ build truchas binary:
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.15.0
   variables:
     GIT_FETCH_EXTRA_FLAGS: --tags --prune --prune-tags
     GIT_DEPTH: 0 # fetch all commits and tags
@@ -39,7 +39,7 @@ test truchas intel (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.14.1
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.15.0
   script:
     - export INTELDIR=/opt/intel/oneapi/2025.2
     - export PATH=$INTELDIR/bin/:$PATH
@@ -61,7 +61,7 @@ test truchas intel (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.14.1
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-intel-1.15.0
   script:
   script:
     - export INTELDIR=/opt/intel/oneapi/2025.2
@@ -84,7 +84,7 @@ test truchas GFortran (Debug):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.15.0
   script:
     - source /opt/rh/gcc-toolset-12/enable
     - export FC=gfortran
@@ -104,7 +104,7 @@ test truchas GFortran (Release):
   stage: build
   needs: []
   tags: ["intel"]
-  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.14.1
+  image: registry.gitlab.com/truchas/ci-images:tpl-mpich-gfortran-1.15.0
   script:
     - source /opt/rh/gcc-toolset-12/enable
     - export FC=gfortran
