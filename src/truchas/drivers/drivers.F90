@@ -138,6 +138,7 @@ call hijack_truchas ()
     use solid_mechanics_driver, only: solid_mechanics_enabled, solid_mechanics_step
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
+    use truchas_vtkhdf_output, only: TVO_write_timestep
     use sim_event_queue_type
     use simulation_event_queue
     use time_step_sync_type
@@ -180,6 +181,7 @@ call hijack_truchas ()
     call mem_diag_write('Before main loop:')
 
     call TDO_write_timestep
+    call TVO_write_timestep
     t_write = t
     call probes_write(t)  ! Write initial probe info.
 
@@ -255,6 +257,7 @@ call hijack_truchas ()
           call TLS_info('Too many repeated failures to take a step; &
                         &writing last time step data and terminating')
           call TDO_write_timestep
+          call TVO_write_timestep
           exit MAIN_CYCLE
         end if
 
@@ -295,6 +298,7 @@ call hijack_truchas ()
           call TLS_info(errmsg)
           call TLS_info('Writing last time step data and terminating')
           call TDO_write_timestep
+          call TVO_write_timestep
           exit MAIN_CYCLE
         end if
 
@@ -304,6 +308,7 @@ call hijack_truchas ()
           call TLS_info('')
           call TLS_info('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
+          call TVO_write_timestep
           exit MAIN_CYCLE
         end if
 
@@ -322,6 +327,7 @@ call hijack_truchas ()
           select type (action)
           type is (output_event)
             call TDO_write_timestep
+            call TVO_write_timestep
             t_write = t
           type is (short_edit_event)
             call edit_short
@@ -352,6 +358,7 @@ call hijack_truchas ()
         else
           call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
           call TDO_write_timestep
+          call TVO_write_timestep
         end if
         exit
       end if
@@ -375,12 +382,15 @@ call hijack_truchas ()
     use time_step_module,       only: t, cycle_number
     use thermal_species_driver,       only: thermal_species_delete
     use em_heat_driver, only: em_heat_driver_final
+    use truchas_vtkhdf_output, only: TVO_close
     use truchas_logging_services
     use truchas_timers
 
     character(128) :: message
 
     !---------------------------------------------------------------------------
+
+    call TVO_close()
 
     !deallocate the fluidvof array, and others
 !NNC    call flow_destroy()

@@ -30,6 +30,8 @@ module ustruc_driver
   use truchas_logging_services
   use truchas_timers
   use material_model_driver, only: matl_model
+  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
+      vtkhdf_cell_data_handle
   implicit none
   private
 
@@ -37,6 +39,25 @@ module ustruc_driver
   public :: ustruc_driver_init, ustruc_update, ustruc_output, ustruc_driver_final
   public :: ustruc_read_checkpoint, ustruc_skip_checkpoint
   public :: ustruc_enabled
+  public :: ustruc_vtkhdf_register_temporal_data, ustruc_vtkhdf_output
+
+  !! A registered temporal VTKHDF field for one microstructure component.
+  type :: ustruc_vtkhdf_field_data
+    character(:), allocatable :: data_name
+    logical :: is_vector = .false.
+    type(vtkhdf_cell_data_handle) :: handle
+  end type
+
+  !! The VTKHDF fields registered for one MICROSTRUCTURE model instance.
+  type :: ustruc_vtkhdf_component_data
+    type(ustruc_vtkhdf_field_data), allocatable :: fields(:)
+  end type
+
+  !! The microstructure VTKHDF component data registered for one mesh block.
+  type, public :: ustruc_vtkhdf_block_data
+    private
+    type(ustruc_vtkhdf_component_data), allocatable :: comp(:)
+  end type
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -440,6 +461,124 @@ contains
     end subroutine
 
   end subroutine ustruc_output
+
+  subroutine ustruc_vtkhdf_register_temporal_data(file, block, data)
+
+    use string_utilities, only: i_to_c
+
+    type(vtkhdf_mb_file), intent(inout) :: file
+    type(vtkhdf_block_handle), intent(in) :: block
+    type(ustruc_vtkhdf_block_data), intent(inout) :: data
+
+    integer :: n
+    character(:), allocatable :: label
+
+    if (.not.allocated(this)) return
+    if (allocated(data%comp)) deallocate(data%comp)
+
+    allocate(data%comp(size(this)))
+    do n = 1, size(this)
+      label = 'ustruc' // i_to_c(n)
+
+      !! GL analysis module
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='gl-G', vtk_name=label//'-G', is_vector=.true.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='gl-L', vtk_name=label//'-L', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='gl-t_sol', vtk_name=label//'-t_sol', is_vector=.false.)
+
+      !! LDRD analysis module
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-type', vtk_name=label//'-type', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-lambda1', vtk_name=label//'-lambda1', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-lambda2', vtk_name=label//'-lambda2', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-G', vtk_name=label//'-G', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-V', vtk_name=label//'-V', is_vector=.false.)
+      call maybe_register_field(this(n)%model, data%comp(n), &
+          data_name='ldrd-t_sol', vtk_name=label//'-t_sol', is_vector=.false.)
+    end do
+
+  contains
+
+    subroutine maybe_register_field(model, comp, data_name, vtk_name, is_vector)
+      type(ustruc_model), intent(in) :: model
+      type(ustruc_vtkhdf_component_data), intent(inout) :: comp
+      character(*), intent(in) :: data_name, vtk_name
+      logical, intent(in) :: is_vector
+      integer :: n
+      if (.not.model%has(data_name)) return
+      call append_field(comp, data_name, is_vector)
+      n = size(comp%fields)
+      if (is_vector) then
+        comp%fields(n)%handle = file%register_temporal_cell_data(block, vtk_name, [real(r8)::0,0,0])
+      else
+        comp%fields(n)%handle = file%register_temporal_cell_data(block, vtk_name, 0.0_r8)
+      end if
+    end subroutine
+
+    subroutine append_field(comp, data_name, is_vector)
+      type(ustruc_vtkhdf_component_data), intent(inout) :: comp
+      character(*), intent(in) :: data_name
+      logical, intent(in) :: is_vector
+      type(ustruc_vtkhdf_field_data), allocatable :: tmp(:)
+      integer :: n
+      if (allocated(comp%fields)) then
+        n = size(comp%fields)
+        allocate(tmp(n+1))
+        tmp(:n) = comp%fields
+        call move_alloc(tmp, comp%fields)
+      else
+        allocate(comp%fields(1))
+      end if
+      n = size(comp%fields)
+      comp%fields(n)%data_name = data_name
+      comp%fields(n)%is_vector = is_vector
+    end subroutine
+
+  end subroutine ustruc_vtkhdf_register_temporal_data
+
+  subroutine ustruc_vtkhdf_output(file, block, block_cells, data)
+
+    type(vtkhdf_mb_file), intent(inout) :: file
+    type(vtkhdf_block_handle), intent(in) :: block
+    integer, intent(in) :: block_cells(:)
+    type(ustruc_vtkhdf_block_data), intent(in) :: data
+
+    integer :: k, n
+    real(r8), allocatable :: scalar_out(:), vector_out(:,:)
+
+    if (.not.allocated(this)) return
+    if (.not.allocated(data%comp)) return
+
+    call start_timer('Microstructure')
+
+    !! NB: all microstructure components must be using the same mesh.
+    allocate(scalar_out(this(1)%mesh%ncell_onP), &
+        vector_out(3,this(1)%mesh%ncell_onP))
+
+    do n = 1, size(data%comp)
+      if (.not.allocated(data%comp(n)%fields)) cycle
+      do k = 1, size(data%comp(n)%fields)
+        associate (field => data%comp(n)%fields(k))
+          if (field%is_vector) then
+            call this(n)%model%get(field%data_name, vector_out)
+            call file%write_cell_data(block, field%handle, vector_out(:,block_cells))
+          else
+            call this(n)%model%get(field%data_name, scalar_out)
+            call file%write_cell_data(block, field%handle, scalar_out(block_cells))
+          end if
+        end associate
+      end do
+    end do
+
+    call stop_timer('Microstructure')
+
+  end subroutine ustruc_vtkhdf_output
 
   !! Output the integrated internal state of the analysis components to the HDF
   !! file needed for restarts.  This is additional internal state that is not set

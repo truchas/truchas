@@ -28,7 +28,13 @@ module solid_mechanics_driver
   public :: solid_mechanics_strain_view
   public :: solid_mechanics_stress_view
   public :: solid_mechanics_displacement_view
-  public :: solid_mechanics_compute_viz_fields
+  public :: solid_mechanics_point_field_request
+  public :: solid_mechanics_point_field_values
+  public :: solid_mechanics_cell_field_request
+  public :: solid_mechanics_cell_field_values
+  public :: solid_mechanics_get_point_fields
+  public :: solid_mechanics_get_cell_fields
+  public :: solid_mechanics_get_contact_set_ids
   public :: solid_mechanics_viscoplasticity_enabled
   public :: solid_mechanics_get_plastic_strain
   public :: solid_mechanics_get_plastic_strain_rate
@@ -184,15 +190,23 @@ contains
   end subroutine compute_initial_state
 
 
-  subroutine solid_mechanics_compute_viz_fields(displ, thermal_strain, total_strain, &
-      elastic_stress, rotation_magnitude, gap_displacement, gap_normal_traction, &
-      plastic_strain, plastic_strain_rate)
-    real(r8), intent(out), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
-        elastic_stress(:,:), rotation_magnitude(:), gap_displacement(:), gap_normal_traction(:), &
-        plastic_strain(:,:), plastic_strain_rate(:)
-    call this%sm%compute_viz_fields(displ, thermal_strain, total_strain, elastic_stress, &
-        rotation_magnitude, gap_displacement, gap_normal_traction, &
-        plastic_strain, plastic_strain_rate)
+  subroutine solid_mechanics_get_point_fields(nodes, request, values)
+    integer, intent(in) :: nodes(:)
+    type(solid_mechanics_point_field_request), intent(in) :: request
+    type(solid_mechanics_point_field_values), intent(out) :: values
+    call this%sm%eval_point_fields(nodes, request, values)
+  end subroutine
+
+  subroutine solid_mechanics_get_cell_fields(cells, request, values)
+    integer, intent(in) :: cells(:)
+    type(solid_mechanics_cell_field_request), intent(in) :: request
+    type(solid_mechanics_cell_field_values), intent(out) :: values
+    call this%sm%eval_cell_fields(cells, request, values)
+  end subroutine
+
+  subroutine solid_mechanics_get_contact_set_ids(setids)
+    integer, allocatable, intent(out) :: setids(:)
+    call this%sm%get_contact_set_ids(setids)
   end subroutine
 
   !! PHASE_TABLE routines.

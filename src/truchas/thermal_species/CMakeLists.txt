@@ -45,6 +45,7 @@ target_sources(truchas PRIVATE
   thermal_species_solver_class.F90
   thermal_species_physics_type.F90
   thermal_species_driver.F90
+  diffusion_solver_vtkhdf_output.F90
   mesh_interop.F90
   enthalpy_advector_class.F90
   enthalpy_advector1_type.F90

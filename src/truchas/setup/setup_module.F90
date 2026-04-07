@@ -55,6 +55,7 @@ CONTAINS
     use unstr_mesh_type
     use mesh_manager,           only: init_mesh_manager, unstr_mesh_ptr
     use truchas_danu_output,    only: TDO_write_mesh
+    use truchas_vtkhdf_output,  only: TVO_write_mesh, TVO_register_temporal_data
     use truchas_timers
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -78,6 +79,7 @@ CONTAINS
 
     ! Write the primary truchas mesh.
     call TDO_write_mesh(mesh)
+    call TVO_write_mesh(mesh)
 
     ! NNC, Sep 2014.  This used to be done after the call to INITIAL, but is
     ! needed here because of time-dependent boundary conditions.  I left the
@@ -91,6 +93,7 @@ CONTAINS
 
     ! Initialize cell-centered fluid variables and thermodynamic quantities.
     call INITIAL (t, dt)
+    call TVO_register_temporal_data
 
     ! Set the initial timestep value. If this is a restart, take what is in
     ! restart file; if not, then it was already set by the input file.

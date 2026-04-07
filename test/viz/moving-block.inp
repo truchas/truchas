@@ -1,0 +1,67 @@
+MOVING BLOCK
+
+This test exercises the visualization output with a moving block.
+
+
+&MESH
+  mesh_file = 'moving-block.gen'
+/
+
+&OUTPUTS
+  Output_T = 0.0, 2.0
+  Output_Dt = 0.25
+  move_block_ids = 2
+  move_toolpath_name = 'tp1'
+/
+
+&TOOLPATH
+ name = 'tp1'
+ command_string = '[["moverel",[2,0,0],2]]'
+ start_time = 0.5
+ start_coord = -1.0, 0.0, 0.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+  heat_transport = .true.
+/
+
+&DIFFUSION_SOLVER
+  abs_temp_tol       = 0.0
+  rel_temp_tol       = 1.0e-3
+  abs_enthalpy_tol   = 0.0
+  rel_enthalpy_tol   = 1.0e-3
+  nlk_tol            = 1.0e-3
+  nlk_preconditioner = 'ssor'
+/
+
+&NUMERICS
+  dt_init = 1.0d-2
+  dt_grow = 5.0
+/
+
+&THERMAL_BC
+  name = 'adiabatic'
+  face_set_ids = 1
+  type = 'flux'
+  flux = 0.0
+/
+
+&THERMAL_SOURCE
+  name = 'foo'
+  cell_set_ids = 1, 2
+  source = 1.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'stuff'
+  temperature = 1.0
+/
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/
