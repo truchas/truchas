@@ -135,7 +135,7 @@ contains
 
       ! visualization storage
       ! Last one written is what gets stored to output. See comments in
-      ! sm_bc_type::compute_viz_fields.
+      ! sm_bc_manager_type::get_gap_fields.
       this%displacement(i) = delta(2)
       this%traction(i) = stress2(2)
 

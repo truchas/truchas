@@ -65,11 +65,43 @@ module solid_mechanics_type
     procedure :: strain_view
     procedure :: stress_view
     procedure :: displacement_view
-    procedure :: compute_viz_fields
+    procedure :: eval_point_fields
+    procedure :: eval_cell_fields
+    procedure :: get_contact_set_ids
     procedure :: viscoplasticity_enabled
     procedure :: get_plastic_strain
     procedure :: get_plastic_strain_rate
   end type solid_mechanics
+
+  type, public :: solid_mechanics_point_field_request
+    logical :: displacement = .false.
+    logical :: gap_displacement = .false.
+    logical :: gap_normal_traction = .false.
+  end type
+
+  type, public :: solid_mechanics_point_field_values
+    real(r8), allocatable :: displacement(:,:)
+    real(r8), allocatable :: gap_displacement(:)
+    real(r8), allocatable :: gap_normal_traction(:)
+  end type
+
+  type, public :: solid_mechanics_cell_field_request
+    logical :: total_strain = .false.
+    logical :: thermal_strain = .false.
+    logical :: stress = .false.
+    logical :: rotation = .false.
+    logical :: plastic_strain = .false.
+    logical :: plastic_strain_rate = .false.
+  end type
+
+  type, public :: solid_mechanics_cell_field_values
+    real(r8), allocatable :: total_strain(:,:)
+    real(r8), allocatable :: thermal_strain(:,:)
+    real(r8), allocatable :: stress(:,:)
+    real(r8), allocatable :: rotation(:)
+    real(r8), allocatable :: plastic_strain(:,:)
+    real(r8), allocatable :: plastic_strain_rate(:)
+  end type
 
 contains
 
@@ -195,6 +227,7 @@ contains
     end if
 
     call this%model%accept_state
+    call this%model%mesh%node_imap%gather_offp(this%displacement)
     this%viscoplastic_niter = this%solver%itr
 
     call stop_timer("solid mechanics")
@@ -221,61 +254,160 @@ contains
   end function stress_view
 
 
-  !! Computes the fields centered on cells for visualization (stresses,
-  !! strains, gap displacements, and gap normal tractions). The internal
-  !! fields are centered either on nodes or integration points, so
-  !! specially-build fields for vizualization must be generated.
-  subroutine compute_viz_fields(this, displ, thermal_strain, total_strain, elastic_stress, &
-      rotation_magnitude, gap_displacement, gap_normal_traction, &
-      plastic_strain, plastic_strain_rate)
-
-    use sm_bc_utilities, only: compute_gradient_node_to_cell, compute_stress
+  subroutine eval_point_fields(this, nodes, request, values)
 
     class(solid_mechanics), intent(inout) :: this
-    real(r8), intent(out), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
-        elastic_stress(:,:), rotation_magnitude(:), gap_displacement(:), gap_normal_traction(:), &
-        plastic_strain(:,:), plastic_strain_rate(:)
+    integer, intent(in) :: nodes(:)
+    type(solid_mechanics_point_field_request), intent(in) :: request
+    type(solid_mechanics_point_field_values), intent(out) :: values
 
-    integer :: j
-    real(r8) :: grad_displ(3,3), elastic_strain(6), rotation(3)
+    if (request%displacement) values%displacement = this%displacement(:,nodes)
 
+    if (request%gap_displacement .or. request%gap_normal_traction) then
+      if (request%gap_displacement .and. request%gap_normal_traction) then
+        call this%model%bc%get_gap_fields(nodes, values%gap_displacement, &
+            values%gap_normal_traction)
+      elseif (request%gap_displacement) then
+        call this%model%bc%get_gap_fields(nodes, gap_displacement=values%gap_displacement)
+      else
+        call this%model%bc%get_gap_fields(nodes, gap_traction=values%gap_normal_traction)
+      end if
+    end if
+
+  end subroutine eval_point_fields
+
+  subroutine eval_cell_fields(this, cells, request, values)
+
+    class(solid_mechanics), intent(inout) :: this
+    integer, intent(in) :: cells(:)
+    type(solid_mechanics_cell_field_request), intent(in) :: request
+    type(solid_mechanics_cell_field_values), intent(out) :: values
+
+    real(r8), allocatable :: grad_displ(:,:,:), total_strain(:,:), thermal_strain(:,:), &
+        plastic_strain(:,:), stress(:,:)
+    logical :: need_grad_displ, need_total_strain, need_thermal_strain, need_plastic_strain, &
+        need_stress
+
+    need_grad_displ = request%total_strain .or. request%rotation .or. request%stress .or. &
+        request%plastic_strain_rate
+    need_total_strain = request%total_strain .or. request%stress .or. request%plastic_strain_rate
+    need_thermal_strain = request%thermal_strain .or. request%stress .or. request%plastic_strain_rate
+    need_plastic_strain = request%plastic_strain .or. request%stress .or. request%plastic_strain_rate
+    need_stress = request%stress .or. request%plastic_strain_rate
+
+    !! NB: Some subsidiary procedures below may not be safe for off-process cells.
+    INSIST(all(cells <= this%model%mesh%ncell_onP))
+
+    if (need_grad_displ) call compute_cell_grad_displacement(this, cells, grad_displ)
+    if (need_total_strain) call compute_cell_total_strain(this, grad_displ, total_strain)
+    if (need_thermal_strain) thermal_strain = this%model%strain_thermal(:,cells)
+    if (request%rotation) call compute_cell_rotation(this, grad_displ, values%rotation)
+    if (need_plastic_strain) call get_cell_plastic_strain(this, cells, plastic_strain)
+    if (need_stress) call compute_cell_stress(this, cells, total_strain, thermal_strain, &
+        plastic_strain, stress)
+
+    if (request%total_strain) call move_alloc(total_strain, values%total_strain)
+    if (request%thermal_strain) call move_alloc(thermal_strain, values%thermal_strain)
+    if (request%plastic_strain) call move_alloc(plastic_strain, values%plastic_strain)
+
+    if (request%plastic_strain_rate) &
+        call get_cell_plastic_strain_rate(this, cells, stress, values%plastic_strain_rate)
+    if (request%stress) call move_alloc(stress, values%stress)
+
+  end subroutine eval_cell_fields
+
+  subroutine get_contact_set_ids(this, setids)
+    class(solid_mechanics), intent(in) :: this
+    integer, allocatable, intent(out) :: setids(:)
+    call this%model%bc%get_contact_set_ids(setids)
+  end subroutine
+
+  subroutine compute_cell_grad_displacement(this, cells, grad_displ)
+    use sm_bc_utilities, only: compute_gradient_node_to_cell
+    class(solid_mechanics), intent(in) :: this
+    integer, intent(in) :: cells(:)
+    real(r8), allocatable, intent(out) :: grad_displ(:,:,:)
+    integer :: i, j
+    allocate(grad_displ(3,3,size(cells)))
     associate (mesh => this%model%mesh)
-      allocate(displ(3,mesh%nnode), &
-          total_strain(6,mesh%ncell_onP), elastic_stress(6,mesh%ncell_onP), &
-          rotation_magnitude(mesh%ncell_onP), &
-          plastic_strain(6,mesh%ncell_onP), plastic_strain_rate(mesh%ncell_onP))
-      thermal_strain = this%model%strain_thermal(:,:mesh%ncell_onP)
-      displ(:,:mesh%nnode_onP) = this%displacement(:,:mesh%nnode_onP)
-      call mesh%node_imap%gather_offp(displ)
-
-      do j = 1, mesh%ncell_onP
+      do i = 1, size(cells)
+        j = cells(i)
         associate (cn => mesh%cnode(mesh%xcnode(j):mesh%xcnode(j+1)-1))
-          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), displ(1,cn), grad_displ(:,1))
-          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), displ(2,cn), grad_displ(:,2))
-          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), displ(3,cn), grad_displ(:,3))
+          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), &
+              this%displacement(1,cn), grad_displ(:,1,i))
+          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), &
+              this%displacement(2,cn), grad_displ(:,2,i))
+          call compute_gradient_node_to_cell(mesh%x(:,cn), mesh%volume(j), &
+              this%displacement(3,cn), grad_displ(:,3,i))
         end associate
-        total_strain(:,j) = this%model%strain_tensor(grad_displ)
-
-        rotation(1) = (grad_displ(1,2) - grad_displ(2,1)) / 2
-        rotation(2) = (grad_displ(1,3) - grad_displ(3,1)) / 2
-        rotation(3) = (grad_displ(2,3) - grad_displ(3,2)) / 2
-        rotation_magnitude(j) = norm2(rotation)
-
-        plastic_strain(:,j) = this%model%plastic_strain_cell(j)
-
-        elastic_strain = total_strain(:,j) - thermal_strain(:,j) - plastic_strain(:,j)
-        call compute_stress(this%model%lame1(j), this%model%lame2(j), &
-            elastic_strain, elastic_stress(:,j))
-
-        plastic_strain_rate(j) = this%model%plastic_strain_rate_cell(j, elastic_stress(:,j))
       end do
-
-      displ = displ(:,:mesh%nnode_onP) ! realloc for viz
     end associate
+  end subroutine
 
-    call this%model%bc%compute_viz_fields(gap_displacement, gap_normal_traction)
+  subroutine compute_cell_total_strain(this, grad_displ, total_strain)
+    class(solid_mechanics), intent(in) :: this
+    real(r8), intent(in) :: grad_displ(:,:,:)
+    real(r8), allocatable, intent(out) :: total_strain(:,:)
+    integer :: i
+    allocate(total_strain(6,size(grad_displ,dim=3)))
+    do i = 1, size(grad_displ,dim=3)
+      total_strain(:,i) = this%model%strain_tensor(grad_displ(:,:,i))
+    end do
+  end subroutine
 
-  end subroutine compute_viz_fields
+  subroutine compute_cell_rotation(this, grad_displ, rotation_magnitude)
+    class(solid_mechanics), intent(in) :: this
+    real(r8), intent(in) :: grad_displ(:,:,:)
+    real(r8), allocatable, intent(out) :: rotation_magnitude(:)
+    integer :: i
+    real(r8) :: rotation(3)
+    allocate(rotation_magnitude(size(grad_displ,dim=3)))
+    do i = 1, size(grad_displ,dim=3)
+      rotation(1) = (grad_displ(1,2,i) - grad_displ(2,1,i)) / 2
+      rotation(2) = (grad_displ(1,3,i) - grad_displ(3,1,i)) / 2
+      rotation(3) = (grad_displ(2,3,i) - grad_displ(3,2,i)) / 2
+      rotation_magnitude(i) = norm2(rotation)
+    end do
+  end subroutine
+
+  subroutine get_cell_plastic_strain(this, cells, plastic_strain)
+    class(solid_mechanics), intent(in) :: this
+    integer, intent(in) :: cells(:)
+    real(r8), allocatable, intent(out) :: plastic_strain(:,:)
+    integer :: i
+    allocate(plastic_strain(6,size(cells)))
+    do i = 1, size(cells)
+      plastic_strain(:,i) = this%model%plastic_strain_cell(cells(i))
+    end do
+  end subroutine
+
+  subroutine compute_cell_stress(this, cells, total_strain, thermal_strain, plastic_strain, stress)
+    use sm_bc_utilities, only: compute_stress
+    class(solid_mechanics), intent(in) :: this
+    integer, intent(in) :: cells(:)
+    real(r8), intent(in) :: total_strain(:,:), thermal_strain(:,:), plastic_strain(:,:)
+    real(r8), allocatable, intent(out) :: stress(:,:)
+    integer :: i
+    real(r8) :: elastic_strain(6)
+    allocate(stress(6,size(cells)))
+    do i = 1, size(cells)
+      elastic_strain = total_strain(:,i) - thermal_strain(:,i) - plastic_strain(:,i)
+      call compute_stress(this%model%lame1(cells(i)), this%model%lame2(cells(i)), &
+          elastic_strain, stress(:,i))
+    end do
+  end subroutine
+
+  subroutine get_cell_plastic_strain_rate(this, cells, stress, plastic_strain_rate)
+    class(solid_mechanics), intent(inout) :: this
+    integer, intent(in) :: cells(:)
+    real(r8), intent(in) :: stress(:,:)
+    real(r8), allocatable, intent(out) :: plastic_strain_rate(:)
+    integer :: i
+    allocate(plastic_strain_rate(size(cells)))
+    do i = 1, size(cells)
+      plastic_strain_rate(i) = this%model%plastic_strain_rate_cell(cells(i), stress(:,i))
+    end do
+  end subroutine
 
 
   logical function viscoplasticity_enabled(this)

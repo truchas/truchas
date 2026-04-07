@@ -44,7 +44,7 @@ module diffusion_solver
   public :: update_moving_vf, add_moving_vf_events, vf_event
 
   !! These return cell-centered results relative to the old Truchas mesh.
-  public :: ds_get_temp, ds_get_enthalpy, ds_get_phi
+  public :: ds_get_temp, ds_get_enthalpy, ds_get_phi, ds_get_phi_view
   public :: ds_get_temp_grad
 
   !! These return results relative to the new distributed mesh.
@@ -320,6 +320,18 @@ contains
       INSIST(.false.)
     end select
   end subroutine ds_get_phi
+
+  subroutine ds_get_phi_view (n, view)
+    integer, intent(in) :: n
+    real(r8), pointer :: view(:)
+    ASSERT(this%have_species_diffusion)
+    select case (this%solver_type)
+    case (SOLVER1)
+      call HTSD_solver_get_cell_conc_view (this%sol1, n, view)
+    case default
+      INSIST(.false.)
+    end select
+  end subroutine ds_get_phi_view
 
   subroutine ds_get_temp_grad (array)
     real(r8), intent(inout) :: array(:,:)

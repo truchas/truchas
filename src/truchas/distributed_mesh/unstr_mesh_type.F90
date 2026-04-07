@@ -153,6 +153,8 @@ module unstr_mesh_type
     procedure :: get_global_cnode_array
     procedure :: get_global_cface_array
     procedure :: get_global_fnode_array
+    procedure :: get_mesh_block
+    procedure :: get_link_set_mesh
     procedure :: compute_geometry
     procedure :: write_profile
     procedure :: check_bndry_face_set
@@ -303,6 +305,174 @@ contains
       call get_global_ragged_array (xfnode_onP, this%node_imap%global_index(fnode_onP), xfnode, fnode)
     end associate
   end subroutine get_global_fnode_array
+
+  !! Creates a process-local mesh block from owned cells belonging to the
+  !! selected cell sets.  The block connectivity is remapped to a packed node
+  !! numbering, with BLOCK_NODES mapping packed node IDs back to local mesh IDs.
+  subroutine get_mesh_block(this, bitmask, x, xcnode, cnode, block_cells, block_nodes)
+
+    class(unstr_mesh), intent(in) :: this
+    integer(kind(this%cell_set_mask)), intent(in) :: bitmask
+    real(r8), allocatable, intent(out) :: x(:,:)
+    integer, allocatable, intent(out) :: xcnode(:), cnode(:), block_cells(:), block_nodes(:)
+
+    integer :: j, n, ncell, nnode, offset, clen, cnode_size
+    integer, allocatable :: nmap(:)
+
+    !! Count the on-process block cells and their ragged connectivity size.
+    ncell = 0
+    cnode_size = 0
+    do j = 1, this%ncell_onP
+      if (popcnt(iand(bitmask, this%cell_set_mask(j))) == 0) cycle
+      ncell = ncell + 1
+      cnode_size = cnode_size + this%xcnode(j+1) - this%xcnode(j)
+    end do
+
+    if (ncell == 0) then
+      allocate(x(size(this%x,dim=1),0), xcnode(1), cnode(0), block_cells(0), block_nodes(0))
+      xcnode(1) = 1
+      return
+    end if
+
+    !! List the on-process block cells and copy their connectivity.
+    allocate(block_cells(ncell), cnode(cnode_size), xcnode(ncell+1))
+    n = 0
+    offset = 0
+    xcnode(1) = 1
+    do j = 1, this%ncell_onP
+      if (popcnt(iand(bitmask, this%cell_set_mask(j))) == 0) cycle
+      n = n + 1
+      block_cells(n) = j
+      clen = this%xcnode(j+1) - this%xcnode(j)
+      cnode(offset+1:offset+clen) = this%cnode(this%xcnode(j):this%xcnode(j+1)-1)
+      offset = offset + clen
+      xcnode(n+1) = offset + 1
+    end do
+
+    !! Tag all nodes belonging to the block cells.
+    allocate(nmap(this%nnode), source=0)
+    do j = 1, size(cnode)
+      nmap(cnode(j)) = 1
+    end do
+
+    !! List the block nodes and map local node IDs to packed block node IDs.
+    nnode = count(nmap /= 0)
+    allocate(block_nodes(nnode))
+    n = 0
+    do j = 1, this%nnode
+      if (nmap(j) == 0) cycle
+      n = n + 1
+      block_nodes(n) = j
+      nmap(j) = n
+    end do
+
+    !! Map block connectivity to packed block node numbering.
+    do j = 1, size(cnode)
+      cnode(j) = nmap(cnode(j))
+    end do
+
+    x = this%x(:,block_nodes)
+
+  end subroutine get_mesh_block
+
+  !! Extract the process-local interface mesh corresponding to the on-process
+  !! links belonging to the selected link sets. This is a 2D mesh consisting of
+  !! tri and quad faces with 3D node coordinates. The mesh is a double cover of
+  !! the interface, containing matching pairs of faces from either side of the
+  !! interface with opposite orientations. The connectivity is remapped to a
+  !! packed node numbering. The FACES and NODES arrays give the local IDs of the
+  !! faces and nodes in the extracted interface mesh.
+
+  subroutine get_link_set_mesh(this, bitmask, x, xfnode, fnode, faces, nodes)
+
+    class(unstr_mesh), intent(in) :: this
+    type(bitfield), intent(in) :: bitmask
+    real(r8), allocatable, intent(out) :: x(:,:)
+    integer, allocatable, intent(out) :: xfnode(:), fnode(:), faces(:), nodes(:)
+
+    integer :: i, j, k, n, nlink, fnode_size, offset, nlen
+    integer, allocatable :: nmap(:)
+
+    !! count the number of on-process links and the ragged connectivity size.
+    nlink = 0
+    fnode_size = 0
+    do j = 1, this%nlink_onp
+      if (popcnt(iand(bitmask, this%link_set_mask(j))) == 0) cycle
+      nlink = nlink + 1
+      do i = 1, 2
+        k = this%lface(i,j)
+        fnode_size = fnode_size + this%xfnode(k+1) - this%xfnode(k)
+      end do
+    end do
+
+    if (nlink == 0) then
+      allocate(x(size(this%x,dim=1),0), xfnode(1), fnode(0), faces(0), nodes(0))
+      xfnode(1) = 1
+      return
+    end if
+
+    !! List the on-process link faces and copy their connectivity.
+    allocate(faces(2*nlink), fnode(fnode_size), xfnode(2*nlink+1))
+    n = 0
+    offset = 0
+    xfnode(1) = 1
+    do j = 1, this%nlink_onP
+      if (popcnt(iand(bitmask, this%link_set_mask(j))) == 0) cycle
+      do i = 1, 2
+        n = n + 1
+        faces(n) = this%lface(i,j)
+        k = this%lface(i,j)
+        nlen = this%xfnode(k+1) - this%xfnode(k)
+        fnode(offset+1:offset+nlen) = this%fnode(this%xfnode(k):this%xfnode(k+1)-1)
+        offset = offset + nlen
+        xfnode(n+1) = offset + 1
+      end do
+    end do
+
+    !! Tag the nodes that belong to the faces
+    allocate(nmap(this%nnode), source=0)
+    do j = 1, size(fnode)
+      nmap(fnode(j)) = 1
+    end do
+
+    !! List the nodes and map local node ids to packed node IDs
+    n = count(nmap /= 0)
+    allocate(nodes(n))
+    n = 0
+    do j = 1, this%nnode
+      if (nmap(j) == 0) cycle
+      n = n + 1
+      nodes(n) = j
+      nmap(j) = n
+    end do
+
+    !! Map connectivity to packed node numbering
+    do j = 1, size(fnode)
+      fnode(j) = nmap(fnode(j))
+    end do
+
+    x = this%x(:,nodes)
+
+    !! Reverse face orientations: face normals point into the volume to which they belong.
+    !! This is purely for ParaView so that backface culling handles the double cover as expected.
+    do j = 1, 2*nlink
+      associate (nlist => fnode(xfnode(j):xfnode(j+1)-1))
+        select case (size(nlist))
+        case (3)
+          n = nlist(2)
+          nlist(2) = nlist(3)
+          nlist(3) = n
+        case (4)
+          n = nlist(2)
+          nlist(2) = nlist(4)
+          nlist(4) = n
+        case default
+          INSIST(.false.)
+        end select
+      end associate
+    end do
+
+  end subroutine get_link_set_mesh
 
   !! Auxiliary subroutine creates a global ragged array on the IO process,
   !! 0-sized on others, given a distributed ragged array.

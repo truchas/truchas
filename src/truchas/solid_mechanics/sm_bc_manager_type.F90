@@ -51,7 +51,8 @@ module sm_bc_manager_type
     procedure :: apply_nontraction
     procedure :: compute_deriv_diagonal
     procedure :: compute_deriv_full
-    procedure :: compute_viz_fields
+    procedure :: get_contact_set_ids
+    procedure :: get_gap_fields
     final :: delete_sm_bc_manager
   end type sm_bc_manager
 
@@ -351,9 +352,31 @@ contains
     end do
   end subroutine add_graph_links
 
+  subroutine get_contact_set_ids(this, setids)
 
-  !! Copy gap displacement and gap traction fields into arrays for
-  !! visualization.
+    class(sm_bc_manager), intent(in) :: this
+    integer, allocatable, intent(out) :: setids(:)
+
+    integer :: i, n
+
+    if (.not.this%contact_active) then
+      allocate(setids(0))
+      return
+    end if
+
+    n = 0
+    allocate(setids(size(this%list%contact)))
+    do i = 1, size(this%list%contact)
+      if (any(setids(:n) == this%list%contact(i)%setid)) cycle
+      n = n + 1
+      setids(n) = this%list%contact(i)%setid
+    end do
+    setids = setids(:n)
+
+  end subroutine get_contact_set_ids
+
+
+  !! Copy gap displacement and gap traction fields for the requested nodes.
   !!
   !! Right now this follows a rudimentary design: a single scalar
   !! displacement and traction at each gap node. The underlying model
@@ -368,36 +391,49 @@ contains
   !! way of plotting fields over subsets of the mesh. This should be
   !! considered in any conversion to VTK. Otherwise we will need to dump
   !! a node-field for every gap sideset, which is wasteful.
-  subroutine compute_viz_fields(this, gap_displacement, gap_traction)
+  subroutine get_gap_fields(this, nodes, gap_displacement, gap_traction)
 
     use,intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
 
     class(sm_bc_manager), intent(in) :: this
-    real(r8), intent(out), allocatable :: gap_displacement(:), gap_traction(:)
+    integer, intent(in) :: nodes(:)
+    real(r8), allocatable, intent(out), optional :: gap_displacement(:), gap_traction(:)
 
     integer :: i, n, b
+    real(r8), allocatable :: displ(:), traction(:)
 
-    allocate(gap_displacement(this%mesh%nnode_onP), gap_traction(this%mesh%nnode_onP))
-    gap_displacement = ieee_value(0.0_r8, ieee_quiet_nan)
-    gap_traction = ieee_value(0.0_r8, ieee_quiet_nan)
+    if (present(gap_displacement)) then
+      allocate(gap_displacement(size(nodes)))
+      gap_displacement = ieee_value(0.0_r8, ieee_quiet_nan)
+    end if
+    if (present(gap_traction)) then
+      allocate(gap_traction(size(nodes)))
+      gap_traction = ieee_value(0.0_r8, ieee_quiet_nan)
+    end if
+    if (.not.this%contact_active) return
 
+    if (present(gap_displacement)) allocate(displ(this%mesh%nnode), source=ieee_value(0.0_r8, ieee_quiet_nan))
+    if (present(gap_traction)) allocate(traction(this%mesh%nnode), source=ieee_value(0.0_r8, ieee_quiet_nan))
     do b = 1, size(this%bcs)
       ! only gap-contact conditions contribute something here
       if (.not.allocated(this%bcs(b)%p%displacement) &
           .or. .not.allocated(this%bcs(b)%p%traction)) cycle
-
-      associate (nodes => this%bcs(b)%p%index, &
-          displacement => this%bcs(b)%p%displacement, &
-          traction => this%bcs(b)%p%traction)
-        do i = 1, size(nodes)
-          n = nodes(i)
-          if (n > this%mesh%nnode_onP) cycle
-          gap_displacement(n) = displacement(i)
-          gap_traction(n) = traction(i)
-        end do
-      end associate
+      do i = 1, size(this%bcs(b)%p%index)
+        n = this%bcs(b)%p%index(i)
+        if (n > this%mesh%nnode_onP) cycle
+        if (present(gap_displacement)) displ(n) = this%bcs(b)%p%displacement(i)
+        if (present(gap_traction)) traction(n) = this%bcs(b)%p%traction(i)
+      end do
     end do
+    if (present(gap_displacement)) then
+      call this%mesh%node_imap%gather_offp(displ)
+      gap_displacement = displ(nodes)
+    end if
+    if (present(gap_traction)) then
+      call this%mesh%node_imap%gather_offp(traction)
+      gap_traction = traction(nodes)
+    end if
 
-  end subroutine compute_viz_fields
+  end subroutine get_gap_fields
 
 end module sm_bc_manager_type

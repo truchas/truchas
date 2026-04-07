@@ -311,24 +311,47 @@ contains
     subroutine write_solid_mechanics_data
 
       use solid_mechanics_driver
+      use mesh_manager, only: unstr_mesh_ptr
+      use unstr_mesh_type, only: unstr_mesh
 
-      real(r8), allocatable :: displ(:,:), thermal_strain(:,:), total_strain(:,:), &
-          elastic_stress(:,:), rotation(:), gap_displacement(:), gap_normal_traction(:), &
-          plastic_strain(:,:), plastic_strain_rate(:)
+      type(unstr_mesh), pointer :: mesh
+      type(solid_mechanics_point_field_request) :: point_request
+      type(solid_mechanics_point_field_values) :: point_values
+      type(solid_mechanics_cell_field_request) :: cell_request
+      type(solid_mechanics_cell_field_values) :: cell_values
+      integer, allocatable :: cells(:), nodes(:)
+      integer :: n
 
-      call solid_mechanics_compute_viz_fields(displ, thermal_strain, total_strain, &
-          elastic_stress, rotation, gap_displacement, gap_normal_traction, &
-          plastic_strain, plastic_strain_rate)
+      mesh => unstr_mesh_ptr('MAIN')
+      INSIST(associated(mesh))
 
-      call write_seq_node_field(seq, displ, 'Displacement', for_viz=.true., &
+      cells = [(n, n = 1, mesh%ncell_onP)]
+      nodes = [(n, n = 1, mesh%nnode_onP)]
+
+      point_request%displacement = .true.
+      point_request%gap_displacement = .true.
+      point_request%gap_normal_traction = .true.
+      call solid_mechanics_get_point_fields(nodes, point_request, point_values)
+
+      cell_request%total_strain = .true.
+      cell_request%thermal_strain = .true.
+      cell_request%stress = .true.
+      cell_request%rotation = .true.
+      if (solid_mechanics_viscoplasticity_enabled()) then
+        cell_request%plastic_strain = .true.
+        cell_request%plastic_strain_rate = .true.
+      end if
+      call solid_mechanics_get_cell_fields(cells, cell_request, cell_values)
+
+      call write_seq_node_field(seq, point_values%displacement, 'Displacement', for_viz=.true., &
           viz_name=['Dx', 'Dy', 'Dz'])
-      call write_seq_cell_field(seq, total_strain, 'epsilon', for_viz=.true., &
+      call write_seq_cell_field(seq, cell_values%total_strain, 'epsilon', for_viz=.true., &
           viz_name=['epsxx', 'epsyy', 'epszz', 'epsxy', 'epsxz', 'epsyz'])
-      call write_seq_cell_field(seq, thermal_strain, 'epstherm', for_viz=.true., &
+      call write_seq_cell_field(seq, cell_values%thermal_strain, 'epstherm', for_viz=.true., &
           viz_name=['epsthxx', 'epsthyy', 'epsthzz', 'epsthxy', 'epsthxz', 'epsthyz'])
-      call write_seq_cell_field (seq, elastic_stress, 'sigma', for_viz=.true., &
+      call write_seq_cell_field (seq, cell_values%stress, 'sigma', for_viz=.true., &
           viz_name=['sigxx', 'sigyy', 'sigzz', 'sigxy', 'sigxz', 'sigyz'])
-      call write_seq_cell_field(seq, rotation, 'Rotation', for_viz=.true.)
+      call write_seq_cell_field(seq, cell_values%rotation, 'Rotation', for_viz=.true.)
       !! Note: the legacy solver also output phase change strain on cells, but this
       !! field seemed to never be set.
 
@@ -341,13 +364,13 @@ contains
       !! displacement and traction fields for every gap BC (wasteful),
       !! or a new output type which associates a small field with given
       !! sidesets.
-      call write_seq_node_field(seq, gap_displacement, 'Gap Displacement', for_viz=.true.)
-      call write_seq_node_field(seq, gap_normal_traction, 'Gap Normal Traction', for_viz=.true.)
+      call write_seq_node_field(seq, point_values%gap_displacement, 'Gap Displacement', for_viz=.true.)
+      call write_seq_node_field(seq, point_values%gap_normal_traction, 'Gap Normal Traction', for_viz=.true.)
 
       if (solid_mechanics_viscoplasticity_enabled()) then
-        call write_seq_cell_field(seq, plastic_strain, 'e_plastic', for_viz=.true., &
+        call write_seq_cell_field(seq, cell_values%plastic_strain, 'e_plastic', for_viz=.true., &
           viz_name=['eplxx', 'eplyy', 'eplzz', 'eplxy', 'eplxz', 'eplyz'])
-        call write_seq_cell_field(seq, plastic_strain_rate, 'epsdot', for_viz=.true.)
+        call write_seq_cell_field(seq, cell_values%plastic_strain_rate, 'epsdot', for_viz=.true.)
         call solid_mechanics_write_checkpoint(seq) ! restart-only data
       end if
 
