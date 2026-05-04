@@ -20,8 +20,8 @@ here to reduce the error.
 /
 
 &OUTPUTS
-  output_t  = 0.0, 3.0
-  output_dt = 1.5
+  times  = 0.0, 3.0
+  subintervals = 2
 /
 
 &PHYSICS

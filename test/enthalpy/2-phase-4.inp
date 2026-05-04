@@ -10,8 +10,7 @@ should be identical to the default "smooth" type of phase change used in
 Test 1.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

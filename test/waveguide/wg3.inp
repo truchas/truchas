@@ -10,8 +10,8 @@ MICROWAVE HEATING WITH TIME-DEPENDENT WAVEGUIDE POWER
 /
 
 &OUTPUTS
-  output_t = 0.0, 20.0
-  output_dt = 2
+  times = 0.0, 20.0
+  subintervals = 10
 /
 
 &NUMERICS

@@ -32,7 +32,7 @@ contains
     use probe_namelist,            only: read_probe_namelists
     use body_input_module,         only: interfaces_input
     use numerics_input_module,     only: numerics_input
-    use outputs_input_module,      only: outputs_input
+    use output_control,            only: read_outputs_namelist
     use parallel_communication,    only: is_IOP, broadcast
     use physics_input_module,      only: physics_input
     use restart_variables,         only: restart, read_restart_namelist
@@ -102,7 +102,7 @@ contains
     call init_material_model  ! later namelists will query the model
 
     ! read output specifications
-    call outputs_input (lun)
+    call read_outputs_namelist (lun)
 
     call read_simulation_control_namelist (lun)
 

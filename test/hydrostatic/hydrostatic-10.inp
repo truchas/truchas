@@ -13,8 +13,7 @@ Note the density_delta is drho(T) = -a(T-1.5). Here we use a=0.5
 Note: Should obtain the same results if heat_transport is disabled.
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

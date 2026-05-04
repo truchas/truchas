@@ -5,8 +5,7 @@ Velocity is uniform and constant and directed along a coordinate axis. Domain
 is 31x31x1 with unit cells.
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

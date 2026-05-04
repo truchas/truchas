@@ -21,8 +21,7 @@ four quadrants of the domain are
 /
 
 &OUTPUTS
-  Output_T = 0.0, 10.0
-  Output_Dt = 10.0
+  times = 0.0, 10.0
 /
 
 &PHYSICS

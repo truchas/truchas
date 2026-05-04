@@ -15,8 +15,7 @@ combining both the default GL analysis module with temperature and solid
 fraction based thresholds.
 
 &OUTPUTS
-  output_t = 0.0, 4.0, 6.0
-  output_dt = 4.0, 2.0
+  times = 0.0, 4.0, 6.0
 /
 
 &MESH

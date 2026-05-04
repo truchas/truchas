@@ -10,8 +10,7 @@ With g=(0,-1,0): rho2 = 2, p = c1 - 2*y, in y < 0;
 Variations use rotated meshes (and rotated g)
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

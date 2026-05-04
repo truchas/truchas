@@ -13,8 +13,7 @@ the fluid/void interfaces moving at speed 1 to the right.
 /
 
 &OUTPUTS
-  output_t  = 0.0, 3.0
-  output_dt = 3.0
+  times  = 0.0, 3.0
 /
 
 &PHYSICS

@@ -55,7 +55,7 @@ CONTAINS
     use unstr_mesh_type
     use mesh_manager,           only: init_mesh_manager, unstr_mesh_ptr
     use truchas_danu_output,    only: TDO_write_mesh
-    use truchas_vtkhdf_output,  only: TVO_write_mesh, TVO_register_temporal_data
+    use viz_driver,  only: TVO_open_and_write_mesh, TVO_register_temporal_data
     use truchas_timers
 
     ! <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
@@ -79,7 +79,7 @@ CONTAINS
 
     ! Write the primary truchas mesh.
     call TDO_write_mesh(mesh)
-    call TVO_write_mesh(mesh)
+    call TVO_open_and_write_mesh(mesh)
 
     ! NNC, Sep 2014.  This used to be done after the call to INITIAL, but is
     ! needed here because of time-dependent boundary conditions.  I left the

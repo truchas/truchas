@@ -3,8 +3,8 @@
 /
 
 &OUTPUTS
-  output_t  = 0.0, 4.8
-  output_dt = 0.4
+  times  = 0.0, 4.8
+  subintervals = 12
 /
 
 &PHYSICS

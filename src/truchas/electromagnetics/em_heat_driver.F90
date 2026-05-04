@@ -27,22 +27,12 @@ module em_heat_driver
   use truchas_timers
   use induction_heat_solver_type
   use microwave_heat_solver_type
-  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
-      vtkhdf_cell_data_handle
   implicit none
   private
 
   public :: em_heat_enabled, em_heat_driver_init, em_heat_driver_final
-  public :: update_em_heat, em_heat_ptr, get_em_heat_event_times
+  public :: update_em_heat, em_heat_ptr, em_heat_generation, get_em_heat_event_times
   public :: read_em_heat_namelists, read_em_heat_restart_data, skip_em_heat_restart_data
-  public :: em_heat_vtkhdf_register_temporal_data, em_heat_vtkhdf_output
-
-  !! The EM heat VTKHDF data registered for one mesh block.
-  type, public :: em_heat_vtkhdf_block_data
-    private
-    type(vtkhdf_cell_data_handle) :: joule_power
-    integer :: last_written_generation = -1
-  end type
 
   type :: em_heat_driver_data
     class(base_mesh), pointer :: ht_mesh => null() ! unowned reference
@@ -77,6 +67,10 @@ contains
   function em_heat_ptr() result(ptr)
     real(r8), pointer :: ptr(:)
     ptr => this%q_ht
+  end function
+
+  integer function em_heat_generation()
+    em_heat_generation = joule_power_generation
   end function
 
   !! This driver subroutine is called by the Truchas input driver and it
@@ -254,37 +248,6 @@ contains
     end subroutine
 
   end subroutine update_em_heat
-
-  subroutine em_heat_vtkhdf_register_temporal_data(file, block, data)
-
-    type(vtkhdf_mb_file), intent(inout) :: file
-    type(vtkhdf_block_handle), intent(in) :: block
-    type(em_heat_vtkhdf_block_data), intent(inout) :: data
-
-    if (.not.allocated(this)) return
-
-    data%joule_power = file%register_temporal_cell_data(block, 'Joule_P', 0.0_r8)
-    data%last_written_generation = -1
-
-  end subroutine
-
-  subroutine em_heat_vtkhdf_output(file, block, block_cells, data)
-
-    type(vtkhdf_mb_file), intent(inout) :: file
-    type(vtkhdf_block_handle), intent(in) :: block
-    integer, intent(in) :: block_cells(:)
-    type(em_heat_vtkhdf_block_data), intent(inout) :: data
-
-    real(r8), pointer :: q(:)
-
-    if (.not.allocated(this)) return
-    if (data%last_written_generation == joule_power_generation) return
-
-    q => em_heat_ptr()
-    call file%write_cell_data(block, data%joule_power, q(block_cells))
-    data%last_written_generation = joule_power_generation
-
-  end subroutine
 
   !! This auxiliary subroutine sets the values of the EPS, MU, and SIGMA
   !! property arrays. The property values are computed on the heat transfer

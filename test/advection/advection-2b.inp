@@ -5,8 +5,7 @@ diagonally across the the mesh. One fluid occupies a disk, and the other the
 remainder of the domain. Domain is 31x31x1 with unit cells.
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

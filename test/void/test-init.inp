@@ -10,8 +10,8 @@
 /
 
 &OUTPUTS
-  output_t  = 0.0, 10.0
-  output_dt = 5.0
+  times  = 0.0, 10.0
+  subintervals = 2
 /
 
 &PHYSICS

@@ -17,8 +17,7 @@ end and the fluid exits the right end with a fixed unit velocity.
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 5.125
-  Output_Dt = 5.125
+  times  = 0.0, 5.125
 /
 
 &PHYSICS

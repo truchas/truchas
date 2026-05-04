@@ -14,8 +14,7 @@ changes smoothly from 1 to 2. This aims to test time-dependent inflow BC.
 /
 
 &OUTPUTS
-  output_t = 0.0, 2.5
-  output_dt = 2.5
+  times = 0.0, 2.5
 /
 
 &NUMERICS

@@ -11,8 +11,7 @@
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 1.0
-  Output_Dt = 100.0
+  times  = 0.0, 1.0
 /
 
 &NUMERICS

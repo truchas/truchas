@@ -22,8 +22,7 @@ The flux values for u1, u2 and u3 are 4/9, 2/3 and 8/9 respectively.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.5, 5.0
-  Output_Dt = 0.5, 5.0
+  times = 0.0, 0.5, 5.0
 /
 
 &PHYSICS

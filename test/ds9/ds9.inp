@@ -16,8 +16,8 @@ The exact steady state solution is T(x,y) = 9 + 6*x*y - x**2 - y**2.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 1.0, 10.0
-  Output_Dt = 0.1, 5.0
+  times = 0.0, 1.0, 10.0
+  subintervals = 10, 2
 /
 
 &PHYSICS

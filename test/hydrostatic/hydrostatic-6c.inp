@@ -10,8 +10,7 @@ Fluid interface placed at cell midpoint.
 Variations use rotated meshes (and rotated g)
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

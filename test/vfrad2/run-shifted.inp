@@ -11,8 +11,8 @@ other simulation where the ball is centered, but uses the same view factors.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.5
-  Output_Dt = 0.1
+  times = 0.0, 0.5
+  subintervals = 5
 /
 
 &PHYSICS

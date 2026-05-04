@@ -12,8 +12,7 @@ from the two tests will not match bit-for-bit as in the other tests, but
 will still be very small.  
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

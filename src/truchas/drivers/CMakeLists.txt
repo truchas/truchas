@@ -8,4 +8,5 @@ target_sources(truchas PRIVATE
   simulation_event_queue.F90
   sim_event_queue_type.F90
   hijack_truchas.F90
+  viz_output_action_type.F90
 )

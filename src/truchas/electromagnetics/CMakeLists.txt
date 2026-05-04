@@ -1,6 +1,7 @@
 target_sources(truchas PRIVATE
   em_properties.F90
   em_heat_driver.F90
+  em_heat_viz_provider_type.F90
   induction_heat_solver_type.F90
   ih_hfield_factory_type.F90
   ih_hfield_func_type.F90

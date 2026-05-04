@@ -9,8 +9,7 @@ enthalpy function for the low temperature phase, and sets the specific heat
 for the other phase.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

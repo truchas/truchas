@@ -14,8 +14,8 @@ value of 1 to a uniform value of 3 at infinite times.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 15.0
-  Output_Dt = 5.0
+  times = 0.0, 15.0
+  subintervals = 3
 /
 
 &PHYSICS

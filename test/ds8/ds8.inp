@@ -9,8 +9,8 @@ elsewhere.  Free-slip flow conditions on all boundaries.
 /
  
 &OUTPUTS
-  output_t  = 0.0, 75.0
-  output_dt = 25.0
+  times  = 0.0, 75.0
+  subintervals = 3
 /
 
 &PHYSICS
