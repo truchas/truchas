@@ -44,6 +44,7 @@ module legacy_matl_type
   contains
     procedure :: init
     procedure :: gather_vof
+    procedure :: gather_vof_cells
     procedure :: get_vof
     generic   :: get_cell_vof => get_cell_vof_all, get_cell_vof_one
     procedure, private :: get_cell_vof_all, get_cell_vof_one
@@ -76,6 +77,26 @@ contains
       associate (cell => this%slot(s)%cell)
         do j = 1, size(vof)
           if (cell(j)%id == m) vof(j) = cell(j)%vof
+        end do
+      end associate
+    end do
+  end subroutine
+
+  !! This returns a rank-1 array VOF of volume fractions of the given material
+  !! index M for the requested cells.
+
+  subroutine gather_vof_cells(this, m, cells, vof)
+    class(legacy_matl), intent(in) :: this
+    integer, intent(in) :: m, cells(:)
+    real(r8), intent(out) :: vof(:)
+    integer :: j, k, s
+    ASSERT(size(vof) == size(cells))
+    vof = 0.0_r8
+    do s = 1, size(this%slot)
+      associate (slot_cells => this%slot(s)%cell)
+        do k = 1, size(cells)
+          j = cells(k)
+          if (slot_cells(j)%id == m) vof(k) = slot_cells(j)%vof
         end do
       end associate
     end do

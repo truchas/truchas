@@ -158,7 +158,7 @@ contains
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
     use solid_mechanics_driver, only: solid_mechanics_enabled
-    use output_control, only: part_path, write_mesh_partition
+    use output_control, only: part_path
     use truchas_env, only: output_file_name
 
     integer :: ncells
@@ -233,13 +233,6 @@ contains
         end do
         call write_seq_cell_field (seq, vof, 'VOF', for_viz=.true., viz_name=name)
         deallocate(vof, name)
-      end if
-
-      !! This is a stop-gap because the Truchas paraview reader ignores this
-      !! data written with the mesh. It is only written to the first snapshot.
-      if (write_mesh_partition) then
-        call write_seq_cell_field(seq, spread(real(this_PE,r8),dim=1,ncopies=ncells), 'CELLPART', for_viz=.true., viz_name='rank')
-        write_mesh_partition = .false.
       end if
 
     end subroutine write_common_data

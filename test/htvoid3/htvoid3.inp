@@ -24,8 +24,7 @@ will result in heat solutions that are not comparable.
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 5.0
-  Output_Dt = 5.0 !0.2
+  times  = 0.0, 5.0
 /
 
 &PHYSICS

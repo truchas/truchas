@@ -8,7 +8,7 @@ module legacy_matl_api
   private
 
   public :: matl_init, matl_free
-  public :: gather_vof, matl_get_vof, matl_get_cell_vof, define_matl
+  public :: gather_vof, gather_vof_cells, matl_get_vof, matl_get_cell_vof, define_matl
   public :: read_matl_data
 
   interface matl_get_cell_vof
@@ -36,6 +36,12 @@ contains
     integer, intent(in) :: m
     real(r8), intent(out) :: vof(:)
     call this%gather_vof(m, vof)
+  end subroutine
+
+  subroutine gather_vof_cells(m, cells, vof)
+    integer, intent(in) :: m, cells(:)
+    real(r8), intent(out) :: vof(:)
+    call this%gather_vof_cells(m, cells, vof)
   end subroutine
 
   subroutine matl_get_vof(vof)

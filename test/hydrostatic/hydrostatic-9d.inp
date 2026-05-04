@@ -9,8 +9,7 @@ With g=(1,0,0): rho = 2, p = c + x, in x > 0
 Variations use rotated meshes (and rotated g)
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

@@ -12,8 +12,7 @@ remain identical as they should.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.1
-  Output_Dt = 0.1
+  times = 0.0, 0.1
 /
 
 &PHYSICS

@@ -13,8 +13,7 @@ particularly as a result of the pressure gradient at the fluid/void interface.
 /
 
 &OUTPUTS
-  output_t  = 0.0, 0.52
-  output_dt = 0.52
+  times  = 0.0, 0.52
 /
 
 &PHYSICS

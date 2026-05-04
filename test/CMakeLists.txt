@@ -64,6 +64,9 @@ add_pytruchas_test(oriented-flux-4 oriented-flux/Temp-depen-absorp/test.py PROCE
 add_pytruchas_test(two-toolheads toolhead/two-toolheads/test.py PROCESSORS 4 LABELS CONDUCTION)
 add_pytruchas_test(laser-power-function-time toolhead/laser-power-function-time/test.py PROCESSORS 4 LABELS CONDUCTION)
 add_pytruchas_test(viz-moving-block viz/test.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(viz-field-selection viz-field-selection/test.py
+                   PROCESSORS 4
+                   LABELS VTKHDF FLOW SOLID_MECHANICS)
 
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4

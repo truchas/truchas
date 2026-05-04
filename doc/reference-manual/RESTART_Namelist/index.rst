@@ -26,7 +26,7 @@ Components
 
 Ignore_T
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : When restarting, the initial time and starting cycle count are normally extracted from the restart file. If this flag is true, then those values are ignored and the first value of the :ref:`Output_T<O_OT>` array is used as the initial time and the cycle count starts at 0, as happens with a non-restart run.
+| **Description** : When restarting, the initial time and starting cycle count are normally extracted from the restart file. If this flag is true, then those values are ignored and the first value of the :ref:`Times<O_Times>` array is used as the initial time and the cycle count starts at 0, as happens with a non-restart run.
 | **Type**        : logical
 | **Default**     : false
 

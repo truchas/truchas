@@ -22,8 +22,7 @@ the flow solver.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.25, 5.0
-  Output_Dt = 0.25, 5.0
+  times = 0.0, 0.25, 5.0
 /
 
 &NUMERICS

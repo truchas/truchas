@@ -37,7 +37,7 @@ leading edge:
   3.33  4.11
   4.01  5.00
 
-To run the problem out to t* > 4, set Output_T = 0.0, 0.25.
+To run the problem out to t* > 4, set times = 0.0, 0.25.
 
 For the purposes of having this problem in the test suite, we limit
 the cycles (cycle_max = 20), and perform a restart from a calculation
@@ -56,8 +56,7 @@ data by Martin & Moyce for this regression test.
 /
 
 &OUTPUTS
-  output_t  = 0.0, 0.075
-  output_dt = 0.075
+  times  = 0.0, 0.075
 /
 
 &PHYSICS

@@ -31,10 +31,7 @@ cells at each long_edit interval.
 
 
 &OUTPUTS
-  output_t = 0.0, 60000.0, 70000.0
-  output_dt = 60000.0, 10000.0
-  short_output_dt_multiplier = 1, 1
-  output_dt_multiplier = 1, 1
+  times = 0.0, 60000.0, 70000.0
 /
 
 &PROBE

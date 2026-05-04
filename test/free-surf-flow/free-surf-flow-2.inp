@@ -14,8 +14,8 @@ fluid, with the fluid/void interface moving at speed 1 to the left.
 /
 
 &OUTPUTS
-  output_t  = 0.0, 4.0
-  output_dt = 2.0
+  times  = 0.0, 4.0
+  subintervals = 2
 /
 
 &PHYSICS

@@ -643,12 +643,6 @@ contains
     call MPI_Abort(comm, 1, ierr)
   end subroutine
 
-  !! Used in only two locations in edit_module.F90. The PGSLib C implementation
-  !! used MPI_MAXLOC with the MPI_DOUBLE_INT type, which isn't available in
-  !! the Fortran interface. We could fudge things by using MPI_MAXLOC with
-  !! the MPI_2DOUBLE_PRECISION (and sticking the integer index into a double).
-  !! Instead we do this manually.
-
   function global_maxloc(a) result(gid)
     real(r8), intent(in) :: a(:)
     integer :: gid(1), last_gid, local_gid, ierr

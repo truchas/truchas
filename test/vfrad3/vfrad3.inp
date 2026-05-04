@@ -13,8 +13,7 @@ core.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.15
-  Output_Dt = 0.15
+  times = 0.0, 0.15
 /
 
 &PHYSICS

@@ -14,8 +14,7 @@ recovery that constant velocity.
 Variations use rotated meshes (and rotated velocity)
 
 &OUTPUTS
-  output_t  = 0.0, .0625, 2.0
-  output_dt = 0.0625, 2.0
+  times  = 0.0, .0625, 2.0
 /
 
 &MESH

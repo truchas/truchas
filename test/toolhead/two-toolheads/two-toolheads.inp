@@ -10,8 +10,7 @@
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 2.1
-  Output_Dt = 2.1 !0.1
+  times  = 0.0, 2.1
   !move_block_ids = 1
   !move_toolpath_name = 'path3'
 /

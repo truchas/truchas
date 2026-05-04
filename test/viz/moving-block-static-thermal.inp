@@ -1,0 +1,44 @@
+MOVING BLOCK STATIC THERMAL OUTPUT
+
+This test exercises constant thermal visualization fields on a moving block.
+
+
+&MESH
+  mesh_file = 'moving-block.gen'
+/
+
+&OUTPUTS
+  times = 0.0, 2.0
+  subintervals = 8
+  move_block_ids = 2
+  move_toolpath_name = 'tp1'
+/
+
+&TOOLPATH
+ name = 'tp1'
+ command_string = '[["moverel",[2,0,0],2]]'
+ start_time = 0.5
+ start_coord = -1.0, 0.0, 0.0
+/
+
+&PHYSICS
+  materials = 'stuff'
+/
+
+&NUMERICS
+  dt_init = 1.0d-2
+  dt_grow = 5.0
+/
+
+&BODY
+  surface_name = 'background'
+  material_name = 'stuff'
+  temperature = 1.0
+/
+
+&MATERIAL
+  name = 'stuff'
+  density = 1.0
+  specific_heat = 1.0
+  conductivity = 1.0
+/

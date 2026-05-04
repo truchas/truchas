@@ -10,8 +10,7 @@ PLANE WAVE NORMALLY INCIDENT ON WALL
 /
 
 &OUTPUTS
-  output_t = 0.0, 1.0e-6
-  output_dt = 1.0e-6
+  times = 0.0, 1.0e-6
 /
 
 &NUMERICS /

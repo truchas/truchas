@@ -8,8 +8,8 @@ This test exercises the visualization output with a moving block.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 2.0
-  Output_Dt = 0.25
+  times = 0.0, 2.0
+  subintervals = 8
   move_block_ids = 2
   move_toolpath_name = 'tp1'
 /

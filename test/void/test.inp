@@ -10,8 +10,8 @@
 /
 
 &OUTPUTS
-  output_t  = 0.0, 10.3 !11.0
-  output_dt = 0.025
+  times  = 0.0, 10.3 !11.0
+  subintervals = 412
 /
 
 x&PROBE

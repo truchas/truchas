@@ -6,8 +6,7 @@ axis. Domain is 15x15x1 with unit cells subdivided into 6 tets each.
 Volume fractions should be advected exactly.
 
 &OUTPUTS
-  output_t  = 0.0, 0.015625
-  output_dt = 2.0
+  times  = 0.0, 0.015625
 /
 
 &MESH

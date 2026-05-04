@@ -20,8 +20,7 @@ for HT/PC.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 1.0
-  Output_Dt = 1.0
+  times = 0.0, 1.0
 /
 
 &PHYSICS

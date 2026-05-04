@@ -13,8 +13,8 @@ with the off-center ball that actually matches the view factors.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.5
-  Output_Dt = 0.1
+  times = 0.0, 0.5
+  subintervals = 5
 /
 
 &PHYSICS

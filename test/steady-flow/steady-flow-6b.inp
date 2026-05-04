@@ -12,8 +12,7 @@ of a prescribed constant velocity, we solve for the velocity, expecting to
 recovery that constant velocity.
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

@@ -29,8 +29,7 @@
 /
 
 &OUTPUTS
-  output_t  = 0.0, 120.0
-  output_dt = 120.0 !5.0
+  times  = 0.0, 120.0
   move_block_ids = 2
   move_toolpath_name = "example"
 /

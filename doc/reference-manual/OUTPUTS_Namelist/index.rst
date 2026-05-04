@@ -18,70 +18,92 @@ OUTPUTS Namelist Features
 
 Components
 ------------
-* :ref:`Int_Output_Dt_Multiplier<O_IODM>`
-* :ref:`Output_Dt<O_OD>`
-* :ref:`Output_Dt_Multiplier<O_ODM>`
-* :ref:`Output_T<O_OT>`
-* :ref:`Probe_Output_Cycle_Multiplier<O_POCM>`
-* :ref:`Short_Output_Dt_Multiplier<O_SODM>`
+* :ref:`Times<O_Times>`
+* :ref:`Subintervals<O_Subintervals>`
+* :ref:`Fields<O_Fields>`
 * :ref:`Move_Block_IDs<O_MBI>`
 * :ref:`Move_Toolpath_Name<O_MTN>`
 
-.. _O_IODM:
+.. _O_Times:
 
-Int_Output_Dt_Multiplier
+Times
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : Factor multiplying :ref:`Output_Dt<O_OD>` for time interval to write interface output data.
-| **Type**        : integer array
-| **Default**     : none
-| **Valid Values**: :math:`\geq 0`
-
-.. _O_OD:
-
-Output_Dt
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : Output time interval for each output time span.
-| **Physical Dimension**: T
-| **Type**        : real array
-| **Default**     : none
-| **Valid Values**: :math:`\gt 0`
-
-.. _O_OT:
-
-Output_T
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : A sequence of time values for defining time spans that have distinct output time intervals. The last time is the problem end time.
+| **Description** : A sequence of time values for defining time spans that have distinct output subdivision counts. The last time is the problem end time.
 | **Physical Dimension**: T
 | **Type**        : real array
 | **Default**     : none
 | **Valid Values**: strictly increasing sequence of two or more values.
 
-.. _O_POCM:
+.. _O_Subintervals:
 
-Probe_Output_Cycle_Multiplier
+Subintervals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : Factor multiplying truchas cycle to determine frequency of writing probe output.
-| **Type**        : integer
+| **Description** : Number of equal subintervals for each time span. Output is written at the endpoint of each subinterval.
+| **Type**        : integer array
 | **Default**     : 1
 | **Valid Values**: :math:`\gt 0`
 
-.. _O_SODM:
+.. _O_Fields:
 
-Short_Output_Dt_Multiplier
+Fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : Factor multiplying :ref:`Output_Dt<O_OD>` for time interval to write short edits.
-| **Type**        : integer array
-| **Default**     : 0
-| **Valid Values**: :math:`\geq 0`
+| **Description** : A list of visualization fields to write to the VTKHDF output file.
+| **Type**        : string array
+| **Default**     : all available visualization fields
+| **Valid Values**: ``'all'`` or one or more field names from the list below. Field names are case sensitive.
+| **Notes**       : Omitting this variable currently writes all available fields for compatibility with earlier output behavior. To explicitly request that behavior, specify ``fields = 'all'``. The value ``'all'`` may not be combined with other field names. A requested field that is unavailable for the active physics is omitted with a warning. In parallel runs, the default and ``'all'`` selections include ``process_id``.
 
-.. _O_ODM:
+The following field names are available, depending on the active physics and
+model configuration:
 
-Output_Dt_Multiplier
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-| **Description** : Factor multiplying :ref:`Output_Dt<O_OD>` for time interval to write output.
-| **Type**        : integer array
-| **Default**     : 0
-| **Valid Values**: :math:`\geq 0`
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Field name
+     - Description
+   * - ``temperature``
+     - Cell temperature.
+   * - ``enthalpy``
+     - Cell enthalpy.
+   * - ``phi_N``
+     - Species field ``N``, for example ``phi_1`` or ``phi_2``.
+   * - ``vfrac``
+     - Shorthand for all material volume-fraction fields.
+   * - ``vfrac_<phase-name>``
+     - Volume fraction for one material phase, for example ``vfrac_water``.
+   * - ``process_id``
+     - MPI process rank that owns each cell. Written only for parallel runs.
+   * - ``em_heat``
+     - Electromagnetic heat generation.
+   * - ``velocity``
+     - Cell-centered flow velocity.
+   * - ``pressure``
+     - Cell-centered flow pressure.
+   * - ``displacement``
+     - Solid-mechanics displacement.
+   * - ``strain``
+     - Solid-mechanics strain tensor.
+   * - ``thermal_strain``
+     - Solid-mechanics thermal strain tensor.
+   * - ``stress``
+     - Solid-mechanics stress tensor.
+   * - ``rotation``
+     - Solid-mechanics rotation.
+   * - ``contact_normal_displ``
+     - Normal displacement on solid-mechanics contact interface blocks.
+   * - ``contact_pressure``
+     - Contact pressure on solid-mechanics contact interface blocks.
+   * - ``plastic_strain``
+     - Solid-mechanics plastic strain tensor; available when viscoplasticity is enabled.
+   * - ``plastic_strain_rate``
+     - Solid-mechanics plastic strain rate; available when viscoplasticity is enabled.
+   * - ``ustruc``
+     - Shorthand for all configured microstructure fields.
+
+The ``vfrac`` and ``ustruc`` entries are selectors rather than dataset names.
+The corresponding VTKHDF datasets are named after the expanded fields, such as
+``vfrac_water`` or ``ustruc1_gl_t_sol``.
 
 .. _O_MBI:
 

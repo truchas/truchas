@@ -3,10 +3,10 @@
 /
 
 &OUTPUTS
-  Output_T = 0.0, 10.0
-  !Output_T = 0.0, 2e-3
-  !Output_T = 0.0, 1.0
-  Output_Dt = 5.0 !1.0
+  times = 0.0, 10.0
+  !times = 0.0, 2e-3
+  !times = 0.0, 1.0
+  subintervals = 2
 /
 
 &PHYSICS

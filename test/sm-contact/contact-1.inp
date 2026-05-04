@@ -5,8 +5,7 @@
 /
 
 &OUTPUTS
-  output_t = 0.0, 1.0
-  output_dt = 1.0
+  times = 0.0, 1.0
 /
 
 &NUMERICS

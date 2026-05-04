@@ -8,8 +8,7 @@ temperature phase and sets the specific heat for the high temperature phase.
 Here the latent heat needs to be set explicitly.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

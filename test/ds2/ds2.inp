@@ -21,8 +21,7 @@ it and/or the boundary conditions so ortho operators are used for HT/PC.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.1
-  Output_Dt = 0.1
+  times = 0.0, 0.1
 /
 
 &PHYSICS

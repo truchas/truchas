@@ -1,6 +1,5 @@
 target_sources(truchas PRIVATE
   cycle_output_module.F90
-  edit_module.F90
   output_control.F90
   output_utilities.F90
   probes_type.F90
@@ -10,6 +9,14 @@ target_sources(truchas PRIVATE
   truchas_danu_output.F90
   truchas_danu_output_data.F90
   truchas_danu_output_tools.F90
-  truchas_vtkhdf_output.F90
+  viz_field_registry_type.F90
+  viz_provider_class.F90
+  viz_provider_state_class.F90
+  viz_field_variability_type.F90
+  thermal_state_viz_provider_type.F90
+  viz_stream_state_type.F90
+  viz_manager_type.F90
+  viz_driver.F90
   degen_hex_topology.F90
+  viz_field_selection_type.F90
 )

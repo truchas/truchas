@@ -23,6 +23,7 @@ module simulation_event_queue
   use toolpath_event_type
   use toolhead_event_type, only: toolhead_event
   use diffusion_solver, only: vf_event
+  use viz_driver, only: TVO_schedule_events
   implicit none
   private
 
@@ -48,12 +49,6 @@ module simulation_event_queue
 #endif
   end type
 
-  type, extends(event_action), public :: short_edit_event
-#ifdef INTEL_BUG20180222
-    integer :: dummy = 1
-#endif
-  end type
-
   type, extends(event_action), public :: stop_event
 #ifdef INTEL_BUG20180222
     integer :: dummy = 1
@@ -73,12 +68,11 @@ contains
     use em_heat_driver, only: em_heat_enabled, get_em_heat_event_times
     use diffusion_solver_data, only: ds_enabled
     use diffusion_solver, only: add_moving_vf_events
-    use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
     real(r8), intent(in) :: dt_min, dt_init
 
-    integer :: i, j, n, dt_policy
+    integer :: i, j, dt_policy
     real(r8) :: c, t
     real(r8), allocatable :: array(:)
 
@@ -117,23 +111,16 @@ contains
     end if
 
     !! Add output times
-    do j = 1, nops
-      n = (output_t(j+1) - output_t(j) + 0.9*output_dt(j)) / output_dt(j)
-      do i = 0, max(0, n-1)
-        t = output_t(j) + i*output_dt(j)
-        if (modulo(i,output_dt_multiplier(j)) == 0) then
-          call event_queue%add_event(t, output_event())
-        end if
-        if (short_output_dt_multiplier(j) > 0) then
-          if (modulo(i,short_output_dt_multiplier(j)) == 0) &
-              call event_queue%add_event(t, short_edit_event())
-        end if
+    do j = 1, ntimes-1
+      do i = 1, output_n(j)
+        t = output_t(j) + i*(output_t(j+1) - output_t(j))/output_n(j)
+        call event_queue%add_event(t, output_event())
       end do
     end do
-    t = output_t(nops+1)
-    call event_queue%add_event(t, output_event())
-    if (short_edit) call event_queue%add_event(t, short_edit_event())
-    call event_queue%add_event(t, stop_event(), rank=99)
+    call event_queue%add_event(output_t(ntimes), stop_event(), rank=99)
+
+    !! VTKHDF output stream events
+    call TVO_schedule_events(event_queue)
 
   end subroutine init_sim_event_queue
 

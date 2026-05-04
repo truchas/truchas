@@ -5,7 +5,7 @@ target_sources(truchas PRIVATE
   flow_bc_factory_type.F90
   flow_bc_type.F90
   flow_driver.F90
-  flow_vtkhdf_output.F90
+  flow_viz_provider_type.F90
   flow_operators.F90
   turbulence_model_class.F90
   default_turb_model_type.F90

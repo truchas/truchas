@@ -11,8 +11,7 @@ pressure field.
     rho1 = 1, p = -(z-sqrt(3)) + c, in z > sqrt(3).
 
 &OUTPUTS
-  output_t  = 0.0, 2.0
-  output_dt = 2.0
+  times  = 0.0, 2.0
 /
 
 &MESH

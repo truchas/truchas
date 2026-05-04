@@ -12,8 +12,7 @@ solid with no fluid present.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.2, 2.5
-  Output_Dt = 0.2, 2.5
+  times = 0.0, 0.2, 2.5
 /
 
 &PHYSICS

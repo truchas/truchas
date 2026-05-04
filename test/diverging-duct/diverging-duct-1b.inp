@@ -16,8 +16,7 @@ mesh used.
 &MESH mesh_file = 'mesh2-rotx.gen'/
 
 &OUTPUTS
-  output_t = 0.0, 20.0
-  output_dt = 20.0
+  times = 0.0, 20.0
 /
 
 &PHYSICS

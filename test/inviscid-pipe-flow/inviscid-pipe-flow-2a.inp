@@ -11,8 +11,7 @@ p1 = 6, p2 = 0, rho = 3, L = 1 => U(t) = 2*t
 &MESH mesh_file = 'mesh2a.gen'/
 
 &OUTPUTS
-  output_t = 0.0, 0.05, 1.0
-  output_dt = 1.0, 1.0
+  times = 0.0, 0.05, 1.0
 /
 
 &PHYSICS

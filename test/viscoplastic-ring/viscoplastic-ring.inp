@@ -28,8 +28,7 @@
 /
 
 &OUTPUTS
-  output_t = 0.0, 0.5 !5.0
-  output_dt = 1.0
+  times = 0.0, 0.5 !5.0
 /
 
 &NUMERICS

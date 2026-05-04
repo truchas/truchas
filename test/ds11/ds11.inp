@@ -9,8 +9,8 @@ HTC interface condition between the outer mold shell and the inner metal.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 1.5, 2.5
-  Output_Dt = 1.5, 0.5
+  times = 0.0, 1.5, 2.5
+  subintervals = 1, 2
 /
 
 &PHYSICS

@@ -15,8 +15,7 @@ an internal HTC condition.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.5
-  Output_Dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PHYSICS

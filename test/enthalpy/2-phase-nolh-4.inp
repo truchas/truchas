@@ -10,8 +10,7 @@ function for the high temperature phase. Here latent heat is implicit
 and not specified.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

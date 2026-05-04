@@ -5,8 +5,7 @@ different equivalent methods of  specifying the internal derived enthalpy
 density are indeed equivalent. This input file specifies the specific heat.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

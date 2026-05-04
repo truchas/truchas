@@ -8,8 +8,7 @@ phase and specifies the specific enthalpy function for the high temperature
 phase. Here the latent heat is implicit in that function.
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

@@ -14,8 +14,7 @@ associated gap-rad-flow test exercises the implementation in the 'FHT' solver.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.5
-  Output_Dt = 5.0
+  times = 0.0, 0.5
 /
 
 &PROBE

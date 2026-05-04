@@ -32,7 +32,7 @@ Cycle_Max
 | **Type**              : integer
 | **Default**           : 1000000 
 | **Valid Values**      : :math:`(0,\infty)`
-| **Notes**             : A simulation will also terminate gracefully if the last entry in the :ref:`Output_T<O_OT>` input variable (real) array (in the :ref:`OUTPUTS<OUTPUTS_Namelist>` namelist) is exceeded by the current simulation time :ref:`t<NUMERICS_T>`.
+| **Notes**             : A simulation will also terminate gracefully if the last entry in the :ref:`Times<O_Times>` input variable (real) array (in the :ref:`OUTPUTS<OUTPUTS_Namelist>` namelist) is exceeded by the current simulation time :ref:`t<NUMERICS_T>`.
 
 .. _NUMERICS_CN:
 

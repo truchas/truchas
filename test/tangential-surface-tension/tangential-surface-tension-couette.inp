@@ -16,8 +16,7 @@ u = dsig/dx / mu * (y - ymin)
 /
 
 &OUTPUTS
-  Output_T = 0.0, 20.0
-  Output_Dt = 20.0
+  times = 0.0, 20.0
 /
 
 &PHYSICS

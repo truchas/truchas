@@ -18,8 +18,8 @@ aim of this problem is to exercise passive advection.
 /
 
 &OUTPUTS
-  output_t = 0.0, 6.0
-  output_dt = 1.5
+  times = 0.0, 6.0
+  subintervals = 4
 /
 
 &NUMERICS

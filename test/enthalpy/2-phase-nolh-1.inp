@@ -8,8 +8,7 @@ produce the same thermal results. This input file sets a material-wide
 specific heat. 
 
 &OUTPUTS
-  output_t = 0.0, 0.5
-  output_dt = 0.5
+  times = 0.0, 0.5
 /
 
 &PROBE

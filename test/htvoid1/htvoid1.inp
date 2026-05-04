@@ -26,8 +26,7 @@ void will result in heat solutions that are not comparable.
 /
 
 &OUTPUTS
-  Output_T  = 0.0, 1.0
-  Output_Dt = 1.0 !.05
+  times  = 0.0, 1.0
 /
 
 &PHYSICS

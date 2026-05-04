@@ -10,10 +10,8 @@ Mesh should be an integer multiple of Ncell = 12, 1, 10 in i,j,k space
 /
 
 &OUTPUTS
-    Output_T                    = 0.0, 0.25
-    Output_Dt                   = 0.0001
-    Int_Output_Dt_Multiplier    = 0
-    Short_Output_Dt_Multiplier  = 1
+    times                    = 0.0, 0.25
+    subintervals  = 2500
 
 /
 

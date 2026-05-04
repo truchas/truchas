@@ -1,6 +1,6 @@
 target_sources(truchas PRIVATE
   solid_mechanics_driver.F90
-  solid_mechanics_vtkhdf_output.F90
+  solid_mechanics_viz_provider_type.F90
   solid_mechanics_type.F90
   solid_mechanics_namelist.F90
   solid_mechanics_bc_namelist.F90

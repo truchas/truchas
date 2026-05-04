@@ -25,13 +25,12 @@ module ustruc_driver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_mesh_type
+  use ustruc_comp_class, only: USTRUC_GL_ID, USTRUC_LDRD_ID
   use ustruc_model_type
   use parameter_list_type
   use truchas_logging_services
   use truchas_timers
   use material_model_driver, only: matl_model
-  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
-      vtkhdf_cell_data_handle
   implicit none
   private
 
@@ -39,25 +38,8 @@ module ustruc_driver
   public :: ustruc_driver_init, ustruc_update, ustruc_output, ustruc_driver_final
   public :: ustruc_read_checkpoint, ustruc_skip_checkpoint
   public :: ustruc_enabled
-  public :: ustruc_vtkhdf_register_temporal_data, ustruc_vtkhdf_output
-
-  !! A registered temporal VTKHDF field for one microstructure component.
-  type :: ustruc_vtkhdf_field_data
-    character(:), allocatable :: data_name
-    logical :: is_vector = .false.
-    type(vtkhdf_cell_data_handle) :: handle
-  end type
-
-  !! The VTKHDF fields registered for one MICROSTRUCTURE model instance.
-  type :: ustruc_vtkhdf_component_data
-    type(ustruc_vtkhdf_field_data), allocatable :: fields(:)
-  end type
-
-  !! The microstructure VTKHDF component data registered for one mesh block.
-  type, public :: ustruc_vtkhdf_block_data
-    private
-    type(ustruc_vtkhdf_component_data), allocatable :: comp(:)
-  end type
+  public :: ustruc_num_models, ustruc_ncell_onP, ustruc_get_component_flags
+  public :: ustruc_has_field, ustruc_get_scalar_field, ustruc_get_vector_field
 
   !! Bundle up all the driver state data as a singleton THIS of private
   !! derived type.  All procedures use/modify this object.
@@ -81,6 +63,66 @@ contains
   logical function ustruc_enabled()
     ustruc_enabled = allocated(this)
   end function
+
+  integer function ustruc_num_models()
+    if (allocated(this)) then
+      ustruc_num_models = size(this)
+    else
+      ustruc_num_models = 0
+    end if
+  end function
+
+  integer function ustruc_ncell_onP()
+    INSIST(allocated(this))
+    INSIST(size(this) > 0)
+    ustruc_ncell_onP = this(1)%mesh%ncell_onP
+  end function
+
+  subroutine ustruc_get_component_flags(n, has_gl, has_ldrd)
+
+    integer, intent(in) :: n
+    logical, intent(out) :: has_gl, has_ldrd
+
+    INSIST(allocated(this))
+    INSIST(n >= 1 .and. n <= size(this))
+    call get_component_flags(this(n)%model, has_gl, has_ldrd)
+
+  end subroutine ustruc_get_component_flags
+
+  logical function ustruc_has_field(n, name)
+
+    integer, intent(in) :: n
+    character(*), intent(in) :: name
+
+    INSIST(allocated(this))
+    INSIST(n >= 1 .and. n <= size(this))
+    ustruc_has_field = this(n)%model%has(name)
+
+  end function ustruc_has_field
+
+  subroutine ustruc_get_scalar_field(n, name, array)
+
+    integer, intent(in) :: n
+    character(*), intent(in) :: name
+    real(r8), intent(inout) :: array(:)
+
+    INSIST(allocated(this))
+    INSIST(n >= 1 .and. n <= size(this))
+    call this(n)%model%get(name, array)
+
+  end subroutine ustruc_get_scalar_field
+
+  subroutine ustruc_get_vector_field(n, name, array)
+
+    integer, intent(in) :: n
+    character(*), intent(in) :: name
+    real(r8), intent(inout) :: array(:,:)
+
+    INSIST(allocated(this))
+    INSIST(n >= 1 .and. n <= size(this))
+    call this(n)%model%get(name, array)
+
+  end subroutine ustruc_get_vector_field
 
   !! Current Truchas design requires that parameter input and object
   !! initialization be separated and occur at distinct execution stages.
@@ -413,6 +455,7 @@ contains
     integer :: n
     real(r8), allocatable :: scalar_out(:), vector_out(:,:)
     character(:), allocatable :: label
+    logical :: has_gl, has_ldrd, qualify_names
 
     if (.not.allocated(this)) return
     call start_timer('Microstructure')
@@ -422,19 +465,43 @@ contains
 
     do n = 1, size(this)
       label = 'ustruc' // i_to_c(n)
+      call get_component_flags(this(n)%model, has_gl, has_ldrd)
+      qualify_names = has_gl .and. has_ldrd
 
       !! GL analysis module
-      call write_vector_field(data_name='gl-G', hdf_name=label//'-G', viz_name=label//'-G')
-      call write_scalar_field(data_name='gl-L', hdf_name=label//'-L', viz_name=label//'-L')
-      call write_scalar_field(data_name='gl-t_sol', hdf_name=label//'-t_sol', viz_name=label//'-t_sol')
+      if (has_gl) then
+        call write_vector_field(data_name='gl-G', &
+            hdf_name=component_field_name(label, 'gl', 'G', qualify_names), &
+            viz_name=component_field_name(label, 'gl', 'G', qualify_names))
+        call write_scalar_field(data_name='gl-L', &
+            hdf_name=component_field_name(label, 'gl', 'L', qualify_names), &
+            viz_name=component_field_name(label, 'gl', 'L', qualify_names))
+        call write_scalar_field(data_name='gl-t_sol', &
+            hdf_name=component_field_name(label, 'gl', 't_sol', qualify_names), &
+            viz_name=component_field_name(label, 'gl', 't_sol', qualify_names))
+      end if
 
       !! LDRD analysis module
-      call write_scalar_field(data_name='ldrd-type', hdf_name=label//'-type',  viz_name=label//'-type')
-      call write_scalar_field(data_name='ldrd-lambda1', hdf_name=label//'-lambda1', viz_name=label//'-lambda1')
-      call write_scalar_field(data_name='ldrd-lambda2', hdf_name=label//'-lambda2', viz_name=label//'-lambda2')
-      call write_scalar_field(data_name='ldrd-G', hdf_name=label//'-G', viz_name=label//'-G')
-      call write_scalar_field(data_name='ldrd-V', hdf_name=label//'-V', viz_name=label//'-V')
-      call write_scalar_field(data_name='ldrd-t_sol', hdf_name=label//'-t_sol', viz_name=label//'-t_sol')
+      if (has_ldrd) then
+        call write_scalar_field(data_name='ldrd-type', &
+            hdf_name=component_field_name(label, 'ldrd', 'type', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 'type', qualify_names))
+        call write_scalar_field(data_name='ldrd-lambda1', &
+            hdf_name=component_field_name(label, 'ldrd', 'lambda1', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 'lambda1', qualify_names))
+        call write_scalar_field(data_name='ldrd-lambda2', &
+            hdf_name=component_field_name(label, 'ldrd', 'lambda2', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 'lambda2', qualify_names))
+        call write_scalar_field(data_name='ldrd-G', &
+            hdf_name=component_field_name(label, 'ldrd', 'G', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 'G', qualify_names))
+        call write_scalar_field(data_name='ldrd-V', &
+            hdf_name=component_field_name(label, 'ldrd', 'V', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 'V', qualify_names))
+        call write_scalar_field(data_name='ldrd-t_sol', &
+            hdf_name=component_field_name(label, 'ldrd', 't_sol', qualify_names), &
+            viz_name=component_field_name(label, 'ldrd', 't_sol', qualify_names))
+      end if
     end do
 
     call stop_timer('Microstructure')
@@ -462,123 +529,32 @@ contains
 
   end subroutine ustruc_output
 
-  subroutine ustruc_vtkhdf_register_temporal_data(file, block, data)
+  subroutine get_component_flags(model, has_gl, has_ldrd)
 
-    use string_utilities, only: i_to_c
+    type(ustruc_model), intent(in) :: model
+    logical, intent(out) :: has_gl, has_ldrd
 
-    type(vtkhdf_mb_file), intent(inout) :: file
-    type(vtkhdf_block_handle), intent(in) :: block
-    type(ustruc_vtkhdf_block_data), intent(inout) :: data
+    integer, allocatable :: comp_ids(:)
 
-    integer :: n
-    character(:), allocatable :: label
+    call model%get_comp_list(comp_ids)
+    has_gl = any(comp_ids == USTRUC_GL_ID)
+    has_ldrd = any(comp_ids == USTRUC_LDRD_ID)
 
-    if (.not.allocated(this)) return
-    if (allocated(data%comp)) deallocate(data%comp)
+  end subroutine get_component_flags
 
-    allocate(data%comp(size(this)))
-    do n = 1, size(this)
-      label = 'ustruc' // i_to_c(n)
+  function component_field_name(label, component, suffix, qualify) result(name)
 
-      !! GL analysis module
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='gl-G', vtk_name=label//'-G', is_vector=.true.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='gl-L', vtk_name=label//'-L', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='gl-t_sol', vtk_name=label//'-t_sol', is_vector=.false.)
+    character(*), intent(in) :: label, component, suffix
+    logical, intent(in) :: qualify
+    character(:), allocatable :: name
 
-      !! LDRD analysis module
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-type', vtk_name=label//'-type', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-lambda1', vtk_name=label//'-lambda1', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-lambda2', vtk_name=label//'-lambda2', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-G', vtk_name=label//'-G', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-V', vtk_name=label//'-V', is_vector=.false.)
-      call maybe_register_field(this(n)%model, data%comp(n), &
-          data_name='ldrd-t_sol', vtk_name=label//'-t_sol', is_vector=.false.)
-    end do
+    if (qualify) then
+      name = label // '-' // component // '-' // suffix
+    else
+      name = label // '-' // suffix
+    end if
 
-  contains
-
-    subroutine maybe_register_field(model, comp, data_name, vtk_name, is_vector)
-      type(ustruc_model), intent(in) :: model
-      type(ustruc_vtkhdf_component_data), intent(inout) :: comp
-      character(*), intent(in) :: data_name, vtk_name
-      logical, intent(in) :: is_vector
-      integer :: n
-      if (.not.model%has(data_name)) return
-      call append_field(comp, data_name, is_vector)
-      n = size(comp%fields)
-      if (is_vector) then
-        comp%fields(n)%handle = file%register_temporal_cell_data(block, vtk_name, [real(r8)::0,0,0])
-      else
-        comp%fields(n)%handle = file%register_temporal_cell_data(block, vtk_name, 0.0_r8)
-      end if
-    end subroutine
-
-    subroutine append_field(comp, data_name, is_vector)
-      type(ustruc_vtkhdf_component_data), intent(inout) :: comp
-      character(*), intent(in) :: data_name
-      logical, intent(in) :: is_vector
-      type(ustruc_vtkhdf_field_data), allocatable :: tmp(:)
-      integer :: n
-      if (allocated(comp%fields)) then
-        n = size(comp%fields)
-        allocate(tmp(n+1))
-        tmp(:n) = comp%fields
-        call move_alloc(tmp, comp%fields)
-      else
-        allocate(comp%fields(1))
-      end if
-      n = size(comp%fields)
-      comp%fields(n)%data_name = data_name
-      comp%fields(n)%is_vector = is_vector
-    end subroutine
-
-  end subroutine ustruc_vtkhdf_register_temporal_data
-
-  subroutine ustruc_vtkhdf_output(file, block, block_cells, data)
-
-    type(vtkhdf_mb_file), intent(inout) :: file
-    type(vtkhdf_block_handle), intent(in) :: block
-    integer, intent(in) :: block_cells(:)
-    type(ustruc_vtkhdf_block_data), intent(in) :: data
-
-    integer :: k, n
-    real(r8), allocatable :: scalar_out(:), vector_out(:,:)
-
-    if (.not.allocated(this)) return
-    if (.not.allocated(data%comp)) return
-
-    call start_timer('Microstructure')
-
-    !! NB: all microstructure components must be using the same mesh.
-    allocate(scalar_out(this(1)%mesh%ncell_onP), &
-        vector_out(3,this(1)%mesh%ncell_onP))
-
-    do n = 1, size(data%comp)
-      if (.not.allocated(data%comp(n)%fields)) cycle
-      do k = 1, size(data%comp(n)%fields)
-        associate (field => data%comp(n)%fields(k))
-          if (field%is_vector) then
-            call this(n)%model%get(field%data_name, vector_out)
-            call file%write_cell_data(block, field%handle, vector_out(:,block_cells))
-          else
-            call this(n)%model%get(field%data_name, scalar_out)
-            call file%write_cell_data(block, field%handle, scalar_out(block_cells))
-          end if
-        end associate
-      end do
-    end do
-
-    call stop_timer('Microstructure')
-
-  end subroutine ustruc_vtkhdf_output
+  end function component_field_name
 
   !! Output the integrated internal state of the analysis components to the HDF
   !! file needed for restarts.  This is additional internal state that is not set

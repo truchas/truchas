@@ -53,6 +53,7 @@ CONTAINS
     use truchas_logging_services
     use truchas_timers
     use fhypre, only: fhypre_initialize
+    use viz_driver, only: TVO_init
 
     !---------------------------------------------------------------------------
 
@@ -82,6 +83,7 @@ CONTAINS
     ! read the data file
     call ANNOUNCE ('INPUT')
     call READ_INPUT (input_file, title)
+    call TVO_init
 
     ! set up the problem
     call ANNOUNCE ('INITIALIZATION')
@@ -121,7 +123,6 @@ call hijack_truchas ()
     !---------------------------------------------------------------------------
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use cycle_output_module,      only: CYCLE_OUTPUT_PRE, CYCLE_OUTPUT_POST
-    use edit_module,              only: edit_short
     use em_heat_driver,           only: em_heat_enabled, update_em_heat
     use parallel_communication,   only: global_any
     use signal_handler
@@ -137,7 +138,7 @@ call hijack_truchas ()
     use solid_mechanics_driver, only: solid_mechanics_enabled, solid_mechanics_step
     use string_utilities, only: i_to_c
     use truchas_danu_output, only: TDO_write_timestep
-    use truchas_vtkhdf_output, only: TVO_write_timestep
+    use viz_driver, only: TVO_write_timestep, TVO_write_stream_timestep
     use sim_event_queue_type
     use simulation_event_queue
     use time_step_sync_type
@@ -146,6 +147,7 @@ call hijack_truchas ()
     use probes_driver, only: probes_write
     use physics_module, only: heat_transport
     use zone_module, only: zone
+    use viz_output_action_type
 
     ! Local Variables
     Logical :: sig_rcvd, restart_ds
@@ -180,7 +182,7 @@ call hijack_truchas ()
     call mem_diag_write('Before main loop:')
 
     call TDO_write_timestep
-    call TVO_write_timestep
+    call TVO_write_timestep(t)
     t_write = t
     call probes_write(t)  ! Write initial probe info.
 
@@ -256,7 +258,7 @@ call hijack_truchas ()
           call TLS_info('Too many repeated failures to take a step; &
                         &writing last time step data and terminating')
           call TDO_write_timestep
-          call TVO_write_timestep
+          call TVO_write_timestep(t)
           exit MAIN_CYCLE
         end if
 
@@ -297,7 +299,7 @@ call hijack_truchas ()
           call TLS_info(errmsg)
           call TLS_info('Writing last time step data and terminating')
           call TDO_write_timestep
-          call TVO_write_timestep
+          call TVO_write_timestep(t)
           exit MAIN_CYCLE
         end if
 
@@ -307,7 +309,7 @@ call hijack_truchas ()
           call TLS_info('')
           call TLS_info('Received signal USR2; writing time step data and terminating')
           call TDO_write_timestep
-          call TVO_write_timestep
+          call TVO_write_timestep(t)
           exit MAIN_CYCLE
         end if
 
@@ -326,10 +328,9 @@ call hijack_truchas ()
           select type (action)
           type is (output_event)
             call TDO_write_timestep
-            call TVO_write_timestep
             t_write = t
-          type is (short_edit_event)
-            call edit_short
+          type is (viz_output_action)
+            call TVO_write_stream_timestep(action%stream_id, t)
           type is (phase_event)
             dt_new = min(dt_new, action%init_dt(dt_old, dt))
             restart_ds = .true.
@@ -357,7 +358,7 @@ call hijack_truchas ()
         else
           call TLS_info('Maximum number of cycles completed; writing time step data and terminating')
           call TDO_write_timestep
-          call TVO_write_timestep
+          call TVO_write_timestep(t)
         end if
         exit
       end if
@@ -381,7 +382,7 @@ call hijack_truchas ()
     use time_step_module,       only: t, cycle_number
     use diffusion_solver,       only: ds_delete
     use em_heat_driver, only: em_heat_driver_final
-    use truchas_vtkhdf_output, only: TVO_close
+    use viz_driver, only: TVO_close
     use truchas_logging_services
     use truchas_timers
 

@@ -12,8 +12,7 @@ solid/void with no fluid present (other than void).
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.2, 1.6
-  Output_Dt = 0.2, 1.4
+  times = 0.0, 0.2, 1.6
 /
 
 &PHYSICS

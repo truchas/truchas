@@ -22,8 +22,8 @@ the flow solver.
 /
 
 &OUTPUTS
-  Output_T = 0.0, 0.25, 5.0
-  Output_Dt = 0.01, 0.25
+  times = 0.0, 0.25, 5.0
+  subintervals = 25, 19
 /
 
 &PHYSICS
