@@ -4,25 +4,24 @@ Building Truchas
 
 ### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
-and testing is done on 64-bit Linux with both Intel, NAG, and GNU compilers,
-and macOS with GNU and NAG compilers.
+is done primarily on 64-bit Linux, with some additional development on macOS.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
-  We use and test with the following compilers.
-  - Intel Fortran/C/C++: Any version of the classic oneAPI compilers, except
-  the initial 2021.0, should work. Note that the alternative LLVM-based
-  compilers are untested and will likely not work. Several older versions
-  also work, namely 18.0.x, x >= 5, and 19.1.0.
-  - NAG Fortran 7.0 on Linux (with GNU C/C++; most any version should be okay)
-  - NAG Fortran 7.0 on MacOS (with Apple Clang C/C++; likely any version of
-  Apple Clang should be fine)
-  - GNU Fortran/C/C++: Versions 10.2, 10.3, 11.2, 11.3, and 12.1 are known to
-  work. Versions 9.x, 10.1, and 11.1 are broken.
-* CMake version 3.16 or later
+  Truchas requires a modern Fortran 2018 compiler. The following suggested
+  compilers are recommended for new builds and have worked in recent ad hoc
+  testing, but this is not an exhaustive compatibility list.
+  - Intel oneAPI Fortran/C/C++ 2025 or later.
+  - LLVM flang/Clang/C++ 22.1 or later.
+  - NAG Fortran 7.2 or later on Linux (with GNU C/C++; most any version should
+  be okay).
+  GitLab CI currently tests with Intel oneAPI 2025.2. Some internal CI jobs use
+  an additional compiler configuration to match internal computing resources;
+  that configuration is not recommended for new external builds.
+* CMake version 3.20.2 or later
 * Standard software development tools: make, patch, perl
 * Zlib development library and header files
 * LAPACK library or equivalent
-* Python, version 3.5 or later, along with the packages h5py (version 2.6.0 or
-  later) and numpy (version 1.12.0 or later)
+* Python, version 3.12 or later, along with the packages h5py (version 3.16.0
+  or later) and numpy (version 2.4.4 or later)
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the
@@ -34,8 +33,8 @@ first stage involves building and installing additional third party libraries
 (TPL) that Truchas requires and which are not present on your system.  This
 only needs to be done once.  A CMake superbuild project for this stage can be
 found in the [truchas-tpl](https://gitlab.com/truchas/truchas-tpl) repository
-on GitLab. This version of Truchas is tested against the "v21" bundle of TPLs;
-do a `git checkout v21` after cloning the TPL repository. See its README file
+on GitLab. This version of Truchas uses the "v26" bundle of TPLs; do a
+`git checkout v26` after cloning the TPL repository. See its README file
 for further instructions.
 
 Once the required TPLs are installed, the procedure for building Truchas is
@@ -82,11 +81,10 @@ for a description of the relevant variables, and `BLA_VENDOR` in particular.
   likely to have been done as part of configuring the environment to use the
   oneAPI compiler.
 
-* The Intel oneAPI MKL library can also be used when compiling with either
-  the GFortran or NAG compilers. In this case the environment variable
-  `MKLROOT` will likely need to be set manually. With NAG,
-  `-D BLA_VENDOR=Intel10_64lp_seq` must used instead to get the basic sequential
-  version.
+* The Intel oneAPI MKL library can also be used when compiling with NAG. In
+  this case the environment variable `MKLROOT` will likely need to be set
+  manually, and `-D BLA_VENDOR=Intel10_64lp_seq` must be used instead to get
+  the basic sequential version.
 
 Note that Truchas currently makes limited direct use of LAPACK and then only
 for very small systems, so that use of a highly optimized library is unlikely
@@ -159,45 +157,6 @@ $ cmake -C ../config/mac-gcc.cmake \
 $ make
 ```
 
-
-### Compiling on a Mac with NAG Fortran and Apple Clang
-This is a 3 step process
-
-1. OpenMPI
-2. TPL
-3. Truchas
-
-##### Notes for OpenMPI
-There is an issue with failing to trigger the NAG preprocessor on the
-case insensitive Mac filesystem.  This should be fixed for OpenMPI
-versions > 4.0.3.  If compiling for version <= 4.0.3, the following
-configuration step should suffice (from the top level source
-directory):
-
-	$ mkdir build
-	$ cd build
-	$ ../configure FC=nagfor FCFLAGS=-fpp --prefix=<my_openmpi_install_dir>
-
-The `-fpp` option can be removed for later OpenMPI releases
-
-##### Notes for TPL
-Configuring cmake using the `config/linux-nag.cmake` is sufficent.  No other
-special flags have been needed
-
-##### Notes for Truchas
-`PGSLib` is a subpackage of Truchas that depends heavily on the linux
-shared library linking model.  The linux linking behavior can be
-emulated with the `CMAKE_SHARED_LINKER_FLAGS` that are set in
-`mac-nag-chk.cmake`.  With this in mind, the following allowed for
-building truchas on a mac
-
-	$ mkdir build
-    $ cd build
-    $ cmake -C ../config/mac-nag.cmake \
-          -D CMAKE_BUILD_TYPE=Release \
-	        -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> ..
-    $ make
-    $ make install
 
 ### Testing
 From the build directory run the command
