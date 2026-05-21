@@ -226,7 +226,7 @@ contains
   pure subroutine find_queue_item(this, time, item)
     class(sim_event_queue), intent(inout) :: this
     real(r8), intent(in) :: time
-    type(queue_item), intent(out), pointer :: item
+    type(queue_item), intent(inout), pointer :: item
     item => this%top
     if (.not.associated(item)) return
     if (time < item%time) then

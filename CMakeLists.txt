@@ -240,6 +240,7 @@ endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES NAG)
   if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER "7.1")
     add_compile_definitions(NAG_BUG20220103)
+    add_compile_definitions(NAG_BUG20260521)
   endif()
 endif()
 

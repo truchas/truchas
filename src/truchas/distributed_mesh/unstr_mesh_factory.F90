@@ -125,7 +125,7 @@ contains
     type(unstr_mesh), pointer :: this
 
     integer :: i, n, m, new_id, exodus_block_modulus
-    integer, allocatable :: ssid(:), ebid(:)
+    integer, allocatable :: ssid(:)
     character(:), allocatable :: mesh_file, msg, new_name
     logical, allocatable :: mask(:)
     type(ext_exodus_mesh) :: mesh
@@ -1151,7 +1151,6 @@ contains
 
     integer :: j, k, n
     integer, allocatable :: fsize(:), fnodes(:)
-    integer, pointer :: list(:)
 
     ASSERT(size(this%xcnode) == size(this%xcface))
     ASSERT(size(this%cfpar) == size(this%xcface)-1)
@@ -1166,8 +1165,23 @@ contains
     do j = 1, this%ncell
       associate (cell_nodes => this%cnode(this%xcnode(j):this%xcnode(j+1)-1), &
                  cell_faces => this%cface(this%xcface(j):this%xcface(j+1)-1))
-        list => cell_face_sizes(cell_nodes)
-        where (fsize(cell_faces) == 0) fsize(cell_faces) = list
+#ifdef NAG_BUG20260521
+        block
+          integer, pointer :: fsizes(:)
+          fsizes => cell_face_sizes(cell_nodes)
+          !! Avoid a vector-subscript WHERE assignment; NAG 7.2 Build 7245 ICEs.
+          do k = 1, size(cell_faces)
+            n = cell_faces(k)
+            if (fsize(n) == 0) fsize(n) = fsizes(k)
+          end do
+        end block
+#else
+        block
+          integer, pointer :: list(:)
+          list => cell_face_sizes(cell_nodes)
+          where (fsize(cell_faces) == 0) fsize(cell_faces) = list
+        end block
+#endif
       end associate
     end do
 
