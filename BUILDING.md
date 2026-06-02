@@ -4,7 +4,7 @@ Building Truchas
 
 ### Requirements
 The Truchas build system assumes a UNIX-like environment. Current development
-is done primarily on 64-bit Linux, with some additional development on macOS.
+is done primarily on 64-bit Linux and MacOS.
 * Fortran and C/C++ compilers.  The compiler executables must be in your path.
   Truchas requires a modern Fortran 2018 compiler. The following suggested
   compilers are recommended for new builds and have worked in recent ad hoc
@@ -21,7 +21,7 @@ is done primarily on 64-bit Linux, with some additional development on macOS.
 * Zlib development library and header files
 * LAPACK library or equivalent
 * Python, version 3.12 or later, along with the packages h5py (version 3.16.0
-  or later) and numpy (version 2.4.4 or later)
+  or later) and numpy (version 2.4.4 or later). Scipy is needed for 1 test (wg).
 * MPI.  The C compiler wrapper (`mpicc`, for example) must be in your path.
 
 Truchas requires some additional libraries, but these can be built by the
@@ -98,18 +98,26 @@ This requires that the portage library has been compiled and installed. See
 the TPL superbuild project referenced above.
 
 
-### Compiling on a Mac with GNU Compilers
-To build Truchas on MacOS via GCC provided by [Homebrew](https://brew.sh/),
-first install GCC:
+### Compiling on a MacOS
+To build Truchas on MacOS, use gfortran provided by [Homebrew](https://brew.sh/)
+alongside either gcc/g++ (also from Homebrew) or apple-clang. First, install
+GCC:
 
 ```sh
 $ brew install gcc
 ```
 
-MacOS provides the binary `gcc`, however this is Apple Clang and not the GNU
-compiler. Brew installs the GNU GCC with the version number baked into the
-binaries, e.g. `gcc-10`, `g++-10`, and `gfortran-10`. These are what we will
-use.
+Set up environment variables for your compiler choice, using one of the
+following (assuming GCC 15 here).
+
+```sh
+$ export CC=gcc-15 CXX=g++-15 FC=gfortran-15
+$ export CC=clang CXX=clang++ FC=gfortran-15
+```
+
+> Note: MacOS provides the binary `gcc`, however this is Apple Clang and not the
+> GNU compiler. Brew installs the GNU GCC with the version number baked into the
+> binaries, e.g. `gcc-15`, `g++-15`, and `gfortran-15`.
 
 Brew's OpenMPI formula is built over Apple Clang rather than true GCC, so
 OpenMPI must be built manually. Download and unpack the latest supported OpenMPI
@@ -118,25 +126,23 @@ tarball, then configure and build using the following:
 ```sh
 $ mkdir build
 $ cd build
-$ ../configure CC=gcc-10 CXX=g++-10 FC=gfortran-10 --prefix=<mpi_install_dir>
+$ ../configure --prefix=<mpi_install_dir>
 $ make all
 $ make install
 ```
 
 Now build the Truchas TPLs and Truchas with this newly-built OpenMPI in your
-`PATH`. Note CMake must be configured to use the GCC compilers rather than Apple
-Clang. This is done with the `CMAKE_*_COMPILER` variables, shown below.
+`PATH`.
 
-For the Truchas TPLs with GCC, the `linux-gcc.cmake` configuration will do just
-fine:
+For the Truchas TPLs, use either the `macos-gcc.cmake` configuration or the
+`macos-gcc-clang.cmake` configuration, depending on whether you are using GCC or
+Apple Clang for the C/C++ compilers, respectively. In either case, the
+configuration will grab the environment variables set earlier. For example:
 
 ```sh
 $ mkdir build
 $ cd build
-$ cmake -C ../config/linux-gcc.cmake \
-        -D CMAKE_C_COMPILER=gcc-10 \
-        -D CMAKE_CXX_COMPILER=g++-10 \
-        -D CMAKE_Fortran_COMPILER=gfortran-10 \
+$ cmake -C ../config/macos-gcc-clang.cmake \
         -D CMAKE_INSTALL_PREFIX=<truchas_tpl_dir> \
         ..
 $ make
@@ -148,15 +154,14 @@ Then build Truchas:
 $ mkdir build
 $ cd build
 $ cmake -C ../config/mac-gcc.cmake \
-        -D CMAKE_C_COMPILER=gcc-10 \
-        -D CMAKE_CXX_COMPILER=g++-10 \
-        -D CMAKE_Fortran_COMPILER=gfortran-10 \
         -D TRUCHAS_TPL_DIR=<truchas_tpl_dir> \
         -D CMAKE_BUILD_TYPE=Release \
         ..
 $ make
 ```
 
+> Note: For the Truchas build, `mac-gcc.cmake` is used for both GCC and Apple
+> Clang configurations.
 
 ### Testing
 From the build directory run the command
