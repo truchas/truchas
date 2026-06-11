@@ -259,7 +259,7 @@ phase
 ^^^^^^^^^^^^^^^^^^
 The phase of the input TE\ :sub:`10` mode for the waveguide port feed boundary
 condition. This is only truly significant when there are multiple waveguides
-with differing phases.
+with differing phases. Input in degrees.
 
 :Type: real
 :Default: 0.0
