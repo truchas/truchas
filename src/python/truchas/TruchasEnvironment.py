@@ -9,12 +9,28 @@ import os
 import argparse
 import json
 import subprocess
+import string
 
 from .TruchasData import TruchasData
 try:
     from .TruchasConfigBuild import TruchasConfig
 except ImportError:
     from .TruchasConfigInstall import TruchasConfig
+
+
+class _InputDeckFormatter(string.Formatter):
+    """Format input templates, allowing arithmetic expressions in fields."""
+
+    def get_field(self, field_name, args, kwargs):
+        try:
+            return super().get_field(field_name, args, kwargs)
+        except (KeyError, AttributeError, IndexError):
+            pass
+
+        try:
+            return eval(field_name, {"__builtins__": {}}, kwargs), field_name
+        except Exception as exc:
+            raise ValueError(f"failed to evaluate template expression {{{field_name}}}") from exc
 
 
 class TruchasEnvironment:
@@ -317,7 +333,9 @@ class TruchasEnvironment:
         1.2e-3}``. Will replace Python format-strings in the input template
         file, e.g. ``{sigma}`` is then replaced with ``.0012``. Formatting can
         be specified in the input template in the typical Python way, such as
-        ``{sigma:.2e}``.
+        ``{sigma:.2e}``. Template fields may also contain Python expressions
+        involving replacement values, such as ``{phase+180}`` or
+        ``{phase+180:.1f}``.
 
         :param replacements: A dictionary of replacements to be inserted into
             the Truchas input deck according to the given template. Dictionary
@@ -344,10 +362,11 @@ class TruchasEnvironment:
         # hack to handle both strs and lists of strs
         tfs = [template_filenames] if isinstance(template_filenames, str) \
             else template_filenames
+        formatter = _InputDeckFormatter()
 
         for template_filename in tfs:
             template_filename_abs = os.path.join(self._input_dir, template_filename)
             with open(template_filename_abs, "r") as ifh, open(output_filename_abs, "a") as ofh:
                 for line in ifh:
-                    ofh.write(line.format(**replacements))
+                    ofh.write(formatter.format(line, **replacements))
                 ofh.write("\n")
