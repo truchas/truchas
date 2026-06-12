@@ -13,22 +13,24 @@
 #
 # To provide the module with a hint about where to find your YAJL installation
 # you have several options. You can include the root installation directory in
-# the setting of the CMAKE_PREFIX_PATH variable, or you can set the environment
-# variable YAJL_ROOT or the cmake variable YAJL_ROOT.
+# CMAKE_PREFIX_PATH, or set the environment variable YAJL_ROOT or the CMake
+# variable YAJL_ROOT.
 
-if(NOT YAJL_ROOT)
-  set(YAJL_ROOT $ENV{YAJL_ROOT})
+find_package(YAJL CONFIG QUIET)
+
+if(YAJL_FOUND)
+  if(TARGET YAJL::YAJL)
+    set(YAJL_LIBRARIES YAJL::YAJL)
+  endif()
+  return()
 endif()
-if(YAJL_ROOT)
-  set(yajl_search_opts NO_DEFAULT_PATH)
-else()
-  set(yajl_search_opts)
-endif()
+
+set(_YAJL_ROOTS ${YAJL_ROOT} ENV YAJL_ROOT)
 
 find_path(YAJL_INCLUDE_DIR NAMES yajl/yajl_common.h
-          HINTS ${YAJL_ROOT} ${yajl_search_opts} PATH_SUFFIXES include)
+          HINTS ${_YAJL_ROOTS} PATH_SUFFIXES include)
 find_library(YAJL_LIBRARY NAMES yajl yajl_s
-             HINTS ${YAJL_ROOT} ${yajl_search_opts} PATH_SUFFIXES lib)
+             HINTS ${_YAJL_ROOTS} PATH_SUFFIXES lib lib64)
 
 if(NOT YAJL_VERSION)
   if(YAJL_INCLUDE_DIR AND YAJL_LIBRARY)
@@ -55,7 +57,7 @@ find_package_handle_standard_args(YAJL
 if(YAJL_FOUND)
   set(YAJL_INCLUDE_DIRS ${YAJL_INCLUDE_DIR})
   set(YAJL_LIBRARIES ${YAJL_LIBRARY})
-  mark_as_advanced(YAJL_INCLUDE_DIR YAJL_LIBRARY)
+
   if(NOT TARGET YAJL::YAJL)
     add_library(YAJL::YAJL UNKNOWN IMPORTED)
     set_target_properties(YAJL::YAJL PROPERTIES
@@ -63,3 +65,6 @@ if(YAJL_FOUND)
         INTERFACE_INCLUDE_DIRECTORIES "${YAJL_INCLUDE_DIRS}")
   endif()
 endif()
+
+mark_as_advanced(YAJL_INCLUDE_DIR YAJL_LIBRARY)
+unset(_YAJL_ROOTS)

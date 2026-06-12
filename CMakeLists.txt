@@ -78,68 +78,43 @@ find_package(LAPACK REQUIRED)
 set(CMAKE_PREFIX_PATH ${TRUCHAS_TPL_DIR})
 
 # HYPRE library
-find_package(HYPRE 2.15.1)
-if(HYPRE_FOUND)
-  if(NOT HYPRE_IS_PARALLEL)
-    set(HYPRE_FOUND False)
-    message(STATUS "Require parallel HYPRE library but found unsuitable serial library")
-  endif()
+find_package(HYPRE 2.15.1 CONFIG REQUIRED)
+if(NOT HYPRE_WITH_MPI)
+  message(FATAL_ERROR "Require parallel HYPRE library but found unsuitable serial library")
 endif()
-if(NOT HYPRE_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Hypre installation")
-endif()
-
 
 # HDF5 library
-set(HDF5_PREFER_PARALLEL True)
-find_package(HDF5 COMPONENTS C HL)
-if(HDF5_FOUND)
-  if(NOT HDF5_IS_PARALLEL)
-    set(HDF5_FOUND False)
-    message(STATUS "Require parallel HDF5 library but found unsuitable serial library")
-  endif()
+find_package(HDF5 CONFIG REQUIRED COMPONENTS C HL shared)
+if(NOT HDF5_ENABLE_PARALLEL)
+  message(FATAL_ERROR "Require parallel HDF5 library but found unsuitable serial library")
 endif()
-if(HDF5_FOUND)
-  add_library(hdf5 INTERFACE)
-  if(HDF5_C_LIBRARY)
-    # hdf5 build from cmake
-    target_link_libraries(hdf5 INTERFACE ${HDF5_C_HL_LIBRARY} ${HDF5_C_LIBRARY})
-  else()
-    # hdf5 build from autotools
-    target_link_libraries(hdf5 INTERFACE ${HDF5_LIBRARIES})
-  endif()
-  target_include_directories(hdf5 INTERFACE ${HDF5_INCLUDE_DIRS})
-  target_compile_definitions(hdf5 INTERFACE ${HDF5_DEFINITIONS})
-else()
-  message(FATAL_ERROR "Could NOT find a suitable HDF5 installation")
+if(NOT TARGET hdf5::hdf5)
+  add_library(hdf5::hdf5 INTERFACE IMPORTED)
+  target_link_libraries(hdf5::hdf5 INTERFACE hdf5_hl-shared hdf5-shared)
 endif()
 
-find_package(fVTKHDF REQUIRED)
+# Use this form, and remove the fVTKHDF_MPI_SUPPORT check below, after fVTKHDF
+# fixes component reporting in its next package config:
+# find_package(fVTKHDF 0.6.0 CONFIG REQUIRED COMPONENTS MPI)
+find_package(fVTKHDF 0.6.0 CONFIG REQUIRED)
+if(NOT fVTKHDF_MPI_SUPPORT)
+  message(FATAL_ERROR "Require fVTKHDF with MPI support")
+endif()
 
 # MUMPS library
 option(USE_MUMPS "Build with support for the MUMPS direct solver library" OFF)
 if (USE_MUMPS)
-  find_package(MUMPS 5.7 REQUIRED)
-  message(STATUS "Found MUMPS: ${MUMPS_FOUND}")
+  find_package(MUMPS 5.7 REQUIRED COMPONENTS d z)
 endif()
 
 # NetCDF library
-find_package(NetCDF "4.1.3")
-if(NETCDF_FOUND)
-  if(NOT NETCDF_HAS_NC4)
-    message(STATUS "Found unsuitable NetCDF without the required netcdf-4 feature")
-    set(NETCDF_FOUND False)
-  endif()
-endif()
-if(NOT NETCDF_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable NetCDF installation")
+find_package(netCDF "4.1.3" CONFIG REQUIRED)
+if(NOT netCDF_HAS_NC4)
+  message(FATAL_ERROR "Require NetCDF with the netcdf-4 feature")
 endif()
 
 # ExodusII library
-find_package(Exodus "8")
-if(NOT EXODUS_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Exodus installation")
-endif()
+find_package(SEACASExodus CONFIG REQUIRED)
 
 # Petaca library and its dependency libyajl
 find_package(PETACA)
@@ -173,10 +148,6 @@ find_package(METIS 5.1.0)
 if(NOT METIS_FOUND)
   message(FATAL_ERROR "Could NOT find a suitable Metis installation")
 endif()
-add_library(metis UNKNOWN IMPORTED)
-set_target_properties(metis PROPERTIES
-    IMPORTED_LOCATION "${METIS_LIBRARIES}")
-set_property(TARGET metis PROPERTY INTERFACE_LINK_LIBRARIES "${METIS_LIBRARIES}")
 
 # optional for building version information
 find_package(Git)
@@ -376,7 +347,11 @@ add_subdirectory(test)
 
 option(BUILD_HTML "Build HTML documentation (requires Sphinx)" OFF)
 if(BUILD_HTML)
-  find_package(Sphinx REQUIRED)
+  find_program(SPHINX_EXECUTABLE NAMES sphinx-build
+    DOC "Path to sphinx-build executable")
+  if(NOT SPHINX_EXECUTABLE)
+    message(FATAL_ERROR "sphinx-build not found. Please install Sphinx.")
+  endif()
   add_subdirectory(doc/sphinx)
   add_subdirectory(doc/reference-manual)
 endif()

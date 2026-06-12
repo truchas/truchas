@@ -1,4 +1,4 @@
-# - Find petaca
+# - Find PETACA
 # ############################################################################ #
 # Find the PETACA includes and library.
 # Once done this will define
@@ -12,24 +12,76 @@
 #
 #  PETACA_VERSION        (STRING) - The version of Petaca found (x.y.z)
 #
-# PETACA will be added to the packages directory and this module file will be
-# deprecated. For now, need this file to avoid rebuilding petaca when it is not
-# required.
-# Module file searches for the library file then builds the include directory
-# assuming that /some/path/lib/libpetaca.a is the pattern for the library file
-# and the include path will be /some/path/include. Search for petaca is
-# controlled by PETACA_INSTALL_PREFIX, otherwise find_library looks in the
-# standard CMake locations. See the cmake --help documentation for details.
+# This module defines the imported library target PETACA::PETACA and keeps the
+# legacy imported target petaca for compatibility.
+#
+# Set PETACA_ROOT, PETACA_INSTALL_PREFIX, or CMAKE_PREFIX_PATH to provide a
+# hint to the fallback search. The environment variable PETACA_ROOT is also
+# honored.
 #
 # ############################################################################ #
+
+find_package(PETACA CONFIG QUIET)
+if(NOT PETACA_FOUND)
+  find_package(Petaca CONFIG QUIET)
+endif()
+
+if(PETACA_FOUND OR Petaca_FOUND)
+  set(_PETACA_CONFIG_TARGETS PETACA::PETACA Petaca::Petaca petaca::petaca petaca)
+  foreach(_target IN LISTS _PETACA_CONFIG_TARGETS)
+    if(TARGET ${_target})
+      set(_PETACA_CONFIG_TARGET ${_target})
+      break()
+    endif()
+  endforeach()
+
+  if(_PETACA_CONFIG_TARGET)
+    if(NOT TARGET PETACA::PETACA)
+      add_library(PETACA::PETACA INTERFACE IMPORTED)
+      target_link_libraries(PETACA::PETACA INTERFACE ${_PETACA_CONFIG_TARGET})
+    endif()
+
+    if(NOT TARGET petaca)
+      add_library(petaca INTERFACE IMPORTED)
+      target_link_libraries(petaca INTERFACE PETACA::PETACA)
+    endif()
+
+    get_target_property(_PETACA_IMPORTED_LOCATION PETACA::PETACA IMPORTED_LOCATION)
+    get_target_property(_PETACA_INCLUDE_DIRS PETACA::PETACA INTERFACE_INCLUDE_DIRECTORIES)
+    if(_PETACA_IMPORTED_LOCATION)
+      set(PETACA_LIBRARY ${_PETACA_IMPORTED_LOCATION})
+    endif()
+    if(_PETACA_INCLUDE_DIRS)
+      set(PETACA_MODULE_DIR ${_PETACA_INCLUDE_DIRS})
+      set(PETACA_INCLUDE_DIRS ${_PETACA_INCLUDE_DIRS})
+    endif()
+    set(PETACA_LIBRARIES PETACA::PETACA)
+    if(NOT PETACA_VERSION AND Petaca_VERSION)
+      set(PETACA_VERSION ${Petaca_VERSION})
+    endif()
+    set(PETACA_FOUND True)
+
+    unset(_PETACA_CONFIG_TARGET)
+    unset(_PETACA_CONFIG_TARGETS)
+    unset(_PETACA_IMPORTED_LOCATION)
+    unset(_PETACA_INCLUDE_DIRS)
+    return()
+  endif()
+
+  unset(_PETACA_CONFIG_TARGETS)
+endif()
 
 if(PETACA_FIND_QUIETLY)
   set(_FIND_YAJL_ARG QUIET)
 endif()
 find_package(YAJL "2.0.4" ${_FIND_YAJL_ARG})
 
+set(_PETACA_ROOTS ${PETACA_ROOT} ${PETACA_INSTALL_PREFIX} ENV PETACA_ROOT)
+
 if(YAJL_FOUND)
-  find_library(PETACA_LIBRARY petaca)
+  find_library(PETACA_LIBRARY petaca
+    HINTS ${_PETACA_ROOTS}
+    PATH_SUFFIXES lib lib64)
 
   # Module files are installed with the library file.
   if(PETACA_LIBRARY)
@@ -40,17 +92,30 @@ if(YAJL_FOUND)
   set(PETACA_VERSION PETACA_VERSION-NOTFOUND)
 
   if(PETACA_LIBRARY AND PETACA_MODULE_DIR)
-    set(PETACA_LIBRARIES ${PETACA_LIBRARY} ${YAJL_LIBRARY})
+    set(PETACA_LIBRARIES ${PETACA_LIBRARY} ${YAJL_LIBRARIES})
     set(PETACA_INCLUDE_DIRS ${PETACA_MODULE_DIR})
-    if(NOT TARGET petaca)
-      add_library(petaca UNKNOWN IMPORTED)
-      set_target_properties(petaca PROPERTIES
+
+    if(NOT TARGET PETACA::PETACA)
+      add_library(PETACA::PETACA UNKNOWN IMPORTED)
+      set_target_properties(PETACA::PETACA PROPERTIES
           IMPORTED_LOCATION "${PETACA_LIBRARY}"
-          INTERFACE_INCLUDE_DIRECTORIES "${PETACA_INCLUDE_DIRS}"
-          INTERFACE_LINK_LIBRARIES "${YAJL_LIBRARY}")
+          INTERFACE_INCLUDE_DIRECTORIES "${PETACA_INCLUDE_DIRS}")
+      target_link_libraries(PETACA::PETACA INTERFACE YAJL::YAJL)
+    endif()
+
+    if(NOT TARGET petaca)
+      add_library(petaca INTERFACE IMPORTED)
+      target_link_libraries(petaca INTERFACE PETACA::PETACA)
     endif()
   endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PETACA REQUIRED_VARS PETACA_LIBRARY PETACA_MODULE_DIR)
+find_package_handle_standard_args(PETACA
+  REQUIRED_VARS PETACA_LIBRARY PETACA_MODULE_DIR YAJL_FOUND
+  VERSION_VAR PETACA_VERSION
+  REASON_FAILURE_MESSAGE "PETACA requires YAJL version 2.0.4 or newer.")
+
+mark_as_advanced(PETACA_LIBRARY PETACA_MODULE_DIR)
+unset(_FIND_YAJL_ARG)
+unset(_PETACA_ROOTS)
