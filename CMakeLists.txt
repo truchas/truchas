@@ -123,9 +123,13 @@ if(NOT PETACA_FOUND)
 endif()
 
 # Chaparral library
-find_package(Chaparral)
-if(NOT Chaparral_FOUND)
-  message(FATAL_ERROR "Could NOT find a suitable Chaparral installation")
+find_package(Chaparral CONFIG REQUIRED)
+if(NOT TARGET Chaparral::Chaparral AND TARGET vflib)
+  add_library(Chaparral::Chaparral INTERFACE IMPORTED)
+  target_link_libraries(Chaparral::Chaparral INTERFACE vflib)
+endif()
+if(NOT TARGET Chaparral::Chaparral)
+  message(FATAL_ERROR "Chaparral package config did not define a usable library target")
 endif()
 
 # Scorpio library

@@ -44,7 +44,7 @@ list(APPEND LIBRARY_RADE_FILES
 	    scl_f77.c)
 
 add_library(rade ${LIBRARY_RADE_FILES})
-target_link_libraries(rade truchas chaparral)
+target_link_libraries(rade truchas Chaparral::Chaparral)
 
 # --- cmpre binary
 set(CMPRE_SOURCE_FILES cmpre.F90)

@@ -92,8 +92,10 @@ message("  PETACA_LIBRARIES=${PETACA_LIBRARIES}")
 message("  PETACA_INCLUDE_DIRS=${PETACA_INCLUDE_DIRS}")
 message("")
 
-message("Chaparral library (version ${CHAPARRAL_VERSION}):")
-message("  CHAPARRAL_LIBRARY=${CHAPARRAL_LIBRARY}")
+message("Chaparral library (version ${Chaparral_VERSION}):")
+message("  Chaparral target=Chaparral::Chaparral")
+message("  Chaparral_LIBRARY_DIR=${Chaparral_LIBRARY_DIR}")
+message("  Chaparral_INCLUDE_DIRS=${Chaparral_INCLUDE_DIRS}")
 message("")
 
 message("Scorpio library (version ${SCORPIO_VERSION}):")
