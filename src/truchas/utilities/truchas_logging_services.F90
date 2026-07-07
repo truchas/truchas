@@ -197,7 +197,7 @@ module truchas_logging_services
   implicit none
   private
 
-  public :: TLS_initialize, TLS_finalize, TLS_set_verbosity, TLS_logging_unit
+  public :: TLS_initialize, TLS_finalize, TLS_set_verbosity, TLS_logging_unit, TLS_flush
   public :: TLS_info, TLS_warn, TLS_error, TLS_fatal, TLS_exit
   public :: TLS_fatal_if_any, TLS_fatal_if_IOP
   public :: TLS_panic, TLS_debug, TLS_debug_unit
@@ -296,6 +296,15 @@ contains
     end if
   end function TLS_logging_unit
 
+  subroutine TLS_flush
+    integer :: n
+    if (is_IOP .and. allocated(log_unit)) then
+      do n = 1, size(log_unit)
+        flush(log_unit(n))
+      end do
+    end if
+  end subroutine TLS_flush
+
   subroutine TLS_finalize
     !! If/when TLS_initialize opens a file, it should be closed here.
     if (is_IOP .and. allocated(log_unit)) then
@@ -328,6 +337,7 @@ contains
         do n = 1, size(log_unit)
           write(log_unit(n),'(a)') message(:len_trim(message))
         end do
+        call TLS_flush
       end if
     end if
   end subroutine TLS_info_scalar
@@ -350,6 +360,7 @@ contains
             write(log_unit(n),'(a)') message(m)(:len_trim(message(m)))
           end do
         end do
+        call TLS_flush
       end if
     end if
   end subroutine TLS_info_array
@@ -377,6 +388,7 @@ contains
             write(log_unit(n),'(a)',advance='no') message ! intentionally not trimmed
           end do
         end if
+        call TLS_flush
       end if
     end if
   end subroutine TLS_info_advance
@@ -422,6 +434,7 @@ contains
         if (i2 >= len_trim(message)) exit
         prefix(1:) = ''
       end do
+      call TLS_flush
     end if
   end subroutine labeled_message_scalar
 
@@ -438,6 +451,7 @@ contains
           write(log_unit(n),'(2a)') repeat(' ',len(label)), message(m)(:len_trim(message(m)))
         end do
       end do
+      call TLS_flush
     end if
   end subroutine labeled_message_array
 
@@ -518,6 +532,7 @@ contains
     write(output_unit,'(a,i0,a)') 'PANIC[', this_PE, ']: ' // message(:len_trim(message))
     call timestamp (date_time)
     write(output_unit,'(a)') 'Truchas terminated abnormally on '//date_time(5:13)//' at '//date_time(15:22)
+    flush(output_unit)
     call abort_parallel_communication
     call exit (1)
   end subroutine TLS_panic
@@ -530,6 +545,7 @@ contains
     character(*), intent(in) :: message
     if (dbg_unit == -1) call open_debug_file
     write(dbg_unit,'(a)') message
+    flush(dbg_unit)
   end subroutine TLS_debug
 
   subroutine TLS_get_debug_unit (unit)

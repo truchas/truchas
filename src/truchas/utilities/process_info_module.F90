@@ -14,10 +14,10 @@ module process_info_module
 
   interface
     subroutine get_process_size (vsize, rsize, dsize) bind(c)
-      use,intrinsic :: iso_c_binding, only: c_int
-      integer(c_int), intent(out) :: vsize  ! virtual memory size (kB)
-      integer(c_int), intent(out) :: rsize  ! resident memory size (kB)
-      integer(c_int), intent(out) :: dsize  ! data memory size (kB)
+      use,intrinsic :: iso_c_binding, only: c_int64_t
+      integer(c_int64_t), intent(out) :: vsize  ! virtual memory size (kB)
+      integer(c_int64_t), intent(out) :: rsize  ! resident memory size (kB)
+      integer(c_int64_t), intent(out) :: dsize  ! data memory size (kB)
     end subroutine
   end interface
 
@@ -38,24 +38,28 @@ Contains
 
   subroutine report_memory(ncells_tot)
 
-    use,intrinsic :: iso_c_binding, only: c_int
+    use,intrinsic :: iso_c_binding, only: c_int64_t
+    use,intrinsic :: iso_fortran_env, only: i8 => int64, r8 => real64
     use parallel_communication, only: nPE, global_all, global_minval, global_maxval, global_sum
     use truchas_logging_services
 
     integer, intent(in) :: ncells_tot
 
     integer, parameter :: real_bytes = storage_size(1.0d0)/8
-    integer(c_int) :: vsize, rsize, dsize
+    integer(c_int64_t) :: vsize, rsize, dsize
+    integer(i8) :: words_per_cell
     character(128) :: string(4)
 
     call get_process_size (vsize, rsize, dsize)
     if (global_all(vsize /= 0)) then
       if (npe == 1) then
-        write(string,1) real(vsize)/1024, int(real(1024*vsize)/(ncells_tot*real_bytes))
+        words_per_cell = int(real(1024_i8*vsize,r8)/(ncells_tot*real_bytes),i8)
+        write(string,1) real(vsize,r8)/1024, words_per_cell
         call TLS_info (string(:2))
       else
-        write(string,2) global_minval(real(vsize)/1024), global_maxval(real(vsize)/1024), &
-            global_sum(real(vsize))/1024, int(global_sum(real(1024*vsize))/(ncells_tot*real_bytes))
+        words_per_cell = int(real(global_sum(1024_i8*vsize),r8)/(ncells_tot*real_bytes),i8)
+        write(string,2) global_minval(real(vsize,r8)/1024), global_maxval(real(vsize,r8)/1024), &
+            global_sum(real(vsize,r8))/1024, words_per_cell
         call TLS_info (string(:4))
       end if
     end if
@@ -81,11 +85,11 @@ Contains
 
   subroutine mem_diag_open
 
-    use,intrinsic :: iso_c_binding, only: c_int
+    use,intrinsic :: iso_c_binding, only: c_int64_t
     use parallel_communication, only: is_IOP, global_all
     use truchas_env, only: output_file_name
 
-    integer(c_int) :: vsize, rsize, dsize
+    integer(c_int64_t) :: vsize, rsize, dsize
 
     !! Check to see if memory usage info is available.
     call get_process_size (vsize, rsize, dsize)
@@ -129,21 +133,22 @@ Contains
 
   subroutine mem_diag_write (comment)
 
-    use,intrinsic :: iso_c_binding, only: c_int
+    use,intrinsic :: iso_c_binding, only: c_int64_t
+    use,intrinsic :: iso_fortran_env, only: r8 => real64
     use parallel_communication, only: nPE, is_IOP, gather
 
     character(*), intent(in) :: comment
 
     integer :: n
-    integer(c_int) :: vsize, rsize, dsize
-    real :: vsize_all(nPE), rsize_all(nPE), dsize_all(nPE)
+    integer(c_int64_t) :: vsize, rsize, dsize
+    real(r8) :: vsize_all(nPE), rsize_all(nPE), dsize_all(nPE)
 
     if (mem_on) then
       !! Gather memory usage from each process.
       call get_process_size (vsize, rsize, dsize)
-      call gather (real(vsize)/1024, vsize_all)
-      call gather (real(rsize)/1024, rsize_all)
-      call gather (real(dsize)/1024, dsize_all)
+      call gather (real(vsize,r8)/1024, vsize_all)
+      call gather (real(rsize,r8)/1024, rsize_all)
+      call gather (real(dsize,r8)/1024, dsize_all)
       !! Write it from the I/O process.
       If (is_IOP) then
         write(mem_lun,'(/,a)') comment

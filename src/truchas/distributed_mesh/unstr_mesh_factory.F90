@@ -190,6 +190,7 @@ contains
 
   function new_unstr_mesh_aux(mesh, params, stat, errmsg) result(this)
 
+    use,intrinsic :: iso_c_binding, only: c_int64_t
     use ext_exodus_mesh_type
     use permutations
     use simple_partitioning_methods, only: get_block_partition, read_partition
@@ -197,6 +198,8 @@ contains
     use unstr_mesh_tools
     use parallel_communication
     use truchas_logging_services
+    use process_info_module, only: get_process_size
+    use string_utilities, only: i_to_c
 
     type(ext_exodus_mesh), intent(inout) :: mesh
     type(parameter_list) :: params
@@ -308,6 +311,8 @@ contains
         end do
       end if
       deallocate(perm)
+      call TLS_info('    done partitioning mesh nodes: total=' // i_to_c(nnode) // &
+          ', max/partition=' // i_to_c(maxval(node_psize)) // memory_string())
     end if
 
     !! Enumerate and partition the mesh faces.
@@ -315,6 +320,8 @@ contains
     if (is_IOP) then
       call TLS_info('  numbering the mesh faces', TLS_VERB_NOISY)
       call label_mesh_faces(xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
+      call TLS_info('    done numbering mesh faces: total=' // i_to_c(nface) // &
+          ', cell-face refs=' // i_to_c(size(cface)) // memory_string())
       !! Extract the relative face orientation info.
       cfpar = 0
       do j = 1, mesh%num_elem
@@ -341,6 +348,8 @@ contains
         lface(:,j) = perm(lface(:,j))
       end do
       deallocate(perm)
+      call TLS_info('    done partitioning mesh faces: max/partition=' // i_to_c(maxval(face_psize)) // &
+          memory_string())
     else
       allocate(xcface(1), cface(0), lface(2,0))
       xcface(1) = 1
@@ -352,6 +361,8 @@ contains
     call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
     call stop_timer('ghost-cells')
+    if (is_IOP) call TLS_info('    done identifying off-process ghost cells: total=' // &
+        i_to_c(sum(offP_size)) // ', max/partition=' // i_to_c(maxval(offP_size)) // memory_string())
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
@@ -361,6 +372,7 @@ contains
     !! Create the cell index partition; include the off-process cells from above.
     call this%cell_imap%init(cell_psize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
+    call TLS_info('    done initializing cell index map' // memory_string())
 
     this%ncell = this%cell_imap%local_size
     this%ncell_onP = this%cell_imap%onp_size
@@ -370,10 +382,12 @@ contains
     call this%cell_imap%scatter(cell_perm, this%xcell)
     call this%cell_imap%gather_offp(this%xcell)
     deallocate(cell_perm)
+    call TLS_info('    done distributing cell permutation' // memory_string())
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
     call init_cell_node_data(this, node_psize, xcnode, cnode)
+    call TLS_info('    done initializing cell-node data' // memory_string())
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
@@ -395,10 +409,12 @@ contains
     !! which identifies off-process faces to augment the partition with.
     call init_cell_face_data(this, face_psize, xcface, cface, cfpar)
     deallocate(cfpar)
+    call TLS_info('    done initializing cell-face data' // memory_string())
 
     !! Initialize the interface link data components.
     call init_link_data(this, mesh, lnhbr, lface)
     deallocate(lnhbr, lface)
+    call TLS_info('    done initializing link data' // memory_string())
 
     !! Initialize the secondary face-node indexing array.
     call init_face_node_data(this)
@@ -441,6 +457,24 @@ contains
     call this%compute_geometry
 
   contains
+
+    function memory_string() result(string)
+      character(:), allocatable :: string
+      integer(c_int64_t) :: vsize, rsize, dsize
+
+      call get_process_size(vsize, rsize, dsize)
+      if (vsize == 0) then
+        string = ', memory unavailable'
+      else
+        block
+          character(96) :: buffer
+          write(buffer,'(a,f0.1,a,f0.1,a,f0.1,a)') &
+              ', memory: vsize=', real(vsize,r8)/1024, ' MB, rsize=', real(rsize,r8)/1024, &
+              ' MB, dsize=', real(dsize,r8)/1024, ' MB'
+          string = trim(buffer)
+        end block
+      end if
+    end function memory_string
 
     subroutine rotate_coord(angle, x, y)
       real(r8), intent(in) :: angle
@@ -826,8 +860,13 @@ contains
 
   subroutine all_cell_neighbors(xcnode, cnode, cell_psize, xcells)
 
+    use,intrinsic :: iso_c_binding, only: c_int64_t
+    use,intrinsic :: iso_fortran_env, only: i8 => int64, r8 => real64
     use integer_set_type_wavl, only: wavl_integer_set => integer_set
     use integer_set_type, only: integer_set
+    use process_info_module, only: get_process_size
+    use truchas_logging_services, only: TLS_info
+    use string_utilities, only: i_to_c
 
     integer, intent(in) :: xcnode(:), cnode(:)
     integer, intent(in) :: cell_psize(:)
@@ -867,6 +906,7 @@ contains
     !! p and q that belong to different partitions, add q to the ghosts of the
     !! partition of p, and add p to the ghosts of the partition of q.
     allocate(nhbr(32), nhbr_part(32)) ! initial buffer size
+    call log_node_support_diagnostics(nsupp, pfirst, nhbr, nhbr_part)
     do j = 1, size(nsupp)
       n = nsupp(j)%size()
       if (n == 0) cycle ! every node should belong to some cell, but ...
@@ -897,6 +937,103 @@ contains
       end do
     end do
     call stop_timer('ghost-cells')
+
+  contains
+
+    subroutine log_node_support_diagnostics(node_support, pfirst, nhbr, nhbr_part)
+      type(integer_set), intent(in) :: node_support(:)
+      integer, intent(in) :: pfirst(:)
+      integer, allocatable, intent(inout) :: nhbr(:), nhbr_part(:)
+
+      integer, parameter :: NTOP = 10
+      integer :: i, j, k, n, p, xnode_count, top_node(NTOP), top_support(NTOP)
+      integer, allocatable :: part_count(:)
+      integer(i8) :: node_pairs, node_same_part_pairs, node_xpairs
+      integer(i8) :: pair_count, xpair_count, max_xpairs
+      character(len=256) :: msg
+
+      top_node = 0
+      top_support = 0
+      xnode_count = 0
+      pair_count = 0_i8
+      xpair_count = 0_i8
+      max_xpairs = 0_i8
+      allocate(part_count(size(cell_psize)))
+
+      do j = 1, size(node_support)
+        n = node_support(j)%size()
+        if (n == 0) cycle
+
+        do p = 1, NTOP
+          if (n <= top_support(p)) cycle
+          if (p < NTOP) then
+            top_support(p+1:NTOP) = top_support(p:NTOP-1)
+            top_node(p+1:NTOP) = top_node(p:NTOP-1)
+          end if
+          top_support(p) = n
+          top_node(p) = j
+          exit
+        end do
+
+        if (n == 1) cycle
+        if (size(nhbr) < n) then
+          deallocate(nhbr, nhbr_part)
+          allocate(nhbr(n), nhbr_part(n))
+        end if
+        call node_support(j)%copy_to_array(nhbr)
+        nhbr_part(1) = partition(nhbr(1), pfirst, 1)
+        do k = 2, n
+          nhbr_part(k) = partition(nhbr(k), pfirst, nhbr_part(k-1))
+        end do
+
+        node_pairs = int(n,i8) * int(n-1,i8) / 2_i8
+        part_count = 0
+        do k = 1, n
+          part_count(nhbr_part(k)) = part_count(nhbr_part(k)) + 1
+        end do
+        node_same_part_pairs = 0_i8
+        do k = 1, size(part_count)
+          node_same_part_pairs = node_same_part_pairs + &
+              int(part_count(k),i8) * int(part_count(k)-1,i8) / 2_i8
+        end do
+        node_xpairs = node_pairs - node_same_part_pairs
+        pair_count = pair_count + node_pairs
+        xpair_count = xpair_count + node_xpairs
+        if (node_xpairs > 0_i8) xnode_count = xnode_count + 1
+        max_xpairs = max(max_xpairs, node_xpairs)
+      end do
+
+      call TLS_info('    node support diagnostic: top cells sharing a node')
+      do i = 1, NTOP
+        if (top_support(i) == 0) exit
+        call TLS_info('      rank ' // i_to_c(i) // ': node=' // i_to_c(top_node(i)) // &
+            ', cells=' // i_to_c(top_support(i)))
+      end do
+      write(msg,'(a,i0,a,i0,a,i0,a,i0)') &
+          '    node support diagnostic: nodes crossing partitions=', xnode_count, &
+          ', all cell pairs=', pair_count, &
+          ', cross-partition pairs=', xpair_count, &
+          ', max cross-partition pairs/node=', max_xpairs
+      call TLS_info(trim(msg) // memory_string())
+    end subroutine log_node_support_diagnostics
+
+    function memory_string() result(string)
+      character(:), allocatable :: string
+      integer(c_int64_t) :: vsize, rsize, dsize
+
+      call get_process_size(vsize, rsize, dsize)
+      if (vsize == 0) then
+        string = ', memory unavailable'
+      else
+        block
+          character(96) :: buffer
+          write(buffer,'(a,f0.1,a,f0.1,a,f0.1,a)') &
+              ', memory: vsize=', real(vsize,r8)/1024, ' MB, rsize=', real(rsize,r8)/1024, &
+              ' MB, dsize=', real(dsize,r8)/1024, ' MB'
+          string = trim(buffer)
+        end block
+      end if
+    end function memory_string
 
   end subroutine all_cell_neighbors
 
