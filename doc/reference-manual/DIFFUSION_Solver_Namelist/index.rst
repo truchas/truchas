@@ -75,6 +75,11 @@ Components
 * :ref:`Stepping_Method<DIFF_SOL_SM>`
 * :ref:`Use_Backward_Euler<DIFF_SOL_UBE>`
 * :ref:`Verbose_Stepping<DIFF_SOL_VS>`
+* :ref:`VFR_Precon_Coupling_Method<DIFF_SOL_VPCM>`
+* :ref:`VFR_Precon_Method<DIFF_SOL_VPM>`
+* :ref:`VFR_Precon_Iter<DIFF_SOL_VPI>`
+* :ref:`VFR_Residual_Tol<DIFF_SOL_VRT>`
+* :ref:`VFR_Solve_Tol<DIFF_SOL_VST>`
 * :ref:`Void_Temperature<DIFF_SOL_VT>`
 
 .. _DIFF_SOL_ACT:
@@ -265,7 +270,6 @@ Note that the variables correspond to similarly named `HYPRE library functions <
 
 When `"ssor"` is selected, use the variable :ref:`PC_SSOR_Relax<DIFF_SOL_PSR>` to specify the overrelaxation parameter and :ref:`PC_SSOR_Sweeps<DIFF_SOL_PSS>` to specify the number of SSOR sweeps per preconditioning step.
 
-
 .. _DIFF_SOL_NT:
 
 NLK_Tol
@@ -426,6 +430,57 @@ Use_Backward_Euler
 | **Type**        : logical
 | **Default**     : false
 | **Notes** : When this is selected, tolerances should be made much tighter, since they are no longer compared against a predictor error.
+
+.. _DIFF_SOL_VPCM:
+
+VFR_Precon_Coupling_Method (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : Method for coupling the view-factor radiation and heat transfer system preconditioners. This setting applies to all view-factor radiation enclosures in the heat transport system.
+| **Type**        : string
+| **Default**     : "backward GS"
+| **Valid Values**: "jacobi", "forward GS", "backward GS", "factorization"
+| **Notes**       : There are several methods for combining the independent preconditionings of the radiosity system and heat transfer system to obtain a preconditioner for the fully-coupled nonlinear system. If we view it as a block system with the radiosity system coming first, the first three methods correspond to block Jacobi, forward block Gauss-Seidel, and backward block Gauss-Seidel updates. The factorization method is an approximate Schur complement update, equivalent to block forward Gauss-Seidel followed by the second half of block backward Gauss-Seidel.
+
+This parameter is specified in the DIFFUSION_SOLVER namelist because it controls the coupled heat transport solver.
+
+.. _DIFF_SOL_VPM:
+
+VFR_Precon_Method (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : Preconditioning method for each view-factor radiation radiosity system.
+| **Type**        : string
+| **Default**     : "jacobi"
+| **Valid Values**: "jacobi", "chebyshev"
+| **Notes**       : This controls the radiosity-system preconditioner used inside the coupled heat transport preconditioner. The selected method is applied to every view-factor radiation enclosure.
+
+.. _DIFF_SOL_VPI:
+
+VFR_Precon_Iter (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : Number of :ref:`VFR_Precon_Method<DIFF_SOL_VPM>` iterations to apply for the radiosity-system preconditioner.
+| **Type**        : integer
+| **Default**     : :math:`1`
+| **Valid Values**: :math:`\geq 1`
+
+.. _DIFF_SOL_VRT:
+
+VFR_Residual_Tol (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : Relative residual tolerance for the view-factor radiation algebraic block in the coupled heat transport nonlinear solve.
+| **Type**        : real
+| **Default**     : :math:`1.0e^{-3}`
+| **Valid Values**: :math:`\gt 0`
+| **Notes**       : When view-factor radiation is present, the heat transport nonlinear error norm includes a radiation contribution given by the global relative :math:`L^2` residual norm of all view-factor radiation equations, divided by this tolerance. This treats the union of all enclosures as a single radiation block.
+
+.. _DIFF_SOL_VST:
+
+VFR_Solve_Tol (Expert Parameter)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+| **Description** : Relative residual tolerance for iterative solves of the view-factor radiation radiosity systems with given surface temperatures.
+| **Type**        : real
+| **Default**     : :math:`1.0e^{-3}`
+| **Valid Values**: :math:`\gt 0`
+| **Notes**       : This tolerance is used when the heat transport models ask the view-factor radiation adapter to solve the radiosity system directly, for example when initializing or resetting the radiation state. The same value is applied to every view-factor radiation enclosure.
 
 .. _DIFF_SOL_VS:
 

@@ -7,7 +7,7 @@ the boundary is to assume its temperature is that of the receiving cell. Here
 the domain is entirely void with no temperature (or 0), so we must specify the
 temperature of the inflow material explicitly.
 
-This test uses the FHT solver for heat transport
+This test uses the fht solver for heat transport
 
 &MESH
   mesh_file = 'mesh1.g'

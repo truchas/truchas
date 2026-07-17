@@ -39,13 +39,13 @@ other simulation where the ball is centered, but uses the same view factors.
   nlk_tol            = 0.05
   max_nlk_itr        = 5
   nlk_preconditioner = 'hypre_amg'
+  vfr_solve_tol      = 1.0e-8
   verbose_stepping   = .true.
 /
 
 &ENCLOSURE_RADIATION
   name = 'shifted-enclosure'
   enclosure_file = 'shifted-enclosure.nc' ! this matches the mesh
-  error_tolerance = 1.0e-8
   ambient_constant = 1.0
 /
 

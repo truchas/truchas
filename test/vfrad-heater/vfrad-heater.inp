@@ -33,6 +33,7 @@
   max_nlk_vec               = 4
   nlk_tol                   = 0.01
   pc_amg_cycles             = 2
+  vfr_precon_coupling_method = "backward-gs"
   verbose_stepping          = T
 /
 
@@ -66,10 +67,6 @@ Thermal radiation inside the container
   name                      = "encl"
   enclosure_file            = "encl.re"
   ambient_constant          = 1.0
-  error_tolerance           = 0.001
-  precon_method             = "jacobi"
-  precon_iter               = 1
-  precon_coupling_method    = "backward GS"
 /
 
 &ENCLOSURE_SURFACE

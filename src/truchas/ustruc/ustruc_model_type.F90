@@ -96,7 +96,7 @@ contains
 
     this%mesh => mesh
 
-    call this%disc%init(this%mesh, use_new_mfd=.true.) ! See Note 1
+    call this%disc%init(this%mesh) ! See Note 1
 
     if (params%is_parameter('cell-set-ids')) then
       call params%get('cell-set-ids', setids)

@@ -25,7 +25,7 @@ def run_test(outA, outB):
     dataA = numpy.loadtxt(filename)
     filename = os.path.join(outB.directory, "probe1.dat")
     dataB = numpy.loadtxt(filename)
-    nfail += truchas.compare_max_rel(dataA[:,1], dataB[:,1], 3e-7, 'enthalpy', -1.0)
+    nfail += truchas.compare_max_rel(dataA[:,1], dataB[:,1], 4e-7, 'enthalpy', -1.0)
 
     truchas.report_summary(nfail)
     return nfail

@@ -681,7 +681,7 @@ contains
     if (gid(1) == huge(1)) gid(1) = 0 ! 0-sized arrays on all ranks
   end function
 
-  !! Used only in FHT_norm_type.F90.
+  !! Used only in fht_norm_type.F90.
 
   subroutine global_maxloc_sub(array, pid, lindex, mask)
 

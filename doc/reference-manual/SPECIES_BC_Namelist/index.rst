@@ -126,7 +126,7 @@ type
 
               - ``'mtc'``: External mass transfer condition. Use `mtc`_ or
                 `mtc_func`_ to set the mass transfer coefficient, and
-                `ambient_conc`_ or `ambient_conc_func`_ to set the ambinet
+                `ambient_conc`_ or `ambient_conc_func`_ to set the ambient
                 concentration.
 
 :Type: string
@@ -187,11 +187,13 @@ mtc_func
 :Description: The name of a :ref:`FUNCTION namelist
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the mass transfer coefficient for a mass
-              transfer-type boundary condition. The function is expected to be a
-              function of :math:`(T,\phi_j,t,x,y,z)`. When used as an interface
-              condition, :math:`T` and :math:`\phi_j` are taken to be the
-              maximums on either side of the interface. When heat transfer is
-              not active, :math:`T` is taken to be 0.
+              transfer-type boundary condition. For species transport without
+              heat transfer, the function is expected to be a function of
+              :math:`(\phi_j,t,x,y,z)`. When species transport is coupled with
+              heat transfer, the function is expected to be a function of
+              :math:`(T,\phi_j,t,x,y,z)`. When used as an interface condition,
+              the state arguments are taken to be the maximums on either side
+              of the interface.
 :Type: string
 :Default: none
 
@@ -211,7 +213,9 @@ ambient_conc_func
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the ambient concentration for species
               component :math:`j` for a mass transfer-type boundary condition.
-              The function is expected to be a function of
-              :math:`(t,x,y,z)`.
+              For species transport without heat transfer, the function is
+              expected to be a function of :math:`(\phi_j,t,x,y,z)`. When
+              species transport is coupled with heat transfer, the function is
+              expected to be a function of :math:`(T,\phi_j,t,x,y,z)`.
 :Type: string
 :Default: none

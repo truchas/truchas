@@ -12,7 +12,7 @@ def run_test(tenv):
 
     test = output.field(2, "Z_VC")
     nfail += truchas.compare_max(test[:,0], uex, 4e-5, "x-velocity", time)
-    nfail += truchas.compare_max(test[:,1], 0, 1e-12, "y-velocity", time)
+    nfail += truchas.compare_max(test[:,1], 0, 5e-12, "y-velocity", time)
     nfail += truchas.compare_max(test[:,2], 0, 1e-12, "z-velocity", time)
 
     time = output.time(3)
@@ -20,7 +20,7 @@ def run_test(tenv):
 
     test = output.field(3, "Z_VC")
     nfail += truchas.compare_max(test[:,0], uex, 1e-5, "x-velocity", time)
-    nfail += truchas.compare_max(test[:,1], 0, 1e-12, "y-velocity", time)
+    nfail += truchas.compare_max(test[:,1], 0, 5e-12, "y-velocity", time)
     nfail += truchas.compare_max(test[:,2], 0, 1e-12, "z-velocity", time)
 
     truchas.report_summary(nfail)

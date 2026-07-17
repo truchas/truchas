@@ -149,7 +149,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.false.)
+    call disc%init (mesh, method=MFD_LEGACY)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -210,7 +210,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.false.)
+    call disc%init (mesh, method=MFD_LEGACY)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -254,7 +254,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.false.)
+    call disc%init (mesh, method=MFD_LEGACY)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -299,7 +299,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.false.)
+    call disc%init (mesh, method=MFD_LEGACY)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = (mesh%cblock == 1)

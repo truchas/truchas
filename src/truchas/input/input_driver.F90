@@ -38,8 +38,7 @@ contains
     use restart_variables,         only: restart, read_restart_namelist
     use restart_driver,            only: open_restart_file
     use mesh_manager,              only: read_truchas_mesh_namelists
-    use diffusion_solver_data,     only: ds_enabled, heat_eqn
-    use diffusion_solver,          only: read_ds_namelists
+    use thermal_species_driver,          only: thermal_species_read_namelists
     use evaporation_namelist,      only: read_evaporation_namelist
     use ustruc_driver,             only: read_microstructure_namelist
     use flow_driver,               only: read_flow_namelists
@@ -54,7 +53,8 @@ contains
     use simulation_event_queue,    only: read_simulation_control_namelist
     use toolpath_driver,           only: read_toolpath_namelists
     use toolhead_namelist,         only: read_toolhead_namelists
-    use physics_module,            only: heat_transport, flow, solid_mechanics, em_heating
+    use physics_module,            only: heat_transport, species_transport, number_of_species, &
+                                         flow, solid_mechanics, em_heating
     use body_namelist,             only: read_body_namelists
     use truchas_logging_services
     use truchas_timers
@@ -130,12 +130,12 @@ contains
     if (em_heating) call read_em_heat_namelists(lun)
 
     ! Read diffusion solver namelists
-    if (ds_enabled) then
+    if (heat_transport .or. species_transport) then
       if (heat_transport) then
         call read_evaporation_namelist (lun)
       end if
-      call read_ds_namelists (lun)
-      if (heat_eqn) call read_microstructure_namelist (lun)
+      call thermal_species_read_namelists (lun, heat_transport, species_transport, number_of_species)
+      if (heat_transport) call read_microstructure_namelist (lun)
     end if
 
     ! Read probe information.

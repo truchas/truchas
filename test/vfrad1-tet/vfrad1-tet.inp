@@ -43,6 +43,9 @@ an internal HTC condition.
   nlk_tol            = 0.01
   max_nlk_itr        = 10
   nlk_preconditioner = 'hypre_amg'
+  vfr_solve_tol      = 1.0e-8
+  vfr_precon_method  = 'jacobi'
+  vfr_precon_iter    = 2
   verbose_stepping   = .true.
 /
 
@@ -53,11 +56,7 @@ an internal HTC condition.
   name = 'exterior'
   enclosure_file = 'extvf.nc'
   ambient_constant = 1.0
-  !! For testing; recommended values are 'jacobi', 1, 'backward GS'
-  precon_method = 'chebyshev'
-  precon_iter = 2
-  precon_coupling_method = 'forward GS'
-  error_tolerance = 1.0e-8
+  !! For testing; recommended values are 'jacobi', 1
 /
 
 &ENCLOSURE_SURFACE
@@ -74,11 +73,7 @@ an internal HTC condition.
   name = 'interior'
   enclosure_file = 'intvf.nc'
   ambient_constant = 1.0  ! required, but not used
-  !! For testing; recommended values are 'jacobi', 1, 'backward GS'
-  precon_method = 'jacobi'
-  precon_iter = 2
-  precon_coupling_method = 'factorization'
-  error_tolerance = 1.0e-8
+  !! For testing; recommended values are 'jacobi', 1
 /
 
 &ENCLOSURE_SURFACE

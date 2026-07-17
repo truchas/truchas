@@ -41,6 +41,7 @@ core.
   nlk_tol            = 0.1
   max_nlk_itr        = 5
   nlk_preconditioner = 'hypre_amg'
+  vfr_solve_tol      = 1.0e-8
   verbose_stepping   = .true.
   void_temperature   = 1.0
 /
@@ -51,7 +52,6 @@ core.
   name = 'casting cavity'
   enclosure_file = 'intvf.nc'
   ambient_constant = 1.0  ! required, but not used
-  error_tolerance = 1.0e-8
 /
 
 &ENCLOSURE_SURFACE

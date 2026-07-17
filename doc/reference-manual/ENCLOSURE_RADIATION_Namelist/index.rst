@@ -22,10 +22,6 @@ Components
 * :ref:`Skip_Geometry_Check<ER_SGC>`
 * :ref:`Ambient_Constant<ER_AC>`
 * :ref:`Ambient_Function<ER_AF>`
-* :ref:`Error_Tolerance<ER_ET>`
-* :ref:`Precon_Method<ER_PM>`
-* :ref:`Precon_Iter<ER_PI>`
-* :ref:`Precon_Coupling_Method<ER_PCM>`
 * :ref:`toolpath<ER_T>`
 
 .. _ER_N:
@@ -81,58 +77,12 @@ Ambient_Function
 | **Default**     : none
 | **Notes**       : Either :ref:`Ambient_Function<ER_AF>` or :ref:`Ambient_Constant<ER_AC>` must be specified, but not both. Currently this is necessary even for full enclosures, although in that case the value will not be used and any value is acceptable.
 
-.. _ER_ET:
-
-Error_Tolerance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-| **Description** : The error tolerance for the iterative solution of the linear radiosity system :math:`Aq=b`. Iteration stops when the approximate radiosity :math:`q` satisfies 
-
-:math:`||b -Aq||_2 \lt \epsilon ||b||_2`
-
-| **Type**        : real
-| **Default**     : :math:`1.0e^{-3}`
-| **Valid values**: :math:`\gt 0`
-| **Notes**       : The Chebyshev iterative method is used when solving the radiosity system in isolation with given surface temperatures. However the usual case has the radiosity system as just one component of a larger nonlinear system that is solved by a Newton-like iteration, and this condition on the radiosity component is one necessary condition of the complete stopping criterion of the iteration.
-
 .. _ER_T:
 
 toolpath
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 | **Description** : The name of a :ref:`TOOLPATH<TOOLPATH_Namelist>` namelist that defines a time-dependent motion that has been suitably partitioned. If this variable is specified it enables the moving enclosure mode of operation. This works in concert with the genre program.
-
-.. _ER_PM:
-
-Precon_Method (Expert Parameter)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-| **Description** : Preconditioning method for the radiosity system.Use the default.
-| **Type**        : string
-| **Default**     : "jacobi"
-| **Valid values**: "jacobi", "chebyshev"
-| **Notes**       : The preconditioner for the fully-coupled heat transfer/enclosure radiation system NLK solver is built from smaller preconditioning pieces, one of which is a preconditioner for the radiosity system alone. The least costly and seemingly most effective is :math:`Jacobi`.
-
-.. _ER_PI:
-
-Precon_Iter (Expert Parameter)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-| **Description** : The number of iterations of the :ref:`Precon_Method<ER_PM>` method to apply as the radiosity system preconditioner. Use the default.
-| **Type**        : integer
-| **Default**     : :math:`1`
-| **Valid values**: :math:`\geq 1`
-
-.. _ER_PCM:
-
-Precon_Coupling_Method (Expert Parameter)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-| **Description** : Method for coupling the radiosity and heat transfer system preconditioners. Use the default.
-| **Type**        : string
-| **Default**     : "backward GS"
-| **Valid values**: "jacobi", "forward GS", "backward GS", "factorization"
-| **Notes**       : There are several methods for combining the independent preconditionings of the radiosity system and heat transfer system to obtain a preconditioner for the fully-coupled system. If we view it as a block system with the the radiosity system coming first, the first three methods correspond to block Jacobi, forward block Gauss-Seidel, and backward Gauss-Seidel updates. The factorization method is an approximate Schur complement update, that looks like block forward Gauss-Seidel followed by the second half of block backward Gauss-Seidel.
 
 .. _ER_SGC:
 
@@ -142,4 +92,3 @@ Skip_Geometry_Check (Expert Parameter)
 | **Description** : Normally the geometry of the enclosure surface faces are compared with boundary faces of the heat conduction mesh to ensure they actually match. Setting this variable to false will disable this check, which may be necessary in some unusual use cases.
 | **Type**        : logical
 | **Default**     : false
-
