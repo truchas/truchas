@@ -4,71 +4,71 @@ set(CMAKE_MODULE_PATH ${TruchasTest_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 include(AddPytruchasTest)
 
-add_pytruchas_test(enthalpy1 enthalpy/test1.py PROCESSORS 1 LABELS CONDUCTION)
-add_pytruchas_test(enthalpy2 enthalpy/test2.py PROCESSORS 1 LABELS CONDUCTION)
-add_pytruchas_test(enthalpy3 enthalpy/test3.py PROCESSORS 1 LABELS CONDUCTION)
-add_pytruchas_test(enthalpy4 enthalpy/test4.py PROCESSORS 1 LABELS CONDUCTION)
-add_pytruchas_test(enthalpy5 enthalpy/test5.py PROCESSORS 1 LABELS CONDUCTION)
+add_pytruchas_test(enthalpy1 enthalpy/test1.py PROCESSORS 1 LABELS THERMAL)
+add_pytruchas_test(enthalpy2 enthalpy/test2.py PROCESSORS 1 LABELS THERMAL)
+add_pytruchas_test(enthalpy3 enthalpy/test3.py PROCESSORS 1 LABELS THERMAL)
+add_pytruchas_test(enthalpy4 enthalpy/test4.py PROCESSORS 1 LABELS THERMAL)
+add_pytruchas_test(enthalpy5 enthalpy/test5.py PROCESSORS 1 LABELS THERMAL)
 
 add_pytruchas_test(1d-ss-hc-xlinear-hex
                    1d-ss-hc-xlinear-hex/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION HEX)
+                   LABELS THERMAL HEX)
 
 add_pytruchas_test(1d-ss-hc-xlinear-tet
                    1d-ss-hc-xlinear-tet/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION TET)
+                   LABELS THERMAL TET)
 
 add_pytruchas_test(1d-ss-hc-ylinear-hex
                    1d-ss-hc-ylinear-hex/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION HEX)
+                   LABELS THERMAL HEX)
 
 add_pytruchas_test(1d-ss-hc-ylinear-tet
                    1d-ss-hc-ylinear-tet/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION TET)
+                   LABELS THERMAL TET)
 
 add_pytruchas_test(1d-ss-hc-zlinear-hex
                    1d-ss-hc-zlinear-hex/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION HEX)
+                   LABELS THERMAL HEX)
 
 add_pytruchas_test(1d-ss-hc-zlinear-tet
                    1d-ss-hc-zlinear-tet/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION TET)
+                   LABELS THERMAL TET)
 
 add_pytruchas_test(3d-ss-hc-linear-hex
                    3d-ss-hc-linear-hex/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION HEX)
+                   LABELS THERMAL HEX)
 
 add_pytruchas_test(3d-ss-hc-linear-tet
                    3d-ss-hc-linear-tet/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION TET)
+                   LABELS THERMAL TET)
 
 add_pytruchas_test(3d-ss-hc-linear-mixed
                    3d-ss-hc-linear-mixed/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION MIXED)
+                   LABELS THERMAL MIXED)
 
-add_pytruchas_test(oriented-flux-1 oriented-flux/test1.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(oriented-flux-2 oriented-flux/test2.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(oriented-flux-3 oriented-flux/test3.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(oriented-flux-4 oriented-flux/Temp-depen-absorp/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(oriented-flux-1 oriented-flux/test1.py PROCESSORS 4 LABELS THERMAL)
+add_pytruchas_test(oriented-flux-2 oriented-flux/test2.py PROCESSORS 4 LABELS THERMAL)
+add_pytruchas_test(oriented-flux-3 oriented-flux/test3.py PROCESSORS 4 LABELS THERMAL)
+add_pytruchas_test(oriented-flux-4 oriented-flux/Temp-depen-absorp/test.py PROCESSORS 4 LABELS THERMAL)
 
 
-add_pytruchas_test(two-toolheads toolhead/two-toolheads/test.py PROCESSORS 4 LABELS CONDUCTION)
-add_pytruchas_test(laser-power-function-time toolhead/laser-power-function-time/test.py PROCESSORS 4 LABELS CONDUCTION)
+add_pytruchas_test(two-toolheads toolhead/two-toolheads/test.py PROCESSORS 4 LABELS THERMAL)
+add_pytruchas_test(laser-power-function-time toolhead/laser-power-function-time/test.py PROCESSORS 4 LABELS THERMAL)
 
 add_pytruchas_test(RestartSuite restart/testRestartSuite.py
                    PROCESSORS 4
-                   LABELS PHASE_CHANGE)
+                   LABELS THERMAL PHASE_CHANGE)
 
-add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4)
+add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4 LABELS THERMAL PHASE_CHANGE)
 
 #add_pytruchas_test(em1 em1/testEM1.py
 #                   DEPENDS RestartSuite remap # Just a demo of how this works
@@ -77,19 +77,19 @@ add_pytruchas_test(remap restart/testRemap.py PROCESSORS 4)
 
 add_pytruchas_test(em1 em1/testEM1.py
                    PROCESSORS 4
-                   LABELS ELECTROMAGNETICS)
+                   LABELS ELECTROMAGNETICS THERMAL VOID)
 
 add_pytruchas_test(em2 em2/testEM2.py
                    PROCESSORS 4
-                   LABELS ELECTROMAGNETICS)
+                   LABELS ELECTROMAGNETICS THERMAL)
 
 add_pytruchas_test(em3 em3/testEM3.py
                    PROCESSORS 4
-                   LABELS ELECTROMAGNETICS)
+                   LABELS ELECTROMAGNETICS THERMAL)
 
 add_pytruchas_test(em4 em4/em.py
                    PROCESSORS 1
-                   LABELS ELECTROMAGNETICS)
+                   LABELS ELECTROMAGNETICS THERMAL)
 
 # add_pytruchas_test(em5 em5/test-small.py
 #                    PROCESSORS 4
@@ -101,99 +101,99 @@ add_pytruchas_test(wg1 waveguide/test.py
 
 add_pytruchas_test(ds1 ds1/testDS1.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS SPECIES)
 
 add_pytruchas_test(ds2 ds2/testDS2.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL VOID)
 
 add_pytruchas_test(ds3 ds3/testDS3.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL SPECIES)
 
 add_pytruchas_test(ds4 ds4/testDS4.py
                    PROCESSORS 4
-                   LABELS DIFFUSION PHASE_CHANGE)
+                   LABELS THERMAL PHASE_CHANGE VOID)
 
 add_pytruchas_test(ds5 ds5/testDS5.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS SPECIES)
 
 add_pytruchas_test(ds6 ds6/testDS6.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL SPECIES)
 
 add_pytruchas_test(ds7 ds7/testDS7.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL)
 
-#add_pytruchas_test(ds8 ds8/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+#add_pytruchas_test(ds8 ds8/test.py PROCESSORS 4 LABELS THERMAL FLOW)
 
 add_pytruchas_test(ds9 ds9/testDS9.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL)
 
 add_pytruchas_test(ds10 ds10/testDS10.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL)
 
 add_pytruchas_test(ds11 ds11/testDS11.py
                    PROCESSORS 4
-                   LABELS DIFFUSION PHASE_CHANGE)
+                   LABELS THERMAL PHASE_CHANGE)
 
-add_pytruchas_test(diffusion-mtc diffusion/test-mtc.py PROCESSORS 4 LABELS DIFFUSION)
+add_pytruchas_test(diffusion-mtc diffusion/test-mtc.py PROCESSORS 4 LABELS SPECIES)
 
-add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-#add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
-add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS DIFFUSION RADIATION FLOW)
+add_pytruchas_test(htvoid1 htvoid1/test.py PROCESSORS 4 LABELS THERMAL FLOW VOID)
+add_pytruchas_test(htvoid2 htvoid2/test.py PROCESSORS 4 LABELS THERMAL FLOW VOID)
+#add_pytruchas_test(htvoid3 htvoid3/test.py PROCESSORS 4 LABELS THERMAL PHASE_CHANGE FLOW VOID)
+add_pytruchas_test(htvoid4 htvoid4/test.py PROCESSORS 4 LABELS THERMAL RADIATION FLOW VOID)
 
 add_pytruchas_test(broken-dam broken-dam/test.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(evap
                    evap/test.py
                    PROCESSORS 4
-                   LABELS CONDUCTION)
+                   LABELS THERMAL)
 
-add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW CONDUCTION HEX)
+add_pytruchas_test(nat-conv nat-conv/test.py PROCESSORS 4 LABELS FLOW THERMAL HEX)
 
-add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(void void/test.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(sloshing-flow sloshing-flow/test.py PROCESSORS 4 LABELS FLOW THERMAL VOID)
+add_pytruchas_test(void void/test.py PROCESSORS 4 LABELS FLOW THERMAL VOID)
 
 add_pytruchas_test(gap-rad
                    gap-rad/testGapRad.py
                    PROCESSORS 4
-                   LABELS DIFFUSION)
+                   LABELS THERMAL)
 
-add_pytruchas_test(gap-rad-flow gap-rad-flow/test.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(gap-rad-flow gap-rad-flow/test.py PROCESSORS 4 LABELS THERMAL FLOW VOID)
 
 add_pytruchas_test(vfrad1
                    vfrad1/testVFRad1.py
                    PROCESSORS 4
-                   LABELS RADIATION CONDUCTION HEX)
+                   LABELS THERMAL RADIATION HEX)
 
 add_pytruchas_test(vfrad1-tet
                    vfrad1-tet/testVFRad1Tet.py
                    PROCESSORS 4
-                   LABELS RADIATION CONDUCTION TET)
+                   LABELS THERMAL RADIATION TET)
 
 add_pytruchas_test(vfrad1-patch
                    vfrad1-patch/testVFRad1Patch.py
                    PROCESSORS 4
-           LABELS RADIATION CONDUCTION HEX)
+                   LABELS THERMAL RADIATION HEX)
 
 add_pytruchas_test(vfrad2
                    vfrad2/testVFRad2.py
                    PROCESSORS 4
-                   LABELS RADIATION CONDUCTION)
+                   LABELS THERMAL RADIATION)
 
-add_pytruchas_test(vfrad-moving vfrad-moving/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
-add_pytruchas_test(vfrad-heater vfrad-heater/test.py PROCESSORS 4 LABELS RADIATION CONDUCTION)
+add_pytruchas_test(vfrad-moving vfrad-moving/test.py PROCESSORS 4 LABELS THERMAL RADIATION)
+add_pytruchas_test(vfrad-heater vfrad-heater/test.py PROCESSORS 4 LABELS THERMAL RADIATION)
 
 add_pytruchas_test(vfrad3
                    vfrad3/testVFRad3.py
                    PROCESSORS 4
-                   LABELS RADIATION CONDUCTION)
+                   LABELS THERMAL RADIATION VOID)
 
 add_pytruchas_test(shear
                    sm-shear/test-shear.py
@@ -248,7 +248,7 @@ add_pytruchas_test(stretch-contact
 add_pytruchas_test(thermoelastic
                    sm-thermoelastic/test-thermoelastic.py
                    PROCESSORS 4
-                   LABELS SOLID_MECHANICS)
+                   LABELS SOLID_MECHANICS THERMAL)
 
 add_pytruchas_test(contact-0
                    sm-contact/test0.py
@@ -268,17 +268,17 @@ add_pytruchas_test(contact-2
 add_pytruchas_test(contact-box-close
                    contact-box-close/test.py
                    PROCESSORS 4
-                   LABELS SOLID_MECHANICS)
+                   LABELS SOLID_MECHANICS THERMAL)
 
 add_pytruchas_test(contact-box-open
                    contact-box-open/test.py
                    PROCESSORS 4
-                   LABELS SOLID_MECHANICS)
+                   LABELS SOLID_MECHANICS THERMAL)
 
 add_pytruchas_test(viscoplastic-ring
                    viscoplastic-ring/test.py
                    PROCESSORS 4
-                   LABELS SOLID_MECHANICS)
+                   LABELS SOLID_MECHANICS THERMAL)
 
 add_pytruchas_test(viscoplastic-1d
                    sm-viscoplastic/test.py
@@ -293,47 +293,47 @@ add_pytruchas_test(sm-restart
 add_pytruchas_test(tangential-surface-tension
                    tangential-surface-tension/test_tst.py
                    PROCESSORS 4
-                   LABELS DIFFUSION FLOW)
+                   LABELS THERMAL FLOW)
 
 add_pytruchas_test(tangential-surface-tension-couette
                    tangential-surface-tension/test_tst_couette.py
                    PROCESSORS 4
-                   LABELS DIFFUSION FLOW)
+                   LABELS THERMAL FLOW)
 
 add_pytruchas_test(ustruc-ldrd
                    ustruc/test-ldrd.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED)
 
 add_pytruchas_test(ustruc-ldrd-restart
                    ustruc/test-ldrd-restart.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED RESTART)
 
 add_pytruchas_test(ustruc-gl-temp
                    ustruc/test-gl-temp.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED)
 
 add_pytruchas_test(ustruc-gl-restart
                    ustruc/test-gl-restart.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED RESTART)
 
 add_pytruchas_test(ustruc-gl-frac
                    ustruc/test-gl-frac.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED)
 
 add_pytruchas_test(ustruc-gl-both
                    ustruc/test-gl-both.py
                    PROCESSORS 4
-                   LABELS MICROSTRUCTURE CONDUCTION PHASE_CHANGE MIXED RESTART)
+                   LABELS MICROSTRUCTURE THERMAL PHASE_CHANGE MIXED RESTART)
 
 # FREEZING FLOW TESTS -- NEW FLOW SOLVER
-add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
-add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
-add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS DIFFUSION PHASE_CHANGE FLOW)
+add_pytruchas_test(freezing-flow-1 freezing-flow/test1.py PROCESSORS 4 LABELS THERMAL PHASE_CHANGE FLOW)
+add_pytruchas_test(freezing-flow-2 freezing-flow/test2.py PROCESSORS 4 LABELS THERMAL PHASE_CHANGE FLOW VOID)
+add_pytruchas_test(freezing-flow-3 freezing-flow/test3.py PROCESSORS 4 LABELS THERMAL PHASE_CHANGE FLOW)
 
 # FREE-SURFACE FLOW TESTS
 add_pytruchas_test(free-surf-flow-1 free-surf-flow/test1.py PROCESSORS 4 LABELS FLOW)
@@ -432,12 +432,12 @@ add_pytruchas_test(hydrostatic-7b hydrostatic/test7b.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(hydrostatic-8a hydrostatic/test8a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-8b hydrostatic/test8b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-8c hydrostatic/test8c.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(hydrostatic-8d hydrostatic/test8c.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-8d hydrostatic/test8d.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-9a hydrostatic/test9a.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-9b hydrostatic/test9b.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-9c hydrostatic/test9c.py PROCESSORS 4 LABELS FLOW)
 add_pytruchas_test(hydrostatic-9d hydrostatic/test9d.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(hydrostatic-10 hydrostatic/test10.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(hydrostatic-10 hydrostatic/test10.py PROCESSORS 4 LABELS FLOW THERMAL)
 
 
 add_pytruchas_test(steady-flow-1a steady-flow/test1a.py PROCESSORS 4 LABELS FLOW)
@@ -464,14 +464,14 @@ add_pytruchas_test(steady-flow-6a steady-flow/test6a.py PROCESSORS 4 LABELS FLOW
 add_pytruchas_test(steady-flow-6b steady-flow/test6b.py PROCESSORS 4 LABELS FLOW)
 
 add_pytruchas_test(inflow-bc-1 inflow-bc/test1.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(inflow-bc-2 inflow-bc/test2.py PROCESSORS 4 LABELS FLOW)
-add_pytruchas_test(inflow-bc-3 inflow-bc/test3.py PROCESSORS 4 LABELS FLOW)
+add_pytruchas_test(inflow-bc-2 inflow-bc/test2.py PROCESSORS 4 LABELS FLOW THERMAL VOID)
+add_pytruchas_test(inflow-bc-3 inflow-bc/test3.py PROCESSORS 4 LABELS FLOW THERMAL)
 
 # POROUS DRAG TESTS
 add_pytruchas_test(drag-1d drag/test-1d.py PROCESSORS 1 LABELS FLOW)
 
-add_pytruchas_test(species-adv-1 scalar-adv-diff/test-adv1.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(species-adv-2 scalar-adv-diff/test-adv2.py PROCESSORS 4 LABELS DIFFUSION FLOW)
-add_pytruchas_test(species-adv-3 scalar-adv-diff/test-adv3.py PROCESSORS 4 LABELS DIFFUSION FLOW)
+add_pytruchas_test(species-adv-1 scalar-adv-diff/test-adv1.py PROCESSORS 4 LABELS SPECIES FLOW)
+add_pytruchas_test(species-adv-2 scalar-adv-diff/test-adv2.py PROCESSORS 4 LABELS SPECIES FLOW)
+add_pytruchas_test(species-adv-3 scalar-adv-diff/test-adv3.py PROCESSORS 4 LABELS SPECIES FLOW)
 
-add_pytruchas_test(species-src-1 scalar-adv-diff/test-src1.py PROCESSORS 4 LABELS DIFFUSION)
+add_pytruchas_test(species-src-1 scalar-adv-diff/test-src1.py PROCESSORS 4 LABELS SPECIES)

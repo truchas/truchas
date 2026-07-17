@@ -57,7 +57,7 @@ MODULE TIME_STEP_MODULE
 
   real(r8), save, public :: dt            ! Current time step
   real(r8), save, public :: dt_old        ! Previous time step
-  real(r8), save, public :: dt_ds = huge(1.0d0)        ! diffusion solver time step limit
+  real(r8), save, public :: dt_ds = huge(1.0d0)        ! thermal/species transport time step limit
   real(r8), save, public :: t1, t2        ! Pre and Post-Cycle times
   real(r8), save, public :: dt_surften    ! surface tension time step limit
 
@@ -74,7 +74,7 @@ CONTAINS
     use physics_module,           only: flow
     use restart_variables,        only: restart
     use zone_module,              only: Zone
-    use diffusion_solver_data,    only: ds_enabled
+    use thermal_species_driver,         only: thermal_species_enabled
     use flow_driver,              only: flow_timestep
     use truchas_logging_services
     use truchas_timers
@@ -96,7 +96,7 @@ CONTAINS
     ! Initialize all old time data.
     ! ZJIBBEN 5/16/22: This subroutine is called after fields have already been
     !   updated. The temp_old field is needed for output during the current cycle,
-    !   so it is instead updated in ds_accept.
+    !   so it is instead updated in thermal_species_commit_step.
     do n = 1, 3
        Zone%Vc_Old(n) = Zone%Vc(n)
     end do
@@ -114,9 +114,9 @@ CONTAINS
     dt_growth = dt_grow*dt
     dt_next = MIN(dt_growth, dt_max)
 
-    ! Diffusion solver time step limit.  The DT_DS value was returned by
-    ! the solver on last step with a huge default initialized value to start.
-    if (ds_enabled) dt_next = min(dt_next, dt_ds)
+    ! Thermal/species transport time step limit.  The DT_DS value was returned
+    ! by the solver on last step with a huge default initialized value to start.
+    if (thermal_species_enabled()) dt_next = min(dt_next, dt_ds)
 
     ! Fluid-Flow Time Step: This must be done here because the ENTHALPY module
     !                       may have changed the fluid properties after NAVIER_STOKES

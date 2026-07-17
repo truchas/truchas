@@ -43,10 +43,12 @@ module cell_geometry
   !! Cell face normals
   public :: tet_face_normals, pyramid_face_normals, wedge_face_normals, hex_face_normals
   public :: cell_face_normals ! wraps the preceding functions
+  public :: get_cell_face_normals
 
   !! Cell face centers
   public :: tet_face_centers, pyramid_face_centers, wedge_face_centers, hex_face_centers
   public :: cell_face_centers
+  public :: get_cell_face_centers
   public :: polygon_center
 
   !! Algebraic primitives
@@ -166,58 +168,95 @@ contains
     end select
   end function cell_face_normals
 
+  pure subroutine get_cell_face_normals (x, a, nface)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: a(:,:)
+    integer, intent(out) :: nface
+    select case (size(x,dim=2))
+    case (4)
+      nface = 4
+      call fill_tet_face_normals(x, a)
+    case (5)
+      nface = 5
+      call fill_pyramid_face_normals(x, a)
+    case (6)
+      nface = 5
+      call fill_wedge_face_normals(x, a)
+    case (8)
+      nface = 6
+      call fill_hex_face_normals(x, a)
+    case default
+      nface = 0
+    end select
+  end subroutine get_cell_face_normals
+
   pure function tet_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,4)
-    !! NB: These must be consistent with the TET4 vertex and face labelings
-    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its TET4_FACES array was not used here.
-    a(:,1) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
-    a(:,2) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
-    a(:,3) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
-    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+    call fill_tet_face_normals(x, a)
   end function tet_face_normals
 
   pure function pyramid_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,5)
-    !! NB: These must be consistent with the PYR5 vertex and face labelings
-    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its PYR5_FACES array was not used here.
-    a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,1), x(:,5)-x(:,1))
-    a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,2), x(:,5)-x(:,2))
-    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,5)-x(:,3))
-    a(:,4) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,5)-x(:,4))
-    a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
-
+    call fill_pyramid_face_normals(x, a)
   end function pyramid_face_normals
 
   pure function wedge_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,5)
-    !! NB: These must be consistent with the WED6 vertex and face labelings
-    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its WED6_FACES array was not used here.
-    a(:,1) = 0.5_r8 * cross_product(x(:,5)-x(:,1), x(:,4)-x(:,2))
-    a(:,2) = 0.5_r8 * cross_product(x(:,6)-x(:,2), x(:,5)-x(:,3))
-    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,6)-x(:,1))
-    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
-    a(:,5) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,6)-x(:,4))
+    call fill_wedge_face_normals(x, a)
   end function wedge_face_normals
 
   pure function hex_face_normals (x) result (a)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: a(3,6)
-    !! NB: These must be consistent with the HEX8 vertex and face labelings
-    !! defined in the CELL_TOPOLOGY module.  To avoid a layer of indirection,
-    !! its HEX8_FACES array was not used here.
+    call fill_hex_face_normals(x, a)
+  end function hex_face_normals
+
+  !! NB: These must be consistent with the cell vertex and face labelings
+  !! defined in the CELL_TOPOLOGY module. To avoid a layer of indirection,
+  !! its face tables are not used here.
+
+  pure subroutine fill_tet_face_normals (x, a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: a(:,:)
+    a(:,1) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,2)-x(:,4))
+    a(:,2) = 0.5_r8 * cross_product(x(:,2)-x(:,4), x(:,3)-x(:,4))
+    a(:,3) = 0.5_r8 * cross_product(x(:,3)-x(:,4), x(:,1)-x(:,4))
+    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+  end subroutine fill_tet_face_normals
+
+  pure subroutine fill_pyramid_face_normals (x, a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: a(:,:)
+    a(:,1) = 0.5_r8 * cross_product(x(:,2)-x(:,1), x(:,5)-x(:,1))
+    a(:,2) = 0.5_r8 * cross_product(x(:,3)-x(:,2), x(:,5)-x(:,2))
+    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,5)-x(:,3))
+    a(:,4) = 0.5_r8 * cross_product(x(:,1)-x(:,4), x(:,5)-x(:,4))
+    a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
+  end subroutine fill_pyramid_face_normals
+
+  pure subroutine fill_wedge_face_normals (x, a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: a(:,:)
+    a(:,1) = 0.5_r8 * cross_product(x(:,5)-x(:,1), x(:,4)-x(:,2))
+    a(:,2) = 0.5_r8 * cross_product(x(:,6)-x(:,2), x(:,5)-x(:,3))
+    a(:,3) = 0.5_r8 * cross_product(x(:,4)-x(:,3), x(:,6)-x(:,1))
+    a(:,4) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,1))
+    a(:,5) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,6)-x(:,4))
+  end subroutine fill_wedge_face_normals
+
+  pure subroutine fill_hex_face_normals (x, a)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: a(:,:)
     a(:,1) = 0.5_r8 * cross_product(x(:,6)-x(:,1), x(:,5)-x(:,2))
     a(:,2) = 0.5_r8 * cross_product(x(:,7)-x(:,2), x(:,6)-x(:,3))
     a(:,3) = 0.5_r8 * cross_product(x(:,8)-x(:,3), x(:,7)-x(:,4))
     a(:,4) = 0.5_r8 * cross_product(x(:,5)-x(:,4), x(:,8)-x(:,1))
     a(:,5) = 0.5_r8 * cross_product(x(:,3)-x(:,1), x(:,2)-x(:,4))
     a(:,6) = 0.5_r8 * cross_product(x(:,7)-x(:,5), x(:,8)-x(:,6))
-  end function hex_face_normals
+  end subroutine fill_hex_face_normals
 
   !! These funcctions returns the area-weighted normal to the given oriented
   !! triangle or quadrilateral face in 3D.  X(:,k) are the coordinates of the
@@ -280,45 +319,91 @@ contains
     end select
   end function cell_face_centers
 
+  pure subroutine get_cell_face_centers (x, xc, nface)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: xc(:,:)
+    integer, intent(out) :: nface
+    select case (size(x,dim=2))
+    case (4)
+      nface = 4
+      call fill_tet_face_centers(x, xc)
+    case (5)
+      nface = 5
+      call fill_pyramid_face_centers(x, xc)
+    case (6)
+      nface = 5
+      call fill_wedge_face_centers(x, xc)
+    case (8)
+      nface = 6
+      call fill_hex_face_centers(x, xc)
+    case default
+      nface = 0
+    end select
+  end subroutine get_cell_face_centers
+
   pure function tet_face_centers (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: xc(3,4)
-    xc(:,1) = (x(:,1) + x(:,2) + x(:,4)) / 3.0_r8
-    xc(:,2) = (x(:,2) + x(:,3) + x(:,4)) / 3.0_r8
-    xc(:,3) = (x(:,1) + x(:,3) + x(:,4)) / 3.0_r8
-    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+    call fill_tet_face_centers(x, xc)
   end function tet_face_centers
 
   pure function pyramid_face_centers (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: xc(3,5)
-    xc(:,1) = (x(:,1) + x(:,2) + x(:,5)) / 3.0_r8
-    xc(:,2) = (x(:,2) + x(:,3) + x(:,5)) / 3.0_r8
-    xc(:,3) = (x(:,3) + x(:,4) + x(:,5)) / 3.0_r8
-    xc(:,4) = (x(:,1) + x(:,4) + x(:,5)) / 3.0_r8
-    xc(:,5) = polygon_center(x(:,[1,4,3,2]))
+    call fill_pyramid_face_centers(x, xc)
   end function pyramid_face_centers
 
   pure function wedge_face_centers (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: xc(3,5)
-    xc(:,1) = polygon_center(x(:,[1,2,5,4]))
-    xc(:,2) = polygon_center(x(:,[2,3,6,5]))
-    xc(:,3) = polygon_center(x(:,[1,4,6,3]))
-    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
-    xc(:,5) = (x(:,4) + x(:,5) + x(:,6)) / 3.0_r8
+    call fill_wedge_face_centers(x, xc)
   end function wedge_face_centers
 
   pure function hex_face_centers (x) result (xc)
     real(r8), intent(in) :: x(:,:)
     real(r8) :: xc(3,6)
-    xc(:,1) = polygon_center(x(:,[1,2,6,5]))
-    xc(:,2) = polygon_center(x(:,[2,3,7,6]))
-    xc(:,3) = polygon_center(x(:,[3,4,8,7]))
-    xc(:,4) = polygon_center(x(:,[1,5,8,4]))
-    xc(:,5) = polygon_center(x(:,[1,4,3,2]))
-    xc(:,6) = polygon_center(x(:,[5,6,7,8]))
+    call fill_hex_face_centers(x, xc)
   end function hex_face_centers
+
+  pure subroutine fill_tet_face_centers (x, xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: xc(:,:)
+    xc(:,1) = (x(:,1) + x(:,2) + x(:,4)) / 3.0_r8
+    xc(:,2) = (x(:,2) + x(:,3) + x(:,4)) / 3.0_r8
+    xc(:,3) = (x(:,1) + x(:,3) + x(:,4)) / 3.0_r8
+    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+  end subroutine fill_tet_face_centers
+
+  pure subroutine fill_pyramid_face_centers (x, xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: xc(:,:)
+    xc(:,1) = (x(:,1) + x(:,2) + x(:,5)) / 3.0_r8
+    xc(:,2) = (x(:,2) + x(:,3) + x(:,5)) / 3.0_r8
+    xc(:,3) = (x(:,3) + x(:,4) + x(:,5)) / 3.0_r8
+    xc(:,4) = (x(:,1) + x(:,4) + x(:,5)) / 3.0_r8
+    call polygon_center4(x(:,1), x(:,4), x(:,3), x(:,2), xc(:,5))
+  end subroutine fill_pyramid_face_centers
+
+  pure subroutine fill_wedge_face_centers (x, xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: xc(:,:)
+    call polygon_center4(x(:,1), x(:,2), x(:,5), x(:,4), xc(:,1))
+    call polygon_center4(x(:,2), x(:,3), x(:,6), x(:,5), xc(:,2))
+    call polygon_center4(x(:,1), x(:,4), x(:,6), x(:,3), xc(:,3))
+    xc(:,4) = (x(:,1) + x(:,2) + x(:,3)) / 3.0_r8
+    xc(:,5) = (x(:,4) + x(:,5) + x(:,6)) / 3.0_r8
+  end subroutine fill_wedge_face_centers
+
+  pure subroutine fill_hex_face_centers (x, xc)
+    real(r8), intent(in) :: x(:,:)
+    real(r8), intent(out) :: xc(:,:)
+    call polygon_center4(x(:,1), x(:,2), x(:,6), x(:,5), xc(:,1))
+    call polygon_center4(x(:,2), x(:,3), x(:,7), x(:,6), xc(:,2))
+    call polygon_center4(x(:,3), x(:,4), x(:,8), x(:,7), xc(:,3))
+    call polygon_center4(x(:,1), x(:,5), x(:,8), x(:,4), xc(:,4))
+    call polygon_center4(x(:,1), x(:,4), x(:,3), x(:,2), xc(:,5))
+    call polygon_center4(x(:,5), x(:,6), x(:,7), x(:,8), xc(:,6))
+  end subroutine fill_hex_face_centers
 
   !! Returns the center of a polygonal face in 3D.  Except for triangles,
   !! a polygonal face is not generally planar and a practical definition
@@ -343,6 +428,37 @@ contains
     end do
     xc = xc / asum
   end function polygon_center
+
+  pure subroutine polygon_center4 (x1, x2, x3, x4, xc)
+    real(r8), intent(in) :: x1(3), x2(3), x3(3), x4(3)
+    real(r8), intent(out) :: xc(3)
+    real(r8) :: xbar(3), xtri(3,3), asum, atri
+    xbar = (x1 + x2 + x3 + x4) / 4.0_r8
+    xtri(:,3) = xbar
+    asum = 0.0_r8
+    xc = 0.0_r8
+    xtri(:,1) = x1
+    xtri(:,2) = x2
+    atri = tri_area(xtri)
+    asum = asum + atri
+    xc = xc + atri*(x1 + x2 + xbar)/3.0_r8
+    xtri(:,1) = x2
+    xtri(:,2) = x3
+    atri = tri_area(xtri)
+    asum = asum + atri
+    xc = xc + atri*(x2 + x3 + xbar)/3.0_r8
+    xtri(:,1) = x3
+    xtri(:,2) = x4
+    atri = tri_area(xtri)
+    asum = asum + atri
+    xc = xc + atri*(x3 + x4 + xbar)/3.0_r8
+    xtri(:,1) = x4
+    xtri(:,2) = x1
+    atri = tri_area(xtri)
+    asum = asum + atri
+    xc = xc + atri*(x4 + x1 + xbar)/3.0_r8
+    xc = xc / asum
+  end subroutine polygon_center4
 
   !! Returns the center of mass of the given 3D cell.  X(:,k) are the
   !! coordinates of the kth vertiex of the cell.  The cell type is inferred

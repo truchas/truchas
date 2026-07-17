@@ -32,6 +32,9 @@ module mtc_intfc_func_type
     integer :: ngroup
     integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: f(:)
+    ! Transitional support for species-only MTC functions, whose user
+    ! functions depend on concentration but not temperature.
+    logical :: use_var1 = .true.
     ! temporaries used during construction
     type(intfc_link_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist
@@ -46,10 +49,12 @@ module mtc_intfc_func_type
 
 contains
 
-  subroutine init(this, mesh)
+  subroutine init(this, mesh, use_var1)
     class(mtc_intfc_func), intent(out) :: this
     class(unstr_base_mesh), intent(in), target :: mesh
+    logical, intent(in), optional :: use_var1
     this%mesh => mesh
+    if (present(use_var1)) this%use_var1 = use_var1
     allocate(this%builder)
     call this%builder%init(mesh)
   end subroutine init
@@ -78,9 +83,11 @@ contains
     class(mtc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, var1(:), var2(:)
     integer :: n, j
-    real(r8) :: args(-2:size(this%mesh%x,dim=1)), c1, c2, fp, fm, df, fdinc
+    real(r8) :: args(-2:size(this%mesh%x,dim=1)), args1(-1:size(this%mesh%x,dim=1))
+    real(r8) :: c1, c2, fp, fm, df, fdinc
     ASSERT(allocated(this%index))
     args(0) = t
+    args1(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
                 value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
@@ -88,18 +95,30 @@ contains
         do j = 1, size(index,dim=2)
           associate(fnode => this%mesh%face_node_list_view(index(1,j)))
             args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
+            args1(1:) = args(1:)
           end associate
           associate (v1 => var2(index(1,j)), v2 => var2(index(2,j)))
-            args(-2) = max(var1(index(1,j)), var1(index(2,j)))
-            args(-1) = max(v1, v2)
-            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+            if (this%use_var1) then
+              args(-2) = max(var1(index(1,j)), var1(index(2,j)))
+              args(-1) = max(v1, v2)
+              c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+              fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
+              fdinc = scale(1.0_r8,exponent(fdinc))
+              args(-1) = max(v1, v2) + fdinc
+              fp = this%f(n)%eval(args)
+              args(-1) = max(v1, v2) - fdinc
+              fm = this%f(n)%eval(args)
+            else
+              args1(-1) = max(v1, v2)
+              c1 = this%f(n)%eval(args1) * this%mesh%area(index(1,j))
+              fdinc = max(1.0_r8, abs(args1(-1))) * sqrt(epsilon(1.0_r8))
+              fdinc = scale(1.0_r8,exponent(fdinc))
+              args1(-1) = max(v1, v2) + fdinc
+              fp = this%f(n)%eval(args1)
+              args1(-1) = max(v1, v2) - fdinc
+              fm = this%f(n)%eval(args1)
+            end if
             value(j) = c1*(v1 - v2)
-            fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
-            fdinc = scale(1.0_r8,exponent(fdinc))
-            args(-1) = max(v1, v2) + fdinc
-            fp = this%f(n)%eval(args)
-            args(-1) = max(v1, v2) - fdinc
-            fm = this%f(n)%eval(args)
             df = (fp - fm) / (2*fdinc)
             c2 = df * (v1 - v2) * this%mesh%area(index(1,j))
             deriv2(1,j) =  c1 + merge(c2, 0.0_r8, v1 > v2)

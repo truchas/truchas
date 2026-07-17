@@ -19,7 +19,6 @@ contains
 
     use physics_module
     use input_utilities,        only: seek_to_namelist, NULL_C
-    use diffusion_solver_data,  only: ds_enabled, system_type, num_species
     use material_model_driver,  only: materials, nmat
     use parallel_communication, only: is_IOP, broadcast
     use string_utilities, only: i_to_c
@@ -96,17 +95,6 @@ contains
 
     ! for now advection with a user-specified flow uses the flow solver
     flow = flow .or. prescribed_flow
-
-    !! Configure the heat/species transport kernel.
-    ds_enabled = heat_transport .or. species_transport
-    if (species_transport) num_species = number_of_species
-    if (heat_transport .and. species_transport) then
-      system_type = 'thermal+species'
-    else if (heat_transport) then
-      system_type = 'thermal'
-    else if (species_transport) then
-      system_type = 'species'
-    end if
 
     nmat = count(materials /= NULL_C)
     if (nmat == 0) call TLS_fatal('MATERIALS not specified')

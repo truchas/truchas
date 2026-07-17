@@ -153,7 +153,7 @@ contains
     use unstr_mesh_type
     use mesh_manager, only: unstr_mesh_ptr
     use time_step_module, only: t, dt, cycle_number
-    use physics_module, only: heat_transport, species_transport
+    use thermal_species_driver, only: thermal_species_have_heat_transport, thermal_species_have_species_transport
     use em_heat_driver, only: em_heat_enabled
     use ustruc_driver, only: ustruc_output
     use flow_driver, only: flow_enabled
@@ -187,7 +187,7 @@ contains
     if (flow_enabled()) call write_new_flow_data
 
     !! Heat transfer fields (other than temperature and enthalpy).
-    if (heat_transport) call write_heat_transfer_data
+    if (thermal_species_have_heat_transport()) call write_heat_transfer_data
 
     !! Induction heating fields.
     if (em_heat_enabled()) call write_ih_data
@@ -196,7 +196,7 @@ contains
     if (solid_mechanics_enabled()) call write_solid_mechanics_data
 
     !! Species fields.
-    if (species_transport) call write_species_data
+    if (thermal_species_have_species_transport()) call write_species_data
 
     !! Microstructure analysis data (if enabled)
     call ustruc_output (seq)
@@ -285,14 +285,14 @@ contains
 
       use zone_module, only: zone
       use time_step_module, only: dt
-      use diffusion_solver, only: ds_get_temp_grad
+      use thermal_species_driver, only: thermal_species_get_temp_grad
 
       real(r8) :: dTdt(ncells), gradT(3,ncells)
 
       dTdt = (zone%temp - zone%temp_old) / dt
       call write_seq_cell_field (seq, dTdt, 'dTdt', for_viz=.true., viz_name='dT/dt')
 
-      call ds_get_temp_grad (gradT)
+      call thermal_species_get_temp_grad (gradT)
       call write_seq_cell_field (seq, gradT, 'Grad_T', for_viz=.true., viz_name=['dT/dx','dT/dy','dT/dz'])
 
     end subroutine write_heat_transfer_data
@@ -355,15 +355,14 @@ contains
 
     subroutine write_species_data
 
-      use diffusion_solver_data, only: num_species
-      use diffusion_solver, only: ds_get_phi
+      use thermal_species_driver, only: thermal_species_get_phi, thermal_species_num_species
       use string_utilities, only: i_to_c
 
       integer :: n
       real(r8) :: array(ncells)
 
-      do n = 1, num_species
-        call ds_get_phi (n, array)
+      do n = 1, thermal_species_num_species()
+        call thermal_species_get_phi (n, array)
         call write_seq_cell_field (seq, array, 'phi'//i_to_c(n), for_viz=.true.)
       end do
 

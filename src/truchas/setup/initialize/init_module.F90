@@ -63,10 +63,11 @@ CONTAINS
     use restart_variables,      only: restart
     use restart_driver,         only: restart_matlzone, restart_solid_mechanics, restart_species, restart_em_heat, restart_ustruc
     use zone_module,            only: Zone
-    use diffusion_solver_data,  only: ds_enabled, num_species, &
-        ds_sys_type, DS_SPEC_SYS, DS_TEMP_SYS, DS_TEMP_SPEC_SYS
-    use diffusion_solver,       only: ds_init, ds_set_initial_state, ds_get_face_temp_view, &
-                                      ds_get_temp
+    use thermal_species_driver, only: thermal_species_init, &
+        thermal_species_set_initial_state, thermal_species_get_face_temp_view, &
+        thermal_species_get_temp, thermal_species_enabled, &
+        thermal_species_have_heat_transport, thermal_species_have_species_transport, &
+        thermal_species_num_species
     use probes_driver,          only: probes_init
     use ustruc_driver,          only: ustruc_driver_init
     use flow_driver, only: flow_driver_init, flow_driver_set_initial_state
@@ -83,7 +84,7 @@ CONTAINS
     real(r8), intent(in) :: t, dt
 
     ! Local Variables
-    integer :: stat
+    integer :: stat, nspecies
     logical :: found
     type(unstr_mesh), pointer :: mesh
     real(r8), allocatable :: phi(:,:), vel_fn(:), hits_vol(:,:)
@@ -136,39 +137,42 @@ CONTAINS
     call toolhead_init(t)
     call output_init(t)
 
-    ! Get the initial species concentration fields.
-    if (ds_enabled .and. num_species > 0) then
-      allocate(phi(mesh%ncell_onP,num_species))
-      if (restart) then
-        call restart_species (mesh%xcell(:mesh%ncell_onP), phi, found)
-        if (.not.found) call init_conc (mesh, hits_vol, phi)
-      else
-        call init_conc (mesh, hits_vol, phi)
+    ! Initialize the diffusion solver.
+    if (thermal_species_enabled()) then
+      call thermal_species_init
+
+      ! Get the initial species concentration fields.
+      if (thermal_species_have_species_transport()) then
+        nspecies = thermal_species_num_species()
+        allocate(phi(mesh%ncell_onP,nspecies))
+        if (restart) then
+          call restart_species (mesh%xcell(:mesh%ncell_onP), phi, found)
+          if (.not.found) call init_conc (mesh, hits_vol, phi)
+        else
+          call init_conc (mesh, hits_vol, phi)
+        end if
+      else if (restart) then
+        call restart_species () ! skip any species data that may be present
+      end if
+
+      if (thermal_species_have_heat_transport() .and. thermal_species_have_species_transport()) then
+        call thermal_species_set_initial_state (t, dt, temp=zone%temp, conc=phi)
+        call thermal_species_get_temp (zone%temp)  ! possibly adjusted on void cells
+        deallocate(phi)
+      else if (thermal_species_have_heat_transport()) then
+        call thermal_species_set_initial_state (t, dt, temp=zone%temp)
+        call thermal_species_get_temp (zone%temp)  ! possibly adjusted on void cells
+      else if (thermal_species_have_species_transport()) then
+        call thermal_species_set_initial_state (t, dt, conc=phi)
+        deallocate(phi)
       end if
     else if (restart) then
       call restart_species () ! skip any species data that may be present
     end if
 
-    ! Initialize the diffusion solver.
-    if (ds_enabled) then
-      call ds_init(t)
-      select case (ds_sys_type)
-      case (DS_SPEC_SYS)
-        call ds_set_initial_state (t, dt, conc=phi)
-        deallocate(phi)
-      case (DS_TEMP_SYS)
-        call ds_set_initial_state (t, dt, temp=zone%temp)
-        call ds_get_temp (zone%temp)  ! possibly adjusted on void cells
-      case (DS_TEMP_SPEC_SYS)
-        call ds_set_initial_state (t, dt, temp=zone%temp, conc=phi)
-        call ds_get_temp (zone%temp)  ! possibly adjusted on void cells
-        deallocate(phi)
-      end select
-    end if
-
     ! Initialize the flow solver.
     if (flow) then
-      if (heat_transport) call ds_get_face_temp_view(temperature_fc)
+      if (heat_transport) call thermal_species_get_face_temp_view(temperature_fc)
       if (allocated(vel_fn)) then
         call flow_driver_set_initial_state(t, dt, temperature_fc, vel_fn)
       else

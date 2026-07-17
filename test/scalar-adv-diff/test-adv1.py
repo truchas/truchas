@@ -10,7 +10,7 @@ def run_test(tenv):
     for i in range(2,6):
         test = output.field(i, "phi1")
         gold = golden.field(i, "phi1")
-        nfail += truchas.compare_max_rel(test, gold, 2e-3, "conc", output.time(i))
+        nfail += truchas.compare_max_rel(test, gold, 1e-4, "conc", output.time(i))
 
     truchas.report_summary(nfail)
     return nfail

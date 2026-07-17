@@ -127,8 +127,9 @@ call hijack_truchas ()
     use signal_handler
     use time_step_module,         only: cycle_number, cycle_max, dt, dt_old, t, t1, t2, dt_ds, &
         TIME_STEP, constant_dt, dt_constraint, dt_min, dt_init
-    use diffusion_solver,         only: ds_step, ds_accept, ds_restart, ds_get_face_temp_view, update_moving_vf
-    use diffusion_solver_data,    only: ds_enabled
+    use thermal_species_driver,  only: thermal_species_step, thermal_species_commit_step, &
+        thermal_species_restart, thermal_species_get_face_temp_view, &
+        thermal_species_update_moving_vf, thermal_species_enabled
     use ustruc_driver,            only: ustruc_update
     use flow_driver, only: flow_enabled, flow_step, flow_accept, flow_vel_fn_view, &
         flow_set_pre_solidification_density
@@ -229,15 +230,15 @@ call hijack_truchas ()
             call flow_set_pre_solidification_density(vof)
           end if
 
-          ! solve heat transfer and phase change
+          ! solve thermal/species transport and phase change
           call mem_diag_write ('Cycle ' // i_to_c(cycle_number) // ': before heat transfer/species diffusion:')
 
-          ! Diffusion solver: species concentration and/or heat.
-          if (ds_enabled) then
-            if (restart_ds) call ds_restart(t2 - t1)
-            call ds_step(dt, dt_ds, errc)
+          ! Thermal/species transport: species concentration and/or heat.
+          if (thermal_species_enabled()) then
+            if (restart_ds) call thermal_species_restart(t2 - t1)
+            call thermal_species_step(t2, dt_ds, errc)
             if (errc == 0) then
-              call ds_accept
+              call thermal_species_commit_step
               exit
             end if
             if (vtrack_enabled() .and. flow_enabled()) call put_orig_vof_into_matl
@@ -260,11 +261,11 @@ call hijack_truchas ()
         ! calculate new velocity field
         call mem_diag_write('Cycle ' // i_to_c(cycle_number) // ': before fluid flow:')
         if (flow_enabled()) then
-          if (heat_transport) call ds_get_face_temp_view(temperature_fc)
+          if (heat_transport) call thermal_species_get_face_temp_view(temperature_fc)
 
           ! This updates the volume tracker's internal variable for the vof, so
           ! we can give the flow the current post-heat-transfer volume fractions.
-          if (vtrack_enabled() .and. ds_enabled) call get_vof_from_matl(vof)
+          if (vtrack_enabled() .and. thermal_species_enabled()) call get_vof_from_matl(vof)
 
           call flow_step(t,dt,vof,flux_vol,temperature_fc)
           ! since this driver doesn't know any better, always accept
@@ -333,7 +334,7 @@ call hijack_truchas ()
             call action%update_toolhead(t1)
             dt_new = min(dt_new, action%init_dt(dt_old, dt))
           type is (vf_event)
-            call update_moving_vf
+            call thermal_species_update_moving_vf
             dt_new = min(dt_new, action%init_dt(dt_old, dt))
           type is (stop_event)
             exit MAIN_CYCLE
@@ -372,7 +373,7 @@ call hijack_truchas ()
     use legacy_matl_api, only: matl_free
 !NNC    use flow_driver, only: flow_destroy
     use time_step_module,       only: t, cycle_number
-    use diffusion_solver,       only: ds_delete
+    use thermal_species_driver,       only: thermal_species_delete
     use em_heat_driver, only: em_heat_driver_final
     use truchas_logging_services
     use truchas_timers
@@ -388,8 +389,8 @@ call hijack_truchas ()
     call zone_free
     call matl_free
 
-    ! free the diffusion solver resources
-    call ds_delete ()
+    ! free the thermal/species transport resources
+    call thermal_species_delete ()
     call em_heat_driver_final
 
     ! end of run; print out diagnostics

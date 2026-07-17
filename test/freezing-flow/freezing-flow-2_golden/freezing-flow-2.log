@@ -1915,7 +1915,7 @@ TIMING SUMMARY
           3.370E-06 --- assemble-ghosts
       8.839E-03 --- VOF Initialize
       1.294E-05 --- Vof Initialization
-      1.515E-05 --- FHT function
+      1.515E-05 --- fht function
       3.982E-04 --- Flow
         3.830E-06 --- update properties
         9.643E-05 --- setup
@@ -1928,11 +1928,11 @@ TIMING SUMMARY
         6.570E-03 --- normals
         7.366E-02 --- reconstruct/advect
       1.132E-01 --- Diffusion Solver
-        6.096E-02 --- FHT precon compute
+        6.096E-02 --- fht precon compute
           3.538E-03 --- hypre-matrix-copy
           4.558E-02 --- boomer-setup
-        5.660E-03 --- FHT function
-        3.317E-02 --- FHT precon apply
+        5.660E-03 --- fht function
+        3.317E-02 --- fht precon apply
           3.241E-02 --- boomer-solve
       2.864E-02 --- Flow
         5.076E-04 --- update properties

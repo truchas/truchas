@@ -39,6 +39,7 @@ end and the fluid exits the right end with a fixed unit velocity.
   residual_rtol      = 1.0e-5
   max_nlk_itr        = 50
   nlk_preconditioner = 'hypre_amg'
+  vfr_solve_tol      = 1.0e-6
   verbose_stepping   = .true.
 /
 
@@ -149,7 +150,6 @@ RADIATION IN THE UPPER CAVITY.
   name = 'upper wall cavity'
   enclosure_file = 'uppervf.nc'
   ambient_constant = 0  ! ignored in this case
-  error_tolerance = 1.0e-6
 /
 &ENCLOSURE_SURFACE
   name = 'upper wall cavity'
@@ -163,7 +163,6 @@ RADIATION IN THE LOWER CAVITY.
   name = 'lower wall cavity'
   enclosure_file = 'lowervf.nc'
   ambient_constant = 0  ! ignored in this case
-  error_tolerance = 1.0e-6
 /
 &ENCLOSURE_SURFACE
   name = 'lower wall cavity'

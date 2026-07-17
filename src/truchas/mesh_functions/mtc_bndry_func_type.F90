@@ -32,6 +32,9 @@ module mtc_bndry_func_type
     integer :: ngroup
     integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: f(:), g(:)
+    ! Transitional support for species-only MTC functions, whose user
+    ! functions depend on concentration but not temperature.
+    logical :: use_var1 = .true.
     ! temporaries used during construction
     type(bndry_face_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist, glist
@@ -46,10 +49,12 @@ module mtc_bndry_func_type
 
 contains
 
-  subroutine init(this, mesh)
+  subroutine init(this, mesh, use_var1)
     class(mtc_bndry_func), intent(out) :: this
     class(unstr_base_mesh), intent(in), target :: mesh
+    logical, intent(in), optional :: use_var1
     this%mesh => mesh
+    if (present(use_var1)) this%use_var1 = use_var1
     allocate(this%builder)
     call this%builder%init(mesh)
   end subroutine init
@@ -81,9 +86,10 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in) :: var1(:), var2(:)
     integer :: n, j
-    real(r8) :: args(-2:size(this%mesh%x,dim=1)), c
+    real(r8) :: args(-2:size(this%mesh%x,dim=1)), args1(-1:size(this%mesh%x,dim=1)), c
     ASSERT(allocated(this%index))
     args(0) = t
+    args1(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
                 value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
@@ -91,11 +97,18 @@ contains
         do j = 1, size(index)
           args(-2) = var1(index(j))
           args(-1) = var2(index(j))
+          args1(-1) = var2(index(j))
           associate (fnode => this%mesh%face_node_list_view(index(j)))
             args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+            args1(1:3) = args(1:3)
           end associate
-          c = this%mesh%area(index(j)) * this%f(n)%eval(args)
-          value(j) = c * (var2(index(j)) - this%g(n)%eval(args))
+          if (this%use_var1) then
+            c = this%mesh%area(index(j)) * this%f(n)%eval(args)
+            value(j) = c * (var2(index(j)) - this%g(n)%eval(args))
+          else
+            c = this%mesh%area(index(j)) * this%f(n)%eval(args1)
+            value(j) = c * (var2(index(j)) - this%g(n)%eval(args1))
+          end if
           deriv2(j) = c
         end do
       end associate
