@@ -66,7 +66,7 @@ contains
     !! Mass-transfer-coefficient (MTC) BC flux contribution.
     if (allocated(this%bc_mtc)) then
       block
-        real(r8) :: value(size(this%bc_mtc%index))
+        real(r8), allocatable :: value(:)
         call this%bc_mtc%compute_value(t, Cface, value)
         do j = 1, size(this%bc_mtc%index)
           n = this%bc_mtc%index(j)
@@ -78,7 +78,7 @@ contains
     !! Internal MTC flux contribution.
     if (allocated(this%ic_mtc)) then
       block
-        real(r8) :: value(size(this%ic_mtc%index,2))
+        real(r8), allocatable :: value(:)
         call this%ic_mtc%compute_value(t, Cface, value)
         do j = 1, size(this%ic_mtc%index,2)
           if (present(void_face)) then
@@ -121,7 +121,7 @@ contains
     !! Mass-transfer-coefficient (MTC) BC flux contribution.
     if (allocated(this%bc_mtc)) then
       block
-        real(r8) :: value(size(this%bc_mtc%index))
+        real(r8), allocatable :: value(:)
         call this%bc_mtc%compute_value(t, Cface, Tface, value)
         do j = 1, size(this%bc_mtc%index)
           n = this%bc_mtc%index(j)
@@ -133,7 +133,7 @@ contains
     !! Internal MTC flux contribution.
     if (allocated(this%ic_mtc)) then
       block
-        real(r8) :: value(size(this%ic_mtc%index,2))
+        real(r8), allocatable :: value(:)
         call this%ic_mtc%compute_value(t, Cface, Tface, value)
         do j = 1, size(this%ic_mtc%index,2)
           if (present(void_face)) then
@@ -165,7 +165,7 @@ contains
     !! Mass-transfer-coefficient (MTC) BC flux contribution.
     if (allocated(this%bc_mtc)) then
       block
-        real(r8) :: deriv(size(this%bc_mtc%index))
+        real(r8), allocatable :: deriv(:)
         call this%bc_mtc%compute_deriv(t, Cface, deriv)
         call matrix%incr_face_diag(this%bc_mtc%index, deriv)
       end block
@@ -174,7 +174,7 @@ contains
     !! Internal MTC flux contribution.
     if (allocated(this%ic_mtc)) then
       block
-        real(r8) :: deriv(2,size(this%ic_mtc%index,2))
+        real(r8), allocatable :: deriv(:,:)
         call this%ic_mtc%compute_deriv(t, Cface, deriv)
         call add_interface_jacobian(this%ic_mtc%index, deriv)
       end block
@@ -182,13 +182,11 @@ contains
 
   contains
 
-    subroutine add_interface_jacobian(index, deriv0)
+    subroutine add_interface_jacobian(index, deriv)
       integer, intent(in) :: index(:,:)
-      real(r8), intent(in) :: deriv0(:,:)
+      real(r8), intent(inout) :: deriv(:,:)
       integer :: j
-      real(r8), allocatable :: deriv(:,:)
 
-      deriv = deriv0
       if (present(void_face)) then
         do j = 1, size(index,2)
           if (any(void_face(index(:,j)))) deriv(:,j) = 0.0_r8
@@ -209,7 +207,7 @@ contains
     !! Mass-transfer-coefficient (MTC) BC flux contribution.
     if (allocated(this%bc_mtc)) then
       block
-        real(r8) :: deriv1(size(this%bc_mtc%index))
+        real(r8), allocatable :: deriv1(:)
         call this%bc_mtc%compute_deriv1(t, Cface, Tface, deriv1)
         call matrix%incr_face_diag(this%bc_mtc%index, deriv1)
       end block
@@ -218,7 +216,7 @@ contains
     !! Internal MTC flux contribution.
     if (allocated(this%ic_mtc)) then
       block
-        real(r8) :: deriv1(2,size(this%ic_mtc%index,2))
+        real(r8), allocatable :: deriv1(:,:)
         call this%ic_mtc%compute_deriv1(t, Cface, Tface, deriv1)
         call add_interface_jacobian(this%ic_mtc%index, deriv1)
       end block
@@ -226,13 +224,11 @@ contains
 
   contains
 
-    subroutine add_interface_jacobian(index, deriv0)
+    subroutine add_interface_jacobian(index, deriv)
       integer, intent(in) :: index(:,:)
-      real(r8), intent(in) :: deriv0(:,:)
+      real(r8), intent(inout) :: deriv(:,:)
       integer :: j
-      real(r8), allocatable :: deriv(:,:)
 
-      deriv = deriv0
       if (present(void_face)) then
         do j = 1, size(index,2)
           if (any(void_face(index(:,j)))) deriv(:,j) = 0.0_r8

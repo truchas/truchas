@@ -16,8 +16,9 @@
 !! that holds the polymorphic object, typically boundary faces or nodes.
 !!
 !! The COMPUTE_VALUE generic supports evaluation with either one or two
-!! mesh-wide fields. Results are returned through caller-provided arrays ordered
-!! to match INDEX. COMPUTE_DERIV returns derivatives with respect to the field
+!! mesh-wide fields. Results are returned through allocatable arrays ordered to
+!! match INDEX; the concrete implementation allocates them with one entry per
+!! managed entity. COMPUTE_DERIV returns derivatives with respect to the field
 !! in a one-field evaluation, while COMPUTE_DERIV1 returns derivatives with
 !! respect to U1 in a two-field evaluation.
 !!
@@ -43,28 +44,28 @@ module bndry_func3_class
       import r8, bndry_func3
       class(bndry_func3), intent(in) :: this
       real(r8), intent(in) :: t, u(:)
-      real(r8), intent(out) :: value(:)
+      real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_value_2_iface(this, t, u1, u2, value)
       import r8, bndry_func3
       class(bndry_func3), intent(in) :: this
       real(r8), intent(in) :: t, u1(:), u2(:)
-      real(r8), intent(out) :: value(:)
+      real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_deriv_iface(this, t, u, deriv)
       import r8, bndry_func3
       class(bndry_func3), intent(in) :: this
       real(r8), intent(in) :: t, u(:)
-      real(r8), intent(out) :: deriv(:)
+      real(r8), allocatable, intent(out) :: deriv(:)
     end subroutine
 
     subroutine compute_deriv1_iface(this, t, u1, u2, deriv1)
       import r8, bndry_func3
       class(bndry_func3), intent(in) :: this
       real(r8), intent(in) :: t, u1(:), u2(:)
-      real(r8), intent(out) :: deriv1(:)
+      real(r8), allocatable, intent(out) :: deriv1(:)
     end subroutine
   end interface
 

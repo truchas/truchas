@@ -1,172 +1,110 @@
 # Boundary Function Evaluation Design Notes
 
-This note captures a design discussion about species mass-transfer-coefficient
-(MTC) boundary/interface functions and the broader shape of the boundary
-function abstractions.
+This note records the redesign motivated by species mass-transfer-coefficient
+(MTC) boundary and interface functions, and the subsequent migration of a
+selected family of thermal boundary functions.
 
-## Immediate Issue
+## Original Issue
 
-The species-only SD model has no temperature field. Some species boundary and
-interface condition helpers, however, currently use the same MTC function
-classes as the coupled HTSD model. Those classes expect two state fields:
+The species-only SD model has no temperature field, while the coupled HTSD
+model has both concentration and temperature. Both models use the same
+`species_component` type and therefore the same polymorphic MTC objects. The
+old MTC interfaces required two mesh-wide state fields even for SD:
 
 ```fortran
 call bc%compute(t, var1, var2)
 ```
 
-For HTSD this is naturally:
+A temporary implementation used a logical flag to make the lower-level MTC
+object optionally ignore the first field. This avoided constructing a dummy
+mesh-wide temperature array, but made a flag change the shape and meaning of
+the user-function argument vector.
+
+## Adopted Design
+
+The sparse function object owns persistent topology, but evaluation results are
+returned through allocatable arguments. The concrete implementation allocates
+each result to the shape determined by its topology. The current abstract
+classes are:
+
+- `intfc_field_func`, with `index(:,:)`, for interface data evaluated with one
+  mesh-wide field.
+- `intfc_multifield_func`, with `index(:,:)`, for interface data that must work
+  with either one or two mesh-wide fields.
+- `bndry_field_func`, with `index(:)`, for boundary data evaluated with one
+  mesh-wide field.
+
+The interface MTC uses the multifield class so SD can supply concentration and
+HTSD can supply concentration followed by temperature:
 
 ```fortran
-call bc%compute(t, Cface, Tface)
+call ic_mtc%compute_value(t, Cface, value)
+call ic_mtc%compute_value(t, Cface, Tface, value)
 ```
 
-For SD, the only physical state field available is concentration:
+The two-field call order is also the order in which the concrete implementation
+slices the fields when constructing the anonymous argument array for the
+user-specified scalar function. For the HTSD interface MTC that argument order
+is `(C, T, t, x, y, z)`; for SD it is `(C, t, x, y, z)`.
+
+The boundary MTC has analogous one-field and two-field interfaces. Its ambient
+concentration depends only on `(t, x, y, z)`, while its MTC coefficient uses
+the same concentration-first state ordering described above.
+
+## Boundary Field Functions
+
+The former `bndry_func2` class stored transient `value` and `deriv` arrays in
+the object. It has been replaced for its thermal/species users by
+`bndry_field_func`, whose interface returns callee-allocated results:
 
 ```fortran
-call bc%compute(t, Cface)
+call bc%compute_value(t, u, value)
+call bc%compute_deriv(t, u, deriv)
 ```
 
-The recent code path avoided exposing a dummy temperature at the
-`species_component` call site, but the lower-level MTC implementation was made
-to optionally ignore its first state argument. That works mechanically, but it
-is not a satisfying design because a logical flag changes the meaning and shape
-of the user-function argument vector inside a low-level mesh-function class.
+The migrated concrete types are the external HTC, ambient radiation, oriented
+flux, and evaporation heat-flux boundary functions. Existing physical behavior
+was preserved except for the following corrections and derivative completion:
 
-## Why Cell Material Properties Were Easier
+- Oriented-flux absorptivity is now evaluated with `u(index(j))`, the
+  temperature on the face being processed. The old code incorrectly passed the
+  entire mesh-local face array to a scalar function and effectively used an
+  unrelated face temperature.
+- The radiation derivative includes the temperature derivative of emissivity,
+  evaluated by centered finite differences.
+- The oriented-flux type can compute the temperature derivative of
+  absorptivity, although the thermal Jacobian does not yet assemble that term.
 
-The material property abstraction already has the right shape:
+Boundary and interface evaluations are entity-local. A value for one managed
+face, or one managed pair of matching interface faces, depends only on the
+supplied fields at those entities. There is no coupling to other managed
+entities.
 
-```fortran
-class(cell_prop_func), allocatable :: diffusivity
-```
+## Why Return Results
 
-The abstract `cell_prop_func` class declares generic evaluation methods for the
-state combinations the models can provide:
+Returning allocatable results makes transient call state explicit, avoids
+exposing mutable arrays through a polymorphic object, and keeps topology-based
+result sizing out of the caller. It also lets one shared abstract type provide
+the field signatures required by both SD and HTSD without constructing
+mesh-wide packed state arrays.
 
-```fortran
-call prop%compute_value(temp, value)
-call prop%compute_value(conc, value)
-call prop%compute_value(temp, conc, value)
-```
+The tradeoff is that caching is no longer implicit. Some other sparse boundary
+functions cache constant or time-dependent results in the object, and complex
+implementations may still benefit from private caching. Such a cache should be
+an implementation detail with clearly defined lifetime and invalidation, not a
+public result component.
 
-The concrete property evaluator can implement these as thin adapters that build
-the anonymous material-function state vector cell-by-cell:
+## Remaining Questions
 
-```fortran
-state = [T]
-state = [C1, C2, ...]
-state = [T, C1, C2, ...]
-```
-
-The output value is returned through a call argument, so the object does not
-need to store per-evaluation results.
-
-## What Makes Boundary Functions Awkward
-
-The boundary/interface function classes currently mix several responsibilities:
-
-1. Static topology: the face or interface-link indices where the condition is
-   defined.
-2. Evaluation policy: how user functions are evaluated on those entities.
-3. Mutable evaluation results: arrays such as `value`, `deriv`, and `deriv2`.
-
-The current `bndry_func2` and `bndry_func3` classes differ mainly by the number
-of state fields passed to `compute`:
-
-```fortran
-! bndry_func2
-call bc%compute(t, var)
-
-! bndry_func3
-call bc%compute(t, var1, var2)
-```
-
-They also differ in stored derivative component names (`deriv` versus
-`deriv2`). Since callers hold MTC conditions as `class(bndry_func3)` and
-`class(intfc_multifield_func)`, Fortran only exposes the multifield bindings
-declared by those abstract types. Adding a one-field generic binding to a
-concrete MTC class would not help callers through the existing abstract type.
-
-## Possible Direction
-
-A cleaner design would keep static topology in the object, but return transient
-evaluation data through call arguments.
-
-For example, a boundary-state-function abstraction could expose the fixed index
-set as a component:
-
-```fortran
-type, abstract :: bndry_state_func
-  integer, allocatable :: index(:)
-contains
-  procedure(value_c_iface),  deferred :: compute_value_c
-  procedure(value_tc_iface), deferred :: compute_value_tc
-  procedure(deriv_c_iface),  deferred :: compute_deriv_c
-  procedure(deriv_tc_iface), deferred :: compute_deriv_tc
-  generic :: compute_value => compute_value_c, compute_value_tc
-  generic :: compute_deriv => compute_deriv_c, compute_deriv_tc
-end type
-```
-
-Callers would use the persistent index for assembly, but own the temporary
-evaluated data:
-
-```fortran
-call bc%compute_value(t, Cface, value)
-
-do j = 1, size(bc%index)
-  n = bc%index(j)
-  Fface(n) = Fface(n) + area(n)*value(j)
-end do
-```
-
-For coupled models:
-
-```fortran
-call bc%compute_deriv1(t, Cface, Tface, deriv1)
-call matrix%incr_face_diag(bc%index, deriv)
-```
-
-For interface functions, the same idea applies: keep `index(:,:)` in the object
-and return `value(:)` or `deriv(:,:)` arrays ordered to match it.
-
-## Benefits
-
-- SD can call a genuine concentration-only interface.
-- HTSD can call a genuine concentration/temperature interface.
-- The user-function argument vector can match the model state instead of being
-  padded with dummy values.
-- Mutable result arrays are not hidden inside boundary-function objects.
-- The derivative naming issue (`deriv` vs `deriv2`) goes away at the caller
-  interface; the caller receives the derivative it requested.
-- This design resembles the successful `cell_prop_func` pattern while retaining
-  static boundary/interface topology in the function object.
-
-## Open Questions
-
-- Should this be introduced as a new abstract class and migrated gradually, or
-  should the existing `bndry_func2/3`, `intfc_field_func`, and
-  `intfc_multifield_func` classes be replaced?
-- Should unsupported state signatures be deferred, or should the base class
-  provide default implementations that fail with a clear programming error?
-- How much caller-side workspace should be reused to avoid repeated allocation
-  of returned value/derivative arrays?
-- Are there boundary function types outside thermal/species transport that
-  rely on the current cached `value`/`deriv` components in a way that would make
-  migration disruptive?
-
-## Near-Term Recommendation
-
-Do not keep expanding the logical-flag approach in the MTC classes. If this is
-worth pursuing, prototype a small species-MTC-specific abstraction first:
-
-```fortran
-call mtc%compute_value(t, Cface, value)
-call mtc%compute_value(t, Cface, Tface, value)
-call mtc%compute_deriv(t, Cface, deriv)
-call mtc%compute_deriv1(t, Cface, Tface, deriv1)
-```
-
-with `index` retained as a component. That would test the design where the
-current problem is most visible without forcing an immediate rewrite of all
-mesh-function boundary abstractions.
+- Audit the other sparse boundary-function families before migrating them;
+  caching may be materially valuable for some implementations, especially in
+  electromagnetics.
+- Audit which sparse functions permit duplicate indices. Residual assembly must
+  use explicit loops rather than indexed assignment. The current diffusion
+  matrix diagonal increment also uses an explicit loop and accumulates
+  duplicate entries.
+- Add the omitted oriented-flux Jacobian contribution if that boundary
+  condition is to be fully linearized.
+- Consider temperature dependence of the external HTC coefficient separately;
+  the current implementation intentionally preserves its existing
+  `(t, x, y, z)` dependence and linear derivative.

@@ -1,5 +1,8 @@
 import truchas
 
+
+# Verify that absorptivity is evaluated with the temperature of each boundary
+# face, rather than with another entry from the mesh-wide face field.
 def run_test(tenv):
     nfail = 0
     stdout, output = tenv.truchas(4, "temp-depen-absorp.inp")
@@ -19,4 +22,3 @@ if __name__=="__main__":
     tenv = truchas.TruchasEnvironment.default()
     nfail = run_test(tenv)
     assert nfail == 0
-

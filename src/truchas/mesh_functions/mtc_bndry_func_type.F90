@@ -88,11 +88,11 @@ contains
     class(mtc_bndry_func), intent(in) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
-    real(r8), intent(out) :: value(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1)), args0(0:size(this%mesh%x,dim=1)), c
     ASSERT(allocated(this%index))
-    ASSERT(size(value) == size(this%index))
+    allocate(value(size(this%index)))
     args(0) = t
     args0(0) = t
     do n = 1, this%ngroup
@@ -115,11 +115,11 @@ contains
     class(mtc_bndry_func), intent(in) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u1(:), u2(:)
-    real(r8), intent(out) :: value(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
     real(r8) :: args(-2:size(this%mesh%x,dim=1)), args2(-1:size(this%mesh%x,dim=1)), c
     ASSERT(allocated(this%index))
-    ASSERT(size(value) == size(this%index))
+    allocate(value(size(this%index)))
     args(0) = t
     args2(0) = t
     do n = 1, this%ngroup
@@ -144,12 +144,12 @@ contains
     class(mtc_bndry_func), intent(in) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
-    real(r8), intent(out) :: deriv(:)
+    real(r8), allocatable, intent(out) :: deriv(:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1)), args0(0:size(this%mesh%x,dim=1))
     real(r8) :: c, camb, df, fdinc, fm, fp, u0
     ASSERT(allocated(this%index))
-    ASSERT(size(deriv) == size(this%index))
+    allocate(deriv(size(this%index)))
     args(0) = t
     args0(0) = t
     do n = 1, this%ngroup
@@ -181,12 +181,12 @@ contains
     class(mtc_bndry_func), intent(in) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u1(:), u2(:)
-    real(r8), intent(out) :: deriv1(:)
+    real(r8), allocatable, intent(out) :: deriv1(:)
     integer :: n, j
     real(r8) :: args(-2:size(this%mesh%x,dim=1)), args2(-1:size(this%mesh%x,dim=1))
     real(r8) :: c, camb, df, fdinc, fm, fp, u10
     ASSERT(allocated(this%index))
-    ASSERT(size(deriv1) == size(this%index))
+    allocate(deriv1(size(this%index)))
     args(0) = t
     args2(0) = t
     do n = 1, this%ngroup

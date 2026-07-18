@@ -1,38 +1,71 @@
+!!
+!! EVAP_HEAT_FLUX_TYPE
+!!
+!! This module defines an evaporation heat-flux boundary function on a subset
+!! of mesh boundary faces. The flux and its temperature derivative are evaluated
+!! analytically from the configured evaporation model.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>, July 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
+
+#include "f90_assert.fpp"
+
 module evap_heat_flux_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use bndry_func2_class
+  use bndry_field_func_class
   implicit none
   private
 
-  type, extends(bndry_func2), public :: evap_heat_flux
+  type, extends(bndry_field_func), public :: evap_heat_flux
     real(r8), private :: a, b, temp_0
   contains
     procedure :: init
-    procedure :: compute
-    procedure :: compute_value => compute
-    procedure :: compute_deriv => compute
+    procedure :: compute_value
+    procedure :: compute_deriv
   end type
 
 contains
 
-  subroutine compute(this, t, var)
-    class(evap_heat_flux), intent(inout) :: this
-    real(r8), intent(in) :: t, var(:)
+  subroutine compute_value(this, t, u, value)
+    class(evap_heat_flux), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer  :: j
     real(r8) :: temp
+    ASSERT(allocated(this%index))
+    allocate(value(size(this%index)))
     do j = 1, size(this%index)
-      temp = var(this%index(j))
+      temp = u(this%index(j))
       if (temp > 0.0_r8) then
-        this%value(j) = (this%a / sqrt(temp)) * &
-                        exp(this%b*(1.0_r8/this%temp_0 - 1.0_r8/temp))
-        this%deriv(j) = this%value(j) * (this%b/temp - 0.5_r8) / temp
+        value(j) = (this%a / sqrt(temp)) * &
+                   exp(this%b*(1.0_r8/this%temp_0 - 1.0_r8/temp))
       else ! wonky temperature data -- avoid invalid floating exception
-        this%value(j) = 0.0_r8
-        this%deriv(j) = 0.0_r8
+        value(j) = 0.0_r8
       end if
     end do
-  end subroutine compute
+  end subroutine compute_value
+
+  subroutine compute_deriv(this, t, u, deriv)
+    class(evap_heat_flux), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), allocatable, intent(out) :: deriv(:)
+    integer  :: j
+    real(r8) :: flux, temp
+    ASSERT(allocated(this%index))
+    allocate(deriv(size(this%index)))
+    do j = 1, size(this%index)
+      temp = u(this%index(j))
+      if (temp > 0.0_r8) then
+        flux = (this%a / sqrt(temp)) * &
+               exp(this%b*(1.0_r8/this%temp_0 - 1.0_r8/temp))
+        deriv(j) = flux * (this%b/temp - 0.5_r8) / temp
+      else ! wonky temperature data -- avoid invalid floating exception
+        deriv(j) = 0.0_r8
+      end if
+    end do
+  end subroutine compute_deriv
 
   subroutine init(this, mesh, params, stat, errmsg)
 
@@ -116,7 +149,7 @@ contains
     end if
 
     n = count(mask(:mesh%nface_onP))
-    allocate(this%index(n), this%value(n), this%deriv(n))
+    allocate(this%index(n))
 
     n = 0
     do j = 1, mesh%nface_onP
