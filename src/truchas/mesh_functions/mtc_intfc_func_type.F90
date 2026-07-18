@@ -1,40 +1,46 @@
 !!
 !! MTC_INTFC_FUNC_TYPE
 !!
-!! This module defines an extension of the base class INTFC_FUNC3 that
-!! implements the MTC interface condition flux function on a subset of the
-!! interface faces of a mesh type that extends the UNSTR_BASE_MESH class.
+!! This module defines a mass-transfer-coefficient interface flux function on
+!! a subset of mesh interface face pairs. The function stores the sparse
+!! interface-link set and evaluates user-supplied MTC scalar functions for
+!! one-field or two-field species transport models.
 !!
-!! Neil N. Carlson <nnc@lanl.gov>
-!! November 2018
+!! Neil Carlson <neil.n.carlson@gmail.com>, July 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Notes
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!! Each value is the flux leaving INDEX(1,J) and entering INDEX(2,J). The MTC
+!! coefficient is evaluated using the maximum concentration across the two
+!! faces. The one-field user-function arguments are (max(C(face1),C(face2)),
+!! time,x,y,z). The two-field arguments are (max(C(face1),C(face2)),
+!! max(T(face1),T(face2)),time,x,y,z).
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! COMPUTE_DERIV returns derivatives with respect to C in a one-field
+!! evaluation, and COMPUTE_DERIV1 returns them in a two-field evaluation. These
+!! derivatives include a centered finite-difference approximation of the MTC
+!! coefficient's dependence on C.
+!!
 
 #include "f90_assert.fpp"
 
 module mtc_intfc_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use intfc_func3_class
+  use intfc_multifield_func_class
   use unstr_base_mesh_class
   use scalar_func_containers
   use intfc_link_group_builder_type
   implicit none
   private
 
-  type, extends(intfc_func3), public :: mtc_intfc_func
+  type, extends(intfc_multifield_func), public :: mtc_intfc_func
     private
     class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     integer :: ngroup
     integer, allocatable :: xgroup(:)
     type(scalar_func_box), allocatable :: f(:)
-    ! Transitional support for species-only MTC functions, whose user
-    ! functions depend on concentration but not temperature.
-    logical :: use_var1 = .true.
     ! temporaries used during construction
     type(intfc_link_group_builder), allocatable :: builder
     type(scalar_func_list) :: flist
@@ -42,19 +48,18 @@ module mtc_intfc_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
-    procedure :: compute
-    procedure :: compute_value => compute
-    procedure :: compute_deriv2 => compute
+    procedure :: compute_value_1
+    procedure :: compute_value_2
+    procedure :: compute_deriv
+    procedure :: compute_deriv1
   end type mtc_intfc_func
 
 contains
 
-  subroutine init(this, mesh, use_var1)
+  subroutine init(this, mesh)
     class(mtc_intfc_func), intent(out) :: this
     class(unstr_base_mesh), intent(in), target :: mesh
-    logical, intent(in), optional :: use_var1
     this%mesh => mesh
-    if (present(use_var1)) this%use_var1 = use_var1
     allocate(this%builder)
     call this%builder%init(mesh)
   end subroutine init
@@ -75,58 +80,141 @@ contains
     ASSERT(allocated(this%builder))
     call this%builder%get_link_groups(this%ngroup, this%xgroup, this%index)
     deallocate(this%builder)
-    allocate(this%value(size(this%index,2)), this%deriv2(2,size(this%index,2)))
     call scalar_func_list_to_box_array(this%flist, this%f)
   end subroutine add_complete
 
-  subroutine compute(this, t, var1, var2)
-    class(mtc_intfc_func), intent(inout) :: this
-    real(r8), intent(in) :: t, var1(:), var2(:)
+  subroutine compute_value_1(this, t, u, value)
+    class(mtc_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), intent(out) :: value(:)
     integer :: n, j
-    real(r8) :: args(-2:size(this%mesh%x,dim=1)), args1(-1:size(this%mesh%x,dim=1))
-    real(r8) :: c1, c2, fp, fm, df, fdinc
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), c1
     ASSERT(allocated(this%index))
+    ASSERT(size(value) == size(this%index,2))
     args(0) = t
-    args1(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
-                value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
-                deriv2 => this%deriv2(:,this%xgroup(n):this%xgroup(n+1)-1))
+                value => value(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index,dim=2)
           associate(fnode => this%mesh%face_node_list_view(index(1,j)))
             args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
-            args1(1:) = args(1:)
           end associate
-          associate (v1 => var2(index(1,j)), v2 => var2(index(2,j)))
-            if (this%use_var1) then
-              args(-2) = max(var1(index(1,j)), var1(index(2,j)))
-              args(-1) = max(v1, v2)
-              c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
-              fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
-              fdinc = scale(1.0_r8,exponent(fdinc))
-              args(-1) = max(v1, v2) + fdinc
-              fp = this%f(n)%eval(args)
-              args(-1) = max(v1, v2) - fdinc
-              fm = this%f(n)%eval(args)
-            else
-              args1(-1) = max(v1, v2)
-              c1 = this%f(n)%eval(args1) * this%mesh%area(index(1,j))
-              fdinc = max(1.0_r8, abs(args1(-1))) * sqrt(epsilon(1.0_r8))
-              fdinc = scale(1.0_r8,exponent(fdinc))
-              args1(-1) = max(v1, v2) + fdinc
-              fp = this%f(n)%eval(args1)
-              args1(-1) = max(v1, v2) - fdinc
-              fm = this%f(n)%eval(args1)
-            end if
+          associate (v1 => u(index(1,j)), v2 => u(index(2,j)))
+            args(-1) = max(v1, v2)
+            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
             value(j) = c1*(v1 - v2)
-            df = (fp - fm) / (2*fdinc)
-            c2 = df * (v1 - v2) * this%mesh%area(index(1,j))
-            deriv2(1,j) =  c1 + merge(c2, 0.0_r8, v1 > v2)
-            deriv2(2,j) = -c1 + merge(c2, 0.0_r8, v2 > v1)
           end associate
         end do
       end associate
     end do
-  end subroutine compute
+  end subroutine compute_value_1
+
+  subroutine compute_value_2(this, t, u1, u2, value)
+    class(mtc_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u1(:), u2(:)
+    real(r8), intent(out) :: value(:)
+    integer :: n, j
+    real(r8) :: args(-2:size(this%mesh%x,dim=1)), c1
+    ASSERT(allocated(this%index))
+    ASSERT(size(value) == size(this%index,2))
+    args(0) = t
+    do n = 1, this%ngroup
+      associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
+                value => value(this%xgroup(n):this%xgroup(n+1)-1))
+        do j = 1, size(index,dim=2)
+          associate(fnode => this%mesh%face_node_list_view(index(1,j)))
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
+          end associate
+          associate (v1 => u1(index(1,j)), v2 => u1(index(2,j)))
+            args(-2) = max(v1, v2)
+            args(-1) = max(u2(index(1,j)), u2(index(2,j)))
+            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+            value(j) = c1*(v1 - v2)
+          end associate
+        end do
+      end associate
+    end do
+  end subroutine compute_value_2
+
+  subroutine compute_deriv(this, t, u, deriv)
+    class(mtc_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), intent(out) :: deriv(:,:)
+    integer :: n, j
+    real(r8) :: args(-1:size(this%mesh%x,dim=1))
+    real(r8) :: c1, c2, df, umax
+    ASSERT(allocated(this%index))
+    ASSERT(size(deriv,1) == 2 .and. size(deriv,2) == size(this%index,2))
+    args(0) = t
+    do n = 1, this%ngroup
+      associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
+                deriv => deriv(:,this%xgroup(n):this%xgroup(n+1)-1))
+        do j = 1, size(index,dim=2)
+          associate(fnode => this%mesh%face_node_list_view(index(1,j)))
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
+          end associate
+          associate (v1 => u(index(1,j)), v2 => u(index(2,j)))
+            umax = max(v1, v2)
+            args(-1) = umax
+            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+            call compute_first_arg_deriv(this%f(n), args, df)
+            c2 = df * (v1 - v2) * this%mesh%area(index(1,j))
+            deriv(1,j) =  c1 + merge(c2, 0.0_r8, v1 > v2)
+            deriv(2,j) = -c1 + merge(c2, 0.0_r8, v2 > v1)
+          end associate
+        end do
+      end associate
+    end do
+  end subroutine compute_deriv
+
+  subroutine compute_deriv1(this, t, u1, u2, deriv1)
+    class(mtc_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u1(:), u2(:)
+    real(r8), intent(out) :: deriv1(:,:)
+    integer :: n, j
+    real(r8) :: args(-2:size(this%mesh%x,dim=1))
+    real(r8) :: c1, c2, df, umax
+    ASSERT(allocated(this%index))
+    ASSERT(size(deriv1,1) == 2 .and. size(deriv1,2) == size(this%index,2))
+    args(0) = t
+    do n = 1, this%ngroup
+      associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
+                deriv1 => deriv1(:,this%xgroup(n):this%xgroup(n+1)-1))
+        do j = 1, size(index,dim=2)
+          associate(fnode => this%mesh%face_node_list_view(index(1,j)))
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
+          end associate
+          associate (v1 => u1(index(1,j)), v2 => u1(index(2,j)))
+            umax = max(v1, v2)
+            args(-2) = umax
+            args(-1) = max(u2(index(1,j)), u2(index(2,j)))
+            c1 = this%f(n)%eval(args) * this%mesh%area(index(1,j))
+            call compute_first_arg_deriv(this%f(n), args, df)
+            c2 = df * (v1 - v2) * this%mesh%area(index(1,j))
+            deriv1(1,j) =  c1 + merge(c2, 0.0_r8, v1 > v2)
+            deriv1(2,j) = -c1 + merge(c2, 0.0_r8, v2 > v1)
+          end associate
+        end do
+      end associate
+    end do
+  end subroutine compute_deriv1
+
+  subroutine compute_first_arg_deriv(f, args, deriv)
+    type(scalar_func_box), intent(in) :: f
+    real(r8), intent(inout) :: args(:)
+    real(r8), intent(out) :: deriv
+    real(r8) :: fdinc, fm, fp, u
+
+    ! Differentiate with respect to the first function argument.
+    u = args(1)
+    fdinc = max(1.0_r8, abs(u)) * sqrt(epsilon(1.0_r8))
+    fdinc = scale(1.0_r8, exponent(fdinc))
+    args(1) = u + fdinc
+    fp = f%eval(args)
+    args(1) = u - fdinc
+    fm = f%eval(args)
+    args(1) = u
+    deriv = (fp - fm) / (2*fdinc)
+  end subroutine compute_first_arg_deriv
 
 end module mtc_intfc_func_type

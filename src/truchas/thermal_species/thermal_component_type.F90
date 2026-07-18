@@ -20,7 +20,7 @@ module thermal_component_type
   use scalar_mesh_multifunc_type
   use bndry_func1_class
   use bndry_func2_class
-  use intfc_func2_class
+  use intfc_field_func_class
   use mfd_diff_matrix_type, only: mfd_diff_matrix
   implicit none
   private
@@ -35,8 +35,8 @@ module thermal_component_type
     class(bndry_func2), allocatable :: bc_vflux
     class(bndry_func2), allocatable :: bc_htc
     class(bndry_func2), allocatable :: bc_rad
-    class(intfc_func2), allocatable :: ic_htc
-    class(intfc_func2), allocatable :: ic_rad
+    class(intfc_field_func), allocatable :: ic_htc
+    class(intfc_field_func), allocatable :: ic_rad
     class(bndry_func2), allocatable :: evap_flux
   contains
     procedure :: add_flux_bc_residual
@@ -108,17 +108,18 @@ contains
   contains
 
     subroutine add_interface_flux(bc)
-      class(intfc_func2), intent(inout) :: bc
+      class(intfc_field_func), intent(in) :: bc
       integer :: j, n1, n2
-      call bc%compute(t, Tface)
+      real(r8) :: value(size(bc%index,2))
+      call bc%compute_value(t, Tface, value)
       do j = 1, size(bc%index,2)
         if (present(void_face)) then
           if (any(void_face(bc%index(:,j)))) cycle
         end if
         n1 = bc%index(1,j)
         n2 = bc%index(2,j)
-        Fface(n1) = Fface(n1) + bc%value(j)
-        Fface(n2) = Fface(n2) - bc%value(j)
+        Fface(n1) = Fface(n1) + value(j)
+        Fface(n2) = Fface(n2) - value(j)
       end do
     end subroutine
 
@@ -163,12 +164,11 @@ contains
   contains
 
     subroutine add_interface_jacobian(bc)
-      class(intfc_func2), intent(inout) :: bc
+      class(intfc_field_func), intent(in) :: bc
       integer :: j
-      real(r8), allocatable :: deriv(:,:)
+      real(r8) :: deriv(2,size(bc%index,2))
 
-      call bc%compute_deriv(t, Tface)
-      deriv = bc%deriv
+      call bc%compute_deriv(t, Tface, deriv)
       if (present(void_face)) then
         do j = 1, size(bc%index,2)
           if (any(void_face(bc%index(:,j)))) deriv(:,j) = 0.0_r8

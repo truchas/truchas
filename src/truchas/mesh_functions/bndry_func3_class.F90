@@ -1,38 +1,25 @@
 !!
 !! BNDRY_FUNC3_CLASS
 !!
-!! An abstract base class that defines an interface used by physics kernels
-!! to access transient mesh-based data associated with boundary conditions
-!! that depend on the value of a state variable. Concrete implementations of
-!! boundary conditions will extend this type.
+!! This module defines an abstract sparse boundary function interface for
+!! scalar boundary data evaluated with one or two mesh-wide fields.
+!! Concrete implementations retain the boundary entity index set and return
+!! transient values and derivatives through evaluation arguments.
 !!
-!! Neil N. Carlson <nnc@lanl.gov>
-!! August 2018
+!! Neil Carlson <neil.n.carlson@gmail.com>, July 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Notes
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!! The index array is persistent topology owned by the function object. The
+!! interpretation of the indices is an implicit contract with the physics code
+!! that holds the polymorphic object, typically boundary faces or nodes.
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! PROGRAMMING INTERFACE
-!!
-!!  The base class defines three public array components, INDEX(:), VALUE(:),
-!!  and DERIV(:). INDEX is a list of integer indices and VALUE and DERIV are
-!!  corresponding lists of real values.  While this is a fairly generic way of
-!!  describing a function and its derivative on a finite integer set, the
-!!  expectation is that the indices refer to mesh faces or nodes on the
-!!  boundary of the mesh.  Application code is expected to use polymorphic
-!!  variables of this type, and not work directly with its extensions.  The
-!!  type bound subroutine COMPUTE_VALUE(T, VAR) is expected to fill the VALUE
-!!  array with the function values at time T and state variable value VAR. The
-!!  type bound subroutine COMPUTE_DERIV(T, VAR) is expected to fill the DERIV
-!!  array with the function derivative with respect to the state variable at
-!!  time T and state variable value VAR. The COMPUTE(T, VAR) fills both arrays.
-!!  It is acceptable for implementations of COMPUTE_VALUE and COMPUTE_DERIV to
-!!  simply be renames of COMPUTE; they exist for cases where computation of the
-!!  function value and its derivative are sufficiently different and costly to
-!!  warrant having separate calls when only one array or the other is needed.
+!! The COMPUTE_VALUE generic supports evaluation with either one or two
+!! mesh-wide fields. Results are returned through caller-provided arrays ordered
+!! to match INDEX. COMPUTE_DERIV returns derivatives with respect to the field
+!! in a one-field evaluation, while COMPUTE_DERIV1 returns derivatives with
+!! respect to U1 in a two-field evaluation.
 !!
 
 module bndry_func3_class
@@ -43,19 +30,41 @@ module bndry_func3_class
 
   type, abstract, public :: bndry_func3
     integer,  allocatable, public :: index(:)
-    real(r8), allocatable, public :: value(:)
-    real(r8), allocatable, public :: deriv2(:)
   contains
-    procedure(compute), deferred :: compute
-    procedure(compute), deferred :: compute_value
-    procedure(compute), deferred :: compute_deriv2
+    procedure(compute_value_1_iface), deferred :: compute_value_1
+    procedure(compute_value_2_iface), deferred :: compute_value_2
+    procedure(compute_deriv_iface),   deferred :: compute_deriv
+    procedure(compute_deriv1_iface),  deferred :: compute_deriv1
+    generic :: compute_value => compute_value_1, compute_value_2
   end type bndry_func3
 
   abstract interface
-    subroutine compute(this, t, var1, var2)
+    subroutine compute_value_1_iface(this, t, u, value)
       import r8, bndry_func3
-      class(bndry_func3), intent(inout) :: this
-      real(r8), intent(in) :: t, var1(:), var2(:)
+      class(bndry_func3), intent(in) :: this
+      real(r8), intent(in) :: t, u(:)
+      real(r8), intent(out) :: value(:)
+    end subroutine
+
+    subroutine compute_value_2_iface(this, t, u1, u2, value)
+      import r8, bndry_func3
+      class(bndry_func3), intent(in) :: this
+      real(r8), intent(in) :: t, u1(:), u2(:)
+      real(r8), intent(out) :: value(:)
+    end subroutine
+
+    subroutine compute_deriv_iface(this, t, u, deriv)
+      import r8, bndry_func3
+      class(bndry_func3), intent(in) :: this
+      real(r8), intent(in) :: t, u(:)
+      real(r8), intent(out) :: deriv(:)
+    end subroutine
+
+    subroutine compute_deriv1_iface(this, t, u1, u2, deriv1)
+      import r8, bndry_func3
+      class(bndry_func3), intent(in) :: this
+      real(r8), intent(in) :: t, u1(:), u2(:)
+      real(r8), intent(out) :: deriv1(:)
     end subroutine
   end interface
 

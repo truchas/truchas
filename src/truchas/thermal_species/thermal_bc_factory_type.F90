@@ -91,11 +91,11 @@
 !!    that describes the simple radiation boundary condition. Sublists with
 !!    'type' equal to 'radiation' are used to define this object.
 !!
-!!  ALLOC_HTC_IC(IC, STAT, ERRMSG) allocates the INTFC_FUNC2 class object IC
+!!  ALLOC_HTC_IC(IC, STAT, ERRMSG) allocates the INTFC_FIELD_FUNC class object IC
 !!    that describes the interface HTC interface condition. Sublists with
 !!    'type' equal to 'interface-htc' are used to define this object.
 !!
-!!  ALLOC_RAD_IC(IC, STAT, ERRMSG) allocates the INTFC_FUNC2 class object IC
+!!  ALLOC_RAD_IC(IC, STAT, ERRMSG) allocates the INTFC_FIELD_FUNC class object IC
 !!    that describes the gap radiation interface condition. Sublists with
 !!    'type' equal to 'gap-radiation' are used to define this object.
 !!
@@ -403,11 +403,11 @@ contains
 
   subroutine alloc_htc_ic(this, ic, stat, errmsg)
 
-    use intfc_func2_class
+    use intfc_field_func_class
     use htc_intfc_func_type
 
     class(thermal_bc_factory), intent(inout) :: this
-    class(intfc_func2), allocatable, intent(out) :: ic
+    class(intfc_field_func), allocatable, intent(out) :: ic
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -450,11 +450,11 @@ contains
 
   subroutine alloc_rad_ic(this, ic, stat, errmsg)
 
-    use intfc_func2_class
+    use intfc_field_func_class
     use rad_intfc_func_type
 
     class(thermal_bc_factory), intent(inout) :: this
-    class(intfc_func2), allocatable, intent(out) :: ic
+    class(intfc_field_func), allocatable, intent(out) :: ic
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
