@@ -307,10 +307,9 @@ that gives the heat transfer coefficient for
 :ref:`"htc"<thermal_bc_namelist/index:heat transfer>` or
 :ref:`"interface-htc"<thermal_bc_namelist/index:interface heat transfer>` type
 boundary conditions. The function is expected to be a function of
-:math:`(t,x,y,z)` for an "htc" condition, and a function of
-:math:`(T,t,x,y,z)` for an "interface-htc" condition. In the latter case
-:math:`T` is taken to be the maximum of the two temperatures on either side of
-the interface.
+:math:`(T,t,x,y,z)`. For an "htc" condition, :math:`T` is the boundary-face
+temperature. For an "interface-htc" condition, :math:`T` is taken to be the
+maximum of the two temperatures on either side of the interface.
 
 :Type: string
 :Default: none
