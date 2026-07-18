@@ -19,7 +19,7 @@ module thermal_component_type
   use cell_prop_func_class
   use scalar_mesh_multifunc_type
   use bndry_func1_class
-  use bndry_func2_class
+  use bndry_field_func_class
   use intfc_field_func_class
   use mfd_diff_matrix_type, only: mfd_diff_matrix
   implicit none
@@ -32,12 +32,12 @@ module thermal_component_type
     type(scalar_mesh_multifunc), allocatable :: src
     class(bndry_func1), allocatable :: bc_dir
     class(bndry_func1), allocatable :: bc_flux
-    class(bndry_func2), allocatable :: bc_vflux
-    class(bndry_func2), allocatable :: bc_htc
-    class(bndry_func2), allocatable :: bc_rad
+    class(bndry_field_func), allocatable :: bc_vflux
+    class(bndry_field_func), allocatable :: bc_htc
+    class(bndry_field_func), allocatable :: bc_rad
     class(intfc_field_func), allocatable :: ic_htc
     class(intfc_field_func), allocatable :: ic_rad
-    class(bndry_func2), allocatable :: evap_flux
+    class(bndry_field_func), allocatable :: evap_flux
   contains
     procedure :: add_flux_bc_residual
     procedure :: add_flux_bc_jacobian
@@ -65,38 +65,50 @@ contains
 
     !! Oriented flux BC contribution.
     if (allocated(this%bc_vflux)) then
-      call this%bc_vflux%compute(t, Tface)
-      do j = 1, size(this%bc_vflux%index)
-        n = this%bc_vflux%index(j)
-        Fface(n) = Fface(n) + this%bc_vflux%value(j)
-      end do
+      block
+        real(r8), allocatable :: value(:)
+        call this%bc_vflux%compute_value(t, Tface, value)
+        do j = 1, size(this%bc_vflux%index)
+          n = this%bc_vflux%index(j)
+          Fface(n) = Fface(n) + value(j)
+        end do
+      end block
     end if
 
     !! External HTC flux contribution.
     if (allocated(this%bc_htc)) then
-      call this%bc_htc%compute(t, Tface)
-      do j = 1, size(this%bc_htc%index)
-        n = this%bc_htc%index(j)
-        Fface(n) = Fface(n) + this%bc_htc%value(j)
-      end do
+      block
+        real(r8), allocatable :: value(:)
+        call this%bc_htc%compute_value(t, Tface, value)
+        do j = 1, size(this%bc_htc%index)
+          n = this%bc_htc%index(j)
+          Fface(n) = Fface(n) + value(j)
+        end do
+      end block
     end if
 
     !! Ambient radiation BC flux contribution.
     if (allocated(this%bc_rad)) then
-      call this%bc_rad%compute(t, Tface)
-      do j = 1, size(this%bc_rad%index)
-        n = this%bc_rad%index(j)
-        Fface(n) = Fface(n) + this%bc_rad%value(j)
-      end do
+      block
+        real(r8), allocatable :: value(:)
+        call this%bc_rad%compute_value(t, Tface, value)
+        do j = 1, size(this%bc_rad%index)
+          n = this%bc_rad%index(j)
+          Fface(n) = Fface(n) + value(j)
+        end do
+      end block
     end if
 
     !! Experimental evaporation heat flux contribution.
     if (allocated(this%evap_flux)) then
-      call this%evap_flux%compute_value(t, Tface)
-      do j = 1, size(this%evap_flux%index)
-        n = this%evap_flux%index(j)
-        Fface(n) = Fface(n) + area(n)*this%evap_flux%value(j)
-      end do
+      block
+        real(r8), allocatable :: value(:)
+        call this%evap_flux%compute_value(t, Tface, value)
+        do j = 1, size(this%evap_flux%index)
+          n = this%evap_flux%index(j)
+          Fface(n) = Fface(n) + area(n)*value(j)
+        end do
+      end block
     end if
 
     !! Internal HTC flux contribution.
@@ -110,7 +122,7 @@ contains
     subroutine add_interface_flux(bc)
       class(intfc_field_func), intent(in) :: bc
       integer :: j, n1, n2
-      real(r8) :: value(size(bc%index,2))
+      real(r8), allocatable :: value(:)
       call bc%compute_value(t, Tface, value)
       do j = 1, size(bc%index,2)
         if (present(void_face)) then
@@ -137,22 +149,31 @@ contains
 
     !! External HTC boundary condition contribution.
     if (allocated(this%bc_htc)) then
-      call this%bc_htc%compute_deriv(t, Tface)
-      call matrix%incr_face_diag(this%bc_htc%index, this%bc_htc%deriv)
+      block
+        real(r8), allocatable :: deriv(:)
+        call this%bc_htc%compute_deriv(t, Tface, deriv)
+        call matrix%incr_face_diag(this%bc_htc%index, deriv)
+      end block
     end if
 
     !! Simple radiation boundary condition contribution.
     if (allocated(this%bc_rad)) then
-      call this%bc_rad%compute_deriv(t, Tface)
-      call matrix%incr_face_diag(this%bc_rad%index, this%bc_rad%deriv)
+      block
+        real(r8), allocatable :: deriv(:)
+        call this%bc_rad%compute_deriv(t, Tface, deriv)
+        call matrix%incr_face_diag(this%bc_rad%index, deriv)
+      end block
     end if
 
     !! Experimental evaporation heat flux contribution.
     if (allocated(this%evap_flux)) then
-      call this%evap_flux%compute_deriv(t, Tface)
-      associate (index => this%evap_flux%index, deriv => this%evap_flux%deriv)
-        call matrix%incr_face_diag(index, area(index)*deriv)
-      end associate
+      block
+        real(r8), allocatable :: deriv(:)
+        call this%evap_flux%compute_deriv(t, Tface, deriv)
+        associate (index => this%evap_flux%index)
+          call matrix%incr_face_diag(index, area(index)*deriv)
+        end associate
+      end block
     end if
 
     !! Internal HTC interface condition contribution.
@@ -166,7 +187,7 @@ contains
     subroutine add_interface_jacobian(bc)
       class(intfc_field_func), intent(in) :: bc
       integer :: j
-      real(r8) :: deriv(2,size(bc%index,2))
+      real(r8), allocatable :: deriv(:,:)
 
       call bc%compute_deriv(t, Tface, deriv)
       if (present(void_face)) then

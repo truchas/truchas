@@ -1,7 +1,7 @@
 !!
 !! RAD_BNDRY_FUNC_TYPE
 !!
-!! This module defines an extension of the base class BNDRY_FUNC2 that
+!! This module defines an extension of the base class BNDRY_FIELD_FUNC that
 !! implements the radiation boundary condition flux function on a subset of
 !! the boundary faces of a mesh type that extends the UNSTR_BASE_MESH class.
 !!
@@ -19,14 +19,14 @@
 module rad_bndry_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use bndry_func2_class
+  use bndry_field_func_class
   use unstr_base_mesh_class
   use scalar_func_containers
   use bndry_face_group_builder_type
   implicit none
   private
 
-  type, extends(bndry_func2), public :: rad_bndry_func
+  type, extends(bndry_field_func), public :: rad_bndry_func
     private
     class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     real(r8) :: sigma, abszero
@@ -40,9 +40,8 @@ module rad_bndry_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
-    procedure :: compute
-    procedure :: compute_value => compute
-    procedure :: compute_deriv => compute
+    procedure :: compute_value
+    procedure :: compute_deriv
   end type rad_bndry_func
 
 contains
@@ -75,45 +74,85 @@ contains
     ASSERT(allocated(this%builder))
     call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
     deallocate(this%builder)
-    allocate(this%value(size(this%index)), this%deriv(size(this%index)))
     call scalar_func_list_to_box_array(this%flist, this%f)
     call scalar_func_list_to_box_array(this%glist, this%g)
   end subroutine add_complete
 
-  subroutine compute(this, t, var)
-    class(rad_bndry_func), intent(inout) :: this
+  subroutine compute_value(this, t, u, value)
+    class(rad_bndry_func), intent(in) :: this
     real(r8), intent(in) :: t
-    real(r8), intent(in) :: var(:)
+    real(r8), intent(in) :: u(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
-    real(r8) :: args(-1:size(this%mesh%x,dim=1)), temp, eps, tamb, c, tmp, fdinc, eps_p, eps_m, deps
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), temp, eps, tamb, c, tmp
     ASSERT(allocated(this%index))
+    allocate(value(size(this%index)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
-                value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
-                deriv => this%deriv(this%xgroup(n):this%xgroup(n+1)-1))
+                value => value(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index)
           associate (fnode => this%mesh%face_node_list_view(index(j)))
-            args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
-          temp = var(index(j))
+          temp = u(index(j))
           args(-1) = temp
           eps  = this%f(n)%eval(args)
           tamb = this%g(n)%eval(args(0:))
           c = this%mesh%area(index(j)) * this%sigma
           tmp = (temp-this%abszero)**4 - (tamb-this%abszero)**4
           value(j) = c*eps*tmp
-          fdinc = max(1.0_r8, abs(temp)) * sqrt(epsilon(1.0_r8))
-          fdinc = scale(1.0_r8,exponent(fdinc))
-          args(-1) = temp + fdinc
-          eps_p = this%f(n)%eval(args)
-          args(-1) = temp - fdinc
-          eps_m = this%f(n)%eval(args)
-          deps = (eps_p - eps_m) / (2*fdinc)
+        end do
+      end associate
+    end do
+  end subroutine compute_value
+
+  subroutine compute_deriv(this, t, u, deriv)
+    class(rad_bndry_func), intent(in) :: this
+    real(r8), intent(in) :: t
+    real(r8), intent(in) :: u(:)
+    real(r8), allocatable, intent(out) :: deriv(:)
+    integer :: n, j
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), temp, eps, tamb, c, tmp, deps
+    ASSERT(allocated(this%index))
+    allocate(deriv(size(this%index)))
+    args(0) = t
+    do n = 1, this%ngroup
+      associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
+                deriv => deriv(this%xgroup(n):this%xgroup(n+1)-1))
+        do j = 1, size(index)
+          associate (fnode => this%mesh%face_node_list_view(index(j)))
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+          end associate
+          temp = u(index(j))
+          args(-1) = temp
+          eps  = this%f(n)%eval(args)
+          tamb = this%g(n)%eval(args(0:))
+          c = this%mesh%area(index(j)) * this%sigma
+          tmp = (temp-this%abszero)**4 - (tamb-this%abszero)**4
+          call compute_first_arg_deriv(this%f(n), args, deps)
           deriv(j) = 4*c*eps*(temp-this%abszero)**3 + c*deps*tmp
         end do
       end associate
     end do
-  end subroutine compute
+  end subroutine compute_deriv
+
+  subroutine compute_first_arg_deriv(f, args, deriv)
+    type(scalar_func_box), intent(in) :: f
+    real(r8), intent(inout) :: args(:)
+    real(r8), intent(out) :: deriv
+    real(r8) :: fdinc, fm, fp, u
+
+    ! Differentiate with respect to the first function argument.
+    u = args(1)
+    fdinc = max(1.0_r8, abs(u)) * sqrt(epsilon(1.0_r8))
+    fdinc = scale(1.0_r8, exponent(fdinc))
+    args(1) = u + fdinc
+    fp = f%eval(args)
+    args(1) = u - fdinc
+    fm = f%eval(args)
+    args(1) = u
+    deriv = (fp - fm) / (2*fdinc)
+  end subroutine compute_first_arg_deriv
 
 end module rad_bndry_func_type

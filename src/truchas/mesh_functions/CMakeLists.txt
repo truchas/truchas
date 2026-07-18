@@ -2,7 +2,7 @@ target_sources(truchas PRIVATE
   bndry_vfunc_class.F90
   bndry_face_vfunc_type.F90
   bndry_func1_class.F90
-  bndry_func2_class.F90
+  bndry_field_func_class.F90
   bndry_func3_class.F90
   intfc_field_func_class.F90
   intfc_multifield_func_class.F90

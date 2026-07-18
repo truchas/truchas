@@ -86,11 +86,11 @@ contains
   subroutine compute_value_1(this, t, u, value)
     class(mtc_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u(:)
-    real(r8), intent(out) :: value(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1)), c1
     ASSERT(allocated(this%index))
-    ASSERT(size(value) == size(this%index,2))
+    allocate(value(size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
@@ -112,11 +112,11 @@ contains
   subroutine compute_value_2(this, t, u1, u2, value)
     class(mtc_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u1(:), u2(:)
-    real(r8), intent(out) :: value(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
     real(r8) :: args(-2:size(this%mesh%x,dim=1)), c1
     ASSERT(allocated(this%index))
-    ASSERT(size(value) == size(this%index,2))
+    allocate(value(size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
@@ -139,12 +139,12 @@ contains
   subroutine compute_deriv(this, t, u, deriv)
     class(mtc_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u(:)
-    real(r8), intent(out) :: deriv(:,:)
+    real(r8), allocatable, intent(out) :: deriv(:,:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1))
     real(r8) :: c1, c2, df, umax
     ASSERT(allocated(this%index))
-    ASSERT(size(deriv,1) == 2 .and. size(deriv,2) == size(this%index,2))
+    allocate(deriv(2,size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
@@ -170,12 +170,12 @@ contains
   subroutine compute_deriv1(this, t, u1, u2, deriv1)
     class(mtc_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u1(:), u2(:)
-    real(r8), intent(out) :: deriv1(:,:)
+    real(r8), allocatable, intent(out) :: deriv1(:,:)
     integer :: n, j
     real(r8) :: args(-2:size(this%mesh%x,dim=1))
     real(r8) :: c1, c2, df, umax
     ASSERT(allocated(this%index))
-    ASSERT(size(deriv1,1) == 2 .and. size(deriv1,2) == size(this%index,2))
+    allocate(deriv1(2,size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &

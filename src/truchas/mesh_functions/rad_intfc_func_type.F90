@@ -79,11 +79,11 @@ contains
   subroutine compute_value(this, t, u, value)
     class(rad_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u(:)
-    real(r8), intent(out) :: value(:)
+    real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1)), c, f, g
     ASSERT(allocated(this%index))
-    ASSERT(size(value) == size(this%index,2))
+    allocate(value(size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
@@ -107,12 +107,12 @@ contains
   subroutine compute_deriv(this, t, u, deriv)
     class(rad_intfc_func), intent(in) :: this
     real(r8), intent(in) :: t, u(:)
-    real(r8), intent(out) :: deriv(:,:)
+    real(r8), allocatable, intent(out) :: deriv(:,:)
     integer :: n, j
     real(r8) :: args(-1:size(this%mesh%x,dim=1))
     real(r8) :: c, f, g, fp, fm, df, fdinc, tmp, umax
     ASSERT(allocated(this%index))
-    ASSERT(size(deriv,1) == 2 .and. size(deriv,2) == size(this%index,2))
+    allocate(deriv(2,size(this%index,2)))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &

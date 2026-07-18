@@ -83,11 +83,11 @@
 !!    that describes the heat flux boundary condition. Sublists with 'type'
 !!    equal to 'oriented-flux' are used to define this object.
 !!
-!!  ALLOC_HTC_BC(BC, STAT, ERRMSG) allocates the BNDRY_FUNC2 class object BC
+!!  ALLOC_HTC_BC(BC, STAT, ERRMSG) allocates the BNDRY_FIELD_FUNC class object BC
 !!    that describes the HTC boundary condition. Sublists with 'type' equal
 !!    to 'htc' are used to define this object.
 !!
-!!  ALLOC_RAD_BC(BC, STAT, ERRMSG) allocates the BNDRY_FUNC2 class object BC
+!!  ALLOC_RAD_BC(BC, STAT, ERRMSG) allocates the BNDRY_FIELD_FUNC class object BC
 !!    that describes the simple radiation boundary condition. Sublists with
 !!    'type' equal to 'radiation' are used to define this object.
 !!
@@ -255,11 +255,11 @@ contains
 
   subroutine alloc_vflux_bc(this, bc, stat, errmsg)
     
-    use bndry_func2_class
+    use bndry_field_func_class
     use vflux_bndry_func_type
 
     class(thermal_bc_factory), intent(inout) :: this
-    class(bndry_func2), allocatable, intent(out) :: bc
+    class(bndry_field_func), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -305,11 +305,11 @@ contains
 
   subroutine alloc_htc_bc(this, bc, stat, errmsg)
 
-    use bndry_func2_class
+    use bndry_field_func_class
     use htc_bndry_func_type
 
     class(thermal_bc_factory), intent(inout) :: this
-    class(bndry_func2), allocatable, intent(out) :: bc
+    class(bndry_field_func), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -354,11 +354,11 @@ contains
 
   subroutine alloc_rad_bc(this, bc, stat, errmsg)
 
-    use bndry_func2_class
+    use bndry_field_func_class
     use rad_bndry_func_type
 
     class(thermal_bc_factory), intent(inout) :: this
-    class(bndry_func2), allocatable, intent(out) :: bc
+    class(bndry_field_func), allocatable, intent(out) :: bc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 

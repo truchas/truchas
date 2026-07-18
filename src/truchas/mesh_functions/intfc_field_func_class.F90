@@ -23,11 +23,11 @@
 !! depend on the field values at INDEX(:,J), but not on field values at entities
 !! in any other pair. Thus there is no field coupling between distinct pairs.
 !!
-!! Evaluation results are returned through caller-provided arrays ordered to
-!! match INDEX. VALUE has one entry per managed face pair. DERIV has shape
-!! (2,size(INDEX,2)); its first dimension corresponds to the two faces in each
-!! interface pair and gives the derivative with respect to the field value on
-!! that face.
+!! Evaluation results are returned through allocatable arrays ordered to match
+!! INDEX. The concrete implementation allocates VALUE with one entry per
+!! managed face pair and DERIV with shape (2,size(INDEX,2)). The first dimension
+!! of DERIV corresponds to the two faces in each interface pair and gives the
+!! derivative with respect to the field value on that face.
 !!
 
 module intfc_field_func_class
@@ -48,14 +48,14 @@ module intfc_field_func_class
       import r8, intfc_field_func
       class(intfc_field_func), intent(in) :: this
       real(r8), intent(in) :: t, u(:)
-      real(r8), intent(out) :: value(:)
+      real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_deriv(this, t, u, deriv)
       import r8, intfc_field_func
       class(intfc_field_func), intent(in) :: this
       real(r8), intent(in) :: t, u(:)
-      real(r8), intent(out) :: deriv(:,:)
+      real(r8), allocatable, intent(out) :: deriv(:,:)
     end subroutine
   end interface
 
