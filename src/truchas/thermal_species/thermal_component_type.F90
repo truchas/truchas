@@ -144,8 +144,10 @@ contains
     type(mfd_diff_matrix), intent(inout) :: matrix
     logical, intent(in), optional :: void_face(:)
 
-    !! TODO: Oriented flux currently has no Jacobian contribution. Preserve
-    !! that existing behavior until the appropriate approximation is clarified.
+    !! Intentionally omit the oriented-flux derivative. For incoming flux with
+    !! absorptivity increasing with temperature, the tangent is negative and
+    !! can destroy coercivity of the diffusion preconditioner. The nonlinear
+    !! residual retains this physical thermal feedback.
 
     !! External HTC boundary condition contribution.
     if (allocated(this%bc_htc)) then

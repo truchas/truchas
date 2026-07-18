@@ -73,7 +73,10 @@ was preserved except for the following corrections and derivative completion:
 - The radiation derivative includes the temperature derivative of emissivity,
   evaluated by centered finite differences.
 - The oriented-flux type can compute the temperature derivative of
-  absorptivity, although the thermal Jacobian does not yet assemble that term.
+  absorptivity, but it is intentionally omitted from the diffusion
+  preconditioner. For incoming flux with absorptivity increasing with
+  temperature, this tangent is negative and can destroy coercivity. The full
+  nonlinear residual retains the physical thermal feedback.
 
 Boundary and interface evaluations are entity-local. A value for one managed
 face, or one managed pair of matching interface faces, depends only on the
@@ -103,8 +106,6 @@ public result component.
   use explicit loops rather than indexed assignment. The current diffusion
   matrix diagonal increment also uses an explicit loop and accumulates
   duplicate entries.
-- Add the omitted oriented-flux Jacobian contribution if that boundary
-  condition is to be fully linearized.
 - Consider temperature dependence of the external HTC coefficient separately;
   the current implementation intentionally preserves its existing
   `(t, x, y, z)` dependence and linear derivative.
