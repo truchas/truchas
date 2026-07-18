@@ -4,8 +4,8 @@ target_sources(truchas PRIVATE
   bndry_func1_class.F90
   bndry_func2_class.F90
   bndry_func3_class.F90
-  intfc_func2_class.F90
-  intfc_func3_class.F90
+  intfc_field_func_class.F90
+  intfc_multifield_func_class.F90
   bndry_face_func_type.F90
   bndry_face_group_builder_type.F90
   intfc_link_group_builder_type.F90

@@ -17,7 +17,7 @@ call bc%compute(t, var1, var2)
 For HTSD this is naturally:
 
 ```fortran
-call bc%compute(t, Tface, Cface)
+call bc%compute(t, Cface, Tface)
 ```
 
 For SD, the only physical state field available is concentration:
@@ -83,9 +83,9 @@ call bc%compute(t, var1, var2)
 
 They also differ in stored derivative component names (`deriv` versus
 `deriv2`). Since callers hold MTC conditions as `class(bndry_func3)` and
-`class(intfc_func3)`, Fortran only exposes the two-state bindings declared by
-those abstract types. Adding a one-state generic binding to a concrete MTC
-class would not help callers through the existing abstract type.
+`class(intfc_multifield_func)`, Fortran only exposes the multifield bindings
+declared by those abstract types. Adding a one-field generic binding to a
+concrete MTC class would not help callers through the existing abstract type.
 
 ## Possible Direction
 
@@ -123,7 +123,7 @@ end do
 For coupled models:
 
 ```fortran
-call bc%compute_deriv(t, Tface, Cface, deriv)
+call bc%compute_deriv1(t, Cface, Tface, deriv1)
 call matrix%incr_face_diag(bc%index, deriv)
 ```
 
@@ -133,7 +133,7 @@ and return `value(:)` or `deriv(:,:)` arrays ordered to match it.
 ## Benefits
 
 - SD can call a genuine concentration-only interface.
-- HTSD can call a genuine temperature/concentration interface.
+- HTSD can call a genuine concentration/temperature interface.
 - The user-function argument vector can match the model state instead of being
   padded with dummy values.
 - Mutable result arrays are not hidden inside boundary-function objects.
@@ -145,7 +145,8 @@ and return `value(:)` or `deriv(:,:)` arrays ordered to match it.
 ## Open Questions
 
 - Should this be introduced as a new abstract class and migrated gradually, or
-  should the existing `bndry_func2/3` and `intfc_func2/3` classes be replaced?
+  should the existing `bndry_func2/3`, `intfc_field_func`, and
+  `intfc_multifield_func` classes be replaced?
 - Should unsupported state signatures be deferred, or should the base class
   provide default implementations that fail with a clear programming error?
 - How much caller-side workspace should be reused to avoid repeated allocation
@@ -161,9 +162,9 @@ worth pursuing, prototype a small species-MTC-specific abstraction first:
 
 ```fortran
 call mtc%compute_value(t, Cface, value)
-call mtc%compute_value(t, Tface, Cface, value)
+call mtc%compute_value(t, Cface, Tface, value)
 call mtc%compute_deriv(t, Cface, deriv)
-call mtc%compute_deriv(t, Tface, Cface, deriv)
+call mtc%compute_deriv1(t, Cface, Tface, deriv1)
 ```
 
 with `index` retained as a component. That would test the design where the

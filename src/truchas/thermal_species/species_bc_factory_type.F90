@@ -246,7 +246,7 @@ contains
       if (stat /= 0) return
       if (.not.allocated(htc)) then
         allocate(htc)
-        call htc%init(this%mesh, use_var1=this%use_temperature)
+        call htc%init(this%mesh)
       end if
       call htc%add(f1, f2, setids, stat, errmsg)
     end subroutine proc
@@ -256,12 +256,12 @@ contains
 
   subroutine alloc_mtc_ic(this, comp, ic, stat, errmsg)
 
-    use intfc_func3_class
+    use intfc_multifield_func_class
     use mtc_intfc_func_type
 
     class(species_bc_factory), intent(inout) :: this
     integer, intent(in) :: comp
-    class(intfc_func3), allocatable, intent(out) :: ic
+    class(intfc_multifield_func), allocatable, intent(out) :: ic
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -294,7 +294,7 @@ contains
       if (stat /= 0) return
       if (.not.allocated(htc)) then
         allocate(htc)
-        call htc%init(this%mesh, use_var1=this%use_temperature)
+        call htc%init(this%mesh)
       end if
       call htc%add(f, setids, stat, errmsg)
     end subroutine proc

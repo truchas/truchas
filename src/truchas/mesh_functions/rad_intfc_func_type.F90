@@ -1,7 +1,7 @@
 !!
 !! RAD_INTFC_FUNC_TYPE
 !!
-!! This module defines an extension of the base class INTFC_FUNC2 that
+!! This module defines an extension of the base class INTFC_FIELD_FUNC that
 !! implements the gap radiation interface condition flux function on a subset of
 !! the interface faces of a mesh type that extends the UNSTR_BASE_MESH class.
 !!
@@ -19,14 +19,14 @@
 module rad_intfc_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use intfc_func2_class
+  use intfc_field_func_class
   use unstr_base_mesh_class
   use scalar_func_containers
   use intfc_link_group_builder_type
   implicit none
   private
 
-  type, extends(intfc_func2), public :: rad_intfc_func
+  type, extends(intfc_field_func), public :: rad_intfc_func
     private
     class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     real(r8) :: sigma, abszero
@@ -40,9 +40,8 @@ module rad_intfc_func_type
     procedure :: init
     procedure :: add
     procedure :: add_complete
-    procedure :: compute
-    procedure :: compute_value => compute
-    procedure :: compute_deriv => compute
+    procedure :: compute_value
+    procedure :: compute_deriv
   end type rad_intfc_func
 
 contains
@@ -74,45 +73,74 @@ contains
     ASSERT(allocated(this%builder))
     call this%builder%get_link_groups(this%ngroup, this%xgroup, this%index)
     deallocate(this%builder)
-    allocate(this%value(size(this%index,2)), this%deriv(2,size(this%index,2)))
     call scalar_func_list_to_box_array(this%flist, this%f)
   end subroutine add_complete
 
-  subroutine compute(this, t, var)
-    class(rad_intfc_func), intent(inout) :: this
-    real(r8), intent(in) :: t, var(:)
+  subroutine compute_value(this, t, u, value)
+    class(rad_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), intent(out) :: value(:)
     integer :: n, j
-    real(r8) :: args(-1:size(this%mesh%x,dim=1)), c, f, g, fp, fm, df, fdinc, tmp
+    real(r8) :: args(-1:size(this%mesh%x,dim=1)), c, f, g
     ASSERT(allocated(this%index))
+    ASSERT(size(value) == size(this%index,2))
     args(0) = t
     do n = 1, this%ngroup
       associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
-                value => this%value(this%xgroup(n):this%xgroup(n+1)-1), &
-                deriv => this%deriv(:,this%xgroup(n):this%xgroup(n+1)-1))
+                value => value(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index,dim=2)
           associate(fnode => this%mesh%face_node_list_view(index(1,j)))
             args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
           end associate
-          associate (v1 => var(index(1,j)), v2 => var(index(2,j)))
+          associate (v1 => u(index(1,j)), v2 => u(index(2,j)))
             args(-1) = max(v1, v2)
             c = this%sigma * this%mesh%area(index(1,j))
             f = this%f(n)%eval(args)
             g = (v1-this%abszero)**4 - (v2-this%abszero)**4
             value(j) = c*f*g
-            fdinc = max(1.0_r8, abs(args(-1))) * sqrt(epsilon(1.0_r8))
-            fdinc = scale(1.0_r8,exponent(fdinc))
-            args(-1) = max(v1, v2) + fdinc
-            fp = this%f(n)%eval(args)
-            args(-1) = max(v1, v2) - fdinc
-            fm = this%f(n)%eval(args)
-            df = (fp - fm) / (2*fdinc)
-            tmp = c*df*g
-            deriv(1,j) =  4*c*f*(var(index(1,j))-this%abszero)**3 + merge(tmp, 0.0_r8, v1 > v2)
-            deriv(2,j) = -4*c*f*(var(index(2,j))-this%abszero)**3 + merge(tmp, 0.0_r8, v2 > v1)
           end associate
         end do
       end associate
     end do
-  end subroutine compute
+  end subroutine compute_value
+
+  subroutine compute_deriv(this, t, u, deriv)
+    class(rad_intfc_func), intent(in) :: this
+    real(r8), intent(in) :: t, u(:)
+    real(r8), intent(out) :: deriv(:,:)
+    integer :: n, j
+    real(r8) :: args(-1:size(this%mesh%x,dim=1))
+    real(r8) :: c, f, g, fp, fm, df, fdinc, tmp, umax
+    ASSERT(allocated(this%index))
+    ASSERT(size(deriv,1) == 2 .and. size(deriv,2) == size(this%index,2))
+    args(0) = t
+    do n = 1, this%ngroup
+      associate(index => this%index(:,this%xgroup(n):this%xgroup(n+1)-1), &
+                deriv => deriv(:,this%xgroup(n):this%xgroup(n+1)-1))
+        do j = 1, size(index,dim=2)
+          associate(fnode => this%mesh%face_node_list_view(index(1,j)))
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2)/size(fnode)
+          end associate
+          associate (v1 => u(index(1,j)), v2 => u(index(2,j)))
+            umax = max(v1, v2)
+            args(-1) = umax
+            c = this%sigma * this%mesh%area(index(1,j))
+            f = this%f(n)%eval(args)
+            g = (v1-this%abszero)**4 - (v2-this%abszero)**4
+            fdinc = max(1.0_r8, abs(umax)) * sqrt(epsilon(1.0_r8))
+            fdinc = scale(1.0_r8,exponent(fdinc))
+            args(-1) = umax + fdinc
+            fp = this%f(n)%eval(args)
+            args(-1) = umax - fdinc
+            fm = this%f(n)%eval(args)
+            df = (fp - fm) / (2*fdinc)
+            tmp = c*df*g
+            deriv(1,j) =  4*c*f*(v1-this%abszero)**3 + merge(tmp, 0.0_r8, v1 > v2)
+            deriv(2,j) = -4*c*f*(v2-this%abszero)**3 + merge(tmp, 0.0_r8, v2 > v1)
+          end associate
+        end do
+      end associate
+    end do
+  end subroutine compute_deriv
 
 end module rad_intfc_func_type

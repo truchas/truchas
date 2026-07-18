@@ -187,11 +187,11 @@ mtc_func
 :Description: The name of a :ref:`FUNCTION namelist
               <FUNCTION_Namelist/index:FUNCTION Namelist>` namelist defining a
               function that gives the mass transfer coefficient for a mass
-              transfer-type boundary condition. For species transport without
-              heat transfer, the function is expected to be a function of
-              :math:`(\phi_j,t,x,y,z)`. When species transport is coupled with
-              heat transfer, the function is expected to be a function of
-              :math:`(T,\phi_j,t,x,y,z)`. When used as an interface condition,
+              transfer-type boundary or interface condition. For species
+              transport without heat transfer, the function is expected to be a
+              function of :math:`(\phi_j,t,x,y,z)`. When species transport is
+              coupled with heat transfer, the function is expected to be a
+              function of :math:`(\phi_j,T,t,x,y,z)`. For interface conditions,
               the state arguments are taken to be the maximums on either side
               of the interface.
 :Type: string
@@ -214,8 +214,10 @@ ambient_conc_func
               function that gives the ambient concentration for species
               component :math:`j` for a mass transfer-type boundary condition.
               For species transport without heat transfer, the function is
-              expected to be a function of :math:`(\phi_j,t,x,y,z)`. When
-              species transport is coupled with heat transfer, the function is
-              expected to be a function of :math:`(T,\phi_j,t,x,y,z)`.
+              expected to be a function of :math:`(t,x,y,z)`. When species
+              transport is coupled with heat transfer, the function is expected
+              to be a function of :math:`(T,t,x,y,z)`. The ambient
+              concentration function does not receive the species
+              concentration as an argument.
 :Type: string
 :Default: none
