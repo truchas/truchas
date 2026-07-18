@@ -72,6 +72,11 @@ was preserved except for the following corrections and derivative completion:
   unrelated face temperature.
 - The radiation derivative includes the temperature derivative of emissivity,
   evaluated by centered finite differences.
+- The external HTC coefficient receives `(T, t, x, y, z)`, where `T` is the
+  local boundary-face temperature. Its derivative includes the resulting
+  product-rule term, with the coefficient derivative evaluated by centered
+  finite differences. Ambient temperature remains a function of
+  `(t, x, y, z)` only.
 - The oriented-flux type can compute the temperature derivative of
   absorptivity, but it is intentionally omitted from the diffusion
   preconditioner. For incoming flux with absorptivity increasing with
@@ -106,6 +111,3 @@ public result component.
   use explicit loops rather than indexed assignment. The current diffusion
   matrix diagonal increment also uses an explicit loop and accumulates
   duplicate entries.
-- Consider temperature dependence of the external HTC coefficient separately;
-  the current implementation intentionally preserves its existing
-  `(t, x, y, z)` dependence and linear derivative.
