@@ -70,7 +70,7 @@
 &FUNCTION
   name = 'temp_depen'
   type = 'tabular'
-  Tabular_Data(1,:) = 300.0, 301.0, 302.0, 303.0
+  Tabular_Data(1,:) = 300.0, 310.0, 320.0, 330.0
   Tabular_Data(2,:) = 0.5, 0.6, 0.7, 1.0
 /
 
