@@ -13,11 +13,11 @@
 !!
 !! Notes
 !!
-!! The index array is persistent topology owned by the function object. For
-!! current users, each column INDEX(:,J) identifies one pair of matching
-!! interface faces managed by this function object. The interpretation of those
-!! pairs remains an implicit contract with the physics code that holds the
-!! polymorphic object.
+!! The index array is persistent topology owned by the function object. Its
+!! columns are unique. For current users, each column INDEX(:,J) identifies one
+!! pair of matching interface faces managed by this function object. The
+!! interpretation of those pairs remains an implicit contract with the physics
+!! code that holds the polymorphic object.
 !!
 !! Evaluation is local to each managed face pair: the result for pair J may
 !! depend on the field values at INDEX(:,J), but not on field values at entities

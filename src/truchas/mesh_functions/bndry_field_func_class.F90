@@ -13,10 +13,11 @@
 !!
 !! Notes
 !!
-!! The index array is persistent topology owned by the function object. For
-!! current users, INDEX(J) identifies a boundary face managed by this function
-!! object. The interpretation of the indices remains an implicit contract with
-!! the physics code that holds the polymorphic object.
+!! The index array is persistent topology owned by the function object. Its
+!! entries are unique. For current users, INDEX(J) identifies a boundary face
+!! managed by this function object. The interpretation of the indices remains
+!! an implicit contract with the physics code that holds the polymorphic
+!! object.
 !!
 !! Evaluation is local to each managed face: the result for entry J may depend
 !! on the field value at INDEX(J), but not on field values at other entities.

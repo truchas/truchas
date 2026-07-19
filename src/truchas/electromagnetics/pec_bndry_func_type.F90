@@ -43,7 +43,7 @@ contains
     class(pec_bndry_func), intent(out) :: this
     type(simpl_mesh), intent(in), target :: mesh
     allocate(this%builder)
-    call this%builder%init(mesh)
+    call this%builder%init(mesh, no_face_overlap=.true., no_edge_overlap=.false.)
   end subroutine
 
   subroutine add(this, setids, stat, errmsg)
@@ -54,13 +54,13 @@ contains
     call this%builder%add_face_group(setids, stat, errmsg)
   end subroutine
 
-  subroutine add_complete(this, stat)
+  subroutine add_complete(this)
     class(pec_bndry_func), intent(inout) :: this
-    integer, intent(out) :: stat
-    integer :: ngroup
-    integer, allocatable :: xgroup(:)
+    integer :: ngroup, stat
+    integer, allocatable :: xgroup(:), map(:)
     ASSERT(allocated(this%builder))
-    call this%builder%get_edge_groups(ngroup, xgroup, this%index, stat)
+    call this%builder%get_unique_edge_groups(ngroup, xgroup, map, this%index, stat)
+    ASSERT(stat == 0)
     deallocate(this%builder)
     allocate(this%value(size(this%index)))
     this%value = 0.0_r8

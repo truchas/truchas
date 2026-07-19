@@ -108,7 +108,6 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    integer :: j
     logical, allocatable :: mask(:), fmask(:)
     type(evap_heat_flux), allocatable :: evap_flux
 
@@ -155,9 +154,7 @@ contains
     if (allocated(comp%bc_vflux)) then
       if (global_any(mask(comp%bc_vflux%index))) &
           call TLS_info('    NOTE: oriented-flux condition is superimposed with interface conditions')
-      do j = 1, size(comp%bc_vflux%index)  ! index not necessarily 1-1
-        fmask(comp%bc_vflux%index(j)) = .true. ! mark the oriented flux faces
-      end do
+      fmask(comp%bc_vflux%index) = .true. ! mark the oriented flux faces
     end if
 
     !! Define the external HTC boundary conditions.

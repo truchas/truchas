@@ -32,7 +32,7 @@ module vflux_bndry_func_type
     private
     class(unstr_base_mesh), pointer :: mesh => null() ! reference only - do not own
     integer :: ngroup
-    integer, allocatable :: xgroup(:)
+    integer, allocatable :: xgroup(:), map(:) ! XGROUP partitions MAP
     type(scalar_func_box), allocatable :: farray(:)
     type(vector_func_box), allocatable :: garray(:)
     ! temporaries used during construction
@@ -73,7 +73,7 @@ contains
   subroutine add_complete(this)
     class(vflux_bndry_func), intent(inout) :: this
     ASSERT(allocated(this%builder))
-    call this%builder%get_face_groups(this%ngroup, this%xgroup, this%index)
+    call this%builder%get_unique_face_groups(this%ngroup, this%xgroup, this%map, this%index)
     deallocate(this%builder)
     call scalar_func_list_to_box_array(this%flist, this%farray)
     call vector_func_list_to_box_array(this%glist, this%garray)
@@ -84,25 +84,24 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
     real(r8), allocatable, intent(out) :: value(:)
-    integer :: n, j
+    integer :: n, i, j, face
     real(r8) :: args(0:size(this%mesh%x,dim=1)), abs_args(1)
     real(r8) :: absorptivity, irrad(3)
     ASSERT(allocated(this%index))
-    allocate(value(size(this%index)))
+    allocate(value(size(this%index)), source=0.0_r8)
     args(0) = t
     do n = 1, this%ngroup
-      associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
-                value => value(this%xgroup(n):this%xgroup(n+1)-1))
-        do j = 1, size(index)
-          associate (fnode => this%mesh%face_node_list_view(index(j)))
-            args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
-          end associate
-          abs_args(1) = u(index(j))
-          absorptivity = this%farray(n)%eval(abs_args)
-          irrad = this%garray(n)%f%eval(args)
-          value(j) = absorptivity*dot_product(this%mesh%normal(:,index(j)), irrad)
-        end do
-      end associate
+      do i = this%xgroup(n), this%xgroup(n+1)-1
+        j = this%map(i)
+        face = this%index(j)
+        associate (fnode => this%mesh%face_node_list_view(face))
+          args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+        end associate
+        abs_args(1) = u(face)
+        absorptivity = this%farray(n)%eval(abs_args)
+        irrad = this%garray(n)%f%eval(args)
+        value(j) = value(j) + absorptivity*dot_product(this%mesh%normal(:,face), irrad)
+      end do
     end do
   end subroutine compute_value
 
@@ -111,25 +110,24 @@ contains
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
     real(r8), allocatable, intent(out) :: deriv(:)
-    integer :: n, j
+    integer :: n, i, j, face
     real(r8) :: args(0:size(this%mesh%x,dim=1)), abs_args(1)
     real(r8) :: dabs, irrad(3)
     ASSERT(allocated(this%index))
-    allocate(deriv(size(this%index)))
+    allocate(deriv(size(this%index)), source=0.0_r8)
     args(0) = t
     do n = 1, this%ngroup
-      associate(index => this%index(this%xgroup(n):this%xgroup(n+1)-1), &
-                deriv => deriv(this%xgroup(n):this%xgroup(n+1)-1))
-        do j = 1, size(index)
-          associate (fnode => this%mesh%face_node_list_view(index(j)))
-            args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
-          end associate
-          abs_args(1) = u(index(j))
-          call compute_first_arg_deriv(this%farray(n), abs_args, dabs)
-          irrad = this%garray(n)%f%eval(args)
-          deriv(j) = dabs*dot_product(this%mesh%normal(:,index(j)), irrad)
-        end do
-      end associate
+      do i = this%xgroup(n), this%xgroup(n+1)-1
+        j = this%map(i)
+        face = this%index(j)
+        associate (fnode => this%mesh%face_node_list_view(face))
+          args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+        end associate
+        abs_args(1) = u(face)
+        call compute_first_arg_deriv(this%farray(n), abs_args, dabs)
+        irrad = this%garray(n)%f%eval(args)
+        deriv(j) = deriv(j) + dabs*dot_product(this%mesh%normal(:,face), irrad)
+      end do
     end do
   end subroutine compute_deriv
 

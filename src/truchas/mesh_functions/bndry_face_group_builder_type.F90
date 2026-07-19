@@ -16,29 +16,37 @@
 !!
 !! The BNDRY_FACE_GROUP_BUILDER type has the following type bound procedures.
 !!
-!!  INIT(MESH [,BNDRY_ONLY]) initializes the object. MESH is of type BASE_MESH.
-!!    Faces will be required to be boundary faces unless the option BNDRY_ONLY
-!!    is present with value .false.
+!!  INIT(MESH [,BNDRY_ONLY] [,OMIT_OFFP] [,NO_OVERLAP]) initializes the object.
+!!    MESH is of type BASE_MESH. Faces will be required to be boundary faces
+!!    unless BNDRY_ONLY is present with value .false. Off-process faces are
+!!    omitted when OMIT_OFFP is present with value .true. Overlap between
+!!    groups is rejected unless NO_OVERLAP is present with value .false.
 !!
 !!  ADD_FACE_GROUP(SETIDS, STAT, ERRMSG) defines a group of boundary faces
 !!    comprising those faces that belong to a face set with ID in the integer
-!!    array SETIDS. It is an error if any of the specified faces belong to
-!!    a previously defined group, or are not a boundary face and BNDRY_ONLY
-!!    was not specified with value .false.  STAT returns 1 in the former case
-!!    and 2 in the latter, otherwise STAT returns 0. A message is returned in
-!!    the deferred-length allocatable character ERRMSG if an error occurs.
+!!    array SETIDS. If overlap checking is enabled, it is an error if any of
+!!    the specified faces belong to a previously defined group. It is also an
+!!    error if a specified face is not a boundary face and BNDRY_ONLY was not
+!!    specified with value .false. STAT returns 1 in the former case and 2 in
+!!    the latter, otherwise STAT returns 0. A message is returned in the
+!!    deferred-length allocatable character ERRMSG if an error occurs.
 !!
-!!  GET_FACE_GROUPS(NGROUP, XGROUP, INDEX [,OMIT_OFFP]) returns the face groups
-!!    defined by the previous calls to ADD_FACE_GROUP.  The array INDEX returns
-!!    the list of face indices: INDEX(XGROUP(n):XGROUP(n)-1) are the face
-!!    indices that belong to group n. The groups are sequentially numbered
-!!    from 1 in the order of the calls to ADD_FACE_GROUP.  NGROUP is the number
-!!    of groups. Both XGROUP and INDEX are allocatable arrays and are allocated
-!!    by this procedure. If the option OMIT_OFFP is specified with value .true.
-!!    then the face groups will only include on-process faces; otherwise, all
-!!    specified faces are included irrespective of whether they are on or off-
-!!    process, which is the default.
+!!  GET_FACE_GROUPS(NGROUP, XGROUP, FACE) returns the face groups defined by
+!!    the previous calls to ADD_FACE_GROUP. The face indices belonging to group
+!!    N are FACE(XGROUP(N):XGROUP(N+1)-1). Faces are ordered and unique within
+!!    each group, but may occur in multiple groups when overlap is permitted.
 !!
+!!  GET_UNIQUE_FACE_GROUPS(NGROUP, XGROUP, MAP, FACE) returns the same groups
+!!    using a unique, ordered FACE array. The faces belonging to group N are
+!!    FACE(MAP(XGROUP(N):XGROUP(N+1)-1)). MAP may contain repeated values when
+!!    faces belong to multiple groups.
+!!
+!!  Groups are sequentially numbered from 1 in the order of calls to
+!!  ADD_FACE_GROUP. NGROUP is the number of groups. All returned arrays are
+!!  allocatable and are allocated by the procedures.
+!!
+
+#include "f90_assert.fpp"
 
 module bndry_face_group_builder_type
 
@@ -61,6 +69,7 @@ module bndry_face_group_builder_type
     procedure :: init
     procedure :: add_face_group
     procedure :: get_face_groups
+    procedure :: get_unique_face_groups
   end type bndry_face_group_builder
 
 contains
@@ -156,11 +165,11 @@ contains
 
   end subroutine add_face_group
 
-  subroutine get_face_groups(this, ngroup, xgroup, index)
+  subroutine get_face_groups(this, ngroup, xgroup, face)
 
     class(bndry_face_group_builder), intent(in) :: this
     integer, intent(out) :: ngroup
-    integer, allocatable, intent(out) :: xgroup(:), index(:)
+    integer, allocatable, intent(out) :: xgroup(:), face(:)
 
     integer :: n, j
 
@@ -169,15 +178,67 @@ contains
     do j = 1, ngroup
       n = n + size(this%glist(j)%array)
     end do
-    allocate(index(n), xgroup(ngroup+1))
+    allocate(face(n), xgroup(ngroup+1))
 
-    !! Face indices in group N are INDEX(XGROUP(N):XGROUP(N+1)-1).
+    !! Face indices in group N are FACE(XGROUP(N):XGROUP(N+1)-1).
     xgroup(1) = 1
     do n = 1, ngroup
       xgroup(n+1) = xgroup(n) + size(this%glist(n)%array)
-      index(xgroup(n):xgroup(n+1)-1) = this%glist(n)%array
+      face(xgroup(n):xgroup(n+1)-1) = this%glist(n)%array
     end do
 
   end subroutine get_face_groups
+
+  subroutine get_unique_face_groups(this, ngroup, xgroup, map, face)
+
+    class(bndry_face_group_builder), intent(in) :: this
+    integer, intent(out) :: ngroup
+    integer, allocatable, intent(out) :: xgroup(:), map(:), face(:)
+
+    integer, allocatable :: slot(:)
+    integer :: entity, i, j, n
+
+    ngroup = size(this%glist)
+    allocate(xgroup(ngroup+1))
+    xgroup(1) = 1
+    do n = 1, ngroup
+      xgroup(n+1) = xgroup(n) + size(this%glist(n)%array)
+    end do
+
+    allocate(slot(size(this%mask)), source=0)
+    do n = 1, ngroup
+      do j = 1, size(this%glist(n)%array)
+        entity = this%glist(n)%array(j)
+        ASSERT(entity >= 1 .and. entity <= size(slot))
+        slot(entity) = -1
+      end do
+    end do
+
+    allocate(face(count(slot /= 0)))
+    i = 0
+    do entity = 1, size(slot)
+      if (slot(entity) /= 0) then
+        i = i + 1
+        face(i) = entity
+        slot(entity) = i
+      end if
+    end do
+
+    allocate(map(xgroup(ngroup+1)-1))
+    i = 0
+    do n = 1, ngroup
+      do j = 1, size(this%glist(n)%array)
+        i = i + 1
+        map(i) = slot(this%glist(n)%array(j))
+      end do
+    end do
+
+    ASSERT(size(map) == xgroup(ngroup+1)-1)
+    ASSERT(all(map >= 1 .and. map <= size(face)))
+    if (size(face) > 1) then
+      ASSERT(all(face(2:) > face(:size(face)-1)))
+    end if
+
+  end subroutine get_unique_face_groups
 
 end module bndry_face_group_builder_type
