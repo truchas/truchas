@@ -92,11 +92,7 @@ contains
     call this%iterate_list('PEC', proc, stat, errmsg)
     if (stat /= 0) return
     if (allocated(nxE_bc)) then
-      call nxE_bc%add_complete(stat)
-      if (stat /= 0) then
-        stat = 0  ! all edges assigned the same value -- no need to caution
-        !call TLS_info('NOTE: duplicate edges in PEC boundary condition')
-      end if
+      call nxE_bc%add_complete()
     else
       call TLS_info('    none specified')
     end if

@@ -11,9 +11,10 @@
 !!
 !! Notes
 !!
-!! The index array is persistent topology owned by the function object. The
-!! interpretation of the indices is an implicit contract with the physics code
-!! that holds the polymorphic object, typically boundary faces or nodes.
+!! The index array is persistent topology owned by the function object. Its
+!! entries are unique. The interpretation of the indices is an implicit
+!! contract with the physics code that holds the polymorphic object, typically
+!! boundary faces or nodes.
 !!
 !! The COMPUTE_VALUE generic supports evaluation with either one or two
 !! mesh-wide fields. Results are returned through allocatable arrays ordered to

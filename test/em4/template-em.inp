@@ -11,7 +11,7 @@
 ################################################################################
 
 &MESH
-  mesh_file = 'mesh_flat.gen'
+  mesh_file = '{mesh_file}'
   coord_scale_factor = 0.01
 /
 
@@ -61,7 +61,7 @@
 
 &MESH
   mesh_type = 'simplicial' ! or 'electromagnetics'
-  mesh_file = 'mesh_flat.gen'
+  mesh_file = '{mesh_file}'
   coord_scale_factor = 0.01
 /
 
@@ -101,11 +101,7 @@
   face_set_ids = 1
 /
 
-&ELECTROMAGNETIC_BC
-  name = 'applied H field'
-  type = 'ih-hfield'
-  face_set_ids = 3
-/
+{hfield_bcs}
 
 ! nxH=0 is a natural BC that is implied by doing nothing
 !&ELECTROMAGNETIC_BC

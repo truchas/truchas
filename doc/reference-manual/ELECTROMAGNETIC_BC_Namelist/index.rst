@@ -48,6 +48,10 @@ the :ref:`INDUCTION_SOURCE_FIELD<INDUCTION_SOURCE_FIELD_Namelist>` namelist,
 is defined by setting `type`_ to **"ih-hfield"**. This special purpose
 boundary condition is used in induction heating simulations.
 
+Separate perfect-magnetic-conductor and magnetic-induction-source
+specifications may meet along boundary edges, but they may not include the
+same boundary face.
+
 Robin
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 A general Robin condition
@@ -259,4 +263,3 @@ with differing phases.
 
 :Type: real
 :Default: 0.0
-

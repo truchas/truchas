@@ -11,6 +11,10 @@
 !! Hb(t,x) that is expressed in separable form: Hb(t,x) = f(t) g(x) where f is
 !! a scalar function and g is a 3-vector function.
 !!
+!! The public INDEX and VALUE arrays contain one entry per unique edge. Distinct
+!! face groups may share edges; their boundary-integral contributions are stored
+!! separately and accumulated into VALUE through the private grouped map.
+!!
 !! Neil Carlson <neil.n.carlson@gmail.com>
 !! February 2024
 !!
@@ -36,7 +40,7 @@ module nxh_bndry_func_type
   type, extends(bndry_func1), public :: nxh_bndry_func
     type(simpl_mesh), pointer :: mesh => null()
     integer :: ngroup = 0
-    integer, allocatable :: xgroup(:)
+    integer, allocatable :: xgroup(:), map(:)
     real(r8), allocatable :: gvalue(:)
     type(scalar_func_box), allocatable :: f(:)
     logical :: computed = .false.
@@ -59,7 +63,7 @@ contains
     type(simpl_mesh), intent(in), target :: mesh
     this%mesh => mesh
     allocate(this%builder)
-    call this%builder%init(mesh, no_overlap=.false.)
+    call this%builder%init(mesh, no_face_overlap=.true., no_edge_overlap=.false.)
   end subroutine
 
   subroutine add(this, f, g, setids, stat, errmsg)
@@ -83,13 +87,14 @@ contains
     integer, intent(in), optional :: omit_edge_list(:)
 
     integer :: i, j, n, stat
-    integer, allocatable :: xgroup(:), index(:), emap(:)
+    integer, allocatable :: xface(:), face(:), emap(:)
     type(vector_func_box), allocatable :: g(:)
     real(r8) :: c, dx(3,3), g_qpt(3), g_dot_dx(7,3), s
 
     ASSERT(allocated(this%builder))
-    call this%builder%get_face_groups(this%ngroup, xgroup, index)
-    call this%builder%get_edge_groups(this%ngroup, this%xgroup, this%index, stat, omit_edge_list)
+    call this%builder%get_face_groups(this%ngroup, xface, face)
+    call this%builder%get_unique_edge_groups(this%ngroup, this%xgroup, this%map, &
+        this%index, stat, omit_edge_list)
     INSIST(stat == 0)
     deallocate(this%builder)
 
@@ -97,23 +102,23 @@ contains
     call scalar_func_list_to_box_array(this%flist, this%f)
     call vector_func_list_to_box_array(this%glist, g)
 
-    allocate(this%value(size(this%index)), this%gvalue(size(this%index)), emap(this%mesh%nedge))
+    allocate(this%value(size(this%index)), this%gvalue(size(this%map)), emap(this%mesh%nedge))
 
     this%gvalue = 0.0_r8
     do n = 1, this%ngroup
       !! EMAP maps on-process edge indices to their group index, or 0 if not in a group.
       emap = 0  !TODO: replace by more efficient algorithm/structure?
       do j = this%xgroup(n), this%xgroup(n+1)-1
-        emap(this%index(j)) = j
+        emap(this%index(this%map(j))) = j
       end do
-      associate (face => index(xgroup(n):xgroup(n+1)-1))
-        do j = 1, size(face) ! loop over faces in group n
-          associate (edge => emap(this%mesh%fedge(:,face(j))), &
-                     x => this%mesh%x(:,this%mesh%fnode(:,face(j))))
+      associate (gface => face(xface(n):xface(n+1)-1))
+        do j = 1, size(gface) ! loop over faces in group n
+          associate (edge => emap(this%mesh%fedge(:,gface(j))), &
+                     x => this%mesh%x(:,this%mesh%fnode(:,gface(j))))
             !! Compute integrals of G over face and assemble results to the
             !! edges. Orientation of the face relative to the outward boundary
             !! normal must be accounted for and is inferred from the fcell array.
-            c = merge(1.0_r8, -1.0_r8, this%mesh%fcell(2,face(j)) == 0) / 2.0_r8
+            c = merge(1.0_r8, -1.0_r8, this%mesh%fcell(2,gface(j)) == 0) / 2.0_r8
 
             dx(:,1) = x(:,3) - x(:,2)
             dx(:,2) = x(:,1) - x(:,3)
@@ -155,13 +160,15 @@ contains
   subroutine compute(this, t)
     class(nxh_bndry_func), intent(inout) :: this
     real(r8), intent(in) :: t
-    integer :: j, n
+    integer :: i, j, n
     real(r8) :: s
     if (this%computed .and. t == this%tlast) return ! value already set for this T
+    this%value = 0.0_r8
     do n = 1, this%ngroup
       s = this%f(n)%eval([t])
-      do j = this%xgroup(n), this%xgroup(n+1)-1
-        this%value(j) = s*this%gvalue(j)
+      do i = this%xgroup(n), this%xgroup(n+1)-1
+        j = this%map(i)
+        this%value(j) = this%value(j) + s*this%gvalue(i)
       end do
     end do
     this%tlast = t
