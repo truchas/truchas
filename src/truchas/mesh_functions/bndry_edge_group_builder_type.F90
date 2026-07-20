@@ -1,25 +1,30 @@
 !!
 !! BNDRY_EDGE_GROUP_BUILDER_TYPE
 !!
-!! This module defines an auxiliary object that constructs a grouped list of
-!! mesh edges specified incrementally using face set IDs. Its principal use is
-!! in the instantiation of boundary condition objects.
+!! This module defines a builder that incrementally converts boundary face-set
+!! selections into grouped edge-index representations. It is primarily used to
+!! construct edge-based electromagnetic boundary functions.
 !!
-!! Face overlap and edge overlap are independent policies. Distinct face groups
-!! may legitimately share edges even when faces may belong to only one group.
-!! GET_EDGE_GROUPS returns the direct grouped representation, where XGROUP
-!! partitions EDGE and EDGE may contain duplicates across groups.
-!! GET_UNIQUE_EDGE_GROUPS instead returns an ordered unique EDGE array and a
-!! grouped MAP, where EDGE(MAP(XGROUP(N):XGROUP(N+1)-1)) gives group N.
+!! Neil Carlson <neil.n.carlson@gmail.com>, January 2024, modified July 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!! Neil Carlson <neil.n.carlson@gmail.com>
-!! January 2024
+!! Notes
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! The builder retains an unowned reference to the mesh. After initialization,
+!! zero or more boundary-face groups are added using face-set IDs. Groups are
+!! numbered in insertion order. All result arrays are allocated by the getter
+!! procedures.
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!! Face overlap and derived-edge overlap are independent policies, both rejected
+!! by default. Distinct, nonoverlapping face groups may legitimately share
+!! edges. When edge-overlap checking is enabled, overlap is reported through a
+!! status value but does not prevent construction of the edge groups.
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Two edge representations are available. The direct representation
+!! concatenates the groups and may repeat edges across groups. The mapped
+!! representation instead returns one ordered, unique edge array and a grouped
+!! map into it. The original face groups are also available directly.
+!!
 
 #include "f90_assert.fpp"
 
@@ -36,7 +41,7 @@ module bndry_edge_group_builder_type
 
   type, public :: bndry_edge_group_builder
     private
-    type(simpl_mesh), pointer :: mesh => null() ! reference only
+    type(simpl_mesh), pointer :: mesh => null() ! reference only -- not owned
     type(bndry_face_group_builder) :: builder
     logical :: no_face_overlap = .true., no_edge_overlap = .true.
   contains
@@ -50,6 +55,10 @@ module bndry_edge_group_builder_type
 
 contains
 
+  !! Initialize an empty builder for MESH. Overlap between face groups and
+  !! overlap between their derived edge groups are rejected by default. The
+  !! optional arguments independently override those policies. Added faces are
+  !! required to be boundary faces, and off-process faces are retained.
   subroutine init(this, mesh, no_face_overlap, no_edge_overlap)
     class(bndry_edge_group_builder), intent(out) :: this
     type(simpl_mesh), target :: mesh
@@ -61,6 +70,9 @@ contains
         no_overlap=this%no_face_overlap)
   end subroutine
 
+  !! Add one boundary-face group containing the union of the face sets in
+  !! SETIDS. Face-set lookup, boundary validation, and optional face-overlap
+  !! errors are returned through STAT and ERRMSG.
   subroutine add_face_group(this, setids, stat, errmsg)
     class(bndry_edge_group_builder), intent(inout) :: this
     integer, intent(in) :: setids(:) ! NB: face set IDs
@@ -69,6 +81,9 @@ contains
     call this%builder%add_face_group(setids, stat, errmsg)
   end subroutine
 
+  !! Return the direct face-group representation maintained by the contained
+  !! face builder. The faces in group N are
+  !! FACE(XGROUP(N):XGROUP(N+1)-1).
   subroutine get_face_groups(this, ngroup, xgroup, face)
     class(bndry_edge_group_builder), intent(in) :: this
     integer, intent(out) :: ngroup
@@ -76,6 +91,10 @@ contains
     call this%builder%get_face_groups(ngroup, xgroup, face)
   end subroutine
 
+  !! Return the direct edge-group representation. The edges in group N are
+  !! EDGE(XGROUP(N):XGROUP(N+1)-1). Edges are ordered and unique within a group,
+  !! but may occur in multiple groups. Optional listed on-process edges are
+  !! omitted. STAT is 1 if prohibited edge overlap is found, and 0 otherwise.
   subroutine get_edge_groups(this, ngroup, xgroup, edge, stat, omit_edge_list)
 
     class(bndry_edge_group_builder), intent(in) :: this
@@ -103,6 +122,10 @@ contains
 
   end subroutine get_edge_groups
 
+  !! Return the mapped edge-group representation. EDGE is ordered and unique
+  !! across all groups, and the edges in group N are
+  !! EDGE(MAP(XGROUP(N):XGROUP(N+1)-1)). MAP may contain repeated entries.
+  !! Optional omission and STAT have the same semantics as GET_EDGE_GROUPS.
   subroutine get_unique_edge_groups(this, ngroup, xgroup, map, edge, stat, omit_edge_list)
 
     class(bndry_edge_group_builder), intent(in) :: this
@@ -161,6 +184,9 @@ contains
 
   end subroutine get_unique_edge_groups
 
+  !! Derive one ordered edge list from each stored face group, synchronize edge
+  !! membership across processes, apply optional on-process omissions, and
+  !! report prohibited overlap between the resulting groups.
   subroutine build_edge_groups(this, glist, stat, omit_edge_list)
 
     use parallel_communication, only: global_any

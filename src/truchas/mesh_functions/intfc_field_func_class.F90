@@ -27,7 +27,9 @@
 !! INDEX. The concrete implementation allocates VALUE with one entry per
 !! managed face pair and DERIV with shape (2,size(INDEX,2)). The first dimension
 !! of DERIV corresponds to the two faces in each interface pair and gives the
-!! derivative with respect to the field value on that face.
+!! derivative with respect to the field value on that face. Evaluation may
+!! update private implementation state, such as an internal cache, but the
+!! returned arrays are independently owned results.
 !!
 
 module intfc_field_func_class
@@ -46,14 +48,14 @@ module intfc_field_func_class
   abstract interface
     subroutine compute_value(this, t, u, value)
       import r8, intfc_field_func
-      class(intfc_field_func), intent(in) :: this
+      class(intfc_field_func), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_deriv(this, t, u, deriv)
       import r8, intfc_field_func
-      class(intfc_field_func), intent(in) :: this
+      class(intfc_field_func), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: deriv(:,:)
     end subroutine

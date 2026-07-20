@@ -1,49 +1,25 @@
 !!
 !! BNDRY_FACE_GROUP_BUILDER_TYPE
 !!
-!! This module defines an auxiliary object that constructs a grouped list of
-!! boundary faces specified incrementally using face set IDs.  Its principal
-!! use is in instantiating boundary condition objects.
+!! This module defines a builder that incrementally converts mesh face-set
+!! selections into grouped face-index representations. It is primarily used to
+!! construct sparse boundary functions and related mesh-data objects.
 !!
-!! Neil N. Carlson <nnc@lanl.gov>
-!! December 2017
+!! Neil Carlson <neil.n.carlson@gmail.com>, December 2017, modified July 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Notes
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!! The builder retains an unowned reference to the mesh. After initialization,
+!! zero or more face groups are added using face-set IDs. Groups are numbered in
+!! insertion order and may optionally be restricted to boundary faces, omit
+!! off-process faces, or reject overlap with preceding groups.
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! The BNDRY_FACE_GROUP_BUILDER type has the following type bound procedures.
-!!
-!!  INIT(MESH [,BNDRY_ONLY] [,OMIT_OFFP] [,NO_OVERLAP]) initializes the object.
-!!    MESH is of type BASE_MESH. Faces will be required to be boundary faces
-!!    unless BNDRY_ONLY is present with value .false. Off-process faces are
-!!    omitted when OMIT_OFFP is present with value .true. Overlap between
-!!    groups is rejected unless NO_OVERLAP is present with value .false.
-!!
-!!  ADD_FACE_GROUP(SETIDS, STAT, ERRMSG) defines a group of boundary faces
-!!    comprising those faces that belong to a face set with ID in the integer
-!!    array SETIDS. If overlap checking is enabled, it is an error if any of
-!!    the specified faces belong to a previously defined group. It is also an
-!!    error if a specified face is not a boundary face and BNDRY_ONLY was not
-!!    specified with value .false. STAT returns 1 in the former case and 2 in
-!!    the latter, otherwise STAT returns 0. A message is returned in the
-!!    deferred-length allocatable character ERRMSG if an error occurs.
-!!
-!!  GET_FACE_GROUPS(NGROUP, XGROUP, FACE) returns the face groups defined by
-!!    the previous calls to ADD_FACE_GROUP. The face indices belonging to group
-!!    N are FACE(XGROUP(N):XGROUP(N+1)-1). Faces are ordered and unique within
-!!    each group, but may occur in multiple groups when overlap is permitted.
-!!
-!!  GET_UNIQUE_FACE_GROUPS(NGROUP, XGROUP, MAP, FACE) returns the same groups
-!!    using a unique, ordered FACE array. The faces belonging to group N are
-!!    FACE(MAP(XGROUP(N):XGROUP(N+1)-1)). MAP may contain repeated values when
-!!    faces belong to multiple groups.
-!!
-!!  Groups are sequentially numbered from 1 in the order of calls to
-!!  ADD_FACE_GROUP. NGROUP is the number of groups. All returned arrays are
-!!  allocatable and are allocated by the procedures.
+!! Two final representations are available. The direct representation
+!! concatenates the groups and may repeat faces across groups when overlap is
+!! allowed. The mapped representation instead returns one ordered, unique face
+!! array and a grouped map into it. All result arrays are allocated by the
+!! getter procedures.
 !!
 
 #include "f90_assert.fpp"
@@ -74,6 +50,9 @@ module bndry_face_group_builder_type
 
 contains
 
+  !! Initialize an empty builder for MESH. Boundary-only validation and overlap
+  !! rejection are enabled by default. Off-process faces are included by
+  !! default. The optional arguments override those policies.
   subroutine init(this, mesh, bndry_only, omit_offp, no_overlap)
     class(bndry_face_group_builder), intent(out) :: this
     class(base_mesh), target :: mesh
@@ -87,6 +66,10 @@ contains
     allocate(this%glist(0))
   end subroutine
 
+  !! Add one group containing the union of the face sets in SETIDS. This is a
+  !! collective operation. Errors from face-set lookup are propagated; the
+  !! builder assigns STAT=1 for overlap with an existing group and STAT=2 for
+  !! non-boundary faces when the corresponding checks are enabled.
   subroutine add_face_group(this, setids, stat, errmsg)
 
     use bitfield_type
@@ -165,6 +148,9 @@ contains
 
   end subroutine add_face_group
 
+  !! Return the direct group representation. The faces in group N are
+  !! FACE(XGROUP(N):XGROUP(N+1)-1). Faces are ordered and unique within a group,
+  !! but may occur in multiple groups when overlap is allowed.
   subroutine get_face_groups(this, ngroup, xgroup, face)
 
     class(bndry_face_group_builder), intent(in) :: this
@@ -189,6 +175,10 @@ contains
 
   end subroutine get_face_groups
 
+  !! Return the mapped group representation. FACE is ordered and unique across
+  !! all groups, and the faces in group N are
+  !! FACE(MAP(XGROUP(N):XGROUP(N+1)-1)). MAP may contain repeated entries when
+  !! overlap is allowed.
   subroutine get_unique_face_groups(this, ngroup, xgroup, map, face)
 
     class(bndry_face_group_builder), intent(in) :: this

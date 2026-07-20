@@ -80,7 +80,7 @@ contains
   end subroutine add_complete
 
   subroutine compute_value(this, t, u, value)
-    class(vflux_bndry_func), intent(in) :: this
+    class(vflux_bndry_func), intent(inout) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
     real(r8), allocatable, intent(out) :: value(:)
@@ -106,7 +106,7 @@ contains
   end subroutine compute_value
 
   subroutine compute_deriv(this, t, u, deriv)
-    class(vflux_bndry_func), intent(in) :: this
+    class(vflux_bndry_func), intent(inout) :: this
     real(r8), intent(in) :: t
     real(r8), intent(in) :: u(:)
     real(r8), allocatable, intent(out) :: deriv(:)

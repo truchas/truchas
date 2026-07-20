@@ -26,7 +26,8 @@
 !! Evaluation results are returned through allocatable arrays ordered to match
 !! INDEX. The concrete implementation allocates VALUE and DERIV with one entry
 !! per managed face. DERIV gives the derivative with respect to the field value
-!! on that face.
+!! on that face. Evaluation may update private implementation state, such as an
+!! internal cache, but the returned arrays are independently owned results.
 !!
 
 module bndry_field_func_class
@@ -45,14 +46,14 @@ module bndry_field_func_class
   abstract interface
     subroutine compute_value(this, t, u, value)
       import r8, bndry_field_func
-      class(bndry_field_func), intent(in) :: this
+      class(bndry_field_func), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_deriv(this, t, u, deriv)
       import r8, bndry_field_func
-      class(bndry_field_func), intent(in) :: this
+      class(bndry_field_func), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: deriv(:)
     end subroutine
