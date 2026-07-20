@@ -120,7 +120,7 @@ contains
   contains
 
     subroutine add_interface_flux(bc)
-      class(intfc_field_func), intent(in) :: bc
+      class(intfc_field_func), intent(inout) :: bc
       integer :: j, n1, n2
       real(r8), allocatable :: value(:)
       call bc%compute_value(t, Tface, value)
@@ -187,7 +187,7 @@ contains
   contains
 
     subroutine add_interface_jacobian(bc)
-      class(intfc_field_func), intent(in) :: bc
+      class(intfc_field_func), intent(inout) :: bc
       integer :: j
       real(r8), allocatable :: deriv(:,:)
 

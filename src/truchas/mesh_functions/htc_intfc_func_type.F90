@@ -79,7 +79,7 @@ contains
   end subroutine add_complete
 
   subroutine compute_value(this, t, u, value)
-    class(htc_intfc_func), intent(in) :: this
+    class(htc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
@@ -105,7 +105,7 @@ contains
   end subroutine compute_value
 
   subroutine compute_deriv(this, t, u, deriv)
-    class(htc_intfc_func), intent(in) :: this
+    class(htc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: deriv(:,:)
     integer :: n, j

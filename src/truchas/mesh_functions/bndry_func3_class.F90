@@ -21,7 +21,9 @@
 !! match INDEX; the concrete implementation allocates them with one entry per
 !! managed entity. COMPUTE_DERIV returns derivatives with respect to the field
 !! in a one-field evaluation, while COMPUTE_DERIV1 returns derivatives with
-!! respect to U1 in a two-field evaluation.
+!! respect to U1 in a two-field evaluation. Evaluation may update private
+!! implementation state, such as an internal cache, but the returned arrays are
+!! independently owned results.
 !!
 
 module bndry_func3_class
@@ -43,28 +45,28 @@ module bndry_func3_class
   abstract interface
     subroutine compute_value_1_iface(this, t, u, value)
       import r8, bndry_func3
-      class(bndry_func3), intent(in) :: this
+      class(bndry_func3), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_value_2_iface(this, t, u1, u2, value)
       import r8, bndry_func3
-      class(bndry_func3), intent(in) :: this
+      class(bndry_func3), intent(inout) :: this
       real(r8), intent(in) :: t, u1(:), u2(:)
       real(r8), allocatable, intent(out) :: value(:)
     end subroutine
 
     subroutine compute_deriv_iface(this, t, u, deriv)
       import r8, bndry_func3
-      class(bndry_func3), intent(in) :: this
+      class(bndry_func3), intent(inout) :: this
       real(r8), intent(in) :: t, u(:)
       real(r8), allocatable, intent(out) :: deriv(:)
     end subroutine
 
     subroutine compute_deriv1_iface(this, t, u1, u2, deriv1)
       import r8, bndry_func3
-      class(bndry_func3), intent(in) :: this
+      class(bndry_func3), intent(inout) :: this
       real(r8), intent(in) :: t, u1(:), u2(:)
       real(r8), allocatable, intent(out) :: deriv1(:)
     end subroutine

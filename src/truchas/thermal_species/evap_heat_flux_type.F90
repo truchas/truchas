@@ -29,7 +29,7 @@ module evap_heat_flux_type
 contains
 
   subroutine compute_value(this, t, u, value)
-    class(evap_heat_flux), intent(in) :: this
+    class(evap_heat_flux), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: value(:)
     integer  :: j
@@ -48,7 +48,7 @@ contains
   end subroutine compute_value
 
   subroutine compute_deriv(this, t, u, deriv)
-    class(evap_heat_flux), intent(in) :: this
+    class(evap_heat_flux), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: deriv(:)
     integer  :: j

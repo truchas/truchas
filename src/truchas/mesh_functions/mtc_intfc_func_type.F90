@@ -84,7 +84,7 @@ contains
   end subroutine add_complete
 
   subroutine compute_value_1(this, t, u, value)
-    class(mtc_intfc_func), intent(in) :: this
+    class(mtc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
@@ -110,7 +110,7 @@ contains
   end subroutine compute_value_1
 
   subroutine compute_value_2(this, t, u1, u2, value)
-    class(mtc_intfc_func), intent(in) :: this
+    class(mtc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u1(:), u2(:)
     real(r8), allocatable, intent(out) :: value(:)
     integer :: n, j
@@ -137,7 +137,7 @@ contains
   end subroutine compute_value_2
 
   subroutine compute_deriv(this, t, u, deriv)
-    class(mtc_intfc_func), intent(in) :: this
+    class(mtc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u(:)
     real(r8), allocatable, intent(out) :: deriv(:,:)
     integer :: n, j
@@ -168,7 +168,7 @@ contains
   end subroutine compute_deriv
 
   subroutine compute_deriv1(this, t, u1, u2, deriv1)
-    class(mtc_intfc_func), intent(in) :: this
+    class(mtc_intfc_func), intent(inout) :: this
     real(r8), intent(in) :: t, u1(:), u2(:)
     real(r8), allocatable, intent(out) :: deriv1(:,:)
     integer :: n, j
