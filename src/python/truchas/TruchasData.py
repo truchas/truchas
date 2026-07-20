@@ -503,17 +503,21 @@ class TruchasData:
         return self._root["Simulations/MAIN/Series Data/Series {:d}".format(n)]
 
 
-    def write_restart(self, outfile, series_id):
+    def write_restart(self, outfile, series_id=None):
         """Write a restart file from given Truchas data object and series ID.
 
         :param outfile: The name of the restart file to be generated.
         :type outfile: str
 
         :param series_id: The ID of a series in the Truchas output file. Valid
-            values are in the range ``[1, TruchasData.num_series()]``.
+            values are in the range ``[1, TruchasData.num_series()]``. Default
+            is ``num_series()``.
 
         :type series_id: int
+
         """
+
+        if series_id is None: series_id = self.num_series()
 
         fw = fortran_write.FortranWrite(outfile)
         fields = self.field_names(series_id)

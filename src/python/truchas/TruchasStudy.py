@@ -221,7 +221,7 @@ class TruchasStudy:
 
 
     def run_inputs(self, template_input_file, replacements,
-                   restart_filename_generator=None):
+                   restart_filename_generator=None, restart_id_map={}):
         # Generate list of replacements and new input files (those not already in the database)
         print("Generating input decks ... ", end="", flush=True)
         new_replacements = [r for r in replacements if not self._tdb.exists(r)]
@@ -231,9 +231,10 @@ class TruchasStudy:
         if not self._generate_only:
             # Run Truchas on all new inputs
             if restart_filename_generator is None: restart_filename_generator = self._restart_file
-            args = [(self, i, r,
-                     (restart_filename_generator.format(self._tdb.identifier(r)))
-                     if restart_filename_generator is not None else None)
+            restart_filename = lambda r: restart_filename_generator.format(
+                restart_id_map.get(self._tdb.identifier(r), self._tdb.identifier(r))) \
+                if restart_filename_generator is not None else None
+            args = [(self, i, r, restart_filename(r))
                     for i, r in zip(new_input_files, new_replacements)]
             with multiprocessing.Pool(self._njobs) as pool:
                 pool.starmap(_run, args)
@@ -260,8 +261,20 @@ class TruchasStudy:
         """Given a default parameter set, and the a dictionary of variations for some/all of those
         parameters, return a single list of all unique replacements.
 
+        If given an empty variation, a dictionary with only the variations defined in the default is
+        returned.
+
         """
         param_set = {}
+        if not params_variation:
+            pvi = copy.deepcopy(params_default)
+            psi = [inputs for inputs in dict_product(pvi)]
+            for p in psi:
+                # frozenset appears to distinguish int from float,
+                # while identifier doesn't, preventing collisions.
+                identifier = TruchasDatabase.identifier(p) #frozenset(p.items())
+                param_set[identifier] = copy.deepcopy(p)
+
         for v, x in params_variation.items():
             pvi = copy.deepcopy(params_default)
             pvi[v] = x
@@ -272,7 +285,7 @@ class TruchasStudy:
                 identifier = TruchasDatabase.identifier(p) #frozenset(p.items())
                 param_set[identifier] = copy.deepcopy(p)
 
-        return param_set.values()
+        return list(param_set.values())
 
 
     def generate_inputs(self, template_input_file, replacements, use_working_dir=False):
