@@ -271,6 +271,7 @@ contains
       call TLS_fatal('COMPUTE_JOULE_HEAT: ' // errmsg)
     else if (stat > 0) then
       call TLS_warn('COMPUTE_JOULE_HEAT: ' // errmsg // '; continuing anyway.')
+      stat = 0
     end if
 
   end subroutine compute_joule_heat_tdme
