@@ -208,6 +208,7 @@ contains
     type(unstr_mesh), pointer :: this
 
     integer :: j, k, n, nnode, nface, ncell, pfirst
+    integer(c_int64_t) :: init_clock, clock_rate
     integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
     integer, allocatable :: xcnode(:), cnode(:), xcnhbr(:), cnhbr(:), part(:)
     integer, allocatable :: xcface(:), cface(:), cfpar(:), lnhbr(:,:), lface(:,:)
@@ -220,6 +221,9 @@ contains
 
     this => null()
 
+    if (is_IOP) call system_clock(init_clock, clock_rate)
+    if (is_IOP) call TLS_info('  beginning unstructured mesh instantiation' // timestamp_string())
+
     ncell = mesh%num_elem
     nnode = mesh%num_node
 
@@ -228,7 +232,7 @@ contains
 
     !! Generate the cell and link neighbor arrays.
     if (is_IOP) then
-      call TLS_info('  finding cell neighbors', TLS_VERB_NOISY)
+      call TLS_info('  finding cell neighbors' // timestamp_string(), TLS_VERB_NOISY)
       call get_cell_neighbor_array(xcnode, cnode, mesh%xlnode, mesh%lnode, xcnhbr, cnhbr, lnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
@@ -241,7 +245,7 @@ contains
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh cells', TLS_VERB_NOISY)
+      call TLS_info('  partitioning the mesh cells' // timestamp_string(), TLS_VERB_NOISY)
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
       call params%get('partitioner', string, default='chaco')
@@ -257,7 +261,9 @@ contains
         call read_partition(string, pfirst, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error reading cell partition: ' // errmsg
       else
+        call TLS_info('    beginning cell partitioner "' // trim(string) // '"' // timestamp_string())
         call partition_cells(params, xcnhbr, cnhbr, lnhbr, nPE, part, stat, errmsg)
+        if (stat == 0) call TLS_info('    completed cell partitioner "' // trim(string) // '"' // timestamp_string())
         if (stat /= 0) errmsg = 'error computing cell partition: ' // errmsg
       end if
     end if
@@ -288,7 +294,7 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NOISY)
+      call TLS_info('  partitioning the mesh nodes' // timestamp_string(), TLS_VERB_NOISY)
       call partition_facets(xcnode, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder (mesh%coord, node_perm)
@@ -312,16 +318,16 @@ contains
       end if
       deallocate(perm)
       call TLS_info('    done partitioning mesh nodes: total=' // i_to_c(nnode) // &
-          ', max/partition=' // i_to_c(maxval(node_psize)) // memory_string())
+          ', max/partition=' // i_to_c(maxval(node_psize)) // diagnostic_string())
     end if
 
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
-      call TLS_info('  numbering the mesh faces', TLS_VERB_NOISY)
+      call TLS_info('  numbering the mesh faces' // timestamp_string(), TLS_VERB_NOISY)
       call label_mesh_faces(xcnode, cnode, mesh%xlnode, mesh%lnode, nface, xcface, cface, lface)
       call TLS_info('    done numbering mesh faces: total=' // i_to_c(nface) // &
-          ', cell-face refs=' // i_to_c(size(cface)) // memory_string())
+          ', cell-face refs=' // i_to_c(size(cface)) // diagnostic_string())
       !! Extract the relative face orientation info.
       cfpar = 0
       do j = 1, mesh%num_elem
@@ -337,7 +343,7 @@ contains
         end associate
       end do
       !! Partition and order the faces.
-      call TLS_info('  partitioning the mesh faces', TLS_VERB_NOISY)
+      call TLS_info('  partitioning the mesh faces' // timestamp_string(), TLS_VERB_NOISY)
       allocate(perm(nface))
       call partition_facets(xcface, cface, cell_psize, face_psize, perm)
       call invert_perm(perm)
@@ -349,7 +355,7 @@ contains
       end do
       deallocate(perm)
       call TLS_info('    done partitioning mesh faces: max/partition=' // i_to_c(maxval(face_psize)) // &
-          memory_string())
+          diagnostic_string())
     else
       allocate(xcface(1), cface(0), lface(2,0))
       xcface(1) = 1
@@ -357,22 +363,22 @@ contains
 
     !! Identify off-process ghost cells to include with each partition.
     call start_timer('ghost-cells')
-    call TLS_info('  identifying off-process ghost cells', TLS_VERB_NOISY)
+    if (is_IOP) call TLS_info('  identifying off-process ghost cells' // timestamp_string(), TLS_VERB_NOISY)
     call select_ghost_cells(cell_psize, xcnhbr, cnhbr, xcnode, cnode, node_psize, &
                             xcface, cface, face_psize, lnhbr, offP_size, offP_index)
     call stop_timer('ghost-cells')
     if (is_IOP) call TLS_info('    done identifying off-process ghost cells: total=' // &
-        i_to_c(sum(offP_size)) // ', max/partition=' // i_to_c(maxval(offP_size)) // memory_string())
+        i_to_c(sum(offP_size)) // ', max/partition=' // i_to_c(maxval(offP_size)) // diagnostic_string())
     deallocate(xcnhbr, cnhbr)
 
     !! Begin initializing the UNSTR_MESH result object.
-    call TLS_info('  generating parallel mesh structure', TLS_VERB_NOISY)
+    if (is_IOP) call TLS_info('  generating parallel mesh structure' // timestamp_string(), TLS_VERB_NOISY)
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
     call this%cell_imap%init(cell_psize, offP_size, offP_index)
     deallocate(offP_size, offP_index)
-    call TLS_info('    done initializing cell index map' // memory_string())
+    if (is_IOP) call TLS_info('    done initializing cell index map' // diagnostic_string())
 
     this%ncell = this%cell_imap%local_size
     this%ncell_onP = this%cell_imap%onp_size
@@ -382,18 +388,19 @@ contains
     call this%cell_imap%scatter(cell_perm, this%xcell)
     call this%cell_imap%gather_offp(this%xcell)
     deallocate(cell_perm)
-    call TLS_info('    done distributing cell permutation' // memory_string())
+    if (is_IOP) call TLS_info('    done distributing cell permutation' // diagnostic_string())
 
     !! Create the node index partition and localize the global CNODE array,
     !! which identifies off-process nodes to augment the partition with.
     call init_cell_node_data(this, node_psize, xcnode, cnode)
-    call TLS_info('    done initializing cell-node data' // memory_string())
+    if (is_IOP) call TLS_info('    done initializing cell-node data' // diagnostic_string())
 
     !! Distribute the node permutation array; gives mapping to the external node number.
     allocate(this%xnode(this%nnode))
     call this%node_imap%scatter(node_perm, this%xnode)
     call this%node_imap%gather_offp(this%xnode)
     deallocate(node_perm)
+    if (is_IOP) call TLS_info('    done distributing node permutation' // diagnostic_string())
 
     !! Distribute the node parent array (TEMPORARY)
     have_parent_node = allocated(mesh%parent_node)
@@ -404,31 +411,35 @@ contains
       call this%node_imap%scatter(mesh%parent_node, this%parent_node)
       call this%node_imap%gather_offp(this%parent_node)
     end if
+    if (is_IOP) call TLS_info('    done distributing node parent data' // diagnostic_string())
 
     !! Create the face index partition and localize the global CFACE array,
     !! which identifies off-process faces to augment the partition with.
     call init_cell_face_data(this, face_psize, xcface, cface, cfpar)
     deallocate(cfpar)
-    call TLS_info('    done initializing cell-face data' // memory_string())
+    if (is_IOP) call TLS_info('    done initializing cell-face data' // diagnostic_string())
 
     !! Initialize the interface link data components.
     call init_link_data(this, mesh, lnhbr, lface)
     deallocate(lnhbr, lface)
-    call TLS_info('    done initializing link data' // memory_string())
+    if (is_IOP) call TLS_info('    done initializing link data' // diagnostic_string())
 
     !! Initialize the secondary face-node indexing array.
     call init_face_node_data(this)
     call init_face_cell_data(this)
+    if (is_IOP) call TLS_info('    done initializing face connectivity' // diagnostic_string())
 
     !! Generate the cell neighbor data for each subdomain.
     call get_cell_neighbor_array(this%xcnode, this%cnode, this%xcnhbr, this%cnhbr, stat)
     INSIST(stat == 0)
+    if (is_IOP) call TLS_info('    done generating local cell neighbors' // diagnostic_string())
 
     !! Initialize the node, face, and cell set data.
     call init_face_set_data(this, mesh, xcface, cface)
     call init_node_set_data(this, mesh)
     call init_cell_set_data(this, mesh)
     deallocate(xcface, cface)
+    if (is_IOP) call TLS_info('    done initializing mesh sets' // diagnostic_string())
 
     !! Scale and rotate the node coordinates and distribute.
     if (is_IOP) then
@@ -451,30 +462,46 @@ contains
     allocate(this%x(3,this%nnode))
     call this%node_imap%scatter(mesh%coord, this%x)
     call this%node_imap%gather_offp(this%x)
+    if (is_IOP) call TLS_info('    done distributing coordinates' // diagnostic_string())
 
     !! Initialize the mesh geometry data components.
     allocate(this%volume(this%ncell), this%normal(3,this%nface), this%area(this%nface))
     call this%compute_geometry
+    if (is_IOP) call TLS_info('  done instantiating unstructured mesh' // diagnostic_string(), TLS_VERB_NOISY)
 
   contains
 
-    function memory_string() result(string)
+    function diagnostic_string() result(string)
       character(:), allocatable :: string
       integer(c_int64_t) :: vsize, rsize, dsize
 
       call get_process_size(vsize, rsize, dsize)
       if (vsize == 0) then
-        string = ', memory unavailable'
+        string = timestamp_string() // ', memory unavailable'
       else
         block
           character(96) :: buffer
           write(buffer,'(a,f0.1,a,f0.1,a,f0.1,a)') &
               ', memory: vsize=', real(vsize,r8)/1024, ' MB, rsize=', real(rsize,r8)/1024, &
               ' MB, dsize=', real(dsize,r8)/1024, ' MB'
-          string = trim(buffer)
+          string = timestamp_string() // trim(buffer)
         end block
       end if
-    end function memory_string
+    end function diagnostic_string
+
+    function timestamp_string() result(string)
+      character(:), allocatable :: string
+      integer :: values(8)
+      integer(c_int64_t) :: clock
+      character(96) :: buffer
+
+      call date_and_time(values=values)
+      call system_clock(clock)
+      write(buffer,'(a,i4.4,a,i2.2,a,i2.2,a,i2.2,a,i2.2,a,i2.2,a,f0.3,a)') &
+          ' [', values(1), '-', values(2), '-', values(3), ' ', values(5), ':', values(6), ':', values(7), &
+          ', elapsed=', real(clock-init_clock,r8)/real(clock_rate,r8), ' s]'
+      string = trim(buffer)
+    end function timestamp_string
 
     subroutine rotate_coord(angle, x, y)
       real(r8), intent(in) :: angle
