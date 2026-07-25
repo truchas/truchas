@@ -1,0 +1,11 @@
+diff --git a/cmake/mumps_project.cmake b/cmake/mumps_project.cmake
+--- a/cmake/mumps_project.cmake
++++ b/cmake/mumps_project.cmake
+@@ -23,6 +23,7 @@ else()
+                -D CMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
+                -D BUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+ 	       -D CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
++               -D LAPACK_VENDOR:STRING=OpenBLAS
+ 	       -D BUILD_SINGLE:BOOL=OFF
+ 	       -D BUILD_COMPLEX16:BOOL=ON
+ 	       -D metis:BOOL=ON
