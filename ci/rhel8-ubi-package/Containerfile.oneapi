@@ -1,0 +1,13 @@
+FROM registry.access.redhat.com/ubi8/ubi:8.10
+
+RUN dnf -y install \
+      bzip2 bzip2-devel curl diffutils file findutils gcc gcc-c++ gcc-gfortran \
+      git hostname libcurl-devel libffi-devel make m4 openssl-devel patch tar \
+      which wget zlib-devel && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf -y install patchelf && \
+    dnf clean all
+
+RUN useradd --create-home --uid 1000 swuser
+USER swuser
+WORKDIR /home/swuser

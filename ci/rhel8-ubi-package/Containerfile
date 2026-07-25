@@ -1,0 +1,32 @@
+FROM registry.access.redhat.com/ubi8/ubi:8.10
+
+RUN dnf -y install \
+      bzip2 bzip2-devel curl diffutils file findutils gcc gcc-c++ git hostname \
+      libcurl-devel libffi-devel make m4 openssl-devel patch \
+      tar which wget zlib-devel && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf -y install patchelf && \
+    dnf clean all
+
+COPY intel-archive.tgz /tmp/intel/
+COPY intel-silent.cfg /tmp/intel/
+
+# A single license file is supplied at /tmp/intel-license/license.lic while
+# building. /opt/intel/licenses must remain writable for the installer.
+RUN mkdir -p /tmp/intel/install-tmp /tmp/intel-license && \
+    tar -xzf /tmp/intel/intel-archive.tgz -C /tmp/intel && \
+    installer=$(find /tmp/intel -maxdepth 2 -type f -name install.sh -print -quit) && \
+    test -n "${installer}" && \
+    "${installer}" \
+      --tmp-dir /tmp/intel/install-tmp --silent /tmp/intel/intel-silent.cfg && \
+    intel_root=$(find /opt/intel -maxdepth 1 -type d -name 'compilers_and_libraries_2020.*' -print -quit) && \
+    test -n "${intel_root}" && \
+    test -e /opt/intel/bin || ln -s "$(basename "${intel_root}")/linux/bin" /opt/intel/bin && \
+    mkdir -p /opt/intel/lib && \
+    test -e /opt/intel/lib/intel64 || ln -s "../../$(basename "${intel_root}")/linux/compiler/lib/intel64" /opt/intel/lib/intel64 && \
+    test -x "${intel_root}/linux/bin/intel64/ifort" && \
+    rm -rf /tmp/intel
+
+RUN useradd --create-home --uid 1000 swuser
+USER swuser
+WORKDIR /home/swuser
