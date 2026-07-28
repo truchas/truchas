@@ -1,0 +1,10 @@
+diff --git a/cmake/fvtkhdf_project.cmake b/cmake/fvtkhdf_project.cmake
+--- a/cmake/fvtkhdf_project.cmake
++++ b/cmake/fvtkhdf_project.cmake
+@@ -23,5 +23,6 @@ else()
+                -D CMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+                -D CMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}
+                -D BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
++               -D CMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}
+ 	       -D USE_MPI_F08:BOOL=NO
+                -D ENABLE_STD_MOD_PROC_NAME=${ENABLE_STD_MOD_PROC_NAME}

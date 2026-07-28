@@ -1,0 +1,57 @@
+FROM registry.access.redhat.com/ubi8/ubi:8.10
+
+ARG JOBS
+
+RUN dnf -y install bzip2 bzip2-devel ca-certificates curl diffutils file findutils \
+      gcc gcc-c++ gcc-gfortran git libcurl-devel libffi-devel make m4 ninja-build \
+      openssl-devel patch procps-ng tar which wget zlib-devel && \
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    dnf -y install patchelf && \
+    dnf clean all
+
+# Keep the compiler version fixed even though the Intel repository also serves
+# newer releases.
+RUN printf '%s\n' \
+      '[oneAPI]' \
+      'name=Intel oneAPI repository' \
+      'baseurl=https://yum.repos.intel.com/oneapi' \
+      'enabled=1' \
+      'gpgcheck=1' \
+      'repo_gpgcheck=1' \
+      'gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB' \
+      >/etc/yum.repos.d/oneAPI.repo && \
+    dnf -y install \
+      intel-oneapi-compiler-dpcpp-cpp-2026.0-2026.0.0-947 \
+      intel-oneapi-compiler-fortran-2026.0-2026.0.0-947 \
+      intel-oneapi-mpi-devel-2021.18.1-9 && \
+    dnf clean all
+
+RUN groupadd --gid 1000 swuser && \
+    useradd --create-home --uid 1000 --gid 1000 swuser
+
+COPY build-dependencies.sh /usr/local/bin/build-truchas-dependencies
+COPY mumps-openblas.patch /usr/local/share/truchas-package/mumps-openblas.patch
+COPY fvtkhdf-prefix.patch /usr/local/share/truchas-package/fvtkhdf-prefix.patch
+RUN JOBS=${JOBS} HOME=/home/swuser su -s /bin/bash swuser -c /usr/local/bin/build-truchas-dependencies
+
+RUN mkdir -p /opt/truchas-package && \
+    { \
+      printf 'UBI=8.10\n'; \
+      printf 'oneAPI=2026.0.0-947\n'; \
+      printf 'IntelMPI=2021.18.1-9\n'; \
+      printf 'OpenBLAS=0.3.26\n'; \
+      printf 'TRUCHAS_TPL=fb5ef5e38\n'; \
+    } >/opt/truchas-package/versions && \
+    HOME=/home/swuser su -s /bin/bash swuser -c 'source /opt/intel/oneapi/setvars.sh --force >/dev/null && ifx --version && icx --version && mpiexec -info' \
+      >/opt/truchas-package/toolchain-info.txt
+
+ENV HOME=/home/swuser
+ENV TRUCHAS_TPL_DIR=/home/swuser/ext
+ENV PATH=/opt/intel/oneapi/mpi/2021.18/bin:/opt/intel/oneapi/compiler/2026.0/bin:/home/swuser/ext/cmake/bin:/home/swuser/ext/bin:/home/swuser/ext/python-install/bin:${PATH}
+ENV I_MPI_ROOT=/opt/intel/oneapi/mpi/2021.18
+ENV LIBRARY_PATH=/opt/intel/oneapi/mpi/2021.18/lib
+ENV FI_PROVIDER_PATH=/opt/intel/oneapi/mpi/2021.18/opt/mpi/libfabric/lib/prov
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/mpi/2021.18/lib:/opt/intel/oneapi/mpi/2021.18/opt/mpi/libfabric/lib:/opt/intel/oneapi/compiler/2026.0/lib:/opt/intel/oneapi/compiler/2026.0/opt/compiler/lib:/home/swuser/ext/lib:/home/swuser/ext/lib64
+ENV CC=mpiicx CXX=mpiicpx FC=mpiifx
+WORKDIR /home/swuser
+USER swuser
