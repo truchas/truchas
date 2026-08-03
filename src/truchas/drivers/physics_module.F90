@@ -22,6 +22,7 @@ module physics_module
 
   logical, public, save :: heat_transport = .false.
   logical, public, save :: species_transport = .false.
+  logical, public, save :: alloy_solidification = .false.
   integer, public, save :: number_of_species = 0
   logical, public, save :: flow = .false.
   logical, public, save :: prescribed_flow = .false.

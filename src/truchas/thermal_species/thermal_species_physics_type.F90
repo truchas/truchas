@@ -28,6 +28,7 @@ module thermal_species_physics_type
   use parameter_list_type
   use thermal_species_solver_class
   use htsd_solver_type, only: htsd_solver
+  use alloy_solver_type, only: alloy_solver
   use fht_solver_type, only: fht_solver
   use ht_solver_type, only: ht_solver
   use sd_solver_type, only: sd_solver
@@ -79,6 +80,7 @@ module thermal_species_physics_type
     enumerator :: SOLVER_FHT
     enumerator :: SOLVER_HT
     enumerator :: SOLVER_SD
+    enumerator :: SOLVER_ALLOY
   end enum
 
 contains
@@ -107,6 +109,8 @@ contains
       solver_from_name = SOLVER_SD
     case ('htsd')
       solver_from_name = SOLVER_HTSD
+    case ('alloy')
+      solver_from_name = SOLVER_ALLOY
     case default
       INSIST(.false.)
     end select
@@ -119,7 +123,14 @@ contains
     character(*), intent(in) :: integrator
 
     runtime_solver = declared_solver
-    if (this%have_void .and. this%have_fluid_flow) then
+    if (declared_solver == SOLVER_ALLOY) then
+      if (this%have_void) then
+        call TLS_fatal ('INIT: alloy solidification does not support VOID material.')
+      end if
+      if (integrator /= 'adaptive-bdf2') then
+        call TLS_fatal ('INIT: alloy solidification requires adaptive-bdf2 stepping.')
+      end if
+    else if (this%have_void .and. this%have_fluid_flow) then
       !! Transient void uses the special FHT solver, which is only defined for
       !! heat transfer without species transport.
       if (declared_solver /= SOLVER_HT) then
@@ -148,6 +159,12 @@ contains
     case (SOLVER_SD)
       this%have_heat_transport = .false.
       this%have_species_transport = .true.
+    case (SOLVER_ALLOY)
+      this%have_heat_transport = .true.
+      !! Alloy solute is an internal phase-change state, not the package's
+      !! conventional SPECIES_TRANSPORT field.  Keeping this false avoids the
+      !! ordinary species initialization and material-fraction update paths.
+      this%have_species_transport = .false.
     case default
       INSIST(.false.)
     end select
@@ -159,7 +176,7 @@ contains
     integer, intent(in) :: solver
     type(parameter_list), pointer, intent(in) :: solvers_params
 
-    type(parameter_list), pointer :: htsd_params, htsd_model_params
+    type(parameter_list), pointer :: htsd_params, htsd_model_params, alloy_params
     type(parameter_list), pointer :: sd_params, species_model_params
 
     select case (solver)
@@ -172,10 +189,13 @@ contains
       sd_params => solvers_params%sublist('species')
       species_model_params => sd_params%sublist('model')
       call species_model_params%get('num-species', this%num_species)
+    case (SOLVER_ALLOY)
+      alloy_params => solvers_params%sublist('alloy')
+      call alloy_params%get('num-comp', this%num_species)
     case default
       this%num_species = 0
     end select
-    this%have_species_transport = (this%num_species > 0)
+    this%have_species_transport = (this%num_species > 0 .and. solver /= SOLVER_ALLOY)
 
   end subroutine set_species_count
 
@@ -185,7 +205,7 @@ contains
     type(parameter_list), pointer, intent(in) :: solvers_params
     type(parameter_list), pointer, intent(out) :: solver_params
 
-    type(parameter_list), pointer :: ht_params, sd_params, htsd_params
+    type(parameter_list), pointer :: ht_params, sd_params, htsd_params, alloy_params
 
     select case (declared_solver)
     case (SOLVER_HT)
@@ -197,6 +217,9 @@ contains
     case (SOLVER_HTSD)
       htsd_params => solvers_params%sublist('htsd')
       solver_params => htsd_params%sublist('solver')
+    case (SOLVER_ALLOY)
+      alloy_params => solvers_params%sublist('alloy')
+      solver_params => alloy_params
     case default
       INSIST(.false.)
     end select
@@ -212,7 +235,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: ht_params, sd_params, fht_params, htsd_params
+    type(parameter_list), pointer :: ht_params, sd_params, fht_params, htsd_params, alloy_params
 
     select case (solver_kind)
     case (SOLVER_HTSD)
@@ -245,6 +268,14 @@ contains
       type is (ht_solver)
         ht_params => solvers_params%sublist('heat')
         call solver%init(this%mesh, this%mmf, ht_params, stat, errmsg)
+      end select
+
+    case (SOLVER_ALLOY)
+      allocate(alloy_solver :: this%solver)
+      select type (solver => this%solver)
+      type is (alloy_solver)
+        alloy_params => solvers_params%sublist('alloy')
+        call solver%init(this%mesh, this%mmf, alloy_params, stat, errmsg)
       end select
 
     case default
@@ -332,6 +363,7 @@ contains
 
     call params%get('declared-solver', declared_solver_name)
     declared_solver = solver_from_name(declared_solver_name)
+    if (declared_solver == SOLVER_ALLOY) this%have_phase_change = .false.
     solvers_params => params%sublist('solvers')
     call get_declared_solver_params(declared_solver, solvers_params, solver_params)
 
@@ -459,6 +491,14 @@ contains
 
     !! Update MATL in contexts that can modify the phase distribution.
     if (this%have_phase_change) call update_phase_fractions
+    select type (solver => this%solver)
+    type is (alloy_solver)
+      block
+        real(r8), pointer :: liquid_frac(:)
+        call solver%get_liq_frac_view(liquid_frac)
+        call update_matl_from_alloy(this%mmf, liquid_frac)
+      end block
+    end select
 
     !! Update Truchas data structures to reflect the new HT/SD solution.
     if (this%have_heat_transport) then
@@ -641,6 +681,8 @@ contains
       call solver%update_moving_vf
     type is (sd_solver)
       !! Species-only transport has no view-factor radiation state.
+    type is (alloy_solver)
+      !! Alloy solidification has no view-factor radiation state.
     class default
       INSIST(.false.)
     end select
@@ -665,6 +707,8 @@ contains
       call solver%add_moving_vf_events(eventq, rank)
     type is (sd_solver)
       !! Species-only transport has no view-factor radiation events.
+    type is (alloy_solver)
+      !! Alloy solidification has no view-factor radiation events.
     class default
       INSIST(.false.)
     end select

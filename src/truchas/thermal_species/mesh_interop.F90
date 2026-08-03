@@ -60,7 +60,7 @@ module mesh_interop
   implicit none
   private
 
-  public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf
+  public :: mmf_init, update_mmf_from_matl, update_matl_from_mmf, update_matl_from_alloy
   public :: void_is_present
 
 contains
@@ -350,5 +350,39 @@ contains
     call define_matl (vof)
 
   end subroutine update_matl_from_mmf
+
+  subroutine update_matl_from_alloy (mmf, liquid_frac)
+    !! Update MATL phase volume fractions from the alloy solver's liquid fraction.
+    use legacy_matl_api, only: define_matl
+
+    type(matl_mesh_func), intent(inout) :: mmf
+    real(r8), intent(in) :: liquid_frac(:)
+
+    integer :: p1, p2
+    real(r8), pointer :: vfrac(:,:)
+    real(r8), allocatable :: vof(:,:)
+    class(base_mesh), pointer :: mesh
+
+    mesh => mmf%mesh_ptr()
+    ASSERT(size(liquid_frac) >= mesh%ncell_onP)
+    ASSERT(.not. matl_model%have_void)
+    ASSERT(matl_model%nmatl_real == 1)
+
+    call matl_model%get_matl_phase_index_range(1, p1, p2)
+    ASSERT(p2 == p1 + 1)
+
+    vfrac => mmf%reg_vol_frac(1)
+    allocate(vof(matl_model%nphase, mesh%ncell_onP))
+    vof = 0.0_r8
+    if (associated(vfrac)) then
+      ASSERT(size(vfrac, dim=2) == 1)
+      vof(p1,:) = (1.0_r8 - liquid_frac(:mesh%ncell_onP))*vfrac(:mesh%ncell_onP,1)
+      vof(p2,:) = liquid_frac(:mesh%ncell_onP)*vfrac(:mesh%ncell_onP,1)
+    else
+      vof(p1,:) = 1.0_r8 - liquid_frac(:mesh%ncell_onP)
+      vof(p2,:) = liquid_frac(:mesh%ncell_onP)
+    end if
+    call define_matl(vof)
+  end subroutine update_matl_from_alloy
 
 end module mesh_interop
