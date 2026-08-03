@@ -70,12 +70,14 @@ contains
   subroutine read_params(lun, heat_transport, species_transport, number_of_species)
 
     use diffusion_solver_namelist
+    use alloy_namelist
+    use physics_module, only: alloy_solidification
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
     integer, intent(in) :: lun
     logical, intent(in) :: heat_transport, species_transport
     integer, intent(in) :: number_of_species
-    type(parameter_list), pointer :: solvers_params, ht_params, sd_params, htsd_params
+    type(parameter_list), pointer :: solvers_params, ht_params, sd_params, htsd_params, alloy_params
     type(parameter_list), pointer :: heat_model_params, species_model_params
     type(parameter_list), pointer :: htsd_model_params, solver_params
     integer :: system_type
@@ -84,6 +86,16 @@ contains
     if (associated(thermal_species_params)) deallocate(thermal_species_params)
     allocate(thermal_species_params)
     solvers_params => thermal_species_params%sublist('solvers')
+
+    if (alloy_solidification) then
+      system_type = TS_THERMAL_SYS
+      call thermal_species_params%set('declared-solver', 'alloy')
+      alloy_params => solvers_params%sublist('alloy')
+      call read_diffusion_solver_namelist(lun, system_type, 0, alloy_params)
+      call read_alloy_namelist(lun, alloy_params)
+      call read_alloy_heat_namelists(lun, alloy_params)
+      return
+    end if
 
     system_type = thermal_species_system_type(heat_transport, species_transport, number_of_species)
     select case (system_type)
@@ -124,6 +136,18 @@ contains
     end if
 
   end subroutine read_params
+
+  subroutine read_alloy_heat_namelists(lun, params)
+    use thermal_bc_namelist
+    use thermal_source_namelist
+    integer, intent(in) :: lun
+    type(parameter_list), pointer, intent(in) :: params
+    type(parameter_list), pointer :: bc_params, source_params
+    bc_params => params%sublist('bc')
+    call read_thermal_bc_namelists(lun, bc_params)
+    source_params => params%sublist('sources')
+    call read_thermal_source_namelists(lun, source_params)
+  end subroutine read_alloy_heat_namelists
 
   integer function thermal_species_system_type(heat_transport, species_transport, number_of_species)
     logical, intent(in) :: heat_transport, species_transport

@@ -202,12 +202,16 @@ contains
   !! takes precedence over that associated with the parent material. If
   !! neither the phase or its parent material has the property, FUNC is
   !! returned unallocated.
-  recursive subroutine get_prop_func(this, name, func)
+  recursive subroutine get_prop_func(this, name, func, strict)
     class(phase), intent(in) :: this
     character(*), intent(in) :: name
     class(scalar_func), allocatable, intent(out) :: func
+    logical, intent(in), optional :: strict
     call this%prop_map%lookup(name, func)
     if (allocated(func)) return ! else check the parent material phase
+    if (present(strict)) then
+      if (strict) return
+    end if
     if (associated(this%matl)) call this%matl%get_prop(name, func)
   end subroutine
 

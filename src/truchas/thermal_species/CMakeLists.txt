@@ -31,6 +31,16 @@ target_sources(truchas PRIVATE
   htsd_solver_type.F90
   htsd_ic_solver_type.F90
   sd_solver_type.F90
+  alloy_back_diff_type.F90
+  alloy_lever_rule_type.F90
+  alloy_vector_type.F90
+  alloy_model_type.F90
+  alloy_norm_type.F90
+  alloy_precon_type.F90
+  alloy_idaesol_model_type.F90
+  alloy_ic_solver_type.F90
+  alloy_solver_type.F90
+  alloy_namelist.F90
   ht_vector_type.F90
   ht_model_type.F90
   ht_norm_type.F90
