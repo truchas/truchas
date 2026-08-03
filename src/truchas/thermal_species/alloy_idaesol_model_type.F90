@@ -94,21 +94,17 @@ contains
     call stop_timer('precon apply')
   end subroutine
 
-  subroutine compute_precon(this, t, u, dt)
+  subroutine compute_precon(this, t, u, udot, dt)
     class(alloy_idaesol_model) :: this
     real(r8), intent(in) :: t, dt
-    class(vector), intent(inout) :: u
-    type(alloy_vector) :: udot
+    class(vector), intent(inout) :: u, udot
     call start_timer('precon compute')
     select type (u)
     class is (alloy_vector)
-      !! The refactored IDAESOL interface deliberately does not expose an
-      !! iterate derivative here.  The alloy Jacobian only needs it for the
-      !! optional back-diffusion algebraic block; a zero derivative gives a
-      !! consistent first-order preconditioner for that block.
-      call udot%init(u)
-      call udot%setval(0.0_r8)
-      call this%precon%compute(this%conc, this%conc_dot, t, u, udot, dt)
+      select type (udot)
+      class is (alloy_vector)
+        call this%precon%compute(this%conc, this%conc_dot, t, u, udot, dt)
+      end select
     end select
     call stop_timer('precon compute')
   end subroutine

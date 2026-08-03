@@ -103,10 +103,10 @@ contains
     call stop_timer('precon apply')
   end subroutine
 
-  subroutine compute_precon(this, t, u, dt)
+  subroutine compute_precon(this, t, u, udot, dt)
     class(ht_idaesol_model) :: this
     real(r8), intent(in) :: t, dt
-    class(vector), intent(inout) :: u
+    class(vector), intent(inout) :: u, udot
     call start_timer('precon compute')
     select type (u)
     class is (ht_vector)

@@ -101,6 +101,11 @@ contains
       end do
     case (2) ! Wang-Beckermann
       do j = 1, this%mesh%ncell
+        !! These derivative terms make this a more complete DAE Jacobian.
+        !! Empirically, however, alloy2 required slightly less nonlinear
+        !! work when this preconditioner used zero derivatives.  Consider
+        !! omitting them if a broader Wang-Beckermann test set confirms that
+        !! behavior.
         call this%model%back_diff%compute_f_jac(C(:,j), Cdot(:,j), &
             u%lsf(:,j), u%lf(j), u%hc(j), u%tc(j), udot%lsf(:,j), udot%lf(j), dt, this%jac2(j))
         call this%jac2(j)%lu_factor
