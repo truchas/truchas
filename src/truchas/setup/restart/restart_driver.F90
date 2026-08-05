@@ -230,6 +230,7 @@ contains
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use restart_utilities, only: read_var, read_dist_array, skip_records, halt
+    use parallel_communication, only: global_sum
 
     integer,  intent(in),  optional :: pcell(:)
     real(r8), intent(out), optional :: phi(:,:)
@@ -248,7 +249,7 @@ contains
           write(errmsg,'(a,i0,a,i0)') 'RESTART_SPECIES: expecting ', m, ' species, found ', n
           call halt (errmsg)
         end if
-        INSIST(size(phi,dim=1) == restart_ncells)
+        INSIST(global_sum(size(phi,dim=1)) == restart_ncells)
         do i = 1, n
           call read_dist_array (unit, phi(:,i), pcell, 'RESTART_SPECIES: error reading PHI records')
         end do
