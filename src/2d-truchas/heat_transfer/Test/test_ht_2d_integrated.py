@@ -83,11 +83,12 @@ def main():
         expected_temperature = {
             "uniform": 2.0,
             "source": 2.01,
+            "nonlinear": (1.0 + 2.0e-2) ** 0.5 - 1.0,
         }
         if case in expected_temperature:
             expected = expected_temperature[case]
             error = max(abs(value - expected) for value in temperature)
-            tolerance = 1.0e-9 if case == "source" else 1.0e-10
+            tolerance = 1.0e-8 if case == "nonlinear" else (1.0e-9 if case == "source" else 1.0e-10)
             if error > tolerance:
                 print(f"FAIL: {case} temperature error {error:g}")
                 return 1
