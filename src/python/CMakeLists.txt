@@ -24,6 +24,7 @@ set(PYTHON_SCRIPT_FILES
   truchas/truchas_geometry.py
   truchas/TruchasData.py
   truchas/TruchasEMData.py
+  truchas/TruchasVTKHDFData.py
   truchas/TruchasEnvironment.py
   truchas/TruchasTest.py
   truchas/TruchasDatabase.py

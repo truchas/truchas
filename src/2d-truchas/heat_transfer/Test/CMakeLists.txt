@@ -3,6 +3,7 @@ project(HeatTransfer2DTest Fortran)
 include(CTest)
 
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_python_package(vtk 9.0)
 
 include_directories(${HeatTransfer2D_BINARY_DIR})
 
