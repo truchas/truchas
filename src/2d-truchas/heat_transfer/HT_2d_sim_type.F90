@@ -84,9 +84,8 @@ contains
     type(material_database) :: matl_db
     class(scalar_func), allocatable :: f
     character(:), allocatable :: errmsg, context
-    real(r8), allocatable :: temp(:), xmin(:), xmax(:)
-    integer, allocatable :: nx(:)
-    real(r8) :: eps, rel_tol
+    real(r8), allocatable :: temp(:)
+    real(r8) :: rel_tol
     integer :: stat, max_itr
 
     call start_timer('initialization')
@@ -100,15 +99,8 @@ contains
     if (params%is_sublist('mesh')) then
       plist => params%sublist('mesh')
       context = 'processing ' // plist%path() // ': '
-      call plist%get('xmin', xmin, stat=stat, errmsg=errmsg)
+      this%mesh => new_unstr_2d_mesh(plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
-      call plist%get('xmax', xmax, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
-      call plist%get('nx', nx, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
-      call plist%get('eps', eps, default=0.0_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
-      this%mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps)
     else
       call TLS_fatal('missing "mesh" sublist parameter')
     end if
