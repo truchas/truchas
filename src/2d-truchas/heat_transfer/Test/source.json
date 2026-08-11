@@ -9,9 +9,8 @@
         }
     },
     "mesh": {
-        "xmin": [0.0, 0.0],
-        "xmax": [1.0, 1.0],
-        "nx": [8, 8]
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
     },
     "ht-model": {
         "bc": {

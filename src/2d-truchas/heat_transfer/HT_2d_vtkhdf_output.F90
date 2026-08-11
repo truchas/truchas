@@ -25,7 +25,7 @@ contains
   subroutine open(this, mesh, stat, errmsg)
 
     use parallel_communication, only: comm
-    use vtkhdf_vtk_cell_types, only: VTK_QUAD
+    use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(HT_2d_vtkhdf_writer), intent(out) :: this
     type(unstr_2d_mesh), intent(in) :: mesh
@@ -34,6 +34,7 @@ contains
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:)
+    integer :: j, nnode
     integer(int8), allocatable :: types(:)
 
     call this%file%create('out.vtkhdf', comm, stat, errmsg)
@@ -45,7 +46,21 @@ contains
     x(:2,:) = mesh%x(:, :mesh%nnode)
     xcnode = mesh%cstart(:mesh%ncell_onP+1)
     cnode = mesh%cnode(:mesh%cstart(mesh%ncell_onP+1)-1)
-    types = spread(VTK_QUAD, dim=1, ncopies=mesh%ncell_onP)
+    allocate(types(mesh%ncell_onP))
+    do j = 1, mesh%ncell_onP
+      nnode = xcnode(j+1) - xcnode(j)
+      select case (nnode)
+      case (3)
+        types(j) = VTK_TRIANGLE
+      case (4)
+        types(j) = VTK_QUAD
+      case default
+        stat = 1
+        errmsg = 'unsupported 2D cell topology'
+        call this%file%close()
+        return
+      end select
+    end do
     call this%file%write_mesh(this%block, x, cnode, xcnode, types)
 
     this%enthalpy = this%file%register_temporal_cell_data(this%block, 'H', 0.0_r8)

@@ -4,17 +4,26 @@
             "properties": {
                 "conductivity": 1.0,
                 "density": 1.0,
-                "specific-heat": {
-                    "type": "polynomial",
-                    "poly-coef": [1.0, 1.0],
-                    "poly-powers": [0, 1]
-                }
+                "specific-heat": 1.0
             }
         }
     },
     "mesh": {
-        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
-        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
+        "x-axis": {
+            "coarse-grid": [0.0, 0.25, 1.0],
+            "intervals": [2, 6],
+            "ratio": [1.0, 1.2]
+        },
+        "y-axis": {
+            "coarse-grid": [0.0, 1.0],
+            "intervals": [8]
+        },
+        "element-type": "quad",
+        "triangle-probability": 0.0,
+        "noise-factor": 0.0,
+        "coord-scale-factor": 1.3,
+        "rotation-angle": 17.0,
+        "partitioner": "block"
     },
     "ht-model": {
         "bc": {
@@ -22,12 +31,6 @@
                 "type": "flux",
                 "face-set-ids": [1, 2, 3, 4],
                 "flux": 0.0
-            }
-        },
-        "source": {
-            "all-cells": {
-                "cell-set-ids": [1],
-                "source": 1.0
             }
         }
     },
@@ -55,7 +58,7 @@
     },
     "initial-temperature": {
         "type": "polynomial",
-        "poly-coef": [0.0],
+        "poly-coef": [2.0],
         "poly-powers": [[0, 0, 0]]
     }
 }
