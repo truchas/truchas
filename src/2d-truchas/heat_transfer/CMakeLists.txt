@@ -13,6 +13,7 @@ set(HT2D_SOURCE_FILES
     HT_2d_norm_type.F90
     HT_2d_precon_type.F90
     HT_2d_idaesol_model_type.F90
+    HT_2d_ic_solver_type.F90
     HT_2d_solver_type.F90
     HT_2d_sim_type.F90
     HT_2d_vtkhdf_output.F90
