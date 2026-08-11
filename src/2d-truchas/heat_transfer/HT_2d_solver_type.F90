@@ -20,6 +20,7 @@ module HT_2d_solver_type
   use HT_2d_precon_type
   use HT_2d_norm_type
   use HT_2d_idaesol_model_type
+  use HT_2d_ic_solver_type
   use idaesol_type
   use parallel_communication
   use truchas_logging_services
@@ -33,6 +34,7 @@ module HT_2d_solver_type
     !TODO: should precon and norm be allocatable?
     type(HT_2d_precon), pointer :: precon => null()
     type(HT_2d_norm), pointer :: norm => null()
+    type(HT_2d_ic_solver) :: ic
     type(HT_2d_idaesol_model) :: integ_model
     type(idaesol) :: integ
     integer :: lun = 0  ! logical unit for integrator output
@@ -42,6 +44,8 @@ module HT_2d_solver_type
     logical :: state_is_pending = .false.
     real(r8) :: hmin
     integer :: max_step_tries
+    real(r8) :: ic_rel_tol = 1.0e-6_r8
+    integer :: ic_max_iter = 100
   contains
     procedure :: init
     procedure :: set_initial_state
@@ -80,6 +84,7 @@ contains
 
     this%mesh => model%mesh
     this%model => model
+    call this%ic%init(model)
 
     allocate(this%u(this%model%num_dof()))
 
@@ -129,21 +134,41 @@ contains
     call params%get('max_step_tries', this%max_step_tries, stat, errmsg)
     if (stat /= 0) call TLS_fatal(context//errmsg)
 
+    if (params%is_sublist('initial-condition')) then
+      plist => params%sublist('initial-condition')
+      call plist%get('rel-tol', this%ic_rel_tol, default=this%ic_rel_tol, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      call plist%get('max-iter', this%ic_max_iter, default=this%ic_max_iter, stat=stat, errmsg=errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+    end if
+
   end subroutine init
 
 
-  !TODO: is there a better way to set/get rel_tol, max_itr
   subroutine set_initial_state(this, t, dt, temp, rel_tol, max_itr)
     class(HT_2d_solver), intent(inout) :: this
-    real(r8), intent(in) :: t, dt, temp(:), rel_tol
-    integer, intent(in) :: max_itr
+    real(r8), intent(in) :: t, dt, temp(:)
+    real(r8), intent(in), optional :: rel_tol
+    integer, intent(in), optional :: max_itr
     character(:), allocatable :: errmsg
     real(r8), allocatable :: udot(:)
+    real(r8) :: rel_tol_
+    integer :: max_itr_
     integer :: stat
     this%t = t
+    rel_tol_ = this%ic_rel_tol
+    if (present(rel_tol)) rel_tol_ = rel_tol
+    max_itr_ = this%ic_max_iter
+    if (present(max_itr)) max_itr_ = max_itr
     allocate(udot(size(this%u)))
-    call this%compute_initial_state(t, dt, temp, this%u, udot, rel_tol, max_itr, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE: '//errmsg)
+    call this%compute_initial_state(t, dt, temp, this%u, udot, rel_tol_, max_itr_, stat, errmsg)
+    if (stat /= 0) then
+      if (allocated(errmsg) .and. len(errmsg) > 0) then
+        call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE: '//errmsg)
+      else
+        call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE failed')
+      end if
+    end if
     call this%integ%set_initial_state(t, this%u, udot)
   end subroutine set_initial_state
 
@@ -262,33 +287,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8), allocatable :: state(:,:), Hcell(:)
-    real(r8), pointer :: ucell(:), uface(:)
-
-    ASSERT(size(temp) == this%mesh%ncell_onP)
-    ASSERT(size(u) == this%model%num_dof())
-    ASSERT(size(udot) == size(u))
-
-    call this%model%get_cell_temp_view(u, ucell)  ! cell temp
-    call this%model%get_face_temp_view(u, uface)  ! face temp
-
-    ucell = temp ! set the cell temperatures from the input
-
-    !! Compute cell enthalpy
-    allocate(Hcell(this%mesh%ncell))
-    call this%model%new_state_array(u, state)
-    call this%model%H_of_T%compute_value(state, Hcell)
-    call this%model%set_cell_heat(Hcell, u)
-    deallocate(state, Hcell)
-
-    !! Solve for the face temperatures.
-    uface = 0.0_r8 ! initial guess (we could do much better)
-    !TODO: better to pass state to compute_face_temp?
-    call this%model%compute_face_temp(t, u, rel_tol, max_itr, stat, errmsg)
-    if (stat /= 0) return
-
-    !! Compute udot given consistent state u
-    call this%model%compute_udot(t, dt, u, udot, rel_tol, max_itr, stat, errmsg)
+    call this%ic%compute(t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
     if (stat /= 0) return
 
   end subroutine compute_initial_state

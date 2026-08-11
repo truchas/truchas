@@ -19,7 +19,7 @@
             "intervals": [8]
         },
         "element-type": "quad",
-        "triangle-probability": 0.0,
+        "triangle-probability": 0.35,
         "noise-factor": 0.0,
         "coord-scale-factor": 1.3,
         "rotation-angle": 17.0,
@@ -35,6 +35,10 @@
         }
     },
     "ht-solver": {
+        "initial-condition": {
+            "rel-tol": 1.0e-6,
+            "max-iter": 100
+        },
         "preconditioner": {
             "method": "BoomerAMG",
             "params": {"num-cycles": 1}
