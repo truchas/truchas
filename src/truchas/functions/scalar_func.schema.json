@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/scalar_func.schema.json",
+  "title": "Truchas scalar function",
+  "description": "Parameter-list forms accepted by scalar_func_factories.",
+  "oneOf": [
+    { "$ref": "#/$defs/constant" },
+    { "$ref": "#/$defs/polynomial" },
+    { "$ref": "#/$defs/tabular" },
+    { "$ref": "#/$defs/smooth-ramp" }
+  ],
+  "$defs": {
+    "number-array": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number" }
+    },
+    "integer-array-or-matrix": {
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer" }
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer" }
+          }
+        }
+      ]
+    },
+    "constant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "constant" },
+        "value": { "type": "number" }
+      }
+    },
+    "polynomial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "poly-coef", "poly-powers"],
+      "properties": {
+        "type": { "const": "polynomial" },
+        "poly-coef": { "$ref": "#/$defs/number-array" },
+        "poly-powers": { "$ref": "#/$defs/integer-array-or-matrix" },
+        "poly-center": {
+          "oneOf": [
+            { "type": "number" },
+            { "$ref": "#/$defs/number-array" }
+          ]
+        }
+      }
+    },
+    "tabular": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "tabular x", "tabular y"],
+      "properties": {
+        "type": { "const": "tabular" },
+        "tabular x": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "number" }
+        },
+        "tabular y": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "number" }
+        }
+      }
+    },
+    "smooth-ramp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "begin time",
+        "begin value",
+        "end time",
+        "end value"
+      ],
+      "properties": {
+        "type": { "const": "smooth ramp" },
+        "begin time": { "type": "number" },
+        "begin value": { "type": "number" },
+        "end time": { "type": "number" },
+        "end value": { "type": "number" }
+      }
+    },
+    "scalar-property-value": {
+      "description": "Values accepted by get_scalar_func for a property.",
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "$ref": "#/$defs/constant" },
+        { "$ref": "#/$defs/polynomial" },
+        { "$ref": "#/$defs/tabular" },
+        { "$ref": "#/$defs/smooth-ramp" }
+      ]
+    }
+  }
+}
