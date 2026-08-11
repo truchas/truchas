@@ -2,6 +2,8 @@ project(HeatTransfer2DTest Fortran)
 
 include(CTest)
 
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
 include_directories(${HeatTransfer2D_BINARY_DIR})
 
 
@@ -93,3 +95,27 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
 add_test(HT_2d_solver_type-4p ${test_launch})
 set_tests_properties(HT_2d_solver_type-4p PROPERTIES PROCESSORS 4)
 set_property(TEST HT_2d_solver_type-4p PROPERTY LABELS UNIT CONDUCTION 2d-truchas)
+
+
+# --- End-to-end JSON-driven application tests
+add_test(NAME HT_2d_integrated_uniform
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/uniform.json
+          uniform)
+set_tests_properties(HT_2d_integrated_uniform PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_integrated_linear
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/linear.json
+          linear)
+set_tests_properties(HT_2d_integrated_linear PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
