@@ -11,18 +11,28 @@ import tempfile
 
 
 def main():
-    if len(sys.argv) != 4:
-        print(f"usage: {sys.argv[0]} HT_2D JSON_INPUT CASE", file=sys.stderr)
+    if len(sys.argv) not in (4, 6):
+        print(
+            f"usage: {sys.argv[0]} HT_2D JSON_INPUT CASE [NPROC MPIEXEC]",
+            file=sys.stderr,
+        )
         return 2
 
     executable = pathlib.Path(sys.argv[1]).resolve()
     input_file = pathlib.Path(sys.argv[2]).resolve()
     case = sys.argv[3]
+    nproc = int(sys.argv[4]) if len(sys.argv) == 6 else 1
+    mpiexec = sys.argv[5] if len(sys.argv) == 6 else None
 
-    output_dir = pathlib.Path(tempfile.mkdtemp(prefix=f"ht_2d_{case}_"))
+    output_dir = pathlib.Path(
+        tempfile.mkdtemp(prefix=f"ht_2d_{case}_{nproc}p_")
+    )
     try:
+        command = [str(executable), str(input_file)]
+        if nproc > 1:
+            command = [mpiexec, "-n", str(nproc)] + command
         result = subprocess.run(
-            [str(executable), str(input_file)],
+            command,
             cwd=output_dir,
             text=True,
             stdout=subprocess.PIPE,
