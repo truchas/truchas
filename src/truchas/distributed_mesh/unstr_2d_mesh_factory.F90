@@ -4,6 +4,7 @@ module unstr_2d_mesh_factory
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
+  use parameter_list_type
   use truchas_logging_services
   implicit none
   private
@@ -12,6 +13,7 @@ module unstr_2d_mesh_factory
   public :: new_unstr_2d_quad_mesh, new_unstr_2d_tri_mesh
 
   interface new_unstr_2d_mesh
+    procedure new_unstr_2d_mesh_params
     procedure new_unstr_2d_mesh_regular
   end interface
 
@@ -58,6 +60,43 @@ contains
     INSIST(associated(this))
 
   end function new_unstr_2d_mesh_regular
+
+
+  function new_unstr_2d_mesh_params(params, stat, errmsg) result(this)
+
+    use ext_exodus_mesh_type
+    use parallel_communication, only: is_IOP
+
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    type(unstr_2d_mesh), pointer :: this
+
+    type(ext_exodus_mesh) :: mesh
+    real(r8), allocatable :: xmin(:), xmax(:)
+    integer, allocatable :: nx(:)
+    real(r8) :: eps
+
+    this => null()
+
+    call params%get('xmin', xmin, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('xmax', xmax, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('nx', nx, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('eps', eps, default=0.0_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+
+    if (is_IOP) call init_exo_mesh(mesh, xmin, xmax, nx, 0.0_r8, eps)
+    this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
+    if (.not.associated(this)) then
+      stat = 1
+      return
+    end if
+    stat = 0
+
+  end function new_unstr_2d_mesh_params
 
 
   subroutine init_exo_mesh(mesh, xmin, xmax, nx, ptri, eps)
