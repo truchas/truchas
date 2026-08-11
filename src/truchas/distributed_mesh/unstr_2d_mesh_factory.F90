@@ -50,11 +50,16 @@ contains
     type(ext_exodus_mesh) :: mesh ! temporary serial base mesh
     type(parameter_list) :: params
     character(:), allocatable :: errmsg
+    real(r8), allocatable :: x(:), y(:)
     real(r8) :: ptri_
+    integer :: i
 
     ptri_ = 0.0_r8
     if (present(ptri)) ptri_ = ptri
-    if (is_IOP) call init_exo_mesh(mesh, xmin, xmax, nx, ptri_, eps)
+    allocate(x(nx(1)+1), y(nx(2)+1))
+    x = [(xmin(1) + (i-1)*(xmax(1)-xmin(1))/nx(1), i=1,nx(1)+1)]
+    y = [(xmin(2) + (i-1)*(xmax(2)-xmin(2))/nx(2), i=1,nx(2)+1)]
+    if (is_IOP) call init_exo_mesh(mesh, x, y, ptri_, eps)
 
     this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
     INSIST(associated(this))
@@ -73,22 +78,55 @@ contains
     type(unstr_2d_mesh), pointer :: this
 
     type(ext_exodus_mesh) :: mesh
-    real(r8), allocatable :: xmin(:), xmax(:)
-    integer, allocatable :: nx(:)
-    real(r8) :: eps
+    real(r8), allocatable :: x(:), y(:)
+    real(r8) :: noise, ptri, scale, angle, theta
+    character(:), allocatable :: element_type
 
     this => null()
 
-    call params%get('xmin', xmin, stat=stat, errmsg=errmsg)
+    call get_axis_grid(params, 'x-axis', x, stat, errmsg)
     if (stat /= 0) return
-    call params%get('xmax', xmax, stat=stat, errmsg=errmsg)
+    call get_axis_grid(params, 'y-axis', y, stat, errmsg)
     if (stat /= 0) return
-    call params%get('nx', nx, stat=stat, errmsg=errmsg)
+    call params%get('element-type', element_type, default='quad', stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call params%get('eps', eps, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call params%get('noise-factor', noise, default=0.0_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('triangle-probability', ptri, default=0.0_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('coord-scale-factor', scale, default=1.0_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('rotation-angle', angle, default=0.0_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
 
-    if (is_IOP) call init_exo_mesh(mesh, xmin, xmax, nx, 0.0_r8, eps)
+    if (element_type == 'tri') ptri = 1.0_r8
+    if (element_type /= 'quad' .and. element_type /= 'tri') then
+      stat = 1
+      errmsg = 'element-type must be either "quad" or "tri"'
+      return
+    end if
+    if (ptri < 0.0_r8 .or. ptri > 1.0_r8) then
+      stat = 1
+      errmsg = 'triangle-probability must be between 0 and 1'
+      return
+    end if
+    if (noise < 0.0_r8 .or. noise > 0.3_r8) then
+      stat = 1
+      errmsg = 'noise-factor must be between 0 and 0.3'
+      return
+    end if
+    if (scale <= 0.0_r8) then
+      stat = 1
+      errmsg = 'coord-scale-factor must be > 0'
+      return
+    end if
+
+    if (is_IOP) then
+      call init_exo_mesh(mesh, x, y, ptri, noise)
+      mesh%coord = scale * mesh%coord
+      theta = angle * acos(-1.0_r8) / 180.0_r8
+      if (theta /= 0.0_r8) call rotate_mesh(mesh, theta)
+    end if
     this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
     if (.not.associated(this)) then
       stat = 1
@@ -99,50 +137,138 @@ contains
   end function new_unstr_2d_mesh_params
 
 
-  subroutine init_exo_mesh(mesh, xmin, xmax, nx, ptri, eps)
+  subroutine rotate_mesh(mesh, angle)
+    use ext_exodus_mesh_type
+    type(ext_exodus_mesh), intent(inout) :: mesh
+    real(r8), intent(in) :: angle
+    real(r8) :: c, s, x, y
+    integer :: n
+    c = cos(angle)
+    s = sin(angle)
+    do n = 1, mesh%num_node
+      x = mesh%coord(1,n)
+      y = mesh%coord(2,n)
+      mesh%coord(1,n) = c*x - s*y
+      mesh%coord(2,n) = s*x + c*y
+    end do
+  end subroutine rotate_mesh
+
+
+  subroutine get_axis_grid(params, key, x, stat, errmsg)
+
+    type(parameter_list), intent(inout) :: params
+    character(*), intent(in) :: key
+    real(r8), allocatable, intent(out) :: x(:)
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(parameter_list), pointer :: axis
+    real(r8), allocatable :: coarse(:), ratio(:)
+    integer, allocatable :: intervals(:)
+    integer :: i, j, n, m, k
+    real(r8) :: h, q, length
+
+    if (.not.params%is_sublist(key)) then
+      stat = 1
+      errmsg = 'missing "' // key // '" sublist'
+      return
+    end if
+    axis => params%sublist(key)
+    call axis%get('coarse-grid', coarse, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call axis%get('intervals', intervals, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    n = size(coarse) - 1
+    if (n < 1 .or. size(intervals) /= n) then
+      stat = 1
+      errmsg = 'incompatible coarse-grid and intervals lengths in "' // key // '"'
+      return
+    end if
+    if (any(coarse(2:) <= coarse(:n)) .or. any(intervals < 1)) then
+      stat = 1
+      errmsg = 'invalid grid specification in "' // key // '"'
+      return
+    end if
+    if (axis%is_parameter('ratio')) then
+      call axis%get('ratio', ratio, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (size(ratio) /= n .or. any(ratio <= 0.0_r8)) then
+        stat = 1
+        errmsg = 'invalid ratio in "' // key // '"'
+        return
+      end if
+    else
+      allocate(ratio(n)); ratio = 1.0_r8
+    end if
+
+    m = sum(intervals)
+    allocate(x(m+1))
+    k = 1
+    x(k) = coarse(1)
+    do i = 1, n
+      length = coarse(i+1) - coarse(i)
+      q = ratio(i)
+      if (q == 1.0_r8) then
+        h = length / intervals(i)
+      else
+        h = length * (q-1.0_r8) / (q**intervals(i)-1.0_r8)
+      end if
+      do j = 1, intervals(i)
+        k = k + 1
+        if (j == intervals(i)) then
+          x(k) = coarse(i+1)
+        else
+          x(k) = x(k-1) + h * q**(j-1)
+        end if
+      end do
+    end do
+    stat = 0
+
+  end subroutine get_axis_grid
+
+
+  subroutine init_exo_mesh(mesh, x, y, ptri, eps)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use ext_exodus_mesh_type
 
     type(ext_exodus_mesh), intent(out) :: mesh
-    real(r8), intent(in) :: xmin(:), xmax(:)
-    integer,  intent(in) :: nx(:)
+    real(r8), intent(in) :: x(:), y(:)
     real(r8), intent(in) :: ptri
     real(r8), intent(in), optional :: eps
 
-    integer :: i, j, n, nquad, ntri, offset
-    real(r8) :: x(2), r
+    integer :: i, j, n, nquad, ntri, offset, nx1, nx2
+    real(r8) :: r
     integer, allocatable :: ckind(:,:), quad_connect(:,:), tri_connect(:,:), seed(:)
 
-    ASSERT(size(xmin) == 2)
-    ASSERT(size(xmax) == 2)
-    ASSERT(size(nx) == 2)
-    ASSERT(all(xmin < xmax))
-    ASSERT(all(nx > 0))
+    ASSERT(size(x) > 1)
+    ASSERT(size(y) > 1)
+    ASSERT(all(x(2:) > x(:size(x)-1)))
+    ASSERT(all(y(2:) > y(:size(y)-1)))
+    nx1 = size(x) - 1
+    nx2 = size(y) - 1
 
     call random_seed(size=n)
     allocate(seed(n))
     call random_seed(get=seed)  ! save for node perturbation
 
     !! Element decomposition for each grid zone: 1 quad (0) or 2 tri (1)
-    allocate(ckind(nx(1),nx(2)))
-    do j = 1, nx(2)
-      do i = 1, nx(1)
+    allocate(ckind(nx1,nx2))
+    do j = 1, nx2
+      do i = 1, nx1
         r = lcg()
         ckind(i,j) = merge(1, 0, r < ptri)
       end do
     end do
 
     mesh%num_dim = 2
-    mesh%num_node = product(nx+1)
+    mesh%num_node = size(x) * size(y)
 
     !! Generate the node coordinates.
     allocate(mesh%coord(2,mesh%num_node))
-    do j = 1, nx(2)+1
-      x(2) = ((nx(2)-j+1)/real(nx(2),r8))*xmin(2) + ((j-1)/real(nx(2),r8))*xmax(2)
-      do i = 1, nx(1)+1
-        x(1) = ((nx(1)-i+1)/real(nx(1),r8))*xmin(1) + ((i-1)/real(nx(1),r8))*xmax(1)
-        mesh%coord(:,node_index(i,j)) = x
+    do j = 1, nx2+1
+      do i = 1, nx1+1
+        mesh%coord(:,node_index(i,j)) = [x(i), y(j)]
       end do
     end do
     if (present(eps)) call randomize_coord(eps)
@@ -153,31 +279,31 @@ contains
 
     !! Side set 1 (x = xmin)
     mesh%sset(1)%id = 1
-    mesh%sset(1)%num_side = nx(2)
-    allocate(mesh%sset(1)%elem(nx(2)), mesh%sset(1)%face(nx(2)))
+    mesh%sset(1)%num_side = nx2
+    allocate(mesh%sset(1)%elem(nx2), mesh%sset(1)%face(nx2))
 
     !! Side set 2 (x = xmax)
     mesh%sset(2)%id = 2
-    mesh%sset(2)%num_side = nx(2)
-    allocate(mesh%sset(2)%elem(nx(2)), mesh%sset(2)%face(nx(2)))
+    mesh%sset(2)%num_side = nx2
+    allocate(mesh%sset(2)%elem(nx2), mesh%sset(2)%face(nx2))
 
     !! Side set 3 (y = ymin)
     mesh%sset(3)%id = 3
-    mesh%sset(3)%num_side = nx(1)
-    allocate(mesh%sset(3)%elem(nx(1)), mesh%sset(3)%face(nx(1)))
+    mesh%sset(3)%num_side = nx1
+    allocate(mesh%sset(3)%elem(nx1), mesh%sset(3)%face(nx1))
 
     !! Side set 4 (y = ymax)
     mesh%sset(4)%id = 4
-    mesh%sset(4)%num_side = nx(1)
-    allocate(mesh%sset(4)%elem(nx(1)), mesh%sset(4)%face(nx(1)))
+    mesh%sset(4)%num_side = nx1
+    allocate(mesh%sset(4)%elem(nx1), mesh%sset(4)%face(nx1))
 
     !! Generate the element connectivity arrays and side set data
     nquad = count(ckind == 0)
     ntri  = 2*count(ckind == 1)
     allocate(quad_connect(4,nquad), tri_connect(3,ntri))
     offset = nquad; nquad = 0; ntri = 0
-    do j = 1, nx(2)
-      do i = 1, nx(1)
+    do j = 1, nx2
+      do i = 1, nx1
         select case (ckind(i,j))
         case (0)  ! one quadrilateral
           nquad = nquad + 1
@@ -189,7 +315,7 @@ contains
             mesh%sset(1)%elem(j) = nquad
             mesh%sset(1)%face(j) = 4
           end if
-          if (i == nx(1)) then  ! side set 2 (x = xmax)
+          if (i == nx1) then  ! side set 2 (x = xmax)
             mesh%sset(2)%elem(j) = nquad
             mesh%sset(2)%face(j) = 2
           end if
@@ -197,7 +323,7 @@ contains
             mesh%sset(3)%elem(i) = nquad
             mesh%sset(3)%face(i) = 1
           end if
-          if (j == nx(2)) then  ! side set 4 (y = ymax)
+          if (j == nx2) then  ! side set 4 (y = ymax)
             mesh%sset(4)%elem(i) = nquad
             mesh%sset(4)%face(i) = 3
           end if
@@ -206,7 +332,7 @@ contains
           tri_connect(1,ntri) = node_index(i,j)
           tri_connect(2,ntri) = node_index(i+1,j)
           tri_connect(3,ntri) = node_index(i+1,j+1)
-          if (i == nx(1)) then  ! side set 2 (x = xmax)
+          if (i == nx1) then  ! side set 2 (x = xmax)
             mesh%sset(2)%elem(j) = ntri + offset
             mesh%sset(2)%face(j) = 2
           end if
@@ -222,7 +348,7 @@ contains
             mesh%sset(1)%elem(j) = ntri + offset
             mesh%sset(1)%face(j) = 2
           end if
-          if (j == nx(2)) then  ! side set 4 (y = ymax)
+          if (j == nx2) then  ! side set 4 (y = ymax)
             mesh%sset(4)%elem(i) = ntri + offset
             mesh%sset(4)%face(i) = 1
           end if
@@ -262,7 +388,7 @@ contains
 
     pure integer function node_index(i, j)
       integer, intent(in) :: i, j
-      node_index = i + (j-1)*(nx(1)+1)
+      node_index = i + (j-1)*(nx1+1)
     end function
 
     ! Apply a random perturbation to the coordinates (preserves the domain)
@@ -270,17 +396,18 @@ contains
       real(r8), intent(in) :: eps
       integer :: i, j, n
       logical :: mask(2)
-      real(r8) :: dx(2), d
+      real(r8) :: dx(2), d, dmin(2)
       ASSERT(eps >= 0)
       if (eps == 0) return
       call random_seed(put=seed)
-      d = minval((xmax-xmin)/nx)
-      do j = 1, nx(2)+1
-        mask(2) = (j > 1 .and. j <= nx(2))
-        do i = 1, nx(1)+1
-          mask(1) = (i > 1 .and. i <= nx(1))
-          dx = lcg()  ! in [0,1)
-          dx = eps*d*(2*dx - 1)     ! in [-eps, eps)*d
+      dmin(1) = minval(x(2:) - x(:nx1))
+      dmin(2) = minval(y(2:) - y(:nx2))
+      do j = 1, nx2+1
+        mask(2) = (j > 1 .and. j <= nx2)
+        do i = 1, nx1+1
+          mask(1) = (i > 1 .and. i <= nx1)
+          d = min(dmin(1), dmin(2))
+          dx = eps*d*(2*[lcg(),lcg()] - 1)
           n = node_index(i,j)
           mesh%coord(:,n) = mesh%coord(:,n) + merge(dx, 0.0_r8, mask)
         end do
