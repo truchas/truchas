@@ -8,7 +8,9 @@ import subprocess
 import sys
 import tempfile
 
-import h5py
+source_root = pathlib.Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(source_root / "src/python/truchas"))
+from TruchasVTKHDFData import TruchasVTKHDFData
 
 
 def main():
@@ -73,14 +75,12 @@ def main():
         if not output_file.exists():
             print("FAIL: ht_2d did not produce out.vtkhdf")
             return 1
-        with h5py.File(output_file, "r") as output:
-            block = output["VTKHDF/Group_0"]
-            values = block["CellData/T"][:]
-            offsets = block["Steps/CellDataOffsets/T"][:]
-            if len(offsets) < 2:
-                print("FAIL: final temperature step not found in VTKHDF output")
-                return 1
-            temperature = values[int(offsets[-1]):]
+        vtkhdf = TruchasVTKHDFData(output_file)
+        final_step = vtkhdf.num_steps - 1
+        if abs(vtkhdf.time(final_step) - final_time) > 1.0e-12:
+            print("FAIL: VTKHDF final time disagrees with run.log")
+            return 1
+        temperature = vtkhdf.field(final_step, "T")
 
         expected_temperature = {
             "uniform": 2.0,
