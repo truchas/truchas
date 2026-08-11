@@ -15,6 +15,7 @@ set(HT2D_SOURCE_FILES
     HT_2d_idaesol_model_type.F90
     HT_2d_solver_type.F90
     HT_2d_sim_type.F90
+    HT_2d_vtkhdf_output.F90
     new_TofH_type.F90
 )
 
@@ -28,4 +29,3 @@ set_target_properties(HT_2d_main PROPERTIES OUTPUT_NAME ht_2d)
 
 # --- ctest binaries
 add_subdirectory(Test)
-

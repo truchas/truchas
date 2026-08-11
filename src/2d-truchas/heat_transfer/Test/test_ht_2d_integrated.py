@@ -4,10 +4,11 @@
 
 import pathlib
 import re
-import struct
 import subprocess
 import sys
 import tempfile
+
+import h5py
 
 
 def main():
@@ -68,17 +69,18 @@ def main():
             print(f"FAIL: final time {final_time:g} differs from 0.01")
             return 1
 
-        xmf = (output_dir / "out.xmf").read_text()
-        fields = re.findall(
-            r'<Attribute Name="T".*?<DataItem[^>]*Dimensions="(\d+)"'
-            r'[^>]*Seek="(\d+)"', xmf, re.DOTALL)
-        if len(fields) < 2:
-            print("FAIL: temperature fields not found in XDMF output")
+        output_file = output_dir / "out.vtkhdf"
+        if not output_file.exists():
+            print("FAIL: ht_2d did not produce out.vtkhdf")
             return 1
-        count, offset = map(int, fields[-1])
-        with (output_dir / "out.bin").open("rb") as binary:
-            binary.seek(offset)
-            temperature = struct.unpack(f"<{count}d", binary.read(8 * count))
+        with h5py.File(output_file, "r") as output:
+            block = output["VTKHDF/Group_0"]
+            values = block["CellData/T"][:]
+            offsets = block["Steps/CellDataOffsets/T"][:]
+            if len(offsets) < 2:
+                print("FAIL: final temperature step not found in VTKHDF output")
+                return 1
+            temperature = values[int(offsets[-1]):]
 
         expected_temperature = {
             "uniform": 2.0,

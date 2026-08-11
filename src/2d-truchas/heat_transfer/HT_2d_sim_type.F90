@@ -27,7 +27,7 @@ module HT_2d_sim_type
   use mfd_2d_disc_type
   use HT_2d_model_type
   use HT_2d_solver_type
-  use xdmf_file_type
+  use HT_2d_vtkhdf_output
   use time_step_sync_type
   use parallel_communication
   use truchas_logging_services
@@ -43,7 +43,7 @@ module HT_2d_sim_type
     type(matl_mesh_func), pointer :: mmf => null()
     type(HT_2d_model), pointer :: model => null()
     type(HT_2d_solver), pointer :: solver => null()
-    type(xdmf_file) :: xdmf
+    type(HT_2d_vtkhdf_writer) :: output
     !! Integration control
     real(r8) :: t_init
     real(r8) :: tlast, hlast
@@ -176,8 +176,8 @@ contains
     call stop_timer('ht-solver')
 
     !! Create output file.
-    call this%xdmf%open('out')
-    call this%xdmf%write_mesh(this%mesh)
+    call this%output%open(this%mesh, stat, errmsg)
+    if (stat /= 0) call TLS_fatal('processing VTKHDF output: ' // errmsg)
 
     !! Simulation control parameters
     if (params%is_sublist('sim-control')) then
@@ -286,7 +286,7 @@ contains
     write(string(1),'(a,es12.5,a)') 'Completed integration to T = ', t
     call TLS_info(string(1))
 
-    call this%xdmf%close
+    call this%output%close()
 
     call stop_timer('integration')
 
@@ -399,10 +399,7 @@ contains
     call this%solver%get_cell_heat_soln(Hcell)
     call this%solver%get_cell_temp_soln(Tcell)
 
-    call this%xdmf%begin_variables(time=t)
-    call this%xdmf%write_cell_var(Hcell, 'H')
-    call this%xdmf%write_cell_var(Tcell, 'T')
-    call this%xdmf%end_variables
+    call this%output%write_solution(t, Hcell, Tcell)
 
     call stop_timer('output')
 
