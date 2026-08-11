@@ -70,10 +70,16 @@ def main():
             binary.seek(offset)
             temperature = struct.unpack(f"<{count}d", binary.read(8 * count))
 
-        if case == "uniform":
-            error = max(abs(value - 2.0) for value in temperature)
-            if error > 1.0e-10:
-                print(f"FAIL: uniform temperature error {error:g}")
+        expected_temperature = {
+            "uniform": 2.0,
+            "source": 2.01,
+        }
+        if case in expected_temperature:
+            expected = expected_temperature[case]
+            error = max(abs(value - expected) for value in temperature)
+            tolerance = 1.0e-9 if case == "source" else 1.0e-10
+            if error > tolerance:
+                print(f"FAIL: {case} temperature error {error:g}")
                 return 1
         elif case == "linear":
             expected = sorted(1.0 - (i + 0.5) / 8.0 for i in range(8) for _ in range(8))

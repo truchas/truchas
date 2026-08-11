@@ -119,3 +119,14 @@ set_tests_properties(HT_2d_integrated_linear PROPERTIES
   PROCESSORS 1
   TIMEOUT 120
   LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_integrated_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/source.json
+          source)
+set_tests_properties(HT_2d_integrated_source PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
