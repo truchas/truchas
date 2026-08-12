@@ -20,6 +20,7 @@ program test_HT_2d_norm_type
   use mfd_2d_disc_type
   use HT_2d_model_type
   use HT_2d_norm_type
+  use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -81,10 +82,10 @@ contains
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    real(r8), allocatable :: u(:), du(:)
+    type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
-    integer :: n, stat
+    integer :: stat
 
     if (is_IOP) print '(/,"Testing absolute tolerance")'
 
@@ -112,10 +113,10 @@ contains
     call HT_norm%init(HT_model, sublist)
 
     !! Compute norm
-    n = HT_model%num_dof()
-    allocate(u(n), du(n))
-    u = -10.0_r8
-    du = -0.5_r8
+    call u%init(disc%mesh)
+    call du%init(u)
+    call u%setval(-10.0_r8)
+    call du%setval(-0.5_r8)
     call HT_norm%compute(u, du, du_norm)
 
     !! Check result
@@ -136,10 +137,10 @@ contains
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    real(r8), allocatable :: u(:), du(:)
+    type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
-    integer :: n, stat
+    integer :: stat
 
     if (is_IOP) print '(/,"Testing relative tolerance")'
 
@@ -167,10 +168,10 @@ contains
     call HT_norm%init(HT_model, sublist)
 
     !! Compute norm
-    n = HT_model%num_dof()
-    allocate(u(n), du(n))
-    u = -2.0_r8
-    du = -1.0_r8
+    call u%init(disc%mesh)
+    call du%init(u)
+    call u%setval(-2.0_r8)
+    call du%setval(-1.0_r8)
     call HT_norm%compute(u, du, du_norm)
 
     !! Check result
@@ -191,10 +192,10 @@ contains
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    real(r8), allocatable :: u(:), du(:)
+    type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
-    integer :: n, stat
+    integer :: stat
 
     if (is_IOP) print '(/,"Testing mixed tolerances")'
 
@@ -224,10 +225,10 @@ contains
     call HT_norm%init(HT_model, sublist)
 
     !! Compute norm
-    n = HT_model%num_dof()
-    allocate(u(n), du(n))
-    u = -1.5_r8
-    du = -4.0_r8
+    call u%init(disc%mesh)
+    call du%init(u)
+    call u%setval(-1.5_r8)
+    call du%setval(-4.0_r8)
     call HT_norm%compute(u, du, du_norm)
 
     !! Check result
@@ -248,10 +249,10 @@ contains
     type(HT_2d_model), target :: HT_model
     type(HT_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    real(r8), allocatable :: u(:), du(:)
+    type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm, maxnorm, minnorm
-    integer :: n, stat
+    integer :: stat
 
     if (is_IOP) print '(/,"Testing global consistency")'
 
@@ -279,10 +280,10 @@ contains
     call HT_norm%init(HT_model, sublist)
 
     !! Compute norm
-    n = HT_model%num_dof()
-    allocate(u(n), du(n))
-    u = 0.0_r8
-    du = this_PE
+    call u%init(disc%mesh)
+    call du%init(u)
+    call u%setval(0.0_r8)
+    call du%setval(real(this_PE, r8))
     call HT_norm%compute(u, du, du_norm)
 
     !! Check result

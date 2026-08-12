@@ -21,6 +21,7 @@ program test_HT_2d_precon_type
   use mfd_2d_disc_type
   use HT_2d_model_type
   use HT_2d_precon_type
+  use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -85,11 +86,11 @@ contains
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    real(r8), allocatable, target :: u(:), udot(:), r(:)
+    type(ht_2d_vector) :: u, udot, r
     real(r8), allocatable :: state(:,:), Hcell(:)
-    real(r8), pointer :: Tcell(:), Tface(:), view(:)
+    real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
-    integer :: n, stat
+    integer :: stat
     real(r8) :: t, dt
 
     if (is_IOP) print '(/,"Testing preconditioner with Dirichlet BCs")'
@@ -124,64 +125,62 @@ contains
     call HT_precon%init(HT_model, sublist)
 
     !! Define state variables
-    n = HT_model%num_dof()
-    allocate(u(n), udot(n), r(n))
+    call u%init(disc%mesh)
+    call udot%init(u)
+    call r%init(u)
 
     !! Compute RHS of Jacobian system
-    u = 0.0_r8
-    udot = 0.0_r8
+    call u%setval(0.0_r8)
+    call udot%setval(0.0_r8)
+    call r%setval(0.0_r8)
     call HT_model%compute_f(t, u, udot, r)
 
     !! Preconditioner fully solves for steady state solution
     dt = huge(0.0_r8)  !TODO: test finite dt
     call HT_precon%compute(t, u, dt)
-    u = -r
+    call u%copy(r)
+    call u%scale(-1.0_r8)
     call HT_precon%apply(u)
 
     !! Check residual
     call HT_model%compute_f(t, u, udot, r)
 
-    call HT_model%get_cell_heat_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%hc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%tc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell temp residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%tf(:disc%mesh%nface_onP) > tol)) then
       if (is_IOP) print '("ERROR: face temp residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
 
     !! Expected cell and face temperature fields.
     call alloc_mpoly_scalar_func(f, lcoef, exps)
-    call HT_model%get_cell_temp_view(r, Tcell)
-    call HT_model%get_face_temp_view(r, Tface)
+    allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell))
-    call HT_model%new_state_array(r, state)
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
     !! Check solution
-    call HT_model%get_cell_heat_view(u, view)
-    if (global_any(abs(Hcell(:size(view))-view) > tol)) then
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(u, view)
-    if (global_any(abs(Tcell-view) > tol)) then
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(u, view)
-    if (global_any(abs(Tface-view) > tol)) then
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
       if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
@@ -202,11 +201,11 @@ contains
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    real(r8), allocatable, target :: u(:), udot(:), r(:)
+    type(ht_2d_vector) :: u, udot, r
     real(r8), allocatable :: state(:,:), Hcell(:)
-    real(r8), pointer :: Tcell(:), Tface(:), view(:)
+    real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
-    integer :: n, stat
+    integer :: stat
     real(r8) :: t, dt, shift
 
     if (is_IOP) print '(/,"Testing preconditioner with Neumann BCs")'
@@ -250,51 +249,49 @@ contains
     call HT_precon%init(HT_model, sublist)
 
     !! Define state variables
-    n = HT_model%num_dof()
-    allocate(u(n), udot(n), r(n))
+    call u%init(disc%mesh)
+    call udot%init(u)
+    call r%init(u)
 
     !! Compute RHS of Jacobian system
-    u = 0.0_r8
-    udot = 0.0_r8
+    call u%setval(0.0_r8)
+    call udot%setval(0.0_r8)
+    call r%setval(0.0_r8)
     call HT_model%compute_f(t, u, udot, r)
 
     !! Preconditioner fully solves for steady state solution
     dt = huge(0.0_r8)  !TODO: test finite dt
     call HT_precon%compute(t, u, dt)
-    u = -r
+    call u%copy(r)
+    call u%scale(-1.0_r8)
     call HT_precon%apply(u)
 
     !! Check residual
     call HT_model%compute_f(t, u, udot, r)
 
-    call HT_model%get_cell_heat_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%hc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%tc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell temp residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(r, view)
-    if (global_any(view > tol)) then
+    if (global_any(r%tf(:disc%mesh%nface_onP) > tol)) then
       if (is_IOP) print '("ERROR: face temp residual is nonzero; tol=",es9.2)', tol
       status = 1
     end if
 
     !! Expected cell and face temperature fields.
     call alloc_mpoly_scalar_func(f, lcoef, exps)
-    call HT_model%get_cell_temp_view(r, Tcell)
-    call HT_model%get_face_temp_view(r, Tface)
+    allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
     !! The solution of this steady-state problem with flux BC is determined
     !! only up to an additive constant.  Shift the solution error so that the
     !! cell temperature error is zero on the first cell of the rank 0 process.
     if (this_PE == 1) then
-      call HT_model%get_cell_temp_view(u, view)
-      shift = Tcell(1) - view(1)
+      shift = Tcell(1) - u%tc(1)
     end if
     call broadcast(shift)
 
@@ -303,23 +300,22 @@ contains
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell))
-    call HT_model%new_state_array(r, state)
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
     !! Check solution
-    call HT_model%get_cell_heat_view(u, view)
-    if (global_any(abs(Hcell(:size(view))-view) > tol)) then
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(u, view)
-    if (global_any(abs(Tcell-view) > tol)) then
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(u, view)
-    if (global_any(abs(Tface-view) > tol)) then
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
       if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if

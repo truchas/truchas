@@ -20,7 +20,8 @@ program test_HT_2d_solver_initial_state
   use scalar_func_factories
   use mfd_2d_disc_type
   use HT_2d_model_type
-  use HT_2d_solver_type
+  use HT_2d_ic_solver_type
+  use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -72,51 +73,23 @@ contains
     stop status
   end subroutine error_exit
 
-  !! Initialize parameter list for all tests
-  subroutine init_params(params)
-
-    type(parameter_list), intent(out) :: params
-    type(parameter_list), pointer :: sublist
-
-    call params%set_path('solver')
-
-    sublist => params%sublist('preconditioner')
-    call sublist%set('method','BoomerAMG')
-    sublist => sublist%sublist('params')
-    call sublist%set('num-cycles', 1)
-
-    sublist => params%sublist('error-norm')
-    call sublist%set('temp-rel-tol', 1.0d-4)
-    call sublist%set('enth-rel-tol', 1.0d-4)
-
-    sublist => params%sublist('integrator')
-    call sublist%set('nlk-max-iter', 5)
-    call sublist%set('nlk-tol', 0.01_r8)
-
-    call params%set('hmin', tiny(1.0_r8))
-    call params%set('max_step_tries', 10)
-
-  end subroutine init_params
-
-  !! Tests the HT_2d_solver on a linear problem with Dirichlet boundary conditions
+  !! Tests consistent initial-state construction for a linear Dirichlet problem.
   subroutine test_linear_dir(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_solver) :: HT_solver
+    type(HT_2d_ic_solver) :: ic
     type(HT_2d_model), target :: HT_model
-    type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    real(r8), allocatable, target :: u(:), udot(:)
+    type(ht_2d_vector) :: u, udot
     real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
-    real(r8), pointer :: view(:)
     character(:), allocatable :: errmsg, string
-    integer :: n, stat, max_itr
+    integer :: stat, max_itr
     real(r8) :: t, dt, rel_tol
 
     if (is_IOP) print '(/,"Testing linear problem with Dirichlet BCs")'
@@ -141,9 +114,9 @@ contains
     call HT_model%init(disc, matl_model, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
-    !! Define state variables
-    n = HT_model%num_dof()
-    allocate(u(n), udot(n))
+    call ic%init(HT_model)
+    call u%init(disc%mesh)
+    call udot%init(u)
 
     !! Define the linear function ax+by
     call alloc_mpoly_scalar_func(f, lcoef, exps)
@@ -152,53 +125,44 @@ contains
     allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
-    !! Initialize 2D HT solver
-    call init_params(solver_params)
-    call HT_solver%init(HT_model, solver_params)
-
     !! Expected cell enthalpy
     allocate(Hcell(disc%mesh%ncell))
-    call HT_model%set_cell_temp(Tcell, u)
-    call HT_model%new_state_array(u, state)
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
     !! Compute consistent u and udot
     max_itr = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call HT_solver%compute_initial_state(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
-    call HT_model%get_cell_heat_view(u, view)
-    if (global_any(abs(Hcell(:size(view))-view) > tol)) then
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(u, view)
-    if (global_any(abs(Tcell-view) /= 0.0_r8)) then
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) /= 0.0_r8)) then
       if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(u, view)
-    if (global_any(abs(Tface-view) > tol)) then
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
       if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
     !! udot must be 0
-    call HT_model%get_cell_heat_view(udot, view)
-    if (global_any(abs(view) > tol)) then
+    if (global_any(abs(udot%hc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: Hdot is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(udot, view)
-    if (global_any(abs(view) > tol)) then
+    if (global_any(abs(udot%tc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell temp derivative is nonzero; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(udot, view)
-    if (global_any(abs(view) > tol)) then
+    if (global_any(abs(udot%tf(:disc%mesh%nface_onP)) > tol)) then
       if (is_IOP) print '("ERROR: face temp derivative is nonzero; tol=",es9.2)', tol
       status = 1
     end if
@@ -206,27 +170,25 @@ contains
   end subroutine test_linear_dir
 
 
-  !! Tests the HT_2d_solver on a linear problem with Neumann boundary conditions
+  !! Tests consistent initial-state construction for a linear flux problem.
   subroutine test_linear_flux(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_solver) :: HT_solver
+    type(HT_2d_ic_solver) :: ic
     type(HT_2d_model), target :: HT_model
-    type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     real(r8) :: dcoef = 1.0_r8  ! diffusion coefficient
-    real(r8), allocatable, target :: u(:), udot(:)
+    type(ht_2d_vector) :: u, udot
     real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
-    real(r8), pointer :: view(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
-    integer :: n, stat, max_itr
+    integer :: stat, max_itr
 
     if (is_IOP) print '(/,"Testing linear problem with Neumann BCs")'
 
@@ -263,9 +225,9 @@ contains
     call HT_model%init(disc, matl_model, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
-    !! Define state variables
-    n = HT_model%num_dof()
-    allocate(u(n), udot(n))
+    call ic%init(HT_model)
+    call u%init(disc%mesh)
+    call udot%init(u)
 
     !! Define the linear function ax+by
     call alloc_mpoly_scalar_func(f, lcoef, exps)
@@ -274,54 +236,45 @@ contains
     allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
-    !! Initialize 2D HT solver
-    call init_params(solver_params)
-    call HT_solver%init(HT_model, solver_params)
-
     !! Expected cell enthalpy
     allocate(Hcell(disc%mesh%ncell))
-    call HT_model%set_cell_temp(Tcell, u)
-    call HT_model%new_state_array(u, state)
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
     !! Compute consistent u and udot
     max_itr = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call HT_solver%compute_initial_state(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
-    call HT_model%get_cell_heat_view(u, view)
-    if (global_any(abs(Hcell(:size(view))-view) > tol)) then
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(u, view)
-    if (global_any(abs(Tcell-view) > tol)) then
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) > tol)) then
       if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(u, view)
-    if (global_any(abs(Tface-view) > tol)) then
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
       if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
     !! udot must match expected values
-    call HT_model%get_cell_heat_view(udot, view)
-    if (global_any(abs(view-dcoef) > tol)) then
+    if (global_any(abs(udot%hc(:disc%mesh%ncell_onP)-dcoef) > tol)) then
       if (is_IOP) print '("ERROR: Hdot exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_cell_temp_view(udot, view)
-    if (global_any(abs(view) > tol)) then
-      if (is_IOP) print '("ERROR: cell temp derivative is nonzero; tol=",es9.2)', tol
+    if (global_any(abs(udot%tc(:disc%mesh%ncell_onP)-dcoef) > tol)) then
+      if (is_IOP) print '("ERROR: cell temp derivative exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
-    call HT_model%get_face_temp_view(udot, view)
-    if (global_any(abs(view) > tol)) then
-      if (is_IOP) print '("ERROR: face temp derivative is nonzero; tol=",es9.2)', tol
+    if (global_any(abs(udot%tf(:disc%mesh%nface_onP)-dcoef) > tol)) then
+      if (is_IOP) print '("ERROR: face temp derivative exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
