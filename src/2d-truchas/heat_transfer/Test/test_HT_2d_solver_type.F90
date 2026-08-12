@@ -122,11 +122,10 @@ contains
     type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f
-    real(r8), allocatable, target :: u(:)
     real(r8), allocatable :: Tface(:), Tcell0(:), Tcell1(:)
     character(:), allocatable :: errmsg, string
     character(80) :: metrics(2)
-    integer :: n, stat, max_itr
+    integer :: stat, max_itr
     real(r8) :: t, dt, h, rel_tol, max_error, l2_error
 
     if (is_IOP) print '(/,"Testing sinusoidal problem with mixed BCs")'
@@ -148,10 +147,6 @@ contains
     !! Initialize 2D HT model
     call HT_model%init(disc, matl_model, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
-
-    !! Define state variables
-    n = HT_model%num_dof()
-    allocate(u(n))
 
     !! Define the function f=1+sin(PI/2 x)*sin(PI/2 y)
     call alloc_fptr_scalar_func(f, sinusoid, [0.0_r8, PI/2, PI/2])

@@ -57,7 +57,6 @@ module HT_2d_solver_type
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
     procedure :: write_metrics
-    procedure :: compute_initial_state
     final :: HT_2d_solver_delete
   end type HT_2d_solver
 
@@ -266,31 +265,5 @@ contains
     call this%integ%commit_state(this%t, this%u)
     this%state_is_pending = .false.
   end subroutine commit_pending_state
-
-  !! This auxiliary procedure computes the consistent initial state (u, du/dt)
-  !! given the initial cell temperatures.  For a typical explicit ODE system
-  !! du/dt = F(t,u) this is trivial; u is given and F evaluated to get du/dt.
-  !! However for our implicit index-1 DAE system F(t,u,du/dt) = 0 this is much
-  !! more involved.  We are only given part of u; the remaining part must be
-  !! obtained by solving the algebraic equation portion of the DAE system.
-  !! Furthermore F=0 only defines du/dt for the cell enthalpies; the remaining
-  !! time derivatives must be solved for (by differentiating F=0 with respect
-  !! to time) or approximated (which we do here).
-
-  !TODO: is there a better way to set/get rel_tol, max_itr
-  subroutine compute_initial_state(this, t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
-
-    class(HT_2d_solver), intent(inout) :: this
-    real(r8), intent(in) :: t, dt, temp(:), rel_tol
-    real(r8), intent(out),  target :: u(:)
-    real(r8), intent(out), target :: udot(:)
-    integer, intent(in) :: max_itr
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    call this%ic%compute(t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
-    if (stat /= 0) return
-
-  end subroutine compute_initial_state
 
 end module HT_2d_solver_type

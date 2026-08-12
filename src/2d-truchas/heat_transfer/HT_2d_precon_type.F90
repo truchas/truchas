@@ -55,10 +55,8 @@ module HT_2d_precon_type
     type(mfd_2d_diff_precon) :: hcprecon ! heat equation preconditioner
   contains
     procedure :: init
-    procedure, private :: compute_array, compute_vector
-    generic :: compute => compute_array, compute_vector
-    procedure, private :: apply_array, apply_vector
-    generic :: apply => apply_array, apply_vector
+    procedure :: compute => compute_vector
+    procedure :: apply => apply_vector
   end type HT_2d_precon
 
 contains
@@ -92,52 +90,6 @@ contains
   end subroutine init
 
 
-  !TODO: handle void cells?
-  subroutine compute_array(this, t, u, dt)
-
-    class(HT_2d_precon), intent(inout) :: this
-    real(r8), intent(in) :: t, dt
-    real(r8), intent(in), target :: u(:)
-
-    real(r8) :: coef(this%mesh%ncell), Tface(this%mesh%nface)
-    real(r8), allocatable :: state(:,:)
-    type(mfd_2d_diff_matrix), pointer :: dm
-
-    ASSERT(size(u) == this%model%num_dof())
-    ASSERT(dt > 0.0_r8)
-
-    call this%model%get_face_temp_copy(u, Tface)
-    call this%mesh%face_imap%gather_offp(Tface)
-
-    call this%model%new_state_array(u, state)
-
-    this%dt = dt  ! the time step size
-
-    !! Grab the matrix; we will update its values.
-    dm => this%hcprecon%matrix()
-
-    !! Jacobian of the heat equation diffusion operator ignoring nonlinearities
-    !! in the conductivity.
-    call this%model%conductivity%compute_value(state, coef)
-    call dm%compute(coef)
-
-    !! Contribution from the time derivative (H/T relation eliminated).
-    !TODO: fix hardwired assumption that T is the first component of state
-    call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
-    call dm%incr_cell_diag(this%mesh%volume * this%dHdT / dt)
-
-    !! Dirichlet boundary condition fixups.
-    if (allocated(this%model%bc_dir)) then
-      call this%model%bc_dir%compute(t)
-      call dm%set_dir_faces(this%model%bc_dir%index)
-    end if
-
-    !! The matrix is now complete; re-compute the preconditioner.
-    call this%hcprecon%compute
-
-  end subroutine compute_array
-
-
   subroutine compute_vector(this, t, u, dt)
 
     class(HT_2d_precon), intent(inout) :: this
@@ -168,35 +120,6 @@ contains
     call this%hcprecon%compute
 
   end subroutine compute_vector
-
-
-  subroutine apply_array(this, f)
-
-    class(HT_2d_precon), intent(in) :: this
-    real(r8), intent(inout), target :: f(:)
-
-    real(r8), pointer :: f0(:), f1(:)  ! on-process segments
-    real(r8) :: f1x(this%mesh%ncell), f2x(this%mesh%nface)  ! off-process extended copies
-
-    !! Heat equation cell residual with the H/T relation residual eliminated.
-    call this%model%get_cell_heat_view(f, f0)
-    call this%model%get_cell_temp_view(f, f1)
-    f1x(:this%mesh%ncell_onP) = f1 - (this%mesh%volume(:this%mesh%ncell_onP)/this%dt)*f0
-    call this%mesh%cell_imap%gather_offp(f1x)
-
-    !! Heat equation face residual.
-    call this%model%get_face_temp_copy(f, f2x)
-    call this%mesh%face_imap%gather_offp(f2x)
-
-    !! Precondition the heat equation.
-    call this%hcprecon%apply(f1x, f2x)
-    call this%model%set_cell_temp(f1x, f)
-    call this%model%set_face_temp(f2x, f)
-
-    !! Backsubstitute to obtain the preconditioned H/T-relation residual.
-    f0 = f0 + this%dHdT(:this%mesh%ncell_onP)*f1
-
-  end subroutine apply_array
 
 
   subroutine apply_vector(this, f)
