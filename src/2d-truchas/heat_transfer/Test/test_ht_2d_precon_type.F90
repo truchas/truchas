@@ -19,8 +19,8 @@ program test_HT_2d_precon_type
   !use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
-  use HT_2d_model_type
-  use HT_2d_precon_type
+  use ht_2d_model_type
+  use ht_2d_precon_type
   use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
@@ -80,14 +80,14 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_precon) :: HT_precon
-    type(HT_2d_model), target :: HT_model
+    type(ht_2d_precon) :: HT_precon
+    type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    type(ht_2d_vector) :: u, udot, r
-    real(r8), allocatable :: state(:,:), Hcell(:)
+    type(ht_2d_vector) :: state, u, udot, r
+    real(r8), allocatable :: func_state(:,:), Hcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat
@@ -125,25 +125,26 @@ contains
     call HT_precon%init(HT_model, sublist)
 
     !! Define state variables
-    call u%init(disc%mesh)
-    call udot%init(u)
-    call r%init(u)
+    call state%init(disc%mesh)
+    call u%init(state)
+    call udot%init(state)
+    call r%init(state)
 
     !! Compute RHS of Jacobian system
-    call u%setval(0.0_r8)
+    call state%setval(0.0_r8)
     call udot%setval(0.0_r8)
     call r%setval(0.0_r8)
-    call HT_model%compute_f(t, u, udot, r)
+    call HT_model%residual(t, state, udot, r)
 
     !! Preconditioner fully solves for steady state solution
     dt = huge(0.0_r8)  !TODO: test finite dt
-    call HT_precon%compute(t, u, dt)
+    call HT_precon%compute(t, state, dt)
     call u%copy(r)
     call u%scale(-1.0_r8)
-    call HT_precon%apply(u)
+    call HT_precon%apply(t, state, u)
 
     !! Check residual
-    call HT_model%compute_f(t, u, udot, r)
+    call HT_model%residual(t, u, udot, r)
 
     if (global_any(r%hc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy residual is nonzero; tol=",es9.2)', tol
@@ -165,11 +166,11 @@ contains
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell))
-    allocate(state(disc%mesh%ncell,0:0))
-    state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(state(:,0))
-    call HT_model%H_of_T%compute_value(state, Hcell)
-    deallocate(state)
+    allocate(func_state(disc%mesh%ncell,0:0))
+    func_state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(func_state(:,0))
+    call HT_model%H_of_T%compute_value(func_state, Hcell)
+    deallocate(func_state)
 
     !! Check solution
     if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
@@ -195,14 +196,14 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_precon) :: HT_precon
-    type(HT_2d_model), target :: HT_model
+    type(ht_2d_precon) :: HT_precon
+    type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    type(ht_2d_vector) :: u, udot, r
-    real(r8), allocatable :: state(:,:), Hcell(:)
+    type(ht_2d_vector) :: state, u, udot, r
+    real(r8), allocatable :: func_state(:,:), Hcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat
@@ -249,25 +250,26 @@ contains
     call HT_precon%init(HT_model, sublist)
 
     !! Define state variables
-    call u%init(disc%mesh)
-    call udot%init(u)
-    call r%init(u)
+    call state%init(disc%mesh)
+    call u%init(state)
+    call udot%init(state)
+    call r%init(state)
 
     !! Compute RHS of Jacobian system
-    call u%setval(0.0_r8)
+    call state%setval(0.0_r8)
     call udot%setval(0.0_r8)
     call r%setval(0.0_r8)
-    call HT_model%compute_f(t, u, udot, r)
+    call HT_model%residual(t, state, udot, r)
 
     !! Preconditioner fully solves for steady state solution
     dt = huge(0.0_r8)  !TODO: test finite dt
-    call HT_precon%compute(t, u, dt)
+    call HT_precon%compute(t, state, dt)
     call u%copy(r)
     call u%scale(-1.0_r8)
-    call HT_precon%apply(u)
+    call HT_precon%apply(t, state, u)
 
     !! Check residual
-    call HT_model%compute_f(t, u, udot, r)
+    call HT_model%residual(t, u, udot, r)
 
     if (global_any(r%hc(:disc%mesh%ncell_onP) > tol)) then
       if (is_IOP) print '("ERROR: cell enthalpy residual is nonzero; tol=",es9.2)', tol
@@ -300,11 +302,11 @@ contains
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell))
-    allocate(state(disc%mesh%ncell,0:0))
-    state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(state(:,0))
-    call HT_model%H_of_T%compute_value(state, Hcell)
-    deallocate(state)
+    allocate(func_state(disc%mesh%ncell,0:0))
+    func_state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(func_state(:,0))
+    call HT_model%H_of_T%compute_value(func_state, Hcell)
+    deallocate(func_state)
 
     !! Check solution
     if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then

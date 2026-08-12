@@ -12,14 +12,14 @@
 
 #include "f90_assert.fpp"
 
-module HT_2d_solver_type
+module ht_2d_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use HT_2d_model_type
-  use HT_2d_precon_type
-  use HT_2d_norm_type
-  use HT_2d_ic_solver_type
+  use ht_2d_model_type
+  use ht_2d_precon_type
+  use ht_2d_norm_type
+  use ht_2d_ic_solver_type
   use ht_2d_vector_type
   use ht_2d_idaesol_model_type
   use new_idaesol_type
@@ -28,14 +28,14 @@ module HT_2d_solver_type
   implicit none
   private
 
-  type, public:: HT_2d_solver
+  type, public:: ht_2d_solver
     private
     type(unstr_2d_mesh), pointer :: mesh => null()  ! reference only -- do not own
-    type(HT_2d_model), pointer :: model => null()   ! reference only -- do not own
+    type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
     !TODO: should precon and norm be allocatable?
-    type(HT_2d_precon), pointer :: precon => null()
-    type(HT_2d_norm), pointer :: norm => null()
-    type(HT_2d_ic_solver) :: ic
+    type(ht_2d_precon), pointer :: precon => null()
+    type(ht_2d_norm), pointer :: norm => null()
+    type(ht_2d_ic_solver) :: ic
     type(ht_2d_idaesol_model) :: integ_model
     type(idaesol) :: integ
     integer :: lun = 0  ! logical unit for integrator output
@@ -43,8 +43,6 @@ module HT_2d_solver_type
     real(r8) :: t
     type(ht_2d_vector) :: u
     logical :: state_is_pending = .false.
-    real(r8) :: hmin
-    integer :: max_step_tries
     real(r8) :: ic_rel_tol = 1.0e-6_r8
     integer :: ic_max_iter = 100
   contains
@@ -57,24 +55,24 @@ module HT_2d_solver_type
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
     procedure :: write_metrics
-    final :: HT_2d_solver_delete
-  end type HT_2d_solver
+    final :: ht_2d_solver_delete
+  end type ht_2d_solver
 
 contains
 
-  subroutine HT_2d_solver_delete(this)
-    type(HT_2d_solver), intent(inout) :: this
+  subroutine ht_2d_solver_delete(this)
+    type(ht_2d_solver), intent(inout) :: this
     if (associated(this%precon)) deallocate(this%precon)
     if (associated(this%norm)) deallocate(this%norm)
-  end subroutine HT_2d_solver_delete
+  end subroutine ht_2d_solver_delete
 
 
   subroutine init(this, model, params)
 
     use parameter_list_type
 
-    class(HT_2d_solver), intent(out), target :: this
-    type(HT_2d_model), intent(in), target :: model
+    class(ht_2d_solver), intent(out), target :: this
+    type(ht_2d_model), intent(in), target :: model
     type(parameter_list) :: params
 
     type(parameter_list), pointer :: plist
@@ -125,15 +123,6 @@ contains
       call TLS_fatal(context//'missing "integrator" sublist parameter')
     end if
 
-    !! BDF2 control parameters
-    !TODO: default values for hmin and max_step_tries?  idaesol%bdf2_step_driver suggests
-    !   max_try = 10
-    !   hmin = tiny(1.0_r8)
-    call params%get('hmin', this%hmin, stat, errmsg)
-    if (stat /= 0) call TLS_fatal(context//errmsg)
-    call params%get('max_step_tries', this%max_step_tries, stat, errmsg)
-    if (stat /= 0) call TLS_fatal(context//errmsg)
-
     if (params%is_sublist('initial-condition')) then
       plist => params%sublist('initial-condition')
       call plist%get('rel-tol', this%ic_rel_tol, default=this%ic_rel_tol, stat=stat, errmsg=errmsg)
@@ -146,7 +135,7 @@ contains
 
 
   subroutine set_initial_state(this, t, dt, temp, rel_tol, max_itr)
-    class(HT_2d_solver), intent(inout) :: this
+    class(ht_2d_solver), intent(inout) :: this
     real(r8), intent(in) :: t, dt, temp(:)
     real(r8), intent(in), optional :: rel_tol
     integer, intent(in), optional :: max_itr
@@ -164,9 +153,9 @@ contains
     call this%ic%compute(t, dt, temp, this%u, udot, rel_tol_, max_itr_, stat, errmsg)
     if (stat /= 0) then
       if (allocated(errmsg) .and. len(errmsg) > 0) then
-        call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE: '//errmsg)
+        call TLS_fatal('ht_2d_SOLVER%SET_INITIAL_STATE: '//errmsg)
       else
-        call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE failed')
+        call TLS_fatal('ht_2d_SOLVER%SET_INITIAL_STATE failed')
       end if
     end if
     call this%integ%set_initial_state(t, this%u, udot)
@@ -175,14 +164,14 @@ contains
   !! Returns the current integration time.
 
   real(r8) function time(this)
-    class(HT_2d_solver), intent(in) :: this
+    class(ht_2d_solver), intent(in) :: this
     time = this%integ%last_time()
   end function time
 
   !! Returns the current cell enthalpy solution.
 
   subroutine get_cell_heat_soln(this, enth)
-    class(HT_2d_solver), intent(in) :: this
+    class(ht_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: enth(:)
     ASSERT(size(enth) == this%mesh%ncell_onP)
     enth = this%u%hc(:this%mesh%ncell_onP)
@@ -191,14 +180,14 @@ contains
   !! Returns the current cell temperature solution.
 
   subroutine get_cell_temp_soln(this, temp)
-    class(HT_2d_solver), intent(in) :: this
+    class(ht_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: temp(:)
     ASSERT(size(temp) == this%mesh%ncell_onP)
     temp = this%u%tc(:this%mesh%ncell_onP)
   end subroutine get_cell_temp_soln
 
   subroutine write_metrics(this, string)
-    class(HT_2d_solver), intent(in) :: this
+    class(ht_2d_solver), intent(in) :: this
     character(*), intent(out) :: string(:)
     ASSERT(size(string) == 2)
     call this%integ%write_metrics(string)
@@ -222,7 +211,7 @@ contains
   !! multi-step driver scenario.
 
   subroutine integrate(this, hnext, status, nstep, tout, hmin, hmax, mtry)
-    class(HT_2d_solver), intent(inout) :: this
+    class(ht_2d_solver), intent(inout) :: this
     real(r8), intent(inout) :: hnext
     integer, intent(out) :: status
     integer,  intent(in), optional :: nstep, mtry
@@ -238,12 +227,11 @@ contains
 
   subroutine step(this, t, hnext, stat)
 
-    class(HT_2d_solver), intent(inout) :: this
+    class(ht_2d_solver), intent(inout) :: this
     real(r8), intent(in) :: t
     real(r8), intent(out) :: hnext
     integer, intent(out) :: stat
 
-    !call this%integ%step(h, this%hmin, this%max_step_tries, this%u, hnext, stat)
     call this%integ%step(t, this%u, hnext, stat)
     if (stat == 0) then
       this%t = t
@@ -260,10 +248,10 @@ contains
   !! step.
 
   subroutine commit_pending_state(this)
-    class(HT_2d_solver), intent(inout) :: this
+    class(ht_2d_solver), intent(inout) :: this
     INSIST(this%state_is_pending)
     call this%integ%commit_state(this%t, this%u)
     this%state_is_pending = .false.
   end subroutine commit_pending_state
 
-end module HT_2d_solver_type
+end module ht_2d_solver_type

@@ -19,8 +19,8 @@ program test_HT_2d_solver_type
   !use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
-  use HT_2d_model_type
-  use HT_2d_solver_type
+  use ht_2d_model_type
+  use ht_2d_solver_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -101,9 +101,6 @@ contains
     call sublist%set('nlk-max-iter', 5)
     call sublist%set('nlk-tol', 0.01_r8)
 
-    call params%set('hmin', tiny(1.0_r8))
-    call params%set('max_step_tries', 10)
-
   end subroutine init_params
 
 
@@ -117,8 +114,8 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_solver), target :: HT_solver
-    type(HT_2d_model), target :: HT_model
+    type(ht_2d_solver), target :: HT_solver
+    type(ht_2d_model), target :: HT_model
     type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f

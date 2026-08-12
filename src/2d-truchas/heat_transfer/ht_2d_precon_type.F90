@@ -30,16 +30,16 @@
 !!    unknown vector U, and time step DT.  It must be called before calling
 !!    the APPLY procedure.
 !!
-!!  APPLY(F) applies the preconditioner for the model to the vector F, which is
-!!    overwritten with the result.
+!!  APPLY(T, U, F) applies the preconditioner at time T and state U to the
+!!    vector F, which is overwritten with the result.
 !!
 
 #include "f90_assert.fpp"
 
-module HT_2d_precon_type
+module ht_2d_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use HT_2d_model_type
+  use ht_2d_model_type
   use ht_2d_vector_type
   use unstr_2d_mesh_type
   use mfd_2d_diff_precon_type
@@ -47,17 +47,17 @@ module HT_2d_precon_type
   implicit none
   private
 
-  type, public :: HT_2d_precon
-    type(HT_2d_model),   pointer :: model => null()  ! reference only -- do not own
+  type, public :: ht_2d_precon
+    type(ht_2d_model),   pointer :: model => null()  ! reference only -- do not own
     type(unstr_2d_mesh), pointer :: mesh  => null()  ! reference only -- do not own
     real(r8) :: dt  ! time step
     real(r8), allocatable :: dHdT(:)  ! derivative of the enthalpy/temperature relation
     type(mfd_2d_diff_precon) :: hcprecon ! heat equation preconditioner
   contains
     procedure :: init
-    procedure :: compute => compute_vector
-    procedure :: apply => apply_vector
-  end type HT_2d_precon
+    procedure :: compute
+    procedure :: apply
+  end type ht_2d_precon
 
 contains
 
@@ -66,8 +66,8 @@ contains
     use parameter_list_type
     use truchas_logging_services
 
-    class(HT_2d_precon), intent(out) :: this
-    type(HT_2d_model), intent(in), target :: model
+    class(ht_2d_precon), intent(out) :: this
+    type(ht_2d_model), intent(in), target :: model
     type(parameter_list) :: params
 
     integer :: stat
@@ -85,16 +85,16 @@ contains
     allocate(dm)
     call dm%init(model%disc)
     call this%hcprecon%init(dm, params, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('HT_2D_PRECON%INIT: ' // errmsg)
+    if (stat /= 0) call TLS_fatal('ht_2d_PRECON%INIT: ' // errmsg)
 
   end subroutine init
 
 
-  subroutine compute_vector(this, t, u, dt)
+  subroutine compute(this, t, u, dt)
 
-    class(HT_2d_precon), intent(inout) :: this
+    class(ht_2d_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
-    type(ht_2d_vector), intent(inout) :: u
+    type(ht_2d_vector), intent(in) :: u
 
     real(r8) :: coef(this%mesh%ncell)
     real(r8), allocatable :: state(:,:)
@@ -119,12 +119,14 @@ contains
     end if
     call this%hcprecon%compute
 
-  end subroutine compute_vector
+  end subroutine compute
 
 
-  subroutine apply_vector(this, f)
+  subroutine apply(this, t, u, f)
 
-    class(HT_2d_precon), intent(in) :: this
+    class(ht_2d_precon), intent(in) :: this
+    real(r8), intent(in) :: t
+    type(ht_2d_vector), intent(inout) :: u
     type(ht_2d_vector), intent(inout) :: f
 
     associate (mesh => this%mesh)
@@ -141,6 +143,6 @@ contains
                              + this%dHdT(:mesh%ncell_onP)*f%tc(:mesh%ncell_onP)
     end associate
 
-  end subroutine apply_vector
+  end subroutine apply
 
-end module HT_2d_precon_type
+end module ht_2d_precon_type

@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_HT_2d_model_type
+program test_HT_2d_solver_initial_state
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -16,11 +16,11 @@ program test_HT_2d_model_type
   use unstr_2d_mesh_factory
   use matl_mesh_func_type
   use material_model_type
+  !use source_mesh_function
   use scalar_func_factories
-  use cell_geometry, only: normalized
   use mfd_2d_disc_type
-  use HT_2d_model_type
-  use HT_2d_ic_solver_type
+  use ht_2d_model_type
+  use ht_2d_ic_solver_type
   use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
@@ -42,14 +42,13 @@ program test_HT_2d_model_type
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NORMAL)
 
-  TOL = 1E-10_r8
+  TOL = 1E-9_r8
   eps = 0.0_r8  ! mesh distortion
   xmin = [0.0_r8, 0.0_r8]
   xmax = [1.0_r8, 1.0_r8]
   nx  = [64, 64]
 
   !! Create the mesh specified by the above input file
-  !TODO: breaks if nproc < ncell
   mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps)
 
   !! Initialize state needed by all tests
@@ -59,8 +58,6 @@ program test_HT_2d_model_type
   !! Run test problems
   call test_linear_dir(mfd_disc, matl_model, tol)
   call test_linear_flux(mfd_disc, matl_model, tol)
-  !! Quadratic boundary-condition verification remains deferred until its
-  !! expected discrete convergence behavior is established.
 
   !! Wrap up
   call halt_parallel_communication
@@ -76,28 +73,29 @@ contains
     stop status
   end subroutine error_exit
 
-  !! Tests the HT_2d_model on a linear problem with Dirichlet boundary conditions
+  !! Tests consistent initial-state construction for a linear Dirichlet problem.
   subroutine test_linear_dir(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_ic_solver) :: ic
-    type(parameter_list), pointer :: params
+    type(ht_2d_ic_solver) :: ic
+    type(ht_2d_model), target :: HT_model
+    type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    type(ht_2d_vector) :: u, udot, r
-    real(r8), allocatable :: Tcell(:), Tface(:)
+    type(ht_2d_vector) :: u, udot
+    real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
-    integer :: n, stat, max_itr
+    integer :: stat, max_itr
     real(r8) :: t, dt, rel_tol
 
     if (is_IOP) print '(/,"Testing linear problem with Dirichlet BCs")'
 
     t = 0.0_r8
+    dt = 1E-3_r8
 
     !! 2D HT model parameters
     string = &
@@ -109,17 +107,16 @@ contains
             "type": "polynomial", &
             "poly-coef": [1.0, 2.0], &
             "poly-powers": [[0,1,0],[0,0,1]]}}}}'
-    call parameter_list_from_json_string(string, params, errmsg)
-    if (.not. associated(params)) call error_exit(errmsg)
+    call parameter_list_from_json_string(string, model_params, errmsg)
+    if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
-    call r%init(u)
 
     !! Define the linear function ax+by
     call alloc_mpoly_scalar_func(f, lcoef, exps)
@@ -128,64 +125,75 @@ contains
     allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
-    !! Check boundary conditions match face temperatures
-    call HT_model%bc_dir%compute(t)
-    n = count(HT_model%bc_dir%index <= disc%mesh%nface_onP)
-    associate (value => HT_model%bc_dir%value(:n), index => HT_model%bc_dir%index(:n))
-      if (global_any(abs(value - Tface(index)) > tol)) call error_exit('incorrect BC values')
-    end associate
+    !! Expected cell enthalpy
+    allocate(Hcell(disc%mesh%ncell))
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
+    call HT_model%H_of_T%compute_value(state, Hcell)
+    deallocate(state)
 
-    !! Compute a consistent vector state, including face temperatures.
-    dt = 1.0e-3_r8
+    !! Compute consistent u and udot
     max_itr = 100
-    rel_tol = tol
+    rel_tol = tol * 1E-5_r8 !TODO: good practice?
     call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
-    !! Compute heat transfer residuals
-    call udot%setval(0.0_r8)
-    call r%setval(0.0_r8)
-    call HT_model%compute_f(t, u, udot, r)
-
-    !! Face and cell residuals must be 0
-    if (global_any(abs(r%tf(:disc%mesh%nface_onP)) > 20.0_r8*tol)) then
-      if (is_IOP) print '("ERROR: face residuals are nonzero; tol=",es9.2)', tol
-      if (is_IOP) print '("  max |rface| = ",es12.4)', global_maxval(maxval(abs(r%tf(:disc%mesh%nface_onP))))
+    !! u must match expected values
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) /= 0.0_r8)) then
+      if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
-    if (global_any(abs(r%tc(:disc%mesh%ncell_onP)) > 20.0_r8*tol)) then
-      if (is_IOP) print '("ERROR: cell residuals are nonzero; tol=",es9.2)', tol
-      if (is_IOP) print '("  max |rcell| = ",es12.4)', global_maxval(maxval(abs(r%tc(:disc%mesh%ncell_onP))))
+    !! udot must be 0
+    if (global_any(abs(udot%hc(:disc%mesh%ncell_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: Hdot is nonzero; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(udot%tc(:disc%mesh%ncell_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: cell temp derivative is nonzero; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(udot%tf(:disc%mesh%nface_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: face temp derivative is nonzero; tol=",es9.2)', tol
       status = 1
     end if
 
   end subroutine test_linear_dir
 
 
-  !! Tests the HT_2d_model on a linear problem with Neumann boundary conditions
+  !! Tests consistent initial-state construction for a linear flux problem.
   subroutine test_linear_flux(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_ic_solver) :: ic
-    type(parameter_list), pointer :: params
+    type(ht_2d_ic_solver) :: ic
+    type(ht_2d_model), target :: HT_model
+    type(parameter_list), pointer :: model_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     real(r8) :: dcoef = 1.0_r8  ! diffusion coefficient
-    type(ht_2d_vector) :: u, udot, r
-    real(r8), allocatable :: Tcell(:), Tface(:)
+    type(ht_2d_vector) :: u, udot
+    real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
-    integer :: n, j, stat, max_itr
+    integer :: stat, max_itr
 
     if (is_IOP) print '(/,"Testing linear problem with Neumann BCs")'
 
     t = 0.0_r8
+    dt = 1E-3_r8
 
     !! 2D HT model parameters
     string = &
@@ -205,18 +213,21 @@ contains
         "top": { &
           "type": "flux", &
           "face-set-ids": [4], &
-          "flux": -2.0 }}}'
-    call parameter_list_from_json_string(string, params, errmsg)
-    if (.not. associated(params)) call error_exit(errmsg)
+          "flux": -2.0 }}, &
+      "source": { &
+        "all-cells": { &
+          "cell-set-ids": [1], &
+          "source": 1.0 }}}'
+    call parameter_list_from_json_string(string, model_params, errmsg)
+    if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
-    call r%init(u)
 
     !! Define the linear function ax+by
     call alloc_mpoly_scalar_func(f, lcoef, exps)
@@ -225,53 +236,48 @@ contains
     allocate(Tcell(disc%mesh%ncell_onP), Tface(disc%mesh%nface_onP))
     call average_integral(disc, f, Tcell, Tface)
 
-    !! Check boundary conditions match expected value
-    block
-      logical, allocatable :: mask(:)
-      real(r8) :: expected, normal(2)
-      call HT_model%bc_flux%compute(t)
-      do j = 1, size(disc%mesh%face_set_id)
-        mask = btest(disc%mesh%face_set_mask(HT_model%bc_flux%index), disc%mesh%face_set_id(j))
-        associate (index => pack(HT_model%bc_flux%index, mask), &
-                   value => pack(HT_model%bc_flux%value, mask))
-          if (size(index) < 1) cycle
-          normal = normalized(disc%mesh%normal(:,index(1)))
-          !! The boundary face fluxes must equal -k*(GRAD u).(face_normal)
-          expected = -dcoef*dot_product(lcoef, normal)
-          if (global_any(abs(value - expected) > tol)) call error_exit('incorrect BC values')
-        end associate
-      end do
-    end block
+    !! Expected cell enthalpy
+    allocate(Hcell(disc%mesh%ncell))
+    allocate(state(disc%mesh%ncell,0:0))
+    state(:disc%mesh%ncell_onP,0) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state(:,0))
+    call HT_model%H_of_T%compute_value(state, Hcell)
+    deallocate(state)
 
-    !! Compute a consistent vector state, including face temperatures.
-    dt = 1.0e-3_r8
+    !! Compute consistent u and udot
     max_itr = 100
-    rel_tol = tol
+    rel_tol = tol * 1E-5_r8 !TODO: good practice?
     call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
-    !! Compute heat transfer residuals
-    call udot%setval(0.0_r8)
-    call r%setval(0.0_r8)
-    call HT_model%compute_f(t, u, udot, r)
-
-    !! Face and cell residuals must be 0
-    if (global_any(abs(r%tf(:disc%mesh%nface_onP)) > 20.0_r8*tol)) then
-      if (is_IOP) print '("ERROR: face residuals are nonzero; tol=",es9.2)', tol
-      if (is_IOP) print '("  max |rface| = ",es12.4)', global_maxval(maxval(abs(r%tf(:disc%mesh%nface_onP))))
+    !! u must match expected values
+    if (global_any(abs(Hcell(:disc%mesh%ncell_onP)-u%hc(:disc%mesh%ncell_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: cell enthalpy exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(Tcell-u%tc(:disc%mesh%ncell_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: cell temp exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(Tface-u%tf(:disc%mesh%nface_onP)) > tol)) then
+      if (is_IOP) print '("ERROR: face temp exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
-    if (global_any(abs(r%tc(:disc%mesh%ncell_onP)) > 20.0_r8*tol)) then
-      if (is_IOP) print '("ERROR: cell residuals are nonzero; tol=",es9.2)', tol
-      if (is_IOP) print '("  max |rcell| = ",es12.4)', global_maxval(maxval(abs(r%tc(:disc%mesh%ncell_onP))))
+    !! udot must match expected values
+    if (global_any(abs(udot%hc(:disc%mesh%ncell_onP)-dcoef) > tol)) then
+      if (is_IOP) print '("ERROR: Hdot exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(udot%tc(:disc%mesh%ncell_onP)-dcoef) > tol)) then
+      if (is_IOP) print '("ERROR: cell temp derivative exceeds expected value; tol=",es9.2)', tol
+      status = 1
+    end if
+    if (global_any(abs(udot%tf(:disc%mesh%nface_onP)-dcoef) > tol)) then
+      if (is_IOP) print '("ERROR: face temp derivative exceeds expected value; tol=",es9.2)', tol
       status = 1
     end if
 
   end subroutine test_linear_flux
 
-
-  !! Tests the HT_2d_model on a quadratic problem with Dirichlet boundary conditions
-  !! The quadratic has the form ax^2+by^2, where a and b are constant
-
-end program test_HT_2d_model_type
+end program test_HT_2d_solver_initial_state

@@ -12,35 +12,35 @@
 
 #include "f90_assert.fpp"
 
-module HT_2d_norm_type
+module ht_2d_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use HT_2d_model_type
+  use ht_2d_model_type
   use ht_2d_vector_type
   use parameter_list_type
   use truchas_logging_services
   implicit none
   private
 
-  type, public:: HT_2d_norm
+  type, public:: ht_2d_norm
     private
     ! type(unstr_2d_mesh), pointer :: mesh => null()  ! reference only -- do not own
-    type(HT_2d_model), pointer :: model => null()   ! reference only -- do not own
+    type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
     real(r8) :: abs_T_tol   ! absolute temperature tolerance
     real(r8) :: rel_T_tol   ! relative temperature tolerance
     real(r8) :: abs_H_tol   ! absolute enthalpy tolerance
     real(r8) :: rel_H_tol   ! relative enthalpy tolerance
   contains
     procedure :: init
-    procedure :: compute => compute_vector
-  end type HT_2d_norm
+    procedure :: compute
+  end type ht_2d_norm
 
 contains
 
   subroutine init(this, model, params)
 
-    class(HT_2d_norm), intent(out) :: this
-    type(HT_2d_model), intent(in), target :: model
+    class(ht_2d_norm), intent(out) :: this
+    type(ht_2d_model), intent(in), target :: model
     type(parameter_list) :: params
 
     integer :: stat
@@ -70,11 +70,12 @@ contains
   end subroutine init
 
 
-  subroutine compute_vector(this, u, du, du_norm)
+  subroutine compute(this, t, u, du, du_norm)
 
     use parallel_communication, only: global_maxval
 
-    class(HT_2d_norm), intent(in) :: this
+    class(ht_2d_norm), intent(in) :: this
+    real(r8), intent(in) :: t
     type(ht_2d_vector), intent(in) :: u, du
     real(r8), intent(out) :: du_norm
 
@@ -94,6 +95,6 @@ contains
       maxerr = maxval(abs(du)/(atol + rtol*abs(u)))
     end function maxerr
 
-  end subroutine compute_vector
+  end subroutine compute
 
-end module HT_2d_norm_type
+end module ht_2d_norm_type

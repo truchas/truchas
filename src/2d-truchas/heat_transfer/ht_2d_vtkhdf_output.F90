@@ -1,4 +1,4 @@
-module HT_2d_vtkhdf_output
+module ht_2d_vtkhdf_output
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use unstr_2d_mesh_type
@@ -7,7 +7,7 @@ module HT_2d_vtkhdf_output
   implicit none
   private
 
-  type, public :: HT_2d_vtkhdf_writer
+  type, public :: ht_2d_vtkhdf_writer
     private
     type(vtkhdf_mb_file) :: file
     type(vtkhdf_block_handle) :: block
@@ -18,7 +18,7 @@ module HT_2d_vtkhdf_output
     procedure :: open
     procedure :: write_solution
     procedure :: close
-  end type HT_2d_vtkhdf_writer
+  end type ht_2d_vtkhdf_writer
 
 contains
 
@@ -27,7 +27,7 @@ contains
     use parallel_communication, only: comm
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
-    class(HT_2d_vtkhdf_writer), intent(out) :: this
+    class(ht_2d_vtkhdf_writer), intent(out) :: this
     type(unstr_2d_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -71,7 +71,7 @@ contains
 
   subroutine write_solution(this, time, enthalpy, temperature)
 
-    class(HT_2d_vtkhdf_writer), intent(inout) :: this
+    class(ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: enthalpy(:), temperature(:)
 
@@ -84,9 +84,9 @@ contains
   end subroutine write_solution
 
   subroutine close(this)
-    class(HT_2d_vtkhdf_writer), intent(inout) :: this
+    class(ht_2d_vtkhdf_writer), intent(inout) :: this
     if (this%is_open) call this%file%close()
     this%is_open = .false.
   end subroutine close
 
-end module HT_2d_vtkhdf_output
+end module ht_2d_vtkhdf_output

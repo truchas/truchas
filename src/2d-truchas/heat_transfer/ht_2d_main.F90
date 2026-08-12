@@ -12,7 +12,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program HT_2D_main
+program ht_2d_main
 
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
@@ -25,14 +25,14 @@ program HT_2D_main
   use parameter_list_type
   use parameter_list_json
   use timer_tree_type
-  use HT_2D_sim_type
+  use ht_2d_sim_type
   implicit none
 
   integer :: n, num_arg, inlun, stat
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
-  type(HT_2D_sim) :: sim
+  type(ht_2d_sim) :: sim
 
   !! Initialize MPI
   call init_parallel_communication

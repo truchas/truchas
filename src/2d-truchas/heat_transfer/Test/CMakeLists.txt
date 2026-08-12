@@ -9,7 +9,7 @@ include_directories(${HeatTransfer2D_BINARY_DIR})
 
 # Compile the shared Fortran module once.  Adding its source to each test
 # executable races to write test_ht_2d_common.mod in a parallel build.
-add_library(test_ht_2d_common STATIC test_HT_2d_common.F90)
+add_library(test_ht_2d_common STATIC test_ht_2d_common.F90)
 set_target_properties(test_ht_2d_common PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_include_directories(test_ht_2d_common INTERFACE
@@ -35,7 +35,7 @@ set_property(TEST ht_2d_vector_type-4p PROPERTY LABELS UNIT CONDUCTION 2d-trucha
 
 
 # --- HT_2D_MODEL_TYPE tests
-add_executable(test_HT_2d_model_type test_HT_2d_model_type.F90)
+add_executable(test_HT_2d_model_type test_ht_2d_model_type.F90)
 target_link_libraries(test_HT_2d_model_type test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
@@ -52,7 +52,7 @@ set_property(TEST HT_2d_model_type-4p PROPERTY LABELS UNIT CONDUCTION 2d-truchas
 
 
 # --- HT_2D_PRECON_TYPE tests
-add_executable(test_HT_2d_precon_type test_HT_2d_precon_type.F90)
+add_executable(test_HT_2d_precon_type test_ht_2d_precon_type.F90)
 target_link_libraries(test_HT_2d_precon_type test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
@@ -69,7 +69,7 @@ set_property(TEST HT_2d_precon_type-4p PROPERTY LABELS UNIT CONDUCTION 2d-trucha
 
 
 # --- HT_2D_NORM_TYPE tests
-add_executable(test_HT_2d_norm_type test_HT_2d_norm_type.F90)
+add_executable(test_HT_2d_norm_type test_ht_2d_norm_type.F90)
 target_link_libraries(test_HT_2d_norm_type test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
@@ -86,7 +86,7 @@ set_property(TEST HT_2d_norm_type-4p PROPERTY LABELS UNIT CONDUCTION 2d-truchas)
 
 
 # --- HT_2D_SOLVER_INITIAL_STATE tests
-add_executable(test_HT_2d_solver_initial_state test_HT_2d_solver_initial_state.F90)
+add_executable(test_HT_2d_solver_initial_state test_ht_2d_solver_initial_state.F90)
 target_link_libraries(test_HT_2d_solver_initial_state test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
@@ -103,7 +103,7 @@ set_property(TEST HT_2d_solver_initial_state-4p PROPERTY LABELS UNIT CONDUCTION 
 
 
 # --- HT_2D_SOLVER_TYPE tests
-add_executable(test_HT_2d_solver_type test_HT_2d_solver_type.F90)
+add_executable(test_HT_2d_solver_type test_ht_2d_solver_type.F90)
 target_link_libraries(test_HT_2d_solver_type test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
