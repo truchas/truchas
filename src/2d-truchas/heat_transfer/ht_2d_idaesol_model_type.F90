@@ -10,16 +10,17 @@ module ht_2d_idaesol_model_type
   use new_idaesol_type, only: idaesol_model
   use vector_class
   use ht_2d_vector_type
-  use HT_2d_model_type
-  use HT_2d_precon_type
-  use HT_2d_norm_type
+  use ht_2d_model_type
+  use ht_2d_precon_type
+  use ht_2d_norm_type
+  use truchas_timers, only: start_timer, stop_timer
   implicit none
   private
 
   type, extends(idaesol_model), public :: ht_2d_idaesol_model
-    type(HT_2d_model), pointer :: model => null() ! unowned reference
-    type(HT_2d_precon), pointer :: precon => null() ! unowned reference
-    type(HT_2d_norm), pointer :: norm => null() ! unowned reference
+    type(ht_2d_model), pointer :: model => null() ! unowned reference
+    type(ht_2d_precon), pointer :: precon => null() ! unowned reference
+    type(ht_2d_norm), pointer :: norm => null() ! unowned reference
   contains
     procedure :: init
     procedure :: alloc_vector
@@ -33,9 +34,9 @@ contains
 
   subroutine init(this, model, precon, norm)
     class(ht_2d_idaesol_model), intent(out) :: this
-    type(HT_2d_model), intent(in), target :: model
-    type(HT_2d_precon), intent(in), target :: precon
-    type(HT_2d_norm), intent(in), target :: norm
+    type(ht_2d_model), intent(in), target :: model
+    type(ht_2d_precon), intent(in), target :: precon
+    type(ht_2d_norm), intent(in), target :: norm
 
     this%model => model
     this%precon => precon
@@ -48,11 +49,11 @@ contains
     class(ht_2d_idaesol_model), intent(in) :: this
     class(vector), allocatable, intent(out) :: vec
 
-    allocate(ht_2d_vector :: vec)
-    select type (vec)
-    class is (ht_2d_vector)
-      call vec%init(this%model%mesh)
-    end select
+    type(ht_2d_vector), allocatable :: tmp
+
+    allocate(tmp)
+    call this%model%init_vector(tmp)
+    call move_alloc(tmp, vec)
   end subroutine alloc_vector
 
 
@@ -62,16 +63,18 @@ contains
     class(vector), intent(inout) :: u, udot
     class(vector), intent(inout) :: f
 
+    call start_timer('residual')
     select type (u)
     class is (ht_2d_vector)
       select type (udot)
       class is (ht_2d_vector)
         select type (f)
         class is (ht_2d_vector)
-          call this%model%compute_f(t, u, udot, f)
+          call this%model%residual(t, u, udot, f)
         end select
       end select
     end select
+    call stop_timer('residual')
   end subroutine compute_f
 
 
@@ -81,13 +84,15 @@ contains
     class(vector), intent(inout) :: u
     class(vector), intent(inout) :: f
 
+    call start_timer('precon apply')
     select type (u)
     class is (ht_2d_vector)
       select type (f)
       class is (ht_2d_vector)
-        call this%precon%apply(f)
+        call this%precon%apply(t, u, f)
       end select
     end select
+    call stop_timer('precon apply')
   end subroutine apply_precon
 
 
@@ -96,10 +101,12 @@ contains
     real(r8), intent(in) :: t, dt
     class(vector), intent(inout) :: u
 
+    call start_timer('precon compute')
     select type (u)
     class is (ht_2d_vector)
       call this%precon%compute(t, u, dt)
     end select
+    call stop_timer('precon compute')
   end subroutine compute_precon
 
 
@@ -113,7 +120,7 @@ contains
     class is (ht_2d_vector)
       select type (du)
       class is (ht_2d_vector)
-        call this%norm%compute(u, du, error)
+        call this%norm%compute(t, u, du, error)
       end select
     end select
   end subroutine du_norm

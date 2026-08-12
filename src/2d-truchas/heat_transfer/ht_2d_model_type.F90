@@ -12,7 +12,7 @@
 
 #include "f90_assert.fpp"
 
-module HT_2d_model_type
+module ht_2d_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
@@ -29,7 +29,7 @@ module HT_2d_model_type
   implicit none
   private
 
-  type, public :: HT_2d_model
+  type, public :: ht_2d_model
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(mfd_2d_disc),  pointer :: disc => null()
     !! Equation parameters
@@ -42,8 +42,9 @@ module HT_2d_model_type
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
   contains
     procedure :: init
-    procedure :: compute_f => compute_f_vector
-  end type HT_2d_model
+    procedure :: init_vector
+    procedure :: residual => residual_vector
+  end type ht_2d_model
 
 contains
 
@@ -53,7 +54,7 @@ contains
     use material_model_type
     use material_utilities
 
-    class(HT_2d_model), intent(out), target :: this
+    class(ht_2d_model), intent(out), target :: this
     type(mfd_2d_disc), intent(in), target :: disc
     type(material_model), intent(in) :: matl_model
     type(parameter_list), intent(inout) :: params
@@ -138,6 +139,14 @@ contains
 
   end subroutine init
 
+
+  subroutine init_vector(this, vec)
+    class(ht_2d_model), intent(in) :: this
+    type(ht_2d_vector), intent(out) :: vec
+
+    call vec%init(this%mesh)
+  end subroutine init_vector
+
   subroutine init_bc(model, params, stat, errmsg)
 
     use bitfield_type
@@ -145,7 +154,7 @@ contains
     use string_utilities, only: i_to_c
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
-    class(HT_2d_model), intent(inout), target :: model
+    class(ht_2d_model), intent(inout), target :: model
     type(parameter_list), intent(inout), target :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -217,7 +226,7 @@ contains
 
     use thermal_source_factory_type
 
-    class(HT_2d_model), intent(inout), target :: model
+    class(ht_2d_model), intent(inout), target :: model
     type(parameter_list), intent(inout), target :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -236,9 +245,9 @@ contains
 
 
   !! Vector form of the DAE residual.
-  subroutine compute_f_vector(this, t, u, udot, f)
+  subroutine residual_vector(this, t, u, udot, f)
 
-    class(HT_2d_model), intent(inout) :: this
+    class(ht_2d_model), intent(inout) :: this
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u, udot
     type(ht_2d_vector), intent(inout) :: f
@@ -301,6 +310,6 @@ contains
     f%tc(:this%mesh%ncell_onP) = Fcell(:this%mesh%ncell_onP)
     f%tf(:this%mesh%nface_onP) = Fface(:this%mesh%nface_onP)
 
-  end subroutine compute_f_vector
+  end subroutine residual_vector
 
-end module HT_2d_model_type
+end module ht_2d_model_type

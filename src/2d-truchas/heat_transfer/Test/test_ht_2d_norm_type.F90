@@ -18,8 +18,8 @@ program test_HT_2d_norm_type
   !use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
-  use HT_2d_model_type
-  use HT_2d_norm_type
+  use ht_2d_model_type
+  use ht_2d_norm_type
   use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
@@ -79,8 +79,8 @@ contains
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_norm), target :: HT_norm
+    type(ht_2d_model), target :: HT_model
+    type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
@@ -117,7 +117,7 @@ contains
     call du%init(u)
     call u%setval(-10.0_r8)
     call du%setval(-0.5_r8)
-    call HT_norm%compute(u, du, du_norm)
+    call HT_norm%compute(0.0_r8, u, du, du_norm)
 
     !! Check result
     if (global_maxval(abs(du_norm-1.0_r8)) /= 0.0_r8) then
@@ -134,8 +134,8 @@ contains
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_norm), target :: HT_norm
+    type(ht_2d_model), target :: HT_model
+    type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
@@ -172,7 +172,7 @@ contains
     call du%init(u)
     call u%setval(-2.0_r8)
     call du%setval(-1.0_r8)
-    call HT_norm%compute(u, du, du_norm)
+    call HT_norm%compute(0.0_r8, u, du, du_norm)
 
     !! Check result
     if (global_maxval(abs(du_norm-2.0_r8)) /= 0.0_r8) then
@@ -189,8 +189,8 @@ contains
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_norm), target :: HT_norm
+    type(ht_2d_model), target :: HT_model
+    type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
@@ -229,7 +229,7 @@ contains
     call du%init(u)
     call u%setval(-1.5_r8)
     call du%setval(-4.0_r8)
-    call HT_norm%compute(u, du, du_norm)
+    call HT_norm%compute(0.0_r8, u, du, du_norm)
 
     !! Check result
     if (global_maxval(abs(du_norm-1.0_r8)) /= 0.0_r8) then
@@ -246,8 +246,8 @@ contains
     type(mfd_2d_disc), target, intent(in) :: disc
     type(material_model), target, intent(in) :: matl_model
 
-    type(HT_2d_model), target :: HT_model
-    type(HT_2d_norm), target :: HT_norm
+    type(ht_2d_model), target :: HT_model
+    type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
     character(:), allocatable :: errmsg, string
@@ -284,7 +284,7 @@ contains
     call du%init(u)
     call u%setval(0.0_r8)
     call du%setval(real(this_PE, r8))
-    call HT_norm%compute(u, du, du_norm)
+    call HT_norm%compute(0.0_r8, u, du, du_norm)
 
     !! Check result
     maxnorm = global_maxval(du_norm)

@@ -42,9 +42,7 @@
         "integrator": {
             "nlk-max-iter": 10,
             "nlk-tol": 0.01
-        },
-        "hmin": 1e-14,
-        "max_step_tries": 10
+        }
       },
     "sim-control": {
         "initial-time": 0.0,

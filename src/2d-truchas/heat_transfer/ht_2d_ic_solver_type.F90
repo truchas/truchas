@@ -4,11 +4,11 @@
 
 #include "f90_assert.fpp"
 
-module HT_2d_ic_solver_type
+module ht_2d_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use HT_2d_model_type
+  use ht_2d_model_type
   use ht_2d_vector_type
   use parameter_list_type
   use parallel_communication, only: global_dot_product
@@ -16,20 +16,20 @@ module HT_2d_ic_solver_type
   implicit none
   private
 
-  type, public :: HT_2d_ic_solver
+  type, public :: ht_2d_ic_solver
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(HT_2d_model), pointer :: model => null()
+    type(ht_2d_model), pointer :: model => null()
   contains
     procedure :: init
     procedure :: compute => compute_vector
-  end type HT_2d_ic_solver
+  end type ht_2d_ic_solver
 
 contains
 
   subroutine init(this, model)
-    class(HT_2d_ic_solver), intent(out) :: this
-    type(HT_2d_model), intent(in), target :: model
+    class(ht_2d_ic_solver), intent(out) :: this
+    type(ht_2d_model), intent(in), target :: model
     this%model => model
     this%mesh => model%mesh
   end subroutine init
@@ -37,7 +37,7 @@ contains
 
   !! Construct the initial state directly in the solver vector representation.
   subroutine compute_vector(this, t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
-    class(HT_2d_ic_solver), intent(inout) :: this
+    class(ht_2d_ic_solver), intent(inout) :: this
     real(r8), intent(in) :: t, dt, temp(:), rel_tol
     type(ht_2d_vector), intent(inout) :: u, udot
     integer, intent(in) :: max_itr
@@ -71,7 +71,7 @@ contains
   !! Compute the initial time derivative by advancing enthalpy one small step,
   !! solving the algebraic variables at that advanced state, and differencing.
   subroutine compute_udot(this, t, dt, u, udot, rel_tol, max_itr, stat, errmsg)
-    class(HT_2d_ic_solver), intent(inout) :: this
+    class(ht_2d_ic_solver), intent(inout) :: this
     real(r8), intent(in) :: t, dt, rel_tol
     type(ht_2d_vector), intent(inout) :: u, udot
     integer, intent(in) :: max_itr
@@ -88,7 +88,7 @@ contains
     call udot%setval(0.0_r8)
     call f%init(u)
     call f%setval(0.0_r8)
-    call this%model%compute_f(t, u, udot, f)
+    call this%model%residual(t, u, udot, f)
     udot%hc(:this%mesh%ncell_onP) = -f%tc(:this%mesh%ncell_onP) / &
         this%mesh%volume(:this%mesh%ncell_onP)
 
@@ -122,7 +122,7 @@ contains
     use hypre_hybrid_type
     use mfd_2d_diff_matrix_type
 
-    class(HT_2d_ic_solver), intent(inout) :: this
+    class(ht_2d_ic_solver), intent(inout) :: this
     real(r8), intent(in) :: t, rel_tol
     type(ht_2d_vector), intent(inout) :: u
     integer, intent(in) :: max_itr
@@ -145,11 +145,11 @@ contains
     call udot%setval(0.0_r8)
     call f%init(u)
     call f%setval(0.0_r8)
-    call this%model%compute_f(t, u, udot, f)
+    call this%model%residual(t, u, udot, f)
     norm = sqrt(global_dot_product(f%tf(:this%mesh%nface_onP), f%tf(:this%mesh%nface_onP)))
 
     if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
-      write (msg,'(a,es10.3)') 'HT_2D_ic_solver%compute_face_temp: initial ||rface||_2 = ', norm
+      write (msg,'(a,es10.3)') 'ht_2d_ic_solver%compute_face_temp: initial ||rface||_2 = ', norm
       call TLS_info(trim(msg))
     end if
     if (norm == 0.0_r8) return
@@ -199,4 +199,4 @@ contains
     end if
   end subroutine compute_face_temp
 
-end module HT_2d_ic_solver_type
+end module ht_2d_ic_solver_type

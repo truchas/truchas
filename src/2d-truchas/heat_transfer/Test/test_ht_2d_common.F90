@@ -16,7 +16,7 @@ module test_ht_2d_common
   use material_model_type
   use scalar_func_class
   use mfd_2d_disc_type
-  use HT_2d_model_type
+  use ht_2d_model_type
   implicit none
 
 contains

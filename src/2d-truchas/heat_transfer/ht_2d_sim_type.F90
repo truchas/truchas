@@ -16,7 +16,7 @@
 
 #include "f90_assert.fpp"
 
-module HT_2d_sim_type
+module ht_2d_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
@@ -26,9 +26,9 @@ module HT_2d_sim_type
   use scalar_func_factories
   use scalar_func_projection
   use mfd_2d_disc_type
-  use HT_2d_model_type
-  use HT_2d_solver_type
-  use HT_2d_vtkhdf_output
+  use ht_2d_model_type
+  use ht_2d_solver_type
+  use ht_2d_vtkhdf_output
   use time_step_sync_type
   use parallel_communication
   use truchas_logging_services
@@ -36,15 +36,15 @@ module HT_2d_sim_type
   implicit none
   private
 
-  type, public:: HT_2d_sim
+  type, public:: ht_2d_sim
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(mfd_2d_disc), pointer :: disc => null()
     type(material_model) :: matl_model
     type(matl_mesh_func), pointer :: mmf => null()
-    type(HT_2d_model), pointer :: model => null()
-    type(HT_2d_solver), pointer :: solver => null()
-    type(HT_2d_vtkhdf_writer) :: output
+    type(ht_2d_model), pointer :: model => null()
+    type(ht_2d_solver), pointer :: solver => null()
+    type(ht_2d_vtkhdf_writer) :: output
     !! Integration control
     real(r8) :: t_init
     real(r8) :: tlast, hlast
@@ -53,21 +53,21 @@ module HT_2d_sim_type
     real(r8), allocatable :: tout(:)
     type(time_step_sync) :: ts_sync
   contains
-    final :: HT_2d_sim_delete
+    final :: ht_2d_sim_delete
     procedure :: init
     procedure :: run
     procedure :: write_solution
-  end type HT_2d_sim
+  end type ht_2d_sim
 
 contains
 
-  subroutine HT_2d_sim_delete(this)
-    type(HT_2d_sim), intent(inout) :: this
+  subroutine ht_2d_sim_delete(this)
+    type(ht_2d_sim), intent(inout) :: this
     if (associated(this%mesh)) deallocate(this%mesh)
     if (associated(this%disc)) deallocate(this%disc)
     if (associated(this%model)) deallocate(this%model)
     if (associated(this%solver)) deallocate(this%solver)
-  end subroutine HT_2d_sim_delete
+  end subroutine ht_2d_sim_delete
 
 
   subroutine init(this, params)
@@ -78,7 +78,7 @@ contains
     use material_factory, only: load_material_database
     use material_utilities, only: add_enthalpy_prop
 
-    class(HT_2d_sim), intent(out) :: this
+    class(ht_2d_sim), intent(out) :: this
     type(parameter_list) :: params
 
     type(parameter_list), pointer :: plist
@@ -221,7 +221,7 @@ contains
 
   subroutine run(this, stat, errmsg)
 
-    class(HT_2d_sim), intent(inout) :: this
+    class(ht_2d_sim), intent(inout) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -289,7 +289,7 @@ contains
 
     use signal_handler, only: read_signal, SIGURG
 
-    class(HT_2d_sim), intent(inout) :: this
+    class(ht_2d_sim), intent(inout) :: this
     real(r8), intent(in) :: tout
     real(r8), intent(inout) :: hnext
     real(r8), intent(out) :: t
@@ -335,7 +335,7 @@ contains
 
   subroutine step(this, t,  hnext, stat, errmsg)
 
-    class(HT_2d_sim), intent(inout) :: this
+    class(ht_2d_sim), intent(inout) :: this
     real(r8), intent(inout) :: t
     real(r8), intent(out) :: hnext
     integer,  intent(out) :: stat
@@ -369,7 +369,7 @@ contains
 
   subroutine write_solution(this, t)
 
-    class(HT_2d_sim), intent(inout) :: this
+    class(ht_2d_sim), intent(inout) :: this
     real(r8), intent(in) :: t
 
     real(r8), allocatable :: Hcell(:), Tcell(:)
@@ -388,4 +388,4 @@ contains
   end subroutine write_solution
 
 
-end module HT_2d_sim_type
+end module ht_2d_sim_type
