@@ -37,6 +37,7 @@
             "params": {"num-cycles": 1}
         },
         "error-norm": {
+            "temp-abs-tol": 1.0e-10,
             "temp-rel-tol": 1.0e-6,
             "enth-rel-tol": 1.0e-6
         },
