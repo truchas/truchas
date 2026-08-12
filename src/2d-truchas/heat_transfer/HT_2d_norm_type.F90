@@ -16,6 +16,7 @@ module HT_2d_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HT_2d_model_type
+  use ht_2d_vector_type
   use parameter_list_type
   use truchas_logging_services
   implicit none
@@ -31,7 +32,8 @@ module HT_2d_norm_type
     real(r8) :: rel_H_tol   ! relative enthalpy tolerance
   contains
     procedure :: init
-    procedure :: compute
+    procedure, private :: compute_array, compute_vector
+    generic :: compute => compute_array, compute_vector
   end type HT_2d_norm
 
 contains
@@ -69,7 +71,7 @@ contains
   end subroutine init
 
 
-  subroutine compute(this, u, du, du_norm)
+  subroutine compute_array(this, u, du, du_norm)
 
     use parallel_communication, only: global_maxval
 
@@ -108,6 +110,33 @@ contains
       maxerr = maxval(abs(du)/(atol + rtol*abs(u)))
     end function
 
-  end subroutine compute
+  end subroutine compute_array
+
+
+  subroutine compute_vector(this, u, du, du_norm)
+
+    use parallel_communication, only: global_maxval
+
+    class(HT_2d_norm), intent(in) :: this
+    type(ht_2d_vector), intent(in) :: u, du
+    real(r8), intent(out) :: du_norm
+
+    associate (mesh => this%model%mesh)
+      du_norm = maxerr(u%tc(:mesh%ncell_onP), du%tc(:mesh%ncell_onP), this%abs_T_tol, this%rel_T_tol)
+      du_norm = max(du_norm, &
+          maxerr(u%tf(:mesh%nface_onP), du%tf(:mesh%nface_onP), this%abs_T_tol, this%rel_T_tol))
+      du_norm = max(du_norm, &
+          maxerr(u%hc(:mesh%ncell_onP), du%hc(:mesh%ncell_onP), this%abs_H_tol, this%rel_H_tol))
+    end associate
+    du_norm = global_maxval(du_norm)
+
+  contains
+
+    real(r8) function maxerr(u, du, atol, rtol)
+      real(r8), intent(in) :: u(:), du(:), atol, rtol
+      maxerr = maxval(abs(du)/(atol + rtol*abs(u)))
+    end function maxerr
+
+  end subroutine compute_vector
 
 end module HT_2d_norm_type
