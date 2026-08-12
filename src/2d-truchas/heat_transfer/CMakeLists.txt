@@ -6,13 +6,19 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 
 # --- Library ht2d
 set(HT2D_SOURCE_FILES
+    # Temporary bridge until refactor-diffusion-solver provides these through
+    # the truchas library.
+    new_nka_type.F90
+    new_state_history_type.F90
+    new_idaesol_type.F90
     mfd_2d_disc_type.F90
     mfd_2d_diff_matrix_type.F90
     mfd_2d_diff_precon_type.F90
+    ht_2d_vector_type.F90
     HT_2d_model_type.F90
     HT_2d_norm_type.F90
     HT_2d_precon_type.F90
-    HT_2d_idaesol_model_type.F90
+    ht_2d_idaesol_model_type.F90
     HT_2d_ic_solver_type.F90
     HT_2d_solver_type.F90
     HT_2d_sim_type.F90

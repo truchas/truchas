@@ -40,6 +40,7 @@ module HT_2d_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use HT_2d_model_type
+  use ht_2d_vector_type
   use unstr_2d_mesh_type
   use mfd_2d_diff_precon_type
   use mfd_2d_diff_matrix_type
@@ -54,8 +55,10 @@ module HT_2d_precon_type
     type(mfd_2d_diff_precon) :: hcprecon ! heat equation preconditioner
   contains
     procedure :: init
-    procedure :: compute
-    procedure :: apply
+    procedure, private :: compute_array, compute_vector
+    generic :: compute => compute_array, compute_vector
+    procedure, private :: apply_array, apply_vector
+    generic :: apply => apply_array, apply_vector
   end type HT_2d_precon
 
 contains
@@ -90,7 +93,7 @@ contains
 
 
   !TODO: handle void cells?
-  subroutine compute(this, t, u, dt)
+  subroutine compute_array(this, t, u, dt)
 
     class(HT_2d_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
@@ -132,10 +135,42 @@ contains
     !! The matrix is now complete; re-compute the preconditioner.
     call this%hcprecon%compute
 
-  end subroutine compute
+  end subroutine compute_array
 
 
-  subroutine apply(this, f)
+  subroutine compute_vector(this, t, u, dt)
+
+    class(HT_2d_precon), intent(inout) :: this
+    real(r8), intent(in) :: t, dt
+    type(ht_2d_vector), intent(inout) :: u
+
+    real(r8) :: coef(this%mesh%ncell)
+    real(r8), allocatable :: state(:,:)
+    type(mfd_2d_diff_matrix), pointer :: dm
+
+    ASSERT(dt > 0.0_r8)
+
+    allocate(state(this%mesh%ncell,0:0))
+    state(:,0) = u%tc
+    call this%mesh%cell_imap%gather_offp(state(:,0))
+
+    this%dt = dt
+    dm => this%hcprecon%matrix()
+    call this%model%conductivity%compute_value(state, coef)
+    call dm%compute(coef)
+    call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
+    call dm%incr_cell_diag(this%mesh%volume*this%dHdT/dt)
+
+    if (allocated(this%model%bc_dir)) then
+      call this%model%bc_dir%compute(t)
+      call dm%set_dir_faces(this%model%bc_dir%index)
+    end if
+    call this%hcprecon%compute
+
+  end subroutine compute_vector
+
+
+  subroutine apply_array(this, f)
 
     class(HT_2d_precon), intent(in) :: this
     real(r8), intent(inout), target :: f(:)
@@ -161,6 +196,28 @@ contains
     !! Backsubstitute to obtain the preconditioned H/T-relation residual.
     f0 = f0 + this%dHdT(:this%mesh%ncell_onP)*f1
 
-  end subroutine apply
+  end subroutine apply_array
+
+
+  subroutine apply_vector(this, f)
+
+    class(HT_2d_precon), intent(in) :: this
+    type(ht_2d_vector), intent(inout) :: f
+
+    associate (mesh => this%mesh)
+      !! Eliminate the enthalpy-temperature residual from the heat equation.
+      f%tc(:mesh%ncell_onP) = f%tc(:mesh%ncell_onP) &
+                             - (mesh%volume(:mesh%ncell_onP)/this%dt)*f%hc(:mesh%ncell_onP)
+      call mesh%cell_imap%gather_offp(f%tc)
+      call mesh%face_imap%gather_offp(f%tf)
+
+      call this%hcprecon%apply(f%tc, f%tf)
+
+      !! Backsubstitute the enthalpy-temperature relation residual.
+      f%hc(:mesh%ncell_onP) = f%hc(:mesh%ncell_onP) &
+                             + this%dHdT(:mesh%ncell_onP)*f%tc(:mesh%ncell_onP)
+    end associate
+
+  end subroutine apply_vector
 
 end module HT_2d_precon_type

@@ -19,9 +19,10 @@ module HT_2d_solver_type
   use HT_2d_model_type
   use HT_2d_precon_type
   use HT_2d_norm_type
-  use HT_2d_idaesol_model_type
   use HT_2d_ic_solver_type
-  use idaesol_type
+  use ht_2d_vector_type
+  use ht_2d_idaesol_model_type
+  use new_idaesol_type
   use parallel_communication
   use truchas_logging_services
   implicit none
@@ -35,12 +36,12 @@ module HT_2d_solver_type
     type(HT_2d_precon), pointer :: precon => null()
     type(HT_2d_norm), pointer :: norm => null()
     type(HT_2d_ic_solver) :: ic
-    type(HT_2d_idaesol_model) :: integ_model
+    type(ht_2d_idaesol_model) :: integ_model
     type(idaesol) :: integ
     integer :: lun = 0  ! logical unit for integrator output
     !! Pending/current state
     real(r8) :: t
-    real(r8), allocatable :: u(:)
+    type(ht_2d_vector) :: u
     logical :: state_is_pending = .false.
     real(r8) :: hmin
     integer :: max_step_tries
@@ -86,7 +87,7 @@ contains
     this%model => model
     call this%ic%init(model)
 
-    allocate(this%u(this%model%num_dof()))
+    call this%u%init(this%mesh)
 
     !! Create the preconditioner
     context = 'processing ' // params%path() // ': '
@@ -151,17 +152,17 @@ contains
     real(r8), intent(in), optional :: rel_tol
     integer, intent(in), optional :: max_itr
     character(:), allocatable :: errmsg
-    real(r8), allocatable :: udot(:)
     real(r8) :: rel_tol_
     integer :: max_itr_
     integer :: stat
+    type(ht_2d_vector) :: udot
     this%t = t
     rel_tol_ = this%ic_rel_tol
     if (present(rel_tol)) rel_tol_ = rel_tol
     max_itr_ = this%ic_max_iter
     if (present(max_itr)) max_itr_ = max_itr
-    allocate(udot(size(this%u)))
-    call this%compute_initial_state(t, dt, temp, this%u, udot, rel_tol_, max_itr_, stat, errmsg)
+    call udot%init(this%u)
+    call this%ic%compute(t, dt, temp, this%u, udot, rel_tol_, max_itr_, stat, errmsg)
     if (stat /= 0) then
       if (allocated(errmsg) .and. len(errmsg) > 0) then
         call TLS_fatal('HT_2D_SOLVER%SET_INITIAL_STATE: '//errmsg)
@@ -185,7 +186,7 @@ contains
     class(HT_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: enth(:)
     ASSERT(size(enth) == this%mesh%ncell_onP)
-    call this%model%get_cell_heat_copy(this%u, enth)
+    enth = this%u%hc(:this%mesh%ncell_onP)
   end subroutine get_cell_heat_soln
 
   !! Returns the current cell temperature solution.
@@ -194,7 +195,7 @@ contains
     class(HT_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: temp(:)
     ASSERT(size(temp) == this%mesh%ncell_onP)
-    call this%model%get_cell_temp_copy(this%u, temp)
+    temp = this%u%tc(:this%mesh%ncell_onP)
   end subroutine get_cell_temp_soln
 
   subroutine write_metrics(this, string)

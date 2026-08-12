@@ -21,6 +21,7 @@ module HT_2d_model_type
   use scalar_mesh_multifunc_type
   use new_TofH_type
   use data_layout_type
+  use ht_2d_vector_type
   !use matl_mesh_func_type
   use new_prop_mesh_func_type
   use parallel_communication
@@ -56,7 +57,9 @@ module HT_2d_model_type
     procedure :: set_cell_temp
     procedure :: set_face_temp
     procedure :: new_state_array
-    procedure :: compute_f
+    procedure, private :: compute_f_array
+    procedure, private :: compute_f_vector
+    generic :: compute_f => compute_f_array, compute_f_vector
     procedure :: compute_udot
     procedure :: compute_face_temp
   end type HT_2d_model
@@ -336,7 +339,7 @@ contains
   end subroutine new_state_array
 
 
-  subroutine compute_f(this, t, u, udot, f)
+  subroutine compute_f_array(this, t, u, udot, f)
 
     class(HT_2d_model), intent(inout) :: this
     real(r8), intent(in) :: t
@@ -413,7 +416,79 @@ contains
       call this%set_cell_temp(Fcell, f)
       call this%set_face_temp(Fface, f)
 
-  end subroutine compute_f
+  end subroutine compute_f_array
+
+
+  !! Vector form of the DAE residual.  The packed-array form above remains
+  !! only as a compatibility interface for legacy focused tests.
+  subroutine compute_f_vector(this, t, u, udot, f)
+
+    class(HT_2d_model), intent(inout) :: this
+    real(r8), intent(in) :: t
+    type(ht_2d_vector), intent(inout) :: u, udot
+    type(ht_2d_vector), intent(inout) :: f
+
+    real(r8), dimension(this%mesh%ncell) :: Tcell, Fcell, Hdot
+    real(r8), dimension(this%mesh%nface) :: Tface, Fface
+    real(r8), allocatable :: Fdir(:), state(:,:)
+    real(r8) :: cval(this%mesh%ncell)
+
+    !! The vector integrator guarantees only on-process entries at callback
+    !! boundaries.  Gather the state needed by the MFD residual explicitly.
+    Tcell = u%tc
+    Tface = u%tf
+    call this%mesh%cell_imap%gather_offp(Tcell)
+    call this%mesh%face_imap%gather_offp(Tface)
+
+    allocate(state(this%mesh%ncell,0:0))
+    state(:,0) = Tcell
+
+    !! Residual of the algebraic enthalpy-temperature relation.
+    call this%H_of_T%compute_value(state, cval)
+    f%hc(:this%mesh%ncell_onP) = u%hc(:this%mesh%ncell_onP) - cval(:this%mesh%ncell_onP)
+
+    !! The heat equation uses only the owned enthalpy derivative entries, but
+    !! retain the existing gather behavior while the MFD kernels are shared
+    !! with the packed-array implementation.
+    Hdot = udot%hc
+    call this%mesh%cell_imap%gather_offp(Hdot)
+
+    !! Pre-compute the Dirichlet residual and impose its data locally for
+    !! flux evaluation.  U itself remains unmodified.
+    if (allocated(this%bc_dir)) then
+      call this%bc_dir%compute(t)
+      allocate(Fdir(size(this%bc_dir%index)))
+      associate (index => this%bc_dir%index, value => this%bc_dir%value)
+        Fdir = Tface(index) - value
+        Tface(index) = value
+      end associate
+    end if
+
+    call this%conductivity%compute_value(state, cval)
+    call this%disc%apply_diff(cval, Tcell, Tface, Fcell, Fface)
+    Fcell = Fcell + this%mesh%volume*Hdot
+
+    if (allocated(this%source)) then
+      call this%source%compute(t, Tcell)
+      Fcell = Fcell - this%mesh%volume*this%source%value
+    end if
+
+    if (allocated(this%bc_dir)) then
+      Fface(this%bc_dir%index) = Fdir
+      deallocate(Fdir)
+    end if
+
+    if (allocated(this%bc_flux)) then
+      call this%bc_flux%compute(t)
+      associate (index => this%bc_flux%index, value => this%bc_flux%value)
+        Fface(index) = Fface(index) + this%mesh%area(index)*value
+      end associate
+    end if
+
+    f%tc(:this%mesh%ncell_onP) = Fcell(:this%mesh%ncell_onP)
+    f%tf(:this%mesh%nface_onP) = Fface(:this%mesh%nface_onP)
+
+  end subroutine compute_f_vector
 
   !TODO: is there a better way to set/get rel_tol, max_itr
   !! Computes UDOT given a consistent U
