@@ -26,12 +26,13 @@ program test_region_func_type
   status = 0
 
   call create_mesh1(mesh)
+  call test_cell_set
   call test1
 
   call create_mesh2(mesh)
   call test2
 
-  if (status /= 0) stop 1
+  if (global_any(status /= 0)) stop 1
 
 contains
 
@@ -54,6 +55,51 @@ contains
     end do
   end subroutine
 
+  subroutine test_cell_set
+
+    type(parameter_list), pointer :: params
+    integer :: stat, j
+    character(:), allocatable :: string, errmsg
+    type(region_func) :: rfunc
+    real(r8), allocatable :: vol_frac(:,:)
+
+    string = '{"selected":{"type":"cell-set","cell-set-ids":[2]},&
+              &"background":{"type":"background"}}'
+
+    call parameter_list_from_json_string(string, params, errmsg)
+    if (.not.associated(params)) then
+      call write_fail('test_cell_set: ' // errmsg)
+      return
+    end if
+
+    call rfunc%init(mesh, params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_cell_set: ' // errmsg)
+      return
+    end if
+
+    allocate(vol_frac(rfunc%num_region(),mesh%ncell_onP))
+    call compute_volume_fractions(mesh, rfunc, 0, vol_frac, stat)
+    if (stat /= 0) then
+      call write_fail('test_cell_set: failed to compute volume fractions')
+      return
+    end if
+    call check_fraction_invariants(vol_frac, 'test_cell_set')
+
+    do j = 1, mesh%ncell_onP
+      if (btest(mesh%cell_set_mask(j), 2)) then
+        if (vol_frac(1,j) /= 1.0_r8 .or. vol_frac(2,j) /= 0.0_r8) then
+          call write_fail('test_cell_set: selected cell is not exact')
+        end if
+      else
+        if (vol_frac(1,j) /= 0.0_r8 .or. vol_frac(2,j) /= 1.0_r8) then
+          call write_fail('test_cell_set: background cell is not exact')
+        end if
+      end if
+    end do
+
+  end subroutine test_cell_set
+
   !! This is just like create_mesh1 except that we randomly perturb the node
   !! positions. We also don't modify the cell set data (and wont use it in the
   !! test) as it doesn't really work with a perturbed mesh.
@@ -61,7 +107,6 @@ contains
   subroutine create_mesh2(mesh)
     use unstr_2d_mesh_factory
     type(unstr_2d_mesh), pointer :: mesh
-    integer :: j
     if (associated(mesh)) deallocate(mesh)
     mesh => new_unstr_2d_mesh([-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], eps=0.1_r8, ptri=0.5_r8)
   end subroutine
@@ -94,12 +139,13 @@ contains
     end if
 
     rlev = 15
-    allocate(vol_frac(rfunc%num_region(),mesh%ncell))
+    allocate(vol_frac(rfunc%num_region(),mesh%ncell_onP))
     call compute_volume_fractions(mesh, rfunc, rlev, vol_frac, stat)
     if (stat /= 0) then
       call write_fail('test1: ' // errmsg)
       return
     end if
+    call check_fraction_invariants(vol_frac, 'test1')
 
     !! Expected volumes
     v(1) = 4*atan(1.0_r8) * 0.75_r8 ** 2
@@ -107,12 +153,12 @@ contains
     v(3) = v(2)/2
     v(4) = v(3)
 
-    write(*,'(a,i0,a)') 'test1: using ', rlev, ' recursion levels'
-    write(*,'(a)') 'test1: expecting single precision accuracy in the total region volumes'
+    if (is_IOP) write(*,'(a,i0,a)') 'test1: using ', rlev, ' recursion levels'
+    if (is_IOP) write(*,'(a)') 'test1: expecting single precision accuracy in the total region volumes'
     do j = 1, size(vol_frac,1)
-      vol = dot_product(mesh%volume, vol_frac(j,:))
+      vol = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), vol_frac(j,:)))
       err = abs(vol-v(j))
-      write(*,'(a,g0)') 'test1: volume error for region ' // i_to_c(j) // ': ', err
+      if (is_IOP) write(*,'(a,g0)') 'test1: volume error for region ' // i_to_c(j) // ': ', err
       if (err > epsilon(1.0)) call write_fail('test1: wrong volume for region ' // i_to_c(j))
     end do
 
@@ -145,28 +191,42 @@ contains
     end if
 
     rlev = 15
-    allocate(vol_frac(rfunc%num_region(),mesh%ncell))
+    allocate(vol_frac(rfunc%num_region(),mesh%ncell_onP))
     call compute_volume_fractions(mesh, rfunc, rlev, vol_frac, stat)
     if (stat /= 0) then
       call write_fail('test2: ' // errmsg)
       return
     end if
+    call check_fraction_invariants(vol_frac, 'test2')
 
     !! Expected volumes
     v(1) = 4*atan(1.0_r8) * 0.75_r8 ** 2
     v(2) = 2 - v(1)/2
     v(3) = v(2)
 
-    write(*,'(a,i0,a)') 'test2: using ', rlev, ' recursion levels'
-    write(*,'(a)') 'test2: expecting single precision accuracy in the total region volumes'
+    if (is_IOP) write(*,'(a,i0,a)') 'test2: using ', rlev, ' recursion levels'
+    if (is_IOP) write(*,'(a)') 'test2: expecting single precision accuracy in the total region volumes'
     do j = 1, size(vol_frac,1)
-      vol = dot_product(mesh%volume, vol_frac(j,:))
+      vol = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), vol_frac(j,:)))
       err = abs(vol-v(j))
-      write(*,'(a,g0)') 'test2: volume error for region ' // i_to_c(j) // ': ', err
+      if (is_IOP) write(*,'(a,g0)') 'test2: volume error for region ' // i_to_c(j) // ': ', err
       if (err > epsilon(1.0)) call write_fail('test2: wrong volume for region ' // i_to_c(j))
     end do
 
   end subroutine
+
+
+  subroutine check_fraction_invariants(vol_frac, label)
+    real(r8), intent(in) :: vol_frac(:,:)
+    character(*), intent(in) :: label
+
+    if (global_any(any(vol_frac < 0.0_r8) .or. any(vol_frac > 1.0_r8))) then
+      call write_fail(label // ': volume fractions are not bounded')
+    end if
+    if (global_any(any(abs(sum(vol_frac, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8)))) then
+      call write_fail(label // ': volume fractions do not sum to one')
+    end if
+  end subroutine check_fraction_invariants
 
   subroutine write_fail(errmsg)
     use,intrinsic :: iso_fortran_env, only: error_unit

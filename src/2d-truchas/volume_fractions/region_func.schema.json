@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/region_func.schema.json",
+  "title": "Truchas 2D region function",
+  "description": "An ordered mapping of region names to region definitions. A point belongs to the first matching region.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "$ref": "#/$defs/region"
+  },
+  "$defs": {
+    "point2": {
+      "type": "array",
+      "description": "A two-dimensional Cartesian point or vector.",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false
+    },
+    "complement": {
+      "type": "boolean",
+      "default": false,
+      "description": "Select the complement of the specified region."
+    },
+    "region": {
+      "oneOf": [
+        { "$ref": "#/$defs/cell-set-region" },
+        { "$ref": "#/$defs/half-plane-region" },
+        { "$ref": "#/$defs/box-region" },
+        { "$ref": "#/$defs/disk-region" },
+        { "$ref": "#/$defs/background-region" }
+      ]
+    },
+    "cell-set-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "cell-set" },
+        "cell-set-ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer" }
+        },
+        "complement": { "$ref": "#/$defs/complement" }
+      },
+      "required": ["type", "cell-set-ids"],
+      "additionalProperties": false
+    },
+    "half-plane-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "half-plane" },
+        "point": { "$ref": "#/$defs/point2" },
+        "normal": { "$ref": "#/$defs/point2" },
+        "complement": { "$ref": "#/$defs/complement" }
+      },
+      "required": ["type", "point", "normal"],
+      "additionalProperties": false
+    },
+    "box-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "box" },
+        "lower-corner": { "$ref": "#/$defs/point2" },
+        "upper-corner": { "$ref": "#/$defs/point2" },
+        "complement": { "$ref": "#/$defs/complement" }
+      },
+      "required": ["type", "lower-corner", "upper-corner"],
+      "additionalProperties": false
+    },
+    "disk-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "disk" },
+        "center": { "$ref": "#/$defs/point2" },
+        "radius": { "type": "number", "exclusiveMinimum": 0 },
+        "complement": { "$ref": "#/$defs/complement" }
+      },
+      "required": ["type", "center", "radius"],
+      "additionalProperties": false
+    },
+    "background-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "background" }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    }
+  }
+}

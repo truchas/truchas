@@ -1,9 +1,22 @@
 !!
 !! VOL_FRAC_INIT_PROCS
 !!
-!! This module provides procedures for computing the cell-based volume fractions
-!! occupied by the regions of a user-specified disjoint decomposition of the
-!! domain of the mesh.
+!! This module computes owned-cell volume fractions for an ordered region
+!! decomposition of a two-dimensional mesh.  A point belongs to the first
+!! region in the input list that contains it.
+!!
+!! Cell-set regions are cellwise and are therefore represented exactly.  Other
+!! region types are geometric initializers: their volume fractions are
+!! approximated by recursively subdividing each cell into triangles and
+!! sampling the region function.  This is not a cut-cell representation.  The
+!! input geometry is expected to be resolved by the local mesh size; features
+!! substantially smaller than a cell are intentionally averaged by this
+!! procedure.
+!!
+!! RLEV controls the number of recursive subdivisions for triangles whose
+!! sampled vertices do not all belong to one region.  At the final level, a
+!! mixed triangle is assigned wholly to the region containing its centroid.
+!! The resulting fractions are nonnegative and sum to one in every owned cell.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>
 !! January 2024
@@ -181,8 +194,9 @@ contains
     stat = merge(1, 0, any(this%regid == 0))
   end subroutine
 
-  !! If the cell vertices all belong to the same region, return its index;
-  !! otherwise return 0 to signal a multi-region cell.
+  !! Classify the triangle from its sampled vertices.  If they all belong to
+  !! the same region, return its index; otherwise return 0 to signal that the
+  !! triangle requires subdivision or centroid sampling.
   pure integer function region_id(this) result(n)
     class(tri_cell), intent(in) :: this
     integer :: i
