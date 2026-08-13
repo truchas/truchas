@@ -1,3 +1,18 @@
+!!
+!! REGION_FUNC_TYPE
+!!
+!! A REGION_FUNC maps a point and its parent-cell set membership to the first
+!! matching region in an ordered input list.  Region order is consequently
+!! significant: earlier regions take precedence over later ones.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 module region_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64

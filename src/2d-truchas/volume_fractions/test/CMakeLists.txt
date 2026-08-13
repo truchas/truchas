@@ -18,5 +18,14 @@ set_property(TEST region_func_type PROPERTY LABELS UNIT)
 add_executable(test_compute_volume_fractions test_compute_volume_fractions.F90)
 target_link_libraries(test_compute_volume_fractions truchas-extra)
 
-add_test(compute_volume_fractions test_compute_volume_fractions)
-set_property(TEST compute_volume_fractions PROPERTY LABELS UNIT)
+set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+  ./test_compute_volume_fractions ${MPIEXEC_POSTFLAGS})
+add_test(compute_volume_fractions-1p ${test_launch})
+set_tests_properties(compute_volume_fractions-1p PROPERTIES PROCESSORS 1)
+set_property(TEST compute_volume_fractions-1p PROPERTY LABELS UNIT 2d-truchas)
+
+set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+  ./test_compute_volume_fractions ${MPIEXEC_POSTFLAGS})
+add_test(compute_volume_fractions-4p ${test_launch})
+set_tests_properties(compute_volume_fractions-4p PROPERTIES PROCESSORS 4)
+set_property(TEST compute_volume_fractions-4p PROPERTY LABELS UNIT 2d-truchas)
