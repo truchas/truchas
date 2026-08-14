@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/material_regions.schema.json",
+  "title": "Truchas 2D material regions",
+  "description": "A mapping of named material regions. Truchas preserves parsed member order and assigns a point to the first matching region.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "$ref": "#/$defs/material-region"
+  },
+  "$defs": {
+    "point2": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "items": false
+    },
+    "material-region": {
+      "type": "object",
+      "properties": {
+        "material": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["cell-set", "half-plane", "box", "disk", "background"] },
+        "cell-set-ids": { "type": "array", "minItems": 1, "items": { "type": "integer" } },
+        "point": { "$ref": "#/$defs/point2" },
+        "normal": { "$ref": "#/$defs/point2" },
+        "lower-corner": { "$ref": "#/$defs/point2" },
+        "upper-corner": { "$ref": "#/$defs/point2" },
+        "center": { "$ref": "#/$defs/point2" },
+        "radius": { "type": "number", "exclusiveMinimum": 0 },
+        "complement": { "type": "boolean", "default": false }
+      },
+      "required": ["material", "type"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "cell-set" } } },
+          "then": { "required": ["cell-set-ids"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "half-plane" } } },
+          "then": { "required": ["point", "normal"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "box" } } },
+          "then": { "required": ["lower-corner", "upper-corner"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "disk" } } },
+          "then": { "required": ["center", "radius"] }
+        }
+      ]
+    }
+  }
+}
