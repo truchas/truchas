@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://truchas.org/schema/region_func.schema.json",
   "title": "Truchas 2D region function",
-  "description": "An ordered mapping of region names to region definitions. A point belongs to the first matching region.",
+  "description": "A mapping of region names to region definitions. Truchas preserves parsed member order and assigns a point to the first matching region.",
   "type": "object",
   "minProperties": 1,
   "additionalProperties": {

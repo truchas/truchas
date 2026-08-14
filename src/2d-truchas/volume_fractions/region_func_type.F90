@@ -2,8 +2,8 @@
 !! REGION_FUNC_TYPE
 !!
 !! A REGION_FUNC maps a point and its parent-cell set membership to the first
-!! matching region in an ordered input list.  Region order is consequently
-!! significant: earlier regions take precedence over later ones.
+!! matching region in parsed PARAMETER_LIST order.  Region order is
+!! consequently significant: earlier regions take precedence over later ones.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>
 !!
