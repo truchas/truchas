@@ -1,60 +1,29 @@
 !!
-!! TOFH_TYPE
+!! HT_2D_TOFH_TYPE
 !!
-!! This module defines a type for representing the relation for temperature as
-!! a function of enthalpy density, T(H), that derives from its given inverse
-!! property mesh function H(T).
+!! This module defines the HT_2D_TOFH type for computing cell temperatures
+!! from enthalpy densities by inverting a cell material property mesh function
+!! H(T).
 !!
-!! Neil N. Carlson <nnc@lanl.gov.
-!! Adapted for Fortran 2008, May 2015
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! PROGRAMMING INTERFACE
-!!
-!!  The derived type TOFH has the following type bound procedures
-!!
-!!  INIT (HOFT, EPS [,MAX_TRY [,DELTA]]) initializes the object to represent
-!!    the inverse of the given property mesh function HOFT, which is assumed
-!!    to describe an increasing enthalpy density as a function of temperature
-!!    relation.  EPS is the accuracy to which the temperature will be computed
-!!    by COMPUTE.  The optional arguments control the recovery algorithm used
-!!    when the root bracketing interval provided to COMPUTE is invalid; see
-!!    COMPUTE for details.
-!!
-!!  COMPUTE (CELL, H, TMIN, TMAX, T) computes the temperature T as a function
-!!    of enthalpy density H for the given cell index CELL.
-!!    (Note that the mixture of materials can vary from cell to cell.)
-!!    The computation involves finding the root of the function H - H(T).
-!!    The given interval [TMIN, TMAX] must bracket the root T.  If MAX_TRY
-!!    and DELTA were given to TOFH_INIT and the interval fails to bracket
-!!    the temperature, then the interval will be expanded as many as MAX_TRY
-!!    times seeking an interval that does.  The errant endpoint is shifted
-!!    successively starting with the increment DELTA, and increasing by a
-!!    factor of 10 each additional try.
-!!
-!! N.B. The given enthalpy relation H(T) is assumed to be a function of
-!!      temperature alone; this will need to be extended to handle systems
-!!      involving species concentrations.
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
 
 #include "f90_assert.fpp"
 
-module new_TofH_type
+module ht_2d_tofh_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use new_prop_mesh_func_type
+  use new_mesh_func_class
   use ridders_class
   implicit none
   private
 
-  type, extends(ridders), public :: TofH
+  !! Per-cell inverse of an increasing enthalpy-temperature relation. The
+  !! enthalpy relation may differ by cell because material composition varies.
+  type, extends(ridders), public :: ht_2d_tofh
     private
-    type(prop_mesh_func), pointer :: HofT => null()
+    class(new_mesh_func), pointer :: HofT => null()
     real(r8) :: H
     integer  :: cell
     !! Parameters for the algorithm that wraps Ridders root finding
@@ -72,21 +41,25 @@ module new_TofH_type
     procedure :: init
     procedure :: compute
     procedure :: get_metrics
-  end type TofH
+  end type ht_2d_tofh
 
 contains
 
   function f (this, x) result (fx)
-    class(TofH), intent(in) :: this
+    class(ht_2d_tofh), intent(in) :: this
     real(r8), intent(in) :: x
     real(r8) :: fx
-    call this%HofT%compute_value(this%cell, [x], fx)
+    call this%HofT%compute_value_cell(this%cell, [x], fx)
     fx = this%H - fx
   end function
 
+  !! Initialize the inverse of H(T). EPS is the temperature root-finding
+  !! tolerance. MAX_TRY and DELTA control recovery when COMPUTE receives an
+  !! interval that does not bracket the root.
+
   subroutine init (this, HofT, eps, max_try, delta)
-    class(TofH), intent(out) :: this
-    type(prop_mesh_func), target :: HofT
+    class(ht_2d_tofh), intent(out) :: this
+    class(new_mesh_func), target :: HofT
     real(r8), intent(in) :: eps
     integer, intent(in), optional :: max_try
     real(r8), intent(in), optional :: delta
@@ -106,9 +79,10 @@ contains
     end if
   end subroutine init
 
+  !! Return collective root-finding and bracket-recovery performance metrics.
   subroutine get_metrics (this, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
     use parallel_communication, only: global_sum, global_maxval
-    class(TofH), intent(in) :: this
+    class(ht_2d_tofh), intent(in) :: this
     integer, intent(out), optional :: max_itr, max_adj
     real, intent(out), optional :: avg_itr, rec_rate, avg_adj
     if (present(avg_itr))  avg_itr  = real(global_sum(this%num_itr)) / max(1,global_sum(this%num_call))
@@ -118,9 +92,17 @@ contains
     if (present(max_adj))  max_adj  = global_maxval(this%max_adj)
   end subroutine get_metrics
 
+  !! Compute temperature T for cell CELL and enthalpy density H by finding
+  !! the root of H - H(T). TMIN and TMAX should bracket the root. If they do
+  !! not, the errant endpoint is shifted up to MAX_TRY times, starting with
+  !! DELTA and increasing the shift by a factor of 10 after each attempt.
+  !!
+  !! H(T) is presently assumed to depend on temperature alone. Coupled
+  !! thermal-species systems require an extended interface.
+
   subroutine compute (this, cell, H, Tmin, Tmax, T)
     use truchas_logging_services, only: TLS_fatal
-    class(TofH), intent(inout) :: this
+    class(ht_2d_tofh), intent(inout) :: this
     integer,  intent(in)  :: cell
     real(r8), intent(in)  :: H, Tmin, Tmax
     real(r8), intent(out) :: T
@@ -169,5 +151,4 @@ contains
     end if
   end subroutine compute
 
-end module new_TofH_type
-
+end module ht_2d_tofh_type

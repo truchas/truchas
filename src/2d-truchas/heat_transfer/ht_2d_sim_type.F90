@@ -20,9 +20,9 @@ module ht_2d_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use matl_mesh_func_type
   use material_database_type
   use material_model_type
+  use material_composition_type
   use scalar_func_factories
   use scalar_func_projection
   use mfd_2d_disc_type
@@ -40,8 +40,9 @@ module ht_2d_sim_type
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(mfd_2d_disc), pointer :: disc => null()
+    type(material_database) :: matl_db
     type(material_model) :: matl_model
-    type(matl_mesh_func), pointer :: mmf => null()
+    type(material_composition), pointer :: composition => null()
     type(ht_2d_model), pointer :: model => null()
     type(ht_2d_solver), pointer :: solver => null()
     type(ht_2d_vtkhdf_writer) :: output
@@ -67,6 +68,7 @@ contains
     if (associated(this%disc)) deallocate(this%disc)
     if (associated(this%model)) deallocate(this%model)
     if (associated(this%solver)) deallocate(this%solver)
+    if (associated(this%composition)) deallocate(this%composition)
   end subroutine ht_2d_sim_delete
 
 
@@ -82,12 +84,12 @@ contains
     type(parameter_list) :: params
 
     type(parameter_list), pointer :: plist
-    type(material_database) :: matl_db
     class(scalar_func), allocatable :: f
-    character(:), allocatable :: errmsg, context
+    character(:), allocatable :: errmsg, context, matl_names(:)
     real(r8), allocatable :: temp(:)
     real(r8) :: rel_tol
-    integer :: stat, max_itr
+    integer :: stat, max_itr, rlev
+    type(parameter_list_iterator) :: piter
 
     call start_timer('initialization')
     call TLS_info('Initializing the simulation', TLS_VERB_NOISY)
@@ -118,26 +120,39 @@ contains
     if (params%is_sublist('materials')) then
       plist => params%sublist('materials')
       context = 'processing ' // plist%path() // ': '
-      call load_material_database(matl_db, plist, stat, errmsg)
+      call load_material_database(this%matl_db, plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
     else
       call TLS_fatal('missing "materials" sublist parameter')
     end if
-    call this%matl_model%init(['default'], matl_db, stat, errmsg)
+    allocate(this%composition)
+    if (params%is_sublist('material-regions')) then
+      plist => params%sublist('material-regions')
+      context = 'processing ' // plist%path() // ': '
+      call get_material_region_names(plist, matl_names, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
+      !! Recursive geometric refinement level. The finest unresolved
+      !! subtriangle has a linear size approximately 2**(-rlev) times that
+      !! of its initial cell triangle.
+      call params%get('material-region-refinement-level', rlev, stat, errmsg, default=6)
+      if (stat /= 0) call TLS_fatal('processing material-region-refinement-level: ' // errmsg)
+      if (rlev < 0) call TLS_fatal('"material-region-refinement-level" must be >= 0')
+    else
+      plist => params%sublist('materials')
+      piter = parameter_list_iterator(plist, sublists_only=.true.)
+      if (piter%count() /= 1) call TLS_fatal('multiple materials require a "material-regions" sublist')
+      matl_names = [piter%name()]
+    end if
+    call this%matl_model%init(matl_names, this%matl_db, stat, errmsg)
     if (stat /= 0) call TLS_fatal(errmsg)
-    
-    !! Layout materials across the mesh
-    !TODO: expose material layout to input
-!    block
-!      integer, allocatable :: matids(:)
-!      allocate(this%mmf)
-!      matids = this%matl_model%matl_index(['unobtanium'])
-!      call this%mmf%init(this%mesh)
-!      call this%mmf%define_region(this%mesh%cell_set_id, matids, stat, errmsg)
-!      if (stat /= 0) call TLS_fatal(errmsg)
-!      call this%mmf%define_complete(stat, errmsg)
-!      if (stat /= 0) call TLS_fatal(errmsg)
-!    end block
+    if (this%matl_model%have_void) call TLS_fatal('2D heat transport does not yet support VOID material regions')
+    if (params%is_sublist('material-regions')) then
+      plist => params%sublist('material-regions')
+      call this%composition%init(this%mesh, this%matl_model, plist, rlev, stat, errmsg)
+    else
+      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+    end if
+    if (stat /= 0) call TLS_fatal('initializing material composition: ' // errmsg)
 
     !! Initialize enthalpy
     call add_enthalpy_prop(this%matl_model, stat, errmsg)
@@ -149,8 +164,7 @@ contains
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
-      !call this%model%init(this%disc, this%mmf, plist, stat, errmsg)
-      call this%model%init(this%disc, this%matl_model, plist, stat, errmsg)
+      call this%model%init(this%disc, this%matl_model, this%composition, plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
     else
       call TLS_fatal('missing "ht-model" sublist parameter')

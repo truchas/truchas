@@ -1,17 +1,14 @@
 !!
 !! MATERIAL_COMPOSITION_TYPE
 !!
-!! This module defines MATERIAL_COMPOSITION, the owned-cell material volume
-!! fraction state of a two-dimensional simulation.  The simulation owns this
-!! state and provides non-owning references to physics models that need it.
+!! This module defines the MATERIAL_COMPOSITION type, which stores the
+!! on-process cell material volume fractions of a two-dimensional simulation.
+!! The simulation owns this state and provides non-owning references to
+!! physics models that need it.
 !!
-!! Neil Carlson <neil.n.carlson@gmail.com>
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #include "f90_assert.fpp"
 
@@ -20,25 +17,18 @@ module material_composition_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use material_model_type
-  use region_func_type
-  use vol_frac_init_procs
-  use parallel_communication, only: global_any
   implicit none
   private
 
   public :: get_material_region_names
 
-  type :: region_material
-    integer :: material_index
-  end type region_material
-
   type, public :: material_composition
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(region_material), allocatable :: region(:)
-    real(r8), allocatable, public :: volume_fraction(:,:) ! (material, owned cell)
+    real(r8), allocatable, public :: vfrac(:,:) ! (material, on-process cell)
   contains
     procedure :: init
+    procedure :: init_uniform
   end type material_composition
 
 contains
@@ -119,6 +109,9 @@ contains
   subroutine init(this, mesh, matl_model, params, rlev, stat, errmsg)
 
     use parameter_list_type
+    use region_func_type
+    use vol_frac_init_procs
+    use parallel_communication, only: global_any
 
     class(material_composition), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
@@ -133,15 +126,16 @@ contains
     type(parameter_list_iterator) :: piter
     character(:), allocatable :: name
     real(r8), allocatable :: region_fraction(:,:)
+    integer, allocatable :: region_mid(:)
     integer :: i, mid
 
     this%mesh => mesh
     call rfunc%init(mesh, params, stat, errmsg)
     if (stat /= 0) return
 
-    allocate(this%region(rfunc%num_region()))
+    allocate(region_mid(rfunc%num_region()))
     piter = parameter_list_iterator(params, sublists_only=.true.)
-    do i = 1, size(this%region)
+    do i = 1, size(region_mid)
       plist => piter%sublist()
       call plist%get('material', name, stat, errmsg)
       if (stat /= 0) then
@@ -154,25 +148,25 @@ contains
         errmsg = 'processing ' // plist%path() // ': unknown material: ' // name
         return
       end if
-      this%region(i)%material_index = mid
+      region_mid(i) = mid
       call piter%next()
     end do
 
-    allocate(region_fraction(size(this%region), mesh%ncell_onP))
+    allocate(region_fraction(size(region_mid), mesh%ncell_onP))
     call compute_volume_fractions(mesh, rfunc, rlev, region_fraction, stat)
     if (stat /= 0) then
       errmsg = 'computing material-region volume fractions failed'
       return
     end if
 
-    allocate(this%volume_fraction(matl_model%nmatl, mesh%ncell_onP), source=0.0_r8)
-    do i = 1, size(this%region)
-      mid = this%region(i)%material_index
-      this%volume_fraction(mid,:) = this%volume_fraction(mid,:) + region_fraction(i,:)
+    allocate(this%vfrac(matl_model%nmatl, mesh%ncell_onP), source=0.0_r8)
+    do i = 1, size(region_mid)
+      mid = region_mid(i)
+      this%vfrac(mid,:) = this%vfrac(mid,:) + region_fraction(i,:)
     end do
 
-    if (global_any(any(this%volume_fraction < 0.0_r8) .or. any(this%volume_fraction > 1.0_r8) .or. &
-        any(abs(sum(this%volume_fraction, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8)))) then
+    if (global_any(any(this%vfrac < 0.0_r8) .or. any(this%vfrac > 1.0_r8) .or. &
+        any(abs(sum(this%vfrac, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8)))) then
       stat = 1
       errmsg = 'invalid material volume fractions'
       return
@@ -181,5 +175,28 @@ contains
     errmsg = ''
 
   end subroutine init
+
+
+  subroutine init_uniform(this, mesh, matl_model, material_index, stat, errmsg)
+
+    class(material_composition), intent(out) :: this
+    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(material_model), intent(in) :: matl_model
+    integer, intent(in) :: material_index
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    if (material_index < 1 .or. material_index > matl_model%nmatl) then
+      stat = 1
+      errmsg = 'invalid uniform material index'
+      return
+    end if
+    this%mesh => mesh
+    allocate(this%vfrac(matl_model%nmatl, mesh%ncell_onP), source=0.0_r8)
+    this%vfrac(material_index,:) = 1.0_r8
+    stat = 0
+    errmsg = ''
+
+  end subroutine init_uniform
 
 end module material_composition_type

@@ -78,10 +78,10 @@ contains
     integer :: mid(3), i, j
 
     if (matl_model%nmatl /= 3) call fail('wrong number of model materials')
-    if (any(composition%volume_fraction < 0.0_r8) .or. any(composition%volume_fraction > 1.0_r8)) then
+    if (any(composition%vfrac < 0.0_r8) .or. any(composition%vfrac > 1.0_r8)) then
       call fail('material fractions are not bounded')
     end if
-    if (any(abs(sum(composition%volume_fraction, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8))) then
+    if (any(abs(sum(composition%vfrac, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8))) then
       call fail('material fractions do not sum to one')
     end if
 
@@ -93,14 +93,14 @@ contains
     expected(2) = 2.0_r8 - 4.0_r8 * atan(1.0_r8) * radius**2
     expected(3) = expected(2)
     do i = 1, size(mid)
-      volume = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), composition%volume_fraction(mid(i),:)))
+      volume = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), composition%vfrac(mid(i),:)))
       if (abs(volume-expected(i)) > epsilon(1.0)) call fail('wrong material volume')
     end do
 
     pure = .false.
     do j = 1, mesh%ncell_onP
       do i = 1, size(mid)
-        pure(i) = pure(i) .or. composition%volume_fraction(mid(i),j) == 1.0_r8
+        pure(i) = pure(i) .or. composition%vfrac(mid(i),j) == 1.0_r8
       end do
     end do
     do i = 1, size(mid)

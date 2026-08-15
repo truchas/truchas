@@ -102,15 +102,16 @@ contains
 
     ASSERT(dt > 0.0_r8)
 
-    allocate(state(this%mesh%ncell,0:0))
-    state(:,0) = u%tc
-    call this%mesh%cell_imap%gather_offp(state(:,0))
+    allocate(state(this%mesh%ncell_onP,0:0))
+    state(:,0) = u%tc(:this%mesh%ncell_onP)
 
     this%dt = dt
     dm => this%hcprecon%matrix()
-    call this%model%conductivity%compute_value(state, coef)
+    call this%model%conductivity%compute_value(state, coef(:this%mesh%ncell_onP))
+    call this%mesh%cell_imap%gather_offp(coef)
     call dm%compute(coef)
-    call this%model%H_of_T%compute_deriv(state, 1, this%dHdT)
+    call this%model%H_of_T%compute_deriv(state, 1, this%dHdT(:this%mesh%ncell_onP))
+    call this%mesh%cell_imap%gather_offp(this%dHdT)
     call dm%incr_cell_diag(this%mesh%volume*this%dHdT/dt)
 
     if (allocated(this%model%bc_dir)) then

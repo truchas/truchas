@@ -19,10 +19,12 @@ module ht_2d_model_type
   use mfd_2d_disc_type
   use bndry_func1_class
   use scalar_mesh_multifunc_type
-  use new_TofH_type
+  use new_mesh_func_class
+  use cell_matl_prop_func_type
+  use ht_2d_tofh_type
   use ht_2d_vector_type
   !use matl_mesh_func_type
-  use new_prop_mesh_func_type
+  use material_composition_type
   use parallel_communication
   use parameter_list_type
   use truchas_logging_services
@@ -33,9 +35,9 @@ module ht_2d_model_type
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(mfd_2d_disc),  pointer :: disc => null()
     !! Equation parameters
-    type(prop_mesh_func) :: conductivity  ! thermal conductivity
-    type(prop_mesh_func) :: H_of_T        ! enthalpy as a function of temperature
-    type(TofH) :: T_of_H                  ! inverse of enthalpy-temperature function
+    class(new_mesh_func), allocatable :: conductivity
+    class(new_mesh_func), allocatable :: H_of_T
+    type(ht_2d_tofh) :: T_of_H            ! inverse enthalpy-temperature relation
     type(scalar_mesh_multifunc), allocatable :: source  ! external heat source
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
@@ -49,7 +51,7 @@ module ht_2d_model_type
 contains
 
   !subroutine init(this, disc, mmf, params, stat, errmsg)
-  subroutine init(this, disc, matl_model, params, stat, errmsg)
+  subroutine init(this, disc, matl_model, composition, params, stat, errmsg)
 
     use material_model_type
     use material_utilities
@@ -57,6 +59,7 @@ contains
     class(ht_2d_model), intent(out), target :: this
     type(mfd_2d_disc), intent(in), target :: disc
     type(material_model), intent(in) :: matl_model
+    type(material_composition), pointer, intent(in) :: composition
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -75,7 +78,11 @@ contains
     call required_property_check(matl_model, 'enthalpy', stat, errmsg)
     if (stat /= 0) return
     !call this%H_of_T%init(mmf, 'enthalpy', stat, errmsg)
-    call this%H_of_T%init(matl_model, 'enthalpy', stat, errmsg)
+    allocate(cell_matl_prop_func :: this%H_of_T)
+    select type (H_of_T => this%H_of_T)
+    type is (cell_matl_prop_func)
+      call H_of_T%init(matl_model, composition, 'enthalpy', stat, errmsg)
+    end select
     if (global_any(stat /= 0)) then
       stat = -1
       errmsg = context // 'unexpected error defining H_of_T: ' // errmsg
@@ -109,7 +116,11 @@ contains
     call required_property_check(matl_model, 'conductivity', stat, errmsg)
     if (stat /= 0) return
     !call this%conductivity%init(mmf, 'conductivity', stat, errmsg)
-    call this%conductivity%init(matl_model, 'conductivity', stat, errmsg)
+    allocate(cell_matl_prop_func :: this%conductivity)
+    select type (conductivity => this%conductivity)
+    type is (cell_matl_prop_func)
+      call conductivity%init(matl_model, composition, 'conductivity', stat, errmsg)
+    end select
     if (global_any(stat /= 0)) then
       stat = -1
       errmsg = context // 'unexpected error defining conductivity: ' // errmsg
@@ -268,7 +279,7 @@ contains
     state(:,0) = Tcell
 
     !! Residual of the algebraic enthalpy-temperature relation.
-    call this%H_of_T%compute_value(state, cval)
+    call this%H_of_T%compute_value(state, cval(:this%mesh%ncell_onP))
     f%hc(:this%mesh%ncell_onP) = u%hc(:this%mesh%ncell_onP) - cval(:this%mesh%ncell_onP)
 
     !! The heat equation uses only the owned enthalpy derivative entries.
@@ -286,7 +297,8 @@ contains
       end associate
     end if
 
-    call this%conductivity%compute_value(state, cval)
+    call this%conductivity%compute_value(state, cval(:this%mesh%ncell_onP))
+    call this%mesh%cell_imap%gather_offp(cval)
     call this%disc%apply_diff(cval, Tcell, Tface, Fcell, Fface)
     Fcell = Fcell + this%mesh%volume*Hdot
 

@@ -105,7 +105,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -160,7 +160,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -217,7 +217,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -272,7 +272,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, sublist, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm

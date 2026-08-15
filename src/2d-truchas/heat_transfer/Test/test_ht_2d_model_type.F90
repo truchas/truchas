@@ -76,6 +76,30 @@ contains
     stop status
   end subroutine error_exit
 
+  subroutine check_prop_extent(model, tol)
+    type(ht_2d_model), intent(in) :: model
+    real(r8), intent(in) :: tol
+
+    real(r8), allocatable :: state(:,:), value(:), value0(:), deriv(:), deriv0(:)
+    integer :: ncell
+
+    ncell = model%mesh%ncell_onP
+    allocate(state(ncell+1,1), value(ncell), value0(ncell), deriv(ncell), deriv0(ncell))
+    state = 1.0_r8
+
+    call model%H_of_T%compute_value(state(:ncell,:), value0)
+    call model%H_of_T%compute_value(state, value)
+    if (global_any(abs(value - value0) > tol)) then
+      call error_exit('property value changed when state included an extra cell')
+    end if
+
+    call model%H_of_T%compute_deriv(state(:ncell,:), 1, deriv0)
+    call model%H_of_T%compute_deriv(state, 1, deriv)
+    if (global_any(abs(deriv - deriv0) > tol)) then
+      call error_exit('property derivative changed when state included an extra cell')
+    end if
+  end subroutine check_prop_extent
+
   !! Tests the HT_2d_model on a linear problem with Dirichlet boundary conditions
   subroutine test_linear_dir(disc, matl_model, tol)
 
@@ -113,8 +137,9 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
+    call check_prop_extent(HT_model, tol)
 
     call ic%init(HT_model)
     call u%init(disc%mesh)
@@ -210,8 +235,9 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, params, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
+    call check_prop_extent(HT_model, tol)
 
     call ic%init(HT_model)
     call u%init(disc%mesh)
