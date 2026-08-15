@@ -55,10 +55,10 @@ contains
     u%tc(:this%mesh%ncell_onP) = temp
     call this%mesh%cell_imap%gather_offp(u%tc)
 
-    allocate(state(this%mesh%ncell,0:0), Hcell(this%mesh%ncell))
-    state(:,0) = u%tc
+    allocate(state(this%mesh%ncell_onP,0:0), Hcell(this%mesh%ncell_onP))
+    state(:,0) = u%tc(:this%mesh%ncell_onP)
     call this%model%H_of_T%compute_value(state, Hcell)
-    u%hc(:this%mesh%ncell_onP) = Hcell(:this%mesh%ncell_onP)
+    u%hc(:this%mesh%ncell_onP) = Hcell
 
     !! The zero face field is only an initial guess for the algebraic solve.
     call compute_face_temp(this, t, u, rel_tol, max_itr, stat, errmsg)
@@ -154,10 +154,10 @@ contains
     end if
     if (norm == 0.0_r8) return
 
-    allocate(coef(this%mesh%ncell), state(this%mesh%ncell,0:0))
-    state(:,0) = u%tc
-    call this%mesh%cell_imap%gather_offp(state(:,0))
-    call this%model%conductivity%compute_value(state, coef)
+    allocate(coef(this%mesh%ncell), state(this%mesh%ncell_onP,0:0))
+    state(:,0) = u%tc(:this%mesh%ncell_onP)
+    call this%model%conductivity%compute_value(state, coef(:this%mesh%ncell_onP))
+    call this%mesh%cell_imap%gather_offp(coef)
     call dm%init(this%model%disc)
     call dm%compute(coef)
     if (allocated(this%model%bc_dir)) then

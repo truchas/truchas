@@ -14,10 +14,13 @@ module test_ht_2d_common
   use matl_mesh_func_type
   use material_database_type
   use material_model_type
+  use material_composition_type
   use scalar_func_class
   use mfd_2d_disc_type
   use ht_2d_model_type
   implicit none
+
+  type(material_composition), target, save :: test_composition
 
 contains
 
@@ -51,6 +54,9 @@ contains
     call matl_model%init(['unobtanium'], matl_db, stat, errmsg)
     if (stat /= 0) call TLS_FATAL(errmsg)
 
+    call test_composition%init_uniform(mesh, matl_model, 1, stat, errmsg)
+    if (stat /= 0) call TLS_FATAL(errmsg)
+
     !! Initialize enthalpy
     call add_enthalpy_prop(matl_model, stat, errmsg)
     if (stat /= 0) call TLS_FATAL(errmsg)
@@ -64,6 +70,12 @@ contains
     if (stat /= 0) call TLS_FATAL(errmsg)
 
   end subroutine init_materials
+
+
+  function material_composition_ref() result(composition)
+    type(material_composition), pointer :: composition
+    composition => test_composition
+  end function material_composition_ref
 
 
   !! Computes the average integral of a function over on-process faces and cells

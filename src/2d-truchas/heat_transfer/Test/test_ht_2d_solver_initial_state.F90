@@ -111,7 +111,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, model_params, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
@@ -222,7 +222,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, model_params, stat, errmsg)
+    call HT_model%init(disc, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
