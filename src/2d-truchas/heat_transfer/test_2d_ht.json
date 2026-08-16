@@ -53,6 +53,6 @@
     "initial-temperature": {
         "type": "polynomial",
         "poly-coef": [1.0,1.0,-2.0],
-        "poly-powers": [[0,0,0],[0,1,0],[0,2,0]]
+        "poly-powers": [[0,0],[1,0],[2,0]]
     }
 }
