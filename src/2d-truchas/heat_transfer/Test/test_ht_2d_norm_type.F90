@@ -13,7 +13,6 @@ program test_HT_2d_norm_type
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
-  use matl_mesh_func_type
   use material_model_type
   !use source_mesh_function
   use scalar_func_factories
@@ -28,7 +27,6 @@ program test_HT_2d_norm_type
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
   type(material_model), target :: matl_model
-  type(matl_mesh_func), target :: mmf
   real(r8) :: xmin(2), xmax(2), eps
   integer  :: nx(2)
   integer :: status = 0
@@ -50,7 +48,7 @@ program test_HT_2d_norm_type
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
-  call init_materials(mesh, matl_model, mmf)
+  call init_materials(mesh, matl_model)
 
   !! Run test problems
   call test_abs(mfd_disc, matl_model)

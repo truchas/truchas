@@ -14,8 +14,11 @@ program test_HT_2d_solver_initial_state
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
-  use matl_mesh_func_type
   use material_model_type
+  use material_database_type
+  use material_factory, only: load_material_database
+  use material_utilities, only: add_enthalpy_prop
+  use material_composition_type
   !use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
@@ -29,7 +32,6 @@ program test_HT_2d_solver_initial_state
   type(unstr_2d_mesh), pointer :: mesh
   type(mfd_2d_disc), target :: mfd_disc
   type(material_model), target :: matl_model
-  type(matl_mesh_func), target :: mmf
   real(r8) :: xmin(2), xmax(2), tol, eps
   integer  :: nx(2)
   integer :: status = 0
@@ -53,11 +55,12 @@ program test_HT_2d_solver_initial_state
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
-  call init_materials(mesh, matl_model, mmf)
+  call init_materials(mesh, matl_model)
 
   !! Run test problems
   call test_linear_dir(mfd_disc, matl_model, tol)
   call test_linear_flux(mfd_disc, matl_model, tol)
+  call diagnose_multimaterial_dirichlet(mfd_disc, tol)
 
   !! Wrap up
   call halt_parallel_communication
@@ -126,7 +129,7 @@ contains
     call average_integral(disc, f, Tcell, Tface)
 
     !! Expected cell enthalpy
-    allocate(Hcell(disc%mesh%ncell))
+    allocate(Hcell(disc%mesh%ncell_onP))
     allocate(state(disc%mesh%ncell,0:0))
     state(:disc%mesh%ncell_onP,0) = Tcell
     call disc%mesh%cell_imap%gather_offp(state(:,0))
@@ -237,7 +240,7 @@ contains
     call average_integral(disc, f, Tcell, Tface)
 
     !! Expected cell enthalpy
-    allocate(Hcell(disc%mesh%ncell))
+    allocate(Hcell(disc%mesh%ncell_onP))
     allocate(state(disc%mesh%ncell,0:0))
     state(:disc%mesh%ncell_onP,0) = Tcell
     call disc%mesh%cell_imap%gather_offp(state(:,0))
@@ -279,5 +282,104 @@ contains
     end if
 
   end subroutine test_linear_flux
+
+
+  !! Diagnose the discrete residual of the exact one-dimensional two-material
+  !! steady conduction solution.  The conductivity interface is aligned with
+  !! a mesh face at x=0.5; density and specific heat are one in both regions.
+  subroutine diagnose_multimaterial_dirichlet(disc, tol)
+
+    type(mfd_2d_disc), target, intent(in) :: disc
+    real(r8), intent(in) :: tol
+
+    type(material_database) :: matl_db
+    type(material_model), target :: matl_model
+    type(material_composition), target :: composition
+    type(ht_2d_model), target :: model
+    type(ht_2d_ic_solver) :: ic
+    type(parameter_list), pointer :: matl_params, region_params, model_params
+    type(ht_2d_vector) :: u, udot, zero_udot, residual
+    real(r8), allocatable :: temp(:), state(:,:), conductivity(:)
+    real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol
+    character(:), allocatable :: errmsg, string
+    integer :: j, max_itr, stat
+
+    if (is_IOP) print '(/,"Diagnosing two-material Dirichlet problem")'
+
+    string = '{"low":{"properties":{"conductivity":1.0,"density":1.0,"specific-heat":1.0}},&
+              &"high":{"properties":{"conductivity":10.0,"density":1.0,"specific-heat":1.0}}}'
+    call parameter_list_from_json_string(string, matl_params, errmsg)
+    if (.not.associated(matl_params)) call error_exit(errmsg)
+    call load_material_database(matl_db, matl_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call matl_model%init(['low ', 'high'], matl_db, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call add_enthalpy_prop(matl_model, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+
+    string = '{"low-half":{"material":"low","type":"half-plane","point":[0.5,0.0],"normal":[1.0,0.0]},&
+              &"high-background":{"material":"high","type":"background"}}'
+    call parameter_list_from_json_string(string, region_params, errmsg)
+    if (.not.associated(region_params)) call error_exit(errmsg)
+    call composition%init(disc%mesh, matl_model, region_params, 6, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+
+    string = '{"bc":{"left":{"type":"temperature","face-set-ids":[1],"temp":1.0},&
+              &"right":{"type":"temperature","face-set-ids":[2],"temp":0.0},&
+              &"bottom-top":{"type":"flux","face-set-ids":[3,4],"flux":0.0}}}'
+    call parameter_list_from_json_string(string, model_params, errmsg)
+    if (.not.associated(model_params)) call error_exit(errmsg)
+    call model%init(disc, matl_model, composition, model_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+
+    flux = 1.0_r8 / (0.5_r8 + 0.5_r8 / 10.0_r8)
+    call disc%mesh%init_cell_centroid
+    allocate(temp(disc%mesh%ncell_onP))
+    do j = 1, size(temp)
+      if (disc%mesh%cell_centroid(1,j) <= 0.5_r8) then
+        temp(j) = 1.0_r8 - flux*disc%mesh%cell_centroid(1,j)
+      else
+        temp(j) = 1.0_r8 - 0.5_r8*flux - flux/10.0_r8 * (disc%mesh%cell_centroid(1,j)-0.5_r8)
+      end if
+    end do
+    allocate(state(disc%mesh%ncell_onP,0:0), conductivity(disc%mesh%ncell_onP))
+    state(:,0) = temp
+    call model%conductivity%compute_value(state, conductivity)
+
+    t = 0.0_r8
+    dt = 1.0e-3_r8
+    rel_tol = tol*1.0e-5_r8
+    max_itr = 100
+    call ic%init(model)
+    call u%init(disc%mesh)
+    call udot%init(u)
+    call ic%compute(t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+
+    call zero_udot%init(u)
+    call zero_udot%setval(0.0_r8)
+    call residual%init(u)
+    call residual%setval(0.0_r8)
+    call model%residual(t, u, zero_udot, residual)
+    cell_norm = sqrt(global_dot_product(residual%tc(:disc%mesh%ncell_onP), &
+                                        residual%tc(:disc%mesh%ncell_onP)))
+    face_norm = sqrt(global_dot_product(residual%tf(:disc%mesh%nface_onP), &
+                                        residual%tf(:disc%mesh%nface_onP)))
+    hdot_norm = sqrt(global_dot_product(udot%hc(:disc%mesh%ncell_onP), &
+                                        udot%hc(:disc%mesh%ncell_onP)))
+    if (is_IOP) then
+      print '("  conductivity left / right       = ",2(es12.4,1x))', &
+        minval(pack(conductivity, disc%mesh%cell_centroid(1,:disc%mesh%ncell_onP) < 0.5_r8)), &
+        maxval(pack(conductivity, disc%mesh%cell_centroid(1,:disc%mesh%ncell_onP) > 0.5_r8))
+      print '("  ||Rcell(T,Tface; Hdot=0)||_2 = ",es12.4)', cell_norm
+      print '("  ||Rface(T,Tface; Hdot=0)||_2 = ",es12.4)', face_norm
+      print '("  ||initial Hdot||_2             = ",es12.4)', hdot_norm
+    end if
+    if (cell_norm > tol .or. face_norm > tol .or. hdot_norm > 10.0_r8*tol) then
+      if (is_IOP) print '("ERROR: two-material steady state is not consistent; tol=",es9.2)', tol
+      status = 1
+    end if
+
+  end subroutine diagnose_multimaterial_dirichlet
 
 end program test_HT_2d_solver_initial_state

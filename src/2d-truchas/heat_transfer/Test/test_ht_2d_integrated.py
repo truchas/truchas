@@ -100,6 +100,26 @@ def main():
             if error > 1.0e-10:
                 print(f"FAIL: steady linear profile error {error:g}")
                 return 1
+        elif case == "multimaterial_source":
+            expected = sorted([2.0 + 1.0e-2] * 32 + [2.0 + 1.0e-2 / 6.0] * 32)
+            error = max(abs(a - b) for a, b in zip(sorted(temperature), expected))
+            if error > 1.0e-9:
+                print(f"FAIL: mixed material source temperature error {error:g}")
+                return 1
+        elif case == "multimaterial_conduction":
+            flux = 1.0 / (0.5 / 1.0 + 0.5 / 10.0)
+            expected = sorted(
+                [1.0 - flux * (i + 0.5) / 8.0 for i in range(4) for _ in range(8)]
+                + [
+                    1.0 - 0.5 * flux - flux / 10.0 * ((i + 0.5) / 8.0 - 0.5)
+                    for i in range(4, 8)
+                    for _ in range(8)
+                ]
+            )
+            error = max(abs(a - b) for a, b in zip(sorted(temperature), expected))
+            if error > 1.0e-9:
+                print(f"FAIL: mixed material steady profile error {error:g}")
+                return 1
 
         print(f"PASS: {case} reached final time {final_time:g}")
         print(f"      artifacts: {output_dir}")

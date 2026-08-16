@@ -1,0 +1,50 @@
+{
+    "materials": {
+        "low-capacity": {
+            "properties": {
+                "conductivity": 1.0e-12,
+                "density": 1.0,
+                "specific-heat": 1.0
+            }
+        },
+        "high-capacity": {
+            "properties": {
+                "conductivity": 1.0e-12,
+                "density": 2.0,
+                "specific-heat": 3.0
+            }
+        }
+    },
+    "material-regions": {
+        "low-capacity-half": {
+            "material": "low-capacity",
+            "type": "half-plane",
+            "point": [0.5, 0.0],
+            "normal": [1.0, 0.0]
+        },
+        "high-capacity-background": {
+            "material": "high-capacity",
+            "type": "background"
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
+    },
+    "ht-model": {
+        "bc": {"all-sides": {"type": "flux", "face-set-ids": [1, 2, 3, 4], "flux": 0.0}},
+        "source": {"all-cells": {"cell-set-ids": [1], "source": 1.0}}
+    },
+    "ht-solver": {
+        "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+        "error-norm": {"temp-rel-tol": 1.0e-6, "enth-rel-tol": 1.0e-6},
+        "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.01}
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-3,
+        "min-time-step": 1.0e-6,
+        "output-times": [0.01]
+    },
+    "initial-temperature": {"type": "polynomial", "poly-coef": [2.0], "poly-powers": [[0, 0]]}
+}
