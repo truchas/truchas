@@ -11,7 +11,6 @@ module test_ht_2d_common
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use truchas_logging_services
   use unstr_2d_mesh_type
-  use matl_mesh_func_type
   use material_database_type
   use material_model_type
   use material_composition_type
@@ -25,7 +24,7 @@ module test_ht_2d_common
 contains
 
   !! Initializes material database and related objects needed by the HT types
-  subroutine init_materials(mesh, matl_model, mmf)
+  subroutine init_materials(mesh, matl_model)
 
     use parameter_list_type
     use parameter_list_json
@@ -34,10 +33,7 @@ contains
 
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(out) :: matl_model
-    type(matl_mesh_func), intent(out) :: mmf
-
     type(parameter_list), pointer :: plist
-    integer, allocatable :: matids(:)
     integer :: stat
     character(:), allocatable :: errmsg, string
     type(material_database), save :: matl_db
@@ -59,14 +55,6 @@ contains
 
     !! Initialize enthalpy
     call add_enthalpy_prop(matl_model, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-
-    !! Layout material across the mesh
-    matids = matl_model%matl_index(['unobtanium'])
-    call mmf%init(mesh)
-    call mmf%define_region(mesh%cell_set_id, matids, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
-    call mmf%define_complete(stat, errmsg)
     if (stat /= 0) call TLS_FATAL(errmsg)
 
   end subroutine init_materials

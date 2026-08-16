@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/ht_2d.schema.json",
+  "title": "Truchas 2D heat transfer input",
+  "type": "object",
+  "properties": {
+    "materials": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Named material definitions. Without material-regions, exactly one material is required."
+    },
+    "material-regions": {
+      "$ref": "../materials/material_regions.schema.json"
+    },
+    "material-region-refinement-level": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 6,
+      "description": "Maximum recursive refinement level for geometric material initialization. The finest unresolved triangle has linear size approximately 2^(-level) times its initial triangle."
+    }
+  },
+  "if": {
+    "required": ["material-regions"]
+  },
+  "then": {
+    "required": ["materials"]
+  },
+  "additionalProperties": true
+}

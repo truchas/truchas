@@ -142,6 +142,28 @@ set_tests_properties(HT_2d_integrated_multimaterial_uniform PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATION;CONDUCTION;2d-truchas")
 
+add_test(NAME HT_2d_integrated_multimaterial_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_source.json
+          multimaterial_source)
+set_tests_properties(HT_2d_integrated_multimaterial_source PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_integrated_multimaterial_conduction
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_conduction.json
+          multimaterial_conduction)
+set_tests_properties(HT_2d_integrated_multimaterial_conduction PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
 add_test(NAME HT_2d_integrated_linear
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
