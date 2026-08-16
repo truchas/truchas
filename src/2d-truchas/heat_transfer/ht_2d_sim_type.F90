@@ -222,7 +222,7 @@ contains
       call TLS_fatal('missing "initial-temperature" parameter')
     end if
     allocate(temp(this%mesh%ncell_onP))
-    call project_scalar_func_to_cell_centers(this%mesh, f, this%t_init, temp)
+    call project_scalar_func_to_cell_centers(this%mesh, f, temp)
 
     !! Define the initial heat conduction state
     call this%solver%set_initial_state(this%t_init, this%dt_init, temp)
