@@ -153,6 +153,28 @@ set_tests_properties(HT_2d_integrated_multimaterial_source PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATION;CONDUCTION;2d-truchas")
 
+add_test(NAME HT_2d_integrated_multimaterial_mixed_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_mixed_source.json
+          multimaterial_mixed_source)
+set_tests_properties(HT_2d_integrated_multimaterial_mixed_source PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_integrated_multimaterial_mixed_tri_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_mixed_tri_source.json
+          multimaterial_mixed_tri_source)
+set_tests_properties(HT_2d_integrated_multimaterial_mixed_tri_source PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
 add_test(NAME HT_2d_integrated_multimaterial_conduction
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
@@ -241,6 +263,39 @@ set_tests_properties(HT_2d_integrated_linear-4p PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATION;CONDUCTION;2d-truchas")
 
+add_test(NAME HT_2d_partition_independent_linear
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_partition_independent.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/linear.json
+          ${MPIEXEC})
+set_tests_properties(HT_2d_partition_independent_linear PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_partition_independent_multimaterial_mixed_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_partition_independent.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_mixed_source.json
+          ${MPIEXEC})
+set_tests_properties(HT_2d_partition_independent_multimaterial_mixed_source PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_partition_independent_multimaterial_mixed_tri_source
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_partition_independent.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_mixed_tri_source.json
+          ${MPIEXEC})
+set_tests_properties(HT_2d_partition_independent_multimaterial_mixed_tri_source PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
 add_test(NAME HT_2d_integrated_source-4p
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
@@ -248,6 +303,17 @@ add_test(NAME HT_2d_integrated_source-4p
           ${CMAKE_CURRENT_SOURCE_DIR}/source.json
           source 4 ${MPIEXEC})
 set_tests_properties(HT_2d_integrated_source-4p PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATION;CONDUCTION;2d-truchas")
+
+add_test(NAME HT_2d_integrated_multimaterial_mixed_source-4p
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ht_2d_integrated.py
+          $<TARGET_FILE:HT_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multimaterial_mixed_source.json
+          multimaterial_mixed_source 4 ${MPIEXEC})
+set_tests_properties(HT_2d_integrated_multimaterial_mixed_source-4p PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATION;CONDUCTION;2d-truchas")

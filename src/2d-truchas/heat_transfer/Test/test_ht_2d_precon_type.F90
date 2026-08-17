@@ -163,7 +163,7 @@ contains
     call average_integral(disc, f, Tcell, Tface)
 
     !! Expected cell enthalpy field.
-    allocate(Hcell(disc%mesh%ncell))
+    allocate(Hcell(disc%mesh%ncell_onP))
     allocate(func_state(disc%mesh%ncell,0:0))
     func_state(:disc%mesh%ncell_onP,0) = Tcell
     call disc%mesh%cell_imap%gather_offp(func_state(:,0))
@@ -299,7 +299,7 @@ contains
     Tface = Tface - shift
 
     !! Expected cell enthalpy field.
-    allocate(Hcell(disc%mesh%ncell))
+    allocate(Hcell(disc%mesh%ncell_onP))
     allocate(func_state(disc%mesh%ncell,0:0))
     func_state(:disc%mesh%ncell_onP,0) = Tcell
     call disc%mesh%cell_imap%gather_offp(func_state(:,0))
