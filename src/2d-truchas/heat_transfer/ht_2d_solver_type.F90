@@ -15,7 +15,6 @@
 module ht_2d_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
   use ht_2d_model_type
   use ht_2d_precon_type
   use ht_2d_norm_type
@@ -30,11 +29,9 @@ module ht_2d_solver_type
 
   type, public:: ht_2d_solver
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
-    !TODO: should precon and norm be allocatable?
-    type(ht_2d_precon), pointer :: precon => null()
-    type(ht_2d_norm), pointer :: norm => null()
+    type(ht_2d_precon) :: precon
+    type(ht_2d_norm) :: norm
     type(ht_2d_ic_solver) :: ic
     type(ht_2d_idaesol_model) :: integ_model
     type(idaesol) :: integ
@@ -55,17 +52,9 @@ module ht_2d_solver_type
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
     procedure :: write_metrics
-    final :: ht_2d_solver_delete
   end type ht_2d_solver
 
 contains
-
-  subroutine ht_2d_solver_delete(this)
-    type(ht_2d_solver), intent(inout) :: this
-    if (associated(this%precon)) deallocate(this%precon)
-    if (associated(this%norm)) deallocate(this%norm)
-  end subroutine ht_2d_solver_delete
-
 
   subroutine init(this, model, params)
 
@@ -80,25 +69,23 @@ contains
     integer :: stat
     logical :: verbose
 
-    this%mesh => model%mesh
     this%model => model
     call this%ic%init(model)
 
-    call this%u%init(this%mesh)
+    call this%u%init(this%model%mesh)
 
     !! Create the preconditioner
     context = 'processing ' // params%path() // ': '
     if (params%is_sublist('preconditioner')) then
       plist => params%sublist('preconditioner')
-      allocate(this%precon)
-      call this%precon%init(this%model, plist)
+      call this%precon%init(this%model, plist, stat, errmsg)
+      if (stat /= 0) call TLS_fatal(context//errmsg)
     else
       call TLS_fatal(context//'missing "preconditioner" sublist parameter')
     end if
 
     !! Create the error norm
     if (params%is_sublist('error-norm')) then
-      allocate(this%norm)
       plist => params%sublist('error-norm')
       call this%norm%init(this%model, plist)
     else
@@ -173,8 +160,8 @@ contains
   subroutine get_cell_heat_soln(this, enth)
     class(ht_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: enth(:)
-    ASSERT(size(enth) == this%mesh%ncell_onP)
-    enth = this%u%hc(:this%mesh%ncell_onP)
+    ASSERT(size(enth) == this%model%mesh%ncell_onP)
+    enth = this%u%hc(:this%model%mesh%ncell_onP)
   end subroutine get_cell_heat_soln
 
   !! Returns the current cell temperature solution.
@@ -182,8 +169,8 @@ contains
   subroutine get_cell_temp_soln(this, temp)
     class(ht_2d_solver), intent(in) :: this
     real(r8), intent(inout) :: temp(:)
-    ASSERT(size(temp) == this%mesh%ncell_onP)
-    temp = this%u%tc(:this%mesh%ncell_onP)
+    ASSERT(size(temp) == this%model%mesh%ncell_onP)
+    temp = this%u%tc(:this%model%mesh%ncell_onP)
   end subroutine get_cell_temp_soln
 
   subroutine write_metrics(this, string)

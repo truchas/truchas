@@ -90,7 +90,7 @@ contains
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     type(ht_2d_vector) :: u, udot
-    real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
+    real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat, max_itr
     real(r8) :: t, dt, rel_tol
@@ -114,7 +114,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, material_composition_ref(), model_params, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
@@ -130,9 +130,9 @@ contains
 
     !! Expected cell enthalpy
     allocate(Hcell(disc%mesh%ncell_onP))
-    allocate(state(disc%mesh%ncell,0:0))
-    state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(state(:,0))
+    allocate(state(disc%mesh%ncell))
+    state(:disc%mesh%ncell_onP) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state)
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
@@ -188,7 +188,7 @@ contains
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     real(r8) :: dcoef = 1.0_r8  ! diffusion coefficient
     type(ht_2d_vector) :: u, udot
-    real(r8), allocatable :: state(:,:), Hcell(:), Tcell(:), Tface(:)
+    real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
     integer :: stat, max_itr
@@ -225,7 +225,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc, matl_model, material_composition_ref(), model_params, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call ic%init(HT_model)
@@ -241,9 +241,9 @@ contains
 
     !! Expected cell enthalpy
     allocate(Hcell(disc%mesh%ncell_onP))
-    allocate(state(disc%mesh%ncell,0:0))
-    state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(state(:,0))
+    allocate(state(disc%mesh%ncell))
+    state(:disc%mesh%ncell_onP) = Tcell
+    call disc%mesh%cell_imap%gather_offp(state)
     call HT_model%H_of_T%compute_value(state, Hcell)
     deallocate(state)
 
@@ -299,7 +299,7 @@ contains
     type(ht_2d_ic_solver) :: ic
     type(parameter_list), pointer :: matl_params, region_params, model_params
     type(ht_2d_vector) :: u, udot, zero_udot, residual
-    real(r8), allocatable :: temp(:), state(:,:), conductivity(:)
+    real(r8), allocatable :: temp(:), state(:), conductivity(:)
     real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol
     character(:), allocatable :: errmsg, string
     integer :: j, max_itr, stat
@@ -329,7 +329,7 @@ contains
               &"bottom-top":{"type":"flux","face-set-ids":[3,4],"flux":0.0}}}'
     call parameter_list_from_json_string(string, model_params, errmsg)
     if (.not.associated(model_params)) call error_exit(errmsg)
-    call model%init(disc, matl_model, composition, model_params, stat, errmsg)
+    call model%init(disc%mesh, matl_model, composition, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     flux = 1.0_r8 / (0.5_r8 + 0.5_r8 / 10.0_r8)
@@ -342,8 +342,8 @@ contains
         temp(j) = 1.0_r8 - 0.5_r8*flux - flux/10.0_r8 * (disc%mesh%cell_centroid(1,j)-0.5_r8)
       end if
     end do
-    allocate(state(disc%mesh%ncell_onP,0:0), conductivity(disc%mesh%ncell_onP))
-    state(:,0) = temp
+    allocate(state(disc%mesh%ncell_onP), conductivity(disc%mesh%ncell_onP))
+    state = temp
     call model%conductivity%compute_value(state, conductivity)
 
     t = 0.0_r8

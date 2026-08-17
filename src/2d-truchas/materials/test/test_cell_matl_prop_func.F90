@@ -21,7 +21,7 @@ program test_cell_matl_prop_func
   type(material_composition), pointer :: composition
   type(cell_matl_prop_func) :: conductivity, enthalpy
   type(parameter_list), pointer :: params
-  real(r8), allocatable :: state(:,:), value(:), deriv(:)
+  real(r8), allocatable :: state(:), value(:), deriv(:)
   character(:), allocatable :: errmsg
   integer :: stat, ncell
 
@@ -55,7 +55,7 @@ program test_cell_matl_prop_func
   if (stat /= 0) call fail('could not initialize enthalpy: ' // errmsg)
 
   ncell = mesh%ncell_onP
-  allocate(state(ncell+1,1), value(ncell), deriv(ncell))
+  allocate(state(ncell+1), value(ncell), deriv(ncell))
   state = 2.0_r8
 
   call conductivity%compute_value(state, value)

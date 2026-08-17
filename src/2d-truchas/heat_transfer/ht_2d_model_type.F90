@@ -32,8 +32,8 @@ module ht_2d_model_type
   private
 
   type, public :: ht_2d_model
-    type(unstr_2d_mesh), pointer :: mesh => null()
-    type(mfd_2d_disc),  pointer :: disc => null()
+    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(mfd_2d_disc) :: disc
     !! Equation parameters
     class(new_mesh_func), allocatable :: conductivity
     class(new_mesh_func), allocatable :: H_of_T
@@ -45,19 +45,19 @@ module ht_2d_model_type
   contains
     procedure :: init
     procedure :: init_vector
-    procedure :: residual => residual_vector
+    procedure :: residual
   end type ht_2d_model
 
 contains
 
-  !subroutine init(this, disc, mmf, params, stat, errmsg)
-  subroutine init(this, disc, matl_model, composition, params, stat, errmsg)
+  !subroutine init(this, mesh, mmf, params, stat, errmsg)
+  subroutine init(this, mesh, matl_model, composition, params, stat, errmsg)
 
     use material_model_type
     use material_utilities
 
     class(ht_2d_model), intent(out), target :: this
-    type(mfd_2d_disc), intent(in), target :: disc
+    type(unstr_2d_mesh), intent(in), target :: mesh
     type(material_model), intent(in) :: matl_model
     type(material_composition), pointer, intent(in) :: composition
     type(parameter_list), intent(inout) :: params
@@ -71,8 +71,8 @@ contains
 
     context = 'processing ' // params%path() // ': '
 
-    this%disc => disc
-    this%mesh => disc%mesh
+    call this%disc%init(mesh)
+    this%mesh => mesh
 
     !! Enthalpy density.
     call required_property_check(matl_model, 'enthalpy', stat, errmsg)
@@ -256,72 +256,77 @@ contains
 
 
   !! Vector form of the DAE residual.
-  subroutine residual_vector(this, t, u, udot, f)
+  subroutine residual(this, t, u, udot, r)
 
     class(ht_2d_model), intent(inout) :: this
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u, udot
-    type(ht_2d_vector), intent(inout) :: f
+    type(ht_2d_vector), intent(inout) :: r
 
-    real(r8), dimension(this%mesh%ncell) :: Tcell, Fcell, Hdot
-    real(r8), dimension(this%mesh%nface) :: Tface, Fface
-    real(r8), allocatable :: Fdir(:), state(:,:)
+    real(r8), allocatable :: Tdir(:)
     real(r8) :: cval(this%mesh%ncell)
 
     !! The vector integrator guarantees only on-process entries at callback
     !! boundaries.  Gather the state needed by the MFD residual explicitly.
-    Tcell = u%tc
-    Tface = u%tf
-    call this%mesh%cell_imap%gather_offp(Tcell)
-    call this%mesh%face_imap%gather_offp(Tface)
+    call this%mesh%cell_imap%gather_offp(u%tc)
+    call this%mesh%face_imap%gather_offp(u%tf)
 
-    allocate(state(this%mesh%ncell,0:0))
-    state(:,0) = Tcell
+    call impose_dirichlet
+    call compute_thermal_residual
+    call restore_dirichlet
 
-    !! Residual of the algebraic enthalpy-temperature relation.
-    call this%H_of_T%compute_value(state, cval(:this%mesh%ncell_onP))
-    f%hc(:this%mesh%ncell_onP) = u%hc(:this%mesh%ncell_onP) - cval(:this%mesh%ncell_onP)
+  contains
 
-    !! The heat equation uses only the owned enthalpy derivative entries.
-    Hdot = udot%hc
-    call this%mesh%cell_imap%gather_offp(Hdot)
+    subroutine impose_dirichlet
+      if (allocated(this%bc_dir)) then
+        call this%bc_dir%compute(t)
+        allocate(Tdir(size(this%bc_dir%index)))
+        associate (index => this%bc_dir%index, value => this%bc_dir%value)
+          Tdir = u%tf(index)
+          u%tf(index) = value
+        end associate
+      end if
+    end subroutine impose_dirichlet
 
-    !! Pre-compute the Dirichlet residual and impose its data locally for
-    !! flux evaluation.  U itself remains unmodified.
-    if (allocated(this%bc_dir)) then
-      call this%bc_dir%compute(t)
-      allocate(Fdir(size(this%bc_dir%index)))
-      associate (index => this%bc_dir%index, value => this%bc_dir%value)
-        Fdir = Tface(index) - value
-        Tface(index) = value
-      end associate
-    end if
+    subroutine restore_dirichlet
+      if (allocated(this%bc_dir)) then
+        u%tf(this%bc_dir%index) = Tdir
+        deallocate(Tdir)
+      end if
+    end subroutine restore_dirichlet
 
-    call this%conductivity%compute_value(state, cval(:this%mesh%ncell_onP))
-    call this%mesh%cell_imap%gather_offp(cval)
-    call this%disc%apply_diff(cval, Tcell, Tface, Fcell, Fface)
-    Fcell = Fcell + this%mesh%volume*Hdot
+    subroutine compute_thermal_residual
 
-    if (allocated(this%source)) then
-      call this%source%compute(t, Tcell)
-      Fcell = Fcell - this%mesh%volume*this%source%value
-    end if
+      integer :: ncell_onP
 
-    if (allocated(this%bc_dir)) then
-      Fface(this%bc_dir%index) = Fdir
-      deallocate(Fdir)
-    end if
+      ncell_onP = this%mesh%ncell_onP
 
-    if (allocated(this%bc_flux)) then
-      call this%bc_flux%compute(t)
-      associate (index => this%bc_flux%index, value => this%bc_flux%value)
-        Fface(index) = Fface(index) + this%mesh%area(index)*value
-      end associate
-    end if
+      !! Residual of the algebraic enthalpy-temperature relation.
+      call this%H_of_T%compute_value(u%tc, cval(:ncell_onP))
+      r%hc(:ncell_onP) = u%hc(:ncell_onP) - cval(:ncell_onP)
 
-    f%tc(:this%mesh%ncell_onP) = Fcell(:this%mesh%ncell_onP)
-    f%tf(:this%mesh%nface_onP) = Fface(:this%mesh%nface_onP)
+      call this%conductivity%compute_value(u%tc, cval(:ncell_onP))
+      call this%mesh%cell_imap%gather_offp(cval)
+      call this%disc%apply_diff(cval, u%tc, u%tf, r%tc, r%tf)
+      r%tc(:ncell_onP) = r%tc(:ncell_onP) + this%mesh%volume(:ncell_onP)*udot%hc(:ncell_onP)
 
-  end subroutine residual_vector
+      if (allocated(this%source)) then
+        call this%source%compute(t, u%tc)
+        r%tc(:ncell_onP) = r%tc(:ncell_onP) &
+            - this%mesh%volume(:ncell_onP)*this%source%value(:ncell_onP)
+      end if
+
+      if (allocated(this%bc_dir)) r%tf(this%bc_dir%index) = Tdir - this%bc_dir%value
+
+      if (allocated(this%bc_flux)) then
+        call this%bc_flux%compute(t)
+        associate (index => this%bc_flux%index, value => this%bc_flux%value)
+          r%tf(index) = r%tf(index) + this%mesh%area(index)*value
+        end associate
+      end if
+
+    end subroutine compute_thermal_residual
+
+  end subroutine residual
 
 end module ht_2d_model_type

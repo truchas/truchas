@@ -39,7 +39,6 @@ module ht_2d_sim_type
   type, public:: ht_2d_sim
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(mfd_2d_disc), pointer :: disc => null()
     type(material_database) :: matl_db
     type(material_model) :: matl_model
     type(material_composition), pointer :: composition => null()
@@ -64,11 +63,10 @@ contains
 
   subroutine ht_2d_sim_delete(this)
     type(ht_2d_sim), intent(inout) :: this
-    if (associated(this%mesh)) deallocate(this%mesh)
-    if (associated(this%disc)) deallocate(this%disc)
-    if (associated(this%model)) deallocate(this%model)
     if (associated(this%solver)) deallocate(this%solver)
+    if (associated(this%model)) deallocate(this%model)
     if (associated(this%composition)) deallocate(this%composition)
+    if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine ht_2d_sim_delete
 
 
@@ -108,12 +106,6 @@ contains
       call TLS_fatal('missing "mesh" sublist parameter')
     end if
     call stop_timer('mesh')
-
-    !! Create the discretization object.
-    call start_timer('mfd-discretization')
-    allocate(this%disc)
-    call this%disc%init(this%mesh)
-    call stop_timer('mfd-discretization')
 
     !! Load the material database and initialize the material model
     !TODO: input name instead of hardwiring it
@@ -164,7 +156,7 @@ contains
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
-      call this%model%init(this%disc, this%matl_model, this%composition, plist, stat, errmsg)
+      call this%model%init(this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
       if (stat /= 0) call TLS_fatal(context//errmsg)
     else
       call TLS_fatal('missing "ht-model" sublist parameter')

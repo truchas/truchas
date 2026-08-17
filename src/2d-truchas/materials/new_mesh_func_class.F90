@@ -2,7 +2,7 @@
 !! NEW_MESH_FUNC_CLASS
 !!
 !! This module defines the NEW_MESH_FUNC abstract type for evaluating scalar
-!! mesh functions. State is indexed as (entity, state variable).
+!! mesh functions of a scalar cell state.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -25,7 +25,7 @@ module new_mesh_func_class
     subroutine compute_value(this, state, value)
       import :: new_mesh_func, r8
       class(new_mesh_func), intent(in) :: this
-      real(r8), intent(in) :: state(:,:)
+      real(r8), intent(in) :: state(:)
       real(r8), intent(out) :: value(:)
     end subroutine
 
@@ -33,14 +33,14 @@ module new_mesh_func_class
       import :: new_mesh_func, r8
       class(new_mesh_func), intent(in) :: this
       integer, intent(in) :: cell
-      real(r8), intent(in) :: state(:)
+      real(r8), intent(in) :: state
       real(r8), intent(out) :: value
     end subroutine
 
     subroutine compute_deriv(this, state, index, value)
       import :: new_mesh_func, r8
       class(new_mesh_func), intent(in) :: this
-      real(r8), intent(in) :: state(:,:)
+      real(r8), intent(in) :: state(:)
       integer, intent(in) :: index
       real(r8), intent(out) :: value(:)
     end subroutine
