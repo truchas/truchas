@@ -407,7 +407,7 @@ contains
         do i = 1, nx1+1
           mask(1) = (i > 1 .and. i <= nx1)
           d = min(dmin(1), dmin(2))
-          dx = eps*d*(2*[lcg(),lcg()] - 1)
+          dx = eps*d*(2*lcg() - 1)
           n = node_index(i,j)
           mesh%coord(:,n) = mesh%coord(:,n) + merge(dx, 0.0_r8, mask)
         end do
