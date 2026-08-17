@@ -7,6 +7,7 @@
 import numpy as np
 from vtkmodules.util.numpy_support import vtk_to_numpy
 from vtkmodules.vtkCommonDataModel import vtkCompositeDataSet
+from vtkmodules.vtkFiltersParallel import vtkRemoveGhosts
 from vtkmodules.vtkIOHDF import vtkHDFReader
 
 
@@ -40,12 +41,22 @@ class TruchasVTKHDFData:
         return float(self._reader.GetTimeValue())
 
     def field(self, step, field_name, association="cell"):
-        """Return a field from a zero-based temporal step as a NumPy array."""
+        """Return a field from a zero-based temporal step as a NumPy array.
+
+        Cell and point fields exclude VTK ghost entities and are ordered by
+        their pedigree IDs, giving a partition-independent representation.
+        """
         if association not in ("cell", "point", "field"):
             raise ValueError(f"unknown VTKHDF association {association!r}")
 
         arrays = []
+        pedigree_ids = []
         for block in self._leaf_blocks(self._block(step)):
+            if association == "cell":
+                remove_ghosts = vtkRemoveGhosts()
+                remove_ghosts.SetInputData(block)
+                remove_ghosts.Update()
+                block = remove_ghosts.GetOutput()
             data = {
                 "cell": block.GetCellData(),
                 "point": block.GetPointData(),
@@ -54,8 +65,76 @@ class TruchasVTKHDFData:
             array = data.GetArray(field_name)
             if array is None:
                 raise KeyError(f"field {field_name!r} not found in {self.filename}")
-            arrays.append(np.asarray(vtk_to_numpy(array)))
-        return np.concatenate(arrays) if len(arrays) > 1 else arrays[0]
+            values = np.asarray(vtk_to_numpy(array))
+            if association in ("cell", "point"):
+                pedigree = data.GetPedigreeIds()
+                if pedigree is None:
+                    raise ValueError(
+                        f"{association} data in {self.filename} has no pedigree IDs"
+                    )
+                ids = np.asarray(vtk_to_numpy(pedigree))
+                if association == "point":
+                    ghost_type = data.GetArray("vtkGhostType")
+                    if ghost_type is None:
+                        raise ValueError(
+                            f"point data in {self.filename} has no vtkGhostType"
+                        )
+                    on_process = np.asarray(vtk_to_numpy(ghost_type)) == 0
+                    values = values[on_process]
+                    ids = ids[on_process]
+                arrays.append(values)
+                pedigree_ids.append(ids)
+            else:
+                arrays.append(values)
+
+        result = np.concatenate(arrays) if len(arrays) > 1 else arrays[0]
+        if association in ("cell", "point"):
+            pedigree_ids = np.concatenate(pedigree_ids) \
+                if len(pedigree_ids) > 1 else pedigree_ids[0]
+            result = self._order_by_pedigree(result, pedigree_ids, association)
+        return result
+
+    def cell_centers(self, step):
+        """Return cell geometric centroids in pedigree-ID order."""
+        centers = []
+        pedigree_ids = []
+        for block in self._leaf_blocks(self._block(step)):
+            remove_ghosts = vtkRemoveGhosts()
+            remove_ghosts.SetInputData(block)
+            remove_ghosts.Update()
+            block = remove_ghosts.GetOutput()
+            pedigree = block.GetCellData().GetPedigreeIds()
+            if pedigree is None:
+                raise ValueError(f"cell data in {self.filename} has no pedigree IDs")
+            centers.append(self._cell_centers(block))
+            pedigree_ids.append(np.asarray(vtk_to_numpy(pedigree)))
+
+        centers = np.concatenate(centers) if len(centers) > 1 else centers[0]
+        pedigree_ids = np.concatenate(pedigree_ids) \
+            if len(pedigree_ids) > 1 else pedigree_ids[0]
+        return self._order_by_pedigree(centers, pedigree_ids, "cell")
+
+    def cell_vertices(self, step):
+        """Return cell vertex coordinates in pedigree-ID order."""
+        vertices = []
+        pedigree_ids = []
+        for block in self._leaf_blocks(self._block(step)):
+            remove_ghosts = vtkRemoveGhosts()
+            remove_ghosts.SetInputData(block)
+            remove_ghosts.Update()
+            block = remove_ghosts.GetOutput()
+            pedigree = block.GetCellData().GetPedigreeIds()
+            if pedigree is None:
+                raise ValueError(f"cell data in {self.filename} has no pedigree IDs")
+            for index in range(block.GetNumberOfCells()):
+                points = block.GetCell(index).GetPoints().GetData()
+                vertices.append(np.asarray(vtk_to_numpy(points)).copy())
+            pedigree_ids.extend(vtk_to_numpy(pedigree))
+
+        pedigree_ids = np.asarray(pedigree_ids)
+        if len(np.unique(pedigree_ids)) != len(pedigree_ids):
+            raise ValueError(f"cell pedigree IDs in {self.filename} are not unique")
+        return [vertices[index] for index in np.argsort(pedigree_ids, kind="stable")]
 
     def _select_step(self, step):
         if not 0 <= step < self._num_steps:
@@ -102,3 +181,28 @@ class TruchasVTKHDFData:
                     leaves.extend(TruchasVTKHDFData._leaf_blocks(child))
             return leaves
         raise TypeError(f"unsupported VTKHDF block type {type(block).__name__}")
+
+    def _order_by_pedigree(self, values, pedigree_ids, association):
+        if len(np.unique(pedigree_ids)) != len(pedigree_ids):
+            raise ValueError(
+                f"{association} pedigree IDs in {self.filename} are not unique"
+            )
+        return values[np.argsort(pedigree_ids, kind="stable")]
+
+    @staticmethod
+    def _cell_centers(block):
+        centers = np.empty((block.GetNumberOfCells(), 3))
+        for index in range(block.GetNumberOfCells()):
+            x = np.asarray(vtk_to_numpy(block.GetCell(index).GetPoints().GetData()))
+            if len(x) < 3:
+                raise ValueError("cannot compute the centroid of a cell with fewer than 3 nodes")
+            if len(x) == 3:
+                centers[index] = x.mean(axis=0)
+                continue
+
+            triangle_area = np.linalg.norm(
+                np.cross(x[1:-1] - x[0], x[2:] - x[0]), axis=1
+            ) / 2.0
+            triangle_centers = (x[0] + x[1:-1] + x[2:]) / 3.0
+            centers[index] = np.average(triangle_centers, axis=0, weights=triangle_area)
+        return centers

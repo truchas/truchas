@@ -8,9 +8,32 @@ import subprocess
 import sys
 import tempfile
 
+import numpy as np
+
 source_root = pathlib.Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(source_root / "src/python/truchas"))
 from TruchasVTKHDFData import TruchasVTKHDFData
+
+
+def half_plane_fraction(vertices, point, normal):
+    """Return the fraction of a convex polygon in the selected half-plane."""
+    vertices = vertices[:, :2]
+    clipped = []
+    for start, end in zip(vertices, np.roll(vertices, -1, axis=0)):
+        start_value = np.dot(normal, start - point)
+        end_value = np.dot(normal, end - point)
+        if start_value <= 0.0:
+            clipped.append(start)
+        if (start_value <= 0.0) != (end_value <= 0.0):
+            clipped.append(start + start_value / (start_value - end_value) * (end - start))
+
+    def area(polygon):
+        if len(polygon) < 3:
+            return 0.0
+        return abs(np.dot(polygon[:, 0], np.roll(polygon[:, 1], -1)) -
+                   np.dot(polygon[:, 1], np.roll(polygon[:, 0], -1))) / 2.0
+
+    return area(np.asarray(clipped)) / area(vertices)
 
 
 def main():
@@ -95,28 +118,56 @@ def main():
                 print(f"FAIL: {case} temperature error {error:g}")
                 return 1
         elif case == "linear":
-            expected = sorted(1.0 - (i + 0.5) / 8.0 for i in range(8) for _ in range(8))
-            error = max(abs(a - b) for a, b in zip(sorted(temperature), expected))
+            expected = 1.0 - vtkhdf.cell_centers(final_step)[:, 0]
+            error = max(abs(temperature - expected))
             if error > 1.0e-10:
                 print(f"FAIL: steady linear profile error {error:g}")
                 return 1
         elif case == "multimaterial_source":
-            expected = sorted([2.0 + 1.0e-2] * 32 + [2.0 + 1.0e-2 / 6.0] * 32)
-            error = max(abs(a - b) for a, b in zip(sorted(temperature), expected))
+            x = vtkhdf.cell_centers(final_step)[:, 0]
+            expected = np.where(x <= 0.5, 2.0 + 1.0e-2, 2.0 + 1.0e-2 / 6.0)
+            error = max(abs(temperature - expected))
             if error > 1.0e-9:
                 print(f"FAIL: mixed material source temperature error {error:g}")
                 return 1
+        elif case == "multimaterial_mixed_source":
+            x = vtkhdf.cell_centers(final_step)[:, 0]
+            low_fraction = np.clip((0.4375 - (x - 0.0625)) / 0.125, 0.0, 1.0)
+            heat_capacity = low_fraction + 3.0 * (1.0 - low_fraction)
+            expected = 2.0 + 1.0e-2 / heat_capacity
+            error = max(abs(temperature - expected))
+            if error > 1.0e-9:
+                print(f"FAIL: mixed-cell source temperature error {error:g}")
+                return 1
+        elif case == "multimaterial_mixed_tri_source":
+            vertices = vtkhdf.cell_vertices(final_step)
+            if not any(len(cell) == 3 for cell in vertices) or \
+                    not any(len(cell) == 4 for cell in vertices):
+                print("FAIL: mixed-cell source mesh does not contain triangles and quads")
+                return 1
+            point = np.array([0.53, 0.0])
+            normal = np.array([1.0, 0.6])
+            low_fraction = np.array(
+                [half_plane_fraction(cell, point, normal) for cell in vertices]
+            )
+            if not np.any((low_fraction > 0.0) & (low_fraction < 1.0)):
+                print("FAIL: mixed-cell source mesh has no mixed cells")
+                return 1
+            heat_capacity = low_fraction + 3.0 * (1.0 - low_fraction)
+            expected = 2.0 + 1.0e-2 / heat_capacity
+            error = max(abs(temperature - expected))
+            if error > 1.0e-5:
+                print(f"FAIL: mixed triangle/quad source temperature error {error:g}")
+                return 1
         elif case == "multimaterial_conduction":
             flux = 1.0 / (0.5 / 1.0 + 0.5 / 10.0)
-            expected = sorted(
-                [1.0 - flux * (i + 0.5) / 8.0 for i in range(4) for _ in range(8)]
-                + [
-                    1.0 - 0.5 * flux - flux / 10.0 * ((i + 0.5) / 8.0 - 0.5)
-                    for i in range(4, 8)
-                    for _ in range(8)
-                ]
+            x = vtkhdf.cell_centers(final_step)[:, 0]
+            expected = np.where(
+                x <= 0.5,
+                1.0 - flux * x,
+                1.0 - 0.5 * flux - flux / 10.0 * (x - 0.5),
             )
-            error = max(abs(a - b) for a, b in zip(sorted(temperature), expected))
+            error = max(abs(temperature - expected))
             if error > 1.0e-9:
                 print(f"FAIL: mixed material steady profile error {error:g}")
                 return 1
