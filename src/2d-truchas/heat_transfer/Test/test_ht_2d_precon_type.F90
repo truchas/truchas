@@ -78,14 +78,14 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_precon) :: HT_precon
+    type(ht_2d_precon), target :: HT_precon
     type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     type(ht_2d_vector) :: state, u, udot, r
-    real(r8), allocatable :: func_state(:,:), Hcell(:)
+    real(r8), allocatable :: func_state(:), Hcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat
@@ -115,12 +115,13 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT preconditioner
     sublist => params%sublist('preconditioner')
-    call HT_precon%init(HT_model, sublist)
+    call HT_precon%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Define state variables
     call state%init(disc%mesh)
@@ -164,9 +165,9 @@ contains
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell_onP))
-    allocate(func_state(disc%mesh%ncell,0:0))
-    func_state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(func_state(:,0))
+    allocate(func_state(disc%mesh%ncell))
+    func_state(:disc%mesh%ncell_onP) = Tcell
+    call disc%mesh%cell_imap%gather_offp(func_state)
     call HT_model%H_of_T%compute_value(func_state, Hcell)
     deallocate(func_state)
 
@@ -194,14 +195,14 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_precon) :: HT_precon
+    type(ht_2d_precon), target :: HT_precon
     type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     type(ht_2d_vector) :: state, u, udot, r
-    real(r8), allocatable :: func_state(:,:), Hcell(:)
+    real(r8), allocatable :: func_state(:), Hcell(:)
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat
@@ -240,12 +241,13 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT preconditioner
     sublist => params%sublist('preconditioner')
-    call HT_precon%init(HT_model, sublist)
+    call HT_precon%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Define state variables
     call state%init(disc%mesh)
@@ -300,9 +302,9 @@ contains
 
     !! Expected cell enthalpy field.
     allocate(Hcell(disc%mesh%ncell_onP))
-    allocate(func_state(disc%mesh%ncell,0:0))
-    func_state(:disc%mesh%ncell_onP,0) = Tcell
-    call disc%mesh%cell_imap%gather_offp(func_state(:,0))
+    allocate(func_state(disc%mesh%ncell))
+    func_state(:disc%mesh%ncell_onP) = Tcell
+    call disc%mesh%cell_imap%gather_offp(func_state)
     call HT_model%H_of_T%compute_value(func_state, Hcell)
     deallocate(func_state)
 

@@ -1,72 +1,18 @@
-!TODO: finish documentation
 !!
 !! MFD_2D_DIFF_PRECON_TYPE
 !!
-!! This module defines a derived type that implements the preconditioner
-!! for a 2D local mimetic finite difference diffusion matrix.
+!! This module implements the Schur-complement preconditioner for the local
+!! 2D mimetic finite difference diffusion operator. It owns a frozen-
+!! coefficient diffusion matrix and its face Schur-complement preconditioner.
 !!
-!! David Neill-Asanza <dhna@lanl.gov>
-!! April 2020
+!! David Neill <davidhneill@gmail.com>, April 2020
+!! Neil Carlson <neil.n.carlson@gmai.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Notes
 !!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! PROGRAMMING INTERFACE
-!!
-!! The preconditioner is derived from a frozen-coefficient diffusion matrix
-!! that is double-sized, involving both the primary cell-based unknowns and
-!! the face-based Lagrange multiplier unknowns.  The procedure implemented
-!! here first eliminates the cell unknowns leaving a face-based Schur
-!! complement system.  A preconditioner (SSOR, Hypre BoomerAMG, etc.) is
-!! applied to that reduced system to obtain the result for the face unknowns.
-!! The result for the cell unknowns is then obtained directly by back
-!! substitution.
-!!
-!! The derived type MFD_2D_DIFF_PRECON has the following type bound procedures.
-!!
-!!  INIT(DM, PARAMS) configures the object to be a preconditioner for the
-!!    specified diffusion matrix DM.  DM is an allocatable variable of type
-!!    MFD_2D_DIFF_MATRIX.  The object takes ownership of DM by moving its
-!!    allocation to an internal component, and DM is returned unallocated.
-!!    Use the function MATRIX to get a pointer to this internal component.
-!!    DM must have been initialized to define its structure, but its values
-!!    need not have been defined at this point. Note that the matrix will not
-!!    be modified in any way by this, or the other procedures.
-!!
-!!    The PARAMETER_LIST type argument PARAMS gives the parameters associated
-!!    with the preconditioner.  It expects two parameters:
-!!
-!!      'method'      - The choice of preconditioner for the face Schur
-!!                      complement system.  Valid values are either
-!!                      'SSOR', or 'BoomerAMG'
-!!      'parameters'  - This is a sublist of the parameters for the
-!!                      specified preconditioner.  See the comments for
-!!                      CSR_PRECON_SSOR_TYPE and CSR_PRECON_BOOMER_TYPE
-!!                      for a description.  This sublist is passed to
-!!                      the INIT subroutine for those types.
-!!
-!!  COMPUTE() performs the final setup and configuration of the preconditioner.
-!!    It must be called before calling APPLY and after the diffusion matrix
-!!    values have been set, and must be called again whenever the matrix is modified.
-!!
-!!  APPLY(V1, V2) applies the diffusion preconditioner to the vector (V1, V2),
-!!    where V1 and V2 are the cell and face-based parts of the vector.
-!!
-!!  MATRIX() returns a pointer to the MFD_2D_DIFF_MATRIX object DM with which the
-!!    the preconditioner was initialized.  This can be used to access the matrix
-!!    and redefine its values.  If the values are redefined, the COMPUTE method
-!!    must be called again before applying the updated preconditioner.
-!!
-!! IMPLEMENTATION NOTES
-!!
-!!  The Sff_precon component holds an internal reference to the Sff component.
-!!  This requires Sff to have the target attribute, and the easiest way to do
-!!  this is to make it a pointer -- that is the only reason it is a pointer.
-!!  The alternative is to give the passed object argument to INIT the target
-!!  attribute, and so forth -- a cascade up the calling chain.
+!! APPLY accepts valid on-process cell and face entries. It gathers the
+!! off-process workspace needed by the local matrix operations internally.
 !!
 
 #include "f90_assert.fpp"
@@ -84,36 +30,28 @@ module mfd_2d_diff_precon_type
   type, public :: mfd_2d_diff_precon
     private
     type(mfd_2d_diff_matrix), allocatable :: dm
-    type(pcsr_matrix), pointer :: Sff => null()  ! needs the target attribute
+    type(pcsr_matrix) :: Sff
     class(pcsr_precon), allocatable :: Sff_precon
   contains
     procedure :: init
     procedure :: compute
     procedure :: apply
-    procedure :: matrix
-  end type mfd_2d_diff_precon
+    procedure :: matrix_ref
+  end type
 
 contains
-
-  !TODO: switch to using target for Sff?
-  !! Final subroutine for MFD_2D_DIFF_PRECON objects
-  subroutine mfd_2d_diff_precon_delete(this)
-    type(mfd_2d_diff_precon) :: this
-    if (associated(this%Sff)) deallocate(this%Sff)
-  end subroutine mfd_2d_diff_precon_delete
 
   subroutine init(this, dm, params, stat, errmsg)
 
     use pcsr_precon_factory
     use parameter_list_type
 
-    class(mfd_2d_diff_precon), intent(out) :: this
+    class(mfd_2d_diff_precon), intent(out), target :: this
     type(mfd_2d_diff_matrix), allocatable, intent(inout) :: dm
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    allocate(this%Sff)
     call this%Sff%init(mold=dm%a22)
     call alloc_pcsr_precon(this%Sff_precon, this%Sff, params, stat, errmsg)
     if (stat /= 0) return
@@ -121,30 +59,104 @@ contains
 
   end subroutine init
 
-  function matrix(this)
+  function matrix_ref(this) result(matrix)
     class(mfd_2d_diff_precon), intent(in), target :: this
     type(mfd_2d_diff_matrix), pointer :: matrix
     matrix => this%dm
-  end function matrix
+  end function
 
   subroutine compute(this)
     class(mfd_2d_diff_precon), intent(inout) :: this
     call this%dm%compute_face_schur_matrix(this%Sff)
     call this%Sff_precon%compute
-  end subroutine compute
+  end subroutine
 
-  subroutine apply(this, f1, f2)
+  subroutine apply(this, r1, r2)
+
     class(mfd_2d_diff_precon), intent(in) :: this
-    real(r8), intent(inout) :: f1(:), f2(:)
-    ASSERT(size(f1) == this%dm%mesh%ncell)
-    ASSERT(size(f2) == this%dm%mesh%nface)
+    real(r8), intent(inout) :: r1(:), r2(:)
+
+    ASSERT(size(r1) == this%dm%mesh%ncell)
+    ASSERT(size(r2) == this%dm%mesh%nface)
+
+    !! Callers provide valid on-process residuals. The off-process tails are
+    !! workspace and are synchronized here before operations that read
+    !! neighboring cell or face values.
+    call this%dm%mesh%cell_imap%gather_offp(r1)
+    call this%dm%mesh%face_imap%gather_offp(r2)
+
     !! Eliminate the cell unknowns.
-    call this%dm%forward_elimination(f1, f2)
+    call forward_elimination(this%dm, r1, r2)
+
     !! Approximately solve the Schur complement system for the face unknowns.
-    call this%Sff_precon%apply(f2)
-    call this%dm%mesh%face_imap%gather_offp(f2)
+    call this%Sff_precon%apply(r2)
+    call this%dm%mesh%face_imap%gather_offp(r2)
+
     !! Solve for the cell unknowns by back substitution.
-    call this%dm%backward_substitution(f1, f2)
+    call backward_substitution(this%dm, r1, r2)
+
   end subroutine apply
+
+  subroutine forward_elimination(dm, b1, b2)
+
+    type(mfd_2d_diff_matrix), intent(in) :: dm
+    real(r8), intent(in) :: b1(:)
+    real(r8), intent(inout) :: b2(:)
+
+    integer :: j
+    real(r8) :: s
+    real(r8), allocatable :: b2_dir(:)
+
+    ASSERT(size(b1) == dm%mesh%ncell)
+    ASSERT(size(b2) == dm%mesh%nface)
+
+    if (allocated(dm%dir_faces)) then
+      allocate(b2_dir(size(dm%dir_faces)))
+      b2_dir = b2(dm%dir_faces)
+    end if
+
+    do j = 1, dm%mesh%ncell
+      s = b1(j) / dm%a11(j)
+      associate (cface => dm%mesh%cface(dm%mesh%cstart(j):dm%mesh%cstart(j+1)-1), &
+                 a12 => dm%a12_val(dm%mesh%cstart(j):dm%mesh%cstart(j+1)-1))
+        b2(cface) = b2(cface) - a12 * s
+      end associate
+    end do
+
+    if (allocated(dm%dir_faces)) then
+      b2(dm%dir_faces) = b2_dir
+      deallocate(b2_dir)
+    end if
+
+  end subroutine forward_elimination
+
+
+  subroutine backward_substitution(dm, b1, u2)
+
+    type(mfd_2d_diff_matrix), intent(in) :: dm
+    real(r8), intent(inout) :: b1(:), u2(:)
+
+    integer :: j
+    real(r8), allocatable :: u2_dir(:)
+
+    if (allocated(dm%dir_faces)) then
+      allocate(u2_dir(size(dm%dir_faces)))
+      u2_dir = u2(dm%dir_faces)
+      u2(dm%dir_faces) = 0.0_r8
+    end if
+
+    do j = 1, dm%mesh%ncell_onP
+      associate (cface => dm%mesh%cface(dm%mesh%cstart(j):dm%mesh%cstart(j+1)-1), &
+                 a12 => dm%a12_val(dm%mesh%cstart(j):dm%mesh%cstart(j+1)-1))
+        b1(j) = (b1(j) - dot_product(a12, u2(cface))) / dm%a11(j)
+      end associate
+    end do
+
+    if (allocated(dm%dir_faces)) then
+      u2(dm%dir_faces) = u2_dir
+      deallocate(u2_dir)
+    end if
+
+  end subroutine backward_substitution
 
 end module mfd_2d_diff_precon_type

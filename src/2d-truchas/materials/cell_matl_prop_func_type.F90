@@ -55,30 +55,30 @@ contains
 
   subroutine compute_value(this, state, value)
     class(cell_matl_prop_func), intent(in) :: this
-    real(r8), intent(in) :: state(:,:)
+    real(r8), intent(in) :: state(:)
     real(r8), intent(out) :: value(:)
     integer :: j
 
     ASSERT(size(state,1) >= size(this%composition%vfrac,2))
     ASSERT(size(value) == size(this%composition%vfrac,2))
     do j = 1, size(this%composition%vfrac,2)
-      call this%prop%compute_value(this%composition%vfrac(this%mid,j), state(j,:), value(j))
+      call this%prop%compute_value(this%composition%vfrac(this%mid,j), state(j:j), value(j))
     end do
   end subroutine compute_value
 
   subroutine compute_value_cell(this, cell, state, value)
     class(cell_matl_prop_func), intent(in) :: this
     integer, intent(in) :: cell
-    real(r8), intent(in) :: state(:)
+    real(r8), intent(in) :: state
     real(r8), intent(out) :: value
 
     ASSERT(cell >= 1 .and. cell <= size(this%composition%vfrac,2))
-    call this%prop%compute_value(this%composition%vfrac(this%mid,cell), state, value)
+    call this%prop%compute_value(this%composition%vfrac(this%mid,cell), [state], value)
   end subroutine compute_value_cell
 
   subroutine compute_deriv(this, state, index, value)
     class(cell_matl_prop_func), intent(in) :: this
-    real(r8), intent(in) :: state(:,:)
+    real(r8), intent(in) :: state(:)
     integer, intent(in) :: index
     real(r8), intent(out) :: value(:)
     integer :: j
@@ -86,7 +86,7 @@ contains
     ASSERT(size(state,1) >= size(this%composition%vfrac,2))
     ASSERT(size(value) == size(this%composition%vfrac,2))
     do j = 1, size(this%composition%vfrac,2)
-      call this%prop%compute_deriv(this%composition%vfrac(this%mid,j), state(j,:), index, value(j))
+      call this%prop%compute_deriv(this%composition%vfrac(this%mid,j), state(j:j), index, value(j))
     end do
   end subroutine compute_deriv
 

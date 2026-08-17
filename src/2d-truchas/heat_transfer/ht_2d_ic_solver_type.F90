@@ -44,7 +44,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8), allocatable :: state(:,:), Hcell(:)
+    real(r8), allocatable :: Hcell(:)
 
     stat = 0
     errmsg = ''
@@ -55,9 +55,8 @@ contains
     u%tc(:this%mesh%ncell_onP) = temp
     call this%mesh%cell_imap%gather_offp(u%tc)
 
-    allocate(state(this%mesh%ncell_onP,0:0), Hcell(this%mesh%ncell_onP))
-    state(:,0) = u%tc(:this%mesh%ncell_onP)
-    call this%model%H_of_T%compute_value(state, Hcell)
+    allocate(Hcell(this%mesh%ncell_onP))
+    call this%model%H_of_T%compute_value(u%tc, Hcell)
     u%hc(:this%mesh%ncell_onP) = Hcell
 
     !! The zero face field is only an initial guess for the algebraic solve.
@@ -133,7 +132,7 @@ contains
     type(parameter_list), target :: params
     type(hypre_hybrid) :: solver
     type(ht_2d_vector) :: udot, f
-    real(r8), allocatable :: coef(:), state(:,:), z(:)
+    real(r8), allocatable :: coef(:), z(:)
     real(r8) :: norm
     integer :: num_itr, num_dscg_itr, num_pcg_itr
     character(80) :: msg
@@ -154,9 +153,8 @@ contains
     end if
     if (norm == 0.0_r8) return
 
-    allocate(coef(this%mesh%ncell), state(this%mesh%ncell_onP,0:0))
-    state(:,0) = u%tc(:this%mesh%ncell_onP)
-    call this%model%conductivity%compute_value(state, coef(:this%mesh%ncell_onP))
+    allocate(coef(this%mesh%ncell))
+    call this%model%conductivity%compute_value(u%tc, coef(:this%mesh%ncell_onP))
     call this%mesh%cell_imap%gather_offp(coef)
     call dm%init(this%model%disc)
     call dm%compute(coef)

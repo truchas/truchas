@@ -49,7 +49,7 @@ contains
     class(ht_2d_tofh), intent(in) :: this
     real(r8), intent(in) :: x
     real(r8) :: fx
-    call this%HofT%compute_value_cell(this%cell, [x], fx)
+    call this%HofT%compute_value_cell(this%cell, x, fx)
     fx = this%H - fx
   end function
 
