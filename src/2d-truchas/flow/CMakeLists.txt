@@ -6,6 +6,7 @@ set(FLOW2D_SOURCE_FILES
     flow_2d_bc_factory_type.F90
     flow_2d_bc_type.F90
     flow_2d_momentum_type.F90
+    flow_2d_momentum_solver_type.F90
 )
 
 add_library(flow2d ${FLOW2D_SOURCE_FILES})
