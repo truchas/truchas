@@ -1,4 +1,5 @@
 include(CTest)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_executable(test_flow_2d_operators test_flow_2d_operators.F90)
 target_link_libraries(test_flow_2d_operators flow2d truchas ${Truchas_LINK_LIBS})
@@ -140,3 +141,14 @@ add_test(NAME flow_2d_pressure_channel-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_F
   $<TARGET_FILE:flow_2d_main> ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_pressure_channel-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_pressure_channel-4p PROPERTY LABELS INTEGRATED FLOW 2d-truchas)
+
+add_test(NAME flow_2d_integrated_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_analytic.json
+          ${MPIEXEC})
+set_tests_properties(flow_2d_integrated_channel PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
