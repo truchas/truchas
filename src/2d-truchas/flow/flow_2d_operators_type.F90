@@ -21,6 +21,8 @@ module flow_2d_operators_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
+  use bndry_func1_class
+  use bndry_vfunc_class
   implicit none
   private
 
@@ -32,6 +34,7 @@ module flow_2d_operators_type
     procedure :: init
     procedure :: derivative_cf_1r, derivative_cf_2r
     procedure :: interpolate_cf_1r, interpolate_cf_2r
+    procedure :: gradient_cc
     procedure :: divergence
     procedure :: normal_distance
     generic :: derivative_cf => derivative_cf_1r, derivative_cf_2r
@@ -86,6 +89,81 @@ contains
   end subroutine
 
 
+  !! Compute a cell-centered scalar gradient by a least-squares fit to the
+  !! neighboring cell values. Pressure Dirichlet values contribute a fit row
+  !! from the cell center to the face center; pressure Neumann values contribute
+  !! a normal row of length NORMAL_DISTANCE. Boundary faces not listed by a
+  !! condition are omitted from the fit.
+  subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc)
+    class(flow_2d_operators), intent(in) :: this
+    real(r8), intent(in) :: field_cc(:)
+    real(r8), intent(out) :: gradient_c(:,:)
+    class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
+
+    integer :: c, i, f, neighbor, n
+    real(r8) :: r(2), difference, matrix(2,2), rhs(2), determinant
+    logical :: found
+
+    ASSERT(size(field_cc) >= this%mesh%ncell)
+    ASSERT(size(gradient_c,1) == 2)
+    ASSERT(size(gradient_c,2) == this%mesh%ncell)
+    gradient_c = 0.0_r8
+    do c = 1, this%mesh%ncell_onP
+      matrix = 0.0_r8
+      rhs = 0.0_r8
+      n = 0
+      do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
+        f = this%mesh%cface(i)
+        neighbor = this%mesh%cnhbr(i)
+        if (neighbor > 0) then
+          r = this%mesh%cell_centroid(:,neighbor) - this%mesh%cell_centroid(:,c)
+          difference = field_cc(neighbor) - field_cc(c)
+        else
+          found = .false.
+          if (present(dirichlet_bc)) then
+            call bndry_value(dirichlet_bc, f, difference, found)
+            if (found) then
+              r = this%mesh%face_centroid(:,f) - this%mesh%cell_centroid(:,c)
+              difference = difference - field_cc(c)
+            end if
+          end if
+          if (.not.found .and. present(normal_flux_bc)) then
+            call bndry_value(normal_flux_bc, f, difference, found)
+            if (found) then
+              r = this%normal_distance(f)*this%mesh%unit_normal(:,f)
+              difference = difference*this%normal_distance(f)
+            end if
+          end if
+          if (.not.found) cycle
+        end if
+        matrix = matrix + reshape([r(1)**2, r(1)*r(2), r(1)*r(2), r(2)**2], [2,2])
+        rhs = rhs + r*difference
+        n = n + 1
+      end do
+      ASSERT(n >= 2)
+      determinant = matrix(1,1)*matrix(2,2) - matrix(1,2)*matrix(2,1)
+      ASSERT(abs(determinant) > tiny(determinant))
+      gradient_c(1,c) = (matrix(2,2)*rhs(1) - matrix(1,2)*rhs(2))/determinant
+      gradient_c(2,c) = (matrix(1,1)*rhs(2) - matrix(2,1)*rhs(1))/determinant
+    end do
+    call this%mesh%cell_imap%gather_offp(gradient_c)
+  end subroutine
+
+
+  subroutine bndry_value(bndry, face, value, found)
+    class(bndry_func1), intent(in) :: bndry
+    integer, intent(in) :: face
+    real(r8), intent(out) :: value
+    logical, intent(out) :: found
+
+    integer :: i
+
+    i = findloc(bndry%index, face, dim=1)
+    found = i > 0
+    if (found) value = bndry%value(i)
+  end subroutine
+
+
   function normal_distance(this, face) result(dx)
     class(flow_2d_operators), intent(in) :: this
     integer, intent(in) :: face
@@ -97,13 +175,15 @@ contains
 
 
   !! Compute a first-order face-normal derivative from cell-centered scalar
-  !! data. Boundary faces are zero until boundary-condition support is added.
-  subroutine derivative_cf_1r(this, field_cc, derivative_fn)
+  !! data. On a boundary face, NORMAL_FLUX_BC supplies the derivative directly
+  !! and DIRICHLET_BC supplies the scalar value at the face center.
+  subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: derivative_fn(:)
+    class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
 
-    integer :: f, c1, c2
+    integer :: f, c1, c2, i
 
     ASSERT(size(field_cc) >= this%mesh%ncell)
     ASSERT(size(derivative_fn) == this%mesh%nface)
@@ -113,18 +193,39 @@ contains
       c2 = this%mesh%fcell(2,f)
       if (c2 > 0) derivative_fn(f) = (field_cc(c2) - field_cc(c1))/this%dx(f)
     end do
+    if (present(normal_flux_bc)) then
+      do i = 1, size(normal_flux_bc%index)
+        f = normal_flux_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        derivative_fn(f) = normal_flux_bc%value(i)
+      end do
+    end if
+    if (present(dirichlet_bc)) then
+      do i = 1, size(dirichlet_bc%index)
+        f = dirichlet_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        c1 = this%mesh%fcell(1,f)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        derivative_fn(f) = (dirichlet_bc%value(i) - field_cc(c1))/this%dx(f)
+      end do
+    end if
     call this%mesh%face_imap%gather_offp(derivative_fn)
   end subroutine
 
 
   !! Vector version of DERIVATIVE_CF_1R. The result is the face-normal
-  !! derivative of each vector component.
-  subroutine derivative_cf_2r(this, field_cc, derivative_fn)
+  !! derivative of each vector component. ZERO_NORMAL_BC imposes a zero
+  !! normal velocity while retaining the adjacent cell's tangential velocity.
+  subroutine derivative_cf_2r(this, field_cc, derivative_fn, zero_normal_bc, dirichlet_bc)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:,:)
     real(r8), intent(out) :: derivative_fn(:,:)
+    class(bndry_func1), optional, intent(in) :: zero_normal_bc
+    class(bndry_vfunc), optional, intent(in) :: dirichlet_bc
 
-    integer :: f, c1, c2
+    integer :: f, c1, c2, i
+    real(r8) :: normal_velocity
 
     ASSERT(size(field_cc,1) == 2)
     ASSERT(size(field_cc,2) >= this%mesh%ncell)
@@ -136,13 +237,32 @@ contains
       c2 = this%mesh%fcell(2,f)
       if (c2 > 0) derivative_fn(:,f) = (field_cc(:,c2) - field_cc(:,c1))/this%dx(f)
     end do
+    if (present(zero_normal_bc)) then
+      do i = 1, size(zero_normal_bc%index)
+        f = zero_normal_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        c1 = this%mesh%fcell(1,f)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        normal_velocity = dot_product(this%mesh%unit_normal(:,f), field_cc(:,c1))
+        derivative_fn(:,f) = -normal_velocity*this%mesh%unit_normal(:,f)/this%dx(f)
+      end do
+    end if
+    if (present(dirichlet_bc)) then
+      do i = 1, size(dirichlet_bc%index)
+        f = dirichlet_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        c1 = this%mesh%fcell(1,f)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        derivative_fn(:,f) = (dirichlet_bc%value(:,i) - field_cc(:,c1))/this%dx(f)
+      end do
+    end if
     call this%mesh%face_imap%gather_offp(derivative_fn)
   end subroutine
 
 
   !! Interpolate cell-centered scalar data to faces using the first-order
   !! method of Ferzinger & Peric (2020, Eq. 9.36). Boundary-face values are
-  !! the adjacent cell values until boundary-condition support is added.
+  !! the adjacent cell values.
   subroutine interpolate_cf_1r(this, field_cc, field_f)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
@@ -163,13 +283,16 @@ contains
 
 
   !! Interpolate cell-centered velocity to its face-normal component using
-  !! the same first-order interpolation as INTERPOLATE_CF_1R.
-  subroutine interpolate_cf_2r(this, field_cc, field_f)
+  !! the same first-order interpolation as INTERPOLATE_CF_1R. DIRICHLET_BC
+  !! and ZERO_NORMAL_BC override the values at their boundary faces.
+  subroutine interpolate_cf_2r(this, field_cc, field_f, zero_normal_bc, dirichlet_bc)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:,:)
     real(r8), intent(out) :: field_f(:)
+    class(bndry_func1), optional, intent(in) :: zero_normal_bc
+    class(bndry_vfunc), optional, intent(in) :: dirichlet_bc
 
-    integer :: f, c1, c2
+    integer :: f, c1, c2, i
 
     ASSERT(size(field_cc,1) == 2)
     ASSERT(size(field_cc,2) >= this%mesh%ncell)
@@ -181,6 +304,22 @@ contains
       if (c2 > 0) field_f(f) = field_f(f) + (1.0_r8-this%interpolation_factor(f))* &
           dot_product(this%mesh%unit_normal(:,f), field_cc(:,c2))
     end do
+    if (present(zero_normal_bc)) then
+      do i = 1, size(zero_normal_bc%index)
+        f = zero_normal_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        field_f(f) = 0.0_r8
+      end do
+    end if
+    if (present(dirichlet_bc)) then
+      do i = 1, size(dirichlet_bc%index)
+        f = dirichlet_bc%index(i)
+        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        ASSERT(this%mesh%fcell(2,f) == 0)
+        field_f(f) = dot_product(this%mesh%unit_normal(:,f), dirichlet_bc%value(:,i))
+      end do
+    end if
     call this%mesh%face_imap%gather_offp(field_f)
   end subroutine
 
