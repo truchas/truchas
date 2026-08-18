@@ -12,6 +12,7 @@ target_link_libraries(truchas-extra PUBLIC truchas)
 target_include_directories(truchas-extra PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(volume_tracking)
+add_subdirectory(flow)
 add_subdirectory(heat_transfer)
 
 add_executable(mesh_example mesh_example.F90)
