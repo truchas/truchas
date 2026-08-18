@@ -23,6 +23,7 @@ target_sources(truchas PRIVATE
   scalar_cell_func1_type.F90
   scalar_cell_func2_type.F90
   scalar_func_projection.F90
+  vector_func_projection.F90
   scalar_mesh_multifunc_type.F90
   bndry_edge_group_builder_type.F90
   bndry_cfunc1_class.F90
