@@ -1,3 +1,36 @@
+module test_flow_2d_bc_types
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use bndry_func1_class
+  use bndry_vfunc_class
+  implicit none
+
+  type, extends(bndry_func1) :: test_bndry_func1
+  contains
+    procedure :: compute => compute_func1
+  end type
+
+  type, extends(bndry_vfunc) :: test_bndry_vfunc
+  contains
+    procedure :: compute => compute_vfunc
+  end type
+
+contains
+
+  subroutine compute_func1(this, t)
+    class(test_bndry_func1), intent(inout) :: this
+    real(r8), intent(in) :: t
+  end subroutine
+
+
+  subroutine compute_vfunc(this, t)
+    class(test_bndry_vfunc), intent(inout) :: this
+    real(r8), intent(in) :: t
+  end subroutine
+
+end module test_flow_2d_bc_types
+
+
 program test_flow_2d_operators
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
@@ -8,6 +41,7 @@ program test_flow_2d_operators
   use unstr_2d_mesh_factory
   use flow_2d_state_type
   use flow_2d_operators_type
+  use test_flow_2d_bc_types
   implicit none
 
   integer :: status
@@ -45,6 +79,93 @@ contains
     call test_divergence(mesh, ops, state, name)
     call test_derivative(mesh, ops, state, name, triangle_probability == 0.0_r8)
     call test_interpolation(mesh, ops, state, name)
+    call test_boundary_operators(mesh, ops, state, name, triangle_probability == 0.0_r8)
+  end subroutine
+
+
+  subroutine test_boundary_operators(mesh, ops, state, name, check_exact)
+    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(flow_2d_operators), intent(in) :: ops
+    type(flow_2d_state), intent(inout) :: state
+    character(*), intent(in) :: name
+    logical, intent(in) :: check_exact
+
+    type(test_bndry_func1) :: pdir, pneu, zero_normal
+    type(test_bndry_vfunc) :: vdir
+    real(r8), allocatable :: derivative(:), velocity_f(:), gradient_c(:,:)
+    real(r8), parameter :: grad(2) = [1.0_r8, 2.0_r8]
+    real(r8), parameter :: velocity(2) = [1.5_r8, -0.75_r8]
+    integer :: c, f, i, nboundary
+    logical :: dirichlet_ok, neumann_ok, velocity_ok, gradient_ok
+
+    do c = 1, mesh%ncell
+      state%p_cc(c) = dot_product(grad, mesh%cell_centroid(:,c))
+      state%vel_cc(:,c) = velocity
+    end do
+    nboundary = count(mesh%fcell(2,1:mesh%nface_onP) == 0)
+    allocate(pdir%index(nboundary), pdir%value(nboundary), pneu%index(nboundary), pneu%value(nboundary), &
+        zero_normal%index(nboundary), zero_normal%value(nboundary), vdir%index(nboundary), &
+        vdir%value(2,nboundary), derivative(mesh%nface), velocity_f(mesh%nface), gradient_c(2,mesh%ncell))
+    i = 0
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) /= 0) cycle
+      i = i + 1
+      pdir%index(i) = f
+      pdir%value(i) = dot_product(grad, mesh%face_centroid(:,f))
+      pneu%index(i) = f
+      pneu%value(i) = dot_product(grad, mesh%unit_normal(:,f))
+      zero_normal%index(i) = f
+      zero_normal%value(i) = 0.0_r8
+      vdir%index(i) = f
+      vdir%value(:,i) = velocity
+    end do
+
+    call ops%derivative_cf(state%p_cc, derivative, dirichlet_bc=pdir)
+    dirichlet_ok = .true.
+    do i = 1, nboundary
+      f = pdir%index(i)
+      if (check_exact) dirichlet_ok = dirichlet_ok .and. &
+          abs(derivative(f) - dot_product(grad, mesh%unit_normal(:,f))) < 1.0e-12_r8
+    end do
+    call require(dirichlet_ok, name // ': pressure Dirichlet derivative is incorrect')
+
+    call ops%derivative_cf(state%p_cc, derivative, normal_flux_bc=pneu)
+    neumann_ok = .true.
+    do i = 1, nboundary
+      f = pneu%index(i)
+      neumann_ok = neumann_ok .and. abs(derivative(f) - pneu%value(i)) < 1.0e-12_r8
+    end do
+    call require(neumann_ok, name // ': pressure Neumann derivative is incorrect')
+
+    call ops%gradient_cc(state%p_cc, gradient_c, dirichlet_bc=pdir)
+    gradient_ok = .true.
+    do c = 1, mesh%ncell_onP
+      gradient_ok = gradient_ok .and. maxval(abs(gradient_c(:,c) - grad)) < 1.0e-12_r8
+    end do
+    call require(gradient_ok, name // ': pressure Dirichlet gradient is incorrect')
+
+    call ops%gradient_cc(state%p_cc, gradient_c, normal_flux_bc=pneu)
+    gradient_ok = .true.
+    do c = 1, mesh%ncell_onP
+      gradient_ok = gradient_ok .and. maxval(abs(gradient_c(:,c) - grad)) < 1.0e-12_r8
+    end do
+    call require(gradient_ok, name // ': pressure Neumann gradient is incorrect')
+
+    call ops%interpolate_cf(state%vel_cc, velocity_f, dirichlet_bc=vdir)
+    velocity_ok = .true.
+    do i = 1, nboundary
+      f = vdir%index(i)
+      velocity_ok = velocity_ok .and. abs(velocity_f(f) - &
+          dot_product(mesh%unit_normal(:,f), velocity)) < 1.0e-12_r8
+    end do
+    call require(velocity_ok, name // ': velocity Dirichlet interpolation is incorrect')
+
+    call ops%interpolate_cf(state%vel_cc, velocity_f, zero_normal_bc=zero_normal)
+    velocity_ok = .true.
+    do i = 1, nboundary
+      velocity_ok = velocity_ok .and. abs(velocity_f(zero_normal%index(i))) < 1.0e-12_r8
+    end do
+    call require(velocity_ok, name // ': zero-normal velocity interpolation is incorrect')
   end subroutine
 
 
