@@ -5,7 +5,7 @@
 !! 2D mimetic finite difference diffusion operator. It owns a frozen-
 !! coefficient diffusion matrix and its face Schur-complement preconditioner.
 !!
-!! David Neill <davidhneill@gmail.com>, April 2020
+!! David Neill-Asanza <davidhneill@gmail.com>, April 2020
 !! Neil Carlson <neil.n.carlson@gmai.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!

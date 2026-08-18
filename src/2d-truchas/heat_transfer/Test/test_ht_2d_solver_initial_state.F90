@@ -60,7 +60,7 @@ program test_HT_2d_solver_initial_state
   !! Run test problems
   call test_linear_dir(mfd_disc, matl_model, tol)
   call test_linear_flux(mfd_disc, matl_model, tol)
-  call diagnose_multimaterial_dirichlet(mfd_disc, tol)
+  call test_multimaterial_dirichlet(mfd_disc, tol)
 
   !! Wrap up
   call halt_parallel_communication
@@ -86,6 +86,7 @@ contains
     type(ht_2d_ic_solver) :: ic
     type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: model_params
+    type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
@@ -117,7 +118,6 @@ contains
     call HT_model%init(disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
-    call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
 
@@ -139,7 +139,11 @@ contains
     !! Compute consistent u and udot
     max_itr = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic_params%set('dt', dt)
+    call ic_params%set('rel-tol', rel_tol)
+    call ic_params%set('max-iter', max_itr)
+    call ic%init(HT_model, ic_params)
+    call ic%compute(t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
@@ -183,6 +187,7 @@ contains
     type(ht_2d_ic_solver) :: ic
     type(ht_2d_model), target :: HT_model
     type(parameter_list), pointer :: model_params
+    type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
@@ -228,7 +233,6 @@ contains
     call HT_model%init(disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
-    call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
 
@@ -250,7 +254,11 @@ contains
     !! Compute consistent u and udot
     max_itr = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic_params%set('dt', dt)
+    call ic_params%set('rel-tol', rel_tol)
+    call ic_params%set('max-iter', max_itr)
+    call ic%init(HT_model, ic_params)
+    call ic%compute(t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
@@ -284,10 +292,10 @@ contains
   end subroutine test_linear_flux
 
 
-  !! Diagnose the discrete residual of the exact one-dimensional two-material
-  !! steady conduction solution.  The conductivity interface is aligned with
-  !! a mesh face at x=0.5; density and specific heat are one in both regions.
-  subroutine diagnose_multimaterial_dirichlet(disc, tol)
+  !! Test the exact one-dimensional two-material steady conduction solution.
+  !! The conductivity interface is aligned with a mesh face at x=0.5; density
+  !! and specific heat are one in both regions.
+  subroutine test_multimaterial_dirichlet(disc, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
     real(r8), intent(in) :: tol
@@ -296,15 +304,16 @@ contains
     type(material_model), target :: matl_model
     type(material_composition), target :: composition
     type(ht_2d_model), target :: model
-    type(ht_2d_ic_solver) :: ic
+    type(ht_2d_ic_solver) :: ic, ic_fail
     type(parameter_list), pointer :: matl_params, region_params, model_params
-    type(ht_2d_vector) :: u, udot, zero_udot, residual
-    real(r8), allocatable :: temp(:), state(:), conductivity(:)
-    real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol
+    type(parameter_list), target :: ic_params, ic_fail_params
+    type(ht_2d_vector) :: u, udot, u_fail, udot_fail, zero_udot, residual
+    real(r8), allocatable :: temp(:), state(:), conductivity(:), temp_face(:)
+    real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol, temp_err
     character(:), allocatable :: errmsg, string
     integer :: j, max_itr, stat
 
-    if (is_IOP) print '(/,"Diagnosing two-material Dirichlet problem")'
+    if (is_IOP) print '(/,"Testing two-material Dirichlet problem")'
 
     string = '{"low":{"properties":{"conductivity":1.0,"density":1.0,"specific-heat":1.0}},&
               &"high":{"properties":{"conductivity":10.0,"density":1.0,"specific-heat":1.0}}}'
@@ -350,11 +359,28 @@ contains
     dt = 1.0e-3_r8
     rel_tol = tol*1.0e-5_r8
     max_itr = 100
-    call ic%init(model)
     call u%init(disc%mesh)
     call udot%init(u)
-    call ic%compute(t, dt, temp, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic_params%set('dt', dt)
+    call ic_params%set('rel-tol', rel_tol)
+    call ic_params%set('max-iter', max_itr)
+    call ic%init(model, ic_params)
+    call ic%compute(t, temp, u, udot, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
+
+    !! The consistent face temperatures differ from simple adjacent-cell
+    !! averages at the conductivity interface.
+    allocate(temp_face(disc%mesh%nface_onP))
+    do j = 1, size(temp_face)
+      associate (x => 0.5_r8 * sum(disc%mesh%x(1,disc%mesh%fnode(:,j))))
+        if (x <= 0.5_r8) then
+          temp_face(j) = 1.0_r8 - flux*x
+        else
+          temp_face(j) = 1.0_r8 - 0.5_r8*flux - flux/10.0_r8*(x-0.5_r8)
+        end if
+      end associate
+    end do
+    temp_err = global_maxval(abs(u%tf(:disc%mesh%nface_onP) - temp_face))
 
     call zero_udot%init(u)
     call zero_udot%setval(0.0_r8)
@@ -374,12 +400,42 @@ contains
       print '("  ||Rcell(T,Tface; Hdot=0)||_2 = ",es12.4)', cell_norm
       print '("  ||Rface(T,Tface; Hdot=0)||_2 = ",es12.4)', face_norm
       print '("  ||initial Hdot||_2             = ",es12.4)', hdot_norm
+      print '("  max |Tface - Tface_exact|      = ",es12.4)', temp_err
     end if
-    if (cell_norm > tol .or. face_norm > tol .or. hdot_norm > 10.0_r8*tol) then
+    if (cell_norm > tol .or. face_norm > tol .or. hdot_norm > 10.0_r8*tol .or. &
+        temp_err > 10.0_r8*tol) then
       if (is_IOP) print '("ERROR: two-material steady state is not consistent; tol=",es9.2)', tol
       status = 1
     end if
 
-  end subroutine diagnose_multimaterial_dirichlet
+    if (global_maxval(abs(udot%tc(:disc%mesh%ncell_onP))) > 10.0_r8*tol .or. &
+        global_maxval(abs(udot%tf(:disc%mesh%nface_onP))) > 10.0_r8*tol) then
+      if (is_IOP) print '("ERROR: steady-state temperature derivatives are nonzero; tol=",es9.2)', tol
+      status = 1
+    end if
+
+    !! A nonzero initial face residual with impossible linear-solver controls
+    !! must be reported rather than silently accepted.
+    call u_fail%init(u)
+    call udot_fail%init(u)
+    call ic_fail_params%set('dt', dt)
+    call ic_fail_params%set('rel-tol', 1.0e-30_r8)
+    call ic_fail_params%set('max-iter', 1)
+    call ic_fail%init(model, ic_fail_params)
+    call ic_fail%compute(t, temp, u_fail, udot_fail, stat, errmsg)
+    if (stat == 0) then
+      if (is_IOP) print '("ERROR: under-resolved face solve was accepted")'
+      status = 1
+    end if
+
+    call ic_fail_params%set('rel-tol', 0.0_r8)
+    call ic_fail%init(model, ic_fail_params)
+    call ic_fail%compute(t, temp, u_fail, udot_fail, stat, errmsg)
+    if (stat == 0 .or. index(errmsg, '"rel-tol"') == 0) then
+      if (is_IOP) print '("ERROR: invalid IC relative tolerance was accepted")'
+      status = 1
+    end if
+
+  end subroutine test_multimaterial_dirichlet
 
 end program test_HT_2d_solver_initial_state

@@ -108,6 +108,7 @@ contains
     type(ht_2d_model), target :: HT_model
     type(ht_2d_ic_solver) :: ic
     type(parameter_list), pointer :: params
+    type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
@@ -139,7 +140,6 @@ contains
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
-    call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
     call r%init(u)
@@ -162,7 +162,11 @@ contains
     dt = 1.0e-3_r8
     max_itr = 100
     rel_tol = tol
-    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic_params%set('dt', dt)
+    call ic_params%set('rel-tol', rel_tol)
+    call ic_params%set('max-iter', max_itr)
+    call ic%init(HT_model, ic_params)
+    call ic%compute(t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals
@@ -196,6 +200,7 @@ contains
     type(ht_2d_model), target :: HT_model
     type(ht_2d_ic_solver) :: ic
     type(parameter_list), pointer :: params
+    type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
@@ -204,7 +209,7 @@ contains
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
-    integer :: n, j, stat, max_itr
+    integer :: j, stat, max_itr
 
     if (is_IOP) print '(/,"Testing linear problem with Neumann BCs")'
 
@@ -237,7 +242,6 @@ contains
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
-    call ic%init(HT_model)
     call u%init(disc%mesh)
     call udot%init(u)
     call r%init(u)
@@ -271,7 +275,11 @@ contains
     dt = 1.0e-3_r8
     max_itr = 100
     rel_tol = tol
-    call ic%compute(t, dt, Tcell, u, udot, rel_tol, max_itr, stat, errmsg)
+    call ic_params%set('dt', dt)
+    call ic_params%set('rel-tol', rel_tol)
+    call ic_params%set('max-iter', max_itr)
+    call ic%init(HT_model, ic_params)
+    call ic%compute(t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals

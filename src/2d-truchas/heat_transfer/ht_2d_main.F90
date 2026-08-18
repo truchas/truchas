@@ -72,7 +72,13 @@ program ht_2d_main
 
   !! Create the simulation and run it.
   call start_timer('simulation')
-  call sim%init(params)
+  call sim%init(params, stat, errmsg)
+  if (stat /= 0) then
+    if (is_IOP) write(error_unit,'(a)') 'error initializing simulation: ' // errmsg
+    call TLS_exit
+    call halt_parallel_communication
+    call exit(1)
+  end if
   call sim%run(stat, errmsg)
   call stop_timer('simulation')
 

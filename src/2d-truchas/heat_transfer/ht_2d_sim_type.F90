@@ -1,20 +1,14 @@
-!TODO: finish documentation
 !!
 !! HT_2D_SIM_TYPE
 !!
-!! This module defines a derived type that encapsulates a heat transfer
-!! simulation.  This drives the time integration and generates the output.
+!! This module defines HT_2D_SIM, which owns the mesh, material state,
+!! thermal model, solver, time-integration control, and output writer for a
+!! two-dimensional thermal transport simulation.
 !!
-!! David Neill-Asanza <dhna@lanl.gov>
-!! August 2020
+!! David Neill-Asanza <davidhneill@gmail.com>, August 2020
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#include "f90_assert.fpp"
 
 module ht_2d_sim_type
 
@@ -25,7 +19,6 @@ module ht_2d_sim_type
   use material_composition_type
   use scalar_func_factories
   use scalar_func_projection
-  use mfd_2d_disc_type
   use ht_2d_model_type
   use ht_2d_solver_type
   use ht_2d_vtkhdf_output
@@ -36,7 +29,7 @@ module ht_2d_sim_type
   implicit none
   private
 
-  type, public:: ht_2d_sim
+  type, public :: ht_2d_sim
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
@@ -44,6 +37,7 @@ module ht_2d_sim_type
     type(material_composition), pointer :: composition => null()
     type(ht_2d_model), pointer :: model => null()
     type(ht_2d_solver), pointer :: solver => null()
+    integer :: integrator_log_unit = 0
     type(ht_2d_vtkhdf_writer) :: output
     !! Integration control
     real(r8) :: t_init
@@ -57,12 +51,14 @@ module ht_2d_sim_type
     procedure :: init
     procedure :: run
     procedure :: write_solution
-  end type ht_2d_sim
+  end type
 
 contains
 
   subroutine ht_2d_sim_delete(this)
     type(ht_2d_sim), intent(inout) :: this
+    if (this%integrator_log_unit /= 0) close(this%integrator_log_unit)
+    call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%model)) deallocate(this%model)
     if (associated(this%composition)) deallocate(this%composition)
@@ -70,7 +66,7 @@ contains
   end subroutine ht_2d_sim_delete
 
 
-  subroutine init(this, params)
+  subroutine init(this, params, stat, errmsg)
 
     use parameter_list_type
     use unstr_2d_mesh_factory
@@ -80,15 +76,19 @@ contains
 
     class(ht_2d_sim), intent(out) :: this
     type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist
+    type(parameter_list), pointer :: plist, integrator_params
     class(scalar_func), allocatable :: f
-    character(:), allocatable :: errmsg, context, matl_names(:)
+    character(:), allocatable :: context, matl_names(:)
+    character(:), allocatable :: integrator_log_file
+    character(256) :: iomsg
     real(r8), allocatable :: temp(:)
-    real(r8) :: rel_tol
-    integer :: stat, max_itr, rlev
+    integer :: rlev
     type(parameter_list_iterator) :: piter
 
+    stat = 0
     call start_timer('initialization')
     call TLS_info('Initializing the simulation', TLS_VERB_NOISY)
 
@@ -101,54 +101,83 @@ contains
       plist => params%sublist('mesh')
       context = 'processing ' // plist%path() // ': '
       this%mesh => new_unstr_2d_mesh(plist, stat, errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
     else
-      call TLS_fatal('missing "mesh" sublist parameter')
+      stat = 1
+      errmsg = 'missing "mesh" sublist parameter'
+      return
     end if
     call stop_timer('mesh')
 
     !! Load the material database and initialize the material model
-    !TODO: input name instead of hardwiring it
     if (params%is_sublist('materials')) then
       plist => params%sublist('materials')
       context = 'processing ' // plist%path() // ': '
       call load_material_database(this%matl_db, plist, stat, errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
     else
-      call TLS_fatal('missing "materials" sublist parameter')
+      stat = 1
+      errmsg = 'missing "materials" sublist parameter'
+      return
     end if
     allocate(this%composition)
     if (params%is_sublist('material-regions')) then
       plist => params%sublist('material-regions')
       context = 'processing ' // plist%path() // ': '
       call get_material_region_names(plist, matl_names, stat, errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
       !! Recursive geometric refinement level. The finest unresolved
       !! subtriangle has a linear size approximately 2**(-rlev) times that
       !! of its initial cell triangle.
       call params%get('material-region-refinement-level', rlev, stat, errmsg, default=6)
-      if (stat /= 0) call TLS_fatal('processing material-region-refinement-level: ' // errmsg)
-      if (rlev < 0) call TLS_fatal('"material-region-refinement-level" must be >= 0')
+      if (stat /= 0) then
+        errmsg = 'processing material-region-refinement-level: ' // errmsg
+        return
+      else if (rlev < 0) then
+        stat = 1
+        errmsg = '"material-region-refinement-level" must be >= 0'
+        return
+      end if
     else
       plist => params%sublist('materials')
       piter = parameter_list_iterator(plist, sublists_only=.true.)
-      if (piter%count() /= 1) call TLS_fatal('multiple materials require a "material-regions" sublist')
+      if (piter%count() /= 1) then
+        stat = 1
+        errmsg = 'multiple materials require a "material-regions" sublist'
+        return
+      end if
       matl_names = [piter%name()]
     end if
     call this%matl_model%init(matl_names, this%matl_db, stat, errmsg)
-    if (stat /= 0) call TLS_fatal(errmsg)
-    if (this%matl_model%have_void) call TLS_fatal('2D heat transport does not yet support VOID material regions')
+    if (stat /= 0) return
+    if (this%matl_model%have_void) then
+      stat = 1
+      errmsg = '2D heat transport does not yet support VOID material regions'
+      return
+    end if
     if (params%is_sublist('material-regions')) then
       plist => params%sublist('material-regions')
       call this%composition%init(this%mesh, this%matl_model, plist, rlev, stat, errmsg)
     else
       call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
     end if
-    if (stat /= 0) call TLS_fatal('initializing material composition: ' // errmsg)
+    if (stat /= 0) then
+      errmsg = 'initializing material composition: ' // errmsg
+      return
+    end if
 
     !! Initialize enthalpy
     call add_enthalpy_prop(this%matl_model, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
+    if (stat /= 0) return
 
     !! Create the heat conduction model.
     call start_timer('ht-model')
@@ -157,9 +186,14 @@ contains
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
       call this%model%init(this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
     else
-      call TLS_fatal('missing "ht-model" sublist parameter')
+      stat = 1
+      errmsg = 'missing "ht-model" sublist parameter'
+      return
     end if
     call stop_timer('ht-model')
 
@@ -168,38 +202,100 @@ contains
     if (params%is_sublist('ht-solver')) then
       plist => params%sublist('ht-solver')
       allocate(this%solver)
-      call this%solver%init(this%model, plist)
+      context = 'processing ' // plist%path() // ': '
+      call this%solver%init(this%model, plist, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
+      if (plist%is_sublist('integrator')) then
+        integrator_params => plist%sublist('integrator')
+        if (integrator_params%is_parameter('integrator-log-file')) then
+          context = 'processing ' // integrator_params%path() // ': '
+          call integrator_params%get('integrator-log-file', integrator_log_file, stat, errmsg)
+          if (stat /= 0) then
+            errmsg = context // errmsg
+            return
+          end if
+          if (len_trim(integrator_log_file) == 0) then
+            stat = 1
+            errmsg = context//'"integrator-log-file" must not be empty'
+            return
+          end if
+          if (is_IOP) then
+            open(newunit=this%integrator_log_unit, file=integrator_log_file, status='replace', action='write', &
+                iostat=stat, iomsg=iomsg)
+            if (stat /= 0) errmsg = context // trim(iomsg)
+          end if
+          call broadcast_iop_status(stat, errmsg)
+          if (stat /= 0) return
+          if (is_IOP) then
+            call this%solver%set_integrator_log(this%integrator_log_unit)
+          end if
+        end if
+      end if
     else
-      call TLS_fatal('missing "ht-solver" sublist parameter')
+      stat = 1
+      errmsg = 'missing "ht-solver" sublist parameter'
+      return
     end if
     call stop_timer('ht-solver')
 
     !! Create output file.
     call this%output%open(this%mesh, stat, errmsg)
-    if (stat /= 0) call TLS_fatal('processing VTKHDF output: ' // errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing VTKHDF output: ' // errmsg
+      return
+    end if
 
     !! Simulation control parameters
     if (params%is_sublist('sim-control')) then
       plist => params%sublist('sim-control')
       context = 'processing ' // plist%path() // ': '
       call plist%get('initial-time', this%t_init, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
       call plist%get('initial-time-step', this%dt_init, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
-      if (this%dt_init <= 0.0_r8) call TLS_fatal(context//'"initial-time-step" must be > 0.0')
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      else if (this%dt_init <= 0.0_r8) then
+        stat = 1
+        errmsg = context//'"initial-time-step" must be > 0.0'
+        return
+      end if
       call plist%get('min-time-step', this%dt_min, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
       call plist%get('max-time-step', this%dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
       call plist%get('max-try-at-step', this%max_try, default=10, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
-      if (this%dt_min > this%dt_init) call TLS_fatal(context//'require "min-time-step" <= "initial-time-step"')
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      else if (this%dt_min > this%dt_init) then
+        stat = 1
+        errmsg = context//'require "min-time-step" <= "initial-time-step"'
+        return
+      end if
       call plist%get('output-times', this%tout, stat=stat, errmsg=errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
       !TODO: check for strictly increasing values in TOUT, TOUT > t_init, or sort
       !and cull those < t_init.
     else
-      call TLS_fatal('missing "sim-control" sublist parameter')
+      stat = 1
+      errmsg = 'missing "sim-control" sublist parameter'
+      return
     end if
 
     this%ts_sync = time_step_sync(4)
@@ -209,20 +305,44 @@ contains
     if (params%is_parameter('initial-temperature')) then
       context = 'processing initial-temperature: '
       call alloc_scalar_func(params, 'initial-temperature', f, stat, errmsg)
-      if (stat /= 0) call TLS_fatal(context//errmsg)
+      if (stat /= 0) then
+        errmsg = context // errmsg
+        return
+      end if
     else
-      call TLS_fatal('missing "initial-temperature" parameter')
+      stat = 1
+      errmsg = 'missing "initial-temperature" parameter'
+      return
     end if
     allocate(temp(this%mesh%ncell_onP))
     call project_scalar_func_to_cell_centers(this%mesh, f, temp)
 
     !! Define the initial heat conduction state
-    call this%solver%set_initial_state(this%t_init, this%dt_init, temp)
+    call this%solver%set_initial_state(this%t_init, this%dt_init, temp, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'initializing thermal state: ' // errmsg
+      return
+    end if
     call stop_timer('initial-state')
 
     call stop_timer('initialization')
 
   end subroutine init
+
+
+  subroutine broadcast_iop_status(stat, errmsg)
+    integer, intent(inout) :: stat
+    character(:), allocatable, intent(inout) :: errmsg
+    integer :: n
+
+    call broadcast(stat)
+    if (stat /= 0) then
+      if (is_IOP) n = len(errmsg)
+      call broadcast(n)
+      if (.not.is_IOP) allocate(character(len=n) :: errmsg)
+      call broadcast(errmsg)
+    end if
+  end subroutine broadcast_iop_status
 
 
   subroutine run(this, stat, errmsg)
@@ -238,7 +358,7 @@ contains
     call start_timer('integration')
 
     !! Write the initial solution
-    t = this%solver%time()
+    t = this%solver%last_time()
     call this%write_solution(t)
     t_write = t ! keep track of the last write time
 
@@ -280,16 +400,16 @@ contains
 
   end subroutine run
 
-  !! This integrates the system to the target time TOUT.  The final solution
-  !! achieved is returned in T and THIS%U.  Nominally this will be at time
-  !! TOUT, however it will be at some earlier time when there is a failure in
-  !! the time stepping (or a user interrupt).  The input value of HNEXT is the
-  !! initial step size to take, and its return value is the suggested next
-  !! step size (nominally the value passed to the next call to INTEGRATE).
+  !! Integrate the system toward TOUT. The final time reached is returned in
+  !! T, and the solver retains the corresponding committed thermal state.
+  !! Nominally T equals TOUT, but it is earlier after a time-stepping failure
+  !! or user interrupt. The input value of HNEXT is the initial step size;
+  !! its return value is the suggested next step size.
   !! STAT returns a negative value if a time stepping failure occurs, with an
   !! explanatory message in ERRMSG.  If the process recieves the SIGURG
   !! signal, the procedure returns at the end of the next time step with a
-  !! positive value of STAT, with T and THIS%U set accordingly.
+  !! positive value of STAT, with T and the solver's committed state set
+  !! accordingly.
 
   subroutine integrate(this, tout, hnext, t, stat, errmsg)
 
@@ -331,8 +451,8 @@ contains
   end subroutine integrate
 
   !! Take a resilient step.  Nominally this takes a single step from the
-  !! current time to time T and returns the solution in THIS%U.  However if
-  !! the step attempt fails, the procedure will re-attempt with successively
+  !! current time to time T. However if the step attempt fails, the procedure
+  !! will re-attempt with successively
   !! smaller step sizes, until the step is successful or the number of
   !! attempts exceeds a maximum or the step size gets too small.  Thus the
   !! return value of T may differ from its input value.  HNEXT returns the
@@ -350,12 +470,12 @@ contains
     integer :: n
     real(r8) :: tlast
 
-    tlast = this%solver%time()
+    tlast = this%solver%last_time()
 
     do n = 1, this%max_try
       call this%solver%step(t, hnext, stat)
       if (stat == 0) then ! success
-        call this%solver%commit_pending_state
+        call this%solver%commit_step
         return
       end if
       t = tlast + hnext
@@ -371,7 +491,7 @@ contains
 
   end subroutine step
 
-  !! This auxiliary subroutine writes the solution to a GMV format viz file.
+  !! Write the current cell solution to the VTKHDF output.
 
   subroutine write_solution(this, t)
 
