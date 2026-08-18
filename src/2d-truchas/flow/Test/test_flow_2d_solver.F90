@@ -77,7 +77,7 @@ contains
     type(flow_2d_solver) :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
-    real(r8), allocatable :: flux(:)
+    real(r8), allocatable :: flux(:), expected_velocity(:)
     real(r8) :: time, mean_velocity
     character(:), allocatable :: errmsg
     integer :: stat, n
@@ -107,7 +107,7 @@ contains
     call solver%init(model, state, momentum_params, projection_params)
 
     time = 0.0_r8
-    do n = 1, 8
+    do n = 1, 50
       call solver%step(time, 1.0_r8, stat)
       call require(stat == 0, 'pressure-driven flow step did not converge')
       if (stat /= 0) return
@@ -119,6 +119,12 @@ contains
     mean_velocity = global_sum(sum(state%vel_cc(1,1:mesh%ncell_onP))) / &
         global_sum(real(mesh%ncell_onP, r8))
     call require(mean_velocity > 1.0e-3_r8, 'pressure gradient did not drive flow from inlet to outlet')
+    call mesh%init_cell_centroid
+    allocate(expected_velocity(mesh%ncell_onP))
+    expected_velocity = 0.5_r8 * mesh%cell_centroid(2,1:mesh%ncell_onP) * &
+        (1.0_r8 - mesh%cell_centroid(2,1:mesh%ncell_onP))
+    call require(maxval(abs(state%vel_cc(1,1:mesh%ncell_onP) - expected_velocity)) < 5.0e-3_r8, &
+        'long-time pressure-driven flow does not match the Poiseuille profile')
   end subroutine
 
 
