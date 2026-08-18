@@ -32,7 +32,8 @@ contains
     type(parameter_list), pointer :: plist
     type(flow_2d_bc) :: bc
     character(:), allocatable :: errmsg
-    integer :: stat, pin_face
+    integer :: stat, pin_face, f
+    logical :: defaults_complete
 
     mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4, 4], 0.0_r8, 0.0_r8)
     plist => velocity_params%sublist('wall')
@@ -41,7 +42,18 @@ contains
 
     call bc%init(mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
-    call bc%compute(0.0_r8)
+    call bc%compute(0.0_r8, 1.0_r8)
+    defaults_complete = .true.
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) /= 0) cycle
+      defaults_complete = defaults_complete .and. any(bc%pressure_neumann%index == f) .and. &
+          (any(bc%velocity_dirichlet%index == f) .or. any(bc%velocity_zero_normal%index == f))
+    end do
+    call require(defaults_complete, 'default boundary conditions do not cover every boundary face')
+    if (size(bc%pressure_correction_dirichlet%value) > 0) then
+      call require(maxval(abs(bc%pressure_correction_dirichlet%value)) < 1.0e-12_r8, &
+          'static pressure data produced a nonzero pressure correction')
+    end if
     pin_face = bc%pressure_pin_face()
     call require(global_sum(merge(1, 0, pin_face > 0)) == 1, &
         'all-Neumann pressure conditions did not select exactly one pin face')

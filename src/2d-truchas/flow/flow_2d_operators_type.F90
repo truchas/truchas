@@ -177,11 +177,12 @@ contains
   !! Compute a first-order face-normal derivative from cell-centered scalar
   !! data. On a boundary face, NORMAL_FLUX_BC supplies the derivative directly
   !! and DIRICHLET_BC supplies the scalar value at the face center.
-  subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc)
+  subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc, dirichlet_value)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: derivative_fn(:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
+    real(r8), optional, intent(in) :: dirichlet_value(:)
 
     integer :: f, c1, c2, i
 
@@ -196,18 +197,27 @@ contains
     if (present(normal_flux_bc)) then
       do i = 1, size(normal_flux_bc%index)
         f = normal_flux_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         ASSERT(this%mesh%fcell(2,f) == 0)
         derivative_fn(f) = normal_flux_bc%value(i)
       end do
     end if
     if (present(dirichlet_bc)) then
+      if (present(dirichlet_value)) then
+        ASSERT(size(dirichlet_value) == size(dirichlet_bc%value))
+      end if
       do i = 1, size(dirichlet_bc%index)
         f = dirichlet_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         c1 = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
-        derivative_fn(f) = (dirichlet_bc%value(i) - field_cc(c1))/this%dx(f)
+        if (present(dirichlet_value)) then
+          derivative_fn(f) = (dirichlet_value(i) - field_cc(c1))/this%dx(f)
+        else
+          derivative_fn(f) = (dirichlet_bc%value(i) - field_cc(c1))/this%dx(f)
+        end if
       end do
     end if
     call this%mesh%face_imap%gather_offp(derivative_fn)
@@ -240,7 +250,8 @@ contains
     if (present(zero_normal_bc)) then
       do i = 1, size(zero_normal_bc%index)
         f = zero_normal_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         c1 = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         normal_velocity = dot_product(this%mesh%unit_normal(:,f), field_cc(:,c1))
@@ -250,7 +261,8 @@ contains
     if (present(dirichlet_bc)) then
       do i = 1, size(dirichlet_bc%index)
         f = dirichlet_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         c1 = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         derivative_fn(:,f) = (dirichlet_bc%value(:,i) - field_cc(:,c1))/this%dx(f)
@@ -307,7 +319,8 @@ contains
     if (present(zero_normal_bc)) then
       do i = 1, size(zero_normal_bc%index)
         f = zero_normal_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         ASSERT(this%mesh%fcell(2,f) == 0)
         field_f(f) = 0.0_r8
       end do
@@ -315,7 +328,8 @@ contains
     if (present(dirichlet_bc)) then
       do i = 1, size(dirichlet_bc%index)
         f = dirichlet_bc%index(i)
-        ASSERT(f >= 1 .and. f <= this%mesh%nface_onP)
+        if (f > this%mesh%nface_onP) cycle
+        ASSERT(f >= 1)
         ASSERT(this%mesh%fcell(2,f) == 0)
         field_f(f) = dot_product(this%mesh%unit_normal(:,f), dirichlet_bc%value(:,i))
       end do

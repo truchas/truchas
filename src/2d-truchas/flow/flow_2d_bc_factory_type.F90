@@ -71,16 +71,14 @@ contains
     type(bndry_face_vfunc), allocatable :: bff
 
     call TLS_info('  generating "velocity" flow boundary condition')
+    allocate(bff)
+    call bff%init(this%mesh)
     call this%iterate_list('velocity', velocity, stat, errmsg)
     if (stat /= 0) return
     call this%iterate_list('no-slip', no_slip, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) then
-      call TLS_info('    none specified')
-    else
-      call bff%add_complete()
-      call move_alloc(bff, bc)
-    end if
+    call bff%add_complete()
+    call move_alloc(bff, bc)
 
   contains
 
@@ -130,14 +128,12 @@ contains
     type(bndry_face_func), allocatable :: bff
 
     call TLS_info('  generating "free-slip" flow boundary condition')
+    allocate(bff)
+    call bff%init(this%mesh)
     call this%iterate_list('free-slip', zero, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) then
-      call TLS_info('    none specified')
-    else
-      call bff%add_complete()
-      call move_alloc(bff, bc)
-    end if
+    call bff%add_complete()
+    call move_alloc(bff, bc)
 
   contains
 
@@ -171,14 +167,12 @@ contains
     type(bndry_face_func), allocatable :: bff
 
     call TLS_info('  generating "pressure" flow boundary condition')
+    allocate(bff)
+    call bff%init(this%mesh)
     call this%iterate_list('pressure', pressure, stat, errmsg)
     if (stat /= 0) return
-    if (.not.allocated(bff)) then
-      call TLS_info('    none specified')
-    else
-      call bff%add_complete()
-      call move_alloc(bff, bc)
-    end if
+    call bff%add_complete()
+    call move_alloc(bff, bc)
 
   contains
 
@@ -212,16 +206,16 @@ contains
 
     type(bndry_face_func), allocatable :: bff
 
+    allocate(bff)
+    call bff%init(this%mesh)
     call this%iterate_list('velocity', zero, stat, errmsg)
     if (stat /= 0) return
     call this%iterate_list('no-slip', zero, stat, errmsg)
     if (stat /= 0) return
     call this%iterate_list('free-slip', zero, stat, errmsg)
     if (stat /= 0) return
-    if (allocated(bff)) then
-      call bff%add_complete()
-      call move_alloc(bff, bc)
-    end if
+    call bff%add_complete()
+    call move_alloc(bff, bc)
 
   contains
 

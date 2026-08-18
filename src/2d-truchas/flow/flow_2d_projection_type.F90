@@ -65,11 +65,12 @@ contains
 
   !! Assemble -div(rho^-1 grad(p)) and its pressure-Dirichlet contribution to
   !! RHS. BC must already have been evaluated at the required time.
-  subroutine assemble(this, inv_density_f, bc, rhs)
+  subroutine assemble(this, inv_density_f, bc, rhs, dirichlet_value)
     class(flow_2d_projection), intent(inout) :: this
     real(r8), intent(in) :: inv_density_f(:)
     type(flow_2d_bc), intent(in) :: bc
     real(r8), intent(out) :: rhs(:)
+    real(r8), optional, intent(in) :: dirichlet_value(:)
 
     integer :: c, i, f, neighbor, pin_face, n
     real(r8) :: coefficient
@@ -96,6 +97,9 @@ contains
     end do
 
     if (allocated(bc%pressure_dirichlet)) then
+      if (present(dirichlet_value)) then
+        ASSERT(size(dirichlet_value) == size(bc%pressure_dirichlet%value))
+      end if
       do n = 1, size(bc%pressure_dirichlet%index)
         f = bc%pressure_dirichlet%index(n)
         if (f > this%mesh%nface_onP) cycle
@@ -103,7 +107,11 @@ contains
         ASSERT(this%mesh%fcell(2,f) == 0)
         coefficient = this%mesh%area(f)*inv_density_f(f)/this%operators%normal_distance(f)
         call this%matrix_%add_to(c, c, coefficient)
-        rhs(c) = rhs(c) + coefficient*bc%pressure_dirichlet%value(n)
+        if (present(dirichlet_value)) then
+          rhs(c) = rhs(c) + coefficient*dirichlet_value(n)
+        else
+          rhs(c) = rhs(c) + coefficient*bc%pressure_dirichlet%value(n)
+        end if
       end do
     end if
 
