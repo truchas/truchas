@@ -1,0 +1,164 @@
+!!
+!! FLOW_2D_SIM_TYPE
+!!
+!! This module defines FLOW_2D_SIM, which owns the mesh, single-fluid flow
+!! model, state, solver, and fixed-step time control for a two-dimensional
+!! isothermal incompressible-flow simulation.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
+
+module flow_2d_sim_type
+
+  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use parameter_list_type
+  use unstr_2d_mesh_type
+  use unstr_2d_mesh_factory
+  use flow_2d_model_type
+  use flow_2d_state_type
+  use flow_2d_solver_type
+  implicit none
+  private
+
+  type, public :: flow_2d_sim
+    private
+    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(flow_2d_model), pointer :: model => null()
+    type(flow_2d_state), pointer :: state => null()
+    type(flow_2d_solver), pointer :: solver => null()
+    real(r8) :: initial_time, time_step, final_time
+  contains
+    final :: delete
+    procedure :: init
+    procedure :: run
+  end type
+
+contains
+
+  subroutine delete(this)
+    type(flow_2d_sim), intent(inout) :: this
+
+    if (associated(this%solver)) deallocate(this%solver)
+    if (associated(this%state)) deallocate(this%state)
+    if (associated(this%model)) deallocate(this%model)
+    if (associated(this%mesh)) deallocate(this%mesh)
+  end subroutine
+
+
+  subroutine init(this, params, stat, errmsg)
+    class(flow_2d_sim), intent(out) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(parameter_list), pointer :: mesh_params, model_params, bc_params, solver_params
+    type(parameter_list), pointer :: momentum_params, projection_params, control_params
+    real(r8) :: density, viscosity
+
+    stat = 0
+    if (.not.params%is_sublist('mesh')) then
+      stat = 1
+      errmsg = 'missing "mesh" sublist parameter'
+      return
+    end if
+    mesh_params => params%sublist('mesh')
+    this%mesh => new_unstr_2d_mesh(mesh_params, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
+      return
+    end if
+
+    if (.not.params%is_sublist('flow-model')) then
+      stat = 1
+      errmsg = 'missing "flow-model" sublist parameter'
+      return
+    end if
+    model_params => params%sublist('flow-model')
+    call model_params%get('density', density, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+      return
+    end if
+    call model_params%get('viscosity', viscosity, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+      return
+    end if
+    if (density <= 0.0_r8 .or. viscosity < 0.0_r8) then
+      stat = 1
+      errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity >= 0'
+      return
+    end if
+    if (.not.model_params%is_sublist('bc')) then
+      stat = 1
+      errmsg = 'missing "bc" sublist parameter in ' // model_params%path()
+      return
+    end if
+    bc_params => model_params%sublist('bc')
+    allocate(this%model)
+    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
+      return
+    end if
+    allocate(this%state)
+    call this%state%init(this%mesh)
+
+    if (.not.params%is_sublist('flow-solver')) then
+      stat = 1
+      errmsg = 'missing "flow-solver" sublist parameter'
+      return
+    end if
+    solver_params => params%sublist('flow-solver')
+    if (.not.solver_params%is_sublist('momentum-solver') .or. &
+        .not.solver_params%is_sublist('projection-solver')) then
+      stat = 1
+      errmsg = 'flow-solver requires "momentum-solver" and "projection-solver" sublists'
+      return
+    end if
+    momentum_params => solver_params%sublist('momentum-solver')
+    projection_params => solver_params%sublist('projection-solver')
+    allocate(this%solver)
+    call this%solver%init(this%model, this%state, momentum_params, projection_params)
+
+    if (.not.params%is_sublist('sim-control')) then
+      stat = 1
+      errmsg = 'missing "sim-control" sublist parameter'
+      return
+    end if
+    control_params => params%sublist('sim-control')
+    call control_params%get('initial-time', this%initial_time, default=0.0_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call control_params%get('time-step', this%time_step, stat, errmsg)
+    if (stat /= 0) return
+    call control_params%get('final-time', this%final_time, stat, errmsg)
+    if (stat /= 0) return
+    if (this%time_step <= 0.0_r8 .or. this%final_time < this%initial_time) then
+      stat = 1
+      errmsg = 'processing ' // control_params%path() // ': require time-step > 0 and final-time >= initial-time'
+    end if
+  end subroutine
+
+
+  subroutine run(this, stat, errmsg)
+    class(flow_2d_sim), intent(inout) :: this
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    real(r8) :: time, dt
+
+    stat = 0
+    time = this%initial_time
+    do while (time < this%final_time)
+      dt = min(this%time_step, this%final_time - time)
+      call this%solver%step(time, dt, stat)
+      if (stat /= 0) then
+        errmsg = 'flow solver step failed'
+        return
+      end if
+      time = time + dt
+    end do
+  end subroutine
+
+end module flow_2d_sim_type
