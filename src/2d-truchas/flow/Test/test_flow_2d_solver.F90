@@ -24,6 +24,7 @@ program test_flow_2d_solver
 
   status = 0
   call test_step
+  call test_pressure_drive
 
   call halt_parallel_communication
   stop status
@@ -63,6 +64,61 @@ contains
     allocate(flux(mesh%ncell_onP))
     call model%operators%divergence(state%vel_fn, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'flow solver step did not make face velocity solenoidal')
+  end subroutine
+
+
+  !! A pressure boundary leaves the normal velocity unconstrained.  This is
+  !! the minimal pressure-driven channel case: pressure decreases from the
+  !! left face set to the right one, while the horizontal walls are no-slip.
+  subroutine test_pressure_drive
+    type(unstr_2d_mesh), pointer :: mesh
+    type(flow_2d_model), target :: model
+    type(flow_2d_state), target :: state
+    type(flow_2d_solver) :: solver
+    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), pointer :: plist
+    real(r8), allocatable :: flux(:)
+    real(r8) :: time, mean_velocity
+    character(:), allocatable :: errmsg
+    integer :: stat, n
+
+    mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [16, 8], 0.0_r8, 0.0_r8)
+    plist => bc_params%sublist('inlet')
+    call plist%set('type', 'pressure')
+    call plist%set('face-set-ids', [1])
+    call plist%set('pressure', 1.0_r8)
+    plist => bc_params%sublist('outlet')
+    call plist%set('type', 'pressure')
+    call plist%set('face-set-ids', [2])
+    call plist%set('pressure', 0.0_r8)
+    plist => bc_params%sublist('wall')
+    call plist%set('type', 'no-slip')
+    call plist%set('face-set-ids', [3,4])
+    call model%init(mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
+    call require(stat == 0, 'pressure-driven flow model initialization failed')
+    if (stat /= 0) return
+    call state%init(mesh)
+    call momentum_params%set('rel-tol', 1.0e-10_r8)
+    call momentum_params%set('max-ds-iter', 100)
+    call momentum_params%set('max-amg-iter', 100)
+    call projection_params%set('rel-tol', 1.0e-10_r8)
+    call projection_params%set('max-ds-iter', 100)
+    call projection_params%set('max-amg-iter', 100)
+    call solver%init(model, state, momentum_params, projection_params)
+
+    time = 0.0_r8
+    do n = 1, 8
+      call solver%step(time, 1.0_r8, stat)
+      call require(stat == 0, 'pressure-driven flow step did not converge')
+      if (stat /= 0) return
+      time = time + 1.0_r8
+    end do
+    allocate(flux(mesh%ncell_onP))
+    call model%operators%divergence(state%vel_fn, flux)
+    call require(maxval(abs(flux)) < 1.0e-8_r8, 'pressure-driven flow is not solenoidal')
+    mean_velocity = global_sum(sum(state%vel_cc(1,1:mesh%ncell_onP))) / &
+        global_sum(real(mesh%ncell_onP, r8))
+    call require(mean_velocity > 1.0e-3_r8, 'pressure gradient did not drive flow from inlet to outlet')
   end subroutine
 
 
