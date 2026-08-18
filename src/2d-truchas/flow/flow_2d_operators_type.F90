@@ -33,6 +33,7 @@ module flow_2d_operators_type
     procedure :: derivative_cf_1r, derivative_cf_2r
     procedure :: interpolate_cf_1r, interpolate_cf_2r
     procedure :: divergence
+    procedure :: normal_distance
     generic :: derivative_cf => derivative_cf_1r, derivative_cf_2r
     generic :: interpolate_cf => interpolate_cf_1r, interpolate_cf_2r
   end type
@@ -83,6 +84,16 @@ contains
     call mesh%face_imap%gather_offp(this%dx)
     call mesh%face_imap%gather_offp(this%interpolation_factor)
   end subroutine
+
+
+  function normal_distance(this, face) result(dx)
+    class(flow_2d_operators), intent(in) :: this
+    integer, intent(in) :: face
+    real(r8) :: dx
+
+    ASSERT(face >= 1 .and. face <= this%mesh%nface)
+    dx = this%dx(face)
+  end function
 
 
   !! Compute a first-order face-normal derivative from cell-centered scalar
