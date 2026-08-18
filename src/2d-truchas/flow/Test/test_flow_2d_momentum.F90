@@ -54,7 +54,7 @@ contains
 
     plist => velocity_params%sublist('wall')
     call plist%set('type', 'velocity')
-    call plist%set('face-set-ids', [1])
+    call plist%set('face-set-ids', [1,2,3,4])
     call plist%set('velocity', [1.5_r8, -0.75_r8])
     call bc%init(mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')

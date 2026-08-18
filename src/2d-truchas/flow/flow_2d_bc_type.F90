@@ -26,12 +26,14 @@ module flow_2d_bc_type
 
   type, public :: flow_2d_bc
     class(bndry_func1), allocatable :: pressure_dirichlet
+    class(bndry_func1), allocatable :: pressure_correction_dirichlet
     class(bndry_func1), allocatable :: pressure_neumann
     class(bndry_func1), allocatable :: velocity_zero_normal
     class(bndry_vfunc), allocatable :: velocity_dirichlet
   contains
     procedure :: init
     procedure :: compute
+    procedure :: compute_initial
     procedure :: pressure_pin_face
   end type
 
@@ -53,18 +55,42 @@ contains
     if (stat /= 0) return
     call factory%alloc_dir_prs_bc(this%pressure_dirichlet, stat, errmsg)
     if (stat /= 0) return
+    call factory%alloc_dir_prs_bc(this%pressure_correction_dirichlet, stat, errmsg)
+    if (stat /= 0) return
     call factory%alloc_neu_prs_bc(this%pressure_neumann, stat, errmsg)
+    if (stat /= 0) return
+    call apply_default(this, mesh)
   end subroutine
 
 
-  subroutine compute(this, time)
+  subroutine compute(this, time, dt)
+    class(flow_2d_bc), intent(inout) :: this
+    real(r8), intent(in) :: time
+    real(r8), optional, intent(in) :: dt
+
+    real(r8) :: dt_
+
+    dt_ = 0.0_r8
+    if (present(dt)) dt_ = dt
+    call this%velocity_dirichlet%compute(time)
+    call this%velocity_zero_normal%compute(time)
+    call this%pressure_dirichlet%compute(time)
+    call this%pressure_neumann%compute(time)
+    call this%pressure_correction_dirichlet%compute(time + dt_)
+    this%pressure_correction_dirichlet%value = this%pressure_correction_dirichlet%value - &
+        this%pressure_dirichlet%value
+  end subroutine
+
+
+  subroutine compute_initial(this, time)
     class(flow_2d_bc), intent(inout) :: this
     real(r8), intent(in) :: time
 
-    if (allocated(this%velocity_dirichlet)) call this%velocity_dirichlet%compute(time)
-    if (allocated(this%velocity_zero_normal)) call this%velocity_zero_normal%compute(time)
-    if (allocated(this%pressure_dirichlet)) call this%pressure_dirichlet%compute(time)
-    if (allocated(this%pressure_neumann)) call this%pressure_neumann%compute(time)
+    call this%velocity_dirichlet%compute(time)
+    call this%velocity_zero_normal%compute(time)
+    call this%pressure_dirichlet%compute(time)
+    call this%pressure_neumann%compute(time)
+    this%pressure_correction_dirichlet%value = 0.0_r8
   end subroutine
 
 
@@ -79,14 +105,51 @@ contains
     logical :: is_candidate, candidate(nPE)
 
     face = 0
-    if (allocated(this%pressure_dirichlet)) return
-    is_candidate = allocated(this%pressure_neumann)
-    if (is_candidate) is_candidate = size(this%pressure_neumann%index) > 0
+    if (size(this%pressure_dirichlet%index) > 0) return
+    is_candidate = size(this%pressure_neumann%index) > 0
     call gather(is_candidate, candidate)
     if (is_IOP) pin_pe = findloc(candidate, .true., dim=1)
     call broadcast(pin_pe)
     INSIST(pin_pe > 0 .and. pin_pe <= nPE)
     if (this_PE == pin_pe) face = this%pressure_neumann%index(1)
   end function
+
+
+  subroutine apply_default(this, mesh)
+    use bndry_face_func_type
+    use scalar_func_class
+    use scalar_func_factories, only: alloc_const_scalar_func
+
+    class(flow_2d_bc), intent(inout) :: this
+    type(unstr_2d_mesh), intent(in) :: mesh
+
+    class(scalar_func), allocatable :: func
+    integer, allocatable :: faces(:)
+    integer :: f, nface
+
+    allocate(faces(mesh%nface_onP))
+    nface = 0
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) /= 0) cycle
+      if (any(this%pressure_dirichlet%index == f)) cycle
+      if (any(this%pressure_neumann%index == f)) cycle
+      nface = nface + 1
+      faces(nface) = f
+    end do
+    if (nface == 0) return
+    call alloc_const_scalar_func(func, 0.0_r8)
+    select type (bndry => this%pressure_neumann)
+    type is (bndry_face_func)
+      call bndry%add_face_list(func, faces(:nface))
+    class default
+      ASSERT(.false.)
+    end select
+    select type (bndry => this%velocity_zero_normal)
+    type is (bndry_face_func)
+      call bndry%add_face_list(func, faces(:nface))
+    class default
+      ASSERT(.false.)
+    end select
+  end subroutine
 
 end module flow_2d_bc_type
