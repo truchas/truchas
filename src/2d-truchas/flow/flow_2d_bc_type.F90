@@ -105,7 +105,7 @@ contains
     logical :: is_candidate, candidate(nPE)
 
     face = 0
-    if (size(this%pressure_dirichlet%index) > 0) return
+    if (global_any(size(this%pressure_dirichlet%index) > 0)) return
     is_candidate = size(this%pressure_neumann%index) > 0
     call gather(is_candidate, candidate)
     if (is_IOP) pin_pe = findloc(candidate, .true., dim=1)
@@ -136,14 +136,29 @@ contains
       nface = nface + 1
       faces(nface) = f
     end do
+    if (nface > 0) then
+      call alloc_const_scalar_func(func, 0.0_r8)
+      select type (bndry => this%pressure_neumann)
+      type is (bndry_face_func)
+        call bndry%add_face_list(func, faces(:nface))
+      class default
+        ASSERT(.false.)
+      end select
+    end if
+
+    nface = 0
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) /= 0) cycle
+      if (any(this%velocity_dirichlet%index == f)) cycle
+      if (any(this%velocity_zero_normal%index == f)) cycle
+      ! A pressure Dirichlet boundary is an open boundary: its normal velocity
+      ! is determined by the pressure solve, not prescribed as free slip.
+      if (any(this%pressure_dirichlet%index == f)) cycle
+      nface = nface + 1
+      faces(nface) = f
+    end do
     if (nface == 0) return
     call alloc_const_scalar_func(func, 0.0_r8)
-    select type (bndry => this%pressure_neumann)
-    type is (bndry_face_func)
-      call bndry%add_face_list(func, faces(:nface))
-    class default
-      ASSERT(.false.)
-    end select
     select type (bndry => this%velocity_zero_normal)
     type is (bndry_face_func)
       call bndry%add_face_list(func, faces(:nface))

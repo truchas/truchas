@@ -66,6 +66,10 @@ contains
     call require(stat == 0, 'pressure boundary condition initialization failed')
     pin_face = bc%pressure_pin_face()
     call require(pin_face == 0, 'pressure Dirichlet condition should suppress pressure pinning')
+    if (size(bc%pressure_dirichlet%index) > 0) then
+      call require(.not.any(bc%velocity_zero_normal%index == bc%pressure_dirichlet%index(1)), &
+          'pressure Dirichlet boundary should not receive a zero-normal velocity condition')
+    end if
   end subroutine
 
 
