@@ -43,9 +43,14 @@ def check_profile(data, case):
     if abs(data.time(step) - 50.0) > 1.0e-12:
         raise RuntimeError(f"{case}: final time is {data.time(step):g}, expected 50")
     centers = data.cell_centers(step)
-    velocity = data.field(step, "velocity")[:, 0]
-    expected = 0.5 * centers[:, 1] * (1.0 - centers[:, 1])
-    error = np.max(np.abs(velocity - expected))
+    velocity = data.field(step, "velocity")
+    angle = np.deg2rad(30.0)
+    tangent = np.array([np.cos(angle), np.sin(angle), 0.0])
+    normal = np.array([-np.sin(angle), np.cos(angle), 0.0])
+    normal_coordinate = centers @ normal
+    expected = 0.5 * normal_coordinate * (1.0 - normal_coordinate)
+    expected_velocity = expected[:, None] * tangent
+    error = np.max(np.abs(velocity - expected_velocity))
     if error > 5.0e-3:
         raise RuntimeError(f"{case}: Poiseuille profile error {error:g}")
     return centers, velocity

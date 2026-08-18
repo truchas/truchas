@@ -1,7 +1,8 @@
 {
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
-        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "rotation-angle": 30.0
     },
     "flow-model": {
         "density": 1.0,
