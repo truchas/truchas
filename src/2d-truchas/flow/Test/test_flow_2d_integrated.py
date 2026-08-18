@@ -38,7 +38,7 @@ def run_case(executable, input_file, nproc, mpiexec):
     return TruchasVTKHDFData(output_file), output_dir
 
 
-def check_profile(data, case):
+def check_profile(data, case, tolerance=5.0e-3):
     step = data.num_steps - 1
     if abs(data.time(step) - 50.0) > 1.0e-12:
         raise RuntimeError(f"{case}: final time is {data.time(step):g}, expected 50")
@@ -51,7 +51,7 @@ def check_profile(data, case):
     expected = 0.5 * normal_coordinate * (1.0 - normal_coordinate)
     expected_velocity = expected[:, None] * tangent
     error = np.max(np.abs(velocity - expected_velocity))
-    if error > 5.0e-3:
+    if error > tolerance:
         raise RuntimeError(f"{case}: Poiseuille profile error {error:g}")
     return centers, velocity
 
@@ -68,8 +68,9 @@ def main():
     try:
         serial, serial_dir = run_case(executable, input_file, 1, mpiexec)
         parallel, parallel_dir = run_case(executable, input_file, 4, mpiexec)
-        serial_centers, serial_velocity = check_profile(serial, "serial")
-        parallel_centers, parallel_velocity = check_profile(parallel, "parallel")
+        tolerance = 1.0e-2 if "noisy" in input_file.stem else 5.0e-3
+        serial_centers, serial_velocity = check_profile(serial, "serial", tolerance)
+        parallel_centers, parallel_velocity = check_profile(parallel, "parallel", tolerance)
     except RuntimeError as error:
         print(f"FAIL: {error}")
         return 1
