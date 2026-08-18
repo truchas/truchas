@@ -21,6 +21,7 @@ module flow_2d_solver_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
+  use flow_2d_ic_solver_type
   implicit none
   private
 
@@ -31,10 +32,13 @@ module flow_2d_solver_type
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
+    type(flow_2d_ic_solver), pointer :: ic_solver => null()
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
   contains
     procedure :: init
+    procedure :: set_initial_state
     procedure :: step
+    final :: delete
   end type
 
 contains
@@ -47,10 +51,29 @@ contains
 
     this%model => model
     this%state => state
-    allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver)
+    allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver, &
+        this%ic_solver)
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver)
+    call this%ic_solver%init(model, momentum_params, projection_params)
+  end subroutine
+
+
+  subroutine set_initial_state(this, time, dt, velocity, stat)
+    class(flow_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: time, dt, velocity(:,:)
+    integer, intent(out) :: stat
+
+    call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+  end subroutine
+
+
+  subroutine delete(this)
+    type(flow_2d_solver), intent(inout) :: this
+
+    if (associated(this%projection_solver)) deallocate(this%projection_solver)
+    if (associated(this%ic_solver)) deallocate(this%ic_solver)
   end subroutine
 
 

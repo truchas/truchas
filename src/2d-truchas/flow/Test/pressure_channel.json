@@ -16,5 +16,6 @@
         "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
         "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
     },
+    "initial-velocity": [0.0, 0.0],
     "sim-control": {"initial-time": 0.0, "time-step": 1.0, "final-time": 2.0}
 }
