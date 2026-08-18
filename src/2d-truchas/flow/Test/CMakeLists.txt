@@ -152,3 +152,14 @@ set_tests_properties(flow_2d_integrated_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME flow_2d_integrated_noisy_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_noisy_analytic.json
+          ${MPIEXEC})
+set_tests_properties(flow_2d_integrated_noisy_channel PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
