@@ -15,6 +15,9 @@ module flow_2d_sim_type
   use parameter_list_type
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
+  use vector_func_class
+  use vector_func_factories, only: alloc_vector_func
+  use vector_func_projection
   use flow_2d_model_type
   use flow_2d_state_type
   use flow_2d_solver_type
@@ -57,6 +60,8 @@ contains
 
     type(parameter_list), pointer :: mesh_params, model_params, bc_params, solver_params
     type(parameter_list), pointer :: momentum_params, projection_params, control_params
+    class(vector_func), allocatable :: initial_velocity_func
+    real(r8), allocatable :: initial_velocity(:,:)
     real(r8) :: density, viscosity
 
     stat = 0
@@ -125,12 +130,6 @@ contains
     allocate(this%solver)
     call this%solver%init(this%model, this%state, momentum_params, projection_params)
 
-    call this%output%open(this%mesh, stat, errmsg)
-    if (stat /= 0) then
-      errmsg = 'opening VTKHDF output: ' // errmsg
-      return
-    end if
-
     if (.not.params%is_sublist('sim-control')) then
       stat = 1
       errmsg = 'missing "sim-control" sublist parameter'
@@ -146,7 +145,35 @@ contains
     if (this%time_step <= 0.0_r8 .or. this%final_time < this%initial_time) then
       stat = 1
       errmsg = 'processing ' // control_params%path() // ': require time-step > 0 and final-time >= initial-time'
+      return
     end if
+
+    allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
+    if (params%is_parameter('initial-velocity')) then
+      call alloc_vector_func(params, 'initial-velocity', initial_velocity_func, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing initial-velocity: ' // errmsg
+        return
+      end if
+      if (initial_velocity_func%dim /= 2) then
+        stat = 1
+        errmsg = 'processing initial-velocity: require a two-component vector function'
+        return
+      end if
+      call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
+    end if
+    call this%solver%set_initial_state(this%initial_time, this%time_step, initial_velocity, stat)
+    if (stat /= 0) then
+      errmsg = 'initializing flow state failed'
+      return
+    end if
+
+    call this%output%open(this%mesh, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'opening VTKHDF output: ' // errmsg
+      return
+    end if
+
   end subroutine
 
 

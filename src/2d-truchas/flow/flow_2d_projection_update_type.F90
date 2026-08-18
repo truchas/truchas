@@ -21,6 +21,7 @@ module flow_2d_projection_update_type
   use flow_2d_projection_solver_type
   use flow_2d_bc_type
   use flow_2d_state_type
+  use parallel_communication, only: global_maxval
   implicit none
   private
 
@@ -35,6 +36,7 @@ module flow_2d_projection_update_type
   contains
     procedure :: init
     procedure :: correct
+    procedure :: project_velocity
   end type
 
 contains
@@ -56,6 +58,57 @@ contains
   end subroutine
 
 
+  !! Project STATE%VEL_CC onto the velocity boundary conditions and the
+  !! discrete face-flux continuity constraint.  The pressure correction is
+  !! used only as a projection multiplier; this procedure does not alter
+  !! STATE%P_CC.
+  subroutine project_velocity(this, dt, inv_density_c, inv_density_f, bc, state, stat)
+    class(flow_2d_projection_update), intent(inout) :: this
+    real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
+    type(flow_2d_bc), intent(in) :: bc
+    type(flow_2d_state), intent(inout) :: state
+    integer, intent(out) :: stat
+
+    integer :: c, f, pin_face
+
+    ASSERT(dt > 0.0_r8)
+    stat = 0
+    call this%mesh%cell_imap%gather_offp(state%vel_cc)
+    call interpolate_velocity(this, state%vel_cc, bc, state%vel_fn)
+    call apply_velocity_boundary_conditions(this%mesh, bc, state%vel_fn)
+    call this%mesh%face_imap%gather_offp(state%vel_fn)
+
+    call this%projection%assemble(inv_density_f, bc, this%rhs, bc%pressure_correction_dirichlet%value)
+    call this%solver%setup()
+    call this%operators%divergence(state%vel_fn, this%flux)
+    this%rhs = this%rhs - this%flux/dt
+    this%delta_p = 0.0_r8
+    if (global_maxval(abs(this%rhs)) > 0.0_r8) then
+      call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
+      if (stat /= 0) return
+    end if
+    call this%mesh%cell_imap%gather_offp(this%delta_p)
+
+    call pressure_derivative(this, this%delta_p, bc, this%derivative_f, correction=.true.)
+    pin_face = bc%pressure_pin_face()
+    if (pin_face > 0) then
+      c = this%mesh%fcell(1,pin_face)
+      this%derivative_f(pin_face) = -this%delta_p(c)/this%operators%normal_distance(pin_face)
+    end if
+    do f = 1, this%mesh%nface_onP
+      state%vel_fn(f) = state%vel_fn(f) - dt*inv_density_f(f)*this%derivative_f(f)
+    end do
+    call apply_velocity_boundary_conditions(this%mesh, bc, state%vel_fn)
+    call this%mesh%face_imap%gather_offp(state%vel_fn)
+
+    call gradient_correction(this, this%delta_p, this%grad_p_new, bc)
+    do c = 1, this%mesh%ncell_onP
+      state%vel_cc(:,c) = state%vel_cc(:,c) - dt*inv_density_c(c)*this%grad_p_new(:,c)
+    end do
+    call this%mesh%cell_imap%gather_offp(state%vel_cc)
+  end subroutine
+
+
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
   subroutine correct(this, dt, inv_density_c, inv_density_f, bc, state, stat)
@@ -68,6 +121,7 @@ contains
     integer :: c, f, pin_face
 
     ASSERT(dt > 0.0_r8)
+    stat = 0
     ASSERT(size(inv_density_c) >= this%mesh%ncell)
     ASSERT(size(inv_density_f) >= this%mesh%nface)
     call gradient_pressure(this, state%p_cc, this%grad_p_old, bc)
@@ -89,8 +143,10 @@ contains
     call this%operators%divergence(state%vel_fn, this%flux)
     this%rhs = this%rhs - this%flux/dt
     this%delta_p = 0.0_r8
-    call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
-    if (stat /= 0) return
+    if (global_maxval(abs(this%rhs)) > 0.0_r8) then
+      call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
+      if (stat /= 0) return
+    end if
     call this%mesh%cell_imap%gather_offp(this%delta_p)
 
     call pressure_derivative(this, this%delta_p, bc, this%derivative_f, correction=.true.)
@@ -133,6 +189,17 @@ contains
     else
       call this%operators%gradient_cc(pressure, gradient)
     end if
+  end subroutine
+
+
+  subroutine gradient_correction(this, pressure, gradient, bc)
+    class(flow_2d_projection_update), intent(in) :: this
+    real(r8), intent(in) :: pressure(:)
+    real(r8), intent(out) :: gradient(:,:)
+    type(flow_2d_bc), intent(in) :: bc
+
+    call this%operators%gradient_cc(pressure, gradient, bc%pressure_neumann, &
+        bc%pressure_correction_dirichlet)
   end subroutine
 
 
