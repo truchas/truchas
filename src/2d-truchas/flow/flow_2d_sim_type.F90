@@ -18,6 +18,7 @@ module flow_2d_sim_type
   use flow_2d_model_type
   use flow_2d_state_type
   use flow_2d_solver_type
+  use flow_2d_vtkhdf_output
   implicit none
   private
 
@@ -27,6 +28,7 @@ module flow_2d_sim_type
     type(flow_2d_model), pointer :: model => null()
     type(flow_2d_state), pointer :: state => null()
     type(flow_2d_solver), pointer :: solver => null()
+    type(flow_2d_vtkhdf_writer) :: output
     real(r8) :: initial_time, time_step, final_time
   contains
     final :: delete
@@ -39,6 +41,7 @@ contains
   subroutine delete(this)
     type(flow_2d_sim), intent(inout) :: this
 
+    call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%state)) deallocate(this%state)
     if (associated(this%model)) deallocate(this%model)
@@ -122,6 +125,12 @@ contains
     allocate(this%solver)
     call this%solver%init(this%model, this%state, momentum_params, projection_params)
 
+    call this%output%open(this%mesh, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'opening VTKHDF output: ' // errmsg
+      return
+    end if
+
     if (.not.params%is_sublist('sim-control')) then
       stat = 1
       errmsg = 'missing "sim-control" sublist parameter'
@@ -150,6 +159,7 @@ contains
 
     stat = 0
     time = this%initial_time
+    call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
     do while (time < this%final_time)
       dt = min(this%time_step, this%final_time - time)
       call this%solver%step(time, dt, stat)
@@ -158,7 +168,9 @@ contains
         return
       end if
       time = time + dt
+      call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
     end do
+    call this%output%close()
   end subroutine
 
 end module flow_2d_sim_type
