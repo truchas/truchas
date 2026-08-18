@@ -14,8 +14,8 @@ module fdme_mumps_solver_type
   use zmumps_solver_type
   use dmumps_solver_type
   use fdme_model_type
+  use block_pcsr_bridge_type
   use truchas_timers
-  use index_map_type
   implicit none
   private
 
@@ -24,26 +24,18 @@ module fdme_mumps_solver_type
     type(zmumps_solver) :: zmumps
     type(dmumps_solver) :: dmumps
 
-    ! used for converting pbsr to pcsr
-    type(index_map), pointer :: imap => null()
+    type(block_pcsr_bridge) :: bridge
     complex(r8), allocatable :: bc(:), xc(:)
     real(r8), allocatable :: br(:), xr(:)
     logical :: use_complex_mumps = .false.
   contains
     procedure :: init
     procedure :: solve
-    procedure, private :: pbsr_to_pcsr
     procedure, private :: solve_nonmixed
     procedure, private :: solve_mixed
-    final :: fdme_mumps_solver_delete
   end type
 
 contains
-
-  elemental subroutine fdme_mumps_solver_delete(this)
-    type(fdme_mumps_solver), intent(inout) :: this
-    if (associated(this%imap)) deallocate(this%imap)
-  end subroutine fdme_mumps_solver_delete
 
 
   subroutine init(this, model, params, stat, errmsg)
@@ -109,70 +101,11 @@ contains
   end subroutine solve_mixed
 
 
-  subroutine pbsr_to_pcsr(this, A, Ac)
-
-    use parallel_communication, only: is_IOP
-    use pbsr_matrix_type
-    use pcsr_matrix_type
-
-    class(fdme_mumps_solver), intent(inout) :: this
-    type(pbsr_matrix), intent(in) :: A
-    type(pcsr_matrix), intent(out) :: Ac
-
-    type(pcsr_graph), pointer :: g => null()
-    integer, allocatable :: nvars(:)
-    integer :: i, ii, ic, xj, j, jj, jc
-
-    if (.not.associated(this%imap)) allocate(this%imap)
-
-    ! convert pbsr matrix to pcsr
-    allocate(g, nvars(merge(A%graph%row_imap%global_size, 0, is_IOP)))
-    nvars = A%bsize
-    call this%imap%init(A%graph%row_imap, nvars)
-
-    call g%init(this%imap)
-    do i = 1, A%nrow
-      do xj = A%graph%xadj(i), A%graph%xadj(i+1)-1
-        j = A%graph%adjncy(xj)
-        do jj = 1, A%bsize
-          jc = A%bsize * (j - 1) + jj
-          do ii = 1, A%bsize
-            ic = A%bsize * (i - 1) + ii
-            call g%add_edge(ic, jc)
-          end do
-        end do
-      end do
-    end do
-    call g%add_complete
-
-    call Ac%init(g, take_graph=.true.)
-    call Ac%set_all(0.0_r8)
-    do i = 1, A%nrow
-      do xj = A%graph%xadj(i), A%graph%xadj(i+1)-1
-        j = A%graph%adjncy(xj)
-        do jj = 1, A%bsize
-          jc = A%bsize * (j - 1) + jj
-          do ii = 1, A%bsize
-            ic = A%bsize * (i - 1) + ii
-            call Ac%set(ic, jc, A%values(ii, jj, xj))
-          end do
-        end do
-      end do
-    end do
-
-  end subroutine pbsr_to_pcsr
-
-
   subroutine solve_nonmixed(this, rhs, efield, stat)
-
-    use pbsr_matrix_type
-    use pcsr_matrix_type
 
     class(fdme_mumps_solver), intent(inout) :: this
     complex(r8), intent(inout) :: rhs(:), efield(:)
     integer, intent(out) :: stat
-
-    type(pcsr_matrix) :: Ac
 
     ! ASSERT(size(b) >= this%mumps%nloc_rhs)
     ! ASSERT(size(x) >= this%mumps%lsol_loc)
@@ -181,8 +114,8 @@ contains
     if (this%use_complex_mumps) then
       call this%zmumps%setup(this%model%A, stat)
     else
-      call this%pbsr_to_pcsr(this%model%A2, Ac)
-      call this%dmumps%setup(Ac, stat)
+      call this%bridge%update(this%model%A2)
+      call this%dmumps%setup(this%bridge%matrix(), stat)
     end if
     if (stat /= 0) return
     call stop_timer("mumps-setup")
