@@ -17,7 +17,7 @@
   "ht-solver": {
     "initial-condition": {"rel-tol": 1.0e-6, "max-iter": 100},
     "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
-    "error-norm": {"temp-rel-tol": 1.0e-6, "enth-rel-tol": 1.0e-6},
+    "error-norm": {"rel-t-tol": 1.0e-6, "rel-h-tol": 1.0e-6},
     "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.01}
   },
   "sim-control": {

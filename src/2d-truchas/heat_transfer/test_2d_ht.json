@@ -36,8 +36,8 @@
             "params": {"num-cycles": 2}
         },
         "error-norm": {
-            "temp-abs-tol": 1.0e-4,
-            "enth-rel-tol": 1.0e-4
+            "abs-t-tol": 1.0e-4,
+            "rel-h-tol": 1.0e-4
         },
         "integrator": {
             "nlk-max-iter": 10,

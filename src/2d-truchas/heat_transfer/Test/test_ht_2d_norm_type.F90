@@ -96,8 +96,8 @@ contains
             "face-set-ids": [1,2,3,4], &
             "temp": 0.0}}}, &
       "error-norm": { &
-        "temp-abs-tol": 0.5, &
-        "enth-abs-tol": 0.5}}'
+        "abs-t-tol": 0.5, &
+        "abs-h-tol": 0.5}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not. associated(params)) call error_exit(errmsg)
 
@@ -108,7 +108,8 @@ contains
 
     !! Initialize 2D HT norm
     sublist => params%sublist('error-norm')
-    call HT_norm%init(HT_model, sublist)
+    call HT_norm%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Compute norm
     call u%init(disc%mesh)
@@ -151,8 +152,7 @@ contains
             "face-set-ids": [1,2,3,4], &
             "temp": 0.0}}}, &
       "error-norm": { &
-        "temp-rel-tol": 0.25, &
-        "enth-rel-tol": 0.25}}'
+        "rel-t-tol": 0.25}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not. associated(params)) call error_exit(errmsg)
 
@@ -163,7 +163,8 @@ contains
 
     !! Initialize 2D HT norm
     sublist => params%sublist('error-norm')
-    call HT_norm%init(HT_model, sublist)
+    call HT_norm%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Compute norm
     call u%init(disc%mesh)
@@ -206,10 +207,10 @@ contains
             "face-set-ids": [1,2,3,4], &
             "temp": 0.0}}}, &
       "error-norm": { &
-        "temp-abs-tol": 1.0, &
-        "temp-rel-tol": 2.0, &
-        "enth-abs-tol": 1.0, &
-        "enth-rel-tol": 2.0}}'
+        "abs-t-tol": 1.0, &
+        "rel-t-tol": 2.0, &
+        "abs-h-tol": 1.0, &
+        "rel-h-tol": 2.0}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not. associated(params)) call error_exit(errmsg)
 
@@ -220,7 +221,8 @@ contains
 
     !! Initialize 2D HT norm
     sublist => params%sublist('error-norm')
-    call HT_norm%init(HT_model, sublist)
+    call HT_norm%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Compute norm
     call u%init(disc%mesh)
@@ -263,8 +265,8 @@ contains
             "face-set-ids": [1,2,3,4], &
             "temp": 0.0}}}, &
       "error-norm": { &
-        "temp-abs-tol": 1.0, &
-        "enth-abs-tol": 1.0}}'
+        "abs-t-tol": 1.0, &
+        "abs-h-tol": 1.0}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not. associated(params)) call error_exit(errmsg)
 
@@ -275,7 +277,8 @@ contains
 
     !! Initialize 2D HT norm
     sublist => params%sublist('error-norm')
-    call HT_norm%init(HT_model, sublist)
+    call HT_norm%init(HT_model, sublist, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Compute norm
     call u%init(disc%mesh)

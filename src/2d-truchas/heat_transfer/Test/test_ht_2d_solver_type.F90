@@ -92,8 +92,8 @@ contains
     call sublist%set('num-cycles', 1)
 
     sublist => params%sublist('error-norm')
-    call sublist%set('temp-rel-tol', 1.0d-4)
-    call sublist%set('enth-rel-tol', 1.0d-4)
+    call sublist%set('rel-t-tol', 1.0d-4)
+    call sublist%set('rel-h-tol', 1.0d-4)
 
     sublist => params%sublist('integrator')
     call sublist%set('nlk-max-iter', 5)
@@ -112,16 +112,16 @@ contains
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_solver), target :: HT_solver
+    type(ht_2d_solver), target :: HT_solver, bad_solver
     type(ht_2d_model), target :: HT_model
     type(parameter_list) :: solver_params
-    type(parameter_list), pointer :: model_params
+    type(parameter_list), pointer :: model_params, sublist
     class(scalar_func), allocatable :: f
     real(r8), allocatable :: Tface(:), Tcell0(:), Tcell1(:)
     character(:), allocatable :: errmsg, string
     character(80) :: metrics(2)
-    integer :: stat, max_itr
-    real(r8) :: t, dt, h, rel_tol, max_error, l2_error
+    integer :: stat
+    real(r8) :: t, dt, h, max_error, l2_error
 
     if (is_IOP) print '(/,"Testing sinusoidal problem with mixed BCs")'
 
@@ -152,13 +152,23 @@ contains
 
     !! Initialize 2D HT solver
     call init_params(solver_params)
-    call HT_solver%init(HT_model, solver_params)
+    call HT_solver%init(HT_model, solver_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+
+    !! Invalid initial-condition parameters are reported to the caller.
+    sublist => solver_params%sublist('initial-condition')
+    call sublist%set('rel-tol', 0.0_r8)
+    call bad_solver%init(HT_model, solver_params, stat, errmsg)
+    if (stat == 0 .or. index(errmsg, '"rel-tol"') == 0) then
+      if (is_IOP) print '("ERROR: invalid initial-condition tolerance was accepted")'
+      status = 1
+      return
+    end if
 
     t = 0.0_r8
     dt = 1E-3_r8
-    max_itr = 100
-    rel_tol = 1E-6_r8
-    call HT_solver%set_initial_state(t, dt, Tcell0, rel_tol, max_itr)
+    call HT_solver%set_initial_state(t, dt, Tcell0, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
 
     !! Run solver
     h = 1E-7_r8
@@ -175,7 +185,7 @@ contains
       return
     end if
 
-    t = HT_solver%time()
+    t = HT_solver%last_time()
 
     allocate(Tcell1(mesh%ncell_onP))
     call HT_solver%get_cell_temp_soln(Tcell1)

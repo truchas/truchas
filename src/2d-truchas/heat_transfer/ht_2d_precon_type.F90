@@ -5,7 +5,7 @@
 !! transport solver. It assembles and applies an approximate Jacobian for the
 !! coupled enthalpy-temperature residual.
 !!
-!! David Neill <davidhneill@gmail.com>, April 2020
+!! David Neill-Asanza <davidhneill@gmail.com>, April 2020
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
