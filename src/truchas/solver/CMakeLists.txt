@@ -13,6 +13,7 @@ target_sources(truchas PRIVATE
   pcsr_precon_boomer_type.F90
   pcsr_precon_factory.F90
   pbsr_matrix_type.F90
+  block_pcsr_bridge_type.F90
   cg_solver_class.F90
   ridders_class.F90
   nlsol_type.F90
