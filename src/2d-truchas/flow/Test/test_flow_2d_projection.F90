@@ -6,8 +6,10 @@ program test_flow_2d_projection
   use truchas_logging_services
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
+  use parameter_list_type
   use flow_2d_operators_type
   use flow_2d_projection_type
+  use flow_2d_bc_type
   use pcsr_matrix_type
   implicit none
 
@@ -32,27 +34,39 @@ contains
     type(flow_2d_operators), target :: operators
     type(flow_2d_projection), target :: projection
     type(pcsr_matrix), pointer :: matrix
-    real(r8), allocatable :: inv_density_f(:), p(:), one(:), result(:)
+    type(parameter_list), target :: neumann_params, dirichlet_params
+    type(parameter_list), pointer :: plist
+    type(flow_2d_bc) :: bc
+    real(r8), allocatable :: inv_density_f(:), p(:), one(:), result(:), rhs(:)
     real(r8), parameter :: gradient(2) = [1.0_r8, 2.0_r8]
-    integer :: c, f, pin_face
-    logical :: constant_nullspace, linear_harmonic, pinned
+    character(:), allocatable :: errmsg
+    integer :: c, stat
+    logical :: linear_harmonic, pinned, dirichlet_solution
 
     mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call rotate_mesh(mesh, 30.0_r8)
     call operators%init(mesh)
     call projection%init(mesh, operators)
-    allocate(inv_density_f(mesh%nface), p(mesh%ncell), one(mesh%ncell), result(mesh%ncell_onP))
+    allocate(inv_density_f(mesh%nface), p(mesh%ncell), one(mesh%ncell), result(mesh%ncell_onP), &
+        rhs(mesh%ncell_onP))
     inv_density_f = 1.0_r8
     one = 1.0_r8
     do c = 1, mesh%ncell
       p(c) = dot_product(gradient, mesh%cell_centroid(:,c))
     end do
 
-    call projection%assemble(inv_density_f)
+    plist => neumann_params%sublist('wall')
+    call plist%set('type', 'no-slip')
+    call plist%set('face-set-ids', [1])
+    call bc%init(mesh, neumann_params, stat, errmsg)
+    call require(stat == 0, 'Neumann boundary condition initialization failed')
+    call bc%compute(0.0_r8)
+    call projection%assemble(inv_density_f, bc, rhs)
     matrix => projection%matrix()
     call matrix%matvec(one, result)
-    constant_nullspace = maxval(abs(result)) < 1.0e-12_r8
-    call require(constant_nullspace, 'unreferenced pressure does not have a constant nullspace')
+    pinned = maxval(abs(result)) > 1.0e-12_r8
+    call require(global_any(pinned), 'all-Neumann pressure conditions did not remove the constant nullspace')
+    call require(maxval(abs(rhs)) < 1.0e-12_r8, 'homogeneous Neumann condition changed projection RHS')
 
     call matrix%matvec(p, result)
     linear_harmonic = .true.
@@ -63,19 +77,19 @@ contains
     end do
     call require(linear_harmonic, 'projection operator is not rotation invariant on an orthogonal mesh')
 
-    pin_face = 0
-    if (this_PE == 1) then
-      do f = 1, mesh%nface_onP
-        if (mesh%fcell(2,f) == 0) then
-          pin_face = f
-          exit
-        end if
-      end do
-    end if
-    call projection%assemble(inv_density_f, pin_face)
-    call matrix%matvec(one, result)
-    pinned = maxval(abs(result)) > 1.0e-12_r8
-    call require(global_any(pinned), 'pressure pin did not remove the constant nullspace')
+    plist => dirichlet_params%sublist('outlet')
+    call plist%set('type', 'pressure')
+    call plist%set('face-set-ids', [1])
+    call plist%set('pressure', 3.0_r8)
+    call bc%init(mesh, dirichlet_params, stat, errmsg)
+    call require(stat == 0, 'Dirichlet boundary condition initialization failed')
+    call bc%compute(0.0_r8)
+    call projection%assemble(inv_density_f, bc, rhs)
+    p = 3.0_r8
+    call matrix%matvec(p, result)
+    dirichlet_solution = maxval(abs(result - rhs)) < 1.0e-12_r8
+    call require(dirichlet_solution, 'constant pressure Dirichlet solution does not satisfy projection system')
+    call require(global_any(abs(rhs) > 1.0e-12_r8), 'pressure Dirichlet condition did not contribute to projection RHS')
   end subroutine
 
 
