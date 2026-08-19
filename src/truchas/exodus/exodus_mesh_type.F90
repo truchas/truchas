@@ -116,7 +116,8 @@
 !!      array containing the sizes of (i.e., the number of nodes on) the sides
 !!      of an element of the specified type.  Recognized values for ELEM_TYPE
 !!      are a subset of the element type strings described by the ExodusII
-!!      manual: 'TETRA', 'TETRA4', 'WEDGE', 'WEDGE6', 'HEX', and 'HEX8'.  The
+!!      manual: 'TRI', 'TRI3', 'QUAD', 'QUAD4', 'TETRA', 'TETRA4', 'WEDGE',
+!!      'WEDGE6', 'HEX', and 'HEX8'.  The
 !!      sizes are listed according to the ExodusII face ordering convention.
 !!      A null pointer is returned if the given ELEM_TYPE is not recognized.
 !!      NB: The target of the pointer result is static storage and consequently
@@ -229,6 +230,16 @@ module exodus_mesh_type
   data HEX8_SIDES/1,2,6,5, 2,3,7,6, 3,4,8,7, 1,5,8,4, 1,4,3,2, 5,6,7,8/
   data HEX8_SSIZE/4,4,4,4,4,4/
 
+  integer, target, private :: TRI3_XSIDE(4), TRI3_SIDES(6), TRI3_SSIZE(3)
+  data TRI3_XSIDE/1,3,5,7/
+  data TRI3_SIDES/1,2, 2,3, 3,1/
+  data TRI3_SSIZE/2,2,2/
+
+  integer, target, private :: QUAD4_XSIDE(5), QUAD4_SIDES(8), QUAD4_SSIZE(4)
+  data QUAD4_XSIDE/1,3,5,7,9/
+  data QUAD4_SIDES/1,2, 2,3, 3,4, 4,1/
+  data QUAD4_SSIZE/2,2,2,2/
+
 contains
 
   function side_node_list (this, elem, side, reverse) result (list)
@@ -266,6 +277,12 @@ contains
     case ('HEX')
       xside => HEX8_XSIDE
       sides => HEX8_SIDES
+    case ('TRI')
+      xside => TRI3_XSIDE
+      sides => TRI3_SIDES
+    case ('QUA')
+      xside => QUAD4_XSIDE
+      sides => QUAD4_SIDES
     case default
       return  ! unknown element type
     end select
@@ -331,6 +348,10 @@ contains
         xside => WEDGE6_XSIDE
       case ('HEX')
         xside => HEX8_XSIDE
+      case ('TRI')
+        xside => TRI3_XSIDE
+      case ('QUA')
+        xside => QUAD4_XSIDE
       case default
         return  ! unknown element type
       end select
@@ -367,6 +388,12 @@ contains
       case ('HEX')
         xside => HEX8_XSIDE
         sides => HEX8_SIDES
+      case ('TRI')
+        xside => TRI3_XSIDE
+        sides => TRI3_SIDES
+      case ('QUA')
+        xside => QUAD4_XSIDE
+        sides => QUAD4_SIDES
       end select
 
       k = this%sset(n)%face(j)
@@ -394,6 +421,10 @@ contains
       list => WEDGE6_SSIZE
     case ('HEX')
       list => HEX8_SSIZE
+    case ('TRI')
+      list => TRI3_SSIZE
+    case ('QUA')
+      list => QUAD4_SSIZE
     case default
       list => null()
     end select
