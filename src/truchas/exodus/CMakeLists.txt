@@ -6,3 +6,5 @@ target_sources(truchas PRIVATE
   exodus_mesh_factory.F90
   exodus_truchas_hack.F90
 )
+
+add_subdirectory(test)

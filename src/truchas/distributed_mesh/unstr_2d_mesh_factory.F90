@@ -70,6 +70,7 @@ contains
   function new_unstr_2d_mesh_params(params, stat, errmsg) result(this)
 
     use ext_exodus_mesh_type
+    use exodus_mesh_io, only: read_exodus_mesh
     use parallel_communication, only: is_IOP
 
     type(parameter_list), intent(inout) :: params
@@ -81,8 +82,49 @@ contains
     real(r8), allocatable :: x(:), y(:)
     real(r8) :: noise, ptri, scale, angle, theta
     character(:), allocatable :: element_type
+    character(:), allocatable :: mesh_file
 
     this => null()
+
+    !! An externally supplied Exodus mesh bypasses the internally generated
+    !! coordinate grid and developer mesh options below.
+    if (params%is_parameter('mesh-file')) then
+      call params%get('coord-scale-factor', scale, stat, errmsg, default=1.0_r8)
+      if (stat /= 0) return
+      call params%get('rotation-angle', angle, stat, errmsg, default=0.0_r8)
+      if (stat /= 0) return
+      if (scale <= 0.0_r8) then
+        stat = 1
+        errmsg = 'coord-scale-factor must be > 0'
+        return
+      end if
+
+      stat = 0
+      if (is_IOP) then
+        call params%get('mesh-file', mesh_file)
+        call read_exodus_mesh(mesh_file, mesh, stat, errmsg)
+        if (stat == 0 .and. mesh%num_dim /= 2) then
+          stat = 1
+          errmsg = 'mesh-file does not contain a 2D mesh'
+        end if
+        if (stat == 0) call normalize_exodus_block_ids(mesh, params, stat, errmsg)
+        if (stat == 0) then
+          mesh%coord = scale * mesh%coord
+          theta = angle * acos(-1.0_r8) / 180.0_r8
+          if (theta /= 0.0_r8) call rotate_mesh(mesh, theta)
+        end if
+      end if
+      call broadcast_status(stat, errmsg)
+      if (stat /= 0) return
+
+      this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
+      if (.not.associated(this)) then
+        stat = 1
+        return
+      end if
+      stat = 0
+      return
+    end if
 
     call get_axis_grid(params, 'x-axis', x, stat, errmsg)
     if (stat /= 0) return
@@ -135,6 +177,66 @@ contains
     stat = 0
 
   end function new_unstr_2d_mesh_params
+
+
+  subroutine normalize_exodus_block_ids(mesh, params, stat, errmsg)
+
+    use ext_exodus_mesh_type
+    use parameter_list_type
+    use parallel_communication, only: is_IOP
+    use string_utilities, only: i_to_c
+    use truchas_logging_services, only: TLS_info
+
+    type(ext_exodus_mesh), intent(inout) :: mesh
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    integer :: i, m, n, new_id, exodus_block_modulus
+    character(:), allocatable :: new_name
+    logical, allocatable :: mask(:)
+
+    call params%get('exodus-block-modulus', exodus_block_modulus, &
+                    stat, errmsg, default=0)
+    if (stat /= 0 .or. .not.is_IOP) return
+    if (exodus_block_modulus <= 0) return
+
+    do n = 1, mesh%num_eblk
+      associate (id => mesh%eblk(n)%id)
+        new_id = modulo(id, exodus_block_modulus)
+        if (new_id /= id) then
+          call TLS_info('  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id))
+          id = new_id
+        end if
+      end associate
+    end do
+
+    !! Preserve a common name for blocks that were merged.  Empty Exodus
+    !! block names are valid and remain empty.
+    allocate(mask(mesh%num_eblk), source=.false.)
+    do n = 1, mesh%num_eblk
+      if (mask(n)) cycle
+      do m = n+1, mesh%num_eblk
+        if (mesh%eblk(m)%id /= mesh%eblk(n)%id) cycle
+        if (.not.allocated(new_name)) then
+          if (allocated(mesh%eblk(n)%name) .and. len_trim(mesh%eblk(n)%name) > 0) then
+            i = scan(mesh%eblk(n)%name, '_', back=.true.)
+            if (i > 1) then
+              new_name = mesh%eblk(n)%name(:i-1)
+            else
+              new_name = trim(mesh%eblk(n)%name)
+            end if
+          else
+            new_name = ''
+          end if
+          mesh%eblk(n)%name = new_name
+        end if
+        mesh%eblk(m)%name = new_name
+        mask(m) = .true.
+      end do
+      if (allocated(new_name)) deallocate(new_name)
+    end do
+  end subroutine
 
 
   subroutine rotate_mesh(mesh, angle)

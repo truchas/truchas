@@ -1,0 +1,4 @@
+add_executable(test_exodus_polygon_sides test_polygon_sides.F90)
+target_link_libraries(test_exodus_polygon_sides truchas)
+add_test(NAME exodus_polygon_sides COMMAND test_exodus_polygon_sides)
+set_tests_properties(exodus_polygon_sides PROPERTIES LABELS UNIT)
