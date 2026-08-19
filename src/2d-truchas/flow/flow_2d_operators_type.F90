@@ -94,11 +94,12 @@ contains
   !! from the cell center to the face center; pressure Neumann values contribute
   !! a normal row of length NORMAL_DISTANCE. Boundary faces not listed by a
   !! condition are omitted from the fit.
-  subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc)
+  subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc, gravity_head)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: gradient_c(:,:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
+    real(r8), optional, intent(in) :: gravity_head(:,:)
 
     integer :: c, i, f, neighbor, n
     real(r8) :: r(2), difference, matrix(2,2), rhs(2), determinant
@@ -118,12 +119,20 @@ contains
         if (neighbor > 0) then
           r = this%mesh%cell_centroid(:,neighbor) - this%mesh%cell_centroid(:,c)
           difference = field_cc(neighbor) - field_cc(c)
+          if (present(gravity_head)) then
+            if (c == this%mesh%fcell(1,f)) then
+              difference = difference + gravity_head(2,f) - gravity_head(1,f)
+            else
+              difference = difference + gravity_head(1,f) - gravity_head(2,f)
+            end if
+          end if
         else
           found = .false.
           if (present(dirichlet_bc)) then
             call bndry_value(dirichlet_bc, f, difference, found)
             if (found) then
               r = this%mesh%face_centroid(:,f) - this%mesh%cell_centroid(:,c)
+              if (present(gravity_head)) difference = difference - gravity_head(1,f)
               difference = difference - field_cc(c)
             end if
           end if
@@ -177,22 +186,33 @@ contains
   !! Compute a first-order face-normal derivative from cell-centered scalar
   !! data. On a boundary face, NORMAL_FLUX_BC supplies the derivative directly
   !! and DIRICHLET_BC supplies the scalar value at the face center.
-  subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc, dirichlet_value)
+  subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc, &
+      dirichlet_value, gravity_head)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: derivative_fn(:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
     real(r8), optional, intent(in) :: dirichlet_value(:)
+    real(r8), optional, intent(in) :: gravity_head(:,:)
 
     integer :: f, c1, c2, i
 
     ASSERT(size(field_cc) >= this%mesh%ncell)
     ASSERT(size(derivative_fn) == this%mesh%nface)
+    if (present(gravity_head)) then
+      ASSERT(size(gravity_head,1) == 2)
+      ASSERT(size(gravity_head,2) == this%mesh%nface)
+    end if
     derivative_fn = 0.0_r8
     do f = 1, this%mesh%nface_onP
       c1 = this%mesh%fcell(1,f)
       c2 = this%mesh%fcell(2,f)
-      if (c2 > 0) derivative_fn(f) = (field_cc(c2) - field_cc(c1))/this%dx(f)
+      if (c2 > 0) then
+        derivative_fn(f) = field_cc(c2) - field_cc(c1)
+        if (present(gravity_head)) derivative_fn(f) = derivative_fn(f) + &
+            gravity_head(2,f) - gravity_head(1,f)
+        derivative_fn(f) = derivative_fn(f)/this%dx(f)
+      end if
     end do
     if (present(normal_flux_bc)) then
       do i = 1, size(normal_flux_bc%index)
@@ -214,10 +234,12 @@ contains
         c1 = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         if (present(dirichlet_value)) then
-          derivative_fn(f) = (dirichlet_value(i) - field_cc(c1))/this%dx(f)
+          derivative_fn(f) = dirichlet_value(i) - field_cc(c1)
         else
-          derivative_fn(f) = (dirichlet_bc%value(i) - field_cc(c1))/this%dx(f)
+          derivative_fn(f) = dirichlet_bc%value(i) - field_cc(c1)
         end if
+        if (present(gravity_head)) derivative_fn(f) = derivative_fn(f) - gravity_head(1,f)
+        derivative_fn(f) = derivative_fn(f)/this%dx(f)
       end do
     end if
     call this%mesh%face_imap%gather_offp(derivative_fn)
