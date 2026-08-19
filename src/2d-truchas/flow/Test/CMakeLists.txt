@@ -4,6 +4,9 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 add_executable(test_flow_2d_operators test_flow_2d_operators.F90)
 target_link_libraries(test_flow_2d_operators flow2d truchas ${Truchas_LINK_LIBS})
 
+add_executable(test_flow_2d_mesh_factory test_flow_2d_mesh_factory.F90)
+target_link_libraries(test_flow_2d_mesh_factory flow2d truchas ${Truchas_LINK_LIBS})
+
 add_executable(test_flow_2d_projection test_flow_2d_projection.F90)
 target_link_libraries(test_flow_2d_projection flow2d truchas ${Truchas_LINK_LIBS})
 
@@ -96,6 +99,11 @@ add_test(NAME flow_2d_operators_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC
   $<TARGET_FILE:test_flow_2d_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_operators_external-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_operators_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+
+add_test(NAME flow_2d_mesh_factory_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+  $<TARGET_FILE:test_flow_2d_mesh_factory> ${CMAKE_CURRENT_SOURCE_DIR}/mixed-2d.gen ${MPIEXEC_POSTFLAGS})
+set_tests_properties(flow_2d_mesh_factory_external-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_2d_mesh_factory_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_projection ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_projection-4p ${test_launch})
