@@ -87,6 +87,15 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
 add_test(flow_2d_operators-4p ${test_launch})
 set_tests_properties(flow_2d_operators-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_operators-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+
+add_test(NAME flow_2d_operators_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+  $<TARGET_FILE:test_flow_2d_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
+set_tests_properties(flow_2d_operators_external-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_2d_operators_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+add_test(NAME flow_2d_operators_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+  $<TARGET_FILE:test_flow_2d_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
+set_tests_properties(flow_2d_operators_external-4p PROPERTIES PROCESSORS 4)
+set_property(TEST flow_2d_operators_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_projection ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_projection-4p ${test_launch})

@@ -39,6 +39,7 @@ program test_flow_2d_operators
   use truchas_logging_services
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
+  use parameter_list_type
   use flow_2d_state_type
   use flow_2d_operators_type
   use test_flow_2d_bc_types
@@ -53,9 +54,13 @@ program test_flow_2d_operators
   call TLS_set_verbosity(TLS_VERB_NORMAL)
 
   status = 0
-  call test_mesh(0.0_r8, 'quad mesh')
-  call test_mesh(0.0_r8, 'rotated quad mesh', 30.0_r8)
-  call test_mesh(0.5_r8, 'mixed triangle/quad mesh')
+  if (command_argument_count() == 0) then
+    call test_mesh(0.0_r8, 'quad mesh')
+    call test_mesh(0.0_r8, 'rotated quad mesh', 30.0_r8)
+    call test_mesh(0.5_r8, 'mixed triangle/quad mesh')
+  else
+    call test_external_mesh()
+  end if
 
   call halt_parallel_communication
   stop status
@@ -80,6 +85,32 @@ contains
     call test_derivative(mesh, ops, state, name, triangle_probability == 0.0_r8)
     call test_interpolation(mesh, ops, state, name)
     call test_boundary_operators(mesh, ops, state, name, triangle_probability == 0.0_r8)
+  end subroutine
+
+
+  subroutine test_external_mesh()
+    type(parameter_list) :: params
+    type(unstr_2d_mesh), pointer :: mesh
+    type(flow_2d_state) :: state
+    type(flow_2d_operators) :: ops
+    character(512) :: path
+    character(:), allocatable :: errmsg
+    integer :: stat
+
+    call get_command_argument(1, path)
+    call params%set('mesh-file', trim(path))
+    mesh => new_unstr_2d_mesh(params, stat, errmsg)
+    if (stat /= 0) return
+    call require(associated(mesh), 'external QUAD4 mesh initialization failed')
+    if (.not.associated(mesh)) return
+
+    call ops%init(mesh)
+    call state%init(mesh)
+    call test_divergence(mesh, ops, state, 'external quad mesh')
+    call test_derivative(mesh, ops, state, 'external quad mesh', .false.)
+    call test_interpolation(mesh, ops, state, 'external quad mesh')
+    call test_boundary_operators(mesh, ops, state, 'external quad mesh', .false.)
+    call report_derivative_accuracy(mesh, ops, state)
   end subroutine
 
 
@@ -166,6 +197,31 @@ contains
       velocity_ok = velocity_ok .and. abs(velocity_f(zero_normal%index(i))) < 1.0e-12_r8
     end do
     call require(velocity_ok, name // ': zero-normal velocity interpolation is incorrect')
+  end subroutine
+
+
+  subroutine report_derivative_accuracy(mesh, ops, state)
+    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(flow_2d_operators), intent(in) :: ops
+    type(flow_2d_state), intent(inout) :: state
+
+    real(r8), allocatable :: derivative(:)
+    real(r8), parameter :: exact_grad(2) = [1.0_r8, 2.0_r8]
+    real(r8) :: exact, error
+    integer :: c, f
+
+    do c = 1, mesh%ncell
+      state%p_cc(c) = dot_product(exact_grad, mesh%cell_centroid(:,c))
+    end do
+    allocate(derivative(mesh%nface))
+    call ops%derivative_cf(state%p_cc, derivative)
+    error = 0.0_r8
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) == 0) cycle
+      exact = dot_product(exact_grad, mesh%unit_normal(:,f))
+      error = max(error, abs(derivative(f) - exact))
+    end do
+    if (is_IOP) print '("external quad mesh: max linear face derivative error = ",es12.5)', error
   end subroutine
 
 
