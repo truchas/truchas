@@ -21,7 +21,7 @@ module flow_2d_ic_solver_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
-  use parallel_communication, only: global_maxval
+  use parallel_communication, only: global_maxval, global_sum
   implicit none
   private
 
@@ -31,7 +31,7 @@ module flow_2d_ic_solver_type
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
-    real(r8), allocatable :: rhs(:,:), velocity_cc(:,:), velocity_fn(:)
+    real(r8), allocatable :: rhs(:,:), grad_p(:,:), velocity_cc(:,:), velocity_fn(:)
   contains
     procedure :: init
     procedure :: solve
@@ -46,11 +46,12 @@ contains
     type(parameter_list), target, intent(in) :: momentum_params, projection_params
 
     this%model => model
-    allocate(this%projection_solver, this%rhs(2,model%mesh%ncell_onP), &
+    allocate(this%projection_solver, this%rhs(2,model%mesh%ncell_onP), this%grad_p(2,model%mesh%ncell), &
         this%velocity_cc(2,model%mesh%ncell), this%velocity_fn(model%mesh%nface))
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
-    call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver)
+    call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
+        model%body_acceleration)
   end subroutine
 
 
@@ -64,7 +65,8 @@ contains
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
 
-    integer :: c
+    integer :: c, i, ndir
+    real(r8) :: pressure_offset
 
     ASSERT(dt > 0.0_r8)
     ASSERT(size(velocity,1) == 2)
@@ -73,6 +75,26 @@ contains
     call state%set_zero()
     state%vel_cc(:,1:this%model%mesh%ncell_onP) = velocity(:,1:this%model%mesh%ncell_onP)
     call this%model%bc%compute_initial(time)
+    !! Seed the physical pressure with the hydrostatic potential for the
+    !! present uniform-density model.  The artificial Stokes solve below can
+    !! then repair this seed when the supplied velocity is not equilibrium.
+    pressure_offset = 0.0_r8
+    ndir = 0
+    if (any(this%model%body_acceleration /= 0.0_r8) .and. &
+        size(this%model%bc%pressure_dirichlet%index) > 0) then
+      ndir = size(this%model%bc%pressure_dirichlet%index)
+      do i = 1, size(this%model%bc%pressure_dirichlet%index)
+        pressure_offset = pressure_offset + this%model%bc%pressure_dirichlet%value(i) - &
+            this%model%density_c(1)*dot_product(this%model%body_acceleration, &
+            this%model%mesh%face_centroid(:,this%model%bc%pressure_dirichlet%index(i)))
+      end do
+    end if
+    ndir = global_sum(ndir)
+    if (ndir > 0) pressure_offset = global_sum(pressure_offset)/ndir
+    do c = 1, this%model%mesh%ncell
+      state%p_cc(c) = this%model%density_c(c)*dot_product(this%model%body_acceleration, &
+          this%model%mesh%cell_centroid(:,c)) + pressure_offset
+    end do
     call this%projection_update%project_velocity(dt, this%model%inv_density_c, this%model%inv_density_f, &
         this%model%bc, state, stat)
     if (stat /= 0) return
@@ -81,11 +103,12 @@ contains
 
     !! Compute pressure from a temporary Stokes step.  The repaired velocity
     !! remains the initial datum after this procedure returns.
-    state%p_cc = 0.0_r8
+    call this%model%pressure_gradient(state%p_cc, this%grad_p)
     call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
         this%model%bc, this%rhs)
     do c = 1, this%model%mesh%ncell_onP
       this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*state%vel_cc(:,c)
+      this%rhs(:,c) = this%rhs(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     state%vel_cc = 0.0_r8
     if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then

@@ -63,6 +63,7 @@ contains
     class(vector_func), allocatable :: initial_velocity_func
     real(r8), allocatable :: initial_velocity(:,:)
     real(r8) :: density, viscosity
+    real(r8), allocatable :: body_acceleration(:)
 
     stat = 0
     if (.not.params%is_sublist('mesh')) then
@@ -93,6 +94,12 @@ contains
       errmsg = 'processing ' // model_params%path() // ': ' // errmsg
       return
     end if
+    call model_params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, &
+        default=[0.0_r8, 0.0_r8])
+    if (stat /= 0) then
+      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+      return
+    end if
     if (density <= 0.0_r8 .or. viscosity < 0.0_r8) then
       stat = 1
       errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity >= 0'
@@ -105,7 +112,7 @@ contains
     end if
     bc_params => model_params%sublist('bc')
     allocate(this%model)
-    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg)
+    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
     if (stat /= 0) then
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return

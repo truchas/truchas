@@ -55,7 +55,8 @@ contains
         this%ic_solver)
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
-    call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver)
+    call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
+        model%body_acceleration)
     call this%ic_solver%init(model, momentum_params, projection_params)
   end subroutine
 
@@ -78,7 +79,8 @@ contains
 
 
   !! Advance STATE from TIME to TIME + DT.  The first implementation has an
-  !! implicit Stokes predictor with no body force or advective momentum term.
+  !! implicit Stokes predictor with body acceleration but no advective momentum
+  !! term.
   subroutine step(this, time, dt, stat)
     class(flow_2d_solver), intent(inout) :: this
     real(r8), intent(in) :: time, dt

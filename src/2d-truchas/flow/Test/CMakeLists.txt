@@ -180,3 +180,25 @@ set_tests_properties(flow_2d_integrated_noisy_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME flow_2d_integrated_body_acceleration
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_gravity.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/body_acceleration.json
+          ${MPIEXEC})
+set_tests_properties(flow_2d_integrated_body_acceleration PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME flow_2d_integrated_hydrostatic
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_hydrostatic.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/hydrostatic_box.json
+          ${MPIEXEC})
+set_tests_properties(flow_2d_integrated_hydrostatic PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
