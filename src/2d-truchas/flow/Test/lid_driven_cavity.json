@@ -1,0 +1,20 @@
+{
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]}
+    },
+    "flow-model": {
+        "density": 1.0,
+        "viscosity": 0.1,
+        "bc": {
+            "lid": {"type": "velocity", "face-set-ids": [4], "velocity": [1.0, 0.0]},
+            "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3]}
+        }
+    },
+    "flow-solver": {
+        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "initial-velocity": [0.0, 0.0],
+    "sim-control": {"initial-time": 0.0, "time-step": 1.0, "final-time": 50.0}
+}
