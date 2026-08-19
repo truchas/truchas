@@ -67,6 +67,7 @@ contains
 
     integer :: c, i, ndir
     real(r8) :: pressure_offset
+    character(:), allocatable :: errmsg
 
     ASSERT(dt > 0.0_r8)
     ASSERT(size(velocity,1) == 2)
@@ -75,6 +76,8 @@ contains
     call state%set_zero()
     state%vel_cc(:,1:this%model%mesh%ncell_onP) = velocity(:,1:this%model%mesh%ncell_onP)
     call this%model%bc%compute_initial(time)
+    call this%model%bc%check_velocity_flux(stat, errmsg)
+    if (stat /= 0) return
     !! Seed the physical pressure with the hydrostatic potential for the
     !! present uniform-density model.  The artificial Stokes solve below can
     !! then repair this seed when the supplied velocity is not equilibrium.

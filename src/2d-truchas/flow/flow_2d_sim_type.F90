@@ -100,9 +100,9 @@ contains
       errmsg = 'processing ' // model_params%path() // ': ' // errmsg
       return
     end if
-    if (density <= 0.0_r8 .or. viscosity < 0.0_r8) then
+    if (density <= 0.0_r8 .or. viscosity <= 0.0_r8) then
       stat = 1
-      errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity >= 0'
+      errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity > 0'
       return
     end if
     if (.not.model_params%is_sublist('bc')) then
@@ -196,9 +196,9 @@ contains
     call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
     do while (time < this%final_time)
       dt = min(this%time_step, this%final_time - time)
-      call this%solver%step(time, dt, stat)
+      call this%solver%step(time, dt, stat, errmsg)
       if (stat /= 0) then
-        errmsg = 'flow solver step failed'
+        if (.not.allocated(errmsg)) errmsg = 'flow solver step failed'
         return
       end if
       time = time + dt
