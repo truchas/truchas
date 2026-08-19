@@ -81,15 +81,21 @@ contains
   !! Advance STATE from TIME to TIME + DT.  The first implementation has an
   !! implicit Stokes predictor with body acceleration but no advective momentum
   !! term.
-  subroutine step(this, time, dt, stat)
+  subroutine step(this, time, dt, stat, errmsg)
     class(flow_2d_solver), intent(inout) :: this
     real(r8), intent(in) :: time, dt
     integer, intent(out) :: stat
+    character(:), allocatable, optional, intent(out) :: errmsg
 
     integer :: c
+    character(:), allocatable :: bc_errmsg
 
     ASSERT(dt > 0.0_r8)
-    call this%model%compute_bc(time, dt)
+    call this%model%compute_bc(time, dt, stat, bc_errmsg)
+    if (stat /= 0) then
+      if (present(errmsg)) errmsg = bc_errmsg
+      return
+    end if
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
     call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
         this%model%bc, this%rhs)

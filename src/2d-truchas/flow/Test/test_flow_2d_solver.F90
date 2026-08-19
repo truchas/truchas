@@ -25,6 +25,7 @@ program test_flow_2d_solver
   status = 0
   call test_step
   call test_pressure_drive
+  call test_incompatible_flux
 
   call halt_parallel_communication
   stop status
@@ -64,6 +65,40 @@ contains
     allocate(flux(mesh%ncell_onP))
     call model%operators%divergence(state%vel_fn, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'flow solver step did not make face velocity solenoidal')
+  end subroutine
+
+
+  subroutine test_incompatible_flux
+    type(unstr_2d_mesh), pointer :: mesh
+    type(flow_2d_model), target :: model
+    type(flow_2d_state), target :: state
+    type(flow_2d_solver) :: solver
+    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), pointer :: plist
+    character(:), allocatable :: errmsg
+    integer :: stat
+
+    mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
+    plist => bc_params%sublist('inlet')
+    call plist%set('type', 'velocity')
+    call plist%set('face-set-ids', [1])
+    call plist%set('velocity', [1.0_r8, 0.0_r8])
+    plist => bc_params%sublist('walls')
+    call plist%set('type', 'no-slip')
+    call plist%set('face-set-ids', [2,3,4])
+    call model%init(mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
+    call require(stat == 0, 'incompatible-flux model initialization failed')
+    if (stat /= 0) return
+    call state%init(mesh)
+    call momentum_params%set('rel-tol', 1.0e-10_r8)
+    call momentum_params%set('max-ds-iter', 100)
+    call momentum_params%set('max-amg-iter', 100)
+    call projection_params%set('rel-tol', 1.0e-10_r8)
+    call projection_params%set('max-ds-iter', 100)
+    call projection_params%set('max-amg-iter', 100)
+    call solver%init(model, state, momentum_params, projection_params)
+    call solver%step(0.0_r8, 1.0_r8, stat, errmsg)
+    call require(stat /= 0, 'incompatible prescribed flux was not rejected')
   end subroutine
 
 

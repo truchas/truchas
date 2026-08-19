@@ -77,11 +77,15 @@ contains
   end subroutine
 
 
-  subroutine compute_bc(this, time, dt)
+  subroutine compute_bc(this, time, dt, stat, errmsg)
     class(flow_2d_model), intent(inout) :: this
     real(r8), intent(in) :: time, dt
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
+    stat = 0
     call this%bc%compute(time, dt)
+    call this%bc%check_velocity_flux(stat, errmsg)
   end subroutine
 
 

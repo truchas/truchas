@@ -25,6 +25,7 @@ module flow_2d_bc_type
   private
 
   type, public :: flow_2d_bc
+    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
     class(bndry_func1), allocatable :: pressure_dirichlet
     class(bndry_func1), allocatable :: pressure_correction_dirichlet
     class(bndry_func1), allocatable :: pressure_neumann
@@ -34,6 +35,7 @@ module flow_2d_bc_type
     procedure :: init
     procedure :: compute
     procedure :: compute_initial
+    procedure :: check_velocity_flux
     procedure :: pressure_pin_face
   end type
 
@@ -48,6 +50,7 @@ contains
 
     type(flow_2d_bc_factory) :: factory
 
+    this%mesh => mesh
     call factory%init(mesh, params)
     call factory%alloc_dir_vel_bc(this%velocity_dirichlet, stat, errmsg)
     if (stat /= 0) return
@@ -60,6 +63,40 @@ contains
     call factory%alloc_neu_prs_bc(this%pressure_neumann, stat, errmsg)
     if (stat /= 0) return
     call apply_default(this, mesh)
+  end subroutine
+
+
+  !! Check the compatibility condition for a closed incompressible domain.
+  !! If a pressure Dirichlet boundary is present, its normal velocity is not
+  !! prescribed and the pressure solve supplies the compensating flux.
+  subroutine check_velocity_flux(this, stat, errmsg)
+    class(flow_2d_bc), intent(in) :: this
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    integer :: f, i
+    real(r8) :: local_flux, flux, scale, tolerance
+
+    stat = 0
+    if (global_any(size(this%pressure_dirichlet%index) > 0)) return
+    local_flux = 0.0_r8
+    scale = 0.0_r8
+    do f = 1, this%mesh%nface_onP
+      if (this%mesh%fcell(2,f) /= 0) cycle
+      i = findloc(this%velocity_dirichlet%index, f, dim=1)
+      if (i == 0) cycle  ! The default or explicit free-slip value is zero.
+      flux = this%mesh%area(f)*dot_product(this%mesh%unit_normal(:,f), &
+          this%velocity_dirichlet%value(:,i))
+      local_flux = local_flux + flux
+      scale = scale + abs(flux)
+    end do
+    flux = global_sum(local_flux)
+    scale = global_sum(scale)
+    tolerance = 100.0_r8*epsilon(1.0_r8)*max(1.0_r8, scale)
+    if (abs(flux) > tolerance) then
+      stat = 1
+      errmsg = 'incompatible prescribed velocity boundary flux'
+    end if
   end subroutine
 
 
