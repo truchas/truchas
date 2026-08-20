@@ -21,7 +21,7 @@ set(FLOW2D_SOURCE_FILES
 add_library(flow2d ${FLOW2D_SOURCE_FILES})
 set_target_properties(flow2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
-target_link_libraries(flow2d truchas ${Truchas_LINK_LIBS})
+target_link_libraries(flow2d PUBLIC truchas-extra truchas ${Truchas_LINK_LIBS})
 target_include_directories(flow2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
 add_executable(flow_2d_main flow_2d_main.F90)

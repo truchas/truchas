@@ -23,6 +23,7 @@ program test_flow_2d_bc_factory
   status = 0
   call test_factory
 
+  call TLS_finalize
   call halt_parallel_communication
   stop status
 
