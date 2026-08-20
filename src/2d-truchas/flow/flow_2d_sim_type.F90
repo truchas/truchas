@@ -81,7 +81,7 @@ contains
       return
     end if
     mesh_params => params%sublist('mesh')
-    this%mesh => new_unstr_2d_mesh(mesh_params, stat, errmsg)
+    this%mesh => new_unstr_2d_mesh(mesh_params, stat, errmsg, env%simlog)
     if (stat /= 0) then
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
       return

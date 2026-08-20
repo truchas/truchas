@@ -2,7 +2,7 @@
 !! This code attempts to initialize a VOF field and advect it with a constant
 !! velocity using it's own time-step driver and VOF routines.
 !! It also instantiates a 2D unstructured mesh (which happens to be a regular
-!! Cartesian mesh) and generates a graphics file that Paraview can read.
+!! Cartesian mesh).
 !!
 
 program vof_advection
@@ -12,7 +12,6 @@ program vof_advection
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use unstr_2d_mesh_factory
-  use xdmf_file_type
   use read_inputfile
   use gaussian_quadrature_vofinit
   use vof_2d_test_driver
@@ -27,11 +26,9 @@ program vof_advection
   integer, allocatable :: global_xcell(:)
   real(r8) :: t_start, t_end, coord(2), vof_err
   real(r8), allocatable :: v(:,:), vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:)
-  real(r8), allocatable :: myproc(:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
   real(r8), allocatable :: gp_coord(:,:), gp_weight(:)
   logical :: test_failure, axisym
-  type(xdmf_file) :: outfile
 
   procedure(constant_vel), pointer :: problem_vel => NULL()
 
@@ -68,7 +65,7 @@ program vof_advection
   axisym = .false.
 
   !! Define a cell-based VOF field.
-  allocate(vof(nmat,mesh%ncell), myproc(mesh%ncell))
+  allocate(vof(nmat,mesh%ncell))
   !! Initialize a "circular" VOF field
   ngp = 16
   allocate(gp_coord(2,ngp), gp_weight(ngp))
@@ -78,8 +75,6 @@ program vof_advection
 
       call quadrature_qua4(ngp, gp_coord, gp_weight)
       vof(:,j) = 0.0_r8
-
-      myproc(j) = this_pe
 
       do i = 1, ngp
         call transform_qua4(mesh%x(:,cn), gp_coord(:,i), coord)
@@ -99,26 +94,8 @@ program vof_advection
   allocate(int_normal(2,nmat,mesh%ncell))
   int_normal = 0.0_r8
 
-  !! Create XDMF-format input files for Paraview: .xmf XML metadata file and
-  !! .bin binary data file. Load the .xmf file into Paraview.
-  call outfile%open('vof')
-  call outfile%write_mesh(mesh)
-
-  !! Write P and V fields at a time snapshot
-  call outfile%begin_variables(0.0_r8)
-  call outfile%write_cell_var(vof(1,:), 'VOF1')
-  call outfile%write_cell_var(vof(2,:), 'VOF2')
-  call outfile%write_cell_var(myproc(:), 'mype')
-  call outfile%write_cell_var(int_normal(1,1,:), 'x-normal')
-  call outfile%write_cell_var(int_normal(2,1,:), 'y-normal')
-  call outfile%end_variables
-
   !! call time-step driver
-  call timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, outfile, &
-    int_normal, axisym, myproc)
-
-  !! Close the files (and add closing tags to the .xmf XML file)
-  call outfile%close
+  call timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, int_normal, axisym)
 
   if (test_run == 0) then
     open(3, file='circleadv_vof.txt')

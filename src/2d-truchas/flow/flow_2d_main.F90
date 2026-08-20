@@ -18,8 +18,6 @@ program flow_2d_main
   use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use simulation_environment_type
@@ -55,10 +53,6 @@ program flow_2d_main
     call exit(1)
   end if
 
-  prefix = 'run'
-  overwrite_output = .true.
-  call TLS_initialize(write_file=.false.)
-  call TLS_set_verbosity(TLS_VERB_SILENT)
   call MPI_Comm_dup(MPI_COMM_WORLD, env%comm, ierr)
   INSIST(ierr == MPI_SUCCESS)
   call MPI_Comm_rank(env%comm, env%rank, ierr)
@@ -70,7 +64,6 @@ program flow_2d_main
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
     call MPI_Comm_free(env%comm, ierr)
     INSIST(ierr == MPI_SUCCESS)
-    call TLS_finalize
     call halt_parallel_communication
     call exit(1)
   end if
@@ -81,14 +74,12 @@ program flow_2d_main
     call env%simlog%close
     call MPI_Comm_free(env%comm, ierr)
     INSIST(ierr == MPI_SUCCESS)
-    call TLS_finalize
     call halt_parallel_communication
     call exit(1)
   end if
   call env%simlog%close
   call MPI_Comm_free(env%comm, ierr)
   INSIST(ierr == MPI_SUCCESS)
-  call TLS_finalize
   call halt_parallel_communication
 
 end program flow_2d_main

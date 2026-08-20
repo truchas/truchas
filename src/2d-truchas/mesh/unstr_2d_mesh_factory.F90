@@ -5,7 +5,7 @@ module unstr_2d_mesh_factory
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
   use parameter_list_type
-  use truchas_logging_services
+  use simulation_log_type
   implicit none
   private
 
@@ -67,7 +67,7 @@ contains
   end function new_unstr_2d_mesh_regular
 
 
-  function new_unstr_2d_mesh_params(params, stat, errmsg) result(this)
+  function new_unstr_2d_mesh_params(params, stat, errmsg, simlog) result(this)
 
     use ext_exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
@@ -76,6 +76,7 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(simulation_log), intent(in), optional :: simlog
     type(unstr_2d_mesh), pointer :: this
 
     type(ext_exodus_mesh) :: mesh
@@ -107,7 +108,7 @@ contains
           stat = 1
           errmsg = 'mesh-file does not contain a 2D mesh'
         end if
-        if (stat == 0) call normalize_exodus_block_ids(mesh, params, stat, errmsg)
+        if (stat == 0) call normalize_exodus_block_ids(mesh, params, stat, errmsg, simlog)
         if (stat == 0) then
           mesh%coord = scale * mesh%coord
           theta = angle * acos(-1.0_r8) / 180.0_r8
@@ -117,7 +118,7 @@ contains
       call broadcast_status(stat, errmsg)
       if (stat /= 0) return
 
-      this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
+      this => new_unstr_2d_mesh_aux(mesh, params, errmsg, simlog)
       if (.not.associated(this)) then
         stat = 1
         return
@@ -169,7 +170,7 @@ contains
       theta = angle * acos(-1.0_r8) / 180.0_r8
       if (theta /= 0.0_r8) call rotate_mesh(mesh, theta)
     end if
-    this => new_unstr_2d_mesh_aux(mesh, params, errmsg)
+    this => new_unstr_2d_mesh_aux(mesh, params, errmsg, simlog)
     if (.not.associated(this)) then
       stat = 1
       return
@@ -179,18 +180,18 @@ contains
   end function new_unstr_2d_mesh_params
 
 
-  subroutine normalize_exodus_block_ids(mesh, params, stat, errmsg)
+  subroutine normalize_exodus_block_ids(mesh, params, stat, errmsg, simlog)
 
     use ext_exodus_mesh_type
     use parameter_list_type
     use parallel_communication, only: is_IOP
     use string_utilities, only: i_to_c
-    use truchas_logging_services, only: TLS_info
 
     type(ext_exodus_mesh), intent(inout) :: mesh
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(simulation_log), intent(in), optional :: simlog
 
     integer :: i, m, n, new_id, exodus_block_modulus
     character(:), allocatable :: new_name
@@ -205,7 +206,7 @@ contains
       associate (id => mesh%eblk(n)%id)
         new_id = modulo(id, exodus_block_modulus)
         if (new_id /= id) then
-          call TLS_info('  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id))
+          call log_info(simlog, '  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id))
           id = new_id
         end if
       end associate
@@ -518,7 +519,7 @@ contains
 
   end subroutine init_exo_mesh
 
-  function new_unstr_2d_mesh_aux(mesh, params, errmsg) result(this)
+  function new_unstr_2d_mesh_aux(mesh, params, errmsg, simlog) result(this)
 
     use unstr_2d_mesh_type
     use ext_exodus_mesh_type
@@ -531,6 +532,7 @@ contains
     type(ext_exodus_mesh), intent(inout) :: mesh
     type(parameter_list),  intent(inout) :: params
     character(:), allocatable, intent(out) :: errmsg
+    type(simulation_log), intent(in), optional :: simlog
     type(unstr_2d_mesh), pointer :: this
 
     integer :: j, k, n, nnode, nface, ncell, stat, pfirst
@@ -550,7 +552,7 @@ contains
 
     !! Generate the cell neighbor array.
     if (is_IOP) then
-      call TLS_info('  finding cell neighbors', TLS_VERB_NORMAL)
+      call log_info(simlog, '  finding cell neighbors')
       call get_cell_neighbor_array(cstart, cnode, cnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
@@ -562,7 +564,7 @@ contains
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh cells', TLS_VERB_NORMAL)
+      call log_info(simlog, '  partitioning the mesh cells')
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
       call params%get('partitioner', string, default='metis')
@@ -605,7 +607,7 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call TLS_info('  partitioning the mesh nodes', TLS_VERB_NORMAL)
+      call log_info(simlog, '  partitioning the mesh nodes')
       call partition_facets(cstart, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder(mesh%coord, node_perm)
@@ -624,7 +626,7 @@ contains
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
-      call TLS_info('  numbering the mesh faces', TLS_VERB_NORMAL)
+      call log_info(simlog, '  numbering the mesh faces')
       call label_mesh_faces(cstart, cnode, nface, cface)
       !! Extract the relative face orientation info.
       cfpar = 0
@@ -641,7 +643,7 @@ contains
         end associate
       end do
       !! Partition and order the faces.
-      call TLS_info('  partitioning the mesh faces', TLS_VERB_NORMAL)
+      call log_info(simlog, '  partitioning the mesh faces')
       allocate(perm(nface))
       call partition_facets(cstart, cface, cell_psize, face_psize, perm)
       call invert_perm(perm)
@@ -654,12 +656,12 @@ contains
     end if
 
     !! Identify off-process ghost cells to include with each partition.
-    call TLS_info('  identifying off-process ghost cells', TLS_VERB_NORMAL)
+    call log_info(simlog, '  identifying off-process ghost cells')
     call select_ghost_cells(cstart, cnode, cell_psize, offP_size, offP_index)
     deallocate(cnhbr)
 
     !! Begin initializing the unstr_2d_mesh result object.
-    call TLS_info('  generating parallel mesh structure')
+    call log_info(simlog, '  generating parallel mesh structure')
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
@@ -789,10 +791,21 @@ contains
     allocate(ewgt(size(adjncy)))
     ewgt = 1.0  ! the default
 
-    call alloc_graph_partitioner(gpart, params)
+    call alloc_graph_partitioner(gpart, params, stat, errmsg)
+    if (stat /= 0) return
     call gpart%compute(ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
 
   end subroutine partition_cells
+
+
+  subroutine log_info(simlog, message)
+
+    type(simulation_log), intent(in), optional :: simlog
+    character(*), intent(in) :: message
+
+    if (present(simlog)) call simlog%info(message)
+
+  end subroutine log_info
 
   !! Given a partition assignment array PART, this auxiliary subroutine
   !! computes the permutation array PERM that makes the partition a block
