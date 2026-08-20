@@ -29,6 +29,17 @@ program test_flow_2d_mesh_factory
     stop 1
   end if
 
+  if (nPE > 1) then
+    deallocate(mesh)
+    call params%set('partitioner', 'invalid')
+    mesh => new_unstr_2d_mesh(params, stat, errmsg)
+    if (stat == 0 .or. associated(mesh)) then
+      if (is_IOP) print '(a)', 'FAIL: invalid partitioner did not return an error'
+      call halt_parallel_communication
+      stop 1
+    end if
+  end if
+
   if (is_IOP) print '(a)', 'PASS: block IDs normalized to cell set 1'
   call halt_parallel_communication
 

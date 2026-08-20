@@ -10,7 +10,6 @@ module vof_2d_test_driver
   use truchas_logging_services
   use unstr_2d_mesh_type
   use volume_tracker_2d_class
-  use xdmf_file_type
   implicit none
 
   !! Bundle up all the driver state data as a singleton THIS of private
@@ -27,8 +26,7 @@ module vof_2d_test_driver
 
 contains
 
-  subroutine timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, &
-    outfile, int_normal, axisym, myproc)
+  subroutine timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, int_normal, axisym)
 
     use simple_volume_tracker_type
     use geometric_volume_tracker_type
@@ -39,8 +37,6 @@ contains
     real(r8), intent(inout) :: vof(:,:)
     real(r8), intent(inout) :: dt, vel_fn(mesh%nface)
     real(r8), intent(out) :: int_normal(:,:,:)
-    real(r8), intent(in) :: myproc(:)
-    type(xdmf_file), intent(inout) :: outfile
 
     integer :: i, j, k, f0, f1, its, void
     real(r8) :: tot_t
@@ -104,16 +100,6 @@ contains
 
       !if (mod(its,100)==0 .or. its==1 .or. its==tsmax) write(*,*) its, tot_t
 
-      if (mod(its,100)==0 .or. its==1 .or. its==tsmax) then
-        !! Write P and V fields at a time snapshot
-        call outfile%begin_variables(tot_t)
-        call outfile%write_cell_var(vof(1,:), 'VOF1')
-        call outfile%write_cell_var(vof(2,:), 'VOF2')
-        call outfile%write_cell_var(myproc(:), 'mype')
-        call outfile%write_cell_var(int_normal(1,1,:), 'x-normal')
-        call outfile%write_cell_var(int_normal(2,1,:), 'y-normal')
-        call outfile%end_variables
-      end if
     end do !its
 
   end subroutine timestep_driver

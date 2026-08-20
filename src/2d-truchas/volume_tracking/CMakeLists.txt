@@ -20,7 +20,7 @@ set(VOLUME_TRACKING_2D_SOURCE_FILES
 add_library(volume_tracking_2d ${VOLUME_TRACKING_2D_SOURCE_FILES})
 set_target_properties(volume_tracking_2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
-target_link_libraries(volume_tracking_2d truchas ${TRUCHAS_LINK_LIBS})
+target_link_libraries(volume_tracking_2d truchas-extra truchas ${TRUCHAS_LINK_LIBS})
 target_include_directories(volume_tracking_2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
 add_library(test_vof_2d OBJECT read_inputfile.F90 vof_2d_test_driver.F90
