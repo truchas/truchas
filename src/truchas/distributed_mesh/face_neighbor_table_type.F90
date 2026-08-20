@@ -85,7 +85,6 @@ contains
   subroutine init (this, xcnode, cnode, dim)
 
     use cell_topology, only: get_face_nodes_3d => get_face_nodes
-    use cell_topology_2d, only: get_face_nodes_2d => get_face_nodes
 
     class(face_neighbor_table), intent(out) :: this
     integer, intent(in) :: xcnode(:), cnode(:)
@@ -183,6 +182,30 @@ contains
     this%xbin(0) = 1
 
   end subroutine init
+
+
+  pure subroutine get_face_nodes_2d(cnodes, index, fnodes, normalize, reverse)
+
+    integer, intent(in) :: cnodes(:), index
+    integer, allocatable, intent(inout) :: fnodes(:)
+    logical, intent(in), optional :: normalize, reverse
+
+    integer :: node
+
+    if (index == size(cnodes)) then
+      fnodes = [cnodes(index), cnodes(1)]
+    else
+      fnodes = cnodes(index:index+1)
+    end if
+    if (present(reverse)) then
+      if (reverse) then
+        node = fnodes(1)
+        fnodes(1) = fnodes(2)
+        fnodes(2) = node
+      end if
+    end if
+
+  end subroutine get_face_nodes_2d
 
 
   subroutine get_neighbors (this, face, nhbrs)
