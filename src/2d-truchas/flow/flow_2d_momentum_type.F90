@@ -3,8 +3,9 @@
 !!
 !! This module defines FLOW_2D_MOMENTUM, the block-structured finite-volume
 !! operator for the cell-centered velocity predictor in two-dimensional
-!! incompressible flow. The matrix has one 2-by-2 block per cell pair. Its
-!! first implementation contains inertial and first-order viscous terms.
+!! incompressible flow. The matrix has one 2-by-2 block per cell pair. It
+!! assembles unsteady inertial and first-order viscous terms, and accumulates
+!! a conservative donor-cell momentum-transport contribution to the RHS.
 !!
 !! Velocity Dirichlet and free-slip conditions are eliminated through the
 !! boundary face fluxes. Free slip contributes a normal outer-product block,
@@ -34,6 +35,7 @@ module flow_2d_momentum_type
   contains
     procedure :: init
     procedure :: assemble
+    procedure :: add_advective_rhs
     procedure :: matrix
   end type
 
@@ -60,6 +62,49 @@ contains
     end do
     call graph%add_complete()
     call this%matrix_%init(2, graph, take_graph=.true.)
+  end subroutine
+
+
+  !! Add -dt*div(rho*u*u) to RHS using first-order donor-cell transport.
+  !! VELOCITY_FN is globally face-oriented; CFPAR supplies the orientation
+  !! relative to each cell.  The caller supplies the velocity at the old time
+  !! level and must have communicated its off-process values.
+  subroutine add_advective_rhs(this, dt, density_c, velocity_cc, velocity_fn, bc, rhs)
+    class(flow_2d_momentum), intent(in) :: this
+    real(r8), intent(in) :: dt, density_c(:), velocity_cc(:,:), velocity_fn(:)
+    type(flow_2d_bc), intent(in) :: bc
+    real(r8), intent(inout) :: rhs(:,:)
+
+    integer :: c, i, f, neighbor, n
+    real(r8) :: flux_volume
+
+    ASSERT(dt >= 0.0_r8)
+    ASSERT(size(density_c) >= this%mesh%ncell)
+    ASSERT(size(velocity_cc,1) == 2 .and. size(velocity_cc,2) >= this%mesh%ncell)
+    ASSERT(size(velocity_fn) >= this%mesh%nface)
+    ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
+
+    do c = 1, this%mesh%ncell_onP
+      do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
+        f = this%mesh%cface(i)
+        neighbor = this%mesh%cnhbr(i)
+        flux_volume = dt*this%mesh%area(f)*velocity_fn(f)
+        if (btest(this%mesh%cfpar(c), i-this%mesh%cstart(c)+1)) flux_volume = -flux_volume
+
+        if (flux_volume > 0.0_r8) then
+          rhs(:,c) = rhs(:,c) - density_c(c)*flux_volume*velocity_cc(:,c)
+        else if (neighbor > 0) then
+          rhs(:,c) = rhs(:,c) - density_c(neighbor)*flux_volume*velocity_cc(:,neighbor)
+        else
+          n = findloc(bc%velocity_dirichlet%index, f, dim=1)
+          if (n > 0) then
+            rhs(:,c) = rhs(:,c) - density_c(c)*flux_volume*bc%velocity_dirichlet%value(:,n)
+          else if (any(bc%pressure_dirichlet%index == f)) then
+            rhs(:,c) = rhs(:,c) - density_c(c)*flux_volume*velocity_cc(:,c)
+          end if
+        end if
+      end do
+    end do
   end subroutine
 
 

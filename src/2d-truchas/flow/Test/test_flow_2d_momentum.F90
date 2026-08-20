@@ -23,6 +23,7 @@ program test_flow_2d_momentum
 
   status = 0
   call test_momentum
+  call test_advective_transport
 
   call halt_parallel_communication
   stop status
@@ -84,6 +85,66 @@ contains
       if (coupled_slip) exit
     end do
     call require(global_any(coupled_slip), 'free-slip condition did not add a symmetric velocity block coupling')
+  end subroutine
+
+
+  subroutine test_advective_transport
+    type(unstr_2d_mesh), pointer :: mesh
+    type(flow_2d_operators), target :: operators
+    type(flow_2d_momentum), target :: momentum
+    type(flow_2d_bc) :: bc
+    type(parameter_list), target :: velocity_params
+    type(parameter_list), pointer :: plist
+    real(r8), allocatable :: density(:), velocity_cc(:,:), velocity_fn(:), rhs(:,:)
+    real(r8) :: transported_velocity(2), result(2), expected(2)
+    character(:), allocatable :: errmsg
+    integer :: stat, c, f, n
+
+    mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
+    call operators%init(mesh)
+    call momentum%init(mesh, operators)
+    allocate(density(mesh%ncell), velocity_cc(2,mesh%ncell), velocity_fn(mesh%nface), rhs(2,mesh%ncell_onP))
+    density = 2.0_r8
+    transported_velocity = [1.5_r8, -0.75_r8]
+    velocity_cc = spread(transported_velocity, dim=2, ncopies=mesh%ncell)
+    velocity_fn = 0.0_r8
+    do f = 1, mesh%nface_onP
+      if (mesh%fcell(2,f) > 0) velocity_fn(f) = dot_product(transported_velocity, mesh%unit_normal(:,f))
+    end do
+    call mesh%face_imap%gather_offp(velocity_fn)
+    call bc%init(mesh, velocity_params, stat, errmsg)
+    call require(stat == 0, 'advective-transport boundary condition initialization failed')
+    if (stat /= 0) return
+    call bc%compute(0.0_r8)
+    rhs = 0.0_r8
+    call momentum%add_advective_rhs(0.25_r8, density, velocity_cc, velocity_fn, bc, rhs)
+    result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
+    call require(maxval(abs(result)) < 1.0e-12_r8, 'interior advective transport is not conservative')
+
+    plist => velocity_params%sublist('inlet')
+    call plist%set('type', 'velocity')
+    call plist%set('face-set-ids', [1])
+    call plist%set('velocity', transported_velocity)
+    call bc%init(mesh, velocity_params, stat, errmsg)
+    call require(stat == 0, 'advective-inflow boundary condition initialization failed')
+    if (stat /= 0) return
+    call bc%compute(0.0_r8)
+    velocity_fn = 0.0_r8
+    expected = 0.0_r8
+    do n = 1, size(bc%velocity_dirichlet%index)
+      f = bc%velocity_dirichlet%index(n)
+      if (f > mesh%nface_onP) cycle
+      c = mesh%fcell(1,f)
+      velocity_fn(f) = dot_product(mesh%unit_normal(:,f), bc%velocity_dirichlet%value(:,n))
+      expected = expected - 0.25_r8*density(c)*mesh%area(f)*velocity_fn(f)*bc%velocity_dirichlet%value(:,n)
+    end do
+    call mesh%face_imap%gather_offp(velocity_fn)
+    rhs = 0.0_r8
+    call momentum%add_advective_rhs(0.25_r8, density, velocity_cc, velocity_fn, bc, rhs)
+    result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
+    expected = [global_sum(expected(1)), global_sum(expected(2))]
+    call require(maxval(abs(result - expected)) < 1.0e-12_r8, &
+        'velocity-boundary inflow does not supply donor momentum')
   end subroutine
 
 
