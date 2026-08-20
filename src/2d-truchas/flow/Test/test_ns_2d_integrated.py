@@ -37,6 +37,10 @@ def run_case(executable, input_file, nproc, mpiexec):
 
 
 def final_solution(data, case):
+    if data.num_steps != 3:
+        raise RuntimeError(f"{case}: wrote {data.num_steps} states, expected initial plus two scheduled outputs")
+    if abs(data.time(1) - 0.053) > 1.0e-12:
+        raise RuntimeError(f"{case}: intermediate output time is {data.time(1):g}, expected 0.053")
     step = data.num_steps - 1
     if abs(data.time(step) - 0.1) > 1.0e-12:
         raise RuntimeError(f"{case}: final time is {data.time(step):g}, expected 0.1")

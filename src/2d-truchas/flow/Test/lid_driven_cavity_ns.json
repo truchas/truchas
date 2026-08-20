@@ -18,8 +18,11 @@
     "initial-velocity": [0.0, 0.0],
     "sim-control": {
         "initial-time": 0.0,
-        "time-step": 0.005,
+        "initial-time-step": 0.005,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 0.005,
+        "time-step-growth": 1.05,
         "courant-number": 0.5,
-        "final-time": 0.1
+        "output-times": [0.053, 0.1]
     }
 }
