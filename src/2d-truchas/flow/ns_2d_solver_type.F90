@@ -34,12 +34,13 @@ module ns_2d_solver_type
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
-    real(r8), allocatable :: rhs(:,:), grad_p(:,:)
+    real(r8), allocatable :: rhs(:,:), grad_p(:,:), flux_volumes(:,:)
   contains
     procedure :: init
     procedure :: set_initial_state
     procedure :: step
     procedure :: courant_time_step
+    procedure, private :: single_fluid_flux_volumes
     final :: delete
   end type
 
@@ -53,8 +54,8 @@ contains
 
     this%model => model
     this%state => state
-    allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver, &
-        this%ic_solver)
+    allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
+        this%flux_volumes(size(model%density),size(model%mesh%cface)), this%projection_solver, this%ic_solver)
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
@@ -104,8 +105,9 @@ contains
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
     call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
         this%model%bc, this%rhs)
-    call this%model%momentum%add_advective_rhs(dt, this%model%density_c, this%state%vel_cc, &
-        this%state%vel_fn, this%model%bc, this%rhs)
+    call this%single_fluid_flux_volumes(dt)
+    call this%model%momentum%add_advective_rhs(this%model%density, this%state%vel_cc, this%flux_volumes, &
+        this%model%bc, this%rhs)
     do c = 1, size(this%rhs,2)
       this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
           dt*this%model%mesh%volume(c)*this%grad_p(:,c)
@@ -116,6 +118,28 @@ contains
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
     call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
         this%model%bc, this%state, stat)
+  end subroutine
+
+
+  !! Construct the one-material cell-face flux-volume field from the old
+  !! global face-normal velocity. This temporary bridge will be replaced by
+  !! volume-tracker output when composition advection is added.
+  subroutine single_fluid_flux_volumes(this, dt)
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: dt
+
+    integer :: c, i, f
+
+    ASSERT(size(this%flux_volumes,1) == 1)
+    this%flux_volumes = 0.0_r8
+    do c = 1, this%model%mesh%ncell_onP
+      do i = this%model%mesh%cstart(c), this%model%mesh%cstart(c+1)-1
+        f = this%model%mesh%cface(i)
+        this%flux_volumes(1,i) = dt*this%model%mesh%area(f)*this%state%vel_fn(f)
+        if (btest(this%model%mesh%cfpar(c), i-this%model%mesh%cstart(c)+1)) &
+            this%flux_volumes(1,i) = -this%flux_volumes(1,i)
+      end do
+    end do
   end subroutine
 
 

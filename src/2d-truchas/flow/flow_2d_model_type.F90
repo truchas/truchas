@@ -32,7 +32,7 @@ module flow_2d_model_type
     type(flow_2d_bc), pointer, public :: bc => null()
     type(flow_2d_momentum), pointer, public :: momentum => null()
     type(flow_2d_projection), pointer, public :: projection => null()
-    real(r8), allocatable, public :: density_c(:), inv_density_c(:), inv_density_f(:), viscosity_f(:)
+    real(r8), allocatable, public :: density(:), density_c(:), inv_density_c(:), inv_density_f(:), viscosity_f(:)
     real(r8), public :: body_acceleration(2) = 0.0_r8
   contains
     procedure :: init
@@ -62,11 +62,12 @@ contains
     end if
     this%mesh => mesh
     allocate(this%operators, this%bc, this%momentum, this%projection)
-    allocate(this%density_c(mesh%ncell), this%inv_density_c(mesh%ncell), &
+    allocate(this%density(1), this%density_c(mesh%ncell), this%inv_density_c(mesh%ncell), &
         this%inv_density_f(mesh%nface), this%viscosity_f(mesh%nface))
-    this%density_c = density
-    this%inv_density_c = 1.0_r8/density
-    this%inv_density_f = 1.0_r8/density
+    this%density = density
+    this%density_c = this%density(1)
+    this%inv_density_c = 1.0_r8/this%density(1)
+    this%inv_density_f = 1.0_r8/this%density(1)
     this%viscosity_f = viscosity
 
     call this%operators%init(mesh)

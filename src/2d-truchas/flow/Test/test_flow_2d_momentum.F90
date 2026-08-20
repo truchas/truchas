@@ -95,16 +95,18 @@ contains
     type(flow_2d_bc) :: bc
     type(parameter_list), target :: velocity_params
     type(parameter_list), pointer :: plist
-    real(r8), allocatable :: density(:), velocity_cc(:,:), velocity_fn(:), rhs(:,:)
-    real(r8) :: transported_velocity(2), result(2), expected(2)
+    real(r8), allocatable :: density(:), velocity_cc(:,:), velocity_fn(:), flux_volumes(:,:), rhs(:,:)
+    real(r8) :: transported_velocity(2), material_fraction(2), result(2), expected(2)
     character(:), allocatable :: errmsg
-    integer :: stat, c, f, n
+    integer :: stat, f, n
 
     mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call operators%init(mesh)
     call momentum%init(mesh, operators)
-    allocate(density(mesh%ncell), velocity_cc(2,mesh%ncell), velocity_fn(mesh%nface), rhs(2,mesh%ncell_onP))
-    density = 2.0_r8
+    allocate(density(2), velocity_cc(2,mesh%ncell), velocity_fn(mesh%nface), &
+        flux_volumes(2,size(mesh%cface)), rhs(2,mesh%ncell_onP))
+    density = [1.0_r8, 3.0_r8]
+    material_fraction = [0.25_r8, 0.75_r8]
     transported_velocity = [1.5_r8, -0.75_r8]
     velocity_cc = spread(transported_velocity, dim=2, ncopies=mesh%ncell)
     velocity_fn = 0.0_r8
@@ -112,12 +114,13 @@ contains
       if (mesh%fcell(2,f) > 0) velocity_fn(f) = dot_product(transported_velocity, mesh%unit_normal(:,f))
     end do
     call mesh%face_imap%gather_offp(velocity_fn)
+    call compute_flux_volumes(mesh, 0.25_r8, velocity_fn, material_fraction, flux_volumes)
     call bc%init(mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'advective-transport boundary condition initialization failed')
     if (stat /= 0) return
     call bc%compute(0.0_r8)
     rhs = 0.0_r8
-    call momentum%add_advective_rhs(0.25_r8, density, velocity_cc, velocity_fn, bc, rhs)
+    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, bc, rhs)
     result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
     call require(maxval(abs(result)) < 1.0e-12_r8, 'interior advective transport is not conservative')
 
@@ -134,17 +137,36 @@ contains
     do n = 1, size(bc%velocity_dirichlet%index)
       f = bc%velocity_dirichlet%index(n)
       if (f > mesh%nface_onP) cycle
-      c = mesh%fcell(1,f)
       velocity_fn(f) = dot_product(mesh%unit_normal(:,f), bc%velocity_dirichlet%value(:,n))
-      expected = expected - 0.25_r8*density(c)*mesh%area(f)*velocity_fn(f)*bc%velocity_dirichlet%value(:,n)
+      expected = expected - 0.25_r8*dot_product(density, material_fraction)*mesh%area(f)*velocity_fn(f) * &
+          bc%velocity_dirichlet%value(:,n)
     end do
     call mesh%face_imap%gather_offp(velocity_fn)
+    call compute_flux_volumes(mesh, 0.25_r8, velocity_fn, material_fraction, flux_volumes)
     rhs = 0.0_r8
-    call momentum%add_advective_rhs(0.25_r8, density, velocity_cc, velocity_fn, bc, rhs)
+    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, bc, rhs)
     result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
     expected = [global_sum(expected(1)), global_sum(expected(2))]
     call require(maxval(abs(result - expected)) < 1.0e-12_r8, &
         'velocity-boundary inflow does not supply donor momentum')
+  end subroutine
+
+
+  subroutine compute_flux_volumes(mesh, dt, velocity_fn, material_fraction, flux_volumes)
+    type(unstr_2d_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: dt, velocity_fn(:), material_fraction(:)
+    real(r8), intent(out) :: flux_volumes(:,:)
+
+    integer :: c, i, f
+
+    flux_volumes = 0.0_r8
+    do c = 1, mesh%ncell_onP
+      do i = mesh%cstart(c), mesh%cstart(c+1)-1
+        f = mesh%cface(i)
+        flux_volumes(:,i) = material_fraction*dt*mesh%area(f)*velocity_fn(f)
+        if (btest(mesh%cfpar(c), i-mesh%cstart(c)+1)) flux_volumes(:,i) = -flux_volumes(:,i)
+      end do
+    end do
   end subroutine
 
 
