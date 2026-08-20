@@ -7,25 +7,30 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
+#include "f90_assert.fpp"
+
 program flow_2d_main
 
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
   use,intrinsic :: iso_fortran_env, only: error_unit
+  use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
+  use simulation_environment_type
   use flow_2d_sim_type
   implicit none
 
-  integer :: n, num_arg, inlun, stat
+  integer :: ierr, n, num_arg, inlun, stat
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
+  type(simulation_environment) :: env
   type(flow_2d_sim) :: sim
 
   call init_parallel_communication
@@ -52,17 +57,38 @@ program flow_2d_main
 
   prefix = 'run'
   overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
-  call sim%init(params, stat, errmsg)
-  if (stat == 0) call sim%run(stat, errmsg)
+  call TLS_initialize(write_file=.false.)
+  call TLS_set_verbosity(TLS_VERB_SILENT)
+  call MPI_Comm_dup(MPI_COMM_WORLD, env%comm, ierr)
+  INSIST(ierr == MPI_SUCCESS)
+  call MPI_Comm_rank(env%comm, env%rank, ierr)
+  INSIST(ierr == MPI_SUCCESS)
+  call MPI_Comm_size(env%comm, env%nproc, ierr)
+  INSIST(ierr == MPI_SUCCESS)
+  call env%simlog%init(env%comm, 'run.log', stat, errmsg)
   if (stat /= 0) then
-    if (is_IOP) write(error_unit,'(a)') 'flow simulation error: ' // errmsg
-    call TLS_exit
+    if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
+    call MPI_Comm_free(env%comm, ierr)
+    INSIST(ierr == MPI_SUCCESS)
+    call TLS_finalize
     call halt_parallel_communication
     call exit(1)
   end if
-  call TLS_exit
+  call sim%init(params, stat, errmsg, env)
+  if (stat == 0) call sim%run(stat, errmsg)
+  if (stat /= 0) then
+    call env%simlog%error('flow simulation error: ' // errmsg)
+    call env%simlog%close
+    call MPI_Comm_free(env%comm, ierr)
+    INSIST(ierr == MPI_SUCCESS)
+    call TLS_finalize
+    call halt_parallel_communication
+    call exit(1)
+  end if
+  call env%simlog%close
+  call MPI_Comm_free(env%comm, ierr)
+  INSIST(ierr == MPI_SUCCESS)
+  call TLS_finalize
   call halt_parallel_communication
 
 end program flow_2d_main

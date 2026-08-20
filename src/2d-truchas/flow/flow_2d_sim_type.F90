@@ -23,6 +23,7 @@ module flow_2d_sim_type
   use flow_2d_solver_type
   use flow_2d_vtkhdf_output
   use time_step_sync_type
+  use simulation_environment_type
   implicit none
   private
 
@@ -56,13 +57,14 @@ contains
   end subroutine
 
 
-  subroutine init(this, params, stat, errmsg)
+  subroutine init(this, params, stat, errmsg, env)
 
     use signal_handler, only: init_signal_handler, SIGURG
     class(flow_2d_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(simulation_environment), intent(in) :: env
 
     type(parameter_list), pointer :: mesh_params, model_params, bc_params, solver_params
     type(parameter_list), pointer :: momentum_params, projection_params, control_params
@@ -119,7 +121,7 @@ contains
     end if
     bc_params => model_params%sublist('bc')
     allocate(this%model)
-    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
+    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, env)
     if (stat /= 0) then
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return

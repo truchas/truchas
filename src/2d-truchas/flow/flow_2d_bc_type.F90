@@ -20,6 +20,7 @@ module flow_2d_bc_type
   use bndry_func1_class
   use bndry_vfunc_class
   use flow_2d_bc_factory_type
+  use simulation_environment_type
   use parallel_communication
   implicit none
   private
@@ -41,26 +42,27 @@ module flow_2d_bc_type
 
 contains
 
-  subroutine init(this, mesh, params, stat, errmsg)
+  subroutine init(this, mesh, params, stat, errmsg, env)
     class(flow_2d_bc), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(simulation_environment), intent(in), optional :: env
 
     type(flow_2d_bc_factory) :: factory
 
     this%mesh => mesh
     call factory%init(mesh, params)
-    call factory%alloc_dir_vel_bc(this%velocity_dirichlet, stat, errmsg)
+    call factory%alloc_dir_vel_bc(this%velocity_dirichlet, stat, errmsg, env)
     if (stat /= 0) return
-    call factory%alloc_zero_vn_bc(this%velocity_zero_normal, stat, errmsg)
+    call factory%alloc_zero_vn_bc(this%velocity_zero_normal, stat, errmsg, env)
     if (stat /= 0) return
-    call factory%alloc_dir_prs_bc(this%pressure_dirichlet, stat, errmsg)
+    call factory%alloc_dir_prs_bc(this%pressure_dirichlet, stat, errmsg, env)
     if (stat /= 0) return
-    call factory%alloc_dir_prs_bc(this%pressure_correction_dirichlet, stat, errmsg)
+    call factory%alloc_dir_prs_bc(this%pressure_correction_dirichlet, stat, errmsg, env)
     if (stat /= 0) return
-    call factory%alloc_neu_prs_bc(this%pressure_neumann, stat, errmsg)
+    call factory%alloc_neu_prs_bc(this%pressure_neumann, stat, errmsg, env)
     if (stat /= 0) return
     call apply_default(this, mesh)
   end subroutine
