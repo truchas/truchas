@@ -36,19 +36,22 @@ module graph_partitioner_factory
 
 contains
 
-  subroutine alloc_graph_partitioner (this, params)
+  subroutine alloc_graph_partitioner (this, params, stat, errmsg)
 
-    use truchas_logging_services
     use string_utilities, only: raise_case
 
     class(graph_partitioner), allocatable, intent(out) :: this
     type(parameter_list) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
-    integer :: stat
-    character(:), allocatable :: partitioner, errmsg
+    character(:), allocatable :: partitioner
 
     call params%get ('partitioner', partitioner, stat, errmsg)
-    if (stat /= 0) call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: ' // errmsg)
+    if (stat /= 0) then
+      errmsg = 'ALLOC_GRAPH_PARTITIONER: ' // errmsg
+      return
+    end if
     select case (raise_case(partitioner))
     case ('METIS')
       block
@@ -58,7 +61,8 @@ contains
         allocate(this, source=metis_partitioner(plist))
       end block
     case default
-      call TLS_fatal ('ALLOC_GRAPH_PARTITIONER: unknown "partitioner": ' // partitioner)
+      stat = 1
+      errmsg = 'ALLOC_GRAPH_PARTITIONER: unknown "partitioner": ' // partitioner
     end select
 
   end subroutine alloc_graph_partitioner

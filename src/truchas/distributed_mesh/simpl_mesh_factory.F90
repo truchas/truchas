@@ -515,7 +515,12 @@ contains
       end do
 
       !! Call the partitioner to partition the cell adjacency graph.
-      call alloc_graph_partitioner (gpart, params)
+      call alloc_graph_partitioner (gpart, params, stat, errmsg)
+      if (stat /= 0) then
+        stat = -2
+        errmsg = 'error creating cell partitioner: ' // errmsg
+        return
+      end if
       allocate(ewgt(size(adjncy)))
       ewgt = 1.0
       call gpart%compute (ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
@@ -1130,4 +1135,3 @@ contains
   end subroutine insertion_sort
 
 end module simpl_mesh_factory
-

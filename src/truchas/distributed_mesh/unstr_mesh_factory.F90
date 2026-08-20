@@ -545,7 +545,8 @@ contains
       ewgt(i) = LINK_WEIGHT
     end do
 
-    call alloc_graph_partitioner(gpart, params)
+    call alloc_graph_partitioner(gpart, params, stat, errmsg)
+    if (stat /= 0) return
     call gpart%compute(ncell, xadj, adjncy, ewgt, npart, part, stat, errmsg)
 
   end subroutine partition_cells
