@@ -26,6 +26,9 @@ target_include_directories(volume_tracking_2d INTERFACE "${CMAKE_CURRENT_BINARY_
 add_library(test_vof_2d OBJECT read_inputfile.F90 vof_2d_test_driver.F90
             gaussian_quadrature_vofinit.F90)
 target_link_libraries(test_vof_2d volume_tracking_2d)
+# The 2D tracker modules intentionally share names with mainline's 3D
+# tracker modules.  Compile this driver against the 2D modules.
+target_include_directories(test_vof_2d BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
 add_executable(vof_advection vof_advection.F90 $<TARGET_OBJECTS:test_vof_2d>)
 add_executable(vof_vortex vof_vortex.F90 $<TARGET_OBJECTS:test_vof_2d>)
