@@ -215,3 +215,14 @@ set_tests_properties(flow_2d_integrated_hydrostatic PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME ns_2d_integrated_lid_cavity
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ns_2d_integrated.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/lid_driven_cavity_ns.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_integrated_lid_cavity PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
