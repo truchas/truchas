@@ -22,3 +22,13 @@ top wall, and impose no-slip on the other walls. The output contains the
 time-dependent cell pressure and three-component VTK velocity, with the third
 component zero. The three-component representation is required by ParaView's
 streamline filter even though the physical problem is two-dimensional.
+
+## Time control
+
+Both 2D flow programs use the same `sim-control` time parameters as the
+thermal simulation: `initial-time`, `initial-time-step`, `min-time-step`,
+`max-time-step`, and a strictly increasing `output-times` array. The initial
+state is written at `initial-time`; integration stops at the final entry of
+`output-times`. `time-step-growth` defaults to `1.05` and limits step growth.
+For Navier--Stokes, `courant-number` additionally limits each step by the
+convective CFL condition.

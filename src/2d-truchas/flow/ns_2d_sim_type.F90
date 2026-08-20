@@ -2,9 +2,9 @@
 !! NS_2D_SIM_TYPE
 !!
 !! This module defines NS_2D_SIM, which owns the mesh, single-fluid
-!! Navier--Stokes model, state, solver, output, and fixed maximum time-step
-!! control for a two-dimensional isothermal incompressible-flow simulation.
-!! The actual step is further restricted by a convective Courant limit.
+!! Navier--Stokes model, state, solver, time-integration control, and output
+!! writer for a two-dimensional isothermal incompressible-flow simulation.
+!! Each step is restricted by a convective Courant limit.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -23,6 +23,7 @@ module ns_2d_sim_type
   use flow_2d_state_type
   use ns_2d_solver_type
   use flow_2d_vtkhdf_output
+  use time_step_sync_type
   implicit none
   private
 
@@ -33,7 +34,10 @@ module ns_2d_sim_type
     type(flow_2d_state), pointer :: state => null()
     type(ns_2d_solver), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
-    real(r8) :: initial_time, time_step, final_time, courant_number
+    real(r8) :: t_init, tlast, hlast
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
+    real(r8), allocatable :: tout(:)
+    type(time_step_sync) :: ts_sync
   contains
     final :: delete
     procedure :: init
@@ -54,6 +58,8 @@ contains
 
 
   subroutine init(this, params, stat, errmsg)
+
+    use signal_handler, only: init_signal_handler, SIGURG
     class(ns_2d_sim), intent(out) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -67,6 +73,7 @@ contains
     real(r8), allocatable :: body_acceleration(:)
 
     stat = 0
+    call init_signal_handler(SIGURG)
     if (.not.params%is_sublist('mesh')) then
       stat = 1
       errmsg = 'missing "mesh" sublist parameter'
@@ -144,21 +151,31 @@ contains
       return
     end if
     control_params => params%sublist('sim-control')
-    call control_params%get('initial-time', this%initial_time, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call control_params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call control_params%get('time-step', this%time_step, stat, errmsg)
+    call control_params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return
-    call control_params%get('final-time', this%final_time, stat, errmsg)
+    call control_params%get('min-time-step', this%dt_min, stat, errmsg)
+    if (stat /= 0) return
+    call control_params%get('max-time-step', this%dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call control_params%get('time-step-growth', this%dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call control_params%get('output-times', this%tout, stat, errmsg)
     if (stat /= 0) return
     call control_params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    if (this%time_step <= 0.0_r8 .or. this%final_time < this%initial_time .or. &
+    if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
+        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. size(this%tout) == 0 .or. &
+        any(this%tout <= this%t_init) .or. any(this%tout(2:) <= this%tout(:size(this%tout)-1)) .or. &
         this%courant_number <= 0.0_r8 .or. this%courant_number > 1.0_r8) then
       stat = 1
       errmsg = 'processing ' // control_params%path() // &
-          ': require time-step > 0, final-time >= initial-time, and courant-number in (0,1]'
+          ': require 0 < min-time-step <= initial-time-step <= max-time-step, time-step-growth >= 1, ' // &
+          'strictly increasing output-times after initial-time, and courant-number in (0,1]'
       return
     end if
+    this%ts_sync = time_step_sync(4)
 
     allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
     if (params%is_parameter('initial-velocity')) then
@@ -174,7 +191,7 @@ contains
       end if
       call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
     end if
-    call this%solver%set_initial_state(this%initial_time, this%time_step, initial_velocity, stat)
+    call this%solver%set_initial_state(this%t_init, this%dt_init, initial_velocity, stat)
     if (stat /= 0) then
       errmsg = 'initializing flow state failed'
       return
@@ -193,22 +210,72 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8) :: time, dt
+    integer :: n
+    real(r8) :: time, hnext, t_write
 
     stat = 0
-    time = this%initial_time
+    time = this%t_init
     call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
-    do while (time < this%final_time)
-      dt = min(this%time_step, this%solver%courant_time_step(this%courant_number), this%final_time - time)
-      call this%solver%step(time, dt, stat, errmsg)
-      if (stat /= 0) then
-        if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
+    t_write = time
+    hnext = min(this%dt_init, this%solver%courant_time_step(this%courant_number))
+    this%tlast = time
+    this%hlast = hnext
+    do n = 1, size(this%tout)
+      call integrate(this, this%tout(n), hnext, time, stat, errmsg)
+      if (stat < 0 .and. time == t_write) exit
+      call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
+      t_write = time
+      if (stat /= 0) exit
+    end do
+    if (stat > 0) then
+      stat = 0
+      deallocate(errmsg)
+    end if
+    call this%output%close()
+  end subroutine
+
+
+  subroutine integrate(this, tout, hnext, time, stat, errmsg)
+
+    use signal_handler, only: read_signal, SIGURG
+
+    class(ns_2d_sim), intent(inout) :: this
+    real(r8), intent(in) :: tout
+    real(r8), intent(inout) :: hnext
+    real(r8), intent(out) :: time
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    logical :: sig_rcvd
+    real(r8) :: dt
+
+    do
+      time = this%ts_sync%next_time(tout, this%tlast, this%hlast, hnext)
+      dt = time - this%tlast
+      if (dt < this%dt_min) then
+        stat = -1
+        errmsg = 'next time step is too small'
+        time = this%tlast
         return
       end if
-      time = time + dt
-      call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
+      call this%solver%step(this%tlast, dt, stat, errmsg)
+      if (stat /= 0) then
+        if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
+        time = this%tlast
+        return
+      end if
+      this%hlast = dt
+      this%tlast = time
+      hnext = min(this%dt_grow*dt, this%dt_max, this%solver%courant_time_step(this%courant_number))
+
+      call read_signal(SIGURG, sig_rcvd)
+      if (sig_rcvd) then
+        stat = 1
+        errmsg = 'received SIGURG signal'
+        return
+      end if
+      if (time == tout) return
     end do
-    call this%output%close()
   end subroutine
 
 end module ns_2d_sim_type
