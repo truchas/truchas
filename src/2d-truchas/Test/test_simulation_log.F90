@@ -1,34 +1,52 @@
 program test_simulation_log
 
+  use simulation_environment_type
   use simulation_log_type
-  use parallel_communication
+  use mpi_f08
+  use parallel_communication, only: init_parallel_communication, halt_parallel_communication, global_any
   implicit none
 
-  type(simulation_log) :: simlog
+  type(simulation_environment) :: env
   character(:), allocatable :: errmsg
-  integer :: stat
+  integer :: ierr, stat
+  logical :: valid
 
   call init_parallel_communication
+  call MPI_Comm_dup(MPI_COMM_WORLD, env%comm, ierr)
+  call require(ierr == MPI_SUCCESS, 'could not duplicate the simulation communicator')
+  call MPI_Comm_rank(env%comm, env%rank, ierr)
+  call require(ierr == MPI_SUCCESS, 'could not determine the simulation rank')
+  call MPI_Comm_size(env%comm, env%nproc, ierr)
+  call require(ierr == MPI_SUCCESS, 'could not determine the simulation size')
 
-  call simlog%init('simulation_log_test.log', stat, errmsg, LOG_NORMAL, .false.)
+  call env%simlog%init(env%comm, 'simulation_log_test.log', stat, errmsg, verbosity=-1)
+  call require(stat /= 0, 'invalid log verbosity was accepted')
+  call require(errmsg == 'invalid log verbosity', 'invalid log verbosity message was not broadcast')
+
+  call env%simlog%init(env%comm, 'simulation_log_test.log', stat, errmsg, LOG_NORMAL, .false.)
   call require(stat == 0, 'could not initialize normal log')
-  call simlog%info('normal message')
-  call simlog%info('detail message', LOG_DETAIL)
-  call simlog%warn('warning message')
-  call simlog%error('error message')
-  call simlog%close()
+  valid = .true.
+  if (env%rank == 0) valid = env%simlog%unit() /= 0
+  call require(valid, 'I/O process has no log unit')
+  call env%simlog%info('normal message')
+  call env%simlog%info('detail message', LOG_DETAIL)
+  call env%simlog%warn('warning message')
+  call env%simlog%error('error message')
+  call env%simlog%close()
 
   call require(log_contains('simulation_log_test.log', 'normal message'), 'normal message missing')
   call require(.not.log_contains('simulation_log_test.log', 'detail message'), 'detail message was not filtered')
   call require(log_contains('simulation_log_test.log', 'Warning: warning message'), 'warning message missing')
   call require(log_contains('simulation_log_test.log', 'ERROR: error message'), 'error message missing')
 
-  call simlog%init('simulation_log_test.log', stat, errmsg, LOG_DETAIL, .false.)
+  call env%simlog%init(env%comm, 'simulation_log_test.log', stat, errmsg, LOG_DETAIL, .false.)
   call require(stat == 0, 'could not initialize detail log')
-  call simlog%info('detail message', LOG_DETAIL, terminal=.false.)
-  call simlog%close()
+  call env%simlog%info('detail message', LOG_DETAIL, terminal=.false.)
+  call env%simlog%close()
   call require(log_contains('simulation_log_test.log', 'detail message'), 'detail message missing')
 
+  call MPI_Comm_free(env%comm, ierr)
+  call require(ierr == MPI_SUCCESS, 'could not free the simulation communicator')
   call halt_parallel_communication
 
 contains
@@ -38,7 +56,7 @@ contains
     character(*), intent(in) :: message
 
     if (global_any(.not.condition)) then
-      if (is_IOP) write(*, '(2a)') 'ERROR: ', message
+      if (env%rank == 0) write(*, '(2a)') 'ERROR: ', message
       error stop 1
     end if
   end subroutine
@@ -50,7 +68,7 @@ contains
     character(256) :: line
     integer :: ios, unit
 
-    if (is_IOP) then
+    if (env%rank == 0) then
       found = .false.
       open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
       if (ios == 0) then
@@ -65,7 +83,7 @@ contains
         close(unit)
       end if
     end if
-    call broadcast(found)
+    call MPI_Bcast(found, 1, MPI_LOGICAL, 0, env%comm, ios)
   end function
 
 end program test_simulation_log
