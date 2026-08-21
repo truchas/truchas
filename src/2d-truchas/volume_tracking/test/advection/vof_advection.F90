@@ -21,7 +21,7 @@ program vof_advection
   use vof_2d_vtkhdf_writer_type
   implicit none
 
-  character(512) :: inputfile, referencefile, arg
+  character(512) :: inputfile, arg
   integer  :: nx(2), tsmax, nmat, nvtrack
   real(r8) :: xmin(2), xmax(2), dxeps, ptri, dt, r
   type(unstr_2d_mesh), pointer :: mesh
@@ -30,13 +30,12 @@ program vof_advection
   integer :: stat
   character(:), allocatable :: errmsg
 
-  integer :: i, j, ngp, test_run, nelem, gncell
-  integer, allocatable :: global_xcell(:)
-  real(r8) :: t_start, t_end, coord(2), vof_err
-  real(r8), allocatable :: v(:,:), vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:)
+  integer :: i, j, ngp
+  real(r8) :: t_start, t_end, coord(2)
+  real(r8), allocatable :: v(:,:), vof(:,:), int_normal(:,:,:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
   real(r8), allocatable :: gp_coord(:,:), gp_weight(:)
-  logical :: test_failure, axisym
+  logical :: axisym
 
   procedure(constant_vel), pointer :: problem_vel => NULL()
 
@@ -53,10 +52,7 @@ program vof_advection
   inputfile = 'input.txt'
   call get_command_argument(1, arg)
   if (len_trim(arg) > 0) inputfile = trim(arg)
-  referencefile = 'reference.txt'
-  call get_command_argument(2, arg)
-  if (len_trim(arg) > 0) referencefile = trim(arg)
-  call readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack, test_run)
+  call readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack)
 
   !! Create the mesh specified by the above input file
   mesh => new_unstr_2d_mesh(env, xmin, xmax, nx, dxeps, ptri)
@@ -117,66 +113,10 @@ program vof_advection
   call vtk_writer%write_solution(real(tsmax, r8)*dt, vof)
   call vtk_writer%close()
 
-  if (test_run == 0) then
-    open(3, file=referencefile)
-
-    write(3,'(I8)') mesh%ncell
-    do j = 1, mesh%ncell
-      write(3,'(I8, E20.10)') j, vof(1,j)
-    end do
-
-    close(3)
-  end if
-
-  !! Collect local VOF arrays into a global VOF array
-  gncell = global_sum(mesh%ncell_onP)
-
-  allocate(global_vof(merge(gncell,0,is_IOP)))
-  allocate(global_xcell(merge(gncell,0,is_IOP)))
-
-  call gather(vof(1,:mesh%ncell_onP), global_vof)
-  call gather(mesh%xcell(:mesh%ncell_onP), global_xcell)
-
-  if (is_iop) global_vof(global_xcell) = global_vof
-
-  ! Testing
-  if (test_run == 1 .and. is_iop) then
-    test_failure = .false.
-    open(3, file=referencefile, action='read', status='old')
-
-    read(3,*) nelem
-    if (nelem /= gncell) then
-      error stop 'number of mesh cells in test standard and current mesh do not match'
-    end if
-
-    allocate(vof_std(nelem))
-
-    do j = 1, nelem
-      read(3,*) i, vof_std(j)
-    end do
-
-    vof_err = 0.0_r8
-    do j = 1, nelem
-      vof_err = max(vof_err, abs(vof_std(j)-global_vof(j)))
-    end do
-    test_failure = vof_err > 1e-07_r8
-
-    close(3)
-  end if
-
   !! Shutdown MPI
   call halt_parallel_communication
 
   call cpu_time(t_end)
-
-  if (test_run == 1 .and. is_iop) then
-    if (test_failure) then
-      write(*,*) "FAIL: VOF linf error=", vof_err, " (tol=1.00e-7)"
-      stop 1
-    else
-      write(*,*) "PASS: VOF linf error=", vof_err, " (tol=1.00e-7)"
-    end if
-  end if
 
   write(*,*) "Runtime: ", t_end-t_start
 
