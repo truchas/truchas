@@ -1,14 +1,13 @@
 !!
-!! This code attempts to initialize a VOF field and advect it with a constant
-!! velocity using it's own time-step driver and VOF routines.
-!! It also instantiates a 2D unstructured mesh (which happens to be a regular
-!! Cartesian mesh).
+!! This code attempts to initialize a VOF field and advect it along the axis of
+!! symmetry in an axisymmetric domain using it's own time-step driver and VOF routines.
+!! It also instantiates a 2D unstructured mesh.
 !!
 !! Aditya K. Pandare <apandare@lanl.gov>, January 2020
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-program vof_vortex
+program vof_axialflow
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -18,18 +17,21 @@ program vof_vortex
   use read_inputfile
   use gaussian_quadrature_vofinit
   use vof_2d_test_driver
+  use vof_2d_vtkhdf_writer_type
+  use geom_axisymmetric
   implicit none
 
-  character(len=100) :: inputfile
+  character(512) :: inputfile, referencefile, arg
   integer  :: nx(2), tsmax, nmat, nvtrack
   real(r8) :: xmin(2), xmax(2), dxeps, ptri, dt, r
   type(unstr_2d_mesh), pointer :: mesh
+  type(vof_2d_vtkhdf_writer) :: vtk_writer
   type(simulation_environment) :: env
   integer :: stat
   character(:), allocatable :: errmsg
 
-  integer :: i, j, ngp, test_run, nelem, gncell
-  integer, allocatable :: global_xcell(:)
+  integer :: i, j, n, ngp, test_run, nelem, gncell
+  integer, allocatable :: seed(:), global_xcell(:)
   real(r8) :: t_start, t_end, coord(2), vof_err
   real(r8), allocatable :: vof(:,:), int_normal(:,:,:), vof_std(:), global_vof(:)
   real(r8), allocatable :: vel_fn(:) ! fluxing velocity stored at faces
@@ -37,6 +39,8 @@ program vof_vortex
   logical :: test_failure, axisym
 
   procedure(constant_vel), pointer :: problem_vel => NULL()
+  procedure(transform_qua4), pointer :: transform_elem => NULL()
+  procedure(quadrature_qua4), pointer :: quadrature_elem => NULL()
 
   call cpu_time(t_start)
 
@@ -48,11 +52,19 @@ program vof_vortex
   call env%simlog%init(env%comm, 'mesh.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
 
-  !! Read input file "input_vortex.txt"
-  inputfile = 'input_vortex.txt'
+  inputfile = 'input.txt'
+  call get_command_argument(1, arg)
+  if (len_trim(arg) > 0) inputfile = trim(arg)
+  referencefile = 'reference.txt'
+  call get_command_argument(2, arg)
+  if (len_trim(arg) > 0) referencefile = trim(arg)
   call readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack, test_run)
 
   !! Create the mesh specified by the above input file
+  call random_seed(size=n)
+  allocate(seed(n))
+  seed = 7
+  call random_seed(put=seed)
   mesh => new_unstr_2d_mesh(env, xmin, xmax, nx, dxeps, ptri)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
@@ -60,10 +72,13 @@ program vof_vortex
   call mesh%init_cell_centroid
   call mesh%init_face_centroid
 
+  !! For axisymmetric problems, the cell volumes and face areas need to be modified
+  call mesh_axisymmetry_mod(mesh)
+
   !! Define a face-based normal-velocity field with arbitrary constant value.
   allocate(vel_fn(mesh%nface))
-  problem_vel => vortex_vel
-  axisym = .false.
+  problem_vel => axisymmetric_vel
+  axisym = .true.
 
   !! Define a cell-based VOF field.
   allocate(vof(nmat,mesh%ncell))
@@ -74,16 +89,27 @@ program vof_vortex
   do j = 1, mesh%ncell
     associate (cn => mesh%cnode(mesh%cstart(j):mesh%cstart(j+1)-1))
 
-      call quadrature_qua4(ngp, gp_coord, gp_weight)
+      select case (size(cn))
+      case (3) ! triangle
+        transform_elem => transform_tri3
+        quadrature_elem => quadrature_tri3
+        ngp = 6
+      case (4) ! quadrilateral
+        transform_elem => transform_qua4
+        quadrature_elem => quadrature_qua4
+        ngp = 16
+      case default
+        error stop 'unaccounted element type in vof_axialflow'
+      end select
+
+      call quadrature_elem(ngp, gp_coord, gp_weight)
       vof(:,j) = 0.0_r8
 
       do i = 1, ngp
-        call transform_qua4(mesh%x(:,cn), gp_coord(:,i), coord)
-        r = norm2(coord(1:2)-[0.5_r8, 0.75_r8])
+        call transform_elem(mesh%x(:,cn), gp_coord(:,i), coord)
+        r = norm2(coord(1:2)-[0.0_r8, 0.75_r8])
         if (r<=0.15_r8) then
           vof(1,j) = vof(1,j) + gp_weight(i)*1.0_r8
-        !else if (r<=0.15) then
-        !  vof(2,j) = vof(2,j) + gp_weight(i)*1.0_r8
         end if
       end do !i
 
@@ -95,19 +121,15 @@ program vof_vortex
   allocate(int_normal(2,nmat,mesh%ncell))
   int_normal = 0.0_r8
 
+  call vtk_writer%open(env, mesh, nmat, stat, errmsg)
+  if (stat /= 0) error stop 'opening VTKHDF output: ' // errmsg
+  call vtk_writer%write_solution(0.0_r8, vof)
+
   !! call time-step driver
   call timestep_driver(tsmax, dt, mesh, vel_fn, nmat, nvtrack, problem_vel, vof, int_normal, axisym)
 
-  if (test_run == 0) then
-    open(3, file='circlevort_vof.txt')
-
-    write(3,'(I8)') mesh%ncell
-    do j = 1, mesh%ncell
-      write(3,'(I8, E20.10)') j, vof(1,j)
-    end do
-
-    close(3)
-  end if
+  call vtk_writer%write_solution(real(tsmax, r8)*dt, vof)
+  call vtk_writer%close()
 
   !! Collect local VOF arrays into a global VOF array
   gncell = global_sum(mesh%ncell_onP)
@@ -120,11 +142,25 @@ program vof_vortex
 
   if (is_iop) global_vof(global_xcell) = global_vof
 
+  ! Writing data-file
+  if (test_run == 0 .and. is_iop) then
+    write(*,*) 'Writing output to ', trim(referencefile)
+    open(3, file=referencefile)
+
+    write(3,'(I8)') gncell
+
+    do j = 1, gncell
+      write(3,'(I8, E20.10)') j, global_vof(j)
+    end do
+
+    close(3)
+  end if
+
   ! Testing
   if (test_run == 1 .and. is_iop) then
     test_failure = .false.
-    write(*,*) 'Comparing output to circlevort_vof.txt'
-    open(3, file='circlevort_vof.txt', action='read', status='old')
+    write(*,*) 'Comparing output to ', trim(referencefile)
+    open(3, file=referencefile, action='read', status='old')
 
     read(3,*) nelem
     if (nelem /= gncell) then
@@ -162,4 +198,4 @@ program vof_vortex
 
   write(*,*) "Runtime: ", t_end-t_start
 
-end program vof_vortex
+end program vof_axialflow
