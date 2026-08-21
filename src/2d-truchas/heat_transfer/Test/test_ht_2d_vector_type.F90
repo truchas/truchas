@@ -1,9 +1,9 @@
 program test_ht_2d_vector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
+  use simulation_environment_type
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
   use vector_class
@@ -13,18 +13,24 @@ program test_ht_2d_vector_type
   type(unstr_2d_mesh), pointer :: mesh
   real(r8) :: xmin(2), xmax(2)
   integer :: nx(2)
-  integer :: status
+  integer :: status, stat
+  character(:), allocatable :: errmsg
+  type(simulation_environment) :: env
 
   call init_parallel_communication
-  prefix = 'run'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
-
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'test_ht_2d_vector_type.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) then
+    if (is_IOP) print '(2a)', 'FAIL: ', errmsg
+    call halt_parallel_communication
+    stop 1
+  end if
   xmin = [0.0_r8, 0.0_r8]
   xmax = [1.0_r8, 1.0_r8]
   nx = [8, 8]
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx, 0.0_r8)
+  mesh => new_unstr_2d_mesh(env, xmin, xmax, nx, 0.0_r8)
 
   status = 0
   call test_storage_and_gather(mesh)

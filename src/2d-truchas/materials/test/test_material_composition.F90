@@ -1,6 +1,7 @@
 program test_material_composition
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_type
@@ -9,6 +10,7 @@ program test_material_composition
   use material_factory, only: load_material_database
   use material_composition_type
   use parallel_communication
+  use simulation_environment_type
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   implicit none
@@ -20,12 +22,18 @@ program test_material_composition
   type(parameter_list), pointer :: matl_params, region_params
   character(:), allocatable :: string, errmsg, names(:)
   integer :: stat
+  type(simulation_environment) :: env
 
   call init_parallel_communication
   prefix = 'run'
   overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_SILENT)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'test_material_composition.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   mesh => create_mesh()
 
@@ -63,7 +71,7 @@ contains
   function create_mesh() result(mesh)
     use unstr_2d_mesh_factory
     type(unstr_2d_mesh), pointer :: mesh
-    mesh => new_unstr_2d_mesh([-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [8,8], ptri=0.5_r8)
+    mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [8,8], ptri=0.5_r8)
     call mesh%init_cell_centroid
   end function create_mesh
 

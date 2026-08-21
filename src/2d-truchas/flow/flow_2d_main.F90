@@ -7,8 +7,6 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-#include "f90_assert.fpp"
-
 program flow_2d_main
 
 #ifdef NAGFOR
@@ -24,13 +22,14 @@ program flow_2d_main
   use flow_2d_sim_type
   implicit none
 
-  integer :: ierr, n, num_arg, inlun, stat
+  integer :: n, num_arg, inlun, stat
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
   type(simulation_environment) :: env
   type(flow_2d_sim) :: sim
 
+  call MPI_Init
   call init_parallel_communication
   call fhypre_initialize
   call get_command_argument(0, arg)
@@ -39,7 +38,7 @@ program flow_2d_main
   num_arg = command_argument_count()
   if (num_arg /= 1) then
     if (is_IOP) write(error_unit,'(3a)') 'usage: ', prog, ' INFILE'
-    call halt_parallel_communication
+    call MPI_Finalize
     stop 1
   end if
   call get_command_argument(1, arg)
@@ -49,37 +48,28 @@ program flow_2d_main
   close(inlun)
   if (.not.associated(params)) then
     if (is_IOP) write(error_unit,'(a)') 'error reading input file: ' // errmsg
-    call halt_parallel_communication
+    call MPI_Finalize
     call exit(1)
   end if
 
-  call MPI_Comm_dup(MPI_COMM_WORLD, env%comm, ierr)
-  INSIST(ierr == MPI_SUCCESS)
-  call MPI_Comm_rank(env%comm, env%rank, ierr)
-  INSIST(ierr == MPI_SUCCESS)
-  call MPI_Comm_size(env%comm, env%nproc, ierr)
-  INSIST(ierr == MPI_SUCCESS)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
   call env%simlog%init(env%comm, 'run.log', stat, errmsg)
   if (stat /= 0) then
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
-    call MPI_Comm_free(env%comm, ierr)
-    INSIST(ierr == MPI_SUCCESS)
-    call halt_parallel_communication
+    call MPI_Finalize
     call exit(1)
   end if
-  call sim%init(params, stat, errmsg, env)
+  call sim%init(env, params, stat, errmsg)
   if (stat == 0) call sim%run(stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('flow simulation error: ' // errmsg)
     call env%simlog%close
-    call MPI_Comm_free(env%comm, ierr)
-    INSIST(ierr == MPI_SUCCESS)
-    call halt_parallel_communication
+    call MPI_Finalize
     call exit(1)
   end if
   call env%simlog%close
-  call MPI_Comm_free(env%comm, ierr)
-  INSIST(ierr == MPI_SUCCESS)
-  call halt_parallel_communication
+  call MPI_Finalize
 
 end program flow_2d_main

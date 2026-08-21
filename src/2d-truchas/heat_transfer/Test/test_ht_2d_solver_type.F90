@@ -9,8 +9,6 @@ program test_HT_2d_solver_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use fhypre, only: fhypre_initialize
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
@@ -36,10 +34,7 @@ program test_HT_2d_solver_type
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
   call fhypre_initialize
-  prefix='run'  ! TLS will write to 'run.log'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
+  call init_test_environment('test_ht_2d_solver_type.log')
 
   TOL = 2E-4_r8
   eps = 0.0_r8  ! mesh distortion
@@ -48,7 +43,7 @@ program test_HT_2d_solver_type
   nx  = [64, 64]
 
   !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps)
+  mesh => new_unstr_2d_mesh(test_env, xmin, xmax, nx, eps)
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
@@ -140,7 +135,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Define the function f=1+sin(PI/2 x)*sin(PI/2 y)
@@ -167,7 +162,7 @@ contains
 
     t = 0.0_r8
     dt = 1E-3_r8
-    call HT_solver%set_initial_state(t, dt, Tcell0, stat, errmsg)
+    call HT_solver%set_initial_state(test_env, t, dt, Tcell0, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Run solver

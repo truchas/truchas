@@ -9,8 +9,6 @@ program test_HT_2d_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
   use fhypre, only: fhypre_initialize
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
@@ -35,10 +33,7 @@ program test_HT_2d_model_type
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
   call fhypre_initialize
-  prefix='run'  ! TLS will write to 'run.log'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
+  call init_test_environment('test_ht_2d_model_type.log')
 
   TOL = 1E-10_r8
   eps = 0.0_r8  ! mesh distortion
@@ -48,7 +43,7 @@ program test_HT_2d_model_type
 
   !! Create the mesh specified by the above input file
   !TODO: breaks if nproc < ncell
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps)
+  mesh => new_unstr_2d_mesh(test_env, xmin, xmax, nx, eps)
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
@@ -136,7 +131,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
@@ -166,7 +161,7 @@ contains
     call ic_params%set('rel-tol', rel_tol)
     call ic_params%set('max-iter', max_itr)
     call ic%init(HT_model, ic_params)
-    call ic%compute(t, Tcell, u, udot, stat, errmsg)
+    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals
@@ -238,7 +233,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
@@ -279,7 +274,7 @@ contains
     call ic_params%set('rel-tol', rel_tol)
     call ic_params%set('max-iter', max_itr)
     call ic%init(HT_model, ic_params)
-    call ic%compute(t, Tcell, u, udot, stat, errmsg)
+    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals

@@ -8,8 +8,6 @@ program test_HT_2d_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
@@ -33,10 +31,7 @@ program test_HT_2d_norm_type
 
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
-  prefix='run'  ! TLS will write to 'run.log'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
+  call init_test_environment('test_ht_2d_norm_type.log')
 
   eps = 0.0_r8  ! mesh distortion
   xmin = [0.0_r8, 0.0_r8]
@@ -44,7 +39,7 @@ program test_HT_2d_norm_type
   nx  = [64, 64]
 
   !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx, eps)
+  mesh => new_unstr_2d_mesh(test_env, xmin, xmax, nx, eps)
 
   !! Initialize state needed by all tests
   call mfd_disc%init(mesh)
@@ -103,7 +98,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -158,7 +153,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -216,7 +211,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm
@@ -272,7 +267,7 @@ contains
 
     !! Initialize 2D HT model
     sublist => params%sublist('model')
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), sublist, stat, errmsg)
+    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, sublist, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Initialize 2D HT norm

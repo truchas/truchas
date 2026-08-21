@@ -8,9 +8,11 @@
 program vof_advection
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
+  use simulation_environment_type
   use unstr_2d_mesh_factory
   use read_inputfile
   use gaussian_quadrature_vofinit
@@ -21,6 +23,9 @@ program vof_advection
   integer  :: nx(2), tsmax, nmat, nvtrack
   real(r8) :: xmin(2), xmax(2), dxeps, ptri, dt, r
   type(unstr_2d_mesh), pointer :: mesh
+  type(simulation_environment) :: env
+  integer :: stat
+  character(:), allocatable :: errmsg
 
   integer :: i, j, ngp, test_run, nelem, gncell
   integer, allocatable :: global_xcell(:)
@@ -40,13 +45,18 @@ program vof_advection
   overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NOISY)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'mesh.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   !! Read input file "input_advection.txt"
   inputfile = 'input_advection.txt'
   call readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack, test_run)
 
   !! Create the mesh specified by the above input file
-  mesh => new_unstr_2d_mesh(xmin, xmax, nx, dxeps, ptri)
+  mesh => new_unstr_2d_mesh(env, xmin, xmax, nx, dxeps, ptri)
 
   !! Cell volumes and face areas (okay, areas and lengths in 2D) are defined
   !! by default. But cell centroids and face centroids must be "requested".

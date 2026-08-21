@@ -57,14 +57,14 @@ contains
   end subroutine
 
 
-  subroutine init(this, params, stat, errmsg, env)
+  subroutine init(this, env, params, stat, errmsg)
 
     use signal_handler, only: init_signal_handler, SIGURG
     class(flow_2d_sim), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in) :: env
 
     type(parameter_list), pointer :: mesh_params, model_params, bc_params, solver_params
     type(parameter_list), pointer :: momentum_params, projection_params, control_params
@@ -81,7 +81,7 @@ contains
       return
     end if
     mesh_params => params%sublist('mesh')
-    this%mesh => new_unstr_2d_mesh(mesh_params, stat, errmsg, env%simlog)
+    this%mesh => new_unstr_2d_mesh(env, mesh_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
       return

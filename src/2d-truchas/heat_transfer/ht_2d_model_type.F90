@@ -27,7 +27,7 @@ module ht_2d_model_type
   use material_composition_type
   use parallel_communication
   use parameter_list_type
-  use truchas_logging_services
+  use simulation_environment_type
   implicit none
   private
 
@@ -51,7 +51,7 @@ module ht_2d_model_type
 contains
 
   !subroutine init(this, mesh, mmf, params, stat, errmsg)
-  subroutine init(this, mesh, matl_model, composition, params, stat, errmsg)
+  subroutine init(this, mesh, matl_model, composition, env, params, stat, errmsg)
 
     use material_model_type
     use material_utilities
@@ -60,6 +60,7 @@ contains
     type(unstr_2d_mesh), intent(in), target :: mesh
     type(material_model), intent(in) :: matl_model
     type(material_composition), pointer, intent(in) :: composition
+    type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -130,7 +131,7 @@ contains
     !! Defines the boundary condition components
     if (params%is_sublist('bc')) then
       sublist => params%sublist('bc')
-      call init_bc(this, sublist, stat, errmsg)
+      call init_bc(this, env, sublist, stat, errmsg)
       if (stat /= 0) return
     else
       stat = 1
@@ -141,11 +142,11 @@ contains
     !! Defines the heat source
     if (params%is_sublist('source')) then
       sublist => params%sublist('source')
-      call init_source(this, sublist, stat, errmsg)
+      call init_source(this, env, sublist, stat, errmsg)
       if (stat /= 0) return
     else
       !TODO: should it fail if 'source' is specified but not a sublist?
-      call TLS_info('No "source" sublist specified')
+      call env%simlog%info('No "source" sublist specified')
     end if
 
   end subroutine init
@@ -158,19 +159,20 @@ contains
     call vec%init(this%mesh)
   end subroutine init_vector
 
-  subroutine init_bc(model, params, stat, errmsg)
+  subroutine init_bc(model, env, params, stat, errmsg)
 
     use bitfield_type
-    use thermal_bc_factory1_type
+    use thermal_bc_factory_type
     use string_utilities, only: i_to_c
     use physical_constants, only: stefan_boltzmann, absolute_zero
 
     class(ht_2d_model), intent(inout), target :: model
+    type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(thermal_bc_factory1) :: bc_fac
+    type(thermal_bc_factory) :: bc_fac
     type(bitfield) :: bitmask
     character(160) :: string
     logical, allocatable :: mask(:)
@@ -182,14 +184,14 @@ contains
     call bc_fac%init(model%mesh, stefan_boltzmann, absolute_zero, params)
 
     !! Define the simple flux boundary conditions.
-    call bc_fac%alloc_flux_bc(model%bc_flux, stat, errmsg)
+    call bc_fac%alloc_flux_bc(model%bc_flux, env, stat, errmsg)
     if (stat /= 0) return
     if (allocated(model%bc_flux)) then
       mask(model%bc_flux%index) = .true. ! mark the simple flux faces
     end if
 
     !! Define the Dirichlet boundary conditions.
-    call bc_fac%alloc_dir_bc(model%bc_dir, stat, errmsg)
+    call bc_fac%alloc_dir_bc(model%bc_dir, env, stat, errmsg)
     if (stat /= 0) return
     if (allocated(model%bc_dir)) then
       if (global_any(mask(model%bc_dir%index))) then
@@ -233,21 +235,22 @@ contains
 
   end subroutine init_bc
 
-  subroutine init_source(model, params, stat, errmsg)
+  subroutine init_source(model, env, params, stat, errmsg)
 
-    use thermal_source_factory_type
+    use ht_2d_source_factory_type
 
     class(ht_2d_model), intent(inout), target :: model
+    type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(thermal_source_factory) :: src_fac
+    type(ht_2d_source_factory) :: src_fac
 
     call src_fac%init(model%mesh, params)
 
     !! Allocated function-based source
-    call src_fac%alloc_source_funcs(model%source, stat, errmsg)
+    call src_fac%alloc_source_funcs(env, model%source, stat, errmsg)
     if (stat /= 0) return
 
     !TODO: check all cells have a source, if a source was specified?

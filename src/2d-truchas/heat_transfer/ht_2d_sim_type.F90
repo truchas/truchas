@@ -24,8 +24,9 @@ module ht_2d_sim_type
   use ht_2d_vtkhdf_output
   use time_step_sync_type
   use parallel_communication
-  use truchas_logging_services
   use timer_tree_type
+  use simulation_environment_type
+  use simulation_log_type, only: LOG_DETAIL
   implicit none
   private
 
@@ -66,7 +67,7 @@ contains
   end subroutine ht_2d_sim_delete
 
 
-  subroutine init(this, params, stat, errmsg)
+  subroutine init(this, env, params, stat, errmsg)
 
     use parameter_list_type
     use unstr_2d_mesh_factory
@@ -75,6 +76,7 @@ contains
     use material_utilities, only: add_enthalpy_prop
 
     class(ht_2d_sim), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -90,7 +92,7 @@ contains
 
     stat = 0
     call start_timer('initialization')
-    call TLS_info('Initializing the simulation', TLS_VERB_NOISY)
+    call env%simlog%info('Initializing the simulation', LOG_DETAIL)
 
     !! Catch SIGURG signals.
     call init_signal_handler(SIGURG)
@@ -100,7 +102,7 @@ contains
     if (params%is_sublist('mesh')) then
       plist => params%sublist('mesh')
       context = 'processing ' // plist%path() // ': '
-      this%mesh => new_unstr_2d_mesh(plist, stat, errmsg)
+      this%mesh => new_unstr_2d_mesh(env, plist, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return
@@ -185,7 +187,7 @@ contains
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
-      call this%model%init(this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
+      call this%model%init(this%mesh, this%matl_model, this%composition, env, plist, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return
@@ -318,7 +320,7 @@ contains
     call project_scalar_func_to_cell_centers(this%mesh, f, temp)
 
     !! Define the initial heat conduction state
-    call this%solver%set_initial_state(this%t_init, this%dt_init, temp, stat, errmsg)
+    call this%solver%set_initial_state(env, this%t_init, this%dt_init, temp, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'initializing thermal state: ' // errmsg
       return
@@ -345,9 +347,10 @@ contains
   end subroutine broadcast_iop_status
 
 
-  subroutine run(this, stat, errmsg)
+  subroutine run(this, env, stat, errmsg)
 
     class(ht_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -362,9 +365,9 @@ contains
     call this%write_solution(t)
     t_write = t ! keep track of the last write time
 
-    call TLS_info('')
+    call env%simlog%info('')
     write(string(1),'(a,es12.5)') 'Beginning integration at T = ', t
-    call TLS_info(string(1))
+    call env%simlog%info(string(1))
 
     hnext = this%dt_init; this%tlast = t; this%hlast = hnext
     do n = 1, size(this%tout)
@@ -373,26 +376,26 @@ contains
       call this%write_solution(t)
       t_write = t ! keep track of the last write time
       call this%solver%write_metrics(string)
-      call TLS_info('')
-      call TLS_info(string(1))
-      call TLS_info(string(2))
+      call env%simlog%info('')
+      call env%simlog%info(string(1))
+      call env%simlog%info(string(2))
       if (stat /= 0) exit
     end do
 
     if (stat > 0) then  ! caught a signal
-      call TLS_info('')
-      call TLS_info(errmsg // ': current solution written, and now terminating ...')
+      call env%simlog%info('')
+      call env%simlog%info(errmsg // ': current solution written, and now terminating ...')
       stat = 0  ! this is a successful return
       deallocate(errmsg)
     else if (stat < 0) then
-      call TLS_info('')
+      call env%simlog%info('')
       errmsg = 'unrecoverable integration failure: ' // errmsg
-      call TLS_info(errmsg)
+      call env%simlog%info(errmsg)
     end if
 
-    call TLS_info('')
+    call env%simlog%info('')
     write(string(1),'(a,es12.5,a)') 'Completed integration to T = ', t
-    call TLS_info(string(1))
+    call env%simlog%info(string(1))
 
     call this%output%close()
 

@@ -6,25 +6,35 @@ program test_2d_regions
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_type
+  use simulation_environment_type
   implicit none
 
   type(unstr_2d_mesh), pointer :: mesh
   integer :: status
+  type(simulation_environment) :: env
 
   !! Create a mesh for testing (only accessed by test_cell_set_region)
   !! The mesh component is parallel so we must initialize MPI, although
   !! we will only run in serial.
   block
+    use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
     use unstr_2d_mesh_factory
     use parallel_communication
     use truchas_env, only: prefix, overwrite_output
     use truchas_logging_services
+    integer :: stat
+    character(:), allocatable :: errmsg
     call init_parallel_communication
     prefix = 'run'
     overwrite_output = .true.
     call TLS_initialize
     call TLS_set_verbosity(TLS_VERB_SILENT)
-    mesh => new_unstr_2d_mesh([-1.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4,2])
+    env%comm = MPI_COMM_WORLD
+    call MPI_Comm_rank(env%comm, env%rank)
+    call MPI_Comm_size(env%comm, env%nproc)
+    call env%simlog%init(env%comm, 'test_2d_regions.log', stat, errmsg, terminal_output=.false.)
+    if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
+    mesh => new_unstr_2d_mesh(env, [-1.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4,2])
     call config_mesh_cell_sets(mesh)
   end block
 

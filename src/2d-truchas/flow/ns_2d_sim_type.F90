@@ -24,6 +24,7 @@ module ns_2d_sim_type
   use ns_2d_solver_type
   use flow_2d_vtkhdf_output
   use time_step_sync_type
+  use simulation_environment_type
   implicit none
   private
 
@@ -57,10 +58,11 @@ contains
   end subroutine
 
 
-  subroutine init(this, params, stat, errmsg)
+  subroutine init(this, env, params, stat, errmsg)
 
     use signal_handler, only: init_signal_handler, SIGURG
     class(ns_2d_sim), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -80,7 +82,7 @@ contains
       return
     end if
     mesh_params => params%sublist('mesh')
-    this%mesh => new_unstr_2d_mesh(mesh_params, stat, errmsg)
+    this%mesh => new_unstr_2d_mesh(env, mesh_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
       return
@@ -120,7 +122,7 @@ contains
     end if
     bc_params => model_params%sublist('bc')
     allocate(this%model)
-    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
+    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, env)
     if (stat /= 0) then
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return

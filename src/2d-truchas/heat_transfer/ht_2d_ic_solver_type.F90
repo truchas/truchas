@@ -26,7 +26,8 @@ module ht_2d_ic_solver_type
   use ht_2d_vector_type
   use parameter_list_type
   use parallel_communication, only: global_dot_product
-  use truchas_logging_services
+  use simulation_environment_type
+  use simulation_log_type, only: LOG_DETAIL
   implicit none
   private
 
@@ -53,9 +54,10 @@ contains
   end subroutine
 
 
-  subroutine compute(this, t, temp, u, udot, stat, errmsg)
+  subroutine compute(this, env, t, temp, u, udot, stat, errmsg)
 
     class(ht_2d_ic_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t, temp(:)
     type(ht_2d_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
@@ -76,19 +78,20 @@ contains
 
     call this%model%H_of_T%compute_value(u%tc, u%hc(:this%mesh%ncell_onP))
 
-    call compute_face_temp(this, t, u, stat, errmsg)
+    call compute_face_temp(this, env, t, u, stat, errmsg)
     if (stat /= 0) return
 
-    call this%compute_udot(t, u, udot, stat, errmsg)
+    call this%compute_udot(env, t, u, udot, stat, errmsg)
 
   end subroutine compute
 
   !! Compute the initial time derivative by advancing enthalpy one small step,
   !! solving the algebraic variables at that advanced state, and differencing.
 
-  subroutine compute_udot(this, t, u, udot, stat, errmsg)
+  subroutine compute_udot(this, env, t, u, udot, stat, errmsg)
 
     class(ht_2d_ic_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
@@ -127,7 +130,7 @@ contains
     end do
     call this%mesh%cell_imap%gather_offp(advanced%tc)
 
-    call compute_face_temp(this, t+dt, advanced, stat, errmsg)
+    call compute_face_temp(this, env, t+dt, advanced, stat, errmsg)
     if (stat /= 0) return
 
     udot%tc(:this%mesh%ncell_onP) = (advanced%tc(:this%mesh%ncell_onP) - &
@@ -145,12 +148,13 @@ contains
   !! temperatures. A future nonlinear face system will require a nonlinear
   !! solve here, rather than this single CG solve.
 
-  subroutine compute_face_temp(this, t, u, stat, errmsg)
+  subroutine compute_face_temp(this, env, t, u, stat, errmsg)
 
     use hypre_hybrid_type
     use mfd_2d_diff_matrix_type
 
     class(ht_2d_ic_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u
     integer, intent(out) :: stat
@@ -187,9 +191,9 @@ contains
     call this%model%residual(t, u, udot, f)
     norm = sqrt(global_dot_product(f%tf(:this%mesh%nface_onP), f%tf(:this%mesh%nface_onP)))
 
-    if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
+    if (env%simlog%is_enabled(LOG_DETAIL)) then
       write (msg,'(a,es10.3)') 'ht_2d_ic_solver%compute_face_temp: initial ||rface||_2 = ', norm
-      call TLS_info(trim(msg))
+      call env%simlog%info(trim(msg), level=LOG_DETAIL)
     end if
     if (norm == 0.0_r8) return
 
@@ -207,7 +211,7 @@ contains
     call solver_params%set('max-ds-iter', max_itr)
     call solver_params%set('max-amg-iter', max_itr)
     call solver_params%set('rel-tol', rel_tol)
-    if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
+    if (env%simlog%is_enabled(LOG_DETAIL)) then
       call solver_params%set('print-level', 1)
       call solver_params%set('logging-level', 1)
     else
@@ -222,11 +226,11 @@ contains
     call solver%solve(f%tf(:this%mesh%nface_onP), z, stat)
     u%tf(:this%mesh%nface_onP) = u%tf(:this%mesh%nface_onP) - z
 
-    if (TLS_VERBOSITY >= TLS_VERB_NOISY) then
+    if (env%simlog%is_enabled(LOG_DETAIL)) then
       call solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, norm)
       write(msg,'(3(a,i0),a,es9.2)') 'solve: num_itr = ', num_itr, &
           ' (', num_dscg_itr, ', ', num_pcg_itr, '), ||r||/||b|| = ', norm
-      call TLS_info(trim(msg))
+      call env%simlog%info(trim(msg), level=LOG_DETAIL)
     end if
 
     if (stat /= 0) then
