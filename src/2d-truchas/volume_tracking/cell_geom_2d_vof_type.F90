@@ -1,6 +1,9 @@
 !!
 !! provides a derived type for packing together cell geometry data
 !!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -29,8 +32,6 @@ module cell_geom_2d_vof_type
 contains
 
   subroutine init (this, node, volume, face_area, face_normal)
-
-    use truchas_logging_services
 
     class(cell_geom), intent(out) :: this
     real(r8), intent(in) :: node(:,:), volume, face_area(:), face_normal(:,:)

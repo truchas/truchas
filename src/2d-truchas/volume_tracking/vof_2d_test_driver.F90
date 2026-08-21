@@ -1,13 +1,12 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 #include "f90_assert.fpp"
 
 module vof_2d_test_driver
 
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
-
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   use unstr_2d_mesh_type
   use volume_tracker_2d_class
   implicit none
@@ -52,10 +51,8 @@ contains
 
     !! allocate required volume tracker derived class
     if (nvtrack == 1) then
-      call TLS_info('  Simple volume tracker:', TLS_VERB_NORMAL)
       allocate(simple_volume_tracker :: this%vt)
     else if (nvtrack == 2) then
-      call TLS_info('  Geometric volume tracker:', TLS_VERB_NORMAL)
       allocate(geometric_volume_tracker :: this%vt)
     else
       write(*,*) "Incorrect vtrack option: ", nvtrack

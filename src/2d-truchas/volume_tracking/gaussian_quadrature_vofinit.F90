@@ -1,9 +1,12 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 #include "f90_assert.fpp"
 
 module gaussian_quadrature_vofinit
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   implicit none
 
 contains
@@ -143,8 +146,7 @@ contains
       gp_weight(16) = w3*w3
 
     case default
-      call TLS_panic('incorrect number of quadrature points for quad4')
-      stop
+      error stop 'incorrect number of quadrature points for quad4'
 
     end select
 
@@ -233,8 +235,7 @@ contains
       gp_weight(6) = w1
 
     case default
-      call TLS_panic('incorrect number of quadrature points for tri3')
-      stop
+      error stop 'incorrect number of quadrature points for tri3'
 
     end select
 

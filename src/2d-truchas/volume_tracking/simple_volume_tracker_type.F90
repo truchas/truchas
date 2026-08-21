@@ -7,6 +7,9 @@
 !! when only one material is present, or when fluids aren't
 !! expected to interact, or when fluid diffusion is acceptable.
 !!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -89,13 +92,9 @@ contains
   !! TODO: If FACES is also ordered (likely) the search can be improved further.
 
   subroutine set_inflow_material(this, mat, faces)
-    use truchas_logging_services
     class(simple_volume_tracker), intent(inout) :: this
     integer, intent(in) :: mat  ! material index
     integer, intent(in) :: faces(:) ! face indices
-    call TLS_warn('****************************************************')
-    call TLS_warn('INFLOW BC NOT IMPLEMENTED FOR SIMPLE VOLUME TRACKING')
-    call TLS_warn('****************************************************')
     ! Note that some of the code and data for this would be identical to
     ! what is in geometric_volume_tracker and could probably be pushed
     ! up into the base class.

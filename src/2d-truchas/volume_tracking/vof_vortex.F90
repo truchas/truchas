@@ -4,14 +4,15 @@
 !! It also instantiates a 2D unstructured mesh (which happens to be a regular
 !! Cartesian mesh).
 !!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 
 program vof_vortex
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use simulation_environment_type
   use unstr_2d_mesh_factory
   use read_inputfile
@@ -41,15 +42,11 @@ program vof_vortex
 
   !! Initialize MPI and other base stuff that truchas depends on
   call init_parallel_communication
-  prefix='run'  ! TLS will write to 'run.log'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NOISY)
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
   call env%simlog%init(env%comm, 'mesh.log', stat, errmsg, terminal_output=.false.)
-  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
+  if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
 
   !! Read input file "input_vortex.txt"
   inputfile = 'input_vortex.txt'
@@ -131,7 +128,7 @@ program vof_vortex
 
     read(3,*) nelem
     if (nelem /= gncell) then
-      call TLS_fatal('Number of mesh cells in test standard and current mesh do not match')
+      error stop 'number of mesh cells in test standard and current mesh do not match'
     end if
 
     allocate(vof_std(nelem))

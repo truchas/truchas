@@ -3,8 +3,8 @@
 !! entites (volumes or face-areas) to 2D axisymmetric ones. All axisymmetric entities are
 !! assumed to be calculated for a sweep of 2*pi rad.
 !!
-!! Aditya K. Pandare <apandare@lanl.gov>
-!! Jan 2020
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
 
 #include "f90_assert.fpp"
@@ -12,7 +12,6 @@
 module geom_axisymmetric
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   use unstr_2d_mesh_type
   implicit none
 
