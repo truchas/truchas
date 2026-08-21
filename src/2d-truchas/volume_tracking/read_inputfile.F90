@@ -1,3 +1,7 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 module read_inputfile
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64

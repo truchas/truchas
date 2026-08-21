@@ -1,3 +1,7 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -9,7 +13,6 @@
 module gradient_2d_cc_function
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   use unstr_2d_mesh_type
   implicit none
   private

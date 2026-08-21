@@ -1,9 +1,12 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 #include "f90_assert.fpp"
 
 program truncvolume_2dtest_driver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   use truncation_volume_2d_type
   use plane_2d_type
   implicit none

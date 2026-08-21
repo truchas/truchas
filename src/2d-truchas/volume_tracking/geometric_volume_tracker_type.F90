@@ -1,3 +1,7 @@
+!!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -10,7 +14,6 @@ module geometric_volume_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use volume_tracker_2d_class
-  use truchas_logging_services
   use truchas_timers
   use unstr_2d_mesh_type
   implicit none
@@ -354,7 +357,7 @@ contains
       flux_vol = dt*vel(f)*cell%face_area(f)
       if (abs(flux_vol) > 0.5_r8 * cell%volume) then
         write(*,*) dt,flux_vol,cell%volume,flux_vol/cell%volume
-        call TLS_panic('advection timestep too large')
+        INSIST(.false.)
       end if
       if (flux_vol <= cutoff*cell%volume) cycle
 
@@ -489,11 +492,11 @@ contains
       node_set(:,2) = cell%node(:,mod(fc,cell%nfc)+1)
       if (fluxplane%intersects(node_set)) then
         icount = icount+1
-        if (icount > 2) call TLS_panic('multiple intersections of fluxing plane found')
+        INSIST(icount <= 2)
         call fluxplane%intersection_point(fv_nodes(:,icount), on_point(icount), node_set)
       end if
     end do !ifc
-    if (icount < 2) call TLS_panic('less than 2 intersections of fluxing plane found')
+    INSIST(icount >= 2)
 
     flux_vol_node(:,1) = cell%node(:,face)
     flux_vol_node(:,2) = cell%node(:,mod(face,cell%nfc)+1)
@@ -554,10 +557,8 @@ contains
   !          HEX8_EDGES, face_normal(:,1:size(fi)), this%mesh%volume(i))
 
   !    case default
-  !      call TLS_panic('unaccounted topology in donor_fluxes_nd')
   !    end select
 
-  !    if (ierr /= 0) call TLS_panic('cell_outward_volflux failed: could not initialize cell')
 
   !    call cell%partition(vof(:,i), this%normal(:,:,i), this%cutoff, this%priority, &
   !        this%location_iter_max)
@@ -565,7 +566,6 @@ contains
   !    this%flux_vol_sub(:this%nfluid,this%mesh%xcface(i):this%mesh%xcface(i+1)-1) = &
   !        cell%outward_volflux(dt, vel(this%mesh%xcface(i):this%mesh%xcface(i+1)-1),&
   !        this%mesh%area(fi), this%cutoff, this%nfluid, ierr)
-  !    if (ierr /= 0) call TLS_panic('cell_outward_volflux failed')
   !  end associate
 
   !end subroutine donor_fluxes_nd_cell
@@ -584,7 +584,7 @@ contains
       nmat = count(vof(:,i) > this%cutoff)
 
       if (nmat > 2 .and. this%nested_dissection) then
-        call TLS_panic('Nested dissection not set up')
+        INSIST(.false.)
         !call this%donor_fluxes_nd_cell(i, vel, vof, dt)
       else
         call this%donor_fluxes_os_cell(i, vel, vof, dt)
@@ -613,6 +613,8 @@ contains
   ! fluxes for materials which may not be present in the cell.
 
   subroutine flux_renorm(this, vel, vof_n, flux_vol, dt)
+
+    use parallel_communication, only: global_any
 
     class(geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
@@ -694,7 +696,7 @@ contains
     end do
 
 
-    call TLS_fatal_if_any (ierr /= 0, 'FLUX_RENORM: cannot reassign face flux to any other material')
+    INSIST(.not.global_any(ierr /= 0))
 
     ! Is there really not a better way?
     do i = 1, this%mesh%ncell_onP

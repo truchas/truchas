@@ -4,8 +4,8 @@
 !! This module defines a 2d plane type (a line), along with routines for
 !! calculating intersection points and distance.
 !!
-!! Zechariah J. Jibben <zjibben@lanl.gov>
-!! October 2015
+!! Zechariah J. Jibben <zjibben@lanl.gov>, October 2015
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -18,7 +18,6 @@
 module plane_2d_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   implicit none
   private
 
@@ -86,7 +85,7 @@ contains
 
     ASSERT(all(shape(x)==[2,2]))
 
-    if (.not.this%intersects (x)) call TLS_panic('edge does not intersect plane')
+    INSIST(this%intersects(x))
 
     d1 = this%signed_distance(x(:,1))
     d2 = this%signed_distance(x(:,2))

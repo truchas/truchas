@@ -4,6 +4,9 @@
 !!
 !! note: lots of duplication here from the nested dissection locate plane module
 !!
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
 !! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
@@ -18,7 +21,6 @@ module locate_plane_os_2d_function
   use plane_2d_type
   use truncation_volume_2d_type
   use brent_root_class
-  use truchas_logging_services
   implicit none
   private
 

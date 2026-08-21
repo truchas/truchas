@@ -2,8 +2,8 @@
 !! This module defines the truncation volume type required for Volume-Of-Fluid
 !! calculations in 2D Cartesian and axisymmetric co-ordinates.
 !!
-!! Aditya K. Pandare <apandare@lanl.gov>
-!! Jan 2020
+!! Aditya K. Pandare <apandare@lanl.gov>, January 2020
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -16,7 +16,6 @@
 module truncation_volume_2d_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
   use geom_axisymmetric
   implicit none
 
@@ -68,7 +67,7 @@ contains
       allocate(this%node_set(2,2,3))
       call this%split_quad4()
     case default
-      call TLS_panic('unaccounted topology in truncation_volume_2d_type')
+      INSIST(.false.)
     end select
 
   end subroutine init_truncation_volume
@@ -92,7 +91,7 @@ contains
     case (4) ! quadrilateral
       allocate(vol_sub(2))
     case default
-      call TLS_panic('unaccounted topology in truncation_volume_2d_type')
+      INSIST(.false.)
     end select
 
     ! determine intersection of plane with component triangles and get truncated volume
