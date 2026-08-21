@@ -3,7 +3,7 @@
 !!
 !! A basic driver for the 2D heat transfer model.
 !!
-!! David Neill-Asanza <dhna@lanl.gov>
+!! David Neill-Asanza <davidhneill@gmail.com>
 !! August 2020
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

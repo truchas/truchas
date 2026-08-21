@@ -5,9 +5,8 @@
 !! source functions for the two-dimensional heat-transfer model from a
 !! parameter list.
 !!
-!! Neil N. Carlson <nnc@lanl.gov>, August 2020
-!! David Neill-Asanza <dhna@lanl.gov>, August 2020
-!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! David Neill-Asanza <davidhneill@gmail.com>, August 2020
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2020; updated August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 

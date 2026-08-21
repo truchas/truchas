@@ -6,7 +6,7 @@
 !! This F2008 version is adapted from much earlier F95 and F77 implementations
 !! and was obtained from http://sourceforge.net/projects/calliope.mfeproject.p/
 !!
-!! Neil N. Carlson <nnc@lanl.gov>
+!! Neil N. Carlson <neil.n.carlson@gmail.com>
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
