@@ -9,12 +9,11 @@ module read_inputfile
 
 contains
 
-  subroutine readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack, &
-    test_run)
+  subroutine readfile(inputfile, xmin, xmax, nx, dxeps, ptri, tsmax, dt, nmat, nvtrack)
 
   character(len=*), intent(in) :: inputfile
   real(r8), intent(inout) :: xmin(2), xmax(2), dxeps, ptri, dt
-  integer,  intent(inout) :: nx(2), tsmax, nmat, nvtrack, test_run
+  integer,  intent(inout) :: nx(2), tsmax, nmat, nvtrack
 
   integer :: n
 
@@ -27,7 +26,6 @@ contains
   read(n,*) tsmax, dt
   read(n,*) nmat
   read(n,*) nvtrack
-  read(n,*) test_run
   close(n)
 
   end subroutine

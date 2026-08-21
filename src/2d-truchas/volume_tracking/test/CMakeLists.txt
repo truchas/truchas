@@ -22,18 +22,11 @@ function(add_vof_test_executable target source)
     "${VOLUME_TRACKING_2D_MODULE_DIR}")
 endfunction()
 
-function(add_vof_legacy_test name executable input_file reference_file)
+function(add_vof_test name script executable input_file gold_file)
   add_test(NAME ${name}
-    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
-      $<TARGET_FILE:${executable}> ${input_file} ${reference_file} ${MPIEXEC_POSTFLAGS})
-  set_tests_properties(${name} PROPERTIES PROCESSORS 4 LABELS 2d-truchas)
-endfunction()
-
-function(add_vof_vtkhdf_test name script executable input_file reference_file)
-  add_test(NAME ${name}_vtkhdf
     COMMAND ${Python3_EXECUTABLE} ${script}
-      $<TARGET_FILE:${executable}> ${input_file} ${reference_file} ${MPIEXEC})
-  set_tests_properties(${name}_vtkhdf PROPERTIES
+      $<TARGET_FILE:${executable}> ${input_file} ${gold_file} ${MPIEXEC})
+  set_tests_properties(${name} PROPERTIES
     PROCESSORS 4
     LABELS "INTEGRATED;2d-truchas"
     TIMEOUT 120)
