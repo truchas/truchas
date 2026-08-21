@@ -21,7 +21,7 @@ module ht_2d_sim_type
   use scalar_func_projection
   use ht_2d_model_type
   use ht_2d_solver_type
-  use ht_2d_vtkhdf_output
+  use ht_2d_vtkhdf_writer_type
   use time_step_sync_type
   use parallel_communication
   use simulation_environment_type
@@ -186,7 +186,7 @@ contains
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
-      call this%model%init(this%mesh, this%matl_model, this%composition, env, plist, stat, errmsg)
+      call this%model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return

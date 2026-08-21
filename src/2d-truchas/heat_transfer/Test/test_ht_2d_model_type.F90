@@ -131,7 +131,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
@@ -233,7 +233,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 

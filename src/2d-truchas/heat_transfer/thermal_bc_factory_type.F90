@@ -6,8 +6,7 @@
 !! parameter list.  It currently supports temperature, flux, heat-transfer
 !! coefficient, and radiation boundary-condition definitions.
 !!
-!! Neil N. Carlson <nnc@lanl.gov>, November 2018
-!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! Neil Carlson <neil.n.carlson@gmail.com>, November 2018; updated August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 

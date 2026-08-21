@@ -1,6 +1,14 @@
+!!
 !! HT_2D_IDAESOL_MODEL_TYPE
 !!
-!! Vector-based IDAESOL adapter for the 2D heat-transfer model.
+!! This module defines an extension of the IDAESOL_MODEL abstract class for
+!! the 2D thermal transport solver. It adapts the cell-and-face thermal model,
+!! preconditioner, and correction norm to the vector-based IDAESOL interface.
+!!
+!! David Neill-Asanza <davidhneill@gmail.com>, May 2020
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
 
 #include "f90_assert.fpp"
 
@@ -29,7 +37,7 @@ module ht_2d_idaesol_model_type
     procedure :: apply_precon
     procedure :: compute_precon
     procedure :: du_norm
-  end type ht_2d_idaesol_model
+  end type
 
 contains
 
@@ -39,34 +47,28 @@ contains
     type(ht_2d_precon), intent(in), target :: precon
     type(ht_2d_norm), intent(in), target :: norm
     type(timer_tree), pointer, intent(in) :: timer
-
     this%model => model
     this%precon => precon
     this%norm => norm
     this%timer => timer
     ASSERT(associated(this%model, precon%model))
     ASSERT(associated(this%timer))
-  end subroutine init
-
+  end subroutine
 
   subroutine alloc_vector(this, vec)
     class(ht_2d_idaesol_model), intent(in) :: this
     class(vector), allocatable, intent(out) :: vec
-
     type(ht_2d_vector), allocatable :: tmp
-
     allocate(tmp)
     call this%model%init_vector(tmp)
     call move_alloc(tmp, vec)
-  end subroutine alloc_vector
-
+  end subroutine
 
   subroutine compute_f(this, t, u, udot, f)
     class(ht_2d_idaesol_model) :: this
     real(r8), intent(in) :: t
     class(vector), intent(inout) :: u, udot
     class(vector), intent(inout) :: f
-
     call this%timer%start('residual')
     select type (u)
     class is (ht_2d_vector)
@@ -79,15 +81,13 @@ contains
       end select
     end select
     call this%timer%stop('residual')
-  end subroutine compute_f
-
+  end subroutine
 
   subroutine apply_precon(this, t, u, f)
     class(ht_2d_idaesol_model) :: this
     real(r8), intent(in) :: t
     class(vector), intent(inout) :: u
     class(vector), intent(inout) :: f
-
     call this%timer%start('precon apply')
     select type (u)
     class is (ht_2d_vector)
@@ -97,29 +97,25 @@ contains
       end select
     end select
     call this%timer%stop('precon apply')
-  end subroutine apply_precon
-
+  end subroutine
 
   subroutine compute_precon(this, t, u, dt)
     class(ht_2d_idaesol_model) :: this
     real(r8), intent(in) :: t, dt
     class(vector), intent(inout) :: u
-
     call this%timer%start('precon compute')
     select type (u)
     class is (ht_2d_vector)
       call this%precon%compute(t, u, dt)
     end select
     call this%timer%stop('precon compute')
-  end subroutine compute_precon
-
+  end subroutine
 
   subroutine du_norm(this, t, u, du, error)
     class(ht_2d_idaesol_model) :: this
     real(r8), intent(in) :: t
     class(vector), intent(in) :: u, du
     real(r8), intent(out) :: error
-
     select type (u)
     class is (ht_2d_vector)
       select type (du)
@@ -127,6 +123,6 @@ contains
         call this%norm%compute(t, u, du, error)
       end select
     end select
-  end subroutine du_norm
+  end subroutine
 
 end module ht_2d_idaesol_model_type

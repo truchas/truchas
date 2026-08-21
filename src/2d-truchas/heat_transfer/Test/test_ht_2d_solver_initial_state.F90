@@ -110,7 +110,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, model_params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call u%init(disc%mesh)
@@ -225,7 +225,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, model_params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call u%init(disc%mesh)
@@ -333,7 +333,7 @@ contains
               &"bottom-top":{"type":"flux","face-set-ids":[3,4],"flux":0.0}}}'
     call parameter_list_from_json_string(string, model_params, errmsg)
     if (.not.associated(model_params)) call error_exit(errmsg)
-    call model%init(disc%mesh, matl_model, composition, test_env, model_params, stat, errmsg)
+    call model%init(test_env, disc%mesh, matl_model, composition, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     flux = 1.0_r8 / (0.5_r8 + 0.5_r8 / 10.0_r8)

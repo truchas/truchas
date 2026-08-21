@@ -1,11 +1,19 @@
 !!
 !! MFD_2D_DISC_TYPE
 !!
-!! This module defines the MFD_2D_DISC type used by thermal diffusion models to
-!! represent a mimetic finite difference (MFD) discretization on an
+!! This module defines the MFD_2D_DISC type used by thermal diffusion models
+!! to represent a mimetic finite difference (MFD) discretization on an
 !! unstructured mesh. Its primary state is the cell-local inverse flux mass
-!! matrix MINV, stored in upper packed format. The standard construction
-!! follows the generic polyhedral-cell MFD method described in:
+!! matrix MINV, stored in upper packed format.
+!!
+!! David Neill-Asanza <davidhneill@gmail.com>, January 2020
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
+!! Notes
+!!
+!! The standard construction for MINV follows the generic polyhedral-cell MFD
+!! method described in:
 !!
 !!   Konstantin Lipnikov, Gianmarco Manzini, and Mikhail Shashkov. Mimetic
 !!   finite difference method. Journal of Computational Physics, 257:1163-1227,
@@ -21,10 +29,6 @@
 !! responsible for ensuring input values are valid on the full local mesh
 !! extent they pass in, and for interpreting which entries of any result are
 !! meaningful for their distributed algorithm.
-!!
-!! David Neill-Asanza <davidhneill@gmail.com>, January 2020
-!! Neil Carlson <neil.n.carlson@gmail.com>, July 2026
-!! SPDX-License-Identifier: BSD-3-Clause
 !!
 
 #include "f90_assert.fpp"

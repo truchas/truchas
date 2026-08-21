@@ -135,7 +135,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(disc%mesh, matl_model, material_composition_ref(), test_env, model_params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Define the function f=1+sin(PI/2 x)*sin(PI/2 y)

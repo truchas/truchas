@@ -1,4 +1,16 @@
-module ht_2d_vtkhdf_output
+!!
+!! HT_2D_VTKHDF_WRITER_TYPE
+!!
+!! This module defines the VTKHDF writer for the two-dimensional heat-transfer
+!! simulation. It writes the fixed unstructured mesh, mesh-associated global
+!! and pedigree identifiers, ghost-cell metadata, and temporal cell enthalpy
+!! and temperature data to a VTKHDF multiblock file.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
+
+module ht_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use unstr_2d_mesh_type
@@ -114,4 +126,4 @@ contains
     nullify(this%mesh)
   end subroutine close
 
-end module ht_2d_vtkhdf_output
+end module ht_2d_vtkhdf_writer_type

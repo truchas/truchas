@@ -24,7 +24,7 @@ set(HT2D_SOURCE_FILES
     ht_2d_ic_solver_type.F90
     ht_2d_solver_type.F90
     ht_2d_sim_type.F90
-    ht_2d_vtkhdf_output.F90
+    ht_2d_vtkhdf_writer_type.F90
     ht_2d_tofh_type.F90
 )
 
