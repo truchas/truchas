@@ -63,7 +63,7 @@ contains
     call plist%set('face-set-ids', [1])
 
     call factory%init(mesh, velocity_params)
-    call factory%alloc_dir_vel_bc(velocity, stat, errmsg)
+    call factory%alloc_dir_vel_bc(velocity, env, stat, errmsg)
     call require(stat == 0 .and. allocated(velocity), 'velocity BC was not allocated')
     call velocity%compute(0.0_r8)
     call require(global_any(size(velocity%index) > 0), 'velocity BC has no faces')
@@ -71,19 +71,19 @@ contains
         'velocity BC values are incorrect')
 
     call factory%init(mesh, pressure_params)
-    call factory%alloc_dir_prs_bc(pressure, stat, errmsg)
+    call factory%alloc_dir_prs_bc(pressure, env, stat, errmsg)
     call require(stat == 0 .and. allocated(pressure), 'pressure BC was not allocated')
     call pressure%compute(0.0_r8)
     call require(all(abs(pressure%value - 3.0_r8) < 1.0e-12_r8), 'pressure BC values are incorrect')
 
     call factory%init(mesh, slip_params)
-    call factory%alloc_zero_vn_bc(zero_normal, stat, errmsg)
+    call factory%alloc_zero_vn_bc(zero_normal, env, stat, errmsg)
     call require(stat == 0 .and. allocated(zero_normal), 'free-slip BC was not allocated')
     call zero_normal%compute(0.0_r8)
     call require(all(abs(zero_normal%value) < 1.0e-12_r8), 'free-slip BC values are incorrect')
 
     call factory%init(mesh, velocity_params)
-    call factory%alloc_neu_prs_bc(pressure_neumann, stat, errmsg)
+    call factory%alloc_neu_prs_bc(pressure_neumann, env, stat, errmsg)
     call require(stat == 0 .and. allocated(pressure_neumann), 'pressure Neumann BC was not allocated')
     call pressure_neumann%compute(0.0_r8)
     call require(all(abs(pressure_neumann%value) < 1.0e-12_r8), 'pressure Neumann BC values are incorrect')

@@ -1,5 +1,5 @@
 !!
-!! FLOW_2D_VTKHDF_OUTPUT
+!! FLOW_2D_VTKHDF_WRITER_TYPE
 !!
 !! This module writes the mesh-associated state of a two-dimensional flow
 !! simulation to a VTKHDF multiblock file.  The mesh and its identifier data
@@ -9,7 +9,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module flow_2d_vtkhdf_output
+module flow_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use unstr_2d_mesh_type
@@ -119,4 +119,4 @@ contains
     nullify(this%mesh)
   end subroutine
 
-end module flow_2d_vtkhdf_output
+end module flow_2d_vtkhdf_writer_type

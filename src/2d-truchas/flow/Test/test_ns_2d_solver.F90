@@ -54,7 +54,7 @@ contains
     plist => bc_params%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1,2,3,4])
-    call model%init(mesh, bc_params, 1.0_r8, 0.1_r8, stat, errmsg)
+    call model%init(env, mesh, bc_params, 1.0_r8, 0.1_r8, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes model initialization failed')
     if (stat /= 0) return
     call state%init(mesh)

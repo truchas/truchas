@@ -63,7 +63,7 @@ contains
     call plist%set('type', 'velocity')
     call plist%set('face-set-ids', [1,2,3,4])
     call plist%set('velocity', [1.5_r8, -0.75_r8])
-    call bc%init(mesh, bc_params, stat, errmsg)
+    call bc%init(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
     call bc%compute(0.0_r8)
     call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
