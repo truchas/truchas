@@ -15,6 +15,7 @@ set(VOLUME_TRACKING_2D_SOURCE_FILES
   locate_plane_os_2d_function.F90
   truncation_volume_2d_type.F90
   geometric_volume_tracker_type.F90
+  vof_2d_vtkhdf_writer_type.F90
 )
 
 add_library(volume_tracking_2d ${VOLUME_TRACKING_2D_SOURCE_FILES})
