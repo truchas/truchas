@@ -13,7 +13,7 @@
 
 module ht_2d_tofh_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, output_unit
   use new_mesh_func_class
   use ridders_class
   implicit none
@@ -101,7 +101,6 @@ contains
   !! thermal-species systems require an extended interface.
 
   subroutine compute (this, cell, H, Tmin, Tmax, T)
-    use truchas_logging_services, only: TLS_fatal
     class(ht_2d_tofh), intent(inout) :: this
     integer,  intent(in)  :: cell
     real(r8), intent(in)  :: H, Tmin, Tmax
@@ -143,12 +142,24 @@ contains
       this%max_itr = max(this%max_itr, this%numitr)
     else if (stat < 0) then
       write(errmsg,'(2(a,es21.14),a)') 'root not bracketed: [', a, ',', b, ']'
-      call TLS_fatal ('TofH_compute: ' // trim(errmsg))
+      call panic('TofH_compute: ' // trim(errmsg))
     else
       write(errmsg,'(a,es10.4,2(a,es21.14))') &
         'convergence failure: error=', this%error, ', T=', T, ', H-H(T)=', this%f(T)
-      call TLS_fatal ('TofH_compute: ' // trim(errmsg))
+      call panic('TofH_compute: ' // trim(errmsg))
     end if
   end subroutine compute
+
+  !! Terminate immediately after reporting an unrecoverable local failure.
+  !! TofH evaluation is performed independently on each process, so this
+  !! must not require a collective error path.
+
+  subroutine panic(message)
+    use parallel_communication, only: this_PE, abort_parallel_communication
+    character(*), intent(in) :: message
+    write(output_unit,'(a,i0,2a)') 'PANIC[', this_PE, ']: ', trim(message)
+    flush(output_unit)
+    call abort_parallel_communication
+  end subroutine panic
 
 end module ht_2d_tofh_type

@@ -1,6 +1,7 @@
 program test_region_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use region_func_type
   use parameter_list_type
   use parameter_list_json
@@ -10,10 +11,13 @@ program test_region_func_type
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parallel_communication
+  use simulation_environment_type
   implicit none
 
   type(unstr_2d_mesh), pointer :: mesh => null()
-  integer :: status
+  integer :: status, stat
+  character(:), allocatable :: errmsg
+  type(simulation_environment) :: env
 
   !! The mesh component is parallel so we must initialize MPI, although
   !! we will only run in serial.
@@ -22,6 +26,11 @@ program test_region_func_type
   overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_SILENT)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'test_compute_volume_fractions.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
 
@@ -47,7 +56,7 @@ contains
     type(unstr_2d_mesh), pointer :: mesh
     integer :: j
     if (associated(mesh)) deallocate(mesh)
-    mesh => new_unstr_2d_mesh([-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], ptri=0.5_r8)
+    mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], ptri=0.5_r8)
     call mesh%init_cell_centroid
     mesh%cell_set_id = [1,2,3]
     do j = 1, mesh%ncell
@@ -108,7 +117,7 @@ contains
     use unstr_2d_mesh_factory
     type(unstr_2d_mesh), pointer :: mesh
     if (associated(mesh)) deallocate(mesh)
-    mesh => new_unstr_2d_mesh([-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], eps=0.1_r8, ptri=0.5_r8)
+    mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], eps=0.1_r8, ptri=0.5_r8)
   end subroutine
 
   subroutine test1

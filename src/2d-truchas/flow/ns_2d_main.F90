@@ -14,12 +14,12 @@ program ns_2d_main
   use,intrinsic :: f90_unix, only: exit
 #endif
   use,intrinsic :: iso_fortran_env, only: error_unit
+  use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
+  use simulation_environment_type
   use ns_2d_sim_type
   implicit none
 
@@ -27,8 +27,10 @@ program ns_2d_main
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
+  type(simulation_environment) :: env
   type(ns_2d_sim) :: sim
 
+  call MPI_Init
   call init_parallel_communication
   call fhypre_initialize
   call get_command_argument(0, arg)
@@ -37,7 +39,7 @@ program ns_2d_main
   num_arg = command_argument_count()
   if (num_arg /= 1) then
     if (is_IOP) write(error_unit,'(3a)') 'usage: ', prog, ' INFILE'
-    call halt_parallel_communication
+    call MPI_Finalize
     stop 1
   end if
   call get_command_argument(1, arg)
@@ -47,23 +49,28 @@ program ns_2d_main
   close(inlun)
   if (.not.associated(params)) then
     if (is_IOP) write(error_unit,'(a)') 'error reading input file: ' // errmsg
-    call halt_parallel_communication
+    call MPI_Finalize
     call exit(1)
   end if
 
-  prefix = 'run'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
-  call sim%init(params, stat, errmsg)
-  if (stat == 0) call sim%run(stat, errmsg)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'run.log', stat, errmsg)
   if (stat /= 0) then
-    if (is_IOP) write(error_unit,'(a)') 'flow simulation error: ' // errmsg
-    call TLS_exit
-    call halt_parallel_communication
+    if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
+    call MPI_Finalize
     call exit(1)
   end if
-  call TLS_exit
-  call halt_parallel_communication
+  call sim%init(env, params, stat, errmsg)
+  if (stat == 0) call sim%run(stat, errmsg)
+  if (stat /= 0) then
+    call env%simlog%error('flow simulation error: ' // errmsg)
+    call env%simlog%close
+    call MPI_Finalize
+    call exit(1)
+  end if
+  call env%simlog%close
+  call MPI_Finalize
 
 end program ns_2d_main

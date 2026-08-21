@@ -1,11 +1,13 @@
 program test_flow_2d_projection_update
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
   use fhypre, only: fhypre_initialize
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
+  use simulation_environment_type
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
   use flow_2d_state_type
@@ -16,7 +18,9 @@ program test_flow_2d_projection_update
   use flow_2d_projection_update_type
   implicit none
 
-  integer :: status
+  integer :: status, stat
+  character(:), allocatable :: errmsg
+  type(simulation_environment) :: env
 
   call init_parallel_communication
   call fhypre_initialize
@@ -24,6 +28,11 @@ program test_flow_2d_projection_update
   overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_NORMAL)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'test_flow_2d_projection_update.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
   call test_update
@@ -47,7 +56,7 @@ contains
     character(:), allocatable :: errmsg
     integer :: stat
 
-    mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
+    mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call operators%init(mesh)
     call projection%init(mesh, operators)
     call state%init(mesh)

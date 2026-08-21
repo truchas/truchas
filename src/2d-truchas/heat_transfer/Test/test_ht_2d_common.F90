@@ -8,8 +8,10 @@
 
 module test_ht_2d_common
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truchas_logging_services
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, error_unit
+  use mpi_f08
+  use parallel_communication, only: this_PE, abort_parallel_communication
+  use simulation_environment_type
   use unstr_2d_mesh_type
   use material_database_type
   use material_model_type
@@ -20,8 +22,24 @@ module test_ht_2d_common
   implicit none
 
   type(material_composition), target, save :: test_composition
+  type(simulation_environment), save :: test_env
 
 contains
+
+  subroutine init_test_environment(log_file)
+
+    character(*), intent(in) :: log_file
+
+    integer :: stat
+    character(:), allocatable :: errmsg
+
+    test_env%comm = MPI_COMM_WORLD
+    call MPI_Comm_rank(test_env%comm, test_env%rank)
+    call MPI_Comm_size(test_env%comm, test_env%nproc)
+    call test_env%simlog%init(test_env%comm, log_file, stat, errmsg, terminal_output=.false.)
+    if (stat /= 0) call test_panic('initializing test log: ' // errmsg)
+
+  end subroutine init_test_environment
 
   !! Initializes material database and related objects needed by the HT types
   subroutine init_materials(mesh, matl_model)
@@ -46,16 +64,16 @@ contains
     !! Initialize material database/model with single material
     call parameter_list_from_json_string(string, plist, errmsg)
     call load_material_database(matl_db, plist, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
+    if (stat /= 0) call test_panic(errmsg)
     call matl_model%init(['unobtanium'], matl_db, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
+    if (stat /= 0) call test_panic(errmsg)
 
     call test_composition%init_uniform(mesh, matl_model, 1, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
+    if (stat /= 0) call test_panic(errmsg)
 
     !! Initialize enthalpy
     call add_enthalpy_prop(matl_model, stat, errmsg)
-    if (stat /= 0) call TLS_FATAL(errmsg)
+    if (stat /= 0) call test_panic(errmsg)
 
   end subroutine init_materials
 
@@ -64,6 +82,14 @@ contains
     type(material_composition), pointer :: composition
     composition => test_composition
   end function material_composition_ref
+
+
+  subroutine test_panic(message)
+    character(*), intent(in) :: message
+    write(error_unit,'(a,i0,2a)') 'PANIC[', this_PE, ']: ', trim(message)
+    flush(error_unit)
+    call abort_parallel_communication
+  end subroutine test_panic
 
 
   !! Computes the average integral of a function over on-process faces and cells

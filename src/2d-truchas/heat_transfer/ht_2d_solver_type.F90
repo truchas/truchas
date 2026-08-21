@@ -24,6 +24,7 @@ module ht_2d_solver_type
   use ht_2d_idaesol_model_type
   use new_idaesol_type
   use parameter_list_type
+  use simulation_environment_type
   implicit none
   private
 
@@ -137,8 +138,9 @@ contains
   end subroutine init
 
 
-  subroutine set_initial_state(this, t, dt, temp, stat, errmsg)
+  subroutine set_initial_state(this, env, t, dt, temp, stat, errmsg)
     class(ht_2d_solver), intent(inout), target :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t, dt, temp(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -148,7 +150,7 @@ contains
     call udot%init(this%u)
     call this%ic_params%set('dt', dt)
     call ic%init(this%model, this%ic_params)
-    call ic%compute(t, temp, this%u, udot, stat, errmsg)
+    call ic%compute(env, t, temp, this%u, udot, stat, errmsg)
     if (stat /= 0) return
     call this%integ%set_initial_state(t, this%u, udot)
   end subroutine set_initial_state

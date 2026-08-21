@@ -2,11 +2,9 @@
 !! SIMULATION_ENVIRONMENT_TYPE
 !!
 !! This module defines SIMULATION_ENVIRONMENT, the plain collection of
-!! process-wide services owned and initialized by a simulation program. Its
-!! communicator is a duplicate of MPI_COMM_WORLD, allowing its lifetime to
-!! be managed independently from MPI itself. The program initializes and
-!! destroys these components explicitly; this type intentionally has no
-!! type-bound procedures.
+!! process-wide services owned and initialized by a simulation program. The
+!! program initializes and destroys these components explicitly; this type
+!! intentionally has no type-bound procedures.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause

@@ -33,6 +33,7 @@ module simulation_log_type
     procedure :: init
     procedure :: close
     procedure :: unit
+    procedure :: is_enabled
     procedure :: info
     procedure :: warn
     procedure :: error
@@ -58,14 +59,10 @@ contains
     INSIST(ierr == MPI_SUCCESS)
 
     this%io_process = rank == 0
+    if (present(verbosity)) this%verbosity = verbosity
+    if (present(terminal_output)) this%terminal_output = terminal_output
     stat = 0
     if (this%io_process) then
-      if (present(verbosity)) then
-        this%verbosity = verbosity
-      end if
-      if (present(terminal_output)) then
-        this%terminal_output = terminal_output
-      end if
       if (this%verbosity < LOG_NORMAL .or. this%verbosity > LOG_DETAIL) then
         stat = 1
         errmsg = 'invalid log verbosity'
@@ -96,6 +93,12 @@ contains
     class(simulation_log), intent(in) :: this
     INSIST(this%io_process .and. this%log_unit /= 0)
     unit = this%log_unit
+  end function
+
+  logical function is_enabled(this, level)
+    class(simulation_log), intent(in) :: this
+    integer, intent(in) :: level
+    is_enabled = level <= this%verbosity
   end function
 
   subroutine info(this, message, level, terminal)

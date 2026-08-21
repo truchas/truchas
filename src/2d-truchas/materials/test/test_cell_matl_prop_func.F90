@@ -1,6 +1,7 @@
 program test_cell_matl_prop_func
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parameter_list_type
   use parameter_list_json
   use unstr_2d_mesh_factory
@@ -11,6 +12,7 @@ program test_cell_matl_prop_func
   use material_composition_type
   use cell_matl_prop_func_type
   use parallel_communication
+  use simulation_environment_type
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   implicit none
@@ -24,14 +26,20 @@ program test_cell_matl_prop_func
   real(r8), allocatable :: state(:), value(:), deriv(:)
   character(:), allocatable :: errmsg
   integer :: stat, ncell
+  type(simulation_environment) :: env
 
   call init_parallel_communication
   prefix = 'run'
   overwrite_output = .true.
   call TLS_initialize
   call TLS_set_verbosity(TLS_VERB_SILENT)
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'test_cell_matl_prop_func.log', stat, errmsg, terminal_output=.false.)
+  if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
-  mesh => new_unstr_2d_mesh([0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4,4])
+  mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4,4])
   call parameter_list_from_json_string( &
     '{"mat-a":{"properties":{"conductivity":2.0,"density":3.0,"specific-heat":4.0}},&
      &"mat-b":{"properties":{"conductivity":10.0,"density":5.0,"specific-heat":6.0}}}', params, errmsg)

@@ -17,14 +17,14 @@ program ht_2d_main
 #ifdef NAGFOR
   use,intrinsic :: f90_unix, only: exit
 #endif
-  use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
+  use,intrinsic :: iso_fortran_env, only: error_unit
+  use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
-  use truchas_env, only: prefix, overwrite_output
-  use truchas_logging_services
   use parameter_list_type
   use parameter_list_json
   use timer_tree_type
+  use simulation_environment_type
   use ht_2d_sim_type
   implicit none
 
@@ -32,9 +32,11 @@ program ht_2d_main
   character(255) :: arg
   character(:), allocatable :: prog, infile, errmsg
   type(parameter_list), pointer :: params
+  type(simulation_environment) :: env
   type(ht_2d_sim) :: sim
 
   !! Initialize MPI
+  call MPI_Init
   call init_parallel_communication
   call fhypre_initialize
 
@@ -50,51 +52,57 @@ program ht_2d_main
     infile = trim(arg)
   else
     if (is_IOP) write(error_unit,'(3a)') 'usage: ', prog, ' INFILE'
-    call halt_parallel_communication
+    call MPI_Finalize
     stop 1
   end if
 
   !! Read the parameter list from the input file
   open(newunit=inlun,file=infile,action='read',access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)
+  close(inlun)
   if (.not.associated(params)) then
     if (is_IOP) write(error_unit,'(a)') 'error reading input file:', errmsg
-    call halt_parallel_communication
+    call MPI_Finalize
     call exit(1)
   end if
-  close(inlun)
 
-  !! Initialize the message logging system.
-  prefix='run'  ! TLS will write to 'run.log'
-  overwrite_output = .true.
-  call TLS_initialize
-  call TLS_set_verbosity(TLS_VERB_NORMAL)
-
+  env%comm = MPI_COMM_WORLD
+  call MPI_Comm_rank(env%comm, env%rank)
+  call MPI_Comm_size(env%comm, env%nproc)
+  call env%simlog%init(env%comm, 'run.log', stat, errmsg)
+  if (stat /= 0) then
+    if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
+    call MPI_Finalize
+    call exit(1)
+  end if
   !! Create the simulation and run it.
   call start_timer('simulation')
-  call sim%init(params, stat, errmsg)
+  call sim%init(env, params, stat, errmsg)
   if (stat /= 0) then
-    if (is_IOP) write(error_unit,'(a)') 'error initializing simulation: ' // errmsg
-    call TLS_exit
-    call halt_parallel_communication
+    call env%simlog%error('error initializing simulation: ' // errmsg)
+    call env%simlog%close
+    call MPI_Finalize
     call exit(1)
   end if
-  call sim%run(stat, errmsg)
+  call sim%run(env, stat, errmsg)
   call stop_timer('simulation')
 
   !! Write some timing info.
-  call TLS_info('')
-  call TLS_info('Timing Summary:')
-  call TLS_info('')
-  if (is_IOP) call write_timer_tree(output_unit, indent=3)
+  call env%simlog%info('')
+  call env%simlog%info('Timing Summary:')
+  call env%simlog%info('')
+  if (env%rank == 0) call write_timer_tree(env%simlog%unit(), indent=3)
 
   !! And quit.
-  call TLS_info('')
+  call env%simlog%info('')
   if (stat == 0) then
-    call TLS_exit
+    call env%simlog%close
   else
-    call TLS_fatal(errmsg)
+    call env%simlog%error(errmsg)
+    call env%simlog%close
+    call MPI_Finalize
+    call exit(1)
   end if
-
+  call MPI_Finalize
 
 end program
