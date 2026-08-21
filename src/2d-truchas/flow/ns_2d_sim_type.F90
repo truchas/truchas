@@ -22,7 +22,7 @@ module ns_2d_sim_type
   use flow_2d_model_type
   use flow_2d_state_type
   use ns_2d_solver_type
-  use flow_2d_vtkhdf_output
+  use flow_2d_vtkhdf_writer_type
   use time_step_sync_type
   use simulation_environment_type
   implicit none
@@ -122,7 +122,7 @@ contains
     end if
     bc_params => model_params%sublist('bc')
     allocate(this%model)
-    call this%model%init(this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, env)
+    call this%model%init(env, this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
     if (stat /= 0) then
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return

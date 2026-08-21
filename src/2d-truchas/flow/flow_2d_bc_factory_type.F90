@@ -59,24 +59,24 @@ contains
   end subroutine
 
 
-  subroutine alloc_dir_vel_bc(this, bc, stat, errmsg, env)
+  subroutine alloc_dir_vel_bc(this, bc, env, stat, errmsg)
     use bndry_vfunc_class
     use bndry_face_vfunc_type
 
     class(flow_2d_bc_factory), intent(in) :: this
     class(bndry_vfunc), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in), optional :: env
 
     type(bndry_face_vfunc), allocatable :: bff
 
-    if (present(env)) call env%simlog%info('  generating "velocity" flow boundary condition')
+    call env%simlog%info('  generating "velocity" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list('velocity', velocity, stat, errmsg, env)
+    call this%iterate_list(env, 'velocity', velocity, stat, errmsg)
     if (stat /= 0) return
-    call this%iterate_list('no-slip', no_slip, stat, errmsg, env)
+    call this%iterate_list(env, 'no-slip', no_slip, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -117,22 +117,22 @@ contains
   end subroutine
 
 
-  subroutine alloc_zero_vn_bc(this, bc, stat, errmsg, env)
+  subroutine alloc_zero_vn_bc(this, bc, env, stat, errmsg)
     use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_2d_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in), optional :: env
 
     type(bndry_face_func), allocatable :: bff
 
-    if (present(env)) call env%simlog%info('  generating "free-slip" flow boundary condition')
+    call env%simlog%info('  generating "free-slip" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list('free-slip', zero, stat, errmsg, env)
+    call this%iterate_list(env, 'free-slip', zero, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -157,22 +157,22 @@ contains
   end subroutine
 
 
-  subroutine alloc_dir_prs_bc(this, bc, stat, errmsg, env)
+  subroutine alloc_dir_prs_bc(this, bc, env, stat, errmsg)
     use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_2d_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in), optional :: env
 
     type(bndry_face_func), allocatable :: bff
 
-    if (present(env)) call env%simlog%info('  generating "pressure" flow boundary condition')
+    call env%simlog%info('  generating "pressure" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list('pressure', pressure, stat, errmsg, env)
+    call this%iterate_list(env, 'pressure', pressure, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -198,25 +198,25 @@ contains
   end subroutine
 
 
-  subroutine alloc_neu_prs_bc(this, bc, stat, errmsg, env)
+  subroutine alloc_neu_prs_bc(this, bc, env, stat, errmsg)
     use bndry_func1_class
     use bndry_face_func_type
 
     class(flow_2d_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in), optional :: env
 
     type(bndry_face_func), allocatable :: bff
 
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list('velocity', zero, stat, errmsg, env)
+    call this%iterate_list(env, 'velocity', zero, stat, errmsg)
     if (stat /= 0) return
-    call this%iterate_list('no-slip', zero, stat, errmsg, env)
+    call this%iterate_list(env, 'no-slip', zero, stat, errmsg)
     if (stat /= 0) return
-    call this%iterate_list('free-slip', zero, stat, errmsg, env)
+    call this%iterate_list(env, 'free-slip', zero, stat, errmsg)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -241,13 +241,13 @@ contains
   end subroutine
 
 
-  subroutine iterate_list(this, type, proc, stat, errmsg, env)
+  subroutine iterate_list(this, env, type, proc, stat, errmsg)
     class(flow_2d_bc_factory), intent(in) :: this
+    type(simulation_environment), intent(in) :: env
     character(*), intent(in) :: type
     procedure(bc_cb) :: proc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(simulation_environment), intent(in), optional :: env
 
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
@@ -261,7 +261,7 @@ contains
       call plist%get('type', bc_type, stat, errmsg)
       if (stat /= 0) exit
       if (lower_case(bc_type) == type) then
-        if (present(env)) call env%simlog%info('    using FLOW_2D_BC[' // piter%name() // ']')
+        call env%simlog%info('    using FLOW_2D_BC[' // piter%name() // ']')
         call plist%get('face-set-ids', setids, stat, errmsg)
         if (stat /= 0) exit
         call proc(plist, setids, stat, errmsg)

@@ -67,7 +67,7 @@ contains
     plist => bc_params%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1,2,3,4])
-    call bc%init(mesh, bc_params, stat, errmsg)
+    call bc%init(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'no-slip boundary condition initialization failed')
     call bc%compute(0.0_r8, 1.0_r8)
 

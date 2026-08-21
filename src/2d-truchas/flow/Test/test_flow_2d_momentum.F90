@@ -66,7 +66,7 @@ contains
     call plist%set('type', 'velocity')
     call plist%set('face-set-ids', [1,2,3,4])
     call plist%set('velocity', [1.5_r8, -0.75_r8])
-    call bc%init(mesh, velocity_params, stat, errmsg)
+    call bc%init(env, mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
     call bc%compute(0.0_r8)
     call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
@@ -78,7 +78,7 @@ contains
     plist => slip_params%sublist('wall')
     call plist%set('type', 'free-slip')
     call plist%set('face-set-ids', [1])
-    call bc%init(mesh, slip_params, stat, errmsg)
+    call bc%init(env, mesh, slip_params, stat, errmsg)
     call require(stat == 0, 'free-slip boundary condition initialization failed')
     call bc%compute(0.0_r8)
     call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
@@ -124,7 +124,7 @@ contains
     end do
     call mesh%face_imap%gather_offp(velocity_fn)
     call compute_flux_volumes(mesh, 0.25_r8, velocity_fn, material_fraction, flux_volumes)
-    call bc%init(mesh, velocity_params, stat, errmsg)
+    call bc%init(env, mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'advective-transport boundary condition initialization failed')
     if (stat /= 0) return
     call bc%compute(0.0_r8)
@@ -137,7 +137,7 @@ contains
     call plist%set('type', 'velocity')
     call plist%set('face-set-ids', [1])
     call plist%set('velocity', transported_velocity)
-    call bc%init(mesh, velocity_params, stat, errmsg)
+    call bc%init(env, mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'advective-inflow boundary condition initialization failed')
     if (stat /= 0) return
     call bc%compute(0.0_r8)

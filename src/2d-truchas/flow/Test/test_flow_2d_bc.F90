@@ -49,7 +49,7 @@ contains
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1])
 
-    call bc%init(mesh, velocity_params, stat, errmsg)
+    call bc%init(env, mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
     call bc%compute(0.0_r8, 1.0_r8)
     defaults_complete = .true.
@@ -71,7 +71,7 @@ contains
     call plist%set('type', 'pressure')
     call plist%set('face-set-ids', [1])
     call plist%set('pressure', 0.0_r8)
-    call bc%init(mesh, pressure_params, stat, errmsg)
+    call bc%init(env, mesh, pressure_params, stat, errmsg)
     call require(stat == 0, 'pressure boundary condition initialization failed')
     pin_face = bc%pressure_pin_face()
     call require(pin_face == 0, 'pressure Dirichlet condition should suppress pressure pinning')

@@ -43,15 +43,15 @@ module flow_2d_model_type
 
 contains
 
-  subroutine init(this, mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, env)
+  subroutine init(this, env, mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
     class(flow_2d_model), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
     real(r8), intent(in) :: density, viscosity
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     real(r8), optional, intent(in) :: body_acceleration(:)
-    type(simulation_environment), intent(in), optional :: env
 
     stat = 0
     if (present(body_acceleration)) then
@@ -73,7 +73,7 @@ contains
     this%viscosity_f = viscosity
 
     call this%operators%init(mesh)
-    call this%bc%init(mesh, bc_params, stat, errmsg, env)
+    call this%bc%init(env, mesh, bc_params, stat, errmsg)
     if (stat /= 0) return
     call this%momentum%init(mesh, this%operators)
     call this%projection%init(mesh, this%operators)

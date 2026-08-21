@@ -62,7 +62,7 @@ contains
     call plist%set('type', 'pressure')
     call plist%set('face-set-ids', [1])
     call plist%set('pressure', 3.0_r8)
-    call bc%init(mesh, bc_params, stat, errmsg)
+    call bc%init(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'pressure boundary condition initialization failed')
     call bc%compute(0.0_r8)
     call projection%assemble(inv_density_f, bc, rhs)
