@@ -42,7 +42,7 @@ contains
     type(flow_2d_bc) :: bc
     character(:), allocatable :: errmsg
     integer :: stat, pin_face, f
-    logical :: defaults_complete
+    logical :: defaults_complete, static_pressure_correction, pressure_dirichlet_has_no_zero_normal
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4, 4], 0.0_r8, 0.0_r8)
     plist => velocity_params%sublist('wall')
@@ -59,10 +59,10 @@ contains
           (any(bc%velocity_dirichlet%index == f) .or. any(bc%velocity_zero_normal%index == f))
     end do
     call require(defaults_complete, 'default boundary conditions do not cover every boundary face')
-    if (size(bc%pressure_correction_dirichlet%value) > 0) then
-      call require(maxval(abs(bc%pressure_correction_dirichlet%value)) < 1.0e-12_r8, &
-          'static pressure data produced a nonzero pressure correction')
-    end if
+    static_pressure_correction = .true.
+    if (size(bc%pressure_correction_dirichlet%value) > 0) &
+      static_pressure_correction = maxval(abs(bc%pressure_correction_dirichlet%value)) < 1.0e-12_r8
+    call require(static_pressure_correction, 'static pressure data produced a nonzero pressure correction')
     pin_face = bc%pressure_pin_face()
     call require(global_sum(merge(1, 0, pin_face > 0)) == 1, &
         'all-Neumann pressure conditions did not select exactly one pin face')
@@ -75,10 +75,12 @@ contains
     call require(stat == 0, 'pressure boundary condition initialization failed')
     pin_face = bc%pressure_pin_face()
     call require(pin_face == 0, 'pressure Dirichlet condition should suppress pressure pinning')
-    if (size(bc%pressure_dirichlet%index) > 0) then
-      call require(.not.any(bc%velocity_zero_normal%index == bc%pressure_dirichlet%index(1)), &
-          'pressure Dirichlet boundary should not receive a zero-normal velocity condition')
-    end if
+    pressure_dirichlet_has_no_zero_normal = .true.
+    if (size(bc%pressure_dirichlet%index) > 0) &
+      pressure_dirichlet_has_no_zero_normal = &
+          .not.any(bc%velocity_zero_normal%index == bc%pressure_dirichlet%index(1))
+    call require(pressure_dirichlet_has_no_zero_normal, &
+        'pressure Dirichlet boundary should not receive a zero-normal velocity condition')
   end subroutine
 
 
