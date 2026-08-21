@@ -55,9 +55,11 @@ program flow_2d_main
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
+  allocate(env%timer)
   call env%simlog%init(env%comm, 'run.log', stat, errmsg)
   if (stat /= 0) then
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
+    deallocate(env%timer)
     call MPI_Finalize
     call exit(1)
   end if
@@ -66,10 +68,12 @@ program flow_2d_main
   if (stat /= 0) then
     call env%simlog%error('flow simulation error: ' // errmsg)
     call env%simlog%close
+    deallocate(env%timer)
     call MPI_Finalize
     call exit(1)
   end if
   call env%simlog%close
+  deallocate(env%timer)
   call MPI_Finalize
 
 end program flow_2d_main

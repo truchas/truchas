@@ -23,7 +23,6 @@ program ht_2d_main
   use fhypre, only: fhypre_initialize
   use parameter_list_type
   use parameter_list_json
-  use timer_tree_type
   use simulation_environment_type
   use ht_2d_sim_type
   implicit none
@@ -69,37 +68,42 @@ program ht_2d_main
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
+  allocate(env%timer)
   call env%simlog%init(env%comm, 'run.log', stat, errmsg)
   if (stat /= 0) then
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
+    deallocate(env%timer)
     call MPI_Finalize
     call exit(1)
   end if
   !! Create the simulation and run it.
-  call start_timer('simulation')
+  call env%timer%start('simulation')
   call sim%init(env, params, stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('error initializing simulation: ' // errmsg)
     call env%simlog%close
+    deallocate(env%timer)
     call MPI_Finalize
     call exit(1)
   end if
   call sim%run(env, stat, errmsg)
-  call stop_timer('simulation')
+  call env%timer%stop('simulation')
 
   !! Write some timing info.
   call env%simlog%info('')
   call env%simlog%info('Timing Summary:')
   call env%simlog%info('')
-  if (env%rank == 0) call write_timer_tree(env%simlog%unit(), indent=3)
+  if (env%rank == 0) call env%timer%write(env%simlog%unit(), indent=3)
 
   !! And quit.
   call env%simlog%info('')
   if (stat == 0) then
     call env%simlog%close
+    deallocate(env%timer)
   else
     call env%simlog%error(errmsg)
     call env%simlog%close
+    deallocate(env%timer)
     call MPI_Finalize
     call exit(1)
   end if

@@ -147,13 +147,13 @@ contains
 
     !! Initialize 2D HT solver
     call init_params(solver_params)
-    call HT_solver%init(HT_model, solver_params, stat, errmsg)
+    call HT_solver%init(test_env, HT_model, solver_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! Invalid initial-condition parameters are reported to the caller.
     sublist => solver_params%sublist('initial-condition')
     call sublist%set('rel-tol', 0.0_r8)
-    call bad_solver%init(HT_model, solver_params, stat, errmsg)
+    call bad_solver%init(test_env, HT_model, solver_params, stat, errmsg)
     if (stat == 0 .or. index(errmsg, '"rel-tol"') == 0) then
       if (is_IOP) print '("ERROR: invalid initial-condition tolerance was accepted")'
       status = 1
