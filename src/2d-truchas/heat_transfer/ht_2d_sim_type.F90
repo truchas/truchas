@@ -24,7 +24,6 @@ module ht_2d_sim_type
   use ht_2d_vtkhdf_output
   use time_step_sync_type
   use parallel_communication
-  use timer_tree_type
   use simulation_environment_type
   use simulation_log_type, only: LOG_DETAIL
   implicit none
@@ -91,14 +90,14 @@ contains
     type(parameter_list_iterator) :: piter
 
     stat = 0
-    call start_timer('initialization')
+    call env%timer%start('initialization')
     call env%simlog%info('Initializing the simulation', LOG_DETAIL)
 
     !! Catch SIGURG signals.
     call init_signal_handler(SIGURG)
 
     !! Create the mesh.
-    call start_timer('mesh')
+    call env%timer%start('mesh')
     if (params%is_sublist('mesh')) then
       plist => params%sublist('mesh')
       context = 'processing ' // plist%path() // ': '
@@ -112,7 +111,7 @@ contains
       errmsg = 'missing "mesh" sublist parameter'
       return
     end if
-    call stop_timer('mesh')
+    call env%timer%stop('mesh')
 
     !! Load the material database and initialize the material model
     if (params%is_sublist('materials')) then
@@ -182,7 +181,7 @@ contains
     if (stat /= 0) return
 
     !! Create the heat conduction model.
-    call start_timer('ht-model')
+    call env%timer%start('ht-model')
     if (params%is_sublist('ht-model')) then
       plist => params%sublist('ht-model')
       context = 'processing ' // plist%path() // ': '
@@ -197,15 +196,15 @@ contains
       errmsg = 'missing "ht-model" sublist parameter'
       return
     end if
-    call stop_timer('ht-model')
+    call env%timer%stop('ht-model')
 
     !! Create the heat conduction solver.
-    call start_timer('ht-solver')
+    call env%timer%start('ht-solver')
     if (params%is_sublist('ht-solver')) then
       plist => params%sublist('ht-solver')
       allocate(this%solver)
       context = 'processing ' // plist%path() // ': '
-      call this%solver%init(this%model, plist, stat, errmsg)
+      call this%solver%init(env, this%model, plist, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return
@@ -241,7 +240,7 @@ contains
       errmsg = 'missing "ht-solver" sublist parameter'
       return
     end if
-    call stop_timer('ht-solver')
+    call env%timer%stop('ht-solver')
 
     !! Create output file.
     call this%output%open(this%mesh, stat, errmsg)
@@ -303,7 +302,7 @@ contains
     this%ts_sync = time_step_sync(4)
 
     !! Generate the initial temperature field
-    call start_timer('initial-state')
+    call env%timer%start('initial-state')
     if (params%is_parameter('initial-temperature')) then
       context = 'processing initial-temperature: '
       call alloc_scalar_func(params, 'initial-temperature', f, stat, errmsg)
@@ -325,9 +324,9 @@ contains
       errmsg = 'initializing thermal state: ' // errmsg
       return
     end if
-    call stop_timer('initial-state')
+    call env%timer%stop('initial-state')
 
-    call stop_timer('initialization')
+    call env%timer%stop('initialization')
 
   end subroutine init
 
@@ -358,11 +357,11 @@ contains
     real(r8) :: t, hnext, t_write
     character(80) :: string(2)
 
-    call start_timer('integration')
+    call env%timer%start('integration')
 
     !! Write the initial solution
     t = this%solver%last_time()
-    call this%write_solution(t)
+    call this%write_solution(env, t)
     t_write = t ! keep track of the last write time
 
     call env%simlog%info('')
@@ -373,7 +372,7 @@ contains
     do n = 1, size(this%tout)
       call integrate(this, this%tout(n), hnext, t, stat, errmsg)
       if (stat < 0 .and. t == t_write) exit
-      call this%write_solution(t)
+      call this%write_solution(env, t)
       t_write = t ! keep track of the last write time
       call this%solver%write_metrics(string)
       call env%simlog%info('')
@@ -399,7 +398,7 @@ contains
 
     call this%output%close()
 
-    call stop_timer('integration')
+    call env%timer%stop('integration')
 
   end subroutine run
 
@@ -496,14 +495,15 @@ contains
 
   !! Write the current cell solution to the VTKHDF output.
 
-  subroutine write_solution(this, t)
+  subroutine write_solution(this, env, t)
 
     class(ht_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
 
     real(r8), allocatable :: Hcell(:), Tcell(:)
 
-    call start_timer('output')
+    call env%timer%start('output')
 
     allocate(Hcell(this%mesh%ncell_onP), Tcell(this%mesh%ncell_onP))
 
@@ -512,7 +512,7 @@ contains
 
     call this%output%write_solution(t, Hcell, Tcell)
 
-    call stop_timer('output')
+    call env%timer%stop('output')
 
   end subroutine write_solution
 

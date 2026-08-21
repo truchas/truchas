@@ -55,9 +55,10 @@ module ht_2d_solver_type
 
 contains
 
-  subroutine init(this, model, params, stat, errmsg)
+  subroutine init(this, env, model, params, stat, errmsg)
 
     class(ht_2d_solver), intent(out), target :: this
+    type(simulation_environment), intent(in) :: env
     type(ht_2d_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -95,7 +96,7 @@ contains
     end if
 
     !! Create the IDAESOL model
-    call this%integ_model%init(this%model, this%precon, this%norm)
+    call this%integ_model%init(this%model, this%precon, this%norm, env%timer)
 
     !! Create the IDAESOL integrator
     if (params%is_sublist('integrator')) then
