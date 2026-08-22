@@ -91,13 +91,17 @@ def run_from_argv(input_file):
     return run_case(sys.argv[1], input_file, nproc, mpiexec)
 
 
-def partition_from_argv(input_file):
+def partition_from_argv(input_file, volume_fraction_names=None):
     if len(sys.argv) != 3:
         raise AssertionError(f"usage: {sys.argv[0]} HT_2D MPIEXEC")
-    check_partition_independence(sys.argv[1], input_file, sys.argv[2])
+    check_partition_independence(
+        sys.argv[1], input_file, sys.argv[2], volume_fraction_names
+    )
 
 
-def check_partition_independence(executable, input_file, mpiexec):
+def check_partition_independence(
+    executable, input_file, mpiexec, volume_fraction_names=None
+):
     """Compare serial and four-process output in external cell order."""
 
     serial = run_case(executable, input_file, 1, mpiexec)
@@ -125,6 +129,13 @@ def check_partition_independence(executable, input_file, mpiexec):
         1.0e-10,
         "serial/4-process temperature",
     )
+    for name in volume_fraction_names or ():
+        check_close(
+            serial.data.field(serial.final_step, name),
+            parallel.data.field(parallel.final_step, name),
+            1.0e-14,
+            f"serial/4-process {name}",
+        )
 
 
 def finish(label, run=None):

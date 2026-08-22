@@ -4,7 +4,8 @@
 !! This module defines the VTKHDF writer for the two-dimensional heat-transfer
 !! simulation. It writes the fixed unstructured mesh, mesh-associated global
 !! and pedigree identifiers, ghost-cell metadata, and temporal cell enthalpy
-!! and temperature data to a VTKHDF multiblock file.
+!! and temperature data. For multimaterial simulations it also writes one
+!! temporal scalar volume-fraction dataset per material.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -14,6 +15,7 @@ module ht_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use unstr_2d_mesh_type
+  use material_model_type
   use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
       vtkhdf_cell_data_handle, UG_FIXED_MESH
   implicit none
@@ -26,6 +28,7 @@ module ht_2d_vtkhdf_writer_type
     type(vtkhdf_block_handle) :: block
     type(vtkhdf_cell_data_handle) :: enthalpy
     type(vtkhdf_cell_data_handle) :: temperature
+    type(vtkhdf_cell_data_handle), allocatable :: volume_fraction(:)
     logical :: is_open = .false.
   contains
     procedure :: open
@@ -35,19 +38,21 @@ module ht_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, mesh, stat, errmsg)
+  subroutine open(this, mesh, matl_model, stat, errmsg)
 
     use parallel_communication, only: comm
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(ht_2d_vtkhdf_writer), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(material_model), intent(in) :: matl_model
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
     integer :: j, nnode
+    character(:), allocatable :: name
     integer(int8), allocatable :: types(:), cell_ghost_type(:), node_ghost_type(:)
 
     call this%file%create('out.vtkhdf', comm, stat, errmsg)
@@ -95,16 +100,41 @@ contains
 
     this%enthalpy = this%file%register_temporal_cell_data(this%block, 'H', 0.0_r8)
     this%temperature = this%file%register_temporal_cell_data(this%block, 'T', 0.0_r8)
+    if (matl_model%nmatl > 1) then
+      allocate(this%volume_fraction(matl_model%nmatl))
+      do j = 1, matl_model%nmatl
+        name = 'vf_' // normalize_material_name(matl_model%matl_name(j))
+        this%volume_fraction(j) = &
+            this%file%register_temporal_cell_data(this%block, name, 0.0_r8)
+      end do
+    end if
     this%is_open = .true.
 
   end subroutine open
 
-  subroutine write_solution(this, time, enthalpy, temperature)
+  pure function normalize_material_name(name) result(normalized)
+    character(*), intent(in) :: name
+    character(:), allocatable :: normalized
+    integer :: i
+
+    allocate(character(len(name)) :: normalized)
+    normalized = name
+    do i = 1, len(name)
+      select case (normalized(i:i))
+      case ('+', '-', '*', '^', '%')
+        normalized(i:i) = '_'
+      end select
+    end do
+  end function normalize_material_name
+
+  subroutine write_solution(this, time, enthalpy, temperature, volume_fraction)
 
     class(ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: enthalpy(:), temperature(:)
-    real(r8), allocatable :: H(:), T(:)
+    real(r8), intent(in) :: volume_fraction(:,:)
+    real(r8), allocatable :: H(:), T(:), v(:)
+    integer :: j
 
     call this%file%start_time_step(time)
     allocate(H(this%mesh%ncell), T(this%mesh%ncell))
@@ -114,6 +144,14 @@ contains
     call this%mesh%cell_imap%gather_offp(T)
     call this%file%write_cell_data(this%block, this%enthalpy, H)
     call this%file%write_cell_data(this%block, this%temperature, T)
+    if (allocated(this%volume_fraction)) then
+      allocate(v(this%mesh%ncell))
+      do j = 1, size(this%volume_fraction)
+        v(:this%mesh%ncell_onP) = volume_fraction(j,:)
+        call this%mesh%cell_imap%gather_offp(v)
+        call this%file%write_cell_data(this%block, this%volume_fraction(j), v)
+      end do
+    end if
     call this%file%finalize_time_step()
     call this%file%flush()
 
@@ -123,6 +161,7 @@ contains
     class(ht_2d_vtkhdf_writer), intent(inout) :: this
     if (this%is_open) call this%file%close()
     this%is_open = .false.
+    if (allocated(this%volume_fraction)) deallocate(this%volume_fraction)
     nullify(this%mesh)
   end subroutine close
 
