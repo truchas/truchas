@@ -138,8 +138,9 @@ contains
     class(vector_func), allocatable, intent(out) :: f
     type(parameter_list) :: params
 
-    real(r8), allocatable :: v0(:), x(:), y(:,:), axis(:)
-    character(:), allocatable :: ftype
+    real(r8), allocatable :: v0(:), x(:), y(:,:), axis(:), p(:)
+    character(:), allocatable :: ftype, library_path, library_symbol
+    integer :: dim
 
     call params%get ('type', ftype)
     select case (ftype)
@@ -155,6 +156,18 @@ contains
       call params%get ('axis', axis)
       INSIST(size(axis) == 3) !TODO: need proper error handling
       call alloc_fptr_vector_func(f, 3, div_radial_cyl_flow, axis)
+#ifdef ENABLE_DYNAMIC_LOADING
+    case ('library')
+      call params%get('library-path', library_path)
+      call params%get('library-symbol', library_symbol)
+      call params%get('dimension', dim)
+      if (params%is_vector('parameters')) then
+        call params%get('parameters', p)
+        call alloc_dl_vector_func(f, library_path, library_symbol, dim, p)
+      else
+        call alloc_dl_vector_func(f, library_path, library_symbol, dim)
+      end if
+#endif
     case default
       INSIST(.false.) !TODO: need proper error handling
     end select
