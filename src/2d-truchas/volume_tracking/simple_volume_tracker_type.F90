@@ -19,6 +19,7 @@
 module simple_volume_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type, only: simulation_environment
   use volume_tracker_2d_class
   use unstr_2d_mesh_type
   implicit none
@@ -36,9 +37,10 @@ module simple_volume_tracker_type
 
 contains
 
-  subroutine init(this, mesh, nrealfluid, nfluid, nmat, axisym)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym)
 
     class(simple_volume_tracker), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     logical, intent(in) :: axisym

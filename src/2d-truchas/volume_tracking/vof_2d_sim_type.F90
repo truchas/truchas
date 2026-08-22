@@ -138,7 +138,7 @@ contains
       call this%mesh%cell_imap%gather_offp(this%vfrac(material,:))
     end do
 
-    call this%solver%init(this%mesh, nmat, algorithm, axisymmetric, stat, errmsg)
+    call this%solver%init(env, this%mesh, nmat, algorithm, axisymmetric, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
