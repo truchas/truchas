@@ -1,0 +1,24 @@
+{
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [100]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [100]}
+  },
+  "vof-model": {
+    "algorithm": "geometric",
+    "velocity": {
+      "type": "library",
+      "library-path": "$<TARGET_FILE:vof_vortex_velocity>",
+      "library-symbol": "vortex_velocity",
+      "dimension": 2
+    }
+  },
+  "initial-regions": {
+    "disk": {"type": "disk", "center": [0.5, 0.75], "radius": 0.15},
+    "background": {"type": "background"}
+  },
+  "initial-region-refinement-level": 6,
+  "sim-control": {
+    "time-step": 0.001,
+    "output-times": [0.0, 0.1]
+  }
+}

@@ -12,7 +12,7 @@ sys.path.insert(0, str(source_root / "src/python/truchas"))
 from TruchasVTKHDFData import TruchasVTKHDFData
 
 
-def run_test(label, final_time):
+def run_test(label, final_time, field_tolerance=1.0e-7):
     if len(sys.argv) != 5:
         raise RuntimeError(
             f"usage: {sys.argv[0]} VOF_EXECUTABLE INPUT_FILE GOLD_FILE MPIEXEC"
@@ -63,7 +63,7 @@ def run_test(label, final_time):
                     f"gold has {expected.size}"
                 )
             error = np.max(np.abs(values - expected))
-            if error > 1.0e-7:
+            if error > field_tolerance:
                 raise RuntimeError(
                     f"{label}: material {material}, step {step} error against gold is {error:g}"
                 )

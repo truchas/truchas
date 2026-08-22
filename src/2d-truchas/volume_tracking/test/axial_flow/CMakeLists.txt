@@ -1,5 +1,6 @@
-add_vof_test_executable(vof_axialflow vof_axialflow.F90)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/input.json"
+  INPUT "${CMAKE_CURRENT_SOURCE_DIR}/input.json.in")
 
-add_vof_test(circle_axialfl ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_axialflow
-  ${CMAKE_CURRENT_SOURCE_DIR}/input.txt
+add_vof_test(circle_axialfl ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_2d_main
+  ${CMAKE_CURRENT_BINARY_DIR}/input.json
   ${CMAKE_CURRENT_SOURCE_DIR}/gold.vtkhdf)

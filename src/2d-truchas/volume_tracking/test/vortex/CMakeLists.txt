@@ -1,5 +1,8 @@
-add_vof_test_executable(vof_vortex vof_vortex.F90)
+add_library(vof_vortex_velocity SHARED vortex_velocity.F90)
 
-add_vof_test(circle_vortex ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_vortex
-  ${CMAKE_CURRENT_SOURCE_DIR}/input.txt
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/input.json"
+  INPUT "${CMAKE_CURRENT_SOURCE_DIR}/input.json.in")
+
+add_vof_test(circle_vortex ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_2d_main
+  ${CMAKE_CURRENT_BINARY_DIR}/input.json
   ${CMAKE_CURRENT_SOURCE_DIR}/gold.vtkhdf)
