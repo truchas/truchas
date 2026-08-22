@@ -1,0 +1,18 @@
+{
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
+  },
+  "vof-model": {
+    "algorithm": "geometric",
+    "velocity": {"type": "constant", "value": [0.0, 0.0]}
+  },
+  "initial-regions": {
+    "disk": {"type": "disk", "center": [0.5, 0.5], "radius": 0.25},
+    "background": {"type": "background"}
+  },
+  "sim-control": {
+    "time-step": 0.001,
+    "output-times": [0.0, 0.002]
+  }
+}

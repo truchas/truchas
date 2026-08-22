@@ -16,13 +16,20 @@ set(VOLUME_TRACKING_2D_SOURCE_FILES
   truncation_volume_2d_type.F90
   geometric_volume_tracker_type.F90
   vof_2d_vtkhdf_writer_type.F90
+  vof_2d_solver_type.F90
+  vof_2d_sim_type.F90
 )
 
 add_library(volume_tracking_2d ${VOLUME_TRACKING_2D_SOURCE_FILES})
 set_target_properties(volume_tracking_2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_link_libraries(volume_tracking_2d truchas-extra truchas ${TRUCHAS_LINK_LIBS})
+target_include_directories(volume_tracking_2d BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_include_directories(volume_tracking_2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
+
+add_executable(vof_2d_main vof_2d_main.F90)
+target_link_libraries(vof_2d_main volume_tracking_2d truchas ${TRUCHAS_LINK_LIBS})
+set_target_properties(vof_2d_main PROPERTIES OUTPUT_NAME vof_2d)
 
 set(VOLUME_TRACKING_2D_MODULE_DIR "${CMAKE_CURRENT_BINARY_DIR}/mod")
 add_subdirectory(test)
