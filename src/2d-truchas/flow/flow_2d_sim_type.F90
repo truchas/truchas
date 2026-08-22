@@ -194,7 +194,7 @@ contains
       return
     end if
 
-    call this%output%open(this%mesh, stat, errmsg)
+    call this%output%open(env, this%mesh, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'opening VTKHDF output: ' // errmsg
       return

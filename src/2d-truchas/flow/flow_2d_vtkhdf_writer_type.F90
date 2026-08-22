@@ -12,6 +12,7 @@
 module flow_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
+  use simulation_environment_type
   use unstr_2d_mesh_type
   use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
       vtkhdf_cell_data_handle, UG_FIXED_MESH
@@ -33,11 +34,11 @@ module flow_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, mesh, stat, errmsg)
-    use parallel_communication, only: comm
+  subroutine open(this, env, mesh, stat, errmsg)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(flow_2d_vtkhdf_writer), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -48,7 +49,8 @@ contains
     integer(int8), allocatable :: types(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: vector_mold(3), scalar_mold
 
-    call this%file%create('out.vtkhdf', comm, stat, errmsg)
+    call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
+        env%comm%mpi_val, stat, errmsg)
     if (stat /= 0) return
     this%mesh => mesh
     this%block = this%file%add_block('main', mode=UG_FIXED_MESH)

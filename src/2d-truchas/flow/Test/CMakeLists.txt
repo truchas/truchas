@@ -168,11 +168,13 @@ set_tests_properties(flow_2d_ic_solver-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_ic_solver-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
 add_test(NAME flow_2d_pressure_channel-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  $<TARGET_FILE:flow_2d_main> ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
+  $<TARGET_FILE:flow_2d_main> --output-dir flow_2d_pressure_channel-1p --force
+  ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_pressure_channel-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_pressure_channel-1p PROPERTY LABELS INTEGRATED FLOW 2d-truchas)
 add_test(NAME flow_2d_pressure_channel-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  $<TARGET_FILE:flow_2d_main> ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
+  $<TARGET_FILE:flow_2d_main> --output-dir flow_2d_pressure_channel-4p --force
+  ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_pressure_channel-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_pressure_channel-4p PROPERTY LABELS INTEGRATED FLOW 2d-truchas)
 

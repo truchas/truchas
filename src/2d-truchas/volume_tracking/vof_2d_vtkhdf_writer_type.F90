@@ -35,7 +35,7 @@ module vof_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, env, mesh, nmat, stat, errmsg, filename)
+  subroutine open(this, env, mesh, nmat, stat, errmsg)
 
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
@@ -45,9 +45,7 @@ contains
     integer, intent(in) :: nmat
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    character(*), intent(in), optional :: filename
 
-    character(:), allocatable :: path
     character(32) :: name
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
@@ -62,12 +60,8 @@ contains
       return
     end if
 
-    if (present(filename)) then
-      path = filename
-    else
-      path = 'out.vtkhdf'
-    end if
-    call this%file%create(path, env%comm%mpi_val, stat, errmsg)
+    call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
+        env%comm%mpi_val, stat, errmsg)
     if (stat /= 0) return
 
     this%mesh => mesh

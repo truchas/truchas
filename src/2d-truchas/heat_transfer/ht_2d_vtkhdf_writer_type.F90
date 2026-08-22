@@ -14,6 +14,7 @@
 module ht_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
+  use simulation_environment_type
   use unstr_2d_mesh_type
   use material_model_type
   use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
@@ -38,12 +39,12 @@ module ht_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, mesh, matl_model, stat, errmsg)
+  subroutine open(this, env, mesh, matl_model, stat, errmsg)
 
-    use parallel_communication, only: comm
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(ht_2d_vtkhdf_writer), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(out) :: stat
@@ -55,7 +56,8 @@ contains
     character(:), allocatable :: name
     integer(int8), allocatable :: types(:), cell_ghost_type(:), node_ghost_type(:)
 
-    call this%file%create('out.vtkhdf', comm, stat, errmsg)
+    call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
+        env%comm%mpi_val, stat, errmsg)
     if (stat /= 0) return
 
     this%mesh => mesh

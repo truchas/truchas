@@ -30,7 +30,7 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
     output_dir = pathlib.Path(
         tempfile.mkdtemp(prefix=f"ht_2d_{input_file.stem}_{nproc}p_")
     )
-    command = [str(executable), str(input_file)]
+    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
 

@@ -14,31 +14,49 @@ program vof_2d_main
   use parallel_communication
   use parameter_list_type
   use parameter_list_json
+  use simulation_command_line_type
   use simulation_environment_type
   use vof_2d_sim_type
   implicit none
 
-  integer :: n, num_arg, inlun, stat
-  character(255) :: arg
-  character(:), allocatable :: prog, infile, errmsg
+  integer :: inlun, stat
+  character(:), allocatable :: errmsg
   type(parameter_list), pointer :: params
+  type(simulation_command_line) :: cli
   type(simulation_environment) :: env
   type(vof_2d_sim) :: sim
 
   call MPI_Init
   call init_parallel_communication
-  call get_command_argument(0, arg)
-  n = scan(arg, '/', back=.true.)
-  prog = trim(arg(n+1:))
-  num_arg = command_argument_count()
-  if (num_arg /= 1) then
-    if (is_IOP) write(error_unit,'(3a)') 'usage: ', prog, ' INFILE'
+
+  call cli%parse(stat, errmsg)
+  if (cli%help) then
+    if (is_IOP) call cli%write_help('A JSON-input driver for the two-dimensional developer VOF simulation.')
     call MPI_Finalize
-    stop 1
+    stop
   end if
-  call get_command_argument(1, arg)
-  infile = trim(arg)
-  open(newunit=inlun, file=infile, action='read', access='stream')
+  if (stat /= 0) then
+    if (is_IOP) then
+      write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
+    end if
+    call MPI_Finalize
+    if (is_IOP) error stop 2
+    stop
+  end if
+
+  if (is_IOP) call cli%prepare_output_dir(stat, errmsg)
+  call broadcast(stat)
+  if (stat /= 0) then
+    call broadcast_alloc_char(errmsg)
+    if (is_IOP) then
+      write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
+    end if
+    call MPI_Finalize
+    if (is_IOP) error stop 1
+    stop
+  end if
+  env%output_dir = cli%output_dir
+  open(newunit=inlun, file=cli%input_file, action='read', access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)
   close(inlun)
   if (.not.associated(params)) then
@@ -51,7 +69,7 @@ program vof_2d_main
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
   allocate(env%timer)
-  call env%simlog%init(env%comm, 'run.log', stat, errmsg)
+  call env%simlog%init(env%comm, trim(env%output_dir)//'/run.log', stat, errmsg)
   if (stat /= 0) then
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
     deallocate(env%timer)
