@@ -11,6 +11,7 @@
 module volume_tracker_2d_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type, only: simulation_environment
   use unstr_2d_mesh_type
   implicit none
   private
@@ -23,9 +24,11 @@ module volume_tracker_2d_class
   end type volume_tracker_2d
 
   abstract interface
-    subroutine vt_init(this, mesh, nrealfluid, nfluid, nmat, axisym)
+    subroutine vt_init(this, env, mesh, nrealfluid, nfluid, nmat, axisym)
       import :: volume_tracker_2d, unstr_2d_mesh
+      import :: simulation_environment
       class(volume_tracker_2d), intent(out) :: this
+      type(simulation_environment), intent(in) :: env
       type(unstr_2d_mesh), intent(in), target :: mesh
       integer, intent(in) :: nrealfluid, nfluid, nmat
       logical, intent(in) :: axisym

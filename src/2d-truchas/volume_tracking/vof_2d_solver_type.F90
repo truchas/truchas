@@ -13,6 +13,7 @@
 module vof_2d_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type, only: simulation_environment
   use unstr_2d_mesh_type
   use vector_func_class
   use volume_tracker_2d_class
@@ -39,12 +40,13 @@ contains
   end subroutine
 
 
-  subroutine init(this, mesh, nmat, algorithm, axisymmetric, stat, errmsg)
+  subroutine init(this, env, mesh, nmat, algorithm, axisymmetric, stat, errmsg)
 
     use simple_volume_tracker_type
     use geometric_volume_tracker_type
 
     class(vof_2d_solver), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nmat
     character(*), intent(in) :: algorithm
@@ -73,7 +75,7 @@ contains
     allocate(this%vfrac_in(nmat,mesh%ncell), this%vfrac_out(nmat,mesh%ncell))
     allocate(this%flux_volume(nmat,size(mesh%cface)), this%flux_velocity(size(mesh%cface)))
     allocate(this%face_velocity(mesh%nface), this%interface_normal(2,nmat,mesh%ncell))
-    call this%tracker%init(mesh, nmat, nmat, nmat, axisymmetric)
+    call this%tracker%init(env, mesh, nmat, nmat, nmat, axisymmetric)
   end subroutine
 
 

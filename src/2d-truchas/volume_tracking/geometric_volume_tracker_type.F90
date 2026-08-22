@@ -13,8 +13,9 @@
 module geometric_volume_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use timer_tree_type, only: timer_tree
+  use simulation_environment_type, only: simulation_environment
   use volume_tracker_2d_class
-  use truchas_timers
   use unstr_2d_mesh_type
   implicit none
   private
@@ -25,6 +26,7 @@ module geometric_volume_tracker_type
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
+    type(timer_tree), pointer :: timer => null() ! unowned reference
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
@@ -49,11 +51,12 @@ module geometric_volume_tracker_type
 
 contains
 
-  subroutine init(this, mesh, nrealfluid, nfluid, nmat, axisym)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym)
 
     use parameter_list_type
 
     class(geometric_volume_tracker), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     logical, intent(in) :: axisym
@@ -64,6 +67,8 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
     this%is_axisym = axisym
+    this%timer => env%timer
+    ASSERT(associated(this%timer))
 
     ! defaults are used for following parameters for now
     this%location_iter_max = 40
@@ -204,7 +209,7 @@ contains
     integer :: i,j,k,c
     logical :: hasvof(size(vof,dim=1))
 
-    call start_timer('normals')
+    call this%timer%start('normals')
     if (this%is_axisym) then
       do i = 1, this%nmat
         call gradient_rz_cc(this%mesh, vof(i,:), this%normal(1,i,:), this%normal(2,i,:), &
@@ -265,7 +270,7 @@ contains
     ! will need normals for vof reconstruction in ghost cells
     call this%mesh%cell_imap%gather_offp(this%normal)
 
-    call stop_timer('normals')
+    call this%timer%stop('normals')
 
   end subroutine normals
 
@@ -578,7 +583,7 @@ contains
     integer :: i, nmat
 
     ! calculate the flux volumes for each face
-    call start_timer('reconstruct/advect')
+    call this%timer%start('reconstruct/advect')
 
     do i = 1, this%mesh%ncell_onP
       nmat = count(vof(:,i) > this%cutoff)
@@ -591,7 +596,7 @@ contains
       end if
     end do
 
-    call stop_timer('reconstruct/advect')
+    call this%timer%stop('reconstruct/advect')
 
   end subroutine donor_fluxes
 
