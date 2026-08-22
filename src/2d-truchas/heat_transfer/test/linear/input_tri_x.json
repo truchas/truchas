@@ -1,0 +1,65 @@
+{
+    "materials": {
+        "default": {
+            "properties": {
+                "conductivity": 1.0,
+                "density": 1.0,
+                "specific-heat": 1.0
+            }
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "element-type": "tri"
+    },
+    "ht-model": {
+        "bc": {
+            "left": {
+                "type": "temperature",
+                "face-set-ids": [1],
+                "temp": 1.0
+            },
+            "right": {
+                "type": "temperature",
+                "face-set-ids": [2],
+                "temp": 0.0
+            },
+            "bottom-top": {
+                "type": "flux",
+                "face-set-ids": [3, 4],
+                "flux": 0.0
+            }
+        }
+    },
+    "ht-solver": {
+        "initial-condition": {
+            "rel-tol": 1.0e-7,
+            "max-iter": 100
+        },
+        "preconditioner": {
+            "method": "BoomerAMG",
+            "params": {"num-cycles": 1}
+        },
+        "error-norm": {
+            "abs-t-tol": 1.0e-11,
+            "rel-t-tol": 1.0e-7,
+            "rel-h-tol": 1.0e-7
+        },
+        "integrator": {
+            "nlk-max-iter": 10,
+            "nlk-tol": 0.001
+        }
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-3,
+        "min-time-step": 1.0e-6,
+        "output-times": [0.01]
+    },
+    "initial-temperature": {
+        "type": "tabular",
+        "tabular x": [0.0, 1.0],
+        "tabular y": [1.0, 0.0]
+    }
+}

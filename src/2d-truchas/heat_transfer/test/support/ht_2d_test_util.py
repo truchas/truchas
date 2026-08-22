@@ -27,25 +27,26 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
 
     executable = pathlib.Path(executable).resolve()
     input_file = pathlib.Path(input_file).resolve()
-    output_dir = pathlib.Path(
+    run_root = pathlib.Path(
         tempfile.mkdtemp(prefix=f"ht_2d_{input_file.stem}_{nproc}p_")
     )
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    output_dir = run_root / input_file.stem
+    command = [str(executable), str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
 
     result = subprocess.run(
         command,
-        cwd=output_dir,
+        cwd=run_root,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
     )
-    (output_dir / "stdout.txt").write_text(result.stdout)
+    (run_root / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
         raise AssertionError(
-            f"ht_2d returned {result.returncode} in {output_dir}\n{result.stdout}"
+            f"ht_2d returned {result.returncode} in {run_root}\n{result.stdout}"
         )
 
     log_file = output_dir / "run.log"
@@ -132,6 +133,12 @@ def check_partition_independence(
         parallel.data.field(parallel.final_step, "T"),
         1.0e-10,
         "serial/4-process temperature",
+    )
+    check_close(
+        serial.data.field(serial.final_step, "H"),
+        parallel.data.field(parallel.final_step, "H"),
+        1.0e-10,
+        "serial/4-process enthalpy",
     )
     for name in volume_fraction_names or ():
         check_close(
