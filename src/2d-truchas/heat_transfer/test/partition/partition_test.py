@@ -9,7 +9,7 @@ from ht_2d_test_util import execute, finish, partition_from_argv
 
 def test():
     partition_from_argv(Path(__file__).with_name("input.json"))
-    finish("linear serial/4-process comparison")
+    finish("VTKHDF partition independence")
 
 
 if __name__ == "__main__":

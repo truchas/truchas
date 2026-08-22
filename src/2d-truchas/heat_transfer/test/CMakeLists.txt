@@ -40,8 +40,16 @@ add_ht_unit_test(test_ht_2d_solver_initial_state test_ht_2d_solver_initial_state
 add_ht_unit_test(test_ht_2d_solver_type test_ht_2d_solver_type.F90)
 
 function(add_ht_integrated_test name case nproc)
-  set(script ${CMAKE_CURRENT_SOURCE_DIR}/${case}/test.py)
-  set(input ${CMAKE_CURRENT_SOURCE_DIR}/${case}/input.json)
+  set(script_name test.py)
+  set(input_name input.json)
+  if(ARGC GREATER 3)
+    set(script_name ${ARGV3})
+  endif()
+  if(ARGC GREATER 4)
+    set(input_name ${ARGV4})
+  endif()
+  set(script ${CMAKE_CURRENT_SOURCE_DIR}/${case}/${script_name})
+  set(input ${CMAKE_CURRENT_SOURCE_DIR}/${case}/${input_name})
   if(nproc GREATER 1)
     add_test(NAME ${name}
       COMMAND ${Python3_EXECUTABLE} ${script}
@@ -58,9 +66,13 @@ function(add_ht_integrated_test name case nproc)
 endfunction()
 
 function(add_ht_partition_test name case)
+  set(script_name partition_test.py)
+  if(ARGC GREATER 2)
+    set(script_name ${ARGV2})
+  endif()
   add_test(NAME ${name}
     COMMAND ${Python3_EXECUTABLE}
-      ${CMAKE_CURRENT_SOURCE_DIR}/${case}/partition_test.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/${case}/${script_name}
       $<TARGET_FILE:HT_2d_main> ${MPIEXEC})
   set_tests_properties(${name} PROPERTIES
     PROCESSORS 4
@@ -77,8 +89,24 @@ add_ht_integrated_test(ht_2d_multimaterial_mixed_source multimaterial_mixed_sour
 add_ht_integrated_test(ht_2d_multimaterial_mixed_source-4p multimaterial_mixed_source 4)
 add_ht_integrated_test(ht_2d_multimaterial_mixed_tri_source multimaterial_mixed_tri_source 1)
 add_ht_integrated_test(ht_2d_multimaterial_conduction multimaterial_conduction 1)
-add_ht_integrated_test(ht_2d_linear linear 1)
-add_ht_integrated_test(ht_2d_linear-4p linear 4)
+add_ht_integrated_test(ht_2d_linear_quad_x linear 1 test_quad_x.py input_quad_x.json)
+add_ht_integrated_test(ht_2d_linear_quad_x-4p linear 4 test_quad_x.py input_quad_x.json)
+add_ht_integrated_test(ht_2d_linear_quad_y linear 1 test_quad_y.py input_quad_y.json)
+add_ht_integrated_test(ht_2d_linear_quad_y-4p linear 4 test_quad_y.py input_quad_y.json)
+add_ht_integrated_test(ht_2d_linear_tri_x linear 1 test_tri_x.py input_tri_x.json)
+add_ht_integrated_test(ht_2d_linear_tri_x-4p linear 4 test_tri_x.py input_tri_x.json)
+add_ht_integrated_test(ht_2d_linear_tri_y linear 1 test_tri_y.py input_tri_y.json)
+add_ht_integrated_test(ht_2d_linear_tri_y-4p linear 4 test_tri_y.py input_tri_y.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy linear 1 test_quad_xy.py input_quad_xy.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy-4p linear 4 test_quad_xy.py input_quad_xy.json)
+add_ht_integrated_test(ht_2d_linear_tri_xy linear 1 test_tri_xy.py input_tri_xy.json)
+add_ht_integrated_test(ht_2d_linear_tri_xy-4p linear 4 test_tri_xy.py input_tri_xy.json)
+add_ht_integrated_test(ht_2d_linear_mixed_xy linear 1 test_mixed_xy.py input_mixed_xy.json)
+add_ht_integrated_test(ht_2d_linear_mixed_xy-4p linear 4 test_mixed_xy.py input_mixed_xy.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy_rotated linear 1 test_quad_xy_rotated.py input_quad_xy_rotated.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy_rotated-4p linear 4 test_quad_xy_rotated.py input_quad_xy_rotated.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy_noisy linear 1 test_quad_xy_noisy.py input_quad_xy_noisy.json)
+add_ht_integrated_test(ht_2d_linear_quad_xy_noisy-4p linear 4 test_quad_xy_noisy.py input_quad_xy_noisy.json)
 add_ht_integrated_test(ht_2d_source source 1)
 add_ht_integrated_test(ht_2d_source-4p source 4)
 add_ht_integrated_test(ht_2d_nonlinear nonlinear 1)
@@ -87,6 +115,6 @@ add_ht_integrated_test(ht_2d_nonlinear_inclusion nonlinear_inclusion 4)
 add_ht_integrated_test(ht_2d_developer_mesh developer_mesh 4)
 add_ht_integrated_test(ht_2d_developer_mesh_tri developer_mesh_tri 4)
 
-add_ht_partition_test(ht_2d_partition_linear linear)
+add_ht_partition_test(ht_2d_vtkhdf_partition partition)
 add_ht_partition_test(ht_2d_partition_multimaterial_mixed_source multimaterial_mixed_source)
 add_ht_partition_test(ht_2d_partition_multimaterial_mixed_tri_source multimaterial_mixed_tri_source)

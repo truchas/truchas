@@ -1,0 +1,57 @@
+{
+    "materials": {
+        "default": {
+            "properties": {
+                "conductivity": 1.0,
+                "density": 4.0,
+                "specific-heat": 0.5
+            }
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "element-type": "quad",
+        "noise-factor": 0.1
+    },
+    "ht-model": {
+        "bc": {
+            "all-sides": {
+                "type": "temperature",
+                "face-set-ids": [1, 2, 3, 4],
+                "temp": {
+                    "type": "polynomial",
+                    "poly-coef": [1.0, 1.0, 2.0],
+                    "poly-powers": [[0, 0, 0], [0, 1, 0], [0, 0, 1]]
+                }
+            }
+        }
+    },
+    "ht-solver": {
+        "initial-condition": {"rel-tol": 1.0e-8, "max-iter": 100},
+        "preconditioner": {
+            "method": "BoomerAMG",
+            "params": {"num-cycles": 1}
+        },
+        "error-norm": {
+            "abs-t-tol": 1.0e-12,
+            "rel-t-tol": 1.0e-8,
+            "rel-h-tol": 1.0e-8
+        },
+        "integrator": {
+            "nlk-max-iter": 10,
+            "nlk-tol": 0.0001
+        }
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-3,
+        "min-time-step": 1.0e-6,
+        "output-times": [0.01]
+    },
+    "initial-temperature": {
+        "type": "polynomial",
+        "poly-coef": [1.0, 1.0, 2.0],
+        "poly-powers": [[0, 0], [1, 0], [0, 1]]
+    }
+}
