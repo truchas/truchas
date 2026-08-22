@@ -23,6 +23,7 @@ module simulation_environment_type
     type(MPI_Comm) :: comm
     integer :: rank = -1
     integer :: nproc = 0
+    character(:), allocatable :: output_dir
     type(simulation_log) :: simlog
     type(timer_tree), pointer :: timer => null()
   end type simulation_environment

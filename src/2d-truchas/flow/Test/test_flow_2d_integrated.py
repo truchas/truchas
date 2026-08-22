@@ -18,7 +18,7 @@ def run_case(executable, input_file, nproc, mpiexec):
     output_dir = pathlib.Path(
         tempfile.mkdtemp(prefix=f"flow_2d_channel_{nproc}p_")
     )
-    command = [str(executable), str(input_file)]
+    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
     result = subprocess.run(

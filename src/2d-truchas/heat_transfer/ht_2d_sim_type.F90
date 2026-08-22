@@ -83,7 +83,7 @@ contains
     type(parameter_list), pointer :: plist, integrator_params
     class(scalar_func), allocatable :: f
     character(:), allocatable :: context, matl_names(:)
-    character(:), allocatable :: integrator_log_file
+    character(:), allocatable :: integrator_log_file, integrator_log_path
     character(256) :: iomsg
     real(r8), allocatable :: temp(:)
     integer :: rlev
@@ -223,8 +223,13 @@ contains
             errmsg = context//'"integrator-log-file" must not be empty'
             return
           end if
+          if (integrator_log_file(1:1) == '/') then
+            integrator_log_path = trim(integrator_log_file)
+          else
+            integrator_log_path = trim(env%output_dir)//'/'//trim(integrator_log_file)
+          end if
           if (is_IOP) then
-            open(newunit=this%integrator_log_unit, file=integrator_log_file, status='replace', action='write', &
+            open(newunit=this%integrator_log_unit, file=integrator_log_path, status='replace', action='write', &
                 iostat=stat, iomsg=iomsg)
             if (stat /= 0) errmsg = context // trim(iomsg)
           end if
@@ -243,7 +248,7 @@ contains
     call env%timer%stop('ht-solver')
 
     !! Create output file.
-    call this%output%open(this%mesh, this%matl_model, stat, errmsg)
+    call this%output%open(env, this%mesh, this%matl_model, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing VTKHDF output: ' // errmsg
       return

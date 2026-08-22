@@ -5,7 +5,10 @@ include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 
-add_library(truchas-extra simulation_log_type.F90 simulation_environment_type.F90)
+add_library(truchas-extra
+  simulation_log_type.F90
+  simulation_environment_type.F90
+  simulation_command_line_type.F90)
 add_subdirectory(mesh)
 add_subdirectory(volume_fractions)
 add_subdirectory(materials)
