@@ -1,3 +1,6 @@
-add_vof_test(circle_axisymm_mixedmesh ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_axisymmetric
-  ${CMAKE_CURRENT_SOURCE_DIR}/input.txt
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/input.json"
+  INPUT "${CMAKE_CURRENT_SOURCE_DIR}/input.json.in")
+
+add_vof_test(circle_axisymm_mixedmesh ${CMAKE_CURRENT_SOURCE_DIR}/test.py vof_2d_main
+  ${CMAKE_CURRENT_BINARY_DIR}/input.json
   ${CMAKE_CURRENT_SOURCE_DIR}/gold.vtkhdf)

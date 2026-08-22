@@ -2,7 +2,7 @@
 
 module unstr_2d_mesh_factory
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
   use unstr_2d_mesh_type
   use parameter_list_type
   use simulation_environment_type
@@ -11,6 +11,8 @@ module unstr_2d_mesh_factory
 
   public :: new_unstr_2d_mesh, unstr_2d_mesh
   public :: new_unstr_2d_quad_mesh, new_unstr_2d_tri_mesh
+
+  integer(i8) :: lcg_state = 0
 
   interface new_unstr_2d_mesh
     procedure new_unstr_2d_mesh_params
@@ -84,6 +86,8 @@ contains
     type(ext_exodus_mesh) :: mesh
     real(r8), allocatable :: x(:), y(:)
     real(r8) :: noise, ptri, scale, angle, theta
+    integer :: random_seed
+    logical :: has_random_seed
     character(:), allocatable :: element_type
     character(:), allocatable :: mesh_file
 
@@ -143,6 +147,16 @@ contains
     if (stat /= 0) return
     call params%get('rotation-angle', angle, default=0.0_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
+    has_random_seed = params%is_parameter('random-seed')
+    if (has_random_seed) then
+      call params%get('random-seed', random_seed, stat, errmsg)
+      if (stat /= 0) return
+      if (random_seed <= 0) then
+        stat = 1
+        errmsg = 'random-seed must be > 0'
+        return
+      end if
+    end if
 
     if (element_type == 'tri') ptri = 1.0_r8
     if (element_type /= 'quad' .and. element_type /= 'tri') then
@@ -167,7 +181,11 @@ contains
     end if
 
     if (is_IOP) then
-      call init_exo_mesh(mesh, x, y, ptri, noise)
+      if (has_random_seed) then
+        call init_exo_mesh(mesh, x, y, ptri, noise, random_seed)
+      else
+        call init_exo_mesh(mesh, x, y, ptri, noise)
+      end if
       mesh%coord = scale * mesh%coord
       theta = angle * acos(-1.0_r8) / 180.0_r8
       if (theta /= 0.0_r8) call rotate_mesh(mesh, theta)
@@ -332,7 +350,7 @@ contains
   end subroutine get_axis_grid
 
 
-  subroutine init_exo_mesh(mesh, x, y, ptri, eps)
+  subroutine init_exo_mesh(mesh, x, y, ptri, eps, seed_value)
 
     use,intrinsic :: iso_fortran_env, only: r8 => real64
     use ext_exodus_mesh_type
@@ -341,10 +359,11 @@ contains
     real(r8), intent(in) :: x(:), y(:)
     real(r8), intent(in) :: ptri
     real(r8), intent(in), optional :: eps
+    integer, intent(in), optional :: seed_value
 
     integer :: i, j, n, nquad, ntri, offset, nx1, nx2
     real(r8) :: r
-    integer, allocatable :: ckind(:,:), quad_connect(:,:), tri_connect(:,:), seed(:)
+    integer, allocatable :: ckind(:,:), quad_connect(:,:), tri_connect(:,:)
 
     ASSERT(size(x) > 1)
     ASSERT(size(y) > 1)
@@ -353,9 +372,11 @@ contains
     nx1 = size(x) - 1
     nx2 = size(y) - 1
 
-    call random_seed(size=n)
-    allocate(seed(n))
-    call random_seed(get=seed)  ! save for node perturbation
+    if (present(seed_value)) then
+      call set_lcg_seed(seed_value)
+    else
+      call set_lcg_seed(0)
+    end if
 
     !! Element decomposition for each grid zone: 1 quad (0) or 2 tri (1)
     allocate(ckind(nx1,nx2))
@@ -504,7 +525,6 @@ contains
       real(r8) :: dx(2), d, dmin(2)
       ASSERT(eps >= 0)
       if (eps == 0) return
-      call random_seed(put=seed)
       dmin(1) = minval(x(2:) - x(:nx1))
       dmin(2) = minval(y(2:) - y(:nx2))
       do j = 1, nx2+1
@@ -1364,29 +1384,27 @@ contains
 
   end subroutine init_cell_set_data
 
-  !! Fixed random-number generator from src/tools/RadE/patching/patching_tools.F90
+  !! Fixed pseudo-random-number generator from src/tools/RadE/patching/patching_tools.F90
   !! by David Neill-Asanza
   !! SOURCE: https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gfortran/RANDOM_005fSEED.html
-  !! This simple PRNG is seeded by a single integer.  This PRNG is used to
-  !! generate a list of numbers with "high entropy" that will serve as the
-  !! actual seed for RANDOM_SEED.
-    real(r8) function lcg(seed)
+  !! This simple PRNG is seeded by a single integer and is used for generated
+  !! mesh topology and coordinate perturbations, ensuring they are portable.
+    subroutine set_lcg_seed(seed)
+      integer, intent(in) :: seed
+      lcg_state = int(seed, i8)
+    end subroutine set_lcg_seed
 
-      use,intrinsic :: iso_fortran_env, only: i8 => int64
+    real(r8) function lcg()
 
-      integer, intent(in), optional :: seed
-      integer(i8), save :: s = 0
       integer(i8) :: lcgi
 
-      if (present(seed)) s = int(seed, i8)
-
-      if (s == 0) then
-         s = 104729
+      if (lcg_state == 0) then
+         lcg_state = 104729
       else
-         s = mod(s, 4294967296_i8)
+         lcg_state = mod(lcg_state, 4294967296_i8)
       end if
-      s = mod(s * 279470273_i8, 4294967291_i8)
-      lcgi = int(mod(s, int(huge(0), i8)), kind(0))
+      lcg_state = mod(lcg_state * 279470273_i8, 4294967291_i8)
+      lcgi = int(mod(lcg_state, int(huge(0), i8)), kind(0))
 
       lcg = dble(lcgi) / dble(huge(0))
 

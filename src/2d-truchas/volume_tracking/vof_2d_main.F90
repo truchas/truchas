@@ -9,9 +9,6 @@
 
 program vof_2d_main
 
-#ifdef NAGFOR
-  use,intrinsic :: f90_unix, only: exit
-#endif
   use,intrinsic :: iso_fortran_env, only: error_unit
   use mpi_f08
   use parallel_communication
@@ -47,7 +44,7 @@ program vof_2d_main
   if (.not.associated(params)) then
     if (is_IOP) write(error_unit,'(a)') 'error reading input file: ' // errmsg
     call MPI_Finalize
-    call exit(1)
+    error stop 1
   end if
 
   env%comm = MPI_COMM_WORLD
@@ -59,7 +56,7 @@ program vof_2d_main
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
     deallocate(env%timer)
     call MPI_Finalize
-    call exit(1)
+    error stop 1
   end if
   call sim%init(env, params, stat, errmsg)
   if (stat /= 0) then
@@ -67,7 +64,7 @@ program vof_2d_main
     call env%simlog%close
     deallocate(env%timer)
     call MPI_Finalize
-    call exit(1)
+    error stop 1
   end if
   call sim%run(stat, errmsg)
   if (stat /= 0) then
@@ -75,7 +72,7 @@ program vof_2d_main
     call env%simlog%close
     deallocate(env%timer)
     call MPI_Finalize
-    call exit(1)
+    error stop 1
   end if
   call env%simlog%close
   deallocate(env%timer)

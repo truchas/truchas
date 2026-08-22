@@ -1,0 +1,27 @@
+{
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 0.5], "intervals": [80]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [100]},
+    "noise-factor": 0.2,
+    "random-seed": 7
+  },
+  "vof-model": {
+    "algorithm": "geometric",
+    "axisymmetric": true,
+    "velocity": {
+      "type": "library",
+      "library-path": "$<TARGET_FILE:vof_axisymmetric_velocity>",
+      "library-symbol": "axisymmetric_velocity",
+      "dimension": 2
+    }
+  },
+  "initial-regions": {
+    "disk": {"type": "disk", "center": [0.0, 0.75], "radius": 0.15},
+    "background": {"type": "background"}
+  },
+  "initial-region-refinement-level": 6,
+  "sim-control": {
+    "time-step": 0.001,
+    "output-times": [0.0, 0.1]
+  }
+}
