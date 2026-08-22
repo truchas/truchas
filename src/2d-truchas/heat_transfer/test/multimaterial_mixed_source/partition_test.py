@@ -8,7 +8,10 @@ from ht_2d_test_util import execute, finish, partition_from_argv
 
 
 def test():
-    partition_from_argv(Path(__file__).with_name("input.json"))
+    partition_from_argv(
+        Path(__file__).with_name("input.json"),
+        ["vf_low_capacity", "vf_high_capacity"],
+    )
     finish("mixed-source serial/4-process comparison")
 
 

@@ -243,7 +243,7 @@ contains
     call env%timer%stop('ht-solver')
 
     !! Create output file.
-    call this%output%open(this%mesh, stat, errmsg)
+    call this%output%open(this%mesh, this%matl_model, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing VTKHDF output: ' // errmsg
       return
@@ -510,7 +510,7 @@ contains
     call this%solver%get_cell_heat_soln(Hcell)
     call this%solver%get_cell_temp_soln(Tcell)
 
-    call this%output%write_solution(t, Hcell, Tcell)
+    call this%output%write_solution(t, Hcell, Tcell, this%composition%vfrac)
 
     call env%timer%stop('output')
 
