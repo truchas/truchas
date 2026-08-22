@@ -37,4 +37,4 @@ target_link_libraries(HT_2d_main ht2d truchas ${Truchas_LINK_LIBS})
 set_target_properties(HT_2d_main PROPERTIES OUTPUT_NAME ht_2d)
 
 # --- ctest binaries
-add_subdirectory(Test)
+add_subdirectory(test)
