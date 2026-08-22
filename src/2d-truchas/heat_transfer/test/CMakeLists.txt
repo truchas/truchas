@@ -83,6 +83,7 @@ add_ht_integrated_test(ht_2d_source source 1)
 add_ht_integrated_test(ht_2d_source-4p source 4)
 add_ht_integrated_test(ht_2d_nonlinear nonlinear 1)
 add_ht_integrated_test(ht_2d_nonlinear-4p nonlinear 4)
+add_ht_integrated_test(ht_2d_nonlinear_inclusion nonlinear_inclusion 4)
 add_ht_integrated_test(ht_2d_developer_mesh developer_mesh 4)
 add_ht_integrated_test(ht_2d_developer_mesh_tri developer_mesh_tri 4)
 

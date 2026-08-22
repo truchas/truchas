@@ -1,0 +1,62 @@
+// Nonlinear, 2-material heat conduction with low-conductivity inclusion
+
+{
+    "materials": {
+        "low-k": {
+            "properties": {
+                "conductivity": 0.05,
+                "density": 4.0,
+                "specific-heat": 0.25
+            }
+        },
+        "high-k": {
+            "properties": {
+                "conductivity": {
+                    "type": "polynomial",
+                    "poly-coef": [1.0],
+                    "poly-powers":[1],
+                    "poly-center": -0.1
+                },
+                "density": 4.0,
+                "specific-heat": 0.25
+            }
+        }
+    },
+    "material-regions": {
+        "inclusion": {
+            "material": "low-k",
+            "type": "disk",
+            "center": [0.0, 0.0],
+            "radius": 0.18
+        },
+        "background": {
+            "material": "high-k",
+            "type": "background"
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [-0.375, 0.375], "intervals": [50]},
+        "y-axis": {"coarse-grid": [0.0, 0.25], "intervals": [17]},
+        "noise-factor": 0.07
+    },
+    "ht-model": {
+        "bc": {
+            "left": {"type": "flux", "face-set-ids": [1], "flux": -10.0},
+            "right": {"type": "temperature", "face-set-ids": [2], "temp": 0.0},
+            "bottom-top": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
+        }
+    },
+    "ht-solver": {
+        "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+        "error-norm": {"abs-t-tol": 1.0e-5, "rel-t-tol": 1.0e-3, "abs-h-tol": 1.0e-5, "rel-h-tol": 1.0e-3},
+        "integrator": {"nlk-max-iter": 5, "nlk-tol": 0.01}
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-5,
+        "min-time-step": 1.0e-6,
+        "output-times": [0.1]
+    },
+    "initial-temperature": 0.0
+    }
+}

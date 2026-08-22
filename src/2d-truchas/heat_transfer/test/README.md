@@ -13,8 +13,11 @@ an `input.json` and a short `test.py` checker:
   `multimaterial_mixed_source`, and `multimaterial_mixed_tri_source` test
   material properties and mixed cells;
 - `multimaterial_conduction` tests the steady composite-conductivity profile;
+- `nonlinear_inclusion` is a reference-data regression for nonlinear
+  heterogeneous conduction, corresponding to mainline diffusion test DS2;
 - `developer_mesh` and `developer_mesh_tri` exercise developer mesh options.
 
 The `partition_test.py` scripts compare serial and four-process VTKHDF output
-in external cell and node order for selected cases. Shared execution and
-VTKHDF helpers are in `support/ht_2d_test_util.py`.
+in external cell and node order for selected cases. Reference-data cases keep
+their VTKHDF reference under `reference/`. Shared execution and VTKHDF helpers
+are in `support/ht_2d_test_util.py`.

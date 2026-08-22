@@ -22,7 +22,7 @@ class Run:
     final_time: float
 
 
-def run_case(executable, input_file, nproc=1, mpiexec=None):
+def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=1.0e-2):
     """Run ht_2d and return its final VTKHDF result."""
 
     executable = pathlib.Path(executable).resolve()
@@ -61,8 +61,10 @@ def run_case(executable, input_file, nproc=1, mpiexec=None):
     if not completed:
         raise AssertionError("completion record not found in run.log")
     final_time = float(completed[-1])
-    if abs(final_time - 1.0e-2) > 1.0e-12:
-        raise AssertionError(f"final time {final_time:g} differs from 0.01")
+    if abs(final_time - expected_final_time) > 1.0e-12:
+        raise AssertionError(
+            f"final time {final_time:g} differs from {expected_final_time:g}"
+        )
 
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
@@ -83,12 +85,14 @@ def check_close(actual, expected, tolerance, label):
         raise AssertionError(f"{label} error {error:g}")
 
 
-def run_from_argv(input_file):
+def run_from_argv(input_file, expected_final_time=1.0e-2):
     if len(sys.argv) not in (2, 4):
         raise AssertionError(f"usage: {sys.argv[0]} HT_2D [NPROC MPIEXEC]")
     nproc = int(sys.argv[2]) if len(sys.argv) == 4 else 1
     mpiexec = sys.argv[3] if len(sys.argv) == 4 else None
-    return run_case(sys.argv[1], input_file, nproc, mpiexec)
+    return run_case(
+        sys.argv[1], input_file, nproc, mpiexec, expected_final_time
+    )
 
 
 def partition_from_argv(input_file, volume_fraction_names=None):
