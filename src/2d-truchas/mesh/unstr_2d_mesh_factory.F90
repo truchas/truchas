@@ -109,6 +109,10 @@ contains
       stat = 0
       if (is_IOP) then
         call params%get('mesh-file', mesh_file)
+        if (mesh_file(1:1) /= '/' .and. allocated(env%input_dir)) then
+          mesh_file = trim(env%input_dir) // trim(mesh_file)
+          call params%set('mesh-file', mesh_file)
+        end if
         call read_exodus_mesh(mesh_file, mesh, stat, errmsg)
         if (stat == 0 .and. mesh%num_dim /= 2) then
           stat = 1

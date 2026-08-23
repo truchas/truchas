@@ -21,6 +21,7 @@ module simulation_command_line_type
   type, public :: simulation_command_line
     character(:), allocatable :: program
     character(:), allocatable :: input_file
+    character(:), allocatable :: input_dir
     character(:), allocatable :: output_dir
     logical :: force = .false.
     logical :: help = .false.
@@ -91,6 +92,7 @@ contains
       errmsg = 'an input file is required'
       return
     end if
+    this%input_dir = dirname(this%input_file)
     if (.not.allocated(this%output_dir)) then
       this%output_dir = file_stem(this%input_file)
     end if
@@ -158,6 +160,22 @@ contains
     end if
 
   end function basename
+
+
+  pure function dirname(path) result(name)
+
+    character(*), intent(in) :: path
+    character(:), allocatable :: name
+    integer :: i
+
+    i = scan(trim(path), '/', back=.true.)
+    if (i == 0) then
+      name = './'
+    else
+      name = trim(path(:i))
+    end if
+
+  end function dirname
 
 
   pure function file_stem(path) result(stem)

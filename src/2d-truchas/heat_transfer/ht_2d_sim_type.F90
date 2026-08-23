@@ -184,6 +184,33 @@ contains
     call env%timer%start('ht-model')
     if (params%is_sublist('ht-model')) then
       plist => params%sublist('ht-model')
+      block
+        type(parameter_list), pointer :: constants
+        real(r8) :: value
+
+        constants => params%sublist('physical-constants', stat, errmsg)
+        if (stat /= 0) then
+          errmsg = 'processing ' // params%path() // ': ' // errmsg
+          return
+        end if
+        context = 'processing ' // constants%path() // ': '
+        if (constants%is_parameter('stefan-boltzmann')) then
+          call constants%get('stefan-boltzmann', value, stat, errmsg)
+          if (stat /= 0) then
+            errmsg = context // errmsg
+            return
+          end if
+          call plist%set('stefan-boltzmann', value)
+        end if
+        if (constants%is_parameter('absolute-zero')) then
+          call constants%get('absolute-zero', value, stat, errmsg)
+          if (stat /= 0) then
+            errmsg = context // errmsg
+            return
+          end if
+          call plist%set('absolute-zero', value)
+        end if
+      end block
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
       call this%model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg)

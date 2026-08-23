@@ -589,6 +589,7 @@ contains
       nmat = count(vof(:,i) > this%cutoff)
 
       if (nmat > 2 .and. this%nested_dissection) then
+        ! TODO: Implement nested-dissection reconstruction for multimaterial cells.
         INSIST(.false.)
         !call this%donor_fluxes_nd_cell(i, vel, vof, dt)
       else
