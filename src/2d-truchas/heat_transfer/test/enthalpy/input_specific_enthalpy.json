@@ -1,0 +1,51 @@
+{
+    "materials": {
+        "stuff": {
+            "properties": {
+                "conductivity": 1.0,
+                "density": 4.0,
+                "specific-enthalpy": {
+                    "type": "polynomial",
+                    "poly-coef": [1.0, 0.5],
+                    "poly-powers": [0, 1],
+                    "poly-center": 2.0
+                }
+            }
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [21]},
+        "y-axis": {"coarse-grid": [-0.05, 0.05], "intervals": [1]}
+    },
+    "ht-model": {
+        "bc": {
+            "right": {"type": "temperature", "face-set-ids": [2], "temp": 5.0},
+            "adiabatic": {"type": "flux", "face-set-ids": [1, 3, 4], "flux": 0.0}
+        }
+    },
+    "ht-solver": {
+        "preconditioner": {
+            "method": "BoomerAMG",
+            "params": {"num-cycles": 1}
+        },
+        "error-norm": {
+            "abs-t-tol": 0.0,
+            "rel-t-tol": 1.0e-4,
+            "rel-h-tol": 1.0e-4
+        },
+        "integrator": {
+            "nlk-max-iter": 10,
+            "nlk-tol": 1.0e-3
+        }
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-5,
+        "min-time-step": 1.0e-7,
+        "output-times": [0.5]
+    },
+    "initial-temperature": {
+        "type": "constant",
+        "value": 12.0
+    }
+}
