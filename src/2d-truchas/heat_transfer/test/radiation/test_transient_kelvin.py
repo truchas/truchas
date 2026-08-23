@@ -8,9 +8,9 @@ from ht_2d_test_util import check_close, execute, finish, run_from_argv
 from TruchasVTKHDFData import TruchasVTKHDFData
 
 
-def test():
+def check_kelvin(input_name, label):
     run = run_from_argv(
-        Path(__file__).with_name("transient-kelvin.json"),
+        Path(__file__).with_name(input_name),
         expected_final_time=1.0e-3,
     )
     reference = TruchasVTKHDFData(
@@ -28,7 +28,11 @@ def test():
                 1.0e-4,
                 f"Kelvin reference {name} at step {step}",
             )
-    finish("transient Kelvin radiation", run)
+    finish(label, run)
+
+
+def test():
+    check_kelvin("transient-kelvin.json", "transient Kelvin radiation")
 
 
 if __name__ == "__main__":

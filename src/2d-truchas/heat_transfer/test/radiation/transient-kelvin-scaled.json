@@ -1,0 +1,55 @@
+{
+    "materials": {
+        "default": {
+            "properties": {
+                "conductivity": 0.05,
+                "density": 4.0,
+                "specific-heat": 0.25
+            }
+        }
+    },
+    "mesh": {
+        "mesh-file": "annular-sector.gen",
+        "coord-scale-factor": 0.01
+    },
+    "physical-constants": {
+        "stefan-boltzmann": 1.134e-7
+    },
+    "ht-model": {
+        "bc": {
+            "inner-radius":   {"type": "flux", "face-set-ids": [1], "flux": 0.0},
+            "symmetry-sides": {"type": "flux", "face-set-ids": [3], "flux": 0.0},
+            "outer-radius": {
+                "type": "radiation",
+                "face-set-ids": [2],
+                "emissivity": 0.4,
+                "ambient-temp": 400.0
+            }
+        }
+    },
+    "ht-solver": {
+        "initial-condition": {"rel-tol": 1.0e-8, "max-iter": 100},
+        "preconditioner": {
+            "method": "BoomerAMG",
+            "params": {"num-cycles": 1}
+        },
+        "error-norm": {
+            "abs-t-tol": 1.0e-3,
+            "abs-h-tol": 1.0e-3
+        },
+        "integrator": {
+            "nlk-max-iter": 5,
+            "nlk-tol": 0.01
+        }
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-7,
+        "min-time-step": 1.0e-9,
+        "output-times": [1.0e-4, 1.0e-3]
+    },
+    "initial-temperature": {
+        "type": "constant",
+        "value": 300.0
+    }
+}
