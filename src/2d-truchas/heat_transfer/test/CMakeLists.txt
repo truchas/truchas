@@ -114,6 +114,7 @@ add_ht_integrated_test(ht_2d_nonlinear-4p nonlinear 4)
 add_ht_integrated_test(ht_2d_nonlinear_inclusion nonlinear_inclusion 4)
 add_ht_integrated_test(ht_2d_developer_mesh developer_mesh 4)
 add_ht_integrated_test(ht_2d_developer_mesh_tri developer_mesh_tri 4)
+add_ht_integrated_test(ht_2d_enthalpy1 enthalpy 1)
 
 add_ht_partition_test(ht_2d_vtkhdf_partition partition)
 add_ht_partition_test(ht_2d_partition_multimaterial_mixed_source multimaterial_mixed_source)

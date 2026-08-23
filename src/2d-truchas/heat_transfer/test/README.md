@@ -14,6 +14,8 @@ explicitly named quad and triangle x- and y-directed variants.
   `multimaterial_mixed_source`, and `multimaterial_mixed_tri_source` test
   material properties and mixed cells;
 - `multimaterial_conduction` tests the steady composite-conductivity profile;
+- `enthalpy` tests equivalent single-phase specific-heat and
+  specific-enthalpy material specifications;
 - `nonlinear_inclusion` is a reference-data regression for nonlinear
   heterogeneous conduction, corresponding to mainline diffusion test DS2;
 - `developer_mesh` and `developer_mesh_tri` exercise developer mesh options.
