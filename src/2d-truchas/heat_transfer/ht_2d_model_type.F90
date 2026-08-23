@@ -45,6 +45,7 @@ module ht_2d_model_type
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
     class(bndry_func2), allocatable :: bc_htc   ! External heat transfer coefficient
+    class(bndry_func2), allocatable :: bc_rad   ! Simple radiation
   contains
     procedure :: init
     procedure :: init_vector
@@ -69,11 +70,17 @@ contains
 
     character(:), allocatable :: context
     type(parameter_list), pointer :: plist
+    real(r8) :: sigma, abszero
 
     context = 'processing ' // params%path() // ': '
 
     call this%disc%init(mesh)
     this%mesh => mesh
+
+    call params%get('stefan-boltzmann', sigma, stat, errmsg, default=5.67e-8_r8)
+    if (stat /= 0) return
+    call params%get('absolute-zero', abszero, stat, errmsg, default=0.0_r8)
+    if (stat /= 0) return
 
     !! Enthalpy density.
     call required_property_check(matl_model, 'enthalpy', stat, errmsg)
@@ -123,7 +130,7 @@ contains
     !! Defines the boundary condition components
     if (params%is_sublist('bc')) then
       plist => params%sublist('bc')
-      call init_bc(this, env, plist, stat, errmsg)
+      call init_bc(this, env, plist, sigma, abszero, stat, errmsg)
       if (stat /= 0) return
     else
       stat = 1
@@ -145,16 +152,16 @@ contains
     call vec%init(this%mesh)
   end subroutine
 
-  subroutine init_bc(model, env, params, stat, errmsg)
+  subroutine init_bc(model, env, params, sigma, abszero, stat, errmsg)
 
     use bitfield_type
     use thermal_bc_factory_type
     use string_utilities, only: i_to_c
-    use physical_constants, only: stefan_boltzmann, absolute_zero
 
     class(ht_2d_model), intent(inout), target :: model
     type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
+    real(r8), intent(in) :: sigma, abszero
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -167,7 +174,7 @@ contains
 
     allocate(mask(model%mesh%nface), source=.false.)
 
-    call bc_fac%init(model%mesh, stefan_boltzmann, absolute_zero, params)
+    call bc_fac%init(model%mesh, sigma, abszero, params)
 
     !! Define the simple flux boundary conditions.
     call bc_fac%alloc_flux_bc(model%bc_flux, env, stat, errmsg)
@@ -183,6 +190,15 @@ contains
     if (stat /= 0) return
     if (allocated(model%bc_htc)) then
       mask(model%bc_htc%index) = .true. ! mark the HTC faces
+    end if
+
+    !! Define simple radiation boundary conditions. Radiation is a flux
+    !! condition and may be superimposed with other flux conditions, but not
+    !! with Dirichlet conditions.
+    call bc_fac%alloc_rad_bc(model%bc_rad, env, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%bc_rad)) then
+      mask(model%bc_rad%index) = .true. ! mark the radiation faces
     end if
 
     !! Define the Dirichlet boundary conditions.
@@ -313,6 +329,12 @@ contains
         call this%bc_htc%compute(t, u%tf)
         r%tf(this%bc_htc%index) = r%tf(this%bc_htc%index) + &
             this%bc_htc%value
+      end if
+
+      if (allocated(this%bc_rad)) then
+        call this%bc_rad%compute(t, u%tf)
+        r%tf(this%bc_rad%index) = r%tf(this%bc_rad%index) + &
+            this%bc_rad%value
       end if
 
     end subroutine compute_thermal_residual

@@ -210,6 +210,10 @@ contains
       call this%model%bc_htc%compute(t, u%tf)
       call dm%incr_face_diag(this%model%bc_htc%index, this%model%bc_htc%deriv)
     end if
+    if (allocated(this%model%bc_rad)) then
+      call this%model%bc_rad%compute(t, u%tf)
+      call dm%incr_face_diag(this%model%bc_rad%index, this%model%bc_rad%deriv)
+    end if
 
     call solver_params%set('krylov-method', 'cg')
     call solver_params%set('max-ds-iter', max_itr)

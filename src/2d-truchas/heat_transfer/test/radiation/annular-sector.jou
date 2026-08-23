@@ -1,0 +1,30 @@
+## /opt/cubit/16.18/bin/clarox
+## Cubit Version 16.18.0
+## Cubit Build 4ee5708
+## Revised Thu Jun 6 10:47:43 2024 -0600
+## Running 08/23/2026 07:22:25 AM
+## Command Options:
+create surface circle radius 1 zplane
+webcut body 1 with plane xplane offset 0
+webcut body 1 with plane xplane offset 0 rotate -60 about z center 0 0 0
+webcut body 1 with plane xplane offset 0 rotate 60 about z center 0 0 0
+webcut body 1 with cylinder radius {1/3} axis z
+delete body 2 to 5
+compress all
+
+surface 1 size 0.02
+surface 1 scheme pave
+mesh surface 1
+
+block 1 add surface 1
+block 1 element type QUAD4
+
+sideset 1 add curve 2
+sideset 1 name "inner"
+sideset 2 add curve 1
+sideset 2 name "outer"
+sideset 3 add curve 3 4
+sideset 3 name "symmetry"
+
+set exodus netcdf4 on
+export mesh "annular-sector.gen" dimension 2 overwrite

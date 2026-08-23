@@ -17,6 +17,7 @@ explicitly named quad and triangle x- and y-directed variants.
 - `enthalpy` tests equivalent single-phase specific-heat and
   specific-enthalpy material specifications;
 - `htc` tests an external heat-transfer-coefficient boundary condition;
+- `radiation` tests a simple ambient-radiation boundary condition;
 - `nonlinear_inclusion` is a reference-data regression for nonlinear
   heterogeneous conduction, corresponding to mainline diffusion test DS2;
 - `developer_mesh` and `developer_mesh_tri` exercise developer mesh options.

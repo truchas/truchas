@@ -99,6 +99,10 @@ contains
       call this%model%bc_htc%compute(t, u%tf)
       call dm%incr_face_diag(this%model%bc_htc%index, this%model%bc_htc%deriv)
     end if
+    if (allocated(this%model%bc_rad)) then
+      call this%model%bc_rad%compute(t, u%tf)
+      call dm%incr_face_diag(this%model%bc_rad%index, this%model%bc_rad%deriv)
+    end if
     call this%pc%compute
 
   end subroutine compute

@@ -55,6 +55,7 @@ program vof_2d_main
     if (is_IOP) error stop 1
     stop
   end if
+  env%input_dir = cli%input_dir
   env%output_dir = cli%output_dir
   open(newunit=inlun, file=cli%input_file, action='read', access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)

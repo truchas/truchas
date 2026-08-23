@@ -65,6 +65,7 @@ program ht_2d_main
     stop
   end if
 
+  env%input_dir = cli%input_dir
   env%output_dir = cli%output_dir
 
   !! Read the parameter list from the input file
