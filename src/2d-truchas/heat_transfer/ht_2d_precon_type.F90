@@ -74,15 +74,17 @@ contains
 
     class(ht_2d_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
-    type(ht_2d_vector), intent(in) :: u
+    type(ht_2d_vector), intent(inout) :: u
 
     real(r8) :: coef(this%mesh%ncell)
+    real(r8), allocatable :: boundary_deriv(:)
     type(mfd_2d_diff_matrix), pointer :: dm
 
     ASSERT(dt > 0.0_r8)
 
     this%dt = dt
     dm => this%pc%matrix_ref()
+    call this%mesh%face_imap%gather_offp(u%tf)
     call this%model%conductivity%compute_value(u%tc, coef(:this%mesh%ncell_onP))
     call this%mesh%cell_imap%gather_offp(coef)
     call dm%compute(coef)
@@ -93,6 +95,10 @@ contains
     if (allocated(this%model%bc_dir)) then
       call this%model%bc_dir%compute(t)
       call dm%set_dir_faces(this%model%bc_dir%index)
+    end if
+    if (allocated(this%model%bc_htc)) then
+      call this%model%bc_htc%compute_deriv(t, u%tf, boundary_deriv)
+      call dm%incr_face_diag(this%model%bc_htc%index, boundary_deriv)
     end if
     call this%pc%compute
 

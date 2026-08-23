@@ -22,9 +22,11 @@
 !! For each preconditioner assembly, call COMPUTE(COEF) first. It defines the
 !! raw diffusion matrix and discards all modifications made by the preceding
 !! assembly. Next, call INCR_CELL_DIAG as needed to add time derivative terms,
-!! then call SET_DIR_FACES for each distinct Dirichlet face set. Finally, call
-!! COMPUTE_FACE_SCHUR_MATRIX to form the face Schur complement after all
-!! matrix modifications are complete.
+  !! then call SET_DIR_FACES for each distinct Dirichlet face set. Finally, call
+  !! COMPUTE_FACE_SCHUR_MATRIX to form the face Schur complement after all
+  !! matrix modifications are complete.
+  !! INCR_FACE_DIAG may be used after COMPUTE to add diagonal contributions
+  !! from flux boundary conditions that depend on face temperature.
 !!
 !! SET_DIR_FACES both projects the face block and records the specified faces.
 !! The record is used when forming the Schur complement and by the diffusion
@@ -59,6 +61,7 @@ module mfd_2d_diff_matrix_type
     procedure :: compute
     procedure :: set_dir_faces
     procedure :: incr_cell_diag
+    procedure :: incr_face_diag
     procedure :: compute_face_schur_matrix
   end type mfd_2d_diff_matrix
 
@@ -221,6 +224,28 @@ contains
     real(r8), intent(in) :: values(:)
     ASSERT(size(values) == size(this%a11))
     this%a11 = this%a11 + values
+  end subroutine
+
+  !! Increment selected diagonal elements of the face-face diffusion
+  !! submatrix. The intended use is to add the Jacobian of a temperature-
+  !! dependent flux boundary condition.
+
+  subroutine incr_face_diag(this, indices, values)
+
+    class(mfd_2d_diff_matrix), intent(inout) :: this
+    integer, intent(in) :: indices(:)
+    real(r8), intent(in) :: values(:)
+
+    integer :: j
+
+    ASSERT(size(indices) == size(values))
+    ASSERT(minval(indices) >= 1)
+    ASSERT(maxval(indices) <= this%mesh%nface)
+
+    do j = 1, size(indices)
+      call this%a22%add_to(indices(j), indices(j), values(j))
+    end do
+
   end subroutine
 
   !! Compute the face Schur complement matrix SFF. SFF is intent(inout). It

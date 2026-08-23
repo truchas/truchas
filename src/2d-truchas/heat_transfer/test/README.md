@@ -16,6 +16,7 @@ explicitly named quad and triangle x- and y-directed variants.
 - `multimaterial_conduction` tests the steady composite-conductivity profile;
 - `enthalpy` tests equivalent single-phase specific-heat and
   specific-enthalpy material specifications;
+- `htc` tests an external heat-transfer-coefficient boundary condition;
 - `nonlinear_inclusion` is a reference-data regression for nonlinear
   heterogeneous conduction, corresponding to mainline diffusion test DS2;
 - `developer_mesh` and `developer_mesh_tri` exercise developer mesh options.

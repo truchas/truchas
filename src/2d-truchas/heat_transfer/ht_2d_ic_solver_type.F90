@@ -164,7 +164,7 @@ contains
     type(parameter_list), target :: solver_params
     type(hypre_hybrid) :: solver
     type(ht_2d_vector) :: udot, f
-    real(r8), allocatable :: coef(:), z(:)
+    real(r8), allocatable :: coef(:), z(:), boundary_deriv(:)
     real(r8) :: norm, rel_tol
     integer :: max_itr, num_itr, num_dscg_itr, num_pcg_itr
     character(80) :: msg
@@ -205,6 +205,10 @@ contains
     if (allocated(this%model%bc_dir)) then
       call this%model%bc_dir%compute(t)
       call dm%set_dir_faces(this%model%bc_dir%index)
+    end if
+    if (allocated(this%model%bc_htc)) then
+      call this%model%bc_htc%compute_deriv(t, u%tf, boundary_deriv)
+      call dm%incr_face_diag(this%model%bc_htc%index, boundary_deriv)
     end if
 
     call solver_params%set('krylov-method', 'cg')

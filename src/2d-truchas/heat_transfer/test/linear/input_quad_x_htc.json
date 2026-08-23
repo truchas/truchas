@@ -1,0 +1,79 @@
+{
+    "materials": {
+        "default": {
+            "properties": {
+                "conductivity": 1.0,
+                "density": 1.0,
+                "specific-heat": 1.0
+            }
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]},
+        "rotation-angle": 30.0
+    },
+    "ht-model": {
+        "bc": {
+            "left": {
+                "type": "htc",
+                "face-set-ids": [1],
+                "htc": 1.0,
+                "ambient-temp": 2.0
+            },
+            "right": {
+                "type": "htc",
+                "face-set-ids": [2],
+                "htc": 1.0,
+                "ambient-temp": -1.0
+            },
+            "bottom": {
+                "type": "htc",
+                "face-set-ids": [3],
+                "htc": 2.0,
+                "ambient-temp": {
+                    "type": "polynomial",
+                    "poly-coef": [1.0, -0.8660254037844386, -0.5],
+                    "poly-powers": [[0, 0, 0], [0, 1, 0], [0, 0, 1]]
+                }
+            },
+            "top": {
+                "type": "htc",
+                "face-set-ids": [4],
+                "htc": 2.0,
+                "ambient-temp": {
+                    "type": "polynomial",
+                    "poly-coef": [1.0, -0.8660254037844386, -0.5],
+                    "poly-powers": [[0, 0, 0], [0, 1, 0], [0, 0, 1]]
+                }
+            }
+        }
+    },
+    "ht-solver": {
+        "initial-condition": {"rel-tol": 1.0e-8, "max-iter": 100},
+        "preconditioner": {
+            "method": "BoomerAMG",
+            "params": {"num-cycles": 1}
+        },
+        "error-norm": {
+            "abs-t-tol": 1.0e-12,
+            "rel-t-tol": 1.0e-8,
+            "rel-h-tol": 1.0e-8
+        },
+        "integrator": {
+            "nlk-max-iter": 10,
+            "nlk-tol": 0.0001
+        }
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-3,
+        "min-time-step": 1.0e-6,
+        "output-times": [0.01]
+    },
+    "initial-temperature": {
+        "type": "polynomial",
+        "poly-coef": [1.0, -0.8660254037844386, -0.5],
+        "poly-powers": [[0, 0], [1, 0], [0, 1]]
+    }
+}
