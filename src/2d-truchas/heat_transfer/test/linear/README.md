@@ -26,6 +26,18 @@ These use analytic Dirichlet conditions on all four sides, since constant
 normal flux values would not remain consistent with the linear solution after
 rotating or perturbing the boundary geometry.
 
+The HTC variants exercise the same linear profile with a 30-degree mesh
+rotation:
+
+- `input_quad_x_htc.json` and `test_quad_x_htc.py` use quadrilaterals;
+- `input_tri_x_htc.json` and `test_tri_x_htc.py` use triangles.
+
+All four sides use HTC conditions. The left and right sides have nonzero
+exchange with constant ambient temperatures, while the top and bottom sides
+use the spatially varying analytic temperature as the ambient temperature.
+Thus these cases test both nonzero HTC fluxes and evaluation of a spatial
+ambient-temperature function on a rotated mesh.
+
 The analytic checkers compare the final cell temperatures with the appropriate
 cell-center profile. Each case is run in both serial and four-process
 configurations. All analytic checks use a `1e-10` tolerance. The triangle and

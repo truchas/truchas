@@ -20,6 +20,7 @@ module ht_2d_model_type
   use unstr_2d_mesh_type
   use mfd_2d_disc_type
   use bndry_func1_class
+  use bndry_func2_class
   use scalar_mesh_multifunc_type
   use new_mesh_func_class
   use cell_matl_prop_func_type
@@ -43,6 +44,7 @@ module ht_2d_model_type
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
+    class(bndry_func2), allocatable :: bc_htc   ! External heat transfer coefficient
   contains
     procedure :: init
     procedure :: init_vector
@@ -174,6 +176,15 @@ contains
       mask(model%bc_flux%index) = .true. ! mark the simple flux faces
     end if
 
+    !! Define external heat-transfer-coefficient boundary conditions. HTC
+    !! conditions are flux conditions and may be superimposed with simple
+    !! flux conditions, but not with Dirichlet conditions.
+    call bc_fac%alloc_htc_bc(model%bc_htc, env, stat, errmsg)
+    if (stat /= 0) return
+    if (allocated(model%bc_htc)) then
+      mask(model%bc_htc%index) = .true. ! mark the HTC faces
+    end if
+
     !! Define the Dirichlet boundary conditions.
     call bc_fac%alloc_dir_bc(model%bc_dir, env, stat, errmsg)
     if (stat /= 0) return
@@ -296,6 +307,12 @@ contains
         associate (index => this%bc_flux%index, value => this%bc_flux%value)
           r%tf(index) = r%tf(index) + this%mesh%area(index)*value
         end associate
+      end if
+
+      if (allocated(this%bc_htc)) then
+        call this%bc_htc%compute(t, u%tf)
+        r%tf(this%bc_htc%index) = r%tf(this%bc_htc%index) + &
+            this%bc_htc%value
       end if
 
     end subroutine compute_thermal_residual

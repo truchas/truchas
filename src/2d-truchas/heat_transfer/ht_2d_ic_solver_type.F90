@@ -206,6 +206,10 @@ contains
       call this%model%bc_dir%compute(t)
       call dm%set_dir_faces(this%model%bc_dir%index)
     end if
+    if (allocated(this%model%bc_htc)) then
+      call this%model%bc_htc%compute(t, u%tf)
+      call dm%incr_face_diag(this%model%bc_htc%index, this%model%bc_htc%deriv)
+    end if
 
     call solver_params%set('krylov-method', 'cg')
     call solver_params%set('max-ds-iter', max_itr)
