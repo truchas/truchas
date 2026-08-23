@@ -90,7 +90,7 @@ contains
                 deriv => this%deriv(this%xgroup(n):this%xgroup(n+1)-1))
         do j = 1, size(index)
           associate (fnode => this%mesh%face_node_list_view(index(j)))
-            args(1:3) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
+            args(1:) = sum(this%mesh%x(:,fnode),dim=2) / size(fnode)
           end associate
           c = this%mesh%area(index(j)) * this%f(n)%eval(args)
           value(j) = c * (var(index(j)) - this%g(n)%eval(args))
