@@ -83,7 +83,8 @@ contains
     class(scalar_func), allocatable :: initial_temp
     class(vector_func), allocatable :: initial_velocity_func
     character(:), allocatable :: matl_name(:)
-    real(r8) :: density, viscosity, dt_init, dt_min, dt_max, dt_grow, courant
+    real(r8) :: density, viscosity, thermal_expan_coef, expan_ref_temp
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant
     real(r8), allocatable :: body_acceleration(:), temp(:), velocity(:,:)
     integer :: max_try
 
@@ -122,6 +123,11 @@ contains
     plist => params%sublist('flow-model')
     call plist%get('density', density, stat, errmsg); if (stat /= 0) return
     call plist%get('viscosity', viscosity, stat, errmsg); if (stat /= 0) return
+    call plist%get('thermal-expan-coef', thermal_expan_coef, &
+        stat=stat, errmsg=errmsg, default=0.0_r8)
+    if (stat /= 0) return
+    call plist%get('expan-ref-temp', expan_ref_temp, stat=stat, errmsg=errmsg, default=0.0_r8)
+    if (stat /= 0) return
     call plist%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8,0.0_r8])
     if (stat /= 0) return
     if (.not.plist%is_sublist('bc')) then
@@ -129,7 +135,8 @@ contains
     end if
     flow_bc => plist%sublist('bc')
     allocate(this%flow_model, this%flow_state)
-    call this%flow_model%init(env, this%mesh, flow_bc, density, viscosity, stat, errmsg, body_acceleration)
+    call this%flow_model%init(env, this%mesh, flow_bc, density, viscosity, stat, errmsg, body_acceleration, &
+        thermal_expan_coef, expan_ref_temp)
     if (stat /= 0) return
     call this%flow_state%init(this%mesh)
 

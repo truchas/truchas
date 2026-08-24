@@ -39,6 +39,7 @@ module ns_2d_solver_type
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
   contains
     procedure :: init
+    procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: step
     procedure :: advance_momentum
@@ -64,6 +65,16 @@ contains
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
         model%body_acceleration)
     call this%ic_solver%init(model, momentum_params, projection_params)
+  end subroutine
+
+
+  subroutine set_buoyancy_temperature(this, temperature)
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: temperature(:)
+
+    call this%model%set_buoyancy_temperature(temperature)
+    call this%projection_update%set_buoyancy_temperature(temperature)
+    call this%ic_solver%set_buoyancy_temperature(temperature)
   end subroutine
 
 

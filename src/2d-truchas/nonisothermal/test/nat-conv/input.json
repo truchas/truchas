@@ -1,0 +1,58 @@
+{
+    "materials": {
+        "air": {
+            "properties": {
+                "conductivity": 2.5470e-5,
+                "density": 1.2180,
+                "specific-heat": 1.006
+            }
+        }
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [49]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [49]}
+    },
+    "flow-model": {
+        "density": 1.2180,
+        "viscosity": 1.7975845e-5,
+        "thermal-expan-coef": 0.00328407224959,
+        "expan-ref-temp": 0.0,
+        "body-acceleration": [0.0, -9.34142216e-5],
+        "bc": {
+            "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3, 4]}
+        }
+    },
+    "ht-model": {
+        "bc": {
+            "left": {"type": "temperature", "face-set-ids": [1], "temp": 2.0},
+            "right": {"type": "temperature", "face-set-ids": [2], "temp": 1.0},
+            "top-bottom": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
+        },
+        "source": {}
+    },
+    "flow-solver": {
+        "momentum-solver": {"rel-tol": 1.0e-8, "abs-tol": 1.0e-10,
+            "max-ds-iter": 50, "max-amg-iter": 25},
+        "projection-solver": {"rel-tol": 0.0, "abs-tol": 1.0e-12,
+            "max-ds-iter": 50, "max-amg-iter": 25}
+    },
+    "ht-solver": {
+        "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+        "error-norm": {"abs-t-tol": 0.0, "rel-t-tol": 1.0e-4, "rel-h-tol": 1.0e-4},
+        "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.05}
+    },
+    "coupled-solver": {
+        "initial-time-step": 1.0e-2,
+        "min-time-step": 1.0e-5,
+        "max-time-step": 1.0e3,
+        "time-step-growth": 1.05,
+        "courant-number": 0.5
+    },
+    "sim-control": {"initial-time": 0.0, "output-times": [1000.0, 30000.0]},
+    "initial-temperature": {
+        "type": "tabular",
+        "tabular x": [0.0, 1.0],
+        "tabular y": [2.0, 1.0]
+    },
+    "initial-velocity": [0.0, 0.0]
+}

@@ -40,8 +40,8 @@ module ht_2d_model_type
     class(new_mesh_func), allocatable :: conductivity
     class(new_mesh_func), allocatable :: H_of_T
     type(ht_2d_tofh) :: T_of_H            ! inverse enthalpy-temperature relation
-    type(scalar_mesh_multifunc), allocatable :: source  ! external heat source
-    real(r8), allocatable :: ext_enthalpy_rate(:)       ! cell-integrated external rate
+    type(scalar_mesh_multifunc), allocatable :: src
+    real(r8), allocatable :: ext_rate(:)                ! cell-integrated external rate
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
@@ -78,7 +78,6 @@ contains
 
     call this%disc%init(mesh)
     this%mesh => mesh
-    allocate(this%ext_enthalpy_rate(mesh%ncell_onP), source=0.0_r8)
 
     call params%get('stefan-boltzmann', sigma, stat, errmsg, default=5.67e-8_r8)
     if (stat /= 0) return
@@ -163,7 +162,7 @@ contains
     real(r8), intent(in) :: enthalpy_rate(:)
 
     ASSERT(size(enthalpy_rate) == this%mesh%ncell_onP)
-    this%ext_enthalpy_rate = enthalpy_rate
+    this%ext_rate = enthalpy_rate
   end subroutine
 
   subroutine init_bc(model, env, params, sigma, abszero, stat, errmsg)
@@ -264,7 +263,7 @@ contains
     call src_fac%init(model%mesh, params)
 
     !! Allocated function-based source
-    call src_fac%alloc_source_funcs(env, model%source, stat, errmsg)
+    call src_fac%alloc_source_funcs(env, model%src, stat, errmsg)
     if (stat /= 0) return
 
   end subroutine init_source
@@ -324,14 +323,14 @@ contains
       call this%disc%apply_diff(cval, u%tc, u%tf, r%tc, r%tf)
       r%tc(:ncell_onP) = r%tc(:ncell_onP) + this%mesh%volume(:ncell_onP)*udot%hc(:ncell_onP)
 
-      if (allocated(this%ext_enthalpy_rate)) then
-        r%tc(:ncell_onP) = r%tc(:ncell_onP) - this%ext_enthalpy_rate
+      if (allocated(this%ext_rate)) then
+        r%tc(:ncell_onP) = r%tc(:ncell_onP) - this%ext_rate
       end if
 
-      if (allocated(this%source)) then
-        call this%source%compute(t, u%tc)
+      if (allocated(this%src)) then
+        call this%src%compute(t, u%tc)
         r%tc(:ncell_onP) = r%tc(:ncell_onP) &
-            - this%mesh%volume(:ncell_onP)*this%source%value(:ncell_onP)
+            - this%mesh%volume(:ncell_onP)*this%src%value(:ncell_onP)
       end if
 
       if (allocated(this%bc_dir)) r%tf(this%bc_dir%index) = Tdir - this%bc_dir%value

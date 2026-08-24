@@ -56,7 +56,7 @@ contains
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
-        model%body_acceleration)
+        model%body_acceleration, model%thermal_expan_coef, model%expan_ref_temp)
     call this%ic_solver%init(model, momentum_params, projection_params)
   end subroutine
 
