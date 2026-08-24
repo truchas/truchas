@@ -32,24 +32,29 @@ module flow_2d_projection_update_type
     type(flow_2d_projection), pointer :: projection => null()  ! unowned reference
     type(flow_2d_projection_solver), pointer :: solver => null()  ! unowned reference
     real(r8) :: body_acceleration(2) = 0.0_r8
+    real(r8) :: thermal_expan_coef = 0.0_r8, expan_ref_temp = 0.0_r8
     real(r8), allocatable :: grad_p_old(:,:), grad_p_new(:,:), velocity_work(:,:)
     real(r8), allocatable :: gravity_head(:,:)
+    real(r8), allocatable :: buoyancy_temperature(:)
     real(r8), allocatable :: derivative_f(:), delta_p(:), rhs(:), flux(:)
   contains
     procedure :: init
+    procedure :: set_buoyancy_temperature
     procedure :: correct
     procedure :: project_velocity
   end type
 
 contains
 
-  subroutine init(this, mesh, operators, projection, solver, body_acceleration)
+  subroutine init(this, mesh, operators, projection, solver, body_acceleration, &
+      thermal_expan_coef, expan_ref_temp)
     class(flow_2d_projection_update), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), target, intent(in) :: operators
     type(flow_2d_projection), target, intent(in) :: projection
     type(flow_2d_projection_solver), target, intent(in) :: solver
     real(r8), optional, intent(in) :: body_acceleration(:)
+    real(r8), optional, intent(in) :: thermal_expan_coef, expan_ref_temp
 
     this%mesh => mesh
     this%operators => operators
@@ -59,10 +64,29 @@ contains
       ASSERT(size(body_acceleration) == 2)
       this%body_acceleration = body_acceleration
     end if
+    if (present(thermal_expan_coef)) then
+      ASSERT(thermal_expan_coef >= 0.0_r8)
+      this%thermal_expan_coef = thermal_expan_coef
+    end if
+    if (present(expan_ref_temp)) this%expan_ref_temp = expan_ref_temp
     allocate(this%grad_p_old(2,mesh%ncell), this%grad_p_new(2,mesh%ncell), &
         this%velocity_work(2,mesh%ncell), this%derivative_f(mesh%nface), &
         this%gravity_head(2,mesh%nface), &
         this%delta_p(mesh%ncell), this%rhs(mesh%ncell_onP), this%flux(mesh%ncell_onP))
+    if (this%thermal_expan_coef > 0.0_r8) then
+      allocate(this%buoyancy_temperature(mesh%ncell), source=0.0_r8)
+    end if
+  end subroutine
+
+
+  subroutine set_buoyancy_temperature(this, temperature)
+    class(flow_2d_projection_update), intent(inout) :: this
+    real(r8), intent(in) :: temperature(:)
+
+    if (.not.allocated(this%buoyancy_temperature)) return
+    ASSERT(size(temperature) == this%mesh%ncell_onP)
+    this%buoyancy_temperature(:this%mesh%ncell_onP) = temperature
+    call this%mesh%cell_imap%gather_offp(this%buoyancy_temperature)
   end subroutine
 
 
@@ -119,20 +143,31 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, bc, state, stat)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, bc, state, stat, initial)
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
     type(flow_2d_bc), intent(in) :: bc
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
+    logical, optional, intent(in) :: initial
 
     integer :: c, f, pin_face
+    logical :: initial_
 
     ASSERT(dt > 0.0_r8)
     stat = 0
+    initial_ = .false.
+    if (present(initial)) initial_ = initial
     ASSERT(size(inv_density_c) >= this%mesh%ncell)
     ASSERT(size(inv_density_f) >= this%mesh%nface)
-    call gradient_pressure(this, state%p_cc, this%grad_p_old, bc, inv_density_c)
+    if (initial_) then
+      !! Refresh GRAVITY_HEAD, but do not use the resulting gradient as the
+      !! previous committed pressure gradient for the initial predictor.
+      call gradient_pressure(this, state%p_cc, this%grad_p_new, bc, inv_density_c)
+      this%grad_p_old = 0.0_r8
+    else
+      call gradient_pressure(this, state%p_cc, this%grad_p_old, bc, inv_density_c)
+    end if
     this%velocity_work = state%vel_cc
     do c = 1, this%mesh%ncell_onP
       this%velocity_work(:,c) = this%velocity_work(:,c) + dt*inv_density_c(c)*this%grad_p_old(:,c)
@@ -188,19 +223,32 @@ contains
     real(r8), intent(in) :: inv_density_c(:)
 
     integer :: f, c1, c2
+    real(r8) :: rho
 
     this%gravity_head = 0.0_r8
     do f = 1, this%mesh%nface_onP
       c1 = this%mesh%fcell(1,f)
       c2 = this%mesh%fcell(2,f)
+      rho = 1.0_r8/inv_density_c(c1)
+      if (allocated(this%buoyancy_temperature)) then
+        rho = rho*(1.0_r8 - this%thermal_expan_coef*(this%buoyancy_temperature(c1) - &
+            this%expan_ref_temp))
+      end if
       this%gravity_head(1,f) = -this%body_acceleration(1)* &
-          (this%mesh%cell_centroid(1,c1)-this%mesh%face_centroid(1,f))/inv_density_c(c1) - &
+          (this%mesh%cell_centroid(1,c1)-this%mesh%face_centroid(1,f))*rho - &
           this%body_acceleration(2)* &
-          (this%mesh%cell_centroid(2,c1)-this%mesh%face_centroid(2,f))/inv_density_c(c1)
-      if (c2 > 0) this%gravity_head(2,f) = -this%body_acceleration(1)* &
-          (this%mesh%cell_centroid(1,c2)-this%mesh%face_centroid(1,f))/inv_density_c(c2) - &
-          this%body_acceleration(2)* &
-          (this%mesh%cell_centroid(2,c2)-this%mesh%face_centroid(2,f))/inv_density_c(c2)
+          (this%mesh%cell_centroid(2,c1)-this%mesh%face_centroid(2,f))*rho
+      if (c2 > 0) then
+        rho = 1.0_r8/inv_density_c(c2)
+        if (allocated(this%buoyancy_temperature)) then
+          rho = rho*(1.0_r8 - this%thermal_expan_coef*(this%buoyancy_temperature(c2) - &
+              this%expan_ref_temp))
+        end if
+        this%gravity_head(2,f) = -this%body_acceleration(1)* &
+            (this%mesh%cell_centroid(1,c2)-this%mesh%face_centroid(1,f))*rho - &
+            this%body_acceleration(2)* &
+            (this%mesh%cell_centroid(2,c2)-this%mesh%face_centroid(2,f))*rho
+      end if
     end do
     call this%mesh%face_imap%gather_offp(this%gravity_head)
     if (allocated(bc%pressure_neumann)) then

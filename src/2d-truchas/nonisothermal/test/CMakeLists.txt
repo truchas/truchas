@@ -37,3 +37,19 @@ set_tests_properties(ns_ht_2d_channel_partition PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
+
+add_test(NAME ns_ht_2d_nat_conv
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/nat-conv/test.py
+    $<TARGET_FILE:ns_ht_2d_main> ${MPIEXEC})
+set_tests_properties(ns_ht_2d_nat_conv PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 600)
+
+add_test(NAME ns_ht_2d_hydrostatic
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/hydrostatic/test.py
+    $<TARGET_FILE:ns_ht_2d_main> ${MPIEXEC})
+set_tests_properties(ns_ht_2d_hydrostatic PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 120)

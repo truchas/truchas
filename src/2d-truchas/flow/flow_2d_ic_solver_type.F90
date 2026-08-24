@@ -21,7 +21,7 @@ module flow_2d_ic_solver_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
-  use parallel_communication, only: global_maxval, global_sum
+  use parallel_communication, only: global_maxval
   implicit none
   private
 
@@ -34,6 +34,7 @@ module flow_2d_ic_solver_type
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), velocity_cc(:,:), velocity_fn(:)
   contains
     procedure :: init
+    procedure :: set_buoyancy_temperature
     procedure :: solve
     final :: delete
   end type
@@ -51,7 +52,15 @@ contains
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
-        model%body_acceleration)
+        model%body_acceleration, model%thermal_expan_coef, model%expan_ref_temp)
+  end subroutine
+
+
+  subroutine set_buoyancy_temperature(this, temperature)
+    class(flow_2d_ic_solver), intent(inout) :: this
+    real(r8), intent(in) :: temperature(:)
+
+    call this%projection_update%set_buoyancy_temperature(temperature)
   end subroutine
 
 
@@ -65,8 +74,7 @@ contains
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
 
-    integer :: c, i, ndir
-    real(r8) :: pressure_offset
+    integer :: c
     character(:), allocatable :: errmsg
 
     ASSERT(dt > 0.0_r8)
@@ -78,26 +86,10 @@ contains
     call this%model%bc%compute_initial(time)
     call this%model%bc%check_velocity_flux(stat, errmsg)
     if (stat /= 0) return
-    !! Seed the physical pressure with the hydrostatic potential for the
-    !! present uniform-density model.  The artificial Stokes solve below can
-    !! then repair this seed when the supplied velocity is not equilibrium.
-    pressure_offset = 0.0_r8
-    ndir = 0
-    if (any(this%model%body_acceleration /= 0.0_r8) .and. &
-        size(this%model%bc%pressure_dirichlet%index) > 0) then
-      ndir = size(this%model%bc%pressure_dirichlet%index)
-      do i = 1, size(this%model%bc%pressure_dirichlet%index)
-        pressure_offset = pressure_offset + this%model%bc%pressure_dirichlet%value(i) - &
-            this%model%density_c(1)*dot_product(this%model%body_acceleration, &
-            this%model%mesh%face_centroid(:,this%model%bc%pressure_dirichlet%index(i)))
-      end do
-    end if
-    ndir = global_sum(ndir)
-    if (ndir > 0) pressure_offset = global_sum(pressure_offset)/ndir
-    do c = 1, this%model%mesh%ncell
-      state%p_cc(c) = this%model%density_c(c)*dot_product(this%model%body_acceleration, &
-          this%model%mesh%cell_centroid(:,c)) + pressure_offset
-    end do
+    !! Start the temporary solve from zero pressure.  As in mainline, the
+    !! predictor/projection sequence computes the initial pressure using the
+    !! same pressure-gradient and body-force operators used during stepping.
+    state%p_cc = 0.0_r8
     call this%projection_update%project_velocity(dt, this%model%inv_density_c, this%model%inv_density_f, &
         this%model%bc, state, stat)
     if (stat /= 0) return
@@ -106,7 +98,10 @@ contains
 
     !! Compute pressure from a temporary Stokes step.  The repaired velocity
     !! remains the initial datum after this procedure returns.
-    call this%model%pressure_gradient(state%p_cc, this%grad_p)
+    !! The mainline initial predictor starts with no committed pressure
+    !! gradient.  Body force enters through the projection below, using the
+    !! same gravity-head operator as an ordinary step.
+    this%grad_p = 0.0_r8
     call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
         this%model%bc, this%rhs)
     do c = 1, this%model%mesh%ncell_onP
@@ -121,7 +116,7 @@ contains
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
     call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%bc, state, stat)
+        this%model%bc, state, stat, initial=.true.)
     if (stat /= 0) return
     state%vel_cc = this%velocity_cc
     state%vel_fn = this%velocity_fn

@@ -125,16 +125,17 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
+    call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
+    if (stat /= 0) return
+    call this%thermal%get_cell_temp_soln(this%temp)
+    call this%flow%set_buoyancy_temperature(this%temp)
     call this%flow%set_initial_state(time, this%dt_init, velocity, stat)
     if (stat /= 0) then
       errmsg = 'initializing flow state failed'
       return
     end if
-    call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
-    if (stat == 0) then
-      this%hnext = this%dt_init
-      this%hlast = this%dt_init
-    end if
+    this%hnext = this%dt_init
+    this%hlast = this%dt_init
   end subroutine
 
 
@@ -208,6 +209,8 @@ contains
         end if
         cycle
       end if
+      call this%thermal%get_cell_temp_soln(this%temp)
+      call this%flow%set_buoyancy_temperature(this%temp)
       call this%flow%advance_momentum(t_n, t_try, this%material_transport%flux_volumes, stat, errmsg)
       if (stat /= 0) then
         stat = -3

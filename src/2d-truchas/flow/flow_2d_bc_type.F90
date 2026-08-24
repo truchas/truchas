@@ -51,6 +51,8 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(flow_2d_bc_factory) :: factory
+    integer :: i
+    logical :: overlap
 
     this%mesh => mesh
     call factory%init(mesh, params)
@@ -65,6 +67,19 @@ contains
     call factory%alloc_neu_prs_bc(this%pressure_neumann, env, stat, errmsg)
     if (stat /= 0) return
     call apply_default(this, mesh)
+
+    overlap = .false.
+    do i = 1, size(this%pressure_dirichlet%index)
+      if (any(this%velocity_zero_normal%index == this%pressure_dirichlet%index(i)) .or. &
+          any(this%velocity_dirichlet%index == this%pressure_dirichlet%index(i))) then
+        overlap = .true.
+        exit
+      end if
+    end do
+    if (global_any(overlap)) then
+      stat = 1
+      errmsg = 'pressure Dirichlet boundary overlaps a velocity boundary condition'
+    end if
   end subroutine
 
 
