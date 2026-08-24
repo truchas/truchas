@@ -19,6 +19,7 @@ add_subdirectory(Test)
 add_subdirectory(volume_tracking)
 add_subdirectory(flow)
 add_subdirectory(heat_transfer)
+add_subdirectory(nonisothermal)
 
 add_executable(mesh_example mesh_example.F90)
 

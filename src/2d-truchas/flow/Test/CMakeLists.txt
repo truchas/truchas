@@ -25,6 +25,9 @@ target_link_libraries(test_flow_2d_bc flow2d truchas ${Truchas_LINK_LIBS})
 add_executable(test_flow_2d_momentum test_flow_2d_momentum.F90)
 target_link_libraries(test_flow_2d_momentum flow2d truchas ${Truchas_LINK_LIBS})
 
+add_executable(test_flow_2d_material_transport test_flow_2d_material_transport.F90)
+target_link_libraries(test_flow_2d_material_transport flow2d truchas ${Truchas_LINK_LIBS})
+
 add_executable(test_flow_2d_momentum_solver test_flow_2d_momentum_solver.F90)
 target_link_libraries(test_flow_2d_momentum_solver flow2d truchas ${Truchas_LINK_LIBS})
 
@@ -72,6 +75,11 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
 add_test(flow_2d_momentum-1p ${test_launch})
 set_tests_properties(flow_2d_momentum-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_momentum-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+  ./test_flow_2d_material_transport ${MPIEXEC_POSTFLAGS})
+add_test(flow_2d_material_transport-1p ${test_launch})
+set_tests_properties(flow_2d_material_transport-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_2d_material_transport-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_flow_2d_momentum_solver ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_momentum_solver-1p ${test_launch})
@@ -146,6 +154,11 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
 add_test(flow_2d_momentum-4p ${test_launch})
 set_tests_properties(flow_2d_momentum-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_momentum-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+  ./test_flow_2d_material_transport ${MPIEXEC_POSTFLAGS})
+add_test(flow_2d_material_transport-4p ${test_launch})
+set_tests_properties(flow_2d_material_transport-4p PROPERTIES PROCESSORS 4)
+set_property(TEST flow_2d_material_transport-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_momentum_solver ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_momentum_solver-4p ${test_launch})

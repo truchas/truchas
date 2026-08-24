@@ -41,6 +41,7 @@ module ht_2d_model_type
     class(new_mesh_func), allocatable :: H_of_T
     type(ht_2d_tofh) :: T_of_H            ! inverse enthalpy-temperature relation
     type(scalar_mesh_multifunc), allocatable :: source  ! external heat source
+    real(r8), allocatable :: ext_enthalpy_rate(:)       ! cell-integrated external rate
     !! Boundary condition data
     class(bndry_func1), allocatable :: bc_dir   ! Dirichlet
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
@@ -49,6 +50,7 @@ module ht_2d_model_type
   contains
     procedure :: init
     procedure :: init_vector
+    procedure :: set_ext_enthalpy_rate
     procedure :: residual
   end type
 
@@ -76,6 +78,7 @@ contains
 
     call this%disc%init(mesh)
     this%mesh => mesh
+    allocate(this%ext_enthalpy_rate(mesh%ncell_onP), source=0.0_r8)
 
     call params%get('stefan-boltzmann', sigma, stat, errmsg, default=5.67e-8_r8)
     if (stat /= 0) return
@@ -150,6 +153,17 @@ contains
     class(ht_2d_model), intent(in) :: this
     type(ht_2d_vector), intent(out) :: vec
     call vec%init(this%mesh)
+  end subroutine
+
+
+  !! Set a cell-integrated external enthalpy rate. This is normally supplied
+  !! by a coupled physics model, such as explicit enthalpy advection.
+  subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
+    class(ht_2d_model), intent(inout) :: this
+    real(r8), intent(in) :: enthalpy_rate(:)
+
+    ASSERT(size(enthalpy_rate) == this%mesh%ncell_onP)
+    this%ext_enthalpy_rate = enthalpy_rate
   end subroutine
 
   subroutine init_bc(model, env, params, sigma, abszero, stat, errmsg)
@@ -309,6 +323,10 @@ contains
       call this%mesh%cell_imap%gather_offp(cval)
       call this%disc%apply_diff(cval, u%tc, u%tf, r%tc, r%tf)
       r%tc(:ncell_onP) = r%tc(:ncell_onP) + this%mesh%volume(:ncell_onP)*udot%hc(:ncell_onP)
+
+      if (allocated(this%ext_enthalpy_rate)) then
+        r%tc(:ncell_onP) = r%tc(:ncell_onP) - this%ext_enthalpy_rate
+      end if
 
       if (allocated(this%source)) then
         call this%source%compute(t, u%tc)

@@ -152,10 +152,10 @@ contains
 
     time = 0.0_r8
     do n = 1, 50
-      call solver%step(time, 1.0_r8, stat)
+      call solver%step(time, real(n, r8), stat)
       call require(stat == 0, 'pressure-driven flow step did not converge')
       if (stat /= 0) return
-      time = time + 1.0_r8
+      time = real(n, r8)
     end do
     allocate(flux(mesh%ncell_onP))
     call model%operators%divergence(state%vel_fn, flux)

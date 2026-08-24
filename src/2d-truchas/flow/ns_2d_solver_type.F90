@@ -19,6 +19,7 @@ module ns_2d_solver_type
   use parallel_communication, only: global_minval
   use flow_2d_model_type
   use flow_2d_state_type
+  use flow_2d_material_transport_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
@@ -34,13 +35,14 @@ module ns_2d_solver_type
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
-    real(r8), allocatable :: rhs(:,:), grad_p(:,:), flux_volumes(:,:)
+    type(flow_2d_material_transport) :: material_transport
+    real(r8), allocatable :: rhs(:,:), grad_p(:,:)
   contains
     procedure :: init
     procedure :: set_initial_state
     procedure :: step
+    procedure :: advance_momentum
     procedure :: courant_time_step
-    procedure, private :: single_fluid_flux_volumes
     final :: delete
   end type
 
@@ -55,7 +57,8 @@ contains
     this%model => model
     this%state => state
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
-        this%flux_volumes(size(model%density),size(model%mesh%cface)), this%projection_solver, this%ic_solver)
+        this%projection_solver, this%ic_solver)
+    call this%material_transport%init(model%mesh, size(model%density))
     call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
@@ -84,20 +87,41 @@ contains
   end subroutine
 
 
-  !! Advance STATE from TIME to TIME + DT. Momentum transport is evaluated
-  !! from the old cell and face velocity fields and added explicitly to the
-  !! otherwise implicit mass-plus-viscous predictor.
-  subroutine step(this, time, dt, stat, errmsg)
+  !! Advance STATE from T_N to T_NP1. The time step is derived from the two
+  !! endpoint times so callers retain exact target times. This is the
+  !! isothermal wrapper: it first obtains material transport from the old face
+  !! velocity and then advances momentum and pressure.
+  subroutine step(this, t_n, t_np1, stat, errmsg)
     class(ns_2d_solver), intent(inout) :: this
-    real(r8), intent(in) :: time, dt
+    real(r8), intent(in) :: t_n, t_np1
+    integer, intent(out) :: stat
+    character(:), allocatable, optional, intent(out) :: errmsg
+
+    call this%material_transport%advance(t_n, t_np1, this%state%vel_fn)
+    call this%advance_momentum(t_n, t_np1, this%material_transport%flux_volumes, stat, errmsg)
+  end subroutine
+
+
+  !! Advance momentum and pressure from T_N to T_NP1 using material-resolved
+  !! flux volumes already constructed for the pending step. This separate
+  !! operation lets a coupled solver advect material and thermal enthalpy
+  !! before it updates the flow state.
+  subroutine advance_momentum(this, t_n, t_np1, flux_volumes, stat, errmsg)
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: t_n, t_np1
+    real(r8), intent(in) :: flux_volumes(:,:)
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
 
     integer :: c
+    real(r8) :: dt
     character(:), allocatable :: bc_errmsg
 
+    dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
-    call this%model%compute_bc(time, dt, stat, bc_errmsg)
+    ASSERT(size(flux_volumes,1) == size(this%model%density))
+    ASSERT(size(flux_volumes,2) == size(this%model%mesh%cface))
+    call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
       if (present(errmsg)) errmsg = bc_errmsg
       return
@@ -105,8 +129,8 @@ contains
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
     call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
         this%model%bc, this%rhs)
-    call this%single_fluid_flux_volumes(dt)
-    call this%model%momentum%add_advective_rhs(this%model%density, this%state%vel_cc, this%flux_volumes, &
+    call this%model%momentum%add_advective_rhs(this%model%density, this%state%vel_cc, &
+        flux_volumes, &
         this%model%bc, this%rhs)
     do c = 1, size(this%rhs,2)
       this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
@@ -119,29 +143,6 @@ contains
     call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
         this%model%bc, this%state, stat)
   end subroutine
-
-
-  !! Construct the one-material cell-face flux-volume field from the old
-  !! global face-normal velocity. This temporary bridge will be replaced by
-  !! volume-tracker output when composition advection is added.
-  subroutine single_fluid_flux_volumes(this, dt)
-    class(ns_2d_solver), intent(inout) :: this
-    real(r8), intent(in) :: dt
-
-    integer :: c, i, f
-
-    ASSERT(size(this%flux_volumes,1) == 1)
-    this%flux_volumes = 0.0_r8
-    do c = 1, this%model%mesh%ncell_onP
-      do i = this%model%mesh%cstart(c), this%model%mesh%cstart(c+1)-1
-        f = this%model%mesh%cface(i)
-        this%flux_volumes(1,i) = dt*this%model%mesh%area(f)*this%state%vel_fn(f)
-        if (btest(this%model%mesh%cfpar(c), i-this%model%mesh%cstart(c)+1)) &
-            this%flux_volumes(1,i) = -this%flux_volumes(1,i)
-      end do
-    end do
-  end subroutine
-
 
   !! Return the maximum step size satisfying the specified convective Courant
   !! number for the old face-normal velocity.

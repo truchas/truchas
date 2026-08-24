@@ -256,7 +256,7 @@ contains
         time = this%tlast
         return
       end if
-      call this%solver%step(this%tlast, dt, stat, errmsg)
+      call this%solver%step(this%tlast, time, stat, errmsg)
       if (stat /= 0) then
         if (.not.allocated(errmsg)) errmsg = 'flow solver step failed'
         time = this%tlast

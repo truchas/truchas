@@ -51,6 +51,7 @@ module ht_2d_solver_type
     procedure :: get_cell_temp_soln
     procedure :: write_metrics
     procedure :: set_integrator_log
+    procedure :: set_ext_enthalpy_rate
   end type
 
 contains
@@ -193,6 +194,16 @@ contains
     class(ht_2d_solver), intent(inout) :: this
     integer, intent(in) :: unit
     call this%integ%set_verbose_stepping(unit)
+  end subroutine
+
+
+  !! Set the cell-integrated external enthalpy rate used in thermal residual
+  !! evaluation.
+  subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
+    class(ht_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: enthalpy_rate(:)
+
+    call this%model%set_ext_enthalpy_rate(enthalpy_rate)
   end subroutine
 
   !! This delegates to the IDAESOL integration driver.  A target time (TOUT)
