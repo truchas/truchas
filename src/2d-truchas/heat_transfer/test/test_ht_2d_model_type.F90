@@ -108,9 +108,9 @@ contains
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     type(ht_2d_vector) :: u, udot, r
-    real(r8), allocatable :: Tcell(:), Tface(:)
+    real(r8), allocatable :: Tcell(:), Tface(:), rate(:), rcell0(:)
     character(:), allocatable :: errmsg, string
-    integer :: n, stat, max_itr
+    integer :: j, n, stat, max_itr
     real(r8) :: t, dt, rel_tol
 
     if (is_IOP) print '(/,"Testing linear problem with Dirichlet BCs")'
@@ -179,6 +179,19 @@ contains
     if (global_any(abs(r%tc(:disc%mesh%ncell_onP)) > 20.0_r8*tol)) then
       if (is_IOP) print '("ERROR: cell residuals are nonzero; tol=",es9.2)', tol
       if (is_IOP) print '("  max |rcell| = ",es12.4)', global_maxval(maxval(abs(r%tc(:disc%mesh%ncell_onP))))
+      status = 1
+    end if
+
+    !! A coupled physics model supplies an externally computed, cell-integrated
+    !! enthalpy rate. Its contribution to the thermal residual is -RATE.
+    allocate(rate(disc%mesh%ncell_onP), rcell0(disc%mesh%ncell_onP))
+    rate = real(disc%mesh%cell_imap%global_index([(j, j=1,disc%mesh%ncell_onP)]), r8)
+    rcell0 = r%tc(:disc%mesh%ncell_onP)
+    call HT_model%set_ext_enthalpy_rate(rate)
+    call r%setval(0.0_r8)
+    call HT_model%residual(t, u, udot, r)
+    if (global_any(abs(r%tc(:disc%mesh%ncell_onP) - rcell0 + rate) > 20.0_r8*tol)) then
+      if (is_IOP) print '("ERROR: incorrect external enthalpy-rate residual")'
       status = 1
     end if
 

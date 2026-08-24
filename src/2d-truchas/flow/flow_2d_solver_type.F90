@@ -78,20 +78,23 @@ contains
   end subroutine
 
 
-  !! Advance STATE from TIME to TIME + DT.  The first implementation has an
-  !! implicit Stokes predictor with body acceleration but no advective momentum
-  !! term.
-  subroutine step(this, time, dt, stat, errmsg)
+  !! Advance STATE from T_N to T_NP1.  The time step is derived from the two
+  !! endpoint times so callers retain exact target times. The first
+  !! implementation has an implicit Stokes predictor with body acceleration
+  !! but no advective momentum term.
+  subroutine step(this, t_n, t_np1, stat, errmsg)
     class(flow_2d_solver), intent(inout) :: this
-    real(r8), intent(in) :: time, dt
+    real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
 
     integer :: c
+    real(r8) :: dt
     character(:), allocatable :: bc_errmsg
 
+    dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
-    call this%model%compute_bc(time, dt, stat, bc_errmsg)
+    call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
       if (present(errmsg)) errmsg = bc_errmsg
       return

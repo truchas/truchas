@@ -29,7 +29,10 @@ set(HT2D_SOURCE_FILES
 )
 
 add_library(ht2d ${HT2D_SOURCE_FILES})
-target_link_libraries(ht2d truchas truchas-extra ${Truchas_LINK_LIBS})
+set_target_properties(ht2d PROPERTIES
+  Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
+target_link_libraries(ht2d PUBLIC truchas truchas-extra ${Truchas_LINK_LIBS})
+target_include_directories(ht2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
 # --- driver program binary
 add_executable(HT_2d_main ht_2d_main.F90)
