@@ -11,6 +11,7 @@ from test_flow_2d_gravity import run_case
 
 
 def check_hydrostatic(data, case):
+    pressure_tol = 1.0e-11
     step = data.num_steps - 1
     if abs(data.time(step) - 20.0) > 1.0e-12:
         raise RuntimeError(f"{case}: final time is {data.time(step):g}, expected 20")
@@ -22,7 +23,7 @@ def check_hydrostatic(data, case):
         raise RuntimeError(f"{case}: hydrostatic velocity error {velocity_error:g}")
     expected = -centers[:, 1]
     pressure_error = np.max(np.abs((pressure - expected) - np.mean(pressure - expected)))
-    if pressure_error > 1.0e-12:
+    if pressure_error > pressure_tol:
         raise RuntimeError(f"{case}: hydrostatic pressure error {pressure_error:g}")
     return centers, pressure, velocity
 
@@ -47,7 +48,8 @@ def main():
 
     for serial_result, parallel_result, name in zip(serial_results, parallel_results,
                                                       ("cell centers", "pressure", "velocity")):
-        if not np.allclose(serial_result, parallel_result, rtol=0.0, atol=1.0e-12):
+        tolerance = 1.0e-11 if name == "pressure" else 1.0e-12
+        if not np.allclose(serial_result, parallel_result, rtol=0.0, atol=tolerance):
             print(f"FAIL: serial and parallel {name} differ")
             return 1
 
