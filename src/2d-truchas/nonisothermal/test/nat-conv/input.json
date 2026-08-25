@@ -2,9 +2,13 @@
     "materials": {
         "air": {
             "properties": {
+                "fluid": true,
                 "conductivity": 2.5470e-5,
                 "density": 1.2180,
-                "specific-heat": 1.006
+                "specific-heat": 1.006,
+                "viscosity": 1.7975845e-5,
+                "thermal-expan-coef": 0.00328407224959,
+                "expan-ref-temp": 0.0
             }
         }
     },
@@ -13,10 +17,6 @@
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [49]}
     },
     "flow-model": {
-        "density": 1.2180,
-        "viscosity": 1.7975845e-5,
-        "thermal-expan-coef": 0.00328407224959,
-        "expan-ref-temp": 0.0,
         "body-acceleration": [0.0, -9.34142216e-5],
         "bc": {
             "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3, 4]}
@@ -30,18 +30,18 @@
         },
         "source": {}
     },
-    "flow-solver": {
-        "momentum-solver": {"rel-tol": 1.0e-8, "abs-tol": 1.0e-10,
-            "max-ds-iter": 50, "max-amg-iter": 25},
-        "projection-solver": {"rel-tol": 0.0, "abs-tol": 1.0e-12,
-            "max-ds-iter": 50, "max-amg-iter": 25}
-    },
-    "ht-solver": {
-        "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
-        "error-norm": {"abs-t-tol": 0.0, "rel-t-tol": 1.0e-4, "rel-h-tol": 1.0e-4},
-        "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.05}
-    },
-    "coupled-solver": {
+    "solver": {
+        "flow": {
+            "momentum-solver": {"rel-tol": 1.0e-8, "abs-tol": 1.0e-10,
+                "max-ds-iter": 50, "max-amg-iter": 25},
+            "projection-solver": {"rel-tol": 0.0, "abs-tol": 1.0e-12,
+                "max-ds-iter": 50, "max-amg-iter": 25}
+        },
+        "thermal": {
+            "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+            "error-norm": {"abs-t-tol": 0.0, "rel-t-tol": 1.0e-4, "rel-h-tol": 1.0e-4},
+            "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.05}
+        },
         "initial-time-step": 1.0e-2,
         "min-time-step": 1.0e-5,
         "max-time-step": 1.0e3,
