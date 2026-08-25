@@ -17,7 +17,6 @@ program test_ns_ht_2d_solver
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
   use flow_2d_model_type
-  use flow_2d_state_type
   use ht_2d_model_type
   use ht_2d_solver_type
   use ns_ht_2d_solver_type
@@ -55,13 +54,13 @@ contains
     type(material_model) :: matl_model
     type(material_composition), target :: composition
     type(flow_2d_model), target :: flow_model
-    type(flow_2d_state), target :: flow_state
     type(ht_2d_model), target :: ht_model
     type(ht_2d_model), target :: standalone_ht_model
     type(ns_ht_2d_solver) :: solver
     type(ht_2d_solver), target :: thermal_solver
     type(parameter_list), pointer :: matl_params, flow_bc_params, ht_params, standalone_ht_params
-    type(parameter_list), target :: momentum_params, projection_params, thermal_params
+    type(parameter_list), target :: solver_params
+    type(parameter_list), pointer :: plist, thermal_params
     real(r8), allocatable :: velocity(:,:), temp(:), temp_result(:), heat_result(:), thermal_temp(:), thermal_heat(:)
     integer :: n, ntry
     real(r8), parameter :: equivalence_tol = 1.0e-12_r8
@@ -70,7 +69,7 @@ contains
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call parameter_list_from_json_string( &
-      '{"liquid":{"properties":{"conductivity":1.0,"density":1.0,"specific-heat":1.0}}}', &
+      '{"liquid":{"properties":{"fluid":true,"conductivity":1.0,"density":1.0,"specific-heat":1.0}}}', &
       matl_params, errmsg)
     if (.not.associated(matl_params)) call fail('parsing material input: ' // errmsg)
     call load_material_database(database, matl_params, stat, errmsg)
@@ -87,13 +86,12 @@ contains
     if (.not.associated(flow_bc_params)) call fail('parsing flow BC input: ' // errmsg)
     call flow_model%init(env, mesh, flow_bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     if (stat /= 0) call fail('initializing flow model: ' // errmsg)
-    call flow_state%init(mesh)
 
     call parameter_list_from_json_string( &
       '{"bc":{"all":{"type":"temperature","face-set-ids":[1,2,3,4],"temp":2.0}},"source":{}}', &
       ht_params, errmsg)
     if (.not.associated(ht_params)) call fail('parsing thermal-model input: ' // errmsg)
-    call ht_model%init(env, mesh, matl_model, composition, ht_params, stat, errmsg)
+    call ht_model%init(env, mesh, matl_model, composition, ht_params, stat, errmsg, advection=.true.)
     if (stat /= 0) call fail('initializing thermal model: ' // errmsg)
     call parameter_list_from_json_string( &
       '{"bc":{"all":{"type":"temperature","face-set-ids":[1,2,3,4],"temp":2.0}},"source":{}}', &
@@ -102,14 +100,24 @@ contains
     call standalone_ht_model%init(env, mesh, matl_model, composition, standalone_ht_params, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal model: ' // errmsg)
 
-    call set_flow_solver_params(momentum_params)
-    call set_flow_solver_params(projection_params)
+    plist => solver_params%sublist('flow')
+    plist => plist%sublist('momentum-solver')
+    call set_flow_solver_params(plist)
+    plist => solver_params%sublist('flow')
+    plist => plist%sublist('projection-solver')
+    call set_flow_solver_params(plist)
+    thermal_params => solver_params%sublist('thermal')
     call set_thermal_solver_params(thermal_params)
+    call solver_params%set('initial-time-step', 1.0e-3_r8)
+    call solver_params%set('min-time-step', 1.0e-8_r8)
+    call solver_params%set('max-time-step', 1.0e-3_r8)
+    call solver_params%set('time-step-growth', 1.0_r8)
+    call solver_params%set('courant-number', 0.5_r8)
+    call solver_params%set('max-try-at-step', 4)
     call thermal_solver%init(env, standalone_ht_model, thermal_params, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal solver: ' // errmsg)
-    call solver%init(env, flow_model, flow_state, ht_model, matl_model, [1], flow_bc_params, &
-        momentum_params, projection_params, thermal_params, 1.0e-3_r8, 1.0e-8_r8, 1.0e-3_r8, 1.0_r8, &
-        0.5_r8, 4, stat, errmsg)
+    call solver%init(env, flow_model, ht_model, matl_model, composition, &
+        solver_params, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled solver: ' // errmsg)
 
     call mesh%init_cell_centroid
@@ -122,7 +130,7 @@ contains
     if (stat /= 0) call fail('initializing standalone thermal state: ' // errmsg)
     call solver%set_initial_state(env, 0.0_r8, velocity, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled state: ' // errmsg)
-    call require(all(flow_state%vel_fn == 0.0_r8), 'zero initial velocity was not preserved')
+    call require_zero_face_velocity(solver, mesh%nface, 'zero initial velocity was not preserved')
     ts_sync = time_step_sync(4)
     t = 0.0_r8
     hlast = 1.0e-3_r8
@@ -148,7 +156,7 @@ contains
       call solver%integrate(real(n,r8)*1.0e-3_r8, stat, errmsg)
       call require(stat == 0, 'zero-velocity coupled integration failed')
       if (stat /= 0) return
-      call require(all(flow_state%vel_fn == 0.0_r8), 'zero velocity did not remain zero')
+      call require_zero_face_velocity(solver, mesh%nface, 'zero velocity did not remain zero')
       call thermal_solver%get_cell_temp_soln(thermal_temp)
       call thermal_solver%get_cell_heat_soln(thermal_heat)
       call solver%get_cell_temp_soln(temp_result)
@@ -160,6 +168,17 @@ contains
     end do
     call require(t == 1.0e-2_r8 .and. solver%last_time() == t, &
         'coupled step did not reach its requested endpoint')
+  end subroutine
+
+
+  subroutine require_zero_face_velocity(solver, nface, message)
+    type(ns_ht_2d_solver), intent(in) :: solver
+    integer, intent(in) :: nface
+    character(*), intent(in) :: message
+    real(r8) :: velocity(nface)
+
+    call solver%get_face_velocity(velocity)
+    call require(all(velocity == 0.0_r8), message)
   end subroutine
 
 

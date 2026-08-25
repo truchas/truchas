@@ -16,7 +16,7 @@ module thermal_bc_factory_type
   use unstr_2d_mesh_type
   use parameter_list_type
   use scalar_func_class
-  use scalar_func_factories, only: alloc_scalar_func
+  use scalar_func_factories, only: alloc_scalar_func, alloc_const_scalar_func
   use string_utilities, only: lower_case
   use simulation_environment_type
   implicit none
@@ -33,6 +33,8 @@ module thermal_bc_factory_type
     procedure :: alloc_flux_bc
     procedure :: alloc_htc_bc
     procedure :: alloc_rad_bc
+    procedure :: alloc_inflow_bc
+    procedure :: alloc_outflow_bc
     procedure, private :: iterate_list
   end type
 
@@ -238,6 +240,92 @@ contains
         call rad%init(this%mesh, this%sigma, this%abszero)
       end if
       call rad%add(f1, f2, setids, stat, errmsg)
+    end subroutine
+
+  end subroutine
+
+
+  subroutine alloc_inflow_bc(this, bc, env, stat, errmsg)
+
+    use bndry_func1_class
+    use bndry_face_func_type
+
+    class(thermal_bc_factory), intent(inout) :: this
+    class(bndry_func1), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(bndry_face_func), allocatable :: bff
+
+    call env%simlog%info('  generating "inflow" thermal boundary condition')
+    call this%iterate_list(env, 'inflow', proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.allocated(bff)) call env%simlog%info('    none specified')
+
+    if (allocated(bff)) then
+      call bff%add_complete
+      call move_alloc(bff, bc)
+    end if
+
+  contains
+
+    subroutine proc(plist, setids, stat, errmsg)
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f
+
+      call alloc_scalar_func(plist, 'temp', f, stat, errmsg)
+      if (stat /= 0) return
+      if (.not.allocated(bff)) then
+        allocate(bff)
+        call bff%init(this%mesh)
+      end if
+      call bff%add(f, setids, stat, errmsg)
+    end subroutine
+
+  end subroutine
+
+
+  subroutine alloc_outflow_bc(this, bc, env, stat, errmsg)
+
+    use bndry_func1_class
+    use bndry_face_func_type
+
+    class(thermal_bc_factory), intent(inout) :: this
+    class(bndry_func1), allocatable, intent(out) :: bc
+    type(simulation_environment), intent(in) :: env
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(bndry_face_func), allocatable :: bff
+
+    call env%simlog%info('  generating "outflow" thermal boundary condition')
+    call this%iterate_list(env, 'outflow', proc, stat, errmsg)
+    if (stat /= 0) return
+    if (.not.allocated(bff)) call env%simlog%info('    none specified')
+
+    if (allocated(bff)) then
+      call bff%add_complete
+      call move_alloc(bff, bc)
+    end if
+
+  contains
+
+    subroutine proc(plist, setids, stat, errmsg)
+      type(parameter_list), intent(inout) :: plist
+      integer, intent(in) :: setids(:)
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+      class(scalar_func), allocatable :: f
+      call alloc_const_scalar_func(f, 0.0_r8)
+      if (.not.allocated(bff)) then
+        allocate(bff)
+        call bff%init(this%mesh)
+      end if
+      call bff%add(f, setids, stat, errmsg)
     end subroutine
 
   end subroutine

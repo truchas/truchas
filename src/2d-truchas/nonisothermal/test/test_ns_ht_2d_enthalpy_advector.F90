@@ -12,6 +12,9 @@ program test_ns_ht_2d_enthalpy_advector
   use material_model_type
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
+  use bndry_face_func_type
+  use scalar_func_class
+  use scalar_func_factories, only: alloc_const_scalar_func
   use parameter_list_type
   use parameter_list_json
   use ns_ht_2d_enthalpy_advector_type
@@ -45,8 +48,10 @@ contains
     type(unstr_2d_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
-    type(parameter_list), pointer :: matl_params, bc_params
+    type(parameter_list), pointer :: matl_params
     type(ns_ht_2d_enthalpy_advector) :: advector
+    type(bndry_face_func), target :: inflow_bc
+    class(scalar_func), allocatable :: inflow_func
     real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:), expected(:)
     integer :: c, f, i, neighbor
     real(r8), parameter :: influx_temp = 7.0_r8
@@ -65,11 +70,12 @@ contains
     call add_enthalpy_prop(matl_model, stat, errmsg)
     if (stat /= 0) call fail('could not add enthalpy property: ' // errmsg)
 
-    call parameter_list_from_json_string( &
-      '{"left":{"type":"velocity","face-set-ids":[1],"velocity":[1.0,0.0],&
-       &"inflow-temperature":7.0}}', bc_params, errmsg)
-    if (.not.associated(bc_params)) call fail('could not parse flow BC input: ' // errmsg)
-    call advector%init(mesh, matl_model, [1, 2], bc_params, stat, errmsg)
+    call inflow_bc%init(mesh)
+    call alloc_const_scalar_func(inflow_func, influx_temp)
+    call inflow_bc%add(inflow_func, [1], stat, errmsg)
+    if (stat /= 0) call fail('could not add inflow thermal BC: ' // errmsg)
+    call inflow_bc%add_complete()
+    call advector%init(mesh, matl_model, [1, 2], stat, errmsg, inflow_temperature=inflow_bc)
     if (stat /= 0) call fail('could not initialize enthalpy advector: ' // errmsg)
 
     allocate(cell_temp(mesh%ncell_onP), flux_volumes(2,size(mesh%cface)), dQ(mesh%ncell_onP), &
@@ -112,7 +118,7 @@ contains
     type(unstr_2d_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
-    type(parameter_list), pointer :: matl_params, bc_params
+    type(parameter_list), pointer :: matl_params
     type(ns_ht_2d_enthalpy_advector) :: advector
     real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:)
     integer :: c, f, i
@@ -130,9 +136,7 @@ contains
     call add_enthalpy_prop(matl_model, stat, errmsg)
     if (stat /= 0) call fail('could not add enthalpy property: ' // errmsg)
 
-    call parameter_list_from_json_string('{}', bc_params, errmsg)
-    if (.not.associated(bc_params)) call fail('could not parse flow BC input: ' // errmsg)
-    call advector%init(mesh, matl_model, [1, 2], bc_params, stat, errmsg)
+    call advector%init(mesh, matl_model, [1, 2], stat, errmsg)
     if (stat /= 0) call fail('could not initialize enthalpy advector: ' // errmsg)
 
     allocate(cell_temp(mesh%ncell_onP), flux_volumes(2,size(mesh%cface)), dQ(mesh%ncell_onP))

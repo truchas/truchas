@@ -2,9 +2,13 @@
     "materials": {
         "liquid": {
             "properties": {
+                "fluid": true,
                 "conductivity": 0.0,
                 "density": 1.0,
-                "specific-heat": 1.0
+                "specific-heat": 1.0,
+                "viscosity": 0.01,
+                "thermal-expan-coef": 0.0,
+                "expan-ref-temp": 0.0
             }
         }
     },
@@ -13,30 +17,30 @@
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
     },
     "flow-model": {
-        "density": 1.0,
-        "viscosity": 0.01,
         "bc": {
-            "inlet": {"type": "velocity", "face-set-ids": [1], "velocity": [1.0, 0.0], "inflow-temperature": 3.0},
+            "inlet": {"type": "velocity", "face-set-ids": [1], "velocity": [1.0, 0.0]},
             "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
             "walls": {"type": "free-slip", "face-set-ids": [3, 4]}
         }
     },
     "ht-model": {
         "bc": {
-            "all-sides": {"type": "flux", "face-set-ids": [1, 2, 3, 4], "flux": 0.0}
+            "inlet": {"type": "inflow", "face-set-ids": [1], "temp": 3.0},
+            "outlet": {"type": "outflow", "face-set-ids": [2]},
+            "walls": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
         },
         "source": {}
     },
-    "flow-solver": {
-        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
-        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
-    },
-    "ht-solver": {
-        "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
-        "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-6, "rel-h-tol": 1.0e-6},
-        "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.01}
-    },
-    "coupled-solver": {
+    "solver": {
+        "flow": {
+            "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+            "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+        },
+        "thermal": {
+            "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+            "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-6, "rel-h-tol": 1.0e-6},
+            "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.01}
+        },
         "initial-time-step": 1.0e-3,
         "min-time-step": 1.0e-8,
         "max-time-step": 1.0e-3,

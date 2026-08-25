@@ -5,7 +5,9 @@
 !! two-dimensional incompressible Navier--Stokes/thermal-transport step. It
 !! advances material transport, converts its fluxes to an enthalpy rate,
 !! attempts thermal transport, and then advances flow momentum and pressure.
-!! The mesh, material composition, models, and flow state remain sim-owned.
+!! The mesh, material composition, and models remain sim-owned. The coupled
+!! solver owns the flow state and provides accessors for data needed by its
+!! simulation driver.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -19,6 +21,8 @@ module ns_ht_2d_solver_type
   use simulation_environment_type
   use parameter_list_type
   use material_model_type
+  use material_class
+  use material_composition_type
   use flow_2d_model_type
   use flow_2d_state_type
   use flow_2d_material_transport_type
@@ -32,12 +36,15 @@ module ns_ht_2d_solver_type
 
   type, public :: ns_ht_2d_solver
     private
-    type(flow_2d_state), pointer :: flow_state => null() ! unowned reference
+    type(flow_2d_state), pointer :: flow_state => null() ! solver-owned state
+    type(material_composition), pointer :: composition => null() ! unowned reference
+    integer, allocatable :: flow_material_ids(:)
     type(ns_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
     real(r8), allocatable :: temp(:), enthalpy_increment(:)
+    integer :: ncell_onP
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number, hnext, hlast
     integer :: max_try
     type(time_step_sync) :: ts_sync
@@ -46,6 +53,8 @@ module ns_ht_2d_solver_type
     procedure :: set_initial_state
     procedure :: integrate
     procedure :: last_time
+    procedure :: get_cell_flow_soln
+    procedure :: get_face_velocity
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
     procedure :: write_metrics
@@ -54,24 +63,62 @@ module ns_ht_2d_solver_type
 
 contains
 
-  subroutine init(this, env, flow_model, flow_state, ht_model, matl_model, material_index, flow_bc_params, &
-      momentum_params, projection_params, thermal_params, dt_init, dt_min, dt_max, dt_grow, courant_number, &
-      max_try, stat, errmsg)
+  subroutine init(this, env, flow_model, ht_model, matl_model, composition, &
+      solver_params, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: flow_model
-    type(flow_2d_state), target, intent(inout) :: flow_state
     type(ht_2d_model), target, intent(in) :: ht_model
     type(material_model), intent(in) :: matl_model
-    integer, intent(in) :: material_index(:)
-    type(parameter_list), intent(inout) :: flow_bc_params
-    type(parameter_list), target, intent(in) :: momentum_params, projection_params
-    type(parameter_list), intent(inout) :: thermal_params
-    real(r8), intent(in) :: dt_init, dt_min, dt_max, dt_grow, courant_number
-    integer, intent(in) :: max_try
+    type(material_composition), target, intent(in) :: composition
+    type(parameter_list), target, intent(inout) :: solver_params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
+    integer :: max_try
+    class(material), pointer :: matl
+
+    stat = 0
+    ASSERT(size(composition%vfrac,1) == matl_model%nmatl)
+    if (matl_model%nmatl /= 1 .or. matl_model%nphase_real /= 1) then
+      stat = 1
+      errmsg = 'current non-isothermal flow requires one single-phase material'
+      return
+    end if
+    call matl_model%get_matl_ref(1, matl)
+    if (.not.matl%has_attr('fluid')) then
+      stat = 1
+      errmsg = 'current non-isothermal flow material must have the fluid attribute'
+      return
+    end if
+    allocate(this%flow_material_ids(1), source=1)
+    if (size(this%flow_material_ids) /= size(flow_model%density)) then
+      stat = 1
+      errmsg = 'flow material properties do not match fluid materials'
+      return
+    end if
+
+    if (.not.solver_params%is_sublist('flow') .or. .not.solver_params%is_sublist('thermal')) then
+      stat = 1
+      errmsg = 'solver requires flow and thermal sublists'
+      return
+    end if
+    flow_params => solver_params%sublist('flow')
+    thermal_params => solver_params%sublist('thermal')
+    call solver_params%get('initial-time-step', dt_init, stat, errmsg)
+    if (stat /= 0) return
+    call solver_params%get('min-time-step', dt_min, stat, errmsg)
+    if (stat /= 0) return
+    call solver_params%get('max-time-step', dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call solver_params%get('time-step-growth', dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call solver_params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call solver_params%get('max-try-at-step', max_try, default=10, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
 
     if (dt_init <= 0.0_r8 .or. dt_min <= 0.0_r8 .or. dt_min > dt_init .or. dt_init > dt_max .or. &
         dt_grow < 1.0_r8 .or. courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
@@ -84,13 +131,17 @@ contains
       errmsg = 'maximum coupled step attempts must be > 0'
       return
     end if
-    if (size(material_index) /= size(flow_model%density)) then
+    if (.not.flow_params%is_sublist('momentum-solver') .or. &
+        .not.flow_params%is_sublist('projection-solver')) then
       stat = 1
-      errmsg = 'flow material indices must correspond to flow material slots'
+      errmsg = 'solver.flow requires momentum-solver and projection-solver sublists'
       return
     end if
+    momentum_params => flow_params%sublist('momentum-solver')
+    projection_params => flow_params%sublist('projection-solver')
 
-    this%flow_state => flow_state
+    this%ncell_onP = flow_model%mesh%ncell_onP
+    this%composition => composition
     this%dt_init = dt_init
     this%dt_min = dt_min
     this%dt_max = dt_max
@@ -98,10 +149,17 @@ contains
     this%courant_number = courant_number
     this%max_try = max_try
     this%ts_sync = time_step_sync(4)
+    allocate(this%flow_state)
+    call this%flow_state%init(flow_model%mesh)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP))
-    call this%flow%init(flow_model, flow_state, momentum_params, projection_params)
-    call this%material_transport%init(flow_model%mesh, size(material_index))
-    call this%enthalpy_advector%init(flow_model%mesh, matl_model, material_index, flow_bc_params, stat, errmsg)
+    call this%flow%init(flow_model, this%flow_state, momentum_params, projection_params)
+    call this%material_transport%init(flow_model%mesh, size(this%flow_material_ids))
+    if (allocated(ht_model%bc_inflow)) then
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, this%flow_material_ids, stat, errmsg, &
+          inflow_temperature=ht_model%bc_inflow)
+    else
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, this%flow_material_ids, stat, errmsg)
+    end if
     if (stat /= 0) return
     allocate(this%thermal)
     call this%thermal%init(env, ht_model, thermal_params, stat, errmsg)
@@ -112,6 +170,7 @@ contains
     type(ns_ht_2d_solver), intent(inout) :: this
 
     if (associated(this%thermal)) deallocate(this%thermal)
+    if (associated(this%flow_state)) deallocate(this%flow_state)
   end subroutine
 
 
@@ -234,6 +293,28 @@ contains
 
     last_time = this%thermal%last_time()
   end function
+
+
+  !! Returns the current local cell pressure and velocity, including ghosts.
+  subroutine get_cell_flow_soln(this, pressure, velocity)
+    class(ns_ht_2d_solver), intent(in) :: this
+    real(r8), intent(out) :: pressure(:), velocity(:,:)
+
+    ASSERT(size(pressure) == size(this%flow_state%p_cc))
+    ASSERT(size(velocity,1) == 2 .and. size(velocity,2) == size(this%flow_state%vel_cc,2))
+    pressure = this%flow_state%p_cc
+    velocity = this%flow_state%vel_cc
+  end subroutine
+
+
+  !! Returns the current face-normal velocity, including ghost faces.
+  subroutine get_face_velocity(this, velocity)
+    class(ns_ht_2d_solver), intent(in) :: this
+    real(r8), intent(out) :: velocity(:)
+
+    ASSERT(size(velocity) == size(this%flow_state%vel_fn))
+    velocity = this%flow_state%vel_fn
+  end subroutine
 
 
   subroutine get_cell_heat_soln(this, enth)

@@ -19,13 +19,13 @@ module ns_ht_2d_sim_type
   use material_model_type
   use material_composition_type
   use scalar_func_class
-  use scalar_func_factories, only: alloc_scalar_func
+  use scalar_func_factories, only: alloc_scalar_func, alloc_poly_scalar_func
+  use scalar_func_tools, only: is_const
   use scalar_func_projection
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use flow_2d_model_type
-  use flow_2d_state_type
   use ht_2d_model_type
   use ns_ht_2d_solver_type
   use ns_ht_2d_vtkhdf_writer_type
@@ -40,7 +40,6 @@ module ns_ht_2d_sim_type
     type(material_model) :: matl_model
     type(material_composition), pointer :: composition => null()
     type(flow_2d_model), pointer :: flow_model => null()
-    type(flow_2d_state), pointer :: flow_state => null()
     type(ht_2d_model), pointer :: ht_model => null()
     type(ns_ht_2d_solver), pointer :: solver => null()
     type(ns_ht_2d_vtkhdf_writer) :: output
@@ -61,7 +60,6 @@ contains
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%ht_model)) deallocate(this%ht_model)
-    if (associated(this%flow_state)) deallocate(this%flow_state)
     if (associated(this%flow_model)) deallocate(this%flow_model)
     if (associated(this%composition)) deallocate(this%composition)
     if (associated(this%mesh)) deallocate(this%mesh)
@@ -78,15 +76,14 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist, flow_bc, momentum, projection, ht_solver, coupled
+    type(parameter_list), pointer :: plist, flow_bc, solver_params
     type(parameter_list_iterator) :: piter
     class(scalar_func), allocatable :: initial_temp
     class(vector_func), allocatable :: initial_velocity_func
     character(:), allocatable :: matl_name(:)
-    real(r8) :: density, viscosity, thermal_expan_coef, expan_ref_temp
-    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant
+    class(scalar_func), allocatable :: density_func, viscosity_func, alpha_func, tref_func, density_delta_func
+    real(r8) :: density, alpha, expan_ref_temp
     real(r8), allocatable :: body_acceleration(:), temp(:), velocity(:,:)
-    integer :: max_try
 
     stat = 0
     call env%simlog%info('Initializing the non-isothermal flow simulation')
@@ -121,54 +118,73 @@ contains
       stat = 1; errmsg = 'missing "flow-model" sublist parameter'; return
     end if
     plist => params%sublist('flow-model')
-    call plist%get('density', density, stat, errmsg); if (stat /= 0) return
-    call plist%get('viscosity', viscosity, stat, errmsg); if (stat /= 0) return
-    call plist%get('thermal-expan-coef', thermal_expan_coef, &
-        stat=stat, errmsg=errmsg, default=0.0_r8)
-    if (stat /= 0) return
-    call plist%get('expan-ref-temp', expan_ref_temp, stat=stat, errmsg=errmsg, default=0.0_r8)
-    if (stat /= 0) return
+    call this%matl_model%get_phase_prop(1, 'density', density_func)
+    if (.not.allocated(density_func) .or. .not.is_const(density_func)) then
+      stat = 1
+      errmsg = 'material density must be a constant property'
+      return
+    end if
+    density = density_func%eval([real(r8)::])
+    if (density <= 0.0_r8) then
+      stat = 1
+      errmsg = 'material density must be positive'
+      return
+    end if
+    call this%matl_model%get_phase_prop(1, 'viscosity', viscosity_func)
+    if (.not.allocated(viscosity_func)) then
+      stat = 1
+      errmsg = 'material viscosity property is missing'
+      return
+    end if
+    call this%matl_model%get_phase_prop(1, 'thermal-expan-coef', alpha_func)
+    if (.not.allocated(alpha_func) .or. .not.is_const(alpha_func)) then
+      stat = 1
+      errmsg = 'material thermal-expan-coef must be a constant property'
+      return
+    end if
+    call this%matl_model%get_phase_prop(1, 'expan-ref-temp', tref_func)
+    if (.not.allocated(tref_func) .or. .not.is_const(tref_func)) then
+      stat = 1
+      errmsg = 'material expan-ref-temp must be a constant property'
+      return
+    end if
+    alpha = alpha_func%eval([real(r8)::])
+    expan_ref_temp = tref_func%eval([real(r8)::])
+    if (alpha < 0.0_r8) then
+      stat = 1
+      errmsg = 'material thermal-expan-coef must be nonnegative'
+      return
+    end if
+    if (.not.is_const(viscosity_func)) then
+      call env%simlog%info('Material viscosity is temperature-dependent')
+    end if
+    call alloc_poly_scalar_func(density_delta_func, [-density*alpha], [1], expan_ref_temp)
     call plist%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8,0.0_r8])
     if (stat /= 0) return
     if (.not.plist%is_sublist('bc')) then
       stat = 1; errmsg = 'flow-model requires a "bc" sublist'; return
     end if
     flow_bc => plist%sublist('bc')
-    allocate(this%flow_model, this%flow_state)
-    call this%flow_model%init(env, this%mesh, flow_bc, density, viscosity, stat, errmsg, body_acceleration, &
-        thermal_expan_coef, expan_ref_temp)
+    allocate(this%flow_model)
+    call this%flow_model%init(env, this%mesh, flow_bc, density, 0.0_r8, stat, errmsg, body_acceleration, &
+        viscosity_func, density_delta_func)
     if (stat /= 0) return
-    call this%flow_state%init(this%mesh)
 
     if (.not.params%is_sublist('ht-model')) then
       stat = 1; errmsg = 'missing "ht-model" sublist parameter'; return
     end if
     plist => params%sublist('ht-model')
     allocate(this%ht_model)
-    call this%ht_model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
+    call this%ht_model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg, advection=.true.)
     if (stat /= 0) return
 
-    if (.not.params%is_sublist('flow-solver') .or. .not.params%is_sublist('ht-solver') .or. &
-        .not.params%is_sublist('coupled-solver')) then
-      stat = 1; errmsg = 'missing flow-solver, ht-solver, or coupled-solver sublist'; return
+    if (.not.params%is_sublist('solver')) then
+      stat = 1; errmsg = 'missing "solver" sublist'; return
     end if
-    plist => params%sublist('flow-solver')
-    if (.not.plist%is_sublist('momentum-solver') .or. .not.plist%is_sublist('projection-solver')) then
-      stat = 1; errmsg = 'flow-solver requires momentum-solver and projection-solver sublists'; return
-    end if
-    momentum => plist%sublist('momentum-solver')
-    projection => plist%sublist('projection-solver')
-    ht_solver => params%sublist('ht-solver')
-    coupled => params%sublist('coupled-solver')
-    call coupled%get('initial-time-step', dt_init, stat, errmsg); if (stat /= 0) return
-    call coupled%get('min-time-step', dt_min, stat, errmsg); if (stat /= 0) return
-    call coupled%get('max-time-step', dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg); if (stat /= 0) return
-    call coupled%get('time-step-growth', dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg); if (stat /= 0) return
-    call coupled%get('courant-number', courant, default=0.5_r8, stat=stat, errmsg=errmsg); if (stat /= 0) return
-    call coupled%get('max-try-at-step', max_try, default=10, stat=stat, errmsg=errmsg); if (stat /= 0) return
+    solver_params => params%sublist('solver')
     allocate(this%solver)
-    call this%solver%init(env, this%flow_model, this%flow_state, this%ht_model, this%matl_model, [1], flow_bc, &
-        momentum, projection, ht_solver, dt_init, dt_min, dt_max, dt_grow, courant, max_try, stat, errmsg)
+    call this%solver%init(env, this%flow_model, this%ht_model, this%matl_model, this%composition, &
+        solver_params, stat, errmsg)
     if (stat /= 0) return
 
     if (.not.params%is_sublist('sim-control')) then
@@ -258,13 +274,14 @@ contains
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time
 
-    real(r8), allocatable :: H(:), T(:)
+    real(r8), allocatable :: p(:), velocity(:,:), H(:), T(:)
 
     call env%timer%start('output')
-    allocate(H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
+    allocate(p(this%mesh%ncell), velocity(2,this%mesh%ncell), H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
+    call this%solver%get_cell_flow_soln(p, velocity)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
-    call this%output%write_solution(time, this%flow_state%p_cc, this%flow_state%vel_cc, H, T)
+    call this%output%write_solution(time, p, velocity, H, T)
     call env%timer%stop('output')
   end subroutine
 

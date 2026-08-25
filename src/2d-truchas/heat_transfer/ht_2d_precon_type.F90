@@ -96,6 +96,10 @@ contains
       call this%model%bc_dir%compute(t)
       call dm%set_dir_faces(this%model%bc_dir%index)
     end if
+    if (allocated(this%model%bc_inflow)) then
+      call this%model%bc_inflow%compute(t)
+      call dm%set_dir_faces(this%model%bc_inflow%index)
+    end if
     if (allocated(this%model%bc_htc)) then
       call this%model%bc_htc%compute_deriv(t, u%tf, boundary_deriv)
       call dm%incr_face_diag(this%model%bc_htc%index, boundary_deriv)
