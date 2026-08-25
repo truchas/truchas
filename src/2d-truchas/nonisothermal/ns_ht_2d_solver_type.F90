@@ -131,13 +131,11 @@ contains
       errmsg = 'maximum coupled step attempts must be > 0'
       return
     end if
-    if (.not.flow_params%is_sublist('momentum-solver') .or. &
-        .not.flow_params%is_sublist('projection-solver')) then
+    if (.not.flow_params%is_sublist('projection-solver')) then
       stat = 1
-      errmsg = 'solver.flow requires momentum-solver and projection-solver sublists'
+      errmsg = 'solver.flow requires a projection-solver sublist'
       return
     end if
-    momentum_params => flow_params%sublist('momentum-solver')
     projection_params => flow_params%sublist('projection-solver')
 
     this%ncell_onP = flow_model%mesh%ncell_onP
@@ -152,7 +150,17 @@ contains
     allocate(this%flow_state)
     call this%flow_state%init(flow_model%mesh)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP))
-    call this%flow%init(flow_model, this%flow_state, momentum_params, projection_params)
+    if (flow_model%inviscid) then
+      call this%flow%init(flow_model, this%flow_state, projection_params=projection_params)
+    else
+      if (.not.flow_params%is_sublist('momentum-solver')) then
+        stat = 1
+        errmsg = 'viscous flow requires a momentum-solver sublist'
+        return
+      end if
+      momentum_params => flow_params%sublist('momentum-solver')
+      call this%flow%init(flow_model, this%flow_state, momentum_params, projection_params)
+    end if
     call this%material_transport%init(flow_model%mesh, size(this%flow_material_ids))
     if (allocated(ht_model%bc_inflow)) then
       call this%enthalpy_advector%init(flow_model%mesh, matl_model, this%flow_material_ids, stat, errmsg, &

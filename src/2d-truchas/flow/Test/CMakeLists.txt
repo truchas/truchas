@@ -256,3 +256,14 @@ set_tests_properties(ns_2d_integrated_lid_cavity PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
+
+foreach(nproc IN ITEMS 1 4)
+  add_test(NAME ns_2d_inviscid_channel-${nproc}p
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
+      $<TARGET_FILE:ns_2d_main> --output-dir ns_2d_inviscid_channel-${nproc}p --force
+      ${CMAKE_CURRENT_SOURCE_DIR}/inviscid_channel.json ${MPIEXEC_POSTFLAGS})
+  set_tests_properties(ns_2d_inviscid_channel-${nproc}p PROPERTIES
+    PROCESSORS ${nproc}
+    TIMEOUT 120
+    LABELS "INTEGRATED;FLOW;2d-truchas")
+endforeach()

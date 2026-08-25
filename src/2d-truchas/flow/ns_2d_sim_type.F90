@@ -73,6 +73,7 @@ contains
     real(r8), allocatable :: initial_velocity(:,:)
     real(r8) :: density, viscosity
     real(r8), allocatable :: body_acceleration(:)
+    logical :: inviscid
 
     stat = 0
     call init_signal_handler(SIGURG)
@@ -94,15 +95,22 @@ contains
       return
     end if
     model_params => params%sublist('flow-model')
+    call model_params%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+      return
+    end if
     call model_params%get('density', density, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // model_params%path() // ': ' // errmsg
       return
     end if
-    call model_params%get('viscosity', viscosity, stat, errmsg)
-    if (stat /= 0) then
-      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
-      return
+    if (.not.inviscid) then
+      call model_params%get('viscosity', viscosity, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+        return
+      end if
     end if
     call model_params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, &
         default=[0.0_r8, 0.0_r8])
@@ -110,9 +118,10 @@ contains
       errmsg = 'processing ' // model_params%path() // ': ' // errmsg
       return
     end if
-    if (density <= 0.0_r8 .or. viscosity <= 0.0_r8) then
+    if (density <= 0.0_r8 .or. (.not.inviscid .and. viscosity <= 0.0_r8)) then
       stat = 1
-      errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity > 0'
+      errmsg = 'processing ' // model_params%path() // ': require density > 0'
+      if (.not.inviscid) errmsg = errmsg // ' and viscosity > 0'
       return
     end if
     if (.not.model_params%is_sublist('bc')) then
@@ -122,7 +131,13 @@ contains
     end if
     bc_params => model_params%sublist('bc')
     allocate(this%model)
-    call this%model%init(env, this%mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration)
+    if (inviscid) then
+      call this%model%init(env, this%mesh, bc_params, density=density, stat=stat, errmsg=errmsg, &
+          body_acceleration=body_acceleration, inviscid=.true.)
+    else
+      call this%model%init(env, this%mesh, bc_params, density=density, viscosity=viscosity, stat=stat, &
+          errmsg=errmsg, body_acceleration=body_acceleration)
+    end if
     if (stat /= 0) then
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return
@@ -136,16 +151,24 @@ contains
       return
     end if
     solver_params => params%sublist('flow-solver')
-    if (.not.solver_params%is_sublist('momentum-solver') .or. &
-        .not.solver_params%is_sublist('projection-solver')) then
+    if (.not.solver_params%is_sublist('projection-solver')) then
       stat = 1
-      errmsg = 'flow-solver requires "momentum-solver" and "projection-solver" sublists'
+      errmsg = 'flow-solver requires a "projection-solver" sublist'
       return
     end if
-    momentum_params => solver_params%sublist('momentum-solver')
     projection_params => solver_params%sublist('projection-solver')
     allocate(this%solver)
-    call this%solver%init(this%model, this%state, momentum_params, projection_params)
+    if (inviscid) then
+      call this%solver%init(this%model, this%state, projection_params=projection_params)
+    else
+      if (.not.solver_params%is_sublist('momentum-solver')) then
+        stat = 1
+        errmsg = 'viscous flow requires a "momentum-solver" sublist'
+        return
+      end if
+      momentum_params => solver_params%sublist('momentum-solver')
+      call this%solver%init(this%model, this%state, momentum_params, projection_params)
+    end if
 
     if (.not.params%is_sublist('sim-control')) then
       stat = 1

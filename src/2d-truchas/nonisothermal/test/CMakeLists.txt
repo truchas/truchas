@@ -53,3 +53,14 @@ set_tests_properties(ns_ht_2d_hydrostatic PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
+
+foreach(nproc IN ITEMS 1 4)
+  add_test(NAME ns_ht_2d_inviscid-${nproc}p
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
+      $<TARGET_FILE:ns_ht_2d_main> --output-dir ns_ht_2d_inviscid-${nproc}p --force
+      ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/input.json ${MPIEXEC_POSTFLAGS})
+  set_tests_properties(ns_ht_2d_inviscid-${nproc}p PROPERTIES
+    PROCESSORS ${nproc}
+    LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+    TIMEOUT 120)
+endforeach()
