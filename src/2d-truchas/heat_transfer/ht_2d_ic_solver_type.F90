@@ -75,6 +75,10 @@ contains
       call this%model%bc_dir%compute(t)
       u%tf(this%model%bc_dir%index) = this%model%bc_dir%value
     end if
+    if (allocated(this%model%bc_inflow)) then
+      call this%model%bc_inflow%compute(t)
+      u%tf(this%model%bc_inflow%index) = this%model%bc_inflow%value
+    end if
 
     call this%model%H_of_T%compute_value(u%tc, u%hc(:this%mesh%ncell_onP))
 
@@ -205,6 +209,10 @@ contains
     if (allocated(this%model%bc_dir)) then
       call this%model%bc_dir%compute(t)
       call dm%set_dir_faces(this%model%bc_dir%index)
+    end if
+    if (allocated(this%model%bc_inflow)) then
+      call this%model%bc_inflow%compute(t)
+      call dm%set_dir_faces(this%model%bc_inflow%index)
     end if
     if (allocated(this%model%bc_htc)) then
       call this%model%bc_htc%compute(t, u%tf)

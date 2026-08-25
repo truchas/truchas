@@ -52,6 +52,7 @@ program test_HT_2d_model_type
   !! Run test problems
   call test_linear_dir(mfd_disc, matl_model, tol)
   call test_linear_flux(mfd_disc, matl_model, tol)
+  call test_advection_bc_constraints(matl_model)
   !! Quadratic boundary-condition verification remains deferred until its
   !! expected discrete convergence behavior is established.
 
@@ -309,6 +310,62 @@ contains
     end if
 
   end subroutine test_linear_flux
+
+
+  subroutine test_advection_bc_constraints(matl_model)
+
+    type(material_model), target, intent(in) :: matl_model
+
+    type(ht_2d_model) :: model
+    type(parameter_list), pointer :: params
+    character(:), allocatable :: errmsg, string
+    integer :: stat
+
+    if (is_IOP) print '(/,"Testing advective thermal BC constraints")'
+
+    string = &
+      '{"bc": { &
+          "temperature": {"type":"temperature", "face-set-ids":[1], "temp":1.0}, &
+          "inflow": {"type":"inflow", "face-set-ids":[1], "temp":2.0}, &
+          "other": {"type":"flux", "face-set-ids":[2,3,4], "flux":0.0}}, &
+        "source": {}}'
+    call parameter_list_from_json_string(string, params, errmsg)
+    if (.not.associated(params)) call error_exit(errmsg)
+    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call require_init_failure(stat, 'inflow/non-advection overlap was accepted')
+
+    string = &
+      '{"bc": { &
+          "outflow": {"type":"outflow", "face-set-ids":[1]}, &
+          "other": {"type":"flux", "face-set-ids":[1,2,3,4], "flux":0.0}}, &
+        "source": {}}'
+    call parameter_list_from_json_string(string, params, errmsg)
+    if (.not.associated(params)) call error_exit(errmsg)
+    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call require_init_failure(stat, 'outflow/non-advection overlap was accepted')
+
+    string = &
+      '{"bc": { &
+          "inflow": {"type":"inflow", "face-set-ids":[1], "temp":2.0}, &
+          "outflow": {"type":"outflow", "face-set-ids":[1]}, &
+          "other": {"type":"flux", "face-set-ids":[2,3,4], "flux":0.0}}, &
+        "source": {}}'
+    call parameter_list_from_json_string(string, params, errmsg)
+    if (.not.associated(params)) call error_exit(errmsg)
+    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call require_init_failure(stat, 'inflow/outflow overlap was accepted')
+
+  end subroutine test_advection_bc_constraints
+
+
+  subroutine require_init_failure(stat, message)
+    integer, intent(in) :: stat
+    character(*), intent(in) :: message
+    if (global_any(stat == 0)) then
+      if (is_IOP) print '("ERROR: ",a)', message
+      status = 1
+    end if
+  end subroutine require_init_failure
 
 
   !! Tests the HT_2d_model on a quadratic problem with Dirichlet boundary conditions

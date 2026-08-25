@@ -47,6 +47,8 @@ module ht_2d_model_type
     class(bndry_func1), allocatable :: bc_flux  ! Simple flux
     class(bndry_func2), allocatable :: bc_htc   ! External heat transfer coefficient
     class(bndry_func2), allocatable :: bc_rad   ! Simple radiation
+    class(bndry_func1), allocatable :: bc_inflow
+    class(bndry_func1), allocatable :: bc_outflow
   contains
     procedure :: init
     procedure :: init_vector
@@ -56,7 +58,7 @@ module ht_2d_model_type
 
 contains
 
-  subroutine init(this, env, mesh, matl_model, composition, params, stat, errmsg)
+  subroutine init(this, env, mesh, matl_model, composition, params, stat, errmsg, advection)
 
     use material_model_type
     use material_utilities
@@ -69,12 +71,16 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in), optional :: advection
 
     character(:), allocatable :: context
     type(parameter_list), pointer :: plist
     real(r8) :: sigma, abszero
+    logical :: enable_advection
 
     context = 'processing ' // params%path() // ': '
+    enable_advection = .false.
+    if (present(advection)) enable_advection = advection
 
     call this%disc%init(mesh)
     this%mesh => mesh
@@ -132,7 +138,7 @@ contains
     !! Defines the boundary condition components
     if (params%is_sublist('bc')) then
       plist => params%sublist('bc')
-      call init_bc(this, env, plist, sigma, abszero, stat, errmsg)
+      call init_bc(this, env, plist, sigma, abszero, enable_advection, stat, errmsg)
       if (stat /= 0) return
     else
       stat = 1
@@ -165,7 +171,7 @@ contains
     this%ext_rate = enthalpy_rate
   end subroutine
 
-  subroutine init_bc(model, env, params, sigma, abszero, stat, errmsg)
+  subroutine init_bc(model, env, params, sigma, abszero, advection, stat, errmsg)
 
     use bitfield_type
     use thermal_bc_factory_type
@@ -175,13 +181,14 @@ contains
     type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
     real(r8), intent(in) :: sigma, abszero
+    logical, intent(in) :: advection
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(thermal_bc_factory) :: bc_fac
     type(bitfield) :: bitmask
     character(160) :: string
-    logical, allocatable :: mask(:)
+    logical, allocatable :: mask(:), mask_nonadv(:), mask_inflow(:)
     integer, allocatable :: setids(:)
     integer :: j, n
 
@@ -224,6 +231,44 @@ contains
         return
       end if
       mask(model%bc_dir%index) = .true. ! mark the dirichlet faces
+    end if
+
+    if (advection) then
+      allocate(mask_nonadv, source=mask)
+      allocate(mask_inflow(model%mesh%nface))
+      mask_inflow = .false.
+
+      !! Inflow is Dirichlet for thermal diffusion, but is retained
+      !! separately for use as the advective donor temperature.
+      call bc_fac%alloc_inflow_bc(model%bc_inflow, env, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(model%bc_inflow)) then
+        if (global_any(mask_nonadv(model%bc_inflow%index))) then
+          stat = -1
+          errmsg = 'inflow boundary condition overlaps with a non-advection boundary condition'
+          return
+        end if
+        mask(model%bc_inflow%index) = .true.
+        mask_inflow(model%bc_inflow%index) = .true.
+      end if
+
+      !! Outflow is currently zero diffusive flux, but remains distinct so
+      !! that a specialized outflow discretization can be added later.
+      call bc_fac%alloc_outflow_bc(model%bc_outflow, env, stat, errmsg)
+      if (stat /= 0) return
+      if (allocated(model%bc_outflow)) then
+        if (global_any(mask_nonadv(model%bc_outflow%index))) then
+          stat = -1
+          errmsg = 'outflow boundary condition overlaps with a non-advection boundary condition'
+          return
+        end if
+        if (global_any(mask_inflow(model%bc_outflow%index))) then
+          stat = -1
+          errmsg = 'outflow boundary condition overlaps with an inflow boundary condition'
+          return
+        end if
+        mask(model%bc_outflow%index) = .true.
+      end if
     end if
 
     !! Finally verify that a condition has been applied to every boundary face.
@@ -276,7 +321,7 @@ contains
     type(ht_2d_vector), intent(inout) :: u, udot
     type(ht_2d_vector), intent(inout) :: r
 
-    real(r8), allocatable :: Tdir(:)
+    real(r8), allocatable :: Tdir(:), Tinflow(:)
     real(r8) :: cval(this%mesh%ncell)
 
     !! The vector integrator guarantees only on-process entries at callback
@@ -299,12 +344,24 @@ contains
           u%tf(index) = value
         end associate
       end if
+      if (allocated(this%bc_inflow)) then
+        call this%bc_inflow%compute(t)
+        allocate(Tinflow(size(this%bc_inflow%index)))
+        associate (index => this%bc_inflow%index, value => this%bc_inflow%value)
+          Tinflow = u%tf(index)
+          u%tf(index) = value
+        end associate
+      end if
     end subroutine
 
     subroutine restore_dirichlet
       if (allocated(this%bc_dir)) then
         u%tf(this%bc_dir%index) = Tdir
         deallocate(Tdir)
+      end if
+      if (allocated(this%bc_inflow)) then
+        u%tf(this%bc_inflow%index) = Tinflow
+        deallocate(Tinflow)
       end if
     end subroutine
 
@@ -334,10 +391,18 @@ contains
       end if
 
       if (allocated(this%bc_dir)) r%tf(this%bc_dir%index) = Tdir - this%bc_dir%value
+      if (allocated(this%bc_inflow)) r%tf(this%bc_inflow%index) = Tinflow - this%bc_inflow%value
 
       if (allocated(this%bc_flux)) then
         call this%bc_flux%compute(t)
         associate (index => this%bc_flux%index, value => this%bc_flux%value)
+          r%tf(index) = r%tf(index) + this%mesh%area(index)*value
+        end associate
+      end if
+
+      if (allocated(this%bc_outflow)) then
+        call this%bc_outflow%compute(t)
+        associate (index => this%bc_outflow%index, value => this%bc_outflow%value)
           r%tf(index) = r%tf(index) + this%mesh%area(index)*value
         end associate
       end if
