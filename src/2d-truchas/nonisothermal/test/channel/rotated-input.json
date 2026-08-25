@@ -14,7 +14,8 @@
     },
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
-        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "rotation-angle": 30.0
     },
     "flow-model": {
         "bc": {
@@ -28,8 +29,8 @@
             "inlet": {
                 "type": "inflow",
                 "face-set-ids": [1],
-                "temp": {"type": "polynomial", "poly-coef": [1.0, 1.0],
-                          "poly-powers": [[0, 0, 0], [0, 0, 1]]}
+                "temp": {"type": "polynomial", "poly-coef": [1.0, -0.5, 0.8660254037844386],
+                          "poly-powers": [[0, 0, 0], [0, 1, 0], [0, 0, 1]]}
             },
             "outlet": {"type": "outflow", "face-set-ids": [2]},
             "bottom": {"type": "temperature", "face-set-ids": [3], "temp": 1.0},
@@ -57,7 +58,7 @@
     "initial-velocity": [0.0, 0.0],
     "initial-temperature": {
         "type": "polynomial",
-        "poly-coef": [1.0, 1.0],
-        "poly-powers": [[0, 0], [0, 1]]
+        "poly-coef": [1.0, -0.5, 0.8660254037844386],
+        "poly-powers": [[0, 0], [1, 0], [0, 1]]
     }
 }

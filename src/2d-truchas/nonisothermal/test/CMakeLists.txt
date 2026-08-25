@@ -26,14 +26,18 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_python_package(vtk 9.0)
 add_test(NAME ns_ht_2d_channel
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/channel/test.py
-    $<TARGET_FILE:ns_ht_2d_main>)
+    $<TARGET_FILE:ns_ht_2d_main>
+    ${CMAKE_CURRENT_SOURCE_DIR}/channel/input.json ${MPIEXEC} 0.0)
 set_tests_properties(ns_ht_2d_channel PROPERTIES
+  PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
-add_test(NAME ns_ht_2d_channel_partition
+
+add_test(NAME ns_ht_2d_channel_rotated
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/channel/test.py
-    $<TARGET_FILE:ns_ht_2d_main> ${MPIEXEC})
-set_tests_properties(ns_ht_2d_channel_partition PROPERTIES
+    $<TARGET_FILE:ns_ht_2d_main>
+    ${CMAKE_CURRENT_SOURCE_DIR}/channel/rotated-input.json ${MPIEXEC} 30.0)
+set_tests_properties(ns_ht_2d_channel_rotated PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
@@ -54,13 +58,24 @@ set_tests_properties(ns_ht_2d_hydrostatic PROPERTIES
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
 
-foreach(nproc IN ITEMS 1 4)
-  add_test(NAME ns_ht_2d_inviscid-${nproc}p
-    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
-      $<TARGET_FILE:ns_ht_2d_main> --output-dir ns_ht_2d_inviscid-${nproc}p --force
-      ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/input.json ${MPIEXEC_POSTFLAGS})
-  set_tests_properties(ns_ht_2d_inviscid-${nproc}p PROPERTIES
-    PROCESSORS ${nproc}
-    LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
-    TIMEOUT 120)
-endforeach()
+add_test(NAME ns_ht_2d_inviscid
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/test.py
+          $<TARGET_FILE:ns_ht_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/input.json
+          ${MPIEXEC})
+set_tests_properties(ns_ht_2d_inviscid PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 120)
+
+add_test(NAME ns_ht_2d_inviscid_rotated
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/test.py
+          $<TARGET_FILE:ns_ht_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/rotated-input.json
+          ${MPIEXEC} 30.0)
+set_tests_properties(ns_ht_2d_inviscid_rotated PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 120)
