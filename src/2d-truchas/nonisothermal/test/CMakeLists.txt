@@ -58,24 +58,24 @@ set_tests_properties(ns_ht_2d_hydrostatic PROPERTIES
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
 
-add_test(NAME ns_ht_2d_inviscid
+add_test(NAME ns_ht_2d_inviscid_channel
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/test.py
           $<TARGET_FILE:ns_ht_2d_main>
           ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/input.json
           ${MPIEXEC})
-set_tests_properties(ns_ht_2d_inviscid PROPERTIES
+set_tests_properties(ns_ht_2d_inviscid_channel PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
 
-add_test(NAME ns_ht_2d_inviscid_rotated
+add_test(NAME ns_ht_2d_inviscid_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/test.py
           $<TARGET_FILE:ns_ht_2d_main>
           ${CMAKE_CURRENT_SOURCE_DIR}/inviscid/rotated-input.json
           ${MPIEXEC} 30.0)
-set_tests_properties(ns_ht_2d_inviscid_rotated PROPERTIES
+set_tests_properties(ns_ht_2d_inviscid_channel_rotated PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)

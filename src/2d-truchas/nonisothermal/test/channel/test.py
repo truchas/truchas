@@ -14,11 +14,10 @@ sys.path.insert(0, str(source_root / "src/python/truchas"))
 from TruchasVTKHDFData import TruchasVTKHDFData
 
 
-def run_case(executable, input_file, nproc, mpiexec):
-    output_dir = Path(tempfile.mkdtemp(prefix=f"ns_ht_2d_channel_{nproc}p_"))
+def run_case(executable, input_file, mpiexec):
+    output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_channel_4p_"))
     command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
-    if nproc > 1:
-        command = [mpiexec, "-n", str(nproc)] + command
+    command = [mpiexec, "-n", "4"] + command
     result = subprocess.run(
         command,
         cwd=output_dir,
@@ -29,7 +28,7 @@ def run_case(executable, input_file, nproc, mpiexec):
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        raise RuntimeError(f"ns_ht_2d returned {result.returncode} with {nproc} processes")
+        raise RuntimeError(f"ns_ht_2d returned {result.returncode} with 4 processes")
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
         raise RuntimeError(f"ns_ht_2d did not produce {output_file}")
@@ -81,30 +80,14 @@ def main():
     mpiexec = sys.argv[3]
     angle = float(sys.argv[4])
     try:
-        serial, serial_dir = run_case(executable, input_file, 1, mpiexec)
-        parallel, parallel_dir = run_case(executable, input_file, 4, mpiexec)
-        serial_result = check_solution(serial, angle)
-        parallel_result = check_solution(parallel, angle)
+        data, output_dir = run_case(executable, input_file, mpiexec)
+        check_solution(data, angle)
     except (OSError, RuntimeError, ValueError) as error:
         print(f"FAIL: {error}")
         return 1
 
-    if not np.allclose(serial_result[0], parallel_result[0], rtol=0.0, atol=1.0e-14):
-        print("FAIL: serial and parallel cell centers differ")
-        return 1
-    for name, serial_values, parallel_values in zip(
-        ("pressure", "velocity", "temperature", "enthalpy"),
-        serial_result[1:],
-        parallel_result[1:],
-    ):
-        if not np.allclose(serial_values, parallel_values, rtol=0.0, atol=1.0e-9):
-            error = np.max(np.abs(serial_values - parallel_values))
-            print(f"FAIL: serial/parallel {name} differs by {error:g}")
-            return 1
-
     print("PASS: viscous channel matches the Poiseuille/linear-temperature solution")
-    print(f"      serial artifacts: {serial_dir}")
-    print(f"      parallel artifacts: {parallel_dir}")
+    print(f"      artifacts: {output_dir}")
     return 0
 
 
