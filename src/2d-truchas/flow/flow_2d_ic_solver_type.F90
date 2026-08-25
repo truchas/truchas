@@ -34,7 +34,6 @@ module flow_2d_ic_solver_type
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), velocity_cc(:,:), velocity_fn(:)
   contains
     procedure :: init
-    procedure :: set_buoyancy_temperature
     procedure :: solve
     final :: delete
   end type
@@ -44,23 +43,16 @@ contains
   subroutine init(this, model, momentum_params, projection_params)
     class(flow_2d_ic_solver), intent(out) :: this
     type(flow_2d_model), target, intent(in) :: model
-    type(parameter_list), target, intent(in) :: momentum_params, projection_params
+    type(parameter_list), target, intent(in), optional :: momentum_params
+    type(parameter_list), target, intent(in) :: projection_params
 
     this%model => model
     allocate(this%projection_solver, this%rhs(2,model%mesh%ncell_onP), this%grad_p(2,model%mesh%ncell), &
         this%velocity_cc(2,model%mesh%ncell), this%velocity_fn(model%mesh%nface))
-    call this%momentum_solver%init(model%momentum, momentum_params)
+    if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
-        model%body_acceleration, model%thermal_expan_coef, model%expan_ref_temp)
-  end subroutine
-
-
-  subroutine set_buoyancy_temperature(this, temperature)
-    class(flow_2d_ic_solver), intent(inout) :: this
-    real(r8), intent(in) :: temperature(:)
-
-    call this%projection_update%set_buoyancy_temperature(temperature)
+        model%body_acceleration)
   end subroutine
 
 
@@ -102,21 +94,23 @@ contains
     !! gradient.  Body force enters through the projection below, using the
     !! same gravity-head operator as an ordinary step.
     this%grad_p = 0.0_r8
-    call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
-        this%model%bc, this%rhs)
+    call this%model%assemble_momentum(dt, this%rhs)
     do c = 1, this%model%mesh%ncell_onP
       this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*state%vel_cc(:,c)
       this%rhs(:,c) = this%rhs(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     state%vel_cc = 0.0_r8
-    if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
+    if (this%model%inviscid) then
+      call this%model%momentum%solve_inviscid(this%model%density_c, this%rhs, &
+          state%vel_cc(:,1:this%model%mesh%ncell_onP))
+    else if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, state%vel_cc(:,1:this%model%mesh%ncell_onP), stat)
       if (stat /= 0) return
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
     call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%bc, state, stat, initial=.true.)
+        this%model%density_delta_c, this%model%bc, state, stat, initial=.true.)
     if (stat /= 0) return
     state%vel_cc = this%velocity_cc
     state%vel_fn = this%velocity_fn

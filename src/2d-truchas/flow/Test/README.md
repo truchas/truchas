@@ -32,3 +32,6 @@ state is written at `initial-time`; integration stops at the final entry of
 `output-times`. `time-step-growth` defaults to `1.05` and limits step growth.
 For Navier--Stokes, `courant-number` additionally limits each step by the
 convective CFL condition.
+
+`inviscid_channel.json` is a small developer/CTest case for the inviscid
+Navier--Stokes path. It omits viscosity and uses free-slip walls.

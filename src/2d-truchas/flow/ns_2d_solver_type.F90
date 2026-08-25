@@ -53,18 +53,23 @@ contains
     class(ns_2d_solver), intent(out) :: this
     type(flow_2d_model), target, intent(in) :: model
     type(flow_2d_state), target, intent(inout) :: state
-    type(parameter_list), target, intent(in) :: momentum_params, projection_params
+    type(parameter_list), target, intent(in), optional :: momentum_params
+    type(parameter_list), target, intent(in) :: projection_params
 
     this%model => model
     this%state => state
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
         this%projection_solver, this%ic_solver)
     call this%material_transport%init(model%mesh, size(model%density))
-    call this%momentum_solver%init(model%momentum, momentum_params)
+    if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
         model%body_acceleration)
-    call this%ic_solver%init(model, momentum_params, projection_params)
+    if (present(momentum_params)) then
+      call this%ic_solver%init(model, momentum_params, projection_params)
+    else
+      call this%ic_solver%init(model, projection_params=projection_params)
+    end if
   end subroutine
 
 
@@ -73,8 +78,6 @@ contains
     real(r8), intent(in) :: temperature(:)
 
     call this%model%set_buoyancy_temperature(temperature)
-    call this%projection_update%set_buoyancy_temperature(temperature)
-    call this%ic_solver%set_buoyancy_temperature(temperature)
   end subroutine
 
 
@@ -138,8 +141,7 @@ contains
       return
     end if
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
-    call this%model%momentum%assemble(dt, this%model%density_c, this%model%viscosity_f, &
-        this%model%bc, this%rhs)
+    call this%model%assemble_momentum(dt, this%rhs)
     call this%model%momentum%add_advective_rhs(this%model%density, this%state%vel_cc, &
         flux_volumes, &
         this%model%bc, this%rhs)
@@ -147,12 +149,17 @@ contains
       this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
           dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
-    call this%momentum_solver%setup()
-    call this%momentum_solver%solve(this%rhs, this%state%vel_cc(:,1:size(this%rhs,2)), stat)
-    if (stat /= 0) return
+    if (this%model%inviscid) then
+      call this%model%momentum%solve_inviscid(this%model%density_c, this%rhs, &
+          this%state%vel_cc(:,1:size(this%rhs,2)))
+    else
+      call this%momentum_solver%setup()
+      call this%momentum_solver%solve(this%rhs, this%state%vel_cc(:,1:size(this%rhs,2)), stat)
+      if (stat /= 0) return
+    end if
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
     call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%bc, this%state, stat)
+        this%model%density_delta_c, this%model%bc, this%state, stat)
   end subroutine
 
   !! Return the maximum step size satisfying the specified convective Courant

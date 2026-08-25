@@ -1,13 +1,15 @@
 !!
 !! FLOW_2D_MODEL_TYPE
 !!
-!! This module defines FLOW_2D_MODEL, the mesh-associated, isothermal
-!! single-fluid model for a two-dimensional incompressible-flow calculation.
-!! It owns the spatial operators, constant fluid properties, boundary
+!! This module defines FLOW_2D_MODEL, the mesh-associated single-fluid model
+!! for a two-dimensional incompressible-flow calculation.
+!! It owns the spatial operators, fluid properties, boundary
 !! conditions, and discrete momentum and pressure-correction operators.  It
-!! also stores the uniform body acceleration used by the effective pressure
-!! gradient and, optionally, a Boussinesq thermal-expansion coefficient.  It
-!! does not own a solution state or choose a time-integration algorithm.
+!! also stores the uniform body acceleration and the temperature-dependent
+!! density and viscosity values used by the operators.  It does not own a
+!! solution state or choose a time-integration algorithm.
+!! In inviscid mode the viscosity property and its derived arrays are omitted,
+!! and the momentum operator uses only the cell mass blocks.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -19,6 +21,8 @@ module flow_2d_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
+  use scalar_func_class
+  use scalar_func_factories, only: alloc_const_scalar_func
   use unstr_2d_mesh_type
   use flow_2d_operators_type
   use flow_2d_bc_type
@@ -35,42 +39,38 @@ module flow_2d_model_type
     type(flow_2d_bc), pointer, public :: bc => null()
     type(flow_2d_momentum), pointer, public :: momentum => null()
     type(flow_2d_projection), pointer, public :: projection => null()
-    real(r8), allocatable, public :: density(:), density_c(:), inv_density_c(:), inv_density_f(:), viscosity_f(:)
+    logical, public :: inviscid = .false.
+    real(r8), allocatable, public :: density(:), density_c(:), density_delta_c(:), inv_density_c(:), &
+        inv_density_f(:), viscosity_c(:), viscosity_f(:)
     real(r8), public :: body_acceleration(2) = 0.0_r8
-    real(r8), public :: thermal_expan_coef = 0.0_r8
-    real(r8), public :: expan_ref_temp = 0.0_r8
-    real(r8), allocatable :: buoyancy_temperature(:)
+    class(scalar_func), allocatable :: viscosity, density_delta
   contains
     procedure :: init
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
     procedure :: pressure_gradient
+    procedure :: assemble_momentum
   end type
 
 contains
 
   subroutine init(this, env, mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, &
-      thermal_expan_coef, expan_ref_temp)
+      viscosity_func, density_delta_func, inviscid)
     class(flow_2d_model), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
-    real(r8), intent(in) :: density, viscosity
+    real(r8), intent(in) :: density
+    real(r8), optional, intent(in) :: viscosity
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     real(r8), optional, intent(in) :: body_acceleration(:)
-    real(r8), optional, intent(in) :: thermal_expan_coef, expan_ref_temp
+    class(scalar_func), allocatable, optional, intent(inout) :: viscosity_func, density_delta_func
+    logical, optional, intent(in) :: inviscid
+    integer :: c
 
     stat = 0
-    if (present(thermal_expan_coef)) then
-      if (thermal_expan_coef < 0.0_r8) then
-        stat = 1
-        errmsg = 'thermal expansion coefficient must be nonnegative'
-        return
-      end if
-      this%thermal_expan_coef = thermal_expan_coef
-    end if
-    if (present(expan_ref_temp)) this%expan_ref_temp = expan_ref_temp
+    if (present(inviscid)) this%inviscid = inviscid
     if (present(body_acceleration)) then
       if (size(body_acceleration) /= 2) then
         stat = 1
@@ -81,36 +81,96 @@ contains
     end if
     this%mesh => mesh
     allocate(this%operators, this%bc, this%momentum, this%projection)
-    allocate(this%density(1), this%density_c(mesh%ncell), this%inv_density_c(mesh%ncell), &
-        this%inv_density_f(mesh%nface), this%viscosity_f(mesh%nface))
+    allocate(this%density(1), this%density_c(mesh%ncell), this%density_delta_c(mesh%ncell), &
+        this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface))
+    if (.not.this%inviscid) allocate(this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
     this%density = density
     this%density_c = this%density(1)
+    this%density_delta_c = 0.0_r8
     this%inv_density_c = 1.0_r8/this%density(1)
     this%inv_density_f = 1.0_r8/this%density(1)
-    this%viscosity_f = viscosity
-    if (this%thermal_expan_coef > 0.0_r8) then
-      allocate(this%buoyancy_temperature(mesh%ncell), source=0.0_r8)
+    if (.not.this%inviscid) then
+      if (present(viscosity_func)) then
+        call move_alloc(viscosity_func, this%viscosity)
+      else if (present(viscosity)) then
+        call alloc_const_scalar_func(this%viscosity, viscosity)
+      else
+        stat = 1
+        errmsg = 'viscosity is required for a viscous flow model'
+        return
+      end if
+    end if
+    if (present(density_delta_func)) then
+      call move_alloc(density_delta_func, this%density_delta)
+    else
+      call alloc_const_scalar_func(this%density_delta, 0.0_r8)
     end if
 
     call this%operators%init(mesh)
+    call this%set_buoyancy_temperature([(0.0_r8, c=1,mesh%ncell_onP)])
+    if (allocated(this%viscosity_c)) then
+      if (any(this%viscosity_c(:mesh%ncell_onP) <= 0.0_r8)) then
+        stat = 1
+        errmsg = 'viscosity must be positive at the initial temperature'
+        return
+      end if
+    end if
     call this%bc%init(env, mesh, bc_params, stat, errmsg)
     if (stat /= 0) return
-    call this%momentum%init(mesh, this%operators)
+    call this%momentum%init(mesh, this%operators, this%inviscid)
     call this%projection%init(mesh, this%operators)
   end subroutine
 
 
-  !! Set the cell temperature used to evaluate the Boussinesq buoyancy term.
-  !! The reference temperature determines the pressure potential associated
-  !! with the constant part of the buoyancy force.
+  !! Set the cell temperature used to evaluate the material properties and
+  !! the Boussinesq buoyancy term.
   subroutine set_buoyancy_temperature(this, temperature)
     class(flow_2d_model), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
 
-    if (.not.allocated(this%buoyancy_temperature)) return
     ASSERT(size(temperature) == this%mesh%ncell_onP)
-    this%buoyancy_temperature(:this%mesh%ncell_onP) = temperature
-    call this%mesh%cell_imap%gather_offp(this%buoyancy_temperature)
+    block
+      integer :: c
+      real(r8) :: state(1)
+      do c = 1, this%mesh%ncell_onP
+        state(1) = temperature(c)
+        this%density_delta_c(c) = this%density_delta%eval(state)
+        if (allocated(this%viscosity)) this%viscosity_c(c) = this%viscosity%eval(state)
+      end do
+    end block
+    call this%mesh%cell_imap%gather_offp(this%density_delta_c)
+    if (.not.allocated(this%viscosity_c)) return
+    call this%mesh%cell_imap%gather_offp(this%viscosity_c)
+    block
+      integer :: c1, c2, f
+      do f = 1, this%mesh%nface_onP
+        c1 = this%mesh%fcell(1,f)
+        c2 = this%mesh%fcell(2,f)
+        if (c2 == 0) then
+          this%viscosity_f(f) = this%viscosity_c(c1)
+        else
+          this%viscosity_f(f) = 2.0_r8*this%viscosity_c(c1)*this%viscosity_c(c2) / &
+              (this%viscosity_c(c1) + this%viscosity_c(c2))
+        end if
+      end do
+    end block
+    call this%mesh%face_imap%gather_offp(this%viscosity_f)
+  end subroutine
+
+
+  !! Assemble the momentum predictor operator for the current flow model.
+  !! Inviscid flow has only the cell mass blocks; viscous flow also includes
+  !! diffusion and velocity-boundary contributions.
+  subroutine assemble_momentum(this, dt, rhs)
+    class(flow_2d_model), intent(inout) :: this
+    real(r8), intent(in) :: dt
+    real(r8), intent(out) :: rhs(:,:)
+
+    if (this%inviscid) then
+      call this%momentum%assemble_inviscid(this%density_c, rhs)
+    else
+      call this%momentum%assemble(dt, this%density_c, this%viscosity_f, this%bc, rhs)
+    end if
   end subroutine
 
 
@@ -140,19 +200,11 @@ contains
     do f = 1, this%mesh%nface_onP
       c1 = this%mesh%fcell(1,f)
       c2 = this%mesh%fcell(2,f)
-      rho = this%density_c(c1)
-      if (allocated(this%buoyancy_temperature)) then
-        rho = rho*(1.0_r8 - this%thermal_expan_coef*(this%buoyancy_temperature(c1) - &
-            this%expan_ref_temp))
-      end if
+      rho = this%density_c(c1) + this%density_delta_c(c1)
       gravity_head(1,f) = -rho*dot_product(this%body_acceleration, &
           this%mesh%cell_centroid(:,c1) - this%mesh%face_centroid(:,f))
       if (c2 > 0) then
-        rho = this%density_c(c2)
-        if (allocated(this%buoyancy_temperature)) then
-          rho = rho*(1.0_r8 - this%thermal_expan_coef*(this%buoyancy_temperature(c2) - &
-              this%expan_ref_temp))
-        end if
+        rho = this%density_c(c2) + this%density_delta_c(c2)
         gravity_head(2,f) = -rho*dot_product(this%body_acceleration, &
             this%mesh%cell_centroid(:,c2) - this%mesh%face_centroid(:,f))
       end if

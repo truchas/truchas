@@ -32,37 +32,88 @@ module flow_2d_momentum_type
     private
     type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
     type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
+    logical :: inviscid
     type(pbsr_matrix) :: matrix_
   contains
     procedure :: init
     procedure :: assemble
+    procedure :: assemble_inviscid
+    procedure :: solve_inviscid
     procedure :: add_advective_rhs
     procedure :: matrix
   end type
 
 contains
 
-  subroutine init(this, mesh, operators)
+  subroutine init(this, mesh, operators, inviscid)
     class(flow_2d_momentum), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), target, intent(in) :: operators
+    logical, optional, intent(in) :: inviscid
 
     type(pcsr_graph), pointer :: graph
     integer :: c, i, neighbor
 
     this%mesh => mesh
     this%operators => operators
+    this%inviscid = .false.
+    if (present(inviscid)) this%inviscid = inviscid
     allocate(graph)
     call graph%init(mesh%cell_imap)
     do c = 1, mesh%ncell_onP
       call graph%add_edge(c, c)
       do i = mesh%cstart(c), mesh%cstart(c+1)-1
         neighbor = mesh%cnhbr(i)
-        if (neighbor > 0) call graph%add_edge(c, neighbor)
+        if (.not.this%inviscid .and. neighbor > 0) call graph%add_edge(c, neighbor)
       end do
     end do
     call graph%add_complete()
     call this%matrix_%init(2, graph, take_graph=.true.)
+  end subroutine
+
+
+  !! Assemble the inviscid momentum predictor matrix, which is just the
+  !! block-diagonal cell mass matrix.  No diffusion coefficients or velocity
+  !! boundary contributions are evaluated.
+  subroutine assemble_inviscid(this, density_c, rhs)
+    class(flow_2d_momentum), intent(inout) :: this
+    real(r8), intent(in) :: density_c(:)
+    real(r8), intent(out) :: rhs(:,:)
+
+    integer :: c
+    real(r8) :: identity(2,2)
+
+    ASSERT(this%inviscid)
+    ASSERT(size(density_c) >= this%mesh%ncell)
+    ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
+    identity = 0.0_r8
+    identity(1,1) = 1.0_r8
+    identity(2,2) = 1.0_r8
+    call this%matrix_%set_all(0.0_r8)
+    rhs = 0.0_r8
+    do c = 1, this%mesh%ncell_onP
+      call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
+    end do
+  end subroutine
+
+
+  !! Solve the inviscid momentum predictor directly from its cell mass
+  !! blocks.  VELOCITY contains on-process cells on return; its ghost values
+  !! are filled by the caller.
+  subroutine solve_inviscid(this, density_c, rhs, velocity)
+    class(flow_2d_momentum), intent(in) :: this
+    real(r8), intent(in) :: density_c(:), rhs(:,:)
+    real(r8), intent(out) :: velocity(:,:)
+
+    integer :: c
+
+    ASSERT(this%inviscid)
+    ASSERT(size(density_c) >= this%mesh%ncell)
+    ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
+    ASSERT(size(velocity,1) == 2 .and. size(velocity,2) == this%mesh%ncell_onP)
+    do c = 1, this%mesh%ncell_onP
+      velocity(:,c) = rhs(:,c)/(density_c(c)*this%mesh%volume(c))
+    end do
   end subroutine
 
 

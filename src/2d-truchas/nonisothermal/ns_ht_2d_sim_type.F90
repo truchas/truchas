@@ -84,6 +84,7 @@ contains
     class(scalar_func), allocatable :: density_func, viscosity_func, alpha_func, tref_func, density_delta_func
     real(r8) :: density, alpha, expan_ref_temp
     real(r8), allocatable :: body_acceleration(:), temp(:), velocity(:,:)
+    logical :: inviscid
 
     stat = 0
     call env%simlog%info('Initializing the non-isothermal flow simulation')
@@ -118,6 +119,8 @@ contains
       stat = 1; errmsg = 'missing "flow-model" sublist parameter'; return
     end if
     plist => params%sublist('flow-model')
+    call plist%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
     call this%matl_model%get_phase_prop(1, 'density', density_func)
     if (.not.allocated(density_func) .or. .not.is_const(density_func)) then
       stat = 1
@@ -130,11 +133,13 @@ contains
       errmsg = 'material density must be positive'
       return
     end if
-    call this%matl_model%get_phase_prop(1, 'viscosity', viscosity_func)
-    if (.not.allocated(viscosity_func)) then
-      stat = 1
-      errmsg = 'material viscosity property is missing'
-      return
+    if (.not.inviscid) then
+      call this%matl_model%get_phase_prop(1, 'viscosity', viscosity_func)
+      if (.not.allocated(viscosity_func)) then
+        stat = 1
+        errmsg = 'material viscosity property is missing'
+        return
+      end if
     end if
     call this%matl_model%get_phase_prop(1, 'thermal-expan-coef', alpha_func)
     if (.not.allocated(alpha_func) .or. .not.is_const(alpha_func)) then
@@ -155,8 +160,8 @@ contains
       errmsg = 'material thermal-expan-coef must be nonnegative'
       return
     end if
-    if (.not.is_const(viscosity_func)) then
-      call env%simlog%info('Material viscosity is temperature-dependent')
+    if (.not.inviscid) then
+      if (.not.is_const(viscosity_func)) call env%simlog%info('Material viscosity is temperature-dependent')
     end if
     call alloc_poly_scalar_func(density_delta_func, [-density*alpha], [1], expan_ref_temp)
     call plist%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8,0.0_r8])
@@ -166,8 +171,14 @@ contains
     end if
     flow_bc => plist%sublist('bc')
     allocate(this%flow_model)
-    call this%flow_model%init(env, this%mesh, flow_bc, density, 0.0_r8, stat, errmsg, body_acceleration, &
-        viscosity_func, density_delta_func)
+    if (inviscid) then
+      call this%flow_model%init(env, this%mesh, flow_bc, density=density, stat=stat, errmsg=errmsg, &
+          body_acceleration=body_acceleration, density_delta_func=density_delta_func, inviscid=.true.)
+    else
+      call this%flow_model%init(env, this%mesh, flow_bc, density=density, stat=stat, errmsg=errmsg, &
+          body_acceleration=body_acceleration, viscosity_func=viscosity_func, &
+          density_delta_func=density_delta_func)
+    end if
     if (stat /= 0) return
 
     if (.not.params%is_sublist('ht-model')) then
