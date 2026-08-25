@@ -180,24 +180,13 @@ add_test(flow_2d_ic_solver-4p ${test_launch})
 set_tests_properties(flow_2d_ic_solver-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_ic_solver-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
-add_test(NAME flow_2d_pressure_channel-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  $<TARGET_FILE:flow_2d_main> --output-dir flow_2d_pressure_channel-1p --force
-  ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_pressure_channel-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_pressure_channel-1p PROPERTY LABELS INTEGRATED FLOW 2d-truchas)
-add_test(NAME flow_2d_pressure_channel-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  $<TARGET_FILE:flow_2d_main> --output-dir flow_2d_pressure_channel-4p --force
-  ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel.json ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_pressure_channel-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_pressure_channel-4p PROPERTY LABELS INTEGRATED FLOW 2d-truchas)
-
-add_test(NAME flow_2d_integrated_channel
+add_test(NAME flow_2d_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
           $<TARGET_FILE:flow_2d_main>
           ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_analytic.json
           ${MPIEXEC})
-set_tests_properties(flow_2d_integrated_channel PROPERTIES
+set_tests_properties(flow_2d_channel_rotated PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
@@ -213,13 +202,35 @@ set_tests_properties(flow_2d_integrated_noisy_channel PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
 
-add_test(NAME ns_2d_integrated_channel
+add_test(NAME ns_2d_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
           $<TARGET_FILE:ns_2d_main>
           ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_analytic.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_integrated_channel PROPERTIES
+set_tests_properties(ns_2d_channel_rotated PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME flow_2d_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_analytic_aligned.json
+          ${MPIEXEC} 0.0)
+set_tests_properties(flow_2d_channel PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME ns_2d_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_flow_2d_integrated.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/pressure_channel_analytic_aligned.json
+          ${MPIEXEC} 0.0)
+set_tests_properties(ns_2d_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
@@ -257,13 +268,24 @@ set_tests_properties(ns_2d_integrated_lid_cavity PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;FLOW;2d-truchas")
 
-foreach(nproc IN ITEMS 1 4)
-  add_test(NAME ns_2d_inviscid_channel-${nproc}p
-    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
-      $<TARGET_FILE:ns_2d_main> --output-dir ns_2d_inviscid_channel-${nproc}p --force
-      ${CMAKE_CURRENT_SOURCE_DIR}/inviscid_channel.json ${MPIEXEC_POSTFLAGS})
-  set_tests_properties(ns_2d_inviscid_channel-${nproc}p PROPERTIES
-    PROCESSORS ${nproc}
-    TIMEOUT 120
-    LABELS "INTEGRATED;FLOW;2d-truchas")
-endforeach()
+add_test(NAME ns_2d_inviscid_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ns_2d_inviscid.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid_channel.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_channel PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")
+
+add_test(NAME ns_2d_inviscid_channel_rotated
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/test_ns_2d_inviscid.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/inviscid_channel_rotated.json
+          ${MPIEXEC} 0.8660254037844386 0.5)
+set_tests_properties(ns_2d_inviscid_channel_rotated PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;FLOW;2d-truchas")

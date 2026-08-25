@@ -13,12 +13,14 @@
     },
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
-        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "rotation-angle": 30.0
     },
     "flow-model": {
         "inviscid": true,
         "bc": {
-            "inlet": {"type": "velocity", "face-set-ids": [1], "velocity": [1.0, 0.0]},
+            "inlet": {"type": "velocity", "face-set-ids": [1],
+                      "velocity": [0.8660254037844386, 0.5]},
             "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
             "walls": {"type": "free-slip", "face-set-ids": [3, 4]}
         }
@@ -28,8 +30,8 @@
             "inlet": {
                 "type": "inflow",
                 "face-set-ids": [1],
-                "temp": {"type": "polynomial", "poly-coef": [1.0, 1.0],
-                          "poly-powers": [[0, 0, 0], [0, 0, 1]]}
+                "temp": {"type": "polynomial", "poly-coef": [1.0, -0.5, 0.8660254037844386],
+                          "poly-powers": [[0, 0, 0], [0, 1, 0], [0, 0, 1]]}
             },
             "outlet": {"type": "outflow", "face-set-ids": [2]},
             "bottom": {"type": "temperature", "face-set-ids": [3], "temp": 1.0},
@@ -53,10 +55,10 @@
         "courant-number": 0.5
     },
     "sim-control": {"initial-time": 0.0, "output-times": [0.01]},
-    "initial-velocity": [1.0, 0.0],
+    "initial-velocity": [0.8660254037844386, 0.5],
     "initial-temperature": {
         "type": "polynomial",
-        "poly-coef": [1.0, 1.0],
-        "poly-powers": [[0, 0], [0, 1]]
+        "poly-coef": [1.0, -0.5, 0.8660254037844386],
+        "poly-powers": [[0, 0], [1, 0], [0, 1]]
     }
 }

@@ -35,3 +35,5 @@ convective CFL condition.
 
 `inviscid_channel.json` is a small developer/CTest case for the inviscid
 Navier--Stokes path. It omits viscosity and uses free-slip walls.
+`inviscid_channel_rotated.json` applies the same case after a 30-degree mesh
+rotation, with the plug-flow velocity rotated with the mesh.
