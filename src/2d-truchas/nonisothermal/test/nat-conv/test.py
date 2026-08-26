@@ -22,7 +22,8 @@ def run_case(executable, input_file, mpiexec):
     (run_root / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
         raise AssertionError(f"ns_ht_2d returned {result.returncode} in {run_root}\n{result.stdout}")
-    return run_root, TruchasVTKHDFData(run_root / "input" / "out.vtkhdf")
+    output_file = run_root / input_file.stem / "out.vtkhdf"
+    return run_root, TruchasVTKHDFData(output_file)
 
 
 def nearest_field(data, step, x, y, component):
@@ -31,7 +32,7 @@ def nearest_field(data, step, x, y, component):
     return data.field(step, "velocity")[index, component]
 
 
-def check_reference(data, reference):
+def check_reference(data, reference, bdf1):
     if reference.num_steps != 3:
         raise AssertionError(f"expected three reference states, found {reference.num_steps}")
     for step, expected in enumerate((0.0, 1000.0, 30000.0)):
@@ -45,10 +46,16 @@ def check_reference(data, reference):
                 f"output {step} has time {data.time(step):g}, expected {expected:g}"
             )
 
-    tolerances = {
-        "T": (2.0e-6, 5.0e-5),
-        "velocity": (2.0e-10, 2.0e-8),
-    }
+    if bdf1:
+        tolerances = {
+            "T": (3.0e-4, 1.0e-4),
+            "velocity": (1.0e-8, 2.0e-8),
+        }
+    else:
+        tolerances = {
+            "T": (2.0e-6, 5.0e-5),
+            "velocity": (2.0e-10, 2.0e-8),
+        }
     for step in (1, 2):
         for name, step_tolerances in tolerances.items():
             error = np.max(np.abs(data.field(step, name) - reference.field(step, name)))
@@ -60,7 +67,7 @@ def check_reference(data, reference):
                 )
 
 
-def check_case(run_root, data, reference):
+def check_case(run_root, data, reference, bdf1):
     if data.num_steps != 3:
         raise AssertionError(f"expected three output states, found {data.num_steps}")
     expected_times = [0.0, 1000.0, 30000.0]
@@ -68,7 +75,7 @@ def check_case(run_root, data, reference):
         if abs(data.time(step) - expected) > 1.0e-10:
             raise AssertionError(f"output {step} has time {data.time(step):g}, expected {expected:g}")
 
-    check_reference(data, reference)
+    check_reference(data, reference, bdf1)
 
     initial_centers = data.cell_centers(0)
     initial_temperature = data.field(0, "T")
@@ -97,16 +104,19 @@ def check_case(run_root, data, reference):
 
 
 def test():
-    if len(sys.argv) != 3:
-        raise AssertionError(f"usage: {sys.argv[0]} NS_HT_2D MPIEXEC")
+    if len(sys.argv) not in (3, 4):
+        raise AssertionError(f"usage: {sys.argv[0]} NS_HT_2D MPIEXEC [INPUT_FILE]")
     executable = Path(sys.argv[1]).resolve()
-    input_file = Path(__file__).with_name("input.json").resolve()
+    input_file = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 \
+    else Path(__file__).with_name("bdf2.json").resolve()
+    bdf1 = input_file.name == "bdf1.json"
     reference = TruchasVTKHDFData(
         Path(__file__).with_name("reference") / "out.vtkhdf"
     )
     run_root, data = run_case(executable, input_file, sys.argv[2])
-    horizontal, vertical = check_case(run_root, data, reference)
-    print(f"PASS: natural convection; centerline velocities {horizontal:g}, {vertical:g}; artifacts: {run_root}")
+    horizontal, vertical = check_case(run_root, data, reference, bdf1)
+    scheme = "BDF1" if bdf1 else "BDF2"
+    print(f"PASS: natural convection ({scheme}); centerline velocities {horizontal:g}, {vertical:g}; artifacts: {run_root}")
 
 
 if __name__ == "__main__":

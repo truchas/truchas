@@ -449,8 +449,12 @@ contains
     if (use_bdf1) then
       etah = h
       t0 = tlast
-      call this%uhist%interp_state(t0, this%u0, order=1)
-      call this%up%copy(this%u0)
+      call this%uhist%interp_state(t0, this%u0, order=0)
+      if (this%uhist%depth() > 1) then
+        call this%uhist%interp_state(t, this%up, order=1)
+      else
+        call this%up%copy(this%u0)
+      end if
     else if (this%uhist%depth() == 2) then ! trapezoid method
       if (this%verbose) write(this%unit,fmt=1) this%seq+1, tlast, h
       etah = 0.5_r8 * h
@@ -513,9 +517,9 @@ contains
 
     end do BCE
 
-    predictor_error = (this%seq >= 3)
+    predictor_error = (this%seq >= merge(2, 3, use_bdf1))
 
-    if (predictor_error .and. .not.use_bdf1) then
+    if (predictor_error) then
 
       !! Predictor error control.
       !du = u - up
@@ -537,8 +541,17 @@ contains
       !! Select the next step size based on the predictor error and past step
       !! size history, but don't change the step size by too great a factor.
       dt(1) = h
-      dt(2:) = h + this%uhist%time_deltas()
-      call select_step_size(dt, perr, hnext)
+      if (use_bdf1) then
+        block
+          real(r8) :: deltas(2)
+          deltas = this%uhist%time_deltas()
+          dt(2) = h + deltas(1)
+        end block
+        call select_step_size(1, dt, perr, hnext)
+      else
+        dt(2:) = h + this%uhist%time_deltas()
+        call select_step_size(2, dt, perr, hnext)
+      end if
       hnext = max(RMIN*h, min(RMAX*h, hnext))
       if (this%freeze_count /= 0) hnext = min(h, hnext)
 
@@ -547,7 +560,7 @@ contains
       if (this%verbose) write(this%unit,fmt=6)
       hnext = h
       errc = 0
-      if (use_bdf1) hnext = min(RMAX*h, this%safe_dt%stepsize(t))
+      !if (use_bdf1) hnext = min(RMAX*h, this%safe_dt%stepsize(t))
 
     end if
 
@@ -565,34 +578,38 @@ contains
  !!  SELECT_STEP_SIZE -- Choose a new time step.
  !!
 
-  subroutine select_step_size(dt, perr, h)
+  subroutine select_step_size(order, dt, perr, h)
 
+    integer,  intent(in)  :: order
     real(r8), intent(in)  :: dt(:), perr
     real(r8), intent(out) :: h
 
     real(r8), parameter :: tol = 0.001_r8
     real(r8) :: a, dh, phi, dphi
 
-    ASSERT( size(dt) == 3 )
+    ASSERT(size(dt) >= order+1)
 
-    a = 0.5_r8*dt(1)*dt(2)*dt(3)/max(perr,0.001_r8)
-    h = dt(1)
+    select case (order)
+    case (1) ! BDF1
+      h = 0.5_r8*(sqrt(dt(1)**2 + (2/max(perr,0.001_r8))*dt(1)*dt(2)) - dt(1))
 
-    do ! until converged -- DANGEROUS!
+    case (2) ! BDF2
+      a = 0.5_r8*dt(1)*dt(2)*dt(3)/max(perr,0.001_r8)
+      h = dt(1)
+      do ! until converged -- DANGEROUS!
+        phi  = h*(h + dt(1))*(h + dt(2)) - a
+        dphi = (2.0_r8*h + dt(1))*(h + dt(2)) + h*(h + dt(1))
 
-      phi  = h*(h + dt(1))*(h + dt(2)) - a
-      dphi = (2.0_r8*h + dt(1))*(h + dt(2)) + h*(h + dt(1))
+        dh = phi / dphi
+        h = h - dh
+        if (abs(dh) / h < tol) exit
+      end do
 
-      dh = phi / dphi
-      h = h - dh
-      if (abs(dh) / h < tol) exit
-
-    end do
+    case default
+      INSIST(.false.)
+    end select
 
   end subroutine select_step_size
-
-  subroutine select_bdf1_step_size(dt, perr, h)
-  end subroutine
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
