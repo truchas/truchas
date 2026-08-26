@@ -140,6 +140,12 @@ contains
 
     ASSERT(size(vfrac,1) >= size(this%density))
     ASSERT(size(vfrac,2) >= this%mesh%ncell)
+    if (size(this%density) == 1 .and. all(vfrac(1,:this%mesh%ncell_onP) == 1.0_r8)) then
+      this%density_c = this%density(1)
+      this%inv_density_c = 1.0_r8/this%density(1)
+      this%inv_density_f = 1.0_r8/this%density(1)
+      return
+    end if
     this%density_c = matmul(this%density, vfrac(:size(this%density),:this%mesh%ncell))
     this%inv_density_c = 1.0_r8/this%density_c
     do f = 1, this%mesh%nface_onP

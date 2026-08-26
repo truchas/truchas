@@ -31,6 +31,7 @@ program test_simple_volume_tracker
   if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
 
   call test_immobile_solid(env)
+  call test_full_fluid(env)
 
   call env%simlog%close
   call MPI_Finalize
@@ -76,6 +77,29 @@ contains
     deallocate(mesh)
 
   end subroutine test_immobile_solid
+
+
+  subroutine test_full_fluid(env)
+
+    type(simulation_environment), intent(in) :: env
+    type(unstr_2d_mesh), pointer :: mesh
+    type(simple_volume_tracker) :: tracker
+    real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
+
+    mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [1, 1])
+    call tracker%init(env, mesh, 1, 1, 1, .false., [1])
+    allocate(vel(size(mesh%cface)), vof_n(1,mesh%ncell), vof(1,mesh%ncell), &
+        flux_vol(1,size(mesh%cface)), int_normal(2,1,mesh%ncell))
+    vel = 0.0_r8
+    vel(1) = 0.1_r8
+    vof_n = 1.0_r8
+
+    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
+    call require_close(vof(1,:), [1.0_r8], 'full-fluid volume fraction')
+
+    deallocate(mesh)
+
+  end subroutine test_full_fluid
 
 
   subroutine require_close(value, expected, label)
