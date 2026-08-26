@@ -42,7 +42,7 @@
             "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
             "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-8,
                 "abs-h-tol": 1.0e-10, "rel-h-tol": 1.0e-8},
-            "integrator": {"nlk-max-iter": 10, "nlk-tol": 0.01}
+            "integrator": {"use-backward-euler": true, "nlk-max-iter": 10, "nlk-tol": 0.01}
         },
         "initial-time-step": 1.0e-2,
         "min-time-step": 1.0e-5,
