@@ -15,6 +15,7 @@
 module ns_2d_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type
   use parameter_list_type
   use parallel_communication, only: global_minval
   use flow_2d_model_type
@@ -51,8 +52,9 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, model, momentum_params, projection_params)
+  subroutine init(this, env, model, momentum_params, projection_params)
     class(ns_2d_solver), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
@@ -61,7 +63,7 @@ contains
     call this%state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
         this%projection_solver, this%ic_solver)
-    call this%material_transport%init(model%mesh, size(model%density))
+    call this%material_transport%init(env, model%mesh, size(model%density))
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
