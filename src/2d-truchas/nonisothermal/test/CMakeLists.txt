@@ -90,3 +90,14 @@ set_tests_properties(ns_ht_2d_multifluid_channel PROPERTIES
   PROCESSORS 4
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
+
+add_test(NAME ns_ht_2d_multifluid_vertical
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/multifluid_vertical/test.py
+          $<TARGET_FILE:ns_ht_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multifluid_vertical/input.json
+          ${MPIEXEC})
+set_tests_properties(ns_ht_2d_multifluid_vertical PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 120)
