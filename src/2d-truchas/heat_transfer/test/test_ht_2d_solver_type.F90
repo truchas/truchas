@@ -91,6 +91,7 @@ contains
     call sublist%set('rel-h-tol', 1.0d-4)
 
     sublist => params%sublist('integrator')
+    call sublist%set('bdf1-startup', .true.)
     call sublist%set('nlk-max-iter', 5)
     call sublist%set('nlk-tol', 0.01_r8)
 
