@@ -59,8 +59,10 @@ contains
 
     integer :: i, j, k, n, f0, f1
 
-    ! compute upwind flux volumes for transport
+    ! Compute upwind flux volumes for moving fluid and void materials only.
+    ! Any trailing solid fraction is fixed in place.
     flux_vol = 0.0_r8
+    vof = vof_n
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%cstart(i)
       f1 = this%mesh%cstart(i+1)-1
@@ -71,14 +73,14 @@ contains
         if (vel(j) > 0 .or. n == 0) then
           ! if the donator cell is off-process and not a ghost cell, this flux is irrelevant.
           if (this%mesh%fcell(1,k) > this%mesh%ncell .or. this%mesh%fcell(1,k) == 0) cycle
-          flux_vol(:,j) = vel(j)*this%mesh%area(k)*dt * vof_n(:,i)
+          flux_vol(:fluids+void,j) = vel(j)*this%mesh%area(k)*dt * vof_n(:fluids+void,i)
         else
-          flux_vol(:,j) = vel(j)*this%mesh%area(k)*dt * vof_n(:,n)
+          flux_vol(:fluids+void,j) = vel(j)*this%mesh%area(k)*dt * vof_n(:fluids+void,n)
         end if
       end do
 
-      vof(:,i) = vof_n(:,i)
-      vof(:,i) = vof(:,i) - sum(flux_vol(:,f0:f1), dim=2) / this%mesh%volume(i)
+      vof(:fluids+void,i) = vof_n(:fluids+void,i) - &
+          sum(flux_vol(:fluids+void,f0:f1), dim=2) / this%mesh%volume(i)
     end do
 
     int_normal = 0.0_r8

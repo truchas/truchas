@@ -41,7 +41,7 @@ module ns_ht_2d_solver_type
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
-    real(r8), allocatable :: temp(:), enthalpy_increment(:)
+    real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:)
     integer :: ncell_onP
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number, hnext, hlast
     integer :: max_try
@@ -138,7 +138,10 @@ contains
     this%ncell_onP = flow_model%mesh%ncell_onP
     this%matl_comp => matl_comp
     this%ts_sync = time_step_sync(4)
-    allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP))
+    allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
+        this%flow_vfrac(1,flow_model%mesh%ncell))
+    this%flow_vfrac(:,1:this%ncell_onP) = matl_comp%vfrac(this%flow_material_ids,:)
+    call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
     if (flow_model%inviscid) then
       call this%flow%init(env, flow_model, projection_params=projection_params)
     else
@@ -150,7 +153,7 @@ contains
       momentum_params => flow_params%sublist('momentum-solver')
       call this%flow%init(env, flow_model, momentum_params, projection_params)
     end if
-    call this%material_transport%init(env, flow_model%mesh, size(this%flow_material_ids))
+    call this%material_transport%init(env, flow_model%mesh, 1, 1, 1)
     if (allocated(ht_model%bc_inflow)) then
       call this%enthalpy_advector%init(flow_model%mesh, matl_model, this%flow_material_ids, stat, errmsg, &
           inflow_temperature=ht_model%bc_inflow)
@@ -242,7 +245,7 @@ contains
 
     integer :: n
     real(r8) :: dt, t_try
-    real(r8), pointer :: face_velocity(:)
+    real(r8), pointer :: face_velocity(:), vfrac_trial(:,:)
 
     ASSERT(t_np1 > t_n)
     ASSERT(this%thermal%last_time() == t_n)
@@ -251,7 +254,7 @@ contains
     do n = 1, this%max_try
       dt = t_try - t_n
       call this%flow%get_face_velocity(face_velocity)
-      call this%material_transport%advance(t_n, t_try, face_velocity)
+      call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
@@ -275,6 +278,9 @@ contains
         return
       end if
       call this%thermal%commit_step
+      call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+      this%flow_vfrac = vfrac_trial
+      this%matl_comp%vfrac(this%flow_material_ids,:) = vfrac_trial(:,1:this%ncell_onP)
       t = t_try
       if (stat == 0) exit
     end do

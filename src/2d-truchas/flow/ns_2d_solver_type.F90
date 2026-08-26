@@ -37,7 +37,7 @@ module ns_2d_solver_type
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     type(flow_2d_material_transport) :: material_transport
-    real(r8), allocatable :: rhs(:,:), grad_p(:,:)
+    real(r8), allocatable :: rhs(:,:), grad_p(:,:), vfrac(:,:)
   contains
     procedure :: init
     procedure :: set_buoyancy_temperature
@@ -62,8 +62,9 @@ contains
     this%model => model
     call this%state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
-        this%projection_solver, this%ic_solver)
-    call this%material_transport%init(env, model%mesh, size(model%density))
+        this%vfrac(1,model%mesh%ncell), this%projection_solver, this%ic_solver)
+    this%vfrac = 1.0_r8
+    call this%material_transport%init(env, model%mesh, 1, 1, 1)
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
@@ -133,8 +134,13 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
 
-    call this%material_transport%advance(t_n, t_np1, this%state%vel_fn)
+    real(r8), pointer :: vfrac_trial(:,:)
+
+    call this%material_transport%advance(t_n, t_np1, this%state%vel_fn, this%vfrac)
     call this%advance_momentum(t_n, t_np1, this%material_transport%flux_volumes, stat, errmsg)
+    if (stat /= 0) return
+    call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+    this%vfrac = vfrac_trial
   end subroutine
 
 
