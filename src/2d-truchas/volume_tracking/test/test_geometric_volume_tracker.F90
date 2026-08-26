@@ -35,6 +35,7 @@ program test_geometric_volume_tracker
 
   call test_stationary(env)
   call test_planar_transport(env)
+  call test_immobile_solid(env)
   call test_inflow_material(env)
   call test_proportional_inflow(env)
   call test_three_material_transport(env)
@@ -107,6 +108,46 @@ contains
     deallocate(mesh)
 
   end subroutine test_planar_transport
+
+
+  subroutine test_immobile_solid(env)
+
+    type(simulation_environment), intent(in) :: env
+    type(unstr_2d_mesh), pointer :: mesh
+    type(geometric_volume_tracker) :: tracker
+    real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
+    integer :: f, j1, j2
+
+    mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
+    call mesh%init_face_centroid
+    call tracker%init(env, mesh, 1, 1, 2, .false.)
+    allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
+        flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
+
+    f = 0
+    do j1 = mesh%cstart(1), mesh%cstart(2)-1
+      if (mesh%cnhbr(j1) == 2) then
+        f = mesh%cface(j1)
+        exit
+      end if
+    end do
+    ASSERT(f > 0)
+    j2 = mesh%cstart(2) - 1 + &
+        findloc(mesh%cface(mesh%cstart(2):mesh%cstart(3)-1), f, dim=1)
+
+    vof_n(:,1) = [0.4_r8, 0.6_r8]
+    vof_n(:,2) = [0.6_r8, 0.4_r8]
+    vel = 0.0_r8
+    vel(j1) = 0.1_r8
+    vel(j2) = -0.1_r8
+    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
+
+    call require_close_2d(vof(2:2,:), vof_n(2:2,:), 'immobile solid', 1.0e-12_r8)
+    call require(maxval(abs(flux_vol(2,:))) <= 1.0e-12_r8, 'immobile solid flux')
+
+    deallocate(mesh)
+
+  end subroutine test_immobile_solid
 
 
   subroutine test_inflow_material(env)

@@ -4,9 +4,13 @@
 !! This module defines FLOW_2D_MATERIAL_TRANSPORT, the flow-side entry point
 !! for material-resolved cell-face flux volumes. It adapts the flow solver's
 !! face-normal velocities to the cface-oriented interface of the two-
-!! dimensional volume trackers. The initial implementation supports one
-!! completely filled liquid material and uses the selected volume tracker to
-!! compute its fluxes.
+!! dimensional volume trackers. The caller provides the current reduced
+!! material composition and retains its authoritative state; this type holds
+!! only the trial composition produced by the tracker.
+!!
+!! The reduced composition is ordered as real fluids in geometric-tracker
+!! priority order, followed by an optional VOID slot and an optional lumped
+!! SOLID slot. Material IDs are maintained separately by the caller.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -27,18 +31,20 @@ module flow_2d_material_transport_type
     private
     type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
     class(volume_tracker_2d), allocatable :: tracker
-    real(r8), allocatable :: vfrac_in(:,:), vfrac_out(:,:)
+    integer :: nrealfluid, nfluid
+    real(r8), allocatable :: vfrac_out(:,:)
     real(r8), allocatable :: cface_velocity(:), interface_normal(:,:,:)
     !! Material-by-cell-face volumes transported over the current step.
     real(r8), allocatable, public :: flux_volumes(:,:)
   contains
     procedure :: init
     procedure :: advance
+    procedure :: get_trial_volume_fractions
   end type
 
 contains
 
-  subroutine init(this, env, mesh, num_material, algorithm)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm)
 
     use simple_volume_tracker_type
     use geometric_volume_tracker_type
@@ -46,12 +52,14 @@ contains
     class(flow_2d_material_transport), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
-    integer, intent(in) :: num_material
+    integer, intent(in) :: nrealfluid, nfluid, nmat
     character(*), intent(in), optional :: algorithm
 
     character(:), allocatable :: tracker_algorithm
 
-    ASSERT(num_material == 1)
+    ASSERT(nrealfluid >= 0)
+    ASSERT(nrealfluid <= nfluid)
+    ASSERT(nfluid <= nmat)
     tracker_algorithm = 'simple'
     if (present(algorithm)) tracker_algorithm = trim(algorithm)
     select case (tracker_algorithm)
@@ -64,32 +72,32 @@ contains
     end select
 
     this%mesh => mesh
-    allocate(this%vfrac_in(num_material,mesh%ncell), this%vfrac_out(num_material,mesh%ncell), &
-        this%flux_volumes(num_material,size(mesh%cface)), this%cface_velocity(size(mesh%cface)), &
-        this%interface_normal(2,num_material,mesh%ncell))
-    call this%tracker%init(env, mesh, num_material, num_material, num_material, .false.)
+    this%nrealfluid = nrealfluid
+    this%nfluid = nfluid
+    allocate(this%vfrac_out(nmat,mesh%ncell), this%flux_volumes(nfluid,size(mesh%cface)), &
+        this%cface_velocity(size(mesh%cface)), this%interface_normal(2,nmat,mesh%ncell))
+    call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false.)
   end subroutine
 
 
-  !! Advance material transport from T_N to T_NP1. The current flow model is
-  !! a single completely filled liquid, so the returned volume fraction is
-  !! not retained; the tracker is nevertheless used to construct the fluxes.
-  subroutine advance(this, t_n, t_np1, velocity_fn)
+  !! Advance material transport from T_N to T_NP1, retaining the resulting
+  !! composition as trial state until the caller accepts the coupled step.
+  subroutine advance(this, t_n, t_np1, velocity_fn, vfrac_n)
     class(flow_2d_material_transport), intent(inout) :: this
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: velocity_fn(:)
+    real(r8), intent(in) :: vfrac_n(:,:)
 
     integer :: c, i, f
     real(r8) :: dt
 
     ASSERT(associated(this%mesh))
-    ASSERT(size(this%flux_volumes,1) == 1)
     ASSERT(size(velocity_fn) >= this%mesh%nface)
+    ASSERT(size(vfrac_n,1) == size(this%vfrac_out,1))
+    ASSERT(size(vfrac_n,2) == size(this%vfrac_out,2))
     dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
 
-    this%vfrac_in = 0.0_r8
-    this%vfrac_in(1,:) = 1.0_r8
     do c = 1, this%mesh%ncell_onP
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
@@ -98,8 +106,18 @@ contains
             this%cface_velocity(i) = -this%cface_velocity(i)
       end do
     end do
-    call this%tracker%flux_volumes(this%cface_velocity, this%vfrac_in, this%vfrac_out, &
-        this%flux_volumes, this%interface_normal, 1, 0, dt)
+    call this%tracker%flux_volumes(this%cface_velocity, vfrac_n, this%vfrac_out, &
+        this%flux_volumes, this%interface_normal, this%nrealfluid, this%nfluid-this%nrealfluid, dt)
+  end subroutine
+
+
+  !! Return a no-copy view of the composition produced by the most recent
+  !! advance call. It is trial state; the caller decides whether to adopt it.
+  subroutine get_trial_volume_fractions(this, vfrac)
+    class(flow_2d_material_transport), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: vfrac(:,:)
+
+    vfrac => this%vfrac_out
   end subroutine
 
 end module flow_2d_material_transport_type
