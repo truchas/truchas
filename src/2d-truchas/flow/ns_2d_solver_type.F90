@@ -30,7 +30,7 @@ module ns_2d_solver_type
   type, public :: ns_2d_solver
     private
     type(flow_2d_model), pointer :: model => null()  ! unowned reference
-    type(flow_2d_state), pointer :: state => null()  ! unowned reference
+    type(flow_2d_state) :: state
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
@@ -41,6 +41,8 @@ module ns_2d_solver_type
     procedure :: init
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
+    procedure :: get_cell_flow_soln
+    procedure :: get_face_velocity
     procedure :: step
     procedure :: advance_momentum
     procedure :: courant_time_step
@@ -49,15 +51,14 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, model, state, momentum_params, projection_params)
+  subroutine init(this, model, momentum_params, projection_params)
     class(ns_2d_solver), intent(out) :: this
     type(flow_2d_model), target, intent(in) :: model
-    type(flow_2d_state), target, intent(inout) :: state
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
 
     this%model => model
-    this%state => state
+    call this%state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
         this%projection_solver, this%ic_solver)
     call this%material_transport%init(model%mesh, size(model%density))
@@ -98,6 +99,25 @@ contains
     integer, intent(out) :: stat
 
     call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+  end subroutine
+
+
+  !! Return no-copy views of the cell-centered pressure and velocity.
+  subroutine get_cell_flow_soln(this, pressure, velocity)
+    class(ns_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
+
+    pressure => this%state%p_cc
+    velocity => this%state%vel_cc
+  end subroutine
+
+
+  !! Return a no-copy view of the face-normal velocity.
+  subroutine get_face_velocity(this, velocity)
+    class(ns_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: velocity(:)
+
+    velocity => this%state%vel_fn
   end subroutine
 
 

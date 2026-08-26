@@ -285,10 +285,11 @@ contains
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time
 
-    real(r8), allocatable :: p(:), velocity(:,:), H(:), T(:)
+    real(r8), pointer :: p(:), velocity(:,:)
+    real(r8), allocatable :: H(:), T(:)
 
     call env%timer%start('output')
-    allocate(p(this%mesh%ncell), velocity(2,this%mesh%ncell), H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
+    allocate(H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
     call this%solver%get_cell_flow_soln(p, velocity)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)

@@ -5,9 +5,9 @@
 !! two-dimensional incompressible Navier--Stokes/thermal-transport step. It
 !! advances material transport, converts its fluxes to an enthalpy rate,
 !! attempts thermal transport, and then advances flow momentum and pressure.
-!! The mesh, material composition, and models remain sim-owned. The coupled
-!! solver owns the flow state and provides accessors for data needed by its
-!! simulation driver.
+!! The mesh, material composition, and models remain sim-owned. The flow
+!! solver owns the flow state and provides accessors for data needed by the
+!! coupled simulation driver.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -24,7 +24,6 @@ module ns_ht_2d_solver_type
   use material_class
   use material_composition_type
   use flow_2d_model_type
-  use flow_2d_state_type
   use flow_2d_material_transport_type
   use ns_2d_solver_type
   use ht_2d_model_type
@@ -36,8 +35,7 @@ module ns_ht_2d_solver_type
 
   type, public :: ns_ht_2d_solver
     private
-    type(flow_2d_state), pointer :: flow_state => null() ! solver-owned state
-    type(material_composition), pointer :: composition => null() ! unowned reference
+    type(material_composition), pointer :: matl_comp => null() ! unowned reference
     integer, allocatable :: flow_material_ids(:)
     type(ns_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
@@ -63,25 +61,23 @@ module ns_ht_2d_solver_type
 
 contains
 
-  subroutine init(this, env, flow_model, ht_model, matl_model, composition, &
-      solver_params, stat, errmsg)
+  subroutine init(this, env, flow_model, ht_model, matl_model, matl_comp, &
+      params, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: flow_model
     type(ht_2d_model), target, intent(in) :: ht_model
     type(material_model), intent(in) :: matl_model
-    type(material_composition), target, intent(in) :: composition
-    type(parameter_list), target, intent(inout) :: solver_params
+    type(material_composition), target, intent(in) :: matl_comp
+    type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params
-    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
-    integer :: max_try
     class(material), pointer :: matl
 
     stat = 0
-    ASSERT(size(composition%vfrac,1) == matl_model%nmatl)
+    ASSERT(size(matl_comp%vfrac,1) == matl_model%nmatl)
     if (matl_model%nmatl /= 1 .or. matl_model%nphase_real /= 1) then
       stat = 1
       errmsg = 'current non-isothermal flow requires one single-phase material'
@@ -100,33 +96,34 @@ contains
       return
     end if
 
-    if (.not.solver_params%is_sublist('flow') .or. .not.solver_params%is_sublist('thermal')) then
+    if (.not.params%is_sublist('flow') .or. .not.params%is_sublist('thermal')) then
       stat = 1
       errmsg = 'solver requires flow and thermal sublists'
       return
     end if
-    flow_params => solver_params%sublist('flow')
-    thermal_params => solver_params%sublist('thermal')
-    call solver_params%get('initial-time-step', dt_init, stat, errmsg)
+    flow_params => params%sublist('flow')
+    thermal_params => params%sublist('thermal')
+    call params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return
-    call solver_params%get('min-time-step', dt_min, stat, errmsg)
+    call params%get('min-time-step', this%dt_min, stat, errmsg)
     if (stat /= 0) return
-    call solver_params%get('max-time-step', dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
+    call params%get('max-time-step', this%dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call solver_params%get('time-step-growth', dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
+    call params%get('time-step-growth', this%dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call solver_params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call solver_params%get('max-try-at-step', max_try, default=10, stat=stat, errmsg=errmsg)
+    call params%get('max-try-at-step', this%max_try, default=10, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
 
-    if (dt_init <= 0.0_r8 .or. dt_min <= 0.0_r8 .or. dt_min > dt_init .or. dt_init > dt_max .or. &
-        dt_grow < 1.0_r8 .or. courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
+    if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
+        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. this%courant_number <= 0.0_r8 .or. &
+        this%courant_number > 1.0_r8) then
       stat = 1
       errmsg = 'invalid coupled time-step controls'
       return
     end if
-    if (max_try <= 0) then
+    if (this%max_try <= 0) then
       stat = 1
       errmsg = 'maximum coupled step attempts must be > 0'
       return
@@ -139,19 +136,11 @@ contains
     projection_params => flow_params%sublist('projection-solver')
 
     this%ncell_onP = flow_model%mesh%ncell_onP
-    this%composition => composition
-    this%dt_init = dt_init
-    this%dt_min = dt_min
-    this%dt_max = dt_max
-    this%dt_grow = dt_grow
-    this%courant_number = courant_number
-    this%max_try = max_try
+    this%matl_comp => matl_comp
     this%ts_sync = time_step_sync(4)
-    allocate(this%flow_state)
-    call this%flow_state%init(flow_model%mesh)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP))
     if (flow_model%inviscid) then
-      call this%flow%init(flow_model, this%flow_state, projection_params=projection_params)
+      call this%flow%init(flow_model, projection_params=projection_params)
     else
       if (.not.flow_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -159,7 +148,7 @@ contains
         return
       end if
       momentum_params => flow_params%sublist('momentum-solver')
-      call this%flow%init(flow_model, this%flow_state, momentum_params, projection_params)
+      call this%flow%init(flow_model, momentum_params, projection_params)
     end if
     call this%material_transport%init(flow_model%mesh, size(this%flow_material_ids))
     if (allocated(ht_model%bc_inflow)) then
@@ -178,7 +167,6 @@ contains
     type(ns_ht_2d_solver), intent(inout) :: this
 
     if (associated(this%thermal)) deallocate(this%thermal)
-    if (associated(this%flow_state)) deallocate(this%flow_state)
   end subroutine
 
 
@@ -254,6 +242,7 @@ contains
 
     integer :: n
     real(r8) :: dt, t_try
+    real(r8), pointer :: face_velocity(:)
 
     ASSERT(t_np1 > t_n)
     ASSERT(this%thermal%last_time() == t_n)
@@ -261,7 +250,8 @@ contains
     t_try = t_np1
     do n = 1, this%max_try
       dt = t_try - t_n
-      call this%material_transport%advance(t_n, t_try, this%flow_state%vel_fn)
+      call this%flow%get_face_velocity(face_velocity)
+      call this%material_transport%advance(t_n, t_try, face_velocity)
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
@@ -305,23 +295,19 @@ contains
 
   !! Returns the current local cell pressure and velocity, including ghosts.
   subroutine get_cell_flow_soln(this, pressure, velocity)
-    class(ns_ht_2d_solver), intent(in) :: this
-    real(r8), intent(out) :: pressure(:), velocity(:,:)
+    class(ns_ht_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
-    ASSERT(size(pressure) == size(this%flow_state%p_cc))
-    ASSERT(size(velocity,1) == 2 .and. size(velocity,2) == size(this%flow_state%vel_cc,2))
-    pressure = this%flow_state%p_cc
-    velocity = this%flow_state%vel_cc
+    call this%flow%get_cell_flow_soln(pressure, velocity)
   end subroutine
 
 
   !! Returns the current face-normal velocity, including ghost faces.
   subroutine get_face_velocity(this, velocity)
-    class(ns_ht_2d_solver), intent(in) :: this
-    real(r8), intent(out) :: velocity(:)
+    class(ns_ht_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: velocity(:)
 
-    ASSERT(size(velocity) == size(this%flow_state%vel_fn))
-    velocity = this%flow_state%vel_fn
+    call this%flow%get_face_velocity(velocity)
   end subroutine
 
 
