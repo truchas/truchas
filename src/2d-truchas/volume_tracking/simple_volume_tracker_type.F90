@@ -60,6 +60,7 @@ contains
     integer :: i, j, k, n, f0, f1
 
     ! compute upwind flux volumes for transport
+    flux_vol = 0.0_r8
     do i = 1, this%mesh%ncell_onP
       f0 = this%mesh%cstart(i)
       f1 = this%mesh%cstart(i+1)-1

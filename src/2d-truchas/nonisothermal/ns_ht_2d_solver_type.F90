@@ -140,7 +140,7 @@ contains
     this%ts_sync = time_step_sync(4)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP))
     if (flow_model%inviscid) then
-      call this%flow%init(flow_model, projection_params=projection_params)
+      call this%flow%init(env, flow_model, projection_params=projection_params)
     else
       if (.not.flow_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -148,9 +148,9 @@ contains
         return
       end if
       momentum_params => flow_params%sublist('momentum-solver')
-      call this%flow%init(flow_model, momentum_params, projection_params)
+      call this%flow%init(env, flow_model, momentum_params, projection_params)
     end if
-    call this%material_transport%init(flow_model%mesh, size(this%flow_material_ids))
+    call this%material_transport%init(env, flow_model%mesh, size(this%flow_material_ids))
     if (allocated(ht_model%bc_inflow)) then
       call this%enthalpy_advector%init(flow_model%mesh, matl_model, this%flow_material_ids, stat, errmsg, &
           inflow_temperature=ht_model%bc_inflow)
