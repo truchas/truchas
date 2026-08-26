@@ -13,6 +13,7 @@ module ns_ht_2d_vtkhdf_writer_type
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use simulation_environment_type
   use unstr_2d_mesh_type
+  use material_model_type
   use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, vtkhdf_cell_data_handle, UG_FIXED_MESH
   implicit none
   private
@@ -23,6 +24,7 @@ module ns_ht_2d_vtkhdf_writer_type
     type(vtkhdf_mb_file) :: file
     type(vtkhdf_block_handle) :: block
     type(vtkhdf_cell_data_handle) :: pressure, velocity, enthalpy, temperature
+    type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
     logical :: is_open = .false.
   contains
     procedure :: open
@@ -32,18 +34,20 @@ module ns_ht_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, env, mesh, stat, errmsg)
+  subroutine open(this, env, mesh, matl_model, stat, errmsg)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(ns_ht_2d_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(material_model), intent(in) :: matl_model
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:), xcnode(:), global_cell_ids(:), global_node_ids(:)
-    integer :: c, nnode
+    integer :: c, m, nnode
+    character(:), allocatable :: name
     integer(int8), allocatable :: cell_type(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: scalar_mold, vector_mold(3)
 
@@ -85,13 +89,38 @@ contains
     this%velocity = this%file%register_temporal_cell_data(this%block, 'velocity', vector_mold)
     this%enthalpy = this%file%register_temporal_cell_data(this%block, 'H', scalar_mold)
     this%temperature = this%file%register_temporal_cell_data(this%block, 'T', scalar_mold)
+    if (matl_model%nmatl > 1) then
+      allocate(this%vfrac(matl_model%nmatl))
+      do m = 1, size(this%vfrac)
+        name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
+        this%vfrac(m) = this%file%register_temporal_cell_data(this%block, name, scalar_mold)
+      end do
+    end if
     this%is_open = .true.
   end subroutine
 
-  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature)
+
+  pure function normalize_material_name(name) result(normalized)
+    character(*), intent(in) :: name
+    character(:), allocatable :: normalized
+    integer :: i
+
+    allocate(character(len(name)) :: normalized)
+    normalized = name
+    do i = 1, len(name)
+      select case (normalized(i:i))
+      case ('+', '-', '*', '^', '%')
+        normalized(i:i) = '_'
+      end select
+    end do
+  end function
+
+  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature, vfrac)
     class(ns_ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:), enthalpy(:), temperature(:)
-    real(r8), allocatable :: p(:), v(:,:), H(:), T(:)
+    real(r8), intent(in) :: vfrac(:,:)
+    real(r8), allocatable :: p(:), v(:,:), H(:), T(:), vf(:)
+    integer :: m
 
     allocate(p(this%mesh%ncell), v(3,this%mesh%ncell), H(this%mesh%ncell), T(this%mesh%ncell))
     p = pressure(:this%mesh%ncell)
@@ -106,6 +135,14 @@ contains
     call this%file%write_cell_data(this%block, this%velocity, v)
     call this%file%write_cell_data(this%block, this%enthalpy, H)
     call this%file%write_cell_data(this%block, this%temperature, T)
+    if (allocated(this%vfrac)) then
+      allocate(vf(this%mesh%ncell))
+      do m = 1, size(this%vfrac)
+        vf(:this%mesh%ncell_onP) = vfrac(m,:)
+        call this%mesh%cell_imap%gather_offp(vf)
+        call this%file%write_cell_data(this%block, this%vfrac(m), vf)
+      end do
+    end if
     call this%file%finalize_time_step()
     call this%file%flush()
   end subroutine
@@ -114,6 +151,7 @@ contains
     class(ns_ht_2d_vtkhdf_writer), intent(inout) :: this
     if (this%is_open) call this%file%close()
     this%is_open = .false.
+    if (allocated(this%vfrac)) deallocate(this%vfrac)
     nullify(this%mesh)
   end subroutine
 

@@ -128,10 +128,10 @@ contains
     bc_params => model_params%sublist('bc')
     allocate(this%model)
     if (inviscid) then
-      call this%model%init(env, this%mesh, bc_params, density=density, stat=stat, errmsg=errmsg, &
+      call this%model%init(env, this%mesh, bc_params, density=[density], stat=stat, errmsg=errmsg, &
           body_acceleration=body_acceleration, inviscid=.true.)
     else
-      call this%model%init(env, this%mesh, bc_params, density=density, viscosity=viscosity, stat=stat, &
+      call this%model%init(env, this%mesh, bc_params, density=[density], viscosity=viscosity, stat=stat, &
           errmsg=errmsg, body_acceleration=body_acceleration)
     end if
     if (stat /= 0) then

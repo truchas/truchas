@@ -19,13 +19,14 @@ module ns_ht_2d_sim_type
   use material_model_type
   use material_composition_type
   use scalar_func_class
-  use scalar_func_factories, only: alloc_scalar_func, alloc_poly_scalar_func
+  use scalar_func_factories, only: alloc_const_scalar_func, alloc_scalar_func, alloc_poly_scalar_func
   use scalar_func_tools, only: is_const
   use scalar_func_projection
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use flow_2d_model_type
+  use flow_2d_material_layout_type
   use ht_2d_model_type
   use ns_ht_2d_solver_type
   use ns_ht_2d_vtkhdf_writer_type
@@ -76,14 +77,18 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist, flow_bc, solver_params
+    type(parameter_list), pointer :: plist, flow_bc, solver_params, flow_solver_params, tracking_params
     type(parameter_list_iterator) :: piter
+    type(flow_2d_material_layout) :: material_layout
     class(scalar_func), allocatable :: initial_temp
     class(vector_func), allocatable :: initial_velocity_func
     character(:), allocatable :: matl_name(:)
     class(scalar_func), allocatable :: density_func, viscosity_func, alpha_func, tref_func, density_delta_func
-    real(r8) :: density, alpha, expan_ref_temp
+    real(r8) :: alpha, expan_ref_temp
     real(r8), allocatable :: body_acceleration(:), temp(:), velocity(:,:)
+    real(r8), allocatable :: density(:)
+    integer, allocatable :: fluid_material_ids(:)
+    integer :: i, rlev
     logical :: inviscid
 
     stat = 0
@@ -102,15 +107,33 @@ contains
     plist => params%sublist('materials')
     call load_material_database(this%matl_db, plist, stat, errmsg)
     if (stat /= 0) return
-    piter = parameter_list_iterator(plist, sublists_only=.true.)
-    if (piter%count() /= 1) then
-      stat = 1; errmsg = 'the initial coupled simulation requires exactly one material'; return
+    allocate(this%composition)
+    if (params%is_sublist('material-regions')) then
+      plist => params%sublist('material-regions')
+      call get_material_region_names(plist, matl_name, stat, errmsg)
+      if (stat /= 0) return
+      call params%get('material-region-refinement-level', rlev, stat, errmsg, default=6)
+      if (stat /= 0) return
+      if (rlev < 0) then
+        stat = 1
+        errmsg = '"material-region-refinement-level" must be >= 0'
+        return
+      end if
+    else
+      piter = parameter_list_iterator(plist, sublists_only=.true.)
+      if (piter%count() /= 1) then
+        stat = 1; errmsg = 'multiple materials require a "material-regions" sublist'; return
+      end if
+      matl_name = [piter%name()]
     end if
-    matl_name = [piter%name()]
     call this%matl_model%init(matl_name, this%matl_db, stat, errmsg)
     if (stat /= 0) return
-    allocate(this%composition)
-    call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+    if (params%is_sublist('material-regions')) then
+      plist => params%sublist('material-regions')
+      call this%composition%init(this%mesh, this%matl_model, plist, rlev, stat, errmsg)
+    else
+      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+    end if
     if (stat /= 0) return
     call add_enthalpy_prop(this%matl_model, stat, errmsg)
     if (stat /= 0) return
@@ -121,55 +144,84 @@ contains
     plist => params%sublist('flow-model')
     call plist%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call this%matl_model%get_phase_prop(1, 'density', density_func)
-    if (.not.allocated(density_func) .or. .not.is_const(density_func)) then
-      stat = 1
-      errmsg = 'material density must be a constant property'
-      return
-    end if
-    density = density_func%eval([real(r8)::])
-    if (density <= 0.0_r8) then
-      stat = 1
-      errmsg = 'material density must be positive'
-      return
-    end if
-    if (.not.inviscid) then
-      call this%matl_model%get_phase_prop(1, 'viscosity', viscosity_func)
-      if (.not.allocated(viscosity_func)) then
-        stat = 1
-        errmsg = 'material viscosity property is missing'
-        return
-      end if
-    end if
-    call this%matl_model%get_phase_prop(1, 'thermal-expan-coef', alpha_func)
-    if (.not.allocated(alpha_func) .or. .not.is_const(alpha_func)) then
-      stat = 1
-      errmsg = 'material thermal-expan-coef must be a constant property'
-      return
-    end if
-    call this%matl_model%get_phase_prop(1, 'expan-ref-temp', tref_func)
-    if (.not.allocated(tref_func) .or. .not.is_const(tref_func)) then
-      stat = 1
-      errmsg = 'material expan-ref-temp must be a constant property'
-      return
-    end if
-    alpha = alpha_func%eval([real(r8)::])
-    expan_ref_temp = tref_func%eval([real(r8)::])
-    if (alpha < 0.0_r8) then
-      stat = 1
-      errmsg = 'material thermal-expan-coef must be nonnegative'
-      return
-    end if
-    if (.not.inviscid) then
-      if (.not.is_const(viscosity_func)) call env%simlog%info('Material viscosity is temperature-dependent')
-    end if
-    call alloc_poly_scalar_func(density_delta_func, [-density*alpha], [1], expan_ref_temp)
     call plist%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8,0.0_r8])
     if (stat /= 0) return
     if (.not.plist%is_sublist('bc')) then
       stat = 1; errmsg = 'flow-model requires a "bc" sublist'; return
     end if
     flow_bc => plist%sublist('bc')
+    if (.not.params%is_sublist('solver')) then
+      stat = 1; errmsg = 'missing "solver" sublist'; return
+    end if
+    solver_params => params%sublist('solver')
+    if (.not.solver_params%is_sublist('flow')) then
+      stat = 1; errmsg = 'solver requires a "flow" sublist'; return
+    end if
+    flow_solver_params => solver_params%sublist('flow')
+    tracking_params => flow_solver_params%sublist('volume-tracking')
+    call material_layout%init(this%matl_model, tracking_params, stat, errmsg)
+    if (stat /= 0) return
+    allocate(fluid_material_ids(material_layout%num_real_fluid()), density(material_layout%num_real_fluid()))
+    call material_layout%get_real_fluid_material_ids(fluid_material_ids)
+    do i = 1, size(fluid_material_ids)
+      call this%matl_model%get_phase_prop(fluid_material_ids(i), 'density', density_func)
+      if (.not.allocated(density_func) .or. .not.is_const(density_func)) then
+        stat = 1
+        errmsg = 'fluid density must be a constant property'
+        return
+      end if
+      density(i) = density_func%eval([real(r8)::])
+    end do
+    if (any(density <= 0.0_r8)) then
+      stat = 1
+      errmsg = 'fluid density must be positive'
+      return
+    end if
+    if (size(density) > 1) then
+      if (.not.inviscid) then
+        stat = 1
+        errmsg = 'current multi-fluid flow requires inviscid=true'
+        return
+      end if
+      if (any(body_acceleration /= 0.0_r8)) then
+        stat = 1
+        errmsg = 'current multi-fluid flow does not support body acceleration'
+        return
+      end if
+      call alloc_const_scalar_func(density_delta_func, 0.0_r8)
+    else
+      if (.not.inviscid) then
+        call this%matl_model%get_phase_prop(fluid_material_ids(1), 'viscosity', viscosity_func)
+        if (.not.allocated(viscosity_func)) then
+          stat = 1
+          errmsg = 'material viscosity property is missing'
+          return
+        end if
+      end if
+      call this%matl_model%get_phase_prop(fluid_material_ids(1), 'thermal-expan-coef', alpha_func)
+      if (.not.allocated(alpha_func) .or. .not.is_const(alpha_func)) then
+        stat = 1
+        errmsg = 'material thermal-expan-coef must be a constant property'
+        return
+      end if
+      call this%matl_model%get_phase_prop(fluid_material_ids(1), 'expan-ref-temp', tref_func)
+      if (.not.allocated(tref_func) .or. .not.is_const(tref_func)) then
+        stat = 1
+        errmsg = 'material expan-ref-temp must be a constant property'
+        return
+      end if
+      alpha = alpha_func%eval([real(r8)::])
+      expan_ref_temp = tref_func%eval([real(r8)::])
+      if (alpha < 0.0_r8) then
+        stat = 1
+        errmsg = 'material thermal-expan-coef must be nonnegative'
+        return
+      end if
+      if (.not.inviscid) then
+        if (.not.is_const(viscosity_func)) call env%simlog%info('Material viscosity is temperature-dependent')
+      end if
+      call alloc_poly_scalar_func(density_delta_func, [-density(1)*alpha], [1], expan_ref_temp)
+    end if
     allocate(this%flow_model)
     if (inviscid) then
       call this%flow_model%init(env, this%mesh, flow_bc, density=density, stat=stat, errmsg=errmsg, &
@@ -189,10 +241,6 @@ contains
     call this%ht_model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg, advection=.true.)
     if (stat /= 0) return
 
-    if (.not.params%is_sublist('solver')) then
-      stat = 1; errmsg = 'missing "solver" sublist'; return
-    end if
-    solver_params => params%sublist('solver')
     allocate(this%solver)
     call this%solver%init(env, this%flow_model, this%ht_model, this%matl_model, this%composition, &
         solver_params, stat, errmsg)
@@ -226,7 +274,7 @@ contains
     call project_scalar_func_to_cell_centers(this%mesh, initial_temp, temp)
     call this%solver%set_initial_state(env, this%t_init, velocity, temp, stat, errmsg)
     if (stat /= 0) return
-    call this%output%open(env, this%mesh, stat, errmsg)
+    call this%output%open(env, this%mesh, this%matl_model, stat, errmsg)
   end subroutine
 
   subroutine run(this, env, stat, errmsg)
@@ -293,7 +341,7 @@ contains
     call this%solver%get_cell_flow_soln(p, velocity)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
-    call this%output%write_solution(time, p, velocity, H, T)
+    call this%output%write_solution(time, p, velocity, H, T, this%composition%vfrac)
     call env%timer%stop('output')
   end subroutine
 

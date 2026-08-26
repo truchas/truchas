@@ -1,8 +1,8 @@
 !!
 !! FLOW_2D_MODEL_TYPE
 !!
-!! This module defines FLOW_2D_MODEL, the mesh-associated single-fluid model
-!! for a two-dimensional incompressible-flow calculation.
+!! This module defines FLOW_2D_MODEL, the mesh-associated material-property
+!! model for a two-dimensional incompressible-flow calculation.
 !! It owns the spatial operators, fluid properties, boundary
 !! conditions, and discrete momentum and pressure-correction operators.  It
 !! also stores the uniform body acceleration and the temperature-dependent
@@ -46,6 +46,7 @@ module flow_2d_model_type
     class(scalar_func), allocatable :: viscosity, density_delta
   contains
     procedure :: init
+    procedure :: set_volume_fractions
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
     procedure :: pressure_gradient
@@ -60,7 +61,7 @@ contains
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
-    real(r8), intent(in) :: density
+    real(r8), intent(in) :: density(:)
     real(r8), optional, intent(in) :: viscosity
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -81,9 +82,14 @@ contains
     end if
     this%mesh => mesh
     allocate(this%operators, this%bc, this%momentum, this%projection)
-    allocate(this%density(1), this%density_c(mesh%ncell), this%density_delta_c(mesh%ncell), &
+    allocate(this%density(size(density)), this%density_c(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface))
     if (.not.this%inviscid) allocate(this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
+    if (size(density) == 0 .or. any(density <= 0.0_r8)) then
+      stat = 1
+      errmsg = 'fluid density must be positive'
+      return
+    end if
     this%density = density
     this%density_c = this%density(1)
     this%density_delta_c = 0.0_r8
@@ -119,6 +125,35 @@ contains
     if (stat /= 0) return
     call this%momentum%init(mesh, this%operators, this%inviscid)
     call this%projection%init(mesh, this%operators)
+  end subroutine
+
+
+  !! Set the local material volume fractions used to form mixture density and
+  !! the face inverse densities used by the pressure projection.  The leading
+  !! rows correspond to the real fluid materials in DENSITY order.
+  subroutine set_volume_fractions(this, vfrac)
+    class(flow_2d_model), intent(inout) :: this
+    real(r8), intent(in) :: vfrac(:,:)
+
+    integer :: c1, c2, f
+    real(r8) :: weight(2), rho_f
+
+    ASSERT(size(vfrac,1) >= size(this%density))
+    ASSERT(size(vfrac,2) >= this%mesh%ncell)
+    this%density_c = matmul(this%density, vfrac(:size(this%density),:this%mesh%ncell))
+    this%inv_density_c = 1.0_r8/this%density_c
+    do f = 1, this%mesh%nface_onP
+      c1 = this%mesh%fcell(1,f)
+      c2 = this%mesh%fcell(2,f)
+      if (c2 == 0) then
+        rho_f = this%density_c(c1)
+      else
+        weight = this%mesh%volume([c1,c2])
+        rho_f = dot_product(this%density_c([c1,c2]), weight)/sum(weight)
+      end if
+      this%inv_density_f(f) = 1.0_r8/rho_f
+    end do
+    call this%mesh%face_imap%gather_offp(this%inv_density_f)
   end subroutine
 
 
