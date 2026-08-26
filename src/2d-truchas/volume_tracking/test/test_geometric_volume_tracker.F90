@@ -58,7 +58,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [1, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 2, 2, 2, .false.)
+    call tracker%init(env, mesh, 2, 2, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -84,7 +84,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 2, 2, 2, .false.)
+    call tracker%init(env, mesh, 2, 2, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -120,7 +120,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 1, 1, 2, .false.)
+    call tracker%init(env, mesh, 1, 1, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -161,7 +161,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [1, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 2, 2, 2, .false.)
+    call tracker%init(env, mesh, 2, 2, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -195,7 +195,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 2, 2, 2, .false.)
+    call tracker%init(env, mesh, 2, 2, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -231,7 +231,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 3, 3, 3, .false.)
+    call tracker%init(env, mesh, 3, 3, 3, .false., [1,2,3])
     allocate(vel(size(mesh%cface)), vof_n(3,mesh%ncell), vof(3,mesh%ncell), &
         flux_vol(3,size(mesh%cface)), int_normal(2,3,mesh%ncell))
 
@@ -261,7 +261,7 @@ contains
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
-    call tracker%init(env, mesh, 2, 2, 2, .false.)
+    call tracker%init(env, mesh, 2, 2, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -301,7 +301,7 @@ contains
     mesh => new_unstr_2d_quad_mesh(env, [1.0_r8, 0.0_r8], [2.0_r8, 2.0_r8], [1, 2])
     call mesh%init_face_centroid
     call mesh_axisymmetry_mod(mesh)
-    call tracker%init(env, mesh, 2, 2, 2, .true.)
+    call tracker%init(env, mesh, 2, 2, 2, .true., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 
@@ -337,7 +337,7 @@ contains
     mesh => new_unstr_2d_quad_mesh(env, [1.0_r8, 0.0_r8], [3.0_r8, 1.0_r8], [2, 1])
     call mesh%init_face_centroid
     call mesh_axisymmetry_mod(mesh)
-    call tracker%init(env, mesh, 2, 2, 2, .true.)
+    call tracker%init(env, mesh, 2, 2, 2, .true., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 

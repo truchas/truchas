@@ -28,6 +28,9 @@ target_link_libraries(test_flow_2d_momentum flow2d truchas ${Truchas_LINK_LIBS})
 add_executable(test_flow_2d_material_transport test_flow_2d_material_transport.F90)
 target_link_libraries(test_flow_2d_material_transport flow2d truchas ${Truchas_LINK_LIBS})
 
+add_executable(test_flow_2d_material_layout test_flow_2d_material_layout.F90)
+target_link_libraries(test_flow_2d_material_layout flow2d truchas ${Truchas_LINK_LIBS})
+
 add_executable(test_flow_2d_momentum_solver test_flow_2d_momentum_solver.F90)
 target_link_libraries(test_flow_2d_momentum_solver flow2d truchas ${Truchas_LINK_LIBS})
 
@@ -80,6 +83,11 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
 add_test(flow_2d_material_transport-1p ${test_launch})
 set_tests_properties(flow_2d_material_transport-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_material_transport-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+  ./test_flow_2d_material_layout ${MPIEXEC_POSTFLAGS})
+add_test(flow_2d_material_layout-1p ${test_launch})
+set_tests_properties(flow_2d_material_layout-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_2d_material_layout-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_flow_2d_momentum_solver ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_momentum_solver-1p ${test_launch})

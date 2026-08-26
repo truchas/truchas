@@ -47,7 +47,7 @@ contains
     integer :: f, j1, j2
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1])
-    call tracker%init(env, mesh, 1, 1, 2, .false.)
+    call tracker%init(env, mesh, 1, 1, 2, .false., [1,2])
     allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
         flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
 

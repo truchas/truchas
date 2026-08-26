@@ -8,9 +8,9 @@
 !! material composition and retains its authoritative state; this type holds
 !! only the trial composition produced by the tracker.
 !!
-!! The reduced composition is ordered as real fluids in geometric-tracker
-!! priority order, followed by an optional VOID slot and an optional lumped
-!! SOLID slot. Material IDs are maintained separately by the caller.
+!! The reduced composition is ordered as real fluids, an optional VOID slot,
+!! and an optional lumped SOLID slot. Material IDs and the independent full
+!! reconstruction-priority ordering are maintained separately by the caller.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -44,7 +44,7 @@ module flow_2d_material_transport_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority)
 
     use simple_volume_tracker_type
     use geometric_volume_tracker_type
@@ -54,12 +54,20 @@ contains
     type(unstr_2d_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     character(*), intent(in), optional :: algorithm
+    integer, intent(in), optional :: priority(:)
 
     character(:), allocatable :: tracker_algorithm
+    integer, allocatable :: tracker_priority(:)
+    integer :: i
 
     ASSERT(nrealfluid >= 0)
     ASSERT(nrealfluid <= nfluid)
     ASSERT(nfluid <= nmat)
+    allocate(tracker_priority(nmat))
+    tracker_priority = [(i, i=1,nmat)]
+    if (present(priority)) tracker_priority = priority
+    ASSERT(all(tracker_priority > 0) .and. all(tracker_priority <= nmat))
+    ASSERT(all([(count(tracker_priority == i), i=1,nmat)] == 1))
     tracker_algorithm = 'simple'
     if (present(algorithm)) tracker_algorithm = trim(algorithm)
     select case (tracker_algorithm)
@@ -76,7 +84,7 @@ contains
     this%nfluid = nfluid
     allocate(this%vfrac_out(nmat,mesh%ncell), this%flux_volumes(nfluid,size(mesh%cface)), &
         this%cface_velocity(size(mesh%cface)), this%interface_normal(2,nmat,mesh%ncell))
-    call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false.)
+    call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority)
   end subroutine
 
 

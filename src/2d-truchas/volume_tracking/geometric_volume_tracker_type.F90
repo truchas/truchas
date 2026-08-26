@@ -51,7 +51,7 @@ module geometric_volume_tracker_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority)
 
     use parameter_list_type
 
@@ -60,6 +60,7 @@ contains
     type(unstr_2d_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     logical, intent(in) :: axisym
+    integer, intent(in) :: priority(:)
     integer :: i, j, k
 
     this%mesh => mesh
@@ -76,11 +77,14 @@ contains
     this%subcycles = 4
     this%nested_dissection = .false.
 
-    ! material priorities for interface reconstruction
-    this%priority = [(i, i=1,this%nmat)]
+    ! Material priorities for interface reconstruction. The flow-facing
+    ! reduced composition has a fixed material-slot order; PRIORITY supplies
+    ! the independent reconstruction order.
+    ASSERT(size(priority) == this%nmat)
+    this%priority = priority
     ASSERT(size(this%priority) == this%nmat)
     ASSERT(all(this%priority > 0) .and. all(this%priority <= this%nmat))
-    ! TODO: assert that each material appears exactly once
+    ASSERT(all([(count(this%priority == i), i=1,this%nmat)] == 1))
 
     allocate(this%flux_vol_sub(this%nmat,size(mesh%cface)))
     allocate(this%normal(2,this%nmat,mesh%ncell))

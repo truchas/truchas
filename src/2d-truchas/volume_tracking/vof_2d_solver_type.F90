@@ -53,6 +53,7 @@ contains
     logical, intent(in) :: axisymmetric
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer :: i
 
     stat = 0
     if (nmat < 1) then
@@ -75,7 +76,7 @@ contains
     allocate(this%vfrac_in(nmat,mesh%ncell), this%vfrac_out(nmat,mesh%ncell))
     allocate(this%flux_volume(nmat,size(mesh%cface)), this%flux_velocity(size(mesh%cface)))
     allocate(this%face_velocity(mesh%nface), this%interface_normal(2,nmat,mesh%ncell))
-    call this%tracker%init(env, mesh, nmat, nmat, nmat, axisymmetric)
+    call this%tracker%init(env, mesh, nmat, nmat, nmat, axisymmetric, [(i, i=1,nmat)])
   end subroutine
 
 
