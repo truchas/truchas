@@ -66,7 +66,7 @@ contains
 
     class(ns_ht_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(flow_2d_model), target, intent(in) :: flow_model
+    type(flow_2d_model), target, intent(inout) :: flow_model
     type(ht_2d_model), target, intent(in) :: ht_model
     type(material_model), intent(in) :: matl_model
     type(material_composition), target, intent(in) :: matl_comp
@@ -96,9 +96,14 @@ contains
     end if
     call this%material_layout%init(matl_model, tracking_params, stat, errmsg)
     if (stat /= 0) return
-    if (this%material_layout%num_real_fluid() /= 1 .or. this%material_layout%num_material() /= 1) then
+    if (this%material_layout%num_real_fluid() == 0) then
       stat = 1
-      errmsg = 'current non-isothermal flow requires one single-phase fluid material'
+      errmsg = 'non-isothermal flow requires at least one fluid material'
+      return
+    end if
+    if (this%material_layout%num_material() /= this%material_layout%num_real_fluid()) then
+      stat = 1
+      errmsg = 'current non-isothermal flow supports fluid materials only; SOLID and VOID are not yet supported'
       return
     end if
     allocate(flow_material_ids(this%material_layout%num_real_fluid()))
@@ -147,6 +152,7 @@ contains
         this%flow_vfrac(this%material_layout%num_material(),flow_model%mesh%ncell))
     call this%material_layout%get_reduced_volume_fractions(matl_comp, this%flow_vfrac)
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
+    call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
       call this%flow%init(env, flow_model, projection_params=projection_params)
     else
@@ -264,12 +270,15 @@ contains
       dt = t_try - t_n
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
+      call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+      call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_comp)
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
       call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment/dt)
       call this%thermal%step(t_try, hnext, stat)
       if (stat /= 0) then
+        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
           stat = -1
@@ -279,6 +288,7 @@ contains
         cycle
       end if
       call this%thermal%get_cell_temp_soln(this%temp)
+      call this%flow%set_volume_fractions(vfrac_trial)
       call this%flow%set_buoyancy_temperature(this%temp)
       call this%flow%advance_momentum(t_n, t_try, this%material_transport%flux_volumes, stat, errmsg)
       if (stat /= 0) then
@@ -287,9 +297,7 @@ contains
         return
       end if
       call this%thermal%commit_step
-      call this%material_transport%get_trial_volume_fractions(vfrac_trial)
       this%flow_vfrac = vfrac_trial
-      call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_comp)
       t = t_try
       if (stat == 0) exit
     end do

@@ -40,6 +40,7 @@ module ns_2d_solver_type
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), vfrac(:,:)
   contains
     procedure :: init
+    procedure :: set_volume_fractions
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -74,6 +75,14 @@ contains
     else
       call this%ic_solver%init(model, projection_params=projection_params)
     end if
+  end subroutine
+
+
+  subroutine set_volume_fractions(this, vfrac)
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: vfrac(:,:)
+
+    call this%model%set_volume_fractions(vfrac)
   end subroutine
 
 

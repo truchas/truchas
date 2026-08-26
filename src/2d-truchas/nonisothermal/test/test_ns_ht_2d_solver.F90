@@ -84,7 +84,7 @@ contains
     call parameter_list_from_json_string( &
       '{"wall":{"type":"no-slip","face-set-ids":[1,2,3,4]}}', flow_bc_params, errmsg)
     if (.not.associated(flow_bc_params)) call fail('parsing flow BC input: ' // errmsg)
-    call flow_model%init(env, mesh, flow_bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
+    call flow_model%init(env, mesh, flow_bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
     if (stat /= 0) call fail('initializing flow model: ' // errmsg)
 
     call parameter_list_from_json_string( &
