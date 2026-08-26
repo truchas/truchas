@@ -3,8 +3,8 @@
 !!
 !! This module defines FLOW_2D_SOLVER, the first isothermal incompressible
 !! flow-step algorithm.  It solves the implicit momentum predictor and then
-!! applies an incremental pressure correction.  The mesh-associated model and
-!! solution state remain owned by the caller.
+!! applies an incremental pressure correction.  It owns the evolving flow
+!! state and provides views of that state to its caller.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -28,7 +28,7 @@ module flow_2d_solver_type
   type, public :: flow_2d_solver
     private
     type(flow_2d_model), pointer :: model => null()  ! unowned reference
-    type(flow_2d_state), pointer :: state => null()  ! unowned reference
+    type(flow_2d_state) :: state
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
@@ -37,21 +37,22 @@ module flow_2d_solver_type
   contains
     procedure :: init
     procedure :: set_initial_state
+    procedure :: get_cell_flow_soln
+    procedure :: get_face_velocity
     procedure :: step
     final :: delete
   end type
 
 contains
 
-  subroutine init(this, model, state, momentum_params, projection_params)
+  subroutine init(this, model, momentum_params, projection_params)
     class(flow_2d_solver), intent(out) :: this
     type(flow_2d_model), target, intent(in) :: model
-    type(flow_2d_state), target, intent(inout) :: state
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
 
     this%model => model
-    this%state => state
+    call this%state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver, &
         this%ic_solver)
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
@@ -72,6 +73,25 @@ contains
     integer, intent(out) :: stat
 
     call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+  end subroutine
+
+
+  !! Return no-copy views of the cell-centered pressure and velocity.
+  subroutine get_cell_flow_soln(this, pressure, velocity)
+    class(flow_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
+
+    pressure => this%state%p_cc
+    velocity => this%state%vel_cc
+  end subroutine
+
+
+  !! Return a no-copy view of the face-normal velocity.
+  subroutine get_face_velocity(this, velocity)
+    class(flow_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: velocity(:)
+
+    velocity => this%state%vel_fn
   end subroutine
 
 

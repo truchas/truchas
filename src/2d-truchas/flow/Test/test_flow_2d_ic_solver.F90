@@ -11,7 +11,6 @@ program test_flow_2d_ic_solver
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
   use flow_2d_model_type
-  use flow_2d_state_type
   use flow_2d_solver_type
   implicit none
 
@@ -43,11 +42,11 @@ contains
   subroutine test_uniform_velocity
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_state), target :: state
-    type(flow_2d_solver) :: solver
+    type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)
+    real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     character(:), allocatable :: errmsg
     integer :: stat
 
@@ -59,18 +58,19 @@ contains
     call model%init(env, mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     call require(stat == 0, 'flow model initialization failed')
     if (stat /= 0) return
-    call state%init(mesh)
     call set_solver_params(momentum_params)
     call set_solver_params(projection_params)
-    call solver%init(model, state, momentum_params, projection_params)
+    call solver%init(model, momentum_params, projection_params)
     allocate(velocity(2,mesh%ncell), flux(mesh%ncell_onP))
     velocity = spread([1.0_r8, 0.0_r8], dim=2, ncopies=mesh%ncell)
     call solver%set_initial_state(0.0_r8, 1.0_r8, velocity, stat)
     call require(stat == 0, 'initial-condition solve did not converge')
     if (stat /= 0) return
-    call model%operators%divergence(state%vel_fn, flux)
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'initial face velocity is not solenoidal')
-    call require(maxval(abs(state%vel_cc(:,1:mesh%ncell_onP) - velocity(:,1:mesh%ncell_onP))) < 1.0e-8_r8, &
+    call require(maxval(abs(velocity_state(:,1:mesh%ncell_onP) - velocity(:,1:mesh%ncell_onP))) < 1.0e-8_r8, &
         'compatible uniform initial velocity was changed')
   end subroutine
 
@@ -78,11 +78,11 @@ contains
   subroutine test_incompatible_velocity
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_state), target :: state
-    type(flow_2d_solver) :: solver
+    type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)
+    real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     real(r8) :: boundary_velocity
     character(:), allocatable :: errmsg
     integer :: stat, f
@@ -94,25 +94,26 @@ contains
     call model%init(env, mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     call require(stat == 0, 'incompatible-velocity model initialization failed')
     if (stat /= 0) return
-    call state%init(mesh)
     call set_solver_params(momentum_params)
     call set_solver_params(projection_params)
-    call solver%init(model, state, momentum_params, projection_params)
+    call solver%init(model, momentum_params, projection_params)
     allocate(velocity(2,mesh%ncell), flux(mesh%ncell_onP))
     velocity = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
     call solver%set_initial_state(0.0_r8, 1.0_r8, velocity, stat)
     call require(stat == 0, 'incompatible initial-condition solve did not converge')
     if (stat /= 0) return
-    call model%operators%divergence(state%vel_fn, flux)
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, &
         'repaired initial face velocity is not solenoidal')
     boundary_velocity = 0.0_r8
     do f = 1, mesh%nface_onP
-      if (mesh%fcell(2,f) == 0) boundary_velocity = max(boundary_velocity, abs(state%vel_fn(f)))
+      if (mesh%fcell(2,f) == 0) boundary_velocity = max(boundary_velocity, abs(velocity_face(f)))
     end do
     call require(boundary_velocity < 1.0e-8_r8, &
         'repaired initial velocity does not satisfy no-slip boundaries')
-    call require(maxval(abs(state%vel_cc(:,1:mesh%ncell_onP) - velocity(:,1:mesh%ncell_onP))) > 1.0e-6_r8, &
+    call require(maxval(abs(velocity_state(:,1:mesh%ncell_onP) - velocity(:,1:mesh%ncell_onP))) > 1.0e-6_r8, &
         'incompatible initial velocity was not repaired')
   end subroutine
 

@@ -56,7 +56,7 @@ contains
     type(flow_2d_model), target :: flow_model
     type(ht_2d_model), target :: ht_model
     type(ht_2d_model), target :: standalone_ht_model
-    type(ns_ht_2d_solver) :: solver
+    type(ns_ht_2d_solver), target :: solver
     type(ht_2d_solver), target :: thermal_solver
     type(parameter_list), pointer :: matl_params, flow_bc_params, ht_params, standalone_ht_params
     type(parameter_list), target :: solver_params
@@ -172,10 +172,10 @@ contains
 
 
   subroutine require_zero_face_velocity(solver, nface, message)
-    type(ns_ht_2d_solver), intent(in) :: solver
+    type(ns_ht_2d_solver), target, intent(in) :: solver
     integer, intent(in) :: nface
     character(*), intent(in) :: message
-    real(r8) :: velocity(nface)
+    real(r8), pointer :: velocity(:)
 
     call solver%get_face_velocity(velocity)
     call require(all(velocity == 0.0_r8), message)

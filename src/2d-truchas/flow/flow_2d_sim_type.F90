@@ -2,7 +2,7 @@
 !! FLOW_2D_SIM_TYPE
 !!
 !! This module defines FLOW_2D_SIM, which owns the mesh, single-fluid flow
-!! model, state, solver, time-integration control, and output writer for a
+!! model, solver, time-integration control, and output writer for a
 !! two-dimensional isothermal incompressible-flow simulation.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
@@ -19,7 +19,6 @@ module flow_2d_sim_type
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use flow_2d_model_type
-  use flow_2d_state_type
   use flow_2d_solver_type
   use flow_2d_vtkhdf_writer_type
   use time_step_sync_type
@@ -31,7 +30,6 @@ module flow_2d_sim_type
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(flow_2d_model), pointer :: model => null()
-    type(flow_2d_state), pointer :: state => null()
     type(flow_2d_solver), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
     real(r8) :: t_init, tlast, hlast
@@ -51,7 +49,6 @@ contains
 
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
-    if (associated(this%state)) deallocate(this%state)
     if (associated(this%model)) deallocate(this%model)
     if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine
@@ -141,9 +138,6 @@ contains
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return
     end if
-    allocate(this%state)
-    call this%state%init(this%mesh)
-
     if (.not.params%is_sublist('flow-solver')) then
       stat = 1
       errmsg = 'missing "flow-solver" sublist parameter'
@@ -158,7 +152,7 @@ contains
     projection_params => solver_params%sublist('projection-solver')
     allocate(this%solver)
     if (inviscid) then
-      call this%solver%init(this%model, this%state, projection_params=projection_params)
+      call this%solver%init(this%model, projection_params=projection_params)
     else
       if (.not.solver_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -166,7 +160,7 @@ contains
         return
       end if
       momentum_params => solver_params%sublist('momentum-solver')
-      call this%solver%init(this%model, this%state, momentum_params, projection_params)
+      call this%solver%init(this%model, momentum_params, projection_params)
     end if
 
     if (.not.params%is_sublist('sim-control')) then
@@ -233,10 +227,12 @@ contains
 
     integer :: n
     real(r8) :: time, hnext, t_write
+    real(r8), pointer :: pressure(:), velocity(:,:)
 
     stat = 0
     time = this%t_init
-    call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
+    call this%solver%get_cell_flow_soln(pressure, velocity)
+    call this%output%write_solution(time, pressure, velocity)
     t_write = time
     hnext = this%dt_init
     this%tlast = time
@@ -244,7 +240,7 @@ contains
     do n = 1, size(this%tout)
       call integrate(this, this%tout(n), hnext, time, stat, errmsg)
       if (stat < 0 .and. time == t_write) exit
-      call this%output%write_solution(time, this%state%p_cc, this%state%vel_cc)
+      call this%output%write_solution(time, pressure, velocity)
       t_write = time
       if (stat /= 0) exit
     end do

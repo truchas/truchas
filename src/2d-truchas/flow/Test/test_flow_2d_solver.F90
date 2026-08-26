@@ -11,7 +11,6 @@ program test_flow_2d_solver
   use unstr_2d_mesh_type
   use unstr_2d_mesh_factory
   use flow_2d_model_type
-  use flow_2d_state_type
   use flow_2d_solver_type
   implicit none
 
@@ -44,11 +43,11 @@ contains
   subroutine test_step
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_state), target :: state
-    type(flow_2d_solver) :: solver
+    type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:)
+    real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     character(:), allocatable :: errmsg
     integer :: stat
 
@@ -59,20 +58,21 @@ contains
     call model%init(env, mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     call require(stat == 0, 'flow model initialization failed')
     if (stat /= 0) return
-    call state%init(mesh)
     call momentum_params%set('rel-tol', 1.0e-10_r8)
     call momentum_params%set('max-ds-iter', 100)
     call momentum_params%set('max-amg-iter', 100)
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, state, momentum_params, projection_params)
+    call solver%init(model, momentum_params, projection_params)
 
-    state%vel_cc = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    velocity_state = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
     call solver%step(0.0_r8, 1.0_r8, stat)
     call require(stat == 0, 'flow solver step did not converge')
     allocate(flux(mesh%ncell_onP))
-    call model%operators%divergence(state%vel_fn, flux)
+    call solver%get_face_velocity(velocity_face)
+    call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'flow solver step did not make face velocity solenoidal')
   end subroutine
 
@@ -80,8 +80,7 @@ contains
   subroutine test_incompatible_flux
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_state), target :: state
-    type(flow_2d_solver) :: solver
+    type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     character(:), allocatable :: errmsg
@@ -98,14 +97,13 @@ contains
     call model%init(env, mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     call require(stat == 0, 'incompatible-flux model initialization failed')
     if (stat /= 0) return
-    call state%init(mesh)
     call momentum_params%set('rel-tol', 1.0e-10_r8)
     call momentum_params%set('max-ds-iter', 100)
     call momentum_params%set('max-amg-iter', 100)
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, state, momentum_params, projection_params)
+    call solver%init(model, momentum_params, projection_params)
     call solver%step(0.0_r8, 1.0_r8, stat, errmsg)
     call require(stat /= 0, 'incompatible prescribed flux was not rejected')
   end subroutine
@@ -117,11 +115,11 @@ contains
   subroutine test_pressure_drive
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_state), target :: state
-    type(flow_2d_solver) :: solver
+    type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:), expected_velocity(:)
+    real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     real(r8) :: time, mean_velocity
     character(:), allocatable :: errmsg
     integer :: stat, n
@@ -141,14 +139,13 @@ contains
     call model%init(env, mesh, bc_params, 1.0_r8, 1.0_r8, stat, errmsg)
     call require(stat == 0, 'pressure-driven flow model initialization failed')
     if (stat /= 0) return
-    call state%init(mesh)
     call momentum_params%set('rel-tol', 1.0e-10_r8)
     call momentum_params%set('max-ds-iter', 100)
     call momentum_params%set('max-amg-iter', 100)
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, state, momentum_params, projection_params)
+    call solver%init(model, momentum_params, projection_params)
 
     time = 0.0_r8
     do n = 1, 50
@@ -158,16 +155,18 @@ contains
       time = real(n, r8)
     end do
     allocate(flux(mesh%ncell_onP))
-    call model%operators%divergence(state%vel_fn, flux)
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'pressure-driven flow is not solenoidal')
-    mean_velocity = global_sum(sum(state%vel_cc(1,1:mesh%ncell_onP))) / &
+    mean_velocity = global_sum(sum(velocity_state(1,1:mesh%ncell_onP))) / &
         global_sum(real(mesh%ncell_onP, r8))
     call require(mean_velocity > 1.0e-3_r8, 'pressure gradient did not drive flow from inlet to outlet')
     call mesh%init_cell_centroid
     allocate(expected_velocity(mesh%ncell_onP))
     expected_velocity = 0.5_r8 * mesh%cell_centroid(2,1:mesh%ncell_onP) * &
         (1.0_r8 - mesh%cell_centroid(2,1:mesh%ncell_onP))
-    call require(maxval(abs(state%vel_cc(1,1:mesh%ncell_onP) - expected_velocity)) < 5.0e-3_r8, &
+    call require(maxval(abs(velocity_state(1,1:mesh%ncell_onP) - expected_velocity)) < 5.0e-3_r8, &
         'long-time pressure-driven flow does not match the Poiseuille profile')
   end subroutine
 
