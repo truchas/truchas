@@ -50,7 +50,8 @@ program test_HT_2d_solver_type
   call init_materials(mesh, matl_model)
 
   !! Run test problems
-  call test1(mfd_disc, mesh, matl_model, tol)
+  call test1(mfd_disc, mesh, matl_model, tol, .false.)
+  call test1(mfd_disc, mesh, matl_model, 3.0e-3_r8, .true.)
 
   !! Wrap up
   call halt_parallel_communication
@@ -74,9 +75,10 @@ contains
   end function sinusoid
 
   !! Initialize solver parameter list
-  subroutine init_params(params)
+  subroutine init_params(params, bdf1)
 
     type(parameter_list), intent(out) :: params
+    logical, intent(in) :: bdf1
     type(parameter_list), pointer :: sublist
 
     call params%set_path('solver')
@@ -91,7 +93,11 @@ contains
     call sublist%set('rel-h-tol', 1.0d-4)
 
     sublist => params%sublist('integrator')
-    call sublist%set('bdf1-startup', .true.)
+    if (bdf1) then
+      call sublist%set('use-backward-euler', .true.)
+    else
+      call sublist%set('bdf1-startup', .true.)
+    end if
     call sublist%set('nlk-max-iter', 5)
     call sublist%set('nlk-tol', 0.01_r8)
 
@@ -99,7 +105,7 @@ contains
 
 
   !! Tests the HT_2d_solver on a linear problem with Dirichlet boundary conditions
-  subroutine test1(disc, mesh, matl_model, tol)
+  subroutine test1(disc, mesh, matl_model, tol, bdf1)
 
     use idaesol_type, only: SOLVED_TO_TOUT
 
@@ -107,6 +113,7 @@ contains
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), target, intent(in) :: matl_model
     real(r8), intent(in) :: tol
+    logical, intent(in) :: bdf1
 
     type(ht_2d_solver), target :: HT_solver, bad_solver
     type(ht_2d_model), target :: HT_model
@@ -119,7 +126,8 @@ contains
     integer :: stat
     real(r8) :: t, dt, h, max_error, l2_error
 
-    if (is_IOP) print '(/,"Testing sinusoidal problem with mixed BCs")'
+    if (is_IOP .and. bdf1) print '(/,"Testing sinusoidal problem with adaptive BDF1")'
+    if (is_IOP .and. .not.bdf1) print '(/,"Testing sinusoidal problem with BDF1 startup and BDF2")'
 
     !! 2D HT model parameters
     string = &
@@ -147,7 +155,7 @@ contains
     call average_integral(disc, f, Tcell0, Tface)
 
     !! Initialize 2D HT solver
-    call init_params(solver_params)
+    call init_params(solver_params, bdf1)
     call HT_solver%init(test_env, HT_model, solver_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
