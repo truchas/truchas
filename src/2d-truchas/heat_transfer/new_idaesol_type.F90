@@ -58,6 +58,7 @@ module new_idaesol_type
     type(nka), allocatable :: nka   ! nonlinear Krylov accelerator
     type(state_history) :: uhist    ! solution history structure
     logical :: use_backward_euler
+    logical :: use_bdf1_startup  ! use BDF1 for the first step before BDF2
     type(safestep) :: safe_dt
 
     !! Persistent temporary workspace
@@ -229,6 +230,11 @@ contains
     end if
 
     call params%get('use-backward-euler', this%use_backward_euler, stat, errmsg, default=.false.)
+    if (stat /= 0) then
+      errmsg = context//errmsg
+      return
+    end if
+    call params%get('bdf1-startup', this%use_bdf1_startup, stat, errmsg, default=.false.)
     if (stat /= 0) then
       errmsg = context//errmsg
       return
@@ -430,7 +436,7 @@ contains
     integer,  intent(out) :: errc
 
     real(r8) :: eta, etah, h, t0, tlast, perr, dt(3)
-    logical  :: fresh_pc, predictor_error
+    logical  :: fresh_pc, predictor_error, use_bdf1
 
     ASSERT(this%seq >= 0)
 
@@ -439,7 +445,8 @@ contains
     INSIST(h > 0)
 
     !! Predicted solution and base point for BCE step.
-    if (this%use_backward_euler) then
+    use_bdf1 = this%use_backward_euler .or. (this%use_bdf1_startup .and. this%seq == 0)
+    if (use_bdf1) then
       etah = h
       t0 = tlast
       call this%uhist%interp_state(t0, this%u0, order=1)
@@ -508,7 +515,7 @@ contains
 
     predictor_error = (this%seq >= 3)
 
-    if (predictor_error .and. .not.this%use_backward_euler) then
+    if (predictor_error .and. .not.use_bdf1) then
 
       !! Predictor error control.
       !du = u - up
@@ -540,7 +547,7 @@ contains
       if (this%verbose) write(this%unit,fmt=6)
       hnext = h
       errc = 0
-      if (this%use_backward_euler) hnext = min(RMAX*h, this%safe_dt%stepsize(t))
+      if (use_bdf1) hnext = min(RMAX*h, this%safe_dt%stepsize(t))
 
     end if
 
@@ -583,6 +590,9 @@ contains
     end do
 
   end subroutine select_step_size
+
+  subroutine select_bdf1_step_size(dt, perr, h)
+  end subroutine
 
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  !!
