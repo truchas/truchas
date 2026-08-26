@@ -259,7 +259,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: n
-    real(r8) :: dt, t_try
+    real(r8) :: t_try
     real(r8), pointer :: face_velocity(:), vfrac_trial(:,:)
 
     ASSERT(t_np1 > t_n)
@@ -267,7 +267,6 @@ contains
     t = t_n
     t_try = t_np1
     do n = 1, this%max_try
-      dt = t_try - t_n
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
       call this%material_transport%get_trial_volume_fractions(vfrac_trial)
@@ -275,7 +274,10 @@ contains
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
-      call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment/dt)
+      !! TODO: A future adaptive BDF1 thermal error estimate should measure
+      !! the conduction update relative to this advected enthalpy state, so
+      !! material-front motion does not masquerade as thermal truncation error.
+      call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
       call this%thermal%step(t_try, hnext, stat)
       if (stat /= 0) then
         call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
