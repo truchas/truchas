@@ -84,6 +84,12 @@ contains
           sum(flux_vol(:fluids+void,f0:f1), dim=2) / this%mesh%volume(i)
     end do
 
+    !! A single fluid with no VOID or immobile material occupies the whole
+    !! cell.  Its volume fraction is therefore invariant, even when the
+    !! supplied face velocity has a small discrete divergence.
+    if (fluids == 1 .and. void == 0 .and. size(vof,1) == 1) &
+      vof(1,:this%mesh%ncell_onP) = 1.0_r8
+
     int_normal = 0.0_r8
 
     call this%mesh%cell_imap%gather_offp(vof)
