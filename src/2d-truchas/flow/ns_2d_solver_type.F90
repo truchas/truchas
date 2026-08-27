@@ -183,7 +183,7 @@ contains
         flux_volumes, &
         this%model%bc, this%rhs)
     do c = 1, size(this%rhs,2)
-      this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
+      this%rhs(:,c) = this%rhs(:,c) + this%model%density_c_old(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
           dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then

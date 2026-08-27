@@ -285,6 +285,7 @@ contains
       call this%thermal%step(t_try, hnext, stat)
       if (stat /= 0) then
         call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
+        call this%flow%set_volume_fractions(this%flow_vfrac)
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
           stat = -1

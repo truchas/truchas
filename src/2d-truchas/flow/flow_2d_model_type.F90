@@ -40,7 +40,7 @@ module flow_2d_model_type
     type(flow_2d_momentum), pointer, public :: momentum => null()
     type(flow_2d_projection), pointer, public :: projection => null()
     logical, public :: inviscid = .false.
-    real(r8), allocatable, public :: density(:), density_c(:), density_delta_c(:), inv_density_c(:), &
+    real(r8), allocatable, public :: density(:), density_c(:), density_c_old(:), density_delta_c(:), inv_density_c(:), &
         inv_density_f(:), viscosity_c(:), viscosity_f(:)
     real(r8), public :: body_acceleration(2) = 0.0_r8
     class(scalar_func), allocatable :: viscosity, density_delta
@@ -82,7 +82,8 @@ contains
     end if
     this%mesh => mesh
     allocate(this%operators, this%bc, this%momentum, this%projection)
-    allocate(this%density(size(density)), this%density_c(mesh%ncell), this%density_delta_c(mesh%ncell), &
+    allocate(this%density(size(density)), this%density_c(mesh%ncell), this%density_c_old(mesh%ncell), &
+        this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface))
     if (.not.this%inviscid) allocate(this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
     if (size(density) == 0 .or. any(density <= 0.0_r8)) then
@@ -92,6 +93,7 @@ contains
     end if
     this%density = density
     this%density_c = this%density(1)
+    this%density_c_old = this%density_c
     this%density_delta_c = 0.0_r8
     this%inv_density_c = 1.0_r8/this%density(1)
     this%inv_density_f = 1.0_r8/this%density(1)
@@ -140,6 +142,7 @@ contains
 
     ASSERT(size(vfrac,1) >= size(this%density))
     ASSERT(size(vfrac,2) >= this%mesh%ncell)
+    this%density_c_old = this%density_c
     if (size(this%density) == 1 .and. all(vfrac(1,:this%mesh%ncell_onP) == 1.0_r8)) then
       this%density_c = this%density(1)
       this%inv_density_c = 1.0_r8/this%density(1)
