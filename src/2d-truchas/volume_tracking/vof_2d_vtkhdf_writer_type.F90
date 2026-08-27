@@ -15,16 +15,14 @@ module vof_2d_vtkhdf_writer_type
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use simulation_environment_type
   use unstr_2d_mesh_type
-  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
-      vtkhdf_cell_data_handle, UG_FIXED_MESH
+  use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, UG_FIXED_MESH
   implicit none
   private
 
   type, public :: vof_2d_vtkhdf_writer
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(vtkhdf_mb_file) :: file
-    type(vtkhdf_block_handle) :: block
+    type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle), allocatable :: volume_fraction(:)
     logical :: is_open = .false.
   contains
@@ -61,11 +59,10 @@ contains
     end if
 
     call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
-        env%comm%mpi_val, stat, errmsg)
+        env%comm%mpi_val, stat, errmsg, mode=UG_FIXED_MESH)
     if (stat /= 0) return
 
     this%mesh => mesh
-    this%block = this%file%add_block('main', mode=UG_FIXED_MESH)
     allocate(x(3, mesh%nnode))
     x = 0.0_r8
     x(:2,:) = mesh%x(:, :mesh%nnode)
@@ -86,31 +83,31 @@ contains
         return
       end select
     end do
-    call this%file%write_mesh(this%block, x, cnode, xcnode, types)
+    call this%file%write_mesh(x, cnode, xcnode, types)
 
     global_cell_ids = [(mesh%cell_imap%global_index(j), j=1,mesh%ncell)]
-    call this%file%write_cell_data(this%block, 'GlobalCellIds', &
+    call this%file%write_cell_data('GlobalCellIds', &
         global_cell_ids, attribute='GlobalIds')
-    call this%file%write_cell_data(this%block, 'ExternalCellIds', mesh%xcell, &
+    call this%file%write_cell_data('ExternalCellIds', mesh%xcell, &
         attribute='PedigreeIds')
     allocate(cell_ghost_type(mesh%ncell), source=0_int8)
     cell_ghost_type(mesh%ncell_onP+1:) = 1_int8
-    call this%file%write_cell_data(this%block, 'vtkGhostType', cell_ghost_type)
+    call this%file%write_cell_data('vtkGhostType', cell_ghost_type)
 
     global_node_ids = [(mesh%node_imap%global_index(j), j=1,mesh%nnode)]
-    call this%file%write_point_data(this%block, 'GlobalNodeIds', &
+    call this%file%write_point_data('GlobalNodeIds', &
         global_node_ids, attribute='GlobalIds')
-    call this%file%write_point_data(this%block, 'ExternalNodeIds', mesh%xnode, &
+    call this%file%write_point_data('ExternalNodeIds', mesh%xnode, &
         attribute='PedigreeIds')
     allocate(node_ghost_type(mesh%nnode), source=0_int8)
     node_ghost_type(mesh%nnode_onP+1:) = 1_int8
-    call this%file%write_point_data(this%block, 'vtkGhostType', node_ghost_type)
+    call this%file%write_point_data('vtkGhostType', node_ghost_type)
 
     allocate(this%volume_fraction(nmat))
     do j = 1, nmat
       write(name, '(a,i0)') 'volume-fraction-', j
       this%volume_fraction(j) = &
-          this%file%register_temporal_cell_data(this%block, trim(name), 0.0_r8)
+          this%file%register_temporal_cell_data(trim(name), 0.0_r8)
     end do
     this%is_open = .true.
 
@@ -134,7 +131,7 @@ contains
     do j = 1, size(this%volume_fraction)
       v(:this%mesh%ncell_onP) = volume_fraction(j,:this%mesh%ncell_onP)
       call this%mesh%cell_imap%gather_offp(v)
-      call this%file%write_cell_data(this%block, this%volume_fraction(j), v)
+      call this%file%write_cell_data(this%volume_fraction(j), v)
     end do
     call this%file%finalize_time_step()
     call this%file%flush()

@@ -49,6 +49,23 @@ class TruchasVTKHDFData:
         if association not in ("cell", "point", "field"):
             raise ValueError(f"unknown VTKHDF association {association!r}")
 
+        if association == "field":
+            # UG output stores temporal field data on the root object.  In
+            # parallel this is a vtkPartitionedDataSet, while serial output
+            # may be the unstructured grid itself.
+            data = self._block(step).GetFieldData()
+            array = data.GetArray(field_name)
+            if array is not None:
+                return np.asarray(vtk_to_numpy(array))
+
+            # Retain support for older multiblock files whose field data was
+            # exposed on a leaf by VTK.
+            for block in self._leaf_blocks(self._block(step)):
+                array = block.GetFieldData().GetArray(field_name)
+                if array is not None:
+                    return np.asarray(vtk_to_numpy(array))
+            raise KeyError(f"field {field_name!r} not found in {self.filename}")
+
         arrays = []
         pedigree_ids = []
         for block in self._leaf_blocks(self._block(step)):
@@ -60,7 +77,6 @@ class TruchasVTKHDFData:
             data = {
                 "cell": block.GetCellData(),
                 "point": block.GetPointData(),
-                "field": block.GetFieldData(),
             }[association]
             array = data.GetArray(field_name)
             if array is None:
@@ -84,14 +100,10 @@ class TruchasVTKHDFData:
                     ids = ids[on_process]
                 arrays.append(values)
                 pedigree_ids.append(ids)
-            else:
-                arrays.append(values)
-
         result = np.concatenate(arrays) if len(arrays) > 1 else arrays[0]
-        if association in ("cell", "point"):
-            pedigree_ids = np.concatenate(pedigree_ids) \
-                if len(pedigree_ids) > 1 else pedigree_ids[0]
-            result = self._order_by_pedigree(result, pedigree_ids, association)
+        pedigree_ids = np.concatenate(pedigree_ids) \
+            if len(pedigree_ids) > 1 else pedigree_ids[0]
+        result = self._order_by_pedigree(result, pedigree_ids, association)
         return result
 
     def cell_centers(self, step):
@@ -146,6 +158,10 @@ class TruchasVTKHDFData:
         self._select_step(step)
         output = self._reader.GetOutputDataObject(0)
         if not hasattr(output, "GetNumberOfBlocks"):
+            if self.blockname is not None:
+                raise KeyError(
+                    f"block {self.blockname!r} requested from output with no named blocks"
+                )
             return output
 
         for index in range(output.GetNumberOfBlocks()):
@@ -166,6 +182,13 @@ class TruchasVTKHDFData:
     def _leaf_blocks(block):
         if hasattr(block, "GetCellData"):
             return [block]
+        if hasattr(block, "GetNumberOfPartitions"):
+            leaves = []
+            for index in range(block.GetNumberOfPartitions()):
+                partition = block.GetPartition(index)
+                if partition is not None:
+                    leaves.extend(TruchasVTKHDFData._leaf_blocks(partition))
+            return leaves
         if hasattr(block, "GetNumberOfPieces"):
             leaves = []
             for index in range(block.GetNumberOfPieces()):
