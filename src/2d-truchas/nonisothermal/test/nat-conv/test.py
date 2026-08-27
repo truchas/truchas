@@ -66,6 +66,33 @@ def check_reference(data, reference, bdf1):
                     f"expected no more than {tolerance:g}"
                 )
 
+    # Accepted-step counts can vary slightly with compiler and MPI reduction
+    # order, but a large change indicates a changed trajectory.  BDF1 has a
+    # distinct trajectory and therefore has its own expected counts.
+    nstep_tolerance = 2
+    if bdf1:
+        expected_nsteps = np.array((0, 177, 409), dtype=np.int64)
+    else:
+        expected_nsteps = np.array(
+            [reference.field(step, "NStep", association="field")[0]
+             for step in range(reference.num_steps)],
+            dtype=np.int64,
+        )
+    for step in range(data.num_steps):
+        actual = np.asarray(
+            data.field(step, "NStep", association="field")
+        ).reshape(-1)
+        if actual.size != 1 or step >= expected_nsteps.size:
+            raise AssertionError(
+                f"NStep at t={data.time(step):g} has unexpected shape {actual.shape}"
+            )
+        error = abs(int(actual[0]) - expected_nsteps[step])
+        if error > nstep_tolerance:
+            raise AssertionError(
+                f"NStep at t={data.time(step):g} is {int(actual[0])}, "
+                f"expected about {expected_nsteps[step]}"
+            )
+
 
 def check_case(run_root, data, reference, bdf1):
     if data.num_steps != 3:
