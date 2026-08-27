@@ -2,7 +2,7 @@
 !! FLOW_2D_VTKHDF_WRITER_TYPE
 !!
 !! This module writes the mesh-associated state of a two-dimensional flow
-!! simulation to a VTKHDF multiblock file.  The mesh and its identifier data
+!! simulation to a VTKHDF unstructured-grid file.  The mesh and its identifier data
 !! are static; cell pressure and velocity are temporal datasets.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
@@ -14,16 +14,14 @@ module flow_2d_vtkhdf_writer_type
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use simulation_environment_type
   use unstr_2d_mesh_type
-  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, &
-      vtkhdf_cell_data_handle, UG_FIXED_MESH
+  use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, UG_FIXED_MESH
   implicit none
   private
 
   type, public :: flow_2d_vtkhdf_writer
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(vtkhdf_mb_file) :: file
-    type(vtkhdf_block_handle) :: block
+    type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle) :: pressure, velocity
     logical :: is_open = .false.
   contains
@@ -50,10 +48,9 @@ contains
     real(r8) :: vector_mold(3), scalar_mold
 
     call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
-        env%comm%mpi_val, stat, errmsg)
+        env%comm%mpi_val, stat, errmsg, mode=UG_FIXED_MESH)
     if (stat /= 0) return
     this%mesh => mesh
-    this%block = this%file%add_block('main', mode=UG_FIXED_MESH)
     allocate(x(3, mesh%nnode))
     x = 0.0_r8
     x(:2,:) = mesh%x(:, :mesh%nnode)
@@ -74,23 +71,23 @@ contains
         return
       end select
     end do
-    call this%file%write_mesh(this%block, x, cnode, xcnode, types)
+    call this%file%write_mesh(x, cnode, xcnode, types)
 
     global_cell_ids = [(mesh%cell_imap%global_index(c), c=1,mesh%ncell)]
-    call this%file%write_cell_data(this%block, 'GlobalCellIds', global_cell_ids, attribute='GlobalIds')
-    call this%file%write_cell_data(this%block, 'ExternalCellIds', mesh%xcell, attribute='PedigreeIds')
+    call this%file%write_cell_data('GlobalCellIds', global_cell_ids, attribute='GlobalIds')
+    call this%file%write_cell_data('ExternalCellIds', mesh%xcell, attribute='PedigreeIds')
     allocate(cell_ghost_type(mesh%ncell), source=0_int8)
     cell_ghost_type(mesh%ncell_onP+1:) = 1_int8
-    call this%file%write_cell_data(this%block, 'vtkGhostType', cell_ghost_type)
+    call this%file%write_cell_data('vtkGhostType', cell_ghost_type)
     global_node_ids = [(mesh%node_imap%global_index(c), c=1,mesh%nnode)]
-    call this%file%write_point_data(this%block, 'GlobalNodeIds', global_node_ids, attribute='GlobalIds')
-    call this%file%write_point_data(this%block, 'ExternalNodeIds', mesh%xnode, attribute='PedigreeIds')
+    call this%file%write_point_data('GlobalNodeIds', global_node_ids, attribute='GlobalIds')
+    call this%file%write_point_data('ExternalNodeIds', mesh%xnode, attribute='PedigreeIds')
     allocate(node_ghost_type(mesh%nnode), source=0_int8)
     node_ghost_type(mesh%nnode_onP+1:) = 1_int8
-    call this%file%write_point_data(this%block, 'vtkGhostType', node_ghost_type)
+    call this%file%write_point_data('vtkGhostType', node_ghost_type)
 
-    this%pressure = this%file%register_temporal_cell_data(this%block, 'pressure', scalar_mold)
-    this%velocity = this%file%register_temporal_cell_data(this%block, 'velocity', vector_mold)
+    this%pressure = this%file%register_temporal_cell_data('pressure', scalar_mold)
+    this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
     this%is_open = .true.
   end subroutine
 
@@ -106,8 +103,8 @@ contains
     v = 0.0_r8
     v(:2,:) = velocity(:2,:this%mesh%ncell)
     call this%file%start_time_step(time)
-    call this%file%write_cell_data(this%block, this%pressure, p)
-    call this%file%write_cell_data(this%block, this%velocity, v)
+    call this%file%write_cell_data(this%pressure, p)
+    call this%file%write_cell_data(this%velocity, v)
     call this%file%finalize_time_step()
     call this%file%flush()
   end subroutine

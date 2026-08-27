@@ -16,7 +16,7 @@ module ns_ht_2d_vtkhdf_writer_type
   use simulation_environment_type
   use unstr_2d_mesh_type
   use material_model_type
-  use vtkhdf_mb_file_type, only: vtkhdf_mb_file, vtkhdf_block_handle, vtkhdf_cell_data_handle, &
+  use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, &
       vtkhdf_field_data_handle, UG_FIXED_MESH
   implicit none
   private
@@ -32,8 +32,7 @@ module ns_ht_2d_vtkhdf_writer_type
   type, public :: ns_ht_2d_vtkhdf_writer
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
-    type(vtkhdf_mb_file) :: file
-    type(vtkhdf_block_handle) :: block
+    type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle) :: pressure, velocity, enthalpy, temperature
     type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
     type(temporal_field), allocatable :: temporal_fields(:)
@@ -64,10 +63,9 @@ contains
     integer(int8), allocatable :: cell_type(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: scalar_mold, vector_mold(3)
 
-    call this%file%create(trim(env%output_dir)//'/out.vtkhdf', env%comm%mpi_val, stat, errmsg)
+    call this%file%create(trim(env%output_dir)//'/out.vtkhdf', env%comm%mpi_val, stat, errmsg, mode=UG_FIXED_MESH)
     if (stat /= 0) return
     this%mesh => mesh
-    this%block = this%file%add_block('main', mode=UG_FIXED_MESH)
     allocate(x(3,mesh%nnode), cell_type(mesh%ncell))
     x = 0.0_r8
     x(:2,:) = mesh%x(:,:mesh%nnode)
@@ -85,28 +83,28 @@ contains
         return
       end select
     end do
-    call this%file%write_mesh(this%block, x, cnode, xcnode, cell_type)
+    call this%file%write_mesh(x, cnode, xcnode, cell_type)
     global_cell_ids = [(mesh%cell_imap%global_index(c), c=1,mesh%ncell)]
-    call this%file%write_cell_data(this%block, 'GlobalCellIds', global_cell_ids, attribute='GlobalIds')
-    call this%file%write_cell_data(this%block, 'ExternalCellIds', mesh%xcell, attribute='PedigreeIds')
+    call this%file%write_cell_data('GlobalCellIds', global_cell_ids, attribute='GlobalIds')
+    call this%file%write_cell_data('ExternalCellIds', mesh%xcell, attribute='PedigreeIds')
     allocate(cell_ghost_type(mesh%ncell), source=0_int8)
     cell_ghost_type(mesh%ncell_onP+1:) = 1_int8
-    call this%file%write_cell_data(this%block, 'vtkGhostType', cell_ghost_type)
+    call this%file%write_cell_data('vtkGhostType', cell_ghost_type)
     global_node_ids = [(mesh%node_imap%global_index(c), c=1,mesh%nnode)]
-    call this%file%write_point_data(this%block, 'GlobalNodeIds', global_node_ids, attribute='GlobalIds')
-    call this%file%write_point_data(this%block, 'ExternalNodeIds', mesh%xnode, attribute='PedigreeIds')
+    call this%file%write_point_data('GlobalNodeIds', global_node_ids, attribute='GlobalIds')
+    call this%file%write_point_data('ExternalNodeIds', mesh%xnode, attribute='PedigreeIds')
     allocate(node_ghost_type(mesh%nnode), source=0_int8)
     node_ghost_type(mesh%nnode_onP+1:) = 1_int8
-    call this%file%write_point_data(this%block, 'vtkGhostType', node_ghost_type)
-    this%pressure = this%file%register_temporal_cell_data(this%block, 'pressure', scalar_mold)
-    this%velocity = this%file%register_temporal_cell_data(this%block, 'velocity', vector_mold)
-    this%enthalpy = this%file%register_temporal_cell_data(this%block, 'H', scalar_mold)
-    this%temperature = this%file%register_temporal_cell_data(this%block, 'T', scalar_mold)
+    call this%file%write_point_data('vtkGhostType', node_ghost_type)
+    this%pressure = this%file%register_temporal_cell_data('pressure', scalar_mold)
+    this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
+    this%enthalpy = this%file%register_temporal_cell_data('H', scalar_mold)
+    this%temperature = this%file%register_temporal_cell_data('T', scalar_mold)
     if (matl_model%nmatl > 1) then
       allocate(this%vfrac(matl_model%nmatl))
       do m = 1, size(this%vfrac)
         name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
-        this%vfrac(m) = this%file%register_temporal_cell_data(this%block, name, scalar_mold)
+        this%vfrac(m) = this%file%register_temporal_cell_data(name, scalar_mold)
       end do
     end if
     call register_temporal_fields(this, temporal_output, stat, errmsg)
@@ -150,16 +148,16 @@ contains
     call this%mesh%cell_imap%gather_offp(H)
     call this%mesh%cell_imap%gather_offp(T)
     call this%file%start_time_step(time)
-    call this%file%write_cell_data(this%block, this%pressure, p)
-    call this%file%write_cell_data(this%block, this%velocity, v)
-    call this%file%write_cell_data(this%block, this%enthalpy, H)
-    call this%file%write_cell_data(this%block, this%temperature, T)
+    call this%file%write_cell_data(this%pressure, p)
+    call this%file%write_cell_data(this%velocity, v)
+    call this%file%write_cell_data(this%enthalpy, H)
+    call this%file%write_cell_data(this%temperature, T)
     if (allocated(this%vfrac)) then
       allocate(vf(this%mesh%ncell))
       do m = 1, size(this%vfrac)
         vf(:this%mesh%ncell_onP) = vfrac(m,:)
         call this%mesh%cell_imap%gather_offp(vf)
-        call this%file%write_cell_data(this%block, this%vfrac(m), vf)
+        call this%file%write_cell_data(this%vfrac(m), vf)
       end do
     end if
     call write_temporal_fields(this, temporal_output)
@@ -200,15 +198,15 @@ contains
       type is (integer(int32))
         this%temporal_fields(n)%value_type = int32_field
         this%temporal_fields(n)%handle = &
-            this%file%register_temporal_field_data(this%block, this%temporal_fields(n)%name, 0_int32)
+            this%file%register_temporal_field_data(this%temporal_fields(n)%name, 0_int32)
       type is (integer(int64))
         this%temporal_fields(n)%value_type = int64_field
         this%temporal_fields(n)%handle = &
-            this%file%register_temporal_field_data(this%block, this%temporal_fields(n)%name, 0_int64)
+            this%file%register_temporal_field_data(this%temporal_fields(n)%name, 0_int64)
       type is (real(r8))
         this%temporal_fields(n)%value_type = real64_field
         this%temporal_fields(n)%handle = &
-            this%file%register_temporal_field_data(this%block, this%temporal_fields(n)%name, 0.0_r8)
+            this%file%register_temporal_field_data(this%temporal_fields(n)%name, 0.0_r8)
       class default
         stat = 1
         errmsg = 'temporal output field "' // this%temporal_fields(n)%name // &
@@ -242,13 +240,13 @@ contains
       select case (this%temporal_fields(j)%value_type)
       case (int32_field)
         call temporal_output%get(this%temporal_fields(j)%name, i32)
-        call this%file%write_field_data(this%block, this%temporal_fields(j)%handle, i32)
+        call this%file%write_field_data(this%temporal_fields(j)%handle, i32)
       case (int64_field)
         call temporal_output%get(this%temporal_fields(j)%name, i64)
-        call this%file%write_field_data(this%block, this%temporal_fields(j)%handle, i64)
+        call this%file%write_field_data(this%temporal_fields(j)%handle, i64)
       case (real64_field)
         call temporal_output%get(this%temporal_fields(j)%name, r64)
-        call this%file%write_field_data(this%block, this%temporal_fields(j)%handle, r64)
+        call this%file%write_field_data(this%temporal_fields(j)%handle, r64)
       end select
     end do
   end subroutine

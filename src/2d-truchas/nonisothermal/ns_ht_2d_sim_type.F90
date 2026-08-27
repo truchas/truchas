@@ -59,7 +59,8 @@ contains
   subroutine delete(this)
     type(ns_ht_2d_sim), intent(inout) :: this
 
-    call this%output%close()
+    ! Finalization may occur at an unexpected time and is not collective.
+    ! Leave collective HDF5 cleanup to the explicit simulation shutdown.
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%ht_model)) deallocate(this%ht_model)
     if (associated(this%flow_model)) deallocate(this%flow_model)
