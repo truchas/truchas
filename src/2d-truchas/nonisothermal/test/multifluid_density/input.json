@@ -1,6 +1,6 @@
 {
     "materials": {
-        "inlet-liquid": {
+        "light-liquid": {
             "properties": {
                 "fluid": true,
                 "conductivity": 1.0e-12,
@@ -8,23 +8,23 @@
                 "specific-heat": 1.0
             }
         },
-        "outlet-liquid": {
+        "heavy-liquid": {
             "properties": {
                 "fluid": true,
                 "conductivity": 1.0e-12,
                 "density": 2.0,
-                "specific-heat": 2.0
+                "specific-heat": 1.0
             }
         }
     },
     "material-regions": {
-        "inlet-side": {
-            "material": "inlet-liquid",
+        "light-side": {
+            "material": "light-liquid",
             "type": "half-plane",
             "point": [0.47, 0.0],
             "normal": [1.0, 0.0]
         },
-        "outlet-side": {"material": "outlet-liquid", "type": "background"}
+        "heavy-side": {"material": "heavy-liquid", "type": "background"}
     },
     "material-region-refinement-level": 10,
     "mesh": {
@@ -41,12 +41,9 @@
     },
     "ht-model": {
         "bc": {
-            "inlet": {"type": "inflow", "face-set-ids": [1],
-                      "temp": {"type": "polynomial", "poly-coef": [1.0, 1.0],
-                               "poly-powers": [[0, 0, 0], [0, 0, 1]]}},
+            "inlet": {"type": "inflow", "face-set-ids": [1], "temp": 1.0},
             "outlet": {"type": "outflow", "face-set-ids": [2]},
-            "bottom": {"type": "temperature", "face-set-ids": [3], "temp": 1.0},
-            "top": {"type": "temperature", "face-set-ids": [4], "temp": 2.0}
+            "walls": {"type": "temperature", "face-set-ids": [3, 4], "temp": 1.0}
         },
         "source": {}
     },
@@ -57,7 +54,7 @@
         },
         "thermal": {
             "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
-            "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-4, "rel-h-tol": 1.0e-4},
+            "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-6, "rel-h-tol": 1.0e-6},
             "integrator": {"use-backward-euler": true, "nlk-max-iter": 10, "nlk-tol": 0.01}
         },
         "initial-time-step": 1.0e-3,
@@ -69,5 +66,5 @@
     "sim-control": {"initial-time": 0.0,
                      "output-times": [0.0025, 0.005, 0.0075, 0.01]},
     "initial-velocity": [1.0, 0.0],
-    "initial-temperature": {"type": "polynomial", "poly-coef": [1.0, 1.0], "poly-powers": [[0, 0], [0, 1]]}
+    "initial-temperature": 1.0
 }
