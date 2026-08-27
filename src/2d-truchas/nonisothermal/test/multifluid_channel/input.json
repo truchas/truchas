@@ -66,7 +66,8 @@
         "time-step-growth": 1.05,
         "courant-number": 0.5
     },
-    "sim-control": {"initial-time": 0.0, "output-times": [0.01]},
+    "sim-control": {"initial-time": 0.0,
+                     "output-times": [0.0025, 0.005, 0.0075, 0.01]},
     "initial-velocity": [1.0, 0.0],
     "initial-temperature": {"type": "polynomial", "poly-coef": [1.0, 1.0], "poly-powers": [[0, 0], [0, 1]]}
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Four-process regression for two-fluid inviscid plug flow."""
+"""Analytic four-process regression for two-fluid inviscid plug flow."""
 
 from pathlib import Path
 import subprocess
@@ -29,28 +29,41 @@ def main():
         raise RuntimeError(f"ns_ht_2d returned {result.returncode}")
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
-    if data.num_steps != 2 or abs(data.time(1) - 0.01) > 1.0e-14:
+    expected_times = (0.0, 0.0025, 0.005, 0.0075, 0.01)
+    if data.num_steps != len(expected_times):
         raise RuntimeError("incorrect output times")
-    lower0, upper0 = (data.field(0, name) for name in ("vf_lower_liquid", "vf_upper_liquid"))
-    lower1, upper1 = (data.field(1, name) for name in ("vf_lower_liquid", "vf_upper_liquid"))
-    if np.max(np.abs(lower0 + upper0 - 1.0)) > 1.0e-12:
-        raise RuntimeError("initial material fractions do not sum to one")
-    if not np.any((lower0 > 1.0e-8) & (lower0 < 1.0 - 1.0e-8)):
-        raise RuntimeError("interface did not create mixed cells")
-    vf_error = max(np.max(np.abs(lower1 - lower0)), np.max(np.abs(upper1 - upper0)))
-    if vf_error > 1.0e-10:
-        raise RuntimeError(f"plug flow changed the horizontal material interface: {vf_error:g}")
-
-    for step, lower, upper in ((0, lower0, upper0), (1, lower1, upper1)):
+    initial_lower = None
+    for step, expected_time in enumerate(expected_times):
+        if abs(data.time(step) - expected_time) > 1.0e-14:
+            raise RuntimeError(f"output {step} has time {data.time(step):g}")
+        lower = data.field(step, "vf_lower_liquid")
+        upper = data.field(step, "vf_upper_liquid")
         centers = data.cell_centers(step)
         temp = data.field(step, "T")
         enthalpy = data.field(step, "H")
+        velocity = data.field(step, "velocity")
+        if np.max(np.abs(lower + upper - 1.0)) > 1.0e-12:
+            raise RuntimeError(f"step {step}: material fractions do not sum to one")
+        if np.min(lower) < -1.0e-12 or np.min(upper) < -1.0e-12:
+            raise RuntimeError(f"step {step}: negative volume fraction")
+        if step == 0:
+            initial_lower = lower.copy()
+        composition_error = np.max(np.abs(lower - initial_lower))
         temp_error = np.max(np.abs(temp - (1.0 + centers[:, 1])))
-        enthalpy_error = np.max(np.abs(enthalpy - (lower + 4.0*upper)*(1.0 + centers[:, 1])))
-        if max(temp_error, enthalpy_error) > 2.0e-9:
-            raise RuntimeError(f"step {step}: temperature={temp_error:g}, enthalpy={enthalpy_error:g}")
+        enthalpy_error = np.max(
+            np.abs(enthalpy - (lower + 4.0*upper)*(1.0 + centers[:, 1]))
+        )
+        velocity_error = np.max(np.abs(velocity[:, :2] - [1.0, 0.0]))
+        if max(composition_error, temp_error, enthalpy_error, velocity_error) > 2.0e-9:
+            raise RuntimeError(
+                f"step {step}: composition={composition_error:g}, "
+                f"temperature={temp_error:g}, enthalpy={enthalpy_error:g}, "
+                f"velocity={velocity_error:g}"
+            )
+        if step == 0 and not np.any((lower > 1.0e-8) & (lower < 1.0 - 1.0e-8)):
+            raise RuntimeError("interface did not create mixed cells")
 
-    print("PASS: two-fluid split-cell plug flow preserves composition and thermal state")
+    print("PASS: two-fluid plug flow preserves the analytic composition and thermal state")
     print(f"      artifacts: {output_dir}")
     return 0
 

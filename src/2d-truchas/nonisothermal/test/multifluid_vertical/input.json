@@ -12,7 +12,7 @@
             "properties": {
                 "fluid": true,
                 "conductivity": 1.0e-12,
-                "density": 2.0,
+                "density": 1.0,
                 "specific-heat": 2.0
             }
         }
@@ -26,7 +26,7 @@
         },
         "outlet-side": {"material": "outlet-liquid", "type": "background"}
     },
-    "material-region-refinement-level": 8,
+    "material-region-refinement-level": 10,
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
@@ -66,7 +66,8 @@
         "time-step-growth": 1.05,
         "courant-number": 0.5
     },
-    "sim-control": {"initial-time": 0.0, "output-times": [0.01]},
+    "sim-control": {"initial-time": 0.0,
+                     "output-times": [0.0025, 0.005, 0.0075, 0.01]},
     "initial-velocity": [1.0, 0.0],
     "initial-temperature": {"type": "polynomial", "poly-coef": [1.0, 1.0], "poly-powers": [[0, 0], [0, 1]]}
 }
