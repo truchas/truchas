@@ -17,7 +17,7 @@
 
 module ns_ht_2d_solver_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
   use parameter_list_type
   use material_model_type
@@ -43,6 +43,7 @@ module ns_ht_2d_solver_type
     type(ht_2d_solver), pointer :: thermal => null()
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:)
     integer :: ncell_onP
+    integer(int64) :: nstep = 0_int64
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number, hnext, hlast
     integer :: max_try
     type(time_step_sync) :: ts_sync
@@ -51,6 +52,8 @@ module ns_ht_2d_solver_type
     procedure :: set_initial_state
     procedure :: integrate
     procedure :: last_time
+    procedure :: init_temporal_output
+    procedure :: set_temporal_output
     procedure :: get_cell_flow_soln
     procedure :: get_face_velocity
     procedure :: get_cell_heat_soln
@@ -209,6 +212,7 @@ contains
     end if
     this%hnext = this%dt_init
     this%hlast = this%dt_init
+    this%nstep = 0_int64
   end subroutine
 
 
@@ -300,6 +304,7 @@ contains
       end if
       call this%thermal%commit_step
       this%flow_vfrac = vfrac_trial
+      this%nstep = this%nstep + 1_int64
       t = t_try
       if (stat == 0) exit
     end do
@@ -316,6 +321,29 @@ contains
 
     last_time = this%thermal%last_time()
   end function
+
+
+  !! Declare the temporal scalar fields published by this coupled solver.
+  !! These fields are updated at each requested solution output and written
+  !! by the simulation's output writer.
+  subroutine init_temporal_output(this, data)
+
+    class(ns_ht_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
+  end subroutine
+
+
+  !! Set the current values of the temporal scalar fields published by this
+  !! coupled solver.
+  subroutine set_temporal_output(this, data)
+
+    class(ns_ht_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
+  end subroutine
 
 
   !! Returns the current local cell pressure and velocity, including ghosts.

@@ -44,6 +44,7 @@ module ns_ht_2d_sim_type
     type(ht_2d_model), pointer :: ht_model => null()
     type(ns_ht_2d_solver), pointer :: solver => null()
     type(ns_ht_2d_vtkhdf_writer) :: output
+    type(parameter_list) :: temporal_output
     real(r8) :: t_init
     real(r8), allocatable :: tout(:)
   contains
@@ -274,7 +275,8 @@ contains
     call project_scalar_func_to_cell_centers(this%mesh, initial_temp, temp)
     call this%solver%set_initial_state(env, this%t_init, velocity, temp, stat, errmsg)
     if (stat /= 0) return
-    call this%output%open(env, this%mesh, this%matl_model, stat, errmsg)
+    call this%solver%init_temporal_output(this%temporal_output)
+    call this%output%open(env, this%mesh, this%matl_model, this%temporal_output, stat, errmsg)
   end subroutine
 
   subroutine run(this, env, stat, errmsg)
@@ -341,7 +343,8 @@ contains
     call this%solver%get_cell_flow_soln(p, velocity)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
-    call this%output%write_solution(time, p, velocity, H, T, this%composition%vfrac)
+    call this%solver%set_temporal_output(this%temporal_output)
+    call this%output%write_solution(time, p, velocity, H, T, this%composition%vfrac, this%temporal_output)
     call env%timer%stop('output')
   end subroutine
 
