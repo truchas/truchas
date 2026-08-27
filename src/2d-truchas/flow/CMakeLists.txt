@@ -11,6 +11,7 @@ set(FLOW2D_SOURCE_FILES
     flow_2d_material_transport_type.F90
     flow_2d_momentum_type.F90
     flow_2d_momentum_solver_type.F90
+    flow_2d_material_props_type.F90
     flow_2d_model_type.F90
     flow_2d_ic_solver_type.F90
     flow_2d_solver_type.F90

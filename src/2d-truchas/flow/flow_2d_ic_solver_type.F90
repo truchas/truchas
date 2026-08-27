@@ -82,7 +82,8 @@ contains
     !! predictor/projection sequence computes the initial pressure using the
     !! same pressure-gradient and body-force operators used during stepping.
     state%p_cc = 0.0_r8
-    call this%projection_update%project_velocity(dt, this%model%inv_density_c, this%model%inv_density_f, &
+    call this%projection_update%project_velocity(dt, this%model%matl_props%inv_density_c, &
+        this%model%matl_props%inv_density_f, &
         this%model%bc, state, stat)
     if (stat /= 0) return
     this%velocity_cc = state%vel_cc
@@ -96,12 +97,12 @@ contains
     this%grad_p = 0.0_r8
     call this%model%assemble_momentum(dt, this%rhs)
     do c = 1, this%model%mesh%ncell_onP
-      this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*state%vel_cc(:,c)
+      this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c(c)*this%model%mesh%volume(c)*state%vel_cc(:,c)
       this%rhs(:,c) = this%rhs(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     state%vel_cc = 0.0_r8
     if (this%model%inviscid) then
-      call this%model%momentum%solve_inviscid(this%model%density_c, this%rhs, &
+      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           state%vel_cc(:,1:this%model%mesh%ncell_onP))
     else if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
       call this%momentum_solver%setup()
@@ -109,8 +110,8 @@ contains
       if (stat /= 0) return
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
-    call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%density_delta_c, this%model%bc, state, stat, initial=.true.)
+    call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, state, stat, initial=.true.)
     if (stat /= 0) return
     state%vel_cc = this%velocity_cc
     state%vel_fn = this%velocity_fn
