@@ -115,10 +115,15 @@ contains
       errmsg = 'processing ' // model_params%path() // ': ' // errmsg
       return
     end if
-    if (density <= 0.0_r8 .or. (.not.inviscid .and. viscosity <= 0.0_r8)) then
+    if (inviscid) then
+      if (density <= 0.0_r8) then
+        stat = 1
+        errmsg = 'processing ' // model_params%path() // ': require density > 0'
+        return
+      end if
+    else if (density <= 0.0_r8 .or. viscosity <= 0.0_r8) then
       stat = 1
-      errmsg = 'processing ' // model_params%path() // ': require density > 0'
-      if (.not.inviscid) errmsg = errmsg // ' and viscosity > 0'
+      errmsg = 'processing ' // model_params%path() // ': require density > 0 and viscosity > 0'
       return
     end if
     if (.not.model_params%is_sublist('bc')) then

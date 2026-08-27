@@ -41,6 +41,8 @@ module ns_2d_solver_type
   contains
     procedure :: init
     procedure :: set_volume_fractions
+    procedure :: set_initial_material_state
+    procedure :: accept_material_state
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -83,6 +85,21 @@ contains
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%model%set_volume_fractions(vfrac)
+  end subroutine
+
+
+  subroutine set_initial_material_state(this, vfrac, temperature)
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: vfrac(:,:), temperature(:)
+
+    call this%model%set_initial_material_state(vfrac, temperature)
+  end subroutine
+
+
+  subroutine accept_material_state(this)
+    class(ns_2d_solver), intent(inout) :: this
+
+    call this%model%accept_material_state()
   end subroutine
 
 
@@ -146,10 +163,15 @@ contains
     real(r8), pointer :: vfrac_trial(:,:)
 
     call this%material_transport%advance(t_n, t_np1, this%state%vel_fn, this%vfrac)
-    call this%advance_momentum(t_n, t_np1, this%material_transport%flux_volumes, stat, errmsg)
-    if (stat /= 0) return
     call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+    call this%model%set_volume_fractions(vfrac_trial)
+    call this%advance_momentum(t_n, t_np1, this%material_transport%flux_volumes, stat, errmsg)
+    if (stat /= 0) then
+      call this%model%set_volume_fractions(this%vfrac)
+      return
+    end if
     this%vfrac = vfrac_trial
+    call this%model%accept_material_state()
   end subroutine
 
 
@@ -170,7 +192,7 @@ contains
 
     dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
-    ASSERT(size(flux_volumes,1) == size(this%model%density))
+    ASSERT(size(flux_volumes,1) == size(this%model%matl_props%density))
     ASSERT(size(flux_volumes,2) == size(this%model%mesh%cface))
     call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
@@ -179,15 +201,15 @@ contains
     end if
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
     call this%model%assemble_momentum(dt, this%rhs)
-    call this%model%momentum%add_advective_rhs(this%model%density, this%state%vel_cc, &
+    call this%model%momentum%add_advective_rhs(this%model%matl_props%density, this%state%vel_cc, &
         flux_volumes, &
         this%model%bc, this%rhs)
     do c = 1, size(this%rhs,2)
-      this%rhs(:,c) = this%rhs(:,c) + this%model%density_c_old(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
+      this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c_old(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
           dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then
-      call this%model%momentum%solve_inviscid(this%model%density_c, this%rhs, &
+      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           this%state%vel_cc(:,1:size(this%rhs,2)))
     else
       call this%momentum_solver%setup()
@@ -195,8 +217,8 @@ contains
       if (stat /= 0) return
     end if
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
-    call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%density_delta_c, this%model%bc, this%state, stat)
+    call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, this%state, stat)
   end subroutine
 
   !! Return the maximum step size satisfying the specified convective Courant

@@ -111,7 +111,7 @@ contains
     end if
     allocate(flow_material_ids(this%material_layout%num_real_fluid()))
     call this%material_layout%get_real_fluid_material_ids(flow_material_ids)
-    if (size(flow_material_ids) /= size(flow_model%density)) then
+    if (size(flow_material_ids) /= size(flow_model%matl_props%density)) then
       stat = 1
       errmsg = 'flow material properties do not match fluid materials'
       return
@@ -204,6 +204,7 @@ contains
     call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
     if (stat /= 0) return
     call this%thermal%get_cell_temp_soln(this%temp)
+    call this%flow%set_initial_material_state(this%flow_vfrac, this%temp)
     call this%flow%set_buoyancy_temperature(this%temp)
     call this%flow%set_initial_state(time, this%dt_init, velocity, stat)
     if (stat /= 0) then
@@ -303,6 +304,7 @@ contains
         if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
         return
       end if
+      call this%flow%accept_material_state()
       call this%thermal%commit_step
       this%flow_vfrac = vfrac_trial
       this%nstep = this%nstep + 1_int64

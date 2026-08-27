@@ -19,8 +19,7 @@ module ns_ht_2d_sim_type
   use material_model_type
   use material_composition_type
   use scalar_func_class
-  use scalar_func_factories, only: alloc_const_scalar_func, alloc_scalar_func, alloc_poly_scalar_func
-  use scalar_func_tools, only: is_const
+  use scalar_func_factories, only: alloc_scalar_func
   use scalar_func_projection
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
@@ -85,12 +84,9 @@ contains
     class(scalar_func), allocatable :: initial_temp
     class(vector_func), allocatable :: initial_velocity_func
     character(:), allocatable :: matl_name(:)
-    class(scalar_func), allocatable :: density_func, viscosity_func, alpha_func, tref_func, density_delta_func
-    real(r8) :: alpha, expan_ref_temp
     real(r8), allocatable :: body_acceleration(:), temp(:), velocity(:,:)
-    real(r8), allocatable :: density(:)
     integer, allocatable :: fluid_material_ids(:)
-    integer :: i, rlev
+    integer :: rlev
     logical :: inviscid
 
     stat = 0
@@ -163,23 +159,9 @@ contains
     tracking_params => flow_solver_params%sublist('volume-tracking')
     call material_layout%init(this%matl_model, tracking_params, stat, errmsg)
     if (stat /= 0) return
-    allocate(fluid_material_ids(material_layout%num_real_fluid()), density(material_layout%num_real_fluid()))
+    allocate(fluid_material_ids(material_layout%num_real_fluid()))
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-    do i = 1, size(fluid_material_ids)
-      call this%matl_model%get_phase_prop(fluid_material_ids(i), 'density', density_func)
-      if (.not.allocated(density_func) .or. .not.is_const(density_func)) then
-        stat = 1
-        errmsg = 'fluid density must be a constant property'
-        return
-      end if
-      density(i) = density_func%eval([real(r8)::])
-    end do
-    if (any(density <= 0.0_r8)) then
-      stat = 1
-      errmsg = 'fluid density must be positive'
-      return
-    end if
-    if (size(density) > 1) then
+    if (size(fluid_material_ids) > 1) then
       if (.not.inviscid) then
         stat = 1
         errmsg = 'current multi-fluid flow requires inviscid=true'
@@ -190,49 +172,10 @@ contains
         errmsg = 'current multi-fluid flow does not support body acceleration'
         return
       end if
-      call alloc_const_scalar_func(density_delta_func, 0.0_r8)
-    else
-      if (.not.inviscid) then
-        call this%matl_model%get_phase_prop(fluid_material_ids(1), 'viscosity', viscosity_func)
-        if (.not.allocated(viscosity_func)) then
-          stat = 1
-          errmsg = 'material viscosity property is missing'
-          return
-        end if
-      end if
-      call this%matl_model%get_phase_prop(fluid_material_ids(1), 'thermal-expan-coef', alpha_func)
-      if (.not.allocated(alpha_func) .or. .not.is_const(alpha_func)) then
-        stat = 1
-        errmsg = 'material thermal-expan-coef must be a constant property'
-        return
-      end if
-      call this%matl_model%get_phase_prop(fluid_material_ids(1), 'expan-ref-temp', tref_func)
-      if (.not.allocated(tref_func) .or. .not.is_const(tref_func)) then
-        stat = 1
-        errmsg = 'material expan-ref-temp must be a constant property'
-        return
-      end if
-      alpha = alpha_func%eval([real(r8)::])
-      expan_ref_temp = tref_func%eval([real(r8)::])
-      if (alpha < 0.0_r8) then
-        stat = 1
-        errmsg = 'material thermal-expan-coef must be nonnegative'
-        return
-      end if
-      if (.not.inviscid) then
-        if (.not.is_const(viscosity_func)) call env%simlog%info('Material viscosity is temperature-dependent')
-      end if
-      call alloc_poly_scalar_func(density_delta_func, [-density(1)*alpha], [1], expan_ref_temp)
     end if
     allocate(this%flow_model)
-    if (inviscid) then
-      call this%flow_model%init(env, this%mesh, flow_bc, density=density, stat=stat, errmsg=errmsg, &
-          body_acceleration=body_acceleration, density_delta_func=density_delta_func, inviscid=.true.)
-    else
-      call this%flow_model%init(env, this%mesh, flow_bc, density=density, stat=stat, errmsg=errmsg, &
-          body_acceleration=body_acceleration, viscosity_func=viscosity_func, &
-          density_delta_func=density_delta_func)
-    end if
+    call this%flow_model%init_material(env, this%mesh, flow_bc, this%matl_model, fluid_material_ids, stat, errmsg, &
+        body_acceleration=body_acceleration, inviscid=inviscid)
     if (stat /= 0) return
 
     if (.not.params%is_sublist('ht-model')) then

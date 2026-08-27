@@ -127,11 +127,11 @@ contains
     call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
     call this%model%assemble_momentum(dt, this%rhs)
     do c = 1, size(this%rhs,2)
-      this%rhs(:,c) = this%rhs(:,c) + this%model%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
+      this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c(c)*this%model%mesh%volume(c)*this%state%vel_cc(:,c) - &
           dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then
-      call this%model%momentum%solve_inviscid(this%model%density_c, this%rhs, &
+      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           this%state%vel_cc(:,1:size(this%rhs,2)))
     else
       call this%momentum_solver%setup()
@@ -139,8 +139,8 @@ contains
       if (stat /= 0) return
     end if
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
-    call this%projection_update%correct(dt, this%model%inv_density_c, this%model%inv_density_f, &
-        this%model%density_delta_c, this%model%bc, this%state, stat)
+    call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, this%state, stat)
   end subroutine
 
 end module flow_2d_solver_type
