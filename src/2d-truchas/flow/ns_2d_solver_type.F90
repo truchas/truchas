@@ -34,23 +34,23 @@ module ns_2d_solver_type
     private
     type(flow_2d_model), pointer :: model => null()  ! unowned reference
     type(flow_2d_state) :: state
+    type(flow_2d_state) :: pending_state
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), vfrac(:,:)
-    real(r8), allocatable :: vel_cc_save(:,:), vel_fn_save(:), p_cc_save(:)
     real(r8) :: tlast, hlast, hnext
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
     logical :: time_stepper_initialized = .false.
+    logical :: step_is_pending = .false.
     type(time_step_sync) :: ts_sync
   contains
     procedure :: init
     procedure :: init_time_stepper
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
-    procedure :: accept_material_state
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -60,6 +60,8 @@ module ns_2d_solver_type
     procedure :: last_time
     procedure :: initial_time_step
     procedure :: advance_momentum
+    procedure :: commit_step
+    procedure :: reject_step
     procedure :: courant_time_step
     final :: delete
   end type
@@ -75,10 +77,9 @@ contains
 
     this%model => model
     call this%state%init(model%mesh)
+    call this%pending_state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
-        this%vfrac(1,model%mesh%ncell), this%vel_cc_save(2,model%mesh%ncell), &
-        this%vel_fn_save(model%mesh%nface), this%p_cc_save(model%mesh%ncell), &
-        this%projection_solver, this%ic_solver)
+        this%vfrac(1,model%mesh%ncell), this%projection_solver, this%ic_solver)
     this%vfrac = 1.0_r8
     call this%material_transport%init(env, model%mesh, 1, 1, 1)
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
@@ -142,13 +143,6 @@ contains
   end subroutine
 
 
-  subroutine accept_material_state(this)
-    class(ns_2d_solver), intent(inout) :: this
-
-    call this%model%accept_material_state()
-  end subroutine
-
-
   subroutine set_buoyancy_temperature(this, temperature)
     class(ns_2d_solver), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
@@ -175,6 +169,10 @@ contains
 
     call this%ic_solver%solve(time, dt, velocity, this%state, stat)
     if (stat /= 0) return
+    this%pending_state%vel_cc = this%state%vel_cc
+    this%pending_state%vel_fn = this%state%vel_fn
+    this%pending_state%p_cc = this%state%p_cc
+    this%step_is_pending = .false.
     if (this%time_stepper_initialized) then
       this%tlast = time
       this%hnext = min(this%dt_init, this%courant_time_step(this%courant_number))
@@ -183,22 +181,35 @@ contains
   end subroutine
 
 
-  !! Return no-copy views of the cell-centered pressure and velocity.
+  !! Return no-copy views of the current cell-centered pressure and velocity.
+  !! The current state is pending after a successful ADVANCE_MOMENTUM call;
+  !! callers must reacquire these views after COMMIT_STEP or REJECT_STEP.
   subroutine get_cell_flow_soln(this, pressure, velocity)
     class(ns_2d_solver), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
-    pressure => this%state%p_cc
-    velocity => this%state%vel_cc
+    if (this%step_is_pending) then
+      pressure => this%pending_state%p_cc
+      velocity => this%pending_state%vel_cc
+    else
+      pressure => this%state%p_cc
+      velocity => this%state%vel_cc
+    end if
   end subroutine
 
 
-  !! Return a no-copy view of the face-normal velocity.
+  !! Return a no-copy view of the current face-normal velocity.  The current
+  !! state is pending after a successful ADVANCE_MOMENTUM call; callers must
+  !! reacquire this view after COMMIT_STEP or REJECT_STEP.
   subroutine get_face_velocity(this, velocity)
     class(ns_2d_solver), target, intent(in) :: this
     real(r8), pointer, intent(out) :: velocity(:)
 
-    velocity => this%state%vel_fn
+    if (this%step_is_pending) then
+      velocity => this%pending_state%vel_fn
+    else
+      velocity => this%state%vel_fn
+    end if
   end subroutine
 
 
@@ -219,11 +230,12 @@ contains
     call this%model%set_volume_fractions(vfrac_trial)
     call this%advance_momentum(t_n, t_np1, this%material_transport%flux_volumes, stat, errmsg)
     if (stat /= 0) then
+      call this%reject_step()
       call this%model%set_volume_fractions(this%vfrac)
       return
     end if
     this%vfrac = vfrac_trial
-    call this%model%accept_material_state()
+    call this%commit_step()
   end subroutine
 
 
@@ -303,16 +315,16 @@ contains
     real(r8) :: dt
     character(:), allocatable :: bc_errmsg
 
+    ASSERT(.not.this%step_is_pending)
     dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
     ASSERT(size(flux_volumes,1) == size(this%model%matl_props%density))
     ASSERT(size(flux_volumes,2) == size(this%model%mesh%cface))
-    this%vel_cc_save = this%state%vel_cc
-    this%vel_fn_save = this%state%vel_fn
-    this%p_cc_save = this%state%p_cc
+    this%pending_state%vel_cc = this%state%vel_cc
+    this%pending_state%vel_fn = this%state%vel_fn
+    this%pending_state%p_cc = this%state%p_cc
     call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
-      call restore_flow_state(this)
       if (present(errmsg)) errmsg = bc_errmsg
       return
     end if
@@ -327,29 +339,45 @@ contains
     end do
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
-          this%state%vel_cc(:,1:size(this%rhs,2)))
+          this%pending_state%vel_cc(:,1:size(this%rhs,2)))
     else
       call this%momentum_solver%setup()
-      call this%momentum_solver%solve(this%rhs, this%state%vel_cc(:,1:size(this%rhs,2)), stat)
+      call this%momentum_solver%solve(this%rhs, this%pending_state%vel_cc(:,1:size(this%rhs,2)), stat)
       if (stat /= 0) then
-        call restore_flow_state(this)
         return
       end if
     end if
-    call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
+    call this%model%mesh%cell_imap%gather_offp(this%pending_state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
-        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, this%state, stat)
-    if (stat /= 0) call restore_flow_state(this)
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, &
+        this%pending_state, stat)
+    if (stat /= 0) then
+      return
+    end if
+    this%step_is_pending = .true.
+  end subroutine
+
+  !! Commit the pending flow state and its current material properties.
+  subroutine commit_step(this)
+    class(ns_2d_solver), intent(inout) :: this
+
+    if (this%step_is_pending) then
+      this%state%vel_cc = this%pending_state%vel_cc
+      this%state%vel_fn = this%pending_state%vel_fn
+      this%state%p_cc = this%pending_state%p_cc
+      call this%model%accept_material_state()
+      this%step_is_pending = .false.
+    end if
   end subroutine
 
 
-  subroutine restore_flow_state(this)
+  !! Reject the pending flow state, restoring the last accepted state.
+  !! Material volume fractions are restored by the owning caller.
+  subroutine reject_step(this)
     class(ns_2d_solver), intent(inout) :: this
 
-    this%state%vel_cc = this%vel_cc_save
-    this%state%vel_fn = this%vel_fn_save
-    this%state%p_cc = this%p_cc_save
-  end subroutine restore_flow_state
+    this%step_is_pending = .false.
+  end subroutine
 
   !! Return the maximum step size satisfying the specified convective Courant
   !! number for the old face-normal velocity.
@@ -360,12 +388,14 @@ contains
 
     integer :: f
     real(r8) :: dt_local
+    real(r8), pointer :: velocity(:)
 
     ASSERT(courant_number > 0.0_r8 .and. courant_number <= 1.0_r8)
     dt_local = huge(1.0_r8)
+    call this%get_face_velocity(velocity)
     do f = 1, this%model%mesh%nface_onP
-      if (this%state%vel_fn(f) == 0.0_r8) cycle
-      dt_local = min(dt_local, this%model%operators%normal_distance(f)/abs(this%state%vel_fn(f)))
+      if (velocity(f) == 0.0_r8) cycle
+      dt_local = min(dt_local, this%model%operators%normal_distance(f)/abs(velocity(f)))
     end do
     dt = courant_number*global_minval(dt_local)
   end function
