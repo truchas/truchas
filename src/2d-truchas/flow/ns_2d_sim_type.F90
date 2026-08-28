@@ -238,6 +238,7 @@ contains
     do n = 1, size(this%tout)
       call this%solver%integrate(this%tout(n), stat, errmsg)
       time = this%solver%last_time()
+      call this%solver%get_cell_flow_soln(pressure, velocity)
       if (stat < 0 .and. time == t_write) exit
       call this%output%write_solution(time, pressure, velocity)
       t_write = time

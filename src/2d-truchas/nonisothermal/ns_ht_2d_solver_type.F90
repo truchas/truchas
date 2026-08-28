@@ -300,6 +300,7 @@ contains
       call this%flow%set_buoyancy_temperature(this%temp)
       call this%flow%advance_momentum(t_n, t_try, this%material_transport%flux_volumes, stat, errmsg)
       if (stat /= 0) then
+        call this%flow%reject_step()
         call this%thermal%reject_step()
         call this%thermal%get_cell_temp_soln(this%temp)
         call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
@@ -309,7 +310,7 @@ contains
         if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
         return
       end if
-      call this%flow%accept_material_state()
+      call this%flow%commit_step()
       call this%thermal%commit_step
       this%flow_vfrac = vfrac_trial
       this%nstep = this%nstep + 1_int64

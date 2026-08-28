@@ -131,6 +131,18 @@ contains
     call solver%set_initial_state(env, 0.0_r8, velocity, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled state: ' // errmsg)
     call require_zero_face_velocity(solver, mesh%nface, 'zero initial velocity was not preserved')
+    call thermal_solver%get_cell_temp_soln(thermal_temp)
+    call thermal_solver%get_cell_heat_soln(thermal_heat)
+    call thermal_solver%step(1.0e-3_r8, thermal_hnext, stat)
+    call require(stat == 0, 'thermal step for reject test failed')
+    if (stat /= 0) return
+    call thermal_solver%reject_step()
+    call thermal_solver%get_cell_temp_soln(temp_result)
+    call thermal_solver%get_cell_heat_soln(heat_result)
+    call require(maxval(abs(temp_result - thermal_temp)) == 0.0_r8, &
+        'thermal temperature was not restored by reject_step')
+    call require(maxval(abs(heat_result - thermal_heat)) == 0.0_r8, &
+        'thermal enthalpy was not restored by reject_step')
     ts_sync = time_step_sync(4)
     t = 0.0_r8
     hlast = 1.0e-3_r8

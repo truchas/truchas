@@ -44,7 +44,8 @@ contains
     type(ns_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
-    real(r8), allocatable :: velocity(:,:), flux(:)
+    real(r8), allocatable :: velocity(:,:), flux(:), flux_volumes(:,:), pressure_save(:), velocity_save(:,:), &
+        face_velocity_save(:), pressure_trial(:), velocity_trial(:,:), face_velocity_trial(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     character(:), allocatable :: errmsg
     integer :: stat
@@ -59,11 +60,54 @@ contains
     call set_solver_params(momentum_params)
     call set_solver_params(projection_params)
     call solver%init(env, model, momentum_params, projection_params)
-    allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP))
+    allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP), flux_volumes(1,size(mesh%cface)))
+    flux_volumes = 0.0_r8
     velocity = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell_onP)
     call solver%set_initial_state(0.0_r8, 0.01_r8, velocity, stat)
     call require(stat == 0, 'Navier--Stokes initial-condition solve did not converge')
     if (stat /= 0) return
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    allocate(pressure_save(size(pressure)), velocity_save(size(velocity_state,1),size(velocity_state,2)), &
+        face_velocity_save(size(velocity_face)), pressure_trial(size(pressure)), &
+        velocity_trial(size(velocity_state,1),size(velocity_state,2)), face_velocity_trial(size(velocity_face)))
+    pressure_save = pressure
+    velocity_save = velocity_state
+    face_velocity_save = velocity_face
+    call solver%advance_momentum(0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
+    call require(stat == 0, 'Navier--Stokes momentum update did not converge')
+    if (stat /= 0) return
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    pressure_trial = pressure
+    velocity_trial = velocity_state
+    face_velocity_trial = velocity_face
+    call solver%reject_step()
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    call require(maxval(abs(pressure - pressure_save)) == 0.0_r8, &
+        'flow pressure was not restored by reject_step')
+    call require(maxval(abs(velocity_state - velocity_save)) == 0.0_r8, &
+        'cell velocity was not restored by reject_step')
+    call require(maxval(abs(velocity_face - face_velocity_save)) == 0.0_r8, &
+        'face velocity was not restored by reject_step')
+    call solver%advance_momentum(0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
+    call require(stat == 0, 'Navier--Stokes second momentum update did not converge')
+    if (stat /= 0) return
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    pressure_trial = pressure
+    velocity_trial = velocity_state
+    face_velocity_trial = velocity_face
+    call solver%commit_step()
+    call solver%get_cell_flow_soln(pressure, velocity_state)
+    call solver%get_face_velocity(velocity_face)
+    call require(maxval(abs(pressure - pressure_trial)) == 0.0_r8, &
+        'flow pressure changed when committing the pending state')
+    call require(maxval(abs(velocity_state - velocity_trial)) == 0.0_r8, &
+        'cell velocity changed when committing the pending state')
+    call require(maxval(abs(velocity_face - face_velocity_trial)) == 0.0_r8, &
+        'face velocity changed when committing the pending state')
     call solver%step(0.0_r8, 0.01_r8, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes solver step did not converge')
     if (stat /= 0) return
