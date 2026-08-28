@@ -15,3 +15,7 @@ against stored field data.
   uniform velocity.  It is a focused regression for the conservative
   variable-density momentum update: old momentum must use the old cell density,
   while the predictor uses the new density.
+
+The `viscous_multifluid` test is separate because it exercises a lid-driven
+shear flow with distinct material viscosities and compares serial and
+four-process results.

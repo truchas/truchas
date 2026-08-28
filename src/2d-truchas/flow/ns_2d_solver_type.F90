@@ -4,7 +4,8 @@
 !! This module defines NS_2D_SOLVER, the isothermal incompressible
 !! Navier--Stokes step algorithm.  It uses the common flow model, state, and
 !! pressure projection, with an explicit first-order donor-cell treatment of
-!! momentum transport in the predictor RHS.
+!! momentum transport in the predictor RHS.  It owns the evolving flow state,
+!! standalone time-step policy, and integration to requested target times.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -25,6 +26,7 @@ module ns_2d_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
   use flow_2d_ic_solver_type
+  use time_step_sync_type
   implicit none
   private
 
@@ -38,8 +40,14 @@ module ns_2d_solver_type
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), vfrac(:,:)
+    real(r8), allocatable :: vel_cc_save(:,:), vel_fn_save(:), p_cc_save(:)
+    real(r8) :: tlast, hlast, hnext
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
+    logical :: time_stepper_initialized = .false.
+    type(time_step_sync) :: ts_sync
   contains
     procedure :: init
+    procedure :: init_time_stepper
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
     procedure :: accept_material_state
@@ -48,6 +56,9 @@ module ns_2d_solver_type
     procedure :: get_cell_flow_soln
     procedure :: get_face_velocity
     procedure :: step
+    procedure :: integrate
+    procedure :: last_time
+    procedure :: initial_time_step
     procedure :: advance_momentum
     procedure :: courant_time_step
     final :: delete
@@ -65,7 +76,9 @@ contains
     this%model => model
     call this%state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
-        this%vfrac(1,model%mesh%ncell), this%projection_solver, this%ic_solver)
+        this%vfrac(1,model%mesh%ncell), this%vel_cc_save(2,model%mesh%ncell), &
+        this%vel_fn_save(model%mesh%nface), this%p_cc_save(model%mesh%ncell), &
+        this%projection_solver, this%ic_solver)
     this%vfrac = 1.0_r8
     call this%material_transport%init(env, model%mesh, 1, 1, 1)
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
@@ -77,6 +90,39 @@ contains
     else
       call this%ic_solver%init(model, projection_params=projection_params)
     end if
+  end subroutine
+
+
+  !! Initialize the standalone time-step policy from SIM-CONTROL parameters.
+  !! The output schedule itself remains owned by the simulation driver.
+  subroutine init_time_stepper(this, params, stat, errmsg)
+    class(ns_2d_solver), intent(inout) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    call params%get('initial-time-step', this%dt_init, stat, errmsg)
+    if (stat /= 0) return
+    call params%get('min-time-step', this%dt_min, stat, errmsg)
+    if (stat /= 0) return
+    call params%get('max-time-step', this%dt_max, default=huge(1.0_r8), stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('time-step-growth', this%dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
+        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. &
+        this%courant_number <= 0.0_r8 .or. this%courant_number > 1.0_r8) then
+      stat = 1
+      errmsg = 'require 0 < min-time-step <= initial-time-step <= max-time-step, ' // &
+          'time-step-growth >= 1, and courant-number in (0,1]'
+      return
+    end if
+    this%ts_sync = time_step_sync(4)
+    this%time_stepper_initialized = .true.
+    stat = 0
+    errmsg = ''
   end subroutine
 
 
@@ -128,6 +174,12 @@ contains
     integer, intent(out) :: stat
 
     call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+    if (stat /= 0) return
+    if (this%time_stepper_initialized) then
+      this%tlast = time
+      this%hnext = min(this%dt_init, this%courant_time_step(this%courant_number))
+      this%hlast = this%hnext
+    end if
   end subroutine
 
 
@@ -175,6 +227,67 @@ contains
   end subroutine
 
 
+  !! Integrate the flow state from its current time to TOUT.  The endpoint
+  !! time is primary; each step derives its size from the two endpoint times.
+  subroutine integrate(this, tout, stat, errmsg)
+    use signal_handler, only: read_signal, SIGURG
+
+    class(ns_2d_solver), intent(inout) :: this
+    real(r8), intent(in) :: tout
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    real(r8) :: t_n, t_np1
+    logical :: sig_rcvd
+
+    stat = 0
+    ASSERT(this%time_stepper_initialized)
+    t_n = this%tlast
+    ASSERT(tout >= t_n)
+    do while (t_n < tout)
+      t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
+      if (t_np1 - t_n < this%dt_min) then
+        stat = -1
+        errmsg = 'next time step is too small'
+        return
+      end if
+      call this%step(t_n, t_np1, stat, errmsg)
+      if (stat /= 0) then
+        if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
+        return
+      end if
+      this%hlast = t_np1 - t_n
+      this%hnext = min(this%dt_grow*this%hlast, this%dt_max, &
+          this%courant_time_step(this%courant_number))
+      t_n = t_np1
+      this%tlast = t_n
+      call read_signal(SIGURG, sig_rcvd)
+      if (sig_rcvd) then
+        stat = 1
+        errmsg = 'received SIGURG signal'
+        return
+      end if
+    end do
+  end subroutine
+
+
+  function last_time(this) result(time)
+    class(ns_2d_solver), intent(in) :: this
+    real(r8) :: time
+
+    time = this%tlast
+  end function
+
+
+  function initial_time_step(this) result(dt)
+    class(ns_2d_solver), intent(in) :: this
+    real(r8) :: dt
+
+    ASSERT(this%time_stepper_initialized)
+    dt = this%dt_init
+  end function
+
+
   !! Advance momentum and pressure from T_N to T_NP1 using material-resolved
   !! flux volumes already constructed for the pending step. This separate
   !! operation lets a coupled solver advect material and thermal enthalpy
@@ -194,8 +307,12 @@ contains
     ASSERT(dt > 0.0_r8)
     ASSERT(size(flux_volumes,1) == size(this%model%matl_props%density))
     ASSERT(size(flux_volumes,2) == size(this%model%mesh%cface))
+    this%vel_cc_save = this%state%vel_cc
+    this%vel_fn_save = this%state%vel_fn
+    this%p_cc_save = this%state%p_cc
     call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
+      call restore_flow_state(this)
       if (present(errmsg)) errmsg = bc_errmsg
       return
     end if
@@ -214,12 +331,25 @@ contains
     else
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, this%state%vel_cc(:,1:size(this%rhs,2)), stat)
-      if (stat /= 0) return
+      if (stat /= 0) then
+        call restore_flow_state(this)
+        return
+      end if
     end if
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, this%state, stat)
+    if (stat /= 0) call restore_flow_state(this)
   end subroutine
+
+
+  subroutine restore_flow_state(this)
+    class(ns_2d_solver), intent(inout) :: this
+
+    this%state%vel_cc = this%vel_cc_save
+    this%state%vel_fn = this%vel_fn_save
+    this%state%p_cc = this%p_cc_save
+  end subroutine restore_flow_state
 
   !! Return the maximum step size satisfying the specified convective Courant
   !! number for the old face-normal velocity.
