@@ -1,0 +1,44 @@
+{
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+    },
+    "flow-model": {
+        "density": 1.0,
+        "viscosity": 1.0,
+        "bc": {
+            "inlet": {
+                "type": "velocity",
+                "face-set-ids": [1],
+                "velocity": {
+                    "type": "tabular",
+                    "tabular-x": [0.0, 1.0],
+                    "tabular-y": [[0.0, 0.0], [1.0, 0.0]],
+                    "tabular-arg": 3
+                }
+            },
+            "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
+            "bottom": {"type": "no-slip", "face-set-ids": [3]},
+            "top": {"type": "velocity", "face-set-ids": [4], "velocity": [1.0, 0.0]}
+        }
+    },
+    "initial-velocity": {
+        "type": "tabular",
+        "tabular-x": [0.0, 1.0],
+        "tabular-y": [[0.0, 0.0], [1.0, 0.0]],
+        "tabular-arg": 2
+    },
+    "flow-solver": {
+        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 0.05,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 0.05,
+        "time-step-growth": 1.0,
+        "courant-number": 0.5,
+        "output-times": [50.0]
+    }
+}

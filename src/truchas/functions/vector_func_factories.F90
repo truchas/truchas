@@ -140,7 +140,7 @@ contains
 
     real(r8), allocatable :: v0(:), x(:), y(:,:), axis(:), p(:)
     character(:), allocatable :: ftype, library_path, library_symbol
-    integer :: dim
+    integer :: arg, dim
 
     call params%get ('type', ftype)
     select case (ftype)
@@ -151,7 +151,8 @@ contains
       call params%get ('tabular-x', x)
       call params%get ('tabular-y', y)
       INSIST(size(x) == size(y,dim=2))  !TODO: need proper error handling
-      call alloc_tabular_vector_func (f, x, y)
+      call params%get('tabular-arg', arg, default=1)
+      call alloc_tabular_vector_func (f, x, y, arg)
     case ('div-radial-cyl-flow')
       call params%get ('axis', axis)
       INSIST(size(axis) == 3) !TODO: need proper error handling
