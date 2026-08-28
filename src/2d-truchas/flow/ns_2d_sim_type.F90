@@ -33,12 +33,14 @@ module ns_2d_sim_type
     type(flow_2d_model), pointer :: model => null()
     type(ns_2d_solver), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
+    type(parameter_list) :: temporal_output
     real(r8) :: t_init
     real(r8), allocatable :: tout(:)
   contains
     final :: delete
     procedure :: init
     procedure :: run
+    procedure :: write_solution
   end type
 
 contains
@@ -213,7 +215,8 @@ contains
       return
     end if
 
-    call this%output%open(env, this%mesh, stat, errmsg)
+    call this%solver%init_temporal_output(this%temporal_output)
+    call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'opening VTKHDF output: ' // errmsg
       return
@@ -228,19 +231,16 @@ contains
 
     integer :: n
     real(r8) :: time, t_write
-    real(r8), pointer :: pressure(:), velocity(:,:)
 
     stat = 0
     time = this%solver%last_time()
-    call this%solver%get_cell_flow_soln(pressure, velocity)
-    call this%output%write_solution(time, pressure, velocity)
+    call this%write_solution(time)
     t_write = time
     do n = 1, size(this%tout)
       call this%solver%integrate(this%tout(n), stat, errmsg)
       time = this%solver%last_time()
-      call this%solver%get_cell_flow_soln(pressure, velocity)
       if (stat < 0 .and. time == t_write) exit
-      call this%output%write_solution(time, pressure, velocity)
+      call this%write_solution(time)
       t_write = time
       if (stat /= 0) exit
     end do
@@ -249,6 +249,18 @@ contains
       deallocate(errmsg)
     end if
     call this%output%close()
+  end subroutine
+
+
+  subroutine write_solution(this, time)
+    class(ns_2d_sim), intent(inout) :: this
+    real(r8), intent(in) :: time
+
+    real(r8), pointer :: pressure(:), velocity(:,:)
+
+    call this%solver%get_cell_flow_soln(pressure, velocity)
+    call this%solver%set_temporal_output(this%temporal_output)
+    call this%output%write_solution(time, pressure, velocity, this%temporal_output)
   end subroutine
 
 

@@ -15,7 +15,7 @@
 
 module ns_2d_solver_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
   use parameter_list_type
   use parallel_communication, only: global_minval
@@ -41,6 +41,7 @@ module ns_2d_solver_type
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: rhs(:,:), grad_p(:,:), vfrac(:,:)
+    integer(int64) :: nstep = 0_int64
     real(r8) :: tlast, hlast, hnext
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
     logical :: time_stepper_initialized = .false.
@@ -59,6 +60,8 @@ module ns_2d_solver_type
     procedure :: integrate
     procedure :: last_time
     procedure :: initial_time_step
+    procedure :: init_temporal_output
+    procedure :: set_temporal_output
     procedure :: advance_momentum
     procedure :: commit_step
     procedure :: reject_step
@@ -173,6 +176,7 @@ contains
     this%pending_state%vel_fn = this%state%vel_fn
     this%pending_state%p_cc = this%state%p_cc
     this%step_is_pending = .false.
+    this%nstep = 0_int64
     if (this%time_stepper_initialized) then
       this%tlast = time
       this%hnext = min(this%dt_init, this%courant_time_step(this%courant_number))
@@ -367,7 +371,29 @@ contains
       this%state%p_cc = this%pending_state%p_cc
       call this%model%accept_material_state()
       this%step_is_pending = .false.
+      this%nstep = this%nstep + 1_int64
     end if
+  end subroutine
+
+
+  !! Declare the temporal scalar fields published by this solver.
+  !! These fields are updated at each requested solution output and written
+  !! by the simulation's output writer.
+  subroutine init_temporal_output(this, data)
+    class(ns_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
+  end subroutine
+
+
+  !! Set the current values of the temporal scalar fields published by this
+  !! solver.
+  subroutine set_temporal_output(this, data)
+    class(ns_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
   end subroutine
 
 

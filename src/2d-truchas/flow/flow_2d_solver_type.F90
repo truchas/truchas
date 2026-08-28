@@ -14,7 +14,8 @@
 
 module flow_2d_solver_type
 
-  use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
+  use simulation_environment_type
   use parameter_list_type
   use flow_2d_model_type
   use flow_2d_state_type
@@ -34,19 +35,23 @@ module flow_2d_solver_type
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
+    integer(int64) :: nstep = 0_int64
   contains
     procedure :: init
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
     procedure :: get_face_velocity
     procedure :: step
+    procedure :: init_temporal_output
+    procedure :: set_temporal_output
     final :: delete
   end type
 
 contains
 
-  subroutine init(this, model, momentum_params, projection_params)
+  subroutine init(this, env, model, momentum_params, projection_params)
     class(flow_2d_solver), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
@@ -73,6 +78,7 @@ contains
     integer, intent(out) :: stat
 
     call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+    if (stat == 0) this%nstep = 0_int64
   end subroutine
 
 
@@ -141,6 +147,28 @@ contains
     call this%model%mesh%cell_imap%gather_offp(this%state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, this%state, stat)
+    if (stat == 0) this%nstep = this%nstep + 1_int64
+  end subroutine
+
+
+  !! Declare the temporal scalar fields published by this solver.
+  !! These fields are updated at each requested solution output and written
+  !! by the simulation's output writer.
+  subroutine init_temporal_output(this, data)
+    class(flow_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
+  end subroutine
+
+
+  !! Set the current values of the temporal scalar fields published by this
+  !! solver.
+  subroutine set_temporal_output(this, data)
+    class(flow_2d_solver), intent(in) :: this
+    type(parameter_list), intent(inout) :: data
+
+    call data%set('NStep', this%nstep)
   end subroutine
 
 end module flow_2d_solver_type
