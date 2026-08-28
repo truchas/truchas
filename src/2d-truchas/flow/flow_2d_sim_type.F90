@@ -32,6 +32,7 @@ module flow_2d_sim_type
     type(flow_2d_model), pointer :: model => null()
     type(flow_2d_solver), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
+    type(parameter_list) :: temporal_output
     real(r8) :: t_init, tlast, hlast
     real(r8) :: dt_init, dt_min, dt_max, dt_grow
     real(r8), allocatable :: tout(:)
@@ -40,6 +41,7 @@ module flow_2d_sim_type
     final :: delete
     procedure :: init
     procedure :: run
+    procedure :: write_solution
   end type
 
 contains
@@ -152,7 +154,7 @@ contains
     projection_params => solver_params%sublist('projection-solver')
     allocate(this%solver)
     if (inviscid) then
-      call this%solver%init(this%model, projection_params=projection_params)
+      call this%solver%init(env, this%model, projection_params=projection_params)
     else
       if (.not.solver_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -160,7 +162,7 @@ contains
         return
       end if
       momentum_params => solver_params%sublist('momentum-solver')
-      call this%solver%init(this%model, momentum_params, projection_params)
+      call this%solver%init(env, this%model, momentum_params, projection_params)
     end if
 
     if (.not.params%is_sublist('sim-control')) then
@@ -211,7 +213,8 @@ contains
       return
     end if
 
-    call this%output%open(env, this%mesh, stat, errmsg)
+    call this%solver%init_temporal_output(this%temporal_output)
+    call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'opening VTKHDF output: ' // errmsg
       return
@@ -227,12 +230,10 @@ contains
 
     integer :: n
     real(r8) :: time, hnext, t_write
-    real(r8), pointer :: pressure(:), velocity(:,:)
 
     stat = 0
     time = this%t_init
-    call this%solver%get_cell_flow_soln(pressure, velocity)
-    call this%output%write_solution(time, pressure, velocity)
+    call this%write_solution(time)
     t_write = time
     hnext = this%dt_init
     this%tlast = time
@@ -240,7 +241,7 @@ contains
     do n = 1, size(this%tout)
       call integrate(this, this%tout(n), hnext, time, stat, errmsg)
       if (stat < 0 .and. time == t_write) exit
-      call this%output%write_solution(time, pressure, velocity)
+      call this%write_solution(time)
       t_write = time
       if (stat /= 0) exit
     end do
@@ -249,6 +250,18 @@ contains
       deallocate(errmsg)
     end if
     call this%output%close()
+  end subroutine
+
+
+  subroutine write_solution(this, time)
+    class(flow_2d_sim), intent(inout) :: this
+    real(r8), intent(in) :: time
+
+    real(r8), pointer :: pressure(:), velocity(:,:)
+
+    call this%solver%get_cell_flow_soln(pressure, velocity)
+    call this%solver%set_temporal_output(this%temporal_output)
+    call this%output%write_solution(time, pressure, velocity, this%temporal_output)
   end subroutine
 
 
