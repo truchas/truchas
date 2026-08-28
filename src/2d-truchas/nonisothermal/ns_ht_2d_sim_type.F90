@@ -162,11 +162,6 @@ contains
     allocate(fluid_material_ids(material_layout%num_real_fluid()))
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
     if (size(fluid_material_ids) > 1) then
-      if (.not.inviscid) then
-        stat = 1
-        errmsg = 'current multi-fluid flow requires inviscid=true'
-        return
-      end if
       if (any(body_acceleration /= 0.0_r8)) then
         stat = 1
         errmsg = 'current multi-fluid flow does not support body acceleration'

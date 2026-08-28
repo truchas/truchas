@@ -46,6 +46,7 @@ module ht_2d_solver_type
     procedure :: integrate
     procedure :: step
     procedure :: commit_step
+    procedure :: reject_step
     procedure :: last_time
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
@@ -264,6 +265,18 @@ contains
     class(ht_2d_solver), intent(inout) :: this
     if (this%step_is_pending) then
       call this%integ%commit_state(this%t, this%u)
+      this%step_is_pending = .false.
+    end if
+  end subroutine
+
+  !! Reject the tentative solution produced by a successful STEP, restoring
+  !! the last committed solution and time.
+  subroutine reject_step(this)
+    class(ht_2d_solver), intent(inout) :: this
+
+    if (this%step_is_pending) then
+      call this%integ%get_last_state_copy(this%u)
+      this%t = this%integ%last_time()
       this%step_is_pending = .false.
     end if
   end subroutine
