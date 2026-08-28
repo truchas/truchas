@@ -14,6 +14,7 @@ target_sources(truchas PRIVATE
   vector_func_map_type.F90
   vector_func_factories.F90
   const_vector_func_type.F90
+  mpoly_vector_func_type.F90
   tabular_vector_func_type.F90
   fptr_vector_func_type.F90
   complex_scalar_func_class.F90

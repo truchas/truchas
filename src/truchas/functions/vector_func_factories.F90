@@ -47,6 +47,7 @@ module vector_func_factories
   !! These subroutines allocate an allocatable CLASS(VECTOR_FUNC) argument
   public :: alloc_const_vector_func
   public :: alloc_tabular_vector_func
+  public :: alloc_mpoly_vector_func
   public :: alloc_fptr_vector_func
   public :: alloc_div_radial_cyl_flow_func
 #ifdef ENABLE_DYNAMIC_LOADING
@@ -76,6 +77,14 @@ contains
     integer, intent(in), optional :: arg
     allocate(f, source=tabular_vector_func(x,y,arg))
   end subroutine alloc_tabular_vector_func
+
+  subroutine alloc_mpoly_vector_func (f, c, e, x0)
+    use mpoly_vector_func_type
+    class(vector_func), allocatable, intent(out) :: f
+    real(r8), intent(in) :: c(:,:), x0(:)
+    integer, intent(in) :: e(:,:)
+    allocate(f, source=mpoly_vector_func(c,e,x0))
+  end subroutine alloc_mpoly_vector_func
 
   subroutine alloc_fptr_vector_func (f, dim, fptr, p)
     use fptr_vector_func_type
@@ -139,6 +148,8 @@ contains
     type(parameter_list) :: params
 
     real(r8), allocatable :: v0(:), x(:), y(:,:), axis(:), p(:)
+    real(r8), allocatable :: coef(:,:), x0(:), x0_def(:)
+    integer, allocatable :: expon(:,:)
     character(:), allocatable :: ftype, library_path, library_symbol
     integer :: arg, dim
 
@@ -153,6 +164,14 @@ contains
       INSIST(size(x) == size(y,dim=2))  !TODO: need proper error handling
       call params%get('tabular-arg', arg, default=1)
       call alloc_tabular_vector_func (f, x, y, arg)
+    case ('polynomial')
+      call params%get('poly-coef', coef)
+      call params%get('poly-powers', expon)
+      allocate(x0_def(size(expon,dim=1)), source=0.0_r8)
+      call params%get('poly-center', x0, default=x0_def)
+      ASSERT(size(coef,dim=2) == size(expon,dim=2))
+      ASSERT(size(coef,dim=1) > 0)
+      call alloc_mpoly_vector_func(f, coef, expon, x0)
     case ('div-radial-cyl-flow')
       call params%get ('axis', axis)
       INSIST(size(axis) == 3) !TODO: need proper error handling
