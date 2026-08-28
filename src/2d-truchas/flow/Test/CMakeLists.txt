@@ -254,6 +254,18 @@ set_tests_properties(ns_2d_couette PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
+add_test(NAME ns_2d_couette_rotated
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_couette.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/couette_rotated.json
+          ${MPIEXEC}
+          30.0)
+set_tests_properties(ns_2d_couette_rotated PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
 add_test(NAME stokes_2d_integrated_body_acceleration
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_gravity.py
