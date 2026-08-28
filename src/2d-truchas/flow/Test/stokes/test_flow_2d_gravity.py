@@ -9,7 +9,7 @@ import tempfile
 
 import numpy as np
 
-source_root = pathlib.Path(__file__).resolve().parents[4]
+source_root = pathlib.Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(source_root / "src/python/truchas"))
 from TruchasVTKHDFData import TruchasVTKHDFData
 
