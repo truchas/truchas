@@ -10,12 +10,15 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
+#include "f90_assert.fpp"
+
 module flow_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
   use parameter_list_type
   use simulation_environment_type
   use unstr_2d_mesh_type
+  use material_model_type
   use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, &
       vtkhdf_field_data_handle, UG_FIXED_MESH
   implicit none
@@ -34,6 +37,7 @@ module flow_2d_vtkhdf_writer_type
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle) :: pressure, velocity
+    type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
     type(temporal_field), allocatable :: temporal_fields(:)
     logical :: is_open = .false.
   contains
@@ -44,7 +48,7 @@ module flow_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, env, mesh, temporal_output, stat, errmsg)
+  subroutine open(this, env, mesh, temporal_output, stat, errmsg, matl_model)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(flow_2d_vtkhdf_writer), intent(out) :: this
@@ -53,12 +57,14 @@ contains
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    type(material_model), intent(in), optional :: matl_model
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
-    integer :: c, nnode
+    integer :: c, m, nnode
     integer(int8), allocatable :: types(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: vector_mold(3), scalar_mold
+    character(:), allocatable :: name
 
     call this%file%create(trim(env%output_dir)//'/out.vtkhdf', &
         env%comm%mpi_val, stat, errmsg, mode=UG_FIXED_MESH)
@@ -101,6 +107,15 @@ contains
 
     this%pressure = this%file%register_temporal_cell_data('pressure', scalar_mold)
     this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
+    if (present(matl_model)) then
+      if (matl_model%nmatl > 1) then
+        allocate(this%vfrac(matl_model%nmatl))
+        do m = 1, size(this%vfrac)
+          name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
+          this%vfrac(m) = this%file%register_temporal_cell_data(name, scalar_mold)
+        end do
+      end if
+    end if
     call register_temporal_fields(this, temporal_output, stat, errmsg)
     if (stat /= 0) then
       call this%file%close()
@@ -110,12 +125,30 @@ contains
   end subroutine
 
 
-  subroutine write_solution(this, time, pressure, velocity, temporal_output)
+  pure function normalize_material_name(name) result(normalized)
+    character(*), intent(in) :: name
+    character(:), allocatable :: normalized
+    integer :: i
+
+    allocate(character(len(name)) :: normalized)
+    normalized = name
+    do i = 1, len(name)
+      select case (normalized(i:i))
+      case ('+', '-', '*', '^', '%')
+        normalized(i:i) = '_'
+      end select
+    end do
+  end function
+
+
+  subroutine write_solution(this, time, pressure, velocity, temporal_output, vfrac)
     class(flow_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:)
     type(parameter_list), intent(inout) :: temporal_output
+    real(r8), intent(in), optional :: vfrac(:,:)
 
-    real(r8), allocatable :: p(:), v(:,:)
+    real(r8), allocatable :: p(:), v(:,:), vf(:)
+    integer :: m
 
     allocate(p(this%mesh%ncell), v(3,this%mesh%ncell))
     p = pressure(:this%mesh%ncell)
@@ -124,6 +157,15 @@ contains
     call this%file%start_time_step(time)
     call this%file%write_cell_data(this%pressure, p)
     call this%file%write_cell_data(this%velocity, v)
+    if (allocated(this%vfrac)) then
+      ASSERT(present(vfrac))
+      allocate(vf(this%mesh%ncell))
+      do m = 1, size(this%vfrac)
+        vf(:this%mesh%ncell_onP) = vfrac(m,:this%mesh%ncell_onP)
+        call this%mesh%cell_imap%gather_offp(vf)
+        call this%file%write_cell_data(this%vfrac(m), vf)
+      end do
+    end if
     call write_temporal_fields(this, temporal_output)
     call this%file%finalize_time_step()
     call this%file%flush()

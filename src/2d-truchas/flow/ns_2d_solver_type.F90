@@ -20,6 +20,7 @@ module ns_2d_solver_type
   use parameter_list_type
   use parallel_communication, only: global_minval
   use flow_2d_model_type
+  use flow_2d_material_layout_type
   use flow_2d_state_type
   use flow_2d_material_transport_type
   use flow_2d_momentum_solver_type
@@ -52,6 +53,7 @@ module ns_2d_solver_type
     procedure :: init_time_stepper
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
+    procedure :: get_volume_fractions
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -71,20 +73,47 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, momentum_params, projection_params)
+  subroutine init(this, env, model, momentum_params, projection_params, material_layout, tracking_params)
     class(ns_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
+    type(flow_2d_material_layout), intent(in), optional :: material_layout
+    type(parameter_list), target, intent(inout), optional :: tracking_params
+
+    integer :: nrealfluid, nfluid, nmat
+    integer, allocatable :: priority(:)
+    character(:), allocatable :: algorithm
 
     this%model => model
     call this%state%init(model%mesh)
     call this%pending_state%init(model%mesh)
+    if (present(material_layout)) then
+      nrealfluid = material_layout%num_real_fluid()
+      nfluid = material_layout%num_fluid()
+      nmat = material_layout%num_material()
+      allocate(priority(nmat))
+      call material_layout%get_priority(priority)
+    else
+      nrealfluid = 1
+      nfluid = 1
+      nmat = 1
+    end if
+    if (present(tracking_params)) then
+      call tracking_params%get('algorithm', algorithm, default='simple')
+    else
+      algorithm = 'simple'
+    end if
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), &
-        this%vfrac(1,model%mesh%ncell), this%projection_solver, this%ic_solver)
-    this%vfrac = 1.0_r8
-    call this%material_transport%init(env, model%mesh, 1, 1, 1)
+        this%vfrac(nmat,model%mesh%ncell), this%projection_solver, this%ic_solver)
+    this%vfrac = 0.0_r8
+    this%vfrac(1,:) = 1.0_r8
+    if (present(material_layout)) then
+      call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority)
+    else
+      call this%material_transport%init(env, model%mesh, 1, 1, 1)
+    end if
     if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
     call this%projection_solver%init(model%projection, projection_params)
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
@@ -143,6 +172,17 @@ contains
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%model%set_initial_material_state(vfrac, temperature)
+    ASSERT(size(vfrac,1) == size(this%vfrac,1))
+    ASSERT(size(vfrac,2) == size(this%vfrac,2))
+    this%vfrac = vfrac
+  end subroutine
+
+
+  subroutine get_volume_fractions(this, vfrac)
+    class(ns_2d_solver), target, intent(in) :: this
+    real(r8), pointer, intent(out) :: vfrac(:,:)
+
+    vfrac => this%vfrac
   end subroutine
 
 

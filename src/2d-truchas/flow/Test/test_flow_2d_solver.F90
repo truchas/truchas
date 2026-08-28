@@ -64,7 +64,7 @@ contains
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, momentum_params, projection_params)
+    call solver%init(env, model, momentum_params, projection_params)
 
     call solver%get_cell_flow_soln(pressure, velocity_state)
     velocity_state = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
@@ -103,7 +103,7 @@ contains
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, momentum_params, projection_params)
+    call solver%init(env, model, momentum_params, projection_params)
     call solver%step(0.0_r8, 1.0_r8, stat, errmsg)
     call require(stat /= 0, 'incompatible prescribed flux was not rejected')
   end subroutine
@@ -145,7 +145,7 @@ contains
     call projection_params%set('rel-tol', 1.0e-10_r8)
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
-    call solver%init(model, momentum_params, projection_params)
+    call solver%init(env, model, momentum_params, projection_params)
 
     time = 0.0_r8
     do n = 1, 50

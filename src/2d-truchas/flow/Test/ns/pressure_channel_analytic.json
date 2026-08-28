@@ -1,12 +1,13 @@
 {
+    "materials": {
+        "fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 1.0}}
+    },
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "rotation-angle": 30.0
     },
     "flow-model": {
-        "density": 1.0,
-        "viscosity": 1.0,
         "bc": {
             "inlet": {"type": "pressure", "face-set-ids": [1], "pressure": 1.0},
             "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
@@ -14,6 +15,7 @@
         }
     },
     "flow-solver": {
+        "volume-tracking": {"algorithm": "simple"},
         "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
         "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
     },

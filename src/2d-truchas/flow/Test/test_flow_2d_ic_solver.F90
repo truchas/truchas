@@ -60,7 +60,7 @@ contains
     if (stat /= 0) return
     call set_solver_params(momentum_params)
     call set_solver_params(projection_params)
-    call solver%init(model, momentum_params, projection_params)
+    call solver%init(env, model, momentum_params, projection_params)
     allocate(velocity(2,mesh%ncell), flux(mesh%ncell_onP))
     velocity = spread([1.0_r8, 0.0_r8], dim=2, ncopies=mesh%ncell)
     call solver%set_initial_state(0.0_r8, 1.0_r8, velocity, stat)
@@ -96,7 +96,7 @@ contains
     if (stat /= 0) return
     call set_solver_params(momentum_params)
     call set_solver_params(projection_params)
-    call solver%init(model, momentum_params, projection_params)
+    call solver%init(env, model, momentum_params, projection_params)
     allocate(velocity(2,mesh%ncell), flux(mesh%ncell_onP))
     velocity = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
     call solver%set_initial_state(0.0_r8, 1.0_r8, velocity, stat)
