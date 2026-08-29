@@ -231,7 +231,7 @@ contains
     call env%simlog%info(string(1))
 
     do n = 1, size(this%tout)
-      call this%solver%integrate(this%tout(n), stat, errmsg)
+      call this%solver%integrate(env, this%tout(n), stat, errmsg)
       time = this%solver%last_time()
       if (stat < 0 .and. time == time_written) exit
       call this%write_solution(env, time)

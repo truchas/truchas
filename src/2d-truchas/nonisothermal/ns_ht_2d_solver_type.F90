@@ -46,6 +46,7 @@ module ns_ht_2d_solver_type
     integer(int64) :: nstep = 0_int64
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number, hnext, hlast
     integer :: max_try
+    character(8) :: hnext_cause = 'init'
     type(time_step_sync) :: ts_sync
   contains
     procedure :: init
@@ -76,6 +77,7 @@ contains
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer :: lookahead
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params, tracking_params
     character(:), allocatable :: tracking_algorithm
     integer, allocatable :: flow_material_ids(:), priority(:)
@@ -126,14 +128,16 @@ contains
     if (stat /= 0) return
     call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
+    call params%get('time-step-lookahead', lookahead, default=3, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
     call params%get('max-try-at-step', this%max_try, default=10, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
 
     if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
         this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. this%courant_number <= 0.0_r8 .or. &
-        this%courant_number > 1.0_r8) then
+        this%courant_number > 1.0_r8 .or. lookahead < 1) then
       stat = 1
-      errmsg = 'invalid coupled time-step controls'
+      errmsg = 'invalid coupled time-step controls, including time-step-lookahead >= 1'
       return
     end if
     if (this%max_try <= 0) then
@@ -150,7 +154,7 @@ contains
 
     this%ncell_onP = flow_model%mesh%ncell_onP
     this%matl_comp => matl_comp
-    this%ts_sync = time_step_sync(4)
+    this%ts_sync = time_step_sync(lookahead)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
         this%flow_vfrac(this%material_layout%num_material(),flow_model%mesh%ncell))
     call this%material_layout%get_reduced_volume_fractions(matl_comp, this%flow_vfrac)
@@ -214,33 +218,38 @@ contains
     this%nstep = 0_int64
     this%hnext = this%dt_init
     this%hlast = this%dt_init
+    this%hnext_cause = 'init'
   end subroutine
 
 
   !! Integrate the coupled state from its current time to TOUT. This owns
   !! output-time synchronization, thermal retry, time-step growth, and the
   !! convective Courant restriction.
-  subroutine integrate(this, tout, stat, errmsg)
+  subroutine integrate(this, env, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
     class(ns_ht_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8) :: t_n, t_np1, t, thermal_hnext
+    real(r8) :: t_n, t_np1, t, thermal_hnext, hproposed
     logical :: sig_rcvd
+    character(8) :: cause
 
     stat = 0
     t_n = this%thermal%last_time()
     ASSERT(tout >= t_n)
     do while (t_n < tout)
+      hproposed = this%hnext
+      cause = this%hnext_cause
       t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
-      call attempt_step(this, t_n, t_np1, t, thermal_hnext, stat, errmsg)
+      if (t_np1 < t_n + hproposed) cause = 'output'
+      call attempt_step(this, env, t_n, t_np1, cause, t, thermal_hnext, stat, errmsg)
       if (stat /= 0) return
       this%hlast = t - t_n
-      this%hnext = min(thermal_hnext, this%dt_grow*this%hlast, this%dt_max, &
-          this%flow%courant_time_step(this%courant_number))
+      call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
       t_n = t
       call read_signal(SIGURG, sig_rcvd)
       if (sig_rcvd) then
@@ -255,10 +264,12 @@ contains
   !! Attempt a coupled step from T_N toward T_NP1. T is the accepted endpoint:
   !! it normally equals T_NP1, but is smaller after thermal recovery. A flow
   !! failure is non-recoverable.
-  subroutine attempt_step(this, t_n, t_np1, t, hnext, stat, errmsg)
+  subroutine attempt_step(this, env, t_n, t_np1, step_cause, t, hnext, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t_n, t_np1
+    character(*), intent(in) :: step_cause
     real(r8), intent(out) :: t, hnext
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -266,24 +277,37 @@ contains
     integer :: n
     real(r8) :: t_try
     real(r8), pointer :: face_velocity(:), vfrac_trial(:,:)
+    character(256) :: line
+    character(8) :: attempt_cause
 
     ASSERT(t_np1 > t_n)
     ASSERT(this%thermal%last_time() == t_n)
     t = t_n
     t_try = t_np1
     do n = 1, this%max_try
+      attempt_cause = step_cause
+      if (n > 1) attempt_cause = 'thermal'
+      write(line,'(a,i0,a,i0,a,es12.5,a,es12.5,a,a)') 'step=', this%nstep + 1_int64, &
+          ' attempt=', n, ' t0=', t_n, ' dt=', t_try - t_n, ' cause=', trim(attempt_cause)
+      call env%simlog%info(trim(line))
+      if (associated(env%timer)) call env%timer%start('flow/material-transport')
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
       call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+      if (associated(env%timer)) call env%timer%stop('flow/material-transport')
       call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_comp)
       call this%thermal%get_cell_temp_soln(this%temp)
+      if (associated(env%timer)) call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
+      if (associated(env%timer)) call env%timer%stop('thermal/advection')
       !! TODO: A future adaptive BDF1 thermal error estimate should measure
       !! the conduction update relative to this advected enthalpy state, so
       !! material-front motion does not masquerade as thermal truncation error.
       call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
+      if (associated(env%timer)) call env%timer%start('thermal/transport')
       call this%thermal%step(t_try, hnext, stat)
+      if (associated(env%timer)) call env%timer%stop('thermal/transport')
       if (stat /= 0) then
         call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
         call this%flow%set_volume_fractions(this%flow_vfrac)
@@ -291,14 +315,16 @@ contains
         if (t_try - t_n < this%dt_min) then
           stat = -1
           errmsg = 'next coupled time step is too small'
+          call env%simlog%info('step-end status=failed')
           return
         end if
+        call env%simlog%info('step-end status=rejected')
         cycle
       end if
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%flow%set_volume_fractions(vfrac_trial)
       call this%flow%set_buoyancy_temperature(this%temp)
-      call this%flow%advance_momentum(t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
+      call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
       if (stat /= 0) then
         call this%flow%reject_step()
         call this%thermal%reject_step()
@@ -308,6 +334,7 @@ contains
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3
         if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
+        call env%simlog%info('step-end status=failed')
         return
       end if
       call this%flow%commit_step()
@@ -315,6 +342,7 @@ contains
       this%flow_vfrac = vfrac_trial
       this%nstep = this%nstep + 1_int64
       t = t_try
+      call env%simlog%info('step-end status=accepted')
       if (stat == 0) exit
     end do
 
@@ -322,6 +350,33 @@ contains
 
     stat = -2
     errmsg = 'unable to take a coupled time step'
+  end subroutine
+
+
+  subroutine select_step_cause(this, thermal_hnext, hnext, cause)
+    class(ns_ht_2d_solver), intent(in) :: this
+    real(r8), intent(in) :: thermal_hnext
+    real(r8), intent(out) :: hnext
+    character(*), intent(out) :: cause
+
+    real(r8) :: hlimit
+
+    hnext = thermal_hnext
+    cause = 'thermal'
+    hlimit = this%dt_grow*this%hlast
+    if (hlimit < hnext) then
+      hnext = hlimit
+      cause = 'growth'
+    end if
+    if (this%dt_max < hnext) then
+      hnext = this%dt_max
+      cause = 'max'
+    end if
+    hlimit = this%flow%courant_time_step(this%courant_number)
+    if (hlimit < hnext) then
+      hnext = hlimit
+      cause = 'cfl'
+    end if
   end subroutine
 
 

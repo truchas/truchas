@@ -118,19 +118,21 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, bc, state, stat, initial)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, bc, state, stat, initial, solved)
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     type(flow_2d_bc), intent(in) :: bc
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
     logical, optional, intent(in) :: initial
+    logical, optional, intent(out) :: solved
 
     integer :: c, f, pin_face
     logical :: initial_
 
     ASSERT(dt > 0.0_r8)
     stat = 0
+    if (present(solved)) solved = .false.
     initial_ = .false.
     if (present(initial)) initial_ = initial
     ASSERT(size(inv_density_c) >= this%mesh%ncell)
@@ -163,6 +165,7 @@ contains
     this%rhs = this%rhs - this%flux/dt
     this%delta_p = 0.0_r8
     if (global_maxval(abs(this%rhs)) > 0.0_r8) then
+      if (present(solved)) solved = .true.
       call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
       if (stat /= 0) return
     end if

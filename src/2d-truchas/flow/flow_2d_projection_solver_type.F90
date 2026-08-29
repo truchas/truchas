@@ -30,6 +30,7 @@ module flow_2d_projection_solver_type
     procedure :: init
     procedure :: setup
     procedure :: solve
+    procedure :: get_metrics
     procedure :: metrics_string
   end type
 
@@ -63,6 +64,15 @@ contains
     integer, intent(out) :: stat
 
     call this%solver%solve(rhs, pressure, stat)
+  end subroutine
+
+
+  subroutine get_metrics(this, num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
+    class(flow_2d_projection_solver), intent(in) :: this
+    integer, intent(out), optional :: num_itr, num_dscg_itr, num_pcg_itr
+    real(r8), intent(out), optional :: rel_res_norm
+
+    call this%solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
   end subroutine
 
 

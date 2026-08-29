@@ -165,7 +165,7 @@ contains
         hnext = min(thermal_hnext, hlast, 1.0e-3_r8)
         t = t_np1
       end do
-      call solver%integrate(real(n,r8)*1.0e-3_r8, stat, errmsg)
+      call solver%integrate(env, real(n,r8)*1.0e-3_r8, stat, errmsg)
       call require(stat == 0, 'zero-velocity coupled integration failed')
       if (stat /= 0) return
       call require_zero_face_velocity(solver, mesh%nface, 'zero velocity did not remain zero')

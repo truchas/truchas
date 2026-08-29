@@ -74,7 +74,7 @@ contains
     pressure_save = pressure
     velocity_save = velocity_state
     face_velocity_save = velocity_face
-    call solver%advance_momentum(0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
+    call solver%advance_momentum(env, 0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes momentum update did not converge')
     if (stat /= 0) return
     call solver%get_cell_flow_soln(pressure, velocity_state)
@@ -91,7 +91,7 @@ contains
         'cell velocity was not restored by reject_step')
     call require(maxval(abs(velocity_face - face_velocity_save)) == 0.0_r8, &
         'face velocity was not restored by reject_step')
-    call solver%advance_momentum(0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
+    call solver%advance_momentum(env, 0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes second momentum update did not converge')
     if (stat /= 0) return
     call solver%get_cell_flow_soln(pressure, velocity_state)
@@ -108,7 +108,7 @@ contains
         'cell velocity changed when committing the pending state')
     call require(maxval(abs(velocity_face - face_velocity_trial)) == 0.0_r8, &
         'face velocity changed when committing the pending state')
-    call solver%step(0.0_r8, 0.01_r8, stat, errmsg)
+    call solver%step(env, 0.0_r8, 0.01_r8, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes solver step did not converge')
     if (stat /= 0) return
     call solver%get_cell_flow_soln(pressure, velocity_state)

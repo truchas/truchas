@@ -260,8 +260,9 @@ contains
   end subroutine
 
 
-  subroutine run(this, stat, errmsg)
+  subroutine run(this, env, stat, errmsg)
     class(ns_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -269,14 +270,19 @@ contains
     real(r8) :: time, t_write
 
     stat = 0
+    if (associated(env%timer)) call env%timer%start('integration')
     time = this%solver%last_time()
+    if (associated(env%timer)) call env%timer%start('output')
     call this%write_solution(time)
+    if (associated(env%timer)) call env%timer%stop('output')
     t_write = time
     do n = 1, size(this%tout)
-      call this%solver%integrate(this%tout(n), stat, errmsg)
+      call this%solver%integrate(env, this%tout(n), stat, errmsg)
       time = this%solver%last_time()
       if (stat < 0 .and. time == t_write) exit
+      if (associated(env%timer)) call env%timer%start('output')
       call this%write_solution(time)
+      if (associated(env%timer)) call env%timer%stop('output')
       t_write = time
       if (stat /= 0) exit
     end do
@@ -285,6 +291,7 @@ contains
       deallocate(errmsg)
     end if
     call this%output%close()
+    if (associated(env%timer)) call env%timer%stop('integration')
   end subroutine
 
 
