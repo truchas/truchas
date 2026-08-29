@@ -161,13 +161,6 @@ contains
     if (stat /= 0) return
     allocate(fluid_material_ids(material_layout%num_real_fluid()))
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-    if (size(fluid_material_ids) > 1) then
-      if (any(body_acceleration /= 0.0_r8)) then
-        stat = 1
-        errmsg = 'current multi-fluid flow does not support body acceleration'
-        return
-      end if
-    end if
     allocate(this%flow_model)
     call this%flow_model%init_material(env, this%mesh, flow_bc, this%matl_model, fluid_material_ids, stat, errmsg, &
         body_acceleration=body_acceleration, inviscid=inviscid)

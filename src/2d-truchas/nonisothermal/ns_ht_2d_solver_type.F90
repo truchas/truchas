@@ -25,7 +25,7 @@ module ns_ht_2d_solver_type
   use flow_2d_model_type
   use flow_2d_material_layout_type
   use flow_2d_material_transport_type
-  use ns_2d_solver_type
+  use flow_2d_solver_type
   use ht_2d_model_type
   use ht_2d_solver_type
   use ns_ht_2d_enthalpy_advector_type
@@ -37,7 +37,7 @@ module ns_ht_2d_solver_type
     private
     type(material_composition), pointer :: matl_comp => null() ! unowned reference
     type(flow_2d_material_layout) :: material_layout
-    type(ns_2d_solver) :: flow
+    type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
@@ -211,9 +211,9 @@ contains
       errmsg = 'initializing flow state failed'
       return
     end if
+    this%nstep = 0_int64
     this%hnext = this%dt_init
     this%hlast = this%dt_init
-    this%nstep = 0_int64
   end subroutine
 
 
@@ -298,7 +298,7 @@ contains
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%flow%set_volume_fractions(vfrac_trial)
       call this%flow%set_buoyancy_temperature(this%temp)
-      call this%flow%advance_momentum(t_n, t_try, this%material_transport%flux_volumes, stat, errmsg)
+      call this%flow%advance_momentum(t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
       if (stat /= 0) then
         call this%flow%reject_step()
         call this%thermal%reject_step()
