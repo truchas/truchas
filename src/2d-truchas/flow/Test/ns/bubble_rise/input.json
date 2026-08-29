@@ -1,0 +1,59 @@
+// Two-dimensional rising-bubble experiment in a 1 x 2 column.  The light
+// fluid disk starts at rest in the lower part of a heavy-fluid column and
+// rises under downward body acceleration.  This is an exploratory,
+// nonanalytic regression for multifluid transport, buoyancy, and interface
+// deformation.
+{
+    "materials": {
+        "heavy-liquid": {
+            "properties": {
+                "fluid": true,
+                "density": 2.0,
+                "viscosity": 0.05
+            }
+        },
+        "light-liquid": {
+            "properties": {
+                "fluid": true,
+                "density": 1.0,
+                "viscosity": 0.05
+            }
+        }
+    },
+    "material-regions": {
+        "light-bubble": {
+            "material": "light-liquid",
+            "type": "disk",
+            "center": [0.5, 0.5],
+            "radius": 0.2
+        },
+        "heavy-background": {"material": "heavy-liquid", "type": "background"}
+    },
+    "material-region-refinement-level": 8,
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [49]},
+        "y-axis": {"coarse-grid": [0.0, 2.0], "intervals": [98]}
+    },
+    "flow-model": {
+        "body-acceleration": [0.0, -1.0],
+        "bc": {
+            "walls": {"type": "free-slip", "face-set-ids": [1, 2, 4]},
+            "outlet": {"type": "pressure", "face-set-ids": [3], "pressure": 0.0}
+        }
+    },
+    "flow-solver": {
+        "volume-tracking": {"algorithm": "geometric"},
+        "momentum-solver": {"rel-tol": 1.0e-8, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-8, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0e-3,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 1.0e-1,
+        "time-step-growth": 1.2,
+        "courant-number": 0.25,
+        "output-times": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    },
+    "initial-velocity": [0.0, 0.0]
+}

@@ -110,6 +110,7 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer :: lookahead
 
     call params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return
@@ -121,15 +122,17 @@ contains
     if (stat /= 0) return
     call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
+    call params%get('time-step-lookahead', lookahead, default=3, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
     if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
         this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. &
-        this%courant_number <= 0.0_r8 .or. this%courant_number > 1.0_r8) then
+        this%courant_number <= 0.0_r8 .or. this%courant_number > 1.0_r8 .or. lookahead < 1) then
       stat = 1
       errmsg = 'require 0 < min-time-step <= initial-time-step <= max-time-step, ' // &
-          'time-step-growth >= 1, and courant-number in (0,1]'
+          'time-step-growth >= 1, courant-number in (0,1], and time-step-lookahead >= 1'
       return
     end if
-    this%ts_sync = time_step_sync(4)
+    this%ts_sync = time_step_sync(lookahead)
     this%time_stepper_initialized = .true.
     stat = 0
     errmsg = ''
@@ -221,54 +224,72 @@ contains
   !! endpoint times so callers retain exact target times. This is the
   !! isothermal wrapper: it first obtains material transport from the old face
   !! velocity and then advances momentum and pressure.
-  subroutine step(this, t_n, t_np1, stat, errmsg)
+  subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
     class(ns_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
+    character(*), optional, intent(in) :: step_cause
 
     real(r8), pointer :: vfrac_trial(:,:), face_velocity(:)
+    character(256) :: line
+    character(8) :: cause
 
+    cause = 'explicit'
+    if (present(step_cause)) cause = step_cause
+    write(line,'(a,i0,a,es12.5,a,es12.5,a,a)') 'step=', this%nstep + 1_int64, &
+        ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
+    call env%simlog%info(trim(line))
+    if (associated(env%timer)) call env%timer%start('flow/material-transport')
     call this%flow%get_face_velocity(face_velocity)
     call this%material_transport%advance(t_n, t_np1, face_velocity, this%vfrac)
     call this%material_transport%get_trial_volume_fractions(vfrac_trial)
+    if (associated(env%timer)) call env%timer%stop('flow/material-transport')
     call this%flow%set_volume_fractions(vfrac_trial)
-    call this%flow%advance_momentum(t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
+    call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
     if (stat /= 0) then
       call this%flow%reject_step()
       call this%flow%set_volume_fractions(this%vfrac)
+      call env%simlog%info('step-end status=failed')
       return
     end if
     this%vfrac = vfrac_trial
     call this%commit_step()
+    call env%simlog%info('step-end status=accepted')
   end subroutine
 
 
   !! Integrate the flow state from its current time to TOUT.  The endpoint
   !! time is primary; each step derives its size from the two endpoint times.
-  subroutine integrate(this, tout, stat, errmsg)
+  subroutine integrate(this, env, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
     class(ns_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8) :: t_n, t_np1
+    real(r8) :: t_n, t_np1, hproposed
     logical :: sig_rcvd
+    character(8) :: cause
 
     stat = 0
     ASSERT(this%time_stepper_initialized)
     t_n = this%tlast
     ASSERT(tout >= t_n)
     do while (t_n < tout)
+      hproposed = this%hnext
+      call select_step_cause(this, cause)
       t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
+      if (t_np1 < t_n + hproposed) cause = 'output'
       if (t_np1 - t_n < this%dt_min) then
         stat = -1
         errmsg = 'next time step is too small'
         return
       end if
-      call this%step(t_n, t_np1, stat, errmsg)
+      call this%step(env, t_n, t_np1, stat, errmsg, step_cause=cause)
       if (stat /= 0) then
         if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
         return
@@ -285,6 +306,33 @@ contains
         return
       end if
     end do
+  end subroutine
+
+
+  subroutine select_step_cause(this, cause)
+    class(ns_2d_solver), intent(in) :: this
+    character(*), intent(out) :: cause
+
+    real(r8) :: h, hlimit
+
+    if (this%nstep == 0_int64) then
+      h = this%dt_init
+      cause = 'init'
+      hlimit = this%courant_time_step(this%courant_number)
+      if (hlimit < h) then
+        h = hlimit
+        cause = 'cfl'
+      end if
+    else
+      h = this%dt_grow*this%hlast
+      cause = 'growth'
+      if (this%dt_max < h) then
+        h = this%dt_max
+        cause = 'max'
+      end if
+      hlimit = this%courant_time_step(this%courant_number)
+      if (hlimit < h) cause = 'cfl'
+    end if
   end subroutine
 
 
@@ -309,14 +357,15 @@ contains
   !! flux volumes already constructed for the pending step. This separate
   !! operation lets a coupled solver advect material and thermal enthalpy
   !! before it updates the flow state.
-  subroutine advance_momentum(this, t_n, t_np1, flux_volumes, stat, errmsg)
+  subroutine advance_momentum(this, env, t_n, t_np1, flux_volumes, stat, errmsg)
     class(ns_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: flux_volumes(:,:)
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
 
-    call this%flow%advance_momentum(t_n, t_np1, stat, errmsg, flux_volumes)
+    call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, flux_volumes)
   end subroutine
 
   !! Commit the pending flow state and its current material properties.

@@ -80,8 +80,10 @@ program ns_2d_main
     call MPI_Finalize
     error stop 1
   end if
+  call env%timer%start('simulation')
   call sim%init(env, params, stat, errmsg)
-  if (stat == 0) call sim%run(stat, errmsg)
+  if (stat == 0) call sim%run(env, stat, errmsg)
+  call env%timer%stop('simulation')
   if (stat /= 0) then
     call env%simlog%error('flow simulation error: ' // errmsg)
     call env%simlog%close
@@ -89,6 +91,10 @@ program ns_2d_main
     call MPI_Finalize
     error stop 1
   end if
+  call env%simlog%info('')
+  call env%simlog%info('Timing Summary:')
+  call env%simlog%info('')
+  if (env%rank == 0) call env%timer%write(env%simlog%unit(), indent=3)
   call env%simlog%close
   deallocate(env%timer)
   call MPI_Finalize

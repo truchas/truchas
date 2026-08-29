@@ -223,8 +223,9 @@ contains
   end subroutine
 
 
-  subroutine run(this, stat, errmsg)
+  subroutine run(this, env, stat, errmsg)
     class(flow_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -232,16 +233,21 @@ contains
     real(r8) :: time, hnext, t_write
 
     stat = 0
+    if (associated(env%timer)) call env%timer%start('integration')
     time = this%t_init
+    if (associated(env%timer)) call env%timer%start('output')
     call this%write_solution(time)
+    if (associated(env%timer)) call env%timer%stop('output')
     t_write = time
     hnext = this%dt_init
     this%tlast = time
     this%hlast = hnext
     do n = 1, size(this%tout)
-      call integrate(this, this%tout(n), hnext, time, stat, errmsg)
+      call integrate(this, env, this%tout(n), hnext, time, stat, errmsg)
       if (stat < 0 .and. time == t_write) exit
+      if (associated(env%timer)) call env%timer%start('output')
       call this%write_solution(time)
+      if (associated(env%timer)) call env%timer%stop('output')
       t_write = time
       if (stat /= 0) exit
     end do
@@ -250,6 +256,7 @@ contains
       deallocate(errmsg)
     end if
     call this%output%close()
+    if (associated(env%timer)) call env%timer%stop('integration')
   end subroutine
 
 
@@ -265,11 +272,12 @@ contains
   end subroutine
 
 
-  subroutine integrate(this, tout, hnext, time, stat, errmsg)
+  subroutine integrate(this, env, tout, hnext, time, stat, errmsg)
 
     use signal_handler, only: read_signal, SIGURG
 
     class(flow_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: tout
     real(r8), intent(inout) :: hnext
     real(r8), intent(out) :: time
@@ -288,7 +296,7 @@ contains
         time = this%tlast
         return
       end if
-      call this%solver%step(this%tlast, time, stat, errmsg)
+      call this%solver%step(env, this%tlast, time, stat, errmsg)
       if (stat /= 0) then
         if (.not.allocated(errmsg)) errmsg = 'flow solver step failed'
         time = this%tlast

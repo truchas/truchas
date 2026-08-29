@@ -68,7 +68,7 @@ contains
 
     call solver%get_cell_flow_soln(pressure, velocity_state)
     velocity_state = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
-    call solver%step(0.0_r8, 1.0_r8, stat)
+    call solver%step(env, 0.0_r8, 1.0_r8, stat)
     call require(stat == 0, 'flow solver step did not converge')
     allocate(flux(mesh%ncell_onP))
     call solver%get_face_velocity(velocity_face)
@@ -104,7 +104,7 @@ contains
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
     call solver%init(env, model, momentum_params, projection_params)
-    call solver%step(0.0_r8, 1.0_r8, stat, errmsg)
+    call solver%step(env, 0.0_r8, 1.0_r8, stat, errmsg)
     call require(stat /= 0, 'incompatible prescribed flux was not rejected')
   end subroutine
 
@@ -149,7 +149,7 @@ contains
 
     time = 0.0_r8
     do n = 1, 50
-      call solver%step(time, real(n, r8), stat)
+      call solver%step(env, time, real(n, r8), stat)
       call require(stat == 0, 'pressure-driven flow step did not converge')
       if (stat /= 0) return
       time = real(n, r8)
