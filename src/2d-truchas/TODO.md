@@ -1,0 +1,50 @@
+# 2D Truchas TODOs
+
+This is the cross-cutting capability list for the 2D flow and coupled
+flow/thermal models.  More detailed subsystem items remain in
+`volume_tracking/TODO.md` and `nonisothermal/TODO.md`.
+
+## Multimaterial and multiphysics capability
+
+- Extend `ns_ht_2d` beyond single-phase fluid materials.  In particular,
+  support the reduced SOLID and VOID components already anticipated by the
+  flow material layout.
+- Add coupled passive-scalar/species transport.  Flow properties and buoyancy
+  will eventually depend on temperature and concentrations; concentrations
+  are not material identities.
+- Decide whether a full variable-density formulation is needed beyond the
+  current incompressible Boussinesq model.  The current constant density and
+  constant thermal-expansion parameters are appropriate for Boussinesq flow.
+- Add phase-change and other thermal/material coupling needed for parity with
+  the 3D multiphysics capability.
+- Add surface-tension and capillary forces for interface-driven flow.
+
+## Volume tracking and interfaces
+
+- Implement nested-dissection reconstruction for cells containing three or
+  more materials; the current geometric tracker uses onion-skin ordering.
+- Revisit conservation repair and small-volume threshold behavior as the
+  number of mobile and immobile components grows.
+- Complete the flow-level integration of VOID and immobile SOLID fractions,
+  including their effects on transport and property evaluation.
+
+## Spatial discretization and initialization
+
+- Improve the flow operators for triangle and mixed triangle/quad meshes.
+  Quad meshes are currently the supported and tested flow topology.
+- Continue improving accuracy on non-orthogonal meshes and reduce the finite-
+  resolution hydrostatic well-balance residual.
+- Revisit the initial pressure/velocity construction so that hydrostatic and
+  boundary-compatible initial states are treated as accurately as possible.
+
+## Architecture and remaining legacy paths
+
+- Retain one shared flow mechanics implementation for Stokes, isothermal NS,
+  and non-isothermal NS while exposing the separate material-transport,
+  momentum, and projection phases needed by coupled physics.
+- Replace the raw single-fluid property-construction path in
+  `flow_2d_sim` when the standalone flow driver is brought into the
+  material-aware design.
+- Generalize the coupled solver structure as additional physics models are
+  added, rather than introducing separate ad hoc combinations for each pair
+  of models.
