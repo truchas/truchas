@@ -122,6 +122,17 @@ set_tests_properties(ns_ht_2d_multifluid_density PROPERTIES
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
 
+add_test(NAME ns_ht_2d_multifluid_hydrostatic
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/multifluid_channel/test_hydrostatic.py
+          $<TARGET_FILE:ns_ht_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/multifluid_channel/input_hydrostatic.json
+          ${MPIEXEC})
+set_tests_properties(ns_ht_2d_multifluid_hydrostatic PROPERTIES
+  PROCESSORS 4
+  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
+  TIMEOUT 120)
+
 add_test(NAME ns_ht_2d_viscous_multifluid
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/viscous_multifluid/test.py

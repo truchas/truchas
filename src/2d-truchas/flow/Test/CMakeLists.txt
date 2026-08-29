@@ -266,6 +266,17 @@ set_tests_properties(ns_2d_couette_rotated PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
+add_test(NAME ns_2d_multifluid_hydrostatic
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_multifluid_hydrostatic.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/multifluid_hydrostatic.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_multifluid_hydrostatic PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
 add_test(NAME stokes_2d_integrated_body_acceleration
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_gravity.py
