@@ -56,11 +56,11 @@ contains
 
     this%mesh => mesh
     call factory%init(mesh, params)
-    call factory%alloc_dir_vel_bc(this%velocity_dirichlet, env, stat, errmsg)
+    call factory%alloc_dir_vel_bc(this%velocity_dirichlet, env, stat, errmsg, report=.true.)
     if (stat /= 0) return
-    call factory%alloc_zero_vn_bc(this%velocity_zero_normal, env, stat, errmsg)
+    call factory%alloc_zero_vn_bc(this%velocity_zero_normal, env, stat, errmsg, report=.true.)
     if (stat /= 0) return
-    call factory%alloc_dir_prs_bc(this%pressure_dirichlet, env, stat, errmsg)
+    call factory%alloc_dir_prs_bc(this%pressure_dirichlet, env, stat, errmsg, report=.true.)
     if (stat /= 0) return
     call factory%alloc_dir_prs_bc(this%pressure_correction_dirichlet, env, stat, errmsg)
     if (stat /= 0) return

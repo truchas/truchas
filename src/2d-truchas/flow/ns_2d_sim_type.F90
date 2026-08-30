@@ -82,6 +82,7 @@ contains
     real(r8), allocatable :: body_acceleration(:)
     real(r8), allocatable :: vfrac(:,:), temperature(:)
     character(:), allocatable :: matl_name(:), region_name(:), region_matl_name(:)
+    character(96) :: message
     integer, allocatable :: fluid_material_ids(:)
     integer :: i, rlev
     logical :: inviscid
@@ -200,17 +201,33 @@ contains
       return
     end if
     tracking_params => solver_params%sublist('volume-tracking')
+    allocate(this%model)
+    call env%simlog%begin_section('Constructing flow model.')
+    if (inviscid) then
+      call env%simlog%info('Using inviscid flow.')
+    else
+      call env%simlog%info('Using viscous flow.')
+    end if
+    if (any(body_acceleration /= 0.0_r8)) then
+      write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
+          body_acceleration(2), '].'
+      call env%simlog%info(trim(message))
+    end if
     call material_layout%init(this%matl_model, tracking_params, stat, errmsg)
-    if (stat /= 0) return
+    if (stat /= 0) then
+      call env%simlog%end_section('Flow model construction failed.')
+      return
+    end if
     allocate(fluid_material_ids(material_layout%num_real_fluid()))
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-    allocate(this%model)
     call this%model%init_material(env, this%mesh, bc_params, this%matl_model, fluid_material_ids, stat, errmsg, &
         body_acceleration=body_acceleration, inviscid=inviscid)
     if (stat /= 0) then
+      call env%simlog%end_section('Flow model construction failed.')
       errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
       return
     end if
+    call env%simlog%end_section('Flow model complete.')
     if (.not.solver_params%is_sublist('projection-solver')) then
       stat = 1
       errmsg = 'flow-solver requires a "projection-solver" sublist'
