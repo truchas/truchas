@@ -61,7 +61,7 @@ program test_material_composition
   call matl_model%init(names, matl_db, stat, errmsg)
   if (stat /= 0) call fail('could not initialize material model: ' // errmsg)
 
-  call composition%init(mesh, matl_model, region_params, 15, stat, errmsg)
+  call composition%init(env, mesh, matl_model, region_params, 15, stat, errmsg)
   if (stat /= 0) call fail('could not initialize material composition: ' // errmsg)
 
   call check_composition(mesh, matl_model, composition)

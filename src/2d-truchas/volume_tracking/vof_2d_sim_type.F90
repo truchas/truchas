@@ -114,7 +114,7 @@ contains
     end if
     plist => params%sublist('initial-regions')
     context = 'processing ' // plist%path() // ': '
-    call regions%init(this%mesh, plist, stat, errmsg)
+    call regions%init(env, this%mesh, plist, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return

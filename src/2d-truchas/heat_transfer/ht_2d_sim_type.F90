@@ -167,7 +167,7 @@ contains
     end if
     if (params%is_sublist('material-regions')) then
       plist => params%sublist('material-regions')
-      call this%composition%init(this%mesh, this%matl_model, plist, rlev, stat, errmsg)
+      call this%composition%init(env, this%mesh, this%matl_model, plist, rlev, stat, errmsg)
     else
       call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
     end if

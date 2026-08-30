@@ -34,8 +34,9 @@ module material_composition_type
 contains
 
   !! Return the unique material names referenced by PARAMS, in first-reference
-  !! order.  PARAMS is the MATERIAL-REGIONS sublist.
-  subroutine get_material_region_names(params, names, stat, errmsg)
+  !! order.  PARAMS is the MATERIAL-REGIONS sublist.  Optionally also return
+  !! its ordered region-to-material assignments.
+  subroutine get_material_region_names(params, names, stat, errmsg, region_names, region_materials)
 
     use parameter_list_type
 
@@ -43,12 +44,13 @@ contains
     character(:), allocatable, intent(out) :: names(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    character(:), allocatable, intent(out), optional :: region_names(:), region_materials(:)
 
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
     character(:), allocatable :: name
     character(:), allocatable :: all_names(:)
-    integer :: i, j, maxlen, nregion, nname
+    integer :: i, j, maxlen, max_region_name_len, nregion, nname
     logical :: found
 
     stat = 0
@@ -62,6 +64,7 @@ contains
     end if
 
     maxlen = 0
+    max_region_name_len = 0
     do i = 1, nregion
       plist => piter%sublist()
       call plist%get('material', name, stat, errmsg)
@@ -75,10 +78,13 @@ contains
         return
       end if
       maxlen = max(maxlen, len(name))
+      max_region_name_len = max(max_region_name_len, len(piter%name()))
       call piter%next()
     end do
 
     allocate(character(maxlen) :: all_names(nregion))
+    if (present(region_names)) allocate(character(max_region_name_len) :: region_names(nregion))
+    if (present(region_materials)) allocate(character(maxlen) :: region_materials(nregion))
     piter = parameter_list_iterator(params, sublists_only=.true.)
     nname = 0
     do i = 1, nregion
@@ -99,6 +105,8 @@ contains
         nname = nname + 1
         all_names(nname) = name
       end if
+      if (present(region_names)) region_names(i) = piter%name()
+      if (present(region_materials)) region_materials(i) = name
       call piter%next()
     end do
     names = all_names(:nname)
@@ -106,14 +114,16 @@ contains
   end subroutine get_material_region_names
 
 
-  subroutine init(this, mesh, matl_model, params, rlev, stat, errmsg)
+  subroutine init(this, env, mesh, matl_model, params, rlev, stat, errmsg)
 
     use parameter_list_type
     use region_func_type
+    use simulation_environment_type
     use vol_frac_init_procs
     use parallel_communication, only: global_any
 
     class(material_composition), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     type(parameter_list), intent(inout) :: params
@@ -130,7 +140,7 @@ contains
     integer :: i, mid
 
     this%mesh => mesh
-    call rfunc%init(mesh, params, stat, errmsg)
+    call rfunc%init(env, mesh, params, stat, errmsg)
     if (stat /= 0) return
 
     allocate(region_mid(rfunc%num_region()))
