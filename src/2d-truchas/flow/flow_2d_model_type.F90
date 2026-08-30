@@ -106,7 +106,8 @@ contains
 
 
   !! Initialize the model's material properties directly from fluid phases.
-  subroutine init_material(this, env, mesh, bc_params, matl_model, material_ids, stat, errmsg, body_acceleration, inviscid)
+  subroutine init_material(this, env, mesh, bc_params, matl_model, material_ids, stat, errmsg, body_acceleration, inviscid, &
+      boussinesq)
     class(flow_2d_model), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(inout) :: mesh
@@ -117,9 +118,14 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     real(r8), optional, intent(in) :: body_acceleration(:)
     logical, optional, intent(in) :: inviscid
+    logical, optional, intent(in) :: boussinesq
+
+    logical :: use_boussinesq
 
     stat = 0
+    use_boussinesq = .false.
     if (present(inviscid)) this%inviscid = inviscid
+    if (present(boussinesq)) use_boussinesq = boussinesq
     if (present(body_acceleration)) then
       if (size(body_acceleration) /= 2) then
         stat = 1
@@ -128,7 +134,7 @@ contains
       end if
       this%body_acceleration = body_acceleration
     end if
-    call this%matl_props%init_material(mesh, matl_model, material_ids, this%inviscid, stat, errmsg)
+    call this%matl_props%init_material(mesh, matl_model, material_ids, this%inviscid, use_boussinesq, stat, errmsg)
     if (stat /= 0) return
     call init_model_core(this, env, mesh, bc_params, stat, errmsg)
   end subroutine
@@ -176,7 +182,6 @@ contains
 
     call this%matl_props%set_initial_state(vfrac, temperature)
   end subroutine
-
 
   subroutine accept_material_state(this)
     class(flow_2d_model), intent(inout) :: this
