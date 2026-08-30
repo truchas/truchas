@@ -14,7 +14,7 @@ set(ver_info ${Truchas_BINARY_DIR}/version_info.F90)
 set(ver_info_in ${CMAKE_CURRENT_SOURCE_DIR}/version_info.F90.in)
 
 add_custom_target(git_versioning ALL
-  COMMAND ${CMAKE_COMMAND} "-DGIT_FOUND=${Git_FOUND}" "-DGIT=${GIT_EXECUTABLE}" "-DINFILE=${ver_info_in}" "-DOUTFILE=${ver_info}" -P "${CMAKE_SOURCE_DIR}/cmake/git_describe.cmake"
+  COMMAND ${CMAKE_COMMAND} "-DGIT_FOUND=${Git_FOUND}" "-DGIT=${GIT_EXECUTABLE}" "-DINFILE=${ver_info_in}" "-DOUTFILE=${ver_info}" "-DSOURCE_DIR=${CMAKE_SOURCE_DIR}" -P "${CMAKE_SOURCE_DIR}/cmake/git_describe.cmake"
   BYPRODUCTS ${ver_info})
 
 
