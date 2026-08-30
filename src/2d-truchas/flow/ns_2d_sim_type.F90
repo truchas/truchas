@@ -68,7 +68,7 @@ contains
     use material_factory, only: load_material_database
     use signal_handler, only: init_signal_handler, SIGURG
     class(ns_2d_sim), intent(out) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -94,13 +94,14 @@ contains
       return
     end if
     mesh_params => params%sublist('mesh')
-    call env%simlog%info('  Constructing mesh.')
+    call env%simlog%begin_section('Constructing mesh.')
     this%mesh => new_unstr_2d_mesh(env, mesh_params, stat, errmsg)
     if (stat /= 0) then
+      call env%simlog%end_section('Mesh construction failed.')
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
       return
     end if
-    call env%simlog%info('  Mesh construction complete.')
+    call env%simlog%end_section('Mesh construction complete.')
 
     if (.not.params%is_sublist('flow-model')) then
       stat = 1
