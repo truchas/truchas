@@ -59,7 +59,7 @@ contains
   end subroutine
 
 
-  subroutine alloc_dir_vel_bc(this, bc, env, stat, errmsg)
+  subroutine alloc_dir_vel_bc(this, bc, env, stat, errmsg, report)
     use bndry_vfunc_class
     use bndry_face_vfunc_type
 
@@ -68,15 +68,15 @@ contains
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in), optional :: report
 
     type(bndry_face_vfunc), allocatable :: bff
 
-    call env%simlog%info('  generating "velocity" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list(env, 'velocity', velocity, stat, errmsg)
+    call this%iterate_list(env, 'velocity', velocity, stat, errmsg, report)
     if (stat /= 0) return
-    call this%iterate_list(env, 'no-slip', no_slip, stat, errmsg)
+    call this%iterate_list(env, 'no-slip', no_slip, stat, errmsg, report)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -117,7 +117,7 @@ contains
   end subroutine
 
 
-  subroutine alloc_zero_vn_bc(this, bc, env, stat, errmsg)
+  subroutine alloc_zero_vn_bc(this, bc, env, stat, errmsg, report)
     use bndry_func1_class
     use bndry_face_func_type
 
@@ -126,13 +126,13 @@ contains
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in), optional :: report
 
     type(bndry_face_func), allocatable :: bff
 
-    call env%simlog%info('  generating "free-slip" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list(env, 'free-slip', zero, stat, errmsg)
+    call this%iterate_list(env, 'free-slip', zero, stat, errmsg, report)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -157,7 +157,7 @@ contains
   end subroutine
 
 
-  subroutine alloc_dir_prs_bc(this, bc, env, stat, errmsg)
+  subroutine alloc_dir_prs_bc(this, bc, env, stat, errmsg, report)
     use bndry_func1_class
     use bndry_face_func_type
 
@@ -166,13 +166,13 @@ contains
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in), optional :: report
 
     type(bndry_face_func), allocatable :: bff
 
-    call env%simlog%info('  generating "pressure" flow boundary condition')
     allocate(bff)
     call bff%init(this%mesh)
-    call this%iterate_list(env, 'pressure', pressure, stat, errmsg)
+    call this%iterate_list(env, 'pressure', pressure, stat, errmsg, report)
     if (stat /= 0) return
     call bff%add_complete()
     call move_alloc(bff, bc)
@@ -241,13 +241,14 @@ contains
   end subroutine
 
 
-  subroutine iterate_list(this, env, type, proc, stat, errmsg)
+  subroutine iterate_list(this, env, type, proc, stat, errmsg, report)
     class(flow_2d_bc_factory), intent(in) :: this
     type(simulation_environment), intent(in) :: env
     character(*), intent(in) :: type
     procedure(bc_cb) :: proc
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, intent(in), optional :: report
 
     type(parameter_list_iterator) :: piter
     type(parameter_list), pointer :: plist
@@ -261,7 +262,10 @@ contains
       call plist%get('type', bc_type, stat, errmsg)
       if (stat /= 0) exit
       if (lower_case(bc_type) == type) then
-        call env%simlog%info('    using FLOW_2D_BC[' // piter%name() // ']')
+        if (present(report)) then
+          if (report) call env%simlog%info('Constructing "' // type // '" boundary condition "' // &
+              trim(piter%name()) // '".')
+        end if
         call plist%get('face-set-ids', setids, stat, errmsg)
         if (stat /= 0) exit
         call proc(plist, setids, stat, errmsg)
