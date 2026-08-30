@@ -27,6 +27,7 @@ module simulation_log_type
     private
     integer :: log_unit = 0
     integer :: verbosity = LOG_NORMAL
+    integer :: indentation = 0
     logical :: terminal_output = .true.
     logical :: io_process = .false.
   contains
@@ -35,6 +36,8 @@ module simulation_log_type
     procedure :: unit
     procedure :: is_enabled
     procedure :: info
+    procedure :: begin_section
+    procedure :: end_section
     procedure :: warn
     procedure :: error
     final :: finalize
@@ -102,19 +105,62 @@ contains
   end function
 
   subroutine info(this, message, level, terminal)
+
     class(simulation_log), intent(in) :: this
     character(*), intent(in) :: message
     integer, intent(in), optional :: level
     logical, intent(in), optional :: terminal
+
+    call write_info(this, message, level, terminal)
+
+  end subroutine
+
+
+  subroutine begin_section(this, message, level, terminal)
+
+    class(simulation_log), intent(inout) :: this
+    character(*), intent(in) :: message
+    integer, intent(in), optional :: level
+    logical, intent(in), optional :: terminal
+
+    call write_info(this, message, level, terminal)
+    this%indentation = this%indentation + 1
+
+  end subroutine
+
+
+  subroutine end_section(this, message, level, terminal)
+
+    class(simulation_log), intent(inout) :: this
+    character(*), intent(in) :: message
+    integer, intent(in), optional :: level
+    logical, intent(in), optional :: terminal
+
+    INSIST(this%indentation > 0)
+    this%indentation = this%indentation - 1
+    call write_info(this, message, level, terminal)
+
+  end subroutine
+
+
+  subroutine write_info(this, message, level, terminal)
+
+    class(simulation_log), intent(in) :: this
+    character(*), intent(in) :: message
+    integer, intent(in), optional :: level
+    logical, intent(in), optional :: terminal
+
     integer :: message_level
     logical :: write_terminal
+
     message_level = LOG_NORMAL
     if (present(level)) message_level = level
     if (message_level > this%verbosity .or. .not.this%io_process) return
-    write(this%log_unit, '(a)') trim(message)
+    write(this%log_unit, '(2a)') indentation(this), trim(message)
     write_terminal = .true.
     if (present(terminal)) write_terminal = terminal
-    if (this%terminal_output .and. write_terminal) write(output_unit,'(a)') trim(message)
+    if (this%terminal_output .and. write_terminal) write(output_unit,'(2a)') indentation(this), trim(message)
+
   end subroutine
 
   subroutine warn(this, message, terminal)
@@ -123,10 +169,10 @@ contains
     logical, intent(in), optional :: terminal
     logical :: write_terminal
     if (.not.this%io_process) return
-    write(this%log_unit, '(2a)') 'Warning: ', trim(message)
+    write(this%log_unit, '(3a)') indentation(this), 'Warning: ', trim(message)
     write_terminal = .true.
     if (present(terminal)) write_terminal = terminal
-    if (this%terminal_output .and. write_terminal) write(output_unit,'(2a)') 'Warning: ', trim(message)
+    if (this%terminal_output .and. write_terminal) write(output_unit,'(3a)') indentation(this), 'Warning: ', trim(message)
   end subroutine
 
   subroutine error(this, message, terminal)
@@ -135,16 +181,26 @@ contains
     logical, intent(in), optional :: terminal
     logical :: write_terminal
     if (.not.this%io_process) return
-    write(this%log_unit, '(2a)') 'ERROR: ', trim(message)
+    write(this%log_unit, '(3a)') indentation(this), 'ERROR: ', trim(message)
     write_terminal = .true.
     if (present(terminal)) write_terminal = terminal
-    if (this%terminal_output .and. write_terminal) write(output_unit,'(2a)') 'ERROR: ', trim(message)
+    if (this%terminal_output .and. write_terminal) write(output_unit,'(3a)') indentation(this), 'ERROR: ', trim(message)
   end subroutine
 
   subroutine finalize(this)
     type(simulation_log), intent(inout) :: this
     call this%close
   end subroutine
+
+
+  function indentation(this) result(prefix)
+
+    class(simulation_log), intent(in) :: this
+    character(:), allocatable :: prefix
+
+    prefix = repeat('  ', this%indentation)
+
+  end function
 
   subroutine broadcast_errmsg(comm, io_process, errmsg)
     type(MPI_Comm), intent(in) :: comm
