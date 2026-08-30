@@ -1,0 +1,22 @@
+!!
+!! SIMULATION_BUILD_INFO
+!!
+!! This generated module provides non-sensitive build information for the 2D
+!! simulation prologue. It deliberately excludes the full compiler command
+!! line.
+!!
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
+!!
+
+module simulation_build_info
+
+  implicit none
+  private
+
+  character(*), parameter, public :: build_flags = '@TRUCHAS_2D_BUILD_FLAGS@'
+  character(*), parameter, public :: compiler_id = '@CMAKE_Fortran_COMPILER_ID@'
+  character(*), parameter, public :: compiler_version = '@CMAKE_Fortran_COMPILER_VERSION@'
+  character(*), parameter, public :: host = '@Truchas_HOSTNAME@'
+
+end module simulation_build_info

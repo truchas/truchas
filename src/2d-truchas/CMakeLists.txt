@@ -5,10 +5,21 @@ include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 
+if(CMAKE_BUILD_TYPE)
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" TRUCHAS_2D_BUILD_TYPE_UPPER)
+  set(TRUCHAS_2D_BUILD_FLAGS "${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_${TRUCHAS_2D_BUILD_TYPE_UPPER}}")
+else()
+  set(TRUCHAS_2D_BUILD_FLAGS "${CMAKE_Fortran_FLAGS}")
+endif()
+string(STRIP "${TRUCHAS_2D_BUILD_FLAGS}" TRUCHAS_2D_BUILD_FLAGS)
+configure_file(simulation_build_info.F90.in simulation_build_info.F90 @ONLY)
+
 add_library(truchas-extra
+  ${CMAKE_CURRENT_BINARY_DIR}/simulation_build_info.F90
   simulation_log_type.F90
   simulation_environment_type.F90
-  simulation_command_line_type.F90)
+  simulation_command_line_type.F90
+  simulation_provenance.F90)
 add_subdirectory(mesh)
 add_subdirectory(volume_fractions)
 add_subdirectory(materials)
