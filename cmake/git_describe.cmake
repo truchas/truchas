@@ -8,6 +8,7 @@ message(DEBUG "OUTFILE: ${OUTFILE}")
 if(GIT_FOUND)
   execute_process(
     COMMAND ${GIT} describe --tags --dirty
+    WORKING_DIRECTORY ${SOURCE_DIR}
     RESULT_VARIABLE result
     OUTPUT_VARIABLE TRUCHAS_VER
     OUTPUT_STRIP_TRAILING_WHITESPACE
