@@ -81,9 +81,9 @@ contains
     real(r8), allocatable :: initial_velocity(:,:)
     real(r8), allocatable :: body_acceleration(:)
     real(r8), allocatable :: vfrac(:,:), temperature(:)
-    character(:), allocatable :: matl_name(:)
+    character(:), allocatable :: matl_name(:), region_name(:), region_matl_name(:)
     integer, allocatable :: fluid_material_ids(:)
-    integer :: rlev
+    integer :: i, rlev
     logical :: inviscid
 
     stat = 0
@@ -102,6 +102,68 @@ contains
       return
     end if
     call env%simlog%end_section('Mesh construction complete.')
+
+    if (.not.params%is_sublist('materials')) then
+      stat = 1
+      errmsg = 'missing "materials" sublist parameter'
+      return
+    end if
+    materials_params => params%sublist('materials')
+    call env%simlog%info('Loading material database.')
+    call load_material_database(this%matl_db, materials_params, stat, errmsg)
+    if (stat /= 0) return
+    allocate(this%composition)
+    if (params%is_sublist('material-regions')) then
+      call env%simlog%begin_section('Reading material regions.')
+      call get_material_region_names(params%sublist('material-regions'), matl_name, stat, errmsg, &
+          region_name, region_matl_name)
+      if (stat /= 0) then
+        call env%simlog%end_section('Material-region processing failed.')
+        return
+      end if
+      do i = 1, size(region_name)
+        call env%simlog%info('Region "' // trim(region_name(i)) // '": material="' // &
+            trim(region_matl_name(i)) // '".')
+      end do
+      call env%simlog%end_section('Material regions read.')
+      call params%get('material-region-refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (rlev < 0) then
+        stat = 1
+        errmsg = '"material-region-refinement-level" must be >= 0'
+        return
+      end if
+    else
+      piter = parameter_list_iterator(materials_params, sublists_only=.true.)
+      if (piter%count() /= 1) then
+        stat = 1
+        errmsg = 'multiple materials require a "material-regions" sublist'
+        return
+      end if
+      matl_name = [piter%name()]
+    end if
+    call env%simlog%begin_section('Constructing material model.')
+    call this%matl_model%init(matl_name, this%matl_db, stat, errmsg)
+    if (stat /= 0) then
+      call env%simlog%end_section('Material model construction failed.')
+      return
+    end if
+    do i = 1, size(matl_name)
+      call env%simlog%info('Using material "' // trim(matl_name(i)) // '".')
+    end do
+    call env%simlog%end_section('Material model complete.')
+    call env%simlog%begin_section('Constructing material distribution.')
+    if (params%is_sublist('material-regions')) then
+      call this%composition%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
+    else
+      call env%simlog%info('Assigning material "' // trim(matl_name(1)) // '" uniformly.')
+      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+    end if
+    if (stat /= 0) then
+      call env%simlog%end_section('Material distribution construction failed.')
+      return
+    end if
+    call env%simlog%end_section('Material distribution complete.')
 
     if (.not.params%is_sublist('flow-model')) then
       stat = 1
@@ -126,42 +188,6 @@ contains
       return
     end if
     bc_params => model_params%sublist('bc')
-    if (.not.params%is_sublist('materials')) then
-      stat = 1
-      errmsg = 'missing "materials" sublist parameter'
-      return
-    end if
-    materials_params => params%sublist('materials')
-    call load_material_database(this%matl_db, materials_params, stat, errmsg)
-    if (stat /= 0) return
-    allocate(this%composition)
-    if (params%is_sublist('material-regions')) then
-      call get_material_region_names(params%sublist('material-regions'), matl_name, stat, errmsg)
-      if (stat /= 0) return
-      call params%get('material-region-refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      if (rlev < 0) then
-        stat = 1
-        errmsg = '"material-region-refinement-level" must be >= 0'
-        return
-      end if
-    else
-      piter = parameter_list_iterator(materials_params, sublists_only=.true.)
-      if (piter%count() /= 1) then
-        stat = 1
-        errmsg = 'multiple materials require a "material-regions" sublist'
-        return
-      end if
-      matl_name = [piter%name()]
-    end if
-    call this%matl_model%init(matl_name, this%matl_db, stat, errmsg)
-    if (stat /= 0) return
-    if (params%is_sublist('material-regions')) then
-      call this%composition%init(this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
-    else
-      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
-    end if
-    if (stat /= 0) return
     if (.not.params%is_sublist('flow-solver')) then
       stat = 1
       errmsg = 'missing "flow-solver" sublist parameter'

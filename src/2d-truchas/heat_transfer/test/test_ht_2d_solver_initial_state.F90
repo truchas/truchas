@@ -325,7 +325,7 @@ contains
               &"high-background":{"material":"high","type":"background"}}'
     call parameter_list_from_json_string(string, region_params, errmsg)
     if (.not.associated(region_params)) call error_exit(errmsg)
-    call composition%init(disc%mesh, matl_model, region_params, 6, stat, errmsg)
+    call composition%init(test_env, disc%mesh, matl_model, region_params, 6, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     string = '{"bc":{"left":{"type":"temperature","face-set-ids":[1],"temp":1.0},&

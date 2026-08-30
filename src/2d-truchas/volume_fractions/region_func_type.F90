@@ -31,18 +31,21 @@ module region_func_type
 
 contains
 
-  subroutine init(this, mesh, params, stat, errmsg)
+  subroutine init(this, env, mesh, params, stat, errmsg)
 
     use base_mesh_class
     use parameter_list_type
     use region_factory
+    use simulation_environment_type
 
     class(region_func), intent(out) :: this
+    type(simulation_environment), intent(in) :: env
     class(base_mesh), intent(in) :: mesh
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     
+    character(:), allocatable :: context, rtype
     integer :: n
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
@@ -51,8 +54,19 @@ contains
     allocate(this%reg(piter%count()))
     do n = 1, size(this%reg)
       plist => piter%sublist()
+      call plist%get('type', rtype, stat, errmsg)
+      if (stat /= 0) then
+        call env%simlog%error('processing region "' // trim(piter%name()) // '".')
+        context = 'processing ' // plist%path() // ': '
+        errmsg = context // errmsg
+        return
+      end if
+      call env%simlog%info('Processing region "' // trim(piter%name()) // '": type="' // trim(rtype) // '".')
       call alloc_region(this%reg(n)%reg, mesh, plist, stat, errmsg)
-      if (stat /= 0) return
+      if (stat /= 0) then
+        call env%simlog%error('processing region "' // trim(piter%name()) // '".')
+        return
+      end if
       !select type (reg => this%reg(n))
       !type is (background_region)
       !  if (n /= size(this%reg)) then

@@ -83,7 +83,7 @@ contains
       return
     end if
 
-    call rfunc%init(mesh, params, stat, errmsg)
+    call rfunc%init(env, mesh, params, stat, errmsg)
     if (stat /= 0) then
       call write_fail('test1: ' // errmsg)
       return
