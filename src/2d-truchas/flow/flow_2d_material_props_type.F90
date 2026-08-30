@@ -109,12 +109,13 @@ contains
 
   !! Initialize properties by querying the material model for each flow
   !! material. MATERIAL_IDS are phase indices in DENSITY order.
-  subroutine init_material(this, mesh, matl_model, material_ids, inviscid, stat, errmsg)
+  subroutine init_material(this, mesh, matl_model, material_ids, inviscid, boussinesq, stat, errmsg)
     class(flow_2d_material_props), intent(out) :: this
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_ids(:)
     logical, intent(in) :: inviscid
+    logical, intent(in) :: boussinesq
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -165,25 +166,29 @@ contains
         end if
       end if
 
-      call matl_model%get_phase_prop(material_ids(m), 'thermal-expan-coef', alpha_func)
-      call matl_model%get_phase_prop(material_ids(m), 'expan-ref-temp', tref_func)
-      if (.not.allocated(alpha_func) .and. .not.allocated(tref_func)) then
+      if (.not.boussinesq) then
         call alloc_const_scalar_func(this%density_delta(m)%f, 0.0_r8)
-      else if (.not.allocated(alpha_func) .or. .not.allocated(tref_func) .or. &
-          .not.is_const(alpha_func) .or. .not.is_const(tref_func)) then
-        stat = 1
-        errmsg = 'thermal expansion properties must be constant and provided together for ' // &
-            matl_model%phase_name(material_ids(m))
-        return
       else
-        alpha = alpha_func%eval([real(r8)::])
-        tref = tref_func%eval([real(r8)::])
-        if (alpha < 0.0_r8) then
+        call matl_model%get_phase_prop(material_ids(m), 'thermal-expan-coef', alpha_func)
+        call matl_model%get_phase_prop(material_ids(m), 'expan-ref-temp', tref_func)
+        if (.not.allocated(alpha_func) .and. .not.allocated(tref_func)) then
+          call alloc_const_scalar_func(this%density_delta(m)%f, 0.0_r8)
+        else if (.not.allocated(alpha_func) .or. .not.allocated(tref_func) .or. &
+            .not.is_const(alpha_func) .or. .not.is_const(tref_func)) then
           stat = 1
-          errmsg = 'thermal-expan-coef must be nonnegative for ' // matl_model%phase_name(material_ids(m))
+          errmsg = 'thermal expansion properties must be constant and provided together for ' // &
+              matl_model%phase_name(material_ids(m))
           return
+        else
+          alpha = alpha_func%eval([real(r8)::])
+          tref = tref_func%eval([real(r8)::])
+          if (alpha < 0.0_r8) then
+            stat = 1
+            errmsg = 'thermal-expan-coef must be nonnegative for ' // matl_model%phase_name(material_ids(m))
+            return
+          end if
+          call alloc_poly_scalar_func(this%density_delta(m)%f, [-rho*alpha], [1], tref)
         end if
-        call alloc_poly_scalar_func(this%density_delta(m)%f, [-rho*alpha], [1], tref)
       end if
     end do
     this%vfrac = 0.0_r8

@@ -163,7 +163,7 @@ contains
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
     allocate(this%flow_model)
     call this%flow_model%init_material(env, this%mesh, flow_bc, this%matl_model, fluid_material_ids, stat, errmsg, &
-        body_acceleration=body_acceleration, inviscid=inviscid)
+        body_acceleration=body_acceleration, inviscid=inviscid, boussinesq=.true.)
     if (stat /= 0) return
 
     if (.not.params%is_sublist('ht-model')) then
