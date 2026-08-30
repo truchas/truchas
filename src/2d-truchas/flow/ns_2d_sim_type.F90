@@ -94,11 +94,13 @@ contains
       return
     end if
     mesh_params => params%sublist('mesh')
+    call env%simlog%info('  Constructing mesh.')
     this%mesh => new_unstr_2d_mesh(env, mesh_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
       return
     end if
+    call env%simlog%info('  Mesh construction complete.')
 
     if (.not.params%is_sublist('flow-model')) then
       stat = 1

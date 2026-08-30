@@ -76,6 +76,7 @@ contains
     use ext_exodus_mesh_type
     use exodus_mesh_io, only: read_exodus_mesh
     use parallel_communication, only: is_IOP
+    use string_utilities, only: i_to_c
 
     type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout) :: params
@@ -90,6 +91,7 @@ contains
     logical :: has_random_seed
     character(:), allocatable :: element_type
     character(:), allocatable :: mesh_file
+    character(256) :: message
 
     this => null()
 
@@ -113,6 +115,7 @@ contains
           mesh_file = trim(env%input_dir) // trim(mesh_file)
           call params%set('mesh-file', mesh_file)
         end if
+        call env%simlog%info('    Reading Exodus mesh "' // trim(mesh_file) // '".')
         call read_exodus_mesh(mesh_file, mesh, stat, errmsg)
         if (stat == 0 .and. mesh%num_dim /= 2) then
           stat = 1
@@ -120,9 +123,17 @@ contains
         end if
         if (stat == 0) call normalize_exodus_block_ids(mesh, params, stat, errmsg, env)
         if (stat == 0) then
+          if (scale /= 1.0_r8) then
+            write(message,'("    Scaling mesh coordinates by ",g0,".")') scale
+            call env%simlog%info(trim(message))
+          end if
           mesh%coord = scale * mesh%coord
           theta = angle * acos(-1.0_r8) / 180.0_r8
-          if (theta /= 0.0_r8) call rotate_mesh(mesh, theta)
+          if (theta /= 0.0_r8) then
+            write(message,'("    Rotating mesh coordinates by ",g0," degrees.")') angle
+            call env%simlog%info(trim(message))
+            call rotate_mesh(mesh, theta)
+          end if
         end if
       end if
       call broadcast_status(stat, errmsg)
@@ -185,6 +196,29 @@ contains
     end if
 
     if (is_IOP) then
+      if (element_type == 'quad') then
+        write(message,'("    Generating a ",i0," by ",i0," quadrilateral mesh.")') size(x)-1, size(y)-1
+      else
+        write(message,'("    Generating a ",i0," by ",i0," triangular mesh.")') size(x)-1, size(y)-1
+      end if
+      call env%simlog%info(trim(message))
+      if (ptri > 0.0_r8 .and. ptri < 1.0_r8) then
+        write(message,'("    Subdividing cells into triangles with probability ",g0,".")') ptri
+        call env%simlog%info(trim(message))
+      end if
+      if (noise /= 0.0_r8) then
+        write(message,'("    Perturbing interior nodes with noise factor ",g0,".")') noise
+        call env%simlog%info(trim(message))
+      end if
+      if (has_random_seed) call env%simlog%info('    Using random seed ' // i_to_c(random_seed) // '.')
+      if (scale /= 1.0_r8) then
+        write(message,'("    Scaling mesh coordinates by ",g0,".")') scale
+        call env%simlog%info(trim(message))
+      end if
+      if (angle /= 0.0_r8) then
+        write(message,'("    Rotating mesh coordinates by ",g0," degrees.")') angle
+        call env%simlog%info(trim(message))
+      end if
       if (has_random_seed) then
         call init_exo_mesh(mesh, x, y, ptri, noise, random_seed)
       else
@@ -230,7 +264,8 @@ contains
       associate (id => mesh%eblk(n)%id)
         new_id = modulo(id, exodus_block_modulus)
         if (new_id /= id) then
-          call env%simlog%info('  element block ' // i_to_c(id) // ' merged with block ' // i_to_c(new_id))
+          call env%simlog%info('    Merging Exodus element block ' // i_to_c(id) // &
+              ' into block ' // i_to_c(new_id) // '.')
           id = new_id
         end if
       end associate
@@ -568,6 +603,7 @@ contains
     integer, allocatable :: cell_perm(:), node_perm(:), offP_size(:), offP_index(:)
     integer, allocatable :: perm(:)
     character(:), allocatable :: string
+    character(256) :: message
 
     this => null()
     ncell = mesh%num_elem
@@ -578,7 +614,6 @@ contains
 
     !! Generate the cell neighbor array.
     if (is_IOP) then
-      call env%simlog%info('  finding cell neighbors')
       call get_cell_neighbor_array(cstart, cnode, cnhbr, stat)
       if (stat /= 0) errmsg = 'get_cell_neighbor_array: invalid mesh topology detected'
     else
@@ -590,22 +625,25 @@ contains
     !! Partition and order the cells.
     allocate(cell_perm(ncell))
     if (is_IOP) then
-      call env%simlog%info('  partitioning the mesh cells')
       !! Partition the cell neighbor graph.
       allocate(part(mesh%num_elem))
       call params%get('partitioner', string, default='metis')
       if (nPE == 1) then
+        call env%simlog%info('    Using a single mesh partition.')
         part = 1
         stat = 0
       else if (string == 'block') then
+        call env%simlog%info('    Partitioning the mesh with the block method.')
         call get_block_partition(nPE, part)
         stat = 0
       else if (string == 'file') then
+        call env%simlog%info('    Reading the mesh partition from a file.')
         call params%get('partition-file', string)
         call params%get('first-partition', pfirst, default=0)
         call read_partition(string, pfirst, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error reading cell partition: ' // errmsg
       else
+        call env%simlog%info('    Partitioning the mesh with the ' // trim(string) // ' method.')
         call partition_cells(params, cstart, cnhbr, nPE, part, stat, errmsg)
         if (stat /= 0) errmsg = 'error computing cell partition: ' // errmsg
       end if
@@ -633,7 +671,6 @@ contains
     !! Partition and order the nodes.
     allocate(node_perm(nnode))
     if (is_IOP) then
-      call env%simlog%info('  partitioning the mesh nodes')
       call partition_facets(cstart, cnode, cell_psize, node_psize, node_perm)
       !! Reorder node-based arrays.
       call reorder(mesh%coord, node_perm)
@@ -652,7 +689,6 @@ contains
     !! Enumerate and partition the mesh faces.
     allocate(cfpar(ncell))
     if (is_IOP) then
-      call env%simlog%info('  numbering the mesh faces')
       call label_mesh_faces(cstart, cnode, nface, cface)
       !! Extract the relative face orientation info.
       cfpar = 0
@@ -669,7 +705,6 @@ contains
         end associate
       end do
       !! Partition and order the faces.
-      call env%simlog%info('  partitioning the mesh faces')
       allocate(perm(nface))
       call partition_facets(cstart, cface, cell_psize, face_psize, perm)
       call invert_perm(perm)
@@ -682,12 +717,10 @@ contains
     end if
 
     !! Identify off-process ghost cells to include with each partition.
-    call env%simlog%info('  identifying off-process ghost cells')
     call select_ghost_cells(cstart, cnode, cell_psize, offP_size, offP_index)
     deallocate(cnhbr)
 
     !! Begin initializing the unstr_2d_mesh result object.
-    call env%simlog%info('  generating parallel mesh structure')
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
@@ -744,6 +777,14 @@ contains
     allocate(this%volume(this%ncell), this%normal(2,this%nface), &
       this%unit_normal(2,this%nface), this%area(this%nface))
     call this%compute_geometry
+
+    if (is_IOP) then
+      write(message,'("    Mesh has ",i0," nodes, ",i0," faces, and ",i0," cells.")') nnode, nface, ncell
+      call env%simlog%info(trim(message))
+      write(message,'("    Mesh defines ",i0," cell sets, ",i0," face sets, and ",i0," node sets.")') &
+          size(this%cell_set_id), size(this%face_set_id), size(this%node_set_id)
+      call env%simlog%info(trim(message))
+    end if
 
   end function new_unstr_2d_mesh_aux
 
