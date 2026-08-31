@@ -322,16 +322,19 @@ contains
     call env%simlog%info(trim(message))
     call env%simlog%end_section('Integration configuration complete.')
 
+    call env%simlog%begin_section('Initializing flow state.')
     allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
     if (params%is_parameter('initial-velocity')) then
       call alloc_vector_func(params, 'initial-velocity', initial_velocity_func, stat, errmsg)
       if (stat /= 0) then
         errmsg = 'processing initial-velocity: ' // errmsg
+        call env%simlog%end_section('Flow-state initialization failed.')
         return
       end if
       if (initial_velocity_func%dim /= 2) then
         stat = 1
         errmsg = 'processing initial-velocity: require a two-component vector function'
+        call env%simlog%end_section('Flow-state initialization failed.')
         return
       end if
       call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
@@ -340,11 +343,13 @@ contains
     call material_layout%get_reduced_volume_fractions(this%composition, vfrac)
     call this%mesh%cell_imap%gather_offp(vfrac)
     call this%solver%set_initial_material_state(vfrac, temperature)
-    call this%solver%set_initial_state(this%t_init, this%solver%initial_time_step(), initial_velocity, stat)
+    call this%solver%set_initial_state(env, this%t_init, this%solver%initial_time_step(), initial_velocity, stat)
     if (stat /= 0) then
       errmsg = 'initializing flow state failed'
+      call env%simlog%end_section('Flow-state initialization failed.')
       return
     end if
+    call env%simlog%end_section('Flow-state initialization complete.')
 
     call this%solver%init_temporal_output(this%temporal_output)
     call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg, this%matl_model)

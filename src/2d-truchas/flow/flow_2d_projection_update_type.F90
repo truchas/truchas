@@ -69,17 +69,19 @@ contains
   !! discrete face-flux continuity constraint.  The pressure correction is
   !! used only as a projection multiplier; this procedure does not alter
   !! STATE%P_CC.
-  subroutine project_velocity(this, dt, inv_density_c, inv_density_f, bc, state, stat)
+  subroutine project_velocity(this, dt, inv_density_c, inv_density_f, bc, state, stat, solved)
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
     type(flow_2d_bc), intent(in) :: bc
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
+    logical, optional, intent(out) :: solved
 
     integer :: c, f, pin_face
 
     ASSERT(dt > 0.0_r8)
     stat = 0
+    if (present(solved)) solved = .false.
     call this%mesh%cell_imap%gather_offp(state%vel_cc)
     call interpolate_velocity(this, state%vel_cc, bc, state%vel_fn)
     call apply_velocity_boundary_conditions(this%mesh, bc, state%vel_fn)
@@ -91,6 +93,7 @@ contains
     this%rhs = this%rhs - this%flux/dt
     this%delta_p = 0.0_r8
     if (global_maxval(abs(this%rhs)) > 0.0_r8) then
+      if (present(solved)) solved = .true.
       call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
       if (stat /= 0) return
     end if

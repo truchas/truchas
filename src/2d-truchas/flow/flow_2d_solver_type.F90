@@ -116,12 +116,13 @@ contains
   end subroutine
 
 
-  subroutine set_initial_state(this, time, dt, velocity, stat)
+  subroutine set_initial_state(this, env, time, dt, velocity, stat)
     class(flow_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     integer, intent(out) :: stat
 
-    call this%ic_solver%solve(time, dt, velocity, this%state, stat)
+    call this%ic_solver%solve(env, time, dt, velocity, this%state, stat)
     if (stat /= 0) return
     this%pending_state%vel_cc = this%state%vel_cc
     this%pending_state%vel_fn = this%state%vel_fn

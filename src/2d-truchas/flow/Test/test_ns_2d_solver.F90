@@ -63,7 +63,7 @@ contains
     allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP), flux_volumes(1,size(mesh%cface)))
     flux_volumes = 0.0_r8
     velocity = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell_onP)
-    call solver%set_initial_state(0.0_r8, 0.01_r8, velocity, stat)
+    call solver%set_initial_state(env, 0.0_r8, 0.01_r8, velocity, stat)
     call require(stat == 0, 'Navier--Stokes initial-condition solve did not converge')
     if (stat /= 0) return
     call solver%get_cell_flow_soln(pressure, velocity_state)
