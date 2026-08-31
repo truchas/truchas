@@ -273,31 +273,54 @@ contains
       call this%solver%init(env, this%model, momentum_params, projection_params, material_layout, tracking_params, courant_number)
     end if
     call env%simlog%end_section('Flow solver complete.')
+    call env%simlog%begin_section('Configuring integration.')
     if (.not.params%is_sublist('sim-control')) then
       stat = 1
       errmsg = 'missing "sim-control" sublist parameter'
+      call env%simlog%end_section('Integration configuration failed.')
       return
     end if
     control_params => params%sublist('sim-control')
     call control_params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0) return
+    if (stat /= 0) then
+      call env%simlog%end_section('Integration configuration failed.')
+      return
+    end if
     call control_params%get('output-times', this%tout, stat, errmsg)
-    if (stat /= 0) return
+    if (stat /= 0) then
+      call env%simlog%end_section('Integration configuration failed.')
+      return
+    end if
     if (size(this%tout) == 0) then
       stat = 1
       errmsg = 'processing ' // control_params%path() // ': require nonempty output-times'
+      call env%simlog%end_section('Integration configuration failed.')
       return
     end if
     if (any(this%tout <= this%t_init) .or. any(this%tout(2:) <= this%tout(:size(this%tout)-1))) then
       stat = 1
       errmsg = 'processing ' // control_params%path() // ': require strictly increasing output-times after initial-time'
+      call env%simlog%end_section('Integration configuration failed.')
       return
     end if
     call this%solver%init_time_stepper(control_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // control_params%path() // ': ' // errmsg
+      call env%simlog%end_section('Integration configuration failed.')
       return
     end if
+    write(message,'(a,es11.4)') 'Initial time: ', this%t_init
+    call env%simlog%info(trim(message))
+    write(message,'(a,es11.4)') 'Initial time step: ', this%solver%initial_time_step()
+    call env%simlog%info(trim(message))
+    if (size(this%tout) == 1) then
+      write(message,'(a,es11.4)') 'Output schedule: 1 time at ', this%tout(1)
+    else
+      write(message,'(a,i0,a,es11.4,a,es11.4)') 'Output schedule: ', size(this%tout), &
+          ' times from ', this%tout(1), ' through ', this%tout(size(this%tout))
+    end if
+    call env%simlog%info(trim(message))
+    call env%simlog%end_section('Integration configuration complete.')
 
     allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
     if (params%is_parameter('initial-velocity')) then
