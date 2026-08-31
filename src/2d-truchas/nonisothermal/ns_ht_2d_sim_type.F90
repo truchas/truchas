@@ -213,7 +213,7 @@ contains
 
   subroutine run(this, env, stat, errmsg)
     class(ns_ht_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 

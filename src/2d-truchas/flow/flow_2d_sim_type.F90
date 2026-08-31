@@ -225,7 +225,7 @@ contains
 
   subroutine run(this, env, stat, errmsg)
     class(flow_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -277,7 +277,7 @@ contains
     use signal_handler, only: read_signal, SIGURG
 
     class(flow_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: tout
     real(r8), intent(inout) :: hnext
     real(r8), intent(out) :: time
