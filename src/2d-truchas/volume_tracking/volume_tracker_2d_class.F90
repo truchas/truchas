@@ -35,10 +35,11 @@ module volume_tracker_2d_class
       integer, intent(in) :: priority(:)
     end subroutine vt_init
 
-    subroutine vt_flux_volumes(this, vel, vof_n, vof, flux_vol, int_normal, fluids, &
+    subroutine vt_flux_volumes(this, env, vel, vof_n, vof, flux_vol, int_normal, fluids, &
         void, dt)
-      import :: volume_tracker_2d, r8
+      import :: volume_tracker_2d, simulation_environment, r8
       class(volume_tracker_2d), intent(inout) :: this
+      type(simulation_environment), intent(inout) :: env
       real(r8), intent(in) :: vel(:), vof_n(:,:), dt
       real(r8), intent(out) :: flux_vol(:,:), vof(:,:), int_normal(:,:,:)
       integer, intent(in) :: fluids, void

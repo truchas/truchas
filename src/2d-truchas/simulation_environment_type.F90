@@ -4,8 +4,8 @@
 !! This module defines SIMULATION_ENVIRONMENT, the plain collection of
 !! process-wide services owned and initialized by a simulation program. The
 !! program initializes and destroys these components explicitly; this type
-!! intentionally has no type-bound procedures. The timer tree is allocated by
-!! the owning program and is referenced, but not owned, by lower-level code.
+!! intentionally has no type-bound procedures. Its timer tree is always
+!! available to simulation code and tests.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -26,7 +26,7 @@ module simulation_environment_type
     character(:), allocatable :: input_dir
     character(:), allocatable :: output_dir
     type(simulation_log) :: simlog
-    type(timer_tree), pointer :: timer => null()
+    type(timer_tree) :: timer
   end type simulation_environment
 
 end module simulation_environment_type

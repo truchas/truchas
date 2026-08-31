@@ -75,7 +75,7 @@ contains
     use material_utilities, only: add_enthalpy_prop
 
     class(ht_2d_sim), intent(out) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -381,7 +381,7 @@ contains
   subroutine run(this, env, stat, errmsg)
 
     class(ht_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -530,7 +530,7 @@ contains
   subroutine write_solution(this, env, t)
 
     class(ht_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t
 
     real(r8), allocatable :: Hcell(:), Tcell(:)

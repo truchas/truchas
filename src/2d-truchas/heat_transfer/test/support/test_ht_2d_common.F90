@@ -36,7 +36,6 @@ contains
     test_env%comm = MPI_COMM_WORLD
     call MPI_Comm_rank(test_env%comm, test_env%rank)
     call MPI_Comm_size(test_env%comm, test_env%nproc)
-    allocate(test_env%timer)
     call test_env%simlog%init(test_env%comm, log_file, stat, errmsg, terminal_output=.false.)
     if (stat /= 0) call test_panic('initializing test log: ' // errmsg)
 

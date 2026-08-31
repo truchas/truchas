@@ -171,9 +171,10 @@ contains
   end subroutine
 
 
-  subroutine run(this, stat, errmsg)
+  subroutine run(this, env, stat, errmsg)
 
     class(vof_2d_sim), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -187,7 +188,7 @@ contains
     do n = 2, size(this%output_times)
       do while (time < this%output_times(n))
         dt = min(this%time_step, this%output_times(n)-time)
-        call this%solver%step(time, dt, this%velocity, this%vfrac)
+        call this%solver%step(env, time, dt, this%velocity, this%vfrac)
         time = time + dt
       end do
       call write_output(this, time, nmat)

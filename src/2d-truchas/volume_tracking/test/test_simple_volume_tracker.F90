@@ -40,7 +40,7 @@ contains
 
   subroutine test_immobile_solid(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -67,7 +67,7 @@ contains
     vel = 0.0_r8
     vel(j1) = 0.1_r8
     vel(j2) = -0.1_r8
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
 
     q = 0.5_r8 * 0.1_r8 * 0.1_r8 * mesh%area(f) / mesh%volume(1)
     call require_close(vof(1,:2), [0.5_r8-q, 0.5_r8+q], 'fluid transport')
@@ -81,7 +81,7 @@ contains
 
   subroutine test_full_fluid(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -94,7 +94,7 @@ contains
     vel(1) = 0.1_r8
     vof_n = 1.0_r8
 
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
     call require_close(vof(1,:), [1.0_r8], 'full-fluid volume fraction')
 
     deallocate(mesh)

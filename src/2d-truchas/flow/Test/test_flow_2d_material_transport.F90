@@ -23,7 +23,6 @@ program test_flow_2d_material_transport
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  allocate(env%timer)
   call env%simlog%init(env%comm, 'test_flow_2d_material_transport.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
@@ -32,7 +31,6 @@ program test_flow_2d_material_transport
   call test_single_liquid_flux_volumes('geometric')
   if (env%nproc == 1) call test_fluid_solid_transport
 
-  deallocate(env%timer)
   call halt_parallel_communication
   stop status
 
@@ -61,7 +59,7 @@ contains
       velocity_fn(f) = dot_product([0.2_r8, -0.1_r8], mesh%unit_normal(:,f))
     end do
     call mesh%face_imap%gather_offp(velocity_fn)
-    call transport%advance(1.0_r8, 1.0_r8 + dt, velocity_fn, vfrac_n)
+    call transport%advance(env, 1.0_r8, 1.0_r8 + dt, velocity_fn, vfrac_n)
     call transport%get_trial_volume_fractions(vfrac_trial)
     ncf_onp = mesh%cstart(mesh%ncell_onP+1)-1
     do c = 1, mesh%ncell_onP
@@ -106,7 +104,7 @@ contains
     velocity_fn(f) = 0.1_r8
     if (btest(mesh%cfpar(1), j1-mesh%cstart(1)+1)) velocity_fn(f) = -velocity_fn(f)
 
-    call transport%advance(0.0_r8, 0.1_r8, velocity_fn, vfrac_n)
+    call transport%advance(env, 0.0_r8, 0.1_r8, velocity_fn, vfrac_n)
     call transport%get_trial_volume_fractions(vfrac_trial)
     q = 0.5_r8 * 0.1_r8 * 0.1_r8 * mesh%area(f) / mesh%volume(1)
     call require(maxval(abs(vfrac_trial(1,:2) - [0.5_r8-q, 0.5_r8+q])) < 1.0e-14_r8, &

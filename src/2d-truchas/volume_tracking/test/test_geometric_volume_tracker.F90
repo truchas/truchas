@@ -28,7 +28,6 @@ program test_geometric_volume_tracker
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  allocate(env%timer)
   call env%simlog%init(env%comm, 'test_geometric_volume_tracker.log', stat, errmsg, &
       terminal_output=.false.)
   if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
@@ -44,14 +43,13 @@ program test_geometric_volume_tracker
   call test_axisymmetric_radial_transport(env)
 
   call env%simlog%close
-  deallocate(env%timer)
   call MPI_Finalize
 
 contains
 
   subroutine test_stationary(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -64,7 +62,7 @@ contains
 
     vel = 0.0_r8
     vof_n(:,1) = [0.3_r8, 0.7_r8]
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
     call require_close_2d(vof, vof_n, 'stationary volume fractions', 1.0e-13_r8)
     call require(maxval(abs(flux_vol)) <= 1.0e-13_r8, 'stationary flux volumes')
 
@@ -75,7 +73,7 @@ contains
 
   subroutine test_planar_transport(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -92,7 +90,7 @@ contains
     vof_n(:,1) = [1.0_r8, 0.0_r8]
     vof_n(:,2) = [0.0_r8, 1.0_r8]
     call uniform_face_velocity(mesh, 0.1_r8, vel)
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
     interface_face = 0
     do f = 1, mesh%nface
       if (mesh%fcell(2,f) /= 0) interface_face = f
@@ -112,7 +110,7 @@ contains
 
   subroutine test_immobile_solid(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -140,7 +138,7 @@ contains
     vel = 0.0_r8
     vel(j1) = 0.1_r8
     vel(j2) = -0.1_r8
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 1, 0, 0.1_r8)
 
     call require_close_2d(vof(2:2,:), vof_n(2:2,:), 'immobile solid', 1.0e-12_r8)
     call require(maxval(abs(flux_vol(2,:))) <= 1.0e-12_r8, 'immobile solid flux')
@@ -152,7 +150,7 @@ contains
 
   subroutine test_inflow_material(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -173,7 +171,7 @@ contains
     call tracker%set_inflow_material(1, [left_face])
     call uniform_face_velocity(mesh, 0.1_r8, vel)
     vof_n(:,1) = [0.0_r8, 1.0_r8]
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
 
     q = 0.1_r8 * 0.1_r8 * mesh%area(left_face) / mesh%volume(1)
     expected(:,1) = [q, 1.0_r8-q]
@@ -186,7 +184,7 @@ contains
 
   subroutine test_proportional_inflow(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -202,7 +200,7 @@ contains
     vof_n(:,1) = [0.3_r8, 0.7_r8]
     vof_n(:,2) = vof_n(:,1)
     call uniform_face_velocity(mesh, 0.1_r8, vel)
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
     left_face = 0
     do f = 1, mesh%nface
       if (mesh%fcell(2,f) == 0 .and. mesh%face_centroid(1,f) == 0.0_r8) left_face = f
@@ -224,7 +222,7 @@ contains
 
   subroutine test_three_material_transport(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -238,7 +236,7 @@ contains
     vof_n(:,1) = [0.2_r8, 0.3_r8, 0.5_r8]
     vof_n(:,2) = vof_n(:,1)
     call uniform_face_velocity(mesh, 0.1_r8, vel)
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 3, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 3, 0, 0.1_r8)
     call require(maxval(abs(vof(:,2)-vof_n(:,2))) <= 1.0e-12_r8, &
         'three-material undisturbed cell')
     call require_close_1d(sum(vof, dim=1), 1.0_r8, 'three-material fraction sum', 1.0e-12_r8)
@@ -252,7 +250,7 @@ contains
 
   subroutine test_material_depletion(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -274,7 +272,7 @@ contains
     call uniform_face_velocity(mesh, 1.0_r8, vel)
     vof_n(:,1) = [0.0_r8, 1.0_r8]
     vof_n(:,2) = [0.01_r8, 0.99_r8]
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.8_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.8_r8)
 
     expected(:,1) = [0.0_r8, 1.0_r8]
     expected(:,2) = [0.0_r8, 1.0_r8]
@@ -291,7 +289,7 @@ contains
 
   subroutine test_axisymmetric_transport(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -309,7 +307,7 @@ contains
     vof_n(:,1) = [1.0_r8, 0.0_r8]
     vof_n(:,2) = [0.0_r8, 1.0_r8]
     call uniform_face_velocity(mesh, 0.1_r8, vel, component=2)
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
     interface_face = 0
     do f = 1, mesh%nface
       if (mesh%fcell(2,f) /= 0) interface_face = f
@@ -327,7 +325,7 @@ contains
 
   subroutine test_axisymmetric_radial_transport(env)
 
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(unstr_2d_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
@@ -344,7 +342,7 @@ contains
     vof_n(:,1) = [1.0_r8, 0.0_r8]
     vof_n(:,2) = [0.0_r8, 1.0_r8]
     call uniform_face_velocity(mesh, 0.1_r8, vel, component=1)
-    call tracker%flux_volumes(vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 2, 0, 0.1_r8)
     interface_face = 0
     do f = 1, mesh%nface
       if (mesh%fcell(2,f) /= 0) interface_face = f

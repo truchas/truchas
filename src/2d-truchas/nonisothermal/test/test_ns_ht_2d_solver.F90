@@ -36,7 +36,6 @@ program test_ns_ht_2d_solver
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  allocate(env%timer)
   call env%simlog%init(env%comm, 'test_ns_ht_2d_solver.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call fail('initializing simulation log: ' // errmsg)
 
