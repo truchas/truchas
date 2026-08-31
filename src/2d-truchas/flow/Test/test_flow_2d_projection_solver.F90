@@ -67,10 +67,16 @@ contains
     call bc%compute(0.0_r8)
     call projection%assemble(inv_density_f, bc, rhs)
 
-    call solver_params%set('rel-tol', 1.0e-10_r8)
+    call solver_params%set('rel-tol', -1.0_r8)
     call solver_params%set('max-ds-iter', 100)
     call solver_params%set('max-amg-iter', 100)
-    call solver%init(projection, solver_params)
+    call solver%init(projection, solver_params, stat, errmsg)
+    call require(stat /= 0, 'invalid projection solver parameters were accepted')
+    call require(index(errmsg, 'rel-tol') > 0, 'projection solver error lacks parameter context')
+
+    call solver_params%set('rel-tol', 1.0e-10_r8)
+    call solver%init(projection, solver_params, stat, errmsg)
+    call require(stat == 0, 'projection solver initialization failed')
     call solver%setup()
     pressure = 0.0_r8
     call solver%solve(rhs, pressure, stat)

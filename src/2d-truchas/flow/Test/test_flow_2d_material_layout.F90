@@ -31,8 +31,10 @@ program test_flow_2d_material_layout
   call parameter_list_from_json_string( &
       '{"material-priority":["SOLID","VOID","oil","water"]}', tracking_params, errmsg)
   if (.not.associated(tracking_params)) error stop 'parsing tracking input: ' // errmsg
-  call layout%init(matl_model, tracking_params, stat, errmsg)
+  call layout%init(matl_model, stat, errmsg)
   if (stat /= 0) error stop 'initializing material layout: ' // errmsg
+  call layout%set_priority(tracking_params, stat, errmsg)
+  if (stat /= 0) error stop 'setting material priority: ' // errmsg
   call require(layout%num_real_fluid() == 2, 'wrong real fluid count')
   call require(layout%num_fluid() == 3, 'wrong moving material count')
   call require(layout%num_material() == 4, 'wrong reduced material count')

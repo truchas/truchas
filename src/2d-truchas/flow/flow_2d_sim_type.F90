@@ -154,7 +154,7 @@ contains
     projection_params => solver_params%sublist('projection-solver')
     allocate(this%solver)
     if (inviscid) then
-      call this%solver%init(env, this%model, projection_params=projection_params)
+      call this%solver%init(env, this%model, projection_params=projection_params, stat=stat, errmsg=errmsg)
     else
       if (.not.solver_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -162,8 +162,9 @@ contains
         return
       end if
       momentum_params => solver_params%sublist('momentum-solver')
-      call this%solver%init(env, this%model, momentum_params, projection_params)
+      call this%solver%init(env, this%model, momentum_params, projection_params, stat=stat, errmsg=errmsg)
     end if
+    if (stat /= 0) return
 
     if (.not.params%is_sublist('sim-control')) then
       stat = 1
