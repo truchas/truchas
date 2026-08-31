@@ -33,6 +33,7 @@ module hypre_hybrid_type
     type(hypre_obj) :: xh = hypre_null_obj     ! HYPRE_IJVector object handles
     type(parameter_list), pointer :: params    ! reference only -- do not own
   contains
+    procedure, nopass :: validate_params
     procedure :: init
     procedure :: setup
     procedure :: solve
@@ -58,14 +59,20 @@ contains
     call fHYPRE_ClearAllErrors
   end subroutine hypre_hybrid_delete
 
-  subroutine init (this, A, params)
+  subroutine init (this, A, params, stat, errmsg)
 
     class(hypre_hybrid), intent(out) :: this
     type(pcsr_matrix), intent(in), target :: A
     type(parameter_list), pointer, intent(in) :: params
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
 
     integer :: ierr, comm
 
+    call validate_params(params, stat, errmsg)
+    if (present(stat)) then
+      if (stat /= 0) return
+    end if
     this%A => A
     this%params => params
 
@@ -85,6 +92,194 @@ contains
     INSIST(ierr == 0)
 
   end subroutine init
+
+
+  !! Validate the parameter-list controls used by HYPRE_HYBRID%SETUP.  If
+  !! STAT is absent, invalid input terminates as PARAMETER_LIST%GET does.
+  subroutine validate_params(params, stat, errmsg)
+    use,intrinsic :: iso_fortran_env, only: error_unit
+    type(parameter_list), pointer, intent(in) :: params
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
+
+    integer :: ipar, istat
+    real(r8) :: rpar
+    logical :: lpar
+    character(:), allocatable :: cpar, message
+
+    if (present(stat)) stat = 0
+    call params%get('rel-tol', rpar, istat, message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (rpar < 0.0_r8) then
+      call fail('"rel-tol" must be >= 0')
+      return
+    end if
+    call params%get('abs-tol', rpar, default=0.0_r8, stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (rpar < 0.0_r8) then
+      call fail('"abs-tol" must be >= 0')
+      return
+    end if
+    if (params%is_parameter('conv-rate-tol')) then
+      call params%get('conv-rate-tol', rpar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (rpar <= 0.0_r8 .or. rpar >= 1.0_r8) then
+        call fail('"conv-rate-tol" must be in (0,1)')
+        return
+      end if
+    end if
+    call params%get('max-ds-iter', ipar, istat, message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (ipar <= 0) then
+      call fail('"max-ds-iter" must be > 0')
+      return
+    end if
+    call params%get('max-amg-iter', ipar, istat, message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (ipar <= 0) then
+      call fail('"max-amg-iter" must be > 0')
+      return
+    end if
+    call params%get('krylov-method', cpar, default='cg', stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    select case (cpar)
+    case ('cg', 'gmres', 'bicgstab')
+    case default
+      call fail('"krylov-method" must be "cg", "gmres", or "bicgstab"')
+      return
+    end select
+    if (cpar == 'gmres') then
+      call params%get('gmres-krylov-dim', ipar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (ipar <= 0) then
+        call fail('"gmres-krylov-dim" must be > 0')
+        return
+      end if
+    end if
+    if (params%is_parameter('cg-use-two-norm')) then
+      call params%get('cg-use-two-norm', lpar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+    end if
+    call params%get('logging-level', ipar, default=1, stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (ipar < 0) then
+      call fail('"logging-level" must be >= 0')
+      return
+    end if
+    call params%get('print-level', ipar, default=0, stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (ipar < 0) then
+      call fail('"print-level" must be >= 0')
+      return
+    end if
+    call params%get('amg-strong-threshold', rpar, default=0.5_r8, stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (rpar <= 0.0_r8 .or. rpar >= 1.0_r8) then
+      call fail('"amg-strong-threshold" must be in (0,1)')
+      return
+    end if
+    if (params%is_parameter('amg-max-levels')) then
+      call params%get('amg-max-levels', ipar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (ipar <= 1) then
+        call fail('"amg-max-levels" must be > 1')
+        return
+      end if
+    end if
+    if (params%is_parameter('amg-coarsen-method')) then
+      call params%get('amg-coarsen-type', ipar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (ipar < 0) then
+        call fail('"amg-coarsen-type" must be >= 0')
+        return
+      end if
+    end if
+    call params%get('amg-smoothing-sweeps', ipar, default=1, stat=istat, errmsg=message)
+    if (istat /= 0) then
+      call fail(message)
+      return
+    end if
+    if (ipar < 0) then
+      call fail('"amg-smoothing-sweeps" must be >= 0')
+      return
+    end if
+    if (params%is_parameter('amg-smoothing-method')) then
+      call params%get('amg-smoothing-method', ipar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (ipar < 0) then
+        call fail('"amg-smoothing-method" must be >= 0')
+        return
+      end if
+    end if
+    if (params%is_parameter('amg-interp-method')) then
+      call params%get('amg-interp-method', ipar, istat, message)
+      if (istat /= 0) then
+        call fail(message)
+        return
+      end if
+      if (ipar < 0) then
+        call fail('"amg-interp-method" must be >= 0')
+        return
+      end if
+    end if
+
+  contains
+
+    subroutine fail(message)
+      character(*), intent(in) :: message
+
+      if (present(stat)) then
+        stat = 1
+        if (present(errmsg)) errmsg = message
+      else
+        write(error_unit,'(a)') 'ERROR: ' // message
+        stop 1
+      end if
+    end subroutine
+
+  end subroutine validate_params
 
   function matrix (this)
     class(hypre_hybrid), intent(in) :: this
@@ -160,7 +355,8 @@ contains
     !! Convergence rate tolerance (optional, use Hypre default)
     if (this%params%is_parameter('conv-rate-tol')) then
       call this%params%get ('conv-rate-tol', rpar)
-      INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8) !TODO: replace with proper error handling
+      ! TODO: replace with proper error handling
+      INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8)
       call fHYPRE_ParCSRHybridSetConvergenceTol (this%solver, rpar, ierr)
       INSIST(ierr == 0)
     end if
@@ -226,7 +422,8 @@ contains
 
     !! AMG strength threshold (default 0.5 (3D Laplace))
     call this%params%get ('amg-strong-threshold', rpar, default=0.5_r8)
-    INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8) !TODO: replace with proper error handling
+    ! TODO: replace with proper error handling
+    INSIST(rpar > 0.0_r8 .and. rpar < 1.0_r8)
     call fHYPRE_ParCSRHybridSetStrongThreshold (this%solver, rpar, ierr)
     INSIST(ierr == 0)
 
