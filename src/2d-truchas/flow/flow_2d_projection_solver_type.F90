@@ -36,11 +36,20 @@ module flow_2d_projection_solver_type
 
 contains
 
-  subroutine init(this, projection, params)
+  subroutine init(this, projection, params, stat, errmsg)
     class(flow_2d_projection_solver), intent(out) :: this
     type(flow_2d_projection), target, intent(in) :: projection
     type(parameter_list), target, intent(in) :: params
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
 
+    call this%solver%validate_params(params, stat, errmsg)
+    if (present(stat)) then
+      if (stat /= 0) then
+        if (present(errmsg)) errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+    end if
     this%projection => projection
     this%params => params
   end subroutine

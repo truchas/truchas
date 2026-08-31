@@ -78,7 +78,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist, flow_bc, solver_params, flow_solver_params, tracking_params
+    type(parameter_list), pointer :: plist, flow_bc, solver_params
     type(parameter_list_iterator) :: piter
     type(flow_2d_material_layout) :: material_layout
     class(scalar_func), allocatable :: initial_temp
@@ -148,16 +148,7 @@ contains
       stat = 1; errmsg = 'flow-model requires a "bc" sublist'; return
     end if
     flow_bc => plist%sublist('bc')
-    if (.not.params%is_sublist('solver')) then
-      stat = 1; errmsg = 'missing "solver" sublist'; return
-    end if
-    solver_params => params%sublist('solver')
-    if (.not.solver_params%is_sublist('flow')) then
-      stat = 1; errmsg = 'solver requires a "flow" sublist'; return
-    end if
-    flow_solver_params => solver_params%sublist('flow')
-    tracking_params => flow_solver_params%sublist('volume-tracking')
-    call material_layout%init(this%matl_model, tracking_params, stat, errmsg)
+    call material_layout%init(this%matl_model, stat, errmsg)
     if (stat /= 0) return
     allocate(fluid_material_ids(material_layout%num_real_fluid()))
     call material_layout%get_real_fluid_material_ids(fluid_material_ids)
@@ -174,6 +165,10 @@ contains
     call this%ht_model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg, advection=.true.)
     if (stat /= 0) return
 
+    if (.not.params%is_sublist('solver')) then
+      stat = 1; errmsg = 'missing "solver" sublist'; return
+    end if
+    solver_params => params%sublist('solver')
     allocate(this%solver)
     call this%solver%init(env, this%flow_model, this%ht_model, this%matl_model, this%composition, &
         solver_params, stat, errmsg)

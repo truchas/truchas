@@ -25,10 +25,12 @@ module flow_2d_material_layout_type
   type, public :: flow_2d_material_layout
     private
     integer, allocatable :: fluid_material_ids(:), solid_material_ids(:)
+    character(:), allocatable :: fluid_material_names(:)
     integer :: void_material_id = 0
     integer, allocatable :: priority(:)
   contains
     procedure :: init
+    procedure :: set_priority
     procedure :: num_real_fluid
     procedure :: num_fluid
     procedure :: num_material
@@ -40,16 +42,14 @@ module flow_2d_material_layout_type
 
 contains
 
-  subroutine init(this, matl_model, params, stat, errmsg)
+  subroutine init(this, matl_model, stat, errmsg)
 
     class(flow_2d_material_layout), intent(out) :: this
     type(material_model), intent(in) :: matl_model
-    type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    character(:), allocatable :: names(:)
-    integer :: i, j, mid, nsolid
+    integer :: i, j, mid, nchar, nsolid
     class(material), pointer :: matl
 
     allocate(this%fluid_material_ids(matl_model%nmatl_real), this%solid_material_ids(matl_model%nmatl_real))
@@ -74,10 +74,36 @@ contains
     end do
     this%fluid_material_ids = this%fluid_material_ids(:j)
     this%solid_material_ids = this%solid_material_ids(:nsolid)
+    nchar = 1
+    do i = 1, size(this%fluid_material_ids)
+      nchar = max(nchar, len(matl_model%matl_name(this%fluid_material_ids(i))))
+    end do
+    allocate(character(nchar) :: this%fluid_material_names(size(this%fluid_material_ids)))
+    do i = 1, size(this%fluid_material_ids)
+      this%fluid_material_names(i) = matl_model%matl_name(this%fluid_material_ids(i))
+    end do
     if (matl_model%have_void) this%void_material_id = matl_model%nmatl
 
     allocate(this%priority(this%num_material()))
     this%priority = [(i, i=1,size(this%priority))]
+
+    stat = 0
+    errmsg = ''
+
+  end subroutine
+
+
+  subroutine set_priority(this, params, stat, errmsg)
+
+    class(flow_2d_material_layout), intent(inout) :: this
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    character(:), allocatable :: names(:)
+    integer :: i
+
+    ASSERT(allocated(this%priority))
     if (.not.params%is_vector('material-priority')) then
       stat = 0
       errmsg = ''
@@ -92,7 +118,7 @@ contains
       return
     end if
     do i = 1, size(names)
-      this%priority(i) = slot_index(this, matl_model, names(i))
+      this%priority(i) = slot_index(this, names(i))
       if (this%priority(i) == 0) then
         stat = 1
         errmsg = 'invalid material-priority entry: ' // names(i)
@@ -106,32 +132,29 @@ contains
     end if
     stat = 0
     errmsg = ''
+  end subroutine
 
-  contains
 
-    integer function slot_index(this, matl_model, name) result(slot)
+  integer function slot_index(this, name) result(slot)
 
-      class(flow_2d_material_layout), intent(in) :: this
-      type(material_model), intent(in) :: matl_model
-      character(*), intent(in) :: name
-      integer :: k
+    class(flow_2d_material_layout), intent(in) :: this
+    character(*), intent(in) :: name
+    integer :: k
 
-      slot = 0
-      do k = 1, size(this%fluid_material_ids)
-        if (name == matl_model%matl_name(this%fluid_material_ids(k))) then
-          slot = k
-          return
-        end if
-      end do
-      if (this%void_material_id /= 0 .and. name == 'VOID') then
-        slot = this%num_fluid()
+    slot = 0
+    do k = 1, size(this%fluid_material_ids)
+      if (name == this%fluid_material_names(k)) then
+        slot = k
         return
       end if
-      if (size(this%solid_material_ids) > 0 .and. name == 'SOLID') slot = this%num_material()
+    end do
+    if (this%void_material_id /= 0 .and. name == 'VOID') then
+      slot = this%num_fluid()
+      return
+    end if
+    if (size(this%solid_material_ids) > 0 .and. name == 'SOLID') slot = this%num_material()
 
-    end function
-
-  end subroutine
+  end function
 
 
   integer function num_real_fluid(this)

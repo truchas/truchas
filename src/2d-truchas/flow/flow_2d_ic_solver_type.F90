@@ -41,17 +41,27 @@ module flow_2d_ic_solver_type
 
 contains
 
-  subroutine init(this, model, momentum_params, projection_params)
+  subroutine init(this, model, momentum_params, projection_params, stat, errmsg)
     class(flow_2d_ic_solver), intent(out) :: this
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
 
     this%model => model
     allocate(this%projection_solver, this%rhs(2,model%mesh%ncell_onP), this%grad_p(2,model%mesh%ncell), &
         this%velocity_cc(2,model%mesh%ncell), this%velocity_fn(model%mesh%nface))
-    if (present(momentum_params)) call this%momentum_solver%init(model%momentum, momentum_params)
-    call this%projection_solver%init(model%projection, projection_params)
+    if (present(momentum_params)) then
+      call this%momentum_solver%init(model%momentum, momentum_params, stat, errmsg)
+      if (present(stat)) then
+        if (stat /= 0) return
+      end if
+    end if
+    call this%projection_solver%init(model%projection, projection_params, stat, errmsg)
+    if (present(stat)) then
+      if (stat /= 0) return
+    end if
     call this%projection_update%init(model%mesh, model%operators, model%projection, this%projection_solver, &
         model%body_acceleration)
   end subroutine

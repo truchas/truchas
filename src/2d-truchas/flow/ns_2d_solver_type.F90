@@ -63,49 +63,80 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, momentum_params, projection_params, material_layout, tracking_params, courant_number)
+  subroutine init(this, env, model, material_layout, params, stat, errmsg)
     class(ns_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
-    type(parameter_list), target, intent(in), optional :: momentum_params
-    type(parameter_list), target, intent(in) :: projection_params
-    type(flow_2d_material_layout), intent(in), optional :: material_layout
-    type(parameter_list), target, intent(inout), optional :: tracking_params
-    real(r8), intent(in), optional :: courant_number
+    type(flow_2d_material_layout), intent(inout) :: material_layout
+    type(parameter_list), target, intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     integer :: nrealfluid, nfluid, nmat
     integer, allocatable :: priority(:)
     character(:), allocatable :: algorithm
+    type(parameter_list), pointer :: tracking_params, momentum_params, projection_params
+    real(r8) :: courant_number
+    character(96) :: message
 
-    if (present(courant_number)) then
-      call this%flow%init(env, model, momentum_params, projection_params, courant_number)
-    else
-      call this%flow%init(env, model, momentum_params, projection_params)
+    stat = 0
+    if (.not.params%is_sublist('volume-tracking')) then
+      stat = 1
+      errmsg = 'requires a "volume-tracking" sublist'
+      return
     end if
-    if (present(material_layout)) then
-      nrealfluid = material_layout%num_real_fluid()
-      nfluid = material_layout%num_fluid()
-      nmat = material_layout%num_material()
-      allocate(priority(nmat))
-      call material_layout%get_priority(priority)
-    else
-      nrealfluid = 1
-      nfluid = 1
-      nmat = 1
+    tracking_params => params%sublist('volume-tracking')
+    call material_layout%set_priority(tracking_params, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+      return
     end if
-    if (present(tracking_params)) then
-      call tracking_params%get('algorithm', algorithm, default='simple')
-    else
-      algorithm = 'simple'
+    call params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // params%path() // ': ' // errmsg
+      return
     end if
+    if (courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
+      stat = 1
+      errmsg = 'processing ' // params%path() // ': "courant-number" must be in (0,1]'
+      return
+    end if
+    write(message, '(a,es11.4,a)') 'Using Courant number ', courant_number, '.'
+    call env%simlog%info(trim(message))
+    if (.not.params%is_sublist('projection-solver')) then
+      stat = 1
+      errmsg = 'requires a "projection-solver" sublist'
+      return
+    end if
+    projection_params => params%sublist('projection-solver')
+    call tracking_params%get('algorithm', algorithm, default='simple', stat=stat, errmsg=errmsg)
+    if (stat /= 0) then
+      errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+      return
+    end if
+    call env%simlog%info('Using ' // trim(algorithm) // ' volume tracking.')
+    if (model%inviscid) then
+      call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
+          stat=stat, errmsg=errmsg)
+    else
+      if (.not.params%is_sublist('momentum-solver')) then
+        stat = 1
+        errmsg = 'viscous flow requires a "momentum-solver" sublist'
+        return
+      end if
+      momentum_params => params%sublist('momentum-solver')
+      call this%flow%init(env, model, momentum_params, projection_params, courant_number, stat, errmsg)
+    end if
+    if (stat /= 0) return
+    nrealfluid = material_layout%num_real_fluid()
+    nfluid = material_layout%num_fluid()
+    nmat = material_layout%num_material()
+    allocate(priority(nmat))
+    call material_layout%get_priority(priority)
     allocate(this%vfrac(nmat,model%mesh%ncell))
     this%vfrac = 0.0_r8
     this%vfrac(1,:) = 1.0_r8
-    if (present(material_layout)) then
-      call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority)
-    else
-      call this%material_transport%init(env, model%mesh, 1, 1, 1)
-    end if
+    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority)
   end subroutine
 
 

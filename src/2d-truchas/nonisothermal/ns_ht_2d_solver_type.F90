@@ -100,7 +100,9 @@ contains
       errmsg = 'solver.flow.volume-tracking.algorithm must be "simple" or "geometric"'
       return
     end if
-    call this%material_layout%init(matl_model, tracking_params, stat, errmsg)
+    call this%material_layout%init(matl_model, stat, errmsg)
+    if (stat /= 0) return
+    call this%material_layout%set_priority(tracking_params, stat, errmsg)
     if (stat /= 0) return
     if (this%material_layout%num_real_fluid() == 0) then
       stat = 1
@@ -162,7 +164,8 @@ contains
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
-      call this%flow%init(env, flow_model, projection_params=projection_params, courant_number=courant_number)
+      call this%flow%init(env, flow_model, projection_params=projection_params, courant_number=courant_number, &
+          stat=stat, errmsg=errmsg)
     else
       if (.not.flow_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -170,8 +173,9 @@ contains
         return
       end if
       momentum_params => flow_params%sublist('momentum-solver')
-      call this%flow%init(env, flow_model, momentum_params, projection_params, courant_number)
+      call this%flow%init(env, flow_model, momentum_params, projection_params, courant_number, stat, errmsg)
     end if
+    if (stat /= 0) return
     allocate(priority(this%material_layout%num_material()))
     call this%material_layout%get_priority(priority)
     call this%material_transport%init(env, flow_model%mesh, this%material_layout%num_real_fluid(), &

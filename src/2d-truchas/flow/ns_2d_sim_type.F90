@@ -54,7 +54,6 @@ contains
 
   subroutine delete(this)
     type(ns_2d_sim), intent(inout) :: this
-
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%model)) deallocate(this%model)
@@ -73,23 +72,18 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: mesh_params, model_params, bc_params, solver_params, tracking_params, materials_params
-    type(parameter_list), pointer :: momentum_params, projection_params, control_params
-    type(parameter_list_iterator) :: piter
+    type(parameter_list), pointer :: mesh_params, model_params, solver_params, materials_params
+    type(parameter_list), pointer :: control_params
     type(flow_2d_material_layout) :: material_layout
-    class(vector_func), allocatable :: initial_velocity_func
-    real(r8), allocatable :: initial_velocity(:,:)
-    real(r8), allocatable :: body_acceleration(:)
-    real(r8), allocatable :: vfrac(:,:), temperature(:)
-    real(r8) :: courant_number
-    character(:), allocatable :: matl_name(:), region_name(:), region_matl_name(:), tracker_algorithm
-    character(96) :: message
-    integer, allocatable :: fluid_material_ids(:)
+    character(:), allocatable :: matl_name(:)
     integer :: i, rlev
     logical :: inviscid
 
     stat = 0
+
     call init_signal_handler(SIGURG)
+
+    !! Construct the mesh.
     if (.not.params%is_sublist('mesh')) then
       stat = 1
       errmsg = 'missing "mesh" sublist parameter'
@@ -105,6 +99,7 @@ contains
     end if
     call env%simlog%end_section('Mesh construction complete.')
 
+    !! Load the material database.
     if (.not.params%is_sublist('materials')) then
       stat = 1
       errmsg = 'missing "materials" sublist parameter'
@@ -114,36 +109,17 @@ contains
     call env%simlog%info('Loading material database.')
     call load_material_database(this%matl_db, materials_params, stat, errmsg)
     if (stat /= 0) return
-    allocate(this%composition)
-    if (params%is_sublist('material-regions')) then
-      call env%simlog%begin_section('Reading material regions.')
-      call get_material_region_names(params%sublist('material-regions'), matl_name, stat, errmsg, &
-          region_name, region_matl_name)
-      if (stat /= 0) then
-        call env%simlog%end_section('Material-region processing failed.')
-        return
-      end if
-      do i = 1, size(region_name)
-        call env%simlog%info('Region "' // trim(region_name(i)) // '": material="' // &
-            trim(region_matl_name(i)) // '".')
-      end do
-      call env%simlog%end_section('Material regions read.')
-      call params%get('material-region-refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      if (rlev < 0) then
-        stat = 1
-        errmsg = '"material-region-refinement-level" must be >= 0'
-        return
-      end if
-    else
-      piter = parameter_list_iterator(materials_params, sublists_only=.true.)
-      if (piter%count() /= 1) then
-        stat = 1
-        errmsg = 'multiple materials require a "material-regions" sublist'
-        return
-      end if
-      matl_name = [piter%name()]
+
+    !! Identify the simulation materials.
+    call env%simlog%begin_section('Reading material regions.')
+    call read_material_regions(stat, errmsg)
+    if (stat /= 0) then
+      call env%simlog%end_section('Material-region processing failed.')
+      return
     end if
+    call env%simlog%end_section('Material regions read.')
+
+    !! Construct the material model.
     call env%simlog%begin_section('Constructing material model.')
     call this%matl_model%init(matl_name, this%matl_db, stat, errmsg)
     if (stat /= 0) then
@@ -154,7 +130,10 @@ contains
       call env%simlog%info('Using material "' // trim(matl_name(i)) // '".')
     end do
     call env%simlog%end_section('Material model complete.')
+
+    !! Construct the material distribution.
     call env%simlog%begin_section('Constructing material distribution.')
+    allocate(this%composition)
     if (params%is_sublist('material-regions')) then
       call this%composition%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
     else
@@ -167,206 +146,250 @@ contains
     end if
     call env%simlog%end_section('Material distribution complete.')
 
+    !! Construct the Navier-Stokes flow model.
     if (.not.params%is_sublist('flow-model')) then
       stat = 1
       errmsg = 'missing "flow-model" sublist parameter'
       return
     end if
     model_params => params%sublist('flow-model')
-    call model_params%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
+    call env%simlog%begin_section('Constructing flow model.')
+    call construct_flow_model(model_params, stat, errmsg)
     if (stat /= 0) then
-      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
+      call env%simlog%end_section('Flow model construction failed.')
       return
     end if
-    call model_params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, &
-        default=[0.0_r8, 0.0_r8])
-    if (stat /= 0) then
-      errmsg = 'processing ' // model_params%path() // ': ' // errmsg
-      return
-    end if
-    if (.not.model_params%is_sublist('bc')) then
-      stat = 1
-      errmsg = 'missing "bc" sublist parameter in ' // model_params%path()
-      return
-    end if
-    bc_params => model_params%sublist('bc')
+    call env%simlog%end_section('Flow model complete.')
+
+    !! Construct the Navier-Stokes solver.
     if (.not.params%is_sublist('flow-solver')) then
       stat = 1
       errmsg = 'missing "flow-solver" sublist parameter'
       return
     end if
     solver_params => params%sublist('flow-solver')
-    if (.not.solver_params%is_sublist('volume-tracking')) then
-      stat = 1
-      errmsg = 'flow-solver requires a volume-tracking sublist for material flow'
-      return
-    end if
-    tracking_params => solver_params%sublist('volume-tracking')
-    allocate(this%model)
-    call env%simlog%begin_section('Constructing flow model.')
-    if (inviscid) then
-      call env%simlog%info('Using inviscid flow.')
-    else
-      call env%simlog%info('Using viscous flow.')
-    end if
-    if (any(body_acceleration /= 0.0_r8)) then
-      write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
-          body_acceleration(2), '].'
-      call env%simlog%info(trim(message))
-    end if
-    call material_layout%init(this%matl_model, tracking_params, stat, errmsg)
-    if (stat /= 0) then
-      call env%simlog%end_section('Flow model construction failed.')
-      return
-    end if
-    allocate(fluid_material_ids(material_layout%num_real_fluid()))
-    call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-    call this%model%init_material(env, this%mesh, bc_params, this%matl_model, fluid_material_ids, stat, errmsg, &
-        body_acceleration=body_acceleration, inviscid=inviscid)
-    if (stat /= 0) then
-      call env%simlog%end_section('Flow model construction failed.')
-      errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
-      return
-    end if
-    call env%simlog%end_section('Flow model complete.')
     call env%simlog%begin_section('Constructing flow solver.')
-    call solver_params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0 .or. courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
-      if (stat == 0) then
-        stat = 1
-        errmsg = '"courant-number" must be in (0,1]'
-      end if
-      call env%simlog%end_section('Flow solver construction failed.')
-      return
-    end if
-    write(message, '(a,es11.4,a)') 'Using Courant number ', courant_number, '.'
-    call env%simlog%info(trim(message))
-    if (.not.solver_params%is_sublist('projection-solver')) then
-      stat = 1
-      errmsg = 'flow-solver requires a "projection-solver" sublist'
-      call env%simlog%end_section('Flow solver construction failed.')
-      return
-    end if
-    projection_params => solver_params%sublist('projection-solver')
-    call tracking_params%get('algorithm', tracker_algorithm, default='simple', stat=stat, errmsg=errmsg)
+    allocate(this%solver)
+    call this%solver%init(env, this%model, material_layout, solver_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Flow solver construction failed.')
-      errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
       return
-    end if
-    call env%simlog%info('Using ' // trim(tracker_algorithm) // ' volume tracking.')
-    allocate(this%solver)
-    if (inviscid) then
-      call env%simlog%info('Constructing projection solver.')
-      call this%solver%init(env, this%model, projection_params=projection_params, material_layout=material_layout, &
-          tracking_params=tracking_params, courant_number=courant_number)
-    else
-      if (.not.solver_params%is_sublist('momentum-solver')) then
-        stat = 1
-        errmsg = 'viscous flow requires a "momentum-solver" sublist'
-        call env%simlog%end_section('Flow solver construction failed.')
-        return
-      end if
-      momentum_params => solver_params%sublist('momentum-solver')
-      call env%simlog%info('Constructing momentum solver.')
-      call env%simlog%info('Constructing projection solver.')
-      call this%solver%init(env, this%model, momentum_params, projection_params, material_layout, tracking_params, courant_number)
     end if
     call env%simlog%end_section('Flow solver complete.')
-    call env%simlog%begin_section('Configuring integration.')
+
+    !! Configure integration
     if (.not.params%is_sublist('sim-control')) then
       stat = 1
       errmsg = 'missing "sim-control" sublist parameter'
-      call env%simlog%end_section('Integration configuration failed.')
       return
     end if
     control_params => params%sublist('sim-control')
-    call control_params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
+    call env%simlog%begin_section('Configuring integration.')
+    call configure_integration(control_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Integration configuration failed.')
       return
     end if
-    call control_params%get('output-times', this%tout, stat, errmsg)
-    if (stat /= 0) then
-      call env%simlog%end_section('Integration configuration failed.')
-      return
-    end if
-    if (size(this%tout) == 0) then
-      stat = 1
-      errmsg = 'processing ' // control_params%path() // ': require nonempty output-times'
-      call env%simlog%end_section('Integration configuration failed.')
-      return
-    end if
-    if (any(this%tout <= this%t_init) .or. any(this%tout(2:) <= this%tout(:size(this%tout)-1))) then
-      stat = 1
-      errmsg = 'processing ' // control_params%path() // ': require strictly increasing output-times after initial-time'
-      call env%simlog%end_section('Integration configuration failed.')
-      return
-    end if
-    call this%solver%init_time_stepper(control_params, stat, errmsg)
-    if (stat /= 0) then
-      errmsg = 'processing ' // control_params%path() // ': ' // errmsg
-      call env%simlog%end_section('Integration configuration failed.')
-      return
-    end if
-    write(message,'(a,es11.4)') 'Initial time: ', this%t_init
-    call env%simlog%info(trim(message))
-    write(message,'(a,es11.4)') 'Initial time step: ', this%solver%initial_time_step()
-    call env%simlog%info(trim(message))
-    if (size(this%tout) == 1) then
-      write(message,'(a,es11.4)') 'Output schedule: 1 time at ', this%tout(1)
-    else
-      write(message,'(a,i0,a,es11.4,a,es11.4)') 'Output schedule: ', size(this%tout), &
-          ' times from ', this%tout(1), ' through ', this%tout(size(this%tout))
-    end if
-    call env%simlog%info(trim(message))
     call env%simlog%end_section('Integration configuration complete.')
 
+    !! Initialize the flow state.
     call env%simlog%begin_section('Initializing flow state.')
-    allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
-    if (params%is_parameter('initial-velocity')) then
-      call env%simlog%info('Projecting user-supplied initial velocity.')
-      call alloc_vector_func(params, 'initial-velocity', initial_velocity_func, stat, errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing initial-velocity: ' // errmsg
-        call env%simlog%end_section('Flow-state initialization failed.')
-        return
-      end if
-      if (initial_velocity_func%dim /= 2) then
-        stat = 1
-        errmsg = 'processing initial-velocity: require a two-component vector function'
-        call env%simlog%end_section('Flow-state initialization failed.')
-        return
-      end if
-      call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
-    else
-      call env%simlog%info('Using zero initial velocity.')
-    end if
-    allocate(vfrac(material_layout%num_material(), this%mesh%ncell), temperature(this%mesh%ncell_onP), source=0.0_r8)
-    call material_layout%get_reduced_volume_fractions(this%composition, vfrac)
-    call this%mesh%cell_imap%gather_offp(vfrac)
-    call this%solver%set_initial_material_state(vfrac, temperature)
-    call this%solver%set_initial_state(env, this%t_init, this%solver%initial_time_step(), initial_velocity, stat)
+    call initialize_flow_state(stat, errmsg)
     if (stat /= 0) then
-      errmsg = 'initializing flow state failed'
       call env%simlog%end_section('Flow-state initialization failed.')
       return
     end if
     call env%simlog%end_section('Flow-state initialization complete.')
 
+    !! Create the output file and write the mesh.
     call this%solver%init_temporal_output(this%temporal_output)
-    call env%simlog%begin_section('Opening VTKHDF output.')
+    call env%simlog%info('Opening VTKHDF output.')
     call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg, this%matl_model)
     if (stat /= 0) then
-      call env%simlog%end_section('VTKHDF output initialization failed.')
       errmsg = 'opening VTKHDF output: ' // errmsg
       return
     end if
-    call env%simlog%end_section('VTKHDF output ready.')
-  end subroutine
+
+  contains
+
+    subroutine read_material_regions(stat, errmsg)
+
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      type(parameter_list_iterator) :: piter
+      character(:), allocatable :: region_name(:), region_matl_name(:)
+      integer :: i
+
+      stat = 0
+      if (params%is_sublist('material-regions')) then
+        call get_material_region_names(params%sublist('material-regions'), matl_name, stat, errmsg, &
+            region_name, region_matl_name)
+        if (stat /= 0) return
+        do i = 1, size(region_name)
+          call env%simlog%info('Region "' // trim(region_name(i)) // '": material="' // &
+              trim(region_matl_name(i)) // '".')
+        end do
+        call params%get('material-region-refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        if (rlev < 0) then
+          stat = 1
+          errmsg = '"material-region-refinement-level" must be >= 0'
+        end if
+      else
+        piter = parameter_list_iterator(materials_params, sublists_only=.true.)
+        if (piter%count() /= 1) then
+          stat = 1
+          errmsg = 'multiple materials require a "material-regions" sublist'
+          return
+        end if
+        matl_name = [piter%name()]
+      end if
+
+    end subroutine read_material_regions
+
+
+    subroutine construct_flow_model(params, stat, errmsg)
+
+      type(parameter_list), intent(inout) :: params
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      type(parameter_list), pointer :: bc_params
+      real(r8), allocatable :: body_acceleration(:)
+      integer, allocatable :: fluid_material_ids(:)
+      character(96) :: message
+
+      stat = 0
+      call params%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      call params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8, 0.0_r8])
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      if (.not.params%is_sublist('bc')) then
+        stat = 1
+        errmsg = 'missing "bc" sublist parameter in ' // params%path()
+        return
+      end if
+      bc_params => params%sublist('bc')
+
+      allocate(this%model)
+      if (inviscid) then
+        call env%simlog%info('Using inviscid flow.')
+      else
+        call env%simlog%info('Using viscous flow.')
+      end if
+      if (any(body_acceleration /= 0.0_r8)) then
+        write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
+            body_acceleration(2), '].'
+        call env%simlog%info(trim(message))
+      end if
+
+      call material_layout%init(this%matl_model, stat, errmsg)
+      if (stat /= 0) return
+      allocate(fluid_material_ids(material_layout%num_real_fluid()))
+      call material_layout%get_real_fluid_material_ids(fluid_material_ids)
+      call this%model%init_material(env, this%mesh, bc_params, this%matl_model, fluid_material_ids, stat, errmsg, &
+          body_acceleration=body_acceleration, inviscid=inviscid)
+      if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
+
+    end subroutine construct_flow_model
+
+
+    subroutine configure_integration(params, stat, errmsg)
+
+      type(parameter_list), intent(inout) :: params
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      character(96) :: message
+
+      stat = 0
+      call params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      call params%get('output-times', this%tout, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      if (size(this%tout) == 0) then
+        stat = 1
+        errmsg = 'processing ' // params%path() // ': require nonempty output-times'
+        return
+      end if
+      if (any(this%tout <= this%t_init) .or. any(this%tout(2:) <= this%tout(:size(this%tout)-1))) then
+        stat = 1
+        errmsg = 'processing ' // params%path() // ': require strictly increasing output-times after initial-time'
+        return
+      end if
+      call this%solver%init_time_stepper(params, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      write(message,'(a,es11.4)') 'Initial time: ', this%t_init
+      call env%simlog%info(trim(message))
+      write(message,'(a,es11.4)') 'Initial time step: ', this%solver%initial_time_step()
+      call env%simlog%info(trim(message))
+      if (size(this%tout) == 1) then
+        write(message,'(a,es11.4)') 'Output schedule: 1 time at ', this%tout(1)
+      else
+        write(message,'(a,i0,a,es11.4,a,es11.4)') 'Output schedule: ', size(this%tout), &
+            ' times from ', this%tout(1), ' through ', this%tout(size(this%tout))
+      end if
+      call env%simlog%info(trim(message))
+
+    end subroutine configure_integration
+
+
+    subroutine initialize_flow_state(stat, errmsg)
+
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      class(vector_func), allocatable :: initial_velocity_func
+      real(r8), allocatable :: initial_velocity(:,:), vfrac(:,:), temperature(:)
+
+      stat = 0
+      allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
+      if (params%is_parameter('initial-velocity')) then
+        call env%simlog%info('Projecting user-supplied initial velocity.')
+        call alloc_vector_func(params, 'initial-velocity', initial_velocity_func, stat, errmsg)
+        if (stat /= 0) then
+          errmsg = 'processing initial-velocity: ' // errmsg
+          return
+        end if
+        if (initial_velocity_func%dim /= 2) then
+          stat = 1
+          errmsg = 'processing initial-velocity: require a two-component vector function'
+          return
+        end if
+        call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
+      else
+        call env%simlog%info('Using zero initial velocity.')
+      end if
+      allocate(vfrac(material_layout%num_material(), this%mesh%ncell), temperature(this%mesh%ncell_onP), source=0.0_r8)
+      call material_layout%get_reduced_volume_fractions(this%composition, vfrac)
+      call this%mesh%cell_imap%gather_offp(vfrac)
+      call this%solver%set_initial_material_state(vfrac, temperature)
+      call this%solver%set_initial_state(env, this%t_init, this%solver%initial_time_step(), initial_velocity, stat)
+      if (stat /= 0) errmsg = 'initializing flow state failed'
+
+    end subroutine initialize_flow_state
+
+  end subroutine init
 
 
   subroutine run(this, env, stat, errmsg)
+
     class(ns_2d_sim), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
@@ -415,15 +438,14 @@ contains
     call this%output%close()
     call env%simlog%end_section(trim(line))
     call env%timer%stop('integration')
-  end subroutine
+
+  end subroutine run
 
 
   subroutine write_solution(this, time)
     class(ns_2d_sim), intent(inout) :: this
     real(r8), intent(in) :: time
-
     real(r8), pointer :: pressure(:), velocity(:,:), vfrac(:,:)
-
     call this%solver%get_cell_flow_soln(pressure, velocity)
     call this%solver%set_temporal_output(this%temporal_output)
     call this%solver%get_volume_fractions(vfrac)

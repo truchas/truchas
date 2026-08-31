@@ -39,11 +39,20 @@ module flow_2d_momentum_solver_type
 
 contains
 
-  subroutine init(this, momentum, params)
+  subroutine init(this, momentum, params, stat, errmsg)
     class(flow_2d_momentum_solver), intent(out) :: this
     type(flow_2d_momentum), target, intent(in) :: momentum
     type(parameter_list), target, intent(in) :: params
+    integer, intent(out), optional :: stat
+    character(:), allocatable, intent(out), optional :: errmsg
 
+    call this%solver%validate_params(params, stat, errmsg)
+    if (present(stat)) then
+      if (stat /= 0) then
+        if (present(errmsg)) errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+    end if
     this%momentum => momentum
     this%params => params
     allocate(this%bridge)
