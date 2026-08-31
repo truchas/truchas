@@ -112,7 +112,8 @@ contains
     call solver_params%set('min-time-step', 1.0e-8_r8)
     call solver_params%set('max-time-step', 1.0e-3_r8)
     call solver_params%set('time-step-growth', 1.0_r8)
-    call solver_params%set('courant-number', 0.5_r8)
+    plist => solver_params%sublist('flow')
+    call plist%set('courant-number', 0.5_r8)
     call solver_params%set('max-try-at-step', 4)
     call thermal_solver%init(env, standalone_ht_model, thermal_params, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal solver: ' // errmsg)
@@ -143,7 +144,7 @@ contains
         'thermal temperature was not restored by reject_step')
     call require(maxval(abs(heat_result - thermal_heat)) == 0.0_r8, &
         'thermal enthalpy was not restored by reject_step')
-    ts_sync = time_step_sync(4)
+    ts_sync = time_step_sync(3)
     t = 0.0_r8
     hlast = 1.0e-3_r8
     hnext = hlast
