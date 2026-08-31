@@ -28,6 +28,7 @@ program test_hypre_hybrid_type
   call init_parallel_communication
   call fhypre_initialize
 
+  call parameter_validation_test
   call cg_test_1
   call cg_test_2
   call gmres_test_1
@@ -38,6 +39,39 @@ program test_hypre_hybrid_type
   call exit (status)
 
 contains
+
+  subroutine parameter_validation_test
+
+    type(parameter_list), pointer :: params
+    type(hypre_hybrid) :: solver
+    integer :: stat
+    character(:), allocatable :: errmsg
+
+    if (is_IOP) write(*,'(/,a)') 'Running PARAMETER_VALIDATION_TEST'
+
+    allocate(params)
+    call params%set('rel-tol', 1.0e-8_r8)
+    call params%set('max-ds-iter', 50)
+    call params%set('max-amg-iter', 10)
+    call solver%validate_params(params, stat, errmsg)
+    if (stat /= 0) then
+      if (is_IOP) write(*,'(a)') 'error: valid HYPRE hybrid parameters rejected: ' // errmsg
+      status = 1
+    end if
+
+    call params%set('rel-tol', -1.0_r8)
+    call solver%validate_params(params, stat, errmsg)
+    if (stat == 0) then
+      if (is_IOP) write(*,'(a)') 'error: negative rel-tol accepted'
+      status = 1
+    else if (index(errmsg, 'rel-tol') == 0) then
+      if (is_IOP) write(*,'(a)') 'error: rel-tol error message lacks parameter name'
+      status = 1
+    end if
+
+    deallocate(params)
+
+  end subroutine
 
   subroutine cg_test_1
   
