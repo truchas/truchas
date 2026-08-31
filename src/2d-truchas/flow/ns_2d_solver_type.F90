@@ -50,6 +50,7 @@ module ns_2d_solver_type
     procedure :: step
     procedure :: integrate
     procedure :: last_time
+    procedure :: num_steps
     procedure :: initial_time_step
     procedure :: init_temporal_output
     procedure :: set_temporal_output
@@ -229,7 +230,7 @@ contains
   !! velocity and then advances momentum and pressure.
   subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
     class(ns_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
@@ -243,7 +244,7 @@ contains
     if (present(step_cause)) cause = step_cause
     write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
         ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
-    call env%simlog%info(trim(line))
+    call env%simlog%begin_section(trim(line))
     if (associated(env%timer)) call env%timer%start('flow/material-transport')
     call this%flow%get_face_velocity(face_velocity)
     call this%material_transport%advance(t_n, t_np1, face_velocity, this%vfrac)
@@ -254,12 +255,12 @@ contains
     if (stat /= 0) then
       call this%flow%reject_step()
       call this%flow%set_volume_fractions(this%vfrac)
-      call env%simlog%info('step-end status=failed')
+      call env%simlog%end_section('step-end status=failed')
       return
     end if
     this%vfrac = vfrac_trial
     call this%commit_step()
-    call env%simlog%info('step-end status=accepted')
+    call env%simlog%end_section('step-end status=accepted')
   end subroutine
 
 
@@ -269,7 +270,7 @@ contains
     use signal_handler, only: read_signal, SIGURG
 
     class(ns_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -344,6 +345,13 @@ contains
     real(r8) :: time
 
     time = this%tlast
+  end function
+
+
+  integer(int64) function num_steps(this)
+    class(ns_2d_solver), intent(in) :: this
+
+    num_steps = this%nstep
   end function
 
 

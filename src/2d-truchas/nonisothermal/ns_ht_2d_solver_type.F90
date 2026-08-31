@@ -230,7 +230,7 @@ contains
     use signal_handler, only: read_signal, SIGURG
 
     class(ns_ht_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -268,7 +268,7 @@ contains
   subroutine attempt_step(this, env, t_n, t_np1, step_cause, t, hnext, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     character(*), intent(in) :: step_cause
     real(r8), intent(out) :: t, hnext
@@ -290,7 +290,7 @@ contains
       if (n > 1) attempt_cause = 'thermal'
       write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
           ' attempt=', n, ' t0=', t_n, ' dt=', t_try - t_n, ' cause=', trim(attempt_cause)
-      call env%simlog%info(trim(line))
+      call env%simlog%begin_section(trim(line))
       if (associated(env%timer)) call env%timer%start('flow/material-transport')
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
@@ -316,10 +316,10 @@ contains
         if (t_try - t_n < this%dt_min) then
           stat = -1
           errmsg = 'next coupled time step is too small'
-          call env%simlog%info('step-end status=failed')
+          call env%simlog%end_section('step-end status=failed')
           return
         end if
-        call env%simlog%info('step-end status=rejected')
+        call env%simlog%end_section('step-end status=rejected')
         cycle
       end if
       call this%thermal%get_cell_temp_soln(this%temp)
@@ -335,7 +335,7 @@ contains
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3
         if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
-        call env%simlog%info('step-end status=failed')
+        call env%simlog%end_section('step-end status=failed')
         return
       end if
       call this%flow%commit_step()
@@ -343,7 +343,7 @@ contains
       this%flow_vfrac = vfrac_trial
       this%nstep = this%nstep + 1_int64
       t = t_try
-      call env%simlog%info('step-end status=accepted')
+      call env%simlog%end_section('step-end status=accepted')
       if (stat == 0) exit
     end do
 

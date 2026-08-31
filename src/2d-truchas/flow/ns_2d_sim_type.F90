@@ -362,19 +362,24 @@ contains
 
   subroutine run(this, env, stat, errmsg)
     class(ns_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: n
+    character(256) :: line
     real(r8) :: time, t_write
 
     stat = 0
-    if (associated(env%timer)) call env%timer%start('integration')
     time = this%solver%last_time()
+    write(line,'(a,es0.5)') 'integration-begin t0=', time
+    call env%simlog%begin_section(trim(line))
+    if (associated(env%timer)) call env%timer%start('integration')
     if (associated(env%timer)) call env%timer%start('output')
     call this%write_solution(time)
     if (associated(env%timer)) call env%timer%stop('output')
+    write(line,'(a,es0.5)') 'output t=', time
+    call env%simlog%info(trim(line))
     t_write = time
     do n = 1, size(this%tout)
       call this%solver%integrate(env, this%tout(n), stat, errmsg)
@@ -383,14 +388,25 @@ contains
       if (associated(env%timer)) call env%timer%start('output')
       call this%write_solution(time)
       if (associated(env%timer)) call env%timer%stop('output')
+      write(line,'(a,es0.5)') 'output t=', time
+      call env%simlog%info(trim(line))
       t_write = time
       if (stat /= 0) exit
     end do
     if (stat > 0) then
       stat = 0
       deallocate(errmsg)
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=interrupted'
+    else if (stat == 0) then
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=complete'
+    else
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=failed'
     end if
     call this%output%close()
+    call env%simlog%end_section(trim(line))
     if (associated(env%timer)) call env%timer%stop('integration')
   end subroutine
 

@@ -175,7 +175,7 @@ contains
   !! until COMMIT_STEP is called.
   subroutine step(this, env, t_n, t_np1, stat, errmsg)
     class(flow_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
@@ -183,14 +183,14 @@ contains
 
     write(line,'(a,i0,a,es0.5,a,es0.5,a)') 'step=', this%nstep + 1_int64, &
         ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=explicit'
-    call env%simlog%info(trim(line))
+    call env%simlog%begin_section(trim(line))
     call this%advance_momentum(env, t_n, t_np1, stat, errmsg)
     if (stat == 0) then
       call this%commit_step()
       this%nstep = this%nstep + 1_int64
-      call env%simlog%info('step-end status=accepted')
+      call env%simlog%end_section('step-end status=accepted')
     else
-      call env%simlog%info('step-end status=failed')
+      call env%simlog%end_section('step-end status=failed')
     end if
   end subroutine
 
@@ -238,7 +238,7 @@ contains
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           this%pending_state%vel_cc(:,1:size(this%rhs,2)))
       if (associated(env%timer)) call env%timer%stop('flow/momentum')
-      call env%simlog%info('  flow.momentum method=inviscid-direct status=ok')
+      call env%simlog%info('flow.momentum method=inviscid-direct status=ok')
     else
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, this%pending_state%vel_cc(:,1:size(this%rhs,2)), stat)
@@ -257,7 +257,7 @@ contains
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
       call write_solver_metrics(env, 'flow.projection', num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)
     else
-      call env%simlog%info('  flow.projection method=none reason=zero-rhs status=skipped')
+      call env%simlog%info('flow.projection method=none reason=zero-rhs status=skipped')
     end if
     if (stat /= 0) return
     this%step_is_pending = .true.
@@ -281,7 +281,7 @@ contains
     write(line,'(a,i0,a,i0,a,i0,a,es0.5,a,a)') trim(name) // &
         ' iterations=', num_itr, ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, &
         ' rel_residual=', rel_res_norm, ' status=', trim(status)
-    call env%simlog%info('  ' // trim(line))
+    call env%simlog%info(trim(line))
   end subroutine
 
 

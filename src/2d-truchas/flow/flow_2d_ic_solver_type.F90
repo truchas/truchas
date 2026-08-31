@@ -94,7 +94,7 @@ contains
       call write_solver_metrics(env, 'flow.initial.velocity-projection', num_itr, num_dscg_itr, num_pcg_itr, &
           rel_res_norm, stat)
     else
-      call env%simlog%info('  flow.initial.velocity-projection method=none reason=zero-rhs status=skipped')
+      call env%simlog%info('flow.initial.velocity-projection method=none reason=zero-rhs status=skipped')
     end if
     if (stat /= 0) return
     this%velocity_cc = state%vel_cc
@@ -115,7 +115,7 @@ contains
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           state%vel_cc(:,1:this%model%mesh%ncell_onP))
-      call env%simlog%info('  flow.initial.momentum method=inviscid-direct status=ok')
+      call env%simlog%info('flow.initial.momentum method=inviscid-direct status=ok')
     else if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, state%vel_cc(:,1:this%model%mesh%ncell_onP), stat)
@@ -123,7 +123,7 @@ contains
       call write_solver_metrics(env, 'flow.initial.momentum', num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)
       if (stat /= 0) return
     else
-      call env%simlog%info('  flow.initial.momentum method=none reason=zero-rhs status=skipped')
+      call env%simlog%info('flow.initial.momentum method=none reason=zero-rhs status=skipped')
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
@@ -134,7 +134,7 @@ contains
       call write_solver_metrics(env, 'flow.initial.pressure-projection', num_itr, num_dscg_itr, num_pcg_itr, &
           rel_res_norm, stat)
     else
-      call env%simlog%info('  flow.initial.pressure-projection method=none reason=zero-rhs status=skipped')
+      call env%simlog%info('flow.initial.pressure-projection method=none reason=zero-rhs status=skipped')
     end if
     if (stat /= 0) return
     state%vel_cc = this%velocity_cc
@@ -158,7 +158,7 @@ contains
     end if
     write(line,'(a,i0,a,i0,a,i0,a,es0.5,a,a)') trim(name)//' iterations=', num_itr, &
         ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, ' rel_residual=', rel_res_norm, ' status=', trim(status)
-    call env%simlog%info('  '//trim(line))
+    call env%simlog%info(trim(line))
   end subroutine
 
 
