@@ -10,7 +10,7 @@
 
 program ns_2d_main
 
-  use,intrinsic :: iso_fortran_env, only: error_unit
+  use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
   use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
@@ -98,24 +98,27 @@ program ns_2d_main
   if (stat /= 0) then
     call env%simlog%end_section('Simulation initialization failed.')
     call env%simlog%error('simulation initialization error: ' // errmsg)
-  else
-    call env%simlog%end_section('Simulation initialization complete.')
-    call sim%run(env, stat, errmsg)
-    if (stat /= 0) call env%simlog%error('flow simulation error: ' // errmsg)
-  end if
-  call env%timer%stop('simulation')
-  if (stat /= 0) then
+    call env%timer%stop('simulation')
     call env%simlog%close
     deallocate(env%timer)
     call MPI_Finalize
     error stop 1
+  else
+    call env%simlog%end_section('Simulation initialization complete.')
+    call sim%run(env, stat, errmsg)
   end if
+  call env%timer%stop('simulation')
+  if (stat /= 0) call env%simlog%error('flow simulation error: ' // errmsg)
   call env%simlog%info('')
   call env%simlog%info('Timing Summary:')
   call env%simlog%info('')
-  if (env%rank == 0) call env%timer%write(env%simlog%unit(), indent=3)
+  if (env%rank == 0) then
+    call env%timer%write(env%simlog%unit(), indent=3)
+    if (env%simlog%terminal_output_enabled()) call env%timer%write(output_unit, indent=3)
+  end if
   call env%simlog%close
   deallocate(env%timer)
   call MPI_Finalize
+  if (stat /= 0) error stop 1
 
 end program ns_2d_main

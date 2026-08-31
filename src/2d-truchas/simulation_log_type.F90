@@ -34,6 +34,7 @@ module simulation_log_type
     procedure :: init
     procedure :: close
     procedure :: unit
+    procedure :: terminal_output_enabled
     procedure :: is_enabled
     procedure :: info
     procedure :: begin_section
@@ -96,6 +97,12 @@ contains
     class(simulation_log), intent(in) :: this
     INSIST(this%io_process .and. this%log_unit /= 0)
     unit = this%log_unit
+  end function
+
+  logical function terminal_output_enabled(this)
+    class(simulation_log), intent(in) :: this
+
+    terminal_output_enabled = this%io_process .and. this%terminal_output
   end function
 
   logical function is_enabled(this, level)
