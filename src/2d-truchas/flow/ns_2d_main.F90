@@ -93,11 +93,18 @@ program ns_2d_main
     error stop 1
   end if
   call env%timer%start('simulation')
+  call env%simlog%begin_section('Initializing simulation.')
   call sim%init(env, params, stat, errmsg)
-  if (stat == 0) call sim%run(env, stat, errmsg)
+  if (stat /= 0) then
+    call env%simlog%end_section('Simulation initialization failed.')
+    call env%simlog%error('simulation initialization error: ' // errmsg)
+  else
+    call env%simlog%end_section('Simulation initialization complete.')
+    call sim%run(env, stat, errmsg)
+    if (stat /= 0) call env%simlog%error('flow simulation error: ' // errmsg)
+  end if
   call env%timer%stop('simulation')
   if (stat /= 0) then
-    call env%simlog%error('flow simulation error: ' // errmsg)
     call env%simlog%close
     deallocate(env%timer)
     call MPI_Finalize
