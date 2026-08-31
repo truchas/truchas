@@ -40,6 +40,7 @@ module flow_2d_solver_type
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
+    real(r8) :: courant_number = 0.5_r8
     integer(int64) :: nstep = 0_int64
     logical :: step_is_pending = .false.
   contains
@@ -62,14 +63,19 @@ module flow_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, momentum_params, projection_params)
+  subroutine init(this, env, model, momentum_params, projection_params, courant_number)
     class(flow_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
+    real(r8), intent(in), optional :: courant_number
 
     this%model => model
+    if (present(courant_number)) then
+      ASSERT(courant_number > 0.0_r8 .and. courant_number <= 1.0_r8)
+      this%courant_number = courant_number
+    end if
     call this%state%init(model%mesh)
     call this%pending_state%init(model%mesh)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver, &
@@ -298,25 +304,24 @@ contains
   end subroutine
 
 
-  !! Return the maximum step size satisfying the specified convective Courant
+  !! Return the maximum step size satisfying the configured convective Courant
   !! number for the current face-normal velocity.
-  function courant_time_step(this, courant_number) result(dt)
+  function courant_time_step(this) result(dt)
     class(flow_2d_solver), intent(in) :: this
-    real(r8), intent(in) :: courant_number
     real(r8) :: dt
 
     integer :: f
     real(r8) :: dt_local
     real(r8), pointer :: velocity(:)
 
-    ASSERT(courant_number > 0.0_r8 .and. courant_number <= 1.0_r8)
+    ASSERT(this%courant_number > 0.0_r8 .and. this%courant_number <= 1.0_r8)
     dt_local = huge(1.0_r8)
     call this%get_face_velocity(velocity)
     do f = 1, this%model%mesh%nface_onP
       if (velocity(f) == 0.0_r8) cycle
       dt_local = min(dt_local, this%model%operators%normal_distance(f)/abs(velocity(f)))
     end do
-    dt = courant_number*global_minval(dt_local)
+    dt = this%courant_number*global_minval(dt_local)
   end function
 
 

@@ -44,7 +44,7 @@ module ns_ht_2d_solver_type
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:)
     integer :: ncell_onP
     integer(int64) :: nstep = 0_int64
-    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number, hnext, hlast
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow, hnext, hlast
     integer :: max_try
     character(8) :: hnext_cause = 'init'
     type(time_step_sync) :: ts_sync
@@ -78,6 +78,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     integer :: lookahead
+    real(r8) :: courant_number
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params, tracking_params
     character(:), allocatable :: tracking_algorithm
     integer, allocatable :: flow_material_ids(:), priority(:)
@@ -126,7 +127,7 @@ contains
     if (stat /= 0) return
     call params%get('time-step-growth', this%dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    call flow_params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
     call params%get('time-step-lookahead', lookahead, default=3, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
@@ -134,8 +135,8 @@ contains
     if (stat /= 0) return
 
     if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
-        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. this%courant_number <= 0.0_r8 .or. &
-        this%courant_number > 1.0_r8 .or. lookahead < 1) then
+        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. courant_number <= 0.0_r8 .or. &
+        courant_number > 1.0_r8 .or. lookahead < 1) then
       stat = 1
       errmsg = 'invalid coupled time-step controls, including time-step-lookahead >= 1'
       return
@@ -161,7 +162,7 @@ contains
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
-      call this%flow%init(env, flow_model, projection_params=projection_params)
+      call this%flow%init(env, flow_model, projection_params=projection_params, courant_number=courant_number)
     else
       if (.not.flow_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -169,7 +170,7 @@ contains
         return
       end if
       momentum_params => flow_params%sublist('momentum-solver')
-      call this%flow%init(env, flow_model, momentum_params, projection_params)
+      call this%flow%init(env, flow_model, momentum_params, projection_params, courant_number)
     end if
     allocate(priority(this%material_layout%num_material()))
     call this%material_layout%get_priority(priority)
@@ -372,7 +373,7 @@ contains
       hnext = this%dt_max
       cause = 'max'
     end if
-    hlimit = this%flow%courant_time_step(this%courant_number)
+    hlimit = this%flow%courant_time_step()
     if (hlimit < hnext) then
       hnext = hlimit
       cause = 'cfl'
