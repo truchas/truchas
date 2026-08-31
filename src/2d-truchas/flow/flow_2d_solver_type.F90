@@ -181,7 +181,7 @@ contains
     character(:), allocatable, optional, intent(out) :: errmsg
     character(256) :: line
 
-    write(line,'(a,i0,a,es12.5,a,es12.5,a)') 'step=', this%nstep + 1_int64, &
+    write(line,'(a,i0,a,es0.5,a,es0.5,a)') 'step=', this%nstep + 1_int64, &
         ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=explicit'
     call env%simlog%info(trim(line))
     call this%advance_momentum(env, t_n, t_np1, stat, errmsg)
@@ -278,7 +278,7 @@ contains
     else
       status = 'failed'
     end if
-    write(line,'(a,i0,a,i0,a,i0,a,es12.5,a,a)') trim(name) // &
+    write(line,'(a,i0,a,i0,a,i0,a,es0.5,a,a)') trim(name) // &
         ' iterations=', num_itr, ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, &
         ' rel_residual=', rel_res_norm, ' status=', trim(status)
     call env%simlog%info('  ' // trim(line))

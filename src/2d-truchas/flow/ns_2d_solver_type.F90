@@ -241,7 +241,7 @@ contains
 
     cause = 'explicit'
     if (present(step_cause)) cause = step_cause
-    write(line,'(a,i0,a,es12.5,a,es12.5,a,a)') 'step=', this%nstep + 1_int64, &
+    write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
         ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
     call env%simlog%info(trim(line))
     if (associated(env%timer)) call env%timer%start('flow/material-transport')
