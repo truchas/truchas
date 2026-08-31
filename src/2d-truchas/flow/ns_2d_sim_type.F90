@@ -81,6 +81,7 @@ contains
     real(r8), allocatable :: initial_velocity(:,:)
     real(r8), allocatable :: body_acceleration(:)
     real(r8), allocatable :: vfrac(:,:), temperature(:)
+    real(r8) :: courant_number
     character(:), allocatable :: matl_name(:), region_name(:), region_matl_name(:), tracker_algorithm
     character(96) :: message
     integer, allocatable :: fluid_material_ids(:)
@@ -229,6 +230,17 @@ contains
     end if
     call env%simlog%end_section('Flow model complete.')
     call env%simlog%begin_section('Constructing flow solver.')
+    call solver_params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0 .or. courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
+      if (stat == 0) then
+        stat = 1
+        errmsg = '"courant-number" must be in (0,1]'
+      end if
+      call env%simlog%end_section('Flow solver construction failed.')
+      return
+    end if
+    write(message, '(a,es11.4,a)') 'Using Courant number ', courant_number, '.'
+    call env%simlog%info(trim(message))
     if (.not.solver_params%is_sublist('projection-solver')) then
       stat = 1
       errmsg = 'flow-solver requires a "projection-solver" sublist'
@@ -247,7 +259,7 @@ contains
     if (inviscid) then
       call env%simlog%info('Constructing projection solver.')
       call this%solver%init(env, this%model, projection_params=projection_params, material_layout=material_layout, &
-          tracking_params=tracking_params)
+          tracking_params=tracking_params, courant_number=courant_number)
     else
       if (.not.solver_params%is_sublist('momentum-solver')) then
         stat = 1
@@ -258,7 +270,7 @@ contains
       momentum_params => solver_params%sublist('momentum-solver')
       call env%simlog%info('Constructing momentum solver.')
       call env%simlog%info('Constructing projection solver.')
-      call this%solver%init(env, this%model, momentum_params, projection_params, material_layout, tracking_params)
+      call this%solver%init(env, this%model, momentum_params, projection_params, material_layout, tracking_params, courant_number)
     end if
     call env%simlog%end_section('Flow solver complete.')
     if (.not.params%is_sublist('sim-control')) then

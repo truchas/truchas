@@ -34,7 +34,7 @@ module ns_2d_solver_type
     real(r8), allocatable :: vfrac(:,:)
     integer(int64) :: nstep = 0_int64
     real(r8) :: tlast, hlast, hnext
-    real(r8) :: dt_init, dt_min, dt_max, dt_grow, courant_number
+    real(r8) :: dt_init, dt_min, dt_max, dt_grow
     logical :: time_stepper_initialized = .false.
     type(time_step_sync) :: ts_sync
   contains
@@ -62,7 +62,7 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, momentum_params, projection_params, material_layout, tracking_params)
+  subroutine init(this, env, model, momentum_params, projection_params, material_layout, tracking_params, courant_number)
     class(ns_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
@@ -70,12 +70,17 @@ contains
     type(parameter_list), target, intent(in) :: projection_params
     type(flow_2d_material_layout), intent(in), optional :: material_layout
     type(parameter_list), target, intent(inout), optional :: tracking_params
+    real(r8), intent(in), optional :: courant_number
 
     integer :: nrealfluid, nfluid, nmat
     integer, allocatable :: priority(:)
     character(:), allocatable :: algorithm
 
-    call this%flow%init(env, model, momentum_params, projection_params)
+    if (present(courant_number)) then
+      call this%flow%init(env, model, momentum_params, projection_params, courant_number)
+    else
+      call this%flow%init(env, model, momentum_params, projection_params)
+    end if
     if (present(material_layout)) then
       nrealfluid = material_layout%num_real_fluid()
       nfluid = material_layout%num_fluid()
@@ -120,16 +125,13 @@ contains
     if (stat /= 0) return
     call params%get('time-step-growth', this%dt_grow, default=1.05_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
-    call params%get('courant-number', this%courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0) return
     call params%get('time-step-lookahead', lookahead, default=3, stat=stat, errmsg=errmsg)
     if (stat /= 0) return
     if (this%dt_init <= 0.0_r8 .or. this%dt_min <= 0.0_r8 .or. this%dt_min > this%dt_init .or. &
-        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. &
-        this%courant_number <= 0.0_r8 .or. this%courant_number > 1.0_r8 .or. lookahead < 1) then
+        this%dt_init > this%dt_max .or. this%dt_grow < 1.0_r8 .or. lookahead < 1) then
       stat = 1
       errmsg = 'require 0 < min-time-step <= initial-time-step <= max-time-step, ' // &
-          'time-step-growth >= 1, courant-number in (0,1], and time-step-lookahead >= 1'
+          'time-step-growth >= 1, and time-step-lookahead >= 1'
       return
     end if
     this%ts_sync = time_step_sync(lookahead)
@@ -192,7 +194,7 @@ contains
     this%nstep = 0_int64
     if (this%time_stepper_initialized) then
       this%tlast = time
-      this%hnext = min(this%dt_init, this%courant_time_step(this%courant_number))
+      this%hnext = min(this%dt_init, this%courant_time_step())
       this%hlast = this%hnext
     end if
   end subroutine
@@ -296,7 +298,7 @@ contains
       end if
       this%hlast = t_np1 - t_n
       this%hnext = min(this%dt_grow*this%hlast, this%dt_max, &
-          this%courant_time_step(this%courant_number))
+          this%courant_time_step())
       t_n = t_np1
       this%tlast = t_n
       call read_signal(SIGURG, sig_rcvd)
@@ -318,7 +320,7 @@ contains
     if (this%nstep == 0_int64) then
       h = this%dt_init
       cause = 'init'
-      hlimit = this%courant_time_step(this%courant_number)
+      hlimit = this%courant_time_step()
       if (hlimit < h) then
         h = hlimit
         cause = 'cfl'
@@ -330,7 +332,7 @@ contains
         h = this%dt_max
         cause = 'max'
       end if
-      hlimit = this%courant_time_step(this%courant_number)
+      hlimit = this%courant_time_step()
       if (hlimit < h) cause = 'cfl'
     end if
   end subroutine
@@ -406,14 +408,13 @@ contains
     call this%flow%reject_step()
   end subroutine
 
-  !! Return the maximum step size satisfying the specified convective Courant
-  !! number for the old face-normal velocity.
-  function courant_time_step(this, courant_number) result(dt)
+  !! Return the maximum step size requested by the flow mechanics for the old
+  !! face-normal velocity.
+  function courant_time_step(this) result(dt)
     class(ns_2d_solver), intent(in) :: this
-    real(r8), intent(in) :: courant_number
     real(r8) :: dt
 
-    dt = this%flow%courant_time_step(courant_number)
+    dt = this%flow%courant_time_step()
   end function
 
 end module ns_2d_solver_type

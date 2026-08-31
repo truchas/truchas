@@ -115,7 +115,7 @@ contains
     call solver%get_face_velocity(velocity_face)
     call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'Navier--Stokes step did not make face velocity solenoidal')
-    call require(solver%courant_time_step(0.5_r8) > 0.0_r8, 'Navier--Stokes Courant time step is not positive')
+    call require(solver%courant_time_step() > 0.0_r8, 'Navier--Stokes Courant time step is not positive')
   end subroutine
 
 
