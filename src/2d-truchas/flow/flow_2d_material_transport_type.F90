@@ -90,8 +90,9 @@ contains
 
   !! Advance material transport from T_N to T_NP1, retaining the resulting
   !! composition as trial state until the caller accepts the coupled step.
-  subroutine advance(this, t_n, t_np1, velocity_fn, vfrac_n)
+  subroutine advance(this, env, t_n, t_np1, velocity_fn, vfrac_n)
     class(flow_2d_material_transport), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: velocity_fn(:)
     real(r8), intent(in) :: vfrac_n(:,:)
@@ -114,7 +115,7 @@ contains
             this%cface_velocity(i) = -this%cface_velocity(i)
       end do
     end do
-    call this%tracker%flux_volumes(this%cface_velocity, vfrac_n, this%vfrac_out, &
+    call this%tracker%flux_volumes(env, this%cface_velocity, vfrac_n, this%vfrac_out, &
         this%flux_volumes, this%interface_normal, this%nrealfluid, this%nfluid-this%nrealfluid, dt)
   end subroutine
 

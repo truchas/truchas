@@ -264,7 +264,7 @@ contains
 
   subroutine write_solution(this, env, time)
     class(ns_ht_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: time
 
     real(r8), pointer :: p(:), velocity(:,:)

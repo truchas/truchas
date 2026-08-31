@@ -325,6 +325,7 @@ contains
     call env%simlog%begin_section('Initializing flow state.')
     allocate(initial_velocity(2,this%mesh%ncell_onP), source=0.0_r8)
     if (params%is_parameter('initial-velocity')) then
+      call env%simlog%info('Projecting user-supplied initial velocity.')
       call alloc_vector_func(params, 'initial-velocity', initial_velocity_func, stat, errmsg)
       if (stat /= 0) then
         errmsg = 'processing initial-velocity: ' // errmsg
@@ -338,6 +339,8 @@ contains
         return
       end if
       call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
+    else
+      call env%simlog%info('Using zero initial velocity.')
     end if
     allocate(vfrac(material_layout%num_material(), this%mesh%ncell), temperature(this%mesh%ncell_onP), source=0.0_r8)
     call material_layout%get_reduced_volume_fractions(this%composition, vfrac)
@@ -352,11 +355,14 @@ contains
     call env%simlog%end_section('Flow-state initialization complete.')
 
     call this%solver%init_temporal_output(this%temporal_output)
+    call env%simlog%begin_section('Opening VTKHDF output.')
     call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg, this%matl_model)
     if (stat /= 0) then
+      call env%simlog%end_section('VTKHDF output initialization failed.')
       errmsg = 'opening VTKHDF output: ' // errmsg
       return
     end if
+    call env%simlog%end_section('VTKHDF output ready.')
   end subroutine
 
 
@@ -373,11 +379,12 @@ contains
     stat = 0
     time = this%solver%last_time()
     write(line,'(a,es0.5)') 'integration-begin t0=', time
+    call env%simlog%info('')
     call env%simlog%begin_section(trim(line))
-    if (associated(env%timer)) call env%timer%start('integration')
-    if (associated(env%timer)) call env%timer%start('output')
+    call env%timer%start('integration')
+    call env%timer%start('output')
     call this%write_solution(time)
-    if (associated(env%timer)) call env%timer%stop('output')
+    call env%timer%stop('output')
     write(line,'(a,es0.5)') 'output t=', time
     call env%simlog%info(trim(line))
     t_write = time
@@ -385,9 +392,9 @@ contains
       call this%solver%integrate(env, this%tout(n), stat, errmsg)
       time = this%solver%last_time()
       if (stat < 0 .and. time == t_write) exit
-      if (associated(env%timer)) call env%timer%start('output')
+      call env%timer%start('output')
       call this%write_solution(time)
-      if (associated(env%timer)) call env%timer%stop('output')
+      call env%timer%stop('output')
       write(line,'(a,es0.5)') 'output t=', time
       call env%simlog%info(trim(line))
       t_write = time
@@ -397,7 +404,7 @@ contains
       stat = 0
       deallocate(errmsg)
       write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
-          ' status=interrupted'
+          ' status=interrupted reason=signal'
     else if (stat == 0) then
       write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
           ' status=complete'
@@ -407,7 +414,7 @@ contains
     end if
     call this%output%close()
     call env%simlog%end_section(trim(line))
-    if (associated(env%timer)) call env%timer%stop('integration')
+    call env%timer%stop('integration')
   end subroutine
 
 

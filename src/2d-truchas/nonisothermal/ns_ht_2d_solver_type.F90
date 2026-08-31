@@ -291,24 +291,24 @@ contains
       write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
           ' attempt=', n, ' t0=', t_n, ' dt=', t_try - t_n, ' cause=', trim(attempt_cause)
       call env%simlog%begin_section(trim(line))
-      if (associated(env%timer)) call env%timer%start('flow/material-transport')
+      call env%timer%start('flow/material-transport')
       call this%flow%get_face_velocity(face_velocity)
-      call this%material_transport%advance(t_n, t_try, face_velocity, this%flow_vfrac)
+      call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
       call this%material_transport%get_trial_volume_fractions(vfrac_trial)
-      if (associated(env%timer)) call env%timer%stop('flow/material-transport')
+      call env%timer%stop('flow/material-transport')
       call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_comp)
       call this%thermal%get_cell_temp_soln(this%temp)
-      if (associated(env%timer)) call env%timer%start('thermal/advection')
+      call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
-      if (associated(env%timer)) call env%timer%stop('thermal/advection')
+      call env%timer%stop('thermal/advection')
       !! TODO: A future adaptive BDF1 thermal error estimate should measure
       !! the conduction update relative to this advected enthalpy state, so
       !! material-front motion does not masquerade as thermal truncation error.
       call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
-      if (associated(env%timer)) call env%timer%start('thermal/transport')
+      call env%timer%start('thermal/transport')
       call this%thermal%step(t_try, hnext, stat)
-      if (associated(env%timer)) call env%timer%stop('thermal/transport')
+      call env%timer%stop('thermal/transport')
       if (stat /= 0) then
         call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
         call this%flow%set_volume_fractions(this%flow_vfrac)

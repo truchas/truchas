@@ -80,9 +80,10 @@ contains
   end subroutine
 
 
-  subroutine step(this, time, dt, velocity, vfrac)
+  subroutine step(this, env, time, dt, velocity, vfrac)
 
     class(vof_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: time, dt
     class(vector_func), intent(in) :: velocity
     real(r8), intent(inout) :: vfrac(:,:)
@@ -113,7 +114,7 @@ contains
         end if
       end do
     end do
-    call this%tracker%flux_volumes(this%flux_velocity, this%vfrac_in, this%vfrac_out, &
+    call this%tracker%flux_volumes(env, this%flux_velocity, this%vfrac_in, this%vfrac_out, &
         this%flux_volume, this%interface_normal, size(vfrac,1), 0, dt)
     vfrac = this%vfrac_out
   end subroutine

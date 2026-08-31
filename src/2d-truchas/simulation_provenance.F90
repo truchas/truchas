@@ -1,9 +1,8 @@
 !!
 !! SIMULATION_PROVENANCE
 !!
-!! This module writes compact program-provenance records to a simulation log.
-!! It also provides collective input staging and SHA-256 computation for use
-!! by the initialization narrative.
+!! This module writes compact simulation-provenance records to a simulation
+!! log. These identify the code, build, run environment, and staged input.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -22,18 +21,20 @@ module simulation_provenance
   implicit none
   private
 
-  public :: stage_input_file, write_program_prologue
+  public :: write_simulation_prologue
 
 contains
 
-  subroutine write_program_prologue(env, code)
+  subroutine write_simulation_prologue(env, code, input_file, stat, errmsg)
 
     type(simulation_environment), intent(in) :: env
-    character(*), intent(in) :: code
+    character(*), intent(in) :: code, input_file
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
 
     character(8) :: date
     character(10) :: time, zone
-    character(:), allocatable :: code_version, cpu, run_host, timestamp
+    character(:), allocatable :: code_version, cpu, run_host, sha256, timestamp
 
     call version(code_version)
     cpu = 'unknown'
@@ -53,9 +54,13 @@ contains
         ' flags=' // log_quoted(build_flags))
     call env%simlog%info('run timestamp=' // log_quoted(timestamp) // ' host=' // log_quoted(run_host) // &
         ' cpu=' // log_quoted(cpu) // ' mpi_processes=' // integer_string(env%nproc))
+    call stage_input_file(env, input_file, 'input.json', sha256, stat, errmsg)
+    if (stat /= 0) return
+    if (env%rank == 0) call env%simlog%info('input file=' // log_quoted(input_file) // &
+        ' sha256=' // log_quoted(sha256))
     call env%simlog%info('')
 
-  end subroutine write_program_prologue
+  end subroutine write_simulation_prologue
 
 
   subroutine run_cpu_model(output_dir, cpu)

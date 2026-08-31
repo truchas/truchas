@@ -51,9 +51,10 @@ contains
 
   end subroutine init
 
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, int_normal, fluids, void, dt)
+  subroutine flux_volumes(this, env, vel, vof_n, vof, flux_vol, int_normal, fluids, void, dt)
 
     class(simple_volume_tracker), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:), int_normal(:,:,:)
     integer, intent(in) :: fluids, void

@@ -233,11 +233,11 @@ contains
     real(r8) :: time, hnext, t_write
 
     stat = 0
-    if (associated(env%timer)) call env%timer%start('integration')
+    call env%timer%start('integration')
     time = this%t_init
-    if (associated(env%timer)) call env%timer%start('output')
+    call env%timer%start('output')
     call this%write_solution(time)
-    if (associated(env%timer)) call env%timer%stop('output')
+    call env%timer%stop('output')
     t_write = time
     hnext = this%dt_init
     this%tlast = time
@@ -245,9 +245,9 @@ contains
     do n = 1, size(this%tout)
       call integrate(this, env, this%tout(n), hnext, time, stat, errmsg)
       if (stat < 0 .and. time == t_write) exit
-      if (associated(env%timer)) call env%timer%start('output')
+      call env%timer%start('output')
       call this%write_solution(time)
-      if (associated(env%timer)) call env%timer%stop('output')
+      call env%timer%stop('output')
       t_write = time
       if (stat /= 0) exit
     end do
@@ -256,7 +256,7 @@ contains
       deallocate(errmsg)
     end if
     call this%output%close()
-    if (associated(env%timer)) call env%timer%stop('integration')
+    call env%timer%stop('integration')
   end subroutine
 
 

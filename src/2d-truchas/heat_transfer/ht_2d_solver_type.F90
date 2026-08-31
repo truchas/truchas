@@ -98,7 +98,7 @@ contains
     end if
 
     !! Create the IDAESOL model
-    call this%integ_model%init(this%model, this%precon, this%norm, env%timer)
+    call this%integ_model%init(this%model, this%precon, this%norm)
 
     !! Create the IDAESOL integrator
     if (params%is_sublist('integrator')) then

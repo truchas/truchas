@@ -13,7 +13,6 @@
 module geometric_volume_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use timer_tree_type, only: timer_tree
   use simulation_environment_type, only: simulation_environment
   use volume_tracker_2d_class
   use unstr_2d_mesh_type
@@ -26,7 +25,6 @@ module geometric_volume_tracker_type
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
-    type(timer_tree), pointer :: timer => null() ! unowned reference
     real(r8) :: cutoff ! allow volume fraction {0,(cutoff,1]}
     real(r8), allocatable :: flux_vol_sub(:,:), normal(:,:,:)
     ! node/face/cell workspace
@@ -68,8 +66,6 @@ contains
     this%nfluid = nfluid
     this%nmat = nmat
     this%is_axisym = axisym
-    this%timer => env%timer
-    ASSERT(associated(this%timer))
 
     ! defaults are used for following parameters for now
     this%location_iter_max = 40
@@ -111,9 +107,10 @@ contains
   end subroutine init
 
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
-  subroutine flux_volumes(this, vel, vof_n, vof, flux_vol, int_normal, fluids, void, dt)
+  subroutine flux_volumes(this, env, vel, vof_n, vof, flux_vol, int_normal, fluids, void, dt)
 
     class(geometric_volume_tracker), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:), int_normal(:,:,:)
     integer, intent(in) :: fluids, void
@@ -126,9 +123,9 @@ contains
     vof = vof_n
 
     do i = 1, this%subcycles
-      call this%normals(vof)
+      call this%normals(env, vof)
 
-      call this%donor_fluxes(vel, vof, sub_dt)
+      call this%donor_fluxes(env, vel, vof, sub_dt)
 
       call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
 
@@ -201,19 +198,20 @@ contains
   end subroutine flux_bc
 
 
-  subroutine normals(this, vof)
+  subroutine normals(this, env, vof)
 
     use gradient_2d_cc_function, only: gradient_2d_cc, gradient_rz_cc
     intrinsic :: norm2
 
     class(geometric_volume_tracker), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in)  :: vof(:,:)
 
     real(r8) :: mag
     integer :: i,j,k,c
     logical :: hasvof(size(vof,dim=1))
 
-    call this%timer%start('normals')
+    call env%timer%start('normals')
     if (this%is_axisym) then
       do i = 1, this%nmat
         call gradient_rz_cc(this%mesh, vof(i,:), this%normal(1,i,:), this%normal(2,i,:), &
@@ -274,7 +272,7 @@ contains
     ! will need normals for vof reconstruction in ghost cells
     call this%mesh%cell_imap%gather_offp(this%normal)
 
-    call this%timer%stop('normals')
+    call env%timer%stop('normals')
 
   end subroutine normals
 
@@ -579,15 +577,16 @@ contains
 
   !end subroutine donor_fluxes_nd_cell
 
-  subroutine donor_fluxes(this, vel, vof, dt)
+  subroutine donor_fluxes(this, env, vel, vof, dt)
 
     class(geometric_volume_tracker), intent(inout) :: this
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
     integer :: i, nmat
 
     ! calculate the flux volumes for each face
-    call this%timer%start('reconstruct/advect')
+    call env%timer%start('reconstruct/advect')
 
     do i = 1, this%mesh%ncell_onP
       nmat = count(vof(:,i) > this%cutoff)
@@ -601,7 +600,7 @@ contains
       end if
     end do
 
-    call this%timer%stop('reconstruct/advect')
+    call env%timer%stop('reconstruct/advect')
 
   end subroutine donor_fluxes
 

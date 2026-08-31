@@ -197,7 +197,7 @@ contains
 
   subroutine advance_momentum(this, env, t_n, t_np1, stat, errmsg, flux_volumes)
     class(flow_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
@@ -212,13 +212,13 @@ contains
     ASSERT(.not.this%step_is_pending)
     dt = t_np1 - t_n
     ASSERT(dt > 0.0_r8)
-    if (associated(env%timer)) call env%timer%start('flow/momentum')
+    call env%timer%start('flow/momentum')
     this%pending_state%vel_cc = this%state%vel_cc
     this%pending_state%vel_fn = this%state%vel_fn
     this%pending_state%p_cc = this%state%p_cc
     call this%model%compute_bc(t_n, dt, stat, bc_errmsg)
     if (stat /= 0) then
-      if (associated(env%timer)) call env%timer%stop('flow/momentum')
+      call env%timer%stop('flow/momentum')
       if (present(errmsg)) errmsg = bc_errmsg
       return
     end if
@@ -237,22 +237,22 @@ contains
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           this%pending_state%vel_cc(:,1:size(this%rhs,2)))
-      if (associated(env%timer)) call env%timer%stop('flow/momentum')
+      call env%timer%stop('flow/momentum')
       call env%simlog%info('flow.momentum method=inviscid-direct status=ok')
     else
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, this%pending_state%vel_cc(:,1:size(this%rhs,2)), stat)
-      if (associated(env%timer)) call env%timer%stop('flow/momentum')
+      call env%timer%stop('flow/momentum')
       call this%momentum_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
       call write_solver_metrics(env, 'flow.momentum', num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)
       if (stat /= 0) return
     end if
     call this%model%mesh%cell_imap%gather_offp(this%pending_state%vel_cc)
-    if (associated(env%timer)) call env%timer%start('flow/projection')
+    call env%timer%start('flow/projection')
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, &
         this%pending_state, stat, solved=projection_solved)
-    if (associated(env%timer)) call env%timer%stop('flow/projection')
+    call env%timer%stop('flow/projection')
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
       call write_solver_metrics(env, 'flow.projection', num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)

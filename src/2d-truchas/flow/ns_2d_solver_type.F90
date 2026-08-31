@@ -245,11 +245,11 @@ contains
     write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
         ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
     call env%simlog%begin_section(trim(line))
-    if (associated(env%timer)) call env%timer%start('flow/material-transport')
+    call env%timer%start('flow/material-transport')
     call this%flow%get_face_velocity(face_velocity)
-    call this%material_transport%advance(t_n, t_np1, face_velocity, this%vfrac)
+    call this%material_transport%advance(env, t_n, t_np1, face_velocity, this%vfrac)
     call this%material_transport%get_trial_volume_fractions(vfrac_trial)
-    if (associated(env%timer)) call env%timer%stop('flow/material-transport')
+    call env%timer%stop('flow/material-transport')
     call this%flow%set_volume_fractions(vfrac_trial)
     call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
     if (stat /= 0) then
@@ -370,7 +370,7 @@ contains
   !! before it updates the flow state.
   subroutine advance_momentum(this, env, t_n, t_np1, flux_volumes, stat, errmsg)
     class(ns_2d_solver), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: flux_volumes(:,:)
     integer, intent(out) :: stat
