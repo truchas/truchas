@@ -15,6 +15,7 @@
 module flow_2d_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type
   use parameter_list_type
   use flow_2d_model_type
   use flow_2d_state_type
@@ -60,14 +61,17 @@ contains
   !! is its discrete projection onto the velocity BCs and continuity
   !! constraint.  The temporary artificial step supplies initial pressure but
   !! its velocity update is rejected.
-  subroutine solve(this, time, dt, velocity, state, stat)
+  subroutine solve(this, env, time, dt, velocity, state, stat)
     class(flow_2d_ic_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     type(flow_2d_state), intent(inout) :: state
     integer, intent(out) :: stat
 
-    integer :: c
+    integer :: c, num_itr, num_dscg_itr, num_pcg_itr
+    real(r8) :: rel_res_norm
     character(:), allocatable :: errmsg
+    logical :: projection_solved
 
     ASSERT(dt > 0.0_r8)
     ASSERT(size(velocity,1) == 2)
@@ -84,7 +88,14 @@ contains
     state%p_cc = 0.0_r8
     call this%projection_update%project_velocity(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, &
-        this%model%bc, state, stat)
+        this%model%bc, state, stat, projection_solved)
+    if (projection_solved) then
+      call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
+      call write_solver_metrics(env, 'flow.initial.velocity-projection', num_itr, num_dscg_itr, num_pcg_itr, &
+          rel_res_norm, stat)
+    else
+      call env%simlog%info('  flow.initial.velocity-projection method=none reason=zero-rhs status=skipped')
+    end if
     if (stat /= 0) return
     this%velocity_cc = state%vel_cc
     this%velocity_fn = state%vel_fn
@@ -104,17 +115,50 @@ contains
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
           state%vel_cc(:,1:this%model%mesh%ncell_onP))
+      call env%simlog%info('  flow.initial.momentum method=inviscid-direct status=ok')
     else if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
       call this%momentum_solver%setup()
       call this%momentum_solver%solve(this%rhs, state%vel_cc(:,1:this%model%mesh%ncell_onP), stat)
+      call this%momentum_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
+      call write_solver_metrics(env, 'flow.initial.momentum', num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)
       if (stat /= 0) return
+    else
+      call env%simlog%info('  flow.initial.momentum method=none reason=zero-rhs status=skipped')
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
-        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, state, stat, initial=.true.)
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, state, stat, &
+        initial=.true., solved=projection_solved)
+    if (projection_solved) then
+      call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
+      call write_solver_metrics(env, 'flow.initial.pressure-projection', num_itr, num_dscg_itr, num_pcg_itr, &
+          rel_res_norm, stat)
+    else
+      call env%simlog%info('  flow.initial.pressure-projection method=none reason=zero-rhs status=skipped')
+    end if
     if (stat /= 0) return
     state%vel_cc = this%velocity_cc
     state%vel_fn = this%velocity_fn
+  end subroutine
+
+
+  subroutine write_solver_metrics(env, name, num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm, stat)
+    type(simulation_environment), intent(in) :: env
+    character(*), intent(in) :: name
+    integer, intent(in) :: num_itr, num_dscg_itr, num_pcg_itr, stat
+    real(r8), intent(in) :: rel_res_norm
+
+    character(256) :: line
+    character(7) :: status
+
+    if (stat == 0) then
+      status = 'ok'
+    else
+      status = 'failed'
+    end if
+    write(line,'(a,i0,a,i0,a,i0,a,es12.5,a,a)') trim(name)//' iterations=', num_itr, &
+        ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, ' rel_residual=', rel_res_norm, ' status=', trim(status)
+    call env%simlog%info('  '//trim(line))
   end subroutine
 
 

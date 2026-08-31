@@ -184,12 +184,13 @@ contains
   !! Set STATE from an input velocity. The common initial-condition solver
   !! projects the velocity and computes an initial pressure with its temporary
   !! Stokes step, as mainline does when it omits initial momentum transport.
-  subroutine set_initial_state(this, time, dt, velocity, stat)
+  subroutine set_initial_state(this, env, time, dt, velocity, stat)
     class(ns_2d_solver), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     integer, intent(out) :: stat
 
-    call this%flow%set_initial_state(time, dt, velocity, stat)
+    call this%flow%set_initial_state(env, time, dt, velocity, stat)
     if (stat /= 0) return
     this%nstep = 0_int64
     if (this%time_stepper_initialized) then

@@ -211,7 +211,7 @@ contains
     call this%thermal%get_cell_temp_soln(this%temp)
     call this%flow%set_initial_material_state(this%flow_vfrac, this%temp)
     call this%flow%set_buoyancy_temperature(this%temp)
-    call this%flow%set_initial_state(time, this%dt_init, velocity, stat)
+    call this%flow%set_initial_state(env, time, this%dt_init, velocity, stat)
     if (stat /= 0) then
       errmsg = 'initializing flow state failed'
       return

@@ -207,7 +207,7 @@ contains
       end if
       call project_vector_func_to_cell_centers(this%mesh, initial_velocity_func, initial_velocity)
     end if
-    call this%solver%set_initial_state(this%t_init, this%dt_init, initial_velocity, stat)
+    call this%solver%set_initial_state(env, this%t_init, this%dt_init, initial_velocity, stat)
     if (stat /= 0) then
       errmsg = 'initializing flow state failed'
       return
