@@ -465,66 +465,64 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: n
-    real(r8) :: time, time_written
-    character(80) :: string(2)
+    character(256) :: line
+    real(r8) :: time, t_write
 
-    call env%timer%start('integration')
-
+    stat = 0
     time = this%solver%last_time()
-    call this%write_solution(env, time)
-    time_written = time
+    write(line,'(a,es0.5)') 'integration-begin t0=', time
     call env%simlog%info('')
-    write(string(1),'(a,es12.5)') 'Beginning integration at T = ', time
-    call env%simlog%info(string(1))
-
+    call env%simlog%begin_section(trim(line))
+    call env%timer%start('integration')
+    call env%timer%start('output')
+    call this%write_solution(time)
+    call env%timer%stop('output')
+    write(line,'(a,es0.5)') 'output t=', time
+    call env%simlog%info(trim(line))
+    t_write = time
     do n = 1, size(this%tout)
       call this%solver%integrate(env, this%tout(n), stat, errmsg)
       time = this%solver%last_time()
-      if (stat < 0 .and. time == time_written) exit
-      call this%write_solution(env, time)
-      time_written = time
-      call this%solver%write_metrics(string)
-      call env%simlog%info('')
-      call env%simlog%info(string(1))
-      call env%simlog%info(string(2))
+      if (stat < 0 .and. time == t_write) exit
+      call env%timer%start('output')
+      call this%write_solution(time)
+      call env%timer%stop('output')
+      write(line,'(a,es0.5)') 'output t=', time
+      call env%simlog%info(trim(line))
+      t_write = time
       if (stat /= 0) exit
     end do
-
     if (stat > 0) then
-      call env%simlog%info('')
-      call env%simlog%info(errmsg // ': current solution written, and now terminating ...')
       stat = 0
       deallocate(errmsg)
-    else if (stat < 0) then
-      call env%simlog%info('')
-      errmsg = 'unrecoverable integration failure: ' // errmsg
-      call env%simlog%info(errmsg)
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=interrupted reason=signal'
+    else if (stat == 0) then
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=complete'
+    else
+      write(line,'(a,es0.5,a,i0,a)') 'integration-end t=', time, ' nstep=', this%solver%num_steps(), &
+          ' status=failed'
     end if
-
-    call env%simlog%info('')
-    write(string(1),'(a,es12.5)') 'Completed integration to T = ', time
-    call env%simlog%info(string(1))
     call this%output%close()
+    call env%simlog%end_section(trim(line))
     call env%timer%stop('integration')
   end subroutine
 
 
-  subroutine write_solution(this, env, time)
+  subroutine write_solution(this, time)
     class(ns_ht_2d_sim), intent(inout) :: this
-    type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: time
 
     real(r8), pointer :: p(:), velocity(:,:)
     real(r8), allocatable :: H(:), T(:)
 
-    call env%timer%start('output')
     allocate(H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
     call this%solver%get_cell_flow_soln(p, velocity)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
     call this%solver%set_temporal_output(this%temporal_output)
     call this%output%write_solution(time, p, velocity, H, T, this%composition%vfrac, this%temporal_output)
-    call env%timer%stop('output')
   end subroutine
 
 end module ns_ht_2d_sim_type
