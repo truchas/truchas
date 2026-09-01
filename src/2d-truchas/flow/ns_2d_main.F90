@@ -42,9 +42,7 @@ program ns_2d_main
     stop
   end if
   if (stat /= 0) then
-    if (is_IOP) then
-      write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
-    end if
+    if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
     call MPI_Finalize
     if (is_IOP) error stop 2
     stop
@@ -55,9 +53,7 @@ program ns_2d_main
   call broadcast(stat)
   if (stat /= 0) then
     call broadcast_alloc_char(errmsg)
-    if (is_IOP) then
-      write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
-    end if
+    if (is_IOP) write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
     call MPI_Finalize
     if (is_IOP) error stop 1
     stop
