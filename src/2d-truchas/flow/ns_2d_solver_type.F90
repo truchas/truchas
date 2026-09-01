@@ -23,7 +23,7 @@ module ns_2d_solver_type
   use material_distribution_type
   use flow_2d_model_type
   use flow_2d_solver_type
-  use flow_2d_material_layout_type
+  use flow_material_mapping_type
   use flow_2d_material_transport_type
   use time_step_sync_type
   implicit none
@@ -31,7 +31,7 @@ module ns_2d_solver_type
 
   type, public :: ns_2d_solver
     private
-    type(flow_2d_material_layout) :: material_layout
+    type(flow_material_mapping) :: matl_map
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
@@ -77,22 +77,27 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: nrealfluid, nfluid, nmat
-    integer, allocatable :: priority(:), fluid_material_ids(:)
+    integer, allocatable :: priority(:), phase_ids(:)
     character(:), allocatable :: algorithm
     type(parameter_list), pointer :: tracking_params, momentum_params, projection_params
     real(r8) :: courant_number
     character(96) :: message
 
     stat = 0
+    if (matl_model%nphase_real /= matl_model%nmatl_real) then
+      stat = 1
+      errmsg = 'isothermal flow requires single-phase materials'
+      return
+    end if
     if (.not.params%is_sublist('volume-tracking')) then
       stat = 1
       errmsg = 'requires a "volume-tracking" sublist'
       return
     end if
     tracking_params => params%sublist('volume-tracking')
-    call this%material_layout%init(matl_model, stat, errmsg)
+    call this%matl_map%init(matl_model, stat, errmsg)
     if (stat /= 0) return
-    call this%material_layout%set_priority(tracking_params, stat, errmsg)
+    call this%matl_map%set_priority(tracking_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
       return
@@ -121,14 +126,14 @@ contains
       return
     end if
     call env%simlog%info('Using ' // trim(algorithm) // ' volume tracking.')
-    nrealfluid = this%material_layout%num_real_fluid()
-    nfluid = this%material_layout%num_fluid()
-    nmat = this%material_layout%num_material()
+    nrealfluid = this%matl_map%num_real_fluid()
+    nfluid = this%matl_map%num_fluid()
+    nmat = this%matl_map%num_material()
     allocate(priority(nmat))
-    call this%material_layout%get_priority(priority)
-    allocate(fluid_material_ids(nrealfluid))
-    call this%material_layout%get_real_fluid_material_ids(fluid_material_ids)
-    call model%init_material(matl_model, fluid_material_ids, stat, errmsg)
+    call this%matl_map%get_priority(priority)
+    allocate(phase_ids(nrealfluid))
+    call this%matl_map%get_real_fluid_phase_ids(phase_ids)
+    call model%init_material(matl_model, phase_ids, stat, errmsg)
     if (stat /= 0) return
     if (model%inviscid) then
       call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
@@ -208,7 +213,7 @@ contains
     real(r8), allocatable, intent(out) :: vfrac(:,:)
 
     allocate(vfrac(size(this%vfrac,1),size(this%vfrac,2)))
-    call this%material_layout%get_reduced_volume_fractions(matl_dist, vfrac)
+    call this%matl_map%get_reduced_volume_fractions(matl_dist, vfrac)
   end subroutine
 
 
