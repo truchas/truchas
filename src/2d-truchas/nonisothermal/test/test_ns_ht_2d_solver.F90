@@ -68,7 +68,7 @@ contains
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call parameter_list_from_json_string( &
-      '{"liquid":{"properties":{"fluid":true,"conductivity":1.0,"density":1.0,"specific-heat":1.0}}}', &
+      '{"liquid":{"properties":{"fluid":true,"conductivity":1.0,"density":1.0,"viscosity":1.0,"specific-heat":1.0}}}', &
       matl_params, errmsg)
     if (.not.associated(matl_params)) call fail('parsing material input: ' // errmsg)
     call load_material_database(database, matl_params, stat, errmsg)
@@ -83,7 +83,7 @@ contains
     call parameter_list_from_json_string( &
       '{"wall":{"type":"no-slip","face-set-ids":[1,2,3,4]}}', flow_bc_params, errmsg)
     if (.not.associated(flow_bc_params)) call fail('parsing flow BC input: ' // errmsg)
-    call flow_model%init(env, mesh, flow_bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call flow_model%init_core(env, mesh, flow_bc_params, stat, errmsg)
     if (stat /= 0) call fail('initializing flow model: ' // errmsg)
 
     call parameter_list_from_json_string( &

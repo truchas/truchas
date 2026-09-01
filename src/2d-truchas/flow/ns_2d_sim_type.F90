@@ -20,7 +20,6 @@ module ns_2d_sim_type
   use material_database_type
   use material_model_type
   use material_distribution_type
-  use flow_2d_material_layout_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
@@ -74,7 +73,6 @@ contains
 
     type(parameter_list), pointer :: mesh_params, model_params, solver_params, materials_params
     type(parameter_list), pointer :: control_params
-    type(flow_2d_material_layout) :: material_layout
     character(:), allocatable :: matl_name(:)
     integer :: i, rlev
     logical :: inviscid
@@ -170,7 +168,7 @@ contains
     solver_params => params%sublist('flow-solver')
     call env%simlog%begin_section('Constructing flow solver.')
     allocate(this%solver)
-    call this%solver%init(env, this%model, material_layout, solver_params, stat, errmsg)
+    call this%solver%init(env, this%model, this%matl_model, solver_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Flow solver construction failed.')
       return
@@ -257,7 +255,6 @@ contains
 
       type(parameter_list), pointer :: bc_params
       real(r8), allocatable :: body_acceleration(:)
-      integer, allocatable :: fluid_material_ids(:)
       character(96) :: message
 
       stat = 0
@@ -290,12 +287,8 @@ contains
         call env%simlog%info(trim(message))
       end if
 
-      call material_layout%init(this%matl_model, stat, errmsg)
-      if (stat /= 0) return
-      allocate(fluid_material_ids(material_layout%num_real_fluid()))
-      call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-      call this%model%init_material(env, this%mesh, bc_params, this%matl_model, fluid_material_ids, stat, errmsg, &
-          body_acceleration=body_acceleration, inviscid=inviscid)
+      call this%model%init_core(env, this%mesh, bc_params, stat, errmsg, body_acceleration=body_acceleration, &
+          inviscid=inviscid)
       if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
 
     end subroutine construct_flow_model
@@ -376,8 +369,8 @@ contains
       else
         call env%simlog%info('Using zero initial velocity.')
       end if
-      allocate(vfrac(material_layout%num_material(), this%mesh%ncell), temperature(this%mesh%ncell_onP), source=0.0_r8)
-      call material_layout%get_reduced_volume_fractions(this%matl_dist, vfrac)
+      allocate(temperature(this%mesh%ncell_onP), source=0.0_r8)
+      call this%solver%get_reduced_volume_fractions(this%matl_dist, vfrac)
       call this%mesh%cell_imap%gather_offp(vfrac)
       call this%solver%set_initial_material_state(vfrac, temperature)
       call this%solver%set_initial_state(env, this%t_init, this%solver%initial_time_step(), initial_velocity, stat)

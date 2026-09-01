@@ -25,7 +25,6 @@ module ns_ht_2d_sim_type
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use flow_2d_model_type
-  use flow_2d_material_layout_type
   use ht_2d_model_type
   use ns_ht_2d_solver_type
   use ns_ht_2d_vtkhdf_writer_type
@@ -80,7 +79,6 @@ contains
 
     type(parameter_list), pointer :: mesh_params, model_params, solver_params, materials_params
     type(parameter_list), pointer :: control_params
-    type(flow_2d_material_layout) :: material_layout
     character(:), allocatable :: matl_name(:)
     real(r8), allocatable :: temp(:), velocity(:,:)
     integer :: i, rlev
@@ -300,7 +298,6 @@ contains
 
       type(parameter_list), pointer :: bc_params
       real(r8), allocatable :: body_acceleration(:)
-      integer, allocatable :: fluid_material_ids(:)
       character(96) :: message
 
       stat = 0
@@ -334,12 +331,8 @@ contains
         call env%simlog%info(trim(message))
       end if
 
-      call material_layout%init(this%matl_model, stat, errmsg)
-      if (stat /= 0) return
-      allocate(fluid_material_ids(material_layout%num_real_fluid()))
-      call material_layout%get_real_fluid_material_ids(fluid_material_ids)
-      call this%flow_model%init_material(env, this%mesh, bc_params, this%matl_model, fluid_material_ids, stat, errmsg, &
-          body_acceleration=body_acceleration, inviscid=inviscid, boussinesq=.true.)
+      call this%flow_model%init_core(env, this%mesh, bc_params, stat, errmsg, &
+          body_acceleration=body_acceleration, inviscid=inviscid)
       if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
 
     end subroutine construct_flow_model
