@@ -133,7 +133,7 @@ contains
     call this%matl_map%get_priority(priority)
     allocate(phase_ids(nrealfluid))
     call this%matl_map%get_real_fluid_phase_ids(phase_ids)
-    call model%init_material(matl_model, phase_ids, stat, errmsg)
+    call model%init_material(matl_model, phase_ids, stat, errmsg, nfluid=nfluid)
     if (stat /= 0) return
     if (model%inviscid) then
       call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
