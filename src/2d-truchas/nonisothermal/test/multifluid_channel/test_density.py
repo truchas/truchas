@@ -45,9 +45,9 @@ def main():
         expected_light = np.clip(
             (interface - (centers[:, 0] - 0.5*dx)) / dx, 0.0, 1.0
         )
-        composition_error = np.max(np.abs(light - expected_light))
-        if composition_error > volume_fraction_tolerance:
-            raise RuntimeError(f"step {step}: composition error={composition_error:g}")
+        distribution_error = np.max(np.abs(light - expected_light))
+        if distribution_error > volume_fraction_tolerance:
+            raise RuntimeError(f"step {step}: distribution error={distribution_error:g}")
         if np.min(light) < -1.0e-12 or np.min(heavy) < -1.0e-12:
             raise RuntimeError(f"step {step}: negative volume fraction")
         if np.max(np.abs(light + heavy - 1.0)) > 1.0e-12:

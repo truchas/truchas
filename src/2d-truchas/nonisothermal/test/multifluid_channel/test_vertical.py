@@ -48,7 +48,7 @@ def main():
             raise RuntimeError(f"step {step}: negative volume fraction")
         if np.max(np.abs(inlet + outlet - 1.0)) > 1.0e-12:
             raise RuntimeError(f"step {step}: volume fractions do not sum to one")
-        composition_error = np.max(np.abs(inlet - expected_inlet))
+        distribution_error = np.max(np.abs(inlet - expected_inlet))
         temp = data.field(step, "T")
         enthalpy = data.field(step, "H")
         temp_error = np.max(np.abs(temp - (1.0 + centers[:, 1])))
@@ -59,10 +59,10 @@ def main():
         velocity_error = np.max(np.abs(velocity[:, :2] - [1.0, 0.0]))
         # The geometric initializer and tracker use a finite refinement level,
         # so the axis-aligned area fraction is only resolved to this scale.
-        if (composition_error > volume_fraction_tolerance or
+        if (distribution_error > volume_fraction_tolerance or
                 max(temp_error, enthalpy_error, velocity_error) > 2.0e-9):
             raise RuntimeError(
-                f"step {step}: composition={composition_error:g}, "
+                f"step {step}: distribution={distribution_error:g}, "
                 f"temperature={temp_error:g}, enthalpy={enthalpy_error:g}, "
                 f"velocity={velocity_error:g}"
             )

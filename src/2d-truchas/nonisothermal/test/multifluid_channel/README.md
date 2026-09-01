@@ -6,7 +6,7 @@ use BDF1 and compare each output against an analytic solution rather than
 against stored field data.
 
 - `input_horizontal.json`: stationary horizontal layers with different
-  material densities.  It checks that a discontinuous material composition can
+  material densities.  It checks that a discontinuous material distribution can
   remain at rest without generating spurious flow.
 - `input_vertical.json`: a horizontal interface translating vertically with a
   uniform velocity.  It checks interface transport, temperature, enthalpy, and

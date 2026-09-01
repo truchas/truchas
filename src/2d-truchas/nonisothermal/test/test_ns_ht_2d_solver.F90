@@ -13,7 +13,7 @@ program test_ns_ht_2d_solver
   use unstr_2d_mesh_factory
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
   use flow_2d_model_type
@@ -51,7 +51,7 @@ contains
     type(unstr_2d_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
-    type(material_composition), target :: composition
+  type(material_distribution), target :: matl_dist
     type(flow_2d_model), target :: flow_model
     type(ht_2d_model), target :: ht_model
     type(ht_2d_model), target :: standalone_ht_model
@@ -75,8 +75,8 @@ contains
     if (stat /= 0) call fail('loading material database: ' // errmsg)
     call matl_model%init(['liquid'], database, stat, errmsg)
     if (stat /= 0) call fail('initializing material model: ' // errmsg)
-    call composition%init_uniform(mesh, matl_model, 1, stat, errmsg)
-    if (stat /= 0) call fail('initializing material composition: ' // errmsg)
+  call matl_dist%init_uniform(mesh, matl_model, 1, stat, errmsg)
+  if (stat /= 0) call fail('initializing material distribution: ' // errmsg)
     call add_enthalpy_prop(matl_model, stat, errmsg)
     if (stat /= 0) call fail('adding enthalpy property: ' // errmsg)
 
@@ -90,13 +90,13 @@ contains
       '{"bc":{"all":{"type":"temperature","face-set-ids":[1,2,3,4],"temp":2.0}},"source":{}}', &
       ht_params, errmsg)
     if (.not.associated(ht_params)) call fail('parsing thermal-model input: ' // errmsg)
-    call ht_model%init(env, mesh, matl_model, composition, ht_params, stat, errmsg, advection=.true.)
+  call ht_model%init(env, mesh, matl_model, matl_dist, ht_params, stat, errmsg, advection=.true.)
     if (stat /= 0) call fail('initializing thermal model: ' // errmsg)
     call parameter_list_from_json_string( &
       '{"bc":{"all":{"type":"temperature","face-set-ids":[1,2,3,4],"temp":2.0}},"source":{}}', &
       standalone_ht_params, errmsg)
     if (.not.associated(standalone_ht_params)) call fail('parsing standalone thermal-model input: ' // errmsg)
-    call standalone_ht_model%init(env, mesh, matl_model, composition, standalone_ht_params, stat, errmsg)
+  call standalone_ht_model%init(env, mesh, matl_model, matl_dist, standalone_ht_params, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal model: ' // errmsg)
 
     plist => solver_params%sublist('flow')
@@ -116,7 +116,7 @@ contains
     call solver_params%set('max-try-at-step', 4)
     call thermal_solver%init(env, standalone_ht_model, thermal_params, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal solver: ' // errmsg)
-    call solver%init(env, flow_model, ht_model, matl_model, composition, &
+  call solver%init(env, flow_model, ht_model, matl_model, matl_dist, &
         solver_params, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled solver: ' // errmsg)
 

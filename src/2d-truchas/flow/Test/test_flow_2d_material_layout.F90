@@ -5,14 +5,14 @@ program test_flow_2d_material_layout
   use parameter_list_json
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use material_factory, only: load_material_database
   use flow_2d_material_layout_type
   implicit none
 
   type(material_database) :: database
   type(material_model) :: matl_model
-  type(material_composition) :: composition
+  type(material_distribution) :: matl_dist
   type(flow_2d_material_layout) :: layout
   type(parameter_list), pointer :: matl_params, tracking_params
   character(:), allocatable :: errmsg
@@ -41,14 +41,14 @@ program test_flow_2d_material_layout
   call layout%get_priority(priority)
   call require(all(priority == [4,3,2,1]), 'wrong full material priority')
 
-  allocate(composition%vfrac(4,1))
-  composition%vfrac(:,1) = [0.1_r8, 0.3_r8, 0.4_r8, 0.2_r8]
-  call layout%get_reduced_volume_fractions(composition, vfrac)
+  allocate(matl_dist%vfrac(4,1))
+  matl_dist%vfrac(:,1) = [0.1_r8, 0.3_r8, 0.4_r8, 0.2_r8]
+  call layout%get_reduced_volume_fractions(matl_dist, vfrac)
   call require(maxval(abs(vfrac(:,1) - [0.1_r8,0.4_r8,0.2_r8,0.3_r8])) < 1.0e-14_r8, &
       'wrong reduced volume fractions')
   vfrac(:,1) = [0.15_r8, 0.35_r8, 0.25_r8, 0.25_r8]
-  call layout%put_reduced_volume_fractions(vfrac, composition)
-  call require(maxval(abs(composition%vfrac(:,1) - [0.15_r8,0.3_r8,0.35_r8,0.25_r8])) < 1.0e-14_r8, &
+  call layout%put_reduced_volume_fractions(vfrac, matl_dist)
+  call require(maxval(abs(matl_dist%vfrac(:,1) - [0.15_r8,0.3_r8,0.35_r8,0.25_r8])) < 1.0e-14_r8, &
       'wrong accepted volume fractions')
 
 contains

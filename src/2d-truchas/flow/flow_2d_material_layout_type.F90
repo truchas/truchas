@@ -1,7 +1,7 @@
 !!
 !! FLOW_2D_MATERIAL_LAYOUT_TYPE
 !!
-!! Defines the flow-facing reduction of simulation material composition. Real
+!! Defines the flow-facing reduction of simulation material distribution. Real
 !! fluids occupy distinct slots, followed by optional VOID and lumped SOLID
 !! slots. The material-slot order is fixed; geometric reconstruction uses the
 !! separate full PRIORITY permutation.
@@ -18,7 +18,7 @@ module flow_2d_material_layout_type
   use parameter_list_type
   use material_model_type
   use material_class
-  use material_composition_type
+  use material_distribution_type
   implicit none
   private
 
@@ -196,45 +196,45 @@ contains
   end subroutine
 
 
-  subroutine get_reduced_volume_fractions(this, composition, vfrac)
+  subroutine get_reduced_volume_fractions(this, matl_dist, vfrac)
     class(flow_2d_material_layout), intent(in) :: this
-    type(material_composition), intent(in) :: composition
+    type(material_distribution), intent(in) :: matl_dist
     real(r8), intent(out) :: vfrac(:,:)
 
     integer :: m
 
     ASSERT(size(vfrac,1) == this%num_material())
-    ASSERT(size(vfrac,2) >= size(composition%vfrac,2))
+    ASSERT(size(vfrac,2) >= size(matl_dist%vfrac,2))
     vfrac = 0.0_r8
     do m = 1, this%num_real_fluid()
-      vfrac(m,:size(composition%vfrac,2)) = composition%vfrac(this%fluid_material_ids(m),:)
+      vfrac(m,:size(matl_dist%vfrac,2)) = matl_dist%vfrac(this%fluid_material_ids(m),:)
     end do
     if (this%void_material_id /= 0) then
-      vfrac(this%num_fluid(),:size(composition%vfrac,2)) = composition%vfrac(this%void_material_id,:)
+      vfrac(this%num_fluid(),:size(matl_dist%vfrac,2)) = matl_dist%vfrac(this%void_material_id,:)
     end if
     if (size(this%solid_material_ids) > 0) then
       do m = 1, size(this%solid_material_ids)
-        vfrac(this%num_material(),:size(composition%vfrac,2)) = &
-            vfrac(this%num_material(),:size(composition%vfrac,2)) + composition%vfrac(this%solid_material_ids(m),:)
+        vfrac(this%num_material(),:size(matl_dist%vfrac,2)) = &
+            vfrac(this%num_material(),:size(matl_dist%vfrac,2)) + matl_dist%vfrac(this%solid_material_ids(m),:)
       end do
     end if
   end subroutine
 
 
-  subroutine put_reduced_volume_fractions(this, vfrac, composition)
+  subroutine put_reduced_volume_fractions(this, vfrac, matl_dist)
     class(flow_2d_material_layout), intent(in) :: this
     real(r8), intent(in) :: vfrac(:,:)
-    type(material_composition), intent(inout) :: composition
+    type(material_distribution), intent(inout) :: matl_dist
 
     integer :: m
 
     ASSERT(size(vfrac,1) == this%num_material())
-    ASSERT(size(vfrac,2) >= size(composition%vfrac,2))
+    ASSERT(size(vfrac,2) >= size(matl_dist%vfrac,2))
     do m = 1, this%num_real_fluid()
-      composition%vfrac(this%fluid_material_ids(m),:) = vfrac(m,:size(composition%vfrac,2))
+      matl_dist%vfrac(this%fluid_material_ids(m),:) = vfrac(m,:size(matl_dist%vfrac,2))
     end do
     if (this%void_material_id /= 0) then
-      composition%vfrac(this%void_material_id,:) = vfrac(this%num_fluid(),:size(composition%vfrac,2))
+      matl_dist%vfrac(this%void_material_id,:) = vfrac(this%num_fluid(),:size(matl_dist%vfrac,2))
     end if
   end subroutine
 

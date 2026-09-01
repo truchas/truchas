@@ -13,11 +13,11 @@ interface reconstruction follow later.
 
 ## Ownership and time-step structure
 
-`material_composition` remains simulation-wide, authoritative state.  Flow
+`material_distribution` remains simulation-wide, authoritative state.  Flow
 uses a reduced view consisting of its individual mobile liquid materials, an
 optional VOID component, and one derived SOLID component.  A flow material
 transport component owns only the mapping, scratch/trial storage, and
-material-resolved flux volumes; it does not own an independent composition.
+material-resolved flux volumes; it does not own an independent distribution.
 
 The coupled solver owns the attempted-step sequence.  Given the committed
 time `t_n` and requested endpoint `t_np1`, it derives
@@ -30,11 +30,11 @@ For a coupled attempt:
    accepted face velocity and records material flux volumes.
 2. The coupled solver computes the enthalpy advection increment from those
    fluxes and the committed thermal state, then attempts thermal transport.
-3. On thermal failure, it restores the pre-advection mobile composition and
+3. On thermal failure, it restores the pre-advection mobile distribution and
    retries the entire attempt using the smaller step size supplied by the
    thermal solver.
 4. On thermal success, it advances NS momentum and pressure correction using
-   the advanced material composition and thermal state.  A flow-solver failure
+   the advanced material distribution and thermal state.  A flow-solver failure
    is non-recoverable for this algorithm.
 5. It accepts the resulting material, thermal, and flow states.
 
@@ -54,7 +54,7 @@ downstream physics that can reject an otherwise successful thermal step.
   default for standalone heat transport.
 - [x] **Enthalpy advection.**  Add a focused, unit-tested helper that converts
   material-resolved flux volumes into a conservative cell enthalpy increment,
-  including explicit inflow thermal data when needed. Material composition
+  including explicit inflow thermal data when needed. Material distribution
   supplies the state from which flow transport constructs those fluxes; the
   advector itself needs only their material-slot mapping.
 - [x] **Coupled solver and sim.**  `ns_ht_2d_solver` owns retry and
@@ -64,5 +64,5 @@ downstream physics that can reject an otherwise successful thermal step.
   results, material-resolved enthalpy-advection conservation, a driven-flow
   thermal case, serial/parallel reader consistency, and basic log output.
 - [ ] **Later capability.**  Replace the one-liquid transport bridge with VOF,
-  add temperature/composition-dependent flow properties and buoyancy, then
+  add temperature/distribution-dependent flow properties and buoyancy, then
   extend tests to multi-material and moving-interface cases.

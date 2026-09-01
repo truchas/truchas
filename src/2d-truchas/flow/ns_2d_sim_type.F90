@@ -1,7 +1,7 @@
 !!
 !! NS_2D_SIM_TYPE
 !!
-!! This module defines NS_2D_SIM, which owns the mesh, material composition,
+!! This module defines NS_2D_SIM, which owns the mesh, material distribution,
 !! Navier--Stokes model, solver, output schedule, and output writer for a
 !! two-dimensional isothermal incompressible-flow simulation.  The solver
 !! owns the flow state and time-step policy; the simulation supplies target
@@ -19,7 +19,7 @@ module ns_2d_sim_type
   use unstr_2d_mesh_factory
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use flow_2d_material_layout_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
@@ -36,7 +36,7 @@ module ns_2d_sim_type
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
     type(material_model) :: matl_model
-    type(material_composition), pointer :: composition => null()
+    type(material_distribution), pointer :: matl_dist => null()
     type(flow_2d_model), pointer :: model => null()
     type(ns_2d_solver), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
@@ -57,7 +57,7 @@ contains
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%model)) deallocate(this%model)
-    if (associated(this%composition)) deallocate(this%composition)
+    if (associated(this%matl_dist)) deallocate(this%matl_dist)
     if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine
 
@@ -133,12 +133,12 @@ contains
 
     !! Construct the material distribution.
     call env%simlog%begin_section('Constructing material distribution.')
-    allocate(this%composition)
+    allocate(this%matl_dist)
     if (params%is_sublist('material-regions')) then
-      call this%composition%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
+      call this%matl_dist%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
     else
       call env%simlog%info('Assigning material "' // trim(matl_name(1)) // '" uniformly.')
-      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+      call this%matl_dist%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
     end if
     if (stat /= 0) then
       call env%simlog%end_section('Material distribution construction failed.')
@@ -377,7 +377,7 @@ contains
         call env%simlog%info('Using zero initial velocity.')
       end if
       allocate(vfrac(material_layout%num_material(), this%mesh%ncell), temperature(this%mesh%ncell_onP), source=0.0_r8)
-      call material_layout%get_reduced_volume_fractions(this%composition, vfrac)
+      call material_layout%get_reduced_volume_fractions(this%matl_dist, vfrac)
       call this%mesh%cell_imap%gather_offp(vfrac)
       call this%solver%set_initial_material_state(vfrac, temperature)
       call this%solver%set_initial_state(env, this%t_init, this%solver%initial_time_step(), initial_velocity, stat)

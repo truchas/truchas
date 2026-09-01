@@ -12,7 +12,7 @@
 !! Notes
 !!
 !! Property evaluation is restricted to on-process cells because material
-!! composition is stored there; the resulting coefficient fields are gathered
+!! distribution is stored there; the resulting coefficient fields are gathered
 !! before diffusion-matrix assembly.
 !!
 

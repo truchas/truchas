@@ -17,7 +17,7 @@ module ns_ht_2d_sim_type
   use unstr_2d_mesh_factory
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use scalar_func_class
   use scalar_func_factories, only: alloc_scalar_func
   use scalar_func_projection
@@ -38,7 +38,7 @@ module ns_ht_2d_sim_type
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
     type(material_model) :: matl_model
-    type(material_composition), pointer :: composition => null()
+    type(material_distribution), pointer :: matl_dist => null()
     type(flow_2d_model), pointer :: flow_model => null()
     type(ht_2d_model), pointer :: ht_model => null()
     type(ns_ht_2d_solver), pointer :: solver => null()
@@ -63,7 +63,7 @@ contains
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%ht_model)) deallocate(this%ht_model)
     if (associated(this%flow_model)) deallocate(this%flow_model)
-    if (associated(this%composition)) deallocate(this%composition)
+    if (associated(this%matl_dist)) deallocate(this%matl_dist)
     if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine
 
@@ -146,12 +146,12 @@ contains
 
     !! Construct the material distribution.
     call env%simlog%begin_section('Constructing material distribution.')
-    allocate(this%composition)
+    allocate(this%matl_dist)
     if (params%is_sublist('material-regions')) then
-      call this%composition%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
+      call this%matl_dist%init(env, this%mesh, this%matl_model, params%sublist('material-regions'), rlev, stat, errmsg)
     else
       call env%simlog%info('Assigning material "' // trim(matl_name(1)) // '" uniformly.')
-      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+      call this%matl_dist%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
     end if
     if (stat /= 0) then
       call env%simlog%end_section('Material distribution construction failed.')
@@ -197,7 +197,7 @@ contains
     solver_params => params%sublist('solver')
     call env%simlog%begin_section('Constructing coupled solver.')
     allocate(this%solver)
-    call this%solver%init(env, this%flow_model, this%ht_model, this%matl_model, this%composition, &
+    call this%solver%init(env, this%flow_model, this%ht_model, this%matl_model, this%matl_dist, &
         solver_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Coupled solver construction failed.')
@@ -352,7 +352,7 @@ contains
       character(:), allocatable, intent(out) :: errmsg
 
       allocate(this%ht_model)
-      call this%ht_model%init(env, this%mesh, this%matl_model, this%composition, params, stat, errmsg, advection=.true.)
+      call this%ht_model%init(env, this%mesh, this%matl_model, this%matl_dist, params, stat, errmsg, advection=.true.)
 
     end subroutine construct_thermal_model
 
@@ -522,7 +522,7 @@ contains
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
     call this%solver%set_temporal_output(this%temporal_output)
-    call this%output%write_solution(time, p, velocity, H, T, this%composition%vfrac, this%temporal_output)
+    call this%output%write_solution(time, p, velocity, H, T, this%matl_dist%vfrac, this%temporal_output)
   end subroutine
 
 end module ns_ht_2d_sim_type

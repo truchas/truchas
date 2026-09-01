@@ -5,7 +5,7 @@
 !! two-dimensional incompressible Navier--Stokes/thermal-transport step. It
 !! advances material transport, converts its fluxes to an enthalpy rate,
 !! attempts thermal transport, and then advances flow momentum and pressure.
-!! The mesh, material composition, and models remain sim-owned. The flow
+!! The mesh, material distribution, and models remain sim-owned. The flow
 !! solver owns the flow state and provides accessors for data needed by the
 !! coupled simulation driver.
 !!
@@ -21,7 +21,7 @@ module ns_ht_2d_solver_type
   use simulation_environment_type
   use parameter_list_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use flow_2d_model_type
   use flow_2d_material_layout_type
   use flow_2d_material_transport_type
@@ -35,7 +35,7 @@ module ns_ht_2d_solver_type
 
   type, public :: ns_ht_2d_solver
     private
-    type(material_composition), pointer :: matl_comp => null() ! unowned reference
+    type(material_distribution), pointer :: matl_dist => null() ! unowned reference
     type(flow_2d_material_layout) :: material_layout
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
@@ -66,7 +66,7 @@ module ns_ht_2d_solver_type
 
 contains
 
-  subroutine init(this, env, flow_model, ht_model, matl_model, matl_comp, &
+  subroutine init(this, env, flow_model, ht_model, matl_model, matl_dist, &
       params, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(out) :: this
@@ -74,7 +74,7 @@ contains
     type(flow_2d_model), target, intent(inout) :: flow_model
     type(ht_2d_model), target, intent(in) :: ht_model
     type(material_model), intent(in) :: matl_model
-    type(material_composition), target, intent(in) :: matl_comp
+    type(material_distribution), target, intent(in) :: matl_dist
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -85,7 +85,7 @@ contains
     integer, allocatable :: flow_material_ids(:), priority(:)
 
     stat = 0
-    ASSERT(size(matl_comp%vfrac,1) == matl_model%nmatl)
+    ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
     if (.not.params%is_sublist('flow') .or. .not.params%is_sublist('thermal')) then
       stat = 1
       errmsg = 'solver requires flow and thermal sublists'
@@ -157,11 +157,11 @@ contains
     projection_params => flow_params%sublist('projection-solver')
 
     this%ncell_onP = flow_model%mesh%ncell_onP
-    this%matl_comp => matl_comp
+    this%matl_dist => matl_dist
     this%ts_sync = time_step_sync(lookahead)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
         this%flow_vfrac(this%material_layout%num_material(),flow_model%mesh%ncell))
-    call this%material_layout%get_reduced_volume_fractions(matl_comp, this%flow_vfrac)
+    call this%material_layout%get_reduced_volume_fractions(matl_dist, this%flow_vfrac)
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
@@ -301,7 +301,7 @@ contains
       call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
       call this%material_transport%get_trial_volume_fractions(vfrac_trial)
       call env%timer%stop('flow/material-transport')
-      call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_comp)
+      call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_dist)
       call this%thermal%get_cell_temp_soln(this%temp)
       call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
@@ -315,7 +315,7 @@ contains
       call this%thermal%step(t_try, hnext, stat)
       call env%timer%stop('thermal/transport')
       if (stat /= 0) then
-        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
+        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
         call this%flow%set_volume_fractions(this%flow_vfrac)
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
@@ -335,7 +335,7 @@ contains
         call this%flow%reject_step()
         call this%thermal%reject_step()
         call this%thermal%get_cell_temp_soln(this%temp)
-        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_comp)
+        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
         call this%flow%set_volume_fractions(this%flow_vfrac)
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3

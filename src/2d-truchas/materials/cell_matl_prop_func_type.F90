@@ -15,14 +15,14 @@ module cell_matl_prop_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use new_mesh_func_class
-  use material_composition_type
+  use material_distribution_type
   use avg_matl_prop_type
   implicit none
   private
 
   type, extends(new_mesh_func), public :: cell_matl_prop_func
     private
-    type(material_composition), pointer :: composition => null()
+    type(material_distribution), pointer :: matl_dist => null()
     type(avg_matl_prop) :: prop
     integer, allocatable :: mid(:)
   contains
@@ -34,12 +34,12 @@ module cell_matl_prop_func_type
 
 contains
 
-  subroutine init(this, matl_model, composition, name, stat, errmsg)
+  subroutine init(this, matl_model, matl_dist, name, stat, errmsg)
     use material_model_type
 
     class(cell_matl_prop_func), intent(out) :: this
     type(material_model), intent(in) :: matl_model
-    type(material_composition), pointer, intent(in) :: composition
+    type(material_distribution), pointer, intent(in) :: matl_dist
     character(*), intent(in) :: name
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -50,7 +50,7 @@ contains
     this%mid = [(i, i=1,matl_model%nmatl_real)]
     call this%prop%init(name, this%mid, matl_model, stat, errmsg)
     if (stat /= 0) return
-    this%composition => composition
+    this%matl_dist => matl_dist
   end subroutine init
 
   subroutine compute_value(this, state, value)
@@ -59,10 +59,10 @@ contains
     real(r8), intent(out) :: value(:)
     integer :: j
 
-    ASSERT(size(state,1) >= size(this%composition%vfrac,2))
-    ASSERT(size(value) == size(this%composition%vfrac,2))
-    do j = 1, size(this%composition%vfrac,2)
-      call this%prop%compute_value(this%composition%vfrac(this%mid,j), state(j:j), value(j))
+    ASSERT(size(state,1) >= size(this%matl_dist%vfrac,2))
+    ASSERT(size(value) == size(this%matl_dist%vfrac,2))
+    do j = 1, size(this%matl_dist%vfrac,2)
+      call this%prop%compute_value(this%matl_dist%vfrac(this%mid,j), state(j:j), value(j))
     end do
   end subroutine compute_value
 
@@ -72,8 +72,8 @@ contains
     real(r8), intent(in) :: state
     real(r8), intent(out) :: value
 
-    ASSERT(cell >= 1 .and. cell <= size(this%composition%vfrac,2))
-    call this%prop%compute_value(this%composition%vfrac(this%mid,cell), [state], value)
+    ASSERT(cell >= 1 .and. cell <= size(this%matl_dist%vfrac,2))
+    call this%prop%compute_value(this%matl_dist%vfrac(this%mid,cell), [state], value)
   end subroutine compute_value_cell
 
   subroutine compute_deriv(this, state, index, value)
@@ -83,10 +83,10 @@ contains
     real(r8), intent(out) :: value(:)
     integer :: j
 
-    ASSERT(size(state,1) >= size(this%composition%vfrac,2))
-    ASSERT(size(value) == size(this%composition%vfrac,2))
-    do j = 1, size(this%composition%vfrac,2)
-      call this%prop%compute_deriv(this%composition%vfrac(this%mid,j), state(j:j), index, value(j))
+    ASSERT(size(state,1) >= size(this%matl_dist%vfrac,2))
+    ASSERT(size(value) == size(this%matl_dist%vfrac,2))
+    do j = 1, size(this%matl_dist%vfrac,2)
+      call this%prop%compute_deriv(this%matl_dist%vfrac(this%mid,j), state(j:j), index, value(j))
     end do
   end subroutine compute_deriv
 

@@ -9,7 +9,7 @@ program test_cell_matl_prop_func
   use material_model_type
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
-  use material_composition_type
+  use material_distribution_type
   use cell_matl_prop_func_type
   use parallel_communication
   use simulation_environment_type
@@ -20,7 +20,7 @@ program test_cell_matl_prop_func
   type(unstr_2d_mesh), pointer :: mesh
   type(material_database) :: matl_db
   type(material_model) :: matl_model
-  type(material_composition), pointer :: composition
+  type(material_distribution), pointer :: matl_dist
   type(cell_matl_prop_func) :: conductivity, enthalpy
   type(parameter_list), pointer :: params
   real(r8), allocatable :: state(:), value(:), deriv(:)
@@ -51,15 +51,15 @@ program test_cell_matl_prop_func
   call add_enthalpy_prop(matl_model, stat, errmsg)
   if (stat /= 0) call fail('could not add enthalpy properties: ' // errmsg)
 
-  allocate(composition)
-  call composition%init_uniform(mesh, matl_model, 1, stat, errmsg)
-  if (stat /= 0) call fail('could not initialize composition: ' // errmsg)
-  composition%vfrac(1,:) = 0.25_r8
-  composition%vfrac(2,:) = 0.75_r8
+  allocate(matl_dist)
+  call matl_dist%init_uniform(mesh, matl_model, 1, stat, errmsg)
+  if (stat /= 0) call fail('could not initialize material distribution: ' // errmsg)
+  matl_dist%vfrac(1,:) = 0.25_r8
+  matl_dist%vfrac(2,:) = 0.75_r8
 
-  call conductivity%init(matl_model, composition, 'conductivity', stat, errmsg)
+  call conductivity%init(matl_model, matl_dist, 'conductivity', stat, errmsg)
   if (stat /= 0) call fail('could not initialize conductivity: ' // errmsg)
-  call enthalpy%init(matl_model, composition, 'enthalpy', stat, errmsg)
+  call enthalpy%init(matl_model, matl_dist, 'enthalpy', stat, errmsg)
   if (stat /= 0) call fail('could not initialize enthalpy: ' // errmsg)
 
   ncell = mesh%ncell_onP
