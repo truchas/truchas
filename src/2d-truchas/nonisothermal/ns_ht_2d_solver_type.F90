@@ -53,6 +53,7 @@ module ns_ht_2d_solver_type
     procedure :: set_initial_state
     procedure :: integrate
     procedure :: last_time
+    procedure :: initial_time_step
     procedure :: init_temporal_output
     procedure :: set_temporal_output
     procedure :: get_cell_flow_soln
@@ -389,6 +390,13 @@ contains
     class(ns_ht_2d_solver), intent(in) :: this
 
     last_time = this%thermal%last_time()
+  end function
+
+
+  real(r8) function initial_time_step(this)
+    class(ns_ht_2d_solver), intent(in) :: this
+
+    initial_time_step = this%dt_init
   end function
 
 
