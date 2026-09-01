@@ -15,7 +15,6 @@ program test_ns_2d_solver
   use material_model_type
   use material_factory, only: load_material_database
   use flow_2d_model_type
-  use flow_2d_material_layout_type
   use ns_2d_solver_type
   implicit none
 
@@ -49,7 +48,6 @@ contains
     type(ns_2d_solver), target :: solver
     type(material_database) :: database
     type(material_model) :: matl_model
-    type(flow_2d_material_layout) :: material_layout
     type(parameter_list), pointer :: matl_params, plist, momentum_params, projection_params, tracking_params
     type(parameter_list), target :: bc_params, solver_params
     real(r8), allocatable :: velocity(:,:), flux(:), flux_volumes(:,:), pressure_save(:), velocity_save(:,:), &
@@ -62,10 +60,11 @@ contains
     plist => bc_params%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1,2,3,4])
-    call model%init(env, mesh, bc_params, [1.0_r8], 0.1_r8, stat, errmsg)
+    call model%init_core(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes model initialization failed')
     if (stat /= 0) return
-    call parameter_list_from_json_string('{"liquid":{"properties":{"fluid":true}}}', matl_params, errmsg)
+    call parameter_list_from_json_string( &
+        '{"liquid":{"properties":{"fluid":true,"density":1.0,"viscosity":0.1}}}', matl_params, errmsg)
     call require(associated(matl_params), 'parsing material database failed')
     if (.not.associated(matl_params)) return
     call load_material_database(database, matl_params, stat, errmsg)
@@ -74,16 +73,13 @@ contains
     call matl_model%init(['liquid'], database, stat, errmsg)
     call require(stat == 0, 'material model initialization failed')
     if (stat /= 0) return
-    call material_layout%init(matl_model, stat, errmsg)
-    call require(stat == 0, 'material-layout initialization failed')
-    if (stat /= 0) return
     momentum_params => solver_params%sublist('momentum-solver')
     call set_solver_params(momentum_params)
     projection_params => solver_params%sublist('projection-solver')
     call set_solver_params(projection_params)
     tracking_params => solver_params%sublist('volume-tracking')
     call tracking_params%set('algorithm', 'simple')
-    call solver%init(env, model, material_layout, solver_params, stat, errmsg)
+    call solver%init(env, model, matl_model, solver_params, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes solver initialization failed')
     if (stat /= 0) return
     allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP), flux_volumes(1,size(mesh%cface)))

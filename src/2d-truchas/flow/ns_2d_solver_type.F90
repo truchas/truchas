@@ -19,6 +19,8 @@ module ns_2d_solver_type
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
   use parameter_list_type
+  use material_model_type
+  use material_distribution_type
   use flow_2d_model_type
   use flow_2d_solver_type
   use flow_2d_material_layout_type
@@ -29,6 +31,7 @@ module ns_2d_solver_type
 
   type, public :: ns_2d_solver
     private
+    type(flow_2d_material_layout) :: material_layout
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
@@ -42,6 +45,7 @@ module ns_2d_solver_type
     procedure :: init_time_stepper
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
+    procedure :: get_reduced_volume_fractions
     procedure :: get_volume_fractions
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
@@ -63,17 +67,17 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, material_layout, params, stat, errmsg)
+  subroutine init(this, env, model, matl_model, params, stat, errmsg)
     class(ns_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(flow_2d_model), target, intent(in) :: model
-    type(flow_2d_material_layout), intent(inout) :: material_layout
+    type(flow_2d_model), target, intent(inout) :: model
+    type(material_model), intent(in) :: matl_model
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     integer :: nrealfluid, nfluid, nmat
-    integer, allocatable :: priority(:)
+    integer, allocatable :: priority(:), fluid_material_ids(:)
     character(:), allocatable :: algorithm
     type(parameter_list), pointer :: tracking_params, momentum_params, projection_params
     real(r8) :: courant_number
@@ -86,7 +90,9 @@ contains
       return
     end if
     tracking_params => params%sublist('volume-tracking')
-    call material_layout%set_priority(tracking_params, stat, errmsg)
+    call this%material_layout%init(matl_model, stat, errmsg)
+    if (stat /= 0) return
+    call this%material_layout%set_priority(tracking_params, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
       return
@@ -115,6 +121,15 @@ contains
       return
     end if
     call env%simlog%info('Using ' // trim(algorithm) // ' volume tracking.')
+    nrealfluid = this%material_layout%num_real_fluid()
+    nfluid = this%material_layout%num_fluid()
+    nmat = this%material_layout%num_material()
+    allocate(priority(nmat))
+    call this%material_layout%get_priority(priority)
+    allocate(fluid_material_ids(nrealfluid))
+    call this%material_layout%get_real_fluid_material_ids(fluid_material_ids)
+    call model%init_material(matl_model, fluid_material_ids, stat, errmsg)
+    if (stat /= 0) return
     if (model%inviscid) then
       call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
           stat=stat, errmsg=errmsg)
@@ -128,11 +143,6 @@ contains
       call this%flow%init(env, model, momentum_params, projection_params, courant_number, stat, errmsg)
     end if
     if (stat /= 0) return
-    nrealfluid = material_layout%num_real_fluid()
-    nfluid = material_layout%num_fluid()
-    nmat = material_layout%num_material()
-    allocate(priority(nmat))
-    call material_layout%get_priority(priority)
     allocate(this%vfrac(nmat,model%mesh%ncell))
     this%vfrac = 0.0_r8
     this%vfrac(1,:) = 1.0_r8
@@ -189,6 +199,16 @@ contains
     ASSERT(size(vfrac,1) == size(this%vfrac,1))
     ASSERT(size(vfrac,2) == size(this%vfrac,2))
     this%vfrac = vfrac
+  end subroutine
+
+
+  subroutine get_reduced_volume_fractions(this, matl_dist, vfrac)
+    class(ns_2d_solver), intent(in) :: this
+    type(material_distribution), intent(in) :: matl_dist
+    real(r8), allocatable, intent(out) :: vfrac(:,:)
+
+    allocate(vfrac(size(this%vfrac,1),size(this%vfrac,2)))
+    call this%material_layout%get_reduced_volume_fractions(matl_dist, vfrac)
   end subroutine
 
 

@@ -117,11 +117,8 @@ contains
     end if
     allocate(flow_material_ids(this%material_layout%num_real_fluid()))
     call this%material_layout%get_real_fluid_material_ids(flow_material_ids)
-    if (size(flow_material_ids) /= size(flow_model%matl_props%density)) then
-      stat = 1
-      errmsg = 'flow material properties do not match fluid materials'
-      return
-    end if
+    call flow_model%init_material(matl_model, flow_material_ids, stat, errmsg, boussinesq=.true.)
+    if (stat /= 0) return
     call params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return
     call params%get('min-time-step', this%dt_min, stat, errmsg)

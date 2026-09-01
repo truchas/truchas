@@ -45,6 +45,7 @@ module flow_2d_model_type
     real(r8), public :: body_acceleration(2) = 0.0_r8
   contains
     procedure :: init
+    procedure :: init_core
     procedure :: init_material
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
@@ -101,31 +102,46 @@ contains
       call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg)
     end if
     if (stat /= 0) return
-    call init_model_core(this, env, mesh, bc_params, stat, errmsg)
+    call check_initial_properties(this, mesh, stat, errmsg)
+    if (stat /= 0) return
+    call this%init_core(env, mesh, bc_params, stat, errmsg)
   end subroutine
 
 
   !! Initialize the model's material properties directly from fluid phases.
-  subroutine init_material(this, env, mesh, bc_params, matl_model, material_ids, stat, errmsg, body_acceleration, inviscid, &
-      boussinesq)
-    class(flow_2d_model), intent(out) :: this
-    type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
-    type(parameter_list), target, intent(inout) :: bc_params
+  !! The model core must already have been initialized.
+  subroutine init_material(this, matl_model, material_ids, stat, errmsg, boussinesq)
+    class(flow_2d_model), intent(inout) :: this
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_ids(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    real(r8), optional, intent(in) :: body_acceleration(:)
-    logical, optional, intent(in) :: inviscid
     logical, optional, intent(in) :: boussinesq
 
     logical :: use_boussinesq
 
     stat = 0
     use_boussinesq = .false.
-    if (present(inviscid)) this%inviscid = inviscid
     if (present(boussinesq)) use_boussinesq = boussinesq
+    call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, stat, errmsg)
+    if (stat == 0) call check_initial_properties(this, this%mesh, stat, errmsg)
+  end subroutine
+
+
+  !! Initialize the mesh-associated operators and boundary conditions.  The
+  !! material properties are initialized separately by INIT_MATERIAL.
+  subroutine init_core(this, env, mesh, bc_params, stat, errmsg, body_acceleration, inviscid)
+    class(flow_2d_model), intent(inout) :: this
+    type(simulation_environment), intent(in) :: env
+    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(parameter_list), target, intent(inout) :: bc_params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+    real(r8), optional, intent(in) :: body_acceleration(:)
+    logical, optional, intent(in) :: inviscid
+
+    stat = 0
+    if (present(inviscid)) this%inviscid = inviscid
     if (present(body_acceleration)) then
       if (size(body_acceleration) /= 2) then
         stat = 1
@@ -134,35 +150,30 @@ contains
       end if
       this%body_acceleration = body_acceleration
     end if
-    call this%matl_props%init_material(mesh, matl_model, material_ids, this%inviscid, use_boussinesq, stat, errmsg)
-    if (stat /= 0) return
-    call init_model_core(this, env, mesh, bc_params, stat, errmsg)
-  end subroutine
-
-
-  subroutine init_model_core(this, env, mesh, bc_params, stat, errmsg)
-    class(flow_2d_model), intent(inout) :: this
-    type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
-    type(parameter_list), target, intent(inout) :: bc_params
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
     this%mesh => mesh
     allocate(this%operators, this%bc, this%momentum, this%projection)
     call this%operators%init(mesh)
-    if (allocated(this%matl_props%viscosity_c)) then
-      if (any(this%matl_props%viscosity_c(:mesh%ncell_onP) <= 0.0_r8)) then
-        stat = 1
-        errmsg = 'viscosity must be positive at the initial temperature'
-        return
-      end if
-    end if
     call this%bc%init(env, mesh, bc_params, stat, errmsg)
     if (stat /= 0) return
     call this%momentum%init(mesh, this%operators, this%inviscid)
     call this%projection%init(mesh, this%operators)
-  end subroutine init_model_core
+  end subroutine init_core
+
+
+  subroutine check_initial_properties(this, mesh, stat, errmsg)
+    class(flow_2d_model), intent(in) :: this
+    type(unstr_2d_mesh), intent(in) :: mesh
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    stat = 0
+    if (allocated(this%matl_props%viscosity_c)) then
+      if (any(this%matl_props%viscosity_c(:mesh%ncell_onP) <= 0.0_r8)) then
+        stat = 1
+        errmsg = 'viscosity must be positive at the initial temperature'
+      end if
+    end if
+  end subroutine check_initial_properties
 
 
   !! Set the local material volume fractions used to form mixture density and
