@@ -1,6 +1,6 @@
 // Two-fluid isothermal hydrostatic column: heavy fluid below y=0.5 and
 // light fluid above it, with a downward body acceleration.  This regression
-// checks the piecewise hydrostatic pressure, material composition, and zero
+// checks the piecewise hydrostatic pressure, material distribution, and zero
 // velocity over time.
 {
     "materials": {

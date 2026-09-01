@@ -20,7 +20,7 @@ module ht_2d_tofh_type
   private
 
   !! Per-cell inverse of an increasing enthalpy-temperature relation. The
-  !! enthalpy relation may differ by cell because material composition varies.
+  !! enthalpy relation may differ by cell because material distribution varies.
   type, extends(ridders), public :: ht_2d_tofh
     private
     class(new_mesh_func), pointer :: HofT => null()

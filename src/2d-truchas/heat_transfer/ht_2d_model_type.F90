@@ -26,7 +26,7 @@ module ht_2d_model_type
   use cell_matl_prop_func_type
   use ht_2d_tofh_type
   use ht_2d_vector_type
-  use material_composition_type
+  use material_distribution_type
   use parallel_communication
   use parameter_list_type
   use simulation_environment_type
@@ -58,7 +58,7 @@ module ht_2d_model_type
 
 contains
 
-  subroutine init(this, env, mesh, matl_model, composition, params, stat, errmsg, advection)
+  subroutine init(this, env, mesh, matl_model, matl_dist, params, stat, errmsg, advection)
 
     use material_model_type
     use material_utilities
@@ -67,7 +67,7 @@ contains
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), intent(in), target :: mesh
     type(material_model), intent(in) :: matl_model
-    type(material_composition), pointer, intent(in) :: composition
+    type(material_distribution), pointer, intent(in) :: matl_dist
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -96,7 +96,7 @@ contains
     allocate(cell_matl_prop_func :: this%H_of_T)
     select type (H_of_T => this%H_of_T)
     type is (cell_matl_prop_func)
-      call H_of_T%init(matl_model, composition, 'enthalpy', stat, errmsg)
+      call H_of_T%init(matl_model, matl_dist, 'enthalpy', stat, errmsg)
     end select
     if (global_any(stat /= 0)) then
       stat = -1
@@ -127,7 +127,7 @@ contains
     allocate(cell_matl_prop_func :: this%conductivity)
     select type (conductivity => this%conductivity)
     type is (cell_matl_prop_func)
-      call conductivity%init(matl_model, composition, 'conductivity', stat, errmsg)
+      call conductivity%init(matl_model, matl_dist, 'conductivity', stat, errmsg)
     end select
     if (global_any(stat /= 0)) then
       stat = -1

@@ -1,4 +1,4 @@
-program test_material_composition
+program test_material_distribution
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -8,7 +8,7 @@ program test_material_composition
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
-  use material_composition_type
+  use material_distribution_type
   use parallel_communication
   use simulation_environment_type
   use truchas_env, only: prefix, overwrite_output
@@ -18,7 +18,7 @@ program test_material_composition
   type(unstr_2d_mesh), pointer :: mesh => null()
   type(material_database), target :: matl_db
   type(material_model) :: matl_model
-  type(material_composition) :: composition
+  type(material_distribution) :: matl_dist
   type(parameter_list), pointer :: matl_params, region_params
   character(:), allocatable :: string, errmsg, names(:)
   integer :: stat
@@ -32,7 +32,7 @@ program test_material_composition
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_material_composition.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_material_distribution.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   mesh => create_mesh()
@@ -61,10 +61,10 @@ program test_material_composition
   call matl_model%init(names, matl_db, stat, errmsg)
   if (stat /= 0) call fail('could not initialize material model: ' // errmsg)
 
-  call composition%init(env, mesh, matl_model, region_params, 15, stat, errmsg)
-  if (stat /= 0) call fail('could not initialize material composition: ' // errmsg)
+  call matl_dist%init(env, mesh, matl_model, region_params, 15, stat, errmsg)
+  if (stat /= 0) call fail('could not initialize material distribution: ' // errmsg)
 
-  call check_composition(mesh, matl_model, composition)
+  call check_distribution(mesh, matl_model, matl_dist)
 
 contains
 
@@ -76,20 +76,20 @@ contains
   end function create_mesh
 
 
-  subroutine check_composition(mesh, matl_model, composition)
+  subroutine check_distribution(mesh, matl_model, matl_dist)
     type(unstr_2d_mesh), intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
-    type(material_composition), intent(in) :: composition
+    type(material_distribution), intent(in) :: matl_dist
 
     real(r8) :: expected(3), volume, radius
     logical :: pure(3)
     integer :: mid(3), i, j
 
     if (matl_model%nmatl /= 3) call fail('wrong number of model materials')
-    if (any(composition%vfrac < 0.0_r8) .or. any(composition%vfrac > 1.0_r8)) then
+    if (any(matl_dist%vfrac < 0.0_r8) .or. any(matl_dist%vfrac > 1.0_r8)) then
       call fail('material fractions are not bounded')
     end if
-    if (any(abs(sum(composition%vfrac, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8))) then
+    if (any(abs(sum(matl_dist%vfrac, dim=1) - 1.0_r8) > 16.0_r8 * epsilon(1.0_r8))) then
       call fail('material fractions do not sum to one')
     end if
 
@@ -101,26 +101,26 @@ contains
     expected(2) = 2.0_r8 - 4.0_r8 * atan(1.0_r8) * radius**2
     expected(3) = expected(2)
     do i = 1, size(mid)
-      volume = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), composition%vfrac(mid(i),:)))
+      volume = global_sum(dot_product(mesh%volume(:mesh%ncell_onP), matl_dist%vfrac(mid(i),:)))
       if (abs(volume-expected(i)) > epsilon(1.0)) call fail('wrong material volume')
     end do
 
     pure = .false.
     do j = 1, mesh%ncell_onP
       do i = 1, size(mid)
-        pure(i) = pure(i) .or. composition%vfrac(mid(i),j) == 1.0_r8
+        pure(i) = pure(i) .or. matl_dist%vfrac(mid(i),j) == 1.0_r8
       end do
     end do
     do i = 1, size(mid)
       if (.not.global_any(pure(i))) call fail('expected a pure cell for every material')
     end do
-  end subroutine check_composition
+  end subroutine check_distribution
 
 
   subroutine fail(message)
     character(*), intent(in) :: message
-    if (is_IOP) write(*,'(a)') 'test_material_composition: ' // message
+    if (is_IOP) write(*,'(a)') 'test_material_distribution: ' // message
     error stop 1
   end subroutine fail
 
-end program test_material_composition
+end program test_material_distribution

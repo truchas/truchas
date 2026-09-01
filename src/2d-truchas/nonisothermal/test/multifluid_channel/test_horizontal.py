@@ -48,22 +48,22 @@ def main():
             raise RuntimeError(f"step {step}: negative volume fraction")
         if step == 0:
             initial_lower = lower.copy()
-        composition_error = np.max(np.abs(lower - initial_lower))
+        distribution_error = np.max(np.abs(lower - initial_lower))
         temp_error = np.max(np.abs(temp - (1.0 + centers[:, 1])))
         enthalpy_error = np.max(
             np.abs(enthalpy - (lower + 4.0*upper)*(1.0 + centers[:, 1]))
         )
         velocity_error = np.max(np.abs(velocity[:, :2] - [1.0, 0.0]))
-        if max(composition_error, temp_error, enthalpy_error, velocity_error) > 2.0e-9:
+        if max(distribution_error, temp_error, enthalpy_error, velocity_error) > 2.0e-9:
             raise RuntimeError(
-                f"step {step}: composition={composition_error:g}, "
+                f"step {step}: distribution={distribution_error:g}, "
                 f"temperature={temp_error:g}, enthalpy={enthalpy_error:g}, "
                 f"velocity={velocity_error:g}"
             )
         if step == 0 and not np.any((lower > 1.0e-8) & (lower < 1.0 - 1.0e-8)):
             raise RuntimeError("interface did not create mixed cells")
 
-    print("PASS: two-fluid plug flow preserves the analytic composition and thermal state")
+    print("PASS: two-fluid plug flow preserves the analytic distribution and thermal state")
     print(f"      artifacts: {output_dir}")
     return 0
 

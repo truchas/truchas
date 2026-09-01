@@ -16,7 +16,7 @@ module ht_2d_sim_type
   use unstr_2d_mesh_type
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use scalar_func_factories
   use scalar_func_projection
   use ht_2d_model_type
@@ -34,7 +34,7 @@ module ht_2d_sim_type
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
     type(material_model) :: matl_model
-    type(material_composition), pointer :: composition => null()
+    type(material_distribution), pointer :: matl_dist => null()
     type(ht_2d_model), pointer :: model => null()
     type(ht_2d_solver), pointer :: solver => null()
     integer :: integrator_log_unit = 0
@@ -61,7 +61,7 @@ contains
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%model)) deallocate(this%model)
-    if (associated(this%composition)) deallocate(this%composition)
+    if (associated(this%matl_dist)) deallocate(this%matl_dist)
     if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine ht_2d_sim_delete
 
@@ -127,7 +127,7 @@ contains
       errmsg = 'missing "materials" sublist parameter'
       return
     end if
-    allocate(this%composition)
+    allocate(this%matl_dist)
     if (params%is_sublist('material-regions')) then
       plist => params%sublist('material-regions')
       context = 'processing ' // plist%path() // ': '
@@ -167,12 +167,12 @@ contains
     end if
     if (params%is_sublist('material-regions')) then
       plist => params%sublist('material-regions')
-      call this%composition%init(env, this%mesh, this%matl_model, plist, rlev, stat, errmsg)
+      call this%matl_dist%init(env, this%mesh, this%matl_model, plist, rlev, stat, errmsg)
     else
-      call this%composition%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
+      call this%matl_dist%init_uniform(this%mesh, this%matl_model, 1, stat, errmsg)
     end if
     if (stat /= 0) then
-      errmsg = 'initializing material composition: ' // errmsg
+      errmsg = 'initializing material distribution: ' // errmsg
       return
     end if
 
@@ -213,7 +213,7 @@ contains
       end block
       context = 'processing ' // plist%path() // ': '
       allocate(this%model)
-      call this%model%init(env, this%mesh, this%matl_model, this%composition, plist, stat, errmsg)
+      call this%model%init(env, this%mesh, this%matl_model, this%matl_dist, plist, stat, errmsg)
       if (stat /= 0) then
         errmsg = context // errmsg
         return
@@ -542,7 +542,7 @@ contains
     call this%solver%get_cell_heat_soln(Hcell)
     call this%solver%get_cell_temp_soln(Tcell)
 
-    call this%output%write_solution(t, Hcell, Tcell, this%composition%vfrac)
+    call this%output%write_solution(t, Hcell, Tcell, this%matl_dist%vfrac)
 
     call env%timer%stop('output')
 

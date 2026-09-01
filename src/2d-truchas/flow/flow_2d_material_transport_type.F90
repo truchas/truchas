@@ -5,10 +5,10 @@
 !! for material-resolved cell-face flux volumes. It adapts the flow solver's
 !! face-normal velocities to the cface-oriented interface of the two-
 !! dimensional volume trackers. The caller provides the current reduced
-!! material composition and retains its authoritative state; this type holds
-!! only the trial composition produced by the tracker.
+!! material distribution and retains its authoritative state; this type holds
+!! only the trial distribution produced by the tracker.
 !!
-!! The reduced composition is ordered as real fluids, an optional VOID slot,
+!! The reduced distribution is ordered as real fluids, an optional VOID slot,
 !! and an optional lumped SOLID slot. Material IDs and the independent full
 !! reconstruction-priority ordering are maintained separately by the caller.
 !!
@@ -89,7 +89,7 @@ contains
 
 
   !! Advance material transport from T_N to T_NP1, retaining the resulting
-  !! composition as trial state until the caller accepts the coupled step.
+  !! distribution as trial state until the caller accepts the coupled step.
   subroutine advance(this, env, t_n, t_np1, velocity_fn, vfrac_n)
     class(flow_2d_material_transport), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
@@ -120,7 +120,7 @@ contains
   end subroutine
 
 
-  !! Return a no-copy view of the composition produced by the most recent
+  !! Return a no-copy view of the distribution produced by the most recent
   !! advance call. It is trial state; the caller decides whether to adopt it.
   subroutine get_trial_volume_fractions(this, vfrac)
     class(flow_2d_material_transport), target, intent(in) :: this

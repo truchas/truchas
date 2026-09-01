@@ -15,13 +15,13 @@ module test_ht_2d_common
   use unstr_2d_mesh_type
   use material_database_type
   use material_model_type
-  use material_composition_type
+  use material_distribution_type
   use scalar_func_class
   use mfd_2d_disc_type
   use ht_2d_model_type
   implicit none
 
-  type(material_composition), target, save :: test_composition
+  type(material_distribution), target, save :: test_matl_dist
   type(simulation_environment), save :: test_env
 
 contains
@@ -68,7 +68,7 @@ contains
     call matl_model%init(['unobtanium'], matl_db, stat, errmsg)
     if (stat /= 0) call test_panic(errmsg)
 
-    call test_composition%init_uniform(mesh, matl_model, 1, stat, errmsg)
+    call test_matl_dist%init_uniform(mesh, matl_model, 1, stat, errmsg)
     if (stat /= 0) call test_panic(errmsg)
 
     !! Initialize enthalpy
@@ -78,10 +78,10 @@ contains
   end subroutine init_materials
 
 
-  function material_composition_ref() result(composition)
-    type(material_composition), pointer :: composition
-    composition => test_composition
-  end function material_composition_ref
+  function material_distribution_ref() result(matl_dist)
+    type(material_distribution), pointer :: matl_dist
+    matl_dist => test_matl_dist
+  end function material_distribution_ref
 
 
   subroutine test_panic(message)

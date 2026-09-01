@@ -16,7 +16,7 @@ program test_HT_2d_solver_initial_state
   use material_database_type
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
-  use material_composition_type
+  use material_distribution_type
   !use source_mesh_function
   use scalar_func_factories
   use mfd_2d_disc_type
@@ -110,7 +110,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_distribution_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call u%init(disc%mesh)
@@ -225,7 +225,7 @@ contains
     if (.not. associated(model_params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), model_params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_distribution_ref(), model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     call u%init(disc%mesh)
@@ -297,7 +297,7 @@ contains
 
     type(material_database) :: matl_db
     type(material_model), target :: matl_model
-    type(material_composition), target :: composition
+    type(material_distribution), target :: matl_dist
     type(ht_2d_model), target :: model
     type(ht_2d_ic_solver) :: ic, ic_fail
     type(parameter_list), pointer :: matl_params, region_params, model_params
@@ -325,7 +325,7 @@ contains
               &"high-background":{"material":"high","type":"background"}}'
     call parameter_list_from_json_string(string, region_params, errmsg)
     if (.not.associated(region_params)) call error_exit(errmsg)
-    call composition%init(test_env, disc%mesh, matl_model, region_params, 6, stat, errmsg)
+    call matl_dist%init(test_env, disc%mesh, matl_model, region_params, 6, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     string = '{"bc":{"left":{"type":"temperature","face-set-ids":[1],"temp":1.0},&
@@ -333,7 +333,7 @@ contains
               &"bottom-top":{"type":"flux","face-set-ids":[3,4],"flux":0.0}}}'
     call parameter_list_from_json_string(string, model_params, errmsg)
     if (.not.associated(model_params)) call error_exit(errmsg)
-    call model%init(test_env, disc%mesh, matl_model, composition, model_params, stat, errmsg)
+    call model%init(test_env, disc%mesh, matl_model, matl_dist, model_params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     flux = 1.0_r8 / (0.5_r8 + 0.5_r8 / 10.0_r8)

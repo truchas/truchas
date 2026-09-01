@@ -8,7 +8,7 @@
 !! temperatures.
 !!
 !! The current and committed cell densities are kept separately.  Updating
-!! the trial material composition changes DENSITY_C but does not change
+!! the trial material distribution changes DENSITY_C but does not change
 !! DENSITY_C_OLD; ACCEPT marks the current material state as committed.
 !!
 !! Neil Carlson <neil.carlson@gmail.com>, August 2026
@@ -210,7 +210,7 @@ contains
   end subroutine set_initial_state
 
 
-  !! Update the current mixture density from the reduced flow composition.
+  !! Update the current mixture density from the reduced flow distribution.
   !! The committed density is deliberately unchanged.
   subroutine set_volume_fractions(this, vfrac)
     class(flow_2d_material_props), intent(inout) :: this
@@ -240,7 +240,7 @@ contains
 
 
   !! Evaluate temperature-dependent material properties for the current
-  !! reduced composition.
+  !! reduced distribution.
   subroutine set_temperature(this, temperature)
     class(flow_2d_material_props), intent(inout) :: this
 

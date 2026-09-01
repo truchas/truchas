@@ -132,7 +132,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_distribution_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
@@ -247,7 +247,7 @@ contains
     if (.not. associated(params)) call error_exit(errmsg)
 
     !! Initialize 2D HT model
-    call HT_model%init(test_env, disc%mesh, matl_model, material_composition_ref(), params, stat, errmsg)
+    call HT_model%init(test_env, disc%mesh, matl_model, material_distribution_ref(), params, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
     call check_prop_extent(HT_model, tol)
 
@@ -331,7 +331,7 @@ contains
         "source": {}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not.associated(params)) call error_exit(errmsg)
-    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call model%init(test_env, mesh, matl_model, material_distribution_ref(), params, stat, errmsg, advection=.true.)
     call require_init_failure(stat, 'inflow/non-advection overlap was accepted')
 
     string = &
@@ -341,7 +341,7 @@ contains
         "source": {}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not.associated(params)) call error_exit(errmsg)
-    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call model%init(test_env, mesh, matl_model, material_distribution_ref(), params, stat, errmsg, advection=.true.)
     call require_init_failure(stat, 'outflow/non-advection overlap was accepted')
 
     string = &
@@ -352,7 +352,7 @@ contains
         "source": {}}'
     call parameter_list_from_json_string(string, params, errmsg)
     if (.not.associated(params)) call error_exit(errmsg)
-    call model%init(test_env, mesh, matl_model, material_composition_ref(), params, stat, errmsg, advection=.true.)
+    call model%init(test_env, mesh, matl_model, material_distribution_ref(), params, stat, errmsg, advection=.true.)
     call require_init_failure(stat, 'inflow/outflow overlap was accepted')
 
   end subroutine test_advection_bc_constraints

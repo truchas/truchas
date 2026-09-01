@@ -1,7 +1,7 @@
 !!
-!! MATERIAL_COMPOSITION_TYPE
+!! MATERIAL_DISTRIBUTION_TYPE
 !!
-!! This module defines the MATERIAL_COMPOSITION type, which stores the
+!! This module defines the MATERIAL_DISTRIBUTION type, which stores the
 !! on-process cell material volume fractions of a two-dimensional simulation.
 !! The simulation owns this state and provides non-owning references to
 !! physics models that need it.
@@ -12,7 +12,7 @@
 
 #include "f90_assert.fpp"
 
-module material_composition_type
+module material_distribution_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
@@ -22,14 +22,14 @@ module material_composition_type
 
   public :: get_material_region_names
 
-  type, public :: material_composition
+  type, public :: material_distribution
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     real(r8), allocatable, public :: vfrac(:,:) ! (material, on-process cell)
   contains
     procedure :: init
     procedure :: init_uniform
-  end type material_composition
+  end type material_distribution
 
 contains
 
@@ -122,7 +122,7 @@ contains
     use vol_frac_init_procs
     use parallel_communication, only: global_any
 
-    class(material_composition), intent(out) :: this
+    class(material_distribution), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
@@ -189,7 +189,7 @@ contains
 
   subroutine init_uniform(this, mesh, matl_model, material_index, stat, errmsg)
 
-    class(material_composition), intent(out) :: this
+    class(material_distribution), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_index
@@ -209,4 +209,4 @@ contains
 
   end subroutine init_uniform
 
-end module material_composition_type
+end module material_distribution_type

@@ -74,7 +74,7 @@ contains
     this%nested_dissection = .false.
 
     ! Material priorities for interface reconstruction. The flow-facing
-    ! reduced composition has a fixed material-slot order; PRIORITY supplies
+    ! reduced distribution has a fixed material-slot order; PRIORITY supplies
     ! the independent reconstruction order.
     ASSERT(size(priority) == this%nmat)
     this%priority = priority
