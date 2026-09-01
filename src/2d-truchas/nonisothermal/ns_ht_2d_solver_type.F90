@@ -53,6 +53,7 @@ module ns_ht_2d_solver_type
     procedure :: set_initial_state
     procedure :: integrate
     procedure :: last_time
+    procedure :: num_steps
     procedure :: initial_time_step
     procedure :: init_temporal_output
     procedure :: set_temporal_output
@@ -60,7 +61,6 @@ module ns_ht_2d_solver_type
     procedure :: get_face_velocity
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
-    procedure :: write_metrics
     final :: delete
   end type
 
@@ -400,6 +400,13 @@ contains
   end function
 
 
+  integer(int64) function num_steps(this)
+    class(ns_ht_2d_solver), intent(in) :: this
+
+    num_steps = this%nstep
+  end function
+
+
   !! Declare the temporal scalar fields published by this coupled solver.
   !! These fields are updated at each requested solution output and written
   !! by the simulation's output writer.
@@ -455,14 +462,5 @@ contains
 
     call this%thermal%get_cell_temp_soln(temp)
   end subroutine
-
-
-  subroutine write_metrics(this, string)
-    class(ns_ht_2d_solver), intent(in) :: this
-    character(*), intent(out) :: string(:)
-
-    call this%thermal%write_metrics(string)
-  end subroutine
-
 
 end module ns_ht_2d_solver_type
