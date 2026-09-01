@@ -98,6 +98,7 @@ contains
     state%p_cc = 0.0_r8
     call this%projection_update%project_velocity(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, &
+        this%model%matl_props%cell_t, this%model%matl_props%face_t, &
         this%model%bc, state, stat, projection_solved)
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
@@ -137,7 +138,8 @@ contains
     end if
     call this%model%mesh%cell_imap%gather_offp(state%vel_cc)
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
-        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, state, stat, &
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, &
+        this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, state, stat, &
         initial=.true., solved=projection_solved)
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)

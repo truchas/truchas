@@ -29,6 +29,7 @@ module flow_2d_model_type
   use flow_2d_momentum_type
   use flow_2d_projection_type
   use flow_2d_material_props_type
+  use flow_domain_types
   use simulation_environment_type
   implicit none
   private
@@ -273,16 +274,19 @@ contains
     if (allocated(this%bc%pressure_neumann)) then
       if (allocated(this%bc%pressure_dirichlet)) then
         call this%operators%gradient_cc(pressure, gradient, this%bc%pressure_neumann, &
-            this%bc%pressure_dirichlet, gravity_head)
+            this%bc%pressure_dirichlet, gravity_head, this%matl_props%cell_t, this%matl_props%face_t)
       else
         call this%operators%gradient_cc(pressure, gradient, &
-            normal_flux_bc=this%bc%pressure_neumann, gravity_head=gravity_head)
+            normal_flux_bc=this%bc%pressure_neumann, gravity_head=gravity_head, &
+            cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
       end if
     else if (allocated(this%bc%pressure_dirichlet)) then
       call this%operators%gradient_cc(pressure, gradient, &
-          dirichlet_bc=this%bc%pressure_dirichlet, gravity_head=gravity_head)
+          dirichlet_bc=this%bc%pressure_dirichlet, gravity_head=gravity_head, &
+          cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
     else
-      call this%operators%gradient_cc(pressure, gradient, gravity_head=gravity_head)
+      call this%operators%gradient_cc(pressure, gradient, gravity_head=gravity_head, &
+          cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
     end if
   end subroutine
 

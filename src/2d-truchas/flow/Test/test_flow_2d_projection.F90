@@ -12,6 +12,7 @@ program test_flow_2d_projection
   use flow_2d_operators_type
   use flow_2d_projection_type
   use flow_2d_bc_type
+  use flow_domain_types
   use pcsr_matrix_type
   implicit none
 
@@ -47,9 +48,10 @@ contains
     type(parameter_list), pointer :: plist
     type(flow_2d_bc) :: bc
     real(r8), allocatable :: inv_density_f(:), p(:), one(:), result(:), rhs(:)
+    integer, allocatable :: cell_t(:), face_t(:)
     real(r8), parameter :: gradient(2) = [1.0_r8, 2.0_r8]
     character(:), allocatable :: errmsg
-    integer :: c, stat
+    integer :: c, c1, c2, f, interior_face, stat
     logical :: linear_harmonic, pinned, dirichlet_solution
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
@@ -57,8 +59,10 @@ contains
     call operators%init(mesh)
     call projection%init(mesh, operators)
     allocate(inv_density_f(mesh%nface), p(mesh%ncell), one(mesh%ncell), result(mesh%ncell_onP), &
-        rhs(mesh%ncell_onP))
+        rhs(mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface))
     inv_density_f = 1.0_r8
+    cell_t = regular_t
+    face_t = regular_t
     one = 1.0_r8
     do c = 1, mesh%ncell
       p(c) = dot_product(gradient, mesh%cell_centroid(:,c))
@@ -70,7 +74,7 @@ contains
     call bc%init(env, mesh, neumann_params, stat, errmsg)
     call require(stat == 0, 'Neumann boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call projection%assemble(inv_density_f, bc, rhs)
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
     matrix => projection%matrix()
     call matrix%matvec(one, result)
     pinned = maxval(abs(result)) > 1.0e-12_r8
@@ -93,12 +97,47 @@ contains
     call bc%init(env, mesh, dirichlet_params, stat, errmsg)
     call require(stat == 0, 'Dirichlet boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call projection%assemble(inv_density_f, bc, rhs)
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
     p = 3.0_r8
     call matrix%matvec(p, result)
     dirichlet_solution = maxval(abs(result - rhs)) < 1.0e-12_r8
     call require(dirichlet_solution, 'constant pressure Dirichlet solution does not satisfy projection system')
     call require(global_any(abs(rhs) > 1.0e-12_r8), 'pressure Dirichlet condition did not contribute to projection RHS')
+
+    if (env%nproc == 1) then
+      interior_face = 0
+      do f = 1, mesh%nface
+        if (all(mesh%fcell(:,f) > 0)) then
+          interior_face = f
+          exit
+        end if
+      end do
+      call require(interior_face > 0, 'test mesh has no interior face')
+      c1 = mesh%fcell(1,interior_face)
+      c2 = mesh%fcell(2,interior_face)
+
+      cell_t = regular_t
+      cell_t(c2) = void_t
+      face_t = regular_t
+      face_t(interior_face) = regular_void_t
+      p = 0.0_r8
+      p(c1) = 1.0_r8
+      call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
+      call matrix%matvec(p, result)
+      call require(abs(result(c2)) < 1.0e-12_r8, 'VOID cell is coupled into the pressure system')
+      call require(result(c1) > 0.0_r8, 'regular/VOID face does not provide a pressure boundary')
+
+      cell_t = regular_t
+      cell_t(c2) = solid_t
+      face_t = regular_t
+      face_t(interior_face) = solid_t
+      p = 0.0_r8
+      p(c2) = 1.0_r8
+      call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
+      call matrix%matvec(p, result)
+      call require(abs(result(c1)) < 1.0e-12_r8, 'solid face couples into the pressure system')
+      call require(abs(result(c2) - 1.0_r8) < 1.0e-12_r8, 'solid cell does not have a dummy pressure equation')
+    end if
   end subroutine
 
 

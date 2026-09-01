@@ -22,6 +22,7 @@ module flow_2d_projection_type
   use unstr_2d_mesh_type
   use flow_2d_operators_type
   use flow_2d_bc_type
+  use flow_domain_types
   use pcsr_matrix_type
   implicit none
   private
@@ -64,10 +65,13 @@ contains
 
 
   !! Assemble -div(rho^-1 grad(p)) and its pressure-Dirichlet contribution to
-  !! RHS. BC must already have been evaluated at the required time.
-  subroutine assemble(this, inv_density_f, bc, rhs, dirichlet_value)
+  !! RHS. Non-regular cells receive dummy equations. A regular/VOID face is
+  !! treated as a zero-pressure boundary, while a solid face is zero flux.
+  !! BC must already have been evaluated at the required time.
+  subroutine assemble(this, inv_density_f, cell_t, face_t, bc, rhs, dirichlet_value)
     class(flow_2d_projection), intent(inout) :: this
     real(r8), intent(in) :: inv_density_f(:)
+    integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
     real(r8), intent(out) :: rhs(:)
     real(r8), optional, intent(in) :: dirichlet_value(:)
@@ -76,6 +80,8 @@ contains
     real(r8) :: coefficient
 
     ASSERT(size(inv_density_f) >= this%mesh%nface)
+    ASSERT(size(cell_t) >= this%mesh%ncell)
+    ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs) == this%mesh%ncell_onP)
     pin_face = bc%pressure_pin_face()
     ASSERT(pin_face >= 0 .and. pin_face <= this%mesh%nface_onP)
@@ -86,13 +92,21 @@ contains
     call this%matrix_%set_all(0.0_r8)
     rhs = 0.0_r8
     do c = 1, this%mesh%ncell_onP
+      if (cell_t(c) > regular_t) then
+        call this%matrix_%add_to(c, c, 1.0_r8)
+        cycle
+      end if
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
         neighbor = this%mesh%cnhbr(i)
         if (neighbor == 0) cycle
         coefficient = this%mesh%area(f)*inv_density_f(f)/this%operators%normal_distance(f)
-        call this%matrix_%add_to(c, c, coefficient)
-        call this%matrix_%add_to(c, neighbor, -coefficient)
+        if (face_t(f) == regular_t) then
+          call this%matrix_%add_to(c, c, coefficient)
+          call this%matrix_%add_to(c, neighbor, -coefficient)
+        else if (face_t(f) == regular_void_t) then
+          call this%matrix_%add_to(c, c, coefficient)
+        end if
       end do
     end do
 
@@ -102,7 +116,7 @@ contains
       end if
       do n = 1, size(bc%pressure_dirichlet%index)
         f = bc%pressure_dirichlet%index(n)
-        if (f > this%mesh%nface_onP) cycle
+        if (f > this%mesh%nface_onP .or. face_t(f) /= regular_t) cycle
         c = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         coefficient = this%mesh%area(f)*inv_density_f(f)/this%operators%normal_distance(f)
@@ -116,10 +130,12 @@ contains
     end if
 
     if (pin_face > 0) then
-      c = this%mesh%fcell(1,pin_face)
-      coefficient = this%mesh%area(pin_face)*inv_density_f(pin_face)/ &
-          this%operators%normal_distance(pin_face)
-      call this%matrix_%add_to(c, c, coefficient)
+      if (face_t(pin_face) == regular_t) then
+        c = this%mesh%fcell(1,pin_face)
+        coefficient = this%mesh%area(pin_face)*inv_density_f(pin_face)/ &
+            this%operators%normal_distance(pin_face)
+        call this%matrix_%add_to(c, c, coefficient)
+      end if
     end if
   end subroutine
 

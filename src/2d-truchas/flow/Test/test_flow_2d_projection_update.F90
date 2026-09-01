@@ -16,6 +16,7 @@ program test_flow_2d_projection_update
   use flow_2d_projection_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
+  use flow_domain_types
   implicit none
 
   integer :: status, stat
@@ -53,6 +54,7 @@ contains
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: inv_density_c(:), inv_density_f(:), density_delta_c(:), flux(:)
+    integer, allocatable :: cell_t(:), face_t(:)
     character(:), allocatable :: errmsg
     integer :: stat
 
@@ -61,10 +63,12 @@ contains
     call projection%init(mesh, operators)
     call state%init(mesh)
     allocate(inv_density_c(mesh%ncell), inv_density_f(mesh%nface), density_delta_c(mesh%ncell), &
-        flux(mesh%ncell_onP))
+        flux(mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface))
     inv_density_c = 1.0_r8
     inv_density_f = 1.0_r8
     density_delta_c = 0.0_r8
+    cell_t = regular_t
+    face_t = regular_t
 
     plist => bc_params%sublist('wall')
     call plist%set('type', 'no-slip')
@@ -80,7 +84,7 @@ contains
     call update%init(mesh, operators, projection, solver)
 
     state%vel_cc = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
-    call update%correct(1.0_r8, inv_density_c, inv_density_f, density_delta_c, bc, state, stat)
+    call update%correct(1.0_r8, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat)
     call require(stat == 0, 'projection update did not converge')
     call operators%divergence(state%vel_fn, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'projection update did not make face velocity solenoidal')

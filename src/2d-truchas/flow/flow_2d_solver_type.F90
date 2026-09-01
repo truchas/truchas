@@ -263,7 +263,8 @@ contains
     call this%model%mesh%cell_imap%gather_offp(this%pending_state%vel_cc)
     call env%timer%start('flow/projection')
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
-        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, this%model%bc, &
+        this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, &
+        this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, &
         this%pending_state, stat, solved=projection_solved)
     call env%timer%stop('flow/projection')
     if (projection_solved) then
