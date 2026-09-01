@@ -12,6 +12,7 @@ program test_flow_2d_projection_solver
   use unstr_2d_mesh_factory
   use flow_2d_operators_type
   use flow_2d_projection_type
+  use flow_domain_types
   use flow_2d_projection_solver_type
   use flow_2d_bc_type
   implicit none
@@ -49,14 +50,18 @@ contains
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: inv_density_f(:), rhs(:), pressure(:)
+    integer, allocatable :: cell_t(:), face_t(:)
     character(:), allocatable :: errmsg
     integer :: stat
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call operators%init(mesh)
     call projection%init(mesh, operators)
-    allocate(inv_density_f(mesh%nface), rhs(mesh%ncell_onP), pressure(mesh%ncell))
+    allocate(inv_density_f(mesh%nface), rhs(mesh%ncell_onP), pressure(mesh%ncell), &
+        cell_t(mesh%ncell), face_t(mesh%nface))
     inv_density_f = 1.0_r8
+    cell_t = regular_t
+    face_t = regular_t
 
     plist => bc_params%sublist('outlet')
     call plist%set('type', 'pressure')
@@ -65,7 +70,7 @@ contains
     call bc%init(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'pressure boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call projection%assemble(inv_density_f, bc, rhs)
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
 
     call solver_params%set('rel-tol', -1.0_r8)
     call solver_params%set('max-ds-iter', 100)

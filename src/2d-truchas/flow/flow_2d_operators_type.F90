@@ -21,6 +21,7 @@ module flow_2d_operators_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
+  use flow_domain_types
   use bndry_func1_class
   use bndry_vfunc_class
   implicit none
@@ -94,12 +95,13 @@ contains
   !! from the cell center to the face center; pressure Neumann values contribute
   !! a normal row of length NORMAL_DISTANCE. Boundary faces not listed by a
   !! condition are omitted from the fit.
-  subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc, gravity_head)
+  subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc, gravity_head, cell_t, face_t)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: gradient_c(:,:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
     real(r8), optional, intent(in) :: gravity_head(:,:)
+    integer, optional, intent(in) :: cell_t(:), face_t(:)
 
     integer :: c, i, f, neighbor, n
     real(r8) :: r(2), difference, matrix(2,2), rhs(2), determinant
@@ -110,12 +112,18 @@ contains
     ASSERT(size(gradient_c,2) == this%mesh%ncell)
     gradient_c = 0.0_r8
     do c = 1, this%mesh%ncell_onP
+      if (present(cell_t)) then
+        if (cell_t(c) > regular_t) cycle
+      end if
       matrix = 0.0_r8
       rhs = 0.0_r8
       n = 0
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
         neighbor = this%mesh%cnhbr(i)
+        if (present(face_t)) then
+          if (face_t(f) > regular_t) cycle
+        end if
         if (neighbor > 0) then
           r = this%mesh%cell_centroid(:,neighbor) - this%mesh%cell_centroid(:,c)
           difference = field_cc(neighbor) - field_cc(c)
@@ -187,13 +195,14 @@ contains
   !! data. On a boundary face, NORMAL_FLUX_BC supplies the derivative directly
   !! and DIRICHLET_BC supplies the scalar value at the face center.
   subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc, &
-      dirichlet_value, gravity_head)
+      dirichlet_value, gravity_head, face_t)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: derivative_fn(:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
     real(r8), optional, intent(in) :: dirichlet_value(:)
     real(r8), optional, intent(in) :: gravity_head(:,:)
+    integer, optional, intent(in) :: face_t(:)
 
     integer :: f, c1, c2, i
 
@@ -207,6 +216,9 @@ contains
     do f = 1, this%mesh%nface_onP
       c1 = this%mesh%fcell(1,f)
       c2 = this%mesh%fcell(2,f)
+      if (present(face_t)) then
+        if (face_t(f) > regular_t) cycle
+      end if
       if (c2 > 0) then
         derivative_fn(f) = field_cc(c2) - field_cc(c1)
         if (present(gravity_head)) derivative_fn(f) = derivative_fn(f) + &
@@ -240,6 +252,11 @@ contains
         end if
         if (present(gravity_head)) derivative_fn(f) = derivative_fn(f) - gravity_head(1,f)
         derivative_fn(f) = derivative_fn(f)/this%dx(f)
+      end do
+    end if
+    if (present(face_t)) then
+      do f = 1, this%mesh%nface_onP
+        if (face_t(f) > regular_t) derivative_fn(f) = 0.0_r8
       end do
     end if
     call this%mesh%face_imap%gather_offp(derivative_fn)
