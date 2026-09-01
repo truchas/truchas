@@ -108,12 +108,12 @@ contains
 
 
   !! Initialize properties by querying the material model for each flow
-  !! material. MATERIAL_IDS are phase indices in DENSITY order.
-  subroutine init_material(this, mesh, matl_model, material_ids, inviscid, boussinesq, stat, errmsg)
+  !! material. PHASE_IDS are phase indices in DENSITY order.
+  subroutine init_material(this, mesh, matl_model, phase_ids, inviscid, boussinesq, stat, errmsg)
     class(flow_2d_material_props), intent(out) :: this
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(material_model), intent(in) :: matl_model
-    integer, intent(in) :: material_ids(:)
+    integer, intent(in) :: phase_ids(:)
     logical, intent(in) :: inviscid
     logical, intent(in) :: boussinesq
     integer, intent(out) :: stat
@@ -124,44 +124,44 @@ contains
     class(scalar_func), allocatable :: f, alpha_func, tref_func
 
     this%mesh => mesh
-    if (size(material_ids) == 0) then
+    if (size(phase_ids) == 0) then
       stat = 1
-      errmsg = 'flow requires at least one fluid material'
+      errmsg = 'flow requires at least one fluid phase'
       return
     end if
-    if (any(material_ids < 1) .or. any(material_ids > matl_model%nphase_real)) then
+    if (any(phase_ids < 1) .or. any(phase_ids > matl_model%nphase_real)) then
       stat = 1
-      errmsg = 'invalid flow material phase index'
+      errmsg = 'invalid flow phase index'
       return
     end if
-    allocate(this%density(size(material_ids)), this%vfrac(size(material_ids), mesh%ncell), &
+    allocate(this%density(size(phase_ids)), this%vfrac(size(phase_ids), mesh%ncell), &
         this%density_c(mesh%ncell), this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
-        this%density_delta(size(material_ids)))
+        this%density_delta(size(phase_ids)))
     if (.not.inviscid) then
-      allocate(this%viscosity(size(material_ids)), this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
+      allocate(this%viscosity(size(phase_ids)), this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
     end if
 
-    do m = 1, size(material_ids)
-      call matl_model%get_phase_prop(material_ids(m), 'density', f)
+    do m = 1, size(phase_ids)
+      call matl_model%get_phase_prop(phase_ids(m), 'density', f)
       if (.not.allocated(f) .or. .not.is_const(f)) then
         stat = 1
-        errmsg = 'fluid density must be a constant property for ' // matl_model%phase_name(material_ids(m))
+        errmsg = 'fluid density must be a constant property for ' // matl_model%phase_name(phase_ids(m))
         return
       end if
       rho = f%eval([real(r8)::])
       if (rho <= 0.0_r8) then
         stat = 1
-        errmsg = 'fluid density must be positive for ' // matl_model%phase_name(material_ids(m))
+        errmsg = 'fluid density must be positive for ' // matl_model%phase_name(phase_ids(m))
         return
       end if
       this%density(m) = rho
 
       if (.not.inviscid) then
-        call matl_model%get_phase_prop(material_ids(m), 'viscosity', this%viscosity(m)%f)
+        call matl_model%get_phase_prop(phase_ids(m), 'viscosity', this%viscosity(m)%f)
         if (.not.allocated(this%viscosity(m)%f)) then
           stat = 1
-          errmsg = 'material viscosity property is missing for ' // matl_model%phase_name(material_ids(m))
+          errmsg = 'material viscosity property is missing for ' // matl_model%phase_name(phase_ids(m))
           return
         end if
       end if
@@ -169,22 +169,22 @@ contains
       if (.not.boussinesq) then
         call alloc_const_scalar_func(this%density_delta(m)%f, 0.0_r8)
       else
-        call matl_model%get_phase_prop(material_ids(m), 'thermal-expan-coef', alpha_func)
-        call matl_model%get_phase_prop(material_ids(m), 'expan-ref-temp', tref_func)
+        call matl_model%get_phase_prop(phase_ids(m), 'thermal-expan-coef', alpha_func)
+        call matl_model%get_phase_prop(phase_ids(m), 'expan-ref-temp', tref_func)
         if (.not.allocated(alpha_func) .and. .not.allocated(tref_func)) then
           call alloc_const_scalar_func(this%density_delta(m)%f, 0.0_r8)
         else if (.not.allocated(alpha_func) .or. .not.allocated(tref_func) .or. &
             .not.is_const(alpha_func) .or. .not.is_const(tref_func)) then
           stat = 1
           errmsg = 'thermal expansion properties must be constant and provided together for ' // &
-              matl_model%phase_name(material_ids(m))
+              matl_model%phase_name(phase_ids(m))
           return
         else
           alpha = alpha_func%eval([real(r8)::])
           tref = tref_func%eval([real(r8)::])
           if (alpha < 0.0_r8) then
             stat = 1
-            errmsg = 'thermal-expan-coef must be nonnegative for ' // matl_model%phase_name(material_ids(m))
+            errmsg = 'thermal-expan-coef must be nonnegative for ' // matl_model%phase_name(phase_ids(m))
             return
           end if
           call alloc_poly_scalar_func(this%density_delta(m)%f, [-rho*alpha], [1], tref)

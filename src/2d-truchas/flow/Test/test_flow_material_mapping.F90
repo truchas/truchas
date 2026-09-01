@@ -1,4 +1,4 @@
-program test_flow_2d_material_layout
+program test_flow_material_mapping
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -7,13 +7,13 @@ program test_flow_2d_material_layout
   use material_model_type
   use material_distribution_type
   use material_factory, only: load_material_database
-  use flow_2d_material_layout_type
+  use flow_material_mapping_type
   implicit none
 
   type(material_database) :: database
   type(material_model) :: matl_model
   type(material_distribution) :: matl_dist
-  type(flow_2d_material_layout) :: layout
+  type(flow_material_mapping) :: mapping
   type(parameter_list), pointer :: matl_params, tracking_params
   character(:), allocatable :: errmsg
   real(r8) :: vfrac(4,1)
@@ -31,23 +31,23 @@ program test_flow_2d_material_layout
   call parameter_list_from_json_string( &
       '{"material-priority":["SOLID","VOID","oil","water"]}', tracking_params, errmsg)
   if (.not.associated(tracking_params)) error stop 'parsing tracking input: ' // errmsg
-  call layout%init(matl_model, stat, errmsg)
-  if (stat /= 0) error stop 'initializing material layout: ' // errmsg
-  call layout%set_priority(tracking_params, stat, errmsg)
+  call mapping%init(matl_model, stat, errmsg)
+  if (stat /= 0) error stop 'initializing material mapping: ' // errmsg
+  call mapping%set_priority(tracking_params, stat, errmsg)
   if (stat /= 0) error stop 'setting material priority: ' // errmsg
-  call require(layout%num_real_fluid() == 2, 'wrong real fluid count')
-  call require(layout%num_fluid() == 3, 'wrong moving material count')
-  call require(layout%num_material() == 4, 'wrong reduced material count')
-  call layout%get_priority(priority)
+  call require(mapping%num_real_fluid() == 2, 'wrong real fluid count')
+  call require(mapping%num_fluid() == 3, 'wrong moving material count')
+  call require(mapping%num_material() == 4, 'wrong reduced material count')
+  call mapping%get_priority(priority)
   call require(all(priority == [4,3,2,1]), 'wrong full material priority')
 
   allocate(matl_dist%vfrac(4,1))
   matl_dist%vfrac(:,1) = [0.1_r8, 0.3_r8, 0.4_r8, 0.2_r8]
-  call layout%get_reduced_volume_fractions(matl_dist, vfrac)
+  call mapping%get_reduced_volume_fractions(matl_dist, vfrac)
   call require(maxval(abs(vfrac(:,1) - [0.1_r8,0.4_r8,0.2_r8,0.3_r8])) < 1.0e-14_r8, &
       'wrong reduced volume fractions')
   vfrac(:,1) = [0.15_r8, 0.35_r8, 0.25_r8, 0.25_r8]
-  call layout%put_reduced_volume_fractions(vfrac, matl_dist)
+  call mapping%put_reduced_volume_fractions(vfrac, matl_dist)
   call require(maxval(abs(matl_dist%vfrac(:,1) - [0.15_r8,0.3_r8,0.35_r8,0.25_r8])) < 1.0e-14_r8, &
       'wrong accepted volume fractions')
 
@@ -60,4 +60,4 @@ contains
     if (.not.condition) error stop 'FAIL: ' // message
   end subroutine
 
-end program test_flow_2d_material_layout
+end program test_flow_material_mapping

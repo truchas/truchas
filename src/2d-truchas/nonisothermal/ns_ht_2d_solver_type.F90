@@ -23,7 +23,7 @@ module ns_ht_2d_solver_type
   use material_model_type
   use material_distribution_type
   use flow_2d_model_type
-  use flow_2d_material_layout_type
+  use flow_material_mapping_type
   use flow_2d_material_transport_type
   use flow_2d_solver_type
   use ht_2d_model_type
@@ -36,7 +36,7 @@ module ns_ht_2d_solver_type
   type, public :: ns_ht_2d_solver
     private
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
-    type(flow_2d_material_layout) :: material_layout
+    type(flow_material_mapping) :: matl_map
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
@@ -82,10 +82,15 @@ contains
     real(r8) :: courant_number
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params, tracking_params
     character(:), allocatable :: tracking_algorithm
-    integer, allocatable :: flow_material_ids(:), priority(:)
+    integer, allocatable :: flow_pids(:), flow_mids(:), priority(:)
 
     stat = 0
     ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
+    if (matl_model%nphase_real /= matl_model%nmatl_real) then
+      stat = 1
+      errmsg = 'current non-isothermal flow requires single-phase materials'
+      return
+    end if
     if (.not.params%is_sublist('flow') .or. .not.params%is_sublist('thermal')) then
       stat = 1
       errmsg = 'solver requires flow and thermal sublists'
@@ -101,23 +106,24 @@ contains
       errmsg = 'solver.flow.volume-tracking.algorithm must be "simple" or "geometric"'
       return
     end if
-    call this%material_layout%init(matl_model, stat, errmsg)
+    call this%matl_map%init(matl_model, stat, errmsg)
     if (stat /= 0) return
-    call this%material_layout%set_priority(tracking_params, stat, errmsg)
+    call this%matl_map%set_priority(tracking_params, stat, errmsg)
     if (stat /= 0) return
-    if (this%material_layout%num_real_fluid() == 0) then
+    if (this%matl_map%num_real_fluid() == 0) then
       stat = 1
       errmsg = 'non-isothermal flow requires at least one fluid material'
       return
     end if
-    if (this%material_layout%num_material() /= this%material_layout%num_real_fluid()) then
+    if (this%matl_map%num_material() /= this%matl_map%num_real_fluid()) then
       stat = 1
       errmsg = 'current non-isothermal flow supports fluid materials only; SOLID and VOID are not yet supported'
       return
     end if
-    allocate(flow_material_ids(this%material_layout%num_real_fluid()))
-    call this%material_layout%get_real_fluid_material_ids(flow_material_ids)
-    call flow_model%init_material(matl_model, flow_material_ids, stat, errmsg, boussinesq=.true.)
+    allocate(flow_pids(this%matl_map%num_real_fluid()), flow_mids(this%matl_map%num_real_fluid()))
+    call this%matl_map%get_real_fluid_phase_ids(flow_pids)
+    call this%matl_map%get_real_fluid_material_ids(flow_mids)
+    call flow_model%init_material(matl_model, flow_pids, stat, errmsg, boussinesq=.true.)
     if (stat /= 0) return
     call params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return
@@ -157,8 +163,8 @@ contains
     this%matl_dist => matl_dist
     this%ts_sync = time_step_sync(lookahead)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
-        this%flow_vfrac(this%material_layout%num_material(),flow_model%mesh%ncell))
-    call this%material_layout%get_reduced_volume_fractions(matl_dist, this%flow_vfrac)
+        this%flow_vfrac(this%matl_map%num_material(),flow_model%mesh%ncell))
+    call this%matl_map%get_reduced_volume_fractions(matl_dist, this%flow_vfrac)
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
@@ -174,16 +180,16 @@ contains
       call this%flow%init(env, flow_model, momentum_params, projection_params, courant_number, stat, errmsg)
     end if
     if (stat /= 0) return
-    allocate(priority(this%material_layout%num_material()))
-    call this%material_layout%get_priority(priority)
-    call this%material_transport%init(env, flow_model%mesh, this%material_layout%num_real_fluid(), &
-        this%material_layout%num_fluid(), this%material_layout%num_material(), algorithm=tracking_algorithm, &
+    allocate(priority(this%matl_map%num_material()))
+    call this%matl_map%get_priority(priority)
+    call this%material_transport%init(env, flow_model%mesh, this%matl_map%num_real_fluid(), &
+        this%matl_map%num_fluid(), this%matl_map%num_material(), algorithm=tracking_algorithm, &
         priority=priority)
     if (allocated(ht_model%bc_inflow)) then
-      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_material_ids, stat, errmsg, &
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_mids, stat, errmsg, &
           inflow_temperature=ht_model%bc_inflow)
     else
-      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_material_ids, stat, errmsg)
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_mids, stat, errmsg)
     end if
     if (stat /= 0) return
     allocate(this%thermal)
@@ -298,7 +304,7 @@ contains
       call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
       call this%material_transport%get_trial_volume_fractions(vfrac_trial)
       call env%timer%stop('flow/material-transport')
-      call this%material_layout%put_reduced_volume_fractions(vfrac_trial, this%matl_dist)
+      call this%matl_map%put_reduced_volume_fractions(vfrac_trial, this%matl_dist)
       call this%thermal%get_cell_temp_soln(this%temp)
       call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
@@ -312,7 +318,7 @@ contains
       call this%thermal%step(t_try, hnext, stat)
       call env%timer%stop('thermal/transport')
       if (stat /= 0) then
-        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
+        call this%matl_map%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
         call this%flow%set_volume_fractions(this%flow_vfrac)
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
@@ -332,7 +338,7 @@ contains
         call this%flow%reject_step()
         call this%thermal%reject_step()
         call this%thermal%get_cell_temp_soln(this%temp)
-        call this%material_layout%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
+        call this%matl_map%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
         call this%flow%set_volume_fractions(this%flow_vfrac)
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3

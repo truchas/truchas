@@ -6,9 +6,13 @@ flow/thermal models.  More detailed subsystem items remain in
 
 ## Multimaterial and multiphysics capability
 
-- Extend `ns_ht_2d` beyond single-phase fluid materials.  In particular,
-  support the reduced SOLID and VOID components already anticipated by the
-  flow material layout.
+- Extend `ns_ht_2d` beyond the current single-phase material contract.  The
+  material factory already has a parameter-list representation for
+  multiphase materials, but the 2D flow path must first split each parent
+  material fraction into temperature-dependent phase fractions.  The flow
+  layout already distinguishes phase IDs from parent material IDs and treats
+  SOLID as the residual after fluid and VOID fractions; the reverse mapping
+  from that lumped slot remains to be designed.
 - Add coupled passive-scalar/species transport.  Flow properties and buoyancy
   will eventually depend on temperature and concentrations; concentrations
   are not material identities.

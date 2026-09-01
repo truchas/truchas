@@ -8,9 +8,10 @@
 !! material distribution and retains its authoritative state; this type holds
 !! only the trial distribution produced by the tracker.
 !!
-!! The reduced distribution is ordered as real fluids, an optional VOID slot,
-!! and an optional lumped SOLID slot. Material IDs and the independent full
-!! reconstruction-priority ordering are maintained separately by the caller.
+!! The reduced distribution is ordered as real fluid phases, an optional VOID
+!! slot, and an optional lumped SOLID slot. The layout maintains the phase and
+!! parent-material mappings; the independent full reconstruction-priority
+!! ordering is supplied by the caller.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
