@@ -123,7 +123,8 @@ contains
     allocate(flow_pids(this%matl_map%num_real_fluid()), flow_mids(this%matl_map%num_real_fluid()))
     call this%matl_map%get_real_fluid_phase_ids(flow_pids)
     call this%matl_map%get_real_fluid_material_ids(flow_mids)
-    call flow_model%init_material(matl_model, flow_pids, stat, errmsg, boussinesq=.true.)
+    call flow_model%init_material(matl_model, flow_pids, stat, errmsg, boussinesq=.true., &
+        nfluid=this%matl_map%num_fluid())
     if (stat /= 0) return
     call params%get('initial-time-step', this%dt_init, stat, errmsg)
     if (stat /= 0) return

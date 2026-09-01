@@ -24,6 +24,7 @@ module flow_2d_material_props_type
   use scalar_func_containers, only: scalar_func_box
   use scalar_func_factories, only: alloc_const_scalar_func, alloc_poly_scalar_func
   use scalar_func_tools, only: is_const
+  use flow_domain_types
   use unstr_2d_mesh_type
   use material_model_type
   use parallel_communication
@@ -36,7 +37,12 @@ module flow_2d_material_props_type
     real(r8), allocatable, public :: density(:)
     type(scalar_func_box), allocatable :: viscosity(:), density_delta(:)
     real(r8), allocatable, public :: vfrac(:,:), density_c(:), density_c_old(:), &
-        density_delta_c(:), inv_density_c(:), inv_density_f(:), viscosity_c(:), viscosity_f(:)
+        density_delta_c(:), inv_density_c(:), inv_density_f(:), viscosity_c(:), viscosity_f(:), &
+        vof(:), vof_novoid(:)
+    integer, allocatable, public :: cell_t(:), face_t(:)
+    integer, public :: nfluid = 0
+    real(r8), public :: cutoff = 0.01_r8
+    logical, public :: any_void = .false., any_real_fluid = .false., any_real_fluid_onP = .false.
   contains
     procedure :: init
     procedure :: init_material
@@ -50,7 +56,7 @@ contains
 
   !! Initialize properties from already-constructed raw flow functions.
   !! This is retained for the standalone single-fluid flow driver.
-  subroutine init(this, mesh, density, inviscid, stat, errmsg, viscosity, viscosity_func, density_delta_func)
+  subroutine init(this, mesh, density, inviscid, stat, errmsg, viscosity, viscosity_func, density_delta_func, nfluid)
     class(flow_2d_material_props), intent(out) :: this
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     real(r8), intent(in) :: density(:)
@@ -59,6 +65,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     real(r8), intent(in), optional :: viscosity
     class(scalar_func), allocatable, optional, intent(inout) :: viscosity_func, density_delta_func
+    integer, intent(in), optional :: nfluid
 
     this%mesh => mesh
     if (size(density) == 0 .or. any(density <= 0.0_r8)) then
@@ -67,10 +74,18 @@ contains
       return
     end if
     this%density = density
+    this%nfluid = size(density)
+    if (present(nfluid)) this%nfluid = nfluid
+    if (this%nfluid < size(density)) then
+      stat = 1
+      errmsg = 'number of mobile flow materials must include every real fluid'
+      return
+    end if
     allocate(this%vfrac(size(density), mesh%ncell), this%density_c(mesh%ncell), &
         this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
-        this%density_delta(size(density)))
+        this%density_delta(size(density)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%cell_t(mesh%ncell), this%face_t(mesh%nface))
     if (.not.inviscid) then
       allocate(this%viscosity(size(density)))
       if (size(density) /= 1) then
@@ -109,7 +124,7 @@ contains
 
   !! Initialize properties by querying the material model for each flow
   !! material. PHASE_IDS are phase indices in DENSITY order.
-  subroutine init_material(this, mesh, matl_model, phase_ids, inviscid, boussinesq, stat, errmsg)
+  subroutine init_material(this, mesh, matl_model, phase_ids, inviscid, boussinesq, stat, errmsg, nfluid)
     class(flow_2d_material_props), intent(out) :: this
     type(unstr_2d_mesh), target, intent(inout) :: mesh
     type(material_model), intent(in) :: matl_model
@@ -118,6 +133,7 @@ contains
     logical, intent(in) :: boussinesq
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    integer, intent(in), optional :: nfluid
 
     integer :: m
     real(r8) :: rho, alpha, tref
@@ -137,7 +153,15 @@ contains
     allocate(this%density(size(phase_ids)), this%vfrac(size(phase_ids), mesh%ncell), &
         this%density_c(mesh%ncell), this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
-        this%density_delta(size(phase_ids)))
+        this%density_delta(size(phase_ids)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%cell_t(mesh%ncell), this%face_t(mesh%nface))
+    this%nfluid = size(phase_ids)
+    if (present(nfluid)) this%nfluid = nfluid
+    if (this%nfluid < size(phase_ids)) then
+      stat = 1
+      errmsg = 'number of mobile flow materials must include every real fluid'
+      return
+    end if
     if (.not.inviscid) then
       allocate(this%viscosity(size(phase_ids)), this%viscosity_c(mesh%ncell), this%viscosity_f(mesh%nface))
     end if
@@ -216,24 +240,87 @@ contains
     class(flow_2d_material_props), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
-    integer :: c1, c2, f
-    real(r8) :: weight(2), rho_f
+    integer :: c, c1, c2, f, j
+    real(r8) :: weight(2), rho_f, weight_sum
 
-    ASSERT(size(vfrac,1) >= size(this%density))
+    ASSERT(size(vfrac,1) >= this%nfluid)
     ASSERT(size(vfrac,2) >= this%mesh%ncell)
     this%vfrac = vfrac(:size(this%density),:this%mesh%ncell)
+    this%vof = sum(vfrac(:this%nfluid,:this%mesh%ncell), dim=1)
+    this%vof_novoid = sum(vfrac(:size(this%density),:this%mesh%ncell), dim=1)
     this%density_c = matmul(this%density, this%vfrac)
-    this%inv_density_c = 1.0_r8/this%density_c
+    where (this%vof > 0.0_r8) this%density_c = this%density_c/this%vof
+    this%inv_density_c = 0.0_r8
+    where (this%density_c > 0.0_r8) this%inv_density_c = 1.0_r8/this%density_c
+
+    do c = 1, this%mesh%ncell
+      if (this%vof(c) < this%cutoff) then
+        this%cell_t(c) = solid_t
+      else if (this%vof_novoid(c) == 0.0_r8) then
+        this%cell_t(c) = void_t
+      else if (this%vof(c) > this%vof_novoid(c)) then
+        this%cell_t(c) = regular_void_t
+      else
+        this%cell_t(c) = regular_t
+      end if
+    end do
+
+    do c = 1, this%mesh%ncell_onP
+      if (this%cell_t(c) /= regular_void_t) cycle
+      do j = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
+        if (this%mesh%cnhbr(j) > 0) then
+          if (this%cell_t(this%mesh%cnhbr(j)) == void_t) then
+            this%cell_t(c) = regular_t
+            exit
+          end if
+        end if
+      end do
+    end do
+    call this%mesh%cell_imap%gather_offp(this%cell_t)
+    this%any_void = global_any(this%cell_t == void_t)
+    this%any_real_fluid_onP = any(this%vof_novoid(:this%mesh%ncell_onP) > this%cutoff)
+    this%any_real_fluid = global_any(this%any_real_fluid_onP)
+
+    this%face_t = regular_t
+    do f = 1, this%mesh%nface_onP
+      c1 = this%mesh%fcell(1,f)
+      c2 = this%mesh%fcell(2,f)
+      if (c2 > 0) then
+        if (any(this%cell_t([c1,c2]) == void_t) .and. &
+            any(this%cell_t([c1,c2]) <= regular_t)) then
+          this%face_t(f) = regular_void_t
+        else
+          this%face_t(f) = max(maxval(this%cell_t([c1,c2])), regular_t)
+        end if
+      else
+        this%face_t(f) = max(this%cell_t(c1), regular_t)
+      end if
+    end do
+    call this%mesh%face_imap%gather_offp(this%face_t)
+
     do f = 1, this%mesh%nface_onP
       c1 = this%mesh%fcell(1,f)
       c2 = this%mesh%fcell(2,f)
       if (c2 == 0) then
-        rho_f = this%density_c(c1)
-      else
+        if (this%cell_t(c1) <= regular_t) then
+          rho_f = this%density_c(c1)
+        else
+          rho_f = 0.0_r8
+        end if
+      else if (any(this%cell_t([c1,c2]) <= regular_t)) then
         weight = this%mesh%volume([c1,c2])
-        rho_f = dot_product(this%density_c([c1,c2]), weight)/sum(weight)
+        weight = weight*this%vof([c1,c2])
+        weight_sum = sum(weight)
+        if (weight_sum > 0.0_r8) then
+          rho_f = dot_product(this%density_c([c1,c2]), weight)/weight_sum
+        else
+          rho_f = 0.0_r8
+        end if
+      else
+        rho_f = 0.0_r8
       end if
-      this%inv_density_f(f) = 1.0_r8/rho_f
+      this%inv_density_f(f) = 0.0_r8
+      if (rho_f > 0.0_r8) this%inv_density_f(f) = 1.0_r8/rho_f
     end do
     call this%mesh%face_imap%gather_offp(this%inv_density_f)
   end subroutine set_volume_fractions
@@ -259,6 +346,10 @@ contains
         if (allocated(this%viscosity_c)) this%viscosity_c(c) = this%viscosity_c(c) + &
             this%vfrac(m,c)*this%viscosity(m)%f%eval(state)
       end do
+      if (this%vof(c) > 0.0_r8) then
+        this%density_delta_c(c) = this%density_delta_c(c)/this%vof(c)
+        if (allocated(this%viscosity_c)) this%viscosity_c(c) = this%viscosity_c(c)/this%vof(c)
+      end if
     end do
     call this%mesh%cell_imap%gather_offp(this%density_delta_c)
     if (.not.allocated(this%viscosity_c)) return
@@ -268,6 +359,8 @@ contains
       c2 = this%mesh%fcell(2,f)
       if (c2 == 0) then
         this%viscosity_f(f) = this%viscosity_c(c1)
+      else if (this%face_t(f) == solid_t) then
+        this%viscosity_f(f) = maxval(this%viscosity_c([c1,c2]))
       else if (product(this%viscosity_c([c1,c2])) > epsilon(1.0_r8)) then
         this%viscosity_f(f) = 2.0_r8*product(this%viscosity_c([c1,c2])) / &
             sum(this%viscosity_c([c1,c2]))
@@ -295,6 +388,12 @@ contains
     this%density_c_old = this%density_c
     this%inv_density_c = 1.0_r8/this%density(1)
     this%inv_density_f = 1.0_r8/this%density(1)
+    this%vof = 1.0_r8
+    this%vof_novoid = 1.0_r8
+    this%cell_t = regular_t
+    this%face_t = regular_t
+    this%any_real_fluid = .true.
+    this%any_real_fluid_onP = .true.
     call this%set_temperature([(0.0_r8, c=1,this%mesh%ncell_onP)])
   end subroutine initialize_values
 

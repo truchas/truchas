@@ -110,20 +110,27 @@ contains
 
   !! Initialize the model's material properties directly from fluid phases.
   !! The model core must already have been initialized.
-  subroutine init_material(this, matl_model, material_ids, stat, errmsg, boussinesq)
+  subroutine init_material(this, matl_model, material_ids, stat, errmsg, boussinesq, nfluid)
     class(flow_2d_model), intent(inout) :: this
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_ids(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     logical, optional, intent(in) :: boussinesq
+    integer, optional, intent(in) :: nfluid
 
     logical :: use_boussinesq
 
     stat = 0
     use_boussinesq = .false.
     if (present(boussinesq)) use_boussinesq = boussinesq
-    call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, stat, errmsg)
+    if (present(nfluid)) then
+      call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, &
+          stat, errmsg, nfluid)
+    else
+      call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, &
+          stat, errmsg)
+    end if
     if (stat == 0) call check_initial_properties(this, this%mesh, stat, errmsg)
   end subroutine
 
