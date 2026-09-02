@@ -11,6 +11,18 @@ The `ns_2d_inviscid_mixed_solid_wall_channel` case is an inviscid pressure-
 driven channel whose solid walls cut through cells.  It checks mixed material
 fractions, stationary SOLID transport, and the uniform analytic flow response.
 
+The `ns_2d_inviscid_solid_wall_hydrostatic_{pure,mixed}` cases check analytic
+hydrostatic pressure and zero velocity beside a material-defined SOLID wall and
+floor, with the interfaces respectively on mesh faces and cutting through
+axis-aligned cells.
+
+The `ns_2d_inviscid_solid_wall_hydrostatic_sloped` case extends the mixed case
+to a sloped material-defined wall, checking hydrostatic balance when the
+interface cuts across multiple cell columns.
+
+The `ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy` case repeats that
+check with a 10 percent mesh perturbation.
+
 The dormant `poiseuille_solid_wall` case is an analytic viscous-channel test
 for the mainline-style representation in which pure SOLID cells form the
 walls.  It is not registered with CTest because the current solid/liquid

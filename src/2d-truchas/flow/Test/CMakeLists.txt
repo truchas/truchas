@@ -273,6 +273,50 @@ set_tests_properties(ns_2d_inviscid_mixed_solid_wall_channel PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
+add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_pure
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_pure.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_pure.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_pure PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
+add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_mixed
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_mixed.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_mixed.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_mixed PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
+add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_sloped
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_sloped.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_sloped.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_sloped PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
+add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_sloped.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_sloped_noisy.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
 # TODO: Enable after the solid/liquid no-slip discretization places the
 # effective wall at the material interface rather than at the solid-cell
 # center.  The current result is not accurate enough for this analytic test.
