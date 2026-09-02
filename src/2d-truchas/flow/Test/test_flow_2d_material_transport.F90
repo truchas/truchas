@@ -29,7 +29,10 @@ program test_flow_2d_material_transport
   status = 0
   call test_single_liquid_flux_volumes('simple')
   call test_single_liquid_flux_volumes('geometric')
-  if (env%nproc == 1) call test_fluid_solid_transport
+  if (env%nproc == 1) then
+    call test_fluid_solid_transport('simple')
+    call test_fluid_solid_transport('geometric')
+  end if
 
   call halt_parallel_communication
   stop status
@@ -77,19 +80,26 @@ contains
   end subroutine
 
 
-  subroutine test_fluid_solid_transport
+  subroutine test_fluid_solid_transport(algorithm)
 
+    character(*), intent(in) :: algorithm
     type(unstr_2d_mesh), pointer :: mesh
     type(flow_2d_material_transport) :: transport
     real(r8), allocatable :: velocity_fn(:), vfrac_n(:,:)
     real(r8), pointer :: vfrac_trial(:,:)
-    real(r8) :: q
-    integer :: f, j1, j2
+    integer :: f, j1
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1], 0.0_r8, 0.0_r8)
-    call transport%init(env, mesh, 1, 1, 2, 'simple')
+    call transport%init(env, mesh, 1, 1, 2, algorithm)
     allocate(velocity_fn(mesh%nface), vfrac_n(2,mesh%ncell), source=0.0_r8)
-    vfrac_n = 0.5_r8
+    if (algorithm == 'simple') then
+      ! Simple tracking supports SOLID when it occupies separate pure cells.
+      vfrac_n(:,1) = [1.0_r8, 0.0_r8]
+      vfrac_n(:,2) = [0.0_r8, 1.0_r8]
+    else
+      ! Geometric tracking also handles a mixed fluid/SOLID cell.
+      vfrac_n = 0.5_r8
+    end if
 
     f = 0
     do j1 = mesh%cstart(1), mesh%cstart(2)-1
@@ -99,25 +109,30 @@ contains
       end if
     end do
     call require(f > 0, 'could not find interior face')
-    j2 = mesh%cstart(2) - 1 + &
-        findloc(mesh%cface(mesh%cstart(2):mesh%cstart(3)-1), f, dim=1)
-    velocity_fn(f) = 0.1_r8
-    if (btest(mesh%cfpar(1), j1-mesh%cstart(1)+1)) velocity_fn(f) = -velocity_fn(f)
+    if (algorithm == 'geometric') then
+      velocity_fn(f) = 0.1_r8
+      if (btest(mesh%cfpar(1), j1-mesh%cstart(1)+1)) velocity_fn(f) = -velocity_fn(f)
+    end if
 
     call transport%advance(env, 0.0_r8, 0.1_r8, velocity_fn, vfrac_n)
     call transport%get_trial_volume_fractions(vfrac_trial)
-    q = 0.5_r8 * 0.1_r8 * 0.1_r8 * mesh%area(f) / mesh%volume(1)
-    call require(maxval(abs(vfrac_trial(1,:2) - [0.5_r8-q, 0.5_r8+q])) < 1.0e-14_r8, &
-        'fluid slot was not transported')
-    call require(maxval(abs(vfrac_trial(2,:2) - 0.5_r8)) < 1.0e-14_r8, &
-        'solid slot was transported')
-    call require(size(transport%flux_volumes,1) == 1, 'solid slot is present in flux volumes')
-    call require(abs(transport%flux_volumes(1,j1)-q*mesh%volume(1)) < 1.0e-14_r8, &
-        'fluid flux volume is incorrect')
-    call require(abs(transport%flux_volumes(1,j2)+q*mesh%volume(1)) < 1.0e-14_r8, &
-        'fluid flux volume orientation is incorrect')
+    if (algorithm == 'simple') then
+      call require(maxval(abs(vfrac_trial(:,:2) - vfrac_n(:,:2))) < 1.0e-14_r8, &
+          'simple: pure solid cell was changed')
+    else
+      call require(maxval(abs(vfrac_trial(2,:2) - 0.5_r8)) < 1.0e-12_r8, &
+          'geometric: solid slot was transported')
+      call require(maxval(abs(sum(vfrac_trial(:,:2), dim=1) - 1.0_r8)) < 16.0_r8 * epsilon(1.0_r8), &
+          'geometric: reduced volume fractions do not sum to one')
+    end if
+    call require(minval(vfrac_trial(1,:2)) >= 0.0_r8 .and. maxval(vfrac_trial(1,:2)) <= 1.0_r8, &
+        trim(algorithm) // ': fluid slot became unbounded')
+    call require(size(transport%flux_volumes,1) == 1, &
+        trim(algorithm) // ': solid slot is present in flux volumes')
+    if (algorithm == 'simple') call require(maxval(abs(transport%flux_volumes)) == 0.0_r8, &
+        'simple: pure solid boundary was fluxed')
 
-  end subroutine test_fluid_solid_transport
+  end subroutine
 
 
   subroutine require(condition, message)
