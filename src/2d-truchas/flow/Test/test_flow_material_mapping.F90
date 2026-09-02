@@ -46,10 +46,12 @@ program test_flow_material_mapping
   call mapping%get_reduced_volume_fractions(matl_dist, vfrac)
   call require(maxval(abs(vfrac(:,1) - [0.1_r8,0.4_r8,0.2_r8,0.3_r8])) < 1.0e-14_r8, &
       'wrong reduced volume fractions')
-  vfrac(:,1) = [0.15_r8, 0.35_r8, 0.25_r8, 0.25_r8]
+  vfrac(:,1) = [0.15_r8, 0.25_r8, 0.30_r8, 0.30_r8]
   call mapping%put_reduced_volume_fractions(vfrac, matl_dist)
-  call require(maxval(abs(matl_dist%vfrac(:,1) - [0.15_r8,0.3_r8,0.35_r8,0.25_r8])) < 1.0e-14_r8, &
+  call require(maxval(abs(matl_dist%vfrac(:,1) - [0.15_r8,0.3_r8,0.25_r8,0.30_r8])) < 1.0e-14_r8, &
       'wrong accepted volume fractions')
+  call require(abs(sum(matl_dist%vfrac(:,1)) - 1.0_r8) < 16.0_r8 * epsilon(1.0_r8), &
+      'accepted volume fractions do not sum to one')
 
 contains
 
