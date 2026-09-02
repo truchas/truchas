@@ -438,11 +438,11 @@ contains
   subroutine write_solution(this, time)
     class(ns_2d_sim), intent(inout) :: this
     real(r8), intent(in) :: time
-    real(r8), pointer :: pressure(:), velocity(:,:), vfrac(:,:)
+    real(r8), pointer :: pressure(:), velocity(:,:)
     call this%solver%get_cell_flow_soln(pressure, velocity)
     call this%solver%set_temporal_output(this%temporal_output)
-    call this%solver%get_volume_fractions(vfrac)
-    call this%output%write_solution(time, pressure, velocity, this%temporal_output, vfrac)
+    call this%solver%update_material_distribution(this%matl_dist)
+    call this%output%write_solution(time, pressure, velocity, this%temporal_output, this%matl_dist%vfrac)
   end subroutine
 
 
