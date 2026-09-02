@@ -79,9 +79,10 @@ contains
     integer :: nrealfluid, nfluid, nmat
     integer, allocatable :: priority(:), phase_ids(:)
     character(:), allocatable :: algorithm
-    type(parameter_list), pointer :: tracking_params, momentum_params, projection_params
+    type(parameter_list), pointer :: tracking_params => null(), momentum_params, projection_params
     real(r8) :: courant_number
     character(96) :: message
+    logical :: simple_default
 
     stat = 0
     if (matl_model%nphase_real /= matl_model%nmatl_real) then
@@ -89,18 +90,26 @@ contains
       errmsg = 'isothermal flow requires single-phase materials'
       return
     end if
-    if (.not.params%is_sublist('volume-tracking')) then
-      stat = 1
-      errmsg = 'requires a "volume-tracking" sublist'
-      return
-    end if
-    tracking_params => params%sublist('volume-tracking')
     call this%matl_map%init(matl_model, stat, errmsg)
     if (stat /= 0) return
-    call this%matl_map%set_priority(tracking_params, stat, errmsg)
-    if (stat /= 0) then
-      errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-      return
+
+    simple_default = .false.
+    if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
+      simple_default = matl_model%is_fluid(1)
+    algorithm = 'geometric'
+    if (simple_default) algorithm = 'simple'
+    if (params%is_sublist('volume-tracking')) then
+      tracking_params => params%sublist('volume-tracking')
+      call tracking_params%get('algorithm', algorithm, default=algorithm, stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+        return
+      end if
+      call this%matl_map%set_priority(tracking_params, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+        return
+      end if
     end if
     call params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
@@ -120,11 +129,6 @@ contains
       return
     end if
     projection_params => params%sublist('projection-solver')
-    call tracking_params%get('algorithm', algorithm, default='simple', stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-      return
-    end if
     call env%simlog%info('Using ' // trim(algorithm) // ' volume tracking.')
     nrealfluid = this%matl_map%num_real_fluid()
     nfluid = this%matl_map%num_fluid()
