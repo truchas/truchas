@@ -248,8 +248,7 @@ contains
 
     ASSERT(size(vfrac,1) == this%num_material())
     ASSERT(size(vfrac,2) >= size(matl_dist%vfrac,2))
-    ASSERT(all(abs(sum(vfrac(:,:size(matl_dist%vfrac,2)), dim=1) - 1.0_r8) <= &
-        16.0_r8 * epsilon(1.0_r8)))
+    ASSERT(all(abs(sum(vfrac(:,:size(matl_dist%vfrac,2)), dim=1) - 1.0_r8) <= 16.0_r8 * epsilon(1.0_r8)))
     do m = 1, this%num_real_fluid()
       matl_dist%vfrac(this%fluid_mid(m),:) = vfrac(m,:size(matl_dist%vfrac,2))
     end do

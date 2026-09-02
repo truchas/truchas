@@ -251,6 +251,17 @@ set_tests_properties(ns_2d_channel PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
+add_test(NAME ns_2d_inviscid_solid_wall_channel
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_channel.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_channel.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_inviscid_solid_wall_channel PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
 add_test(NAME ns_2d_couette
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_couette.py

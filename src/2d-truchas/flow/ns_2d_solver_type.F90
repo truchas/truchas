@@ -46,7 +46,7 @@ module ns_2d_solver_type
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
     procedure :: get_reduced_volume_fractions
-    procedure :: get_volume_fractions
+    procedure :: update_material_distribution
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -217,11 +217,13 @@ contains
   end subroutine
 
 
-  subroutine get_volume_fractions(this, vfrac)
-    class(ns_2d_solver), target, intent(in) :: this
-    real(r8), pointer, intent(out) :: vfrac(:,:)
+  !! Update the simulation-owned material distribution from the current flow
+  !! distribution before it is used for output or by another physics model.
+  subroutine update_material_distribution(this, matl_dist)
+    class(ns_2d_solver), intent(in) :: this
+    type(material_distribution), intent(inout) :: matl_dist
 
-    vfrac => this%vfrac
+    call this%matl_map%put_reduced_volume_fractions(this%vfrac, matl_dist)
   end subroutine
 
 
