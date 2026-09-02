@@ -1,5 +1,6 @@
 include(CTest)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_python_package(vtk 9.0)
 
 add_executable(test_flow_2d_operators test_flow_2d_operators.F90)
 target_link_libraries(test_flow_2d_operators flow2d truchas ${Truchas_LINK_LIBS})
@@ -45,6 +46,9 @@ target_link_libraries(test_ns_2d_solver flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_flow_2d_ic_solver test_flow_2d_ic_solver.F90)
 target_link_libraries(test_flow_2d_ic_solver flow2d truchas ${Truchas_LINK_LIBS})
+
+add_executable(test_flow_2d_vtkhdf_nan test_flow_2d_vtkhdf_nan.F90)
+target_link_libraries(test_flow_2d_vtkhdf_nan flow2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_flow_2d_operators ${MPIEXEC_POSTFLAGS})
@@ -116,6 +120,16 @@ set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
 add_test(flow_2d_ic_solver-1p ${test_launch})
 set_tests_properties(flow_2d_ic_solver-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_ic_solver-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+
+add_test(NAME flow_2d_vtkhdf_nan
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/vtkhdf_nan/test.py
+          $<TARGET_FILE:test_flow_2d_vtkhdf_nan>
+          ${MPIEXEC})
+set_tests_properties(flow_2d_vtkhdf_nan PROPERTIES
+  PROCESSORS 1
+  TIMEOUT 30
+  LABELS "UNIT;FLOW;VTKHDF;2d-truchas")
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_operators ${MPIEXEC_POSTFLAGS})

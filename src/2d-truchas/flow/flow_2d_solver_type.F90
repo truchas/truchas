@@ -7,7 +7,8 @@
 !! material or other coupled-physics transport before the momentum update.
 !! It owns the committed and pending flow states and provides views of them
 !! to its caller.  Material transport and time-step orchestration belong to
-!! higher-level simulation solvers.
+!! higher-level simulation solvers.  It also owns the full-local mask that
+!! identifies cells receiving genuine flow equations.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -41,6 +42,7 @@ module flow_2d_solver_type
     type(flow_2d_projection_update) :: projection_update
     type(flow_2d_ic_solver), pointer :: ic_solver => null()
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
+    logical, allocatable :: flow_active(:)
     real(r8) :: courant_number = 0.5_r8
     integer(int64) :: nstep = 0_int64
     logical :: step_is_pending = .false.
@@ -51,6 +53,7 @@ module flow_2d_solver_type
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
+    procedure :: get_cell_flow_active
     procedure :: get_face_velocity
     procedure :: step
     procedure :: advance_momentum
@@ -81,6 +84,8 @@ contains
     end if
     call this%state%init(model%mesh)
     call this%pending_state%init(model%mesh)
+    allocate(this%flow_active(model%mesh%ncell))
+    call update_flow_active(this)
     allocate(this%rhs(2, model%mesh%ncell_onP), this%grad_p(2, model%mesh%ncell), this%projection_solver, &
         this%ic_solver)
     if (present(momentum_params)) then
@@ -111,6 +116,7 @@ contains
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%model%set_volume_fractions(vfrac)
+    call update_flow_active(this)
   end subroutine
 
 
@@ -119,6 +125,7 @@ contains
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%model%set_initial_material_state(vfrac, temperature)
+    call update_flow_active(this)
   end subroutine
 
 
@@ -161,6 +168,16 @@ contains
   end subroutine
 
 
+  !! Return a no-copy view of the full-local mask used to distinguish genuine
+  !! flow equations from dummy equations.
+  subroutine get_cell_flow_active(this, active)
+    class(flow_2d_solver), target, intent(in) :: this
+    logical, pointer, intent(out) :: active(:)
+
+    active => this%flow_active
+  end subroutine
+
+
   !! Return a no-copy view of the face-normal velocity.
   subroutine get_face_velocity(this, velocity)
     class(flow_2d_solver), target, intent(in) :: this
@@ -179,6 +196,13 @@ contains
 
     if (associated(this%projection_solver)) deallocate(this%projection_solver)
     if (associated(this%ic_solver)) deallocate(this%ic_solver)
+  end subroutine
+
+
+  subroutine update_flow_active(this)
+    class(flow_2d_solver), intent(inout) :: this
+
+    this%flow_active = this%model%matl_props%cell_t <= regular_t
   end subroutine
 
 

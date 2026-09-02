@@ -33,6 +33,35 @@ def relative_l2_error(actual, reference):
     return np.linalg.norm(actual - reference) / np.linalg.norm(reference)
 
 
+def compare_field(actual, reference, name, step):
+    if name == "velocity":
+        actual_active = np.isfinite(actual).all(axis=1)
+        reference_active = np.isfinite(reference).all(axis=1)
+        actual_inactive = ~actual_active
+        if not np.array_equal(actual_active, reference_active):
+            raise RuntimeError(f"step {step}: {name} active-cell mask differs from reference")
+        if np.any(actual_inactive) and not np.isnan(actual[actual_inactive]).all():
+            raise RuntimeError(f"step {step}: {name} inactive cells are not quiet NaNs")
+        actual = actual[actual_active]
+        reference = reference[reference_active]
+    elif name == "pressure":
+        actual_active = np.isfinite(actual)
+        reference_active = np.isfinite(reference)
+        actual_inactive = ~actual_active
+        if not np.array_equal(actual_active, reference_active):
+            raise RuntimeError(f"step {step}: {name} active-cell mask differs from reference")
+        if np.any(actual_inactive) and not np.isnan(actual[actual_inactive]).all():
+            raise RuntimeError(f"step {step}: {name} inactive cells are not quiet NaNs")
+        actual = actual[actual_active]
+        reference = reference[reference_active]
+    elif not np.isfinite(actual).all():
+        raise RuntimeError(f"step {step}: non-finite {name}")
+
+    error = relative_l2_error(actual, reference)
+    if error > 2.0e-6:
+        raise RuntimeError(f"step {step}: {name} relative L2 error={error:g}")
+
+
 def main():
     if len(sys.argv) != 4:
         print(f"usage: {sys.argv[0]} NS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
@@ -58,11 +87,7 @@ def main():
         for name in ("vf_cylinder", "vf_fluid", "velocity", "pressure"):
             actual = data.field(step, name)
             expected = reference.field(step, name)
-            error = relative_l2_error(actual, expected)
-            if error > 2.0e-6:
-                raise RuntimeError(f"step {step}: {name} relative L2 error={error:g}")
-            if not np.isfinite(actual).all():
-                raise RuntimeError(f"step {step}: non-finite {name}")
+            compare_field(actual, expected, name, step)
 
         cylinder = data.field(step, "vf_cylinder")
         fluid = data.field(step, "vf_fluid")

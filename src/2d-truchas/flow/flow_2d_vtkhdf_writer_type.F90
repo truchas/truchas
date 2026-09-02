@@ -4,6 +4,7 @@
 !! This module writes the mesh-associated state of a two-dimensional flow
 !! simulation to a VTKHDF unstructured-grid file.  The mesh and its identifier data
 !! are static; cell pressure and velocity are temporal datasets.  The writer
+!! masks cells without flow equations with quiet NaNs in its output buffers and
 !! can also publish scalar temporal field data supplied by the solver.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
@@ -14,6 +15,7 @@
 
 module flow_2d_vtkhdf_writer_type
 
+  use,intrinsic :: ieee_arithmetic, only: ieee_quiet_nan, ieee_value
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
   use parameter_list_type
   use simulation_environment_type
@@ -141,19 +143,29 @@ contains
   end function
 
 
-  subroutine write_solution(this, time, pressure, velocity, temporal_output, vfrac)
+  subroutine write_solution(this, time, pressure, velocity, temporal_output, flow_active, vfrac)
+    !! PRESSURE, VELOCITY, and FLOW_ACTIVE are full-local arrays with current
+    !! ghost values.  FLOW_ACTIVE is true exactly where flow equations exist.
     class(flow_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:)
     type(parameter_list), intent(inout) :: temporal_output
+    logical, intent(in) :: flow_active(:)
     real(r8), intent(in), optional :: vfrac(:,:)
 
     real(r8), allocatable :: p(:), v(:,:), vf(:)
+    real(r8) :: qnan
     integer :: m
 
+    ASSERT(size(pressure) == this%mesh%ncell)
+    ASSERT(size(velocity,1) == 2 .and. size(velocity,2) == this%mesh%ncell)
+    ASSERT(size(flow_active) == this%mesh%ncell)
     allocate(p(this%mesh%ncell), v(3,this%mesh%ncell))
     p = pressure(:this%mesh%ncell)
     v = 0.0_r8
     v(:2,:) = velocity(:2,:this%mesh%ncell)
+    qnan = ieee_value(0.0_r8, ieee_quiet_nan)
+    where (.not.flow_active) p = qnan
+    where (spread(.not.flow_active, dim=1, ncopies=3)) v = qnan
     call this%file%start_time_step(time)
     call this%file%write_cell_data(this%pressure, p)
     call this%file%write_cell_data(this%velocity, v)
