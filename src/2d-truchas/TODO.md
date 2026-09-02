@@ -36,6 +36,10 @@ flow/thermal models.  More detailed subsystem items remain in
 
 - Improve the flow operators for triangle and mixed triangle/quad meshes.
   Quad meshes are currently the supported and tested flow topology.
+- Improve the no-slip discretization at solid/fluid interfaces.  The current
+  treatment places the effective wall at the solid-cell center rather than at
+  the material interface; [the dormant solid-wall Poiseuille test](flow/Test/ns/poiseuille_solid_wall.json)
+  demonstrates the resulting velocity error.
 - Continue improving accuracy on non-orthogonal meshes and reduce the finite-
   resolution hydrostatic well-balance residual.
 - Revisit the initial pressure/velocity construction so that hydrostatic and
