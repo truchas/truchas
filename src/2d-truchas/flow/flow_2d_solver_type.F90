@@ -27,6 +27,7 @@ module flow_2d_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
   use flow_2d_ic_solver_type
+  use flow_domain_types
   implicit none
   private
 
@@ -241,14 +242,19 @@ contains
       ASSERT(size(flux_volumes,1) == size(this%model%matl_props%density))
       ASSERT(size(flux_volumes,2) == size(this%model%mesh%cface))
       call this%model%momentum%add_advective_rhs(this%model%matl_props%density, this%state%vel_cc, &
-          flux_volumes, this%model%bc, this%rhs)
+          flux_volumes, this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, this%rhs)
     end if
     do c = 1, size(this%rhs,2)
+      if (this%model%matl_props%cell_t(c) > regular_t) then
+        this%rhs(:,c) = 0.0_r8
+        cycle
+      end if
       this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c_old(c)*this%model%mesh%volume(c)* &
           this%state%vel_cc(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then
-      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
+      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, &
+          this%model%matl_props%cell_t, this%rhs, &
           this%pending_state%vel_cc(:,1:size(this%rhs,2)))
       call env%timer%stop('flow/momentum')
       call env%simlog%info('flow.momentum method=inviscid-direct status=ok')

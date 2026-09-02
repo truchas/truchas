@@ -14,6 +14,7 @@ program test_flow_2d_momentum_solver
   use flow_2d_bc_type
   use flow_2d_momentum_type
   use flow_2d_momentum_solver_type
+  use flow_domain_types
   implicit none
 
   integer :: status, stat
@@ -49,15 +50,19 @@ contains
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), velocity(:,:)
+    integer, allocatable :: cell_t(:), face_t(:)
     character(:), allocatable :: errmsg
     integer :: stat
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
     call operators%init(mesh)
     call momentum%init(mesh, operators)
-    allocate(density(mesh%ncell), viscosity(mesh%nface), rhs(2,mesh%ncell_onP), velocity(2,mesh%ncell))
+    allocate(density(mesh%ncell), viscosity(mesh%nface), rhs(2,mesh%ncell_onP), velocity(2,mesh%ncell), &
+        cell_t(mesh%ncell), face_t(mesh%nface))
     density = 0.0_r8
     viscosity = 1.0_r8
+    cell_t = regular_t
+    face_t = regular_t
 
     plist => bc_params%sublist('wall')
     call plist%set('type', 'velocity')
@@ -66,7 +71,7 @@ contains
     call bc%init(env, mesh, bc_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs)
 
     call solver_params%set('rel-tol', 1.0e-10_r8)
     call solver_params%set('max-ds-iter', 100)
