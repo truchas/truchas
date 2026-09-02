@@ -1,0 +1,48 @@
+// Hydrostatic fluid beside a sloped SOLID wall and above a SOLID floor.
+// The wall cuts through multiple columns on a mesh perturbed by 10 percent.
+{
+    "materials": {
+        "wall": {"properties": {"density": 2.0}},
+        "fluid": {"properties": {"fluid": true, "density": 2.0}}
+    },
+    "material-regions": {
+        "sloped-wall": {
+            "material": "wall",
+            "type": "half-plane",
+            "point": [0.28, 0.0],
+            "normal": [1.0, -0.2]
+        },
+        "floor": {
+            "material": "wall",
+            "type": "box",
+            "lower-corner": [0.0, 0.0],
+            "upper-corner": [1.0, 0.28]
+        },
+        "fluid-domain": {"material": "fluid", "type": "background"}
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "noise-factor": 0.1
+    },
+    "material-region-refinement-level": 6,
+    "flow-model": {
+        "inviscid": true,
+        "body-acceleration": [0.0, -1.0],
+        "bc": {
+            "right-wall": {"type": "free-slip", "face-set-ids": [2]},
+            "pressure-reference": {"type": "pressure", "face-set-ids": [4], "pressure": 0.0}
+        }
+    },
+    "flow-solver": {
+        "courant-number": 0.5,
+        "volume-tracking": {"algorithm": "simple"},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "initial-velocity": [0.0, 0.0],
+    "sim-control": {
+        "initial-time": 0.0, "initial-time-step": 1.0e-2,
+        "min-time-step": 1.0e-8, "max-time-step": 1.0e-2,
+        "output-times": [1.0]
+    }
+}
