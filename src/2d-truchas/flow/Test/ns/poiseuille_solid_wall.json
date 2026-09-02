@@ -1,0 +1,48 @@
+// Viscous pressure-driven channel with pure SOLID cells forming the walls.
+// The fluid occupies the middle half of the unit-height domain.  The exact
+// solution has physical no-slip walls at y=0.25 and y=0.75.
+{
+    "materials": {
+        "wall": {"properties": {"density": 1.0}},
+        "fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 1.0}}
+    },
+    "material-regions": {
+        "lower-wall": {
+            "material": "wall",
+            "type": "box",
+            "lower-corner": [0.0, 0.0],
+            "upper-corner": [1.0, 0.25]
+        },
+        "upper-wall": {
+            "material": "wall",
+            "type": "box",
+            "lower-corner": [0.0, 0.75],
+            "upper-corner": [1.0, 1.0]
+        },
+        "channel": {"material": "fluid", "type": "background"}
+    },
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+    },
+    "material-region-refinement-level": 0,
+    "flow-model": {
+        "bc": {
+            "inlet": {"type": "pressure", "face-set-ids": [1], "pressure": 1.0},
+            "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0}
+        }
+    },
+    "flow-solver": {
+        "volume-tracking": {"algorithm": "simple"},
+        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "initial-velocity": [0.0, 0.0],
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 1.0,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 1.0,
+        "output-times": [50.0]
+    }
+}
