@@ -1,0 +1,60 @@
+// Two-layer Stokes Couette flow with a mesh-aligned interface.  The lower
+// fluid has viscosity 1 and the upper fluid viscosity 2.  The inlet profile
+// and initial velocity are the exact piecewise-linear steady solution.  This
+// tests material-derived viscosity in the shared flow mechanics path.
+{
+    "materials": {
+        "lower-fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 1.0}},
+        "upper-fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 2.0}}
+    },
+    "material-regions": {
+        "lower-layer": {
+            "material": "lower-fluid",
+            "type": "half-plane",
+            "point": [0.0, 0.5],
+            "normal": [0.0, 1.0]
+        },
+        "upper-layer": {"material": "upper-fluid", "type": "background"}
+    },
+    "material-region-refinement-level": 0,
+    "mesh": {
+        "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+        "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+    },
+    "flow-model": {
+        "bc": {
+            "inlet": {
+                "type": "velocity",
+                "face-set-ids": [1],
+                "velocity": {
+                    "type": "tabular",
+                    "tabular-x": [0.0, 0.5, 1.0],
+                    "tabular-y": [[0.0, 0.0], [0.6666666666666666, 0.0], [1.0, 0.0]],
+                    "tabular-arg": 3
+                }
+            },
+            "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
+            "bottom": {"type": "no-slip", "face-set-ids": [3]},
+            "top": {"type": "velocity", "face-set-ids": [4], "velocity": [1.0, 0.0]}
+        }
+    },
+    "flow-solver": {
+        "courant-number": 0.5,
+        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "initial-velocity": {
+        "type": "tabular",
+        "tabular-x": [0.0, 0.5, 1.0],
+        "tabular-y": [[0.0, 0.0], [0.6666666666666666, 0.0], [1.0, 0.0]],
+        "tabular-arg": 2
+    },
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 0.05,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 0.05,
+        "time-step-growth": 1.0,
+        "output-times": [0.1]
+    }
+}

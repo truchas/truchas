@@ -1,11 +1,12 @@
 {
+    "materials": {
+        "fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 0.1}}
+    },
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]}
     },
     "flow-model": {
-        "density": 1.0,
-        "viscosity": 0.1,
         "bc": {
             "lid": {"type": "velocity", "face-set-ids": [4], "velocity": [1.0, 0.0]},
             "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3]}
