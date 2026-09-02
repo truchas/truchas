@@ -262,6 +262,20 @@ set_tests_properties(ns_2d_inviscid_solid_wall_channel PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
+# TODO: Enable after the solid/liquid no-slip discretization places the
+# effective wall at the material interface rather than at the solid-cell
+# center.  The current result is not accurate enough for this analytic test.
+# add_test(NAME ns_2d_poiseuille_solid_wall
+#   COMMAND ${Python3_EXECUTABLE}
+#           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_poiseuille_solid_wall.py
+#           $<TARGET_FILE:ns_2d_main>
+#           ${CMAKE_CURRENT_SOURCE_DIR}/ns/poiseuille_solid_wall.json
+#           ${MPIEXEC})
+# set_tests_properties(ns_2d_poiseuille_solid_wall PROPERTIES
+#   PROCESSORS 4
+#   TIMEOUT 120
+#   LABELS "INTEGRATED;NS;2d-truchas")
+
 add_test(NAME ns_2d_couette
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_couette.py
