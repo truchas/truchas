@@ -80,9 +80,11 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     integer :: lookahead
     real(r8) :: courant_number
-    type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params, tracking_params
+    type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params
+    type(parameter_list), pointer :: tracking_params => null()
     character(:), allocatable :: tracking_algorithm
     integer, allocatable :: flow_pids(:), flow_mids(:), priority(:)
+    logical :: simple_default
 
     stat = 0
     ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
@@ -98,9 +100,16 @@ contains
     end if
     flow_params => params%sublist('flow')
     thermal_params => params%sublist('thermal')
-    tracking_params => flow_params%sublist('volume-tracking')
-    call tracking_params%get('algorithm', tracking_algorithm, default='simple', stat=stat, errmsg=errmsg)
-    if (stat /= 0) return
+    simple_default = .false.
+    if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
+      simple_default = matl_model%is_fluid(1)
+    tracking_algorithm = 'geometric'
+    if (simple_default) tracking_algorithm = 'simple'
+    if (flow_params%is_sublist('volume-tracking')) then
+      tracking_params => flow_params%sublist('volume-tracking')
+      call tracking_params%get('algorithm', tracking_algorithm, default=tracking_algorithm, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+    end if
     if (tracking_algorithm /= 'simple' .and. tracking_algorithm /= 'geometric') then
       stat = 1
       errmsg = 'solver.flow.volume-tracking.algorithm must be "simple" or "geometric"'
@@ -108,8 +117,10 @@ contains
     end if
     call this%matl_map%init(matl_model, stat, errmsg)
     if (stat /= 0) return
-    call this%matl_map%set_priority(tracking_params, stat, errmsg)
-    if (stat /= 0) return
+    if (associated(tracking_params)) then
+      call this%matl_map%set_priority(tracking_params, stat, errmsg)
+      if (stat /= 0) return
+    end if
     if (this%matl_map%num_real_fluid() == 0) then
       stat = 1
       errmsg = 'non-isothermal flow requires at least one fluid material'

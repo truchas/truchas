@@ -14,7 +14,6 @@
         }
     },
     "flow-solver": {
-        "volume-tracking": {"algorithm": "simple"},
         "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
         "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
     },
