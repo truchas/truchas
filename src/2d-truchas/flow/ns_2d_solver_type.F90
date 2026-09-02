@@ -35,6 +35,7 @@ module ns_2d_solver_type
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
+    logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
     real(r8) :: tlast, hlast, hnext
     real(r8) :: dt_init, dt_min, dt_max, dt_grow
@@ -68,7 +69,7 @@ module ns_2d_solver_type
 
 contains
 
-  subroutine init(this, env, model, matl_model, params, stat, errmsg)
+  subroutine init(this, env, model, matl_model, params, stat, errmsg, inertial)
     class(ns_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(inout) :: model
@@ -76,6 +77,7 @@ contains
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, optional, intent(in) :: inertial
 
     integer :: nrealfluid, nfluid, nmat
     integer, allocatable :: priority(:), phase_ids(:)
@@ -86,6 +88,12 @@ contains
     logical :: simple_default
 
     stat = 0
+    if (present(inertial)) this%inertial = inertial
+    if (model%inviscid .and. .not.this%inertial) then
+      stat = 1
+      errmsg = 'non-inertial flow is incompatible with inviscid flow'
+      return
+    end if
     if (matl_model%nphase_real /= matl_model%nmatl_real) then
       stat = 1
       errmsg = 'isothermal flow requires single-phase materials'
@@ -323,7 +331,11 @@ contains
     call this%material_transport%get_trial_volume_fractions(vfrac_trial)
     call env%timer%stop('flow/material-transport')
     call this%flow%set_volume_fractions(vfrac_trial)
-    call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
+    if (this%inertial) then
+      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
+    else
+      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg)
+    end if
     if (stat /= 0) then
       call this%flow%reject_step()
       call this%flow%set_volume_fractions(this%vfrac)

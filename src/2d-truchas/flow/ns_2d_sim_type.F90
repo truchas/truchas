@@ -75,7 +75,7 @@ contains
     type(parameter_list), pointer :: control_params
     character(:), allocatable :: matl_name(:)
     integer :: i, rlev
-    logical :: inviscid
+    logical :: inviscid, inertial
 
     stat = 0
 
@@ -168,7 +168,7 @@ contains
     solver_params => params%sublist('flow-solver')
     call env%simlog%begin_section('Constructing flow solver.')
     allocate(this%solver)
-    call this%solver%init(env, this%model, this%matl_model, solver_params, stat, errmsg)
+    call this%solver%init(env, this%model, this%matl_model, solver_params, stat, errmsg, inertial=inertial)
     if (stat /= 0) then
       call env%simlog%end_section('Flow solver construction failed.')
       return
@@ -263,6 +263,16 @@ contains
         errmsg = 'processing ' // params%path() // ': ' // errmsg
         return
       end if
+      call params%get('inertial', inertial, default=.true., stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      if (inviscid .and. .not.inertial) then
+        stat = 1
+        errmsg = 'inviscid flow is incompatible with non-inertial flow'
+        return
+      end if
       call params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8, 0.0_r8])
       if (stat /= 0) then
         errmsg = 'processing ' // params%path() // ': ' // errmsg
@@ -280,6 +290,11 @@ contains
         call env%simlog%info('Using inviscid flow.')
       else
         call env%simlog%info('Using viscous flow.')
+      end if
+      if (inertial) then
+        call env%simlog%info('Using inertial momentum.')
+      else
+        call env%simlog%info('Using non-inertial momentum (Stokes).')
       end if
       if (any(body_acceleration /= 0.0_r8)) then
         write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
