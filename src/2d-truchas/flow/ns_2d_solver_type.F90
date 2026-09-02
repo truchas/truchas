@@ -50,6 +50,7 @@ module ns_2d_solver_type
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
+    procedure :: get_cell_flow_active
     procedure :: get_face_velocity
     procedure :: step
     procedure :: integrate
@@ -272,6 +273,15 @@ contains
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
     call this%flow%get_cell_flow_soln(pressure, velocity)
+  end subroutine
+
+
+  !! Return a no-copy view of the full-local flow-equation mask.
+  subroutine get_cell_flow_active(this, active)
+    class(ns_2d_solver), target, intent(in) :: this
+    logical, pointer, intent(out) :: active(:)
+
+    call this%flow%get_cell_flow_active(active)
   end subroutine
 
 
