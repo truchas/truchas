@@ -12,6 +12,7 @@ program test_flow_2d_momentum
   use flow_2d_operators_type
   use flow_2d_bc_type
   use flow_2d_momentum_type
+  use flow_domain_types
   use pbsr_matrix_type
   implicit none
 
@@ -33,6 +34,7 @@ program test_flow_2d_momentum
   status = 0
   call test_momentum
   call test_advective_transport
+  if (env%nproc == 1) call test_nonfluid_cells
 
   call halt_parallel_communication
   stop status
@@ -48,6 +50,7 @@ contains
     type(parameter_list), pointer :: plist
     type(pbsr_matrix), pointer :: matrix
     real(r8), allocatable :: density(:), viscosity(:), velocity(:,:), rhs(:,:), result(:,:)
+    integer, allocatable :: cell_t(:), face_t(:)
     character(:), allocatable :: errmsg
     integer :: stat, f, c, entry
     logical :: dirichlet_solution, coupled_slip
@@ -57,9 +60,11 @@ contains
     call operators%init(mesh)
     call momentum%init(mesh, operators)
     allocate(density(mesh%ncell), viscosity(mesh%nface), velocity(2,mesh%ncell), &
-        rhs(2,mesh%ncell_onP), result(2,mesh%ncell_onP))
+        rhs(2,mesh%ncell_onP), result(2,mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface))
     density = 0.0_r8
     viscosity = 1.0_r8
+    cell_t = regular_t
+    face_t = regular_t
     velocity = spread([1.5_r8, -0.75_r8], dim=2, ncopies=mesh%ncell)
 
     plist => velocity_params%sublist('wall')
@@ -69,7 +74,7 @@ contains
     call bc%init(env, mesh, velocity_params, stat, errmsg)
     call require(stat == 0, 'velocity boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs)
     matrix => momentum%matrix()
     call matrix%matvec(velocity, result)
     dirichlet_solution = maxval(abs(result - rhs)) < 1.0e-12_r8
@@ -81,7 +86,7 @@ contains
     call bc%init(env, mesh, slip_params, stat, errmsg)
     call require(stat == 0, 'free-slip boundary condition initialization failed')
     call bc%compute(0.0_r8)
-    call momentum%assemble(1.0_r8, density, viscosity, bc, rhs)
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs)
     matrix => momentum%matrix()
     coupled_slip = .false.
     do f = 1, mesh%nface_onP
@@ -105,6 +110,7 @@ contains
     type(parameter_list), target :: velocity_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: density(:), velocity_cc(:,:), velocity_fn(:), flux_volumes(:,:), rhs(:,:)
+    integer, allocatable :: cell_t(:), face_t(:)
     real(r8) :: transported_velocity(2), material_fraction(2), result(2), expected(2)
     character(:), allocatable :: errmsg
     integer :: stat, f, n
@@ -113,8 +119,10 @@ contains
     call operators%init(mesh)
     call momentum%init(mesh, operators)
     allocate(density(2), velocity_cc(2,mesh%ncell), velocity_fn(mesh%nface), &
-        flux_volumes(2,size(mesh%cface)), rhs(2,mesh%ncell_onP))
+        flux_volumes(2,size(mesh%cface)), rhs(2,mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface))
     density = [1.0_r8, 3.0_r8]
+    cell_t = regular_t
+    face_t = regular_t
     material_fraction = [0.25_r8, 0.75_r8]
     transported_velocity = [1.5_r8, -0.75_r8]
     velocity_cc = spread(transported_velocity, dim=2, ncopies=mesh%ncell)
@@ -129,7 +137,7 @@ contains
     if (stat /= 0) return
     call bc%compute(0.0_r8)
     rhs = 0.0_r8
-    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, bc, rhs)
+    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, cell_t, face_t, bc, rhs)
     result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
     call require(maxval(abs(result)) < 1.0e-12_r8, 'interior advective transport is not conservative')
 
@@ -153,11 +161,72 @@ contains
     call mesh%face_imap%gather_offp(velocity_fn)
     call compute_flux_volumes(mesh, 0.25_r8, velocity_fn, material_fraction, flux_volumes)
     rhs = 0.0_r8
-    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, bc, rhs)
+    call momentum%add_advective_rhs(density, velocity_cc, flux_volumes, cell_t, face_t, bc, rhs)
     result = [global_sum(sum(rhs(1,:))), global_sum(sum(rhs(2,:)))]
     expected = [global_sum(expected(1)), global_sum(expected(2))]
     call require(maxval(abs(result - expected)) < 1.0e-12_r8, &
         'velocity-boundary inflow does not supply donor momentum')
+  end subroutine
+
+
+  subroutine test_nonfluid_cells
+    type(unstr_2d_mesh), pointer :: mesh
+    type(flow_2d_operators), target :: operators
+    type(flow_2d_momentum), target :: momentum, inviscid_momentum
+    type(flow_2d_bc) :: bc
+    type(pbsr_matrix), pointer :: matrix
+    real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), result(:,:), velocity(:,:)
+    integer, allocatable :: cell_t(:), face_t(:)
+    integer :: f, c1, c2, entry11, entry12
+
+    mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4, 4], 0.0_r8, 0.0_r8)
+    call operators%init(mesh)
+    allocate(density(mesh%ncell), viscosity(mesh%nface), rhs(2,mesh%ncell_onP), &
+        result(2,mesh%ncell_onP), velocity(2,mesh%ncell), cell_t(mesh%ncell), face_t(mesh%nface))
+    density = 0.0_r8
+    viscosity = 1.0_r8
+    cell_t = regular_t
+    face_t = regular_t
+
+    f = findloc(mesh%fcell(2,:) > 0, .true., dim=1)
+    c1 = mesh%fcell(1,f)
+    c2 = mesh%fcell(2,f)
+    cell_t(c2) = solid_t
+    face_t(f) = solid_t
+
+    call momentum%init(mesh, operators)
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs)
+    matrix => momentum%matrix()
+    entry11 = matrix%graph%index(c1, c1)
+    entry12 = matrix%graph%index(c1, c2)
+    call require(abs(matrix%values(1,1,entry12)) < 1.0e-12_r8, &
+        'solid face retained viscous coupling to solid cell')
+    call require(abs(matrix%values(1,1,matrix%graph%index(c2,c2)) - 1.0_r8) < 1.0e-12_r8, &
+        'solid cell did not receive a viscous dummy equation')
+    call require(matrix%values(1,1,entry11) > 0.0_r8, &
+        'fluid cell lost its viscous diagonal at a solid face')
+
+    cell_t(c2) = void_t
+    face_t(f) = regular_void_t
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs)
+    matrix => momentum%matrix()
+    call require(abs(matrix%values(1,1,matrix%graph%index(c1,c2))) < 1.0e-12_r8, &
+        'regular-VOID face retained viscous coupling to VOID cell')
+    call require(abs(matrix%values(1,1,matrix%graph%index(c2,c2)) - 1.0_r8) < 1.0e-12_r8, &
+        'VOID cell did not receive a viscous dummy equation')
+
+    call inviscid_momentum%init(mesh, operators, inviscid=.true.)
+    density = 2.0_r8
+    rhs = 0.0_r8
+    rhs(:,c1) = [2.0_r8, -4.0_r8]
+    rhs(:,c2) = [3.0_r8, 5.0_r8]
+    call inviscid_momentum%assemble_inviscid(density, cell_t, rhs)
+    velocity = 0.0_r8
+    call inviscid_momentum%solve_inviscid(density, cell_t, rhs, velocity(:,1:mesh%ncell_onP))
+    call require(maxval(abs(velocity(:,c2))) < 1.0e-12_r8, &
+        'inviscid solve did not zero solid-cell velocity')
+    call require(maxval(abs(velocity(:,c1) - rhs(:,c1)/(density(c1)*mesh%volume(c1)))) < 1.0e-12_r8, &
+        'inviscid solve changed fluid-cell velocity')
   end subroutine
 
 

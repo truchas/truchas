@@ -24,6 +24,7 @@ module flow_2d_momentum_type
   use unstr_2d_mesh_type
   use flow_2d_operators_type
   use flow_2d_bc_type
+  use flow_domain_types
   use pbsr_matrix_type
   implicit none
   private
@@ -75,9 +76,10 @@ contains
   !! Assemble the inviscid momentum predictor matrix, which is just the
   !! block-diagonal cell mass matrix.  No diffusion coefficients or velocity
   !! boundary contributions are evaluated.
-  subroutine assemble_inviscid(this, density_c, rhs)
+  subroutine assemble_inviscid(this, density_c, cell_t, rhs)
     class(flow_2d_momentum), intent(inout) :: this
     real(r8), intent(in) :: density_c(:)
+    integer, intent(in) :: cell_t(:)
     real(r8), intent(out) :: rhs(:,:)
 
     integer :: c
@@ -85,6 +87,7 @@ contains
 
     ASSERT(this%inviscid)
     ASSERT(size(density_c) >= this%mesh%ncell)
+    ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
     identity = 0.0_r8
     identity(1,1) = 1.0_r8
@@ -92,7 +95,11 @@ contains
     call this%matrix_%set_all(0.0_r8)
     rhs = 0.0_r8
     do c = 1, this%mesh%ncell_onP
-      call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
+      if (cell_t(c) > regular_t) then
+        call this%matrix_%add_to(c, c, identity)
+      else
+        call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
+      end if
     end do
   end subroutine
 
@@ -100,19 +107,25 @@ contains
   !! Solve the inviscid momentum predictor directly from its cell mass
   !! blocks.  VELOCITY contains on-process cells on return; its ghost values
   !! are filled by the caller.
-  subroutine solve_inviscid(this, density_c, rhs, velocity)
+  subroutine solve_inviscid(this, density_c, cell_t, rhs, velocity)
     class(flow_2d_momentum), intent(in) :: this
     real(r8), intent(in) :: density_c(:), rhs(:,:)
+    integer, intent(in) :: cell_t(:)
     real(r8), intent(out) :: velocity(:,:)
 
     integer :: c
 
     ASSERT(this%inviscid)
     ASSERT(size(density_c) >= this%mesh%ncell)
+    ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
     ASSERT(size(velocity,1) == 2 .and. size(velocity,2) == this%mesh%ncell_onP)
     do c = 1, this%mesh%ncell_onP
-      velocity(:,c) = rhs(:,c)/(density_c(c)*this%mesh%volume(c))
+      if (cell_t(c) > regular_t) then
+        velocity(:,c) = 0.0_r8
+      else
+        velocity(:,c) = rhs(:,c)/(density_c(c)*this%mesh%volume(c))
+      end if
     end do
   end subroutine
 
@@ -121,9 +134,10 @@ contains
   !! FLUX_VOLUMES is material-by-cell-face and contains signed material
   !! volumes transported over the pending time step; positive values leave
   !! the associated cell. DENSITY gives the corresponding material densities.
-  subroutine add_advective_rhs(this, density, velocity_cc, flux_volumes, bc, rhs)
+  subroutine add_advective_rhs(this, density, velocity_cc, flux_volumes, cell_t, face_t, bc, rhs)
     class(flow_2d_momentum), intent(in) :: this
     real(r8), intent(in) :: density(:), velocity_cc(:,:), flux_volumes(:,:)
+    integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
     real(r8), intent(inout) :: rhs(:,:)
 
@@ -133,9 +147,12 @@ contains
     ASSERT(size(density) > 0)
     ASSERT(size(velocity_cc,1) == 2 .and. size(velocity_cc,2) >= this%mesh%ncell)
     ASSERT(size(flux_volumes,1) >= size(density) .and. size(flux_volumes,2) == size(this%mesh%cface))
+    ASSERT(size(cell_t) >= this%mesh%ncell)
+    ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
 
     do c = 1, this%mesh%ncell_onP
+      if (cell_t(c) > regular_t) cycle
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
         neighbor = this%mesh%cnhbr(i)
@@ -152,6 +169,7 @@ contains
     do n = 1, size(bc%velocity_dirichlet%index)
       f = bc%velocity_dirichlet%index(n)
       if (f > this%mesh%nface_onP) cycle
+      if (face_t(f) /= regular_t) cycle
       c = this%mesh%fcell(1,f)
       i = this%mesh%cstart(c) - 1 + findloc(this%mesh%cface(this%mesh%cstart(c):this%mesh%cstart(c+1)-1), f, dim=1)
       if (.not.any(flux_volumes(:,i) < 0.0_r8)) cycle
@@ -162,6 +180,7 @@ contains
     do n = 1, size(bc%pressure_dirichlet%index)
       f = bc%pressure_dirichlet%index(n)
       if (f > this%mesh%nface_onP) cycle
+      if (face_t(f) /= regular_t) cycle
       c = this%mesh%fcell(1,f)
       i = this%mesh%cstart(c) - 1 + findloc(this%mesh%cface(this%mesh%cstart(c):this%mesh%cstart(c+1)-1), f, dim=1)
       if (.not.any(flux_volumes(:,i) < 0.0_r8)) cycle
@@ -174,9 +193,10 @@ contains
   !! Assemble rho*volume*I - dt*div(mu grad(u)) and its velocity-Dirichlet
   !! contribution to RHS. BC must already have been evaluated at the required
   !! time.
-  subroutine assemble(this, dt, density_c, viscosity_f, bc, rhs)
+  subroutine assemble(this, dt, density_c, viscosity_f, cell_t, face_t, bc, rhs)
     class(flow_2d_momentum), intent(inout) :: this
     real(r8), intent(in) :: dt, density_c(:), viscosity_f(:)
+    integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
     real(r8), intent(out) :: rhs(:,:)
 
@@ -186,6 +206,8 @@ contains
     ASSERT(dt >= 0.0_r8)
     ASSERT(size(density_c) >= this%mesh%ncell)
     ASSERT(size(viscosity_f) >= this%mesh%nface)
+    ASSERT(size(cell_t) >= this%mesh%ncell)
+    ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
 
     identity = 0.0_r8
@@ -195,14 +217,22 @@ contains
     rhs = 0.0_r8
 
     do c = 1, this%mesh%ncell_onP
+      if (cell_t(c) > regular_t) then
+        call this%matrix_%add_to(c, c, identity)
+        cycle
+      end if
       call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
         neighbor = this%mesh%cnhbr(i)
         if (neighbor == 0) cycle
         coefficient = dt*viscosity_f(f)*this%mesh%area(f)/this%operators%normal_distance(f)
-        call this%matrix_%add_to(c, c, coefficient*identity)
-        call this%matrix_%add_to(c, neighbor, -coefficient*identity)
+        if (face_t(f) == regular_t) then
+          call this%matrix_%add_to(c, c, coefficient*identity)
+          call this%matrix_%add_to(c, neighbor, -coefficient*identity)
+        else if (face_t(f) == solid_t) then
+          call this%matrix_%add_to(c, c, coefficient*identity)
+        end if
       end do
     end do
 
@@ -210,6 +240,7 @@ contains
       do n = 1, size(bc%velocity_dirichlet%index)
         f = bc%velocity_dirichlet%index(n)
         if (f > this%mesh%nface_onP) cycle
+        if (face_t(f) /= regular_t) cycle
         c = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         coefficient = dt*viscosity_f(f)*this%mesh%area(f)/this%operators%normal_distance(f)
@@ -222,6 +253,7 @@ contains
       do n = 1, size(bc%velocity_zero_normal%index)
         f = bc%velocity_zero_normal%index(n)
         if (f > this%mesh%nface_onP) cycle
+        if (face_t(f) /= regular_t) cycle
         c = this%mesh%fcell(1,f)
         ASSERT(this%mesh%fcell(2,f) == 0)
         coefficient = dt*viscosity_f(f)*this%mesh%area(f)/this%operators%normal_distance(f)

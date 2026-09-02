@@ -228,9 +228,10 @@ contains
     real(r8), intent(out) :: rhs(:,:)
 
     if (this%inviscid) then
-      call this%momentum%assemble_inviscid(this%matl_props%density_c, rhs)
+      call this%momentum%assemble_inviscid(this%matl_props%density_c, this%matl_props%cell_t, rhs)
     else
-      call this%momentum%assemble(dt, this%matl_props%density_c, this%matl_props%viscosity_f, this%bc, rhs)
+      call this%momentum%assemble(dt, this%matl_props%density_c, this%matl_props%viscosity_f, &
+          this%matl_props%cell_t, this%matl_props%face_t, this%bc, rhs)
     end if
   end subroutine
 

@@ -23,6 +23,7 @@ module flow_2d_ic_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
   use parallel_communication, only: global_maxval
+  use flow_domain_types
   implicit none
   private
 
@@ -119,12 +120,17 @@ contains
     this%grad_p = 0.0_r8
     call this%model%assemble_momentum(dt, this%rhs)
     do c = 1, this%model%mesh%ncell_onP
+      if (this%model%matl_props%cell_t(c) > regular_t) then
+        this%rhs(:,c) = 0.0_r8
+        cycle
+      end if
       this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c(c)*this%model%mesh%volume(c)*state%vel_cc(:,c)
       this%rhs(:,c) = this%rhs(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
     end do
     state%vel_cc = 0.0_r8
     if (this%model%inviscid) then
-      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, this%rhs, &
+      call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, &
+          this%model%matl_props%cell_t, this%rhs, &
           state%vel_cc(:,1:this%model%mesh%ncell_onP))
       call env%simlog%info('flow.initial.momentum method=inviscid-direct status=ok')
     else if (global_maxval(maxval(abs(this%rhs))) > 0.0_r8) then
