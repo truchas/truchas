@@ -1,0 +1,57 @@
+// Laminar flow around a cylinder at Reynolds number 20, with a graded mesh
+// and an inlet velocity ramped from zero to [1, 0] over the first time unit.
+// This is the upper half of a channel: y=0 is a symmetry plane and the
+// circular SOLID obstacle is centered on that plane.
+{
+    "materials": {
+        "cylinder": {"properties": {"density": 1.0}},
+        "fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 0.005}}
+    },
+    "material-regions": {
+        "cylinder": {
+            "material": "cylinder",
+            "type": "disk",
+            "center": [0.2, 0.0],
+            "radius": 0.05
+        },
+        "fluid-domain": {"material": "fluid", "type": "background"}
+    },
+    "mesh": {
+        "x-axis": {
+            "coarse-grid": [0.0, 0.1482680200082069, 0.2635805200082069, 1.098125, 2.2],
+            "intervals": [16, 18, 60, 43],
+            "ratio": [0.9548416039104165, 1.0, 1.023793338037844, 1.0]
+        },
+        "y-axis": {"coarse-grid": [0.0, 0.205], "intervals": [32]}
+    },
+    "material-region-refinement-level": 6,
+    "flow-model": {
+        "bc": {
+            "inlet": {
+                "type": "velocity",
+                "face-set-ids": [1],
+                "velocity": {
+                    "type": "tabular",
+                    "tabular-x": [0.0, 1.0],
+                    "tabular-y": [[0.0, 0.0], [1.0, 0.0]],
+                    "tabular-arg": 1
+                }
+            },
+            "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
+            "walls": {"type": "free-slip", "face-set-ids": [3, 4]}
+        }
+    },
+    "flow-solver": {
+        "courant-number": 0.5,
+        "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+        "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+    },
+    "initial-velocity": [0.0, 0.0],
+    "sim-control": {
+        "initial-time": 0.0,
+        "initial-time-step": 0.005,
+        "min-time-step": 1.0e-6,
+        "max-time-step": 0.005,
+        "output-times": [0.25, 0.5, 1.0, 2.0]
+    }
+}
