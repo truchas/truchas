@@ -15,6 +15,7 @@ set(FLOW2D_SOURCE_FILES
     flow_2d_model_type.F90
     flow_2d_ic_solver_type.F90
     flow_2d_solver_type.F90
+    stokes_2d_solver_type.F90
     ns_2d_solver_type.F90
     flow_2d_vtkhdf_writer_type.F90
     flow_2d_sim_type.F90

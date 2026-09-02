@@ -1,7 +1,7 @@
 !!
 !! FLOW_2D_MAIN
 !!
-!! A basic JSON-input driver for the two-dimensional isothermal flow model.
+!! This program drives the two-dimensional incompressible Stokes simulation.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -9,7 +9,7 @@
 
 program flow_2d_main
 
-  use,intrinsic :: iso_fortran_env, only: error_unit
+  use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
   use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
@@ -31,9 +31,12 @@ program flow_2d_main
   call MPI_Init
   call init_parallel_communication
 
+  call fhypre_initialize
+
+  !! Parse the command line.
   call cli%parse(stat, errmsg)
   if (cli%help) then
-    if (is_IOP) call cli%write_help('A JSON-input driver for the two-dimensional isothermal flow model.')
+    if (is_IOP) call cli%write_help('Two-dimensional incompressible Stokes flow simulation.')
     call MPI_Finalize
     stop
   end if
@@ -46,7 +49,7 @@ program flow_2d_main
     stop
   end if
 
-  call fhypre_initialize
+  !! Prepare the output directory.
   if (is_IOP) call cli%prepare_output_dir(stat, errmsg)
   call broadcast(stat)
   if (stat /= 0) then
@@ -69,6 +72,7 @@ program flow_2d_main
     call MPI_Finalize
     error stop 1
   end if
+  !! Write the log file prologue.
   call write_simulation_prologue(env, cli%program, cli%input_file, stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('error staging input file: ' // errmsg)
@@ -76,6 +80,7 @@ program flow_2d_main
     call MPI_Finalize
     error stop 1
   end if
+  !! Read the input file.
   open(newunit=inlun, file=cli%input_file, action='read', access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)
   close(inlun)
@@ -85,21 +90,35 @@ program flow_2d_main
     call MPI_Finalize
     error stop 1
   end if
+  !! Initialize the simulation.
   call env%timer%start('simulation')
+  call env%simlog%begin_section('Initializing simulation.')
   call sim%init(env, params, stat, errmsg)
-  if (stat == 0) call sim%run(env, stat, errmsg)
-  call env%timer%stop('simulation')
   if (stat /= 0) then
-    call env%simlog%error('flow simulation error: ' // errmsg)
+    call env%simlog%end_section('Simulation initialization failed.')
+    call env%simlog%error('simulation initialization error: ' // errmsg)
+    call env%timer%stop('simulation')
     call env%simlog%close
     call MPI_Finalize
     error stop 1
   end if
+  call env%simlog%end_section('Simulation initialization complete.')
+
+  !! Run the simulation.
+  call sim%run(env, stat, errmsg)
+  call env%timer%stop('simulation')
+  if (stat /= 0) call env%simlog%error('flow simulation error: ' // errmsg)
+
+  !! Write simulation timing data.
   call env%simlog%info('')
-  call env%simlog%info('Timing Summary:')
-  call env%simlog%info('')
-  if (env%rank == 0) call env%timer%write(env%simlog%unit(), indent=3)
+  call env%simlog%info('timing-summary-begin')
+  if (env%rank == 0) then
+    call env%timer%write(env%simlog%unit(), indent=2)
+    if (env%simlog%terminal_output_enabled()) call env%timer%write(output_unit, indent=2)
+  end if
+  call env%simlog%info('timing-summary-end')
   call env%simlog%close
   call MPI_Finalize
+  if (stat /= 0) error stop 1
 
 end program flow_2d_main

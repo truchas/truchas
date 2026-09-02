@@ -254,6 +254,17 @@ set_tests_properties(stokes_2d_channel PROPERTIES
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
+add_test(NAME stokes_2d_couette_viscosity_contrast
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_couette.py
+          $<TARGET_FILE:flow_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/couette_viscosity_contrast.json
+          ${MPIEXEC})
+set_tests_properties(stokes_2d_couette_viscosity_contrast PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;STOKES;2d-truchas")
+
 add_test(NAME ns_2d_channel
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_channel.py
@@ -386,6 +397,17 @@ add_test(NAME ns_2d_cylinder
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/cylinder/input.json
           ${MPIEXEC})
 set_tests_properties(ns_2d_cylinder PROPERTIES
+  PROCESSORS 4
+  TIMEOUT 120
+  LABELS "INTEGRATED;NS;2d-truchas")
+
+add_test(NAME ns_2d_bubble_rise
+  COMMAND ${Python3_EXECUTABLE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/bubble_rise/test.py
+          $<TARGET_FILE:ns_2d_main>
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/bubble_rise/input.json
+          ${MPIEXEC})
+set_tests_properties(ns_2d_bubble_rise PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")

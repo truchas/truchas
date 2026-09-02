@@ -211,16 +211,20 @@ contains
   !! FLUX_VOLUMES is present, its material-resolved values provide the
   !! explicit momentum-advection contribution.  The result remains pending
   !! until COMMIT_STEP is called.
-  subroutine step(this, env, t_n, t_np1, stat, errmsg)
+  subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
     class(flow_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
+    character(*), optional, intent(in) :: step_cause
     character(256) :: line
+    character(8) :: cause
 
+    cause = 'explicit'
+    if (present(step_cause)) cause = step_cause
     write(line,'(a,i0,a,es0.5,a,es0.5,a)') 'step=', this%nstep + 1_int64, &
-        ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=explicit'
+        ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=' // trim(cause)
     call env%simlog%begin_section(trim(line))
     call this%advance_momentum(env, t_n, t_np1, stat, errmsg)
     if (stat == 0) then
