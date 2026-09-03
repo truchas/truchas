@@ -43,6 +43,7 @@ module ns_ht_2d_solver_type
     type(ht_2d_solver), pointer :: thermal => null()
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:)
     integer :: ncell_onP
+    logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
     real(r8) :: dt_init, dt_min, dt_max, dt_grow, hnext, hlast
     integer :: max_try
@@ -59,6 +60,7 @@ module ns_ht_2d_solver_type
     procedure :: set_temporal_output
     procedure :: get_cell_flow_soln
     procedure :: get_face_velocity
+    procedure :: get_cell_flow_active
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
     final :: delete
@@ -100,6 +102,18 @@ contains
     end if
     flow_params => params%sublist('flow')
     thermal_params => params%sublist('thermal')
+    call flow_params%get('inertial', this%inertial, default=.true., stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (flow_model%inviscid .and. .not.this%inertial) then
+      stat = 1
+      errmsg = 'inviscid flow is incompatible with non-inertial flow'
+      return
+    end if
+    if (this%inertial) then
+      call env%simlog%info('Using inertial momentum.')
+    else
+      call env%simlog%info('Using non-inertial momentum (Stokes).')
+    end if
     simple_default = .false.
     if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
       simple_default = matl_model%is_fluid(1)
@@ -124,11 +138,6 @@ contains
     if (this%matl_map%num_real_fluid() == 0) then
       stat = 1
       errmsg = 'non-isothermal flow requires at least one fluid material'
-      return
-    end if
-    if (this%matl_map%num_material() /= this%matl_map%num_real_fluid()) then
-      stat = 1
-      errmsg = 'current non-isothermal flow supports fluid materials only; SOLID and VOID are not yet supported'
       return
     end if
     allocate(flow_pids(this%matl_map%num_real_fluid()), flow_mids(this%matl_map%num_real_fluid()))
@@ -225,6 +234,7 @@ contains
     real(r8), intent(in) :: time, velocity(:,:), temp(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    real(r8) :: hlimit
 
     call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
     if (stat /= 0) return
@@ -238,8 +248,13 @@ contains
     end if
     this%nstep = 0_int64
     this%hnext = this%dt_init
-    this%hlast = this%dt_init
     this%hnext_cause = 'init'
+    hlimit = this%flow%courant_time_step()
+    if (hlimit < this%hnext) then
+      this%hnext = hlimit
+      this%hnext_cause = 'cfl'
+    end if
+    this%hlast = this%hnext
   end subroutine
 
 
@@ -345,7 +360,11 @@ contains
       call this%thermal%get_cell_temp_soln(this%temp)
       call this%flow%set_volume_fractions(vfrac_trial)
       call this%flow%set_buoyancy_temperature(this%temp)
-      call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
+      if (this%inertial) then
+        call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
+      else
+        call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg)
+      end if
       if (stat /= 0) then
         call this%flow%reject_step()
         call this%thermal%reject_step()
@@ -460,6 +479,16 @@ contains
     real(r8), pointer, intent(out) :: velocity(:)
 
     call this%flow%get_face_velocity(velocity)
+  end subroutine
+
+
+  !! Returns a no-copy view of the full-local mask used to distinguish genuine
+  !! flow equations from dummy equations.
+  subroutine get_cell_flow_active(this, active)
+    class(ns_ht_2d_solver), target, intent(in) :: this
+    logical, pointer, intent(out) :: active(:)
+
+    call this%flow%get_cell_flow_active(active)
   end subroutine
 
 
