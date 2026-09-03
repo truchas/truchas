@@ -9,9 +9,12 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
+#include "f90_assert.fpp"
+
 module ns_ht_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_quiet_nan, ieee_value
   use parameter_list_type
   use simulation_environment_type
   use unstr_2d_mesh_type
@@ -131,18 +134,24 @@ contains
     end do
   end function
 
-  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature, vfrac, temporal_output)
+  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature, vfrac, temporal_output, flow_active)
     class(ns_ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:), enthalpy(:), temperature(:)
     real(r8), intent(in) :: vfrac(:,:)
     type(parameter_list), intent(inout) :: temporal_output
+    logical, intent(in) :: flow_active(:)
     real(r8), allocatable :: p(:), v(:,:), H(:), T(:), vf(:)
+    real(r8) :: qnan
     integer :: m
 
     allocate(p(this%mesh%ncell), v(3,this%mesh%ncell), H(this%mesh%ncell), T(this%mesh%ncell))
+    ASSERT(size(flow_active) == this%mesh%ncell)
     p = pressure(:this%mesh%ncell)
     v = 0.0_r8
     v(:2,:) = velocity(:2,:this%mesh%ncell)
+    qnan = ieee_value(0.0_r8, ieee_quiet_nan)
+    where (.not.flow_active) p = qnan
+    where (spread(.not.flow_active, dim=1, ncopies=3)) v = qnan
     H(:this%mesh%ncell_onP) = enthalpy
     T(:this%mesh%ncell_onP) = temperature
     call this%mesh%cell_imap%gather_offp(H)

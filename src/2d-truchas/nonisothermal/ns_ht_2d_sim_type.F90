@@ -508,14 +508,16 @@ contains
     real(r8), intent(in) :: time
 
     real(r8), pointer :: p(:), velocity(:,:)
+    logical, pointer :: flow_active(:)
     real(r8), allocatable :: H(:), T(:)
 
     allocate(H(this%mesh%ncell_onP), T(this%mesh%ncell_onP))
     call this%solver%get_cell_flow_soln(p, velocity)
+    call this%solver%get_cell_flow_active(flow_active)
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
     call this%solver%set_temporal_output(this%temporal_output)
-    call this%output%write_solution(time, p, velocity, H, T, this%matl_dist%vfrac, this%temporal_output)
+    call this%output%write_solution(time, p, velocity, H, T, this%matl_dist%vfrac, this%temporal_output, flow_active)
   end subroutine
 
 end module ns_ht_2d_sim_type
