@@ -321,10 +321,11 @@ contains
     ASSERT(size(flux_volumes,1) == this%num_fluid())
     ASSERT(size(flux_volumes,2) == size(mesh%cface))
 
-    !! A one-material, single-phase fluid has invariant composition.  Avoid
+    !! A one-material distribution without VOID has invariant composition,
+    !! including when that material has stationary and mobile phases.  Avoid
     !! feeding even a small discrete divergence back into its state.
     if (size(matl_dist%vfrac,1) == 1 .and. this%num_real_fluid() == 1 .and. &
-        this%void_mid == 0 .and. .not.this%has_solid) return
+        this%void_mid == 0) return
 
     do c = 1, mesh%ncell_onP
       first_face = mesh%cstart(c)

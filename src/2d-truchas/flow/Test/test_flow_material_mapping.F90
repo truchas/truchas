@@ -8,6 +8,7 @@ program test_flow_material_mapping
   use material_distribution_type
   use material_factory, only: load_material_database
   use flow_material_mapping_type
+  use unstr_2d_mesh_type
   implicit none
 
   type(material_database) :: database
@@ -18,11 +19,16 @@ program test_flow_material_mapping
   type(material_model) :: phase_model
   type(material_distribution) :: phase_dist
   type(flow_material_mapping) :: phase_mapping
+  type(material_model) :: single_phase_model
+  type(material_distribution) :: single_phase_dist
+  type(flow_material_mapping) :: single_phase_mapping
+  type(unstr_2d_mesh) :: mesh
   type(parameter_list), pointer :: matl_params, tracking_params
   type(parameter_list), pointer :: phase_params
   character(:), allocatable :: errmsg
   real(r8) :: vfrac(4,1)
   real(r8) :: phase_vfrac(3,1), temperature(1)
+  real(r8) :: single_flux(1,1)
   integer :: stat, priority(4)
 
   call parameter_list_from_json_string( &
@@ -79,6 +85,23 @@ program test_flow_material_mapping
   call phase_mapping%get_phase_volume_fractions(phase_model, phase_dist, temperature, phase_vfrac)
   call require(maxval(abs(phase_vfrac(:,1) - [0.3_r8,0.4_r8,0.3_r8])) < 1.0e-14_r8, &
       'wrong phase-aware volume fractions')
+
+  call single_phase_model%init(['pcm  '], phase_database, stat, errmsg)
+  if (stat /= 0) error stop 'initializing single phase-change material model: ' // errmsg
+  call single_phase_mapping%init(single_phase_model, stat, errmsg)
+  if (stat /= 0) error stop 'initializing single phase-change material mapping: ' // errmsg
+  allocate(single_phase_dist%vfrac(1,1))
+  single_phase_dist%vfrac = 1.0_r8
+  mesh%ncell_onP = 1
+  mesh%ncell = 1
+  allocate(mesh%cstart(2), mesh%cface(1), mesh%volume(1))
+  mesh%cstart = [1, 2]
+  mesh%cface = 1
+  mesh%volume = 1.0_r8
+  single_flux = 0.25_r8
+  call single_phase_mapping%apply_phase_fluxes(mesh, single_flux, single_phase_dist)
+  call require(maxval(abs(single_phase_dist%vfrac - 1.0_r8)) < 1.0e-14_r8, &
+      'single phase-change material distribution was changed by phase flux')
 contains
 
   subroutine require(condition, message)
