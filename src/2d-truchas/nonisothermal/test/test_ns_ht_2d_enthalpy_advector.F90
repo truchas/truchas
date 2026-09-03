@@ -38,6 +38,7 @@ program test_ns_ht_2d_enthalpy_advector
   status = 0
   call test_material_flux_enthalpy
   call test_closed_transport_conservation
+  call test_multiphase_phase_enthalpy
 
   call halt_parallel_communication
   stop status
@@ -111,6 +112,43 @@ contains
       end do
     end do
     call require(all(abs(dQ - expected) < 1.0e-13_r8), 'incorrect material-resolved enthalpy flux')
+  end subroutine
+
+
+  subroutine test_multiphase_phase_enthalpy
+    type(unstr_2d_mesh), pointer :: mesh
+    type(material_database) :: database
+    type(material_model) :: matl_model
+    type(parameter_list), pointer :: matl_params
+    type(ns_ht_2d_enthalpy_advector) :: advector
+    real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:), expected(:)
+    real(r8), parameter :: q = 1.0e-3_r8
+
+    mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 4], 0.0_r8, 0.0_r8)
+    call parameter_list_from_json_string( &
+      '{"pcm":{"properties":{"density":1.0},' // &
+      '"phases":{"solid":{"specific-heat":2.0},' // &
+      '"liquid":{"specific-heat":3.0}},' // &
+      '"phase-changes":{"solid:liquid":{"solidus-temp":0.0,' // &
+      '"liquidus-temp":1.0,"latent-heat":1.0}}}}', matl_params, errmsg)
+    if (.not.associated(matl_params)) call fail('could not parse phase material input: ' // errmsg)
+    call load_material_database(database, matl_params, stat, errmsg)
+    if (stat /= 0) call fail('could not load phase material database: ' // errmsg)
+    call matl_model%init(['pcm'], database, stat, errmsg)
+    if (stat /= 0) call fail('could not initialize phase material model: ' // errmsg)
+    call add_enthalpy_prop(matl_model, stat, errmsg)
+    if (stat /= 0) call fail('could not add phase enthalpy property: ' // errmsg)
+    call advector%init(mesh, matl_model, [2], stat, errmsg)
+    if (stat /= 0) call fail('could not initialize phase enthalpy advector: ' // errmsg)
+
+    allocate(cell_temp(mesh%ncell_onP), flux_volumes(1,size(mesh%cface)), &
+        dQ(mesh%ncell_onP), expected(mesh%ncell_onP))
+    cell_temp = 2.0_r8
+    flux_volumes = q
+    call advector%get_advected_enthalpy(0.0_r8, cell_temp, flux_volumes, dQ)
+    expected = -4.0_r8*q*6.0_r8
+    call require(all(abs(dQ - expected) < 1.0e-13_r8), &
+        'phase enthalpy was not used for material-resolved enthalpy flux')
   end subroutine
 
 

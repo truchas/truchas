@@ -231,7 +231,7 @@ contains
 
     !! Set the initial solver state.
     call env%simlog%begin_section('Setting initial solver state.')
-    call this%solver%set_initial_state(env, this%t_init, velocity, temp, stat, errmsg)
+    call this%solver%set_initial_state(env, this%matl_model, this%t_init, velocity, temp, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Initial solver-state setup failed.')
       return
@@ -467,7 +467,7 @@ contains
     call env%simlog%info(trim(line))
     t_write = time
     do n = 1, size(this%tout)
-      call this%solver%integrate(env, this%tout(n), stat, errmsg)
+      call this%solver%integrate(env, this%matl_model, this%tout(n), stat, errmsg)
       time = this%solver%last_time()
       if (stat < 0 .and. time == t_write) exit
       call env%timer%start('output')
@@ -510,7 +510,8 @@ contains
     call this%solver%get_cell_heat_soln(H)
     call this%solver%get_cell_temp_soln(T)
     call this%solver%set_temporal_output(this%temporal_output)
-    call this%output%write_solution(time, p, velocity, H, T, this%matl_dist%vfrac, this%temporal_output, flow_active)
+    call this%output%write_solution(time, p, velocity, H, T, this%matl_model, this%matl_dist%vfrac, &
+        this%temporal_output, flow_active)
   end subroutine
 
 end module ns_ht_2d_sim_type

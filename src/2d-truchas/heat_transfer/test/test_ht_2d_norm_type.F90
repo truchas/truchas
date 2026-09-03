@@ -70,7 +70,7 @@ contains
   subroutine test_abs(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
@@ -126,7 +126,7 @@ contains
   subroutine test_rel(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
@@ -181,7 +181,7 @@ contains
   subroutine test_mixed(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
@@ -239,7 +239,7 @@ contains
   subroutine test_global(disc, matl_model)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm

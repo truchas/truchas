@@ -98,7 +98,7 @@ contains
   subroutine test_linear_dir(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
     type(ht_2d_model), target :: HT_model
@@ -203,7 +203,7 @@ contains
   subroutine test_linear_flux(disc, matl_model, tol)
 
     type(mfd_2d_disc), target, intent(in) :: disc
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
     type(ht_2d_model), target :: HT_model
@@ -314,7 +314,7 @@ contains
 
   subroutine test_advection_bc_constraints(matl_model)
 
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model) :: model
     type(parameter_list), pointer :: params

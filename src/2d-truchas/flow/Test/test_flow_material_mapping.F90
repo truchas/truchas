@@ -14,9 +14,15 @@ program test_flow_material_mapping
   type(material_model) :: matl_model
   type(material_distribution) :: matl_dist
   type(flow_material_mapping) :: mapping
+  type(material_database) :: phase_database
+  type(material_model) :: phase_model
+  type(material_distribution) :: phase_dist
+  type(flow_material_mapping) :: phase_mapping
   type(parameter_list), pointer :: matl_params, tracking_params
+  type(parameter_list), pointer :: phase_params
   character(:), allocatable :: errmsg
   real(r8) :: vfrac(4,1)
+  real(r8) :: phase_vfrac(3,1), temperature(1)
   integer :: stat, priority(4)
 
   call parameter_list_from_json_string( &
@@ -53,6 +59,26 @@ program test_flow_material_mapping
   call require(abs(sum(matl_dist%vfrac(:,1)) - 1.0_r8) < 16.0_r8 * epsilon(1.0_r8), &
       'accepted volume fractions do not sum to one')
 
+  call parameter_list_from_json_string( &
+      '{"pcm":{"phases":{"solid":{},"liquid":{"fluid":true}},' // &
+      '"phase-changes":{"solid:liquid":{"solidus-temp":0.0,"liquidus-temp":1.0,"latent-heat":1.0}}},' // &
+      '"water":{"properties":{"fluid":true}}}', phase_params, errmsg)
+  if (.not.associated(phase_params)) error stop 'parsing phase material database: ' // errmsg
+  call load_material_database(phase_database, phase_params, stat, errmsg)
+  if (stat /= 0) error stop 'loading phase material database: ' // errmsg
+  call phase_model%init(['pcm  ', 'water'], phase_database, stat, errmsg)
+  if (stat /= 0) error stop 'initializing phase material model: ' // errmsg
+  call phase_mapping%init(phase_model, stat, errmsg)
+  if (stat /= 0) error stop 'initializing phase material mapping: ' // errmsg
+  call require(phase_mapping%num_real_fluid() == 2, 'wrong phase fluid count')
+  call require(phase_mapping%num_material() == 3, 'wrong phase reduced count')
+
+  allocate(phase_dist%vfrac(2,1))
+  phase_dist%vfrac(:,1) = [0.6_r8, 0.4_r8]
+  temperature = 0.5_r8
+  call phase_mapping%get_phase_volume_fractions(phase_model, phase_dist, temperature, phase_vfrac)
+  call require(maxval(abs(phase_vfrac(:,1) - [0.3_r8,0.4_r8,0.3_r8])) < 1.0e-14_r8, &
+      'wrong phase-aware volume fractions')
 contains
 
   subroutine require(condition, message)

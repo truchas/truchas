@@ -436,7 +436,8 @@ contains
     call this%solver%get_cell_temp_soln(Tcell)
 
     call this%solver%set_temporal_output(this%temporal_output)
-    call this%output%write_solution(t, Hcell, Tcell, this%matl_dist%vfrac, this%temporal_output)
+    call this%output%write_solution(t, Hcell, Tcell, this%matl_model, this%matl_dist%vfrac, &
+        this%temporal_output)
 
   end subroutine write_solution
 

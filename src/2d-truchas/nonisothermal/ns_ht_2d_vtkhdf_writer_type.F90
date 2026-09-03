@@ -61,7 +61,7 @@ contains
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: cnode(:), xcnode(:), global_cell_ids(:), global_node_ids(:)
-    integer :: c, m, nnode
+    integer :: c, m, nnode, nfield, nphase, first, last, pid
     character(:), allocatable :: name
     integer(int8), allocatable :: cell_type(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: scalar_mold, vector_mold(3)
@@ -103,11 +103,38 @@ contains
     this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
     this%enthalpy = this%file%register_temporal_cell_data('H', scalar_mold)
     this%temperature = this%file%register_temporal_cell_data('T', scalar_mold)
-    if (matl_model%nmatl > 1) then
-      allocate(this%vfrac(matl_model%nmatl))
-      do m = 1, size(this%vfrac)
-        name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
-        this%vfrac(m) = this%file%register_temporal_cell_data(name, scalar_mold)
+    nfield = 0
+    do m = 1, matl_model%nmatl
+      if (matl_model%have_void .and. m == matl_model%nmatl) then
+        nphase = 1
+      else
+        nphase = matl_model%num_matl_phase(m)
+      end if
+      if (matl_model%nmatl > 1 .or. nphase > 1) nfield = nfield + nphase
+    end do
+    if (nfield > 0) then
+      allocate(this%vfrac(nfield))
+      nfield = 0
+      do m = 1, matl_model%nmatl
+        if (matl_model%have_void .and. m == matl_model%nmatl) then
+          nphase = 1
+        else
+          nphase = matl_model%num_matl_phase(m)
+        end if
+        if (matl_model%nmatl == 1 .and. nphase == 1) cycle
+        if (nphase == 1) then
+          nfield = nfield + 1
+          name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
+          this%vfrac(nfield) = this%file%register_temporal_cell_data(name, scalar_mold)
+        else
+          call matl_model%get_matl_phase_index_range(m, first, last)
+          do pid = first, last
+            nfield = nfield + 1
+            name = 'vf_' // normalize_material_name(matl_model%matl_name(m)) // '_' // &
+                normalize_material_name(matl_model%phase_name(pid))
+            this%vfrac(nfield) = this%file%register_temporal_cell_data(name, scalar_mold)
+          end do
+        end if
       end do
     end if
     call register_temporal_fields(this, temporal_output, stat, errmsg)
@@ -134,15 +161,17 @@ contains
     end do
   end function
 
-  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature, vfrac, temporal_output, flow_active)
+  subroutine write_solution(this, time, pressure, velocity, enthalpy, temperature, matl_model, vfrac, &
+      temporal_output, flow_active)
     class(ns_ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:), enthalpy(:), temperature(:)
+    type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: vfrac(:,:)
     type(parameter_list), intent(inout) :: temporal_output
     logical, intent(in) :: flow_active(:)
-    real(r8), allocatable :: p(:), v(:,:), H(:), T(:), vf(:)
+    real(r8), allocatable :: p(:), v(:,:), H(:), T(:), vf(:), beta(:,:)
     real(r8) :: qnan
-    integer :: m
+    integer :: c, m, nphase, phase, field
 
     allocate(p(this%mesh%ncell), v(3,this%mesh%ncell), H(this%mesh%ncell), T(this%mesh%ncell))
     ASSERT(size(flow_active) == this%mesh%ncell)
@@ -163,10 +192,36 @@ contains
     call this%file%write_cell_data(this%temperature, T)
     if (allocated(this%vfrac)) then
       allocate(vf(this%mesh%ncell))
-      do m = 1, size(this%vfrac)
-        vf(:this%mesh%ncell_onP) = vfrac(m,:)
-        call this%mesh%cell_imap%gather_offp(vf)
-        call this%file%write_cell_data(this%vfrac(m), vf)
+      field = 0
+      do m = 1, matl_model%nmatl
+        if (matl_model%have_void .and. m == matl_model%nmatl) then
+          nphase = 1
+        else
+          nphase = matl_model%num_matl_phase(m)
+        end if
+        if (matl_model%nmatl == 1 .and. nphase == 1) cycle
+        if (nphase == 1) then
+          field = field + 1
+          vf(:this%mesh%ncell_onP) = vfrac(m,:)
+          call this%mesh%cell_imap%gather_offp(vf)
+          call this%file%write_cell_data(this%vfrac(field), vf)
+        else
+          allocate(beta(nphase, this%mesh%ncell_onP))
+          do c = 1, this%mesh%ncell_onP
+            if (vfrac(m,c) > 0.0_r8) then
+              call matl_model%get_matl_phase_frac(m, temperature(c), beta(:,c))
+            else
+              beta(:,c) = 0.0_r8
+            end if
+          end do
+          do phase = 1, nphase
+            field = field + 1
+            vf(:this%mesh%ncell_onP) = vfrac(m,:) * beta(phase,:)
+            call this%mesh%cell_imap%gather_offp(vf)
+            call this%file%write_cell_data(this%vfrac(field), vf)
+          end do
+          deallocate(beta)
+        end if
       end do
     end if
     call write_temporal_fields(this, temporal_output)

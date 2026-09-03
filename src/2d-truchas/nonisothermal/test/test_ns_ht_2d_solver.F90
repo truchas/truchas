@@ -128,7 +128,7 @@ contains
         sin(acos(-1.0_r8)*mesh%cell_centroid(2,:mesh%ncell_onP))
     call thermal_solver%set_initial_state(env, 0.0_r8, temp, stat, errmsg, dt=1.0e-3_r8)
     if (stat /= 0) call fail('initializing standalone thermal state: ' // errmsg)
-    call solver%set_initial_state(env, 0.0_r8, velocity, temp, stat, errmsg)
+    call solver%set_initial_state(env, matl_model, 0.0_r8, velocity, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled state: ' // errmsg)
     call require_zero_face_velocity(solver, mesh%nface, 'zero initial velocity was not preserved')
     call thermal_solver%get_cell_temp_soln(thermal_temp)
@@ -165,7 +165,7 @@ contains
         hnext = min(thermal_hnext, hlast, 1.0e-3_r8)
         t = t_np1
       end do
-      call solver%integrate(env, real(n,r8)*1.0e-3_r8, stat, errmsg)
+      call solver%integrate(env, matl_model, real(n,r8)*1.0e-3_r8, stat, errmsg)
       call require(stat == 0, 'zero-velocity coupled integration failed')
       if (stat /= 0) return
       call require_zero_face_velocity(solver, mesh%nface, 'zero velocity did not remain zero')
