@@ -50,9 +50,6 @@ flow/thermal models.  More detailed subsystem items remain in
 - Retain one shared flow mechanics implementation for Stokes, isothermal NS,
   and non-isothermal NS while exposing the separate material-transport,
   momentum, and projection phases needed by coupled physics.
-- Replace the raw single-fluid property-construction path in
-  `flow_2d_sim` when the standalone flow driver is brought into the
-  material-aware design.
 - Generalize the coupled solver structure as additional physics models are
   added, rather than introducing separate ad hoc combinations for each pair
   of models.
