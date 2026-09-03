@@ -202,7 +202,7 @@ contains
     !! Create the output file and write the mesh.
     call this%solver%init_temporal_output(this%temporal_output)
     call env%simlog%info('Opening VTKHDF output.')
-    call this%output%open(env, this%mesh, this%temporal_output, stat, errmsg, this%matl_model)
+    call this%output%open(env, this%mesh, this%matl_model, this%temporal_output, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'opening VTKHDF output: ' // errmsg
       return

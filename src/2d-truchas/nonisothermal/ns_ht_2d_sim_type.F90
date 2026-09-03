@@ -68,7 +68,6 @@ contains
 
   subroutine init(this, env, params, stat, errmsg)
     use material_factory, only: load_material_database
-    use material_utilities, only: add_enthalpy_prop
     use signal_handler, only: init_signal_handler, SIGURG
 
     class(ns_ht_2d_sim), intent(out) :: this
@@ -134,12 +133,6 @@ contains
     do i = 1, size(matl_name)
       call env%simlog%info('Using material "' // trim(matl_name(i)) // '".')
     end do
-    call env%simlog%info('Adding enthalpy property.')
-    call add_enthalpy_prop(this%matl_model, stat, errmsg)
-    if (stat /= 0) then
-      call env%simlog%end_section('Material model construction failed.')
-      return
-    end if
     call env%simlog%end_section('Material model complete.')
 
     !! Construct the material distribution.

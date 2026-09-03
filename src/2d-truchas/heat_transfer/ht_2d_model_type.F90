@@ -66,7 +66,7 @@ contains
     class(ht_2d_model), intent(out), target :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), intent(in), target :: mesh
-    type(material_model), intent(in) :: matl_model
+    type(material_model), intent(inout) :: matl_model
     type(material_distribution), target, intent(in) :: matl_dist
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -91,7 +91,9 @@ contains
     if (stat /= 0) return
 
     !! Enthalpy density.
-    call required_property_check(matl_model, 'enthalpy', stat, errmsg)
+    call env%simlog%info('Adding enthalpy property.')
+    stat = 0
+    call add_enthalpy_prop(matl_model, stat, errmsg)
     if (stat /= 0) return
     allocate(cell_matl_prop_func :: this%H_of_T)
     select type (H_of_T => this%H_of_T)
