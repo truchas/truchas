@@ -16,6 +16,7 @@ explicitly named quad and triangle x- and y-directed variants.
 - `multimaterial_conduction` tests the steady composite-conductivity profile;
 - `enthalpy` tests equivalent single-phase specific-heat and
   specific-enthalpy material specifications;
+- `solidification` exercises a two-phase material and phase-fraction output;
 - `htc` tests an external heat-transfer-coefficient boundary condition;
 - `radiation` contains transient tests of simple radiation boundary
   conditions;

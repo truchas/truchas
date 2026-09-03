@@ -1,0 +1,2022 @@
+program code="ht_2d" version="26.05-180-g62b3c13f-dirty"
+build compiler="GNU" compiler_version="16.1.1" host="thelio2.indiana" flags="-g -O0 -ffpe-trap=zero,invalid,overflow -fcheck=bounds,do,mem,pointer -finit-real=nan -finit-integer=-2147483647"
+run timestamp="2026-09-03T16:04:10-0600" host="thelio2.indiana" cpu="AMD Ryzen Threadripper 7970X 32-Cores" mpi_processes=4
+input file="input.json" sha256="816412e2231575a3e98005ab1ef46c8548b51556043435d642963ab421c95ad0"
+
+Initializing simulation.
+  Constructing mesh.
+    Generating a 32 by 32 quadrilateral mesh.
+    Partitioning the mesh with the metis method.
+    Mesh has 1089 nodes, 2112 faces, and 1024 cells.
+    Mesh defines 1 cell sets, 4 face sets, and 0 node sets.
+  Mesh construction complete.
+  Loading material database.
+  Reading material regions.
+  Material regions read.
+  Constructing material model.
+    Using material "phase-change-material".
+  Material model complete.
+  Constructing material distribution.
+  Material distribution complete.
+  Constructing thermal model.
+    Adding enthalpy property.
+      generating "flux" thermal boundary condition
+        using thermal BC [top-bottom]
+      generating "htc" thermal boundary condition
+        none specified
+      generating "radiation" thermal boundary condition
+        none specified
+      generating "temperature" thermal boundary condition
+        using thermal BC [left]
+        using thermal BC [right]
+      generating "scalar_cell_func1" thermal source
+        none specified
+      generating "scalar_cell_func2" thermal source
+        none specified
+  Thermal model complete.
+  Constructing thermal solver.
+  Thermal solver complete.
+  Configuring integration.
+    Initial time:  0.0000E+00
+    Initial time step:  1.0000E-01
+    Output schedule: 2 times from  1.0000E+02 through  1.0000E+03
+  Integration configuration complete.
+  Initializing thermal state.
+    Projecting user-supplied initial temperature.
+  Thermal-state initialization complete.
+  Setting initial solver state.
+    Computing consistent initial state.
+    thermal.initial.state method=none reason=zero-residual status=skipped
+    Computing consistent initial-state derivative.
+    thermal.initial.deriv init_res=5.65685E-003 iter=6 dscg=6 amg=0 rel_res=0.00000E+000 status=ok
+  Initial solver state ready.
+  Opening VTKHDF output.
+Simulation initialization complete.
+
+integration-begin t0=0.00000E+000
+  output t=0.00000E+000
+  step=1 attempt=1 t0=0.00000E+000 dt=1.00000E-001 cause=init
+    thermal nres=3 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=2 attempt=1 t0=1.00000E-001 dt=1.00000E-001 cause=thermal
+    thermal nres=6 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=3 attempt=1 t0=2.00000E-001 dt=1.00000E-001 cause=thermal
+    thermal nres=9 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=4 attempt=1 t0=3.00000E-001 dt=1.00000E-001 cause=thermal
+    thermal nres=12 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=5 attempt=1 t0=4.00000E-001 dt=2.03104E-001 cause=thermal
+    thermal nres=15 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=6 attempt=1 t0=6.03104E-001 dt=1.55167E-001 cause=thermal
+    thermal nres=18 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=7 attempt=1 t0=7.58271E-001 dt=2.12204E-001 cause=thermal
+    thermal nres=21 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=8 attempt=1 t0=9.70475E-001 dt=2.01257E-001 cause=thermal
+    thermal nres=24 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=9 attempt=1 t0=1.17173E+000 dt=2.39312E-001 cause=thermal
+    thermal nres=27 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=10 attempt=1 t0=1.41104E+000 dt=2.56158E-001 cause=thermal
+    thermal nres=30 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=11 attempt=1 t0=1.66720E+000 dt=2.95275E-001 cause=thermal
+    thermal nres=33 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=12 attempt=1 t0=1.96248E+000 dt=3.32365E-001 cause=thermal
+    thermal nres=36 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=13 attempt=1 t0=2.29484E+000 dt=3.85567E-001 cause=thermal
+    thermal nres=39 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=14 attempt=1 t0=2.68041E+000 dt=4.40369E-001 cause=thermal
+    thermal nres=42 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=15 attempt=1 t0=3.12078E+000 dt=4.97948E-001 cause=thermal
+    thermal nres=45 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=16 attempt=1 t0=3.61873E+000 dt=5.28046E-001 cause=thermal
+    thermal nres=48 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=17 attempt=1 t0=4.14677E+000 dt=5.88899E-001 cause=thermal
+    thermal nres=51 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=18 attempt=1 t0=4.73567E+000 dt=6.42793E-001 cause=thermal
+    thermal nres=54 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=19 attempt=1 t0=5.37847E+000 dt=7.18472E-001 cause=thermal
+    thermal nres=57 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=20 attempt=1 t0=6.09694E+000 dt=7.96068E-001 cause=thermal
+    thermal nres=60 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=21 attempt=1 t0=6.89301E+000 dt=8.48632E-001 cause=thermal
+    thermal nres=63 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=22 attempt=1 t0=7.74164E+000 dt=9.27027E-001 cause=thermal
+    thermal nres=66 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=23 attempt=1 t0=8.66867E+000 dt=9.99156E-001 cause=thermal
+    thermal nres=70 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=24 attempt=1 t0=9.66782E+000 dt=1.08556E+000 cause=thermal
+    thermal nres=74 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=25 attempt=1 t0=1.07534E+001 dt=1.17871E+000 cause=thermal
+    thermal nres=78 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=26 attempt=1 t0=1.19321E+001 dt=1.26158E+000 cause=thermal
+    thermal nres=83 npc=2 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=27 attempt=1 t0=1.31937E+001 dt=1.35026E+000 cause=thermal
+    thermal nres=86 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=28 attempt=1 t0=1.45439E+001 dt=1.44345E+000 cause=thermal
+    thermal nres=89 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=29 attempt=1 t0=1.59874E+001 dt=1.54614E+000 cause=thermal
+    thermal nres=92 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=30 attempt=1 t0=1.75335E+001 dt=1.65773E+000 cause=thermal
+    thermal nres=95 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=31 attempt=1 t0=1.91912E+001 dt=1.75444E+000 cause=thermal
+    thermal nres=98 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=32 attempt=1 t0=2.09457E+001 dt=1.86602E+000 cause=thermal
+    thermal nres=101 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=33 attempt=1 t0=2.28117E+001 dt=1.97745E+000 cause=thermal
+    thermal nres=104 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=34 attempt=1 t0=2.47892E+001 dt=2.10032E+000 cause=thermal
+    thermal nres=107 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=35 attempt=1 t0=2.68895E+001 dt=2.22544E+000 cause=thermal
+    thermal nres=110 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=36 attempt=1 t0=2.91149E+001 dt=2.33995E+000 cause=thermal
+    thermal nres=113 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=37 attempt=1 t0=3.14549E+001 dt=2.47214E+000 cause=thermal
+    thermal nres=116 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=38 attempt=1 t0=3.39270E+001 dt=2.60293E+000 cause=thermal
+    thermal nres=119 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=39 attempt=1 t0=3.65299E+001 dt=2.74649E+000 cause=thermal
+    thermal nres=122 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=40 attempt=1 t0=3.92764E+001 dt=2.87796E+000 cause=thermal
+    thermal nres=125 npc=3 nnr=0 nnf=0 nsr=0 status=ok
+  step-end status=accepted
+  step=41 attempt=1 t0=4.21544E+001 dt=3.02241E+000 cause=thermal
+    thermal nres=135 npc=4 nnr=1 nnf=1 nsr=0 status=failed
+  step-end status=failed
+  step=41 attempt=2 t0=4.21544E+001 dt=1.51120E+000 cause=thermal
+    thermal nres=138 npc=4 nnr=1 nnf=1 nsr=0 status=ok
+  step-end status=accepted
+  step=42 attempt=1 t0=4.36656E+001 dt=1.51120E+000 cause=thermal
+    thermal nres=148 npc=5 nnr=2 nnf=2 nsr=0 status=failed
+  step-end status=failed
+  step=42 attempt=2 t0=4.36656E+001 dt=7.55602E-001 cause=thermal
+    thermal nres=158 npc=6 nnr=3 nnf=2 nsr=1 status=failed
+  step-end status=failed
+  step=42 attempt=3 t0=4.36656E+001 dt=3.77801E-001 cause=thermal
+    thermal nres=163 npc=6 nnr=3 nnf=2 nsr=1 status=ok
+  step-end status=accepted
+  step=43 attempt=1 t0=4.40434E+001 dt=3.77801E-001 cause=thermal
+    thermal nres=173 npc=7 nnr=4 nnf=2 nsr=2 status=failed
+  step-end status=failed
+  step=43 attempt=2 t0=4.40434E+001 dt=1.88901E-001 cause=thermal
+    thermal nres=182 npc=8 nnr=5 nnf=2 nsr=3 status=failed
+  step-end status=failed
+  step=43 attempt=3 t0=4.40434E+001 dt=9.44503E-002 cause=thermal
+    thermal nres=187 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=44 attempt=1 t0=4.41379E+001 dt=9.44503E-002 cause=thermal
+    thermal nres=191 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=45 attempt=1 t0=4.42323E+001 dt=1.11607E-001 cause=thermal
+    thermal nres=195 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=46 attempt=1 t0=4.43439E+001 dt=1.23654E-001 cause=thermal
+    thermal nres=199 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=47 attempt=1 t0=4.44676E+001 dt=1.81069E-001 cause=thermal
+    thermal nres=202 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=48 attempt=1 t0=4.46486E+001 dt=2.29848E-001 cause=thermal
+    thermal nres=205 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=49 attempt=1 t0=4.48785E+001 dt=2.92072E-001 cause=thermal
+    thermal nres=209 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=50 attempt=1 t0=4.51706E+001 dt=3.78132E-001 cause=thermal
+    thermal nres=213 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=51 attempt=1 t0=4.55487E+001 dt=4.59067E-001 cause=thermal
+    thermal nres=217 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=52 attempt=1 t0=4.60078E+001 dt=4.77576E-001 cause=thermal
+    thermal nres=221 npc=8 nnr=5 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=53 attempt=1 t0=4.64853E+001 dt=5.54107E-001 cause=thermal
+    thermal nres=229 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=54 attempt=1 t0=4.70394E+001 dt=6.11620E-001 cause=thermal
+    thermal nres=232 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=55 attempt=1 t0=4.76511E+001 dt=7.13433E-001 cause=thermal
+    thermal nres=236 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=56 attempt=1 t0=4.83645E+001 dt=7.81718E-001 cause=thermal
+    thermal nres=240 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=57 attempt=1 t0=4.91462E+001 dt=7.71730E-001 cause=thermal
+    thermal nres=244 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=58 attempt=1 t0=4.99179E+001 dt=8.06975E-001 cause=thermal
+    thermal nres=248 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=59 attempt=1 t0=5.07249E+001 dt=8.01752E-001 cause=thermal
+    thermal nres=252 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=60 attempt=1 t0=5.15267E+001 dt=8.18432E-001 cause=thermal
+    thermal nres=256 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=61 attempt=1 t0=5.23451E+001 dt=8.17950E-001 cause=thermal
+    thermal nres=260 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=62 attempt=1 t0=5.31630E+001 dt=8.22022E-001 cause=thermal
+    thermal nres=264 npc=9 nnr=6 nnf=2 nsr=3 status=ok
+  step-end status=accepted
+  step=63 attempt=1 t0=5.39851E+001 dt=8.19360E-001 cause=thermal
+    thermal nres=274 npc=10 nnr=7 nnf=2 nsr=4 status=failed
+  step-end status=failed
+  step=63 attempt=2 t0=5.39851E+001 dt=4.09680E-001 cause=thermal
+    thermal nres=283 npc=11 nnr=8 nnf=2 nsr=5 status=failed
+  step-end status=failed
+  step=63 attempt=3 t0=5.39851E+001 dt=2.04840E-001 cause=thermal
+    thermal nres=288 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=64 attempt=1 t0=5.41899E+001 dt=1.96618E-001 cause=thermal
+    thermal nres=293 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=65 attempt=1 t0=5.43865E+001 dt=1.37842E-001 cause=thermal
+    thermal nres=298 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=66 attempt=1 t0=5.45244E+001 dt=1.11918E-001 cause=thermal
+    thermal nres=302 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=67 attempt=1 t0=5.46363E+001 dt=2.31524E-001 cause=thermal
+    thermal nres=306 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=68 attempt=1 t0=5.48678E+001 dt=2.76567E-001 cause=thermal
+    thermal nres=309 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=69 attempt=1 t0=5.51444E+001 dt=3.59404E-001 cause=thermal
+    thermal nres=313 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=70 attempt=1 t0=5.55038E+001 dt=4.51922E-001 cause=thermal
+    thermal nres=317 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=71 attempt=1 t0=5.59557E+001 dt=5.61654E-001 cause=thermal
+    thermal nres=321 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=72 attempt=1 t0=5.65174E+001 dt=5.79621E-001 cause=thermal
+    thermal nres=325 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=73 attempt=1 t0=5.70970E+001 dt=6.81136E-001 cause=thermal
+    thermal nres=329 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=74 attempt=1 t0=5.77781E+001 dt=7.52672E-001 cause=thermal
+    thermal nres=333 npc=11 nnr=8 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=75 attempt=1 t0=5.85308E+001 dt=8.82158E-001 cause=thermal
+    thermal nres=341 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=76 attempt=1 t0=5.94129E+001 dt=8.19469E-001 cause=thermal
+    thermal nres=344 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=77 attempt=1 t0=6.02324E+001 dt=8.44224E-001 cause=thermal
+    thermal nres=347 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=78 attempt=1 t0=6.10766E+001 dt=7.97553E-001 cause=thermal
+    thermal nres=350 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=79 attempt=1 t0=6.18742E+001 dt=7.89916E-001 cause=thermal
+    thermal nres=353 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=80 attempt=1 t0=6.26641E+001 dt=7.64091E-001 cause=thermal
+    thermal nres=356 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=81 attempt=1 t0=6.34282E+001 dt=7.48754E-001 cause=thermal
+    thermal nres=359 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=82 attempt=1 t0=6.41769E+001 dt=7.30405E-001 cause=thermal
+    thermal nres=362 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=83 attempt=1 t0=6.49074E+001 dt=7.13779E-001 cause=thermal
+    thermal nres=365 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=84 attempt=1 t0=6.56211E+001 dt=6.97356E-001 cause=thermal
+    thermal nres=368 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=85 attempt=1 t0=6.63185E+001 dt=6.81012E-001 cause=thermal
+    thermal nres=371 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=86 attempt=1 t0=6.69995E+001 dt=6.65124E-001 cause=thermal
+    thermal nres=374 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=87 attempt=1 t0=6.76646E+001 dt=6.49214E-001 cause=thermal
+    thermal nres=377 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=88 attempt=1 t0=6.83138E+001 dt=6.33561E-001 cause=thermal
+    thermal nres=380 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=89 attempt=1 t0=6.89474E+001 dt=6.17934E-001 cause=thermal
+    thermal nres=384 npc=12 nnr=9 nnf=2 nsr=5 status=ok
+  step-end status=accepted
+  step=90 attempt=1 t0=6.95653E+001 dt=5.92339E-001 cause=thermal
+    thermal nres=393 npc=13 nnr=10 nnf=2 nsr=6 status=failed
+  step-end status=failed
+  step=90 attempt=2 t0=6.95653E+001 dt=2.96170E-001 cause=thermal
+    thermal nres=398 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=91 attempt=1 t0=6.98615E+001 dt=1.68349E-001 cause=thermal
+    thermal nres=403 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=92 attempt=1 t0=7.00299E+001 dt=3.48792E-001 cause=thermal
+    thermal nres=407 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=93 attempt=1 t0=7.03786E+001 dt=2.45670E-001 cause=thermal
+    thermal nres=411 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=94 attempt=1 t0=7.06243E+001 dt=4.71936E-001 cause=thermal
+    thermal nres=414 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=95 attempt=1 t0=7.10963E+001 dt=5.82766E-001 cause=thermal
+    thermal nres=418 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=96 attempt=1 t0=7.16790E+001 dt=5.18700E-001 cause=thermal
+    thermal nres=422 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=97 attempt=1 t0=7.21977E+001 dt=5.55413E-001 cause=thermal
+    thermal nres=426 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=98 attempt=1 t0=7.27531E+001 dt=5.02811E-001 cause=thermal
+    thermal nres=430 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=99 attempt=1 t0=7.32559E+001 dt=5.05833E-001 cause=thermal
+    thermal nres=434 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=100 attempt=1 t0=7.37618E+001 dt=4.79731E-001 cause=thermal
+    thermal nres=438 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=101 attempt=1 t0=7.42415E+001 dt=4.69849E-001 cause=thermal
+    thermal nres=442 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=102 attempt=1 t0=7.47114E+001 dt=4.52820E-001 cause=thermal
+    thermal nres=446 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=103 attempt=1 t0=7.51642E+001 dt=4.38584E-001 cause=thermal
+    thermal nres=450 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=104 attempt=1 t0=7.56028E+001 dt=4.23287E-001 cause=thermal
+    thermal nres=454 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=105 attempt=1 t0=7.60260E+001 dt=4.07917E-001 cause=thermal
+    thermal nres=458 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=106 attempt=1 t0=7.64340E+001 dt=3.92596E-001 cause=thermal
+    thermal nres=462 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=107 attempt=1 t0=7.68266E+001 dt=3.76956E-001 cause=thermal
+    thermal nres=466 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=108 attempt=1 t0=7.72035E+001 dt=3.61366E-001 cause=thermal
+    thermal nres=471 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=109 attempt=1 t0=7.75649E+001 dt=3.45593E-001 cause=thermal
+    thermal nres=476 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=110 attempt=1 t0=7.79105E+001 dt=3.29710E-001 cause=thermal
+    thermal nres=481 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=111 attempt=1 t0=7.82402E+001 dt=3.13772E-001 cause=thermal
+    thermal nres=486 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=112 attempt=1 t0=7.85540E+001 dt=2.97681E-001 cause=thermal
+    thermal nres=491 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=113 attempt=1 t0=7.88516E+001 dt=2.81477E-001 cause=thermal
+    thermal nres=496 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=114 attempt=1 t0=7.91331E+001 dt=2.65151E-001 cause=thermal
+    thermal nres=501 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=115 attempt=1 t0=7.93983E+001 dt=2.48672E-001 cause=thermal
+    thermal nres=506 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=116 attempt=1 t0=7.96469E+001 dt=2.32046E-001 cause=thermal
+    thermal nres=511 npc=13 nnr=10 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=117 attempt=1 t0=7.98790E+001 dt=2.15230E-001 cause=thermal
+    thermal nres=519 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=118 attempt=1 t0=8.00942E+001 dt=1.98281E-001 cause=thermal
+    thermal nres=522 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=119 attempt=1 t0=8.02925E+001 dt=1.80909E-001 cause=thermal
+    thermal nres=526 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=120 attempt=1 t0=8.04734E+001 dt=1.63457E-001 cause=thermal
+    thermal nres=530 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=121 attempt=1 t0=8.06369E+001 dt=1.36196E-001 cause=thermal
+    thermal nres=534 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=122 attempt=1 t0=8.07731E+001 dt=1.07152E-001 cause=thermal
+    thermal nres=538 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=123 attempt=1 t0=8.08802E+001 dt=8.49538E-002 cause=thermal
+    thermal nres=542 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=124 attempt=1 t0=8.09652E+001 dt=6.52592E-002 cause=thermal
+    thermal nres=546 npc=14 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=125 attempt=1 t0=8.10304E+001 dt=4.88044E-002 cause=thermal
+    thermal nres=549 npc=15 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=126 attempt=1 t0=8.10792E+001 dt=3.56083E-002 cause=thermal
+    thermal nres=553 npc=15 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=127 attempt=1 t0=8.11148E+001 dt=2.48899E-002 cause=thermal
+    thermal nres=557 npc=15 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=128 attempt=1 t0=8.11397E+001 dt=1.65051E-002 cause=thermal
+    thermal nres=562 npc=15 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=129 attempt=1 t0=8.11562E+001 dt=1.00837E-002 cause=thermal
+    thermal nres=566 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=130 attempt=1 t0=8.11663E+001 dt=5.28260E-003 cause=thermal
+    thermal nres=570 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=131 attempt=1 t0=8.11716E+001 dt=3.56712E-003 cause=thermal
+    thermal nres=574 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=132 attempt=1 t0=8.11752E+001 dt=3.13129E-003 cause=thermal
+    thermal nres=578 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=133 attempt=1 t0=8.11783E+001 dt=7.57379E-003 cause=thermal
+    thermal nres=580 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=134 attempt=1 t0=8.11859E+001 dt=3.02952E-002 cause=thermal
+    thermal nres=583 npc=16 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=135 attempt=1 t0=8.12162E+001 dt=6.52854E-002 cause=thermal
+    thermal nres=586 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=136 attempt=1 t0=8.12814E+001 dt=3.99219E-002 cause=thermal
+    thermal nres=589 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=137 attempt=1 t0=8.13214E+001 dt=5.82348E-002 cause=thermal
+    thermal nres=592 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=138 attempt=1 t0=8.13796E+001 dt=4.69385E-002 cause=thermal
+    thermal nres=595 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=139 attempt=1 t0=8.14265E+001 dt=5.46539E-002 cause=thermal
+    thermal nres=598 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=140 attempt=1 t0=8.14812E+001 dt=5.22770E-002 cause=thermal
+    thermal nres=601 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=141 attempt=1 t0=8.15335E+001 dt=5.58367E-002 cause=thermal
+    thermal nres=604 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=142 attempt=1 t0=8.15893E+001 dt=5.66034E-002 cause=thermal
+    thermal nres=607 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=143 attempt=1 t0=8.16459E+001 dt=5.88815E-002 cause=thermal
+    thermal nres=610 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=144 attempt=1 t0=8.17048E+001 dt=6.06364E-002 cause=thermal
+    thermal nres=613 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=145 attempt=1 t0=8.17654E+001 dt=6.27575E-002 cause=thermal
+    thermal nres=616 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=146 attempt=1 t0=8.18282E+001 dt=6.49393E-002 cause=thermal
+    thermal nres=619 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=147 attempt=1 t0=8.18931E+001 dt=6.72831E-002 cause=thermal
+    thermal nres=622 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=148 attempt=1 t0=8.19604E+001 dt=6.98128E-002 cause=thermal
+    thermal nres=625 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=149 attempt=1 t0=8.20302E+001 dt=7.25169E-002 cause=thermal
+    thermal nres=628 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=150 attempt=1 t0=8.21027E+001 dt=7.54479E-002 cause=thermal
+    thermal nres=631 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=151 attempt=1 t0=8.21782E+001 dt=7.86080E-002 cause=thermal
+    thermal nres=634 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=152 attempt=1 t0=8.22568E+001 dt=8.20426E-002 cause=thermal
+    thermal nres=637 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=153 attempt=1 t0=8.23388E+001 dt=8.57769E-002 cause=thermal
+    thermal nres=640 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=154 attempt=1 t0=8.24246E+001 dt=8.98576E-002 cause=thermal
+    thermal nres=643 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=155 attempt=1 t0=8.25145E+001 dt=9.43305E-002 cause=thermal
+    thermal nres=646 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=156 attempt=1 t0=8.26088E+001 dt=9.92553E-002 cause=thermal
+    thermal nres=649 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=157 attempt=1 t0=8.27081E+001 dt=1.04702E-001 cause=thermal
+    thermal nres=652 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=158 attempt=1 t0=8.28128E+001 dt=1.10755E-001 cause=thermal
+    thermal nres=655 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=159 attempt=1 t0=8.29235E+001 dt=1.17519E-001 cause=thermal
+    thermal nres=658 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=160 attempt=1 t0=8.30410E+001 dt=1.25124E-001 cause=thermal
+    thermal nres=661 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=161 attempt=1 t0=8.31662E+001 dt=1.33731E-001 cause=thermal
+    thermal nres=664 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=162 attempt=1 t0=8.32999E+001 dt=1.43545E-001 cause=thermal
+    thermal nres=667 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=163 attempt=1 t0=8.34434E+001 dt=1.54829E-001 cause=thermal
+    thermal nres=670 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=164 attempt=1 t0=8.35983E+001 dt=1.67927E-001 cause=thermal
+    thermal nres=673 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=165 attempt=1 t0=8.37662E+001 dt=1.83294E-001 cause=thermal
+    thermal nres=676 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=166 attempt=1 t0=8.39495E+001 dt=2.01546E-001 cause=thermal
+    thermal nres=679 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=167 attempt=1 t0=8.41510E+001 dt=2.23535E-001 cause=thermal
+    thermal nres=682 npc=17 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=168 attempt=1 t0=8.43746E+001 dt=2.50483E-001 cause=thermal
+    thermal nres=685 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=169 attempt=1 t0=8.46250E+001 dt=2.84233E-001 cause=thermal
+    thermal nres=688 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=170 attempt=1 t0=8.49093E+001 dt=3.26987E-001 cause=thermal
+    thermal nres=691 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=171 attempt=1 t0=8.52363E+001 dt=3.84043E-001 cause=thermal
+    thermal nres=694 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=172 attempt=1 t0=8.56203E+001 dt=4.61235E-001 cause=thermal
+    thermal nres=697 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=173 attempt=1 t0=8.60815E+001 dt=5.71657E-001 cause=thermal
+    thermal nres=700 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=174 attempt=1 t0=8.66532E+001 dt=7.37643E-001 cause=thermal
+    thermal nres=704 npc=18 nnr=11 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=175 attempt=1 t0=8.73908E+001 dt=1.00608E+000 cause=thermal
+    thermal nres=713 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=176 attempt=1 t0=8.83969E+001 dt=2.51521E-001 cause=thermal
+    thermal nres=718 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=177 attempt=1 t0=8.86485E+001 dt=3.42984E-001 cause=thermal
+    thermal nres=723 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=178 attempt=1 t0=8.89914E+001 dt=3.19953E-001 cause=thermal
+    thermal nres=727 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=179 attempt=1 t0=8.93114E+001 dt=6.15246E-001 cause=thermal
+    thermal nres=731 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=180 attempt=1 t0=8.99266E+001 dt=8.59254E-001 cause=thermal
+    thermal nres=735 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=181 attempt=1 t0=9.07859E+001 dt=8.21254E-001 cause=thermal
+    thermal nres=739 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=182 attempt=1 t0=9.16071E+001 dt=1.01032E+000 cause=thermal
+    thermal nres=743 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=183 attempt=1 t0=9.26175E+001 dt=8.31181E-001 cause=thermal
+    thermal nres=747 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=184 attempt=1 t0=9.34486E+001 dt=8.75492E-001 cause=thermal
+    thermal nres=751 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=185 attempt=1 t0=9.43241E+001 dt=7.86634E-001 cause=thermal
+    thermal nres=755 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=186 attempt=1 t0=9.51108E+001 dt=7.75557E-001 cause=thermal
+    thermal nres=759 npc=19 nnr=12 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=187 attempt=1 t0=9.58863E+001 dt=7.32477E-001 cause=thermal
+    thermal nres=766 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=188 attempt=1 t0=9.66188E+001 dt=7.05901E-001 cause=thermal
+    thermal nres=769 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=189 attempt=1 t0=9.73247E+001 dt=6.76691E-001 cause=thermal
+    thermal nres=772 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=190 attempt=1 t0=9.80014E+001 dt=6.47833E-001 cause=thermal
+    thermal nres=775 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=191 attempt=1 t0=9.86492E+001 dt=5.36930E-001 cause=output
+    thermal nres=778 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=192 attempt=1 t0=9.91862E+001 dt=4.45013E-001 cause=output
+    thermal nres=781 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  step=193 attempt=1 t0=9.96312E+001 dt=3.68831E-001 cause=output
+    thermal nres=784 npc=20 nnr=13 nnf=2 nsr=6 status=ok
+  step-end status=accepted
+  output t=1.00000E+002
+  step=194 attempt=1 t0=1.00000E+002 dt=6.86228E-001 cause=thermal
+    thermal nres=794 npc=21 nnr=14 nnf=2 nsr=7 status=failed
+  step-end status=failed
+  step=194 attempt=2 t0=1.00000E+002 dt=3.43114E-001 cause=thermal
+    thermal nres=803 npc=22 nnr=15 nnf=2 nsr=8 status=failed
+  step-end status=failed
+  step=194 attempt=3 t0=1.00000E+002 dt=1.71557E-001 cause=thermal
+    thermal nres=808 npc=22 nnr=15 nnf=2 nsr=9 status=failed
+  step-end status=failed
+  step=194 attempt=4 t0=1.00000E+002 dt=8.57785E-002 cause=thermal
+    thermal nres=813 npc=22 nnr=15 nnf=2 nsr=10 status=failed
+  step-end status=failed
+  step=194 attempt=5 t0=1.00000E+002 dt=4.28893E-002 cause=thermal
+    thermal nres=816 npc=23 nnr=15 nnf=2 nsr=11 status=failed
+  step-end status=failed
+  step=194 attempt=6 t0=1.00000E+002 dt=2.14446E-002 cause=thermal
+    thermal nres=820 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=195 attempt=1 t0=1.00021E+002 dt=2.14446E-002 cause=thermal
+    thermal nres=824 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=196 attempt=1 t0=1.00043E+002 dt=7.31681E-002 cause=thermal
+    thermal nres=826 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=197 attempt=1 t0=1.00116E+002 dt=1.22598E-001 cause=thermal
+    thermal nres=829 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=198 attempt=1 t0=1.00239E+002 dt=1.91712E-001 cause=thermal
+    thermal nres=832 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=199 attempt=1 t0=1.00430E+002 dt=1.44580E-001 cause=thermal
+    thermal nres=835 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=200 attempt=1 t0=1.00575E+002 dt=1.89201E-001 cause=thermal
+    thermal nres=838 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=201 attempt=1 t0=1.00764E+002 dt=1.76805E-001 cause=thermal
+    thermal nres=841 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=202 attempt=1 t0=1.00941E+002 dt=2.09901E-001 cause=thermal
+    thermal nres=844 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=203 attempt=1 t0=1.01151E+002 dt=2.22958E-001 cause=thermal
+    thermal nres=847 npc=23 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=204 attempt=1 t0=1.01374E+002 dt=2.56968E-001 cause=thermal
+    thermal nres=850 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=205 attempt=1 t0=1.01631E+002 dt=2.88357E-001 cause=thermal
+    thermal nres=853 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=206 attempt=1 t0=1.01919E+002 dt=3.35385E-001 cause=thermal
+    thermal nres=856 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=207 attempt=1 t0=1.02255E+002 dt=3.91832E-001 cause=thermal
+    thermal nres=859 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=208 attempt=1 t0=1.02646E+002 dt=4.69957E-001 cause=thermal
+    thermal nres=863 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=209 attempt=1 t0=1.03116E+002 dt=4.64950E-001 cause=thermal
+    thermal nres=867 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=210 attempt=1 t0=1.03581E+002 dt=4.47736E-001 cause=thermal
+    thermal nres=871 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=211 attempt=1 t0=1.04029E+002 dt=4.18670E-001 cause=thermal
+    thermal nres=875 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=212 attempt=1 t0=1.04448E+002 dt=3.86282E-001 cause=thermal
+    thermal nres=878 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=213 attempt=1 t0=1.04834E+002 dt=3.56024E-001 cause=thermal
+    thermal nres=881 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=214 attempt=1 t0=1.05190E+002 dt=3.23818E-001 cause=thermal
+    thermal nres=885 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=215 attempt=1 t0=1.05514E+002 dt=2.95156E-001 cause=thermal
+    thermal nres=889 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=216 attempt=1 t0=1.05809E+002 dt=2.64425E-001 cause=thermal
+    thermal nres=893 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=217 attempt=1 t0=1.06073E+002 dt=2.30634E-001 cause=thermal
+    thermal nres=897 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=218 attempt=1 t0=1.06304E+002 dt=1.78712E-001 cause=thermal
+    thermal nres=901 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=219 attempt=1 t0=1.06483E+002 dt=1.41789E-001 cause=thermal
+    thermal nres=906 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=220 attempt=1 t0=1.06625E+002 dt=1.09916E-001 cause=thermal
+    thermal nres=911 npc=24 nnr=15 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=221 attempt=1 t0=1.06734E+002 dt=8.17973E-002 cause=thermal
+    thermal nres=919 npc=25 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=222 attempt=1 t0=1.06816E+002 dt=6.00430E-002 cause=thermal
+    thermal nres=923 npc=25 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=223 attempt=1 t0=1.06876E+002 dt=4.21358E-002 cause=thermal
+    thermal nres=927 npc=25 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=224 attempt=1 t0=1.06918E+002 dt=2.80700E-002 cause=thermal
+    thermal nres=932 npc=25 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=225 attempt=1 t0=1.06946E+002 dt=1.73301E-002 cause=thermal
+    thermal nres=936 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=226 attempt=1 t0=1.06964E+002 dt=9.27930E-003 cause=thermal
+    thermal nres=940 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=227 attempt=1 t0=1.06973E+002 dt=5.61084E-003 cause=thermal
+    thermal nres=944 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=228 attempt=1 t0=1.06979E+002 dt=5.73849E-003 cause=thermal
+    thermal nres=948 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=229 attempt=1 t0=1.06984E+002 dt=9.14014E-003 cause=thermal
+    thermal nres=950 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=230 attempt=1 t0=1.06994E+002 dt=3.65605E-002 cause=thermal
+    thermal nres=953 npc=26 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=231 attempt=1 t0=1.07030E+002 dt=9.92822E-002 cause=thermal
+    thermal nres=956 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=232 attempt=1 t0=1.07129E+002 dt=5.40566E-002 cause=thermal
+    thermal nres=959 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=233 attempt=1 t0=1.07183E+002 dt=8.56784E-002 cause=thermal
+    thermal nres=962 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=234 attempt=1 t0=1.07269E+002 dt=6.66251E-002 cause=thermal
+    thermal nres=965 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=235 attempt=1 t0=1.07336E+002 dt=7.98888E-002 cause=thermal
+    thermal nres=968 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=236 attempt=1 t0=1.07416E+002 dt=7.59169E-002 cause=thermal
+    thermal nres=971 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=237 attempt=1 t0=1.07492E+002 dt=8.21286E-002 cause=thermal
+    thermal nres=974 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=238 attempt=1 t0=1.07574E+002 dt=8.34565E-002 cause=thermal
+    thermal nres=977 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=239 attempt=1 t0=1.07657E+002 dt=8.74839E-002 cause=thermal
+    thermal nres=980 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=240 attempt=1 t0=1.07745E+002 dt=9.05250E-002 cause=thermal
+    thermal nres=983 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=241 attempt=1 t0=1.07835E+002 dt=9.42589E-002 cause=thermal
+    thermal nres=986 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=242 attempt=1 t0=1.07929E+002 dt=9.80482E-002 cause=thermal
+    thermal nres=989 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=243 attempt=1 t0=1.08027E+002 dt=1.02133E-001 cause=thermal
+    thermal nres=992 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=244 attempt=1 t0=1.08130E+002 dt=1.06508E-001 cause=thermal
+    thermal nres=995 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=245 attempt=1 t0=1.08236E+002 dt=1.11171E-001 cause=thermal
+    thermal nres=998 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=246 attempt=1 t0=1.08347E+002 dt=1.16193E-001 cause=thermal
+    thermal nres=1001 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=247 attempt=1 t0=1.08463E+002 dt=1.21577E-001 cause=thermal
+    thermal nres=1004 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=248 attempt=1 t0=1.08585E+002 dt=1.27389E-001 cause=thermal
+    thermal nres=1007 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=249 attempt=1 t0=1.08712E+002 dt=1.33660E-001 cause=thermal
+    thermal nres=1010 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=250 attempt=1 t0=1.08846E+002 dt=1.40457E-001 cause=thermal
+    thermal nres=1013 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=251 attempt=1 t0=1.08987E+002 dt=1.47841E-001 cause=thermal
+    thermal nres=1016 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=252 attempt=1 t0=1.09134E+002 dt=1.55894E-001 cause=thermal
+    thermal nres=1019 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=253 attempt=1 t0=1.09290E+002 dt=1.64711E-001 cause=thermal
+    thermal nres=1023 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=254 attempt=1 t0=1.09455E+002 dt=1.74411E-001 cause=thermal
+    thermal nres=1027 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=255 attempt=1 t0=1.09629E+002 dt=1.84136E-001 cause=thermal
+    thermal nres=1031 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=256 attempt=1 t0=1.09814E+002 dt=1.97762E-001 cause=thermal
+    thermal nres=1035 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=257 attempt=1 t0=1.10011E+002 dt=2.09826E-001 cause=thermal
+    thermal nres=1039 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=258 attempt=1 t0=1.10221E+002 dt=2.25597E-001 cause=thermal
+    thermal nres=1043 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=259 attempt=1 t0=1.10447E+002 dt=2.41925E-001 cause=thermal
+    thermal nres=1047 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=260 attempt=1 t0=1.10689E+002 dt=2.61577E-001 cause=thermal
+    thermal nres=1051 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=261 attempt=1 t0=1.10950E+002 dt=2.83676E-001 cause=thermal
+    thermal nres=1055 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=262 attempt=1 t0=1.11234E+002 dt=3.09810E-001 cause=thermal
+    thermal nres=1059 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=263 attempt=1 t0=1.11544E+002 dt=3.40468E-001 cause=thermal
+    thermal nres=1063 npc=27 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=264 attempt=1 t0=1.11884E+002 dt=3.77290E-001 cause=thermal
+    thermal nres=1066 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=265 attempt=1 t0=1.12261E+002 dt=4.22239E-001 cause=thermal
+    thermal nres=1069 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=266 attempt=1 t0=1.12684E+002 dt=4.76455E-001 cause=thermal
+    thermal nres=1072 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=267 attempt=1 t0=1.13160E+002 dt=5.47768E-001 cause=thermal
+    thermal nres=1075 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=268 attempt=1 t0=1.13708E+002 dt=6.37618E-001 cause=thermal
+    thermal nres=1079 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=269 attempt=1 t0=1.14346E+002 dt=7.57835E-001 cause=thermal
+    thermal nres=1083 npc=28 nnr=16 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=270 attempt=1 t0=1.15103E+002 dt=9.28157E-001 cause=thermal
+    thermal nres=1091 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=271 attempt=1 t0=1.16032E+002 dt=1.16252E+000 cause=thermal
+    thermal nres=1094 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=272 attempt=1 t0=1.17194E+002 dt=1.41450E+000 cause=thermal
+    thermal nres=1098 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=273 attempt=1 t0=1.18609E+002 dt=1.19497E+000 cause=thermal
+    thermal nres=1102 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=274 attempt=1 t0=1.19804E+002 dt=1.38477E+000 cause=thermal
+    thermal nres=1106 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=275 attempt=1 t0=1.21188E+002 dt=1.33188E+000 cause=thermal
+    thermal nres=1110 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=276 attempt=1 t0=1.22520E+002 dt=1.49727E+000 cause=thermal
+    thermal nres=1114 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=277 attempt=1 t0=1.24017E+002 dt=1.60119E+000 cause=thermal
+    thermal nres=1119 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=278 attempt=1 t0=1.25619E+002 dt=1.83995E+000 cause=thermal
+    thermal nres=1124 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=279 attempt=1 t0=1.27459E+002 dt=1.87569E+000 cause=thermal
+    thermal nres=1129 npc=29 nnr=17 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=280 attempt=1 t0=1.29334E+002 dt=2.09163E+000 cause=thermal
+    thermal nres=1137 npc=30 nnr=18 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=281 attempt=1 t0=1.31426E+002 dt=1.92701E+000 cause=thermal
+    thermal nres=1140 npc=30 nnr=18 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=282 attempt=1 t0=1.33353E+002 dt=1.31200E+000 cause=thermal
+    thermal nres=1144 npc=30 nnr=18 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=283 attempt=1 t0=1.34665E+002 dt=1.33867E+000 cause=thermal
+    thermal nres=1148 npc=30 nnr=18 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=284 attempt=1 t0=1.36004E+002 dt=1.06179E+000 cause=thermal
+    thermal nres=1153 npc=30 nnr=18 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=285 attempt=1 t0=1.37065E+002 dt=4.48067E-001 cause=thermal
+    thermal nres=1161 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=286 attempt=1 t0=1.37513E+002 dt=9.04621E-001 cause=thermal
+    thermal nres=1165 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=287 attempt=1 t0=1.38418E+002 dt=6.47236E-001 cause=thermal
+    thermal nres=1169 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=288 attempt=1 t0=1.39065E+002 dt=1.01255E+000 cause=thermal
+    thermal nres=1174 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=289 attempt=1 t0=1.40078E+002 dt=7.32489E-001 cause=thermal
+    thermal nres=1178 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=290 attempt=1 t0=1.40810E+002 dt=8.07392E-001 cause=thermal
+    thermal nres=1182 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=291 attempt=1 t0=1.41618E+002 dt=6.85752E-001 cause=thermal
+    thermal nres=1186 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=292 attempt=1 t0=1.42303E+002 dt=6.61135E-001 cause=thermal
+    thermal nres=1190 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=293 attempt=1 t0=1.42965E+002 dt=6.03297E-001 cause=thermal
+    thermal nres=1194 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=294 attempt=1 t0=1.43568E+002 dt=5.57633E-001 cause=thermal
+    thermal nres=1199 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=295 attempt=1 t0=1.44126E+002 dt=5.13316E-001 cause=thermal
+    thermal nres=1204 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=296 attempt=1 t0=1.44639E+002 dt=4.66827E-001 cause=thermal
+    thermal nres=1209 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=297 attempt=1 t0=1.45106E+002 dt=4.23634E-001 cause=thermal
+    thermal nres=1214 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=298 attempt=1 t0=1.45529E+002 dt=3.78697E-001 cause=thermal
+    thermal nres=1219 npc=31 nnr=19 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=299 attempt=1 t0=1.45908E+002 dt=3.34939E-001 cause=thermal
+    thermal nres=1227 npc=32 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=300 attempt=1 t0=1.46243E+002 dt=2.88075E-001 cause=thermal
+    thermal nres=1231 npc=32 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=301 attempt=1 t0=1.46531E+002 dt=2.08468E-001 cause=thermal
+    thermal nres=1235 npc=32 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=302 attempt=1 t0=1.46740E+002 dt=1.54835E-001 cause=thermal
+    thermal nres=1240 npc=32 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=303 attempt=1 t0=1.46894E+002 dt=1.09724E-001 cause=thermal
+    thermal nres=1245 npc=32 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=304 attempt=1 t0=1.47004E+002 dt=7.17875E-002 cause=thermal
+    thermal nres=1248 npc=33 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=305 attempt=1 t0=1.47076E+002 dt=4.40718E-002 cause=thermal
+    thermal nres=1253 npc=33 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=306 attempt=1 t0=1.47120E+002 dt=2.29426E-002 cause=thermal
+    thermal nres=1257 npc=33 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=307 attempt=1 t0=1.47143E+002 dt=1.62025E-002 cause=thermal
+    thermal nres=1260 npc=34 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=308 attempt=1 t0=1.47159E+002 dt=1.29065E-002 cause=thermal
+    thermal nres=1262 npc=34 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=309 attempt=1 t0=1.47172E+002 dt=4.06660E-002 cause=thermal
+    thermal nres=1264 npc=34 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=310 attempt=1 t0=1.47213E+002 dt=9.20791E-002 cause=thermal
+    thermal nres=1267 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=311 attempt=1 t0=1.47305E+002 dt=1.03357E-001 cause=thermal
+    thermal nres=1270 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=312 attempt=1 t0=1.47408E+002 dt=1.02809E-001 cause=thermal
+    thermal nres=1273 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=313 attempt=1 t0=1.47511E+002 dt=1.10113E-001 cause=thermal
+    thermal nres=1276 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=314 attempt=1 t0=1.47621E+002 dt=1.10233E-001 cause=thermal
+    thermal nres=1279 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=315 attempt=1 t0=1.47731E+002 dt=1.17814E-001 cause=thermal
+    thermal nres=1282 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=316 attempt=1 t0=1.47849E+002 dt=1.22526E-001 cause=thermal
+    thermal nres=1285 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=317 attempt=1 t0=1.47972E+002 dt=1.30534E-001 cause=thermal
+    thermal nres=1288 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=318 attempt=1 t0=1.48102E+002 dt=1.37867E-001 cause=thermal
+    thermal nres=1291 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=319 attempt=1 t0=1.48240E+002 dt=1.46758E-001 cause=thermal
+    thermal nres=1294 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=320 attempt=1 t0=1.48387E+002 dt=1.56102E-001 cause=thermal
+    thermal nres=1297 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=321 attempt=1 t0=1.48543E+002 dt=1.66659E-001 cause=thermal
+    thermal nres=1300 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=322 attempt=1 t0=1.48710E+002 dt=1.78265E-001 cause=thermal
+    thermal nres=1303 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=323 attempt=1 t0=1.48888E+002 dt=1.91219E-001 cause=thermal
+    thermal nres=1306 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=324 attempt=1 t0=1.49079E+002 dt=2.05627E-001 cause=thermal
+    thermal nres=1309 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=325 attempt=1 t0=1.49285E+002 dt=2.21690E-001 cause=thermal
+    thermal nres=1312 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=326 attempt=1 t0=1.49506E+002 dt=2.39599E-001 cause=thermal
+    thermal nres=1315 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=327 attempt=1 t0=1.49746E+002 dt=2.59564E-001 cause=thermal
+    thermal nres=1318 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=328 attempt=1 t0=1.50005E+002 dt=2.81820E-001 cause=thermal
+    thermal nres=1321 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=329 attempt=1 t0=1.50287E+002 dt=3.06619E-001 cause=thermal
+    thermal nres=1324 npc=35 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=330 attempt=1 t0=1.50594E+002 dt=3.34251E-001 cause=thermal
+    thermal nres=1327 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=331 attempt=1 t0=1.50928E+002 dt=3.66019E-001 cause=thermal
+    thermal nres=1330 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=332 attempt=1 t0=1.51294E+002 dt=3.96870E-001 cause=thermal
+    thermal nres=1333 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=333 attempt=1 t0=1.51691E+002 dt=4.39020E-001 cause=thermal
+    thermal nres=1336 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=334 attempt=1 t0=1.52130E+002 dt=4.80863E-001 cause=thermal
+    thermal nres=1339 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=335 attempt=1 t0=1.52611E+002 dt=5.28817E-001 cause=thermal
+    thermal nres=1342 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=336 attempt=1 t0=1.53140E+002 dt=5.74004E-001 cause=thermal
+    thermal nres=1345 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=337 attempt=1 t0=1.53714E+002 dt=6.37764E-001 cause=thermal
+    thermal nres=1348 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=338 attempt=1 t0=1.54352E+002 dt=7.11527E-001 cause=thermal
+    thermal nres=1351 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=339 attempt=1 t0=1.55063E+002 dt=8.09135E-001 cause=thermal
+    thermal nres=1354 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=340 attempt=1 t0=1.55872E+002 dt=9.32318E-001 cause=thermal
+    thermal nres=1357 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=341 attempt=1 t0=1.56804E+002 dt=1.09643E+000 cause=thermal
+    thermal nres=1360 npc=36 nnr=20 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=342 attempt=1 t0=1.57901E+002 dt=1.31906E+000 cause=thermal
+    thermal nres=1368 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=343 attempt=1 t0=1.59220E+002 dt=1.62917E+000 cause=thermal
+    thermal nres=1371 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=344 attempt=1 t0=1.60849E+002 dt=1.98589E+000 cause=thermal
+    thermal nres=1375 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=345 attempt=1 t0=1.62835E+002 dt=1.51565E+000 cause=thermal
+    thermal nres=1378 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=346 attempt=1 t0=1.64351E+002 dt=1.80632E+000 cause=thermal
+    thermal nres=1381 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=347 attempt=1 t0=1.66157E+002 dt=1.63287E+000 cause=thermal
+    thermal nres=1384 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=348 attempt=1 t0=1.67790E+002 dt=1.82749E+000 cause=thermal
+    thermal nres=1389 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=349 attempt=1 t0=1.69617E+002 dt=6.79199E-001 cause=thermal
+    thermal nres=1393 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=350 attempt=1 t0=1.70297E+002 dt=9.50092E-001 cause=thermal
+    thermal nres=1397 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=351 attempt=1 t0=1.71247E+002 dt=8.03963E-001 cause=thermal
+    thermal nres=1401 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=352 attempt=1 t0=1.72051E+002 dt=2.05346E+000 cause=thermal
+    thermal nres=1406 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=353 attempt=1 t0=1.74104E+002 dt=1.72995E+000 cause=thermal
+    thermal nres=1410 npc=37 nnr=21 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=354 attempt=1 t0=1.75834E+002 dt=2.28235E+000 cause=thermal
+    thermal nres=1418 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=355 attempt=1 t0=1.78116E+002 dt=2.26589E+000 cause=thermal
+    thermal nres=1421 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=356 attempt=1 t0=1.80382E+002 dt=2.52164E+000 cause=thermal
+    thermal nres=1424 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=357 attempt=1 t0=1.82904E+002 dt=2.69247E+000 cause=thermal
+    thermal nres=1428 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=358 attempt=1 t0=1.85596E+002 dt=2.64884E+000 cause=thermal
+    thermal nres=1432 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=359 attempt=1 t0=1.88245E+002 dt=1.90772E+000 cause=thermal
+    thermal nres=1436 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=360 attempt=1 t0=1.90153E+002 dt=1.89610E+000 cause=thermal
+    thermal nres=1440 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=361 attempt=1 t0=1.92049E+002 dt=1.56164E+000 cause=thermal
+    thermal nres=1444 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=362 attempt=1 t0=1.93611E+002 dt=1.50157E+000 cause=thermal
+    thermal nres=1448 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=363 attempt=1 t0=1.95112E+002 dt=1.35645E+000 cause=thermal
+    thermal nres=1452 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=364 attempt=1 t0=1.96469E+002 dt=1.27474E+000 cause=thermal
+    thermal nres=1456 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=365 attempt=1 t0=1.97743E+002 dt=1.18459E+000 cause=thermal
+    thermal nres=1460 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=366 attempt=1 t0=1.98928E+002 dt=1.10385E+000 cause=thermal
+    thermal nres=1465 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=367 attempt=1 t0=2.00032E+002 dt=1.02757E+000 cause=thermal
+    thermal nres=1470 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=368 attempt=1 t0=2.01059E+002 dt=9.56045E-001 cause=thermal
+    thermal nres=1475 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=369 attempt=1 t0=2.02016E+002 dt=8.85028E-001 cause=thermal
+    thermal nres=1480 npc=38 nnr=22 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=370 attempt=1 t0=2.02901E+002 dt=8.17921E-001 cause=thermal
+    thermal nres=1488 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=371 attempt=1 t0=2.03718E+002 dt=7.51517E-001 cause=thermal
+    thermal nres=1491 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=372 attempt=1 t0=2.04470E+002 dt=6.86424E-001 cause=thermal
+    thermal nres=1495 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=373 attempt=1 t0=2.05156E+002 dt=6.22758E-001 cause=thermal
+    thermal nres=1499 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=374 attempt=1 t0=2.05779E+002 dt=5.59106E-001 cause=thermal
+    thermal nres=1503 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=375 attempt=1 t0=2.06338E+002 dt=4.96103E-001 cause=thermal
+    thermal nres=1508 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=376 attempt=1 t0=2.06834E+002 dt=4.32735E-001 cause=thermal
+    thermal nres=1513 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=377 attempt=1 t0=2.07267E+002 dt=3.68664E-001 cause=thermal
+    thermal nres=1518 npc=39 nnr=23 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=378 attempt=1 t0=2.07636E+002 dt=2.72514E-001 cause=thermal
+    thermal nres=1526 npc=40 nnr=24 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=379 attempt=1 t0=2.07908E+002 dt=1.80145E-001 cause=thermal
+    thermal nres=1530 npc=40 nnr=24 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=380 attempt=1 t0=2.08088E+002 dt=1.12166E-001 cause=thermal
+    thermal nres=1539 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=381 attempt=1 t0=2.08201E+002 dt=5.78443E-002 cause=thermal
+    thermal nres=1543 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=382 attempt=1 t0=2.08258E+002 dt=4.92281E-002 cause=thermal
+    thermal nres=1547 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=383 attempt=1 t0=2.08308E+002 dt=3.01258E-002 cause=thermal
+    thermal nres=1550 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=384 attempt=1 t0=2.08338E+002 dt=1.20503E-001 cause=thermal
+    thermal nres=1553 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=385 attempt=1 t0=2.08458E+002 dt=1.77709E-001 cause=thermal
+    thermal nres=1557 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=386 attempt=1 t0=2.08636E+002 dt=1.34503E-001 cause=thermal
+    thermal nres=1561 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=387 attempt=1 t0=2.08771E+002 dt=1.79440E-001 cause=thermal
+    thermal nres=1565 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=388 attempt=1 t0=2.08950E+002 dt=1.60611E-001 cause=thermal
+    thermal nres=1569 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=389 attempt=1 t0=2.09111E+002 dt=1.89979E-001 cause=thermal
+    thermal nres=1573 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=390 attempt=1 t0=2.09301E+002 dt=1.94092E-001 cause=thermal
+    thermal nres=1577 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=391 attempt=1 t0=2.09495E+002 dt=2.17886E-001 cause=thermal
+    thermal nres=1581 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=392 attempt=1 t0=2.09713E+002 dt=2.34360E-001 cause=thermal
+    thermal nres=1585 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=393 attempt=1 t0=2.09947E+002 dt=2.59508E-001 cause=thermal
+    thermal nres=1589 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=394 attempt=1 t0=2.10206E+002 dt=2.85183E-001 cause=thermal
+    thermal nres=1593 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=395 attempt=1 t0=2.10492E+002 dt=3.16900E-001 cause=thermal
+    thermal nres=1598 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=396 attempt=1 t0=2.10808E+002 dt=3.52880E-001 cause=thermal
+    thermal nres=1603 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=397 attempt=1 t0=2.11161E+002 dt=3.96016E-001 cause=thermal
+    thermal nres=1608 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=398 attempt=1 t0=2.11557E+002 dt=4.46002E-001 cause=thermal
+    thermal nres=1613 npc=41 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=399 attempt=1 t0=2.12003E+002 dt=5.03795E-001 cause=thermal
+    thermal nres=1616 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=400 attempt=1 t0=2.12507E+002 dt=5.72457E-001 cause=thermal
+    thermal nres=1619 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=401 attempt=1 t0=2.13080E+002 dt=6.13015E-001 cause=thermal
+    thermal nres=1622 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=402 attempt=1 t0=2.13693E+002 dt=6.82783E-001 cause=thermal
+    thermal nres=1625 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=403 attempt=1 t0=2.14375E+002 dt=7.45367E-001 cause=thermal
+    thermal nres=1628 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=404 attempt=1 t0=2.15121E+002 dt=8.34477E-001 cause=thermal
+    thermal nres=1631 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=405 attempt=1 t0=2.15955E+002 dt=9.35531E-001 cause=thermal
+    thermal nres=1634 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=406 attempt=1 t0=2.16891E+002 dt=1.05950E+000 cause=thermal
+    thermal nres=1637 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=407 attempt=1 t0=2.17950E+002 dt=1.19459E+000 cause=thermal
+    thermal nres=1641 npc=42 nnr=25 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=408 attempt=1 t0=2.19145E+002 dt=1.37506E+000 cause=thermal
+    thermal nres=1649 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=409 attempt=1 t0=2.20520E+002 dt=1.60512E+000 cause=thermal
+    thermal nres=1652 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=410 attempt=1 t0=2.22125E+002 dt=1.92950E+000 cause=thermal
+    thermal nres=1656 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=411 attempt=1 t0=2.24055E+002 dt=2.16718E+000 cause=thermal
+    thermal nres=1660 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=412 attempt=1 t0=2.26222E+002 dt=2.22809E+000 cause=thermal
+    thermal nres=1664 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=413 attempt=1 t0=2.28450E+002 dt=2.16382E+000 cause=thermal
+    thermal nres=1668 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=414 attempt=1 t0=2.30614E+002 dt=2.15664E+000 cause=thermal
+    thermal nres=1672 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=415 attempt=1 t0=2.32770E+002 dt=2.18748E+000 cause=thermal
+    thermal nres=1676 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=416 attempt=1 t0=2.34958E+002 dt=2.25061E+000 cause=thermal
+    thermal nres=1680 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=417 attempt=1 t0=2.37208E+002 dt=2.33985E+000 cause=thermal
+    thermal nres=1684 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=418 attempt=1 t0=2.39548E+002 dt=2.44388E+000 cause=thermal
+    thermal nres=1688 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=419 attempt=1 t0=2.41992E+002 dt=2.56904E+000 cause=thermal
+    thermal nres=1692 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=420 attempt=1 t0=2.44561E+002 dt=2.72032E+000 cause=thermal
+    thermal nres=1696 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=421 attempt=1 t0=2.47281E+002 dt=2.91891E+000 cause=thermal
+    thermal nres=1701 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=422 attempt=1 t0=2.50200E+002 dt=3.19153E+000 cause=thermal
+    thermal nres=1706 npc=43 nnr=26 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=423 attempt=1 t0=2.53392E+002 dt=3.71663E+000 cause=thermal
+    thermal nres=1714 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=424 attempt=1 t0=2.57109E+002 dt=2.62418E+000 cause=thermal
+    thermal nres=1719 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=425 attempt=1 t0=2.59733E+002 dt=8.28805E-001 cause=thermal
+    thermal nres=1724 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=426 attempt=1 t0=2.60562E+002 dt=2.28683E+000 cause=thermal
+    thermal nres=1729 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=427 attempt=1 t0=2.62848E+002 dt=1.77465E+000 cause=thermal
+    thermal nres=1733 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=428 attempt=1 t0=2.64623E+002 dt=3.88307E+000 cause=thermal
+    thermal nres=1738 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=429 attempt=1 t0=2.68506E+002 dt=2.11979E+000 cause=thermal
+    thermal nres=1742 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=430 attempt=1 t0=2.70626E+002 dt=2.61214E+000 cause=thermal
+    thermal nres=1746 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=431 attempt=1 t0=2.73238E+002 dt=1.98659E+000 cause=thermal
+    thermal nres=1750 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=432 attempt=1 t0=2.75225E+002 dt=1.95311E+000 cause=thermal
+    thermal nres=1755 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=433 attempt=1 t0=2.77178E+002 dt=1.75359E+000 cause=thermal
+    thermal nres=1760 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=434 attempt=1 t0=2.78931E+002 dt=1.63256E+000 cause=thermal
+    thermal nres=1765 npc=44 nnr=27 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=435 attempt=1 t0=2.80564E+002 dt=1.51868E+000 cause=thermal
+    thermal nres=1773 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=436 attempt=1 t0=2.82083E+002 dt=1.40155E+000 cause=thermal
+    thermal nres=1776 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=437 attempt=1 t0=2.83484E+002 dt=1.30573E+000 cause=thermal
+    thermal nres=1779 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=438 attempt=1 t0=2.84790E+002 dt=1.19936E+000 cause=thermal
+    thermal nres=1783 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=439 attempt=1 t0=2.85989E+002 dt=1.10571E+000 cause=thermal
+    thermal nres=1787 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=440 attempt=1 t0=2.87095E+002 dt=1.00877E+000 cause=thermal
+    thermal nres=1791 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=441 attempt=1 t0=2.88104E+002 dt=9.16382E-001 cause=thermal
+    thermal nres=1796 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=442 attempt=1 t0=2.89020E+002 dt=8.23702E-001 cause=thermal
+    thermal nres=1801 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=443 attempt=1 t0=2.89844E+002 dt=7.31830E-001 cause=thermal
+    thermal nres=1806 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=444 attempt=1 t0=2.90576E+002 dt=6.39456E-001 cause=thermal
+    thermal nres=1811 npc=45 nnr=28 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=445 attempt=1 t0=2.91215E+002 dt=5.45778E-001 cause=thermal
+    thermal nres=1819 npc=46 nnr=29 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=446 attempt=1 t0=2.91761E+002 dt=4.49468E-001 cause=thermal
+    thermal nres=1823 npc=46 nnr=29 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=447 attempt=1 t0=2.92210E+002 dt=3.09828E-001 cause=thermal
+    thermal nres=1832 npc=47 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=448 attempt=1 t0=2.92520E+002 dt=1.62247E-001 cause=thermal
+    thermal nres=1836 npc=47 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=449 attempt=1 t0=2.92682E+002 dt=1.92499E-001 cause=thermal
+    thermal nres=1840 npc=47 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=450 attempt=1 t0=2.92875E+002 dt=6.87468E-002 cause=thermal
+    thermal nres=1842 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=451 attempt=1 t0=2.92944E+002 dt=2.74987E-001 cause=thermal
+    thermal nres=1845 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=452 attempt=1 t0=2.93219E+002 dt=2.24440E-001 cause=thermal
+    thermal nres=1848 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=453 attempt=1 t0=2.93443E+002 dt=2.84644E-001 cause=thermal
+    thermal nres=1851 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=454 attempt=1 t0=2.93728E+002 dt=2.94334E-001 cause=thermal
+    thermal nres=1854 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=455 attempt=1 t0=2.94022E+002 dt=3.30206E-001 cause=thermal
+    thermal nres=1857 npc=48 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=456 attempt=1 t0=2.94352E+002 dt=3.72266E-001 cause=thermal
+    thermal nres=1860 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=457 attempt=1 t0=2.94724E+002 dt=4.22661E-001 cause=thermal
+    thermal nres=1863 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=458 attempt=1 t0=2.95147E+002 dt=4.94558E-001 cause=thermal
+    thermal nres=1866 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=459 attempt=1 t0=2.95642E+002 dt=5.72993E-001 cause=thermal
+    thermal nres=1869 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=460 attempt=1 t0=2.96215E+002 dt=6.77577E-001 cause=thermal
+    thermal nres=1872 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=461 attempt=1 t0=2.96892E+002 dt=8.00220E-001 cause=thermal
+    thermal nres=1875 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=462 attempt=1 t0=2.97692E+002 dt=8.74978E-001 cause=thermal
+    thermal nres=1878 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=463 attempt=1 t0=2.98567E+002 dt=9.96342E-001 cause=thermal
+    thermal nres=1882 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=464 attempt=1 t0=2.99564E+002 dt=1.11153E+000 cause=thermal
+    thermal nres=1886 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=465 attempt=1 t0=3.00675E+002 dt=1.26738E+000 cause=thermal
+    thermal nres=1890 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=466 attempt=1 t0=3.01943E+002 dt=1.45962E+000 cause=thermal
+    thermal nres=1895 npc=49 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=467 attempt=1 t0=3.03402E+002 dt=1.74029E+000 cause=thermal
+    thermal nres=1898 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=468 attempt=1 t0=3.05143E+002 dt=1.99556E+000 cause=thermal
+    thermal nres=1901 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=469 attempt=1 t0=3.07138E+002 dt=2.33327E+000 cause=thermal
+    thermal nres=1905 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=470 attempt=1 t0=3.09471E+002 dt=2.61179E+000 cause=thermal
+    thermal nres=1909 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=471 attempt=1 t0=3.12083E+002 dt=2.66490E+000 cause=thermal
+    thermal nres=1913 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=472 attempt=1 t0=3.14748E+002 dt=2.79400E+000 cause=thermal
+    thermal nres=1918 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=473 attempt=1 t0=3.17542E+002 dt=1.92245E+000 cause=thermal
+    thermal nres=1922 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=474 attempt=1 t0=3.19465E+002 dt=1.35105E+000 cause=thermal
+    thermal nres=1926 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=475 attempt=1 t0=3.20816E+002 dt=2.14916E+000 cause=thermal
+    thermal nres=1930 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=476 attempt=1 t0=3.22965E+002 dt=2.80901E+000 cause=thermal
+    thermal nres=1934 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=477 attempt=1 t0=3.25774E+002 dt=2.68141E+000 cause=thermal
+    thermal nres=1938 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=478 attempt=1 t0=3.28455E+002 dt=2.99897E+000 cause=thermal
+    thermal nres=1942 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=479 attempt=1 t0=3.31454E+002 dt=2.92848E+000 cause=thermal
+    thermal nres=1946 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=480 attempt=1 t0=3.34383E+002 dt=3.11709E+000 cause=thermal
+    thermal nres=1950 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=481 attempt=1 t0=3.37500E+002 dt=3.19437E+000 cause=thermal
+    thermal nres=1955 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=482 attempt=1 t0=3.40694E+002 dt=3.36912E+000 cause=thermal
+    thermal nres=1960 npc=50 nnr=30 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=483 attempt=1 t0=3.44063E+002 dt=3.55573E+000 cause=thermal
+    thermal nres=1968 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=484 attempt=1 t0=3.47619E+002 dt=3.78921E+000 cause=thermal
+    thermal nres=1971 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=485 attempt=1 t0=3.51408E+002 dt=4.17197E+000 cause=thermal
+    thermal nres=1974 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=486 attempt=1 t0=3.55580E+002 dt=4.74326E+000 cause=thermal
+    thermal nres=1977 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=487 attempt=1 t0=3.60323E+002 dt=6.20382E+000 cause=thermal
+    thermal nres=1981 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=488 attempt=1 t0=3.66527E+002 dt=8.32396E+000 cause=thermal
+    thermal nres=1986 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=489 attempt=1 t0=3.74851E+002 dt=2.67640E+000 cause=thermal
+    thermal nres=1990 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=490 attempt=1 t0=3.77528E+002 dt=4.14511E+000 cause=thermal
+    thermal nres=1994 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=491 attempt=1 t0=3.81673E+002 dt=2.38869E+000 cause=thermal
+    thermal nres=1998 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=492 attempt=1 t0=3.84061E+002 dt=2.68500E+000 cause=thermal
+    thermal nres=2002 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=493 attempt=1 t0=3.86746E+002 dt=2.22601E+000 cause=thermal
+    thermal nres=2007 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=494 attempt=1 t0=3.88972E+002 dt=2.11821E+000 cause=thermal
+    thermal nres=2012 npc=51 nnr=31 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=495 attempt=1 t0=3.91091E+002 dt=1.95307E+000 cause=thermal
+    thermal nres=2020 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=496 attempt=1 t0=3.93044E+002 dt=1.77694E+000 cause=thermal
+    thermal nres=2023 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=497 attempt=1 t0=3.94821E+002 dt=1.64535E+000 cause=thermal
+    thermal nres=2027 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=498 attempt=1 t0=3.96466E+002 dt=1.48825E+000 cause=thermal
+    thermal nres=2031 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=499 attempt=1 t0=3.97954E+002 dt=1.35080E+000 cause=thermal
+    thermal nres=2035 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=500 attempt=1 t0=3.99305E+002 dt=1.20748E+000 cause=thermal
+    thermal nres=2040 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=501 attempt=1 t0=4.00512E+002 dt=1.06636E+000 cause=thermal
+    thermal nres=2045 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=502 attempt=1 t0=4.01579E+002 dt=9.21756E-001 cause=thermal
+    thermal nres=2050 npc=52 nnr=32 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=503 attempt=1 t0=4.02501E+002 dt=7.72120E-001 cause=thermal
+    thermal nres=2058 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=504 attempt=1 t0=4.03273E+002 dt=6.12028E-001 cause=thermal
+    thermal nres=2062 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=505 attempt=1 t0=4.03885E+002 dt=5.13907E-001 cause=thermal
+    thermal nres=2066 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=506 attempt=1 t0=4.04399E+002 dt=2.20060E-001 cause=thermal
+    thermal nres=2071 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=507 attempt=1 t0=4.04619E+002 dt=6.49336E-001 cause=thermal
+    thermal nres=2075 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=508 attempt=1 t0=4.05268E+002 dt=3.58143E-001 cause=thermal
+    thermal nres=2079 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=509 attempt=1 t0=4.05626E+002 dt=7.11395E-001 cause=thermal
+    thermal nres=2083 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=510 attempt=1 t0=4.06338E+002 dt=6.37857E-001 cause=thermal
+    thermal nres=2087 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=511 attempt=1 t0=4.06975E+002 dt=9.67904E-001 cause=thermal
+    thermal nres=2091 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=512 attempt=1 t0=4.07943E+002 dt=1.08823E+000 cause=thermal
+    thermal nres=2095 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=513 attempt=1 t0=4.09032E+002 dt=1.34183E+000 cause=thermal
+    thermal nres=2099 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=514 attempt=1 t0=4.10373E+002 dt=1.52263E+000 cause=thermal
+    thermal nres=2103 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=515 attempt=1 t0=4.11896E+002 dt=1.81434E+000 cause=thermal
+    thermal nres=2107 npc=53 nnr=33 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=516 attempt=1 t0=4.13710E+002 dt=2.15295E+000 cause=thermal
+    thermal nres=2115 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=517 attempt=1 t0=4.15863E+002 dt=2.72169E+000 cause=thermal
+    thermal nres=2119 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=518 attempt=1 t0=4.18585E+002 dt=2.93715E+000 cause=thermal
+    thermal nres=2123 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=519 attempt=1 t0=4.21522E+002 dt=3.06872E+000 cause=thermal
+    thermal nres=2127 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=520 attempt=1 t0=4.24591E+002 dt=3.23430E+000 cause=thermal
+    thermal nres=2130 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=521 attempt=1 t0=4.27825E+002 dt=3.35470E+000 cause=thermal
+    thermal nres=2133 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=522 attempt=1 t0=4.31180E+002 dt=3.10893E+000 cause=thermal
+    thermal nres=2136 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=523 attempt=1 t0=4.34289E+002 dt=3.22461E+000 cause=thermal
+    thermal nres=2139 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=524 attempt=1 t0=4.37513E+002 dt=3.17495E+000 cause=thermal
+    thermal nres=2142 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=525 attempt=1 t0=4.40688E+002 dt=3.29877E+000 cause=thermal
+    thermal nres=2145 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=526 attempt=1 t0=4.43987E+002 dt=3.36399E+000 cause=thermal
+    thermal nres=2148 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=527 attempt=1 t0=4.47351E+002 dt=3.48389E+000 cause=thermal
+    thermal nres=2151 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=528 attempt=1 t0=4.50835E+002 dt=3.58998E+000 cause=thermal
+    thermal nres=2154 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=529 attempt=1 t0=4.54425E+002 dt=3.71481E+000 cause=thermal
+    thermal nres=2157 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=530 attempt=1 t0=4.58140E+002 dt=3.84534E+000 cause=thermal
+    thermal nres=2160 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=531 attempt=1 t0=4.61985E+002 dt=3.99162E+000 cause=thermal
+    thermal nres=2163 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=532 attempt=1 t0=4.65977E+002 dt=4.15631E+000 cause=thermal
+    thermal nres=2167 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=533 attempt=1 t0=4.70133E+002 dt=4.34263E+000 cause=thermal
+    thermal nres=2171 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=534 attempt=1 t0=4.74476E+002 dt=4.58002E+000 cause=thermal
+    thermal nres=2175 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=535 attempt=1 t0=4.79056E+002 dt=4.87420E+000 cause=thermal
+    thermal nres=2179 npc=54 nnr=34 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=536 attempt=1 t0=4.83930E+002 dt=5.27971E+000 cause=thermal
+    thermal nres=2187 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=537 attempt=1 t0=4.89210E+002 dt=5.01911E+000 cause=thermal
+    thermal nres=2191 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=538 attempt=1 t0=4.94229E+002 dt=1.42313E+000 cause=thermal
+    thermal nres=2196 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=539 attempt=1 t0=4.95652E+002 dt=4.55682E+000 cause=thermal
+    thermal nres=2200 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=540 attempt=1 t0=5.00209E+002 dt=4.01544E+000 cause=thermal
+    thermal nres=2204 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=541 attempt=1 t0=5.04224E+002 dt=6.71876E+000 cause=thermal
+    thermal nres=2208 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=542 attempt=1 t0=5.10943E+002 dt=5.60020E+000 cause=thermal
+    thermal nres=2212 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=543 attempt=1 t0=5.16543E+002 dt=4.43972E+000 cause=thermal
+    thermal nres=2217 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=544 attempt=1 t0=5.20983E+002 dt=4.16479E+000 cause=thermal
+    thermal nres=2222 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=545 attempt=1 t0=5.25148E+002 dt=3.44712E+000 cause=thermal
+    thermal nres=2227 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=546 attempt=1 t0=5.28595E+002 dt=3.25125E+000 cause=thermal
+    thermal nres=2232 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=547 attempt=1 t0=5.31846E+002 dt=2.89620E+000 cause=thermal
+    thermal nres=2237 npc=55 nnr=35 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=548 attempt=1 t0=5.34742E+002 dt=2.66343E+000 cause=thermal
+    thermal nres=2245 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=549 attempt=1 t0=5.37406E+002 dt=2.42497E+000 cause=thermal
+    thermal nres=2248 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=550 attempt=1 t0=5.39831E+002 dt=2.19210E+000 cause=thermal
+    thermal nres=2252 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=551 attempt=1 t0=5.42023E+002 dt=1.96453E+000 cause=thermal
+    thermal nres=2256 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=552 attempt=1 t0=5.43987E+002 dt=1.72782E+000 cause=thermal
+    thermal nres=2261 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=553 attempt=1 t0=5.45715E+002 dt=1.48377E+000 cause=thermal
+    thermal nres=2266 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=554 attempt=1 t0=5.47199E+002 dt=1.49920E+000 cause=thermal
+    thermal nres=2271 npc=56 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=555 attempt=1 t0=5.48698E+002 dt=5.64651E-001 cause=thermal
+    thermal nres=2273 npc=57 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=556 attempt=1 t0=5.49263E+002 dt=1.05864E+000 cause=thermal
+    thermal nres=2276 npc=57 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=557 attempt=1 t0=5.50321E+002 dt=8.45668E-001 cause=thermal
+    thermal nres=2279 npc=57 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=558 attempt=1 t0=5.51167E+002 dt=1.84177E+000 cause=thermal
+    thermal nres=2283 npc=57 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=559 attempt=1 t0=5.53009E+002 dt=2.00036E+000 cause=thermal
+    thermal nres=2287 npc=57 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=560 attempt=1 t0=5.55009E+002 dt=2.88875E+000 cause=thermal
+    thermal nres=2290 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=561 attempt=1 t0=5.57898E+002 dt=3.53053E+000 cause=thermal
+    thermal nres=2294 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=562 attempt=1 t0=5.61428E+002 dt=3.65986E+000 cause=thermal
+    thermal nres=2298 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=563 attempt=1 t0=5.65088E+002 dt=3.91443E+000 cause=thermal
+    thermal nres=2302 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=564 attempt=1 t0=5.69003E+002 dt=4.04880E+000 cause=thermal
+    thermal nres=2305 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=565 attempt=1 t0=5.73051E+002 dt=3.95963E+000 cause=thermal
+    thermal nres=2308 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=566 attempt=1 t0=5.77011E+002 dt=3.83204E+000 cause=thermal
+    thermal nres=2311 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=567 attempt=1 t0=5.80843E+002 dt=3.88986E+000 cause=thermal
+    thermal nres=2314 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=568 attempt=1 t0=5.84733E+002 dt=3.91700E+000 cause=thermal
+    thermal nres=2317 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=569 attempt=1 t0=5.88650E+002 dt=4.04384E+000 cause=thermal
+    thermal nres=2320 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=570 attempt=1 t0=5.92694E+002 dt=4.15225E+000 cause=thermal
+    thermal nres=2323 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=571 attempt=1 t0=5.96846E+002 dt=4.29460E+000 cause=thermal
+    thermal nres=2326 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=572 attempt=1 t0=6.01141E+002 dt=4.43291E+000 cause=thermal
+    thermal nres=2329 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=573 attempt=1 t0=6.05574E+002 dt=4.58483E+000 cause=thermal
+    thermal nres=2333 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=574 attempt=1 t0=6.10158E+002 dt=4.74338E+000 cause=thermal
+    thermal nres=2338 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=575 attempt=1 t0=6.14902E+002 dt=1.95307E+000 cause=thermal
+    thermal nres=2342 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=576 attempt=1 t0=6.16855E+002 dt=4.20530E+000 cause=thermal
+    thermal nres=2346 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=577 attempt=1 t0=6.21060E+002 dt=4.85101E+000 cause=thermal
+    thermal nres=2350 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=578 attempt=1 t0=6.25911E+002 dt=5.62294E+000 cause=thermal
+    thermal nres=2355 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=579 attempt=1 t0=6.31534E+002 dt=5.73901E+000 cause=thermal
+    thermal nres=2359 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=580 attempt=1 t0=6.37273E+002 dt=6.04030E+000 cause=thermal
+    thermal nres=2363 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=581 attempt=1 t0=6.43313E+002 dt=6.33221E+000 cause=thermal
+    thermal nres=2367 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=582 attempt=1 t0=6.49646E+002 dt=6.72491E+000 cause=thermal
+    thermal nres=2372 npc=58 nnr=36 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=583 attempt=1 t0=6.56371E+002 dt=7.37114E+000 cause=thermal
+    thermal nres=2380 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=584 attempt=1 t0=6.63742E+002 dt=8.27736E+000 cause=thermal
+    thermal nres=2383 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=585 attempt=1 t0=6.72019E+002 dt=1.01487E+001 cause=thermal
+    thermal nres=2387 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=586 attempt=1 t0=6.82168E+002 dt=1.29399E+001 cause=thermal
+    thermal nres=2392 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=587 attempt=1 t0=6.95108E+002 dt=7.60976E+000 cause=thermal
+    thermal nres=2397 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=588 attempt=1 t0=7.02717E+002 dt=6.37528E+000 cause=thermal
+    thermal nres=2402 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=589 attempt=1 t0=7.09093E+002 dt=5.40663E+000 cause=thermal
+    thermal nres=2407 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=590 attempt=1 t0=7.14499E+002 dt=4.58204E+000 cause=thermal
+    thermal nres=2412 npc=59 nnr=37 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=591 attempt=1 t0=7.19081E+002 dt=4.27972E+000 cause=thermal
+    thermal nres=2420 npc=60 nnr=38 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=592 attempt=1 t0=7.23361E+002 dt=3.78060E+000 cause=thermal
+    thermal nres=2424 npc=60 nnr=38 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=593 attempt=1 t0=7.27142E+002 dt=3.44293E+000 cause=thermal
+    thermal nres=2428 npc=60 nnr=38 nnf=2 nsr=11 status=ok
+  step-end status=accepted
+  step=594 attempt=1 t0=7.30585E+002 dt=5.68607E+000 cause=thermal
+    thermal nres=2433 npc=60 nnr=38 nnf=2 nsr=12 status=failed
+  step-end status=failed
+  step=594 attempt=2 t0=7.30585E+002 dt=2.84303E+000 cause=thermal
+    thermal nres=2438 npc=60 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=595 attempt=1 t0=7.33428E+002 dt=8.83710E-001 cause=thermal
+    thermal nres=2440 npc=61 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=596 attempt=1 t0=7.34311E+002 dt=2.02376E+000 cause=thermal
+    thermal nres=2444 npc=61 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=597 attempt=1 t0=7.36335E+002 dt=1.67653E+000 cause=thermal
+    thermal nres=2447 npc=61 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=598 attempt=1 t0=7.38012E+002 dt=3.94759E+000 cause=thermal
+    thermal nres=2452 npc=61 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=599 attempt=1 t0=7.41959E+002 dt=4.69018E+000 cause=thermal
+    thermal nres=2455 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=600 attempt=1 t0=7.46649E+002 dt=4.95309E+000 cause=thermal
+    thermal nres=2458 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=601 attempt=1 t0=7.51602E+002 dt=5.22884E+000 cause=thermal
+    thermal nres=2461 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=602 attempt=1 t0=7.56831E+002 dt=4.69828E+000 cause=thermal
+    thermal nres=2464 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=603 attempt=1 t0=7.61530E+002 dt=4.89840E+000 cause=thermal
+    thermal nres=2468 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=604 attempt=1 t0=7.66428E+002 dt=4.77246E+000 cause=thermal
+    thermal nres=2472 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=605 attempt=1 t0=7.71200E+002 dt=2.47232E+000 cause=thermal
+    thermal nres=2476 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=606 attempt=1 t0=7.73673E+002 dt=6.19949E+000 cause=thermal
+    thermal nres=2480 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=607 attempt=1 t0=7.79872E+002 dt=4.40678E+000 cause=thermal
+    thermal nres=2484 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=608 attempt=1 t0=7.84279E+002 dt=6.10143E+000 cause=thermal
+    thermal nres=2487 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=609 attempt=1 t0=7.90380E+002 dt=5.42069E+000 cause=thermal
+    thermal nres=2491 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=610 attempt=1 t0=7.95801E+002 dt=6.07170E+000 cause=thermal
+    thermal nres=2495 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=611 attempt=1 t0=8.01873E+002 dt=6.04635E+000 cause=thermal
+    thermal nres=2499 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=612 attempt=1 t0=8.07919E+002 dt=6.40081E+000 cause=thermal
+    thermal nres=2503 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=613 attempt=1 t0=8.14320E+002 dt=6.60141E+000 cause=thermal
+    thermal nres=2507 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=614 attempt=1 t0=8.20921E+002 dt=6.89602E+000 cause=thermal
+    thermal nres=2511 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=615 attempt=1 t0=8.27817E+002 dt=7.17095E+000 cause=thermal
+    thermal nres=2515 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=616 attempt=1 t0=8.34988E+002 dt=7.47934E+000 cause=thermal
+    thermal nres=2519 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=617 attempt=1 t0=8.42468E+002 dt=7.80317E+000 cause=thermal
+    thermal nres=2524 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=618 attempt=1 t0=8.50271E+002 dt=8.19205E+000 cause=thermal
+    thermal nres=2529 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=619 attempt=1 t0=8.58463E+002 dt=8.50455E+000 cause=thermal
+    thermal nres=2534 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=620 attempt=1 t0=8.66967E+002 dt=9.05572E+000 cause=thermal
+    thermal nres=2539 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=621 attempt=1 t0=8.76023E+002 dt=9.59462E+000 cause=thermal
+    thermal nres=2544 npc=62 nnr=38 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=622 attempt=1 t0=8.85618E+002 dt=1.03837E+001 cause=thermal
+    thermal nres=2552 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=623 attempt=1 t0=8.96002E+002 dt=1.19683E+001 cause=thermal
+    thermal nres=2556 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=624 attempt=1 t0=9.07970E+002 dt=1.26203E+001 cause=thermal
+    thermal nres=2560 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=625 attempt=1 t0=9.20590E+002 dt=1.29394E+001 cause=thermal
+    thermal nres=2564 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=626 attempt=1 t0=9.33529E+002 dt=1.22072E+001 cause=thermal
+    thermal nres=2568 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=627 attempt=1 t0=9.45737E+002 dt=1.12358E+001 cause=thermal
+    thermal nres=2573 npc=63 nnr=39 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=628 attempt=1 t0=9.56972E+002 dt=8.02147E+000 cause=thermal
+    thermal nres=2582 npc=64 nnr=40 nnf=2 nsr=12 status=ok
+  step-end status=accepted
+  step=629 attempt=1 t0=9.64994E+002 dt=7.00835E+000 cause=thermal
+    thermal nres=2587 npc=64 nnr=40 nnf=2 nsr=13 status=failed
+  step-end status=failed
+  step=629 attempt=2 t0=9.64994E+002 dt=3.50418E+000 cause=thermal
+    thermal nres=2592 npc=64 nnr=40 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=630 attempt=1 t0=9.68498E+002 dt=2.40740E+000 cause=thermal
+    thermal nres=2600 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=631 attempt=1 t0=9.70906E+002 dt=2.32611E+000 cause=thermal
+    thermal nres=2603 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=632 attempt=1 t0=9.73232E+002 dt=3.36041E+000 cause=thermal
+    thermal nres=2606 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=633 attempt=1 t0=9.76592E+002 dt=6.30440E+000 cause=thermal
+    thermal nres=2610 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=634 attempt=1 t0=9.82896E+002 dt=5.72783E+000 cause=output
+    thermal nres=2614 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=635 attempt=1 t0=9.88624E+002 dt=5.70115E+000 cause=output
+    thermal nres=2618 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  step=636 attempt=1 t0=9.94325E+002 dt=5.67459E+000 cause=output
+    thermal nres=2622 npc=65 nnr=41 nnf=2 nsr=13 status=ok
+  step-end status=accepted
+  output t=1.00000E+003
+integration-end t=1.00000E+003 nstep=636 status=complete
+
+timing-summary-begin
+simulation: 5.77585E-01
+  ht-model: 4.61698E-04
+  ht-solver: 3.91538E-04
+  integration: 5.63143E-01
+    output: 1.82392E-02
+    thermal/transport: 5.35153E-01
+timing-summary-end
