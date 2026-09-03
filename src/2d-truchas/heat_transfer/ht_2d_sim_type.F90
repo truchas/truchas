@@ -65,7 +65,6 @@ contains
     use unstr_2d_mesh_factory
     use signal_handler, only: init_signal_handler, SIGURG
     use material_factory, only: load_material_database
-    use material_utilities, only: add_enthalpy_prop
 
     class(ht_2d_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
@@ -91,9 +90,7 @@ contains
     end if
     mesh_params => params%sublist('mesh')
     call env%simlog%begin_section('Constructing mesh.')
-    call env%timer%start('mesh')
     this%mesh => new_unstr_2d_mesh(env, mesh_params, stat, errmsg)
-    call env%timer%stop('mesh')
     if (stat /= 0) then
       call env%simlog%end_section('Mesh construction failed.')
       errmsg = 'processing ' // mesh_params%path() // ': ' // errmsg
@@ -131,12 +128,6 @@ contains
     do i = 1, size(matl_name)
       call env%simlog%info('Using material "' // trim(matl_name(i)) // '".')
     end do
-    call env%simlog%info('Adding enthalpy property.')
-    call add_enthalpy_prop(this%matl_model, stat, errmsg)
-    if (stat /= 0) then
-      call env%simlog%end_section('Material model construction failed.')
-      return
-    end if
     call env%simlog%end_section('Material model complete.')
 
     !! Construct the material distribution.
@@ -224,7 +215,7 @@ contains
     !! Create the output file and write the mesh.
     call this%solver%init_temporal_output(this%temporal_output)
     call env%simlog%info('Opening VTKHDF output.')
-    call this%output%open(env, this%mesh, this%matl_model, stat, errmsg)
+    call this%output%open(env, this%mesh, this%matl_model, this%temporal_output, stat, errmsg)
     if (stat /= 0) then
       errmsg = 'processing VTKHDF output: ' // errmsg
       return

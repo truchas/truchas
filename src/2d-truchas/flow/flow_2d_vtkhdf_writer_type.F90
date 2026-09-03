@@ -50,16 +50,16 @@ module flow_2d_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, env, mesh, temporal_output, stat, errmsg, matl_model)
+  subroutine open(this, env, mesh, matl_model, temporal_output, stat, errmsg)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(flow_2d_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(material_model), intent(in) :: matl_model
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(material_model), intent(in), optional :: matl_model
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
@@ -109,14 +109,12 @@ contains
 
     this%pressure = this%file%register_temporal_cell_data('pressure', scalar_mold)
     this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
-    if (present(matl_model)) then
-      if (matl_model%nmatl > 1) then
-        allocate(this%vfrac(matl_model%nmatl))
-        do m = 1, size(this%vfrac)
-          name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
-          this%vfrac(m) = this%file%register_temporal_cell_data(name, scalar_mold)
-        end do
-      end if
+    if (matl_model%nmatl > 1) then
+      allocate(this%vfrac(matl_model%nmatl))
+      do m = 1, size(this%vfrac)
+        name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
+        this%vfrac(m) = this%file%register_temporal_cell_data(name, scalar_mold)
+      end do
     end if
     call register_temporal_fields(this, temporal_output, stat, errmsg)
     if (stat /= 0) then

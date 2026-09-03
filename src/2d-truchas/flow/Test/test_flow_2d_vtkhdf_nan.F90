@@ -15,6 +15,8 @@ program test_flow_2d_vtkhdf_nan
   use, intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08
   use parameter_list_type
+  use material_database_type
+  use material_model_type
   use simulation_environment_type
   use unstr_2d_mesh_factory, only: new_unstr_2d_quad_mesh
   use unstr_2d_mesh_type, only: unstr_2d_mesh
@@ -23,8 +25,11 @@ program test_flow_2d_vtkhdf_nan
 
   type(simulation_environment) :: env
   type(unstr_2d_mesh), pointer :: mesh
+  type(material_database) :: database
+  type(material_model) :: matl_model
   type(flow_2d_vtkhdf_writer) :: output
   type(parameter_list) :: temporal_output
+  character(1) :: no_materials(0)
   real(r8), allocatable :: pressure(:), velocity(:,:)
   logical, allocatable :: flow_active(:)
   character(:), allocatable :: errmsg
@@ -39,13 +44,16 @@ program test_flow_2d_vtkhdf_nan
   mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1], 0.0_r8)
   if (mesh%ncell /= 2) call fail('test mesh does not contain two cells')
 
+  call matl_model%init(no_materials, database, stat, errmsg)
+  if (stat /= 0) call fail('initializing material model: ' // errmsg)
+
   allocate(pressure(mesh%ncell), velocity(2, mesh%ncell))
   pressure = [1.0_r8, 0.0_r8]
   velocity(:,1) = [0.25_r8, 0.0_r8]
   velocity(:,2) = 0.0_r8
   flow_active = [.true., .false.]
 
-  call output%open(env, mesh, temporal_output, stat, errmsg)
+  call output%open(env, mesh, matl_model, temporal_output, stat, errmsg)
   if (stat /= 0) call fail(errmsg)
   call output%write_solution(0.0_r8, pressure, velocity, temporal_output, flow_active)
   call output%close()
