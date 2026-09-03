@@ -125,6 +125,7 @@ contains
     do i = 1, this%subcycles
       call this%normals(env, vof)
 
+      this%flux_vol_sub = 0.0_r8
       call this%donor_fluxes(env, vel, vof, sub_dt)
 
       call this%flux_renorm(vel, vof_n, flux_vol, sub_dt)
