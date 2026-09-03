@@ -13,11 +13,12 @@
 
 module ht_2d_vtkhdf_writer_type
 
-  use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
+  use,intrinsic :: iso_fortran_env, only: int8, int64, r8 => real64
   use simulation_environment_type
   use unstr_2d_mesh_type
   use material_model_type
-  use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, UG_FIXED_MESH
+  use parameter_list_type
+  use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, vtkhdf_field_data_handle, UG_FIXED_MESH
   implicit none
   private
 
@@ -28,6 +29,7 @@ module ht_2d_vtkhdf_writer_type
     type(vtkhdf_cell_data_handle) :: enthalpy
     type(vtkhdf_cell_data_handle) :: temperature
     type(vtkhdf_cell_data_handle), allocatable :: volume_fraction(:)
+    type(vtkhdf_field_data_handle) :: nstep
     logical :: is_open = .false.
   contains
     procedure :: open
@@ -99,6 +101,7 @@ contains
 
     this%enthalpy = this%file%register_temporal_cell_data('H', 0.0_r8)
     this%temperature = this%file%register_temporal_cell_data('T', 0.0_r8)
+    this%nstep = this%file%register_temporal_field_data('NStep', 0_int64)
     if (matl_model%nmatl > 1) then
       allocate(this%volume_fraction(matl_model%nmatl))
       do j = 1, matl_model%nmatl
@@ -126,16 +129,20 @@ contains
     end do
   end function normalize_material_name
 
-  subroutine write_solution(this, time, enthalpy, temperature, volume_fraction)
+  subroutine write_solution(this, time, enthalpy, temperature, volume_fraction, temporal_output)
 
     class(ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: enthalpy(:), temperature(:)
     real(r8), intent(in) :: volume_fraction(:,:)
+    type(parameter_list), intent(inout) :: temporal_output
     real(r8), allocatable :: H(:), T(:), v(:)
     integer :: j
+    integer(int64) :: nstep
 
     call this%file%start_time_step(time)
+    call temporal_output%get('NStep', nstep)
+    call this%file%write_field_data(this%nstep, nstep)
     allocate(H(this%mesh%ncell), T(this%mesh%ncell))
     H(:this%mesh%ncell_onP) = enthalpy
     T(:this%mesh%ncell_onP) = temperature

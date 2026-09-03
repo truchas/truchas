@@ -36,6 +36,16 @@ def test():
     if abs(reference.time(reference_step) - run.final_time) > 1.0e-12:
         raise AssertionError("reference and candidate final times differ")
 
+    actual_nstep = int(run.data.field(run.final_step, "NStep", "field")[0])
+    reference_nstep = int(
+        reference.field(reference_step, "NStep", "field")[0]
+    )
+    if abs(actual_nstep - reference_nstep) > 3:
+        raise AssertionError(
+            f"NStep differs by {abs(actual_nstep - reference_nstep)} "
+            f"({actual_nstep} != {reference_nstep})"
+        )
+
     check_close(
         run.data.cell_centers(run.final_step),
         reference.cell_centers(reference_step),

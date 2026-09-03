@@ -67,7 +67,7 @@ contains
     type(simulation_environment), intent(in) :: env
     type(unstr_2d_mesh), intent(in), target :: mesh
     type(material_model), intent(in) :: matl_model
-    type(material_distribution), pointer, intent(in) :: matl_dist
+    type(material_distribution), target, intent(in) :: matl_dist
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

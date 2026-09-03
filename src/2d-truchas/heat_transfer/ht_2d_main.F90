@@ -1,20 +1,15 @@
 !!
-!! HT_2D_main
+!! HT_2D_MAIN
 !!
-!! A basic driver for the 2D heat transfer model.
+!! This program drives the two-dimensional thermal-transport simulation.
 !!
-!! David Neill-Asanza <davidhneill@gmail.com>
-!! August 2020
+!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! SPDX-License-Identifier: BSD-3-Clause
 !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!! This file is part of Truchas. 3-Clause BSD license; see the LICENSE file.
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program ht_2d_main
 
-  use,intrinsic :: iso_fortran_env, only: error_unit
+  use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
   use mpi_f08
   use parallel_communication
   use fhypre, only: fhypre_initialize
@@ -33,42 +28,39 @@ program ht_2d_main
   type(simulation_environment) :: env
   type(ht_2d_sim) :: sim
 
-  !! Initialize MPI
   call MPI_Init
   call init_parallel_communication
 
+  call fhypre_initialize
+
+  !! Parse the command line.
   call cli%parse(stat, errmsg)
   if (cli%help) then
-    if (is_IOP) call cli%write_help('A JSON-input driver for the two-dimensional heat-transfer model.')
+    if (is_IOP) call cli%write_help('Two-dimensional thermal-transport simulation.')
     call MPI_Finalize
     stop
   end if
   if (stat /= 0) then
-    if (is_IOP) then
-      write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
-    end if
+    if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
     call MPI_Finalize
     if (is_IOP) error stop 2
     stop
   end if
 
-  call fhypre_initialize
-
+  !! Prepare the output directory.
   if (is_IOP) call cli%prepare_output_dir(stat, errmsg)
   call broadcast(stat)
   if (stat /= 0) then
     call broadcast_alloc_char(errmsg)
-    if (is_IOP) then
-      write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
-    end if
+    if (is_IOP) write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
     call MPI_Finalize
     if (is_IOP) error stop 1
     stop
   end if
 
+  !! Initialize the simulation environment.
   env%input_dir = cli%input_dir
   env%output_dir = cli%output_dir
-
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
@@ -78,6 +70,8 @@ program ht_2d_main
     call MPI_Finalize
     error stop 1
   end if
+
+  !! Write the log file prologue.
   call write_simulation_prologue(env, cli%program, cli%input_file, stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('error staging input file: ' // errmsg)
@@ -85,7 +79,9 @@ program ht_2d_main
     call MPI_Finalize
     error stop 1
   end if
-  open(newunit=inlun,file=cli%input_file,action='read',access='stream')
+
+  !! Read the input file.
+  open(newunit=inlun, file=cli%input_file, action='read', access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)
   close(inlun)
   if (.not.associated(params)) then
@@ -94,34 +90,38 @@ program ht_2d_main
     call MPI_Finalize
     error stop 1
   end if
-  !! Create the simulation and run it.
+
+  !! Initialize the simulation.
   call env%timer%start('simulation')
+  call env%simlog%begin_section('Initializing simulation.')
   call sim%init(env, params, stat, errmsg)
   if (stat /= 0) then
-    call env%simlog%error('error initializing simulation: ' // errmsg)
+    call env%simlog%end_section('Simulation initialization failed.')
+    call env%simlog%error('simulation initialization error: ' // errmsg)
+    call env%timer%stop('simulation')
     call env%simlog%close
     call MPI_Finalize
     error stop 1
+  else
+    call env%simlog%end_section('Simulation initialization complete.')
   end if
+
+  !! Run the simulation.
   call sim%run(env, stat, errmsg)
   call env%timer%stop('simulation')
+  if (stat /= 0) call env%simlog%error('heat-transport simulation error: ' // errmsg)
 
-  !! Write some timing info.
+  !! Write simulation timing data.
   call env%simlog%info('')
-  call env%simlog%info('Timing Summary:')
-  call env%simlog%info('')
-  if (env%rank == 0) call env%timer%write(env%simlog%unit(), indent=3)
-
-  !! And quit.
-  call env%simlog%info('')
-  if (stat == 0) then
-    call env%simlog%close
-  else
-    call env%simlog%error(errmsg)
-    call env%simlog%close
-    call MPI_Finalize
-    error stop 1
+  call env%simlog%info('timing-summary-begin')
+  if (env%rank == 0) then
+    call env%timer%write(env%simlog%unit(), indent=2)
+    if (env%simlog%terminal_output_enabled()) call env%timer%write(output_unit, indent=2)
   end if
-  call MPI_Finalize
+  call env%simlog%info('timing-summary-end')
 
-end program
+  call env%simlog%close
+  call MPI_Finalize
+  if (stat /= 0) error stop 1
+
+end program ht_2d_main

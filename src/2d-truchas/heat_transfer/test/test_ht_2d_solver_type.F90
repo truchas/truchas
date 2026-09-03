@@ -93,6 +93,10 @@ contains
     call sublist%set('rel-h-tol', 1.0d-4)
 
     sublist => params%sublist('integrator')
+    call params%set('initial-time-step', 1.0e-3_r8)
+    call params%set('min-time-step', 1.0e-8_r8)
+    call params%set('max-time-step', 1.0e-3_r8)
+    call params%set('time-step-growth', 1.0_r8)
     if (bdf1) then
       call sublist%set('use-backward-euler', .true.)
     else
@@ -106,8 +110,6 @@ contains
 
   !! Tests the HT_2d_solver on a linear problem with Dirichlet boundary conditions
   subroutine test1(disc, mesh, matl_model, tol, bdf1)
-
-    use idaesol_type, only: SOLVED_TO_TOUT
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(unstr_2d_mesh), target, intent(in) :: mesh
@@ -124,7 +126,7 @@ contains
     character(:), allocatable :: errmsg, string
     character(80) :: metrics(2)
     integer :: stat
-    real(r8) :: t, dt, h, max_error, l2_error
+    real(r8) :: t, h, max_error, l2_error
 
     if (is_IOP .and. bdf1) print '(/,"Testing sinusoidal problem with adaptive BDF1")'
     if (is_IOP .and. .not.bdf1) print '(/,"Testing sinusoidal problem with BDF1 startup and BDF2")'
@@ -170,20 +172,19 @@ contains
     end if
 
     t = 0.0_r8
-    dt = 1E-3_r8
-    call HT_solver%set_initial_state(test_env, t, dt, Tcell0, stat, errmsg)
-    if (stat /= 0) call error_exit(errmsg)
-
     !! Run solver
-    h = 1E-7_r8
-    call HT_solver%integrate(h, stat, tout=0.1_r8)
+    call HT_solver%init_time_stepper(solver_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call HT_solver%set_initial_state(test_env, t, Tcell0, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call HT_solver%integrate(test_env, 0.1_r8, stat, errmsg)
     if (is_IOP) then
       print '("stat=",i3)', stat
       call HT_solver%write_metrics(metrics)
       print '(a)', metrics
     end if
 
-    if (stat /= SOLVED_TO_TOUT) then
+    if (stat /= 0) then
       if (is_IOP) print '("ERROR: failed to integrate to final time")'
       status = 1
       return
