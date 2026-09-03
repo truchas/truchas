@@ -210,6 +210,8 @@ contains
     real(r8) :: x0, t0, v0, t1, v1
     integer, allocatable :: expon(:), expon2(:,:)
     real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
+    logical :: smooth
+    character(:), allocatable :: interp
     character(:), allocatable :: ftype
 
     call params%get('type', ftype)
@@ -238,7 +240,16 @@ contains
       call params%get('tabular x', x)
       call params%get('tabular y', y)
       ASSERT(size(x) == size(y))
-      f => new_tabular_scalar_func(x, y)
+      call params%get('interp', interp, default='linear')
+      select case (interp)
+      case ('linear')
+        smooth = .false.
+      case ('akima')
+        smooth = .true.
+      case default
+        INSIST(.false.)
+      end select
+      f => new_tabular_scalar_func(x, y, smooth=smooth)
     case ('smooth ramp')
       call params%get('begin time', t0)
       call params%get('begin value', v0)
@@ -262,6 +273,8 @@ contains
     real(r8) :: x0, t0, v0, t1, v1
     integer, allocatable :: expon(:), expon2(:,:)
     real(r8), allocatable :: coef(:), x(:), y(:), x0_def(:), x02(:)
+    logical :: smooth
+    character(:), allocatable :: interp
     character(:), allocatable :: ftype
 
     call params%get('type', ftype)
@@ -290,7 +303,16 @@ contains
       call params%get('tabular x', x)
       call params%get('tabular y', y)
       ASSERT(size(x) == size(y))
-      call alloc_tabular_scalar_func(f, x, y)
+      call params%get('interp', interp, default='linear')
+      select case (interp)
+      case ('linear')
+        smooth = .false.
+      case ('akima')
+        smooth = .true.
+      case default
+        INSIST(.false.)
+      end select
+      call alloc_tabular_scalar_func(f, x, y, smooth=smooth)
     case ('smooth ramp')
       call params%get('begin time', t0)
       call params%get('begin value', v0)
