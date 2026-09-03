@@ -30,12 +30,12 @@ module material_model_type
 
   type, public :: material_model
     private ! public components are READ ONLY
-    integer, public :: nmatl       ! number of materials, including void
-    integer, public :: nmatl_real  ! number of materials, excluding void
-    integer, public :: nphase      ! total number of phases, including void
-    integer, public :: nphase_real ! total number of phases, excluding void
-    logical, public :: have_void
-    integer, public :: void_index     ! either 0 or NUM_PHASE
+    integer, public :: nmatl = 0       ! number of materials, including void
+    integer, public :: nmatl_real = 0  ! number of materials, excluding void
+    integer, public :: nphase = 0      ! total number of phases, including void
+    integer, public :: nphase_real = 0 ! total number of phases, excluding void
+    logical, public :: have_void = .false.
+    integer, public :: void_index = 0  ! either 0 or NUM_PHASE
     logical, allocatable, public :: is_fluid(:) ! read-only
     type(phase_box), allocatable :: plist(:)
     type(material_box), allocatable :: mlist(:)
