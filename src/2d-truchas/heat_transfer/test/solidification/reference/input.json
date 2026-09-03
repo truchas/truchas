@@ -1,0 +1,52 @@
+{
+  "materials": {
+    "phase-change-material": {
+      "properties": {
+        "conductivity": 1.0e-3,
+        "density": 1.0,
+        "specific-heat": 1.0
+      },
+      "phases": {
+        "solid": {},
+        "liquid": {}
+      },
+      "phase-changes": {
+        "solid:liquid": {
+          "solidus-temp": -0.1,
+          "liquidus-temp": 0.1,
+          "latent-heat": 5.0
+        }
+      }
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [32]}
+  },
+  "ht-model": {
+    "bc": {
+      "left": {"type": "temperature", "face-set-ids": [1], "temp": {
+        "type": "tabular", "tabular x": [0.0, 100.0], "tabular y": [0.5, -0.5], "interp": "akima"
+      }},
+      "right": {"type": "temperature", "face-set-ids": [2], "temp": 0.5},
+      "top-bottom": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
+    }
+  },
+  "ht-solver": {
+    "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
+    "error-norm": {
+      "abs-t-tol": 1.0e-4,
+      "rel-t-tol": 0.0,
+      "abs-h-tol": 1.0e-4,
+      "rel-h-tol": 0.0
+    },
+    "integrator": {"nlk-max-iter": 5, "nlk-tol": 1.0e-2}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 1.0e-1,
+    "min-time-step": 1.0e-6,
+    "output-times": [100.0, 1000.0]
+  },
+  "initial-temperature": {"type": "constant", "value": 0.5}
+}
