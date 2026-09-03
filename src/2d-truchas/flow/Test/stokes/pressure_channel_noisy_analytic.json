@@ -9,6 +9,7 @@
         "rotation-angle": 30.0
     },
     "flow-model": {
+        "inertial": false,
         "bc": {
             "inlet": {"type": "pressure", "face-set-ids": [1], "pressure": 1.0},
             "outlet": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},

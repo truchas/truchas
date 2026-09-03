@@ -103,14 +103,17 @@ contains
       return
     end if
     projection_params => params%sublist('projection-solver')
-    if (.not.model%inviscid) then
-      if (.not.params%is_sublist('momentum-solver')) then
-        stat = 1
-        errmsg = 'viscous flow requires a "momentum-solver" sublist'
-        return
-      end if
-      momentum_params => params%sublist('momentum-solver')
+    if (model%inviscid) then
+      stat = 1
+      errmsg = 'Stokes flow is incompatible with inviscid flow'
+      return
     end if
+    if (.not.params%is_sublist('momentum-solver')) then
+      stat = 1
+      errmsg = 'Stokes flow requires a "momentum-solver" sublist'
+      return
+    end if
+    momentum_params => params%sublist('momentum-solver')
 
     nrealfluid = this%matl_map%num_real_fluid()
     nfluid = this%matl_map%num_fluid()
@@ -119,12 +122,7 @@ contains
     call model%init_material(matl_model, phase_ids, stat, errmsg, nfluid=nfluid)
     if (stat /= 0) return
 
-    if (model%inviscid) then
-      call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
-          stat=stat, errmsg=errmsg)
-    else
-      call this%flow%init(env, model, momentum_params, projection_params, courant_number, stat, errmsg)
-    end if
+    call this%flow%init(env, model, momentum_params, projection_params, courant_number, stat, errmsg)
   end subroutine
 
 
