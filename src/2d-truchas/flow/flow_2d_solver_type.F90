@@ -327,8 +327,8 @@ contains
       status = 'failed'
     end if
     write(line,'(a,i0,a,i0,a,i0,a,es0.5,a,a)') trim(name) // &
-        ' iterations=', num_itr, ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, &
-        ' rel_residual=', rel_res_norm, ' status=', trim(status)
+        ' iter=', num_itr, ' dscg=', num_dscg_itr, ' amg=', num_pcg_itr, &
+        ' rel_res=', rel_res_norm, ' status=', trim(status)
     call env%simlog%info(trim(line))
   end subroutine
 
