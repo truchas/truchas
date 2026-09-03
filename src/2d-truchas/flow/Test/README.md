@@ -2,8 +2,8 @@
 
 The integrated tests are organized by the physics they exercise:
 
-- [`stokes`](stokes/README.md) contains tests for the `flow_2d` Stokes
-  executable.
+- [`stokes`](stokes/README.md) contains Stokes tests run by the `ns_2d`
+  executable with inertia disabled.
 - [`ns`](ns/README.md) contains tests for the `ns_2d` Navier--Stokes
   executable.
 
