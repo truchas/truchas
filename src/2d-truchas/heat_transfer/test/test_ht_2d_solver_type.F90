@@ -113,7 +113,7 @@ contains
 
     type(mfd_2d_disc), target, intent(in) :: disc
     type(unstr_2d_mesh), target, intent(in) :: mesh
-    type(material_model), target, intent(in) :: matl_model
+    type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
     logical, intent(in) :: bdf1
 

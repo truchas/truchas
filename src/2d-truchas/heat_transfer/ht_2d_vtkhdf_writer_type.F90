@@ -4,8 +4,8 @@
 !! This module defines the VTKHDF writer for the two-dimensional heat-transfer
 !! simulation. It writes the fixed unstructured mesh, mesh-associated global
 !! and pedigree identifiers, ghost-cell metadata, and temporal cell enthalpy
-!! and temperature data. For multimaterial simulations it also writes one
-!! temporal scalar volume-fraction dataset per material.
+!! and temperature data. For multimaterial simulations it also writes
+!! temporal scalar volume-fraction data for each material or material phase.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -61,7 +61,7 @@ contains
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
-    integer :: j, nnode
+    integer :: j, m, nnode, nfield, nphase, first, last, pid
     character(:), allocatable :: name
     integer(int8), allocatable :: types(:), cell_ghost_type(:), node_ghost_type(:)
     real(r8) :: scalar_mold
@@ -111,12 +111,40 @@ contains
 
     this%enthalpy = this%file%register_temporal_cell_data('H', scalar_mold)
     this%temperature = this%file%register_temporal_cell_data('T', scalar_mold)
-    if (matl_model%nmatl > 1) then
-      allocate(this%volume_fraction(matl_model%nmatl))
-      do j = 1, matl_model%nmatl
-        name = 'vf_' // normalize_material_name(matl_model%matl_name(j))
-        this%volume_fraction(j) = &
-            this%file%register_temporal_cell_data(name, 0.0_r8)
+    nfield = 0
+    do m = 1, matl_model%nmatl
+      if (matl_model%have_void .and. m == matl_model%nmatl) then
+        nphase = 1
+      else
+        nphase = matl_model%num_matl_phase(m)
+      end if
+      if (matl_model%nmatl > 1 .or. nphase > 1) nfield = nfield + nphase
+    end do
+    if (nfield > 0) then
+      allocate(this%volume_fraction(nfield))
+      nfield = 0
+      do m = 1, matl_model%nmatl
+        if (matl_model%have_void .and. m == matl_model%nmatl) then
+          nphase = 1
+        else
+          nphase = matl_model%num_matl_phase(m)
+        end if
+        if (matl_model%nmatl == 1 .and. nphase == 1) cycle
+        if (nphase == 1) then
+          nfield = nfield + 1
+          name = 'vf_' // normalize_material_name(matl_model%matl_name(m))
+          this%volume_fraction(nfield) = &
+              this%file%register_temporal_cell_data(name, 0.0_r8)
+        else
+          call matl_model%get_matl_phase_index_range(m, first, last)
+          do pid = first, last
+            nfield = nfield + 1
+            name = 'vf_' // normalize_material_name(matl_model%matl_name(m)) // '_' // &
+                normalize_material_name(matl_model%phase_name(pid))
+            this%volume_fraction(nfield) = &
+                this%file%register_temporal_cell_data(name, 0.0_r8)
+          end do
+        end if
       end do
     end if
     call register_temporal_fields(this, temporal_output, stat, errmsg)
@@ -143,15 +171,16 @@ contains
     end do
   end function normalize_material_name
 
-  subroutine write_solution(this, time, enthalpy, temperature, volume_fraction, temporal_output)
+  subroutine write_solution(this, time, enthalpy, temperature, matl_model, volume_fraction, temporal_output)
 
     class(ht_2d_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: enthalpy(:), temperature(:)
+    type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: volume_fraction(:,:)
     type(parameter_list), intent(inout) :: temporal_output
-    real(r8), allocatable :: H(:), T(:), v(:)
-    integer :: j
+    real(r8), allocatable :: H(:), T(:), v(:), beta(:,:)
+    integer :: c, m, nphase, p, field
 
     call this%file%start_time_step(time)
     allocate(H(this%mesh%ncell), T(this%mesh%ncell))
@@ -163,10 +192,36 @@ contains
     call this%file%write_cell_data(this%temperature, T)
     if (allocated(this%volume_fraction)) then
       allocate(v(this%mesh%ncell))
-      do j = 1, size(this%volume_fraction)
-        v(:this%mesh%ncell_onP) = volume_fraction(j,:)
-        call this%mesh%cell_imap%gather_offp(v)
-        call this%file%write_cell_data(this%volume_fraction(j), v)
+      field = 0
+      do m = 1, matl_model%nmatl
+        if (matl_model%have_void .and. m == matl_model%nmatl) then
+          nphase = 1
+        else
+          nphase = matl_model%num_matl_phase(m)
+        end if
+        if (matl_model%nmatl == 1 .and. nphase == 1) cycle
+        if (nphase == 1) then
+          field = field + 1
+          v(:this%mesh%ncell_onP) = volume_fraction(m,:)
+          call this%mesh%cell_imap%gather_offp(v)
+          call this%file%write_cell_data(this%volume_fraction(field), v)
+        else
+          allocate(beta(nphase, this%mesh%ncell_onP))
+          do c = 1, this%mesh%ncell_onP
+            if (volume_fraction(m,c) > 0.0_r8) then
+              call matl_model%get_matl_phase_frac(m, temperature(c), beta(:,c))
+            else
+              beta(:,c) = 0.0_r8
+            end if
+          end do
+          do p = 1, nphase
+            field = field + 1
+            v(:this%mesh%ncell_onP) = volume_fraction(m,:) * beta(p,:)
+            call this%mesh%cell_imap%gather_offp(v)
+            call this%file%write_cell_data(this%volume_fraction(field), v)
+          end do
+          deallocate(beta)
+        end if
       end do
     end if
     call write_temporal_fields(this, temporal_output)

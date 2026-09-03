@@ -20,6 +20,7 @@ module flow_material_mapping_type
   use parameter_list_type
   use material_model_type
   use material_distribution_type
+  use unstr_2d_mesh_type
   implicit none
   private
 
@@ -41,6 +42,8 @@ module flow_material_mapping_type
     procedure :: get_priority
     procedure :: get_reduced_volume_fractions
     procedure :: put_reduced_volume_fractions
+    procedure :: get_phase_volume_fractions
+    procedure :: apply_phase_fluxes
   end type
 
 contains
@@ -210,9 +213,9 @@ contains
   end subroutine
 
 
-  !! Form the reduced flow distribution for the current single-phase
-  !! material contract. SOLID is the residual after the fluid and VOID slots;
-  !! phase-aware splitting for multiphase materials is not yet implemented.
+  !! Form the reduced flow distribution for the material-level single-phase
+  !! contract. SOLID is the residual after the fluid and VOID slots. The
+  !! phase-aware variant is GET_PHASE_VOLUME_FRACTIONS.
   subroutine get_reduced_volume_fractions(this, matl_dist, vfrac)
     class(flow_material_mapping), intent(in) :: this
     type(material_distribution), intent(in) :: matl_dist
@@ -256,6 +259,90 @@ contains
       matl_dist%vfrac(this%void_mid,:) = vfrac(this%num_fluid(),:size(matl_dist%vfrac,2))
     end if
     ASSERT(all(abs(sum(matl_dist%vfrac, dim=1) - 1.0_r8) <= 16.0_r8 * epsilon(1.0_r8)))
+  end subroutine
+
+
+  !! Form the reduced flow distribution from a material distribution and the
+  !! current temperature.  A multiphase material contributes the fraction of
+  !! its fluid phase to that phase's flow slot; all of its non-fluid phases
+  !! contribute to the lumped SOLID slot.  The material distribution itself
+  !! remains material-level state and is not modified.
+  subroutine get_phase_volume_fractions(this, matl_model, matl_dist, temperature, vfrac)
+    class(flow_material_mapping), intent(in) :: this
+    type(material_model), intent(in) :: matl_model
+    type(material_distribution), intent(in) :: matl_dist
+    real(r8), intent(in) :: temperature(:)
+    real(r8), intent(out) :: vfrac(:,:)
+
+    integer :: c, m, mid, first, last, nphase, ncell
+    real(r8), allocatable :: beta(:)
+
+    ncell = size(matl_dist%vfrac, 2)
+    ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
+    ASSERT(size(temperature) >= ncell)
+    ASSERT(size(vfrac,1) == this%num_material())
+    ASSERT(size(vfrac,2) >= ncell)
+    allocate(beta(matl_model%nphase_real))
+    vfrac = 0.0_r8
+
+    do m = 1, this%num_real_fluid()
+      mid = this%fluid_mid(m)
+      call matl_model%get_matl_phase_index_range(mid, first, last)
+      nphase = last - first + 1
+      if (nphase == 1) then
+        vfrac(m,:ncell) = matl_dist%vfrac(mid,:)
+      else
+        do c = 1, ncell
+          beta(:nphase) = 0.0_r8
+          call matl_model%get_matl_phase_frac(mid, temperature(c), beta(:nphase))
+          vfrac(m,c) = matl_dist%vfrac(mid,c) * beta(this%fluid_pid(m)-first+1)
+        end do
+      end if
+    end do
+    if (this%void_mid /= 0) vfrac(this%num_fluid(),:ncell) = matl_dist%vfrac(this%void_mid,:)
+    if (this%has_solid) vfrac(this%num_material(),:ncell) = &
+        1.0_r8 - sum(vfrac(:this%num_fluid(),:ncell), dim=1)
+  end subroutine
+
+
+  !! Apply the divergence of material-transport phase fluxes to the
+  !! material-level distribution.  The fluxes, rather than a tracker trial
+  !! VOF, are the authoritative result of material transport.  Stationary
+  !! solid phases are absent from FLUX_VOLUMES and remain unchanged.
+  subroutine apply_phase_fluxes(this, mesh, flux_volumes, matl_dist)
+    class(flow_material_mapping), intent(in) :: this
+    type(unstr_2d_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: flux_volumes(:,:)
+    type(material_distribution), intent(inout) :: matl_dist
+
+    integer :: c, m, first_face, last_face
+
+    ASSERT(size(matl_dist%vfrac,2) == mesh%ncell_onP)
+    ASSERT(size(flux_volumes,1) == this%num_fluid())
+    ASSERT(size(flux_volumes,2) == size(mesh%cface))
+
+    !! A one-material, single-phase fluid has invariant composition.  Avoid
+    !! feeding even a small discrete divergence back into its state.
+    if (size(matl_dist%vfrac,1) == 1 .and. this%num_real_fluid() == 1 .and. &
+        this%void_mid == 0 .and. .not.this%has_solid) return
+
+    do c = 1, mesh%ncell_onP
+      first_face = mesh%cstart(c)
+      last_face = mesh%cstart(c+1) - 1
+      do m = 1, this%num_real_fluid()
+        matl_dist%vfrac(this%fluid_mid(m),c) = matl_dist%vfrac(this%fluid_mid(m),c) - &
+            sum(flux_volumes(m,first_face:last_face))/mesh%volume(c)
+      end do
+      if (this%void_mid /= 0) then
+        matl_dist%vfrac(this%void_mid,c) = matl_dist%vfrac(this%void_mid,c) - &
+            sum(flux_volumes(this%num_fluid(),first_face:last_face))/mesh%volume(c)
+      end if
+    end do
+
+    !! TODO: Reconcile the moving phase fractions after transport so they
+    !! sum to one with the stationary-solid fraction.  This must preserve
+    !! small fragments in MATL_DIST rather than adopting a clipped tracker
+    !! trial VOF.
   end subroutine
 
 end module flow_material_mapping_type

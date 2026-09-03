@@ -22,6 +22,7 @@ module ns_ht_2d_solver_type
   use parameter_list_type
   use material_model_type
   use material_distribution_type
+  use unstr_2d_mesh_type
   use flow_2d_model_type
   use flow_material_mapping_type
   use flow_2d_material_transport_type
@@ -35,13 +36,14 @@ module ns_ht_2d_solver_type
 
   type, public :: ns_ht_2d_solver
     private
+    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
     type(flow_material_mapping) :: matl_map
     type(flow_2d_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
-    real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:)
+    real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), matl_vfrac_old(:,:)
     integer :: ncell_onP
     logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
@@ -85,16 +87,11 @@ contains
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params
     type(parameter_list), pointer :: tracking_params => null()
     character(:), allocatable :: tracking_algorithm
-    integer, allocatable :: flow_pids(:), flow_mids(:), priority(:)
+    integer, allocatable :: flow_pids(:), priority(:)
     logical :: simple_default
 
     stat = 0
     ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
-    if (matl_model%nphase_real /= matl_model%nmatl_real) then
-      stat = 1
-      errmsg = 'current non-isothermal flow requires single-phase materials'
-      return
-    end if
     if (.not.params%is_sublist('flow') .or. .not.params%is_sublist('thermal')) then
       stat = 1
       errmsg = 'solver requires flow and thermal sublists'
@@ -140,9 +137,8 @@ contains
       errmsg = 'non-isothermal flow requires at least one fluid material'
       return
     end if
-    allocate(flow_pids(this%matl_map%num_real_fluid()), flow_mids(this%matl_map%num_real_fluid()))
+    allocate(flow_pids(this%matl_map%num_real_fluid()))
     call this%matl_map%get_real_fluid_phase_ids(flow_pids)
-    call this%matl_map%get_real_fluid_material_ids(flow_mids)
     call flow_model%init_material(matl_model, flow_pids, stat, errmsg, boussinesq=.true., &
         nfluid=this%matl_map%num_fluid())
     if (stat /= 0) return
@@ -181,9 +177,11 @@ contains
     projection_params => flow_params%sublist('projection-solver')
 
     this%ncell_onP = flow_model%mesh%ncell_onP
+    this%mesh => flow_model%mesh
     this%matl_dist => matl_dist
     this%ts_sync = time_step_sync(lookahead)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
+        this%matl_vfrac_old(matl_model%nmatl,flow_model%mesh%ncell_onP), &
         this%flow_vfrac(this%matl_map%num_material(),flow_model%mesh%ncell))
     call this%matl_map%get_reduced_volume_fractions(matl_dist, this%flow_vfrac)
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
@@ -207,10 +205,10 @@ contains
         this%matl_map%num_fluid(), this%matl_map%num_material(), algorithm=tracking_algorithm, &
         priority=priority)
     if (allocated(ht_model%bc_inflow)) then
-      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_mids, stat, errmsg, &
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_pids, stat, errmsg, &
           inflow_temperature=ht_model%bc_inflow)
     else
-      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_mids, stat, errmsg)
+      call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_pids, stat, errmsg)
     end if
     if (stat /= 0) return
     allocate(this%thermal)
@@ -227,10 +225,11 @@ contains
 
   !! Set the initial flow and thermal states at TIME. The configured initial
   !! time step is supplied to their respective initial-condition procedures.
-  subroutine set_initial_state(this, env, time, velocity, temp, stat, errmsg)
+  subroutine set_initial_state(this, env, matl_model, time, velocity, temp, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
+    type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: time, velocity(:,:), temp(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -239,6 +238,8 @@ contains
     call this%thermal%set_initial_state(env, time, temp, stat, errmsg, dt=this%dt_init)
     if (stat /= 0) return
     call this%thermal%get_cell_temp_soln(this%temp)
+    call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
+    call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call this%flow%set_initial_material_state(this%flow_vfrac, this%temp)
     call this%flow%set_buoyancy_temperature(this%temp)
     call this%flow%set_initial_state(env, time, this%dt_init, velocity, stat)
@@ -261,11 +262,12 @@ contains
   !! Integrate the coupled state from its current time to TOUT. This owns
   !! output-time synchronization, thermal retry, time-step growth, and the
   !! convective Courant restriction.
-  subroutine integrate(this, env, tout, stat, errmsg)
+  subroutine integrate(this, env, matl_model, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
     class(ns_ht_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
+    type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -282,7 +284,7 @@ contains
       cause = this%hnext_cause
       t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
       if (t_np1 < t_n + hproposed) cause = 'output'
-      call attempt_step(this, env, t_n, t_np1, cause, t, thermal_hnext, stat, errmsg)
+      call attempt_step(this, env, matl_model, t_n, t_np1, cause, t, thermal_hnext, stat, errmsg)
       if (stat /= 0) return
       this%hlast = t - t_n
       call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
@@ -300,10 +302,11 @@ contains
   !! Attempt a coupled step from T_N toward T_NP1. T is the accepted endpoint:
   !! it normally equals T_NP1, but is smaller after thermal recovery. A flow
   !! failure is non-recoverable.
-  subroutine attempt_step(this, env, t_n, t_np1, step_cause, t, hnext, stat, errmsg)
+  subroutine attempt_step(this, env, matl_model, t_n, t_np1, step_cause, t, hnext, stat, errmsg)
 
     class(ns_ht_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
+    type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: t_n, t_np1
     character(*), intent(in) :: step_cause
     real(r8), intent(out) :: t, hnext
@@ -312,7 +315,7 @@ contains
 
     integer :: n
     real(r8) :: t_try
-    real(r8), pointer :: face_velocity(:), vfrac_trial(:,:)
+    real(r8), pointer :: face_velocity(:)
     character(256) :: line
     character(8) :: attempt_cause
 
@@ -329,10 +332,10 @@ contains
       call env%timer%start('flow/material-transport')
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
-      call this%material_transport%get_trial_volume_fractions(vfrac_trial)
       call env%timer%stop('flow/material-transport')
-      call this%matl_map%put_reduced_volume_fractions(vfrac_trial, this%matl_dist)
       call this%thermal%get_cell_temp_soln(this%temp)
+      this%matl_vfrac_old = this%matl_dist%vfrac
+      call this%matl_map%apply_phase_fluxes(this%mesh, this%material_transport%flux_volumes, this%matl_dist)
       call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
@@ -343,7 +346,7 @@ contains
       call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
       call this%thermal%step(env, t_n, t_try, stat, errmsg, hnext=hnext)
       if (stat /= 0) then
-        call this%matl_map%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
+        this%matl_dist%vfrac = this%matl_vfrac_old
         call this%flow%set_volume_fractions(this%flow_vfrac)
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
@@ -356,7 +359,9 @@ contains
         cycle
       end if
       call this%thermal%get_cell_temp_soln(this%temp)
-      call this%flow%set_volume_fractions(vfrac_trial)
+      call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
+      call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
+      call this%flow%set_volume_fractions(this%flow_vfrac)
       call this%flow%set_buoyancy_temperature(this%temp)
       if (this%inertial) then
         call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
@@ -367,7 +372,7 @@ contains
         call this%flow%reject_step()
         call this%thermal%reject_step()
         call this%thermal%get_cell_temp_soln(this%temp)
-        call this%matl_map%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
+        this%matl_dist%vfrac = this%matl_vfrac_old
         call this%flow%set_volume_fractions(this%flow_vfrac)
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3
@@ -377,7 +382,6 @@ contains
       end if
       call this%flow%commit_step()
       call this%thermal%commit_step
-      this%flow_vfrac = vfrac_trial
       this%nstep = this%nstep + 1_int64
       t = t_try
       call env%simlog%end_section('step-end status=accepted')

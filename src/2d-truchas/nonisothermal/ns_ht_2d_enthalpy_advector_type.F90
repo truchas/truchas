@@ -16,20 +16,20 @@ module ns_ht_2d_enthalpy_advector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use matl_prop_class
+  use scalar_func_class
   use bndry_func1_class
   implicit none
   private
 
-  type :: matl_prop_box
-    class(matl_prop), allocatable :: prop
+  type :: enthalpy_func_box
+    class(scalar_func), allocatable :: prop
   end type
 
   type, public :: ns_ht_2d_enthalpy_advector
     private
     type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
-    type(matl_prop_box), allocatable :: enthalpy(:)
-    integer, allocatable :: matl_ids(:)
+    type(enthalpy_func_box), allocatable :: enthalpy(:)
+    integer, allocatable :: phase_ids(:)
     real(r8), allocatable :: temp(:) ! on- and off-process cell workspace
     class(bndry_func1), pointer :: inflow_temperature => null()
   contains
@@ -39,33 +39,36 @@ module ns_ht_2d_enthalpy_advector_type
 
 contains
 
-  subroutine init(this, mesh, matl_model, matl_ids, stat, errmsg, inflow_temperature)
+  subroutine init(this, mesh, matl_model, phase_ids, stat, errmsg, inflow_temperature)
 
     use material_model_type
 
     class(ns_ht_2d_enthalpy_advector), intent(out) :: this
     type(unstr_2d_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
-    integer, intent(in) :: matl_ids(:)
+    integer, intent(in) :: phase_ids(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     class(bndry_func1), target, intent(in), optional :: inflow_temperature
 
     integer :: m
 
-    if (size(matl_ids) == 0 .or. any(matl_ids < 1) .or. &
-        any(matl_ids > matl_model%nmatl_real)) then
+    stat = 0
+    errmsg = ''
+    if (size(phase_ids) == 0 .or. any(phase_ids < 1) .or. &
+        any(phase_ids > matl_model%nphase_real)) then
       stat = 1
-      errmsg = 'invalid flow material IDs for enthalpy advection'
+      errmsg = 'invalid flow phase IDs for enthalpy advection'
       return
     end if
     this%mesh => mesh
-    this%matl_ids = matl_ids
-    allocate(this%enthalpy(size(matl_ids)), this%temp(mesh%ncell))
-    do m = 1, size(matl_ids)
-      call matl_model%get_matl_prop(matl_ids(m), 'enthalpy', this%enthalpy(m)%prop, errmsg)
+    this%phase_ids = phase_ids
+    allocate(this%enthalpy(size(phase_ids)), this%temp(mesh%ncell))
+    do m = 1, size(phase_ids)
+      call matl_model%get_phase_prop(phase_ids(m), 'enthalpy', this%enthalpy(m)%prop)
       if (.not.allocated(this%enthalpy(m)%prop)) then
         stat = 1
+        errmsg = 'enthalpy property is missing for phase ' // matl_model%phase_name(phase_ids(m))
         return
       end if
     end do
@@ -93,7 +96,7 @@ contains
     ASSERT(associated(this%mesh))
     ASSERT(size(cell_temp) == this%mesh%ncell_onP)
     ASSERT(size(dQ) == this%mesh%ncell_onP)
-    ASSERT(size(flux_volumes,1) >= size(this%matl_ids))
+    ASSERT(size(flux_volumes,1) >= size(this%phase_ids))
     ASSERT(size(flux_volumes,2) == size(this%mesh%cface))
 
     this%temp(:this%mesh%ncell_onP) = cell_temp
@@ -103,7 +106,7 @@ contains
     do c = 1, this%mesh%ncell_onP
       dQ(c) = 0.0_r8
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
-        if (any(flux_volumes(:size(this%matl_ids),i) > 0.0_r8)) then
+        if (any(flux_volumes(:size(this%phase_ids),i) > 0.0_r8)) then
           donor_temp = this%temp(c)
         else
           neighbor = this%mesh%cnhbr(i)
@@ -118,8 +121,8 @@ contains
             end if
           end if
         end if
-        do m = 1, size(this%matl_ids)
-          call this%enthalpy(m)%prop%compute_value([donor_temp], flux_enthalpy)
+        do m = 1, size(this%phase_ids)
+          flux_enthalpy = this%enthalpy(m)%prop%eval([donor_temp])
           dQ(c) = dQ(c) - flux_volumes(m,i)*flux_enthalpy
         end do
       end do
