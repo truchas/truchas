@@ -73,6 +73,10 @@
           "type": "array",
           "minItems": 2,
           "items": { "type": "number" }
+        },
+        "interp": {
+          "enum": ["linear", "akima"],
+          "default": "linear"
         }
       }
     },
