@@ -82,7 +82,8 @@ contains
 
     call this%model%H_of_T%compute_value(u%tc, u%hc(:this%mesh%ncell_onP))
 
-    call compute_face_temp(this, env, t, u, stat, errmsg)
+    call env%simlog%info('Computing consistent initial state.')
+    call compute_face_temp(this, env, t, u, 'thermal.initial.state', stat, errmsg)
     if (stat /= 0) return
 
     call this%compute_udot(env, t, u, udot, stat, errmsg)
@@ -134,7 +135,8 @@ contains
     end do
     call this%mesh%cell_imap%gather_offp(advanced%tc)
 
-    call compute_face_temp(this, env, t+dt, advanced, stat, errmsg)
+    call env%simlog%info('Computing consistent initial-state derivative.')
+    call compute_face_temp(this, env, t+dt, advanced, 'thermal.initial.deriv', stat, errmsg)
     if (stat /= 0) return
 
     udot%tc(:this%mesh%ncell_onP) = (advanced%tc(:this%mesh%ncell_onP) - &
@@ -152,7 +154,7 @@ contains
   !! temperatures. A future nonlinear face system will require a nonlinear
   !! solve here, rather than this single CG solve.
 
-  subroutine compute_face_temp(this, env, t, u, stat, errmsg)
+  subroutine compute_face_temp(this, env, t, u, name, stat, errmsg)
 
     use hypre_hybrid_type
     use mfd_2d_diff_matrix_type
@@ -161,6 +163,7 @@ contains
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u
+    character(*), intent(in) :: name
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -169,9 +172,9 @@ contains
     type(hypre_hybrid) :: solver
     type(ht_2d_vector) :: udot, f
     real(r8), allocatable :: coef(:), z(:)
-    real(r8) :: norm, rel_tol
+    real(r8) :: init_res, rel_res, rel_tol
     integer :: max_itr, num_itr, num_dscg_itr, num_pcg_itr
-    character(80) :: msg
+    character(256) :: msg
 
     call this%params%get('rel-tol', rel_tol, stat, errmsg)
     if (stat /= 0) return
@@ -193,13 +196,11 @@ contains
     call f%init(u)
     call f%setval(0.0_r8)
     call this%model%residual(t, u, udot, f)
-    norm = sqrt(global_dot_product(f%tf(:this%mesh%nface_onP), f%tf(:this%mesh%nface_onP)))
-
-    if (env%simlog%is_enabled(LOG_DETAIL)) then
-      write (msg,'(a,es10.3)') 'ht_2d_ic_solver%compute_face_temp: initial ||rface||_2 = ', norm
-      call env%simlog%info(trim(msg), level=LOG_DETAIL)
+    init_res = sqrt(global_dot_product(f%tf(:this%mesh%nface_onP), f%tf(:this%mesh%nface_onP)))
+    if (init_res == 0.0_r8) then
+      call env%simlog%info(trim(name) // ' method=none reason=zero-residual status=skipped')
+      return
     end if
-    if (norm == 0.0_r8) return
 
     allocate(coef(this%mesh%ncell))
     call this%model%conductivity%compute_value(u%tc, coef(:this%mesh%ncell_onP))
@@ -242,17 +243,17 @@ contains
     call solver%solve(f%tf(:this%mesh%nface_onP), z, stat)
     u%tf(:this%mesh%nface_onP) = u%tf(:this%mesh%nface_onP) - z
 
-    if (env%simlog%is_enabled(LOG_DETAIL)) then
-      call solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, norm)
-      write(msg,'(3(a,i0),a,es9.2)') 'solve: num_itr = ', num_itr, &
-          ' (', num_dscg_itr, ', ', num_pcg_itr, '), ||r||/||b|| = ', norm
-      call env%simlog%info(trim(msg), level=LOG_DETAIL)
-    end if
-
-    if (stat /= 0) then
-      call solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, norm)
-      write(msg,'(3(a,i0),a,es9.2)') 'failed to converge: num_itr = ', num_itr, &
-          ' (', num_dscg_itr, ', ', num_pcg_itr, '), ||r||/||b|| = ', norm
+    call solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res)
+    if (stat == 0) then
+      write(msg,'(a,a,es0.5,a,i0,a,i0,a,i0,a,es0.5,a)') trim(name), &
+          ' init_res=', init_res, ' iter=', num_itr, ' dscg=', num_dscg_itr, &
+          ' amg=', num_pcg_itr, ' rel_res=', rel_res, ' status=ok'
+      call env%simlog%info(trim(msg))
+    else
+      write(msg,'(a,a,es0.5,a,i0,a,i0,a,i0,a,es0.5,a)') trim(name), &
+          ' init_res=', init_res, ' iter=', num_itr, ' dscg=', num_dscg_itr, &
+          ' amg=', num_pcg_itr, ' rel_res=', rel_res, ' status=failed'
+      call env%simlog%info(trim(msg))
       errmsg = trim(msg)
     end if
 

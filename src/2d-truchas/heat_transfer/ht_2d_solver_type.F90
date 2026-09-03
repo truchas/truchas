@@ -357,6 +357,7 @@ contains
 
     call this%integ%step(t_np1, this%u, this%hnext, stat)
     call env%timer%stop('thermal/transport')
+    call write_step_metrics()
     if (stat == 0) then
       this%t = t_np1
       this%step_is_pending = .true.
@@ -369,6 +370,27 @@ contains
       call env%simlog%end_section('step-end status=failed')
     end if
     if (present(hnext)) hnext = this%hnext
+
+  contains
+
+    subroutine write_step_metrics()
+
+      integer :: counters(6)
+      character(128) :: line
+      character(6) :: status
+
+      call this%integ%get_stepping_statistics(counters)
+      if (stat == 0) then
+        status = 'ok'
+      else
+        status = 'failed'
+      end if
+      write(line,'(a,i0,a,i0,a,i0,a,i0,a,i0,a,a)') 'thermal nres=', counters(1), &
+          ' npc=', counters(2), ' nnr=', counters(4), ' nnf=', counters(5), &
+          ' nsr=', counters(6), ' status=', trim(status)
+      call env%simlog%info(trim(line))
+
+    end subroutine write_step_metrics
 
   end subroutine step
 
