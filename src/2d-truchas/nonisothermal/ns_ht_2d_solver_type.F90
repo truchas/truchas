@@ -236,7 +236,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     real(r8) :: hlimit
 
-    call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
+    call this%thermal%set_initial_state(env, time, temp, stat, errmsg, dt=this%dt_init)
     if (stat /= 0) return
     call this%thermal%get_cell_temp_soln(this%temp)
     call this%flow%set_initial_material_state(this%flow_vfrac, this%temp)
@@ -341,9 +341,7 @@ contains
       !! the conduction update relative to this advected enthalpy state, so
       !! material-front motion does not masquerade as thermal truncation error.
       call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
-      call env%timer%start('thermal/transport')
-      call this%thermal%step(t_try, hnext, stat)
-      call env%timer%stop('thermal/transport')
+      call this%thermal%step(env, t_n, t_try, stat, errmsg, hnext=hnext)
       if (stat /= 0) then
         call this%matl_map%put_reduced_volume_fractions(this%flow_vfrac, this%matl_dist)
         call this%flow%set_volume_fractions(this%flow_vfrac)

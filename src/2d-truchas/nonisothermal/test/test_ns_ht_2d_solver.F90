@@ -126,14 +126,14 @@ contains
     velocity = 0.0_r8
     temp = 2.0_r8 + sin(acos(-1.0_r8)*mesh%cell_centroid(1,:mesh%ncell_onP)) * &
         sin(acos(-1.0_r8)*mesh%cell_centroid(2,:mesh%ncell_onP))
-    call thermal_solver%set_initial_state(env, 0.0_r8, 1.0e-3_r8, temp, stat, errmsg)
+    call thermal_solver%set_initial_state(env, 0.0_r8, temp, stat, errmsg, dt=1.0e-3_r8)
     if (stat /= 0) call fail('initializing standalone thermal state: ' // errmsg)
     call solver%set_initial_state(env, 0.0_r8, velocity, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled state: ' // errmsg)
     call require_zero_face_velocity(solver, mesh%nface, 'zero initial velocity was not preserved')
     call thermal_solver%get_cell_temp_soln(thermal_temp)
     call thermal_solver%get_cell_heat_soln(thermal_heat)
-    call thermal_solver%step(1.0e-3_r8, thermal_hnext, stat)
+    call thermal_solver%step(env, 0.0_r8, 1.0e-3_r8, stat, hnext=thermal_hnext)
     call require(stat == 0, 'thermal step for reject test failed')
     if (stat /= 0) return
     call thermal_solver%reject_step()
@@ -151,7 +151,7 @@ contains
       do while (t < real(n,r8)*1.0e-3_r8)
         t_np1 = ts_sync%next_time(real(n,r8)*1.0e-3_r8, t, hlast, hnext)
         do ntry = 1, 4
-          call thermal_solver%step(t_np1, thermal_hnext, stat)
+          call thermal_solver%step(env, t, t_np1, stat, hnext=thermal_hnext)
           if (stat == 0) exit
           t_np1 = t + thermal_hnext
           if (t_np1 - t < 1.0e-8_r8) then

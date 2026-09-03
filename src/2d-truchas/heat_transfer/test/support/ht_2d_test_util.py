@@ -55,7 +55,11 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
     log = log_file.read_text()
     if "unrecoverable integration failure" in log:
         raise AssertionError("unrecoverable integration failure")
-    completed = re.findall(r"Completed integration to T =\s*([0-9.E+-]+)", log)
+    completed = re.findall(
+        r"^integration-end t=([0-9.E+-]+) nstep=[0-9]+ status=complete$",
+        log,
+        re.MULTILINE,
+    )
     if not completed:
         raise AssertionError("completion record not found in run.log")
     final_time = float(completed[-1])
