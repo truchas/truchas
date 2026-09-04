@@ -50,6 +50,7 @@ module flow_2d_solver_type
     procedure :: init
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
+    procedure :: set_pre_solidification_state
     procedure :: set_buoyancy_temperature
     procedure :: set_initial_state
     procedure :: get_cell_flow_soln
@@ -127,6 +128,14 @@ contains
     call this%model%set_initial_material_state(vfrac, temperature)
     call update_flow_active(this)
   end subroutine
+
+
+  !! Save the mobile-fluid mass density before thermal phase change.
+  subroutine set_pre_solidification_state(this)
+    class(flow_2d_solver), intent(inout) :: this
+
+    call this%model%set_pre_solidification_state()
+  end subroutine set_pre_solidification_state
 
 
   subroutine set_buoyancy_temperature(this, temperature)

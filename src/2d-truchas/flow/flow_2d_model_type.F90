@@ -50,6 +50,7 @@ module flow_2d_model_type
     procedure :: init_material
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
+    procedure :: set_pre_solidification_state
     procedure :: accept_material_state
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
@@ -202,6 +203,15 @@ contains
     call this%matl_props%set_initial_state(vfrac, temperature)
   end subroutine
 
+
+  !! Save the mobile-fluid mass density before thermal phase change.
+  subroutine set_pre_solidification_state(this)
+    class(flow_2d_model), intent(inout) :: this
+
+    call this%matl_props%set_pre_solidification_state()
+  end subroutine set_pre_solidification_state
+
+
   subroutine accept_material_state(this)
     class(flow_2d_model), intent(inout) :: this
 
@@ -228,10 +238,12 @@ contains
     real(r8), intent(out) :: rhs(:,:)
 
     if (this%inviscid) then
-      call this%momentum%assemble_inviscid(this%matl_props%density_c, this%matl_props%cell_t, rhs)
+      call this%momentum%assemble_inviscid(this%matl_props%density_c, this%matl_props%cell_t, rhs, &
+          this%matl_props%solidified_density, this%matl_props%vof)
     else
       call this%momentum%assemble(dt, this%matl_props%density_c, this%matl_props%viscosity_f, &
-          this%matl_props%cell_t, this%matl_props%face_t, this%bc, rhs)
+          this%matl_props%cell_t, this%matl_props%face_t, this%bc, rhs, &
+          this%matl_props%solidified_density, this%matl_props%vof)
     end if
   end subroutine
 

@@ -38,17 +38,20 @@ module flow_2d_material_props_type
     type(scalar_func_box), allocatable :: viscosity(:), density_delta(:)
     real(r8), allocatable, public :: vfrac(:,:), density_c(:), density_c_old(:), &
         density_delta_c(:), inv_density_c(:), inv_density_f(:), viscosity_c(:), viscosity_f(:), &
-        vof(:), vof_novoid(:)
+        vof(:), vof_novoid(:), solidified_density(:)
+    real(r8), allocatable :: pre_solidification_density(:)
     integer, allocatable, public :: cell_t(:), face_t(:)
     integer, public :: nfluid = 0
     real(r8), public :: cutoff = 0.01_r8
     logical, public :: any_void = .false., any_real_fluid = .false., any_real_fluid_onP = .false.
+    logical :: have_pre_solidification_state = .false.
   contains
     procedure :: init
     procedure :: init_material
     procedure :: set_initial_state
     procedure :: set_volume_fractions
     procedure :: set_temperature
+    procedure :: set_pre_solidification_state
     procedure :: accept
   end type flow_2d_material_props
 
@@ -85,6 +88,7 @@ contains
         this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
         this%density_delta(size(density)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
         this%cell_t(mesh%ncell), this%face_t(mesh%nface))
     if (.not.inviscid) then
       allocate(this%viscosity(size(density)))
@@ -154,6 +158,7 @@ contains
         this%density_c(mesh%ncell), this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
         this%density_delta(size(phase_ids)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
         this%cell_t(mesh%ncell), this%face_t(mesh%nface))
     this%nfluid = size(phase_ids)
     if (present(nfluid)) this%nfluid = nfluid
@@ -249,6 +254,12 @@ contains
     this%vof = sum(vfrac(:this%nfluid,:this%mesh%ncell), dim=1)
     this%vof_novoid = sum(vfrac(:size(this%density),:this%mesh%ncell), dim=1)
     this%density_c = matmul(this%density, this%vfrac)
+    if (this%have_pre_solidification_state) then
+      this%solidified_density = max(this%pre_solidification_density - &
+          matmul(this%density, this%vfrac), 0.0_r8)
+    else
+      this%solidified_density = 0.0_r8
+    end if
     where (this%vof > 0.0_r8) this%density_c = this%density_c/this%vof
     this%inv_density_c = 0.0_r8
     where (this%density_c > 0.0_r8) this%inv_density_c = 1.0_r8/this%density_c
@@ -326,6 +337,18 @@ contains
   end subroutine set_volume_fractions
 
 
+  !! Save the current mobile-fluid mass density before thermal phase change.
+  !! The subsequent SET_VOLUME_FRACTIONS call then exposes the mass lost from
+  !! the mobile phase through SOLIDIFIED_DENSITY.
+  subroutine set_pre_solidification_state(this)
+    class(flow_2d_material_props), intent(inout) :: this
+
+    this%pre_solidification_density = matmul(this%density, this%vfrac)
+    this%solidified_density = 0.0_r8
+    this%have_pre_solidification_state = .true.
+  end subroutine set_pre_solidification_state
+
+
   !! Evaluate temperature-dependent material properties for the current
   !! reduced distribution.
   subroutine set_temperature(this, temperature)
@@ -377,6 +400,8 @@ contains
     class(flow_2d_material_props), intent(inout) :: this
 
     this%density_c_old = this%density_c
+    this%solidified_density = 0.0_r8
+    this%have_pre_solidification_state = .false.
   end subroutine accept
 
 
@@ -390,6 +415,8 @@ contains
     this%inv_density_f = 1.0_r8/this%density(1)
     this%vof = 1.0_r8
     this%vof_novoid = 1.0_r8
+    this%solidified_density = 0.0_r8
+    this%pre_solidification_density = 0.0_r8
     this%cell_t = regular_t
     this%face_t = regular_t
     this%any_real_fluid = .true.

@@ -49,10 +49,12 @@ contains
     type(parameter_list), target :: velocity_params, slip_params
     type(parameter_list), pointer :: plist
     type(pbsr_matrix), pointer :: matrix
-    real(r8), allocatable :: density(:), viscosity(:), velocity(:,:), rhs(:,:), result(:,:)
+    real(r8), allocatable :: density(:), viscosity(:), velocity(:,:), rhs(:,:), result(:,:), &
+        solidified_density(:), fluid_fraction(:)
     integer, allocatable :: cell_t(:), face_t(:)
     character(:), allocatable :: errmsg
     integer :: stat, f, c, entry
+    real(r8) :: base_diag
     logical :: dirichlet_solution, coupled_slip
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
@@ -60,7 +62,8 @@ contains
     call operators%init(mesh)
     call momentum%init(mesh, operators)
     allocate(density(mesh%ncell), viscosity(mesh%nface), velocity(2,mesh%ncell), &
-        rhs(2,mesh%ncell_onP), result(2,mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface))
+        rhs(2,mesh%ncell_onP), result(2,mesh%ncell_onP), solidified_density(mesh%ncell), &
+        fluid_fraction(mesh%ncell), cell_t(mesh%ncell), face_t(mesh%nface))
     density = 0.0_r8
     viscosity = 1.0_r8
     cell_t = regular_t
@@ -79,6 +82,18 @@ contains
     call matrix%matvec(velocity, result)
     dirichlet_solution = maxval(abs(result - rhs)) < 1.0e-12_r8
     call require(dirichlet_solution, 'constant velocity Dirichlet solution does not satisfy momentum system')
+
+    solidified_density = 0.0_r8
+    fluid_fraction = 1.0_r8
+    solidified_density(1) = 0.25_r8
+    fluid_fraction(1) = 0.5_r8
+    entry = matrix%graph%index(1, 1)
+    base_diag = matrix%values(1,1,entry)
+    call momentum%assemble(1.0_r8, density, viscosity, cell_t, face_t, bc, rhs, &
+        solidified_density, fluid_fraction)
+    matrix => momentum%matrix()
+    call require(abs(matrix%values(1,1,entry) - base_diag - 0.5_r8*mesh%volume(1)) < 1.0e-12_r8, &
+        'solidification did not add the expected momentum sink')
 
     plist => slip_params%sublist('wall')
     call plist%set('type', 'free-slip')
@@ -175,9 +190,11 @@ contains
     type(flow_2d_momentum), target :: momentum, inviscid_momentum
     type(flow_2d_bc) :: bc
     type(pbsr_matrix), pointer :: matrix
-    real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), result(:,:), velocity(:,:)
+    real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), result(:,:), velocity(:,:), &
+        solidified_density(:), fluid_fraction(:)
     integer, allocatable :: cell_t(:), face_t(:)
     integer :: f, c1, c2, entry11, entry12
+    real(r8) :: base_diag
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4, 4], 0.0_r8, 0.0_r8)
     call operators%init(mesh)
@@ -216,11 +233,23 @@ contains
         'VOID cell did not receive a viscous dummy equation')
 
     call inviscid_momentum%init(mesh, operators, inviscid=.true.)
+    allocate(solidified_density(mesh%ncell), fluid_fraction(mesh%ncell))
     density = 2.0_r8
     rhs = 0.0_r8
     rhs(:,c1) = [2.0_r8, -4.0_r8]
     rhs(:,c2) = [3.0_r8, 5.0_r8]
     call inviscid_momentum%assemble_inviscid(density, cell_t, rhs)
+    matrix => inviscid_momentum%matrix()
+    entry11 = matrix%graph%index(c1, c1)
+    base_diag = matrix%values(1,1,entry11)
+    solidified_density = 0.0_r8
+    fluid_fraction = 1.0_r8
+    solidified_density(c1) = 0.25_r8
+    fluid_fraction(c1) = 0.5_r8
+    call inviscid_momentum%assemble_inviscid(density, cell_t, rhs, solidified_density, fluid_fraction)
+    matrix => inviscid_momentum%matrix()
+    call require(abs(matrix%values(1,1,entry11) - base_diag - 0.5_r8*mesh%volume(c1)) < 1.0e-12_r8, &
+        'inviscid solidification did not add the expected momentum sink')
     velocity = 0.0_r8
     call inviscid_momentum%solve_inviscid(density, cell_t, rhs, velocity(:,1:mesh%ncell_onP))
     call require(maxval(abs(velocity(:,c2))) < 1.0e-12_r8, &

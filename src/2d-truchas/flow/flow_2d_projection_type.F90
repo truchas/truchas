@@ -83,7 +83,7 @@ contains
     ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs) == this%mesh%ncell_onP)
-    pin_face = bc%pressure_pin_face()
+    pin_face = bc%pressure_pin_face(face_t)
     ASSERT(pin_face >= 0 .and. pin_face <= this%mesh%nface_onP)
     if (pin_face > 0) then
       ASSERT(this%mesh%fcell(2,pin_face) == 0)

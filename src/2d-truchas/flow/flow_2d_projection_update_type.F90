@@ -113,7 +113,7 @@ contains
     call this%mesh%cell_imap%gather_offp(this%delta_p)
 
     call pressure_derivative(this, this%delta_p, cell_t, face_t, bc, this%derivative_f, correction=.true.)
-    pin_face = bc%pressure_pin_face()
+    pin_face = bc%pressure_pin_face(face_t)
     if (pin_face > 0) then
       c = this%mesh%fcell(1,pin_face)
       this%derivative_f(pin_face) = -this%delta_p(c)/this%operators%normal_distance(pin_face)
@@ -209,7 +209,7 @@ contains
     call this%mesh%cell_imap%gather_offp(this%delta_p)
 
     call pressure_derivative(this, this%delta_p, cell_t, face_t, bc, this%derivative_f, correction=.true.)
-    pin_face = bc%pressure_pin_face()
+    pin_face = bc%pressure_pin_face(face_t)
     if (pin_face > 0) then
       c = this%mesh%fcell(1,pin_face)
       this%derivative_f(pin_face) = -this%delta_p(c)/this%operators%normal_distance(pin_face)
