@@ -275,9 +275,12 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    real(r8) :: t_n, t_np1, t, thermal_hnext, hproposed
+    real(r8) :: t_n, t_np1, thermal_hnext, hproposed
     logical :: sig_rcvd
+    integer :: n
+    character(256) :: line
     character(8) :: cause
+    character(8) :: attempt_cause
 
     stat = 0
     t_n = this%thermal%last_time()
@@ -287,11 +290,39 @@ contains
       cause = this%hnext_cause
       t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
       if (t_np1 < t_n + hproposed) cause = 'output'
-      call attempt_step(this, env, matl_model, t_n, t_np1, cause, t, thermal_hnext, stat, errmsg)
-      if (stat /= 0) return
-      this%hlast = t - t_n
+      do n = 1, this%max_try
+        attempt_cause = cause
+        if (n > 1) attempt_cause = 'thermal'
+        write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
+            ' attempt=', n, ' t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(attempt_cause)
+        call env%simlog%begin_section(trim(line))
+        call attempt_step(this, env, matl_model, t_n, t_np1, stat, errmsg, thermal_hnext)
+        if (stat == 0) then
+          call env%simlog%end_section('step-end status=accepted')
+          exit
+        else if (stat > 0) then
+          t_np1 = t_n + thermal_hnext
+          if (t_np1 - t_n < this%dt_min) then
+            stat = -1
+            errmsg = 'next coupled time step is too small'
+            call env%simlog%end_section('step-end status=failed')
+            return
+          end if
+          if (n == this%max_try) then
+            stat = -2
+            errmsg = 'unable to take a coupled time step'
+            call env%simlog%end_section('step-end status=failed')
+            return
+          end if
+          call env%simlog%end_section('step-end status=rejected')
+        else
+          call env%simlog%end_section('step-end status=failed')
+          return
+        end if
+      end do
       call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
-      t_n = t
+      this%hlast = t_np1 - t_n
+      t_n = t_np1
       call read_signal(SIGURG, sig_rcvd)
       if (sig_rcvd) then
         stat = 1
@@ -302,108 +333,78 @@ contains
   end subroutine
 
 
-  !! Attempt a coupled step from T_N toward T_NP1. T is the accepted endpoint:
-  !! it normally equals T_NP1, but is smaller after thermal recovery. A flow
-  !! failure is non-recoverable.
-  subroutine attempt_step(this, env, matl_model, t_n, t_np1, step_cause, t, hnext, stat, errmsg)
+  !! Attempt one coupled step from T_N to T_NP1. Thermal failure is reported
+  !! as recoverable; a flow failure is non-recoverable.
+  subroutine attempt_step(this, env, matl_model, t_n, t_np1, stat, errmsg, hnext)
 
     class(ns_ht_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: t_n, t_np1
-    character(*), intent(in) :: step_cause
-    real(r8), intent(out) :: t, hnext
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    real(r8), intent(out) :: hnext
 
-    integer :: n
-    real(r8) :: t_try
     real(r8), pointer :: face_velocity(:)
-    character(256) :: line
-    character(8) :: attempt_cause
 
     ASSERT(t_np1 > t_n)
     ASSERT(this%thermal%last_time() == t_n)
-    t = t_n
-    t_try = t_np1
-    do n = 1, this%max_try
-      attempt_cause = step_cause
-      if (n > 1) attempt_cause = 'thermal'
-      write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
-          ' attempt=', n, ' t0=', t_n, ' dt=', t_try - t_n, ' cause=', trim(attempt_cause)
-      call env%simlog%begin_section(trim(line))
-      call env%timer%start('flow/material-transport')
-      this%flow_vfrac_old = this%flow_vfrac
-      call this%flow%get_face_velocity(face_velocity)
-      call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
-      call env%timer%stop('flow/material-transport')
-      call this%thermal%get_cell_temp_soln(this%temp)
-      this%matl_vfrac_old = this%matl_dist%vfrac
-      call this%matl_map%apply_phase_fluxes(this%mesh, this%material_transport%flux_volumes, this%matl_dist)
-      call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
-      call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
-      call this%flow%set_volume_fractions(this%flow_vfrac)
+    stat = 0
+    call env%timer%start('flow/material-transport')
+    this%flow_vfrac_old = this%flow_vfrac
+    call this%flow%get_face_velocity(face_velocity)
+    call this%material_transport%advance(env, t_n, t_np1, face_velocity, this%flow_vfrac)
+    call env%timer%stop('flow/material-transport')
+    call this%thermal%get_cell_temp_soln(this%temp)
+    this%matl_vfrac_old = this%matl_dist%vfrac
+    call this%matl_map%apply_phase_fluxes(this%mesh, this%material_transport%flux_volumes, this%matl_dist)
+    call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
+    call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
+    call this%flow%set_volume_fractions(this%flow_vfrac)
+    call this%flow%set_pre_solidification_state()
+    call env%timer%start('thermal/advection')
+    call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
+        this%material_transport%flux_volumes, this%enthalpy_increment)
+    call env%timer%stop('thermal/advection')
+    !! TODO: A future adaptive BDF1 thermal error estimate should measure
+    !! the conduction update relative to this advected enthalpy state, so
+    !! material-front motion does not masquerade as thermal truncation error.
+    call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_np1 - t_n))
+    call this%thermal%step(env, t_n, t_np1, stat, errmsg, hnext=hnext)
+    if (stat /= 0) then
+      this%matl_dist%vfrac = this%matl_vfrac_old
+      this%flow_vfrac = this%flow_vfrac_old
+      call this%flow%set_volume_fractions(this%flow_vfrac_old)
       call this%flow%set_pre_solidification_state()
-      call env%timer%start('thermal/advection')
-      call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
-          this%material_transport%flux_volumes, this%enthalpy_increment)
-      call env%timer%stop('thermal/advection')
-      !! TODO: A future adaptive BDF1 thermal error estimate should measure
-      !! the conduction update relative to this advected enthalpy state, so
-      !! material-front motion does not masquerade as thermal truncation error.
-      call this%thermal%set_ext_enthalpy_rate(this%enthalpy_increment / (t_try - t_n))
-      call this%thermal%step(env, t_n, t_try, stat, errmsg, hnext=hnext)
-      if (stat /= 0) then
-        this%matl_dist%vfrac = this%matl_vfrac_old
-        this%flow_vfrac = this%flow_vfrac_old
-        call this%flow%set_volume_fractions(this%flow_vfrac_old)
-        call this%flow%set_pre_solidification_state()
-        t_try = t_n + hnext
-        if (t_try - t_n < this%dt_min) then
-          stat = -1
-          errmsg = 'next coupled time step is too small'
-          call env%simlog%end_section('step-end status=failed')
-          return
-        end if
-        call env%simlog%end_section('step-end status=rejected')
-        cycle
-      end if
+      stat = 1
+      return
+    end if
+    call this%thermal%get_cell_temp_soln(this%temp)
+    call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
+    call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
+    call this%flow%set_volume_fractions(this%flow_vfrac)
+    call this%flow%set_buoyancy_temperature(this%temp)
+    if (this%inertial) then
+      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
+    else
+      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg)
+    end if
+    if (stat /= 0) then
+      call this%flow%reject_step()
+      call this%thermal%reject_step()
       call this%thermal%get_cell_temp_soln(this%temp)
-      call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
-      call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
-      call this%flow%set_volume_fractions(this%flow_vfrac)
+      this%matl_dist%vfrac = this%matl_vfrac_old
+      this%flow_vfrac = this%flow_vfrac_old
+      call this%flow%set_volume_fractions(this%flow_vfrac_old)
+      call this%flow%set_pre_solidification_state()
       call this%flow%set_buoyancy_temperature(this%temp)
-      if (this%inertial) then
-        call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg, this%material_transport%flux_volumes)
-      else
-        call this%flow%advance_momentum(env, t_n, t_try, stat, errmsg)
-      end if
-      if (stat /= 0) then
-        call this%flow%reject_step()
-        call this%thermal%reject_step()
-        call this%thermal%get_cell_temp_soln(this%temp)
-        this%matl_dist%vfrac = this%matl_vfrac_old
-        this%flow_vfrac = this%flow_vfrac_old
-        call this%flow%set_volume_fractions(this%flow_vfrac_old)
-        call this%flow%set_pre_solidification_state()
-        call this%flow%set_buoyancy_temperature(this%temp)
-        stat = -3
-        if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
-        call env%simlog%end_section('step-end status=failed')
-        return
-      end if
-      call this%flow%commit_step()
-      call this%thermal%commit_step
-      this%nstep = this%nstep + 1_int64
-      t = t_try
-      call env%simlog%end_section('step-end status=accepted')
-      if (stat == 0) exit
-    end do
-
-    if (stat == 0) return
-
-    stat = -2
-    errmsg = 'unable to take a coupled time step'
+      stat = -3
+      if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'
+      return
+    end if
+    call this%flow%commit_step()
+    call this%thermal%commit_step
+    this%nstep = this%nstep + 1_int64
   end subroutine
 
 
