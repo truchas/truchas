@@ -276,6 +276,7 @@ contains
     real(r8) :: t_n, t_np1, hproposed, hthermal
     logical :: sig_rcvd
     integer :: n
+    character(256) :: line
     character(8) :: cause
 
     stat = 0
@@ -293,20 +294,29 @@ contains
         return
       end if
       do n = 1, this%max_try
-        call this%step(env, t_n, t_np1, stat, errmsg, cause, n, hthermal)
-        if (stat == 0) exit
+        write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
+            ' attempt=', n, ' t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
+        call env%simlog%begin_section(trim(line))
+        call this%step(env, t_n, t_np1, stat, errmsg, hthermal)
+        if (stat == 0) then
+          call env%simlog%end_section('step-end status=accepted')
+          exit
+        end if
         t_np1 = t_n + hthermal
         if (t_np1 - t_n < this%dt_min) then
           stat = -1
           errmsg = 'next time step is too small'
+          call env%simlog%end_section('step-end status=failed')
           return
         end if
+        if (n == this%max_try) then
+          stat = -2
+          errmsg = 'unable to take a thermal time step'
+          call env%simlog%end_section('step-end status=failed')
+          return
+        end if
+        call env%simlog%end_section('step-end status=rejected')
       end do
-      if (stat /= 0) then
-        stat = -2
-        errmsg = 'unable to take a thermal time step'
-        return
-      end if
       call this%commit_step()
       t_n = t_np1
       this%hnext = min(hthermal, this%dt_grow*this%hlast, this%dt_max)
@@ -329,30 +339,17 @@ contains
   !! failure, THIS%U is restored to the last committed state and STAT is
   !! nonzero.
 
-  subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause, attempt, hnext)
+  subroutine step(this, env, t_n, t_np1, stat, errmsg, hnext)
 
     class(ht_2d_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
     character(:), allocatable, optional, intent(out) :: errmsg
-    character(*), optional, intent(in) :: step_cause
-    integer, optional, intent(in) :: attempt
     real(r8), optional, intent(out) :: hnext
-
-    character(256) :: line
-    character(8) :: cause
-    integer :: iattempt
 
     ASSERT(t_np1 > t_n)
     ASSERT(this%integ%last_time() == t_n)
-    cause = 'explicit'
-    if (present(step_cause)) cause = step_cause
-    iattempt = 1
-    if (present(attempt)) iattempt = attempt
-    write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
-        ' attempt=', iattempt, ' t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
-    call env%simlog%begin_section(trim(line))
     call env%timer%start('thermal/transport')
 
     call this%integ%step(t_np1, this%u, this%hnext, stat)
@@ -361,13 +358,11 @@ contains
     if (stat == 0) then
       this%t = t_np1
       this%step_is_pending = .true.
-      call env%simlog%end_section('step-end status=accepted')
     else ! failed -- restore last good state before returning
       call this%integ%get_last_state_copy(this%u)
       this%t = t_n
       this%step_is_pending = .false.
       if (present(errmsg)) errmsg = 'thermal integrator step failed'
-      call env%simlog%end_section('step-end status=failed')
     end if
     if (present(hnext)) hnext = this%hnext
 
