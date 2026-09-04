@@ -42,6 +42,10 @@ flow/thermal models.  More detailed subsystem items remain in
   demonstrates the resulting velocity error.
 - Continue improving accuracy on non-orthogonal meshes and reduce the finite-
   resolution hydrostatic well-balance residual.
+- The cell-centered flow gradient currently uses a minimum-norm `DGELSY`
+  fallback for rank-deficient stencils created by dynamically changing solid
+  regions.  Replace this with a proper interface-aware reconstruction; the
+  fallback is not a general treatment of solid/fluid interfaces.
 - Revisit the initial pressure/velocity construction so that hydrostatic and
   boundary-compatible initial states are treated as accurately as possible.
 - Handle pressure null spaces for multiple disconnected active-fluid

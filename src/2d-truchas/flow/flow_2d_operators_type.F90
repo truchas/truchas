@@ -95,6 +95,9 @@ contains
   !! from the cell center to the face center; pressure Neumann values contribute
   !! a normal row of length NORMAL_DISTANCE. Boundary faces not listed by a
   !! condition are omitted from the fit.
+  !!
+  !! The least-squares system may be rank deficient when solid cells remove
+  !! neighboring rows. DGELSY returns a minimum-norm solution in that case.
   subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc, gravity_head, cell_t, face_t)
     class(flow_2d_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
@@ -103,8 +106,10 @@ contains
     real(r8), optional, intent(in) :: gravity_head(:,:)
     integer, optional, intent(in) :: cell_t(:), face_t(:)
 
-    integer :: c, i, f, neighbor, n
-    real(r8) :: r(2), difference, matrix(2,2), rhs(2), determinant
+    external dgelsy
+
+    integer :: c, i, f, neighbor, n, ierr, rank, jpvt(2)
+    real(r8) :: r(2), difference, matrix(4,2), rhs(4), work(32)
     logical :: found
 
     ASSERT(size(field_cc) >= this%mesh%ncell)
@@ -153,15 +158,15 @@ contains
           end if
           if (.not.found) cycle
         end if
-        matrix = matrix + reshape([r(1)**2, r(1)*r(2), r(1)*r(2), r(2)**2], [2,2])
-        rhs = rhs + r*difference
         n = n + 1
+        matrix(n,:) = r
+        rhs(n) = difference
       end do
-      ASSERT(n >= 2)
-      determinant = matrix(1,1)*matrix(2,2) - matrix(1,2)*matrix(2,1)
-      ASSERT(abs(determinant) > tiny(determinant))
-      gradient_c(1,c) = (matrix(2,2)*rhs(1) - matrix(1,2)*rhs(2))/determinant
-      gradient_c(2,c) = (matrix(1,1)*rhs(2) - matrix(2,1)*rhs(1))/determinant
+      INSIST(n /= 0)
+      jpvt = 0
+      call dgelsy(n, 2, 1, matrix, 4, rhs, 4, jpvt, 1.0e-8_r8, rank, work, size(work), ierr)
+      INSIST(ierr == 0)
+      gradient_c(:,c) = rhs(:2)
     end do
     call this%mesh%cell_imap%gather_offp(gradient_c)
   end subroutine
