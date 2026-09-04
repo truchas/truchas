@@ -43,7 +43,8 @@ module ns_ht_2d_solver_type
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
-    real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), matl_vfrac_old(:,:)
+    real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), flow_vfrac_old(:,:), &
+        matl_vfrac_old(:,:)
     integer :: ncell_onP
     logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
@@ -182,9 +183,11 @@ contains
     this%ts_sync = time_step_sync(lookahead)
     allocate(this%temp(flow_model%mesh%ncell_onP), this%enthalpy_increment(flow_model%mesh%ncell_onP), &
         this%matl_vfrac_old(matl_model%nmatl,flow_model%mesh%ncell_onP), &
-        this%flow_vfrac(this%matl_map%num_material(),flow_model%mesh%ncell))
+        this%flow_vfrac(this%matl_map%num_material(),flow_model%mesh%ncell), &
+        this%flow_vfrac_old(this%matl_map%num_material(),flow_model%mesh%ncell))
     call this%matl_map%get_reduced_volume_fractions(matl_dist, this%flow_vfrac)
     call flow_model%mesh%cell_imap%gather_offp(this%flow_vfrac)
+    this%flow_vfrac_old = this%flow_vfrac
     call flow_model%set_volume_fractions(this%flow_vfrac)
     if (flow_model%inviscid) then
       call this%flow%init(env, flow_model, projection_params=projection_params, courant_number=courant_number, &
@@ -330,12 +333,17 @@ contains
           ' attempt=', n, ' t0=', t_n, ' dt=', t_try - t_n, ' cause=', trim(attempt_cause)
       call env%simlog%begin_section(trim(line))
       call env%timer%start('flow/material-transport')
+      this%flow_vfrac_old = this%flow_vfrac
       call this%flow%get_face_velocity(face_velocity)
       call this%material_transport%advance(env, t_n, t_try, face_velocity, this%flow_vfrac)
       call env%timer%stop('flow/material-transport')
       call this%thermal%get_cell_temp_soln(this%temp)
       this%matl_vfrac_old = this%matl_dist%vfrac
       call this%matl_map%apply_phase_fluxes(this%mesh, this%material_transport%flux_volumes, this%matl_dist)
+      call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)
+      call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
+      call this%flow%set_volume_fractions(this%flow_vfrac)
+      call this%flow%set_pre_solidification_state()
       call env%timer%start('thermal/advection')
       call this%enthalpy_advector%get_advected_enthalpy(t_n, this%temp, &
           this%material_transport%flux_volumes, this%enthalpy_increment)
@@ -347,7 +355,9 @@ contains
       call this%thermal%step(env, t_n, t_try, stat, errmsg, hnext=hnext)
       if (stat /= 0) then
         this%matl_dist%vfrac = this%matl_vfrac_old
-        call this%flow%set_volume_fractions(this%flow_vfrac)
+        this%flow_vfrac = this%flow_vfrac_old
+        call this%flow%set_volume_fractions(this%flow_vfrac_old)
+        call this%flow%set_pre_solidification_state()
         t_try = t_n + hnext
         if (t_try - t_n < this%dt_min) then
           stat = -1
@@ -373,7 +383,9 @@ contains
         call this%thermal%reject_step()
         call this%thermal%get_cell_temp_soln(this%temp)
         this%matl_dist%vfrac = this%matl_vfrac_old
-        call this%flow%set_volume_fractions(this%flow_vfrac)
+        this%flow_vfrac = this%flow_vfrac_old
+        call this%flow%set_volume_fractions(this%flow_vfrac_old)
+        call this%flow%set_pre_solidification_state()
         call this%flow%set_buoyancy_temperature(this%temp)
         stat = -3
         if (.not.allocated(errmsg)) errmsg = 'flow momentum update failed'

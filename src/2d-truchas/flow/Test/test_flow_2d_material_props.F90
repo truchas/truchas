@@ -62,6 +62,17 @@ program test_flow_2d_material_props
   call require(maxval(abs(props%density_c - [2.0_r8, 2.0_r8])) < 1.0e-14_r8, &
       'wrong partially solid cell density')
 
+  vfrac = 1.0_r8
+  call props%set_volume_fractions(vfrac)
+  call props%set_pre_solidification_state()
+  vfrac = reshape([0.75_r8, 0.25_r8], shape(vfrac))
+  call props%set_volume_fractions(vfrac)
+  call require(maxval(abs(props%solidified_density - [0.5_r8, 1.5_r8])) < 1.0e-14_r8, &
+      'wrong solidified mobile-fluid mass density')
+  call props%accept()
+  call require(maxval(abs(props%solidified_density)) == 0.0_r8, &
+      'solidification state was not cleared on acceptance')
+
   call props%init(mesh, [2.0_r8], .true., stat, errmsg, nfluid=2)
   call require(stat == 0, 'initializing fluid/VOID properties: ' // errmsg)
   vfrac_void = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape(vfrac_void))

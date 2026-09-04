@@ -44,6 +44,9 @@ flow/thermal models.  More detailed subsystem items remain in
   resolution hydrostatic well-balance residual.
 - Revisit the initial pressure/velocity construction so that hydrostatic and
   boundary-compatible initial states are treated as accurately as possible.
+- Handle pressure null spaces for multiple disconnected active-fluid
+  components (and, more generally, multiply connected active domains).  The
+  current dynamic pin selection supplies one reference per projection solve.
 
 ## Architecture and remaining legacy paths
 

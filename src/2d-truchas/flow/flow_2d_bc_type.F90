@@ -20,6 +20,7 @@ module flow_2d_bc_type
   use bndry_func1_class
   use bndry_vfunc_class
   use flow_2d_bc_factory_type
+  use flow_domain_types
   use simulation_environment_type
   use parallel_communication
   implicit none
@@ -149,23 +150,47 @@ contains
 
 
   !! Return the local boundary face at which a zero pressure reference is to
-  !! be imposed. All ranks must call this collective function. A value of zero
+  !! be imposed. If FACE_T is present, only currently regular faces are
+  !! considered. All ranks must call this collective function. A value of zero
   !! indicates that a pressure Dirichlet condition already supplies a reference.
-  function pressure_pin_face(this) result(face)
+  function pressure_pin_face(this, face_t) result(face)
     class(flow_2d_bc), intent(in) :: this
+    integer, optional, intent(in) :: face_t(:)
     integer :: face
 
-    integer :: pin_pe
+    integer :: i, pin_pe
     logical :: is_candidate, candidate(nPE)
 
     face = 0
     if (global_any(size(this%pressure_dirichlet%index) > 0)) return
-    is_candidate = size(this%pressure_neumann%index) > 0
+    pin_pe = 0
+    if (present(face_t)) then
+      is_candidate = .false.
+      do i = 1, size(this%pressure_neumann%index)
+        if (this%pressure_neumann%index(i) <= size(face_t)) &
+            is_candidate = is_candidate .or. face_t(this%pressure_neumann%index(i)) == regular_t
+      end do
+    else
+      is_candidate = size(this%pressure_neumann%index) > 0
+    end if
     call gather(is_candidate, candidate)
     if (is_IOP) pin_pe = findloc(candidate, .true., dim=1)
     call broadcast(pin_pe)
-    INSIST(pin_pe > 0 .and. pin_pe <= nPE)
-    if (this_PE == pin_pe) face = this%pressure_neumann%index(1)
+    if (pin_pe == 0) return
+    if (this_PE == pin_pe) then
+      if (present(face_t)) then
+        do i = 1, size(this%pressure_neumann%index)
+          if (this%pressure_neumann%index(i) <= size(face_t)) then
+            if (face_t(this%pressure_neumann%index(i)) == regular_t) then
+              face = this%pressure_neumann%index(i)
+              exit
+            end if
+          end if
+        end do
+      else
+        face = this%pressure_neumann%index(1)
+      end if
+    end if
   end function
 
 

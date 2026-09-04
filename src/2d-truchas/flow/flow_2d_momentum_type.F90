@@ -76,11 +76,12 @@ contains
   !! Assemble the inviscid momentum predictor matrix, which is just the
   !! block-diagonal cell mass matrix.  No diffusion coefficients or velocity
   !! boundary contributions are evaluated.
-  subroutine assemble_inviscid(this, density_c, cell_t, rhs)
+  subroutine assemble_inviscid(this, density_c, cell_t, rhs, solidified_density, fluid_fraction)
     class(flow_2d_momentum), intent(inout) :: this
     real(r8), intent(in) :: density_c(:)
     integer, intent(in) :: cell_t(:)
     real(r8), intent(out) :: rhs(:,:)
+    real(r8), optional, intent(in) :: solidified_density(:), fluid_fraction(:)
 
     integer :: c
     real(r8) :: identity(2,2)
@@ -89,6 +90,11 @@ contains
     ASSERT(size(density_c) >= this%mesh%ncell)
     ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
+    if (present(solidified_density)) then
+      ASSERT(present(fluid_fraction))
+      ASSERT(size(solidified_density) >= this%mesh%ncell)
+      ASSERT(size(fluid_fraction) >= this%mesh%ncell)
+    end if
     identity = 0.0_r8
     identity(1,1) = 1.0_r8
     identity(2,2) = 1.0_r8
@@ -99,6 +105,12 @@ contains
         call this%matrix_%add_to(c, c, identity)
       else
         call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
+        if (present(solidified_density)) then
+          if (fluid_fraction(c) > 0.0_r8) then
+            call this%matrix_%add_to(c, c, solidified_density(c)/fluid_fraction(c)* &
+                this%mesh%volume(c)*identity)
+          end if
+        end if
       end if
     end do
   end subroutine
@@ -193,12 +205,14 @@ contains
   !! Assemble rho*volume*I - dt*div(mu grad(u)) and its velocity-Dirichlet
   !! contribution to RHS. BC must already have been evaluated at the required
   !! time.
-  subroutine assemble(this, dt, density_c, viscosity_f, cell_t, face_t, bc, rhs)
+  subroutine assemble(this, dt, density_c, viscosity_f, cell_t, face_t, bc, rhs, &
+      solidified_density, fluid_fraction)
     class(flow_2d_momentum), intent(inout) :: this
     real(r8), intent(in) :: dt, density_c(:), viscosity_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
     real(r8), intent(out) :: rhs(:,:)
+    real(r8), optional, intent(in) :: solidified_density(:), fluid_fraction(:)
 
     integer :: c, i, f, neighbor, n
     real(r8) :: coefficient, identity(2,2), normal(2), block(2,2)
@@ -209,6 +223,11 @@ contains
     ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs,1) == 2 .and. size(rhs,2) == this%mesh%ncell_onP)
+    if (present(solidified_density)) then
+      ASSERT(present(fluid_fraction))
+      ASSERT(size(solidified_density) >= this%mesh%ncell)
+      ASSERT(size(fluid_fraction) >= this%mesh%ncell)
+    end if
 
     identity = 0.0_r8
     identity(1,1) = 1.0_r8
@@ -222,6 +241,12 @@ contains
         cycle
       end if
       call this%matrix_%add_to(c, c, density_c(c)*this%mesh%volume(c)*identity)
+      if (present(solidified_density)) then
+        if (fluid_fraction(c) > 0.0_r8) then
+          call this%matrix_%add_to(c, c, solidified_density(c)/fluid_fraction(c)* &
+              this%mesh%volume(c)*identity)
+        end if
+      end if
       do i = this%mesh%cstart(c), this%mesh%cstart(c+1)-1
         f = this%mesh%cface(i)
         neighbor = this%mesh%cnhbr(i)
