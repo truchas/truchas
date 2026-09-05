@@ -17,7 +17,7 @@ program test_HT_2d_solver_type
   use scalar_func_factories
   use t2d_mfd_disc_type
   use ht_2d_model_type
-  use t2d_thermal_solver_type
+  use t2d_thermal_integrator_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -34,7 +34,7 @@ program test_HT_2d_solver_type
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
   call fhypre_initialize
-  call init_test_environment('test_t2d_thermal_solver.log')
+  call init_test_environment('test_t2d_thermal_integrator.log')
 
   TOL = 2E-4_r8
   eps = 0.0_r8  ! mesh distortion
@@ -117,7 +117,7 @@ contains
     real(r8), intent(in) :: tol
     logical, intent(in) :: bdf1
 
-    type(t2d_thermal_solver), target :: HT_solver, bad_solver
+    type(t2d_thermal_integrator), target :: HT_solver, bad_solver
     type(ht_2d_model), target :: HT_model
     type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params, sublist
