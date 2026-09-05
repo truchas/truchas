@@ -16,14 +16,14 @@ module vof_2d_solver_type
   use simulation_environment_type, only: simulation_environment
   use t2d_unstr_mesh_type
   use vector_func_class
-  use volume_tracker_2d_class
+  use t2d_volume_tracker_class
   implicit none
   private
 
   type, public :: vof_2d_solver
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
-    class(volume_tracker_2d), allocatable :: tracker
+    class(t2d_volume_tracker), allocatable :: tracker
     real(r8), allocatable :: vfrac_in(:,:), vfrac_out(:,:), flux_volume(:,:)
     real(r8), allocatable :: flux_velocity(:), face_velocity(:), interface_normal(:,:,:)
   contains
@@ -42,8 +42,8 @@ contains
 
   subroutine init(this, env, mesh, nmat, algorithm, axisymmetric, stat, errmsg)
 
-    use simple_volume_tracker_type
-    use geometric_volume_tracker_type
+    use t2d_simple_volume_tracker_type
+    use t2d_geometric_volume_tracker_type
 
     class(vof_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
@@ -63,9 +63,9 @@ contains
     end if
     select case (algorithm)
     case ('simple')
-      allocate(simple_volume_tracker :: this%tracker)
+      allocate(t2d_simple_volume_tracker :: this%tracker)
     case ('geometric')
-      allocate(geometric_volume_tracker :: this%tracker)
+      allocate(t2d_geometric_volume_tracker :: this%tracker)
     case default
       stat = 1
       errmsg = 'unknown volume-tracking algorithm: ' // algorithm

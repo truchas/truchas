@@ -7,7 +7,7 @@
 
 #include "f90_assert.fpp"
 
-program test_simple_volume_tracker
+program test_t2d_simple_volume_tracker
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08
@@ -15,7 +15,7 @@ program test_simple_volume_tracker
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
-  use simple_volume_tracker_type
+  use t2d_simple_volume_tracker_type
   implicit none
 
   type(simulation_environment) :: env
@@ -27,7 +27,7 @@ program test_simple_volume_tracker
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_simple_volume_tracker.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_simple_volume_tracker.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
 
   call test_immobile_solid(env)
@@ -42,7 +42,7 @@ contains
 
     type(simulation_environment), intent(inout) :: env
     type(t2d_unstr_mesh), pointer :: mesh
-    type(simple_volume_tracker) :: tracker
+    type(t2d_simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: q
     integer :: f, j1, j2
@@ -83,7 +83,7 @@ contains
 
     type(simulation_environment), intent(inout) :: env
     type(t2d_unstr_mesh), pointer :: mesh
-    type(simple_volume_tracker) :: tracker
+    type(t2d_simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
 
     mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [1, 1])
@@ -112,4 +112,4 @@ contains
 
   end subroutine require_close
 
-end program test_simple_volume_tracker
+end program test_t2d_simple_volume_tracker
