@@ -23,7 +23,7 @@ module t2d_thermal_sim_type
   use scalar_func_projection
   use t2d_thermal_model_type
   use t2d_thermal_integrator_type
-  use ht_2d_vtkhdf_writer_type
+  use t2d_thermal_vtkhdf_writer_type
   use simulation_environment_type
   use simulation_type
   implicit none
@@ -37,7 +37,7 @@ module t2d_thermal_sim_type
     type(material_distribution), pointer :: matl_dist => null()
     type(t2d_thermal_model), pointer :: model => null()
     type(t2d_thermal_integrator), pointer :: solver => null()
-    type(ht_2d_vtkhdf_writer) :: output
+    type(t2d_thermal_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output
     !! Integration control
     real(r8) :: t_init

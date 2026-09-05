@@ -25,7 +25,7 @@ set(HT2D_SOURCE_FILES
     t2d_thermal_solver_type.F90
     t2d_thermal_integrator_type.F90
     t2d_thermal_sim_type.F90
-    ht_2d_vtkhdf_writer_type.F90
+    t2d_thermal_vtkhdf_writer_type.F90
     t2d_thermal_tofh_type.F90
 )
 

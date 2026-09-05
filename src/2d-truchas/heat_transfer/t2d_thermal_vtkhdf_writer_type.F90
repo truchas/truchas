@@ -1,5 +1,5 @@
 !!
-!! HT_2D_VTKHDF_WRITER_TYPE
+!! T2D_THERMAL_VTKHDF_WRITER_TYPE
 !!
 !! This module defines the VTKHDF writer for the two-dimensional heat-transfer
 !! simulation. It writes the fixed unstructured mesh, mesh-associated global
@@ -11,7 +11,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module ht_2d_vtkhdf_writer_type
+module t2d_thermal_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
   use simulation_environment_type
@@ -30,7 +30,7 @@ module ht_2d_vtkhdf_writer_type
     type(vtkhdf_field_data_handle) :: handle
   end type
 
-  type, public :: ht_2d_vtkhdf_writer
+  type, public :: t2d_thermal_vtkhdf_writer
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
@@ -43,7 +43,7 @@ module ht_2d_vtkhdf_writer_type
     procedure :: open
     procedure :: write_solution
     procedure :: close
-  end type ht_2d_vtkhdf_writer
+  end type t2d_thermal_vtkhdf_writer
 
 contains
 
@@ -51,7 +51,7 @@ contains
 
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
-    class(ht_2d_vtkhdf_writer), intent(out) :: this
+    class(t2d_thermal_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
@@ -173,7 +173,7 @@ contains
 
   subroutine write_solution(this, time, enthalpy, temperature, matl_model, volume_fraction, temporal_output)
 
-    class(ht_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_thermal_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: enthalpy(:), temperature(:)
     type(material_model), intent(in) :: matl_model
@@ -235,7 +235,7 @@ contains
   !! VTKHDF requires this registration before the first time step is started.
   subroutine register_temporal_fields(this, temporal_output, stat, errmsg)
 
-    class(ht_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_thermal_vtkhdf_writer), intent(inout) :: this
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -286,7 +286,7 @@ contains
   !! Write the current values of the registered scalar temporal field data.
   subroutine write_temporal_fields(this, temporal_output)
 
-    class(ht_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_thermal_vtkhdf_writer), intent(inout) :: this
     type(parameter_list), intent(inout) :: temporal_output
 
     integer :: j
@@ -317,7 +317,7 @@ contains
   end subroutine
 
   subroutine close(this)
-    class(ht_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_thermal_vtkhdf_writer), intent(inout) :: this
     if (this%is_open) call this%file%close()
     this%is_open = .false.
     if (allocated(this%volume_fraction)) deallocate(this%volume_fraction)
@@ -325,4 +325,4 @@ contains
     nullify(this%mesh)
   end subroutine close
 
-end module ht_2d_vtkhdf_writer_type
+end module t2d_thermal_vtkhdf_writer_type
