@@ -1,4 +1,4 @@
-program test_flow_2d_bc_factory
+program test_t2d_flow_bc_factory
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -11,7 +11,7 @@ program test_flow_2d_bc_factory
   use t2d_unstr_mesh_factory
   use bndry_func1_class
   use bndry_vfunc_class
-  use flow_2d_bc_factory_type
+  use t2d_flow_bc_factory_type
   implicit none
 
   integer :: status, stat
@@ -26,7 +26,7 @@ program test_flow_2d_bc_factory
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_bc_factory.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_bc_factory.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -42,7 +42,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(parameter_list), target :: velocity_params, pressure_params, slip_params
     type(parameter_list), pointer :: plist
-    type(flow_2d_bc_factory) :: factory
+    type(t2d_flow_bc_factory) :: factory
     class(bndry_vfunc), allocatable :: velocity
     class(bndry_func1), allocatable :: pressure, zero_normal, pressure_neumann
     character(:), allocatable :: errmsg
@@ -100,4 +100,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_bc_factory
+end program test_t2d_flow_bc_factory

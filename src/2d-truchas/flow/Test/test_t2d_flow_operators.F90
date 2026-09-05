@@ -1,4 +1,4 @@
-module test_flow_2d_bc_types
+module test_t2d_flow_bc_types
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use bndry_func1_class
@@ -28,7 +28,7 @@ contains
     real(r8), intent(in) :: t
   end subroutine
 
-end module test_flow_2d_bc_types
+end module test_t2d_flow_bc_types
 
 
 program test_t2d_flow_operators
@@ -44,7 +44,7 @@ program test_t2d_flow_operators
   use simulation_environment_type
   use t2d_flow_state_type
   use t2d_flow_operators_type
-  use test_flow_2d_bc_types
+  use test_t2d_flow_bc_types
   implicit none
 
   integer :: status, stat

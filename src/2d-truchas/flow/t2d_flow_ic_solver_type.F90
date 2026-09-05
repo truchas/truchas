@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_IC_SOLVER_TYPE
+!! T2D_FLOW_IC_SOLVER_TYPE
 !!
-!! This module defines FLOW_2D_IC_SOLVER, which repairs a supplied initial
+!! This module defines T2D_FLOW_IC_SOLVER, which repairs a supplied initial
 !! cell velocity to satisfy velocity boundary conditions and discrete
 !! continuity.  It then computes an initial pressure by an artificial Stokes
 !! predictor/projection step while retaining the repaired velocity state.
@@ -12,7 +12,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_ic_solver_type
+module t2d_flow_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
@@ -27,7 +27,7 @@ module flow_2d_ic_solver_type
   implicit none
   private
 
-  type, public :: flow_2d_ic_solver
+  type, public :: t2d_flow_ic_solver
     private
     type(t2d_flow_model), pointer :: model => null()  ! unowned reference
     type(flow_2d_momentum_solver) :: momentum_solver
@@ -43,7 +43,7 @@ module flow_2d_ic_solver_type
 contains
 
   subroutine init(this, model, momentum_params, projection_params, stat, errmsg)
-    class(flow_2d_ic_solver), intent(out) :: this
+    class(t2d_flow_ic_solver), intent(out) :: this
     type(t2d_flow_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
@@ -73,7 +73,7 @@ contains
   !! constraint.  The temporary artificial step supplies initial pressure but
   !! its velocity update is rejected.
   subroutine solve(this, env, time, dt, velocity, state, stat)
-    class(flow_2d_ic_solver), intent(inout) :: this
+    class(t2d_flow_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     type(t2d_flow_state), intent(inout) :: state
@@ -181,9 +181,9 @@ contains
 
 
   subroutine delete(this)
-    type(flow_2d_ic_solver), intent(inout) :: this
+    type(t2d_flow_ic_solver), intent(inout) :: this
 
     if (associated(this%projection_solver)) deallocate(this%projection_solver)
   end subroutine
 
-end module flow_2d_ic_solver_type
+end module t2d_flow_ic_solver_type

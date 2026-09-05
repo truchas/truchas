@@ -1,4 +1,4 @@
-program test_flow_2d_material_props
+program test_t2d_flow_material_props
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -9,14 +9,14 @@ program test_flow_2d_material_props
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use flow_domain_types
-  use flow_2d_material_props_type
+  use t2d_flow_material_props_type
   implicit none
 
   integer :: status, stat
   character(:), allocatable :: errmsg
   type(simulation_environment) :: env
   type(t2d_unstr_mesh), pointer :: mesh
-  type(flow_2d_material_props) :: props
+  type(t2d_flow_material_props) :: props
   real(r8) :: vfrac(1,2), vfrac_void(2,2)
   integer :: interior_face
 
@@ -28,7 +28,7 @@ program test_flow_2d_material_props
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_material_props.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_material_props.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [2.0_r8, 1.0_r8], [2, 1], 0.0_r8, 0.0_r8)
@@ -97,4 +97,4 @@ contains
     end if
   end subroutine require
 
-end program test_flow_2d_material_props
+end program test_t2d_flow_material_props
