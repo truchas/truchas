@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_HT_2d_norm_type
+program test_t2d_thermal_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -19,7 +19,7 @@ program test_HT_2d_norm_type
   use t2d_thermal_norm_type
   use t2d_thermal_vector_type
   use bitfield_type
-  use test_ht_2d_common
+  use test_t2d_thermal_common
   implicit none
 
   type(t2d_unstr_mesh), pointer :: mesh
@@ -66,7 +66,7 @@ contains
   end subroutine error_exit
 
 
-  !! Test the HT_2d_norm type with only the absolute tolerance set
+  !! Test the t2d_thermal_norm type with only the absolute tolerance set
   subroutine test_abs(disc, matl_model)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -122,7 +122,7 @@ contains
   end subroutine test_abs
 
 
-  !! Test the HT_2d_norm type with only the relative tolerance set
+  !! Test the t2d_thermal_norm type with only the relative tolerance set
   subroutine test_rel(disc, matl_model)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -177,7 +177,7 @@ contains
   end subroutine test_rel
 
 
-  !! Test the HT_2d_norm type with mixed tolerances
+  !! Test the t2d_thermal_norm type with mixed tolerances
   subroutine test_mixed(disc, matl_model)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -235,7 +235,7 @@ contains
   end subroutine test_mixed
 
 
-  !! Test the global consistency of the HT_2d_norm type
+  !! Test the global consistency of the t2d_thermal_norm type
   subroutine test_global(disc, matl_model)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -296,4 +296,4 @@ contains
 
   end subroutine test_global
 
-end program test_HT_2d_norm_type
+end program test_t2d_thermal_norm_type

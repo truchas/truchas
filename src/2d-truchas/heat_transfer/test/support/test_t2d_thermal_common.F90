@@ -6,7 +6,7 @@
 
 #include "f90_assert.fpp"
 
-module test_ht_2d_common
+module test_t2d_thermal_common
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, error_unit
   use mpi_f08
@@ -179,4 +179,4 @@ contains
     axb = a(1)*b(2) - a(2)*b(1)
   end function cross_product_2D
 
-end module test_ht_2d_common
+end module test_t2d_thermal_common

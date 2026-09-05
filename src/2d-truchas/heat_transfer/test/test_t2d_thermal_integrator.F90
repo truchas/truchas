@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_HT_2d_solver_type
+program test_t2d_thermal_integrator
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -19,7 +19,7 @@ program test_HT_2d_solver_type
   use t2d_thermal_model_type
   use t2d_thermal_integrator_type
   use bitfield_type
-  use test_ht_2d_common
+  use test_t2d_thermal_common
   implicit none
 
   type(t2d_unstr_mesh), pointer :: mesh
@@ -108,7 +108,7 @@ contains
   end subroutine init_params
 
 
-  !! Tests the HT_2d_solver on a linear problem with Dirichlet boundary conditions
+  !! Tests the thermal solver on a linear problem with Dirichlet boundary conditions
   subroutine test1(disc, mesh, matl_model, tol, bdf1)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -212,4 +212,4 @@ contains
 
   end subroutine test1
 
-end program test_HT_2d_solver_type
+end program test_t2d_thermal_integrator

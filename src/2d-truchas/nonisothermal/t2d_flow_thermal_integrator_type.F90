@@ -1,7 +1,7 @@
 !!
-!! NS_HT_2D_SOLVER_TYPE
+!! T2D_FLOW_THERMAL_INTEGRATOR_TYPE
 !!
-!! This module defines NS_HT_2D_SOLVER, which coordinates an attempted
+!! This module defines T2D_FLOW_THERMAL_INTEGRATOR, which coordinates an attempted
 !! two-dimensional incompressible Navier--Stokes/thermal-transport step. It
 !! advances material transport, converts its fluxes to an enthalpy rate,
 !! attempts thermal transport, and then advances flow momentum and pressure.
