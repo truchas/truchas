@@ -7,8 +7,8 @@ program test_flow_2d_bc
   use truchas_logging_services
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_bc_type
   implicit none
 
@@ -36,7 +36,7 @@ program test_flow_2d_bc
 contains
 
   subroutine test_pressure_pin
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(parameter_list), target :: velocity_params, pressure_params
     type(parameter_list), pointer :: plist
     type(flow_2d_bc) :: bc

@@ -15,7 +15,7 @@
 module material_distribution_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_model_type
   implicit none
   private
@@ -24,7 +24,7 @@ module material_distribution_type
 
   type, public :: material_distribution
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     real(r8), allocatable, public :: vfrac(:,:) ! (material, on-process cell)
   contains
     procedure :: init
@@ -124,7 +124,7 @@ contains
 
     class(material_distribution), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     type(parameter_list), intent(inout) :: params
     integer, intent(in) :: rlev
@@ -190,7 +190,7 @@ contains
   subroutine init_uniform(this, mesh, matl_model, material_index, stat, errmsg)
 
     class(material_distribution), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_index
     integer, intent(out) :: stat

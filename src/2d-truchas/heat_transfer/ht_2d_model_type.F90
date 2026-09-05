@@ -17,7 +17,7 @@
 module ht_2d_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use t2d_mfd_disc_type
   use bndry_func1_class
   use bndry_func2_class
@@ -34,7 +34,7 @@ module ht_2d_model_type
   private
 
   type, public :: ht_2d_model
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(t2d_mfd_disc) :: disc
     !! Equation parameters
     class(new_mesh_func), allocatable :: conductivity
@@ -65,7 +65,7 @@ contains
 
     class(ht_2d_model), intent(out), target :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), intent(in), target :: mesh
+    type(t2d_unstr_mesh), intent(in), target :: mesh
     type(material_model), intent(inout) :: matl_model
     type(material_distribution), target, intent(in) :: matl_dist
     type(parameter_list), intent(inout) :: params

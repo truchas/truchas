@@ -13,7 +13,7 @@
 module thermal_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use parameter_list_type
   use scalar_func_class
   use scalar_func_factories, only: alloc_scalar_func, alloc_const_scalar_func
@@ -24,7 +24,7 @@ module thermal_bc_factory_type
 
   type, public :: thermal_bc_factory
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
     real(r8) :: sigma, abszero
   contains
@@ -53,7 +53,7 @@ contains
   subroutine init(this, mesh, sigma, abszero, params)
 
     class(thermal_bc_factory), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     real(r8), intent(in) :: sigma, abszero
     type(parameter_list), target, intent(in) :: params
 

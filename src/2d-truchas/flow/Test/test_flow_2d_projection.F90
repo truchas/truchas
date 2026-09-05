@@ -5,8 +5,8 @@ program test_flow_2d_projection
   use parallel_communication
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use parameter_list_type
   use simulation_environment_type
   use flow_2d_operators_type
@@ -40,7 +40,7 @@ program test_flow_2d_projection
 contains
 
   subroutine test_projection
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_projection), target :: projection
     type(pcsr_matrix), pointer :: matrix
@@ -142,7 +142,7 @@ contains
 
 
   subroutine rotate_mesh(mesh, angle)
-    type(unstr_2d_mesh), intent(inout) :: mesh
+    type(t2d_unstr_mesh), intent(inout) :: mesh
     real(r8), intent(in) :: angle
 
     real(r8) :: theta, rotation(2,2)

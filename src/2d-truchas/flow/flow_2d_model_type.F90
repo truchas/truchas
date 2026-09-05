@@ -22,7 +22,7 @@ module flow_2d_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   use scalar_func_class
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_model_type
   use flow_2d_operators_type
   use flow_2d_bc_type
@@ -36,7 +36,7 @@ module flow_2d_model_type
 
   type, public :: flow_2d_model
     private
-    type(unstr_2d_mesh), pointer, public :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer, public :: mesh => null()  ! unowned reference
     type(flow_2d_operators), pointer, public :: operators => null()
     type(flow_2d_bc), pointer, public :: bc => null()
     type(flow_2d_momentum), pointer, public :: momentum => null()
@@ -64,7 +64,7 @@ contains
       viscosity_func, density_delta_func, inviscid)
     class(flow_2d_model), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
     real(r8), intent(in) :: density(:)
     real(r8), optional, intent(in) :: viscosity
@@ -142,7 +142,7 @@ contains
   subroutine init_core(this, env, mesh, bc_params, stat, errmsg, body_acceleration, inviscid)
     class(flow_2d_model), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -171,7 +171,7 @@ contains
 
   subroutine check_initial_properties(this, mesh, stat, errmsg)
     class(flow_2d_model), intent(in) :: this
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 

@@ -13,8 +13,8 @@ program test_simple_volume_tracker
   use mpi_f08
   use parallel_communication
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory, only: new_unstr_2d_quad_mesh
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
   use simple_volume_tracker_type
   implicit none
 
@@ -41,7 +41,7 @@ contains
   subroutine test_immobile_solid(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: q
@@ -82,7 +82,7 @@ contains
   subroutine test_full_fluid(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(simple_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
 

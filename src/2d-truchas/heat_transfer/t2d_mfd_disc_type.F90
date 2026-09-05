@@ -36,14 +36,14 @@
 module t2d_mfd_disc_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
   private
 
   integer, parameter :: MFD_CELL_NFACE_MAX = 4
 
   type, public :: t2d_mfd_disc
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     integer, allocatable :: xminv(:)
     real(r8), allocatable :: minv(:)
     integer, private :: nface_max
@@ -71,7 +71,7 @@ contains
   subroutine init(this, mesh)
 
     class(t2d_mfd_disc), intent(out) :: this
-    type(unstr_2d_mesh), intent(in), target :: mesh
+    type(t2d_unstr_mesh), intent(in), target :: mesh
 
     integer :: j, n
     type(mfd_cell) :: cell
@@ -101,7 +101,7 @@ contains
   contains
 
     integer function max_cell_faces(mesh)
-      type(unstr_2d_mesh), intent(in) :: mesh
+      type(t2d_unstr_mesh), intent(in) :: mesh
       if (mesh%ncell == 0) then
         max_cell_faces = 0
       else
@@ -218,7 +218,7 @@ contains
 
     class(mfd_cell), intent(out) :: this
     integer, intent(in) :: cellid
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
 
     real(r8) :: parity
     integer :: j

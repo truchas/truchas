@@ -12,7 +12,7 @@ module vof_2d_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use region_func_type
@@ -26,7 +26,7 @@ module vof_2d_sim_type
 
   type, extends(simulation), public :: vof_2d_sim
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     class(vector_func), allocatable :: velocity
     type(vof_2d_solver) :: solver
     type(vof_2d_vtkhdf_writer) :: output
@@ -49,7 +49,7 @@ contains
 
   subroutine init(this, env, params, stat, errmsg)
 
-    use unstr_2d_mesh_factory
+    use t2d_unstr_mesh_factory
     use geom_axisymmetric, only: mesh_axisymmetry_mod
 
     class(vof_2d_sim), intent(out) :: this

@@ -15,13 +15,13 @@ module geometric_volume_tracker_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type, only: simulation_environment
   use volume_tracker_2d_class
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
   private
 
   type, extends(volume_tracker_2d), public :: geometric_volume_tracker
     private
-    type(unstr_2d_mesh), pointer :: mesh ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh ! unowned reference
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
     integer :: subcycles
     logical :: nested_dissection
@@ -55,7 +55,7 @@ contains
 
     class(geometric_volume_tracker), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), intent(in), target :: mesh
+    type(t2d_unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     logical, intent(in) :: axisym
     integer, intent(in) :: priority(:)
@@ -515,7 +515,7 @@ contains
 
   !subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt)
 
-  !  use cell_topology_2d
+  !  use t2d_cell_topology
   !  use multimat_cell_type
 
   !  class(geometric_volume_tracker), intent(inout) :: this

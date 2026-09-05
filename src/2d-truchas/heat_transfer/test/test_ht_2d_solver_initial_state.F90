@@ -11,7 +11,7 @@ program test_HT_2d_solver_initial_state
   use fhypre, only: fhypre_initialize
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_factory
   use material_model_type
   use material_database_type
   use material_factory, only: load_material_database
@@ -27,7 +27,7 @@ program test_HT_2d_solver_initial_state
   use test_ht_2d_common
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(t2d_mfd_disc), target :: mfd_disc
   type(material_model), target :: matl_model
   real(r8) :: xmin(2), xmax(2), tol, eps

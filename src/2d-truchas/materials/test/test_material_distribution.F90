@@ -4,7 +4,7 @@ program test_material_distribution
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
@@ -15,7 +15,7 @@ program test_material_distribution
   use truchas_logging_services
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh => null()
+  type(t2d_unstr_mesh), pointer :: mesh => null()
   type(material_database), target :: matl_db
   type(material_model) :: matl_model
   type(material_distribution) :: matl_dist
@@ -69,15 +69,15 @@ program test_material_distribution
 contains
 
   function create_mesh() result(mesh)
-    use unstr_2d_mesh_factory
-    type(unstr_2d_mesh), pointer :: mesh
+    use t2d_unstr_mesh_factory
+    type(t2d_unstr_mesh), pointer :: mesh
     mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [8,8], ptri=0.5_r8)
     call mesh%init_cell_centroid
   end function create_mesh
 
 
   subroutine check_distribution(mesh, matl_model, matl_dist)
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     type(material_distribution), intent(in) :: matl_dist
 

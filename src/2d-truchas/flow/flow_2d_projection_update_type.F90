@@ -15,7 +15,7 @@
 module flow_2d_projection_update_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use flow_2d_operators_type
   use flow_2d_projection_type
   use flow_2d_projection_solver_type
@@ -28,7 +28,7 @@ module flow_2d_projection_update_type
 
   type, public :: flow_2d_projection_update
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
     type(flow_2d_projection), pointer :: projection => null()  ! unowned reference
     type(flow_2d_projection_solver), pointer :: solver => null()  ! unowned reference
@@ -46,7 +46,7 @@ contains
 
   subroutine init(this, mesh, operators, projection, solver, body_acceleration)
     class(flow_2d_projection_update), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), target, intent(in) :: operators
     type(flow_2d_projection), target, intent(in) :: projection
     type(flow_2d_projection_solver), target, intent(in) :: solver
@@ -390,7 +390,7 @@ contains
 
 
   subroutine apply_velocity_boundary_conditions(mesh, bc, face_t, velocity_f)
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     type(flow_2d_bc), intent(in) :: bc
     integer, intent(in) :: face_t(:)
     real(r8), intent(inout) :: velocity_f(:)

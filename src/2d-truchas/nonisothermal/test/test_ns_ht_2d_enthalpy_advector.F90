@@ -6,8 +6,8 @@ program test_ns_ht_2d_enthalpy_advector
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
@@ -46,7 +46,7 @@ program test_ns_ht_2d_enthalpy_advector
 contains
 
   subroutine test_material_flux_enthalpy
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params
@@ -116,7 +116,7 @@ contains
 
 
   subroutine test_multiphase_phase_enthalpy
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params
@@ -153,7 +153,7 @@ contains
 
 
   subroutine test_closed_transport_conservation
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params

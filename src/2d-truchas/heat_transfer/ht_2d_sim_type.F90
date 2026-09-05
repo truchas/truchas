@@ -14,7 +14,7 @@ module ht_2d_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_database_type
   use material_model_type
   use material_distribution_type
@@ -31,7 +31,7 @@ module ht_2d_sim_type
 
   type, extends(simulation), public :: ht_2d_sim
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
     type(material_model) :: matl_model
     type(material_distribution), pointer :: matl_dist => null()
@@ -63,7 +63,7 @@ contains
 
   subroutine init(this, env, params, stat, errmsg)
 
-    use unstr_2d_mesh_factory
+    use t2d_unstr_mesh_factory
     use signal_handler, only: init_signal_handler, SIGURG
     use material_factory, only: load_material_database
 

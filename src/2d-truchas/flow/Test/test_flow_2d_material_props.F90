@@ -6,8 +6,8 @@ program test_flow_2d_material_props
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_domain_types
   use flow_2d_material_props_type
   implicit none
@@ -15,7 +15,7 @@ program test_flow_2d_material_props
   integer :: status, stat
   character(:), allocatable :: errmsg
   type(simulation_environment) :: env
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(flow_2d_material_props) :: props
   real(r8) :: vfrac(1,2), vfrac_void(2,2)
   integer :: interior_face

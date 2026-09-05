@@ -21,7 +21,7 @@
 module ht_2d_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use ht_2d_model_type
   use ht_2d_vector_type
   use parameter_list_type
@@ -33,7 +33,7 @@ module ht_2d_ic_solver_type
 
   type, public :: ht_2d_ic_solver
     private
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(ht_2d_model), pointer :: model => null() ! unowned reference
     type(parameter_list), pointer :: params => null() ! unowned reference
   contains
@@ -262,7 +262,7 @@ contains
 
   subroutine average_to_faces(mesh, ucell, uface)
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: ucell(:)
     real(r8), intent(out) :: uface(:)
 

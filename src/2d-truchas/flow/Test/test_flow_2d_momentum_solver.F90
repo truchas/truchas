@@ -8,8 +8,8 @@ program test_flow_2d_momentum_solver
   use truchas_logging_services
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_operators_type
   use flow_2d_bc_type
   use flow_2d_momentum_type
@@ -42,7 +42,7 @@ program test_flow_2d_momentum_solver
 contains
 
   subroutine test_solver
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_momentum), target :: momentum
     type(flow_2d_momentum_solver) :: solver

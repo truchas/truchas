@@ -13,8 +13,8 @@ program test_geometric_volume_tracker
   use mpi_f08
   use parallel_communication
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory, only: new_unstr_2d_quad_mesh
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
   use geom_axisymmetric, only: mesh_axisymmetry_mod
   use geometric_volume_tracker_type
   implicit none
@@ -50,7 +50,7 @@ contains
   subroutine test_stationary(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
 
@@ -74,7 +74,7 @@ contains
   subroutine test_planar_transport(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: expected(2,2), q
@@ -111,7 +111,7 @@ contains
   subroutine test_immobile_solid(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     integer :: f, j1, j2
@@ -151,7 +151,7 @@ contains
   subroutine test_inflow_material(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: expected(2,1), q
@@ -185,7 +185,7 @@ contains
   subroutine test_proportional_inflow(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: expected_flux(2)
@@ -223,7 +223,7 @@ contains
   subroutine test_three_material_transport(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
 
@@ -251,7 +251,7 @@ contains
   subroutine test_material_depletion(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: expected(2,2)
@@ -290,7 +290,7 @@ contains
   subroutine test_axisymmetric_transport(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: expected(2,2), q
@@ -326,7 +326,7 @@ contains
   subroutine test_axisymmetric_radial_transport(env)
 
     type(simulation_environment), intent(inout) :: env
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(geometric_volume_tracker) :: tracker
     real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
     real(r8) :: q
@@ -362,7 +362,7 @@ contains
 
   subroutine uniform_face_velocity(mesh, speed, vel, component)
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: speed
     real(r8), intent(out) :: vel(:)
     integer, intent(in), optional :: component

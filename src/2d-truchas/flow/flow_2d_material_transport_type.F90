@@ -23,14 +23,14 @@ module flow_2d_material_transport_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use volume_tracker_2d_class
   implicit none
   private
 
   type, public :: flow_2d_material_transport
     private
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     class(volume_tracker_2d), allocatable :: tracker
     integer :: nrealfluid, nfluid
     real(r8), allocatable :: vfrac_out(:,:)
@@ -52,7 +52,7 @@ contains
 
     class(flow_2d_material_transport), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
     character(*), intent(in), optional :: algorithm
     integer, intent(in), optional :: priority(:)

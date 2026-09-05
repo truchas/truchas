@@ -19,7 +19,7 @@
 module flow_2d_projection_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use flow_2d_operators_type
   use flow_2d_bc_type
   use flow_domain_types
@@ -29,7 +29,7 @@ module flow_2d_projection_type
 
   type, public :: flow_2d_projection
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
     type(pcsr_matrix) :: matrix_
   contains
@@ -42,7 +42,7 @@ contains
 
   subroutine init(this, mesh, operators)
     class(flow_2d_projection), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), target, intent(in) :: operators
 
     type(pcsr_graph), pointer :: graph

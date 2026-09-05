@@ -25,13 +25,13 @@ module ht_2d_vector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use vector_class
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use parallel_communication, only: global_sum, global_maxval
   implicit none
   private
 
   type, extends(vector), public :: ht_2d_vector
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     real(r8), allocatable :: hc(:) ! cell enthalpy density
     real(r8), allocatable :: tc(:) ! cell temperature
     real(r8), allocatable :: tf(:) ! face temperature
@@ -59,7 +59,7 @@ contains
 
   subroutine init_mesh(this, mesh)
     class(ht_2d_vector), intent(out) :: this
-    type(unstr_2d_mesh), intent(in), target :: mesh
+    type(t2d_unstr_mesh), intent(in), target :: mesh
     this%mesh => mesh
     allocate(this%hc(mesh%ncell), this%tc(mesh%ncell), this%tf(mesh%nface))
   end subroutine

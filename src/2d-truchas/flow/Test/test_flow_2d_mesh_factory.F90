@@ -4,13 +4,13 @@ program test_flow_2d_mesh_factory
   use parallel_communication
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   implicit none
 
   type(parameter_list) :: params
   type(simulation_environment) :: env
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   character(512) :: path
   character(:), allocatable :: errmsg
   integer :: stat

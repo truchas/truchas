@@ -9,8 +9,8 @@ program test_ns_ht_2d_solver
   use simulation_environment_type
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use material_database_type
   use material_model_type
   use material_distribution_type
@@ -48,7 +48,7 @@ program test_ns_ht_2d_solver
 contains
 
   subroutine test_zero_velocity_thermal_equivalence
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(material_database) :: database
     type(material_model) :: matl_model
   type(material_distribution), target :: matl_dist

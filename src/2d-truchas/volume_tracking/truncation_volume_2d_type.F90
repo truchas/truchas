@@ -44,7 +44,7 @@ contains
 
   subroutine init_truncation_volume(this, nodex, plane_normal, axisym)
 
-    use cell_topology_2d
+    use t2d_cell_topology
 
     class(truncation_volume), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), plane_normal(:)

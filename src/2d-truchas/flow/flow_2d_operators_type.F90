@@ -20,7 +20,7 @@
 module flow_2d_operators_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use flow_domain_types
   use bndry_func1_class
   use bndry_vfunc_class
@@ -29,7 +29,7 @@ module flow_2d_operators_type
 
   type, public :: flow_2d_operators
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     real(r8), allocatable :: dx(:), dr(:,:,:), interpolation_factor(:)
   contains
     procedure :: init
@@ -46,7 +46,7 @@ contains
 
   subroutine init(this, mesh)
     class(flow_2d_operators), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(t2d_unstr_mesh), target, intent(inout) :: mesh
 
     integer :: f, c1, c2
     real(r8) :: dcc(2), r(2,2)

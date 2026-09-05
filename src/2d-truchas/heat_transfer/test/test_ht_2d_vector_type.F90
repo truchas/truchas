@@ -4,13 +4,13 @@ program test_ht_2d_vector_type
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use vector_class
   use ht_2d_vector_type
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   real(r8) :: xmin(2), xmax(2)
   integer :: nx(2)
   integer :: status, stat
@@ -42,7 +42,7 @@ program test_ht_2d_vector_type
 contains
 
   subroutine test_storage_and_gather(mesh)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
 
     type(ht_2d_vector) :: u
     real(r8), allocatable :: hc_offp(:), tc_offp(:), tf_offp(:)
@@ -89,7 +89,7 @@ contains
 
 
   subroutine test_vector_operations(mesh)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
 
     type(ht_2d_vector) :: x, y, z
     class(vector), allocatable :: clone

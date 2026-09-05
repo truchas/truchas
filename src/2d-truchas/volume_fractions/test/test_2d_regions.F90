@@ -5,11 +5,11 @@ program test_2d_regions
   use region_factory
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use simulation_environment_type
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   integer :: status
   type(simulation_environment) :: env
 
@@ -18,7 +18,7 @@ program test_2d_regions
   !! we will only run in serial.
   block
     use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
-    use unstr_2d_mesh_factory
+    use t2d_unstr_mesh_factory
     use parallel_communication
     use truchas_env, only: prefix, overwrite_output
     use truchas_logging_services
@@ -54,7 +54,7 @@ contains
   !! to the right to cell set 2. Also add a cell set 3 to which no cell belongs.
 
   subroutine config_mesh_cell_sets(mesh)
-    type(unstr_2d_mesh), intent(inout) :: mesh
+    type(t2d_unstr_mesh), intent(inout) :: mesh
     integer :: j
     call mesh%init_cell_centroid
     mesh%cell_set_id = [1,2,3]

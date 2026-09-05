@@ -8,8 +8,8 @@ program test_flow_2d_projection_update
   use truchas_logging_services
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_state_type
   use flow_2d_operators_type
   use flow_2d_bc_type
@@ -44,7 +44,7 @@ program test_flow_2d_projection_update
 contains
 
   subroutine test_update
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_projection), target :: projection
     type(flow_2d_projection_solver), target :: solver

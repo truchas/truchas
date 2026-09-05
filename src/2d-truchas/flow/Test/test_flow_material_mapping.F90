@@ -8,7 +8,7 @@ program test_flow_material_mapping
   use material_distribution_type
   use material_factory, only: load_material_database
   use flow_material_mapping_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
 
   type(material_database) :: database
@@ -22,7 +22,7 @@ program test_flow_material_mapping
   type(material_model) :: single_phase_model
   type(material_distribution) :: single_phase_dist
   type(flow_material_mapping) :: single_phase_mapping
-  type(unstr_2d_mesh) :: mesh
+  type(t2d_unstr_mesh) :: mesh
   type(parameter_list), pointer :: matl_params, tracking_params
   type(parameter_list), pointer :: phase_params
   character(:), allocatable :: errmsg

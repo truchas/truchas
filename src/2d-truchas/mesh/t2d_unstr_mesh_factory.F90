@@ -1,15 +1,15 @@
 #include "f90_assert.fpp"
 
-module unstr_2d_mesh_factory
+module t2d_unstr_mesh_factory
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, i8 => int64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use parameter_list_type
   use simulation_environment_type
   implicit none
   private
 
-  public :: new_unstr_2d_mesh, unstr_2d_mesh
+  public :: new_unstr_2d_mesh, t2d_unstr_mesh
   public :: new_unstr_2d_quad_mesh, new_unstr_2d_tri_mesh
 
   integer(i8) :: lcg_state = 0
@@ -26,7 +26,7 @@ contains
     real(r8), intent(in) :: xmin(:), xmax(:)
     integer,  intent(in) :: nx(:)
     real(r8), intent(in), optional :: eps
-    type(unstr_2d_mesh), pointer :: this
+    type(t2d_unstr_mesh), pointer :: this
     this => new_unstr_2d_mesh(env, xmin, xmax, nx, eps, ptri=0.0_r8)
   end function
 
@@ -35,7 +35,7 @@ contains
     real(r8), intent(in) :: xmin(:), xmax(:)
     integer,  intent(in) :: nx(:)
     real(r8), intent(in), optional :: eps
-    type(unstr_2d_mesh), pointer :: this
+    type(t2d_unstr_mesh), pointer :: this
     this => new_unstr_2d_mesh(env, xmin, xmax, nx, eps, ptri=1.0_r8)
   end function
 
@@ -49,7 +49,7 @@ contains
     real(r8), intent(in) :: xmin(:), xmax(:)
     integer,  intent(in) :: nx(:)
     real(r8), intent(in), optional :: eps, ptri
-    type(unstr_2d_mesh), pointer :: this
+    type(t2d_unstr_mesh), pointer :: this
 
     type(ext_exodus_mesh) :: mesh ! temporary serial base mesh
     type(parameter_list) :: params
@@ -82,7 +82,7 @@ contains
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    type(unstr_2d_mesh), pointer :: this
+    type(t2d_unstr_mesh), pointer :: this
 
     type(ext_exodus_mesh) :: mesh
     real(r8), allocatable :: x(:), y(:)
@@ -582,11 +582,11 @@ contains
 
   function new_unstr_2d_mesh_aux(mesh, params, errmsg, env) result(this)
 
-    use unstr_2d_mesh_type
+    use t2d_unstr_mesh_type
     use ext_exodus_mesh_type
     use permutations
     use simple_partitioning_methods, only: get_block_partition, read_partition
-    use unstr_2d_mesh_tools
+    use t2d_unstr_mesh_tools
     use parallel_communication
     use parameter_list_type
 
@@ -594,7 +594,7 @@ contains
     type(parameter_list),  intent(inout) :: params
     character(:), allocatable, intent(out) :: errmsg
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), pointer :: this
+    type(t2d_unstr_mesh), pointer :: this
 
     integer :: j, k, n, nnode, nface, ncell, stat, pfirst
     integer :: cell_psize(nPE), node_psize(nPE), face_psize(nPE)
@@ -720,7 +720,7 @@ contains
     call select_ghost_cells(cstart, cnode, cell_psize, offP_size, offP_index)
     deallocate(cnhbr)
 
-    !! Begin initializing the unstr_2d_mesh result object.
+    !! Begin initializing the t2d_unstr_mesh result object.
     allocate(this)
 
     !! Create the cell index partition; include the off-process cells from above.
@@ -1085,7 +1085,7 @@ contains
 
     use parallel_communication, only: is_IOP
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     integer, intent(in) :: psize(:), cstart(:), cnode(:)
 
     integer :: j
@@ -1123,7 +1123,7 @@ contains
 
     use parallel_communication, only: is_IOP, scatter
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     integer, intent(in) :: psize(:), cstart(:), cface(:), cfpar(:)
 
     integer, allocatable :: count_g(:), count_l(:)
@@ -1159,9 +1159,9 @@ contains
 
   subroutine init_face_node_data(this)
 
-    use cell_topology_2d, only: get_face_nodes
+    use t2d_cell_topology, only: get_face_nodes
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
 
     integer :: j, k, n
     integer, allocatable :: fnodes(:)
@@ -1199,7 +1199,7 @@ contains
   !! such that FCELL(1,j) is non-zero and FCELL(2,j) is 0.
 
   subroutine init_face_cell_data(this)
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     integer :: j, k, n
     allocate(this%fcell(2,this%nface))
     this%fcell = 0
@@ -1232,7 +1232,7 @@ contains
     use exodus_mesh_type
     use parallel_communication, only: is_IOP, scatter, broadcast
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
     integer, intent(in) :: cstart(:), cface(:)
 
@@ -1303,7 +1303,7 @@ contains
     use bitfield_type
     use parallel_communication, only: is_IOP, scatter, broadcast
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
 
     integer :: i, j, n, nnode_tot
@@ -1377,7 +1377,7 @@ contains
     use permutations, only: reorder
     use parallel_communication, only: is_IOP, scatter, broadcast, gather
 
-    type(unstr_2d_mesh), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(inout) :: this
     class(exodus_mesh), intent(in) :: mesh
 
     integer :: i, j, n, offset, ncell_tot
@@ -1455,4 +1455,4 @@ contains
 
     end function lcg
 
-end module unstr_2d_mesh_factory
+end module t2d_unstr_mesh_factory

@@ -15,7 +15,7 @@
 module flow_2d_bc_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use parameter_list_type
   use bndry_func1_class
   use bndry_vfunc_class
@@ -27,7 +27,7 @@ module flow_2d_bc_type
   private
 
   type, public :: flow_2d_bc
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     class(bndry_func1), allocatable :: pressure_dirichlet
     class(bndry_func1), allocatable :: pressure_correction_dirichlet
     class(bndry_func1), allocatable :: pressure_neumann
@@ -46,7 +46,7 @@ contains
   subroutine init(this, env, mesh, params, stat, errmsg)
     class(flow_2d_bc), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -200,7 +200,7 @@ contains
     use scalar_func_factories, only: alloc_const_scalar_func
 
     class(flow_2d_bc), intent(inout) :: this
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
 
     class(scalar_func), allocatable :: func
     integer, allocatable :: faces(:)

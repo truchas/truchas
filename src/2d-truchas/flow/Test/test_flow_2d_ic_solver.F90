@@ -8,8 +8,8 @@ program test_flow_2d_ic_solver
   use truchas_logging_services
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_model_type
   use flow_2d_solver_type
   implicit none
@@ -40,7 +40,7 @@ program test_flow_2d_ic_solver
 contains
 
   subroutine test_uniform_velocity
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
     type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
@@ -76,7 +76,7 @@ contains
 
 
   subroutine test_incompatible_velocity
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
     type(flow_2d_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
