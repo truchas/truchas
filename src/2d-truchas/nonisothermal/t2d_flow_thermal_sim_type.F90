@@ -27,7 +27,7 @@ module t2d_flow_thermal_sim_type
   use t2d_flow_model_type
   use t2d_thermal_model_type
   use t2d_flow_thermal_integrator_type
-  use ns_ht_2d_vtkhdf_writer_type
+  use t2d_flow_thermal_vtkhdf_writer_type
   use simulation_environment_type
   use simulation_type
   implicit none
@@ -42,7 +42,7 @@ module t2d_flow_thermal_sim_type
     type(t2d_flow_model), pointer :: flow_model => null()
     type(t2d_thermal_model), pointer :: ht_model => null()
     type(t2d_flow_thermal_integrator), pointer :: solver => null()
-    type(ns_ht_2d_vtkhdf_writer) :: output
+    type(t2d_flow_thermal_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output
     real(r8) :: t_init
     real(r8), allocatable :: tout(:)

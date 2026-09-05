@@ -1,7 +1,7 @@
 !!
-!! NS_HT_2D_ENTHALPY_ADVECTOR_TYPE
+!! T2D_FLOW_THERMAL_ENTHALPY_ADVECTOR_TYPE
 !!
-!! This module defines NS_HT_2D_ENTHALPY_ADVECTOR, the explicit donor-cell
+!! This module defines T2D_FLOW_THERMAL_ENTHALPY_ADVECTOR, the explicit donor-cell
 !! enthalpy-advection helper used by coupled two-dimensional
 !! Navier--Stokes/thermal transport. It converts material-resolved signed
 !! cell-face flux volumes to a conservative on-process cell energy increment.
@@ -12,7 +12,7 @@
 
 #include "f90_assert.fpp"
 
-module ns_ht_2d_enthalpy_advector_type
+module t2d_flow_thermal_enthalpy_advector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -25,7 +25,7 @@ module ns_ht_2d_enthalpy_advector_type
     class(scalar_func), allocatable :: prop
   end type
 
-  type, public :: ns_ht_2d_enthalpy_advector
+  type, public :: t2d_flow_thermal_enthalpy_advector
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(enthalpy_func_box), allocatable :: enthalpy(:)
@@ -43,7 +43,7 @@ contains
 
     use material_model_type
 
-    class(ns_ht_2d_enthalpy_advector), intent(out) :: this
+    class(t2d_flow_thermal_enthalpy_advector), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: phase_ids(:)
@@ -84,7 +84,7 @@ contains
   !! retained.
   subroutine get_advected_enthalpy(this, time, cell_temp, flux_volumes, dQ)
 
-    class(ns_ht_2d_enthalpy_advector), intent(inout) :: this
+    class(t2d_flow_thermal_enthalpy_advector), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: cell_temp(:)
     real(r8), intent(in) :: flux_volumes(:,:)
@@ -131,4 +131,4 @@ contains
   end subroutine
 
 
-end module ns_ht_2d_enthalpy_advector_type
+end module t2d_flow_thermal_enthalpy_advector_type

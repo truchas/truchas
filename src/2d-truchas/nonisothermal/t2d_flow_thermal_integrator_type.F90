@@ -29,7 +29,7 @@ module t2d_flow_thermal_integrator_type
   use t2d_flow_solver_type
   use t2d_thermal_model_type
   use t2d_thermal_solver_type
-  use ns_ht_2d_enthalpy_advector_type
+  use t2d_flow_thermal_enthalpy_advector_type
   use time_step_sync_type
   implicit none
   private
@@ -41,7 +41,7 @@ module t2d_flow_thermal_integrator_type
     type(t2d_flow_material_mapping) :: matl_map
     type(t2d_flow_solver) :: flow
     type(t2d_flow_material_transport) :: material_transport
-    type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
+    type(t2d_flow_thermal_enthalpy_advector) :: enthalpy_advector
     type(t2d_thermal_solver), pointer :: thermal => null()
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), flow_vfrac_old(:,:), &
         matl_vfrac_old(:,:)
