@@ -32,13 +32,13 @@ contains
 
     stat = 0
     select case (trim(name))
-    case ('ns_2d')
+    case ('flow')
       allocate(ns_2d_sim :: sim)
-    case ('ht_2d')
+    case ('thermal')
       allocate(ht_2d_sim :: sim)
-    case ('ns_ht_2d')
+    case ('flow_thermal')
       allocate(ns_ht_2d_sim :: sim)
-    case ('vof_2d')
+    case ('vof')
       allocate(vof_2d_sim :: sim)
     case default
       stat = 1

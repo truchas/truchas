@@ -1,6 +1,7 @@
 # Stokes tests
 
-These integrated tests run the `ns_2d` executable with inertia disabled:
+These integrated tests run the `truchas-2d` executable with `--simulation flow`
+and inertia disabled:
 
 - pressure-driven channel flow, aligned and rotated, compared with the
   analytic Poiseuille profile;

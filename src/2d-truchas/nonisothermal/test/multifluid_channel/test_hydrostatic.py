@@ -22,7 +22,7 @@ def main():
     executable, input_file, mpiexec = map(Path, sys.argv[1:])
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_multifluid_hydrostatic_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_ht_2d", str(input_file)],
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow_thermal", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, check=False)
     (output_dir / "stdout.txt").write_text(result.stdout)

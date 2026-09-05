@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, mpiexec):
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_channel_4p_"))
-    command = [str(executable), "--simulation", "ns_ht_2d", "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "flow_thermal", "--output-dir", ".", "--force", str(input_file)]
     command = [mpiexec, "-n", "4"] + command
     result = subprocess.run(
         command,

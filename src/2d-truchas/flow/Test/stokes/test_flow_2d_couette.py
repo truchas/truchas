@@ -24,7 +24,7 @@ def main():
     mpiexec = sys.argv[3]
     output_dir = Path(tempfile.mkdtemp(prefix="stokes_2d_couette_viscosity_4p_"))
     result = subprocess.run(
-        [mpiexec, "-n", "4", str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)],
+        [mpiexec, "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
         text=True,
         stdout=subprocess.PIPE,

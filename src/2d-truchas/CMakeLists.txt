@@ -34,6 +34,7 @@ add_subdirectory(heat_transfer)
 add_subdirectory(nonisothermal)
 
 add_executable(truchas_2d truchas_2d_main.F90 simulation_factory.F90)
+set_target_properties(truchas_2d PROPERTIES OUTPUT_NAME truchas-2d)
 target_link_libraries(truchas_2d nsht2d flow2d ht2d volume_tracking_2d truchas-extra truchas ${TRUCHAS_LINK_LIBS})
 
 add_executable(mesh_example mesh_example.F90)

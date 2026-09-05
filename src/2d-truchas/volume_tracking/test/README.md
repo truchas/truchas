@@ -8,4 +8,4 @@
 - `generic`: exercises the generic VOF simulation with a stationary circular region.
 - `truncated_volumes`: directly checks geometric truncation volumes for planar and axisymmetric cells.
 
-The VOF cases run the generic `vof_2d` program and compare partitioned VTKHDF output with serial gold data. `truncated_volumes` is a direct executable test of the geometric utility.
+The VOF cases run the generic `truchas-2d --simulation vof` driver and compare partitioned VTKHDF output with serial gold data. `truncated_volumes` is a direct executable test of the geometric utility.

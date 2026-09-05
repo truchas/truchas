@@ -24,7 +24,7 @@ PHASE_FIELDS = (
 def run_case(executable, input_file, mpiexec):
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_freezing_flow_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_ht_2d", "--output-dir", ".", "--force",
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow_thermal", "--output-dir", ".", "--force",
          str(input_file)],
         cwd=output_dir,
         text=True,
