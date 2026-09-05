@@ -1,10 +1,10 @@
 !!
-!! NS_2D_SOLVER_TYPE
+!! T2D_FLOW_INTEGRATOR_TYPE
 !!
-!! This module defines NS_2D_SOLVER, the isothermal incompressible
+!! This module defines T2D_FLOW_INTEGRATOR, the isothermal incompressible
 !! Navier--Stokes orchestration layer.  It owns material transport, the
 !! standalone time-step policy, and the count of successful steps.  It
-!! delegates flow mechanics and flow-state management to FLOW_2D_SOLVER.
+!! delegates flow mechanics and flow-state management to T2D_FLOW_SOLVER.
 !! Momentum transport is an explicit first-order donor-cell contribution
 !! supplied to that common solver.
 !!
@@ -14,7 +14,7 @@
 
 #include "f90_assert.fpp"
 
-module ns_2d_solver_type
+module t2d_flow_integrator_type
 
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
@@ -22,17 +22,17 @@ module ns_2d_solver_type
   use material_model_type
   use material_distribution_type
   use flow_2d_model_type
-  use flow_2d_solver_type
+  use t2d_flow_solver_type
   use flow_material_mapping_type
   use flow_2d_material_transport_type
   use time_step_sync_type
   implicit none
   private
 
-  type, public :: ns_2d_solver
+  type, public :: t2d_flow_integrator
     private
     type(flow_material_mapping) :: matl_map
-    type(flow_2d_solver) :: flow
+    type(t2d_flow_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
     logical :: inertial = .true.
@@ -70,7 +70,7 @@ module ns_2d_solver_type
 contains
 
   subroutine init(this, env, model, matl_model, params, stat, errmsg, inertial)
-    class(ns_2d_solver), intent(out) :: this
+    class(t2d_flow_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(inout) :: model
     type(material_model), intent(in) :: matl_model
@@ -171,7 +171,7 @@ contains
   !! Initialize the standalone time-step policy from SIM-CONTROL parameters.
   !! The output schedule itself remains owned by the simulation driver.
   subroutine init_time_stepper(this, params, stat, errmsg)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -202,7 +202,7 @@ contains
 
 
   subroutine set_volume_fractions(this, vfrac)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%flow%set_volume_fractions(vfrac)
@@ -210,7 +210,7 @@ contains
 
 
   subroutine set_initial_material_state(this, vfrac, temperature)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%flow%set_initial_material_state(vfrac, temperature)
@@ -221,7 +221,7 @@ contains
 
 
   subroutine get_reduced_volume_fractions(this, matl_dist, vfrac)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     type(material_distribution), intent(in) :: matl_dist
     real(r8), allocatable, intent(out) :: vfrac(:,:)
 
@@ -233,7 +233,7 @@ contains
   !! Update the simulation-owned material distribution from the current flow
   !! distribution before it is used for output or by another physics model.
   subroutine update_material_distribution(this, matl_dist)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     type(material_distribution), intent(inout) :: matl_dist
 
     call this%matl_map%put_reduced_volume_fractions(this%vfrac, matl_dist)
@@ -241,7 +241,7 @@ contains
 
 
   subroutine set_buoyancy_temperature(this, temperature)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
 
     call this%flow%set_buoyancy_temperature(temperature)
@@ -249,7 +249,7 @@ contains
 
 
   subroutine delete(this)
-    type(ns_2d_solver), intent(inout) :: this
+    type(t2d_flow_integrator), intent(inout) :: this
   end subroutine
 
 
@@ -257,7 +257,7 @@ contains
   !! projects the velocity and computes an initial pressure with its temporary
   !! Stokes step, as mainline does when it omits initial momentum transport.
   subroutine set_initial_state(this, env, time, dt, velocity, stat)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     integer, intent(out) :: stat
@@ -277,7 +277,7 @@ contains
   !! The current state is pending after a successful ADVANCE_MOMENTUM call;
   !! callers must reacquire these views after COMMIT_STEP or REJECT_STEP.
   subroutine get_cell_flow_soln(this, pressure, velocity)
-    class(ns_2d_solver), target, intent(in) :: this
+    class(t2d_flow_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
     call this%flow%get_cell_flow_soln(pressure, velocity)
@@ -286,7 +286,7 @@ contains
 
   !! Return a no-copy view of the full-local flow-equation mask.
   subroutine get_cell_flow_active(this, active)
-    class(ns_2d_solver), target, intent(in) :: this
+    class(t2d_flow_integrator), target, intent(in) :: this
     logical, pointer, intent(out) :: active(:)
 
     call this%flow%get_cell_flow_active(active)
@@ -297,7 +297,7 @@ contains
   !! state is pending after a successful ADVANCE_MOMENTUM call; callers must
   !! reacquire this view after COMMIT_STEP or REJECT_STEP.
   subroutine get_face_velocity(this, velocity)
-    class(ns_2d_solver), target, intent(in) :: this
+    class(t2d_flow_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: velocity(:)
 
     call this%flow%get_face_velocity(velocity)
@@ -309,7 +309,7 @@ contains
   !! isothermal wrapper: it first obtains material transport from the old face
   !! velocity and then advances momentum and pressure.
   subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
@@ -353,7 +353,7 @@ contains
   subroutine integrate(this, env, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
@@ -398,7 +398,7 @@ contains
 
 
   subroutine select_step_cause(this, cause)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     character(*), intent(out) :: cause
 
     real(r8) :: h, hlimit
@@ -425,7 +425,7 @@ contains
 
 
   function last_time(this) result(time)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     real(r8) :: time
 
     time = this%tlast
@@ -433,14 +433,14 @@ contains
 
 
   integer(int64) function num_steps(this)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
 
     num_steps = this%nstep
   end function
 
 
   function initial_time_step(this) result(dt)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     real(r8) :: dt
 
     ASSERT(this%time_stepper_initialized)
@@ -453,7 +453,7 @@ contains
   !! operation lets a coupled solver advect material and thermal enthalpy
   !! before it updates the flow state.
   subroutine advance_momentum(this, env, t_n, t_np1, flux_volumes, stat, errmsg)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: flux_volumes(:,:)
@@ -465,7 +465,7 @@ contains
 
   !! Commit the pending flow state and its current material properties.
   subroutine commit_step(this)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
 
     call this%flow%commit_step()
     this%nstep = this%nstep + 1_int64
@@ -476,7 +476,7 @@ contains
   !! These fields are updated at each requested solution output and written
   !! by the simulation's output writer.
   subroutine init_temporal_output(this, data)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
@@ -486,7 +486,7 @@ contains
   !! Set the current values of the temporal scalar fields published by this
   !! solver.
   subroutine set_temporal_output(this, data)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
@@ -496,7 +496,7 @@ contains
   !! Reject the pending flow state, restoring the last accepted state.
   !! Material volume fractions are restored by the owning caller.
   subroutine reject_step(this)
-    class(ns_2d_solver), intent(inout) :: this
+    class(t2d_flow_integrator), intent(inout) :: this
 
     call this%flow%reject_step()
   end subroutine
@@ -504,10 +504,10 @@ contains
   !! Return the maximum step size requested by the flow mechanics for the old
   !! face-normal velocity.
   function courant_time_step(this) result(dt)
-    class(ns_2d_solver), intent(in) :: this
+    class(t2d_flow_integrator), intent(in) :: this
     real(r8) :: dt
 
     dt = this%flow%courant_time_step()
   end function
 
-end module ns_2d_solver_type
+end module t2d_flow_integrator_type

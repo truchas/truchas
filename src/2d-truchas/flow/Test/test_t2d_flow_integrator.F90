@@ -1,4 +1,4 @@
-program test_ns_2d_solver
+program test_t2d_flow_integrator
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -15,7 +15,7 @@ program test_ns_2d_solver
   use material_model_type
   use material_factory, only: load_material_database
   use flow_2d_model_type
-  use ns_2d_solver_type
+  use t2d_flow_integrator_type
   implicit none
 
   integer :: status, stat
@@ -31,7 +31,7 @@ program test_ns_2d_solver
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_ns_2d_solver.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_integrator.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -45,7 +45,7 @@ contains
   subroutine test_step
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(ns_2d_solver), target :: solver
+    type(t2d_flow_integrator), target :: solver
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params, plist, momentum_params, projection_params, tracking_params
@@ -160,4 +160,4 @@ contains
     end if
   end subroutine
 
-end program test_ns_2d_solver
+end program test_t2d_flow_integrator

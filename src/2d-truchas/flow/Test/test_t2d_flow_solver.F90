@@ -1,4 +1,4 @@
-program test_flow_2d_solver
+program test_t2d_flow_solver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -11,7 +11,7 @@ program test_flow_2d_solver
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use flow_2d_model_type
-  use flow_2d_solver_type
+  use t2d_flow_solver_type
   implicit none
 
   integer :: status, stat
@@ -27,7 +27,7 @@ program test_flow_2d_solver
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_solver.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_solver.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -43,7 +43,7 @@ contains
   subroutine test_step
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_solver), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:)
@@ -80,7 +80,7 @@ contains
   subroutine test_incompatible_flux
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_solver), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     character(:), allocatable :: errmsg
@@ -115,7 +115,7 @@ contains
   subroutine test_pressure_drive
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_solver), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:), expected_velocity(:)
@@ -181,4 +181,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_solver
+end program test_t2d_flow_solver
