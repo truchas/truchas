@@ -1,7 +1,8 @@
 !!
-!! HT_2D_SOLVER_TYPE
+!! T2D_THERMAL_SOLVER_TYPE
 !!
-!! This module defines the solver for a 2D thermal transport simulation. It
+!! This module defines the thermal solver for a 2D thermal transport
+!! simulation. It
 !! owns the preconditioner, correction norm, integrator adapter, integrator,
 !! and current solution vector, and coordinates initialization, time stepping,
 !! and access to thermal state data for its sim-owned model.
@@ -13,7 +14,7 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_solver_type
+module t2d_thermal_solver_type
 
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use ht_2d_model_type
@@ -29,7 +30,7 @@ module ht_2d_solver_type
   implicit none
   private
 
-  type, public :: ht_2d_solver
+  type, public :: t2d_thermal_solver
     private
     type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
     type(ht_2d_precon) :: precon
@@ -72,7 +73,7 @@ contains
 
   subroutine init(this, env, model, params, stat, errmsg)
 
-    class(ht_2d_solver), intent(out), target :: this
+    class(t2d_thermal_solver), intent(out), target :: this
     type(simulation_environment), intent(in) :: env
     type(ht_2d_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
@@ -155,7 +156,7 @@ contains
 
 
   subroutine set_initial_state(this, env, t, temp, stat, errmsg, dt)
-    class(ht_2d_solver), intent(inout), target :: this
+    class(t2d_thermal_solver), intent(inout), target :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t, temp(:)
     integer, intent(out) :: stat
@@ -191,7 +192,7 @@ contains
 
   !! Initialize the solver-owned time-step policy from simulation controls.
   subroutine init_time_stepper(this, params, stat, errmsg)
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -224,14 +225,14 @@ contains
   !! Returns the current integration time.
 
   real(r8) function last_time(this)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     last_time = this%integ%last_time()
   end function
 
   !! Returns the current cell enthalpy solution.
 
   subroutine get_cell_heat_soln(this, enth)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     real(r8), intent(inout) :: enth(:)
     ASSERT(size(enth) == this%model%mesh%ncell_onP)
     enth = this%u%hc(:this%model%mesh%ncell_onP)
@@ -240,14 +241,14 @@ contains
   !! Returns the current cell temperature solution.
 
   subroutine get_cell_temp_soln(this, temp)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     real(r8), intent(inout) :: temp(:)
     ASSERT(size(temp) == this%model%mesh%ncell_onP)
     temp = this%u%tc(:this%model%mesh%ncell_onP)
   end subroutine
 
   subroutine write_metrics(this, string)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     character(*), intent(out) :: string(:)
     ASSERT(size(string) == 2)
     call this%integ%write_metrics(string)
@@ -256,7 +257,7 @@ contains
   !! Set the cell-integrated external enthalpy rate used in thermal residual
   !! evaluation.
   subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
     real(r8), intent(in) :: enthalpy_rate(:)
 
     call this%model%set_ext_enthalpy_rate(enthalpy_rate)
@@ -267,7 +268,7 @@ contains
   subroutine integrate(this, env, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: tout
     integer, intent(out) :: stat
@@ -341,7 +342,7 @@ contains
 
   subroutine step(this, env, t_n, t_np1, stat, errmsg, hnext)
 
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
@@ -393,7 +394,7 @@ contains
   !! current state of the DAE system. This has no effect if no step is pending.
 
   subroutine commit_step(this)
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
     if (this%step_is_pending) then
       call this%integ%commit_state(this%t, this%u)
       if (this%time_stepper_initialized) then
@@ -408,7 +409,7 @@ contains
   !! Reject the tentative solution produced by a successful STEP, restoring
   !! the last committed solution and time.
   subroutine reject_step(this)
-    class(ht_2d_solver), intent(inout) :: this
+    class(t2d_thermal_solver), intent(inout) :: this
 
     if (this%step_is_pending) then
       call this%integ%get_last_state_copy(this%u)
@@ -419,29 +420,29 @@ contains
 
 
   integer(int64) function num_steps(this)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     num_steps = this%nstep
   end function
 
 
   real(r8) function initial_time_step(this)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     ASSERT(this%time_stepper_initialized)
     initial_time_step = this%dt_init
   end function
 
 
   subroutine init_temporal_output(this, data)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     type(parameter_list), intent(inout) :: data
     call data%set('NStep', this%nstep)
   end subroutine
 
 
   subroutine set_temporal_output(this, data)
-    class(ht_2d_solver), intent(in) :: this
+    class(t2d_thermal_solver), intent(in) :: this
     type(parameter_list), intent(inout) :: data
     call data%set('NStep', this%nstep)
   end subroutine
 
-end module ht_2d_solver_type
+end module t2d_thermal_solver_type

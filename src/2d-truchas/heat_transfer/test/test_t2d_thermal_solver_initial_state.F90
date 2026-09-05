@@ -37,7 +37,7 @@ program test_HT_2d_solver_initial_state
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
   call fhypre_initialize
-  call init_test_environment('test_ht_2d_solver_initial_state.log')
+  call init_test_environment('test_t2d_thermal_solver_initial_state.log')
 
   TOL = 1E-9_r8
   eps = 0.0_r8  ! mesh distortion

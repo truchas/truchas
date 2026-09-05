@@ -59,14 +59,14 @@ downstream physics that can reject an otherwise successful thermal step.
   initially supplies one-liquid flux volumes directly from face velocity, then
   becomes the owner of the volume-tracker interaction and reduced-view mapping.
 - [x] **External thermal rate.**  Add the general cell-integrated external
-  enthalpy-rate interface to `ht_2d_model`/`ht_2d_solver`; zero remains the
+  enthalpy-rate interface to `ht_2d_model`/`t2d_thermal_solver`; zero remains the
   default for standalone heat transport.
 - [x] **Enthalpy advection.**  Add a focused, unit-tested helper that converts
   material-resolved flux volumes into a conservative cell enthalpy increment,
   including explicit inflow thermal data when needed. Material distribution
   supplies the state from which flow transport constructs those fluxes; the
   advector itself needs only their material-slot mapping.
-- [x] **Coupled solver and sim.**  `ns_ht_2d_solver` owns retry and
+- [x] **Coupled solver and sim.**  `ns_t2d_thermal_solver` owns retry and
   sequencing, while `ns_ht_2d_sim`/main own setup, output scheduling,
   logging, signal termination, timing summary, and combined VTKHDF output.
 - [x] **Initial tests.**  Cover zero-velocity equivalence to thermal-only
