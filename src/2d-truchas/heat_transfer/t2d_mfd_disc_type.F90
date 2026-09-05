@@ -1,7 +1,7 @@
 !!
-!! MFD_2D_DISC_TYPE
+!! T2D_MFD_DISC_TYPE
 !!
-!! This module defines the MFD_2D_DISC type used by thermal diffusion models
+!! This module defines the T2D_MFD_DISC type used by thermal diffusion models
 !! to represent a mimetic finite difference (MFD) discretization on an
 !! unstructured mesh. Its primary state is the cell-local inverse flux mass
 !! matrix MINV, stored in upper packed format.
@@ -33,7 +33,7 @@
 
 #include "f90_assert.fpp"
 
-module mfd_2d_disc_type
+module t2d_mfd_disc_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
@@ -42,7 +42,7 @@ module mfd_2d_disc_type
 
   integer, parameter :: MFD_CELL_NFACE_MAX = 4
 
-  type, public :: mfd_2d_disc
+  type, public :: t2d_mfd_disc
     type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
     integer, allocatable :: xminv(:)
     real(r8), allocatable :: minv(:)
@@ -70,7 +70,7 @@ contains
 
   subroutine init(this, mesh)
 
-    class(mfd_2d_disc), intent(out) :: this
+    class(t2d_mfd_disc), intent(out) :: this
     type(unstr_2d_mesh), intent(in), target :: mesh
 
     integer :: j, n
@@ -120,7 +120,7 @@ contains
 
     !use upper_packed_matrix_procs, only: upm_sym_matvec
 
-    class(mfd_2d_disc), intent(in) :: this
+    class(t2d_mfd_disc), intent(in) :: this
     real(r8), intent(in)  :: coef(:)
     real(r8), intent(in)  :: ucell(:), uface(:)
     real(r8), intent(out) :: rcell(:), rface(:)
@@ -158,7 +158,7 @@ contains
 
     !use upper_packed_matrix_procs, only: upm_sym_matvec
 
-    class(mfd_2d_disc), intent(in) :: this
+    class(t2d_mfd_disc), intent(in) :: this
     real(r8), intent(in)    :: coef(:)
     real(r8), intent(in)    :: ucell(:), uface(:)
     real(r8), intent(inout) :: rcell(:), rface(:)
@@ -284,4 +284,4 @@ contains
 
   end subroutine compute_flux_matrix_inv
 
-end module mfd_2d_disc_type
+end module t2d_mfd_disc_type

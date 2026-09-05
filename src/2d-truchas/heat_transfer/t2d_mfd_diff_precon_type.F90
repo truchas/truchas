@@ -1,5 +1,5 @@
 !!
-!! MFD_2D_DIFF_PRECON_TYPE
+!! T2D_MFD_DIFF_PRECON_TYPE
 !!
 !! This module implements the Schur-complement preconditioner for the local
 !! 2D mimetic finite difference diffusion operator. It owns a frozen-
@@ -17,19 +17,19 @@
 
 #include "f90_assert.fpp"
 
-module mfd_2d_diff_precon_type
+module t2d_mfd_diff_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use mfd_2d_diff_matrix_type
+  use t2d_mfd_diff_matrix_type
   use pcsr_matrix_type
   use pcsr_precon_class
   use index_map_type
   implicit none
   private
 
-  type, public :: mfd_2d_diff_precon
+  type, public :: t2d_mfd_diff_precon
     private
-    type(mfd_2d_diff_matrix), allocatable :: dm
+    type(t2d_mfd_diff_matrix), allocatable :: dm
     type(pcsr_matrix) :: Sff
     class(pcsr_precon), allocatable :: Sff_precon
   contains
@@ -46,8 +46,8 @@ contains
     use pcsr_precon_factory
     use parameter_list_type
 
-    class(mfd_2d_diff_precon), intent(out), target :: this
-    type(mfd_2d_diff_matrix), allocatable, intent(inout) :: dm
+    class(t2d_mfd_diff_precon), intent(out), target :: this
+    type(t2d_mfd_diff_matrix), allocatable, intent(inout) :: dm
     type(parameter_list) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -60,20 +60,20 @@ contains
   end subroutine init
 
   function matrix_ref(this) result(matrix)
-    class(mfd_2d_diff_precon), intent(in), target :: this
-    type(mfd_2d_diff_matrix), pointer :: matrix
+    class(t2d_mfd_diff_precon), intent(in), target :: this
+    type(t2d_mfd_diff_matrix), pointer :: matrix
     matrix => this%dm
   end function
 
   subroutine compute(this)
-    class(mfd_2d_diff_precon), intent(inout) :: this
+    class(t2d_mfd_diff_precon), intent(inout) :: this
     call this%dm%compute_face_schur_matrix(this%Sff)
     call this%Sff_precon%compute
   end subroutine
 
   subroutine apply(this, r1, r2)
 
-    class(mfd_2d_diff_precon), intent(in) :: this
+    class(t2d_mfd_diff_precon), intent(in) :: this
     real(r8), intent(inout) :: r1(:), r2(:)
 
     ASSERT(size(r1) == this%dm%mesh%ncell)
@@ -99,7 +99,7 @@ contains
 
   subroutine forward_elimination(dm, b1, b2)
 
-    type(mfd_2d_diff_matrix), intent(in) :: dm
+    type(t2d_mfd_diff_matrix), intent(in) :: dm
     real(r8), intent(in) :: b1(:)
     real(r8), intent(inout) :: b2(:)
 
@@ -133,7 +133,7 @@ contains
 
   subroutine backward_substitution(dm, b1, u2)
 
-    type(mfd_2d_diff_matrix), intent(in) :: dm
+    type(t2d_mfd_diff_matrix), intent(in) :: dm
     real(r8), intent(inout) :: b1(:), u2(:)
 
     integer :: j
@@ -159,4 +159,4 @@ contains
 
   end subroutine backward_substitution
 
-end module mfd_2d_diff_precon_type
+end module t2d_mfd_diff_precon_type

@@ -157,7 +157,7 @@ contains
   subroutine compute_face_temp(this, env, t, u, name, stat, errmsg)
 
     use hypre_hybrid_type
-    use mfd_2d_diff_matrix_type
+    use t2d_mfd_diff_matrix_type
 
     class(ht_2d_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
@@ -167,7 +167,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(mfd_2d_diff_matrix), target :: dm
+    type(t2d_mfd_diff_matrix), target :: dm
     type(parameter_list), target :: solver_params
     type(hypre_hybrid) :: solver
     type(ht_2d_vector) :: udot, f

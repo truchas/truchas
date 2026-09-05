@@ -1,5 +1,5 @@
 !!
-!! MFD_2D_DIFF_MATRIX_TYPE
+!! T2D_MFD_DIFF_MATRIX_TYPE
 !!
 !! This module defines a derived type that constructs and stores the local
 !! frozen-coefficient 2D mimetic finite difference diffusion operator. It is
@@ -36,19 +36,19 @@
 
 #include "f90_assert.fpp"
 
-module mfd_2d_diff_matrix_type
+module t2d_mfd_diff_matrix_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use mfd_2d_disc_type
+  use t2d_mfd_disc_type
   use pcsr_matrix_type
   use parallel_communication
   use index_map_type
   implicit none
   private
 
-  type, public :: mfd_2d_diff_matrix
-    type(mfd_2d_disc),   pointer :: disc => null() ! unowned reference
+  type, public :: t2d_mfd_diff_matrix
+    type(t2d_mfd_disc),   pointer :: disc => null() ! unowned reference
     type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
     real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
     real(r8), allocatable :: a12_val(:) ! the cell-face submatrix
@@ -63,14 +63,14 @@ module mfd_2d_diff_matrix_type
     procedure :: incr_cell_diag
     procedure :: incr_face_diag
     procedure :: compute_face_schur_matrix
-  end type mfd_2d_diff_matrix
+  end type t2d_mfd_diff_matrix
 
 contains
 
   subroutine init_disc(this, disc)
 
-    class(mfd_2d_diff_matrix), intent(out) :: this
-    type(mfd_2d_disc), intent(in), target :: disc
+    class(t2d_mfd_diff_matrix), intent(out) :: this
+    type(t2d_mfd_disc), intent(in), target :: disc
 
     integer :: j
     type(pcsr_graph), pointer :: g
@@ -103,8 +103,8 @@ contains
 
 
   subroutine init_mold(this, mold)
-    class(mfd_2d_diff_matrix), intent(out) :: this
-    class(mfd_2d_diff_matrix), intent(in)  :: mold
+    class(t2d_mfd_diff_matrix), intent(out) :: this
+    class(t2d_mfd_diff_matrix), intent(in)  :: mold
     this%disc => mold%disc
     this%mesh => mold%mesh
     allocate(this%a11(size(mold%a11)))
@@ -117,7 +117,7 @@ contains
 
     use upper_packed_matrix_procs, only: upm_col_sum
 
-    class(mfd_2d_diff_matrix), intent(inout) :: this
+    class(t2d_mfd_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: coef(:)
 
     integer :: j, l, ir, ic, n, nface_max
@@ -183,7 +183,7 @@ contains
 
   subroutine set_dir_faces(this, dir_faces)
 
-    class(mfd_2d_diff_matrix), intent(inout) :: this
+    class(t2d_mfd_diff_matrix), intent(inout) :: this
     integer, intent(in) :: dir_faces(:)
 
     integer :: j, n
@@ -220,7 +220,7 @@ contains
   !! derivative terms into the base diffusion matrix.
 
   subroutine incr_cell_diag(this, values)
-    class(mfd_2d_diff_matrix), intent(inout) :: this
+    class(t2d_mfd_diff_matrix), intent(inout) :: this
     real(r8), intent(in) :: values(:)
     ASSERT(size(values) == size(this%a11))
     this%a11 = this%a11 + values
@@ -232,7 +232,7 @@ contains
 
   subroutine incr_face_diag(this, indices, values)
 
-    class(mfd_2d_diff_matrix), intent(inout) :: this
+    class(t2d_mfd_diff_matrix), intent(inout) :: this
     integer, intent(in) :: indices(:)
     real(r8), intent(in) :: values(:)
 
@@ -255,7 +255,7 @@ contains
 
   subroutine compute_face_schur_matrix(this, Sff)
 
-    class(mfd_2d_diff_matrix), intent(in) :: this
+    class(t2d_mfd_diff_matrix), intent(in) :: this
     type(pcsr_matrix), intent(inout) :: Sff
 
     integer :: j, n, ir, ic
@@ -287,4 +287,4 @@ contains
 
   end subroutine compute_face_schur_matrix
 
-end module mfd_2d_diff_matrix_type
+end module t2d_mfd_diff_matrix_type
