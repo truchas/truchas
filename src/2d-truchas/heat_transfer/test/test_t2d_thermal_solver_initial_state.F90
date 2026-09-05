@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_HT_2d_solver_initial_state
+program test_t2d_thermal_solver_initial_state
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -24,7 +24,7 @@ program test_HT_2d_solver_initial_state
   use t2d_thermal_ic_solver_type
   use t2d_thermal_vector_type
   use bitfield_type
-  use test_ht_2d_common
+  use test_t2d_thermal_common
   implicit none
 
   type(t2d_unstr_mesh), pointer :: mesh
@@ -433,4 +433,4 @@ contains
 
   end subroutine test_multimaterial_dirichlet
 
-end program test_HT_2d_solver_initial_state
+end program test_t2d_thermal_solver_initial_state

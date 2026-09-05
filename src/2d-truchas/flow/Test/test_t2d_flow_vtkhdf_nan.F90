@@ -1,5 +1,5 @@
 !!
-!! TEST_FLOW_2D_VTKHDF_NAN
+!! TEST_T2D_FLOW_VTKHDF_NAN
 !!
 !! This test verifies that quiet NaNs can be passed through the two-dimensional
 !! flow VTKHDF writer without raising an IEEE invalid-operation exception.

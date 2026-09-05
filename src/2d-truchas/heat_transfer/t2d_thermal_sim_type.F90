@@ -1,7 +1,7 @@
 !!
-!! HT_2D_SIM_TYPE
+!! T2D_THERMAL_SIM_TYPE
 !!
-!! This module defines HT_2D_SIM, which owns the mesh, material state,
+!! This module defines T2D_THERMAL_SIM, which owns the mesh, material state,
 !! thermal model, solver, time-integration control, and output writer for a
 !! two-dimensional thermal transport simulation.
 !!

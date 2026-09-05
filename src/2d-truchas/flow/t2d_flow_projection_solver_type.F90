@@ -2,7 +2,7 @@
 !! T2D_FLOW_PROJECTION_SOLVER_TYPE
 !!
 !! This module defines T2D_FLOW_PROJECTION_SOLVER, the linear-solver adapter
-!! for the scalar pressure system stored by FLOW_2D_PROJECTION. It owns the
+!! for the scalar pressure system stored by T2D_FLOW_PROJECTION. It owns the
 !! HYPRE_HYBRID solver and retains unowned references to the projection
 !! operator and its solver parameter list.
 !!

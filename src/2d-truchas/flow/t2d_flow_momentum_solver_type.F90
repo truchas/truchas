@@ -2,7 +2,7 @@
 !! T2D_FLOW_MOMENTUM_SOLVER_TYPE
 !!
 !! This module defines T2D_FLOW_MOMENTUM_SOLVER, the linear-solver adapter for
-!! FLOW_2D_MOMENTUM. It owns a BLOCK_PCSR_BRIDGE and HYPRE_HYBRID while the
+!! T2D_FLOW_MOMENTUM. It owns a BLOCK_PCSR_BRIDGE and HYPRE_HYBRID while the
 !! momentum operator remains stored and assembled as a 2-by-2 block matrix.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026

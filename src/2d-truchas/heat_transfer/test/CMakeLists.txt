@@ -8,17 +8,17 @@ find_python_package(vtk 9.0)
 include_directories(${HeatTransfer2D_BINARY_DIR})
 
 # Compile the shared Fortran fixture once. Adding its source to each test
-# executable races to write test_ht_2d_common.mod in a parallel build.
-add_library(test_ht_2d_common STATIC support/test_ht_2d_common.F90)
-set_target_properties(test_ht_2d_common PROPERTIES
+# executable races to write test_t2d_thermal_common.mod in a parallel build.
+add_library(test_t2d_thermal_common STATIC support/test_t2d_thermal_common.F90)
+set_target_properties(test_t2d_thermal_common PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
-target_include_directories(test_ht_2d_common INTERFACE
+target_include_directories(test_t2d_thermal_common INTERFACE
   "${CMAKE_CURRENT_BINARY_DIR}/mod")
-target_link_libraries(test_ht_2d_common PRIVATE ht2d truchas ${Truchas_LINK_LIBS})
+target_link_libraries(test_t2d_thermal_common PRIVATE ht2d truchas ${Truchas_LINK_LIBS})
 
 function(add_ht_unit_test target source)
   add_executable(${target} ${source})
-  target_link_libraries(${target} test_ht_2d_common ht2d truchas ${Truchas_LINK_LIBS})
+  target_link_libraries(${target} test_t2d_thermal_common ht2d truchas ${Truchas_LINK_LIBS})
 
   foreach(nproc IN ITEMS 1 4)
     set(name "${target}-${nproc}p")

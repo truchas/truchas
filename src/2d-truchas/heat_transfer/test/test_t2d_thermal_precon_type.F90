@@ -4,7 +4,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program test_HT_2d_precon_type
+program test_t2d_thermal_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parallel_communication
@@ -20,7 +20,7 @@ program test_HT_2d_precon_type
   use t2d_thermal_precon_type
   use t2d_thermal_vector_type
   use bitfield_type
-  use test_ht_2d_common
+  use test_t2d_thermal_common
   implicit none
 
   type(t2d_unstr_mesh), pointer :: mesh
@@ -66,7 +66,7 @@ contains
     stop status
   end subroutine error_exit
 
-  !! Tests the HT_2d_precon on a linear problem with Dirichlet boundary conditions
+  !! Tests the t2d_thermal_precon on a linear problem with Dirichlet boundary conditions
   subroutine test_linear_dir(disc, matl_model, tol)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -183,7 +183,7 @@ contains
   end subroutine test_linear_dir
 
 
-  !! Tests the HT_2d_precon on a linear problem with Neumann boundary conditions
+  !! Tests the t2d_thermal_precon on a linear problem with Neumann boundary conditions
   subroutine test_linear_flux(disc, matl_model, tol)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
@@ -319,4 +319,4 @@ contains
 
   end subroutine test_linear_flux
 
-end program test_HT_2d_precon_type
+end program test_t2d_thermal_precon_type

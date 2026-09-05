@@ -1,7 +1,7 @@
 !!
-!! NS_HT_2D_SIM_TYPE
+!! T2D_FLOW_THERMAL_SIM_TYPE
 !!
-!! This module defines NS_HT_2D_SIM, which owns the setup and output for a
+!! This module defines T2D_FLOW_THERMAL_SIM, which owns the setup and output for a
 !! single-liquid two-dimensional non-isothermal Navier--Stokes simulation.
 !! Time-step policy is owned by its coupled solver.
 !!
