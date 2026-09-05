@@ -24,9 +24,9 @@ module t2d_flow_solver_type
   use parallel_communication, only: global_minval
   use t2d_flow_model_type
   use t2d_flow_state_type
-  use flow_2d_momentum_solver_type
-  use flow_2d_projection_solver_type
-  use flow_2d_projection_update_type
+  use t2d_flow_momentum_solver_type
+  use t2d_flow_projection_solver_type
+  use t2d_flow_projection_update_type
   use t2d_flow_ic_solver_type
   use flow_domain_types
   implicit none
@@ -37,9 +37,9 @@ module t2d_flow_solver_type
     type(t2d_flow_model), pointer :: model => null()  ! unowned reference
     type(t2d_flow_state) :: state
     type(t2d_flow_state) :: pending_state
-    type(flow_2d_momentum_solver) :: momentum_solver
-    type(flow_2d_projection_solver), pointer :: projection_solver => null()
-    type(flow_2d_projection_update) :: projection_update
+    type(t2d_flow_momentum_solver) :: momentum_solver
+    type(t2d_flow_projection_solver), pointer :: projection_solver => null()
+    type(t2d_flow_projection_update) :: projection_update
     type(t2d_flow_ic_solver), pointer :: ic_solver => null()
     real(r8), allocatable :: rhs(:,:), grad_p(:,:)
     logical, allocatable :: flow_active(:)

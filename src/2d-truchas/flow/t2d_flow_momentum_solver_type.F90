@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_MOMENTUM_SOLVER_TYPE
+!! T2D_FLOW_MOMENTUM_SOLVER_TYPE
 !!
-!! This module defines FLOW_2D_MOMENTUM_SOLVER, the linear-solver adapter for
+!! This module defines T2D_FLOW_MOMENTUM_SOLVER, the linear-solver adapter for
 !! FLOW_2D_MOMENTUM. It owns a BLOCK_PCSR_BRIDGE and HYPRE_HYBRID while the
 !! momentum operator remains stored and assembled as a 2-by-2 block matrix.
 !!
@@ -11,7 +11,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_momentum_solver_type
+module t2d_flow_momentum_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -22,7 +22,7 @@ module flow_2d_momentum_solver_type
   implicit none
   private
 
-  type, public :: flow_2d_momentum_solver
+  type, public :: t2d_flow_momentum_solver
     private
     type(t2d_flow_momentum), pointer :: momentum => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
@@ -40,7 +40,7 @@ module flow_2d_momentum_solver_type
 contains
 
   subroutine init(this, momentum, params, stat, errmsg)
-    class(flow_2d_momentum_solver), intent(out) :: this
+    class(t2d_flow_momentum_solver), intent(out) :: this
     type(t2d_flow_momentum), target, intent(in) :: momentum
     type(parameter_list), target, intent(in) :: params
     integer, intent(out), optional :: stat
@@ -60,7 +60,7 @@ contains
 
 
   subroutine delete(this)
-    type(flow_2d_momentum_solver), intent(inout) :: this
+    type(t2d_flow_momentum_solver), intent(inout) :: this
 
     if (associated(this%bridge)) deallocate(this%bridge)
   end subroutine
@@ -69,7 +69,7 @@ contains
   !! Update the scalar solver representation after the block momentum matrix
   !! has been assembled.
   subroutine setup(this)
-    class(flow_2d_momentum_solver), intent(inout) :: this
+    class(t2d_flow_momentum_solver), intent(inout) :: this
 
     type(pcsr_matrix), pointer :: matrix
 
@@ -86,7 +86,7 @@ contains
   !! Solve for a cell-centered two-component velocity. RHS and VELOCITY use
   !! the block-interleaved storage expected by BLOCK_PCSR_BRIDGE.
   subroutine solve(this, rhs, velocity, stat)
-    class(flow_2d_momentum_solver), intent(inout) :: this
+    class(t2d_flow_momentum_solver), intent(inout) :: this
     real(r8), target, contiguous, intent(in) :: rhs(:,:)
     real(r8), target, contiguous, intent(inout) :: velocity(:,:)
     integer, intent(out) :: stat
@@ -103,7 +103,7 @@ contains
 
 
   subroutine get_metrics(this, num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
-    class(flow_2d_momentum_solver), intent(in) :: this
+    class(t2d_flow_momentum_solver), intent(in) :: this
     integer, intent(out), optional :: num_itr, num_dscg_itr, num_pcg_itr
     real(r8), intent(out), optional :: rel_res_norm
 
@@ -112,10 +112,10 @@ contains
 
 
   function metrics_string(this) result(string)
-    class(flow_2d_momentum_solver), intent(in) :: this
+    class(t2d_flow_momentum_solver), intent(in) :: this
     character(:), allocatable :: string
 
     string = this%solver%metrics_string()
   end function
 
-end module flow_2d_momentum_solver_type
+end module t2d_flow_momentum_solver_type

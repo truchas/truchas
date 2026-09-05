@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_PROJECTION_UPDATE_TYPE
+!! T2D_FLOW_PROJECTION_UPDATE_TYPE
 !!
-!! This module defines FLOW_2D_PROJECTION_UPDATE, the collocated pressure
+!! This module defines T2D_FLOW_PROJECTION_UPDATE, the collocated pressure
 !! correction in a two-dimensional incompressible-flow step. It constructs a
 !! pressure-consistent predicted face velocity, solves for the pressure
 !! correction, then corrects face velocity, cell velocity, and pressure.
@@ -12,13 +12,13 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_projection_update_type
+module t2d_flow_projection_update_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
   use t2d_flow_operators_type
   use t2d_flow_projection_type
-  use flow_2d_projection_solver_type
+  use t2d_flow_projection_solver_type
   use t2d_flow_bc_type
   use t2d_flow_state_type
   use flow_domain_types
@@ -26,12 +26,12 @@ module flow_2d_projection_update_type
   implicit none
   private
 
-  type, public :: flow_2d_projection_update
+  type, public :: t2d_flow_projection_update
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(t2d_flow_operators), pointer :: operators => null()  ! unowned reference
     type(t2d_flow_projection), pointer :: projection => null()  ! unowned reference
-    type(flow_2d_projection_solver), pointer :: solver => null()  ! unowned reference
+    type(t2d_flow_projection_solver), pointer :: solver => null()  ! unowned reference
     real(r8) :: body_acceleration(2) = 0.0_r8
     real(r8), allocatable :: grad_p_old(:,:), grad_p_new(:,:), velocity_work(:,:)
     real(r8), allocatable :: gravity_head(:,:)
@@ -45,11 +45,11 @@ module flow_2d_projection_update_type
 contains
 
   subroutine init(this, mesh, operators, projection, solver, body_acceleration)
-    class(flow_2d_projection_update), intent(out) :: this
+    class(t2d_flow_projection_update), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(t2d_flow_operators), target, intent(in) :: operators
     type(t2d_flow_projection), target, intent(in) :: projection
-    type(flow_2d_projection_solver), target, intent(in) :: solver
+    type(t2d_flow_projection_solver), target, intent(in) :: solver
     real(r8), optional, intent(in) :: body_acceleration(:)
     this%mesh => mesh
     this%operators => operators
@@ -71,7 +71,7 @@ contains
   !! used only as a projection multiplier; this procedure does not alter
   !! STATE%P_CC.
   subroutine project_velocity(this, dt, inv_density_c, inv_density_f, cell_t, face_t, bc, state, stat, solved)
-    class(flow_2d_projection_update), intent(inout) :: this
+    class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(t2d_flow_bc), intent(in) :: bc
@@ -139,7 +139,7 @@ contains
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
   subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved)
-    class(flow_2d_projection_update), intent(inout) :: this
+    class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(t2d_flow_bc), intent(in) :: bc
@@ -240,7 +240,7 @@ contains
 
 
   subroutine gradient_pressure(this, pressure, cell_t, face_t, gradient, bc, inv_density_c, density_delta_c)
-    class(flow_2d_projection_update), intent(inout) :: this
+    class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     real(r8), intent(out) :: gradient(:,:)
@@ -289,7 +289,7 @@ contains
 
 
   subroutine gradient_correction(this, pressure, cell_t, face_t, gradient, bc)
-    class(flow_2d_projection_update), intent(in) :: this
+    class(t2d_flow_projection_update), intent(in) :: this
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     real(r8), intent(out) :: gradient(:,:)
@@ -301,7 +301,7 @@ contains
 
 
   subroutine pressure_derivative(this, pressure, cell_t, face_t, bc, derivative, correction)
-    class(flow_2d_projection_update), intent(inout) :: this
+    class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(t2d_flow_bc), intent(in) :: bc
@@ -348,7 +348,7 @@ contains
 
 
   subroutine interpolate_velocity(this, velocity, cell_t, face_t, bc, velocity_f)
-    class(flow_2d_projection_update), intent(in) :: this
+    class(t2d_flow_projection_update), intent(in) :: this
     real(r8), intent(in) :: velocity(:,:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(t2d_flow_bc), intent(in) :: bc
@@ -415,4 +415,4 @@ contains
     end if
   end subroutine
 
-end module flow_2d_projection_update_type
+end module t2d_flow_projection_update_type
