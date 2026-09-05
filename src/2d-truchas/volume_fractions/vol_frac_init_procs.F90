@@ -59,9 +59,9 @@ contains
 
   subroutine compute_volume_fractions(mesh, rfunc, rlev, vol_frac, stat)
 
-    use unstr_2d_mesh_type
+    use t2d_unstr_mesh_type
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     type(region_func), intent(in), target :: rfunc
     integer,  intent(in)  :: rlev
     real(r8), intent(out) :: vol_frac(:,:)

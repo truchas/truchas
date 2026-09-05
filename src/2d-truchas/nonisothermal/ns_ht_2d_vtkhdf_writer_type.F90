@@ -17,7 +17,7 @@ module ns_ht_2d_vtkhdf_writer_type
   use,intrinsic :: ieee_arithmetic, only: ieee_quiet_nan, ieee_value
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_model_type
   use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, &
       vtkhdf_field_data_handle, UG_FIXED_MESH
@@ -34,7 +34,7 @@ module ns_ht_2d_vtkhdf_writer_type
 
   type, public :: ns_ht_2d_vtkhdf_writer
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle) :: pressure, velocity, enthalpy, temperature
     type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
@@ -53,7 +53,7 @@ contains
 
     class(ns_ht_2d_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     type(parameter_list), intent(in) :: temporal_output
     integer, intent(out) :: stat

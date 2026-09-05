@@ -6,8 +6,8 @@ program test_flow_2d_material_transport
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_material_transport_type
   implicit none
 
@@ -42,7 +42,7 @@ contains
   subroutine test_single_liquid_flux_volumes(algorithm)
     character(*), intent(in) :: algorithm
 
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_material_transport) :: transport
     real(r8), allocatable :: velocity_fn(:), expected_flux(:), vfrac_n(:,:)
     real(r8), pointer :: vfrac_trial(:,:)
@@ -83,7 +83,7 @@ contains
   subroutine test_fluid_solid_transport(algorithm)
 
     character(*), intent(in) :: algorithm
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_material_transport) :: transport
     real(r8), allocatable :: velocity_fn(:), vfrac_n(:,:)
     real(r8), pointer :: vfrac_trial(:,:)

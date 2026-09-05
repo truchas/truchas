@@ -119,7 +119,7 @@
 
 #include "f90_assert.fpp"
 
-module unstr_2d_mesh_type
+module t2d_unstr_mesh_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_base_mesh_class
@@ -129,7 +129,7 @@ module unstr_2d_mesh_type
   implicit none
   private
 
-  type, extends(unstr_base_mesh), public :: unstr_2d_mesh
+  type, extends(unstr_base_mesh), public :: t2d_unstr_mesh
     integer, allocatable :: cnode(:) ! cell nodes connectivity
     integer, allocatable :: cface(:) ! cell faces connectivity
     integer, allocatable :: cnhbr(:) ! cell neighbors connectivity
@@ -153,14 +153,14 @@ module unstr_2d_mesh_type
     procedure :: cell_node_list_view
     procedure :: cell_face_list_view
     procedure :: face_node_list_view
-  end type unstr_2d_mesh
+  end type t2d_unstr_mesh
 
 contains
 
   !! Compute the geometric data components from the node coordinates.
   subroutine compute_geometry (this)
     use cell_geometry, only: cell_volume, vector_length
-    class(unstr_2d_mesh), intent(inout) :: this
+    class(t2d_unstr_mesh), intent(inout) :: this
     integer :: j
     ASSERT(allocated(this%volume))
     ASSERT(allocated(this%normal))
@@ -181,7 +181,7 @@ contains
 
   subroutine init_cell_centroid(this)
     use cell_geometry, only: cell_centroid_2d
-    class(unstr_2d_mesh), intent(inout) :: this
+    class(t2d_unstr_mesh), intent(inout) :: this
     integer :: j
     if (allocated(this%cell_centroid)) return
     allocate(this%cell_centroid(2,this%ncell))
@@ -193,7 +193,7 @@ contains
   end subroutine init_cell_centroid
 
   subroutine init_face_centroid(this)
-    class(unstr_2d_mesh), intent(inout) :: this
+    class(t2d_unstr_mesh), intent(inout) :: this
     integer :: j
     if (allocated(this%face_centroid)) return
     allocate(this%face_centroid(2,this%nface))
@@ -204,7 +204,7 @@ contains
 
   !! Creates the global ragged CNODE array on the IO process, 0-sized on others.
   subroutine get_global_cnode_array (this, cstart, cnode)
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cstart(:), cnode(:)
     associate (cstart_onP => this%cstart(:this%ncell_onP+1), &
                 cnode_onP => this%cnode(:this%cstart(this%ncell_onP+1)-1))
@@ -214,7 +214,7 @@ contains
 
   !! Creates the global ragged CFACE array on the IO process, 0-sized on others.
   subroutine get_global_cface_array (this, cstart, cface)
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     integer, allocatable, intent(out) :: cstart(:), cface(:)
     associate (cstart_onP => this%cstart(:this%ncell_onP+1), &
                 cface_onP => this%cface(:this%cstart(this%ncell_onP+1)-1))
@@ -287,7 +287,7 @@ contains
     use parallel_communication, only: nPE, broadcast, gather
     use truchas_logging_services
 
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
 
     integer :: n
     character(80) :: line
@@ -302,7 +302,7 @@ contains
     call broadcast (nface_vec)
     call broadcast (ncell_vec)
 
-    call TLS_info ('  unstr_2d_mesh Profile:')
+    call TLS_info ('  t2d_unstr_mesh Profile:')
     write(line,fmt='(4x,a3,a,4a9)') 'PE', '|', 'nnode', 'nface', 'ncell'
     call TLS_info (line)
     call TLS_info ('    ---+'//repeat('-',27))
@@ -345,7 +345,7 @@ contains
     use string_utilities, only: i_to_c
     use truchas_logging_services
 
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
 
     integer, parameter :: MAX_PRINT = 10
     integer :: j, n, nqf, array(nPE)
@@ -416,7 +416,7 @@ contains
 
   subroutine get_link_set_bitmask (this, setids, bitmask, stat, errmsg)
     use string_utilities, only: i_to_c
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     integer, intent(in) :: setids(:)
     type(bitfield), intent(out) :: bitmask
     integer, intent(out) :: stat
@@ -439,7 +439,7 @@ contains
 
   subroutine get_link_set_ids(this, mask, setids)
 
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     logical, intent(in) :: mask(:)
     integer, allocatable, intent(out) :: setids(:)
 
@@ -468,7 +468,7 @@ contains
 
   function nearest_cell(this, point)
 
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     real(r8), intent(in) :: point(:)
     integer :: nearest_cell
 
@@ -506,7 +506,7 @@ contains
 
   function nearest_node(this, point)
 
-    class(unstr_2d_mesh), intent(in) :: this
+    class(t2d_unstr_mesh), intent(in) :: this
     real(r8), intent(in) :: point(:)
     integer :: nearest_node
 
@@ -535,7 +535,7 @@ contains
 
   !! Returns the nodes of the given cell
   function cell_node_list_view(this, n) result(view)
-    class(unstr_2d_mesh), intent(in), target :: this
+    class(t2d_unstr_mesh), intent(in), target :: this
     integer, intent(in) :: n
     integer, pointer, contiguous :: view(:)
     view => this%cnode(this%cstart(n):this%cstart(n+1)-1)
@@ -543,7 +543,7 @@ contains
 
   !! Returns the faces of the given cell
   function cell_face_list_view(this, n) result(view)
-    class(unstr_2d_mesh), intent(in), target :: this
+    class(t2d_unstr_mesh), intent(in), target :: this
     integer, intent(in) :: n
     integer, pointer, contiguous :: view(:)
     view => this%cface(this%cstart(n):this%cstart(n+1)-1)
@@ -551,10 +551,10 @@ contains
 
   !! Returns the nodes of the given face
   function face_node_list_view(this, n) result(view)
-    class(unstr_2d_mesh), intent(in), target :: this
+    class(t2d_unstr_mesh), intent(in), target :: this
     integer, intent(in) :: n
     integer, pointer, contiguous :: view(:)
     view => this%fnode(:,n)
   end function
 
-end module unstr_2d_mesh_type
+end module t2d_unstr_mesh_type

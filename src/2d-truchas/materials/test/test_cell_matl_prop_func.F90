@@ -4,7 +4,7 @@ program test_cell_matl_prop_func
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_factory
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
@@ -17,7 +17,7 @@ program test_cell_matl_prop_func
   use truchas_logging_services
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(material_database) :: matl_db
   type(material_model) :: matl_model
   type(material_distribution), pointer :: matl_dist

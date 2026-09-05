@@ -14,7 +14,7 @@ module vof_2d_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type, only: simulation_environment
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use vector_func_class
   use volume_tracker_2d_class
   implicit none
@@ -22,7 +22,7 @@ module vof_2d_solver_type
 
   type, public :: vof_2d_solver
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     class(volume_tracker_2d), allocatable :: tracker
     real(r8), allocatable :: vfrac_in(:,:), vfrac_out(:,:), flux_volume(:,:)
     real(r8), allocatable :: flux_velocity(:), face_velocity(:), interface_normal(:,:,:)
@@ -47,7 +47,7 @@ contains
 
     class(vof_2d_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nmat
     character(*), intent(in) :: algorithm
     logical, intent(in) :: axisymmetric

@@ -22,7 +22,7 @@ module ns_ht_2d_solver_type
   use parameter_list_type
   use material_model_type
   use material_distribution_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use flow_2d_model_type
   use flow_material_mapping_type
   use flow_2d_material_transport_type
@@ -36,7 +36,7 @@ module ns_ht_2d_solver_type
 
   type, public :: ns_ht_2d_solver
     private
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
     type(flow_material_mapping) :: matl_map
     type(flow_2d_solver) :: flow

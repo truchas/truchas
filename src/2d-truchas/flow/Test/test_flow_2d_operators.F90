@@ -38,8 +38,8 @@ program test_flow_2d_operators
   use parallel_communication
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use parameter_list_type
   use simulation_environment_type
   use flow_2d_state_type
@@ -86,7 +86,7 @@ contains
     character(*), intent(in) :: name
     real(r8), optional, intent(in) :: rotation_angle
 
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_state) :: state
     type(flow_2d_operators) :: ops
 
@@ -104,7 +104,7 @@ contains
 
   subroutine test_external_mesh()
     type(parameter_list) :: params
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_state) :: state
     type(flow_2d_operators) :: ops
     character(512) :: path
@@ -129,7 +129,7 @@ contains
 
 
   subroutine test_boundary_operators(mesh, ops, state, name, check_exact)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), intent(in) :: ops
     type(flow_2d_state), intent(inout) :: state
     character(*), intent(in) :: name
@@ -215,7 +215,7 @@ contains
 
 
   subroutine report_derivative_accuracy(mesh, ops, state)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), intent(in) :: ops
     type(flow_2d_state), intent(inout) :: state
 
@@ -240,7 +240,7 @@ contains
 
 
   subroutine rotate_mesh(mesh, angle)
-    type(unstr_2d_mesh), intent(inout) :: mesh
+    type(t2d_unstr_mesh), intent(inout) :: mesh
     real(r8), intent(in) :: angle
 
     real(r8) :: theta, rotation(2,2)
@@ -253,7 +253,7 @@ contains
 
 
   subroutine test_divergence(mesh, ops, state, name)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), intent(in) :: ops
     type(flow_2d_state), intent(inout) :: state
     character(*), intent(in) :: name
@@ -272,7 +272,7 @@ contains
 
 
   subroutine test_derivative(mesh, ops, state, name, check_exact)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), intent(in) :: ops
     type(flow_2d_state), intent(inout) :: state
     character(*), intent(in) :: name
@@ -312,7 +312,7 @@ contains
 
 
   subroutine test_interpolation(mesh, ops, state, name)
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(flow_2d_operators), intent(in) :: ops
     type(flow_2d_state), intent(inout) :: state
     character(*), intent(in) :: name

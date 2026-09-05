@@ -14,13 +14,13 @@
 module flow_2d_state_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
   private
 
   type, public :: flow_2d_state
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     real(r8), allocatable, public :: vel_cc(:,:)  ! (2, local cell)
     real(r8), allocatable, public :: vel_fn(:)    ! local face-normal velocity
     real(r8), allocatable, public :: p_cc(:)      ! local dynamic pressure
@@ -34,7 +34,7 @@ contains
 
   subroutine init(this, mesh)
     class(flow_2d_state), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
 
     this%mesh => mesh
     allocate(this%vel_cc(2, mesh%ncell), this%vel_fn(mesh%nface), this%p_cc(mesh%ncell))

@@ -13,7 +13,7 @@
 module flow_2d_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use parameter_list_type
   use scalar_func_class
   use vector_func_class
@@ -26,7 +26,7 @@ module flow_2d_bc_factory_type
 
   type, public :: flow_2d_bc_factory
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()  ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
   contains
     procedure :: init
@@ -51,7 +51,7 @@ contains
 
   subroutine init(this, mesh, params)
     class(flow_2d_bc_factory), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(in) :: params
 
     this%mesh => mesh

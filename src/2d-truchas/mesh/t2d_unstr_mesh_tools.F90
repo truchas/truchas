@@ -4,7 +4,7 @@
 
 #include "f90_assert.fpp"
 
-module unstr_2d_mesh_tools
+module t2d_unstr_mesh_tools
 
   implicit none
   private
@@ -35,7 +35,7 @@ contains
   subroutine get_cnhbr_aux(nhbr_table, cstart, cnode, cnhbr, stat)
 
     use face_neighbor_table_type
-    use cell_topology_2d, only: get_face_nodes
+    use t2d_cell_topology, only: get_face_nodes
 
     type(face_neighbor_table), intent(in) :: nhbr_table
     integer, intent(in) :: cstart(:), cnode(:)
@@ -96,7 +96,7 @@ contains
 
   subroutine label_mesh_faces(cstart, cnode, nface, cface)
 
-    use cell_topology_2d
+    use t2d_cell_topology
     use facet_table_type
 
     integer, intent(in)  :: cstart(:), cnode(:)
@@ -132,4 +132,4 @@ contains
 
   end subroutine label_mesh_faces
 
-end module unstr_2d_mesh_tools
+end module t2d_unstr_mesh_tools

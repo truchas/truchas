@@ -11,7 +11,7 @@ program test_HT_2d_precon_type
   use fhypre, only: fhypre_initialize
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_factory
   use material_model_type
   !use source_mesh_function
   use scalar_func_factories
@@ -23,7 +23,7 @@ program test_HT_2d_precon_type
   use test_ht_2d_common
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(t2d_mfd_disc), target :: mfd_disc
   type(material_model), target :: matl_model
   real(r8) :: xmin(2), xmax(2), tol, eps

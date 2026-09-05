@@ -11,7 +11,7 @@ program test_HT_2d_solver_type
   use fhypre, only: fhypre_initialize
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_factory
   use material_model_type
   !use source_mesh_function
   use scalar_func_factories
@@ -22,7 +22,7 @@ program test_HT_2d_solver_type
   use test_ht_2d_common
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(t2d_mfd_disc), target :: mfd_disc
   type(material_model), target :: matl_model
   real(r8) :: xmin(2), xmax(2), tol, eps
@@ -112,7 +112,7 @@ contains
   subroutine test1(disc, mesh, matl_model, tol, bdf1)
 
     type(t2d_mfd_disc), target, intent(in) :: disc
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
     logical, intent(in) :: bdf1

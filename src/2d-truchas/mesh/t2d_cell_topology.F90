@@ -2,7 +2,7 @@
 ! This contains versions of procedures from CELL_TOPOLOGY specialized
 ! for 2D cell types. Can this be reasonably merged into that module?
 
-module cell_topology_2d
+module t2d_cell_topology
 
   implicit none
   private
@@ -44,4 +44,4 @@ contains
 
   end subroutine get_face_nodes
 
-end module cell_topology_2d
+end module t2d_cell_topology

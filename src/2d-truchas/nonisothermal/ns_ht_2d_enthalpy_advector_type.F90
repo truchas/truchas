@@ -15,7 +15,7 @@
 module ns_ht_2d_enthalpy_advector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use scalar_func_class
   use bndry_func1_class
   implicit none
@@ -27,7 +27,7 @@ module ns_ht_2d_enthalpy_advector_type
 
   type, public :: ns_ht_2d_enthalpy_advector
     private
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(enthalpy_func_box), allocatable :: enthalpy(:)
     integer, allocatable :: phase_ids(:)
     real(r8), allocatable :: temp(:) ! on- and off-process cell workspace
@@ -44,7 +44,7 @@ contains
     use material_model_type
 
     class(ns_ht_2d_enthalpy_advector), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: phase_ids(:)
     integer, intent(out) :: stat

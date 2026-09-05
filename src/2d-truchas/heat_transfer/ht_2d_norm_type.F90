@@ -23,7 +23,7 @@ module ht_2d_norm_type
 
   type, public :: ht_2d_norm
     private
-    ! type(unstr_2d_mesh), pointer :: mesh => null()  ! reference only -- do not own
+    ! type(t2d_unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
     real(r8) :: abs_T_tol   ! absolute temperature tolerance
     real(r8) :: rel_T_tol   ! relative temperature tolerance

@@ -39,7 +39,7 @@
 module t2d_mfd_diff_matrix_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use t2d_mfd_disc_type
   use pcsr_matrix_type
   use parallel_communication
@@ -49,7 +49,7 @@ module t2d_mfd_diff_matrix_type
 
   type, public :: t2d_mfd_diff_matrix
     type(t2d_mfd_disc),   pointer :: disc => null() ! unowned reference
-    type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
+    type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     real(r8), allocatable :: a11(:)     ! the cell-cell submatrix
     real(r8), allocatable :: a12_val(:) ! the cell-face submatrix
     type(pcsr_matrix)     :: a22        ! the face-face submatrix

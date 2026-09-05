@@ -20,7 +20,7 @@ module flow_material_mapping_type
   use parameter_list_type
   use material_model_type
   use material_distribution_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
   private
 
@@ -311,7 +311,7 @@ contains
   !! solid phases are absent from FLUX_VOLUMES and remain unchanged.
   subroutine apply_phase_fluxes(this, mesh, flux_volumes, matl_dist)
     class(flow_material_mapping), intent(in) :: this
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: flux_volumes(:,:)
     type(material_distribution), intent(inout) :: matl_dist
 

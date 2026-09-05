@@ -13,12 +13,12 @@ program mesh_example
   use truchas_env, only: prefix
   use truchas_logging_services
   use simulation_environment_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_factory
   implicit none
 
   integer  :: nx(2)
   real(r8) :: xmin(2), xmax(2), eps, ptri
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(simulation_environment) :: env
   integer :: stat
   character(:), allocatable :: errmsg

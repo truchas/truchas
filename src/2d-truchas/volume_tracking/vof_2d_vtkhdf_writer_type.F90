@@ -14,14 +14,14 @@ module vof_2d_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use simulation_environment_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, UG_FIXED_MESH
   implicit none
   private
 
   type, public :: vof_2d_vtkhdf_writer
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle), allocatable :: volume_fraction(:)
     logical :: is_open = .false.
@@ -39,7 +39,7 @@ contains
 
     class(vof_2d_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nmat
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

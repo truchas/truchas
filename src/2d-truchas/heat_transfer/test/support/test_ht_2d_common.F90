@@ -12,7 +12,7 @@ module test_ht_2d_common
   use mpi_f08
   use parallel_communication, only: this_PE, abort_parallel_communication
   use simulation_environment_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_database_type
   use material_model_type
   use material_distribution_type
@@ -49,7 +49,7 @@ contains
     use material_factory, only: load_material_database
     use material_utilities, only: add_enthalpy_prop
 
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(out) :: matl_model
     type(parameter_list), pointer :: plist
     integer :: stat

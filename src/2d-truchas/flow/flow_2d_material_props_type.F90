@@ -25,7 +25,7 @@ module flow_2d_material_props_type
   use scalar_func_factories, only: alloc_const_scalar_func, alloc_poly_scalar_func
   use scalar_func_tools, only: is_const
   use flow_domain_types
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_model_type
   use parallel_communication
   implicit none
@@ -33,7 +33,7 @@ module flow_2d_material_props_type
 
   type, public :: flow_2d_material_props
     private
-    type(unstr_2d_mesh), pointer, public :: mesh => null()
+    type(t2d_unstr_mesh), pointer, public :: mesh => null()
     real(r8), allocatable, public :: density(:)
     type(scalar_func_box), allocatable :: viscosity(:), density_delta(:)
     real(r8), allocatable, public :: vfrac(:,:), density_c(:), density_c_old(:), &
@@ -61,7 +61,7 @@ contains
   !! This is retained for the standalone single-fluid flow driver.
   subroutine init(this, mesh, density, inviscid, stat, errmsg, viscosity, viscosity_func, density_delta_func, nfluid)
     class(flow_2d_material_props), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(t2d_unstr_mesh), target, intent(inout) :: mesh
     real(r8), intent(in) :: density(:)
     logical, intent(in) :: inviscid
     integer, intent(out) :: stat
@@ -130,7 +130,7 @@ contains
   !! material. PHASE_IDS are phase indices in DENSITY order.
   subroutine init_material(this, mesh, matl_model, phase_ids, inviscid, boussinesq, stat, errmsg, nfluid)
     class(flow_2d_material_props), intent(out) :: this
-    type(unstr_2d_mesh), target, intent(inout) :: mesh
+    type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: phase_ids(:)
     logical, intent(in) :: inviscid

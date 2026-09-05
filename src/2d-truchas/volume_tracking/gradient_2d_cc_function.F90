@@ -13,7 +13,7 @@
 module gradient_2d_cc_function
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
   private
 
@@ -24,7 +24,7 @@ contains
   ! 2d gradient of cell-centered scalar `x` evaluated at cell centers
   subroutine gradient_2d_cc(mesh, x, gx, gy, w_node0, w_node1, w_face)
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: x(:)
     real(r8), intent(out) :: gx(:), gy(:), w_node0(:), w_node1(:), w_face(:)
 
@@ -71,7 +71,7 @@ contains
 
     use cell_geometry, only: cell_volume
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: x(:)
     real(r8), intent(out) :: gx(:), gy(:), w_node0(:), w_node1(:), w_face(:)
 
@@ -125,7 +125,7 @@ contains
 
   subroutine node_avg(mesh, x_cell, x_node, w_node)
 
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: x_cell(:)
     real(r8), intent(out) :: x_node(:), w_node(:)
 

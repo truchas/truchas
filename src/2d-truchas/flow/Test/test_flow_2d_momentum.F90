@@ -7,8 +7,8 @@ program test_flow_2d_momentum
   use truchas_logging_services
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use flow_2d_operators_type
   use flow_2d_bc_type
   use flow_2d_momentum_type
@@ -42,7 +42,7 @@ program test_flow_2d_momentum
 contains
 
   subroutine test_momentum
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_momentum), target :: momentum
     type(flow_2d_bc) :: bc
@@ -118,7 +118,7 @@ contains
 
 
   subroutine test_advective_transport
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_momentum), target :: momentum
     type(flow_2d_bc) :: bc
@@ -185,7 +185,7 @@ contains
 
 
   subroutine test_nonfluid_cells
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_operators), target :: operators
     type(flow_2d_momentum), target :: momentum, inviscid_momentum
     type(flow_2d_bc) :: bc
@@ -260,7 +260,7 @@ contains
 
 
   subroutine compute_flux_volumes(mesh, dt, velocity_fn, material_fraction, flux_volumes)
-    type(unstr_2d_mesh), intent(in) :: mesh
+    type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: dt, velocity_fn(:), material_fraction(:)
     real(r8), intent(out) :: flux_volumes(:,:)
 
@@ -278,7 +278,7 @@ contains
 
 
   subroutine rotate_mesh(mesh, angle)
-    type(unstr_2d_mesh), intent(inout) :: mesh
+    type(t2d_unstr_mesh), intent(inout) :: mesh
     real(r8), intent(in) :: angle
 
     real(r8) :: theta, rotation(2,2)

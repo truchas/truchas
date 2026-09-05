@@ -9,8 +9,8 @@ program test_ns_2d_solver
   use parameter_list_type
   use parameter_list_json
   use simulation_environment_type
-  use unstr_2d_mesh_type
-  use unstr_2d_mesh_factory
+  use t2d_unstr_mesh_type
+  use t2d_unstr_mesh_factory
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
@@ -43,7 +43,7 @@ program test_ns_2d_solver
 contains
 
   subroutine test_step
-    type(unstr_2d_mesh), pointer :: mesh
+    type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
     type(ns_2d_solver), target :: solver
     type(material_database) :: database

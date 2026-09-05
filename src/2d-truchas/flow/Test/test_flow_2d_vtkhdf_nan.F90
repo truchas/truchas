@@ -18,13 +18,13 @@ program test_flow_2d_vtkhdf_nan
   use material_database_type
   use material_model_type
   use simulation_environment_type
-  use unstr_2d_mesh_factory, only: new_unstr_2d_quad_mesh
-  use unstr_2d_mesh_type, only: unstr_2d_mesh
+  use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
+  use t2d_unstr_mesh_type, only: t2d_unstr_mesh
   use flow_2d_vtkhdf_writer_type, only: flow_2d_vtkhdf_writer
   implicit none
 
   type(simulation_environment) :: env
-  type(unstr_2d_mesh), pointer :: mesh
+  type(t2d_unstr_mesh), pointer :: mesh
   type(material_database) :: database
   type(material_model) :: matl_model
   type(flow_2d_vtkhdf_writer) :: output

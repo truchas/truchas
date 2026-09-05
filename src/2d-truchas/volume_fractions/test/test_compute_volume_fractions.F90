@@ -5,7 +5,7 @@ program test_region_func_type
   use region_func_type
   use parameter_list_type
   use parameter_list_json
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use vol_frac_init_procs
   use string_utilities, only: i_to_c
   use truchas_env, only: prefix, overwrite_output
@@ -14,7 +14,7 @@ program test_region_func_type
   use simulation_environment_type
   implicit none
 
-  type(unstr_2d_mesh), pointer :: mesh => null()
+  type(t2d_unstr_mesh), pointer :: mesh => null()
   integer :: status, stat
   character(:), allocatable :: errmsg
   type(simulation_environment) :: env
@@ -52,8 +52,8 @@ contains
   !! which no cell belongs.
 
   subroutine create_mesh1(mesh)
-    use unstr_2d_mesh_factory
-    type(unstr_2d_mesh), pointer :: mesh
+    use t2d_unstr_mesh_factory
+    type(t2d_unstr_mesh), pointer :: mesh
     integer :: j
     if (associated(mesh)) deallocate(mesh)
     mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], ptri=0.5_r8)
@@ -114,8 +114,8 @@ contains
   !! test) as it doesn't really work with a perturbed mesh.
 
   subroutine create_mesh2(mesh)
-    use unstr_2d_mesh_factory
-    type(unstr_2d_mesh), pointer :: mesh
+    use t2d_unstr_mesh_factory
+    type(t2d_unstr_mesh), pointer :: mesh
     if (associated(mesh)) deallocate(mesh)
     mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4], eps=0.1_r8, ptri=0.5_r8)
   end subroutine

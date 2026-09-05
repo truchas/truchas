@@ -12,7 +12,7 @@
 module geom_axisymmetric
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   implicit none
 
 contains
@@ -21,7 +21,7 @@ contains
 
   subroutine mesh_axisymmetry_mod(mesh)
 
-    type(unstr_2d_mesh), target :: mesh
+    type(t2d_unstr_mesh), target :: mesh
 
     integer :: i
 

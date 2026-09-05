@@ -19,7 +19,7 @@ module flow_2d_vtkhdf_writer_type
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
   use parameter_list_type
   use simulation_environment_type
-  use unstr_2d_mesh_type
+  use t2d_unstr_mesh_type
   use material_model_type
   use vtkhdf_ug_file_type, only: vtkhdf_ug_file, vtkhdf_cell_data_handle, &
       vtkhdf_field_data_handle, UG_FIXED_MESH
@@ -36,7 +36,7 @@ module flow_2d_vtkhdf_writer_type
 
   type, public :: flow_2d_vtkhdf_writer
     private
-    type(unstr_2d_mesh), pointer :: mesh => null()
+    type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
     type(vtkhdf_cell_data_handle) :: pressure, velocity
     type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
@@ -55,7 +55,7 @@ contains
 
     class(flow_2d_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(unstr_2d_mesh), target, intent(in) :: mesh
+    type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
