@@ -1,4 +1,4 @@
-program test_flow_2d_projection_update
+program test_t2d_flow_projection_update
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -14,8 +14,8 @@ program test_flow_2d_projection_update
   use t2d_flow_operators_type
   use t2d_flow_bc_type
   use t2d_flow_projection_type
-  use flow_2d_projection_solver_type
-  use flow_2d_projection_update_type
+  use t2d_flow_projection_solver_type
+  use t2d_flow_projection_update_type
   use flow_domain_types
   implicit none
 
@@ -32,7 +32,7 @@ program test_flow_2d_projection_update
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_projection_update.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_projection_update.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -47,8 +47,8 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_operators), target :: operators
     type(t2d_flow_projection), target :: projection
-    type(flow_2d_projection_solver), target :: solver
-    type(flow_2d_projection_update) :: update
+    type(t2d_flow_projection_solver), target :: solver
+    type(t2d_flow_projection_update) :: update
     type(t2d_flow_state) :: state
     type(t2d_flow_bc) :: bc
     type(parameter_list), target :: bc_params, solver_params
@@ -101,4 +101,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_projection_update
+end program test_t2d_flow_projection_update
