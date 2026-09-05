@@ -119,7 +119,7 @@ contains
     use parameter_list_type
     use t2d_region_func_type
     use simulation_environment_type
-    use vol_frac_init_procs
+    use t2d_vol_frac_init_procs
     use parallel_communication, only: global_any
 
     class(material_distribution), intent(out) :: this
