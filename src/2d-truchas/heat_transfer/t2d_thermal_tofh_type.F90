@@ -1,7 +1,7 @@
 !!
-!! HT_2D_TOFH_TYPE
+!! T2D_THERMAL_TOFH_TYPE
 !!
-!! This module defines the HT_2D_TOFH type for computing cell temperatures
+!! This module defines the T2D_THERMAL_TOFH type for computing cell temperatures
 !! from enthalpy densities by inverting a cell material property mesh function
 !! H(T).
 !!
@@ -11,7 +11,7 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_tofh_type
+module t2d_thermal_tofh_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64, output_unit
   use new_mesh_func_class
@@ -21,7 +21,7 @@ module ht_2d_tofh_type
 
   !! Per-cell inverse of an increasing enthalpy-temperature relation. The
   !! enthalpy relation may differ by cell because material distribution varies.
-  type, extends(ridders), public :: ht_2d_tofh
+  type, extends(ridders), public :: t2d_thermal_tofh
     private
     class(new_mesh_func), pointer :: HofT => null()
     real(r8) :: H
@@ -41,12 +41,12 @@ module ht_2d_tofh_type
     procedure :: init
     procedure :: compute
     procedure :: get_metrics
-  end type ht_2d_tofh
+  end type t2d_thermal_tofh
 
 contains
 
   function f (this, x) result (fx)
-    class(ht_2d_tofh), intent(in) :: this
+    class(t2d_thermal_tofh), intent(in) :: this
     real(r8), intent(in) :: x
     real(r8) :: fx
     call this%HofT%compute_value_cell(this%cell, x, fx)
@@ -58,7 +58,7 @@ contains
   !! interval that does not bracket the root.
 
   subroutine init (this, HofT, eps, max_try, delta)
-    class(ht_2d_tofh), intent(out) :: this
+    class(t2d_thermal_tofh), intent(out) :: this
     class(new_mesh_func), target :: HofT
     real(r8), intent(in) :: eps
     integer, intent(in), optional :: max_try
@@ -82,7 +82,7 @@ contains
   !! Return collective root-finding and bracket-recovery performance metrics.
   subroutine get_metrics (this, avg_itr, max_itr, rec_rate, avg_adj, max_adj)
     use parallel_communication, only: global_sum, global_maxval
-    class(ht_2d_tofh), intent(in) :: this
+    class(t2d_thermal_tofh), intent(in) :: this
     integer, intent(out), optional :: max_itr, max_adj
     real, intent(out), optional :: avg_itr, rec_rate, avg_adj
     if (present(avg_itr))  avg_itr  = real(global_sum(this%num_itr)) / max(1,global_sum(this%num_call))
@@ -101,7 +101,7 @@ contains
   !! thermal-species systems require an extended interface.
 
   subroutine compute (this, cell, H, Tmin, Tmax, T)
-    class(ht_2d_tofh), intent(inout) :: this
+    class(t2d_thermal_tofh), intent(inout) :: this
     integer,  intent(in)  :: cell
     real(r8), intent(in)  :: H, Tmin, Tmax
     real(r8), intent(out) :: T
@@ -162,4 +162,4 @@ contains
     call abort_parallel_communication
   end subroutine panic
 
-end module ht_2d_tofh_type
+end module t2d_thermal_tofh_type

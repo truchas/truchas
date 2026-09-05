@@ -18,7 +18,7 @@ program test_HT_2d_model_type
   use t2d_mfd_disc_type
   use t2d_thermal_model_type
   use t2d_thermal_ic_solver_type
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -108,7 +108,7 @@ contains
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    type(ht_2d_vector) :: u, udot, r
+    type(t2d_thermal_vector) :: u, udot, r
     real(r8), allocatable :: Tcell(:), Tface(:), rate(:), rcell0(:)
     character(:), allocatable :: errmsg, string
     integer :: j, n, stat, max_itr
@@ -214,7 +214,7 @@ contains
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     real(r8) :: dcoef = 1.0_r8  ! diffusion coefficient
-    type(ht_2d_vector) :: u, udot, r
+    type(t2d_thermal_vector) :: u, udot, r
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol

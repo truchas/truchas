@@ -16,8 +16,8 @@ program test_HT_2d_norm_type
   use scalar_func_factories
   use t2d_mfd_disc_type
   use t2d_thermal_model_type
-  use ht_2d_norm_type
-  use ht_2d_vector_type
+  use t2d_thermal_norm_type
+  use t2d_thermal_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -31,7 +31,7 @@ program test_HT_2d_norm_type
 
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
-  call init_test_environment('test_ht_2d_norm_type.log')
+  call init_test_environment('test_t2d_thermal_norm_type.log')
 
   eps = 0.0_r8  ! mesh distortion
   xmin = [0.0_r8, 0.0_r8]
@@ -73,9 +73,9 @@ contains
     type(material_model), target, intent(inout) :: matl_model
 
     type(t2d_thermal_model), target :: HT_model
-    type(ht_2d_norm), target :: HT_norm
+    type(t2d_thermal_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    type(ht_2d_vector) :: u, du
+    type(t2d_thermal_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
     integer :: stat
@@ -129,9 +129,9 @@ contains
     type(material_model), target, intent(inout) :: matl_model
 
     type(t2d_thermal_model), target :: HT_model
-    type(ht_2d_norm), target :: HT_norm
+    type(t2d_thermal_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    type(ht_2d_vector) :: u, du
+    type(t2d_thermal_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
     integer :: stat
@@ -184,9 +184,9 @@ contains
     type(material_model), target, intent(inout) :: matl_model
 
     type(t2d_thermal_model), target :: HT_model
-    type(ht_2d_norm), target :: HT_norm
+    type(t2d_thermal_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    type(ht_2d_vector) :: u, du
+    type(t2d_thermal_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm
     integer :: stat
@@ -242,9 +242,9 @@ contains
     type(material_model), target, intent(inout) :: matl_model
 
     type(t2d_thermal_model), target :: HT_model
-    type(ht_2d_norm), target :: HT_norm
+    type(t2d_thermal_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
-    type(ht_2d_vector) :: u, du
+    type(t2d_thermal_vector) :: u, du
     character(:), allocatable :: errmsg, string
     real(r8) :: du_norm, maxnorm, minnorm
     integer :: stat
