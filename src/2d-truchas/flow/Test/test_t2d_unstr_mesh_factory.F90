@@ -1,4 +1,4 @@
-program test_flow_2d_mesh_factory
+program test_t2d_unstr_mesh_factory
 
   use mpi_f08
   use parallel_communication
@@ -19,7 +19,7 @@ program test_flow_2d_mesh_factory
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_mesh_factory.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_unstr_mesh_factory.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) then
     if (is_IOP) print '(2a)', 'FAIL: ', errmsg
     call halt_parallel_communication
@@ -58,4 +58,4 @@ program test_flow_2d_mesh_factory
   call env%simlog%close
   call halt_parallel_communication
 
-end program test_flow_2d_mesh_factory
+end program test_t2d_unstr_mesh_factory
