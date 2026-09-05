@@ -22,7 +22,7 @@ set(HT2D_SOURCE_FILES
     ht_2d_precon_type.F90
     ht_2d_idaesol_model_type.F90
     ht_2d_ic_solver_type.F90
-    ht_2d_solver_type.F90
+    t2d_thermal_solver_type.F90
     ht_2d_sim_type.F90
     ht_2d_vtkhdf_writer_type.F90
     ht_2d_tofh_type.F90

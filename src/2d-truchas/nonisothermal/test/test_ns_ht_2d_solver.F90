@@ -18,7 +18,7 @@ program test_ns_ht_2d_solver
   use material_utilities, only: add_enthalpy_prop
   use flow_2d_model_type
   use ht_2d_model_type
-  use ht_2d_solver_type
+  use t2d_thermal_solver_type
   use ns_ht_2d_solver_type
   use time_step_sync_type
   implicit none
@@ -56,7 +56,7 @@ contains
     type(ht_2d_model), target :: ht_model
     type(ht_2d_model), target :: standalone_ht_model
     type(ns_ht_2d_solver), target :: solver
-    type(ht_2d_solver), target :: thermal_solver
+    type(t2d_thermal_solver), target :: thermal_solver
     type(parameter_list), pointer :: matl_params, flow_bc_params, ht_params, standalone_ht_params
     type(parameter_list), target :: solver_params
     type(parameter_list), pointer :: plist, thermal_params

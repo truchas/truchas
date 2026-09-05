@@ -28,7 +28,7 @@ module ns_ht_2d_solver_type
   use flow_2d_material_transport_type
   use t2d_flow_solver_type
   use ht_2d_model_type
-  use ht_2d_solver_type
+  use t2d_thermal_solver_type
   use ns_ht_2d_enthalpy_advector_type
   use time_step_sync_type
   implicit none
@@ -42,7 +42,7 @@ module ns_ht_2d_solver_type
     type(t2d_flow_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
-    type(ht_2d_solver), pointer :: thermal => null()
+    type(t2d_thermal_solver), pointer :: thermal => null()
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), flow_vfrac_old(:,:), &
         matl_vfrac_old(:,:)
     integer :: ncell_onP
