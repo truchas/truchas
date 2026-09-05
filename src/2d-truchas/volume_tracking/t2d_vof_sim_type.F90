@@ -8,7 +8,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module vof_2d_sim_type
+module t2d_vof_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -17,19 +17,19 @@ module vof_2d_sim_type
   use vector_func_factories, only: alloc_vector_func
   use t2d_region_func_type
   use t2d_vol_frac_init_procs, only: compute_volume_fractions
-  use vof_2d_solver_type
-  use vof_2d_vtkhdf_writer_type
+  use t2d_vof_solver_type
+  use t2d_vof_vtkhdf_writer_type
   use simulation_environment_type
   use simulation_type
   implicit none
   private
 
-  type, extends(simulation), public :: vof_2d_sim
+  type, extends(simulation), public :: t2d_vof_sim
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     class(vector_func), allocatable :: velocity
-    type(vof_2d_solver) :: solver
-    type(vof_2d_vtkhdf_writer) :: output
+    type(t2d_vof_solver) :: solver
+    type(t2d_vof_vtkhdf_writer) :: output
     real(r8), allocatable :: vfrac(:,:), output_times(:)
     real(r8) :: time_step
   contains
@@ -41,7 +41,7 @@ module vof_2d_sim_type
 contains
 
   subroutine delete(this)
-    type(vof_2d_sim), intent(inout) :: this
+    type(t2d_vof_sim), intent(inout) :: this
     call this%output%close()
     if (associated(this%mesh)) deallocate(this%mesh)
   end subroutine
@@ -52,7 +52,7 @@ contains
     use t2d_unstr_mesh_factory
     use t2d_geom_axisymmetric, only: mesh_axisymmetry_mod
 
-    class(vof_2d_sim), intent(out) :: this
+    class(t2d_vof_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -174,7 +174,7 @@ contains
 
   subroutine run(this, env, stat, errmsg)
 
-    class(vof_2d_sim), intent(inout) :: this
+    class(t2d_vof_sim), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -199,10 +199,10 @@ contains
 
 
   subroutine write_output(this, time, nmat)
-    class(vof_2d_sim), intent(inout) :: this
+    class(t2d_vof_sim), intent(inout) :: this
     real(r8), intent(in) :: time
     integer, intent(in) :: nmat
     call this%output%write_solution(time, this%vfrac)
   end subroutine
 
-end module vof_2d_sim_type
+end module t2d_vof_sim_type
