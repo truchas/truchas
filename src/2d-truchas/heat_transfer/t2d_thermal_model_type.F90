@@ -24,8 +24,8 @@ module t2d_thermal_model_type
   use scalar_mesh_multifunc_type
   use new_mesh_func_class
   use cell_matl_prop_func_type
-  use ht_2d_tofh_type
-  use ht_2d_vector_type
+  use t2d_thermal_tofh_type
+  use t2d_thermal_vector_type
   use material_distribution_type
   use parallel_communication
   use parameter_list_type
@@ -39,7 +39,7 @@ module t2d_thermal_model_type
     !! Equation parameters
     class(new_mesh_func), allocatable :: conductivity
     class(new_mesh_func), allocatable :: H_of_T
-    type(ht_2d_tofh) :: T_of_H            ! inverse enthalpy-temperature relation
+    type(t2d_thermal_tofh) :: T_of_H            ! inverse enthalpy-temperature relation
     type(scalar_mesh_multifunc), allocatable :: src
     real(r8), allocatable :: ext_rate(:)                ! cell-integrated external rate
     !! Boundary condition data
@@ -158,7 +158,7 @@ contains
 
   subroutine init_vector(this, vec)
     class(t2d_thermal_model), intent(in) :: this
-    type(ht_2d_vector), intent(out) :: vec
+    type(t2d_thermal_vector), intent(out) :: vec
     call vec%init(this%mesh)
   end subroutine
 
@@ -297,7 +297,7 @@ contains
 
   subroutine init_source(model, env, params, stat, errmsg)
 
-    use ht_2d_source_factory_type
+    use t2d_thermal_source_factory_type
 
     class(t2d_thermal_model), intent(inout), target :: model
     type(simulation_environment), intent(in) :: env
@@ -305,7 +305,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(ht_2d_source_factory) :: src_fac
+    type(t2d_thermal_source_factory) :: src_fac
 
     call src_fac%init(model%mesh, params)
 
@@ -320,8 +320,8 @@ contains
 
     class(t2d_thermal_model), intent(inout) :: this
     real(r8), intent(in) :: t
-    type(ht_2d_vector), intent(inout) :: u, udot
-    type(ht_2d_vector), intent(inout) :: r
+    type(t2d_thermal_vector), intent(inout) :: u, udot
+    type(t2d_thermal_vector), intent(inout) :: r
 
     real(r8), allocatable :: Tdir(:), Tinflow(:)
     real(r8) :: cval(this%mesh%ncell)

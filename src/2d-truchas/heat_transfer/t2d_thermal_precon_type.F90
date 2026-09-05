@@ -1,5 +1,5 @@
 !!
-!! HT_2D_PRECON_TYPE
+!! T2D_THERMAL_PRECON_TYPE
 !!
 !! This module defines the preconditioner used by the implicit 2D thermal
 !! transport solver. It assembles and applies an approximate Jacobian for the
@@ -18,18 +18,18 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_precon_type
+module t2d_thermal_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_thermal_model_type
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use t2d_unstr_mesh_type
   use t2d_mfd_diff_precon_type
   use t2d_mfd_diff_matrix_type
   implicit none
   private
 
-  type, public :: ht_2d_precon
+  type, public :: t2d_thermal_precon
     type(t2d_thermal_model),   pointer :: model => null() ! unowned reference
     type(t2d_unstr_mesh), pointer :: mesh  => null() ! unowned reference
     real(r8) :: dt ! time step
@@ -47,7 +47,7 @@ contains
 
     use parameter_list_type
 
-    class(ht_2d_precon), intent(out), target :: this
+    class(t2d_thermal_precon), intent(out), target :: this
     type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -72,9 +72,9 @@ contains
 
   subroutine compute(this, t, u, dt)
 
-    class(ht_2d_precon), intent(inout) :: this
+    class(t2d_thermal_precon), intent(inout) :: this
     real(r8), intent(in) :: t, dt
-    type(ht_2d_vector), intent(inout) :: u
+    type(t2d_thermal_vector), intent(inout) :: u
 
     real(r8) :: coef(this%mesh%ncell)
     type(t2d_mfd_diff_matrix), pointer :: dm
@@ -114,10 +114,10 @@ contains
 
   subroutine apply(this, t, u, r)
 
-    class(ht_2d_precon), intent(in) :: this
+    class(t2d_thermal_precon), intent(in) :: this
     real(r8), intent(in) :: t
-    type(ht_2d_vector), intent(inout) :: u
-    type(ht_2d_vector), intent(inout) :: r
+    type(t2d_thermal_vector), intent(inout) :: u
+    type(t2d_thermal_vector), intent(inout) :: r
 
     associate (mesh => this%mesh)
       !! Eliminate the enthalpy-temperature residual from the heat equation.
@@ -132,4 +132,4 @@ contains
 
   end subroutine apply
 
-end module ht_2d_precon_type
+end module t2d_thermal_precon_type

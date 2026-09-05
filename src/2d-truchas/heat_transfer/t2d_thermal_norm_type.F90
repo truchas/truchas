@@ -1,5 +1,5 @@
 !!
-!! HT_2D_NORM_TYPE
+!! T2D_THERMAL_NORM_TYPE
 !!
 !! This module defines the correction norm used by the implicit integrator for
 !! the 2D thermal transport time-step system. It combines temperature and
@@ -12,16 +12,16 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_norm_type
+module t2d_thermal_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_thermal_model_type
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use parallel_communication, only: global_maxval
   implicit none
   private
 
-  type, public :: ht_2d_norm
+  type, public :: t2d_thermal_norm
     private
     ! type(t2d_unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
     type(t2d_thermal_model), pointer :: model => null()   ! reference only -- do not own
@@ -40,7 +40,7 @@ contains
 
     use parameter_list_type
 
-    class(ht_2d_norm), intent(out) :: this
+    class(t2d_thermal_norm), intent(out) :: this
     type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -115,9 +115,9 @@ contains
 
   subroutine compute(this, t, u, du, du_norm)
 
-    class(ht_2d_norm), intent(in) :: this
+    class(t2d_thermal_norm), intent(in) :: this
     real(r8), intent(in) :: t
-    type(ht_2d_vector), intent(in) :: u, du
+    type(t2d_thermal_vector), intent(in) :: u, du
     real(r8), intent(out) :: du_norm
 
     associate (ncell_onP => this%model%mesh%ncell_onP, nface_onP => this%model%mesh%nface_onP)
@@ -138,4 +138,4 @@ contains
 
   end subroutine compute
 
-end module ht_2d_norm_type
+end module t2d_thermal_norm_type

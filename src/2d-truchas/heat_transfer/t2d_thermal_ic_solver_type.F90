@@ -23,7 +23,7 @@ module t2d_thermal_ic_solver_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
   use t2d_thermal_model_type
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use parameter_list_type
   use parallel_communication, only: global_dot_product
   use simulation_environment_type
@@ -59,7 +59,7 @@ contains
     class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t, temp(:)
-    type(ht_2d_vector), intent(inout) :: u, udot
+    type(t2d_thermal_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -98,11 +98,11 @@ contains
     class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
-    type(ht_2d_vector), intent(inout) :: u, udot
+    type(t2d_thermal_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(ht_2d_vector) :: f, advanced
+    type(t2d_thermal_vector) :: f, advanced
     real(r8) :: dt, Tmin, Tmax
     integer :: j
 
@@ -162,7 +162,7 @@ contains
     class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
-    type(ht_2d_vector), intent(inout) :: u
+    type(t2d_thermal_vector), intent(inout) :: u
     character(*), intent(in) :: name
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -170,7 +170,7 @@ contains
     type(t2d_mfd_diff_matrix), target :: dm
     type(parameter_list), target :: solver_params
     type(hypre_hybrid) :: solver
-    type(ht_2d_vector) :: udot, f
+    type(t2d_thermal_vector) :: udot, f
     real(r8), allocatable :: coef(:), z(:)
     real(r8) :: init_res, rel_res, rel_tol
     integer :: max_itr, num_itr, num_dscg_itr, num_pcg_itr

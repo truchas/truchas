@@ -32,10 +32,10 @@ function(add_ht_unit_test target source)
 endfunction()
 
 # Component-level tests.
-add_ht_unit_test(test_ht_2d_vector_type test_ht_2d_vector_type.F90)
+add_ht_unit_test(test_t2d_thermal_vector_type test_t2d_thermal_vector_type.F90)
 add_ht_unit_test(test_t2d_thermal_model_type test_t2d_thermal_model_type.F90)
-add_ht_unit_test(test_ht_2d_precon_type test_ht_2d_precon_type.F90)
-add_ht_unit_test(test_ht_2d_norm_type test_ht_2d_norm_type.F90)
+add_ht_unit_test(test_t2d_thermal_precon_type test_t2d_thermal_precon_type.F90)
+add_ht_unit_test(test_t2d_thermal_norm_type test_t2d_thermal_norm_type.F90)
 add_ht_unit_test(test_t2d_thermal_solver_initial_state test_t2d_thermal_solver_initial_state.F90)
 add_ht_unit_test(test_t2d_thermal_integrator test_t2d_thermal_integrator.F90)
 

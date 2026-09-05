@@ -22,7 +22,7 @@ program test_HT_2d_solver_initial_state
   use t2d_mfd_disc_type
   use t2d_thermal_model_type
   use t2d_thermal_ic_solver_type
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use bitfield_type
   use test_ht_2d_common
   implicit none
@@ -85,7 +85,7 @@ contains
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
-    type(ht_2d_vector) :: u, udot
+    type(t2d_thermal_vector) :: u, udot
     real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     integer :: stat, max_itr
@@ -187,7 +187,7 @@ contains
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
     real(r8) :: lcoef(2) = [1.0_r8, 2.0_r8]  ! coefficients of u(x,t)
     real(r8) :: dcoef = 1.0_r8  ! diffusion coefficient
-    type(ht_2d_vector) :: u, udot
+    type(t2d_thermal_vector) :: u, udot
     real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
@@ -302,7 +302,7 @@ contains
     type(t2d_thermal_ic_solver) :: ic, ic_fail
     type(parameter_list), pointer :: matl_params, region_params, model_params
     type(parameter_list), target :: ic_params, ic_fail_params
-    type(ht_2d_vector) :: u, udot, u_fail, udot_fail, zero_udot, residual
+    type(t2d_thermal_vector) :: u, udot, u_fail, udot_fail, zero_udot, residual
     real(r8), allocatable :: temp(:), state(:), conductivity(:), temp_face(:)
     real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol, temp_err
     character(:), allocatable :: errmsg, string

@@ -1,4 +1,4 @@
-program test_ht_2d_vector_type
+program test_t2d_thermal_vector_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -7,7 +7,7 @@ program test_ht_2d_vector_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use vector_class
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   implicit none
 
   type(t2d_unstr_mesh), pointer :: mesh
@@ -21,7 +21,7 @@ program test_ht_2d_vector_type
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_ht_2d_vector_type.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_thermal_vector_type.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) then
     if (is_IOP) print '(2a)', 'FAIL: ', errmsg
     call halt_parallel_communication
@@ -44,7 +44,7 @@ contains
   subroutine test_storage_and_gather(mesh)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
 
-    type(ht_2d_vector) :: u
+    type(t2d_thermal_vector) :: u
     real(r8), allocatable :: hc_offp(:), tc_offp(:), tf_offp(:)
     integer :: j
 
@@ -91,7 +91,7 @@ contains
   subroutine test_vector_operations(mesh)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
 
-    type(ht_2d_vector) :: x, y, z
+    type(t2d_thermal_vector) :: x, y, z
     class(vector), allocatable :: clone
     integer :: n
 
@@ -122,7 +122,7 @@ contains
     call x%clone(clone)
     call clone%copy(x)
     select type (clone)
-    class is (ht_2d_vector)
+    class is (t2d_thermal_vector)
       call require_owned_value(clone, 2.0_r8, 'clone or copy failed')
     class default
       call require(.false., 'incorrect clone dynamic type')
@@ -131,7 +131,7 @@ contains
 
 
   subroutine require_owned_value(u, value, message)
-    type(ht_2d_vector), intent(in) :: u
+    type(t2d_thermal_vector), intent(in) :: u
     real(r8), intent(in) :: value
     character(*), intent(in) :: message
 
@@ -151,4 +151,4 @@ contains
     end if
   end subroutine require
 
-end program test_ht_2d_vector_type
+end program test_t2d_thermal_vector_type

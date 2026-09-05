@@ -17,17 +17,17 @@ module t2d_thermal_idaesol_model_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use new_idaesol_type, only: idaesol_model
   use vector_class
-  use ht_2d_vector_type
+  use t2d_thermal_vector_type
   use t2d_thermal_model_type
-  use ht_2d_precon_type
-  use ht_2d_norm_type
+  use t2d_thermal_precon_type
+  use t2d_thermal_norm_type
   implicit none
   private
 
   type, extends(idaesol_model), public :: t2d_thermal_idaesol_model
     type(t2d_thermal_model), pointer :: model => null() ! unowned reference
-    type(ht_2d_precon), pointer :: precon => null() ! unowned reference
-    type(ht_2d_norm), pointer :: norm => null() ! unowned reference
+    type(t2d_thermal_precon), pointer :: precon => null() ! unowned reference
+    type(t2d_thermal_norm), pointer :: norm => null() ! unowned reference
   contains
     procedure :: init
     procedure :: alloc_vector
@@ -42,8 +42,8 @@ contains
   subroutine init(this, model, precon, norm)
     class(t2d_thermal_idaesol_model), intent(out) :: this
     type(t2d_thermal_model), intent(in), target :: model
-    type(ht_2d_precon), intent(in), target :: precon
-    type(ht_2d_norm), intent(in), target :: norm
+    type(t2d_thermal_precon), intent(in), target :: precon
+    type(t2d_thermal_norm), intent(in), target :: norm
     this%model => model
     this%precon => precon
     this%norm => norm
@@ -53,7 +53,7 @@ contains
   subroutine alloc_vector(this, vec)
     class(t2d_thermal_idaesol_model), intent(in) :: this
     class(vector), allocatable, intent(out) :: vec
-    type(ht_2d_vector), allocatable :: tmp
+    type(t2d_thermal_vector), allocatable :: tmp
     allocate(tmp)
     call this%model%init_vector(tmp)
     call move_alloc(tmp, vec)
@@ -65,11 +65,11 @@ contains
     class(vector), intent(inout) :: u, udot
     class(vector), intent(inout) :: f
     select type (u)
-    class is (ht_2d_vector)
+    class is (t2d_thermal_vector)
       select type (udot)
-      class is (ht_2d_vector)
+      class is (t2d_thermal_vector)
         select type (f)
-        class is (ht_2d_vector)
+        class is (t2d_thermal_vector)
           call this%model%residual(t, u, udot, f)
         end select
       end select
@@ -82,9 +82,9 @@ contains
     class(vector), intent(inout) :: u
     class(vector), intent(inout) :: f
     select type (u)
-    class is (ht_2d_vector)
+    class is (t2d_thermal_vector)
       select type (f)
-      class is (ht_2d_vector)
+      class is (t2d_thermal_vector)
         call this%precon%apply(t, u, f)
       end select
     end select
@@ -95,7 +95,7 @@ contains
     real(r8), intent(in) :: t, dt
     class(vector), intent(inout) :: u
     select type (u)
-    class is (ht_2d_vector)
+    class is (t2d_thermal_vector)
       call this%precon%compute(t, u, dt)
     end select
   end subroutine
@@ -106,9 +106,9 @@ contains
     class(vector), intent(in) :: u, du
     real(r8), intent(out) :: error
     select type (u)
-    class is (ht_2d_vector)
+    class is (t2d_thermal_vector)
       select type (du)
-      class is (ht_2d_vector)
+      class is (t2d_thermal_vector)
         call this%norm%compute(t, u, du, error)
       end select
     end select

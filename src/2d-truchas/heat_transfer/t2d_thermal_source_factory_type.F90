@@ -1,7 +1,7 @@
 !!
-!! HT_2D_SOURCE_FACTORY_TYPE
+!! T2D_THERMAL_SOURCE_FACTORY_TYPE
 !!
-!! This module defines HT_2D_SOURCE_FACTORY, which creates volumetric thermal
+!! This module defines T2D_THERMAL_SOURCE_FACTORY, which creates volumetric thermal
 !! source functions for the two-dimensional heat-transfer model from a
 !! parameter list.
 !!
@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module ht_2d_source_factory_type
+module t2d_thermal_source_factory_type
 
   use t2d_unstr_mesh_type
   use parameter_list_type
@@ -20,7 +20,7 @@ module ht_2d_source_factory_type
   implicit none
   private
 
-  type, public :: ht_2d_source_factory
+  type, public :: t2d_thermal_source_factory
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
@@ -48,7 +48,7 @@ module ht_2d_source_factory_type
 contains
 
   subroutine init(this, mesh, params)
-    class(ht_2d_source_factory), intent(out) :: this
+    class(t2d_thermal_source_factory), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(in) :: params
     this%mesh => mesh
@@ -62,7 +62,7 @@ contains
     use scalar_cell_func1_type
     use scalar_cell_func2_type
 
-    class(ht_2d_source_factory), intent(inout) :: this
+    class(t2d_thermal_source_factory), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(scalar_mesh_multifunc), allocatable, intent(out) :: src
     integer, intent(out) :: stat
@@ -96,7 +96,7 @@ contains
 
     use scalar_cell_func1_type
 
-    class(ht_2d_source_factory), intent(inout) :: this
+    class(t2d_thermal_source_factory), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(scalar_cell_func1), allocatable, intent(inout) :: src
     integer, intent(out) :: stat
@@ -134,7 +134,7 @@ contains
 
     use scalar_cell_func2_type
 
-    class(ht_2d_source_factory), intent(inout) :: this
+    class(t2d_thermal_source_factory), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(scalar_cell_func2), allocatable, intent(inout) :: src
     integer, intent(out) :: stat
@@ -182,7 +182,7 @@ contains
 
   subroutine iterate_list(this, env, type, proc, stat, errmsg)
 
-    class(ht_2d_source_factory), intent(in) :: this
+    class(t2d_thermal_source_factory), intent(in) :: this
     type(simulation_environment), intent(in) :: env
     integer, intent(in) :: type
     procedure(src_cb) :: proc
@@ -207,4 +207,4 @@ contains
 
   end subroutine
 
-end module ht_2d_source_factory_type
+end module t2d_thermal_source_factory_type
