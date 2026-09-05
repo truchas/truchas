@@ -13,13 +13,13 @@
 
 #include "f90_assert.fpp"
 
-module truncation_volume_2d_type
+module t2d_truncation_volume_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use geom_axisymmetric
   implicit none
 
-  type, public :: truncation_volume
+  type, public :: t2d_truncation_volume
     private
     integer :: nfc
     real(r8), allocatable :: nodex(:,:)
@@ -36,7 +36,7 @@ module truncation_volume_2d_type
     procedure :: volume
     procedure, private :: split_quad4
     procedure, private :: trunc_tri_volume
-  end type truncation_volume
+  end type t2d_truncation_volume
 
 contains
 
@@ -46,7 +46,7 @@ contains
 
     use t2d_cell_topology
 
-    class(truncation_volume), intent(out) :: this
+    class(t2d_truncation_volume), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), plane_normal(:)
     logical, intent(in) :: axisym
 
@@ -77,7 +77,7 @@ contains
   ! calculates the truncation volume
   real(r8) function volume(this, plane_rho)
 
-    class(truncation_volume), intent(in) :: this
+    class(t2d_truncation_volume), intent(in) :: this
     real(r8), intent(in) :: plane_rho
 
     integer :: i
@@ -109,7 +109,7 @@ contains
 
   ! splits a quadratic element (quad4) into two triangular elements (tri3)
   subroutine split_quad4(this)
-    class(truncation_volume), intent(inout) :: this
+    class(t2d_truncation_volume), intent(inout) :: this
     this%node_set(1,:,1:3) = this%nodex(:,1:3)
     this%node_set(2,:,1) = this%nodex(:,1)
     this%node_set(2,:,2) = this%nodex(:,3)
@@ -123,14 +123,14 @@ contains
   real(r8) function trunc_tri_volume(this, node_set, plane_rho)
 
     use cell_geometry
-    use plane_2d_type
+    use t2d_plane_type
 
-    class(truncation_volume), intent(in) :: this
+    class(t2d_truncation_volume), intent(in) :: this
     real(r8), intent(in) :: node_set(:,:), plane_rho
 
     integer :: f, icount, icut, on_point(3), fid(3)
     real(r8) :: xf(2,2), xint(2,3), xt(2,3), vol_full_tri, vol_sub_tri
-    type(plane) :: int_plane
+    type(t2d_plane) :: int_plane
     logical :: entire_element, cut_plane(3), f_intersection(3)
 
     int_plane%rho = plane_rho
@@ -246,4 +246,4 @@ contains
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end module truncation_volume_2d_type
+end module t2d_truncation_volume_type

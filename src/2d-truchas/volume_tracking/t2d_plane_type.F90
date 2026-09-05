@@ -1,5 +1,5 @@
 !!
-!! plane_2d_type
+!! t2d_plane_type
 !!
 !! This module defines a 2d plane type (a line), along with routines for
 !! calculating intersection points and distance.
@@ -15,21 +15,21 @@
 
 #include "f90_assert.fpp"
 
-module plane_2d_type
+module t2d_plane_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
   private
 
   ! dot(n,x) - rho = 0
-  type, public :: plane
+  type, public :: t2d_plane
     real(r8) :: rho, normal(2) ! plane constant and normal
   contains
     procedure :: signed_distance
     procedure :: intersects
     procedure :: intersection_point
     procedure :: print_data
-  end type plane
+  end type t2d_plane
 
   ! This cut-off for local precision comes from Hopcroft, J. E., & Kahn, P. J. (1992).
   ! A paradigm for robust geometric algorithms. Algorithmica, 7(1-6), 339-380.
@@ -40,7 +40,7 @@ contains
   ! calculates the signed distance from a plane
   real(r8) function signed_distance (this,x)
 
-    class(plane), intent(in) :: this
+    class(t2d_plane), intent(in) :: this
     real(r8),     intent(in) :: x(:)
 
     ASSERT(size(x)==size(this%normal))
@@ -56,7 +56,7 @@ contains
 
     use near_zero_function
 
-    class(plane), intent(in) :: this
+    class(t2d_plane), intent(in) :: this
     real(r8),     intent(in) :: x(:,:) ! tuple of x positions
 
     real(r8) :: d1,d2
@@ -76,7 +76,7 @@ contains
 
     use near_zero_function
 
-    class(plane), intent(in) :: this
+    class(t2d_plane), intent(in) :: this
     real(r8), intent(out) :: intx(:)
     integer, intent(out) :: on_point
     real(r8), intent(in) :: x(:,:)
@@ -105,8 +105,8 @@ contains
   end subroutine intersection_point
 
   subroutine print_data (this)
-    class(plane), intent(in) :: this
+    class(t2d_plane), intent(in) :: this
     print '(a,4es30.20)', 'plane n, rho: ',this%normal, this%rho
   end subroutine print_data
 
-end module plane_2d_type
+end module t2d_plane_type

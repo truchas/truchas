@@ -12,7 +12,7 @@
 
 #include "f90_assert.fpp"
 
-module cell_geom_2d_vof_type
+module t2d_cell_geom_vof_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   implicit none
@@ -21,19 +21,19 @@ module cell_geom_2d_vof_type
   integer, parameter, public :: &
       CELL_TRI3 = 1, CELL_QUA4 = 2
 
-  type, public :: cell_geom
+  type, public :: t2d_cell_geom
     real(r8), allocatable :: node(:,:), face_area(:), face_normal(:,:)
     real(r8) :: volume
     integer :: nfc, cell_type
   contains
     procedure :: init
-  end type cell_geom
+  end type t2d_cell_geom
 
 contains
 
   subroutine init (this, node, volume, face_area, face_normal)
 
-    class(cell_geom), intent(out) :: this
+    class(t2d_cell_geom), intent(out) :: this
     real(r8), intent(in) :: node(:,:), volume, face_area(:), face_normal(:,:)
 
     this%node = node
@@ -56,4 +56,4 @@ contains
 
   end subroutine init
 
-end module cell_geom_2d_vof_type
+end module t2d_cell_geom_vof_type
