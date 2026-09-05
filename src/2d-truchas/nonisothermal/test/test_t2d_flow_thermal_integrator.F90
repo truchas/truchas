@@ -1,4 +1,4 @@
-program test_ns_ht_2d_solver
+program test_t2d_flow_thermal_integrator
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -19,7 +19,7 @@ program test_ns_ht_2d_solver
   use flow_2d_model_type
   use ht_2d_model_type
   use t2d_thermal_solver_type
-  use ns_ht_2d_solver_type
+  use t2d_flow_thermal_integrator_type
   use time_step_sync_type
   implicit none
 
@@ -36,7 +36,7 @@ program test_ns_ht_2d_solver
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_ns_ht_2d_solver.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_thermal_integrator.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call fail('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -55,7 +55,7 @@ contains
     type(flow_2d_model), target :: flow_model
     type(ht_2d_model), target :: ht_model
     type(ht_2d_model), target :: standalone_ht_model
-    type(ns_ht_2d_solver), target :: solver
+    type(t2d_flow_thermal_integrator), target :: solver
     type(t2d_thermal_solver), target :: thermal_solver
     type(parameter_list), pointer :: matl_params, flow_bc_params, ht_params, standalone_ht_params
     type(parameter_list), target :: solver_params
@@ -184,7 +184,7 @@ contains
 
 
   subroutine require_zero_face_velocity(solver, nface, message)
-    type(ns_ht_2d_solver), target, intent(in) :: solver
+    type(t2d_flow_thermal_integrator), target, intent(in) :: solver
     integer, intent(in) :: nface
     character(*), intent(in) :: message
     real(r8), pointer :: velocity(:)
@@ -238,4 +238,4 @@ contains
     error stop 1
   end subroutine
 
-end program test_ns_ht_2d_solver
+end program test_t2d_flow_thermal_integrator

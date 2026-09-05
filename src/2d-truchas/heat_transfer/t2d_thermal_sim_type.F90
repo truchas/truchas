@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module ht_2d_sim_type
+module t2d_thermal_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -29,7 +29,7 @@ module ht_2d_sim_type
   implicit none
   private
 
-  type, extends(simulation), public :: ht_2d_sim
+  type, extends(simulation), public :: t2d_thermal_sim
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
@@ -43,7 +43,7 @@ module ht_2d_sim_type
     real(r8) :: t_init
     real(r8), allocatable :: tout(:)
   contains
-    final :: ht_2d_sim_delete
+    final :: t2d_thermal_sim_delete
     procedure :: init
     procedure :: run
     procedure :: write_solution
@@ -51,14 +51,14 @@ module ht_2d_sim_type
 
 contains
 
-  subroutine ht_2d_sim_delete(this)
-    type(ht_2d_sim), intent(inout) :: this
+  subroutine t2d_thermal_sim_delete(this)
+    type(t2d_thermal_sim), intent(inout) :: this
     call this%output%close()
     if (associated(this%solver)) deallocate(this%solver)
     if (associated(this%model)) deallocate(this%model)
     if (associated(this%matl_dist)) deallocate(this%matl_dist)
     if (associated(this%mesh)) deallocate(this%mesh)
-  end subroutine ht_2d_sim_delete
+  end subroutine t2d_thermal_sim_delete
 
 
   subroutine init(this, env, params, stat, errmsg)
@@ -67,7 +67,7 @@ contains
     use signal_handler, only: init_signal_handler, SIGURG
     use material_factory, only: load_material_database
 
-    class(ht_2d_sim), intent(out) :: this
+    class(t2d_thermal_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -369,7 +369,7 @@ contains
 
   subroutine run(this, env, stat, errmsg)
 
-    class(ht_2d_sim), intent(inout) :: this
+    class(t2d_thermal_sim), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -426,7 +426,7 @@ contains
 
   subroutine write_solution(this, t)
 
-    class(ht_2d_sim), intent(inout) :: this
+    class(t2d_thermal_sim), intent(inout) :: this
     real(r8), intent(in) :: t
 
     real(r8), allocatable :: Hcell(:), Tcell(:)
@@ -443,4 +443,4 @@ contains
   end subroutine write_solution
 
 
-end module ht_2d_sim_type
+end module t2d_thermal_sim_type

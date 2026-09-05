@@ -12,9 +12,9 @@
 module simulation_factory
 
   use simulation_type, only: simulation
-  use ns_2d_sim_type, only: ns_2d_sim
-  use ht_2d_sim_type, only: ht_2d_sim
-  use ns_ht_2d_sim_type, only: ns_ht_2d_sim
+  use t2d_flow_sim_type, only: t2d_flow_sim
+  use t2d_thermal_sim_type, only: t2d_thermal_sim
+  use t2d_flow_thermal_sim_type, only: t2d_flow_thermal_sim
   use t2d_vof_sim_type, only: t2d_vof_sim
   implicit none
   private
@@ -33,11 +33,11 @@ contains
     stat = 0
     select case (trim(name))
     case ('flow')
-      allocate(ns_2d_sim :: sim)
+      allocate(t2d_flow_sim :: sim)
     case ('thermal')
-      allocate(ht_2d_sim :: sim)
+      allocate(t2d_thermal_sim :: sim)
     case ('flow_thermal')
-      allocate(ns_ht_2d_sim :: sim)
+      allocate(t2d_flow_thermal_sim :: sim)
     case ('vof')
       allocate(t2d_vof_sim :: sim)
     case default

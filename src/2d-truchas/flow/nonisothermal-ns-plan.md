@@ -66,8 +66,8 @@ downstream physics that can reject an otherwise successful thermal step.
   including explicit inflow thermal data when needed. Material distribution
   supplies the state from which flow transport constructs those fluxes; the
   advector itself needs only their material-slot mapping.
-- [x] **Coupled solver and sim.**  `ns_ht_2d_solver` owns retry and
-  sequencing, while `ns_ht_2d_sim`/main own setup, output scheduling,
+- [x] **Coupled solver and sim.**  `t2d_flow_thermal_integrator` owns retry and
+  sequencing, while `t2d_flow_thermal_sim`/main own setup, output scheduling,
   logging, signal termination, timing summary, and combined VTKHDF output.
 - [x] **Initial tests.**  Cover zero-velocity equivalence to thermal-only
   results, material-resolved enthalpy-advection conservation, a driven-flow
