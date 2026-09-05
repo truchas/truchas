@@ -31,7 +31,7 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
         tempfile.mkdtemp(prefix=f"ht_2d_{input_file.stem}_{nproc}p_")
     )
     output_dir = run_root / input_file.stem
-    command = [str(executable), "--simulation", "ht_2d", str(input_file)]
+    command = [str(executable), "--simulation", "thermal", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
 

@@ -25,7 +25,7 @@ def main():
     angle = float(sys.argv[4]) if len(sys.argv) == 5 else 0.0
     output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_couette_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)],
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
         text=True,
         stdout=subprocess.PIPE,

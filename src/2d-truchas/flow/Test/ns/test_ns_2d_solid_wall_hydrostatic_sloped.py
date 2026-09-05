@@ -24,7 +24,7 @@ def main():
     mpiexec = sys.argv[3]
     output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_solid_wall_hydrostatic_sloped_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)],
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")

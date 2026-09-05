@@ -38,7 +38,7 @@ program truchas_2d_main
   if (cli%help) then
     if (is_IOP) then
       call cli%write_help('Two-dimensional Truchas simulation.')
-      write(output_unit,'(a)') 'Simulations: ns_2d, ht_2d, ns_ht_2d, vof_2d.'
+      write(output_unit,'(a)') 'Simulations: flow, thermal, flow_thermal.'
     end if
     call MPI_Finalize
     stop
