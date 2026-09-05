@@ -320,8 +320,8 @@ contains
           return
         end if
       end do
-      call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
       this%hlast = t_np1 - t_n
+      call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
       t_n = t_np1
       call read_signal(SIGURG, sig_rcvd)
       if (sig_rcvd) then

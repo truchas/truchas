@@ -157,11 +157,17 @@ def check_case(data, reference):
         int(data.field(step, "NStep", association="field")[0])
         for step in range(len(EXPECTED_TIMES))
     ]
+    nstep_relative_tolerance = 0.02
     for step, (actual, expected) in enumerate(zip(actual_nsteps, reference_nsteps)):
-        if abs(actual - expected) > 10:
+        if expected == 0:
+            error = actual != expected
+        else:
+            error = abs(actual - expected) / expected > nstep_relative_tolerance
+        if error:
             raise RuntimeError(
                 f"NStep at t={EXPECTED_TIMES[step]:g} is {actual}; "
-                f"reference is {expected}"
+                f"reference is {expected} (relative tolerance "
+                f"{nstep_relative_tolerance:g})"
             )
 
     return actual_nsteps
