@@ -10,16 +10,16 @@
 
 #include "f90_assert.fpp"
 
-module geometric_volume_tracker_type
+module t2d_geometric_volume_tracker_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type, only: simulation_environment
-  use volume_tracker_2d_class
+  use t2d_volume_tracker_class
   use t2d_unstr_mesh_type
   implicit none
   private
 
-  type, extends(volume_tracker_2d), public :: geometric_volume_tracker
+  type, extends(t2d_volume_tracker), public :: t2d_geometric_volume_tracker
     private
     type(t2d_unstr_mesh), pointer :: mesh ! unowned reference
     integer :: location_iter_max ! maximum number of iterations to use in fitting interface
@@ -45,7 +45,7 @@ module geometric_volume_tracker_type
     procedure, private :: flux_bc
     procedure, private :: accumulate_volume
     procedure, private :: enforce_bounded_vof
-  end type geometric_volume_tracker
+  end type t2d_geometric_volume_tracker
 
 contains
 
@@ -53,7 +53,7 @@ contains
 
     use parameter_list_type
 
-    class(geometric_volume_tracker), intent(out) :: this
+    class(t2d_geometric_volume_tracker), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), intent(in), target :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
@@ -109,7 +109,7 @@ contains
   ! flux volumes routine assuming vel/flux_vol is a cface-like array
   subroutine flux_volumes(this, env, vel, vof_n, vof, flux_vol, int_normal, fluids, void, dt)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
     real(r8), intent(out) :: flux_vol(:,:), vof(:,:), int_normal(:,:,:)
@@ -151,7 +151,7 @@ contains
   !! TODO: If FACES is also ordered (likely) the search can be improved further.
 
   subroutine set_inflow_material(this, mat, faces)
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: mat  ! material index
     integer, intent(in) :: faces(:) ! face indices
     integer :: i
@@ -177,7 +177,7 @@ contains
 
   subroutine flux_bc(this, vel, vof_n, dt)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), dt
 
     integer :: i, f, j, fl
@@ -204,7 +204,7 @@ contains
     use gradient_2d_cc_function, only: gradient_2d_cc, gradient_rz_cc
     intrinsic :: norm2
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in)  :: vof(:,:)
 
@@ -281,7 +281,7 @@ contains
 
     use cell_geom_2d_vof_type
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
     real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
@@ -518,7 +518,7 @@ contains
   !  use t2d_cell_topology
   !  use multimat_cell_type
 
-  !  class(geometric_volume_tracker), intent(inout) :: this
+  !  class(t2d_geometric_volume_tracker), intent(inout) :: this
   !  integer, intent(in) :: i
   !  real(r8), intent(in)  :: dt, vof(:,:), vel(:)
 
@@ -580,7 +580,7 @@ contains
 
   subroutine donor_fluxes(this, env, vel, vof, dt)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: dt, vof(:,:), vel(:)
 
@@ -626,7 +626,7 @@ contains
 
     use parallel_communication, only: global_any
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(in) :: vel(:), vof_n(:,:), flux_vol(:,:), dt
 
     integer :: i,j,o,m,f0,f1,navail,nmat, ierr
@@ -732,7 +732,7 @@ contains
 
   subroutine flux_acceptor(this)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
 
     integer :: m,j,i,f0,f1,nmat
 
@@ -766,7 +766,7 @@ contains
 
   subroutine accumulate_volume(this, vof, flux_vol)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: flux_vol(:,:), vof(:,:)
 
     integer :: i,j,f0,f1,m
@@ -788,7 +788,7 @@ contains
   ! Enforce boundedness by allowing _inconsistent_ material flux volumes at faces
   subroutine enforce_bounded_vof(this, vof, flux_vol, fluids, void)
 
-    class(geometric_volume_tracker), intent(inout) :: this
+    class(t2d_geometric_volume_tracker), intent(inout) :: this
     real(r8), intent(inout) :: vof(:,:), flux_vol(:,:)
     integer, intent(in) :: fluids, void
 
@@ -951,4 +951,4 @@ contains
 
   end subroutine adjust_flux_all
 
-end module geometric_volume_tracker_type
+end module t2d_geometric_volume_tracker_type

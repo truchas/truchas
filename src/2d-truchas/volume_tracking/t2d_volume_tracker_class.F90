@@ -8,7 +8,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module volume_tracker_2d_class
+module t2d_volume_tracker_class
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type, only: simulation_environment
@@ -16,18 +16,18 @@ module volume_tracker_2d_class
   implicit none
   private
 
-  type, abstract, public :: volume_tracker_2d
+  type, abstract, public :: t2d_volume_tracker
   contains
     procedure(vt_init), deferred :: init
     procedure(vt_flux_volumes), deferred :: flux_volumes
     procedure(vt_set_inflow_material), deferred :: set_inflow_material
-  end type volume_tracker_2d
+  end type t2d_volume_tracker
 
   abstract interface
     subroutine vt_init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority)
-      import :: volume_tracker_2d, t2d_unstr_mesh
+      import :: t2d_volume_tracker, t2d_unstr_mesh
       import :: simulation_environment
-      class(volume_tracker_2d), intent(out) :: this
+      class(t2d_volume_tracker), intent(out) :: this
       type(simulation_environment), intent(in) :: env
       type(t2d_unstr_mesh), intent(in), target :: mesh
       integer, intent(in) :: nrealfluid, nfluid, nmat
@@ -37,8 +37,8 @@ module volume_tracker_2d_class
 
     subroutine vt_flux_volumes(this, env, vel, vof_n, vof, flux_vol, int_normal, fluids, &
         void, dt)
-      import :: volume_tracker_2d, simulation_environment, r8
-      class(volume_tracker_2d), intent(inout) :: this
+      import :: t2d_volume_tracker, simulation_environment, r8
+      class(t2d_volume_tracker), intent(inout) :: this
       type(simulation_environment), intent(inout) :: env
       real(r8), intent(in) :: vel(:), vof_n(:,:), dt
       real(r8), intent(out) :: flux_vol(:,:), vof(:,:), int_normal(:,:,:)
@@ -46,10 +46,10 @@ module volume_tracker_2d_class
     end subroutine vt_flux_volumes
 
     subroutine vt_set_inflow_material(this, mat, faces)
-      import :: volume_tracker_2d
-      class(volume_tracker_2d), intent(inout) :: this
+      import :: t2d_volume_tracker
+      class(t2d_volume_tracker), intent(inout) :: this
       integer, intent(in) :: mat, faces(:)
     end subroutine
   end interface
 
-end module volume_tracker_2d_class
+end module t2d_volume_tracker_class

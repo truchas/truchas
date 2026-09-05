@@ -24,14 +24,14 @@ module flow_2d_material_transport_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
   use t2d_unstr_mesh_type
-  use volume_tracker_2d_class
+  use t2d_volume_tracker_class
   implicit none
   private
 
   type, public :: flow_2d_material_transport
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
-    class(volume_tracker_2d), allocatable :: tracker
+    class(t2d_volume_tracker), allocatable :: tracker
     integer :: nrealfluid, nfluid
     real(r8), allocatable :: vfrac_out(:,:)
     real(r8), allocatable :: cface_velocity(:), interface_normal(:,:,:)
@@ -47,8 +47,8 @@ contains
 
   subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority)
 
-    use simple_volume_tracker_type
-    use geometric_volume_tracker_type
+    use t2d_simple_volume_tracker_type
+    use t2d_geometric_volume_tracker_type
 
     class(flow_2d_material_transport), intent(out) :: this
     type(simulation_environment), intent(in) :: env
@@ -73,9 +73,9 @@ contains
     if (present(algorithm)) tracker_algorithm = trim(algorithm)
     select case (tracker_algorithm)
     case ('simple')
-      allocate(simple_volume_tracker :: this%tracker)
+      allocate(t2d_simple_volume_tracker :: this%tracker)
     case ('geometric')
-      allocate(geometric_volume_tracker :: this%tracker)
+      allocate(t2d_geometric_volume_tracker :: this%tracker)
     case default
       ASSERT(.false.)
     end select
