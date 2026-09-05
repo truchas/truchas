@@ -20,8 +20,8 @@ program test_HT_2d_solver_initial_state
   !use source_mesh_function
   use scalar_func_factories
   use t2d_mfd_disc_type
-  use ht_2d_model_type
-  use ht_2d_ic_solver_type
+  use t2d_thermal_model_type
+  use t2d_thermal_ic_solver_type
   use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
@@ -78,8 +78,8 @@ contains
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_ic_solver) :: ic
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_ic_solver) :: ic
+    type(t2d_thermal_model), target :: HT_model
     type(parameter_list), pointer :: model_params
     type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
@@ -179,8 +179,8 @@ contains
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_ic_solver) :: ic
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_ic_solver) :: ic
+    type(t2d_thermal_model), target :: HT_model
     type(parameter_list), pointer :: model_params
     type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
@@ -298,8 +298,8 @@ contains
     type(material_database) :: matl_db
     type(material_model), target :: matl_model
     type(material_distribution), target :: matl_dist
-    type(ht_2d_model), target :: model
-    type(ht_2d_ic_solver) :: ic, ic_fail
+    type(t2d_thermal_model), target :: model
+    type(t2d_thermal_ic_solver) :: ic, ic_fail
     type(parameter_list), pointer :: matl_params, region_params, model_params
     type(parameter_list), target :: ic_params, ic_fail_params
     type(ht_2d_vector) :: u, udot, u_fail, udot_fail, zero_udot, residual

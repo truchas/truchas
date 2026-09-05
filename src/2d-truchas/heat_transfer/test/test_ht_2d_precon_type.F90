@@ -16,7 +16,7 @@ program test_HT_2d_precon_type
   !use source_mesh_function
   use scalar_func_factories
   use t2d_mfd_disc_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_precon_type
   use ht_2d_vector_type
   use bitfield_type
@@ -74,7 +74,7 @@ contains
     real(r8), intent(in) :: tol
 
     type(ht_2d_precon), target :: HT_precon
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)
@@ -191,7 +191,7 @@ contains
     real(r8), intent(in) :: tol
 
     type(ht_2d_precon), target :: HT_precon
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(parameter_list), pointer :: params, sublist
     class(scalar_func), allocatable :: f
     integer :: exps(3,2) = reshape([0,1,0,0,0,1],[3,2])  ! exponents of u(x,t)

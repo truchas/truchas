@@ -16,12 +16,12 @@
 module t2d_thermal_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_precon_type
   use ht_2d_norm_type
-  use ht_2d_ic_solver_type
+  use t2d_thermal_ic_solver_type
   use ht_2d_vector_type
-  use ht_2d_idaesol_model_type
+  use t2d_thermal_idaesol_model_type
   use new_idaesol_type
   use parameter_list_type
   use simulation_environment_type
@@ -30,10 +30,10 @@ module t2d_thermal_solver_type
 
   type, public :: t2d_thermal_solver
     private
-    type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
+    type(t2d_thermal_model), pointer :: model => null()   ! reference only -- do not own
     type(ht_2d_precon) :: precon
     type(ht_2d_norm) :: norm
-    type(ht_2d_idaesol_model) :: integ_model
+    type(t2d_thermal_idaesol_model) :: integ_model
     type(idaesol) :: integ
     !! Pending/current state
     real(r8) :: t
@@ -59,7 +59,7 @@ contains
 
     class(t2d_thermal_solver), intent(out), target :: this
     type(simulation_environment), intent(in) :: env
-    type(ht_2d_model), intent(in), target :: model
+    type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -146,7 +146,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     real(r8), intent(in) :: dt
-    type(ht_2d_ic_solver) :: ic
+    type(t2d_thermal_ic_solver) :: ic
     type(ht_2d_vector) :: udot
     real(r8) :: dt_ic
 

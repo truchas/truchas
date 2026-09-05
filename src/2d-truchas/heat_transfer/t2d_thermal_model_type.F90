@@ -1,5 +1,5 @@
 !!
-!! HT_2D_MODEL_TYPE
+!! T2D_THERMAL_MODEL_TYPE
 !!
 !! This module defines the 2D thermal-transport model. It owns the mimetic
 !! finite difference discretization, material-dependent thermal properties,
@@ -14,7 +14,7 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_model_type
+module t2d_thermal_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -33,7 +33,7 @@ module ht_2d_model_type
   implicit none
   private
 
-  type, public :: ht_2d_model
+  type, public :: t2d_thermal_model
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(t2d_mfd_disc) :: disc
     !! Equation parameters
@@ -63,7 +63,7 @@ contains
     use material_model_type
     use material_utilities
 
-    class(ht_2d_model), intent(out), target :: this
+    class(t2d_thermal_model), intent(out), target :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), intent(in), target :: mesh
     type(material_model), intent(inout) :: matl_model
@@ -157,7 +157,7 @@ contains
 
 
   subroutine init_vector(this, vec)
-    class(ht_2d_model), intent(in) :: this
+    class(t2d_thermal_model), intent(in) :: this
     type(ht_2d_vector), intent(out) :: vec
     call vec%init(this%mesh)
   end subroutine
@@ -166,7 +166,7 @@ contains
   !! Set a cell-integrated external enthalpy rate. This is normally supplied
   !! by a coupled physics model, such as explicit enthalpy advection.
   subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
-    class(ht_2d_model), intent(inout) :: this
+    class(t2d_thermal_model), intent(inout) :: this
     real(r8), intent(in) :: enthalpy_rate(:)
 
     ASSERT(size(enthalpy_rate) == this%mesh%ncell_onP)
@@ -179,7 +179,7 @@ contains
     use thermal_bc_factory_type
     use string_utilities, only: i_to_c
 
-    class(ht_2d_model), intent(inout), target :: model
+    class(t2d_thermal_model), intent(inout), target :: model
     type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
     real(r8), intent(in) :: sigma, abszero
@@ -299,7 +299,7 @@ contains
 
     use ht_2d_source_factory_type
 
-    class(ht_2d_model), intent(inout), target :: model
+    class(t2d_thermal_model), intent(inout), target :: model
     type(simulation_environment), intent(in) :: env
     type(parameter_list), intent(inout), target :: params
     integer, intent(out) :: stat
@@ -318,7 +318,7 @@ contains
 
   subroutine residual(this, t, u, udot, r)
 
-    class(ht_2d_model), intent(inout) :: this
+    class(t2d_thermal_model), intent(inout) :: this
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u, udot
     type(ht_2d_vector), intent(inout) :: r
@@ -425,4 +425,4 @@ contains
 
   end subroutine residual
 
-end module ht_2d_model_type
+end module t2d_thermal_model_type

@@ -19,7 +19,7 @@ module t2d_thermal_integrator_type
   use simulation_environment_type
   use signal_handler, only: read_signal, SIGURG
   use time_step_sync_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use t2d_thermal_solver_type
   implicit none
   private
@@ -56,7 +56,7 @@ contains
 
     class(t2d_thermal_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(ht_2d_model), intent(in), target :: model
+    type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

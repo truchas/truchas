@@ -21,7 +21,7 @@
 module ht_2d_precon_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_vector_type
   use t2d_unstr_mesh_type
   use t2d_mfd_diff_precon_type
@@ -30,7 +30,7 @@ module ht_2d_precon_type
   private
 
   type, public :: ht_2d_precon
-    type(ht_2d_model),   pointer :: model => null() ! unowned reference
+    type(t2d_thermal_model),   pointer :: model => null() ! unowned reference
     type(t2d_unstr_mesh), pointer :: mesh  => null() ! unowned reference
     real(r8) :: dt ! time step
     real(r8), allocatable :: dHdT(:) ! derivative of the enthalpy/temperature relation
@@ -48,7 +48,7 @@ contains
     use parameter_list_type
 
     class(ht_2d_precon), intent(out), target :: this
-    type(ht_2d_model), intent(in), target :: model
+    type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

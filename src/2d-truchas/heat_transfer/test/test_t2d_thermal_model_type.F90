@@ -16,8 +16,8 @@ program test_HT_2d_model_type
   use scalar_func_factories
   use cell_geometry, only: normalized
   use t2d_mfd_disc_type
-  use ht_2d_model_type
-  use ht_2d_ic_solver_type
+  use t2d_thermal_model_type
+  use t2d_thermal_ic_solver_type
   use ht_2d_vector_type
   use bitfield_type
   use test_ht_2d_common
@@ -33,7 +33,7 @@ program test_HT_2d_model_type
   !! Initialize MPI and other base stuff that Truchas depends on
   call init_parallel_communication
   call fhypre_initialize
-  call init_test_environment('test_ht_2d_model_type.log')
+  call init_test_environment('test_t2d_thermal_model_type.log')
 
   TOL = 1E-10_r8
   eps = 0.0_r8  ! mesh distortion
@@ -71,7 +71,7 @@ contains
   end subroutine error_exit
 
   subroutine check_prop_extent(model, tol)
-    type(ht_2d_model), intent(in) :: model
+    type(t2d_thermal_model), intent(in) :: model
     real(r8), intent(in) :: tol
 
     real(r8), allocatable :: state(:), value(:), value0(:), deriv(:), deriv0(:)
@@ -101,8 +101,8 @@ contains
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_model), target :: HT_model
-    type(ht_2d_ic_solver) :: ic
+    type(t2d_thermal_model), target :: HT_model
+    type(t2d_thermal_ic_solver) :: ic
     type(parameter_list), pointer :: params
     type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
@@ -206,8 +206,8 @@ contains
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
-    type(ht_2d_model), target :: HT_model
-    type(ht_2d_ic_solver) :: ic
+    type(t2d_thermal_model), target :: HT_model
+    type(t2d_thermal_ic_solver) :: ic
     type(parameter_list), pointer :: params
     type(parameter_list), target :: ic_params
     class(scalar_func), allocatable :: f
@@ -316,7 +316,7 @@ contains
 
     type(material_model), target, intent(inout) :: matl_model
 
-    type(ht_2d_model) :: model
+    type(t2d_thermal_model) :: model
     type(parameter_list), pointer :: params
     character(:), allocatable :: errmsg, string
     integer :: stat

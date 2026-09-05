@@ -27,7 +27,7 @@ module t2d_flow_thermal_integrator_type
   use t2d_flow_material_mapping_type
   use t2d_flow_material_transport_type
   use t2d_flow_solver_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use t2d_thermal_solver_type
   use ns_ht_2d_enthalpy_advector_type
   use time_step_sync_type
@@ -77,7 +77,7 @@ contains
     class(t2d_flow_thermal_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_flow_model), target, intent(inout) :: flow_model
-    type(ht_2d_model), target, intent(in) :: ht_model
+    type(t2d_thermal_model), target, intent(in) :: ht_model
     type(material_model), intent(in) :: matl_model
     type(material_distribution), target, intent(in) :: matl_dist
     type(parameter_list), target, intent(inout) :: params
