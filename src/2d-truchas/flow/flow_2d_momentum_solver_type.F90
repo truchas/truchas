@@ -18,13 +18,13 @@ module flow_2d_momentum_solver_type
   use pcsr_matrix_type
   use block_pcsr_bridge_type
   use hypre_hybrid_type
-  use flow_2d_momentum_type
+  use t2d_flow_momentum_type
   implicit none
   private
 
   type, public :: flow_2d_momentum_solver
     private
-    type(flow_2d_momentum), pointer :: momentum => null()  ! unowned reference
+    type(t2d_flow_momentum), pointer :: momentum => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
     type(block_pcsr_bridge), pointer :: bridge => null()
     type(hypre_hybrid) :: solver
@@ -41,7 +41,7 @@ contains
 
   subroutine init(this, momentum, params, stat, errmsg)
     class(flow_2d_momentum_solver), intent(out) :: this
-    type(flow_2d_momentum), target, intent(in) :: momentum
+    type(t2d_flow_momentum), target, intent(in) :: momentum
     type(parameter_list), target, intent(in) :: params
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg

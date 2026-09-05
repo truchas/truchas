@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_OPERATORS_TYPE
+!! T2D_FLOW_OPERATORS_TYPE
 !!
-!! This module defines FLOW_2D_OPERATORS, geometry-dependent finite-volume
+!! This module defines T2D_FLOW_OPERATORS, geometry-dependent finite-volume
 !! operators for two-dimensional flow on an unstructured mesh. The type has
 !! no global state. Its first-order cell-to-face operators use a two-point
 !! stencil in the face-normal direction. DIVERGENCE accumulates the signed
@@ -17,7 +17,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_operators_type
+module t2d_flow_operators_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -27,7 +27,7 @@ module flow_2d_operators_type
   implicit none
   private
 
-  type, public :: flow_2d_operators
+  type, public :: t2d_flow_operators
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     real(r8), allocatable :: dx(:), dr(:,:,:), interpolation_factor(:)
@@ -45,7 +45,7 @@ module flow_2d_operators_type
 contains
 
   subroutine init(this, mesh)
-    class(flow_2d_operators), intent(out) :: this
+    class(t2d_flow_operators), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
 
     integer :: f, c1, c2
@@ -99,7 +99,7 @@ contains
   !! The least-squares system may be rank deficient when solid cells remove
   !! neighboring rows. DGELSY returns a minimum-norm solution in that case.
   subroutine gradient_cc(this, field_cc, gradient_c, normal_flux_bc, dirichlet_bc, gravity_head, cell_t, face_t)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: gradient_c(:,:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
@@ -187,7 +187,7 @@ contains
 
 
   function normal_distance(this, face) result(dx)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     integer, intent(in) :: face
     real(r8) :: dx
 
@@ -201,7 +201,7 @@ contains
   !! and DIRICHLET_BC supplies the scalar value at the face center.
   subroutine derivative_cf_1r(this, field_cc, derivative_fn, normal_flux_bc, dirichlet_bc, &
       dirichlet_value, gravity_head, face_t)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: derivative_fn(:)
     class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
@@ -272,7 +272,7 @@ contains
   !! derivative of each vector component. ZERO_NORMAL_BC imposes a zero
   !! normal velocity while retaining the adjacent cell's tangential velocity.
   subroutine derivative_cf_2r(this, field_cc, derivative_fn, zero_normal_bc, dirichlet_bc)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:,:)
     real(r8), intent(out) :: derivative_fn(:,:)
     class(bndry_func1), optional, intent(in) :: zero_normal_bc
@@ -320,7 +320,7 @@ contains
   !! method of Ferzinger & Peric (2020, Eq. 9.36). Boundary-face values are
   !! the adjacent cell values.
   subroutine interpolate_cf_1r(this, field_cc, field_f)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:)
     real(r8), intent(out) :: field_f(:)
 
@@ -342,7 +342,7 @@ contains
   !! the same first-order interpolation as INTERPOLATE_CF_1R. DIRICHLET_BC
   !! and ZERO_NORMAL_BC override the values at their boundary faces.
   subroutine interpolate_cf_2r(this, field_cc, field_f, zero_normal_bc, dirichlet_bc)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_cc(:,:)
     real(r8), intent(out) :: field_f(:)
     class(bndry_func1), optional, intent(in) :: zero_normal_bc
@@ -385,7 +385,7 @@ contains
   !! Accumulate the signed face-normal fluxes in each on-process cell. The
   !! returned values are net fluxes, not volume-scaled divergence values.
   subroutine divergence(this, field_f, flux_c)
-    class(flow_2d_operators), intent(in) :: this
+    class(t2d_flow_operators), intent(in) :: this
     real(r8), intent(in) :: field_f(:)
     real(r8), intent(out) :: flux_c(:)
 
@@ -406,4 +406,4 @@ contains
     end do
   end subroutine
 
-end module flow_2d_operators_type
+end module t2d_flow_operators_type

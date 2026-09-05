@@ -31,7 +31,7 @@ contains
 end module test_flow_2d_bc_types
 
 
-program test_flow_2d_operators
+program test_t2d_flow_operators
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08
@@ -42,8 +42,8 @@ program test_flow_2d_operators
   use t2d_unstr_mesh_factory
   use parameter_list_type
   use simulation_environment_type
-  use flow_2d_state_type
-  use flow_2d_operators_type
+  use t2d_flow_state_type
+  use t2d_flow_operators_type
   use test_flow_2d_bc_types
   implicit none
 
@@ -59,7 +59,7 @@ program test_flow_2d_operators
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_operators.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_operators.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) then
     if (is_IOP) print '(2a)', 'FAIL: ', errmsg
     call halt_parallel_communication
@@ -87,8 +87,8 @@ contains
     real(r8), optional, intent(in) :: rotation_angle
 
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_state) :: state
-    type(flow_2d_operators) :: ops
+    type(t2d_flow_state) :: state
+    type(t2d_flow_operators) :: ops
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], &
         0.0_r8, triangle_probability)
@@ -105,8 +105,8 @@ contains
   subroutine test_external_mesh()
     type(parameter_list) :: params
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_state) :: state
-    type(flow_2d_operators) :: ops
+    type(t2d_flow_state) :: state
+    type(t2d_flow_operators) :: ops
     character(512) :: path
     character(:), allocatable :: errmsg
     integer :: stat
@@ -130,8 +130,8 @@ contains
 
   subroutine test_boundary_operators(mesh, ops, state, name, check_exact)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), intent(in) :: ops
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_operators), intent(in) :: ops
+    type(t2d_flow_state), intent(inout) :: state
     character(*), intent(in) :: name
     logical, intent(in) :: check_exact
 
@@ -216,8 +216,8 @@ contains
 
   subroutine report_derivative_accuracy(mesh, ops, state)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), intent(in) :: ops
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_operators), intent(in) :: ops
+    type(t2d_flow_state), intent(inout) :: state
 
     real(r8), allocatable :: derivative(:)
     real(r8), parameter :: exact_grad(2) = [1.0_r8, 2.0_r8]
@@ -254,8 +254,8 @@ contains
 
   subroutine test_divergence(mesh, ops, state, name)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), intent(in) :: ops
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_operators), intent(in) :: ops
+    type(t2d_flow_state), intent(inout) :: state
     character(*), intent(in) :: name
 
     real(r8), allocatable :: div(:)
@@ -273,8 +273,8 @@ contains
 
   subroutine test_derivative(mesh, ops, state, name, check_exact)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), intent(in) :: ops
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_operators), intent(in) :: ops
+    type(t2d_flow_state), intent(inout) :: state
     character(*), intent(in) :: name
     logical, intent(in) :: check_exact
 
@@ -313,8 +313,8 @@ contains
 
   subroutine test_interpolation(mesh, ops, state, name)
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), intent(in) :: ops
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_operators), intent(in) :: ops
+    type(t2d_flow_state), intent(inout) :: state
     character(*), intent(in) :: name
 
     real(r8), allocatable :: scalar_f(:)
@@ -360,4 +360,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_operators
+end program test_t2d_flow_operators

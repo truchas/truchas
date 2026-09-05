@@ -1,4 +1,4 @@
-program test_flow_2d_momentum
+program test_t2d_flow_momentum
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -9,9 +9,9 @@ program test_flow_2d_momentum
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
-  use flow_2d_operators_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
-  use flow_2d_momentum_type
+  use t2d_flow_momentum_type
   use flow_domain_types
   use pbsr_matrix_type
   implicit none
@@ -28,7 +28,7 @@ program test_flow_2d_momentum
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_momentum.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_momentum.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -43,8 +43,8 @@ contains
 
   subroutine test_momentum
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_momentum), target :: momentum
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_momentum), target :: momentum
     type(flow_2d_bc) :: bc
     type(parameter_list), target :: velocity_params, slip_params
     type(parameter_list), pointer :: plist
@@ -119,8 +119,8 @@ contains
 
   subroutine test_advective_transport
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_momentum), target :: momentum
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_momentum), target :: momentum
     type(flow_2d_bc) :: bc
     type(parameter_list), target :: velocity_params
     type(parameter_list), pointer :: plist
@@ -186,8 +186,8 @@ contains
 
   subroutine test_nonfluid_cells
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_momentum), target :: momentum, inviscid_momentum
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_momentum), target :: momentum, inviscid_momentum
     type(flow_2d_bc) :: bc
     type(pbsr_matrix), pointer :: matrix
     real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), result(:,:), velocity(:,:), &
@@ -300,4 +300,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_momentum
+end program test_t2d_flow_momentum

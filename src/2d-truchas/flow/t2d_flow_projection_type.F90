@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_PROJECTION_TYPE
+!! T2D_FLOW_PROJECTION_TYPE
 !!
-!! This module defines FLOW_2D_PROJECTION, the pressure Poisson system used
+!! This module defines T2D_FLOW_PROJECTION, the pressure Poisson system used
 !! by a two-dimensional incompressible-flow projection. The system represents
 !! -div(rho^-1 grad(p)) with the first-order face-normal operators.
 !!
@@ -16,21 +16,21 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_projection_type
+module t2d_flow_projection_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
-  use flow_2d_operators_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
   use flow_domain_types
   use pcsr_matrix_type
   implicit none
   private
 
-  type, public :: flow_2d_projection
+  type, public :: t2d_flow_projection
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
-    type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
+    type(t2d_flow_operators), pointer :: operators => null()  ! unowned reference
     type(pcsr_matrix) :: matrix_
   contains
     procedure :: init
@@ -41,9 +41,9 @@ module flow_2d_projection_type
 contains
 
   subroutine init(this, mesh, operators)
-    class(flow_2d_projection), intent(out) :: this
+    class(t2d_flow_projection), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), target, intent(in) :: operators
+    type(t2d_flow_operators), target, intent(in) :: operators
 
     type(pcsr_graph), pointer :: graph
     integer :: c, i, neighbor
@@ -69,7 +69,7 @@ contains
   !! treated as a zero-pressure boundary, while a solid face is zero flux.
   !! BC must already have been evaluated at the required time.
   subroutine assemble(this, inv_density_f, cell_t, face_t, bc, rhs, dirichlet_value)
-    class(flow_2d_projection), intent(inout) :: this
+    class(t2d_flow_projection), intent(inout) :: this
     real(r8), intent(in) :: inv_density_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
@@ -141,10 +141,10 @@ contains
 
 
   function matrix(this)
-    class(flow_2d_projection), intent(in), target :: this
+    class(t2d_flow_projection), intent(in), target :: this
     type(pcsr_matrix), pointer :: matrix
 
     matrix => this%matrix_
   end function
 
-end module flow_2d_projection_type
+end module t2d_flow_projection_type

@@ -2,14 +2,14 @@ include(CTest)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_python_package(vtk 9.0)
 
-add_executable(test_flow_2d_operators test_flow_2d_operators.F90)
-target_link_libraries(test_flow_2d_operators flow2d truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_operators test_t2d_flow_operators.F90)
+target_link_libraries(test_t2d_flow_operators flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_unstr_mesh_factory test_t2d_unstr_mesh_factory.F90)
 target_link_libraries(test_t2d_unstr_mesh_factory flow2d truchas ${Truchas_LINK_LIBS})
 
-add_executable(test_flow_2d_projection test_flow_2d_projection.F90)
-target_link_libraries(test_flow_2d_projection flow2d truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_projection test_t2d_flow_projection.F90)
+target_link_libraries(test_t2d_flow_projection flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_flow_2d_projection_solver test_flow_2d_projection_solver.F90)
 target_link_libraries(test_flow_2d_projection_solver flow2d truchas ${Truchas_LINK_LIBS})
@@ -23,8 +23,8 @@ target_link_libraries(test_flow_2d_bc_factory flow2d truchas ${Truchas_LINK_LIBS
 add_executable(test_flow_2d_bc test_flow_2d_bc.F90)
 target_link_libraries(test_flow_2d_bc flow2d truchas ${Truchas_LINK_LIBS})
 
-add_executable(test_flow_2d_momentum test_flow_2d_momentum.F90)
-target_link_libraries(test_flow_2d_momentum flow2d truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_momentum test_t2d_flow_momentum.F90)
+target_link_libraries(test_t2d_flow_momentum flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_flow_2d_material_transport test_flow_2d_material_transport.F90)
 target_link_libraries(test_flow_2d_material_transport flow2d truchas ${Truchas_LINK_LIBS})
@@ -51,15 +51,15 @@ add_executable(test_flow_2d_vtkhdf_nan test_flow_2d_vtkhdf_nan.F90)
 target_link_libraries(test_flow_2d_vtkhdf_nan flow2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  ./test_flow_2d_operators ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_operators-1p ${test_launch})
-set_tests_properties(flow_2d_operators-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_operators-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_operators ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_operators-1p ${test_launch})
+set_tests_properties(t2d_flow_operators-1p PROPERTIES PROCESSORS 1)
+set_property(TEST t2d_flow_operators-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  ./test_flow_2d_projection ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_projection-1p ${test_launch})
-set_tests_properties(flow_2d_projection-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_projection-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_projection ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_projection-1p ${test_launch})
+set_tests_properties(t2d_flow_projection-1p PROPERTIES PROCESSORS 1)
+set_property(TEST t2d_flow_projection-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_flow_2d_projection_solver ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_projection_solver-1p ${test_launch})
@@ -81,10 +81,10 @@ add_test(flow_2d_bc-1p ${test_launch})
 set_tests_properties(flow_2d_bc-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_bc-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  ./test_flow_2d_momentum ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_momentum-1p ${test_launch})
-set_tests_properties(flow_2d_momentum-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_momentum-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_momentum ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_momentum-1p ${test_launch})
+set_tests_properties(t2d_flow_momentum-1p PROPERTIES PROCESSORS 1)
+set_property(TEST t2d_flow_momentum-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_flow_2d_material_transport ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_material_transport-1p ${test_launch})
@@ -132,17 +132,17 @@ set_tests_properties(flow_2d_vtkhdf_nan PROPERTIES
   LABELS "UNIT;FLOW;VTKHDF;2d-truchas")
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  ./test_flow_2d_operators ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_operators-4p ${test_launch})
-set_tests_properties(flow_2d_operators-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_operators-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_operators ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_operators-4p ${test_launch})
+set_tests_properties(t2d_flow_operators-4p PROPERTIES PROCESSORS 4)
+set_property(TEST t2d_flow_operators-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
 add_test(NAME flow_2d_operators_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  $<TARGET_FILE:test_flow_2d_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
+  $<TARGET_FILE:test_t2d_flow_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_operators_external-1p PROPERTIES PROCESSORS 1)
 set_property(TEST flow_2d_operators_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 add_test(NAME flow_2d_operators_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  $<TARGET_FILE:test_flow_2d_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
+  $<TARGET_FILE:test_t2d_flow_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
 set_tests_properties(flow_2d_operators_external-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_operators_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
@@ -155,10 +155,10 @@ add_test(NAME flow_2d_mesh_factory_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMP
 set_tests_properties(flow_2d_mesh_factory_external-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_mesh_factory_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  ./test_flow_2d_projection ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_projection-4p ${test_launch})
-set_tests_properties(flow_2d_projection-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_projection-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_projection ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_projection-4p ${test_launch})
+set_tests_properties(t2d_flow_projection-4p PROPERTIES PROCESSORS 4)
+set_property(TEST t2d_flow_projection-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_projection_solver ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_projection_solver-4p ${test_launch})
@@ -180,10 +180,10 @@ add_test(flow_2d_bc-4p ${test_launch})
 set_tests_properties(flow_2d_bc-4p PROPERTIES PROCESSORS 4)
 set_property(TEST flow_2d_bc-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
-  ./test_flow_2d_momentum ${MPIEXEC_POSTFLAGS})
-add_test(flow_2d_momentum-4p ${test_launch})
-set_tests_properties(flow_2d_momentum-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_momentum-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_momentum ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_momentum-4p ${test_launch})
+set_tests_properties(t2d_flow_momentum-4p PROPERTIES PROCESSORS 4)
+set_property(TEST t2d_flow_momentum-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_flow_2d_material_transport ${MPIEXEC_POSTFLAGS})
 add_test(flow_2d_material_transport-4p ${test_launch})

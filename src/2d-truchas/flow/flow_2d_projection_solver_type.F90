@@ -16,14 +16,14 @@ module flow_2d_projection_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
-  use flow_2d_projection_type
+  use t2d_flow_projection_type
   use hypre_hybrid_type
   implicit none
   private
 
   type, public :: flow_2d_projection_solver
     private
-    type(flow_2d_projection), pointer :: projection => null()  ! unowned reference
+    type(t2d_flow_projection), pointer :: projection => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
     type(hypre_hybrid) :: solver
   contains
@@ -38,7 +38,7 @@ contains
 
   subroutine init(this, projection, params, stat, errmsg)
     class(flow_2d_projection_solver), intent(out) :: this
-    type(flow_2d_projection), target, intent(in) :: projection
+    type(t2d_flow_projection), target, intent(in) :: projection
     type(parameter_list), target, intent(in) :: params
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg

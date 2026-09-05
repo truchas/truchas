@@ -16,11 +16,11 @@ module flow_2d_projection_update_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
-  use flow_2d_operators_type
-  use flow_2d_projection_type
+  use t2d_flow_operators_type
+  use t2d_flow_projection_type
   use flow_2d_projection_solver_type
   use flow_2d_bc_type
-  use flow_2d_state_type
+  use t2d_flow_state_type
   use flow_domain_types
   use parallel_communication, only: global_maxval
   implicit none
@@ -29,8 +29,8 @@ module flow_2d_projection_update_type
   type, public :: flow_2d_projection_update
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
-    type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
-    type(flow_2d_projection), pointer :: projection => null()  ! unowned reference
+    type(t2d_flow_operators), pointer :: operators => null()  ! unowned reference
+    type(t2d_flow_projection), pointer :: projection => null()  ! unowned reference
     type(flow_2d_projection_solver), pointer :: solver => null()  ! unowned reference
     real(r8) :: body_acceleration(2) = 0.0_r8
     real(r8), allocatable :: grad_p_old(:,:), grad_p_new(:,:), velocity_work(:,:)
@@ -47,8 +47,8 @@ contains
   subroutine init(this, mesh, operators, projection, solver, body_acceleration)
     class(flow_2d_projection_update), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), target, intent(in) :: operators
-    type(flow_2d_projection), target, intent(in) :: projection
+    type(t2d_flow_operators), target, intent(in) :: operators
+    type(t2d_flow_projection), target, intent(in) :: projection
     type(flow_2d_projection_solver), target, intent(in) :: solver
     real(r8), optional, intent(in) :: body_acceleration(:)
     this%mesh => mesh
@@ -75,7 +75,7 @@ contains
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_state), intent(inout) :: state
     integer, intent(out) :: stat
     logical, optional, intent(out) :: solved
 
@@ -143,7 +143,7 @@ contains
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_state), intent(inout) :: state
     integer, intent(out) :: stat
     logical, optional, intent(in) :: initial
     logical, optional, intent(out) :: solved
