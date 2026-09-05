@@ -24,7 +24,7 @@ module t2d_flow_thermal_integrator_type
   use material_distribution_type
   use t2d_unstr_mesh_type
   use t2d_flow_model_type
-  use flow_material_mapping_type
+  use t2d_flow_material_mapping_type
   use t2d_flow_material_transport_type
   use t2d_flow_solver_type
   use ht_2d_model_type
@@ -38,7 +38,7 @@ module t2d_flow_thermal_integrator_type
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
-    type(flow_material_mapping) :: matl_map
+    type(t2d_flow_material_mapping) :: matl_map
     type(t2d_flow_solver) :: flow
     type(t2d_flow_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector

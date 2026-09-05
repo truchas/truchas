@@ -29,8 +29,8 @@ target_link_libraries(test_t2d_flow_momentum flow2d truchas ${Truchas_LINK_LIBS}
 add_executable(test_t2d_flow_material_transport test_t2d_flow_material_transport.F90)
 target_link_libraries(test_t2d_flow_material_transport flow2d truchas ${Truchas_LINK_LIBS})
 
-add_executable(test_flow_material_mapping test_flow_material_mapping.F90)
-target_link_libraries(test_flow_material_mapping flow2d truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_material_mapping test_t2d_flow_material_mapping.F90)
+target_link_libraries(test_t2d_flow_material_mapping flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_flow_material_props test_t2d_flow_material_props.F90)
 target_link_libraries(test_t2d_flow_material_props flow2d truchas ${Truchas_LINK_LIBS})
@@ -91,10 +91,10 @@ add_test(t2d_flow_material_transport-1p ${test_launch})
 set_tests_properties(t2d_flow_material_transport-1p PROPERTIES PROCESSORS 1)
 set_property(TEST t2d_flow_material_transport-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
-  ./test_flow_material_mapping ${MPIEXEC_POSTFLAGS})
-add_test(flow_material_mapping-1p ${test_launch})
-set_tests_properties(flow_material_mapping-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_material_mapping-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+  ./test_t2d_flow_material_mapping ${MPIEXEC_POSTFLAGS})
+add_test(t2d_flow_material_mapping-1p ${test_launch})
+set_tests_properties(t2d_flow_material_mapping-1p PROPERTIES PROCESSORS 1)
+set_property(TEST t2d_flow_material_mapping-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_t2d_flow_material_props ${MPIEXEC_POSTFLAGS})
 add_test(t2d_flow_material_props-1p ${test_launch})

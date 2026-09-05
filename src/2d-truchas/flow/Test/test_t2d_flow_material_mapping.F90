@@ -1,4 +1,4 @@
-program test_flow_material_mapping
+program test_t2d_flow_material_mapping
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -7,21 +7,21 @@ program test_flow_material_mapping
   use material_model_type
   use material_distribution_type
   use material_factory, only: load_material_database
-  use flow_material_mapping_type
+  use t2d_flow_material_mapping_type
   use t2d_unstr_mesh_type
   implicit none
 
   type(material_database) :: database
   type(material_model) :: matl_model
   type(material_distribution) :: matl_dist
-  type(flow_material_mapping) :: mapping
+  type(t2d_flow_material_mapping) :: mapping
   type(material_database) :: phase_database
   type(material_model) :: phase_model
   type(material_distribution) :: phase_dist
-  type(flow_material_mapping) :: phase_mapping
+  type(t2d_flow_material_mapping) :: phase_mapping
   type(material_model) :: single_phase_model
   type(material_distribution) :: single_phase_dist
-  type(flow_material_mapping) :: single_phase_mapping
+  type(t2d_flow_material_mapping) :: single_phase_mapping
   type(t2d_unstr_mesh) :: mesh
   type(parameter_list), pointer :: matl_params, tracking_params
   type(parameter_list), pointer :: phase_params
@@ -111,4 +111,4 @@ contains
     if (.not.condition) error stop 'FAIL: ' // message
   end subroutine
 
-end program test_flow_material_mapping
+end program test_t2d_flow_material_mapping

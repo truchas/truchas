@@ -1,5 +1,5 @@
 !!
-!! FLOW_MATERIAL_MAPPING_TYPE
+!! T2D_T2D_FLOW_MATERIAL_MAPPING_TYPE
 !!
 !! Defines the flow-facing reduction of simulation material distribution. Real
 !! fluid phases occupy distinct slots, followed by optional VOID and a lumped
@@ -14,7 +14,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_material_mapping_type
+module t2d_flow_material_mapping_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -24,7 +24,7 @@ module flow_material_mapping_type
   implicit none
   private
 
-  type, public :: flow_material_mapping
+  type, public :: t2d_flow_material_mapping
     private
     integer, allocatable :: fluid_pid(:), fluid_mid(:)
     character(:), allocatable :: fluid_name(:)
@@ -50,7 +50,7 @@ contains
 
   subroutine init(this, matl_model, stat, errmsg)
 
-    class(flow_material_mapping), intent(out) :: this
+    class(t2d_flow_material_mapping), intent(out) :: this
     type(material_model), intent(in) :: matl_model
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -103,7 +103,7 @@ contains
 
   subroutine set_priority(this, params, stat, errmsg)
 
-    class(flow_material_mapping), intent(inout) :: this
+    class(t2d_flow_material_mapping), intent(inout) :: this
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -145,7 +145,7 @@ contains
 
   integer function slot_index(this, name) result(slot)
 
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     character(*), intent(in) :: name
     integer :: k
 
@@ -166,28 +166,28 @@ contains
 
 
   integer function num_real_fluid(this)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
 
     num_real_fluid = size(this%fluid_pid)
   end function
 
 
   integer function num_fluid(this)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
 
     num_fluid = this%num_real_fluid() + merge(1, 0, this%void_pid /= 0)
   end function
 
 
   integer function num_material(this)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
 
     num_material = this%num_fluid() + merge(1, 0, this%has_solid)
   end function
 
 
   subroutine get_real_fluid_phase_ids(this, phase_ids)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     integer, intent(out) :: phase_ids(:)
 
     ASSERT(size(phase_ids) == size(this%fluid_pid))
@@ -196,7 +196,7 @@ contains
 
 
   subroutine get_real_fluid_material_ids(this, matl_ids)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     integer, intent(out) :: matl_ids(:)
 
     ASSERT(size(matl_ids) == size(this%fluid_mid))
@@ -205,7 +205,7 @@ contains
 
 
   subroutine get_priority(this, priority)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     integer, intent(out) :: priority(:)
 
     ASSERT(size(priority) == size(this%priority))
@@ -217,7 +217,7 @@ contains
   !! contract. SOLID is the residual after the fluid and VOID slots. The
   !! phase-aware variant is GET_PHASE_VOLUME_FRACTIONS.
   subroutine get_reduced_volume_fractions(this, matl_dist, vfrac)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     type(material_distribution), intent(in) :: matl_dist
     real(r8), intent(out) :: vfrac(:,:)
 
@@ -243,7 +243,7 @@ contains
   !! The lumped SOLID slot is not unpacked; that is unambiguous only for the
   !! current single-phase material contract.
   subroutine put_reduced_volume_fractions(this, vfrac, matl_dist)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     real(r8), intent(in) :: vfrac(:,:)
     type(material_distribution), intent(inout) :: matl_dist
 
@@ -268,7 +268,7 @@ contains
   !! contribute to the lumped SOLID slot.  The material distribution itself
   !! remains material-level state and is not modified.
   subroutine get_phase_volume_fractions(this, matl_model, matl_dist, temperature, vfrac)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     type(material_model), intent(in) :: matl_model
     type(material_distribution), intent(in) :: matl_dist
     real(r8), intent(in) :: temperature(:)
@@ -310,7 +310,7 @@ contains
   !! VOF, are the authoritative result of material transport.  Stationary
   !! solid phases are absent from FLUX_VOLUMES and remain unchanged.
   subroutine apply_phase_fluxes(this, mesh, flux_volumes, matl_dist)
-    class(flow_material_mapping), intent(in) :: this
+    class(t2d_flow_material_mapping), intent(in) :: this
     type(t2d_unstr_mesh), intent(in) :: mesh
     real(r8), intent(in) :: flux_volumes(:,:)
     type(material_distribution), intent(inout) :: matl_dist
@@ -346,4 +346,4 @@ contains
     !! trial VOF.
   end subroutine
 
-end module flow_material_mapping_type
+end module t2d_flow_material_mapping_type
