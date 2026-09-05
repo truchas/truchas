@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def main():
     if len(sys.argv) != 4:
-        print(f"usage: {sys.argv[0]} NS_HT_2D JSON_INPUT MPIEXEC", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
         return 2
 
     executable = Path(sys.argv[1]).resolve()
@@ -24,7 +24,7 @@ def main():
     mpiexec = sys.argv[3]
     run_root = Path(tempfile.mkdtemp(prefix="ns_ht_2d_solidification_flow_4p_"))
     result = subprocess.run(
-        [mpiexec, "-n", "4", str(executable), "--output-dir", str(run_root),
+        [mpiexec, "-n", "4", str(executable), "--simulation", "ns_ht_2d", "--output-dir", str(run_root),
          "--force", str(input_file)],
         text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
     )

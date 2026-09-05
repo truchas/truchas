@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, mpiexec):
     output_dir = pathlib.Path(tempfile.mkdtemp(prefix="ns_2d_channel_4p_"))
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)]
     command = [mpiexec, "-n", "4"] + command
     result = subprocess.run(
         command,
@@ -55,7 +55,7 @@ def check_profile(data, case, angle=30.0, tolerance=5.0e-3):
 
 def main():
     if len(sys.argv) not in (4, 5):
-        print(f"usage: {sys.argv[0]} NS_2D JSON_INPUT MPIEXEC [ANGLE]", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC [ANGLE]", file=sys.stderr)
         return 2
 
     executable = pathlib.Path(sys.argv[1]).resolve()

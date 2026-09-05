@@ -18,7 +18,7 @@ def run_case(executable, input_file, nproc, mpiexec):
     output_dir = pathlib.Path(
         tempfile.mkdtemp(prefix=f"ns_2d_inviscid_channel_{nproc}p_")
     )
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
     result = subprocess.run(
@@ -64,7 +64,7 @@ def check_solution(data, analytic_velocity):
 
 def main():
     if len(sys.argv) not in (4, 6):
-        print(f"usage: {sys.argv[0]} NS_2D JSON_INPUT MPIEXEC [VX VY]", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC [VX VY]", file=sys.stderr)
         return 2
 
     executable = pathlib.Path(sys.argv[1]).resolve()

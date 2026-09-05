@@ -16,13 +16,13 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def main():
     if len(sys.argv) != 4:
-        print(f"usage: {sys.argv[0]} NS_HT_2D JSON_INPUT MPIEXEC", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
         return 2
 
     executable, input_file, mpiexec = map(Path, sys.argv[1:])
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_multifluid_density_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--output-dir", ".", "--force", str(input_file)],
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_ht_2d", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")

@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, nproc, mpiexec):
     output_dir = pathlib.Path(tempfile.mkdtemp(prefix=f"ns_2d_lid_{nproc}p_"))
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
     result = subprocess.run(
@@ -58,7 +58,7 @@ def final_solution(data, case):
 
 def main():
     if len(sys.argv) != 4:
-        print(f"usage: {sys.argv[0]} NS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
         return 2
 
     executable = pathlib.Path(sys.argv[1]).resolve()

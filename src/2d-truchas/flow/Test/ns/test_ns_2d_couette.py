@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def main():
     if len(sys.argv) not in (4, 5):
-        print(f"usage: {sys.argv[0]} NS_2D JSON_INPUT MPIEXEC [ROTATION_ANGLE]", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC [ROTATION_ANGLE]", file=sys.stderr)
         return 2
 
     executable = Path(sys.argv[1]).resolve()
@@ -25,7 +25,7 @@ def main():
     angle = float(sys.argv[4]) if len(sys.argv) == 5 else 0.0
     output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_couette_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--output-dir", ".", "--force", str(input_file)],
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
         text=True,
         stdout=subprocess.PIPE,

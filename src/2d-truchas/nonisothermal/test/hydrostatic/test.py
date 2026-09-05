@@ -14,7 +14,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, mpiexec):
     run_root = Path(tempfile.mkdtemp(prefix="ns_ht_2d_hydrostatic_4p_"))
-    command = [mpiexec, "-n", "4", str(executable), str(input_file)]
+    command = [mpiexec, "-n", "4", str(executable), "--simulation", "ns_ht_2d", str(input_file)]
     result = subprocess.run(
         command, cwd=run_root, text=True, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, check=False,
@@ -75,7 +75,7 @@ def check_case(data):
 
 def test():
     if len(sys.argv) != 3:
-        raise AssertionError(f"usage: {sys.argv[0]} NS_HT_2D MPIEXEC")
+        raise AssertionError(f"usage: {sys.argv[0]} TRUCHAS_2D MPIEXEC")
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(__file__).with_name("input.json").resolve()
     run_root, data = run_case(executable, input_file, sys.argv[2])

@@ -31,7 +31,7 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
         tempfile.mkdtemp(prefix=f"ht_2d_{input_file.stem}_{nproc}p_")
     )
     output_dir = run_root / input_file.stem
-    command = [str(executable), str(input_file)]
+    command = [str(executable), "--simulation", "ht_2d", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
 
@@ -89,7 +89,7 @@ def check_close(actual, expected, tolerance, label):
 
 def run_from_argv(input_file, expected_final_time=1.0e-2):
     if len(sys.argv) not in (2, 4):
-        raise AssertionError(f"usage: {sys.argv[0]} HT_2D [NPROC MPIEXEC]")
+        raise AssertionError(f"usage: {sys.argv[0]} TRUCHAS_2D [NPROC MPIEXEC]")
     nproc = int(sys.argv[2]) if len(sys.argv) == 4 else 1
     mpiexec = sys.argv[3] if len(sys.argv) == 4 else None
     return run_case(
@@ -99,7 +99,7 @@ def run_from_argv(input_file, expected_final_time=1.0e-2):
 
 def partition_from_argv(input_file, volume_fraction_names=None):
     if len(sys.argv) != 3:
-        raise AssertionError(f"usage: {sys.argv[0]} HT_2D MPIEXEC")
+        raise AssertionError(f"usage: {sys.argv[0]} TRUCHAS_2D MPIEXEC")
     check_partition_independence(
         sys.argv[1], input_file, sys.argv[2], volume_fraction_names
     )
