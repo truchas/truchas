@@ -34,10 +34,5 @@ set_target_properties(ht2d PROPERTIES
 target_link_libraries(ht2d PUBLIC truchas truchas-extra ${Truchas_LINK_LIBS})
 target_include_directories(ht2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
-# --- driver program binary
-add_executable(HT_2d_main ht_2d_main.F90)
-target_link_libraries(HT_2d_main ht2d truchas ${Truchas_LINK_LIBS})
-set_target_properties(HT_2d_main PROPERTIES OUTPUT_NAME ht_2d)
-
 # --- ctest binaries
 add_subdirectory(test)

@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, nproc, mpiexec):
     output_dir = pathlib.Path(tempfile.mkdtemp(prefix=f"flow_2d_gravity_{nproc}p_"))
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "ns_2d", "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
         command = [mpiexec, "-n", str(nproc)] + command
     result = subprocess.run(command, cwd=output_dir, text=True,

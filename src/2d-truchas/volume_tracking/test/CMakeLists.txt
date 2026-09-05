@@ -22,10 +22,10 @@ add_test(NAME simple_volume_tracker
 set_tests_properties(simple_volume_tracker PROPERTIES
   PROCESSORS 1 LABELS "UNIT;2d-truchas")
 
-function(add_vof_test name script executable input_file gold_file)
+function(add_vof_test name script input_file gold_file)
   add_test(NAME ${name}
     COMMAND ${Python3_EXECUTABLE} ${script}
-      $<TARGET_FILE:${executable}> ${input_file} ${gold_file} ${MPIEXEC})
+      $<TARGET_FILE:truchas_2d> ${input_file} ${gold_file} ${MPIEXEC})
   set_tests_properties(${name} PROPERTIES
     PROCESSORS 4
     LABELS "INTEGRATED;2d-truchas"

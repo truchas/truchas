@@ -14,7 +14,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, mpiexec):
     run_root = Path(tempfile.mkdtemp(prefix="ns_ht_2d_nat_conv_4p_"))
-    command = [mpiexec, "-n", "4", str(executable), str(input_file)]
+    command = [mpiexec, "-n", "4", str(executable), "--simulation", "ns_ht_2d", str(input_file)]
     result = subprocess.run(
         command, cwd=run_root, text=True, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, check=False,
@@ -132,7 +132,7 @@ def check_case(run_root, data, reference, bdf1):
 
 def test():
     if len(sys.argv) not in (3, 4):
-        raise AssertionError(f"usage: {sys.argv[0]} NS_HT_2D MPIEXEC [INPUT_FILE]")
+        raise AssertionError(f"usage: {sys.argv[0]} TRUCHAS_2D MPIEXEC [INPUT_FILE]")
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 \
     else Path(__file__).with_name("bdf2.json").resolve()

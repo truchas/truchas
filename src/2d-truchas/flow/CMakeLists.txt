@@ -27,8 +27,4 @@ target_link_libraries(flow2d PUBLIC volume_tracking_2d truchas-extra truchas ${T
 target_include_directories(flow2d BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../volume_tracking/mod")
 target_include_directories(flow2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
 
-add_executable(ns_2d_main ns_2d_main.F90)
-target_link_libraries(ns_2d_main flow2d truchas ${Truchas_LINK_LIBS})
-set_target_properties(ns_2d_main PROPERTIES OUTPUT_NAME ns_2d)
-
 add_subdirectory(Test)

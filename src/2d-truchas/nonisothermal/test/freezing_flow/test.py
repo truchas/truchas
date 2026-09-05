@@ -24,7 +24,7 @@ PHASE_FIELDS = (
 def run_case(executable, input_file, mpiexec):
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_freezing_flow_4p_"))
     result = subprocess.run(
-        [str(mpiexec), "-n", "4", str(executable), "--output-dir", ".", "--force",
+        [str(mpiexec), "-n", "4", str(executable), "--simulation", "ns_ht_2d", "--output-dir", ".", "--force",
          str(input_file)],
         cwd=output_dir,
         text=True,
@@ -169,7 +169,7 @@ def check_case(data, reference):
 
 def main():
     if len(sys.argv) != 4:
-        print(f"usage: {sys.argv[0]} NS_HT_2D JSON_INPUT MPIEXEC", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC", file=sys.stderr)
         return 2
 
     executable = Path(sys.argv[1]).resolve()

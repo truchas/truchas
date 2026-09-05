@@ -24,7 +24,8 @@ def run_test(label, final_time, field_tolerance=1.0e-7):
     mpiexec = sys.argv[4]
     output_dir = pathlib.Path(tempfile.mkdtemp(prefix=f"vof_{label}_4p_"))
     result = subprocess.run(
-        [mpiexec, "-n", "4", str(executable), "--output-dir", ".",
+        [mpiexec, "-n", "4", str(executable), "--simulation", "vof_2d",
+         "--output-dir", ".",
          "--force", str(input_file)],
         cwd=output_dir,
         text=True,

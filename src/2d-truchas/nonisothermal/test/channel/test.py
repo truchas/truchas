@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, mpiexec):
     output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_channel_4p_"))
-    command = [str(executable), "--output-dir", ".", "--force", str(input_file)]
+    command = [str(executable), "--simulation", "ns_ht_2d", "--output-dir", ".", "--force", str(input_file)]
     command = [mpiexec, "-n", "4"] + command
     result = subprocess.run(
         command,
@@ -72,7 +72,7 @@ def check_solution(data, angle):
 
 def main():
     if len(sys.argv) != 5:
-        print(f"usage: {sys.argv[0]} NS_HT_2D JSON_INPUT MPIEXEC ANGLE", file=sys.stderr)
+        print(f"usage: {sys.argv[0]} TRUCHAS_2D JSON_INPUT MPIEXEC ANGLE", file=sys.stderr)
         return 2
 
     executable = Path(sys.argv[1]).resolve()

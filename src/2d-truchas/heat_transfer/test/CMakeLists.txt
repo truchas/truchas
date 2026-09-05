@@ -53,11 +53,11 @@ function(add_ht_integrated_test name case nproc)
   if(nproc GREATER 1)
     add_test(NAME ${name}
       COMMAND ${Python3_EXECUTABLE} ${script}
-        $<TARGET_FILE:HT_2d_main> ${nproc} ${MPIEXEC})
+        $<TARGET_FILE:truchas_2d> ${nproc} ${MPIEXEC})
   else()
     add_test(NAME ${name}
       COMMAND ${Python3_EXECUTABLE} ${script}
-        $<TARGET_FILE:HT_2d_main>)
+        $<TARGET_FILE:truchas_2d>)
   endif()
   set_tests_properties(${name} PROPERTIES
     PROCESSORS ${nproc}
@@ -73,7 +73,7 @@ function(add_ht_partition_test name case)
   add_test(NAME ${name}
     COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/${case}/${script_name}
-      $<TARGET_FILE:HT_2d_main> ${MPIEXEC})
+      $<TARGET_FILE:truchas_2d> ${MPIEXEC})
   set_tests_properties(${name} PROPERTIES
     PROCESSORS 4
     TIMEOUT 120
