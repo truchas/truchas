@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-program test_flow_2d_vtkhdf_nan
+program test_t2d_flow_vtkhdf_nan
 
   use, intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08
@@ -20,14 +20,14 @@ program test_flow_2d_vtkhdf_nan
   use simulation_environment_type
   use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
   use t2d_unstr_mesh_type, only: t2d_unstr_mesh
-  use flow_2d_vtkhdf_writer_type, only: flow_2d_vtkhdf_writer
+  use t2d_flow_vtkhdf_writer_type, only: t2d_flow_vtkhdf_writer
   implicit none
 
   type(simulation_environment) :: env
   type(t2d_unstr_mesh), pointer :: mesh
   type(material_database) :: database
   type(material_model) :: matl_model
-  type(flow_2d_vtkhdf_writer) :: output
+  type(t2d_flow_vtkhdf_writer) :: output
   type(parameter_list) :: temporal_output
   character(1) :: no_materials(0)
   real(r8), allocatable :: pressure(:), velocity(:,:)
@@ -69,4 +69,4 @@ contains
     call MPI_Abort(env%comm, 1)
   end subroutine fail
 
-end program test_flow_2d_vtkhdf_nan
+end program test_t2d_flow_vtkhdf_nan

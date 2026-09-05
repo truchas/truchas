@@ -1,5 +1,5 @@
 !!
-!! FLOW_2D_VTKHDF_WRITER_TYPE
+!! T2D_FLOW_VTKHDF_WRITER_TYPE
 !!
 !! This module writes the mesh-associated state of a two-dimensional flow
 !! simulation to a VTKHDF unstructured-grid file.  The mesh and its identifier data
@@ -13,7 +13,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_vtkhdf_writer_type
+module t2d_flow_vtkhdf_writer_type
 
   use,intrinsic :: ieee_arithmetic, only: ieee_quiet_nan, ieee_value
   use,intrinsic :: iso_fortran_env, only: int8, int32, int64, r8 => real64
@@ -34,7 +34,7 @@ module flow_2d_vtkhdf_writer_type
     type(vtkhdf_field_data_handle) :: handle
   end type
 
-  type, public :: flow_2d_vtkhdf_writer
+  type, public :: t2d_flow_vtkhdf_writer
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
@@ -53,7 +53,7 @@ contains
   subroutine open(this, env, mesh, matl_model, temporal_output, stat, errmsg)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
-    class(flow_2d_vtkhdf_writer), intent(out) :: this
+    class(t2d_flow_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(material_model), intent(in) :: matl_model
@@ -144,7 +144,7 @@ contains
   subroutine write_solution(this, time, pressure, velocity, temporal_output, flow_active, vfrac)
     !! PRESSURE, VELOCITY, and FLOW_ACTIVE are full-local arrays with current
     !! ghost values.  FLOW_ACTIVE is true exactly where flow equations exist.
-    class(flow_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_flow_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:)
     type(parameter_list), intent(inout) :: temporal_output
     logical, intent(in) :: flow_active(:)
@@ -186,7 +186,7 @@ contains
   !! VTKHDF requires this registration before the first time step is started.
   subroutine register_temporal_fields(this, temporal_output, stat, errmsg)
 
-    class(flow_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_flow_vtkhdf_writer), intent(inout) :: this
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -237,7 +237,7 @@ contains
   !! Write the current values of the registered scalar temporal field data.
   subroutine write_temporal_fields(this, temporal_output)
 
-    class(flow_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_flow_vtkhdf_writer), intent(inout) :: this
     type(parameter_list), intent(inout) :: temporal_output
 
     integer :: j
@@ -269,7 +269,7 @@ contains
 
 
   subroutine close(this)
-    class(flow_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_flow_vtkhdf_writer), intent(inout) :: this
 
     if (this%is_open) call this%file%close()
     this%is_open = .false.
@@ -277,4 +277,4 @@ contains
     nullify(this%mesh)
   end subroutine
 
-end module flow_2d_vtkhdf_writer_type
+end module t2d_flow_vtkhdf_writer_type
