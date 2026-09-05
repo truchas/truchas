@@ -37,7 +37,7 @@ add_ht_unit_test(test_ht_2d_model_type test_ht_2d_model_type.F90)
 add_ht_unit_test(test_ht_2d_precon_type test_ht_2d_precon_type.F90)
 add_ht_unit_test(test_ht_2d_norm_type test_ht_2d_norm_type.F90)
 add_ht_unit_test(test_t2d_thermal_solver_initial_state test_t2d_thermal_solver_initial_state.F90)
-add_ht_unit_test(test_t2d_thermal_solver test_t2d_thermal_solver.F90)
+add_ht_unit_test(test_t2d_thermal_integrator test_t2d_thermal_integrator.F90)
 
 function(add_ht_integrated_test name case nproc)
   set(script_name test.py)
