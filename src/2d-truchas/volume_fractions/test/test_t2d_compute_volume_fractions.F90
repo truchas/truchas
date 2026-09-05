@@ -1,4 +1,4 @@
-program test_region_func_type
+program test_t2d_compute_volume_fractions
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -6,7 +6,7 @@ program test_region_func_type
   use parameter_list_type
   use parameter_list_json
   use t2d_unstr_mesh_type
-  use vol_frac_init_procs
+  use t2d_vol_frac_init_procs
   use string_utilities, only: i_to_c
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
@@ -29,7 +29,7 @@ program test_region_func_type
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_compute_volume_fractions.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_compute_volume_fractions.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -244,4 +244,4 @@ contains
     write(error_unit,'(a)') errmsg
   end subroutine
 
-end program test_region_func_type
+end program test_t2d_compute_volume_fractions

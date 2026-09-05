@@ -29,7 +29,7 @@
 
 #include "f90_assert.fpp"
 
-module vol_frac_init_procs
+module t2d_vol_frac_init_procs
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_region_func_type
@@ -313,4 +313,4 @@ contains
 
   end subroutine subdivide
 
-end module vol_frac_init_procs
+end module t2d_vol_frac_init_procs

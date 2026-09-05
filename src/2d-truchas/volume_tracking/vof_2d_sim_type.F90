@@ -16,7 +16,7 @@ module vof_2d_sim_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use t2d_region_func_type
-  use vol_frac_init_procs, only: compute_volume_fractions
+  use t2d_vol_frac_init_procs, only: compute_volume_fractions
   use vof_2d_solver_type
   use vof_2d_vtkhdf_writer_type
   use simulation_environment_type
