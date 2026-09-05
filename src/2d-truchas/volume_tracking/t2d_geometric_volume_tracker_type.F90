@@ -201,7 +201,7 @@ contains
 
   subroutine normals(this, env, vof)
 
-    use gradient_2d_cc_function, only: gradient_2d_cc, gradient_rz_cc
+    use t2d_gradient_cc_function, only: gradient_2d_cc, gradient_rz_cc
     intrinsic :: norm2
 
     class(t2d_geometric_volume_tracker), intent(inout) :: this

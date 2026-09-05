@@ -6,10 +6,10 @@ include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
 
 set(VOLUME_TRACKING_2D_SOURCE_FILES
-  geom_axisymmetric.F90
+  t2d_geom_axisymmetric.F90
   t2d_volume_tracker_class.F90
   t2d_simple_volume_tracker_type.F90
-  gradient_2d_cc_function.F90
+  t2d_gradient_cc_function.F90
   t2d_cell_geom_vof_type.F90
   t2d_plane_type.F90
   t2d_locate_plane_os_function.F90

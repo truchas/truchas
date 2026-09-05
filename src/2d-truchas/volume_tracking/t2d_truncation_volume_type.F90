@@ -16,7 +16,7 @@
 module t2d_truncation_volume_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use geom_axisymmetric
+  use t2d_geom_axisymmetric
   implicit none
 
   type, public :: t2d_truncation_volume
