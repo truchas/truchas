@@ -10,7 +10,7 @@
 
 #include "f90_assert.fpp"
 
-module vof_2d_solver_type
+module t2d_vof_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type, only: simulation_environment
@@ -20,7 +20,7 @@ module vof_2d_solver_type
   implicit none
   private
 
-  type, public :: vof_2d_solver
+  type, public :: t2d_vof_solver
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     class(t2d_volume_tracker), allocatable :: tracker
@@ -35,7 +35,7 @@ module vof_2d_solver_type
 contains
 
   subroutine delete(this)
-    type(vof_2d_solver), intent(inout) :: this
+    type(t2d_vof_solver), intent(inout) :: this
     nullify(this%mesh)
   end subroutine
 
@@ -45,7 +45,7 @@ contains
     use t2d_simple_volume_tracker_type
     use t2d_geometric_volume_tracker_type
 
-    class(vof_2d_solver), intent(out) :: this
+    class(t2d_vof_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nmat
@@ -82,7 +82,7 @@ contains
 
   subroutine step(this, env, time, dt, velocity, vfrac)
 
-    class(vof_2d_solver), intent(inout) :: this
+    class(t2d_vof_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: time, dt
     class(vector_func), intent(in) :: velocity
@@ -119,4 +119,4 @@ contains
     vfrac = this%vfrac_out
   end subroutine
 
-end module vof_2d_solver_type
+end module t2d_vof_solver_type

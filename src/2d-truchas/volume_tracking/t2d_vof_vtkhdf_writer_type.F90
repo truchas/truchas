@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module vof_2d_vtkhdf_writer_type
+module t2d_vof_vtkhdf_writer_type
 
   use,intrinsic :: iso_fortran_env, only: int8, r8 => real64
   use simulation_environment_type
@@ -19,7 +19,7 @@ module vof_2d_vtkhdf_writer_type
   implicit none
   private
 
-  type, public :: vof_2d_vtkhdf_writer
+  type, public :: t2d_vof_vtkhdf_writer
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
@@ -29,7 +29,7 @@ module vof_2d_vtkhdf_writer_type
     procedure :: open
     procedure :: write_solution
     procedure :: close
-  end type vof_2d_vtkhdf_writer
+  end type t2d_vof_vtkhdf_writer
 
 contains
 
@@ -37,7 +37,7 @@ contains
 
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
-    class(vof_2d_vtkhdf_writer), intent(out) :: this
+    class(t2d_vof_vtkhdf_writer), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nmat
@@ -116,7 +116,7 @@ contains
 
   subroutine write_solution(this, time, volume_fraction)
 
-    class(vof_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_vof_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), intent(in) :: volume_fraction(:,:)
 
@@ -141,7 +141,7 @@ contains
 
   subroutine close(this)
 
-    class(vof_2d_vtkhdf_writer), intent(inout) :: this
+    class(t2d_vof_vtkhdf_writer), intent(inout) :: this
 
     if (this%is_open) call this%file%close()
     this%is_open = .false.
@@ -150,4 +150,4 @@ contains
 
   end subroutine close
 
-end module vof_2d_vtkhdf_writer_type
+end module t2d_vof_vtkhdf_writer_type

@@ -15,7 +15,7 @@ module simulation_factory
   use ns_2d_sim_type, only: ns_2d_sim
   use ht_2d_sim_type, only: ht_2d_sim
   use ns_ht_2d_sim_type, only: ns_ht_2d_sim
-  use vof_2d_sim_type, only: vof_2d_sim
+  use t2d_vof_sim_type, only: t2d_vof_sim
   implicit none
   private
 
@@ -39,7 +39,7 @@ contains
     case ('flow_thermal')
       allocate(ns_ht_2d_sim :: sim)
     case ('vof')
-      allocate(vof_2d_sim :: sim)
+      allocate(t2d_vof_sim :: sim)
     case default
       stat = 1
       errmsg = 'unknown simulation: ' // trim(name)
