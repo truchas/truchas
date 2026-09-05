@@ -14,7 +14,7 @@ program test_t2d_flow_integrator
   use material_database_type
   use material_model_type
   use material_factory, only: load_material_database
-  use flow_2d_model_type
+  use t2d_flow_model_type
   use t2d_flow_integrator_type
   implicit none
 
@@ -44,7 +44,7 @@ contains
 
   subroutine test_step
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_model), target :: model
+    type(t2d_flow_model), target :: model
     type(t2d_flow_integrator), target :: solver
     type(material_database) :: database
     type(material_model) :: matl_model

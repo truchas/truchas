@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_MODEL_TYPE
+!! T2D_FLOW_MODEL_TYPE
 !!
-!! This module defines FLOW_2D_MODEL, the mesh-associated material-property
+!! This module defines T2D_FLOW_MODEL, the mesh-associated material-property
 !! model for a two-dimensional incompressible-flow calculation.
 !! It owns the spatial operators, fluid properties, boundary
 !! conditions, and discrete momentum and pressure-correction operators.  It
@@ -17,30 +17,30 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_model_type
+module t2d_flow_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
   use scalar_func_class
   use t2d_unstr_mesh_type
   use material_model_type
-  use flow_2d_operators_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
-  use flow_2d_momentum_type
-  use flow_2d_projection_type
+  use t2d_flow_momentum_type
+  use t2d_flow_projection_type
   use flow_2d_material_props_type
   use flow_domain_types
   use simulation_environment_type
   implicit none
   private
 
-  type, public :: flow_2d_model
+  type, public :: t2d_flow_model
     private
     type(t2d_unstr_mesh), pointer, public :: mesh => null()  ! unowned reference
-    type(flow_2d_operators), pointer, public :: operators => null()
+    type(t2d_flow_operators), pointer, public :: operators => null()
     type(flow_2d_bc), pointer, public :: bc => null()
-    type(flow_2d_momentum), pointer, public :: momentum => null()
-    type(flow_2d_projection), pointer, public :: projection => null()
+    type(t2d_flow_momentum), pointer, public :: momentum => null()
+    type(t2d_flow_projection), pointer, public :: projection => null()
     type(flow_2d_material_props), public :: matl_props
     logical, public :: inviscid = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
@@ -62,7 +62,7 @@ contains
 
   subroutine init(this, env, mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, &
       viscosity_func, density_delta_func, inviscid)
-    class(flow_2d_model), intent(out) :: this
+    class(t2d_flow_model), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
@@ -113,7 +113,7 @@ contains
   !! Initialize the model's material properties directly from fluid phases.
   !! The model core must already have been initialized.
   subroutine init_material(this, matl_model, material_ids, stat, errmsg, boussinesq, nfluid)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: material_ids(:)
     integer, intent(out) :: stat
@@ -140,7 +140,7 @@ contains
   !! Initialize the mesh-associated operators and boundary conditions.  The
   !! material properties are initialized separately by INIT_MATERIAL.
   subroutine init_core(this, env, mesh, bc_params, stat, errmsg, body_acceleration, inviscid)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(parameter_list), target, intent(inout) :: bc_params
@@ -170,7 +170,7 @@ contains
 
 
   subroutine check_initial_properties(this, mesh, stat, errmsg)
-    class(flow_2d_model), intent(in) :: this
+    class(t2d_flow_model), intent(in) :: this
     type(t2d_unstr_mesh), intent(in) :: mesh
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -189,7 +189,7 @@ contains
   !! the face inverse densities used by the pressure projection.  The leading
   !! rows correspond to the real fluid materials in DENSITY order.
   subroutine set_volume_fractions(this, vfrac)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%matl_props%set_volume_fractions(vfrac)
@@ -197,7 +197,7 @@ contains
 
 
   subroutine set_initial_material_state(this, vfrac, temperature)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%matl_props%set_initial_state(vfrac, temperature)
@@ -206,14 +206,14 @@ contains
 
   !! Save the mobile-fluid mass density before thermal phase change.
   subroutine set_pre_solidification_state(this)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
 
     call this%matl_props%set_pre_solidification_state()
   end subroutine set_pre_solidification_state
 
 
   subroutine accept_material_state(this)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
 
     call this%matl_props%accept()
   end subroutine
@@ -222,7 +222,7 @@ contains
   !! Set the cell temperature used to evaluate the material properties and
   !! the Boussinesq buoyancy term.
   subroutine set_buoyancy_temperature(this, temperature)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
 
     call this%matl_props%set_temperature(temperature)
@@ -233,7 +233,7 @@ contains
   !! Inviscid flow has only the cell mass blocks; viscous flow also includes
   !! diffusion and velocity-boundary contributions.
   subroutine assemble_momentum(this, dt, rhs)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: dt
     real(r8), intent(out) :: rhs(:,:)
 
@@ -249,7 +249,7 @@ contains
 
 
   subroutine compute_bc(this, time, dt, stat, errmsg)
-    class(flow_2d_model), intent(inout) :: this
+    class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: time, dt
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -263,7 +263,7 @@ contains
   !! Compute the cell pressure gradient using the physical pressure boundary
   !! conditions evaluated by COMPUTE_BC.
   subroutine pressure_gradient(this, pressure, gradient)
-    class(flow_2d_model), intent(in) :: this
+    class(t2d_flow_model), intent(in) :: this
     real(r8), intent(in) :: pressure(:)
     real(r8), intent(out) :: gradient(:,:)
 
@@ -303,4 +303,4 @@ contains
     end if
   end subroutine
 
-end module flow_2d_model_type
+end module t2d_flow_model_type

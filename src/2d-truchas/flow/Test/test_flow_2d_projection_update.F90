@@ -10,10 +10,10 @@ program test_flow_2d_projection_update
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
-  use flow_2d_state_type
-  use flow_2d_operators_type
+  use t2d_flow_state_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
-  use flow_2d_projection_type
+  use t2d_flow_projection_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
   use flow_domain_types
@@ -45,11 +45,11 @@ contains
 
   subroutine test_update
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_projection), target :: projection
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_projection), target :: projection
     type(flow_2d_projection_solver), target :: solver
     type(flow_2d_projection_update) :: update
-    type(flow_2d_state) :: state
+    type(t2d_flow_state) :: state
     type(flow_2d_bc) :: bc
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist

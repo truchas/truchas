@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_MOMENTUM_TYPE
+!! T2D_FLOW_MOMENTUM_TYPE
 !!
-!! This module defines FLOW_2D_MOMENTUM, the block-structured finite-volume
+!! This module defines T2D_FLOW_MOMENTUM, the block-structured finite-volume
 !! operator for the cell-centered velocity predictor in two-dimensional
 !! incompressible flow. The matrix has one 2-by-2 block per cell pair. It
 !! assembles unsteady inertial and first-order viscous terms, and accumulates
@@ -18,21 +18,21 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_momentum_type
+module t2d_flow_momentum_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
-  use flow_2d_operators_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
   use flow_domain_types
   use pbsr_matrix_type
   implicit none
   private
 
-  type, public :: flow_2d_momentum
+  type, public :: t2d_flow_momentum
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
-    type(flow_2d_operators), pointer :: operators => null()  ! unowned reference
+    type(t2d_flow_operators), pointer :: operators => null()  ! unowned reference
     logical :: inviscid
     type(pbsr_matrix) :: matrix_
   contains
@@ -47,9 +47,9 @@ module flow_2d_momentum_type
 contains
 
   subroutine init(this, mesh, operators, inviscid)
-    class(flow_2d_momentum), intent(out) :: this
+    class(t2d_flow_momentum), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
-    type(flow_2d_operators), target, intent(in) :: operators
+    type(t2d_flow_operators), target, intent(in) :: operators
     logical, optional, intent(in) :: inviscid
 
     type(pcsr_graph), pointer :: graph
@@ -77,7 +77,7 @@ contains
   !! block-diagonal cell mass matrix.  No diffusion coefficients or velocity
   !! boundary contributions are evaluated.
   subroutine assemble_inviscid(this, density_c, cell_t, rhs, solidified_density, fluid_fraction)
-    class(flow_2d_momentum), intent(inout) :: this
+    class(t2d_flow_momentum), intent(inout) :: this
     real(r8), intent(in) :: density_c(:)
     integer, intent(in) :: cell_t(:)
     real(r8), intent(out) :: rhs(:,:)
@@ -120,7 +120,7 @@ contains
   !! blocks.  VELOCITY contains on-process cells on return; its ghost values
   !! are filled by the caller.
   subroutine solve_inviscid(this, density_c, cell_t, rhs, velocity)
-    class(flow_2d_momentum), intent(in) :: this
+    class(t2d_flow_momentum), intent(in) :: this
     real(r8), intent(in) :: density_c(:), rhs(:,:)
     integer, intent(in) :: cell_t(:)
     real(r8), intent(out) :: velocity(:,:)
@@ -147,7 +147,7 @@ contains
   !! volumes transported over the pending time step; positive values leave
   !! the associated cell. DENSITY gives the corresponding material densities.
   subroutine add_advective_rhs(this, density, velocity_cc, flux_volumes, cell_t, face_t, bc, rhs)
-    class(flow_2d_momentum), intent(in) :: this
+    class(t2d_flow_momentum), intent(in) :: this
     real(r8), intent(in) :: density(:), velocity_cc(:,:), flux_volumes(:,:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
@@ -207,7 +207,7 @@ contains
   !! time.
   subroutine assemble(this, dt, density_c, viscosity_f, cell_t, face_t, bc, rhs, &
       solidified_density, fluid_fraction)
-    class(flow_2d_momentum), intent(inout) :: this
+    class(t2d_flow_momentum), intent(inout) :: this
     real(r8), intent(in) :: dt, density_c(:), viscosity_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     type(flow_2d_bc), intent(in) :: bc
@@ -292,10 +292,10 @@ contains
 
 
   function matrix(this)
-    class(flow_2d_momentum), intent(in), target :: this
+    class(t2d_flow_momentum), intent(in), target :: this
     type(pbsr_matrix), pointer :: matrix
 
     matrix => this%matrix_
   end function
 
-end module flow_2d_momentum_type
+end module t2d_flow_momentum_type

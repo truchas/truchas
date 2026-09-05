@@ -17,8 +17,8 @@ module flow_2d_ic_solver_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
   use parameter_list_type
-  use flow_2d_model_type
-  use flow_2d_state_type
+  use t2d_flow_model_type
+  use t2d_flow_state_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
@@ -29,7 +29,7 @@ module flow_2d_ic_solver_type
 
   type, public :: flow_2d_ic_solver
     private
-    type(flow_2d_model), pointer :: model => null()  ! unowned reference
+    type(t2d_flow_model), pointer :: model => null()  ! unowned reference
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
@@ -44,7 +44,7 @@ contains
 
   subroutine init(this, model, momentum_params, projection_params, stat, errmsg)
     class(flow_2d_ic_solver), intent(out) :: this
-    type(flow_2d_model), target, intent(in) :: model
+    type(t2d_flow_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
     integer, intent(out), optional :: stat
@@ -76,7 +76,7 @@ contains
     class(flow_2d_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
-    type(flow_2d_state), intent(inout) :: state
+    type(t2d_flow_state), intent(inout) :: state
     integer, intent(out) :: stat
 
     integer :: c, num_itr, num_dscg_itr, num_pcg_itr

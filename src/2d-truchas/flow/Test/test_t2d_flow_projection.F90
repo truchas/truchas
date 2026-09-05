@@ -1,4 +1,4 @@
-program test_flow_2d_projection
+program test_t2d_flow_projection
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -9,8 +9,8 @@ program test_flow_2d_projection
   use t2d_unstr_mesh_factory
   use parameter_list_type
   use simulation_environment_type
-  use flow_2d_operators_type
-  use flow_2d_projection_type
+  use t2d_flow_operators_type
+  use t2d_flow_projection_type
   use flow_2d_bc_type
   use flow_domain_types
   use pcsr_matrix_type
@@ -28,7 +28,7 @@ program test_flow_2d_projection
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_projection.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_projection.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -41,8 +41,8 @@ contains
 
   subroutine test_projection
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_projection), target :: projection
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_projection), target :: projection
     type(pcsr_matrix), pointer :: matrix
     type(parameter_list), target :: neumann_params, dirichlet_params
     type(parameter_list), pointer :: plist
@@ -164,4 +164,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_projection
+end program test_t2d_flow_projection

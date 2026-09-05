@@ -22,8 +22,8 @@ module t2d_flow_solver_type
   use simulation_environment_type
   use parameter_list_type
   use parallel_communication, only: global_minval
-  use flow_2d_model_type
-  use flow_2d_state_type
+  use t2d_flow_model_type
+  use t2d_flow_state_type
   use flow_2d_momentum_solver_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
@@ -34,9 +34,9 @@ module t2d_flow_solver_type
 
   type, public :: t2d_flow_solver
     private
-    type(flow_2d_model), pointer :: model => null()  ! unowned reference
-    type(flow_2d_state) :: state
-    type(flow_2d_state) :: pending_state
+    type(t2d_flow_model), pointer :: model => null()  ! unowned reference
+    type(t2d_flow_state) :: state
+    type(t2d_flow_state) :: pending_state
     type(flow_2d_momentum_solver) :: momentum_solver
     type(flow_2d_projection_solver), pointer :: projection_solver => null()
     type(flow_2d_projection_update) :: projection_update
@@ -71,7 +71,7 @@ contains
   subroutine init(this, env, model, momentum_params, projection_params, courant_number, stat, errmsg)
     class(t2d_flow_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(flow_2d_model), target, intent(in) :: model
+    type(t2d_flow_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
     type(parameter_list), target, intent(in) :: projection_params
     real(r8), intent(in), optional :: courant_number

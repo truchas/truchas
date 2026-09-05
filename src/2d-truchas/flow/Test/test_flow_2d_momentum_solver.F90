@@ -10,9 +10,9 @@ program test_flow_2d_momentum_solver
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
-  use flow_2d_operators_type
+  use t2d_flow_operators_type
   use flow_2d_bc_type
-  use flow_2d_momentum_type
+  use t2d_flow_momentum_type
   use flow_2d_momentum_solver_type
   use flow_domain_types
   implicit none
@@ -43,8 +43,8 @@ contains
 
   subroutine test_solver
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_operators), target :: operators
-    type(flow_2d_momentum), target :: momentum
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_momentum), target :: momentum
     type(flow_2d_momentum_solver) :: solver
     type(flow_2d_bc) :: bc
     type(parameter_list), target :: bc_params, solver_params

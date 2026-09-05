@@ -23,7 +23,7 @@ module t2d_flow_sim_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
-  use flow_2d_model_type
+  use t2d_flow_model_type
   use t2d_flow_integrator_type
   use flow_2d_vtkhdf_writer_type
   use simulation_environment_type
@@ -37,7 +37,7 @@ module t2d_flow_sim_type
     type(material_database) :: matl_db
     type(material_model) :: matl_model
     type(material_distribution), pointer :: matl_dist => null()
-    type(flow_2d_model), pointer :: model => null()
+    type(t2d_flow_model), pointer :: model => null()
     type(t2d_flow_integrator), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output

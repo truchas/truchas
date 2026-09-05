@@ -1,18 +1,18 @@
 # --- Library flow2d
 set(FLOW2D_SOURCE_FILES
-    flow_2d_state_type.F90
-    flow_2d_operators_type.F90
-    flow_2d_projection_type.F90
+    t2d_flow_state_type.F90
+    t2d_flow_operators_type.F90
+    t2d_flow_projection_type.F90
     flow_2d_projection_solver_type.F90
     flow_2d_projection_update_type.F90
     flow_2d_bc_factory_type.F90
     flow_2d_bc_type.F90
     flow_material_mapping_type.F90
     flow_2d_material_transport_type.F90
-    flow_2d_momentum_type.F90
+    t2d_flow_momentum_type.F90
     flow_2d_momentum_solver_type.F90
     flow_2d_material_props_type.F90
-    flow_2d_model_type.F90
+    t2d_flow_model_type.F90
     flow_2d_ic_solver_type.F90
     t2d_flow_solver_type.F90
     t2d_flow_integrator_type.F90

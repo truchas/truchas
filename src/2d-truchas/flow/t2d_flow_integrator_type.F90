@@ -21,7 +21,7 @@ module t2d_flow_integrator_type
   use parameter_list_type
   use material_model_type
   use material_distribution_type
-  use flow_2d_model_type
+  use t2d_flow_model_type
   use t2d_flow_solver_type
   use flow_material_mapping_type
   use flow_2d_material_transport_type
@@ -72,7 +72,7 @@ contains
   subroutine init(this, env, model, matl_model, params, stat, errmsg, inertial)
     class(t2d_flow_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
-    type(flow_2d_model), target, intent(inout) :: model
+    type(t2d_flow_model), target, intent(inout) :: model
     type(material_model), intent(in) :: matl_model
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
