@@ -1,0 +1,3165 @@
+program code="ns_ht_2d" version="26.05-190-gdff8e5e1"
+build compiler="NAG" compiler_version="7.2.7245" host="thelio2.indiana" flags="-u -f2018 -w=uda -target=native -O3 -DNDEBUG"
+run timestamp="2026-09-04T21:02:50-0600" host="thelio2.indiana" cpu="AMD Ryzen Threadripper 7970X 32-Cores" mpi_processes=4
+input file="src/2d-truchas/nonisothermal/test/freezing_flow/input.json" sha256="7841f5ac61a184cb39f860d93a7077f5b25b2c4714714e139e0b3967e3dde13f"
+
+Initializing simulation.
+  Constructing mesh.
+    Generating a 24 by 24 quadrilateral mesh.
+    Partitioning the mesh with the metis method.
+    Mesh has 625 nodes, 1200 faces, and 576 cells.
+    Mesh defines 1 cell sets, 4 face sets, and 0 node sets.
+  Mesh construction complete.
+  Loading material database.
+  Reading material regions.
+  Material regions read.
+  Constructing material model.
+    Using material "freezing-material".
+  Material model complete.
+  Constructing material distribution.
+    Assigning material "freezing-material" uniformly.
+  Material distribution complete.
+  Constructing flow model.
+    Using inviscid flow.
+    Constructing "velocity" boundary condition "inlet".
+    Constructing "free-slip" boundary condition "walls".
+    Constructing "pressure" boundary condition "outlet".
+  Flow model complete.
+  Constructing thermal model.
+    Adding enthalpy property.
+      generating "flux" thermal boundary condition
+        using thermal BC [adiabatic]
+      generating "htc" thermal boundary condition
+        none specified
+      generating "radiation" thermal boundary condition
+        none specified
+      generating "temperature" thermal boundary condition
+        using thermal BC [wall]
+      generating "inflow" thermal boundary condition
+        none specified
+      generating "outflow" thermal boundary condition
+        using thermal BC [outlet]
+      generating "scalar_cell_func1" thermal source
+        none specified
+      generating "scalar_cell_func2" thermal source
+        none specified
+  Thermal model complete.
+  Constructing coupled solver.
+    Using inertial momentum.
+  Coupled solver complete.
+  Configuring integration.
+    Initial time:  0.0000E+00
+    Initial time step:  1.0000E-03
+    Output schedule: 2 times from  5.0000E-01 through  3.0000E+00
+  Integration configuration complete.
+  Initializing flow state.
+    Projecting user-supplied initial velocity.
+  Flow-state initialization complete.
+  Initializing thermal state.
+    Projecting user-supplied initial temperature.
+  Thermal-state initialization complete.
+  Setting initial solver state.
+    Computing consistent initial state.
+    thermal.initial.state init_res=6.85857E-01 iter=8 dscg=8 amg=0 rel_res=0.00000E+00 status=ok
+    Computing consistent initial-state derivative.
+    thermal.initial.deriv init_res=1.72874E-01 iter=8 dscg=8 amg=0 rel_res=0.00000E+00 status=ok
+    flow.initial.velocity-projection iter=8 dscg=2 amg=6 rel_res=6.50510E-07 status=ok
+    flow.initial.momentum method=inviscid-direct status=ok
+    flow.initial.pressure-projection iter=70 dscg=70 amg=0 rel_res=6.82190E-07 status=ok
+  Initial solver state ready.
+  Opening VTKHDF output.
+Simulation initialization complete.
+
+integration-begin t0=0.00000E+00
+  output t=0.00000E+00
+  step=1 attempt=1 t0=0.00000E+00 dt=1.00000E-03 cause=init
+    thermal nres=3 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=76 dscg=76 amg=0 rel_res=6.30947E-07 status=ok
+  step-end status=accepted
+  step=2 attempt=1 t0=1.00000E-03 dt=1.00000E-03 cause=thermal
+    thermal nres=6 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=9.31596E-07 status=ok
+  step-end status=accepted
+  step=3 attempt=1 t0=2.00000E-03 dt=1.00000E-03 cause=thermal
+    thermal nres=9 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=9.54454E-07 status=ok
+  step-end status=accepted
+  step=4 attempt=1 t0=3.00000E-03 dt=1.20000E-03 cause=growth
+    thermal nres=12 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=7.55060E-07 status=ok
+  step-end status=accepted
+  step=5 attempt=1 t0=4.20000E-03 dt=1.18121E-03 cause=thermal
+    thermal nres=15 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=7.40170E-07 status=ok
+  step-end status=accepted
+  step=6 attempt=1 t0=5.38121E-03 dt=1.29550E-03 cause=thermal
+    thermal nres=18 npc=1 nnr=0 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.94897E-07 status=ok
+  step-end status=accepted
+  step=7 attempt=1 t0=6.67671E-03 dt=1.24728E-03 cause=thermal
+    thermal nres=27 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=9.84992E-07 status=ok
+  step-end status=accepted
+  step=8 attempt=1 t0=7.92399E-03 dt=4.27999E-04 cause=thermal
+    thermal nres=31 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.10335E-07 status=ok
+  step-end status=accepted
+  step=9 attempt=1 t0=8.35199E-03 dt=6.53760E-04 cause=thermal
+    thermal nres=35 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.36319E-07 status=ok
+  step-end status=accepted
+  step=10 attempt=1 t0=9.00575E-03 dt=5.13599E-04 cause=growth
+    thermal nres=38 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=75 dscg=75 amg=0 rel_res=6.73939E-07 status=ok
+  step-end status=accepted
+  step=11 attempt=1 t0=9.51935E-03 dt=7.84512E-04 cause=growth
+    thermal nres=41 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=5.96059E-07 status=ok
+  step-end status=accepted
+  step=12 attempt=1 t0=1.03039E-02 dt=6.16319E-04 cause=growth
+    thermal nres=44 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=9.73935E-07 status=ok
+  step-end status=accepted
+  step=13 attempt=1 t0=1.09202E-02 dt=9.41414E-04 cause=growth
+    thermal nres=47 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.31783E-07 status=ok
+  step-end status=accepted
+  step=14 attempt=1 t0=1.18616E-02 dt=7.39582E-04 cause=growth
+    thermal nres=50 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=75 dscg=75 amg=0 rel_res=9.55828E-07 status=ok
+  step-end status=accepted
+  step=15 attempt=1 t0=1.26012E-02 dt=1.12970E-03 cause=growth
+    thermal nres=53 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=8.71837E-07 status=ok
+  step-end status=accepted
+  step=16 attempt=1 t0=1.37309E-02 dt=8.87499E-04 cause=growth
+    thermal nres=56 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=9.31847E-07 status=ok
+  step-end status=accepted
+  step=17 attempt=1 t0=1.46184E-02 dt=1.35564E-03 cause=growth
+    thermal nres=58 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=8.86677E-07 status=ok
+  step-end status=accepted
+  step=18 attempt=1 t0=1.59740E-02 dt=1.06500E-03 cause=growth
+    thermal nres=60 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.18386E-07 status=ok
+  step-end status=accepted
+  step=19 attempt=1 t0=1.70390E-02 dt=1.62676E-03 cause=growth
+    thermal nres=63 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.63053E-07 status=ok
+  step-end status=accepted
+  step=20 attempt=1 t0=1.86658E-02 dt=1.27800E-03 cause=growth
+    thermal nres=65 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.66276E-07 status=ok
+  step-end status=accepted
+  step=21 attempt=1 t0=1.99438E-02 dt=1.95212E-03 cause=growth
+    thermal nres=69 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=9.86468E-07 status=ok
+  step-end status=accepted
+  step=22 attempt=1 t0=2.18959E-02 dt=1.53360E-03 cause=growth
+    thermal nres=73 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.16983E-07 status=ok
+  step-end status=accepted
+  step=23 attempt=1 t0=2.34295E-02 dt=1.46583E-03 cause=thermal
+    thermal nres=77 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=98 dscg=98 amg=0 rel_res=9.85673E-07 status=ok
+  step-end status=accepted
+  step=24 attempt=1 t0=2.48953E-02 dt=4.51945E-04 cause=thermal
+    thermal nres=81 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.34218E-07 status=ok
+  step-end status=accepted
+  step=25 attempt=1 t0=2.53473E-02 dt=1.28702E-03 cause=thermal
+    thermal nres=85 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=9.58631E-07 status=ok
+  step-end status=accepted
+  step=26 attempt=1 t0=2.66343E-02 dt=5.42334E-04 cause=growth
+    thermal nres=89 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=8.54570E-07 status=ok
+  step-end status=accepted
+  step=27 attempt=1 t0=2.71766E-02 dt=1.54442E-03 cause=growth
+    thermal nres=93 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=6.75902E-07 status=ok
+  step-end status=accepted
+  step=28 attempt=1 t0=2.87210E-02 dt=6.50801E-04 cause=growth
+    thermal nres=97 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=7.33357E-07 status=ok
+  step-end status=accepted
+  step=29 attempt=1 t0=2.93718E-02 dt=1.85330E-03 cause=growth
+    thermal nres=101 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=5.73912E-07 status=ok
+  step-end status=accepted
+  step=30 attempt=1 t0=3.12251E-02 dt=7.80961E-04 cause=growth
+    thermal nres=105 npc=2 nnr=1 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=6.32333E-07 status=ok
+  step-end status=accepted
+  step=31 attempt=1 t0=3.20061E-02 dt=2.22397E-03 cause=growth
+    thermal nres=113 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=9.67867E-07 status=ok
+  step-end status=accepted
+  step=32 attempt=1 t0=3.42301E-02 dt=9.37153E-04 cause=growth
+    thermal nres=117 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=8.65904E-07 status=ok
+  step-end status=accepted
+  step=33 attempt=1 t0=3.51672E-02 dt=1.93817E-03 cause=thermal
+    thermal nres=120 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.22972E-07 status=ok
+  step-end status=accepted
+  step=34 attempt=1 t0=3.71054E-02 dt=1.12458E-03 cause=growth
+    thermal nres=123 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=9.94895E-07 status=ok
+  step-end status=accepted
+  step=35 attempt=1 t0=3.82300E-02 dt=2.31969E-03 cause=thermal
+    thermal nres=127 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=8.09344E-07 status=ok
+  step-end status=accepted
+  step=36 attempt=1 t0=4.05497E-02 dt=1.32953E-03 cause=thermal
+    thermal nres=130 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=6.98552E-07 status=ok
+  step-end status=accepted
+  step=37 attempt=1 t0=4.18792E-02 dt=2.49865E-03 cause=thermal
+    thermal nres=134 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.28171E-07 status=ok
+  step-end status=accepted
+  step=38 attempt=1 t0=4.43778E-02 dt=1.50567E-03 cause=thermal
+    thermal nres=137 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=9.17027E-07 status=ok
+  step-end status=accepted
+  step=39 attempt=1 t0=4.58835E-02 dt=2.69830E-03 cause=thermal
+    thermal nres=141 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=9.89328E-07 status=ok
+  step-end status=accepted
+  step=40 attempt=1 t0=4.85818E-02 dt=1.72642E-03 cause=thermal
+    thermal nres=144 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.44995E-07 status=ok
+  step-end status=accepted
+  step=41 attempt=1 t0=5.03082E-02 dt=2.95859E-03 cause=thermal
+    thermal nres=148 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=8.94465E-07 status=ok
+  step-end status=accepted
+  step=42 attempt=1 t0=5.32668E-02 dt=2.01949E-03 cause=thermal
+    thermal nres=152 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.57175E-07 status=ok
+  step-end status=accepted
+  step=43 attempt=1 t0=5.52863E-02 dt=3.30966E-03 cause=thermal
+    thermal nres=156 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=75 dscg=75 amg=0 rel_res=9.45717E-07 status=ok
+  step-end status=accepted
+  step=44 attempt=1 t0=5.85960E-02 dt=2.42339E-03 cause=growth
+    thermal nres=159 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.31244E-07 status=ok
+  step-end status=accepted
+  step=45 attempt=1 t0=6.10194E-02 dt=3.80194E-03 cause=thermal
+    thermal nres=162 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=8.59218E-07 status=ok
+  step-end status=accepted
+  step=46 attempt=1 t0=6.48213E-02 dt=2.90807E-03 cause=growth
+    thermal nres=166 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=7.64941E-07 status=ok
+  step-end status=accepted
+  step=47 attempt=1 t0=6.77294E-02 dt=4.56233E-03 cause=growth
+    thermal nres=170 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=74 dscg=74 amg=0 rel_res=6.84017E-07 status=ok
+  step-end status=accepted
+  step=48 attempt=1 t0=7.22917E-02 dt=3.48968E-03 cause=growth
+    thermal nres=174 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.79082E-07 status=ok
+  step-end status=accepted
+  step=49 attempt=1 t0=7.57814E-02 dt=5.20833E-03 cause=cfl
+    thermal nres=178 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=8.32616E-07 status=ok
+  step-end status=accepted
+  step=50 attempt=1 t0=8.09897E-02 dt=4.18762E-03 cause=growth
+    thermal nres=182 npc=3 nnr=2 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=9.65261E-07 status=ok
+  step-end status=accepted
+  step=51 attempt=1 t0=8.51773E-02 dt=5.20833E-03 cause=cfl
+    thermal nres=191 npc=4 nnr=3 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=69 dscg=65 amg=4 rel_res=2.17006E-07 status=ok
+  step-end status=accepted
+  step=52 attempt=1 t0=9.03857E-02 dt=2.02849E-03 cause=thermal
+    thermal nres=199 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=54 dscg=49 amg=5 rel_res=1.03999E-07 status=ok
+  step-end status=accepted
+  step=53 attempt=1 t0=9.24142E-02 dt=2.39600E-03 cause=thermal
+    thermal nres=202 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=95 dscg=95 amg=0 rel_res=9.96621E-07 status=ok
+  step-end status=accepted
+  step=54 attempt=1 t0=9.48102E-02 dt=2.43418E-03 cause=growth
+    thermal nres=205 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.38374E-07 status=ok
+  step-end status=accepted
+  step=55 attempt=1 t0=9.72443E-02 dt=2.87520E-03 cause=growth
+    thermal nres=209 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.21857E-07 status=ok
+  step-end status=accepted
+  step=56 attempt=1 t0=1.00120E-01 dt=2.92102E-03 cause=growth
+    thermal nres=213 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=8.52349E-07 status=ok
+  step-end status=accepted
+  step=57 attempt=1 t0=1.03041E-01 dt=3.45024E-03 cause=growth
+    thermal nres=217 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.35553E-07 status=ok
+  step-end status=accepted
+  step=58 attempt=1 t0=1.06491E-01 dt=3.50522E-03 cause=growth
+    thermal nres=221 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=9.91506E-07 status=ok
+  step-end status=accepted
+  step=59 attempt=1 t0=1.09996E-01 dt=4.14029E-03 cause=growth
+    thermal nres=225 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=96 dscg=96 amg=0 rel_res=7.04210E-07 status=ok
+  step-end status=accepted
+  step=60 attempt=1 t0=1.14136E-01 dt=4.20627E-03 cause=growth
+    thermal nres=229 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=98 dscg=98 amg=0 rel_res=9.58613E-07 status=ok
+  step-end status=accepted
+  step=61 attempt=1 t0=1.18343E-01 dt=4.96835E-03 cause=growth
+    thermal nres=233 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=99 dscg=99 amg=0 rel_res=7.76110E-07 status=ok
+  step-end status=accepted
+  step=62 attempt=1 t0=1.23311E-01 dt=5.04752E-03 cause=growth
+    thermal nres=237 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=56 amg=4 rel_res=5.91257E-07 status=ok
+  step-end status=accepted
+  step=63 attempt=1 t0=1.28358E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=241 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=55 dscg=51 amg=4 rel_res=9.64999E-07 status=ok
+  step-end status=accepted
+  step=64 attempt=1 t0=1.33567E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=245 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=55 dscg=51 amg=4 rel_res=8.76980E-07 status=ok
+  step-end status=accepted
+  step=65 attempt=1 t0=1.38775E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=249 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=99 dscg=99 amg=0 rel_res=7.80515E-07 status=ok
+  step-end status=accepted
+  step=66 attempt=1 t0=1.43983E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=253 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=56 dscg=52 amg=4 rel_res=4.82661E-07 status=ok
+  step-end status=accepted
+  step=67 attempt=1 t0=1.49192E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=257 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=98 dscg=98 amg=0 rel_res=7.06464E-07 status=ok
+  step-end status=accepted
+  step=68 attempt=1 t0=1.54400E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=261 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=63 dscg=59 amg=4 rel_res=2.92674E-07 status=ok
+  step-end status=accepted
+  step=69 attempt=1 t0=1.59608E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=265 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=62 dscg=58 amg=4 rel_res=3.45261E-07 status=ok
+  step-end status=accepted
+  step=70 attempt=1 t0=1.64817E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=270 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=56 amg=4 rel_res=4.87642E-07 status=ok
+  step-end status=accepted
+  step=71 attempt=1 t0=1.70025E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=275 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=55 amg=4 rel_res=5.31649E-07 status=ok
+  step-end status=accepted
+  step=72 attempt=1 t0=1.75233E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=279 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=55 amg=4 rel_res=5.12238E-07 status=ok
+  step-end status=accepted
+  step=73 attempt=1 t0=1.80442E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=284 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=55 amg=4 rel_res=4.88386E-07 status=ok
+  step-end status=accepted
+  step=74 attempt=1 t0=1.85650E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=289 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=55 amg=4 rel_res=4.64433E-07 status=ok
+  step-end status=accepted
+  step=75 attempt=1 t0=1.90858E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=294 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=56 amg=4 rel_res=3.65201E-07 status=ok
+  step-end status=accepted
+  step=76 attempt=1 t0=1.96067E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=299 npc=5 nnr=4 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=33 dscg=28 amg=5 rel_res=7.65201E-07 status=ok
+  step-end status=accepted
+  step=77 attempt=1 t0=2.01275E-01 dt=4.17246E-03 cause=thermal
+    thermal nres=307 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=32 dscg=27 amg=5 rel_res=8.44794E-07 status=ok
+  step-end status=accepted
+  step=78 attempt=1 t0=2.05448E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=310 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=97 dscg=97 amg=0 rel_res=9.25538E-07 status=ok
+  step-end status=accepted
+  step=79 attempt=1 t0=2.10656E-01 dt=5.00695E-03 cause=growth
+    thermal nres=313 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=9.91205E-07 status=ok
+  step-end status=accepted
+  step=80 attempt=1 t0=2.15663E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=316 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.02178E-07 status=ok
+  step-end status=accepted
+  step=81 attempt=1 t0=2.20871E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=319 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=7.72940E-07 status=ok
+  step-end status=accepted
+  step=82 attempt=1 t0=2.26080E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=322 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=9.34799E-07 status=ok
+  step-end status=accepted
+  step=83 attempt=1 t0=2.31288E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=325 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.84783E-07 status=ok
+  step-end status=accepted
+  step=84 attempt=1 t0=2.36496E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=328 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=9.88088E-07 status=ok
+  step-end status=accepted
+  step=85 attempt=1 t0=2.41705E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=331 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=55 amg=4 rel_res=4.21077E-07 status=ok
+  step-end status=accepted
+  step=86 attempt=1 t0=2.46913E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=334 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=53 amg=4 rel_res=6.20987E-07 status=ok
+  step-end status=accepted
+  step=87 attempt=1 t0=2.52121E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=337 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=55 dscg=51 amg=4 rel_res=6.08663E-07 status=ok
+  step-end status=accepted
+  step=88 attempt=1 t0=2.57330E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=340 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=54 dscg=50 amg=4 rel_res=8.74242E-07 status=ok
+  step-end status=accepted
+  step=89 attempt=1 t0=2.62538E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=343 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=48 amg=5 rel_res=1.23154E-07 status=ok
+  step-end status=accepted
+  step=90 attempt=1 t0=2.67746E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=346 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=52 dscg=47 amg=5 rel_res=1.40651E-07 status=ok
+  step-end status=accepted
+  step=91 attempt=1 t0=2.72955E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=349 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=52 dscg=47 amg=5 rel_res=1.45515E-07 status=ok
+  step-end status=accepted
+  step=92 attempt=1 t0=2.78163E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=352 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=52 dscg=47 amg=5 rel_res=1.49245E-07 status=ok
+  step-end status=accepted
+  step=93 attempt=1 t0=2.83371E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=355 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=52 dscg=47 amg=5 rel_res=1.50378E-07 status=ok
+  step-end status=accepted
+  step=94 attempt=1 t0=2.88580E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=358 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=51 dscg=46 amg=5 rel_res=1.56296E-07 status=ok
+  step-end status=accepted
+  step=95 attempt=1 t0=2.93788E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=361 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=51 dscg=46 amg=5 rel_res=1.54659E-07 status=ok
+  step-end status=accepted
+  step=96 attempt=1 t0=2.98996E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=364 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=51 dscg=46 amg=5 rel_res=1.52494E-07 status=ok
+  step-end status=accepted
+  step=97 attempt=1 t0=3.04205E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=367 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=51 dscg=46 amg=5 rel_res=1.49577E-07 status=ok
+  step-end status=accepted
+  step=98 attempt=1 t0=3.09413E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=370 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.79882E-07 status=ok
+  step-end status=accepted
+  step=99 attempt=1 t0=3.14621E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=373 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.72836E-07 status=ok
+  step-end status=accepted
+  step=100 attempt=1 t0=3.19830E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=376 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.73840E-07 status=ok
+  step-end status=accepted
+  step=101 attempt=1 t0=3.25038E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=379 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.72014E-07 status=ok
+  step-end status=accepted
+  step=102 attempt=1 t0=3.30246E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=382 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.68992E-07 status=ok
+  step-end status=accepted
+  step=103 attempt=1 t0=3.35455E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=385 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.65255E-07 status=ok
+  step-end status=accepted
+  step=104 attempt=1 t0=3.40663E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=388 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.60986E-07 status=ok
+  step-end status=accepted
+  step=105 attempt=1 t0=3.45871E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=391 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.55521E-07 status=ok
+  step-end status=accepted
+  step=106 attempt=1 t0=3.51080E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=396 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=29 dscg=23 amg=6 rel_res=1.12709E-07 status=ok
+  step-end status=accepted
+  step=107 attempt=1 t0=3.56288E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=401 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=27 dscg=21 amg=6 rel_res=1.20032E-07 status=ok
+  step-end status=accepted
+  step=108 attempt=1 t0=3.61496E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=406 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=61 dscg=57 amg=4 rel_res=2.76615E-07 status=ok
+  step-end status=accepted
+  step=109 attempt=1 t0=3.66705E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=411 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=8.28310E-07 status=ok
+  step-end status=accepted
+  step=110 attempt=1 t0=3.71913E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=416 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.72407E-07 status=ok
+  step-end status=accepted
+  step=111 attempt=1 t0=3.77121E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=421 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.70693E-07 status=ok
+  step-end status=accepted
+  step=112 attempt=1 t0=3.82330E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=424 npc=6 nnr=5 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=7.68587E-07 status=ok
+  step-end status=accepted
+  step=113 attempt=1 t0=3.87538E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=432 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=9.85980E-07 status=ok
+  step-end status=accepted
+  step=114 attempt=1 t0=3.92746E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=434 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.89182E-07 status=ok
+  step-end status=accepted
+  step=115 attempt=1 t0=3.97955E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=436 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=7.74327E-07 status=ok
+  step-end status=accepted
+  step=116 attempt=1 t0=4.03163E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=438 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=7.94438E-07 status=ok
+  step-end status=accepted
+  step=117 attempt=1 t0=4.08371E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=440 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=7.75758E-07 status=ok
+  step-end status=accepted
+  step=118 attempt=1 t0=4.13580E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=442 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=9.86997E-07 status=ok
+  step-end status=accepted
+  step=119 attempt=1 t0=4.18788E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=445 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.07285E-07 status=ok
+  step-end status=accepted
+  step=120 attempt=1 t0=4.23996E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=448 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.29538E-07 status=ok
+  step-end status=accepted
+  step=121 attempt=1 t0=4.29205E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=451 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.43888E-07 status=ok
+  step-end status=accepted
+  step=122 attempt=1 t0=4.34413E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=453 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.54839E-07 status=ok
+  step-end status=accepted
+  step=123 attempt=1 t0=4.39621E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=456 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.63539E-07 status=ok
+  step-end status=accepted
+  step=124 attempt=1 t0=4.44830E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=458 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.69084E-07 status=ok
+  step-end status=accepted
+  step=125 attempt=1 t0=4.50038E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=461 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.70116E-07 status=ok
+  step-end status=accepted
+  step=126 attempt=1 t0=4.55246E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=463 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.67993E-07 status=ok
+  step-end status=accepted
+  step=127 attempt=1 t0=4.60454E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=466 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.62453E-07 status=ok
+  step-end status=accepted
+  step=128 attempt=1 t0=4.65663E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=468 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.54462E-07 status=ok
+  step-end status=accepted
+  step=129 attempt=1 t0=4.70871E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=470 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=52 dscg=47 amg=5 rel_res=1.77960E-07 status=ok
+  step-end status=accepted
+  step=130 attempt=1 t0=4.76079E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=473 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=48 amg=5 rel_res=1.52558E-07 status=ok
+  step-end status=accepted
+  step=131 attempt=1 t0=4.81288E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=476 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=48 amg=5 rel_res=1.45609E-07 status=ok
+  step-end status=accepted
+  step=132 attempt=1 t0=4.86496E-01 dt=4.83752E-03 cause=output
+    thermal nres=478 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.52397E-07 status=ok
+  step-end status=accepted
+  step=133 attempt=1 t0=4.91334E-01 dt=4.49311E-03 cause=output
+    thermal nres=480 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.75700E-07 status=ok
+  step-end status=accepted
+  step=134 attempt=1 t0=4.95827E-01 dt=4.17322E-03 cause=output
+    thermal nres=483 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.03178E-07 status=ok
+  step-end status=accepted
+  output t=5.00000E-01
+  step=135 attempt=1 t0=5.00000E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=486 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.73452E-07 status=ok
+  step-end status=accepted
+  step=136 attempt=1 t0=5.05208E-01 dt=5.00786E-03 cause=growth
+    thermal nres=488 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.40076E-07 status=ok
+  step-end status=accepted
+  step=137 attempt=1 t0=5.10216E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=491 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.91790E-07 status=ok
+  step-end status=accepted
+  step=138 attempt=1 t0=5.15425E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=494 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=8.14441E-07 status=ok
+  step-end status=accepted
+  step=139 attempt=1 t0=5.20633E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=497 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.57715E-07 status=ok
+  step-end status=accepted
+  step=140 attempt=1 t0=5.25841E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=500 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.74377E-07 status=ok
+  step-end status=accepted
+  step=141 attempt=1 t0=5.31050E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=503 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=7.72813E-07 status=ok
+  step-end status=accepted
+  step=142 attempt=1 t0=5.36258E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=506 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.13883E-07 status=ok
+  step-end status=accepted
+  step=143 attempt=1 t0=5.41466E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=509 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.30002E-07 status=ok
+  step-end status=accepted
+  step=144 attempt=1 t0=5.46675E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=512 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.85187E-07 status=ok
+  step-end status=accepted
+  step=145 attempt=1 t0=5.51883E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=516 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=8.17583E-07 status=ok
+  step-end status=accepted
+  step=146 attempt=1 t0=5.57091E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=521 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=20 dscg=14 amg=6 rel_res=2.05803E-07 status=ok
+  step-end status=accepted
+  step=147 attempt=1 t0=5.62300E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=526 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=19 dscg=13 amg=6 rel_res=2.12630E-07 status=ok
+  step-end status=accepted
+  step=148 attempt=1 t0=5.67508E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=531 npc=7 nnr=6 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=96 dscg=96 amg=0 rel_res=8.21140E-07 status=ok
+  step-end status=accepted
+  step=149 attempt=1 t0=5.72716E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=538 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.61804E-07 status=ok
+  step-end status=accepted
+  step=150 attempt=1 t0=5.77924E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=540 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=7.87836E-07 status=ok
+  step-end status=accepted
+  step=151 attempt=1 t0=5.83133E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=542 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.15583E-07 status=ok
+  step-end status=accepted
+  step=152 attempt=1 t0=5.88341E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=544 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.39161E-07 status=ok
+  step-end status=accepted
+  step=153 attempt=1 t0=5.93549E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=546 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=2.98815E-07 status=ok
+  step-end status=accepted
+  step=154 attempt=1 t0=5.98758E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=548 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=3.79776E-07 status=ok
+  step-end status=accepted
+  step=155 attempt=1 t0=6.03966E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=550 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=4.00337E-07 status=ok
+  step-end status=accepted
+  step=156 attempt=1 t0=6.09174E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=552 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.29014E-07 status=ok
+  step-end status=accepted
+  step=157 attempt=1 t0=6.14383E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=554 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.37496E-07 status=ok
+  step-end status=accepted
+  step=158 attempt=1 t0=6.19591E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=556 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.38419E-07 status=ok
+  step-end status=accepted
+  step=159 attempt=1 t0=6.24799E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=558 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.31619E-07 status=ok
+  step-end status=accepted
+  step=160 attempt=1 t0=6.30008E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=560 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=4.12259E-07 status=ok
+  step-end status=accepted
+  step=161 attempt=1 t0=6.35216E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=562 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=3.91818E-07 status=ok
+  step-end status=accepted
+  step=162 attempt=1 t0=6.40424E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=564 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.35190E-07 status=ok
+  step-end status=accepted
+  step=163 attempt=1 t0=6.45633E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=566 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.79352E-07 status=ok
+  step-end status=accepted
+  step=164 attempt=1 t0=6.50841E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=568 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=2.07657E-07 status=ok
+  step-end status=accepted
+  step=165 attempt=1 t0=6.56049E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=570 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=48 amg=5 rel_res=1.44659E-07 status=ok
+  step-end status=accepted
+  step=166 attempt=1 t0=6.61258E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=572 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=56 dscg=52 amg=4 rel_res=9.65566E-07 status=ok
+  step-end status=accepted
+  step=167 attempt=1 t0=6.66466E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=574 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=72 dscg=69 amg=3 rel_res=8.22344E-07 status=ok
+  step-end status=accepted
+  step=168 attempt=1 t0=6.71674E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=576 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=96 dscg=96 amg=0 rel_res=8.20999E-07 status=ok
+  step-end status=accepted
+  step=169 attempt=1 t0=6.76883E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=578 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=95 dscg=95 amg=0 rel_res=9.31351E-07 status=ok
+  step-end status=accepted
+  step=170 attempt=1 t0=6.82091E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=580 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=95 dscg=95 amg=0 rel_res=8.51150E-07 status=ok
+  step-end status=accepted
+  step=171 attempt=1 t0=6.87299E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=582 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.70799E-07 status=ok
+  step-end status=accepted
+  step=172 attempt=1 t0=6.92508E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=584 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=9.15435E-07 status=ok
+  step-end status=accepted
+  step=173 attempt=1 t0=6.97716E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=587 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=8.63213E-07 status=ok
+  step-end status=accepted
+  step=174 attempt=1 t0=7.02924E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=589 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=8.17181E-07 status=ok
+  step-end status=accepted
+  step=175 attempt=1 t0=7.08133E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=592 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=7.69053E-07 status=ok
+  step-end status=accepted
+  step=176 attempt=1 t0=7.13341E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=594 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=7.20236E-07 status=ok
+  step-end status=accepted
+  step=177 attempt=1 t0=7.18549E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=597 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=6.72819E-07 status=ok
+  step-end status=accepted
+  step=178 attempt=1 t0=7.23758E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=600 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.76693E-07 status=ok
+  step-end status=accepted
+  step=179 attempt=1 t0=7.28966E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=602 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=8.59308E-07 status=ok
+  step-end status=accepted
+  step=180 attempt=1 t0=7.34174E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=604 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.19610E-07 status=ok
+  step-end status=accepted
+  step=181 attempt=1 t0=7.39383E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=607 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.07281E-07 status=ok
+  step-end status=accepted
+  step=182 attempt=1 t0=7.44591E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=610 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=7.10831E-07 status=ok
+  step-end status=accepted
+  step=183 attempt=1 t0=7.49799E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=612 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=7.83933E-07 status=ok
+  step-end status=accepted
+  step=184 attempt=1 t0=7.55008E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=615 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.02807E-07 status=ok
+  step-end status=accepted
+  step=185 attempt=1 t0=7.60216E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=618 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.06600E-07 status=ok
+  step-end status=accepted
+  step=186 attempt=1 t0=7.65424E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=621 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.00322E-07 status=ok
+  step-end status=accepted
+  step=187 attempt=1 t0=7.70633E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=623 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.61247E-07 status=ok
+  step-end status=accepted
+  step=188 attempt=1 t0=7.75841E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=626 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.47479E-07 status=ok
+  step-end status=accepted
+  step=189 attempt=1 t0=7.81049E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=629 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.99483E-07 status=ok
+  step-end status=accepted
+  step=190 attempt=1 t0=7.86258E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=632 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.98108E-07 status=ok
+  step-end status=accepted
+  step=191 attempt=1 t0=7.91466E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=634 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=9.59878E-07 status=ok
+  step-end status=accepted
+  step=192 attempt=1 t0=7.96674E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=637 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.17342E-07 status=ok
+  step-end status=accepted
+  step=193 attempt=1 t0=8.01883E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=640 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.40857E-07 status=ok
+  step-end status=accepted
+  step=194 attempt=1 t0=8.07091E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=643 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=48 dscg=43 amg=5 rel_res=2.64108E-07 status=ok
+  step-end status=accepted
+  step=195 attempt=1 t0=8.12299E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=647 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=33 dscg=27 amg=6 rel_res=1.11908E-07 status=ok
+  step-end status=accepted
+  step=196 attempt=1 t0=8.17508E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=651 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=32 dscg=26 amg=6 rel_res=1.17537E-07 status=ok
+  step-end status=accepted
+  step=197 attempt=1 t0=8.22716E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=655 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=94 dscg=94 amg=0 rel_res=9.13610E-07 status=ok
+  step-end status=accepted
+  step=198 attempt=1 t0=8.27924E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=659 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.92985E-07 status=ok
+  step-end status=accepted
+  step=199 attempt=1 t0=8.33133E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=662 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.00194E-07 status=ok
+  step-end status=accepted
+  step=200 attempt=1 t0=8.38341E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=666 npc=8 nnr=7 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=9.80063E-07 status=ok
+  step-end status=accepted
+  step=201 attempt=1 t0=8.43549E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=673 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.76917E-07 status=ok
+  step-end status=accepted
+  step=202 attempt=1 t0=8.48758E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=675 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.65011E-07 status=ok
+  step-end status=accepted
+  step=203 attempt=1 t0=8.53966E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=677 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.85467E-07 status=ok
+  step-end status=accepted
+  step=204 attempt=1 t0=8.59174E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=679 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.76611E-07 status=ok
+  step-end status=accepted
+  step=205 attempt=1 t0=8.64383E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=681 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.46306E-07 status=ok
+  step-end status=accepted
+  step=206 attempt=1 t0=8.69591E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=683 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.89815E-07 status=ok
+  step-end status=accepted
+  step=207 attempt=1 t0=8.74799E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=685 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.90389E-07 status=ok
+  step-end status=accepted
+  step=208 attempt=1 t0=8.80008E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=687 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.61521E-07 status=ok
+  step-end status=accepted
+  step=209 attempt=1 t0=8.85216E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=689 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.26200E-07 status=ok
+  step-end status=accepted
+  step=210 attempt=1 t0=8.90424E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=691 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=90 dscg=90 amg=0 rel_res=9.75765E-07 status=ok
+  step-end status=accepted
+  step=211 attempt=1 t0=8.95633E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=693 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.26544E-07 status=ok
+  step-end status=accepted
+  step=212 attempt=1 t0=9.00841E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=695 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.79128E-07 status=ok
+  step-end status=accepted
+  step=213 attempt=1 t0=9.06049E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=697 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.71931E-07 status=ok
+  step-end status=accepted
+  step=214 attempt=1 t0=9.11258E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=699 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.68623E-07 status=ok
+  step-end status=accepted
+  step=215 attempt=1 t0=9.16466E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=701 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.46364E-07 status=ok
+  step-end status=accepted
+  step=216 attempt=1 t0=9.21674E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=703 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=8.49041E-07 status=ok
+  step-end status=accepted
+  step=217 attempt=1 t0=9.26883E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=705 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.22231E-07 status=ok
+  step-end status=accepted
+  step=218 attempt=1 t0=9.32091E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=707 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.77183E-07 status=ok
+  step-end status=accepted
+  step=219 attempt=1 t0=9.37299E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=709 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=8.45735E-07 status=ok
+  step-end status=accepted
+  step=220 attempt=1 t0=9.42508E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=711 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.01117E-07 status=ok
+  step-end status=accepted
+  step=221 attempt=1 t0=9.47716E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=713 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.42500E-07 status=ok
+  step-end status=accepted
+  step=222 attempt=1 t0=9.52924E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=715 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=92 dscg=92 amg=0 rel_res=9.82682E-07 status=ok
+  step-end status=accepted
+  step=223 attempt=1 t0=9.58133E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=717 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.53049E-07 status=ok
+  step-end status=accepted
+  step=224 attempt=1 t0=9.63341E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=719 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.62615E-07 status=ok
+  step-end status=accepted
+  step=225 attempt=1 t0=9.68549E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=721 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.63443E-07 status=ok
+  step-end status=accepted
+  step=226 attempt=1 t0=9.73758E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=723 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.58487E-07 status=ok
+  step-end status=accepted
+  step=227 attempt=1 t0=9.78966E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=725 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.50961E-07 status=ok
+  step-end status=accepted
+  step=228 attempt=1 t0=9.84174E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=727 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.46852E-07 status=ok
+  step-end status=accepted
+  step=229 attempt=1 t0=9.89383E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=729 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.49644E-07 status=ok
+  step-end status=accepted
+  step=230 attempt=1 t0=9.94591E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=731 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=93 dscg=93 amg=0 rel_res=7.59453E-07 status=ok
+  step-end status=accepted
+  step=231 attempt=1 t0=9.99799E-01 dt=5.20833E-03 cause=cfl
+    thermal nres=733 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=3.24541E-07 status=ok
+  step-end status=accepted
+  step=232 attempt=1 t0=1.00501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=735 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=3.37907E-07 status=ok
+  step-end status=accepted
+  step=233 attempt=1 t0=1.01022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=737 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=3.99293E-07 status=ok
+  step-end status=accepted
+  step=234 attempt=1 t0=1.01542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=739 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.11816E-07 status=ok
+  step-end status=accepted
+  step=235 attempt=1 t0=1.02063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=741 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.24410E-07 status=ok
+  step-end status=accepted
+  step=236 attempt=1 t0=1.02584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=743 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.37027E-07 status=ok
+  step-end status=accepted
+  step=237 attempt=1 t0=1.03105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=745 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.48520E-07 status=ok
+  step-end status=accepted
+  step=238 attempt=1 t0=1.03626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=747 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.58679E-07 status=ok
+  step-end status=accepted
+  step=239 attempt=1 t0=1.04147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=749 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.65441E-07 status=ok
+  step-end status=accepted
+  step=240 attempt=1 t0=1.04667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=751 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.68993E-07 status=ok
+  step-end status=accepted
+  step=241 attempt=1 t0=1.05188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=753 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=4.67729E-07 status=ok
+  step-end status=accepted
+  step=242 attempt=1 t0=1.05709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=755 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.82567E-07 status=ok
+  step-end status=accepted
+  step=243 attempt=1 t0=1.06230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=757 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.76678E-07 status=ok
+  step-end status=accepted
+  step=244 attempt=1 t0=1.06751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=759 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.72431E-07 status=ok
+  step-end status=accepted
+  step=245 attempt=1 t0=1.07272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=761 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.60789E-07 status=ok
+  step-end status=accepted
+  step=246 attempt=1 t0=1.07792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=763 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.46273E-07 status=ok
+  step-end status=accepted
+  step=247 attempt=1 t0=1.08313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=765 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.29112E-07 status=ok
+  step-end status=accepted
+  step=248 attempt=1 t0=1.08834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=767 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=3.06857E-07 status=ok
+  step-end status=accepted
+  step=249 attempt=1 t0=1.09355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=769 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=2.23318E-07 status=ok
+  step-end status=accepted
+  step=250 attempt=1 t0=1.09876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=771 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=2.03361E-07 status=ok
+  step-end status=accepted
+  step=251 attempt=1 t0=1.10397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=773 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=54 dscg=49 amg=5 rel_res=1.33495E-07 status=ok
+  step-end status=accepted
+  step=252 attempt=1 t0=1.10917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=775 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=56 dscg=52 amg=4 rel_res=8.00955E-07 status=ok
+  step-end status=accepted
+  step=253 attempt=1 t0=1.11438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=777 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=91 dscg=91 amg=0 rel_res=9.97939E-07 status=ok
+  step-end status=accepted
+  step=254 attempt=1 t0=1.11959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=780 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=17 dscg=11 amg=6 rel_res=2.53598E-07 status=ok
+  step-end status=accepted
+  step=255 attempt=1 t0=1.12480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=783 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=11 dscg=5 amg=6 rel_res=2.76184E-07 status=ok
+  step-end status=accepted
+  step=256 attempt=1 t0=1.13001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=785 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.61764E-07 status=ok
+  step-end status=accepted
+  step=257 attempt=1 t0=1.13522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=787 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.72261E-07 status=ok
+  step-end status=accepted
+  step=258 attempt=1 t0=1.14042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=790 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.98075E-07 status=ok
+  step-end status=accepted
+  step=259 attempt=1 t0=1.14563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=792 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.06996E-07 status=ok
+  step-end status=accepted
+  step=260 attempt=1 t0=1.15084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=795 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.86622E-07 status=ok
+  step-end status=accepted
+  step=261 attempt=1 t0=1.15605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=798 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.12747E-07 status=ok
+  step-end status=accepted
+  step=262 attempt=1 t0=1.16126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=803 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=6.99483E-07 status=ok
+  step-end status=accepted
+  step=263 attempt=1 t0=1.16647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=805 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.78006E-07 status=ok
+  step-end status=accepted
+  step=264 attempt=1 t0=1.17167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=807 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.48049E-07 status=ok
+  step-end status=accepted
+  step=265 attempt=1 t0=1.17688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=809 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.21204E-07 status=ok
+  step-end status=accepted
+  step=266 attempt=1 t0=1.18209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=811 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.98103E-07 status=ok
+  step-end status=accepted
+  step=267 attempt=1 t0=1.18730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=813 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.75021E-07 status=ok
+  step-end status=accepted
+  step=268 attempt=1 t0=1.19251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=816 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.53215E-07 status=ok
+  step-end status=accepted
+  step=269 attempt=1 t0=1.19772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=818 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.33333E-07 status=ok
+  step-end status=accepted
+  step=270 attempt=1 t0=1.20292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=821 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.09649E-07 status=ok
+  step-end status=accepted
+  step=271 attempt=1 t0=1.20813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=823 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.75536E-07 status=ok
+  step-end status=accepted
+  step=272 attempt=1 t0=1.21334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=825 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.29973E-07 status=ok
+  step-end status=accepted
+  step=273 attempt=1 t0=1.21855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=827 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=9.67601E-07 status=ok
+  step-end status=accepted
+  step=274 attempt=1 t0=1.22376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=829 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.84011E-07 status=ok
+  step-end status=accepted
+  step=275 attempt=1 t0=1.22897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=831 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.42016E-07 status=ok
+  step-end status=accepted
+  step=276 attempt=1 t0=1.23417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=833 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=8.39177E-07 status=ok
+  step-end status=accepted
+  step=277 attempt=1 t0=1.23938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=835 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.84571E-07 status=ok
+  step-end status=accepted
+  step=278 attempt=1 t0=1.24459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=837 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.96279E-07 status=ok
+  step-end status=accepted
+  step=279 attempt=1 t0=1.24980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=840 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.08541E-07 status=ok
+  step-end status=accepted
+  step=280 attempt=1 t0=1.25501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=842 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.19608E-07 status=ok
+  step-end status=accepted
+  step=281 attempt=1 t0=1.26022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=844 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.25802E-07 status=ok
+  step-end status=accepted
+  step=282 attempt=1 t0=1.26542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=846 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.41332E-07 status=ok
+  step-end status=accepted
+  step=283 attempt=1 t0=1.27063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=849 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.53273E-07 status=ok
+  step-end status=accepted
+  step=284 attempt=1 t0=1.27584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=851 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.58500E-07 status=ok
+  step-end status=accepted
+  step=285 attempt=1 t0=1.28105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=853 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.68103E-07 status=ok
+  step-end status=accepted
+  step=286 attempt=1 t0=1.28626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=855 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.84971E-07 status=ok
+  step-end status=accepted
+  step=287 attempt=1 t0=1.29147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=858 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.85497E-07 status=ok
+  step-end status=accepted
+  step=288 attempt=1 t0=1.29667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=860 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.87981E-07 status=ok
+  step-end status=accepted
+  step=289 attempt=1 t0=1.30188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=863 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.04362E-07 status=ok
+  step-end status=accepted
+  step=290 attempt=1 t0=1.30709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=865 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.08549E-07 status=ok
+  step-end status=accepted
+  step=291 attempt=1 t0=1.31230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=868 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.03035E-07 status=ok
+  step-end status=accepted
+  step=292 attempt=1 t0=1.31751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=870 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.19212E-07 status=ok
+  step-end status=accepted
+  step=293 attempt=1 t0=1.32272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=873 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.29942E-07 status=ok
+  step-end status=accepted
+  step=294 attempt=1 t0=1.32792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=875 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.33530E-07 status=ok
+  step-end status=accepted
+  step=295 attempt=1 t0=1.33313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=878 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.18744E-07 status=ok
+  step-end status=accepted
+  step=296 attempt=1 t0=1.33834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=880 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.47102E-07 status=ok
+  step-end status=accepted
+  step=297 attempt=1 t0=1.34355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=882 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.36076E-07 status=ok
+  step-end status=accepted
+  step=298 attempt=1 t0=1.34876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=884 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.27970E-07 status=ok
+  step-end status=accepted
+  step=299 attempt=1 t0=1.35397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=887 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.16740E-07 status=ok
+  step-end status=accepted
+  step=300 attempt=1 t0=1.35917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=889 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.96988E-07 status=ok
+  step-end status=accepted
+  step=301 attempt=1 t0=1.36438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=891 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.88826E-07 status=ok
+  step-end status=accepted
+  step=302 attempt=1 t0=1.36959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=893 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.45128E-07 status=ok
+  step-end status=accepted
+  step=303 attempt=1 t0=1.37480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=895 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.24016E-07 status=ok
+  step-end status=accepted
+  step=304 attempt=1 t0=1.38001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=897 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.49100E-07 status=ok
+  step-end status=accepted
+  step=305 attempt=1 t0=1.38522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=900 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.70718E-07 status=ok
+  step-end status=accepted
+  step=306 attempt=1 t0=1.39042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=902 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=7.54485E-07 status=ok
+  step-end status=accepted
+  step=307 attempt=1 t0=1.39563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=904 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=8.99755E-07 status=ok
+  step-end status=accepted
+  step=308 attempt=1 t0=1.40084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=906 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.92272E-07 status=ok
+  step-end status=accepted
+  step=309 attempt=1 t0=1.40605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=908 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.57427E-07 status=ok
+  step-end status=accepted
+  step=310 attempt=1 t0=1.41126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=910 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.98714E-07 status=ok
+  step-end status=accepted
+  step=311 attempt=1 t0=1.41647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=913 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.73655E-07 status=ok
+  step-end status=accepted
+  step=312 attempt=1 t0=1.42167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=915 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.09804E-07 status=ok
+  step-end status=accepted
+  step=313 attempt=1 t0=1.42688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=917 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=6.86268E-07 status=ok
+  step-end status=accepted
+  step=314 attempt=1 t0=1.43209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=919 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.02717E-07 status=ok
+  step-end status=accepted
+  step=315 attempt=1 t0=1.43730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=921 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.15149E-07 status=ok
+  step-end status=accepted
+  step=316 attempt=1 t0=1.44251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=923 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.37818E-07 status=ok
+  step-end status=accepted
+  step=317 attempt=1 t0=1.44772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=925 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.84494E-07 status=ok
+  step-end status=accepted
+  step=318 attempt=1 t0=1.45292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=928 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.93349E-07 status=ok
+  step-end status=accepted
+  step=319 attempt=1 t0=1.45813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=931 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.23831E-07 status=ok
+  step-end status=accepted
+  step=320 attempt=1 t0=1.46334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=933 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.43242E-07 status=ok
+  step-end status=accepted
+  step=321 attempt=1 t0=1.46855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=936 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.88712E-07 status=ok
+  step-end status=accepted
+  step=322 attempt=1 t0=1.47376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=939 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.68581E-07 status=ok
+  step-end status=accepted
+  step=323 attempt=1 t0=1.47897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=941 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=10 dscg=4 amg=6 rel_res=4.08595E-07 status=ok
+  step-end status=accepted
+  step=324 attempt=1 t0=1.48417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=944 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=11 dscg=5 amg=6 rel_res=3.79843E-07 status=ok
+  step-end status=accepted
+  step=325 attempt=1 t0=1.48938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=947 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=2.24585E-07 status=ok
+  step-end status=accepted
+  step=326 attempt=1 t0=1.49459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=949 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.29641E-07 status=ok
+  step-end status=accepted
+  step=327 attempt=1 t0=1.49980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=952 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=9.55513E-07 status=ok
+  step-end status=accepted
+  step=328 attempt=1 t0=1.50501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=955 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.35141E-07 status=ok
+  step-end status=accepted
+  step=329 attempt=1 t0=1.51022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=957 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.16854E-07 status=ok
+  step-end status=accepted
+  step=330 attempt=1 t0=1.51542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=960 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.03392E-07 status=ok
+  step-end status=accepted
+  step=331 attempt=1 t0=1.52063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=963 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.25555E-07 status=ok
+  step-end status=accepted
+  step=332 attempt=1 t0=1.52584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=965 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=6.97118E-07 status=ok
+  step-end status=accepted
+  step=333 attempt=1 t0=1.53105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=968 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.56827E-07 status=ok
+  step-end status=accepted
+  step=334 attempt=1 t0=1.53626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=971 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=6.47488E-07 status=ok
+  step-end status=accepted
+  step=335 attempt=1 t0=1.54147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=973 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.56301E-07 status=ok
+  step-end status=accepted
+  step=336 attempt=1 t0=1.54667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=975 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.46135E-07 status=ok
+  step-end status=accepted
+  step=337 attempt=1 t0=1.55188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=977 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.39866E-07 status=ok
+  step-end status=accepted
+  step=338 attempt=1 t0=1.55709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=980 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.71193E-07 status=ok
+  step-end status=accepted
+  step=339 attempt=1 t0=1.56230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=982 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.84966E-07 status=ok
+  step-end status=accepted
+  step=340 attempt=1 t0=1.56751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=984 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=7.30443E-07 status=ok
+  step-end status=accepted
+  step=341 attempt=1 t0=1.57272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=986 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.74876E-07 status=ok
+  step-end status=accepted
+  step=342 attempt=1 t0=1.57792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=988 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.81295E-07 status=ok
+  step-end status=accepted
+  step=343 attempt=1 t0=1.58313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=990 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=6.22998E-07 status=ok
+  step-end status=accepted
+  step=344 attempt=1 t0=1.58834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=992 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.36879E-07 status=ok
+  step-end status=accepted
+  step=345 attempt=1 t0=1.59355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=994 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.54899E-07 status=ok
+  step-end status=accepted
+  step=346 attempt=1 t0=1.59876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=997 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.25113E-07 status=ok
+  step-end status=accepted
+  step=347 attempt=1 t0=1.60397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=999 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.73970E-07 status=ok
+  step-end status=accepted
+  step=348 attempt=1 t0=1.60917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1001 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.29860E-07 status=ok
+  step-end status=accepted
+  step=349 attempt=1 t0=1.61438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1003 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.63022E-07 status=ok
+  step-end status=accepted
+  step=350 attempt=1 t0=1.61959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1005 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.93850E-07 status=ok
+  step-end status=accepted
+  step=351 attempt=1 t0=1.62480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1007 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.57487E-07 status=ok
+  step-end status=accepted
+  step=352 attempt=1 t0=1.63001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1009 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.72868E-07 status=ok
+  step-end status=accepted
+  step=353 attempt=1 t0=1.63522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1011 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=77 dscg=77 amg=0 rel_res=9.71025E-07 status=ok
+  step-end status=accepted
+  step=354 attempt=1 t0=1.64042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1013 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.04192E-07 status=ok
+  step-end status=accepted
+  step=355 attempt=1 t0=1.64563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1015 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.93846E-07 status=ok
+  step-end status=accepted
+  step=356 attempt=1 t0=1.65084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1017 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.28958E-07 status=ok
+  step-end status=accepted
+  step=357 attempt=1 t0=1.65605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1019 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.07758E-07 status=ok
+  step-end status=accepted
+  step=358 attempt=1 t0=1.66126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1021 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.29169E-07 status=ok
+  step-end status=accepted
+  step=359 attempt=1 t0=1.66647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1023 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.42955E-07 status=ok
+  step-end status=accepted
+  step=360 attempt=1 t0=1.67167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1025 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.92311E-07 status=ok
+  step-end status=accepted
+  step=361 attempt=1 t0=1.67688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1027 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.44295E-07 status=ok
+  step-end status=accepted
+  step=362 attempt=1 t0=1.68209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1029 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.04343E-07 status=ok
+  step-end status=accepted
+  step=363 attempt=1 t0=1.68730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1031 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.92784E-07 status=ok
+  step-end status=accepted
+  step=364 attempt=1 t0=1.69251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1034 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.67539E-07 status=ok
+  step-end status=accepted
+  step=365 attempt=1 t0=1.69772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1036 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=1.03430E-07 status=ok
+  step-end status=accepted
+  step=366 attempt=1 t0=1.70292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1038 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.81241E-07 status=ok
+  step-end status=accepted
+  step=367 attempt=1 t0=1.70813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1040 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.95908E-07 status=ok
+  step-end status=accepted
+  step=368 attempt=1 t0=1.71334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1042 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.52514E-07 status=ok
+  step-end status=accepted
+  step=369 attempt=1 t0=1.71855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1044 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=3.24215E-07 status=ok
+  step-end status=accepted
+  step=370 attempt=1 t0=1.72376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1046 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.75613E-07 status=ok
+  step-end status=accepted
+  step=371 attempt=1 t0=1.72897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1048 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=3.16218E-07 status=ok
+  step-end status=accepted
+  step=372 attempt=1 t0=1.73417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1050 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=3.14865E-07 status=ok
+  step-end status=accepted
+  step=373 attempt=1 t0=1.73938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1052 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=3.42096E-07 status=ok
+  step-end status=accepted
+  step=374 attempt=1 t0=1.74459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1054 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.22937E-07 status=ok
+  step-end status=accepted
+  step=375 attempt=1 t0=1.74980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1056 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.93695E-07 status=ok
+  step-end status=accepted
+  step=376 attempt=1 t0=1.75501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1058 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.87853E-07 status=ok
+  step-end status=accepted
+  step=377 attempt=1 t0=1.76022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1060 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=7.60654E-07 status=ok
+  step-end status=accepted
+  step=378 attempt=1 t0=1.76542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1063 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=7.21327E-07 status=ok
+  step-end status=accepted
+  step=379 attempt=1 t0=1.77063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1065 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.40030E-07 status=ok
+  step-end status=accepted
+  step=380 attempt=1 t0=1.77584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1067 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=3.68604E-07 status=ok
+  step-end status=accepted
+  step=381 attempt=1 t0=1.78105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1069 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=6.41019E-07 status=ok
+  step-end status=accepted
+  step=382 attempt=1 t0=1.78626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1071 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.75867E-07 status=ok
+  step-end status=accepted
+  step=383 attempt=1 t0=1.79147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1073 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=8.85917E-07 status=ok
+  step-end status=accepted
+  step=384 attempt=1 t0=1.79667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1075 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.32875E-07 status=ok
+  step-end status=accepted
+  step=385 attempt=1 t0=1.80188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1077 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.21906E-07 status=ok
+  step-end status=accepted
+  step=386 attempt=1 t0=1.80709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1079 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=9.18466E-07 status=ok
+  step-end status=accepted
+  step=387 attempt=1 t0=1.81230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1081 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.57336E-07 status=ok
+  step-end status=accepted
+  step=388 attempt=1 t0=1.81751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1083 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=9.00085E-07 status=ok
+  step-end status=accepted
+  step=389 attempt=1 t0=1.82272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1085 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=6.90665E-07 status=ok
+  step-end status=accepted
+  step=390 attempt=1 t0=1.82792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1088 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=7.68058E-07 status=ok
+  step-end status=accepted
+  step=391 attempt=1 t0=1.83313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1090 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=7.81772E-07 status=ok
+  step-end status=accepted
+  step=392 attempt=1 t0=1.83834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1092 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=8.15010E-07 status=ok
+  step-end status=accepted
+  step=393 attempt=1 t0=1.84355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1094 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=5.41781E-07 status=ok
+  step-end status=accepted
+  step=394 attempt=1 t0=1.84876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1097 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=6.19058E-07 status=ok
+  step-end status=accepted
+  step=395 attempt=1 t0=1.85397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1099 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=5.51392E-07 status=ok
+  step-end status=accepted
+  step=396 attempt=1 t0=1.85917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1101 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=9.83977E-07 status=ok
+  step-end status=accepted
+  step=397 attempt=1 t0=1.86438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1103 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=7.46459E-07 status=ok
+  step-end status=accepted
+  step=398 attempt=1 t0=1.86959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1105 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=31 amg=6 rel_res=1.11073E-07 status=ok
+  step-end status=accepted
+  step=399 attempt=1 t0=1.87480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1107 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=4.43676E-07 status=ok
+  step-end status=accepted
+  step=400 attempt=1 t0=1.88001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1109 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=32 amg=6 rel_res=1.19706E-07 status=ok
+  step-end status=accepted
+  step=401 attempt=1 t0=1.88522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1111 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=17 dscg=11 amg=6 rel_res=1.91455E-07 status=ok
+  step-end status=accepted
+  step=402 attempt=1 t0=1.89042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1113 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=17 dscg=11 amg=6 rel_res=1.93709E-07 status=ok
+  step-end status=accepted
+  step=403 attempt=1 t0=1.89563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1115 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=7.21161E-07 status=ok
+  step-end status=accepted
+  step=404 attempt=1 t0=1.90084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1117 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.83803E-07 status=ok
+  step-end status=accepted
+  step=405 attempt=1 t0=1.90605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1120 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.32425E-07 status=ok
+  step-end status=accepted
+  step=406 attempt=1 t0=1.91126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1122 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.77938E-07 status=ok
+  step-end status=accepted
+  step=407 attempt=1 t0=1.91647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1124 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=9.11558E-07 status=ok
+  step-end status=accepted
+  step=408 attempt=1 t0=1.92167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1126 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=6.41132E-07 status=ok
+  step-end status=accepted
+  step=409 attempt=1 t0=1.92688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1129 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.91202E-07 status=ok
+  step-end status=accepted
+  step=410 attempt=1 t0=1.93209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1132 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.38877E-07 status=ok
+  step-end status=accepted
+  step=411 attempt=1 t0=1.93730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1134 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.15568E-07 status=ok
+  step-end status=accepted
+  step=412 attempt=1 t0=1.94251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1137 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.60710E-07 status=ok
+  step-end status=accepted
+  step=413 attempt=1 t0=1.94772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1140 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=7.37161E-07 status=ok
+  step-end status=accepted
+  step=414 attempt=1 t0=1.95292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1142 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.23554E-07 status=ok
+  step-end status=accepted
+  step=415 attempt=1 t0=1.95813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1144 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.15306E-07 status=ok
+  step-end status=accepted
+  step=416 attempt=1 t0=1.96334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1146 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=7.23929E-07 status=ok
+  step-end status=accepted
+  step=417 attempt=1 t0=1.96855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1149 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=6.77061E-07 status=ok
+  step-end status=accepted
+  step=418 attempt=1 t0=1.97376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1151 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=8.24239E-07 status=ok
+  step-end status=accepted
+  step=419 attempt=1 t0=1.97897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1153 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.29348E-07 status=ok
+  step-end status=accepted
+  step=420 attempt=1 t0=1.98417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1155 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.38792E-07 status=ok
+  step-end status=accepted
+  step=421 attempt=1 t0=1.98938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1157 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=2.05695E-07 status=ok
+  step-end status=accepted
+  step=422 attempt=1 t0=1.99459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1159 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.37652E-07 status=ok
+  step-end status=accepted
+  step=423 attempt=1 t0=1.99980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1161 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.98681E-07 status=ok
+  step-end status=accepted
+  step=424 attempt=1 t0=2.00501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1163 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.44819E-07 status=ok
+  step-end status=accepted
+  step=425 attempt=1 t0=2.01022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1165 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.57678E-07 status=ok
+  step-end status=accepted
+  step=426 attempt=1 t0=2.01542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1167 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=5.27977E-07 status=ok
+  step-end status=accepted
+  step=427 attempt=1 t0=2.02063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1169 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=6.72099E-07 status=ok
+  step-end status=accepted
+  step=428 attempt=1 t0=2.02584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1171 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=6.85896E-07 status=ok
+  step-end status=accepted
+  step=429 attempt=1 t0=2.03105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1173 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=6.36298E-07 status=ok
+  step-end status=accepted
+  step=430 attempt=1 t0=2.03626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1175 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=8.39380E-07 status=ok
+  step-end status=accepted
+  step=431 attempt=1 t0=2.04147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1177 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.48551E-07 status=ok
+  step-end status=accepted
+  step=432 attempt=1 t0=2.04667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1179 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.41542E-07 status=ok
+  step-end status=accepted
+  step=433 attempt=1 t0=2.05188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1181 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=8.99710E-07 status=ok
+  step-end status=accepted
+  step=434 attempt=1 t0=2.05709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1183 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.48800E-07 status=ok
+  step-end status=accepted
+  step=435 attempt=1 t0=2.06230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1185 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.19541E-07 status=ok
+  step-end status=accepted
+  step=436 attempt=1 t0=2.06751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1187 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=8.46038E-07 status=ok
+  step-end status=accepted
+  step=437 attempt=1 t0=2.07272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1189 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=1.79336E-07 status=ok
+  step-end status=accepted
+  step=438 attempt=1 t0=2.07792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1191 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=8.84030E-07 status=ok
+  step-end status=accepted
+  step=439 attempt=1 t0=2.08313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1193 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=8.68988E-07 status=ok
+  step-end status=accepted
+  step=440 attempt=1 t0=2.08834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1195 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=1.51241E-07 status=ok
+  step-end status=accepted
+  step=441 attempt=1 t0=2.09355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1197 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=5.78636E-07 status=ok
+  step-end status=accepted
+  step=442 attempt=1 t0=2.09876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1199 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=7.87065E-07 status=ok
+  step-end status=accepted
+  step=443 attempt=1 t0=2.10397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1201 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=6.45372E-07 status=ok
+  step-end status=accepted
+  step=444 attempt=1 t0=2.10917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1203 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=54 amg=4 rel_res=3.77178E-07 status=ok
+  step-end status=accepted
+  step=445 attempt=1 t0=2.11438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1205 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.43347E-07 status=ok
+  step-end status=accepted
+  step=446 attempt=1 t0=2.11959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1207 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=3.61772E-07 status=ok
+  step-end status=accepted
+  step=447 attempt=1 t0=2.12480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1209 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=85 dscg=85 amg=0 rel_res=9.02100E-07 status=ok
+  step-end status=accepted
+  step=448 attempt=1 t0=2.13001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1211 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.81754E-07 status=ok
+  step-end status=accepted
+  step=449 attempt=1 t0=2.13522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1213 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.31103E-07 status=ok
+  step-end status=accepted
+  step=450 attempt=1 t0=2.14042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1215 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=7.60018E-07 status=ok
+  step-end status=accepted
+  step=451 attempt=1 t0=2.14563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1217 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=50 dscg=45 amg=5 rel_res=1.38676E-07 status=ok
+  step-end status=accepted
+  step=452 attempt=1 t0=2.15084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1219 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=6.98863E-07 status=ok
+  step-end status=accepted
+  step=453 attempt=1 t0=2.15605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1221 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=3.08253E-07 status=ok
+  step-end status=accepted
+  step=454 attempt=1 t0=2.16126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1223 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.57161E-07 status=ok
+  step-end status=accepted
+  step=455 attempt=1 t0=2.16647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1225 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=9.85551E-07 status=ok
+  step-end status=accepted
+  step=456 attempt=1 t0=2.17167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1227 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=89 dscg=89 amg=0 rel_res=7.00628E-07 status=ok
+  step-end status=accepted
+  step=457 attempt=1 t0=2.17688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1229 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=4.22756E-07 status=ok
+  step-end status=accepted
+  step=458 attempt=1 t0=2.18209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1231 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=1.92433E-07 status=ok
+  step-end status=accepted
+  step=459 attempt=1 t0=2.18730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1233 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=4.27118E-07 status=ok
+  step-end status=accepted
+  step=460 attempt=1 t0=2.19251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1235 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.16073E-07 status=ok
+  step-end status=accepted
+  step=461 attempt=1 t0=2.19772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1237 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=3.59929E-07 status=ok
+  step-end status=accepted
+  step=462 attempt=1 t0=2.20292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1239 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=3.26925E-07 status=ok
+  step-end status=accepted
+  step=463 attempt=1 t0=2.20813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1241 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.22936E-07 status=ok
+  step-end status=accepted
+  step=464 attempt=1 t0=2.21334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1243 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=41 dscg=36 amg=5 rel_res=3.23566E-07 status=ok
+  step-end status=accepted
+  step=465 attempt=1 t0=2.21855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1245 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=36 dscg=31 amg=5 rel_res=9.96486E-07 status=ok
+  step-end status=accepted
+  step=466 attempt=1 t0=2.22376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1247 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=35 dscg=30 amg=5 rel_res=6.95573E-07 status=ok
+  step-end status=accepted
+  step=467 attempt=1 t0=2.22897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1249 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=4.91514E-07 status=ok
+  step-end status=accepted
+  step=468 attempt=1 t0=2.23417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1251 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.04110E-07 status=ok
+  step-end status=accepted
+  step=469 attempt=1 t0=2.23938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1253 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=46 dscg=41 amg=5 rel_res=2.53894E-07 status=ok
+  step-end status=accepted
+  step=470 attempt=1 t0=2.24459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1255 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=88 dscg=88 amg=0 rel_res=9.25324E-07 status=ok
+  step-end status=accepted
+  step=471 attempt=1 t0=2.24980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1257 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=2.52761E-07 status=ok
+  step-end status=accepted
+  step=472 attempt=1 t0=2.25501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1259 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=9.91172E-07 status=ok
+  step-end status=accepted
+  step=473 attempt=1 t0=2.26022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1261 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=86 dscg=86 amg=0 rel_res=8.51604E-07 status=ok
+  step-end status=accepted
+  step=474 attempt=1 t0=2.26542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1263 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=54 dscg=49 amg=5 rel_res=9.71120E-08 status=ok
+  step-end status=accepted
+  step=475 attempt=1 t0=2.27063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1265 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.42350E-07 status=ok
+  step-end status=accepted
+  step=476 attempt=1 t0=2.27584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1267 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=2.71102E-07 status=ok
+  step-end status=accepted
+  step=477 attempt=1 t0=2.28105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1269 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=33 dscg=28 amg=5 rel_res=9.77667E-07 status=ok
+  step-end status=accepted
+  step=478 attempt=1 t0=2.28626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1271 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=31 amg=6 rel_res=8.53352E-08 status=ok
+  step-end status=accepted
+  step=479 attempt=1 t0=2.29147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1273 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=6.61383E-07 status=ok
+  step-end status=accepted
+  step=480 attempt=1 t0=2.29667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1275 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=6.32400E-07 status=ok
+  step-end status=accepted
+  step=481 attempt=1 t0=2.30188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1277 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=41 dscg=36 amg=5 rel_res=6.59144E-07 status=ok
+  step-end status=accepted
+  step=482 attempt=1 t0=2.30709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1280 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=36 dscg=30 amg=6 rel_res=1.10504E-07 status=ok
+  step-end status=accepted
+  step=483 attempt=1 t0=2.31230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1282 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=8.50762E-07 status=ok
+  step-end status=accepted
+  step=484 attempt=1 t0=2.31751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1284 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=87 dscg=87 amg=0 rel_res=7.36256E-07 status=ok
+  step-end status=accepted
+  step=485 attempt=1 t0=2.32272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1286 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=35 dscg=29 amg=6 rel_res=7.43957E-08 status=ok
+  step-end status=accepted
+  step=486 attempt=1 t0=2.32792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1288 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=34 dscg=28 amg=6 rel_res=7.43194E-08 status=ok
+  step-end status=accepted
+  step=487 attempt=1 t0=2.33313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1290 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=8.58920E-07 status=ok
+  step-end status=accepted
+  step=488 attempt=1 t0=2.33834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1293 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.15077E-07 status=ok
+  step-end status=accepted
+  step=489 attempt=1 t0=2.34355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1295 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=6.37461E-07 status=ok
+  step-end status=accepted
+  step=490 attempt=1 t0=2.34876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1297 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.85839E-07 status=ok
+  step-end status=accepted
+  step=491 attempt=1 t0=2.35397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1299 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=9.89720E-07 status=ok
+  step-end status=accepted
+  step=492 attempt=1 t0=2.35917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1301 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.77432E-07 status=ok
+  step-end status=accepted
+  step=493 attempt=1 t0=2.36438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1303 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.94507E-07 status=ok
+  step-end status=accepted
+  step=494 attempt=1 t0=2.36959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1306 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.90808E-07 status=ok
+  step-end status=accepted
+  step=495 attempt=1 t0=2.37480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1308 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=51 dscg=46 amg=5 rel_res=1.06027E-07 status=ok
+  step-end status=accepted
+  step=496 attempt=1 t0=2.38001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1310 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=3.34774E-07 status=ok
+  step-end status=accepted
+  step=497 attempt=1 t0=2.38522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1312 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=2.90843E-07 status=ok
+  step-end status=accepted
+  step=498 attempt=1 t0=2.39042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1314 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.23034E-07 status=ok
+  step-end status=accepted
+  step=499 attempt=1 t0=2.39563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1316 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=31 amg=6 rel_res=1.01100E-07 status=ok
+  step-end status=accepted
+  step=500 attempt=1 t0=2.40084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1318 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=41 dscg=36 amg=5 rel_res=3.72342E-07 status=ok
+  step-end status=accepted
+  step=501 attempt=1 t0=2.40605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1320 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=35 dscg=29 amg=6 rel_res=9.17547E-08 status=ok
+  step-end status=accepted
+  step=502 attempt=1 t0=2.41126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1322 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=36 dscg=30 amg=6 rel_res=1.04253E-07 status=ok
+  step-end status=accepted
+  step=503 attempt=1 t0=2.41647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1324 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.97883E-07 status=ok
+  step-end status=accepted
+  step=504 attempt=1 t0=2.42167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1326 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=41 dscg=36 amg=5 rel_res=4.38200E-07 status=ok
+  step-end status=accepted
+  step=505 attempt=1 t0=2.42688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1328 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=3.67551E-07 status=ok
+  step-end status=accepted
+  step=506 attempt=1 t0=2.43209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1330 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.04874E-07 status=ok
+  step-end status=accepted
+  step=507 attempt=1 t0=2.43730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1332 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=2.42597E-07 status=ok
+  step-end status=accepted
+  step=508 attempt=1 t0=2.44251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1334 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=49 dscg=44 amg=5 rel_res=1.67518E-07 status=ok
+  step-end status=accepted
+  step=509 attempt=1 t0=2.44772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1336 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=3.20156E-07 status=ok
+  step-end status=accepted
+  step=510 attempt=1 t0=2.45292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1338 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=6.75495E-07 status=ok
+  step-end status=accepted
+  step=511 attempt=1 t0=2.45813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1340 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=79 dscg=79 amg=0 rel_res=9.71941E-07 status=ok
+  step-end status=accepted
+  step=512 attempt=1 t0=2.46334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1342 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.55343E-07 status=ok
+  step-end status=accepted
+  step=513 attempt=1 t0=2.46855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1344 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=5.67764E-07 status=ok
+  step-end status=accepted
+  step=514 attempt=1 t0=2.47376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1346 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.14149E-07 status=ok
+  step-end status=accepted
+  step=515 attempt=1 t0=2.47897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1348 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=1.75533E-07 status=ok
+  step-end status=accepted
+  step=516 attempt=1 t0=2.48417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1350 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=5.65157E-07 status=ok
+  step-end status=accepted
+  step=517 attempt=1 t0=2.48938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1352 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.39974E-07 status=ok
+  step-end status=accepted
+  step=518 attempt=1 t0=2.49459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1354 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.85756E-07 status=ok
+  step-end status=accepted
+  step=519 attempt=1 t0=2.49980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1356 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=6.05237E-07 status=ok
+  step-end status=accepted
+  step=520 attempt=1 t0=2.50501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1358 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=5.62033E-07 status=ok
+  step-end status=accepted
+  step=521 attempt=1 t0=2.51022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1360 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=7.67400E-07 status=ok
+  step-end status=accepted
+  step=522 attempt=1 t0=2.51542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1362 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=1.94042E-07 status=ok
+  step-end status=accepted
+  step=523 attempt=1 t0=2.52063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1364 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=6.92388E-07 status=ok
+  step-end status=accepted
+  step=524 attempt=1 t0=2.52584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1366 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.94857E-07 status=ok
+  step-end status=accepted
+  step=525 attempt=1 t0=2.53105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1368 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.00656E-07 status=ok
+  step-end status=accepted
+  step=526 attempt=1 t0=2.53626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1370 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.55111E-07 status=ok
+  step-end status=accepted
+  step=527 attempt=1 t0=2.54147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1372 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.32066E-07 status=ok
+  step-end status=accepted
+  step=528 attempt=1 t0=2.54667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1374 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.88808E-07 status=ok
+  step-end status=accepted
+  step=529 attempt=1 t0=2.55188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1376 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.02229E-07 status=ok
+  step-end status=accepted
+  step=530 attempt=1 t0=2.55709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1378 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=7.19825E-07 status=ok
+  step-end status=accepted
+  step=531 attempt=1 t0=2.56230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1380 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=8.04673E-07 status=ok
+  step-end status=accepted
+  step=532 attempt=1 t0=2.56751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1382 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.06845E-07 status=ok
+  step-end status=accepted
+  step=533 attempt=1 t0=2.57272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1384 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.42935E-07 status=ok
+  step-end status=accepted
+  step=534 attempt=1 t0=2.57792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1386 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.30641E-07 status=ok
+  step-end status=accepted
+  step=535 attempt=1 t0=2.58313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1388 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.32025E-07 status=ok
+  step-end status=accepted
+  step=536 attempt=1 t0=2.58834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1390 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.28642E-07 status=ok
+  step-end status=accepted
+  step=537 attempt=1 t0=2.59355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1392 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.06829E-07 status=ok
+  step-end status=accepted
+  step=538 attempt=1 t0=2.59876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1394 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.24096E-07 status=ok
+  step-end status=accepted
+  step=539 attempt=1 t0=2.60397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1396 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.35798E-07 status=ok
+  step-end status=accepted
+  step=540 attempt=1 t0=2.60917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1398 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.89244E-07 status=ok
+  step-end status=accepted
+  step=541 attempt=1 t0=2.61438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1400 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.25223E-07 status=ok
+  step-end status=accepted
+  step=542 attempt=1 t0=2.61959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1402 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.56638E-07 status=ok
+  step-end status=accepted
+  step=543 attempt=1 t0=2.62480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1404 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=9.92417E-07 status=ok
+  step-end status=accepted
+  step=544 attempt=1 t0=2.63001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1406 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=7.14719E-07 status=ok
+  step-end status=accepted
+  step=545 attempt=1 t0=2.63522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1408 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.62284E-07 status=ok
+  step-end status=accepted
+  step=546 attempt=1 t0=2.64042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1410 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=7.02400E-07 status=ok
+  step-end status=accepted
+  step=547 attempt=1 t0=2.64563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1412 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.32599E-07 status=ok
+  step-end status=accepted
+  step=548 attempt=1 t0=2.65084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1414 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.08182E-07 status=ok
+  step-end status=accepted
+  step=549 attempt=1 t0=2.65605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1416 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=2.54508E-07 status=ok
+  step-end status=accepted
+  step=550 attempt=1 t0=2.66126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1418 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.96652E-07 status=ok
+  step-end status=accepted
+  step=551 attempt=1 t0=2.66647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1420 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.80496E-07 status=ok
+  step-end status=accepted
+  step=552 attempt=1 t0=2.67167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1422 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.60107E-07 status=ok
+  step-end status=accepted
+  step=553 attempt=1 t0=2.67688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1424 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=80 dscg=80 amg=0 rel_res=9.20655E-07 status=ok
+  step-end status=accepted
+  step=554 attempt=1 t0=2.68209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1426 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=8.31919E-07 status=ok
+  step-end status=accepted
+  step=555 attempt=1 t0=2.68730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1428 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.85250E-07 status=ok
+  step-end status=accepted
+  step=556 attempt=1 t0=2.69251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1430 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.87987E-07 status=ok
+  step-end status=accepted
+  step=557 attempt=1 t0=2.69772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1432 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.76070E-07 status=ok
+  step-end status=accepted
+  step=558 attempt=1 t0=2.70292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1434 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=3.77225E-07 status=ok
+  step-end status=accepted
+  step=559 attempt=1 t0=2.70813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1436 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=35 dscg=29 amg=6 rel_res=8.41584E-08 status=ok
+  step-end status=accepted
+  step=560 attempt=1 t0=2.71334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1438 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.62717E-07 status=ok
+  step-end status=accepted
+  step=561 attempt=1 t0=2.71855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1440 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=9.53575E-07 status=ok
+  step-end status=accepted
+  step=562 attempt=1 t0=2.72376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1442 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=5.68544E-07 status=ok
+  step-end status=accepted
+  step=563 attempt=1 t0=2.72897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1444 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=8.24673E-07 status=ok
+  step-end status=accepted
+  step=564 attempt=1 t0=2.73417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1446 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=48 amg=5 rel_res=1.02103E-07 status=ok
+  step-end status=accepted
+  step=565 attempt=1 t0=2.73938E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1448 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=4.69652E-07 status=ok
+  step-end status=accepted
+  step=566 attempt=1 t0=2.74459E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1450 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=3.77277E-07 status=ok
+  step-end status=accepted
+  step=567 attempt=1 t0=2.74980E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1452 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=80 dscg=80 amg=0 rel_res=8.66700E-07 status=ok
+  step-end status=accepted
+  step=568 attempt=1 t0=2.75501E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1454 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=55 dscg=51 amg=4 rel_res=5.77279E-07 status=ok
+  step-end status=accepted
+  step=569 attempt=1 t0=2.76022E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1456 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=3.07204E-07 status=ok
+  step-end status=accepted
+  step=570 attempt=1 t0=2.76542E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1458 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=84 dscg=84 amg=0 rel_res=6.50431E-07 status=ok
+  step-end status=accepted
+  step=571 attempt=1 t0=2.77063E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1460 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.14514E-07 status=ok
+  step-end status=accepted
+  step=572 attempt=1 t0=2.77584E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1462 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=3.18432E-07 status=ok
+  step-end status=accepted
+  step=573 attempt=1 t0=2.78105E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1464 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=10 dscg=4 amg=6 rel_res=3.65470E-07 status=ok
+  step-end status=accepted
+  step=574 attempt=1 t0=2.78626E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1466 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=8 dscg=2 amg=6 rel_res=4.73013E-07 status=ok
+  step-end status=accepted
+  step=575 attempt=1 t0=2.79147E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1468 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=47 dscg=42 amg=5 rel_res=1.49958E-07 status=ok
+  step-end status=accepted
+  step=576 attempt=1 t0=2.79667E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1470 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=7.69779E-07 status=ok
+  step-end status=accepted
+  step=577 attempt=1 t0=2.80188E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1472 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=7.82265E-07 status=ok
+  step-end status=accepted
+  step=578 attempt=1 t0=2.80709E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1474 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=7.76261E-07 status=ok
+  step-end status=accepted
+  step=579 attempt=1 t0=2.81230E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1476 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=8.61531E-07 status=ok
+  step-end status=accepted
+  step=580 attempt=1 t0=2.81751E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1478 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=3.88449E-07 status=ok
+  step-end status=accepted
+  step=581 attempt=1 t0=2.82272E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1480 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=8.58175E-07 status=ok
+  step-end status=accepted
+  step=582 attempt=1 t0=2.82792E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1482 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=80 dscg=80 amg=0 rel_res=8.04356E-07 status=ok
+  step-end status=accepted
+  step=583 attempt=1 t0=2.83313E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1484 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=3.58514E-07 status=ok
+  step-end status=accepted
+  step=584 attempt=1 t0=2.83834E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1486 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=35 dscg=30 amg=5 rel_res=9.00932E-07 status=ok
+  step-end status=accepted
+  step=585 attempt=1 t0=2.84355E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1488 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=6.28093E-07 status=ok
+  step-end status=accepted
+  step=586 attempt=1 t0=2.84876E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1490 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=4.89883E-07 status=ok
+  step-end status=accepted
+  step=587 attempt=1 t0=2.85397E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1492 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=37 dscg=32 amg=5 rel_res=7.48749E-07 status=ok
+  step-end status=accepted
+  step=588 attempt=1 t0=2.85917E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1494 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=6.81362E-07 status=ok
+  step-end status=accepted
+  step=589 attempt=1 t0=2.86438E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1496 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=9.05295E-07 status=ok
+  step-end status=accepted
+  step=590 attempt=1 t0=2.86959E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1498 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=5.04554E-07 status=ok
+  step-end status=accepted
+  step=591 attempt=1 t0=2.87480E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1500 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=38 dscg=33 amg=5 rel_res=5.76416E-07 status=ok
+  step-end status=accepted
+  step=592 attempt=1 t0=2.88001E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1502 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=32 dscg=26 amg=6 rel_res=9.93986E-08 status=ok
+  step-end status=accepted
+  step=593 attempt=1 t0=2.88522E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1504 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=29 dscg=23 amg=6 rel_res=1.64963E-07 status=ok
+  step-end status=accepted
+  step=594 attempt=1 t0=2.89042E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1506 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=29 dscg=23 amg=6 rel_res=1.14398E-07 status=ok
+  step-end status=accepted
+  step=595 attempt=1 t0=2.89563E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1508 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=5.29560E-07 status=ok
+  step-end status=accepted
+  step=596 attempt=1 t0=2.90084E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1510 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.24691E-07 status=ok
+  step-end status=accepted
+  step=597 attempt=1 t0=2.90605E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1512 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=3.62360E-07 status=ok
+  step-end status=accepted
+  step=598 attempt=1 t0=2.91126E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1514 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=44 dscg=39 amg=5 rel_res=2.00295E-07 status=ok
+  step-end status=accepted
+  step=599 attempt=1 t0=2.91647E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1516 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=43 dscg=38 amg=5 rel_res=3.14657E-07 status=ok
+  step-end status=accepted
+  step=600 attempt=1 t0=2.92167E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1518 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=42 dscg=37 amg=5 rel_res=2.82293E-07 status=ok
+  step-end status=accepted
+  step=601 attempt=1 t0=2.92688E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1520 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=32 dscg=26 amg=6 rel_res=8.64983E-08 status=ok
+  step-end status=accepted
+  step=602 attempt=1 t0=2.93209E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1522 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=33 dscg=27 amg=6 rel_res=9.87514E-08 status=ok
+  step-end status=accepted
+  step=603 attempt=1 t0=2.93730E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1524 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.60918E-07 status=ok
+  step-end status=accepted
+  step=604 attempt=1 t0=2.94251E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1526 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=40 dscg=35 amg=5 rel_res=5.29143E-07 status=ok
+  step-end status=accepted
+  step=605 attempt=1 t0=2.94772E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1528 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=45 dscg=40 amg=5 rel_res=2.06776E-07 status=ok
+  step-end status=accepted
+  step=606 attempt=1 t0=2.95292E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1530 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=81 dscg=81 amg=0 rel_res=8.50780E-07 status=ok
+  step-end status=accepted
+  step=607 attempt=1 t0=2.95813E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1532 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=6.29958E-07 status=ok
+  step-end status=accepted
+  step=608 attempt=1 t0=2.96334E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1534 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=82 dscg=82 amg=0 rel_res=6.99988E-07 status=ok
+  step-end status=accepted
+  step=609 attempt=1 t0=2.96855E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1536 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.32470E-07 status=ok
+  step-end status=accepted
+  step=610 attempt=1 t0=2.97376E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1538 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=83 dscg=83 amg=0 rel_res=7.85834E-07 status=ok
+  step-end status=accepted
+  step=611 attempt=1 t0=2.97897E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1540 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=4.95188E-07 status=ok
+  step-end status=accepted
+  step=612 attempt=1 t0=2.98417E+00 dt=5.20833E-03 cause=cfl
+    thermal nres=1542 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=33 dscg=27 amg=6 rel_res=1.07605E-07 status=ok
+  step-end status=accepted
+  step=613 attempt=1 t0=2.98938E+00 dt=4.26494E-03 cause=output
+    thermal nres=1544 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=31 dscg=26 amg=5 rel_res=9.87879E-07 status=ok
+  step-end status=accepted
+  step=614 attempt=1 t0=2.99365E+00 dt=3.49243E-03 cause=output
+    thermal nres=1546 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=39 dscg=34 amg=5 rel_res=7.22279E-07 status=ok
+  step-end status=accepted
+  step=615 attempt=1 t0=2.99714E+00 dt=2.85985E-03 cause=output
+    thermal nres=1548 npc=9 nnr=8 nnf=0 nsr=0 status=ok
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=53 dscg=49 amg=4 rel_res=8.42083E-07 status=ok
+  step-end status=accepted
+  output t=3.00000E+00
+integration-end t=3.00000E+00 nstep=615 status=complete
+
+timing-summary-begin
+simulation: 1.37686E+00
+  integration: 1.36131E+00
+    output: 1.89870E-02
+    flow/material-transport: 5.07476E-01
+      normals: 4.68712E-02
+      reconstruct/advect: 9.58237E-02
+    thermal/advection: 5.56899E-03
+    thermal/transport: 1.42758E-01
+    flow/momentum: 5.51100E-02
+    flow/projection: 5.72229E-01
+timing-summary-end

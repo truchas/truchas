@@ -1,0 +1,123 @@
+// 2D adaptation of the truchas-pbf freezing-flow test.
+// A uniform superheated phase-change material is advected through a channel.
+// The cold top wall initiates freezing; the other walls are adiabatic.
+{
+  "materials": {
+    "freezing-material": {
+      "properties": {
+        "density": 1.0
+      },
+      "phases": {
+        "solid": {
+          "specific-heat": 1.0,
+          "conductivity": 0.02
+        },
+        "liquid": {
+          "specific-heat": 1.0,
+          "conductivity": 0.02,
+          "fluid": true
+        }
+      },
+      "phase-changes": {
+        "solid:liquid": {
+          "solidus-temp": 9.0,
+          "liquidus-temp": 11.0,
+          "latent-heat": 5.0
+        }
+      }
+    }
+  },
+
+  "mesh": {
+    "x-axis": {
+      "coarse-grid": [0.0, 0.5],
+      "intervals": [24]
+    },
+    "y-axis": {
+      "coarse-grid": [0.0, 0.5],
+      "intervals": [24]
+    }
+  },
+
+  "flow-model": {
+    "inviscid": true,
+    "body-acceleration": [0.0, 0.0],
+    "bc": {
+      "inlet": {
+        "type": "velocity",
+        "face-set-ids": [1],
+        "velocity": [1.0, 0.0]
+      },
+      "outlet": {
+        "type": "pressure",
+        "face-set-ids": [2],
+        "pressure": 0.0
+      },
+      "walls": {
+        "type": "free-slip",
+        "face-set-ids": [3, 4]
+      }
+    }
+  },
+
+  "ht-model": {
+    "bc": {
+      "adiabatic": {
+        "type": "flux",
+        "face-set-ids": [1, 3],
+        "flux": 0.0
+      },
+      "outlet": {
+        "type": "outflow",
+        "face-set-ids": [2]
+      },
+      "wall": {
+        "type": "temperature",
+        "face-set-ids": [4],
+        "temp": 1.0
+      }
+    },
+    "source": {}
+  },
+
+  "solver": {
+    "flow": {
+      "courant-number": 0.5,
+      "projection-solver": {
+        "rel-tol": 1.0e-6,
+        "max-ds-iter": 100,
+        "max-amg-iter": 100
+      }
+    },
+    "thermal": {
+      "preconditioner": {
+        "method": "BoomerAMG",
+        "params": {
+          "num-cycles": 1
+        }
+      },
+      "error-norm": {
+        "abs-t-tol": 0.0,
+        "rel-t-tol": 1.0e-2,
+        "abs-h-tol": 0.0,
+        "rel-h-tol": 1.0e-2
+      },
+      "integrator": {
+        "use-backward-euler": true,
+        "nlk-max-iter": 5,
+        "nlk-tol": 0.01
+      }
+    },
+    "initial-time-step": 1.0e-3,
+    "time-step-growth": 1.2,
+    "min-time-step": 1.0e-9
+  },
+
+  "sim-control": {
+    "initial-time": 0.0,
+    "output-times": [0.5, 3.0]
+  },
+
+  "initial-temperature": 15.0,
+  "initial-velocity": [0.0, 0.0]
+}
