@@ -15,7 +15,7 @@
 
 #include "f90_assert.fpp"
 
-module ns_ht_2d_solver_type
+module t2d_flow_thermal_integrator_type
 
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
@@ -34,7 +34,7 @@ module ns_ht_2d_solver_type
   implicit none
   private
 
-  type, public :: ns_ht_2d_solver
+  type, public :: t2d_flow_thermal_integrator
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
@@ -74,7 +74,7 @@ contains
   subroutine init(this, env, flow_model, ht_model, matl_model, matl_dist, &
       params, stat, errmsg)
 
-    class(ns_ht_2d_solver), intent(out) :: this
+    class(t2d_flow_thermal_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(inout) :: flow_model
     type(ht_2d_model), target, intent(in) :: ht_model
@@ -220,7 +220,7 @@ contains
 
 
   subroutine delete(this)
-    type(ns_ht_2d_solver), intent(inout) :: this
+    type(t2d_flow_thermal_integrator), intent(inout) :: this
 
     if (associated(this%thermal)) deallocate(this%thermal)
   end subroutine
@@ -230,7 +230,7 @@ contains
   !! time step is supplied to their respective initial-condition procedures.
   subroutine set_initial_state(this, env, matl_model, time, velocity, temp, stat, errmsg)
 
-    class(ns_ht_2d_solver), intent(inout) :: this
+    class(t2d_flow_thermal_integrator), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: time, velocity(:,:), temp(:)
@@ -268,7 +268,7 @@ contains
   subroutine integrate(this, env, matl_model, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
-    class(ns_ht_2d_solver), intent(inout) :: this
+    class(t2d_flow_thermal_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: tout
@@ -337,7 +337,7 @@ contains
   !! as recoverable; a flow failure is non-recoverable.
   subroutine attempt_step(this, env, matl_model, t_n, t_np1, stat, errmsg, hnext)
 
-    class(ns_ht_2d_solver), intent(inout) :: this
+    class(t2d_flow_thermal_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     type(material_model), intent(in) :: matl_model
     real(r8), intent(in) :: t_n, t_np1
@@ -409,7 +409,7 @@ contains
 
 
   subroutine select_step_cause(this, thermal_hnext, hnext, cause)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
     real(r8), intent(in) :: thermal_hnext
     real(r8), intent(out) :: hnext
     character(*), intent(out) :: cause
@@ -436,21 +436,21 @@ contains
 
 
   real(r8) function last_time(this)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
 
     last_time = this%thermal%last_time()
   end function
 
 
   real(r8) function initial_time_step(this)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
 
     initial_time_step = this%dt_init
   end function
 
 
   integer(int64) function num_steps(this)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
 
     num_steps = this%nstep
   end function
@@ -461,7 +461,7 @@ contains
   !! by the simulation's output writer.
   subroutine init_temporal_output(this, data)
 
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
@@ -472,7 +472,7 @@ contains
   !! coupled solver.
   subroutine set_temporal_output(this, data)
 
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
@@ -481,7 +481,7 @@ contains
 
   !! Returns the current local cell pressure and velocity, including ghosts.
   subroutine get_cell_flow_soln(this, pressure, velocity)
-    class(ns_ht_2d_solver), target, intent(in) :: this
+    class(t2d_flow_thermal_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
     call this%flow%get_cell_flow_soln(pressure, velocity)
@@ -490,7 +490,7 @@ contains
 
   !! Returns the current face-normal velocity, including ghost faces.
   subroutine get_face_velocity(this, velocity)
-    class(ns_ht_2d_solver), target, intent(in) :: this
+    class(t2d_flow_thermal_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: velocity(:)
 
     call this%flow%get_face_velocity(velocity)
@@ -500,7 +500,7 @@ contains
   !! Returns a no-copy view of the full-local mask used to distinguish genuine
   !! flow equations from dummy equations.
   subroutine get_cell_flow_active(this, active)
-    class(ns_ht_2d_solver), target, intent(in) :: this
+    class(t2d_flow_thermal_integrator), target, intent(in) :: this
     logical, pointer, intent(out) :: active(:)
 
     call this%flow%get_cell_flow_active(active)
@@ -508,7 +508,7 @@ contains
 
 
   subroutine get_cell_heat_soln(this, enth)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
     real(r8), intent(inout) :: enth(:)
 
     call this%thermal%get_cell_heat_soln(enth)
@@ -516,10 +516,10 @@ contains
 
 
   subroutine get_cell_temp_soln(this, temp)
-    class(ns_ht_2d_solver), intent(in) :: this
+    class(t2d_flow_thermal_integrator), intent(in) :: this
     real(r8), intent(inout) :: temp(:)
 
     call this%thermal%get_cell_temp_soln(temp)
   end subroutine
 
-end module ns_ht_2d_solver_type
+end module t2d_flow_thermal_integrator_type

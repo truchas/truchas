@@ -9,7 +9,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module ns_ht_2d_sim_type
+module t2d_flow_thermal_sim_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
@@ -26,14 +26,14 @@ module ns_ht_2d_sim_type
   use vector_func_projection
   use flow_2d_model_type
   use ht_2d_model_type
-  use ns_ht_2d_solver_type
+  use t2d_flow_thermal_integrator_type
   use ns_ht_2d_vtkhdf_writer_type
   use simulation_environment_type
   use simulation_type
   implicit none
   private
 
-  type, extends(simulation), public :: ns_ht_2d_sim
+  type, extends(simulation), public :: t2d_flow_thermal_sim
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db
@@ -41,7 +41,7 @@ module ns_ht_2d_sim_type
     type(material_distribution), pointer :: matl_dist => null()
     type(flow_2d_model), pointer :: flow_model => null()
     type(ht_2d_model), pointer :: ht_model => null()
-    type(ns_ht_2d_solver), pointer :: solver => null()
+    type(t2d_flow_thermal_integrator), pointer :: solver => null()
     type(ns_ht_2d_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output
     real(r8) :: t_init
@@ -56,7 +56,7 @@ module ns_ht_2d_sim_type
 contains
 
   subroutine delete(this)
-    type(ns_ht_2d_sim), intent(inout) :: this
+    type(t2d_flow_thermal_sim), intent(inout) :: this
 
     ! Finalization may occur at an unexpected time and is not collective.
     ! Leave collective HDF5 cleanup to the explicit simulation shutdown.
@@ -71,7 +71,7 @@ contains
     use material_factory, only: load_material_database
     use signal_handler, only: init_signal_handler, SIGURG
 
-    class(ns_ht_2d_sim), intent(out) :: this
+    class(t2d_flow_thermal_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -446,7 +446,7 @@ contains
   end subroutine
 
   subroutine run(this, env, stat, errmsg)
-    class(ns_ht_2d_sim), intent(inout) :: this
+    class(t2d_flow_thermal_sim), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -498,7 +498,7 @@ contains
 
 
   subroutine write_solution(this, time)
-    class(ns_ht_2d_sim), intent(inout) :: this
+    class(t2d_flow_thermal_sim), intent(inout) :: this
     real(r8), intent(in) :: time
 
     real(r8), pointer :: p(:), velocity(:,:)
@@ -515,4 +515,4 @@ contains
         this%temporal_output, flow_active)
   end subroutine
 
-end module ns_ht_2d_sim_type
+end module t2d_flow_thermal_sim_type
