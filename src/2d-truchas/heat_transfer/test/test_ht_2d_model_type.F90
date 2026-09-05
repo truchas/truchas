@@ -15,7 +15,7 @@ program test_HT_2d_model_type
   use material_model_type
   use scalar_func_factories
   use cell_geometry, only: normalized
-  use mfd_2d_disc_type
+  use t2d_mfd_disc_type
   use ht_2d_model_type
   use ht_2d_ic_solver_type
   use ht_2d_vector_type
@@ -24,7 +24,7 @@ program test_HT_2d_model_type
   implicit none
 
   type(unstr_2d_mesh), pointer :: mesh
-  type(mfd_2d_disc), target :: mfd_disc
+  type(t2d_mfd_disc), target :: mfd_disc
   type(material_model), target :: matl_model
   real(r8) :: xmin(2), xmax(2), tol, eps
   integer  :: nx(2)
@@ -97,7 +97,7 @@ contains
   !! Tests the HT_2d_model on a linear problem with Dirichlet boundary conditions
   subroutine test_linear_dir(disc, matl_model, tol)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 
@@ -202,7 +202,7 @@ contains
   !! Tests the HT_2d_model on a linear problem with Neumann boundary conditions
   subroutine test_linear_flux(disc, matl_model, tol)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
     real(r8), intent(in) :: tol
 

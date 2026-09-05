@@ -14,7 +14,7 @@ program test_HT_2d_norm_type
   use material_model_type
   !use source_mesh_function
   use scalar_func_factories
-  use mfd_2d_disc_type
+  use t2d_mfd_disc_type
   use ht_2d_model_type
   use ht_2d_norm_type
   use ht_2d_vector_type
@@ -23,7 +23,7 @@ program test_HT_2d_norm_type
   implicit none
 
   type(unstr_2d_mesh), pointer :: mesh
-  type(mfd_2d_disc), target :: mfd_disc
+  type(t2d_mfd_disc), target :: mfd_disc
   type(material_model), target :: matl_model
   real(r8) :: xmin(2), xmax(2), eps
   integer  :: nx(2)
@@ -69,7 +69,7 @@ contains
   !! Test the HT_2d_norm type with only the absolute tolerance set
   subroutine test_abs(disc, matl_model)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
@@ -125,7 +125,7 @@ contains
   !! Test the HT_2d_norm type with only the relative tolerance set
   subroutine test_rel(disc, matl_model)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
@@ -180,7 +180,7 @@ contains
   !! Test the HT_2d_norm type with mixed tolerances
   subroutine test_mixed(disc, matl_model)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model
@@ -238,7 +238,7 @@ contains
   !! Test the global consistency of the HT_2d_norm type
   subroutine test_global(disc, matl_model)
 
-    type(mfd_2d_disc), target, intent(in) :: disc
+    type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
     type(ht_2d_model), target :: HT_model

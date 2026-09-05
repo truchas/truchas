@@ -17,7 +17,7 @@ module test_ht_2d_common
   use material_model_type
   use material_distribution_type
   use scalar_func_class
-  use mfd_2d_disc_type
+  use t2d_mfd_disc_type
   use ht_2d_model_type
   implicit none
 
@@ -95,7 +95,7 @@ contains
   !! Computes the average integral of a function over on-process faces and cells
   subroutine average_integral(disc, f, ucell, uface)
 
-    type(mfd_2d_disc), intent(in) :: disc
+    type(t2d_mfd_disc), intent(in) :: disc
     class(scalar_func), intent(in) :: f
     real(r8), intent(out) :: ucell(:), uface(:)
 

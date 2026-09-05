@@ -18,7 +18,7 @@ module ht_2d_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use unstr_2d_mesh_type
-  use mfd_2d_disc_type
+  use t2d_mfd_disc_type
   use bndry_func1_class
   use bndry_func2_class
   use scalar_mesh_multifunc_type
@@ -35,7 +35,7 @@ module ht_2d_model_type
 
   type, public :: ht_2d_model
     type(unstr_2d_mesh), pointer :: mesh => null() ! unowned reference
-    type(mfd_2d_disc) :: disc
+    type(t2d_mfd_disc) :: disc
     !! Equation parameters
     class(new_mesh_func), allocatable :: conductivity
     class(new_mesh_func), allocatable :: H_of_T

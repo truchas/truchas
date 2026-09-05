@@ -11,9 +11,9 @@ set(HT2D_SOURCE_FILES
     new_nka_type.F90
     new_state_history_type.F90
     new_idaesol_type.F90
-    mfd_2d_disc_type.F90
-    mfd_2d_diff_matrix_type.F90
-    mfd_2d_diff_precon_type.F90
+    t2d_mfd_disc_type.F90
+    t2d_mfd_diff_matrix_type.F90
+    t2d_mfd_diff_precon_type.F90
     ht_2d_vector_type.F90
     thermal_bc_factory_type.F90
     ht_2d_source_factory_type.F90

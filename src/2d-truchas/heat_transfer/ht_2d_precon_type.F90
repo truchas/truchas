@@ -24,8 +24,8 @@ module ht_2d_precon_type
   use ht_2d_model_type
   use ht_2d_vector_type
   use unstr_2d_mesh_type
-  use mfd_2d_diff_precon_type
-  use mfd_2d_diff_matrix_type
+  use t2d_mfd_diff_precon_type
+  use t2d_mfd_diff_matrix_type
   implicit none
   private
 
@@ -34,7 +34,7 @@ module ht_2d_precon_type
     type(unstr_2d_mesh), pointer :: mesh  => null() ! unowned reference
     real(r8) :: dt ! time step
     real(r8), allocatable :: dHdT(:) ! derivative of the enthalpy/temperature relation
-    type(mfd_2d_diff_precon) :: pc   ! heat equation preconditioner
+    type(t2d_mfd_diff_precon) :: pc   ! heat equation preconditioner
   contains
     procedure :: init
     procedure :: compute
@@ -53,7 +53,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(mfd_2d_diff_matrix), allocatable :: dm
+    type(t2d_mfd_diff_matrix), allocatable :: dm
 
     this%model => model
     this%mesh  => model%mesh
@@ -77,7 +77,7 @@ contains
     type(ht_2d_vector), intent(inout) :: u
 
     real(r8) :: coef(this%mesh%ncell)
-    type(mfd_2d_diff_matrix), pointer :: dm
+    type(t2d_mfd_diff_matrix), pointer :: dm
 
     ASSERT(dt > 0.0_r8)
 
