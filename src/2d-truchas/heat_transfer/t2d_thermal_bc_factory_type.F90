@@ -1,7 +1,7 @@
 !!
-!! THERMAL_BC_FACTORY_TYPE
+!! T2D_T2D_THERMAL_BC_FACTORY_TYPE
 !!
-!! This module defines THERMAL_BC_FACTORY, which creates the boundary
+!! This module defines T2D_THERMAL_BC_FACTORY, which creates the boundary
 !! condition functions used by the two-dimensional heat-transfer model from a
 !! parameter list.  It currently supports temperature, flux, heat-transfer
 !! coefficient, and radiation boundary-condition definitions.
@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module thermal_bc_factory_type
+module t2d_thermal_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -22,7 +22,7 @@ module thermal_bc_factory_type
   implicit none
   private
 
-  type, public :: thermal_bc_factory
+  type, public :: t2d_thermal_bc_factory
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
@@ -52,7 +52,7 @@ contains
 
   subroutine init(this, mesh, sigma, abszero, params)
 
-    class(thermal_bc_factory), intent(out) :: this
+    class(t2d_thermal_bc_factory), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     real(r8), intent(in) :: sigma, abszero
     type(parameter_list), target, intent(in) :: params
@@ -70,7 +70,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -114,7 +114,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -158,7 +158,7 @@ contains
     use bndry_func2_class
     use htc_bndry_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func2), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -204,7 +204,7 @@ contains
     use bndry_func2_class
     use rad_bndry_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func2), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -250,7 +250,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -294,7 +294,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(thermal_bc_factory), intent(inout) :: this
+    class(t2d_thermal_bc_factory), intent(inout) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -333,7 +333,7 @@ contains
 
   subroutine iterate_list(this, env, type, proc, stat, errmsg)
 
-    class(thermal_bc_factory), intent(in) :: this
+    class(t2d_thermal_bc_factory), intent(in) :: this
     type(simulation_environment), intent(in) :: env
     character(*), intent(in) :: type
     procedure(bc_cb) :: proc
@@ -364,4 +364,4 @@ contains
 
   end subroutine
 
-end module thermal_bc_factory_type
+end module t2d_thermal_bc_factory_type
