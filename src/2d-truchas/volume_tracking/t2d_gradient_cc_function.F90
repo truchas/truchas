@@ -10,7 +10,7 @@
 
 #include "f90_assert.fpp"
 
-module gradient_2d_cc_function
+module t2d_gradient_cc_function
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -158,4 +158,4 @@ contains
     face_area = vector_length(normal)
   end function face_area
 
-end module gradient_2d_cc_function
+end module t2d_gradient_cc_function

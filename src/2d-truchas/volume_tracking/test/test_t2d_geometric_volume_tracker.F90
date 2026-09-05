@@ -15,7 +15,7 @@ program test_t2d_geometric_volume_tracker
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory, only: new_unstr_2d_quad_mesh
-  use geom_axisymmetric, only: mesh_axisymmetry_mod
+  use t2d_geom_axisymmetric, only: mesh_axisymmetry_mod
   use t2d_geometric_volume_tracker_type
   implicit none
 

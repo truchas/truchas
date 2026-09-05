@@ -9,7 +9,7 @@
 
 #include "f90_assert.fpp"
 
-module geom_axisymmetric
+module t2d_geom_axisymmetric
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -143,4 +143,4 @@ contains
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-end module geom_axisymmetric
+end module t2d_geom_axisymmetric

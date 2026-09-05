@@ -50,7 +50,7 @@ contains
   subroutine init(this, env, params, stat, errmsg)
 
     use t2d_unstr_mesh_factory
-    use geom_axisymmetric, only: mesh_axisymmetry_mod
+    use t2d_geom_axisymmetric, only: mesh_axisymmetry_mod
 
     class(vof_2d_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
