@@ -27,10 +27,11 @@ module ns_2d_sim_type
   use ns_2d_solver_type
   use flow_2d_vtkhdf_writer_type
   use simulation_environment_type
+  use simulation_type
   implicit none
   private
 
-  type, public :: ns_2d_sim
+  type, extends(simulation), public :: ns_2d_sim
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     type(material_database) :: matl_db

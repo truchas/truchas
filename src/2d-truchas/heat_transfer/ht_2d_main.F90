@@ -72,7 +72,7 @@ program ht_2d_main
   end if
 
   !! Write the log file prologue.
-  call write_simulation_prologue(env, cli%program, cli%input_file, stat, errmsg)
+  call write_simulation_prologue(env, cli%program, cli%program, cli%input_file, stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('error staging input file: ' // errmsg)
     call env%simlog%close

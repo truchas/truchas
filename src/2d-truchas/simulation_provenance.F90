@@ -25,10 +25,10 @@ module simulation_provenance
 
 contains
 
-  subroutine write_simulation_prologue(env, code, input_file, stat, errmsg)
+  subroutine write_simulation_prologue(env, program, simulation, input_file, stat, errmsg)
 
     type(simulation_environment), intent(in) :: env
-    character(*), intent(in) :: code, input_file
+    character(*), intent(in) :: program, simulation, input_file
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -47,8 +47,8 @@ contains
     timestamp = date(:4) // '-' // date(5:6) // '-' // date(7:8) // 'T' // &
         time(:2) // ':' // time(3:4) // ':' // time(5:6) // trim(zone)
 
-    call env%simlog%info('program code=' // log_quoted(code) // ' version=' // &
-        log_quoted(code_version))
+    call env%simlog%info('program=' // log_quoted(program) // ' simulation=' // &
+        log_quoted(simulation) // ' version=' // log_quoted(code_version))
     call env%simlog%info('build compiler=' // log_quoted(compiler_id) // &
         ' compiler_version=' // log_quoted(compiler_version) // ' host=' // log_quoted(host) // &
         ' flags=' // log_quoted(build_flags))

@@ -2,10 +2,10 @@
 !! SIMULATION_COMMAND_LINE_TYPE
 !!
 !! This module defines the common command-line interface used by the JSON
-!! driven simulation programs.  It handles the input file, output directory,
-!! overwrite policy, and help request.  Parsing is MPI-independent; the
-!! drivers initialize MPI before reporting help or command-line errors so
-!! those messages are emitted only by the I/O process.
+!! driven simulation programs.  It handles simulation selection, the input
+!! file, output directory, overwrite policy, and help request.  Parsing is
+!! MPI-independent; the drivers initialize MPI before reporting help or
+!! command-line errors so those messages are emitted only by the I/O process.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -20,6 +20,7 @@ module simulation_command_line_type
 
   type, public :: simulation_command_line
     character(:), allocatable :: program
+    character(:), allocatable :: simulation
     character(:), allocatable :: input_file
     character(:), allocatable :: input_dir
     character(:), allocatable :: output_dir
@@ -57,6 +58,20 @@ contains
         this%help = .true.
       case ('-f', '--force')
         this%force = .true.
+      case ('-s', '--simulation')
+        if (i == narg) then
+          stat = 1
+          errmsg = trim(arg) // ' requires an argument'
+          return
+        end if
+        i = i + 1
+        call get_command_argument(i, arg)
+        if (len_trim(arg) == 0) then
+          stat = 1
+          errmsg = 'simulation name must not be empty'
+          return
+        end if
+        this%simulation = trim(arg)
       case ('-o', '--output-dir')
         if (i == narg) then
           stat = 1
@@ -136,6 +151,8 @@ contains
     write(output_unit,'(a)') trim(description)
     write(output_unit,'(a)') ''
     write(output_unit,'(a)') 'Options:'
+    write(output_unit,'(a)') '  -s NAME, --simulation NAME'
+    write(output_unit,'(a)') '                   Select the simulation.'
     write(output_unit,'(a)') '  -o DIR, --output-dir DIR'
     write(output_unit,'(a)') '                   Write run products in DIR.'
     write(output_unit,'(a)') '  -f, --force       Permit use of an existing output directory.'
