@@ -1,9 +1,9 @@
-module region_factory
+module t2d_region_factory
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use base_mesh_class
   use parameter_list_type
-  use region_class
+  use t2d_region_class
 
   public :: alloc_region
 
@@ -11,7 +11,7 @@ contains
 
   subroutine alloc_region(reg, mesh, params, stat, errmsg)
   
-    class(region), allocatable, intent(out) :: reg
+    class(t2d_region), allocatable, intent(out) :: reg
     class(base_mesh), intent(in) :: mesh
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
@@ -30,7 +30,7 @@ contains
     select case (rtype)
     case ('cell-set')
       block
-        use cell_set_region_type, only: alloc_cell_set_region
+        use t2d_cell_set_region_type, only: alloc_cell_set_region
         integer, allocatable :: setids(:)
         integer :: bitmask
         logical :: c
@@ -54,7 +54,7 @@ contains
       
     case ('half-plane')
       block
-        use half_plane_region_type, only: alloc_half_plane_region
+        use t2d_half_plane_region_type, only: alloc_half_plane_region
         real(r8), allocatable :: p(:), n(:)
         logical :: c
         call params%get('point', p, stat, errmsg)
@@ -89,7 +89,7 @@ contains
       
     case ('box')
       block
-        use box_region_type, only: alloc_box_region
+        use t2d_box_region_type, only: alloc_box_region
         real(r8), allocatable :: x(:), y(:)
         logical :: c
         call params%get('lower-corner', x, stat, errmsg)
@@ -120,7 +120,7 @@ contains
 
     case ('disk')
       block
-        use disk_region_type, only: alloc_disk_region
+        use t2d_disk_region_type, only: alloc_disk_region
         real(r8), allocatable :: x(:)
         real(r8) :: r
         logical :: c
@@ -161,4 +161,4 @@ contains
   
   end subroutine alloc_region
 
-end module region_factory
+end module t2d_region_factory

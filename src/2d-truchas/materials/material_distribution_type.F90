@@ -117,7 +117,7 @@ contains
   subroutine init(this, env, mesh, matl_model, params, rlev, stat, errmsg)
 
     use parameter_list_type
-    use region_func_type
+    use t2d_region_func_type
     use simulation_environment_type
     use vol_frac_init_procs
     use parallel_communication, only: global_any
@@ -131,7 +131,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(region_func) :: rfunc
+    type(t2d_region_func) :: rfunc
     type(parameter_list), pointer :: plist
     type(parameter_list_iterator) :: piter
     character(:), allocatable :: name

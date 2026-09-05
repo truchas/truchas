@@ -1,7 +1,7 @@
-program test_region_func_type
+program test_t2d_region_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region_func_type
+  use t2d_region_func_type
   use parameter_list_type
   use parameter_list_json
   use t2d_unstr_mesh_type
@@ -32,7 +32,7 @@ program test_region_func_type
     env%comm = MPI_COMM_WORLD
     call MPI_Comm_rank(env%comm, env%rank)
     call MPI_Comm_size(env%comm, env%nproc)
-    call env%simlog%init(env%comm, 'test_region_func_type.log', stat, errmsg, terminal_output=.false.)
+    call env%simlog%init(env%comm, 'test_t2d_region_func_type.log', stat, errmsg, terminal_output=.false.)
     if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
     mesh => new_unstr_2d_mesh(env, [-1.0_r8, -1.0_r8], [1.0_r8, 1.0_r8], [4,4])
     call config_mesh_cell_sets(mesh)
@@ -66,7 +66,7 @@ contains
     type(parameter_list), pointer :: params
     integer :: stat
     character(:), allocatable :: string, errmsg
-    type(region_func) :: rfunc
+    type(t2d_region_func) :: rfunc
     real(r8), allocatable :: point(:,:)
     integer, allocatable :: cellid(:), regid(:), bitmask(:)
     integer :: j
@@ -96,10 +96,10 @@ contains
 
     do j = 1, size(cellid)
       if (rfunc%region_index(point(:,j), bitmask(j)) /= regid(j)) &
-          call write_fail('wrong region for point ' // i_to_c(j))
+          call write_fail('wrong t2d_region for point ' // i_to_c(j))
     end do
 
-    if (rfunc%region_index([0.5_r8,0.375_r8], 0) /= 1) call write_fail('wrong region for box point')
+    if (rfunc%region_index([0.5_r8,0.375_r8], 0) /= 1) call write_fail('wrong t2d_region for box point')
 
   end subroutine
 
@@ -110,4 +110,4 @@ contains
     write(error_unit,'(a)') errmsg
   end subroutine
 
-end program test_region_func_type
+end program test_t2d_region_func_type

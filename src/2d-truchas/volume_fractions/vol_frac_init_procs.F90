@@ -32,7 +32,7 @@
 module vol_frac_init_procs
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region_func_type
+  use t2d_region_func_type
   implicit none
   private
 
@@ -41,7 +41,7 @@ module vol_frac_init_procs
   !! Private type implementing the divide-and-conquer method for
   !! computing the volume fractions for a triangular cell.
   type :: tri_cell
-    type(region_func), pointer :: rfunc => null()
+    type(t2d_region_func), pointer :: rfunc => null()
     real(r8) :: x(2,3)
     integer  :: regid(3)
     integer  :: nreg
@@ -62,7 +62,7 @@ contains
     use t2d_unstr_mesh_type
 
     type(t2d_unstr_mesh), intent(in) :: mesh
-    type(region_func), intent(in), target :: rfunc
+    type(t2d_region_func), intent(in), target :: rfunc
     integer,  intent(in)  :: rlev
     real(r8), intent(out) :: vol_frac(:,:)
     integer,  intent(out) :: stat
@@ -107,7 +107,7 @@ contains
 
     real(r8), intent(in) :: x(:,:)
     integer, intent(in) :: bitmask
-    type(region_func), intent(in), target :: rfunc
+    type(t2d_region_func), intent(in), target :: rfunc
     type(tri_cell), allocatable, intent(out) :: subtri(:)
     integer, intent(out) :: stat
 
@@ -181,7 +181,7 @@ contains
     class(tri_cell), intent(out) :: this
     real(r8), intent(in) :: x(:,:)
     integer, intent(in) :: bitmask
-    type(region_func), intent(in), target :: rfunc
+    type(t2d_region_func), intent(in), target :: rfunc
     integer, intent(out) :: stat
     integer :: i
     this%x = x

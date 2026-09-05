@@ -13,16 +13,16 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module region_func_type
+module t2d_region_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region_class
+  use t2d_region_class
   implicit none
   private
 
-  type, public :: region_func
+  type, public :: t2d_region_func
     private
-    type(region_box), allocatable :: reg(:)
+    type(t2d_region_box), allocatable :: reg(:)
   contains
     procedure :: init
     procedure :: num_region
@@ -35,10 +35,10 @@ contains
 
     use base_mesh_class
     use parameter_list_type
-    use region_factory
+    use t2d_region_factory
     use simulation_environment_type
 
-    class(region_func), intent(out) :: this
+    class(t2d_region_func), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     class(base_mesh), intent(in) :: mesh
     type(parameter_list), intent(inout) :: params
@@ -68,7 +68,7 @@ contains
         return
       end if
       !select type (reg => this%reg(n))
-      !type is (background_region)
+      !type is (t2d_background_region)
       !  if (n /= size(this%reg)) then
       !    ! Warn that remaining regions will be unused?
       !  end if
@@ -79,12 +79,12 @@ contains
   end subroutine
 
   pure integer function num_region(this)
-    class(region_func), intent(in) :: this
+    class(t2d_region_func), intent(in) :: this
     num_region = size(this%reg)
   end function
 
   pure integer function region_index(this, x, bitmask) result(i)
-    class(region_func), intent(in) :: this
+    class(t2d_region_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: bitmask
     do i = 1, size(this%reg)
@@ -93,4 +93,4 @@ contains
     i = 0
   end function
 
-end module region_func_type
+end module t2d_region_func_type

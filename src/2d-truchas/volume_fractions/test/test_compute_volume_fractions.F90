@@ -2,7 +2,7 @@ program test_region_func_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
-  use region_func_type
+  use t2d_region_func_type
   use parameter_list_type
   use parameter_list_json
   use t2d_unstr_mesh_type
@@ -69,7 +69,7 @@ contains
     type(parameter_list), pointer :: params
     integer :: stat, j
     character(:), allocatable :: string, errmsg
-    type(region_func) :: rfunc
+    type(t2d_region_func) :: rfunc
     real(r8), allocatable :: vol_frac(:,:)
 
     string = '{"selected":{"type":"cell-set","cell-set-ids":[2]},&
@@ -125,7 +125,7 @@ contains
     type(parameter_list), pointer :: params
     integer :: stat
     character(:), allocatable :: string, errmsg
-    type(region_func) :: rfunc
+    type(t2d_region_func) :: rfunc
     real(r8), allocatable :: vol_frac(:,:)
     real(r8) :: v(4), err, vol
     integer :: j, rlev
@@ -178,7 +178,7 @@ contains
     type(parameter_list), pointer :: params
     integer :: stat
     character(:), allocatable :: string, errmsg
-    type(region_func) :: rfunc
+    type(t2d_region_func) :: rfunc
     real(r8), allocatable :: vol_frac(:,:)
     real(r8) :: v(3), err, vol
     integer :: j, rlev

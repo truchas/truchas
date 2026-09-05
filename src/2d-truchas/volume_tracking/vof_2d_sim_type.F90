@@ -15,7 +15,7 @@ module vof_2d_sim_type
   use t2d_unstr_mesh_type
   use vector_func_class
   use vector_func_factories, only: alloc_vector_func
-  use region_func_type
+  use t2d_region_func_type
   use vol_frac_init_procs, only: compute_volume_fractions
   use vof_2d_solver_type
   use vof_2d_vtkhdf_writer_type
@@ -59,7 +59,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: plist
-    type(region_func) :: regions
+    type(t2d_region_func) :: regions
     character(:), allocatable :: algorithm, context
     real(r8), allocatable :: owned_vfrac(:,:)
     logical :: axisymmetric
