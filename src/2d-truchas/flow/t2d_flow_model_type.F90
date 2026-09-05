@@ -25,10 +25,10 @@ module t2d_flow_model_type
   use t2d_unstr_mesh_type
   use material_model_type
   use t2d_flow_operators_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use t2d_flow_momentum_type
   use t2d_flow_projection_type
-  use flow_2d_material_props_type
+  use t2d_flow_material_props_type
   use flow_domain_types
   use simulation_environment_type
   implicit none
@@ -38,10 +38,10 @@ module t2d_flow_model_type
     private
     type(t2d_unstr_mesh), pointer, public :: mesh => null()  ! unowned reference
     type(t2d_flow_operators), pointer, public :: operators => null()
-    type(flow_2d_bc), pointer, public :: bc => null()
+    type(t2d_flow_bc), pointer, public :: bc => null()
     type(t2d_flow_momentum), pointer, public :: momentum => null()
     type(t2d_flow_projection), pointer, public :: projection => null()
-    type(flow_2d_material_props), public :: matl_props
+    type(t2d_flow_material_props), public :: matl_props
     logical, public :: inviscid = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
   contains

@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_BC_FACTORY_TYPE
+!! T2D_FLOW_BC_FACTORY_TYPE
 !!
-!! This module defines FLOW_2D_BC_FACTORY, a concrete factory for the
+!! This module defines T2D_FLOW_BC_FACTORY, a concrete factory for the
 !! old-style sparse boundary function objects used by two-dimensional flow.
 !! It is patterned after THERMAL_BC_FACTORY1, but has no abstract factory
 !! base class.
@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module flow_2d_bc_factory_type
+module t2d_flow_bc_factory_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
@@ -24,7 +24,7 @@ module flow_2d_bc_factory_type
   implicit none
   private
 
-  type, public :: flow_2d_bc_factory
+  type, public :: t2d_flow_bc_factory
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     type(parameter_list), pointer :: params => null()  ! unowned reference
@@ -50,7 +50,7 @@ module flow_2d_bc_factory_type
 contains
 
   subroutine init(this, mesh, params)
-    class(flow_2d_bc_factory), intent(out) :: this
+    class(t2d_flow_bc_factory), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(in) :: params
 
@@ -63,7 +63,7 @@ contains
     use bndry_vfunc_class
     use bndry_face_vfunc_type
 
-    class(flow_2d_bc_factory), intent(in) :: this
+    class(t2d_flow_bc_factory), intent(in) :: this
     class(bndry_vfunc), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -121,7 +121,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(flow_2d_bc_factory), intent(in) :: this
+    class(t2d_flow_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -161,7 +161,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(flow_2d_bc_factory), intent(in) :: this
+    class(t2d_flow_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -202,7 +202,7 @@ contains
     use bndry_func1_class
     use bndry_face_func_type
 
-    class(flow_2d_bc_factory), intent(in) :: this
+    class(t2d_flow_bc_factory), intent(in) :: this
     class(bndry_func1), allocatable, intent(out) :: bc
     type(simulation_environment), intent(in) :: env
     integer, intent(out) :: stat
@@ -242,7 +242,7 @@ contains
 
 
   subroutine iterate_list(this, env, type, proc, stat, errmsg, report)
-    class(flow_2d_bc_factory), intent(in) :: this
+    class(t2d_flow_bc_factory), intent(in) :: this
     type(simulation_environment), intent(in) :: env
     character(*), intent(in) :: type
     procedure(bc_cb) :: proc
@@ -273,7 +273,7 @@ contains
       end if
       call piter%next()
     end do
-    if (stat /= 0) errmsg = 'FLOW_2D_BC[' // piter%name() // ']: ' // errmsg
+    if (stat /= 0) errmsg = 'T2D_FLOW_BC[' // piter%name() // ']: ' // errmsg
   end subroutine
 
-end module flow_2d_bc_factory_type
+end module t2d_flow_bc_factory_type

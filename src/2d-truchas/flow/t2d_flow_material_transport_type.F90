@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_MATERIAL_TRANSPORT_TYPE
+!! T2D_FLOW_MATERIAL_TRANSPORT_TYPE
 !!
-!! This module defines FLOW_2D_MATERIAL_TRANSPORT, the flow-side entry point
+!! This module defines T2D_FLOW_MATERIAL_TRANSPORT, the flow-side entry point
 !! for material-resolved cell-face flux volumes. It adapts the flow solver's
 !! face-normal velocities to the cface-oriented interface of the two-
 !! dimensional volume trackers. The caller provides the current reduced
@@ -19,7 +19,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_material_transport_type
+module t2d_flow_material_transport_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
@@ -28,7 +28,7 @@ module flow_2d_material_transport_type
   implicit none
   private
 
-  type, public :: flow_2d_material_transport
+  type, public :: t2d_flow_material_transport
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     class(t2d_volume_tracker), allocatable :: tracker
@@ -50,7 +50,7 @@ contains
     use t2d_simple_volume_tracker_type
     use t2d_geometric_volume_tracker_type
 
-    class(flow_2d_material_transport), intent(out) :: this
+    class(t2d_flow_material_transport), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     integer, intent(in) :: nrealfluid, nfluid, nmat
@@ -92,7 +92,7 @@ contains
   !! Advance material transport from T_N to T_NP1, retaining the resulting
   !! distribution as trial state until the caller accepts the coupled step.
   subroutine advance(this, env, t_n, t_np1, velocity_fn, vfrac_n)
-    class(flow_2d_material_transport), intent(inout) :: this
+    class(t2d_flow_material_transport), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     real(r8), intent(in) :: velocity_fn(:)
@@ -124,10 +124,10 @@ contains
   !! Return a no-copy view of the distribution produced by the most recent
   !! advance call. It is trial state; the caller decides whether to adopt it.
   subroutine get_trial_volume_fractions(this, vfrac)
-    class(flow_2d_material_transport), target, intent(in) :: this
+    class(t2d_flow_material_transport), target, intent(in) :: this
     real(r8), pointer, intent(out) :: vfrac(:,:)
 
     vfrac => this%vfrac_out
   end subroutine
 
-end module flow_2d_material_transport_type
+end module t2d_flow_material_transport_type

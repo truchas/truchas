@@ -11,7 +11,7 @@ program test_t2d_flow_projection
   use simulation_environment_type
   use t2d_flow_operators_type
   use t2d_flow_projection_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use flow_domain_types
   use pcsr_matrix_type
   implicit none
@@ -46,7 +46,7 @@ contains
     type(pcsr_matrix), pointer :: matrix
     type(parameter_list), target :: neumann_params, dirichlet_params
     type(parameter_list), pointer :: plist
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     real(r8), allocatable :: inv_density_f(:), p(:), one(:), result(:), rhs(:)
     integer, allocatable :: cell_t(:), face_t(:)
     real(r8), parameter :: gradient(2) = [1.0_r8, 2.0_r8]

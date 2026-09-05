@@ -12,7 +12,7 @@ program test_flow_2d_projection_update
   use t2d_unstr_mesh_factory
   use t2d_flow_state_type
   use t2d_flow_operators_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use t2d_flow_projection_type
   use flow_2d_projection_solver_type
   use flow_2d_projection_update_type
@@ -50,7 +50,7 @@ contains
     type(flow_2d_projection_solver), target :: solver
     type(flow_2d_projection_update) :: update
     type(t2d_flow_state) :: state
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: inv_density_c(:), inv_density_f(:), density_delta_c(:), flux(:)

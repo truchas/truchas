@@ -10,7 +10,7 @@ program test_t2d_flow_momentum
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use t2d_flow_operators_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use t2d_flow_momentum_type
   use flow_domain_types
   use pbsr_matrix_type
@@ -45,7 +45,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_operators), target :: operators
     type(t2d_flow_momentum), target :: momentum
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     type(parameter_list), target :: velocity_params, slip_params
     type(parameter_list), pointer :: plist
     type(pbsr_matrix), pointer :: matrix
@@ -121,7 +121,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_operators), target :: operators
     type(t2d_flow_momentum), target :: momentum
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     type(parameter_list), target :: velocity_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: density(:), velocity_cc(:,:), velocity_fn(:), flux_volumes(:,:), rhs(:,:)
@@ -188,7 +188,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_operators), target :: operators
     type(t2d_flow_momentum), target :: momentum, inviscid_momentum
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     type(pbsr_matrix), pointer :: matrix
     real(r8), allocatable :: density(:), viscosity(:), rhs(:,:), result(:,:), velocity(:,:), &
         solidified_density(:), fluid_fraction(:)

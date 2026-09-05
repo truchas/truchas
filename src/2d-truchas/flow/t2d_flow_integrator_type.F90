@@ -24,7 +24,7 @@ module t2d_flow_integrator_type
   use t2d_flow_model_type
   use t2d_flow_solver_type
   use flow_material_mapping_type
-  use flow_2d_material_transport_type
+  use t2d_flow_material_transport_type
   use time_step_sync_type
   implicit none
   private
@@ -33,7 +33,7 @@ module t2d_flow_integrator_type
     private
     type(flow_material_mapping) :: matl_map
     type(t2d_flow_solver) :: flow
-    type(flow_2d_material_transport) :: material_transport
+    type(t2d_flow_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
     logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64

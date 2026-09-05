@@ -1,9 +1,9 @@
 !!
-!! FLOW_2D_BC_TYPE
+!! T2D_FLOW_BC_TYPE
 !!
-!! This module defines FLOW_2D_BC, the boundary-condition data used by
+!! This module defines T2D_FLOW_BC, the boundary-condition data used by
 !! two-dimensional flow. It owns old-style sparse boundary functions created
-!! by FLOW_2D_BC_FACTORY and selects a single pressure reference face when
+!! by T2D_FLOW_BC_FACTORY and selects a single pressure reference face when
 !! all pressure boundaries are homogeneous Neumann conditions.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
@@ -12,21 +12,21 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_bc_type
+module t2d_flow_bc_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
   use parameter_list_type
   use bndry_func1_class
   use bndry_vfunc_class
-  use flow_2d_bc_factory_type
+  use t2d_flow_bc_factory_type
   use flow_domain_types
   use simulation_environment_type
   use parallel_communication
   implicit none
   private
 
-  type, public :: flow_2d_bc
+  type, public :: t2d_flow_bc
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     class(bndry_func1), allocatable :: pressure_dirichlet
     class(bndry_func1), allocatable :: pressure_correction_dirichlet
@@ -44,14 +44,14 @@ module flow_2d_bc_type
 contains
 
   subroutine init(this, env, mesh, params, stat, errmsg)
-    class(flow_2d_bc), intent(out) :: this
+    class(t2d_flow_bc), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(in) :: mesh
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(flow_2d_bc_factory) :: factory
+    type(t2d_flow_bc_factory) :: factory
     integer :: i
     logical :: overlap
 
@@ -88,7 +88,7 @@ contains
   !! If a pressure Dirichlet boundary is present, its normal velocity is not
   !! prescribed and the pressure solve supplies the compensating flux.
   subroutine check_velocity_flux(this, stat, errmsg)
-    class(flow_2d_bc), intent(in) :: this
+    class(t2d_flow_bc), intent(in) :: this
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
@@ -119,7 +119,7 @@ contains
 
 
   subroutine compute(this, time, dt)
-    class(flow_2d_bc), intent(inout) :: this
+    class(t2d_flow_bc), intent(inout) :: this
     real(r8), intent(in) :: time
     real(r8), optional, intent(in) :: dt
 
@@ -138,7 +138,7 @@ contains
 
 
   subroutine compute_initial(this, time)
-    class(flow_2d_bc), intent(inout) :: this
+    class(t2d_flow_bc), intent(inout) :: this
     real(r8), intent(in) :: time
 
     call this%velocity_dirichlet%compute(time)
@@ -154,7 +154,7 @@ contains
   !! considered. All ranks must call this collective function. A value of zero
   !! indicates that a pressure Dirichlet condition already supplies a reference.
   function pressure_pin_face(this, face_t) result(face)
-    class(flow_2d_bc), intent(in) :: this
+    class(t2d_flow_bc), intent(in) :: this
     integer, optional, intent(in) :: face_t(:)
     integer :: face
 
@@ -199,7 +199,7 @@ contains
     use scalar_func_class
     use scalar_func_factories, only: alloc_const_scalar_func
 
-    class(flow_2d_bc), intent(inout) :: this
+    class(t2d_flow_bc), intent(inout) :: this
     type(t2d_unstr_mesh), intent(in) :: mesh
 
     class(scalar_func), allocatable :: func
@@ -246,4 +246,4 @@ contains
     end select
   end subroutine
 
-end module flow_2d_bc_type
+end module t2d_flow_bc_type

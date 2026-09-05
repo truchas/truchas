@@ -1,4 +1,4 @@
-program test_flow_2d_material_transport
+program test_t2d_flow_material_transport
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -8,7 +8,7 @@ program test_flow_2d_material_transport
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
-  use flow_2d_material_transport_type
+  use t2d_flow_material_transport_type
   implicit none
 
   integer :: status, stat
@@ -23,7 +23,7 @@ program test_flow_2d_material_transport
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_flow_2d_material_transport.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_material_transport.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -43,7 +43,7 @@ contains
     character(*), intent(in) :: algorithm
 
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_material_transport) :: transport
+    type(t2d_flow_material_transport) :: transport
     real(r8), allocatable :: velocity_fn(:), expected_flux(:), vfrac_n(:,:)
     real(r8), pointer :: vfrac_trial(:,:)
     real(r8) :: dt, expected
@@ -84,7 +84,7 @@ contains
 
     character(*), intent(in) :: algorithm
     type(t2d_unstr_mesh), pointer :: mesh
-    type(flow_2d_material_transport) :: transport
+    type(t2d_flow_material_transport) :: transport
     real(r8), allocatable :: velocity_fn(:), vfrac_n(:,:)
     real(r8), pointer :: vfrac_trial(:,:)
     integer :: f, j1
@@ -145,4 +145,4 @@ contains
     end if
   end subroutine
 
-end program test_flow_2d_material_transport
+end program test_t2d_flow_material_transport

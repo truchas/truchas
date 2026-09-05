@@ -14,7 +14,7 @@ program test_flow_2d_projection_solver
   use t2d_flow_projection_type
   use flow_domain_types
   use flow_2d_projection_solver_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   implicit none
 
   integer :: status, stat
@@ -46,7 +46,7 @@ contains
     type(t2d_flow_operators), target :: operators
     type(t2d_flow_projection), target :: projection
     type(flow_2d_projection_solver) :: solver
-    type(flow_2d_bc) :: bc
+    type(t2d_flow_bc) :: bc
     type(parameter_list), target :: bc_params, solver_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: inv_density_f(:), rhs(:), pressure(:)

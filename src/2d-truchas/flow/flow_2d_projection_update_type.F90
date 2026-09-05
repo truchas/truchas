@@ -19,7 +19,7 @@ module flow_2d_projection_update_type
   use t2d_flow_operators_type
   use t2d_flow_projection_type
   use flow_2d_projection_solver_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use t2d_flow_state_type
   use flow_domain_types
   use parallel_communication, only: global_maxval
@@ -74,7 +74,7 @@ contains
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     type(t2d_flow_state), intent(inout) :: state
     integer, intent(out) :: stat
     logical, optional, intent(out) :: solved
@@ -142,7 +142,7 @@ contains
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     type(t2d_flow_state), intent(inout) :: state
     integer, intent(out) :: stat
     logical, optional, intent(in) :: initial
@@ -244,7 +244,7 @@ contains
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     real(r8), intent(out) :: gradient(:,:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(in) :: inv_density_c(:), density_delta_c(:)
 
     integer :: f, c1, c2
@@ -293,7 +293,7 @@ contains
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
     real(r8), intent(out) :: gradient(:,:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
 
     call this%operators%gradient_cc(pressure, gradient, bc%pressure_neumann, &
         bc%pressure_correction_dirichlet, cell_t=cell_t, face_t=face_t)
@@ -304,7 +304,7 @@ contains
     class(flow_2d_projection_update), intent(inout) :: this
     real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(out) :: derivative(:)
     logical, optional, intent(in) :: correction
 
@@ -351,7 +351,7 @@ contains
     class(flow_2d_projection_update), intent(in) :: this
     real(r8), intent(in) :: velocity(:,:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(out) :: velocity_f(:)
 
     integer :: f, c1, c2
@@ -391,7 +391,7 @@ contains
 
   subroutine apply_velocity_boundary_conditions(mesh, bc, face_t, velocity_f)
     type(t2d_unstr_mesh), intent(in) :: mesh
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     integer, intent(in) :: face_t(:)
     real(r8), intent(inout) :: velocity_f(:)
 

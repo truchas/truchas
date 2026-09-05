@@ -23,7 +23,7 @@ module t2d_flow_momentum_type
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
   use t2d_flow_operators_type
-  use flow_2d_bc_type
+  use t2d_flow_bc_type
   use flow_domain_types
   use pbsr_matrix_type
   implicit none
@@ -150,7 +150,7 @@ contains
     class(t2d_flow_momentum), intent(in) :: this
     real(r8), intent(in) :: density(:), velocity_cc(:,:), flux_volumes(:,:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(inout) :: rhs(:,:)
 
     integer :: c, i, f, neighbor, n
@@ -210,7 +210,7 @@ contains
     class(t2d_flow_momentum), intent(inout) :: this
     real(r8), intent(in) :: dt, density_c(:), viscosity_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    type(flow_2d_bc), intent(in) :: bc
+    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(out) :: rhs(:,:)
     real(r8), optional, intent(in) :: solidified_density(:), fluid_fraction(:)
 

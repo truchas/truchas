@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_MATERIAL_PROPS_TYPE
+!! T2D_FLOW_MATERIAL_PROPS_TYPE
 !!
-!! This module defines FLOW_2D_MATERIAL_PROPS, the material-aware property
+!! This module defines T2D_FLOW_MATERIAL_PROPS, the material-aware property
 !! layer for the two-dimensional incompressible-flow model.  It constructs
 !! flow properties from the material model and evaluates their cell- and
 !! face-centered values from the reduced flow volume fractions and cell
@@ -17,7 +17,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_material_props_type
+module t2d_flow_material_props_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use scalar_func_class
@@ -31,7 +31,7 @@ module flow_2d_material_props_type
   implicit none
   private
 
-  type, public :: flow_2d_material_props
+  type, public :: t2d_flow_material_props
     private
     type(t2d_unstr_mesh), pointer, public :: mesh => null()
     real(r8), allocatable, public :: density(:)
@@ -53,14 +53,14 @@ module flow_2d_material_props_type
     procedure :: set_temperature
     procedure :: set_pre_solidification_state
     procedure :: accept
-  end type flow_2d_material_props
+  end type t2d_flow_material_props
 
 contains
 
   !! Initialize properties from already-constructed raw flow functions.
   !! This is retained for the standalone single-fluid flow driver.
   subroutine init(this, mesh, density, inviscid, stat, errmsg, viscosity, viscosity_func, density_delta_func, nfluid)
-    class(flow_2d_material_props), intent(out) :: this
+    class(t2d_flow_material_props), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
     real(r8), intent(in) :: density(:)
     logical, intent(in) :: inviscid
@@ -129,7 +129,7 @@ contains
   !! Initialize properties by querying the material model for each flow
   !! material. PHASE_IDS are phase indices in DENSITY order.
   subroutine init_material(this, mesh, matl_model, phase_ids, inviscid, boussinesq, stat, errmsg, nfluid)
-    class(flow_2d_material_props), intent(out) :: this
+    class(t2d_flow_material_props), intent(out) :: this
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
     type(material_model), intent(in) :: matl_model
     integer, intent(in) :: phase_ids(:)
@@ -230,7 +230,7 @@ contains
 
   !! Initialize the current and committed material-property state.
   subroutine set_initial_state(this, vfrac, temperature)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%set_volume_fractions(vfrac)
@@ -242,7 +242,7 @@ contains
   !! Update the current mixture density from the reduced flow distribution.
   !! The committed density is deliberately unchanged.
   subroutine set_volume_fractions(this, vfrac)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
     integer :: c, c1, c2, f, j
@@ -341,7 +341,7 @@ contains
   !! The subsequent SET_VOLUME_FRACTIONS call then exposes the mass lost from
   !! the mobile phase through SOLIDIFIED_DENSITY.
   subroutine set_pre_solidification_state(this)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
 
     this%pre_solidification_density = matmul(this%density, this%vfrac)
     this%solidified_density = 0.0_r8
@@ -352,7 +352,7 @@ contains
   !! Evaluate temperature-dependent material properties for the current
   !! reduced distribution.
   subroutine set_temperature(this, temperature)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
 
     real(r8), intent(in) :: temperature(:)
     integer :: c, c1, c2, f, m
@@ -397,7 +397,7 @@ contains
 
   !! Mark current cell density as the committed density for the next step.
   subroutine accept(this)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
 
     this%density_c_old = this%density_c
     this%solidified_density = 0.0_r8
@@ -406,7 +406,7 @@ contains
 
 
   subroutine initialize_values(this)
-    class(flow_2d_material_props), intent(inout) :: this
+    class(t2d_flow_material_props), intent(inout) :: this
 
     integer :: c
     this%density_c = this%density(1)
@@ -424,4 +424,4 @@ contains
     call this%set_temperature([(0.0_r8, c=1,this%mesh%ncell_onP)])
   end subroutine initialize_values
 
-end module flow_2d_material_props_type
+end module t2d_flow_material_props_type
