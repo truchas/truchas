@@ -15,7 +15,7 @@
 module ht_2d_norm_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_vector_type
   use parallel_communication, only: global_maxval
   implicit none
@@ -24,7 +24,7 @@ module ht_2d_norm_type
   type, public :: ht_2d_norm
     private
     ! type(t2d_unstr_mesh), pointer :: mesh => null()  ! reference only -- do not own
-    type(ht_2d_model), pointer :: model => null()   ! reference only -- do not own
+    type(t2d_thermal_model), pointer :: model => null()   ! reference only -- do not own
     real(r8) :: abs_T_tol   ! absolute temperature tolerance
     real(r8) :: rel_T_tol   ! relative temperature tolerance
     real(r8) :: abs_H_tol   ! absolute enthalpy tolerance
@@ -41,7 +41,7 @@ contains
     use parameter_list_type
 
     class(ht_2d_norm), intent(out) :: this
-    type(ht_2d_model), intent(in), target :: model
+    type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

@@ -16,7 +16,7 @@ program test_HT_2d_solver_type
   !use source_mesh_function
   use scalar_func_factories
   use t2d_mfd_disc_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use t2d_thermal_integrator_type
   use bitfield_type
   use test_ht_2d_common
@@ -118,7 +118,7 @@ contains
     logical, intent(in) :: bdf1
 
     type(t2d_thermal_integrator), target :: HT_solver, bad_solver
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(parameter_list) :: solver_params
     type(parameter_list), pointer :: model_params, sublist
     class(scalar_func), allocatable :: f

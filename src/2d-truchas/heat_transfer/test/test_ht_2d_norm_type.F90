@@ -15,7 +15,7 @@ program test_HT_2d_norm_type
   !use source_mesh_function
   use scalar_func_factories
   use t2d_mfd_disc_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_norm_type
   use ht_2d_vector_type
   use bitfield_type
@@ -72,7 +72,7 @@ contains
     type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
@@ -128,7 +128,7 @@ contains
     type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
@@ -183,7 +183,7 @@ contains
     type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du
@@ -241,7 +241,7 @@ contains
     type(t2d_mfd_disc), target, intent(in) :: disc
     type(material_model), target, intent(inout) :: matl_model
 
-    type(ht_2d_model), target :: HT_model
+    type(t2d_thermal_model), target :: HT_model
     type(ht_2d_norm), target :: HT_norm
     type(parameter_list), pointer :: params, sublist
     type(ht_2d_vector) :: u, du

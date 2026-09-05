@@ -25,7 +25,7 @@ module t2d_flow_thermal_sim_type
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use t2d_flow_model_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use t2d_flow_thermal_integrator_type
   use ns_ht_2d_vtkhdf_writer_type
   use simulation_environment_type
@@ -40,7 +40,7 @@ module t2d_flow_thermal_sim_type
     type(material_model) :: matl_model
     type(material_distribution), pointer :: matl_dist => null()
     type(t2d_flow_model), pointer :: flow_model => null()
-    type(ht_2d_model), pointer :: ht_model => null()
+    type(t2d_thermal_model), pointer :: ht_model => null()
     type(t2d_flow_thermal_integrator), pointer :: solver => null()
     type(ns_ht_2d_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output

@@ -18,7 +18,7 @@ module test_ht_2d_common
   use material_distribution_type
   use scalar_func_class
   use t2d_mfd_disc_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   implicit none
 
   type(material_distribution), target, save :: test_matl_dist

@@ -17,7 +17,7 @@ program test_t2d_flow_thermal_integrator
   use material_factory, only: load_material_database
   use material_utilities, only: add_enthalpy_prop
   use t2d_flow_model_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use t2d_thermal_solver_type
   use t2d_flow_thermal_integrator_type
   use time_step_sync_type
@@ -53,8 +53,8 @@ contains
     type(material_model) :: matl_model
   type(material_distribution), target :: matl_dist
     type(t2d_flow_model), target :: flow_model
-    type(ht_2d_model), target :: ht_model
-    type(ht_2d_model), target :: standalone_ht_model
+    type(t2d_thermal_model), target :: ht_model
+    type(t2d_thermal_model), target :: standalone_ht_model
     type(t2d_flow_thermal_integrator), target :: solver
     type(t2d_thermal_solver), target :: thermal_solver
     type(parameter_list), pointer :: matl_params, flow_bc_params, ht_params, standalone_ht_params

@@ -1,5 +1,5 @@
 !!
-!! HT_2D_IC_SOLVER_TYPE
+!! T2D_THERMAL_IC_SOLVER_TYPE
 !!
 !! This module defines the initial-condition solver used by the 2D thermal
 !! transport solver. It takes cell temperature initial conditions and computes
@@ -18,11 +18,11 @@
 
 #include "f90_assert.fpp"
 
-module ht_2d_ic_solver_type
+module t2d_thermal_ic_solver_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_unstr_mesh_type
-  use ht_2d_model_type
+  use t2d_thermal_model_type
   use ht_2d_vector_type
   use parameter_list_type
   use parallel_communication, only: global_dot_product
@@ -31,10 +31,10 @@ module ht_2d_ic_solver_type
   implicit none
   private
 
-  type, public :: ht_2d_ic_solver
+  type, public :: t2d_thermal_ic_solver
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
-    type(ht_2d_model), pointer :: model => null() ! unowned reference
+    type(t2d_thermal_model), pointer :: model => null() ! unowned reference
     type(parameter_list), pointer :: params => null() ! unowned reference
   contains
     procedure :: init
@@ -45,8 +45,8 @@ module ht_2d_ic_solver_type
 contains
 
   subroutine init(this, model, params)
-    class(ht_2d_ic_solver), intent(out) :: this
-    type(ht_2d_model), intent(in), target :: model
+    class(t2d_thermal_ic_solver), intent(out) :: this
+    type(t2d_thermal_model), intent(in), target :: model
     type(parameter_list), intent(inout), target :: params
     this%model => model
     this%mesh => model%mesh
@@ -56,7 +56,7 @@ contains
 
   subroutine compute(this, env, t, temp, u, udot, stat, errmsg)
 
-    class(ht_2d_ic_solver), intent(inout) :: this
+    class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t, temp(:)
     type(ht_2d_vector), intent(inout) :: u, udot
@@ -95,7 +95,7 @@ contains
 
   subroutine compute_udot(this, env, t, u, udot, stat, errmsg)
 
-    class(ht_2d_ic_solver), intent(inout) :: this
+    class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u, udot
@@ -159,7 +159,7 @@ contains
     use hypre_hybrid_type
     use t2d_mfd_diff_matrix_type
 
-    class(ht_2d_ic_solver), intent(inout) :: this
+    class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: t
     type(ht_2d_vector), intent(inout) :: u
@@ -291,4 +291,4 @@ contains
 
   end subroutine average_to_faces
 
-end module ht_2d_ic_solver_type
+end module t2d_thermal_ic_solver_type
