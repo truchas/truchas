@@ -1,14 +1,14 @@
 !!
-!! NS_HT_2D_MAIN
+!! TRUCHAS_2D_MAIN
 !!
-!! This program drives the two-dimensional non-isothermal incompressible
-!! Navier--Stokes simulation.
+!! This program drives the two-dimensional Truchas simulations.  The
+!! simulation implementation is selected with the --simulation option.
 !!
-!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! Neil Carlson <neil.n.carlson@gmail.com>, September 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-program ns_ht_2d_main
+program truchas_2d_main
 
   use,intrinsic :: iso_fortran_env, only: error_unit, output_unit
   use mpi_f08
@@ -18,8 +18,9 @@ program ns_ht_2d_main
   use parameter_list_json
   use simulation_command_line_type
   use simulation_environment_type
+  use simulation_factory
   use simulation_provenance
-  use ns_ht_2d_sim_type
+  use simulation_type
   implicit none
 
   integer :: inlun, stat
@@ -27,19 +28,24 @@ program ns_ht_2d_main
   type(parameter_list), pointer :: params
   type(simulation_command_line) :: cli
   type(simulation_environment) :: env
-  type(ns_ht_2d_sim) :: sim
+  class(simulation), allocatable :: sim
 
   call MPI_Init
   call init_parallel_communication
-
   call fhypre_initialize
 
-  !! Parse the command line.
   call cli%parse(stat, errmsg)
   if (cli%help) then
-    if (is_IOP) call cli%write_help('Two-dimensional non-isothermal incompressible Navier--Stokes simulation.')
+    if (is_IOP) then
+      call cli%write_help('Two-dimensional Truchas simulation.')
+      write(output_unit,'(a)') 'Simulations: ns_2d, ht_2d, ns_ht_2d, vof_2d.'
+    end if
     call MPI_Finalize
     stop
+  end if
+  if (stat == 0 .and. .not.allocated(cli%simulation)) then
+    stat = 1
+    errmsg = 'the --simulation option is required'
   end if
   if (stat /= 0) then
     if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
@@ -48,7 +54,14 @@ program ns_ht_2d_main
     stop
   end if
 
-  !! Prepare the output directory.
+  call new_simulation(cli%simulation, sim, stat, errmsg)
+  if (stat /= 0) then
+    if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
+    call MPI_Finalize
+    if (is_IOP) error stop 2
+    stop
+  end if
+
   if (is_IOP) call cli%prepare_output_dir(stat, errmsg)
   call broadcast(stat)
   if (stat /= 0) then
@@ -59,7 +72,6 @@ program ns_ht_2d_main
     stop
   end if
 
-  !! Initialize the simulation environment.
   env%input_dir = cli%input_dir
   env%output_dir = cli%output_dir
   env%comm = MPI_COMM_WORLD
@@ -72,8 +84,7 @@ program ns_ht_2d_main
     error stop 1
   end if
 
-  !! Write the log file prologue.
-  call write_simulation_prologue(env, cli%program, cli%program, cli%input_file, stat, errmsg)
+  call write_simulation_prologue(env, cli%program, cli%simulation, cli%input_file, stat, errmsg)
   if (stat /= 0) then
     call env%simlog%error('error staging input file: ' // errmsg)
     call env%simlog%close
@@ -81,7 +92,6 @@ program ns_ht_2d_main
     error stop 1
   end if
 
-  !! Read the input file.
   open(newunit=inlun, file=cli%input_file, action='read', access='stream')
   call parameter_list_from_json_stream(inlun, params, errmsg)
   close(inlun)
@@ -92,7 +102,6 @@ program ns_ht_2d_main
     error stop 1
   end if
 
-  !! Initialize the simulation.
   call env%timer%start('simulation')
   call env%simlog%begin_section('Initializing simulation.')
   call sim%init(env, params, stat, errmsg)
@@ -107,12 +116,10 @@ program ns_ht_2d_main
     call env%simlog%end_section('Simulation initialization complete.')
   end if
 
-  !! Run the simulation.
   call sim%run(env, stat, errmsg)
   call env%timer%stop('simulation')
-  if (stat /= 0) call env%simlog%error('flow simulation error: ' // errmsg)
+  if (stat /= 0) call env%simlog%error('simulation error: ' // errmsg)
 
-  !! Write simulation timing data.
   call env%simlog%info('')
   call env%simlog%info('timing-summary-begin')
   if (env%rank == 0) then
@@ -125,4 +132,4 @@ program ns_ht_2d_main
   call MPI_Finalize
   if (stat /= 0) error stop 1
 
-end program ns_ht_2d_main
+end program truchas_2d_main

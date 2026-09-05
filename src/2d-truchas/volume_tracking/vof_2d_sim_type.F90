@@ -20,10 +20,11 @@ module vof_2d_sim_type
   use vof_2d_solver_type
   use vof_2d_vtkhdf_writer_type
   use simulation_environment_type
+  use simulation_type
   implicit none
   private
 
-  type, public :: vof_2d_sim
+  type, extends(simulation), public :: vof_2d_sim
     private
     type(unstr_2d_mesh), pointer :: mesh => null()
     class(vector_func), allocatable :: velocity
@@ -52,7 +53,7 @@ contains
     use geom_axisymmetric, only: mesh_axisymmetry_mod
 
     class(vof_2d_sim), intent(out) :: this
-    type(simulation_environment), intent(in) :: env
+    type(simulation_environment), intent(inout) :: env
     type(parameter_list), intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg

@@ -18,6 +18,7 @@ add_library(truchas-extra
   ${CMAKE_CURRENT_BINARY_DIR}/simulation_build_info.F90
   simulation_log_type.F90
   simulation_environment_type.F90
+  simulation_type.F90
   simulation_command_line_type.F90
   simulation_provenance.F90)
 add_subdirectory(mesh)
@@ -31,6 +32,9 @@ add_subdirectory(volume_tracking)
 add_subdirectory(flow)
 add_subdirectory(heat_transfer)
 add_subdirectory(nonisothermal)
+
+add_executable(truchas_2d truchas_2d_main.F90 simulation_factory.F90)
+target_link_libraries(truchas_2d nsht2d flow2d ht2d volume_tracking_2d truchas-extra truchas ${TRUCHAS_LINK_LIBS})
 
 add_executable(mesh_example mesh_example.F90)
 
