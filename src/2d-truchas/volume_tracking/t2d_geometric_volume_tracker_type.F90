@@ -279,7 +279,7 @@ contains
 
   subroutine donor_fluxes_os_cell(this, i, vel, vof, dt)
 
-    use cell_geom_2d_vof_type
+    use t2d_cell_geom_vof_type
 
     class(t2d_geometric_volume_tracker), intent(inout) :: this
     integer, intent(in) :: i
@@ -287,7 +287,7 @@ contains
 
     real(r8) :: face_normal(2,4)
     integer :: j,k
-    type(cell_geom) :: cell
+    type(t2d_cell_geom) :: cell
 
     associate (cn => this%mesh%cnode(this%mesh%cstart(i):this%mesh%cstart(i+1)-1), &
         fi => this%mesh%cface(this%mesh%cstart(i):this%mesh%cstart(i+1)-1))
@@ -317,21 +317,21 @@ contains
   subroutine cell_volume_flux(dt, cell, vof, int_norm, vel, cutoff, priority, nmat, maxiter, &
       is_axisym, flux_volume)
 
-    use locate_plane_os_2d_function
-    use plane_2d_type
-    use cell_geom_2d_vof_type
+    use t2d_locate_plane_os_function
+    use t2d_plane_type
+    use t2d_cell_geom_vof_type
 
     real(r8), intent(in) :: dt, int_norm(:,:), vof(:), vel(:), cutoff
     integer, intent(in) :: priority(:), nmat, maxiter
     logical, intent(in) :: is_axisym
-    type(cell_geom), intent(in) :: cell
+    type(t2d_cell_geom), intent(in) :: cell
     real(r8), intent(out) :: flux_volume(:,:)
 
     real(r8) :: Vofint, dvol
     real(r8) :: flux_vol_sum(cell%nfc), flux_vol
     integer :: ni,f,nlast, nmat_in_cell
     logical :: is_mixed_donor_cell
-    type(plane) :: P
+    type(t2d_plane) :: P
 
     flux_volume = 0.0_r8
     flux_vol_sum = 0.0_r8
@@ -388,20 +388,20 @@ contains
   subroutine compute_material_volume_flux(material_volume_flux, flux_vol_sum, P, cell, &
       is_mixed_donor_cell, is_axisym, vel, dt, vof, cutoff)
 
-    use cell_geom_2d_vof_type
-    use truncation_volume_2d_type
-    use plane_2d_type
+    use t2d_cell_geom_vof_type
+    use t2d_truncation_volume_type
+    use t2d_plane_type
 
     real(r8), intent(out) :: material_volume_flux(:)
     real(r8), intent(inout) :: flux_vol_sum(:)
-    type(plane), intent(in) :: P
-    type(cell_geom), intent(in) :: cell
+    type(t2d_plane), intent(in) :: P
+    type(t2d_cell_geom), intent(in) :: cell
     logical, intent(in) :: is_mixed_donor_cell, is_axisym
     real(r8), intent(in) :: vel(:), dt, vof, cutoff
 
     integer :: f
     real(r8) :: vp, flux_vol, flux_vol_node(2,4)
-    type(truncation_volume) :: trunc_vol
+    type(t2d_truncation_volume) :: trunc_vol
 
     material_volume_flux = 0.0_r8
     do f = 1,cell%nfc
@@ -452,12 +452,12 @@ contains
 
   subroutine flux_vol_nodes(face, cell, dist, flux_vol, cutoff, flux_vol_node, is_axisym)
 
-    use cell_geom_2d_vof_type
-    use plane_2d_type
-    use locate_plane_os_2d_function
+    use t2d_cell_geom_vof_type
+    use t2d_plane_type
+    use t2d_locate_plane_os_function
 
     integer, intent(in) :: face
-    type(cell_geom), intent(in) :: cell
+    type(t2d_cell_geom), intent(in) :: cell
     real(r8), intent(in) :: dist, cutoff, flux_vol
     real(r8), intent(out) :: flux_vol_node(:,:)
     logical, intent(in) :: is_axisym
@@ -466,7 +466,7 @@ contains
 
     integer :: ifc, fc, icount, on_point(2)
     real(r8) :: xfc(2), rho_fp, node_set(2,2), fv_nodes(2,2)
-    type(plane) :: fluxplane
+    type(t2d_plane) :: fluxplane
     logical :: is_guess
 
     ! find the line-constant for the fluxing plane (fluxing line in 2D)

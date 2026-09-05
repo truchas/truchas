@@ -7,16 +7,16 @@
 program truncvolume_2dtest_driver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use truncation_volume_2d_type
-  use plane_2d_type
+  use t2d_truncation_volume_type
+  use t2d_plane_type
   implicit none
 
   real(r8) :: xn(2,4), vp
   real(r8) :: t_start, t_end
   real(r8) :: pi
   logical :: is_axisym
-  type(plane) :: intplane
-  type(truncation_volume) :: trunc_vol
+  type(t2d_plane) :: intplane
+  type(t2d_truncation_volume) :: trunc_vol
 
   t_start = 0.0_r8
   t_end = 0.0_r8

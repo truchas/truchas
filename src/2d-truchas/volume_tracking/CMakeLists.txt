@@ -10,10 +10,10 @@ set(VOLUME_TRACKING_2D_SOURCE_FILES
   t2d_volume_tracker_class.F90
   t2d_simple_volume_tracker_type.F90
   gradient_2d_cc_function.F90
-  cell_geom_2d_vof_type.F90
-  plane_2d_type.F90
-  locate_plane_os_2d_function.F90
-  truncation_volume_2d_type.F90
+  t2d_cell_geom_vof_type.F90
+  t2d_plane_type.F90
+  t2d_locate_plane_os_function.F90
+  t2d_truncation_volume_type.F90
   t2d_geometric_volume_tracker_type.F90
   vof_2d_vtkhdf_writer_type.F90
   vof_2d_solver_type.F90

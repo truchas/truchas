@@ -15,24 +15,24 @@
 
 #include "f90_assert.fpp"
 
-module locate_plane_os_2d_function
+module t2d_locate_plane_os_function
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use plane_2d_type
-  use truncation_volume_2d_type
+  use t2d_plane_type
+  use t2d_truncation_volume_type
   use brent_root_class
   implicit none
   private
 
   public :: locate_plane_os
 
-  type, extends(brent_root) :: vof_error_func
+  type, extends(brent_root) :: t2d_vof_error_func
     real(r8) :: target_volume, cell_volume
-    type(truncation_volume) :: trunc_vol
+    type(t2d_truncation_volume) :: trunc_vol
   contains
     procedure :: init
     procedure :: f => signed_eval
-  end type vof_error_func
+  end type t2d_vof_error_func
 
 contains
 
@@ -42,10 +42,10 @@ contains
     real(r8), intent(in) :: norm(:), vof, volume, node(:,:), cutoff
     integer, intent(in) :: maxiter
     logical, intent(in) :: axisym
-    type(plane), intent(inout) :: int_plane 
+    type(t2d_plane), intent(inout) :: int_plane
     logical, intent(in), optional :: guess
 
-    type(vof_error_func) :: vof_error
+    type(t2d_vof_error_func) :: vof_error
     real(r8) :: rho_min, rho_max
     integer :: ierr
     logical :: guess_
@@ -65,7 +65,7 @@ contains
   end subroutine locate_plane_os
 
   subroutine init(this, nodex, normal, vof, cell_volume, axisym)
-    class(vof_error_func), intent(out) :: this
+    class(t2d_vof_error_func), intent(out) :: this
     real(r8), intent(in) :: nodex(:,:), normal(:), vof, cell_volume
     logical, intent(in) :: axisym
     call this%trunc_vol%init(nodex, normal, axisym)
@@ -74,7 +74,7 @@ contains
   end subroutine init
 
   real(r8) function signed_eval(this, x)
-    class(vof_error_func), intent(inout) :: this
+    class(t2d_vof_error_func), intent(inout) :: this
     real(r8), intent(in) :: x
     signed_eval = (this%trunc_vol%volume(x) - this%target_volume) / this%cell_volume
   end function signed_eval
@@ -86,7 +86,7 @@ contains
   subroutine rho_bracket(norm, node, vof_error, rho_min, rho_max)
 
     real(r8), intent(in) :: norm(:), node(:,:)
-    type(vof_error_func), intent(inout) :: vof_error
+    type(t2d_vof_error_func), intent(inout) :: vof_error
     real(r8), intent(out) :: rho_min, rho_max
 
     real(r8) :: rho, err, err_min, err_max
@@ -116,4 +116,4 @@ contains
 
   end subroutine rho_bracket
 
-end module locate_plane_os_2d_function
+end module t2d_locate_plane_os_function
