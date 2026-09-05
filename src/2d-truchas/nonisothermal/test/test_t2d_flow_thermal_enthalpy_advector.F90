@@ -1,4 +1,4 @@
-program test_ns_ht_2d_enthalpy_advector
+program test_t2d_flow_thermal_enthalpy_advector
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -17,7 +17,7 @@ program test_ns_ht_2d_enthalpy_advector
   use scalar_func_factories, only: alloc_const_scalar_func
   use parameter_list_type
   use parameter_list_json
-  use ns_ht_2d_enthalpy_advector_type
+  use t2d_flow_thermal_enthalpy_advector_type
   implicit none
 
   integer :: status, stat
@@ -32,7 +32,7 @@ program test_ns_ht_2d_enthalpy_advector
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_ns_ht_2d_enthalpy_advector.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_thermal_enthalpy_advector.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -50,7 +50,7 @@ contains
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params
-    type(ns_ht_2d_enthalpy_advector) :: advector
+    type(t2d_flow_thermal_enthalpy_advector) :: advector
     type(bndry_face_func), target :: inflow_bc
     class(scalar_func), allocatable :: inflow_func
     real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:), expected(:)
@@ -120,7 +120,7 @@ contains
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params
-    type(ns_ht_2d_enthalpy_advector) :: advector
+    type(t2d_flow_thermal_enthalpy_advector) :: advector
     real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:), expected(:)
     real(r8), parameter :: q = 1.0e-3_r8
 
@@ -157,7 +157,7 @@ contains
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params
-    type(ns_ht_2d_enthalpy_advector) :: advector
+    type(t2d_flow_thermal_enthalpy_advector) :: advector
     real(r8), allocatable :: cell_temp(:), flux_volumes(:,:), dQ(:)
     integer :: c, f, i
     real(r8), parameter :: q = 1.0e-3_r8
@@ -212,4 +212,4 @@ contains
     error stop 1
   end subroutine
 
-end program test_ns_ht_2d_enthalpy_advector
+end program test_t2d_flow_thermal_enthalpy_advector

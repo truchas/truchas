@@ -1,16 +1,16 @@
 include(CTest)
 
-add_executable(test_ns_ht_2d_enthalpy_advector test_ns_ht_2d_enthalpy_advector.F90)
-target_link_libraries(test_ns_ht_2d_enthalpy_advector nsht2d truchas-extra truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_thermal_enthalpy_advector test_t2d_flow_thermal_enthalpy_advector.F90)
+target_link_libraries(test_t2d_flow_thermal_enthalpy_advector nsht2d truchas-extra truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_flow_thermal_integrator test_t2d_flow_thermal_integrator.F90)
 target_link_libraries(test_t2d_flow_thermal_integrator nsht2d truchas-extra truchas ${Truchas_LINK_LIBS})
 
 foreach(nproc IN ITEMS 1 4)
-  add_test(NAME ns_ht_2d_enthalpy_advector-${nproc}p
+  add_test(NAME t2d_flow_thermal_enthalpy_advector-${nproc}p
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
-      $<TARGET_FILE:test_ns_ht_2d_enthalpy_advector> ${MPIEXEC_POSTFLAGS})
-  set_tests_properties(ns_ht_2d_enthalpy_advector-${nproc}p PROPERTIES
+      $<TARGET_FILE:test_t2d_flow_thermal_enthalpy_advector> ${MPIEXEC_POSTFLAGS})
+  set_tests_properties(t2d_flow_thermal_enthalpy_advector-${nproc}p PROPERTIES
     PROCESSORS ${nproc}
       LABELS "UNIT;NONISOTHERMAL;2d-truchas")
 
