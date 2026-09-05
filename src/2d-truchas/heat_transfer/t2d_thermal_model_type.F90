@@ -176,7 +176,7 @@ contains
   subroutine init_bc(model, env, params, sigma, abszero, advection, stat, errmsg)
 
     use bitfield_type
-    use thermal_bc_factory_type
+    use t2d_thermal_bc_factory_type
     use string_utilities, only: i_to_c
 
     class(t2d_thermal_model), intent(inout), target :: model
@@ -187,7 +187,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(thermal_bc_factory) :: bc_fac
+    type(t2d_thermal_bc_factory) :: bc_fac
     type(bitfield) :: bitmask
     character(160) :: string
     logical, allocatable :: mask(:), mask_nonadv(:), mask_inflow(:)

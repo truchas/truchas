@@ -15,7 +15,7 @@ set(HT2D_SOURCE_FILES
     t2d_mfd_diff_matrix_type.F90
     t2d_mfd_diff_precon_type.F90
     t2d_thermal_vector_type.F90
-    thermal_bc_factory_type.F90
+    t2d_thermal_bc_factory_type.F90
     t2d_thermal_source_factory_type.F90
     t2d_thermal_model_type.F90
     t2d_thermal_norm_type.F90
