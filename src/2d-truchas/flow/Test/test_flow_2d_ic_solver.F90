@@ -11,7 +11,7 @@ program test_flow_2d_ic_solver
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use flow_2d_model_type
-  use flow_2d_solver_type
+  use t2d_flow_solver_type
   implicit none
 
   integer :: status, stat
@@ -42,7 +42,7 @@ contains
   subroutine test_uniform_velocity
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_solver), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)
@@ -78,7 +78,7 @@ contains
   subroutine test_incompatible_velocity
     type(t2d_unstr_mesh), pointer :: mesh
     type(flow_2d_model), target :: model
-    type(flow_2d_solver), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)

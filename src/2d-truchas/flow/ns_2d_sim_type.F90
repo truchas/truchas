@@ -24,7 +24,7 @@ module ns_2d_sim_type
   use vector_func_factories, only: alloc_vector_func
   use vector_func_projection
   use flow_2d_model_type
-  use ns_2d_solver_type
+  use t2d_flow_integrator_type
   use flow_2d_vtkhdf_writer_type
   use simulation_environment_type
   use simulation_type
@@ -38,7 +38,7 @@ module ns_2d_sim_type
     type(material_model) :: matl_model
     type(material_distribution), pointer :: matl_dist => null()
     type(flow_2d_model), pointer :: model => null()
-    type(ns_2d_solver), pointer :: solver => null()
+    type(t2d_flow_integrator), pointer :: solver => null()
     type(flow_2d_vtkhdf_writer) :: output
     type(parameter_list) :: temporal_output
     real(r8) :: t_init

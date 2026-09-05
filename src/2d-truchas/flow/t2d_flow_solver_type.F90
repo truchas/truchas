@@ -1,7 +1,7 @@
 !!
-!! FLOW_2D_SOLVER_TYPE
+!! T2D_FLOW_SOLVER_TYPE
 !!
-!! This module defines FLOW_2D_SOLVER, the common two-dimensional flow
+!! This module defines T2D_FLOW_SOLVER, the common two-dimensional flow
 !! mechanics solver.  It advances the implicit momentum predictor and
 !! incremental pressure correction, while allowing a caller to interpose
 !! material or other coupled-physics transport before the momentum update.
@@ -16,7 +16,7 @@
 
 #include "f90_assert.fpp"
 
-module flow_2d_solver_type
+module t2d_flow_solver_type
 
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use simulation_environment_type
@@ -32,7 +32,7 @@ module flow_2d_solver_type
   implicit none
   private
 
-  type, public :: flow_2d_solver
+  type, public :: t2d_flow_solver
     private
     type(flow_2d_model), pointer :: model => null()  ! unowned reference
     type(flow_2d_state) :: state
@@ -69,7 +69,7 @@ module flow_2d_solver_type
 contains
 
   subroutine init(this, env, model, momentum_params, projection_params, courant_number, stat, errmsg)
-    class(flow_2d_solver), intent(out) :: this
+    class(t2d_flow_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(flow_2d_model), target, intent(in) :: model
     type(parameter_list), target, intent(in), optional :: momentum_params
@@ -113,7 +113,7 @@ contains
 
 
   subroutine set_volume_fractions(this, vfrac)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%model%set_volume_fractions(vfrac)
@@ -122,7 +122,7 @@ contains
 
 
   subroutine set_initial_material_state(this, vfrac, temperature)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
     call this%model%set_initial_material_state(vfrac, temperature)
@@ -132,14 +132,14 @@ contains
 
   !! Save the mobile-fluid mass density before thermal phase change.
   subroutine set_pre_solidification_state(this)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
 
     call this%model%set_pre_solidification_state()
   end subroutine set_pre_solidification_state
 
 
   subroutine set_buoyancy_temperature(this, temperature)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
 
     call this%model%set_buoyancy_temperature(temperature)
@@ -147,7 +147,7 @@ contains
 
 
   subroutine set_initial_state(this, env, time, dt, velocity, stat)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     integer, intent(out) :: stat
@@ -164,7 +164,7 @@ contains
 
   !! Return no-copy views of the cell-centered pressure and velocity.
   subroutine get_cell_flow_soln(this, pressure, velocity)
-    class(flow_2d_solver), target, intent(in) :: this
+    class(t2d_flow_solver), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
     if (this%step_is_pending) then
@@ -180,7 +180,7 @@ contains
   !! Return a no-copy view of the full-local mask used to distinguish genuine
   !! flow equations from dummy equations.
   subroutine get_cell_flow_active(this, active)
-    class(flow_2d_solver), target, intent(in) :: this
+    class(t2d_flow_solver), target, intent(in) :: this
     logical, pointer, intent(out) :: active(:)
 
     active => this%flow_active
@@ -189,7 +189,7 @@ contains
 
   !! Return a no-copy view of the face-normal velocity.
   subroutine get_face_velocity(this, velocity)
-    class(flow_2d_solver), target, intent(in) :: this
+    class(t2d_flow_solver), target, intent(in) :: this
     real(r8), pointer, intent(out) :: velocity(:)
 
     if (this%step_is_pending) then
@@ -201,7 +201,7 @@ contains
 
 
   subroutine delete(this)
-    type(flow_2d_solver), intent(inout) :: this
+    type(t2d_flow_solver), intent(inout) :: this
 
     if (associated(this%projection_solver)) deallocate(this%projection_solver)
     if (associated(this%ic_solver)) deallocate(this%ic_solver)
@@ -209,7 +209,7 @@ contains
 
 
   subroutine update_flow_active(this)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
 
     this%flow_active = this%model%matl_props%cell_t <= regular_t
   end subroutine
@@ -221,7 +221,7 @@ contains
   !! explicit momentum-advection contribution.  The result remains pending
   !! until COMMIT_STEP is called.
   subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
@@ -247,7 +247,7 @@ contains
 
 
   subroutine advance_momentum(this, env, t_n, t_np1, stat, errmsg, flux_volumes)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
     real(r8), intent(in) :: t_n, t_np1
     integer, intent(out) :: stat
@@ -343,7 +343,7 @@ contains
 
 
   subroutine commit_step(this)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
 
     if (this%step_is_pending) then
       this%state%vel_cc = this%pending_state%vel_cc
@@ -356,7 +356,7 @@ contains
 
 
   subroutine reject_step(this)
-    class(flow_2d_solver), intent(inout) :: this
+    class(t2d_flow_solver), intent(inout) :: this
 
     this%step_is_pending = .false.
   end subroutine
@@ -365,7 +365,7 @@ contains
   !! Return the maximum step size satisfying the configured convective Courant
   !! number for the current face-normal velocity.
   function courant_time_step(this) result(dt)
-    class(flow_2d_solver), intent(in) :: this
+    class(t2d_flow_solver), intent(in) :: this
     real(r8) :: dt
 
     integer :: f
@@ -387,7 +387,7 @@ contains
   !! These fields are updated at each requested solution output and written
   !! by the simulation's output writer.
   subroutine init_temporal_output(this, data)
-    class(flow_2d_solver), intent(in) :: this
+    class(t2d_flow_solver), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
@@ -397,10 +397,10 @@ contains
   !! Set the current values of the temporal scalar fields published by this
   !! solver.
   subroutine set_temporal_output(this, data)
-    class(flow_2d_solver), intent(in) :: this
+    class(t2d_flow_solver), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
     call data%set('NStep', this%nstep)
   end subroutine
 
-end module flow_2d_solver_type
+end module t2d_flow_solver_type

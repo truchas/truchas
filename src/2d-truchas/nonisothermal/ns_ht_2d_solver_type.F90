@@ -26,7 +26,7 @@ module ns_ht_2d_solver_type
   use flow_2d_model_type
   use flow_material_mapping_type
   use flow_2d_material_transport_type
-  use flow_2d_solver_type
+  use t2d_flow_solver_type
   use ht_2d_model_type
   use ht_2d_solver_type
   use ns_ht_2d_enthalpy_advector_type
@@ -39,7 +39,7 @@ module ns_ht_2d_solver_type
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
     type(flow_material_mapping) :: matl_map
-    type(flow_2d_solver) :: flow
+    type(t2d_flow_solver) :: flow
     type(flow_2d_material_transport) :: material_transport
     type(ns_ht_2d_enthalpy_advector) :: enthalpy_advector
     type(ht_2d_solver), pointer :: thermal => null()
