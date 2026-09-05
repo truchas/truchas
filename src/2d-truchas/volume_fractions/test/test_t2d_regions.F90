@@ -1,8 +1,8 @@
-program test_2d_regions
+program test_t2d_regions
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use region_class
-  use region_factory
+  use t2d_region_class
+  use t2d_region_factory
   use parameter_list_type
   use parameter_list_json
   use t2d_unstr_mesh_type
@@ -32,7 +32,7 @@ program test_2d_regions
     env%comm = MPI_COMM_WORLD
     call MPI_Comm_rank(env%comm, env%rank)
     call MPI_Comm_size(env%comm, env%nproc)
-    call env%simlog%init(env%comm, 'test_2d_regions.log', stat, errmsg, terminal_output=.false.)
+    call env%simlog%init(env%comm, 'test_t2d_regions.log', stat, errmsg, terminal_output=.false.)
     if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
     mesh => new_unstr_2d_mesh(env, [-1.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4,2])
     call config_mesh_cell_sets(mesh)
@@ -65,7 +65,7 @@ contains
 
   subroutine test_box_region
 
-    class(region), allocatable :: r
+    class(t2d_region), allocatable :: r
     type(parameter_list) :: params
     real(r8), parameter :: lower(*) = [1, 1], upper(*)=[3,1]
     character(:), allocatable :: errmsg
@@ -101,7 +101,7 @@ contains
 
   subroutine test_disk_region
 
-    class(region), allocatable :: r
+    class(t2d_region), allocatable :: r
     type(parameter_list) :: params
     character(:), allocatable :: errmsg
     integer :: stat, unused
@@ -132,7 +132,7 @@ contains
 
   subroutine test_half_plane_region
 
-    class(region), allocatable :: r
+    class(t2d_region), allocatable :: r
     type(parameter_list) :: params
     real(r8), parameter :: point(*) = [2,0], normal(*) = [1,2]
     character(:), allocatable :: errmsg
@@ -164,7 +164,7 @@ contains
 
   subroutine test_cell_set_region
 
-    class(region), allocatable :: r
+    class(t2d_region), allocatable :: r
     type(parameter_list) :: params
     real(r8), parameter :: unused(*) = [0,0]
     character(:), allocatable :: errmsg
@@ -204,4 +204,4 @@ contains
     write(error_unit,'(a)') errmsg
   end subroutine
 
-end program test_2d_regions
+end program test_t2d_regions
