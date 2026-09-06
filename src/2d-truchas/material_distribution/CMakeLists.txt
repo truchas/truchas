@@ -1,4 +1,5 @@
 target_sources(truchas-extra PRIVATE
+  material_distribution_type.F90
   t2d_region_class.F90
   t2d_region_factory.F90
   t2d_cell_set_region_type.F90
