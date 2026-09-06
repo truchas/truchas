@@ -1,10 +1,3 @@
-#TODO: finalize build system
-project(HeatTransfer2D Fortran)
-
-# Want modules in the build directory.
-unset(CMAKE_Fortran_MODULE_DIRECTORY)
-
-# --- Library ht2d
 set(HT2D_SOURCE_FILES
     # Temporary bridge until refactor-diffusion-solver provides these through
     # the truchas library.
@@ -22,18 +15,11 @@ set(HT2D_SOURCE_FILES
     t2d_thermal_precon_type.F90
     t2d_thermal_idaesol_model_type.F90
     t2d_thermal_ic_solver_type.F90
-    t2d_thermal_solver_type.F90
-    t2d_thermal_integrator_type.F90
-    t2d_thermal_sim_type.F90
-    t2d_thermal_vtkhdf_writer_type.F90
     t2d_thermal_tofh_type.F90
-)
+    t2d_thermal_solver_type.F90)
 
 add_library(ht2d ${HT2D_SOURCE_FILES})
 set_target_properties(ht2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_link_libraries(ht2d PUBLIC truchas truchas-extra ${Truchas_LINK_LIBS})
 target_include_directories(ht2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
-
-# --- ctest binaries
-add_subdirectory(test)
