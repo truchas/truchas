@@ -18,7 +18,11 @@ target_link_libraries(test_t2d_thermal_common PRIVATE ht2d truchas ${Truchas_LIN
 
 function(add_thermal_unit_test target source)
   add_executable(${target} ${source})
-  target_link_libraries(${target} test_t2d_thermal_common ht2d truchas ${Truchas_LINK_LIBS})
+  if(target STREQUAL "test_t2d_thermal_integrator")
+    target_link_libraries(${target} test_t2d_thermal_common thermal_sim2d truchas ${Truchas_LINK_LIBS})
+  else()
+    target_link_libraries(${target} test_t2d_thermal_common ht2d truchas ${Truchas_LINK_LIBS})
+  endif()
 
   foreach(nproc IN ITEMS 1 4)
     set(name "${target}-${nproc}p")

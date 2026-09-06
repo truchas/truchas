@@ -42,13 +42,13 @@ add_executable(test_t2d_flow_solver test_t2d_flow_solver.F90)
 target_link_libraries(test_t2d_flow_solver flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_flow_integrator test_t2d_flow_integrator.F90)
-target_link_libraries(test_t2d_flow_integrator flow2d truchas ${Truchas_LINK_LIBS})
+target_link_libraries(test_t2d_flow_integrator flow_sim2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_flow_ic_solver test_t2d_flow_ic_solver.F90)
 target_link_libraries(test_t2d_flow_ic_solver flow2d truchas ${Truchas_LINK_LIBS})
 
 add_executable(test_t2d_flow_vtkhdf_nan test_t2d_flow_vtkhdf_nan.F90)
-target_link_libraries(test_t2d_flow_vtkhdf_nan flow2d truchas ${Truchas_LINK_LIBS})
+target_link_libraries(test_t2d_flow_vtkhdf_nan flow_sim2d truchas ${Truchas_LINK_LIBS})
 
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   ./test_t2d_flow_operators ${MPIEXEC_POSTFLAGS})

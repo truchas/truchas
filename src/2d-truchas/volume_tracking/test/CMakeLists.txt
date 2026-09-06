@@ -2,13 +2,8 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_executable(test_t2d_geometric_volume_tracker test_t2d_geometric_volume_tracker.F90)
 target_link_libraries(test_t2d_geometric_volume_tracker volume_tracking_2d truchas ${TRUCHAS_LINK_LIBS})
-target_include_directories(test_t2d_geometric_volume_tracker BEFORE PRIVATE
-  "${VOLUME_TRACKING_2D_MODULE_DIR}")
-
 add_executable(test_t2d_simple_volume_tracker test_t2d_simple_volume_tracker.F90)
 target_link_libraries(test_t2d_simple_volume_tracker volume_tracking_2d truchas ${TRUCHAS_LINK_LIBS})
-target_include_directories(test_t2d_simple_volume_tracker BEFORE PRIVATE
-  "${VOLUME_TRACKING_2D_MODULE_DIR}")
 
 add_test(NAME t2d_geometric_volume_tracker
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
