@@ -33,7 +33,7 @@ def main():
 
     executable = Path(sys.argv[1]).resolve()
     mpiexec = shutil.which(sys.argv[2]) or sys.argv[2]
-    output_dir = Path(tempfile.mkdtemp(prefix="flow_2d_vtkhdf_nan_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_vtkhdf_nan_"))
     result = subprocess.run(
         [mpiexec, "-n", "1", str(executable)],
         cwd=output_dir,

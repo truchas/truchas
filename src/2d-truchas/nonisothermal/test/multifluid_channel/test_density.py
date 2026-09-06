@@ -20,13 +20,13 @@ def main():
         return 2
 
     executable, input_file, mpiexec = map(Path, sys.argv[1:])
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_multifluid_density_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_thermal_multifluid_density_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow_thermal", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")
-        raise RuntimeError(f"ns_ht_2d returned {result.returncode}")
+        raise RuntimeError(f"flow_thermal returned {result.returncode}")
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
     expected_times = (0.0, 0.0025, 0.005, 0.0075, 0.01)

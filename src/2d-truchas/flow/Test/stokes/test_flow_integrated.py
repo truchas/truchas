@@ -15,7 +15,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 
 def run_case(executable, input_file, mpiexec):
-    output_dir = pathlib.Path(tempfile.mkdtemp(prefix="flow_2d_channel_4p_"))
+    output_dir = pathlib.Path(tempfile.mkdtemp(prefix="flow_stokes_channel_4p_"))
     command = [str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)]
     command = [mpiexec, "-n", "4"] + command
     result = subprocess.run(
@@ -28,10 +28,10 @@ def run_case(executable, input_file, mpiexec):
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        raise RuntimeError(f"flow_2d returned {result.returncode} with 4 processes")
+        raise RuntimeError(f"flow returned {result.returncode} with 4 processes")
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
-        raise RuntimeError(f"flow_2d did not produce {output_file}")
+        raise RuntimeError(f"flow did not produce {output_file}")
     return TruchasVTKHDFData(output_file), output_dir
 
 

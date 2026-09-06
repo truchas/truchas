@@ -6,7 +6,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "support"))
-from ht_2d_test_util import (
+from thermal_test_util import (
     TruchasVTKHDFData,
     check_close,
     execute,

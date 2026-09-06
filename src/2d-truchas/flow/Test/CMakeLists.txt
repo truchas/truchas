@@ -137,23 +137,23 @@ add_test(t2d_flow_operators-4p ${test_launch})
 set_tests_properties(t2d_flow_operators-4p PROPERTIES PROCESSORS 4)
 set_property(TEST t2d_flow_operators-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
-add_test(NAME flow_2d_operators_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+add_test(NAME flow_operators_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   $<TARGET_FILE:test_t2d_flow_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_operators_external-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_operators_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
-add_test(NAME flow_2d_operators_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+set_tests_properties(flow_operators_external-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_operators_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+add_test(NAME flow_operators_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   $<TARGET_FILE:test_t2d_flow_operators> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_operators_external-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_operators_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+set_tests_properties(flow_operators_external-4p PROPERTIES PROCESSORS 4)
+set_property(TEST flow_operators_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
-add_test(NAME flow_2d_mesh_factory_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+add_test(NAME flow_mesh_factory_external-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   $<TARGET_FILE:test_t2d_unstr_mesh_factory> ${CMAKE_CURRENT_SOURCE_DIR}/mixed-2d.gen ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_mesh_factory_external-1p PROPERTIES PROCESSORS 1)
-set_property(TEST flow_2d_mesh_factory_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
-add_test(NAME flow_2d_mesh_factory_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+set_tests_properties(flow_mesh_factory_external-1p PROPERTIES PROCESSORS 1)
+set_property(TEST flow_mesh_factory_external-1p PROPERTY LABELS UNIT FLOW 2d-truchas)
+add_test(NAME flow_mesh_factory_external-4p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   $<TARGET_FILE:test_t2d_unstr_mesh_factory> ${CMAKE_CURRENT_SOURCE_DIR}/unstr-quad.gen ${MPIEXEC_POSTFLAGS})
-set_tests_properties(flow_2d_mesh_factory_external-4p PROPERTIES PROCESSORS 4)
-set_property(TEST flow_2d_mesh_factory_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
+set_tests_properties(flow_mesh_factory_external-4p PROPERTIES PROCESSORS 4)
+set_property(TEST flow_mesh_factory_external-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 set(test_launch ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
   ./test_t2d_flow_projection ${MPIEXEC_POSTFLAGS})
 add_test(t2d_flow_projection-4p ${test_launch})
@@ -210,134 +210,134 @@ add_test(t2d_flow_ic_solver-4p ${test_launch})
 set_tests_properties(t2d_flow_ic_solver-4p PROPERTIES PROCESSORS 4)
 set_property(TEST t2d_flow_ic_solver-4p PROPERTY LABELS UNIT FLOW 2d-truchas)
 
-add_test(NAME stokes_2d_channel_rotated
+add_test(NAME flow_stokes_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_integrated.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_integrated.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/pressure_channel_analytic.json
           ${MPIEXEC})
-set_tests_properties(stokes_2d_channel_rotated PROPERTIES
+set_tests_properties(flow_stokes_channel_rotated PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME stokes_2d_integrated_noisy_channel
+add_test(NAME flow_stokes_channel_noisy
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_integrated.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_integrated.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/pressure_channel_noisy_analytic.json
           ${MPIEXEC})
-set_tests_properties(stokes_2d_integrated_noisy_channel PROPERTIES
+set_tests_properties(flow_stokes_channel_noisy PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME ns_2d_channel_rotated
+add_test(NAME flow_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_channel.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_channel.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/pressure_channel_analytic.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_channel_rotated PROPERTIES
+set_tests_properties(flow_channel_rotated PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME stokes_2d_channel
+add_test(NAME flow_stokes_channel
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_integrated.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_integrated.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/pressure_channel_analytic_aligned.json
           ${MPIEXEC} 0.0)
-set_tests_properties(stokes_2d_channel PROPERTIES
+set_tests_properties(flow_stokes_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME stokes_2d_couette_viscosity_contrast
+add_test(NAME flow_stokes_couette_viscosity_contrast
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_couette.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_couette.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/couette_viscosity_contrast.json
           ${MPIEXEC})
-set_tests_properties(stokes_2d_couette_viscosity_contrast PROPERTIES
+set_tests_properties(flow_stokes_couette_viscosity_contrast PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME ns_2d_channel
+add_test(NAME flow_channel
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_channel.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_channel.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/pressure_channel_analytic_aligned.json
           ${MPIEXEC} 0.0)
-set_tests_properties(ns_2d_channel PROPERTIES
+set_tests_properties(flow_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_solid_wall_channel
+add_test(NAME flow_inviscid_solid_wall_channel
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_channel.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_solid_wall_channel.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_channel.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_solid_wall_channel PROPERTIES
+set_tests_properties(flow_inviscid_solid_wall_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_mixed_solid_wall_channel
+add_test(NAME flow_inviscid_mixed_solid_wall_channel
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_mixed_solid_wall_channel.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_mixed_solid_wall_channel.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/mixed_solid_wall_channel.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_mixed_solid_wall_channel PROPERTIES
+set_tests_properties(flow_inviscid_mixed_solid_wall_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_pure
+add_test(NAME flow_inviscid_solid_wall_hydrostatic_pure
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_pure.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_solid_wall_hydrostatic_pure.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_pure.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_pure PROPERTIES
+set_tests_properties(flow_inviscid_solid_wall_hydrostatic_pure PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_mixed
+add_test(NAME flow_inviscid_solid_wall_hydrostatic_mixed
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_mixed.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_solid_wall_hydrostatic_mixed.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_mixed.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_mixed PROPERTIES
+set_tests_properties(flow_inviscid_solid_wall_hydrostatic_mixed PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_sloped
+add_test(NAME flow_inviscid_solid_wall_hydrostatic_sloped
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_sloped.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_solid_wall_hydrostatic_sloped.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_sloped.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_sloped PROPERTIES
+set_tests_properties(flow_inviscid_solid_wall_hydrostatic_sloped PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy
+add_test(NAME flow_inviscid_solid_wall_hydrostatic_sloped_noisy
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_solid_wall_hydrostatic_sloped.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_solid_wall_hydrostatic_sloped.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/solid_wall_hydrostatic_sloped_noisy.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy PROPERTIES
+set_tests_properties(flow_inviscid_solid_wall_hydrostatic_sloped_noisy PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
@@ -345,124 +345,124 @@ set_tests_properties(ns_2d_inviscid_solid_wall_hydrostatic_sloped_noisy PROPERTI
 # TODO: Enable after the solid/liquid no-slip discretization places the
 # effective wall at the material interface rather than at the solid-cell
 # center.  The current result is not accurate enough for this analytic test.
-# add_test(NAME ns_2d_poiseuille_solid_wall
+# add_test(NAME flow_poiseuille_solid_wall
 #   COMMAND ${Python3_EXECUTABLE}
-#           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_poiseuille_solid_wall.py
+#           ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_poiseuille_solid_wall.py
 #           $<TARGET_FILE:truchas_2d>
 #           ${CMAKE_CURRENT_SOURCE_DIR}/ns/poiseuille_solid_wall.json
 #           ${MPIEXEC})
-# set_tests_properties(ns_2d_poiseuille_solid_wall PROPERTIES
+# set_tests_properties(flow_poiseuille_solid_wall PROPERTIES
 #   PROCESSORS 4
 #   TIMEOUT 120
 #   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_couette
+add_test(NAME flow_couette
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_couette.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_couette.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/couette_mixed.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_couette PROPERTIES
+set_tests_properties(flow_couette PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_couette_rotated
+add_test(NAME flow_couette_rotated
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_couette.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_couette.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/couette_rotated.json
           ${MPIEXEC}
           30.0)
-set_tests_properties(ns_2d_couette_rotated PROPERTIES
+set_tests_properties(flow_couette_rotated PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_multifluid_hydrostatic
+add_test(NAME flow_multifluid_hydrostatic
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_multifluid_hydrostatic.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_multifluid_hydrostatic.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/multifluid_hydrostatic.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_multifluid_hydrostatic PROPERTIES
+set_tests_properties(flow_multifluid_hydrostatic PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_cylinder
+add_test(NAME flow_cylinder
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/cylinder/test.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/cylinder/input.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_cylinder PROPERTIES
+set_tests_properties(flow_cylinder PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_bubble_rise
+add_test(NAME flow_bubble_rise
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/bubble_rise/test.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/bubble_rise/input.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_bubble_rise PROPERTIES
+set_tests_properties(flow_bubble_rise PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME stokes_2d_integrated_body_acceleration
+add_test(NAME flow_stokes_body_acceleration
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_gravity.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_gravity.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/body_acceleration.json
           ${MPIEXEC})
-set_tests_properties(stokes_2d_integrated_body_acceleration PROPERTIES
+set_tests_properties(flow_stokes_body_acceleration PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME stokes_2d_integrated_hydrostatic
+add_test(NAME flow_stokes_hydrostatic
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_2d_hydrostatic.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/stokes/test_flow_hydrostatic.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/stokes/hydrostatic_box.json
           ${MPIEXEC})
-set_tests_properties(stokes_2d_integrated_hydrostatic PROPERTIES
+set_tests_properties(flow_stokes_hydrostatic PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;STOKES;2d-truchas")
 
-add_test(NAME ns_2d_integrated_lid_cavity
+add_test(NAME flow_lid_driven_cavity
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_integrated.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_integrated.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/lid_driven_cavity_ns.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_integrated_lid_cavity PROPERTIES
+set_tests_properties(flow_lid_driven_cavity PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_channel
+add_test(NAME flow_inviscid_channel
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_inviscid.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_inviscid.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/inviscid_channel.json
           ${MPIEXEC})
-set_tests_properties(ns_2d_inviscid_channel PROPERTIES
+set_tests_properties(flow_inviscid_channel PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")
 
-add_test(NAME ns_2d_inviscid_channel_rotated
+add_test(NAME flow_inviscid_channel_rotated
   COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_ns_2d_inviscid.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/ns/test_flow_inviscid.py
           $<TARGET_FILE:truchas_2d>
           ${CMAKE_CURRENT_SOURCE_DIR}/ns/inviscid_channel_rotated.json
           ${MPIEXEC} 0.8660254037844386 0.5)
-set_tests_properties(ns_2d_inviscid_channel_rotated PROPERTIES
+set_tests_properties(flow_inviscid_channel_rotated PROPERTIES
   PROCESSORS 4
   TIMEOUT 120
   LABELS "INTEGRATED;NS;2d-truchas")

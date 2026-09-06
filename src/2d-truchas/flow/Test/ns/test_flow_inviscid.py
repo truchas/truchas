@@ -16,7 +16,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 def run_case(executable, input_file, nproc, mpiexec):
     output_dir = pathlib.Path(
-        tempfile.mkdtemp(prefix=f"ns_2d_inviscid_channel_{nproc}p_")
+        tempfile.mkdtemp(prefix=f"flow_inviscid_channel_{nproc}p_")
     )
     command = [str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)]
     if nproc > 1:
@@ -31,10 +31,10 @@ def run_case(executable, input_file, nproc, mpiexec):
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        raise RuntimeError(f"ns_2d returned {result.returncode} with {nproc} processes")
+        raise RuntimeError(f"flow returned {result.returncode} with {nproc} processes")
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
-        raise RuntimeError(f"ns_2d did not produce {output_file}")
+        raise RuntimeError(f"flow did not produce {output_file}")
     return TruchasVTKHDFData(output_file), output_dir
 
 

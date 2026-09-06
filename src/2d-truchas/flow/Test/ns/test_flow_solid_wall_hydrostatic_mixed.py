@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Four-process hydrostatic regression for a sloped material-defined wall."""
+"""Four-process hydrostatic regression for mixed material-defined solid walls."""
 
 from pathlib import Path
 import subprocess
@@ -22,13 +22,13 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_solid_wall_hydrostatic_sloped_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_solid_wall_hydrostatic_mixed_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
@@ -78,7 +78,7 @@ def main():
             )
             return 1
 
-    print("PASS: sloped solid-wall hydrostatic state is preserved")
+    print("PASS: mixed solid-wall hydrostatic state is preserved")
     print(f"      artifacts: {output_dir}")
     return 0
 

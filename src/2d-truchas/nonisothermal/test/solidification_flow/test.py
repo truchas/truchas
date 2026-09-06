@@ -22,7 +22,7 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    run_root = Path(tempfile.mkdtemp(prefix="ns_ht_2d_solidification_flow_4p_"))
+    run_root = Path(tempfile.mkdtemp(prefix="flow_thermal_solidification_flow_4p_"))
     result = subprocess.run(
         [mpiexec, "-n", "4", str(executable), "--simulation", "flow_thermal", "--output-dir", str(run_root),
          "--force", str(input_file)],
@@ -30,7 +30,7 @@ def main():
     )
     (run_root / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
-        raise RuntimeError(f"ns_ht_2d returned {result.returncode} in {run_root}\n{result.stdout}")
+        raise RuntimeError(f"flow_thermal returned {result.returncode} in {run_root}\n{result.stdout}")
 
     data = TruchasVTKHDFData(run_root / "out.vtkhdf")
     expected_times = (0.0, 1.0, 5.0, 20.0, 100.0, 200.0)

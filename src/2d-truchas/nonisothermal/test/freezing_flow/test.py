@@ -22,7 +22,7 @@ PHASE_FIELDS = (
 
 
 def run_case(executable, input_file, mpiexec):
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_ht_2d_freezing_flow_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_thermal_freezing_flow_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow_thermal", "--output-dir", ".", "--force",
          str(input_file)],
@@ -35,12 +35,12 @@ def run_case(executable, input_file, mpiexec):
     (output_dir / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
         raise RuntimeError(
-            f"ns_ht_2d returned {result.returncode} in {output_dir}\n"
+            f"flow_thermal returned {result.returncode} in {output_dir}\n"
             f"{result.stdout}"
         )
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
-        raise RuntimeError(f"ns_ht_2d did not produce {output_file}")
+        raise RuntimeError(f"flow_thermal did not produce {output_file}")
     return TruchasVTKHDFData(output_file), output_dir
 
 

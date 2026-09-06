@@ -1,6 +1,6 @@
 # 2D heat-transport tests
 
-The component tests are the six `test_ht_2d_*.F90` programs in this
+The component tests are the six `test_t2d_thermal_*.F90` programs in this
 directory. They share the material and mesh fixture in `support/` and run in
 both serial and four-process configurations.
 
@@ -28,4 +28,4 @@ See `linear/README.md` for the x/y analytic cases and `partition/README.md`
 for the standalone VTKHDF partition test.
 
 Reference-data cases keep their VTKHDF reference under `reference/`. Shared
-execution and VTKHDF helpers are in `support/ht_2d_test_util.py`.
+execution and VTKHDF helpers are in `support/thermal_test_util.py`.

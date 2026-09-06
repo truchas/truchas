@@ -6,7 +6,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "support"))
-from ht_2d_test_util import TruchasVTKHDFData, execute, finish, run_from_argv
+from thermal_test_util import TruchasVTKHDFData, execute, finish, run_from_argv
 
 
 def check_reference(actual, reference, tolerance, label):

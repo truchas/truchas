@@ -6,7 +6,7 @@ flow/thermal models.  More detailed subsystem items remain in
 
 ## Multimaterial and multiphysics capability
 
-- Extend `ns_ht_2d` beyond the current single-phase material contract.  The
+- Extend `flow_thermal` beyond the current single-phase material contract.  The
   material factory already has a parameter-list representation for
   multiphase materials, but the 2D flow path must first split each parent
   material fraction into temperature-dependent phase fractions.  The flow

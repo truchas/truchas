@@ -23,7 +23,7 @@ def main():
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
     angle = float(sys.argv[4]) if len(sys.argv) == 5 else 0.0
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_couette_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_couette_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
@@ -34,7 +34,7 @@ def main():
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
