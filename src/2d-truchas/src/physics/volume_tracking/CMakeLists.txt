@@ -18,3 +18,5 @@ set_target_properties(volume_tracking_2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_link_libraries(volume_tracking_2d PUBLIC truchas-extra truchas ${TRUCHAS_LINK_LIBS})
 target_include_directories(volume_tracking_2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
+
+add_subdirectory(test)
