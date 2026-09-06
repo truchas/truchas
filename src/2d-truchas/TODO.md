@@ -2,7 +2,7 @@
 
 This is the cross-cutting capability list for the 2D flow and coupled
 flow/thermal models.  More detailed subsystem items remain in
-`volume_tracking/TODO.md` and `nonisothermal/TODO.md`.
+`physics/volume_tracking/TODO.md` and `simulations/flow_thermal/TODO.md`.
 
 ## Multimaterial and multiphysics capability
 
@@ -38,7 +38,7 @@ flow/thermal models.  More detailed subsystem items remain in
   Quad meshes are currently the supported and tested flow topology.
 - Improve the no-slip discretization at solid/fluid interfaces.  The current
   treatment places the effective wall at the solid-cell center rather than at
-  the material interface; [the dormant solid-wall Poiseuille test](flow/Test/ns/poiseuille_solid_wall.json)
+  the material interface; [the dormant solid-wall Poiseuille test](simulations/flow/test/ns/poiseuille_solid_wall.json)
   demonstrates the resulting velocity error.
 - Continue improving accuracy on non-orthogonal meshes and reduce the finite-
   resolution hydrostatic well-balance residual.

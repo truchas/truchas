@@ -22,7 +22,6 @@ except ImportError:
 from .TruchasMappedData import *
 from .TruchasData import *
 from .TruchasEMData import TruchasEMData
-from .TruchasVTKHDFData import TruchasVTKHDFData
 from .TruchasEnvironment import *
 from .TruchasTest import *
 from .TruchasStudy import *
