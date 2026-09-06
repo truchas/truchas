@@ -81,6 +81,11 @@ program test_t2d_flow_material_props
   call require(props%face_t(interior_face) == regular_void_t, 'wrong fluid/VOID face classification')
   call require(props%any_void, 'fluid/VOID case did not report VOID')
 
+  vfrac_void = reshape([1.0e-8_r8, 1.0_r8-1.0e-8_r8, 0.0_r8, 1.0_r8], shape(vfrac_void))
+  call props%set_volume_fractions(vfrac_void)
+  call require(abs(props%inv_density_f(interior_face) - 500.0_r8) < 1.0e-10_r8, &
+      'fluid/VOID face density did not respect the minimum fraction')
+
   call env%simlog%close()
   call halt_parallel_communication
   stop status

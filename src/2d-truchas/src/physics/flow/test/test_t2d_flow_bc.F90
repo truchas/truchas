@@ -10,6 +10,7 @@ program test_t2d_flow_bc
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use t2d_flow_bc_type
+  use flow_domain_types
   implicit none
 
   integer :: status, stat
@@ -42,6 +43,7 @@ contains
     type(t2d_flow_bc) :: bc
     character(:), allocatable :: errmsg
     integer :: stat, pin_face, f
+    integer, allocatable :: face_t(:)
     logical :: defaults_complete, static_pressure_correction, pressure_dirichlet_has_no_zero_normal
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [4, 4], 0.0_r8, 0.0_r8)
@@ -66,6 +68,10 @@ contains
     pin_face = bc%pressure_pin_face()
     call require(global_sum(merge(1, 0, pin_face > 0)) == 1, &
         'all-Neumann pressure conditions did not select exactly one pin face')
+    allocate(face_t(mesh%nface), source=regular_t)
+    face_t(1) = void_t
+    pin_face = bc%pressure_pin_face(face_t)
+    call require(pin_face == 0, 'VOID should suppress all-Neumann pressure pinning')
 
     plist => pressure_params%sublist('outlet')
     call plist%set('type', 'pressure')

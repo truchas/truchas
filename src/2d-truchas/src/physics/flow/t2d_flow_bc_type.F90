@@ -26,6 +26,11 @@ module t2d_flow_bc_type
   implicit none
   private
 
+  type, public :: t2d_flow_inflow_material
+    character(:), allocatable :: name
+    integer, allocatable :: face(:)
+  end type
+
   type, public :: t2d_flow_bc
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     class(bndry_func1), allocatable :: pressure_dirichlet
@@ -33,6 +38,7 @@ module t2d_flow_bc_type
     class(bndry_func1), allocatable :: pressure_neumann
     class(bndry_func1), allocatable :: velocity_zero_normal
     class(bndry_vfunc), allocatable :: velocity_dirichlet
+    type(t2d_flow_inflow_material), allocatable :: inflow_material(:)
   contains
     procedure :: init
     procedure :: compute
@@ -67,6 +73,8 @@ contains
     if (stat /= 0) return
     call factory%alloc_neu_prs_bc(this%pressure_neumann, env, stat, errmsg)
     if (stat /= 0) return
+    call read_inflow_material(this, mesh, params, stat, errmsg)
+    if (stat /= 0) return
     call apply_default(this, mesh)
 
     overlap = .false.
@@ -81,6 +89,70 @@ contains
       stat = 1
       errmsg = 'pressure Dirichlet boundary overlaps a velocity boundary condition'
     end if
+  end subroutine
+
+
+  !! Extract static material-inflow data from velocity and pressure boundary
+  !! conditions.  The tracker consumes the resolved local face lists after
+  !! the flow material mapping has established its reduced slot ordering.
+  subroutine read_inflow_material(this, mesh, params, stat, errmsg)
+    use bitfield_type, only: bitfield, ZERO_BITFIELD, iand, operator(/=)
+    use string_utilities, only: lower_case
+
+    class(t2d_flow_bc), intent(inout) :: this
+    type(t2d_unstr_mesh), intent(in) :: mesh
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(parameter_list_iterator) :: iter
+    type(parameter_list), pointer :: plist
+    type(bitfield) :: mask
+    integer, allocatable :: setids(:)
+    character(:), allocatable :: bc_type
+    integer :: f, n
+
+    n = 0
+    iter = parameter_list_iterator(params, sublists_only=.true.)
+    do while (.not.iter%at_end())
+      plist => iter%sublist()
+      if (plist%is_parameter('inflow-material')) n = n + 1
+      call iter%next()
+    end do
+    if (n == 0) then
+      stat = 0
+      errmsg = ''
+      return
+    end if
+    allocate(this%inflow_material(n))
+
+    n = 0
+    iter = parameter_list_iterator(params, sublists_only=.true.)
+    do while (.not.iter%at_end())
+      plist => iter%sublist()
+      if (.not.plist%is_parameter('inflow-material')) then
+        call iter%next()
+        cycle
+      end if
+      call plist%get('type', bc_type, stat, errmsg)
+      if (stat /= 0) exit
+      if (lower_case(bc_type) /= 'velocity' .and. lower_case(bc_type) /= 'pressure') then
+        stat = 1
+        errmsg = 'T2D_FLOW_BC[' // iter%name() // ']: "inflow-material" requires a velocity or pressure boundary'
+        exit
+      end if
+      n = n + 1
+      call plist%get('inflow-material', this%inflow_material(n)%name, stat, errmsg)
+      if (stat /= 0) exit
+      call plist%get('face-set-ids', setids, stat, errmsg)
+      if (stat /= 0) exit
+      call mesh%get_face_set_bitmask(setids, mask, stat, errmsg)
+      if (stat /= 0) exit
+      this%inflow_material(n)%face = pack([(f, f=1,mesh%nface_onP)], &
+          iand(mesh%face_set_mask(:mesh%nface_onP), mask) /= ZERO_BITFIELD)
+      call iter%next()
+    end do
+    if (stat /= 0) errmsg = 'T2D_FLOW_BC[' // iter%name() // ']: ' // errmsg
   end subroutine
 
 
@@ -152,7 +224,8 @@ contains
   !! Return the local boundary face at which a zero pressure reference is to
   !! be imposed. If FACE_T is present, only currently regular faces are
   !! considered. All ranks must call this collective function. A value of zero
-  !! indicates that a pressure Dirichlet condition already supplies a reference.
+  !! indicates that a pressure Dirichlet condition or a fluid/VOID interface
+  !! already supplies a reference.
   function pressure_pin_face(this, face_t) result(face)
     class(t2d_flow_bc), intent(in) :: this
     integer, optional, intent(in) :: face_t(:)
@@ -163,6 +236,9 @@ contains
 
     face = 0
     if (global_any(size(this%pressure_dirichlet%index) > 0)) return
+    if (present(face_t)) then
+      if (global_any(face_t == void_t)) return
+    end if
     pin_pe = 0
     if (present(face_t)) then
       is_candidate = .false.

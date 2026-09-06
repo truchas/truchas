@@ -44,6 +44,7 @@ module t2d_flow_material_mapping_type
     procedure :: put_reduced_volume_fractions
     procedure :: get_phase_volume_fractions
     procedure :: apply_phase_fluxes
+    procedure :: slot_index
   end type
 
 contains

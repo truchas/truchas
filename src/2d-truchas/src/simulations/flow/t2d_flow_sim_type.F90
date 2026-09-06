@@ -256,6 +256,7 @@ contains
 
       type(parameter_list), pointer :: bc_params
       real(r8), allocatable :: body_acceleration(:)
+      real(r8) :: fluid_fraction_cutoff, min_face_fraction
       character(96) :: message
 
       stat = 0
@@ -275,6 +276,16 @@ contains
         return
       end if
       call params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8, 0.0_r8])
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      call params%get('fluid-fraction-cutoff', fluid_fraction_cutoff, default=0.01_r8, stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        return
+      end if
+      call params%get('min-face-fraction', min_face_fraction, default=0.001_r8, stat=stat, errmsg=errmsg)
       if (stat /= 0) then
         errmsg = 'processing ' // params%path() // ': ' // errmsg
         return
@@ -306,6 +317,12 @@ contains
       call this%model%init_core(env, this%mesh, bc_params, stat, errmsg, body_acceleration=body_acceleration, &
           inviscid=inviscid)
       if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
+      if (stat /= 0) return
+      call this%model%set_fluid_fraction_cutoff(fluid_fraction_cutoff, stat, errmsg)
+      if (stat /= 0) errmsg = 'processing ' // params%path() // ': ' // errmsg
+      if (stat /= 0) return
+      call this%model%set_min_face_fraction(min_face_fraction, stat, errmsg)
+      if (stat /= 0) errmsg = 'processing ' // params%path() // ': ' // errmsg
 
     end subroutine construct_flow_model
 

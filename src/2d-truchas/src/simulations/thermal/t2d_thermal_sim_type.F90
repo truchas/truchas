@@ -126,6 +126,12 @@ contains
       call env%simlog%end_section('Material model construction failed.')
       return
     end if
+    if (this%matl_model%have_void) then
+      stat = 1
+      errmsg = 'thermal simulation does not support the VOID material'
+      call env%simlog%end_section('Material model construction failed.')
+      return
+    end if
     do i = 1, size(matl_name)
       call env%simlog%info('Using material "' // trim(matl_name(i)) // '".')
     end do

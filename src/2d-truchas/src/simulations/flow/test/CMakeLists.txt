@@ -84,3 +84,9 @@ add_flow_integrated_test(flow_inviscid_channel
 add_flow_integrated_test(flow_inviscid_channel_rotated
   ns/test_flow_inviscid.py ns/inviscid_channel_rotated.json
   0.8660254037844386 0.5)
+add_flow_integrated_test(flow_free_surface_plug
+  free_surface/test_pipe.py free_surface/plug.json plug)
+add_flow_integrated_test(flow_free_surface_fill
+  free_surface/test_pipe.py free_surface/fill.json fill)
+add_flow_integrated_test(flow_free_surface_drain
+  free_surface/test_pipe.py free_surface/drain.json drain)

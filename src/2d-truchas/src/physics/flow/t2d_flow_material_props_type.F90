@@ -43,6 +43,7 @@ module t2d_flow_material_props_type
     integer, allocatable, public :: cell_t(:), face_t(:)
     integer, public :: nfluid = 0
     real(r8), public :: cutoff = 0.01_r8
+    real(r8), public :: min_face_fraction = 0.001_r8
     logical, public :: any_void = .false., any_real_fluid = .false., any_real_fluid_onP = .false.
     logical :: have_pre_solidification_state = .false.
   contains
@@ -246,7 +247,7 @@ contains
     real(r8), intent(in) :: vfrac(:,:)
 
     integer :: c, c1, c2, f, j
-    real(r8) :: weight(2), rho_f, weight_sum
+    real(r8) :: weight(2), minrho, min_face_density, rho_f, weight_sum
 
     ASSERT(size(vfrac,1) >= this%nfluid)
     ASSERT(size(vfrac,2) >= this%mesh%ncell)
@@ -263,6 +264,14 @@ contains
     where (this%vof > 0.0_r8) this%density_c = this%density_c/this%vof
     this%inv_density_c = 0.0_r8
     where (this%density_c > 0.0_r8) this%inv_density_c = 1.0_r8/this%density_c
+
+    minrho = huge(1.0_r8)
+    do c = 1, this%mesh%ncell_onP
+      if (this%vof_novoid(c) > 0.0_r8) then
+        minrho = min(minrho, this%density_c(c)*this%vof(c)/this%vof_novoid(c))
+      end if
+    end do
+    min_face_density = global_minval(minrho)*this%min_face_fraction
 
     do c = 1, this%mesh%ncell
       if (this%vof(c) < this%cutoff) then
@@ -323,7 +332,7 @@ contains
         weight = weight*this%vof([c1,c2])
         weight_sum = sum(weight)
         if (weight_sum > 0.0_r8) then
-          rho_f = dot_product(this%density_c([c1,c2]), weight)/weight_sum
+          rho_f = max(min_face_density, dot_product(this%density_c([c1,c2]), weight)/weight_sum)
         else
           rho_f = 0.0_r8
         end if

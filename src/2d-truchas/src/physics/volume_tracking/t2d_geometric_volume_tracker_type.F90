@@ -49,7 +49,7 @@ module t2d_geometric_volume_tracker_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority, cutoff)
 
     use parameter_list_type
 
@@ -59,6 +59,7 @@ contains
     integer, intent(in) :: nrealfluid, nfluid, nmat
     logical, intent(in) :: axisym
     integer, intent(in) :: priority(:)
+    real(r8), optional, intent(in) :: cutoff
     integer :: i, j, k
 
     this%mesh => mesh
@@ -70,6 +71,10 @@ contains
     ! defaults are used for following parameters for now
     this%location_iter_max = 40
     this%cutoff = 1.0e-6_r8
+    if (present(cutoff)) then
+      ASSERT(cutoff > 0.0_r8 .and. cutoff < 1.0_r8)
+      this%cutoff = cutoff
+    end if
     this%subcycles = 4
     this%nested_dissection = .false.
 
