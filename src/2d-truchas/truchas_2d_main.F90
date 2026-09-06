@@ -18,9 +18,12 @@ program truchas_2d_main
   use parameter_list_json
   use simulation_command_line_type
   use simulation_environment_type
-  use simulation_factory
   use simulation_provenance
   use simulation_type
+  use t2d_flow_sim_type
+  use t2d_flow_thermal_sim_type
+  use t2d_thermal_sim_type
+  use t2d_vof_sim_type
   implicit none
 
   integer :: inlun, stat
@@ -131,5 +134,31 @@ program truchas_2d_main
   call env%simlog%close
   call MPI_Finalize
   if (stat /= 0) error stop 1
+
+contains
+
+  subroutine new_simulation(name, sim, stat, errmsg)
+
+    character(*), intent(in) :: name
+    class(simulation), allocatable, intent(out) :: sim
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    stat = 0
+    select case (trim(name))
+    case ('flow')
+      allocate(t2d_flow_sim :: sim)
+    case ('thermal')
+      allocate(t2d_thermal_sim :: sim)
+    case ('flow_thermal')
+      allocate(t2d_flow_thermal_sim :: sim)
+    case ('vof')
+      allocate(t2d_vof_sim :: sim)
+    case default
+      stat = 1
+      errmsg = 'unknown simulation: ' // trim(name)
+    end select
+
+  end subroutine new_simulation
 
 end program truchas_2d_main
