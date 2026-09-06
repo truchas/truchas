@@ -23,3 +23,5 @@ set_target_properties(ht2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_link_libraries(ht2d PUBLIC truchas truchas-extra ${Truchas_LINK_LIBS})
 target_include_directories(ht2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
+
+add_subdirectory(test)

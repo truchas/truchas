@@ -7,3 +7,5 @@ set_target_properties(nsht2d PROPERTIES
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
 target_link_libraries(nsht2d PUBLIC flow_sim2d thermal_sim2d flow2d ht2d truchas-extra truchas ${Truchas_LINK_LIBS})
 target_include_directories(nsht2d INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/mod")
+
+add_subdirectory(test)
