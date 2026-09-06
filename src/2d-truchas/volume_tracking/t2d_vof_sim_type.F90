@@ -20,7 +20,7 @@ module t2d_vof_sim_type
   use t2d_vof_solver_type
   use t2d_vof_vtkhdf_writer_type
   use simulation_environment_type
-  use simulation_type
+  use simulation_class
   implicit none
   private
 

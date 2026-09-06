@@ -19,7 +19,7 @@ program truchas_2d_main
   use simulation_command_line_type
   use simulation_environment_type
   use simulation_provenance
-  use simulation_type
+  use simulation_class
   use t2d_flow_sim_type
   use t2d_flow_thermal_sim_type
   use t2d_thermal_sim_type

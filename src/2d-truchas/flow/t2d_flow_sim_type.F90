@@ -27,7 +27,7 @@ module t2d_flow_sim_type
   use t2d_flow_integrator_type
   use t2d_flow_vtkhdf_writer_type
   use simulation_environment_type
-  use simulation_type
+  use simulation_class
   implicit none
   private
 

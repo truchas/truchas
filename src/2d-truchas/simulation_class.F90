@@ -1,5 +1,5 @@
 !!
-!! SIMULATION_TYPE
+!! SIMULATION_CLASS
 !!
 !! This module defines the common lifecycle interface for self-contained
 !! simulations.  Concrete simulations own their state and implementation;
@@ -9,7 +9,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-module simulation_type
+module simulation_class
 
   use parameter_list_type, only: parameter_list
   use simulation_environment_type, only: simulation_environment
@@ -41,4 +41,4 @@ module simulation_type
     end subroutine simulation_run_interface
   end interface
 
-end module simulation_type
+end module simulation_class
