@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Four-process hydrostatic regression for mixed material-defined solid walls."""
+"""Four-process hydrostatic regression for pure material-defined solid walls."""
 
 from pathlib import Path
 import subprocess
@@ -22,13 +22,13 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_solid_wall_hydrostatic_mixed_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_solid_wall_hydrostatic_pure_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
@@ -36,8 +36,6 @@ def main():
         print(f"FAIL: found {data.num_steps} output states, expected 2")
         return 1
 
-    initial_fluid = None
-    initial_wall = None
     for step in range(data.num_steps):
         expected_time = 0.0 if step == 0 else 1.0
         if abs(data.time(step) - expected_time) > 1.0e-12:
@@ -49,21 +47,14 @@ def main():
         wall = data.field(step, "vf_wall")
         mixed = (fluid > 1.0e-12) & (fluid < 1.0 - 1.0e-12)
         fluid_cells = fluid > 1.0e-12
-        if not np.any(mixed):
-            print(f"FAIL: step {step}: no mixed cells found")
+        if np.any(mixed):
+            print(f"FAIL: step {step}: found {mixed.sum()} mixed cells in pure case")
             return 1
         if not np.allclose(fluid + wall, 1.0, rtol=0.0, atol=1.0e-12):
             print(f"FAIL: step {step}: material fractions do not sum to one")
             return 1
         if not np.allclose(fluid[~fluid_cells], 0.0, rtol=0.0, atol=1.0e-12):
             print(f"FAIL: step {step}: pure solid cells contain fluid")
-            return 1
-
-        if step == 0:
-            initial_fluid = fluid.copy()
-            initial_wall = wall.copy()
-        elif not np.array_equal(fluid, initial_fluid) or not np.array_equal(wall, initial_wall):
-            print("FAIL: material fractions changed in the hydrostatic state")
             return 1
 
         pressure = data.field(step, "pressure")
@@ -78,7 +69,7 @@ def main():
             )
             return 1
 
-    print("PASS: mixed solid-wall hydrostatic state is preserved")
+    print("PASS: pure solid-wall hydrostatic state is preserved")
     print(f"      artifacts: {output_dir}")
     return 0
 

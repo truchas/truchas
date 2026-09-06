@@ -22,7 +22,7 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_poiseuille_solid_wall_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_poiseuille_solid_wall_4p_"))
     result = subprocess.run(
         [mpiexec, "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
@@ -33,7 +33,7 @@ def main():
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")

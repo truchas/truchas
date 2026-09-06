@@ -7,7 +7,7 @@ import sys
 
 import numpy as np
 
-from test_flow_2d_gravity import run_case
+from test_flow_gravity import run_case
 
 
 def check_hydrostatic(data, case):

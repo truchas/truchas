@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "support"))
-from ht_2d_test_util import check_close, execute, finish, run_from_argv
+from thermal_test_util import check_close, execute, finish, run_from_argv
 
 
 def test():

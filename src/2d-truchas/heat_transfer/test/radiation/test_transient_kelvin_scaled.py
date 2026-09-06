@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "support"))
-from ht_2d_test_util import execute
+from thermal_test_util import execute
 from test_transient_kelvin import check_kelvin
 
 

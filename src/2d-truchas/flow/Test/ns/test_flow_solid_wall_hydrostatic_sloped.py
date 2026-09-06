@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Four-process regression for an inviscid channel with mixed solid cells."""
+"""Four-process hydrostatic regression for a sloped material-defined wall."""
 
 from pathlib import Path
 import subprocess
@@ -22,48 +22,40 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_mixed_solid_wall_channel_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_solid_wall_hydrostatic_sloped_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
-        cwd=output_dir,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
+        cwd=output_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
     if data.num_steps != 2:
         print(f"FAIL: found {data.num_steps} output states, expected 2")
         return 1
-    if abs(data.time(0)) > 1.0e-14 or abs(data.time(1) - 0.1) > 1.0e-14:
-        print(f"FAIL: output times are {data.time(0):g}, {data.time(1):g}")
-        return 1
 
     initial_fluid = None
     initial_wall = None
     for step in range(data.num_steps):
+        expected_time = 0.0 if step == 0 else 1.0
+        if abs(data.time(step) - expected_time) > 1.0e-12:
+            print(f"FAIL: output {step} has time {data.time(step):g}")
+            return 1
+
         centers = data.cell_centers(step)
         fluid = data.field(step, "vf_fluid")
         wall = data.field(step, "vf_wall")
         mixed = (fluid > 1.0e-12) & (fluid < 1.0 - 1.0e-12)
-        pure_fluid = fluid > 1.0 - 1.0e-12
-        pure_solid = fluid < 1.0e-12
-
-        if mixed.sum() != 32:
-            print(f"FAIL: step {step}: found {mixed.sum()} mixed cells, expected 32")
+        fluid_cells = fluid > 1.0e-12
+        if not np.any(mixed):
+            print(f"FAIL: step {step}: no mixed cells found")
             return 1
         if not np.allclose(fluid + wall, 1.0, rtol=0.0, atol=1.0e-12):
             print(f"FAIL: step {step}: material fractions do not sum to one")
             return 1
-        if not np.all(centers[fluid > 0.0, 1] > 0.25) or not np.all(centers[fluid > 0.0, 1] < 0.75):
-            print(f"FAIL: step {step}: fluid cells are not confined to the channel")
-            return 1
-        if not np.allclose(fluid[pure_solid], 0.0, rtol=0.0, atol=1.0e-12):
+        if not np.allclose(fluid[~fluid_cells], 0.0, rtol=0.0, atol=1.0e-12):
             print(f"FAIL: step {step}: pure solid cells contain fluid")
             return 1
 
@@ -71,26 +63,22 @@ def main():
             initial_fluid = fluid.copy()
             initial_wall = wall.copy()
         elif not np.array_equal(fluid, initial_fluid) or not np.array_equal(wall, initial_wall):
-            print("FAIL: material fractions changed during stationary-wall transport")
+            print("FAIL: material fractions changed in the hydrostatic state")
             return 1
 
-        pressure = data.field(step, "pressure")[fluid > 0.0]
-        velocity = data.field(step, "velocity")[fluid > 0.0]
-        x = centers[fluid > 0.0, 0]
-        expected_pressure = 1.0 - x
-        expected_velocity = np.zeros_like(x) if step == 0 else np.full_like(x, 0.1)
-        pressure_error = np.max(np.abs(pressure - expected_pressure))
-        velocity_error = np.max(np.abs(velocity[:, 0] - expected_velocity))
-        transverse_error = np.max(np.abs(velocity[:, 1]))
-        if pressure_error > 1.0e-10 or velocity_error > 1.3e-3 or transverse_error > 1.0e-10:
+        pressure = data.field(step, "pressure")
+        velocity = data.field(step, "velocity")
+        y = centers[fluid_cells, 1]
+        pressure_error = np.max(np.abs(pressure[fluid_cells] - 2.0 * (1.0 - y)))
+        velocity_error = np.max(np.abs(velocity[fluid_cells]))
+        if pressure_error > 1.0e-10 or velocity_error > 1.0e-10:
             print(
-                f"FAIL: step {step}: channel errors are "
-                f"pressure={pressure_error:g}, velocity={velocity_error:g}, "
-                f"transverse={transverse_error:g}"
+                f"FAIL: step {step}: hydrostatic errors are "
+                f"pressure={pressure_error:g}, velocity={velocity_error:g}"
             )
             return 1
 
-    print("PASS: inviscid channel with mixed SOLID walls is conserved and analytic")
+    print("PASS: sloped solid-wall hydrostatic state is preserved")
     print(f"      artifacts: {output_dir}")
     return 0
 

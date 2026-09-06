@@ -13,7 +13,7 @@ from TruchasVTKHDFData import TruchasVTKHDFData
 
 
 def run_case(executable, input_file, mpiexec):
-    run_root = Path(tempfile.mkdtemp(prefix="ns_ht_2d_hydrostatic_4p_"))
+    run_root = Path(tempfile.mkdtemp(prefix="flow_thermal_hydrostatic_4p_"))
     command = [mpiexec, "-n", "4", str(executable), "--simulation", "flow_thermal", str(input_file)]
     result = subprocess.run(
         command, cwd=run_root, text=True, stdout=subprocess.PIPE,
@@ -21,7 +21,7 @@ def run_case(executable, input_file, mpiexec):
     )
     (run_root / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
-        raise AssertionError(f"ns_ht_2d returned {result.returncode} in {run_root}\n{result.stdout}")
+        raise AssertionError(f"flow_thermal returned {result.returncode} in {run_root}\n{result.stdout}")
     return run_root, TruchasVTKHDFData(run_root / "input" / "out.vtkhdf")
 
 

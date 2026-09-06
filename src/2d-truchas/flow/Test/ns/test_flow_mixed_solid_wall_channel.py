@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Analytic four-process test for an inviscid channel with solid walls."""
+"""Four-process regression for an inviscid channel with mixed solid cells."""
 
 from pathlib import Path
 import subprocess
@@ -22,7 +22,7 @@ def main():
     executable = Path(sys.argv[1]).resolve()
     input_file = Path(sys.argv[2]).resolve()
     mpiexec = sys.argv[3]
-    output_dir = Path(tempfile.mkdtemp(prefix="ns_2d_inviscid_solid_wall_channel_4p_"))
+    output_dir = Path(tempfile.mkdtemp(prefix="flow_mixed_solid_wall_channel_4p_"))
     result = subprocess.run(
         [str(mpiexec), "-n", "4", str(executable), "--simulation", "flow", "--output-dir", ".", "--force", str(input_file)],
         cwd=output_dir,
@@ -33,41 +33,52 @@ def main():
     )
     if result.returncode != 0:
         print(result.stdout, end="")
-        print(f"FAIL: ns_2d returned {result.returncode}")
+        print(f"FAIL: flow returned {result.returncode}")
         return 1
 
     data = TruchasVTKHDFData(output_dir / "out.vtkhdf")
     if data.num_steps != 2:
         print(f"FAIL: found {data.num_steps} output states, expected 2")
         return 1
-    if abs(data.time(0)) > 1.0e-14 or abs(data.time(1) - 1.0e-2) > 1.0e-14:
+    if abs(data.time(0)) > 1.0e-14 or abs(data.time(1) - 0.1) > 1.0e-14:
         print(f"FAIL: output times are {data.time(0):g}, {data.time(1):g}")
         return 1
 
+    initial_fluid = None
+    initial_wall = None
     for step in range(data.num_steps):
         centers = data.cell_centers(step)
         fluid = data.field(step, "vf_fluid")
         wall = data.field(step, "vf_wall")
-        fluid_cells = fluid > 0.5
+        mixed = (fluid > 1.0e-12) & (fluid < 1.0 - 1.0e-12)
+        pure_fluid = fluid > 1.0 - 1.0e-12
+        pure_solid = fluid < 1.0e-12
+
+        if mixed.sum() != 32:
+            print(f"FAIL: step {step}: found {mixed.sum()} mixed cells, expected 32")
+            return 1
         if not np.allclose(fluid + wall, 1.0, rtol=0.0, atol=1.0e-12):
             print(f"FAIL: step {step}: material fractions do not sum to one")
             return 1
-        if not np.all((centers[fluid_cells, 1] > 0.25) & (centers[fluid_cells, 1] < 0.75)):
+        if not np.all(centers[fluid > 0.0, 1] > 0.25) or not np.all(centers[fluid > 0.0, 1] < 0.75):
             print(f"FAIL: step {step}: fluid cells are not confined to the channel")
             return 1
-        if not np.allclose(fluid[~fluid_cells], 0.0, rtol=0.0, atol=1.0e-12):
-            print(f"FAIL: step {step}: non-fluid cells contain fluid")
+        if not np.allclose(fluid[pure_solid], 0.0, rtol=0.0, atol=1.0e-12):
+            print(f"FAIL: step {step}: pure solid cells contain fluid")
             return 1
 
-        pressure = data.field(step, "pressure")[fluid_cells]
-        velocity = data.field(step, "velocity")[fluid_cells]
-        x = centers[fluid_cells, 0]
-        y = centers[fluid_cells, 1]
-        expected_pressure = 1.0 - x
         if step == 0:
-            expected_velocity = np.zeros_like(y)
-        else:
-            expected_velocity = np.full_like(y, 1.0e-2)
+            initial_fluid = fluid.copy()
+            initial_wall = wall.copy()
+        elif not np.array_equal(fluid, initial_fluid) or not np.array_equal(wall, initial_wall):
+            print("FAIL: material fractions changed during stationary-wall transport")
+            return 1
+
+        pressure = data.field(step, "pressure")[fluid > 0.0]
+        velocity = data.field(step, "velocity")[fluid > 0.0]
+        x = centers[fluid > 0.0, 0]
+        expected_pressure = 1.0 - x
+        expected_velocity = np.zeros_like(x) if step == 0 else np.full_like(x, 0.1)
         pressure_error = np.max(np.abs(pressure - expected_pressure))
         velocity_error = np.max(np.abs(velocity[:, 0] - expected_velocity))
         transverse_error = np.max(np.abs(velocity[:, 1]))
@@ -79,7 +90,7 @@ def main():
             )
             return 1
 
-    print("PASS: pressure-driven channel with pure SOLID walls matches the analytic solution")
+    print("PASS: inviscid channel with mixed SOLID walls is conserved and analytic")
     print(f"      artifacts: {output_dir}")
     return 0
 

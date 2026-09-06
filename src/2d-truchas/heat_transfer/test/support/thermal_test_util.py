@@ -23,12 +23,12 @@ class Run:
 
 
 def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=1.0e-2):
-    """Run ht_2d and return its final VTKHDF result."""
+    """Run the thermal simulation and return its final VTKHDF result."""
 
     executable = pathlib.Path(executable).resolve()
     input_file = pathlib.Path(input_file).resolve()
     run_root = pathlib.Path(
-        tempfile.mkdtemp(prefix=f"ht_2d_{input_file.stem}_{nproc}p_")
+        tempfile.mkdtemp(prefix=f"thermal_{input_file.stem}_{nproc}p_")
     )
     output_dir = run_root / input_file.stem
     command = [str(executable), "--simulation", "thermal", str(input_file)]
@@ -46,12 +46,12 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
     (run_root / "stdout.txt").write_text(result.stdout)
     if result.returncode != 0:
         raise AssertionError(
-            f"ht_2d returned {result.returncode} in {run_root}\n{result.stdout}"
+            f"thermal returned {result.returncode} in {run_root}\n{result.stdout}"
         )
 
     log_file = output_dir / "run.log"
     if not log_file.exists():
-        raise AssertionError(f"ht_2d did not produce run.log in {output_dir}")
+        raise AssertionError(f"thermal did not produce run.log in {output_dir}")
     log = log_file.read_text()
     if "unrecoverable integration failure" in log:
         raise AssertionError("unrecoverable integration failure")
@@ -70,7 +70,7 @@ def run_case(executable, input_file, nproc=1, mpiexec=None, expected_final_time=
 
     output_file = output_dir / "out.vtkhdf"
     if not output_file.exists():
-        raise AssertionError(f"ht_2d did not produce out.vtkhdf in {output_dir}")
+        raise AssertionError(f"thermal did not produce out.vtkhdf in {output_dir}")
     data = TruchasVTKHDFData(output_file)
     final_step = data.num_steps - 1
     if abs(data.time(final_step) - final_time) > 1.0e-12:
