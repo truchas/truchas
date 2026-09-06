@@ -48,6 +48,8 @@ module t2d_flow_model_type
     procedure :: init
     procedure :: init_core
     procedure :: init_material
+    procedure :: set_fluid_fraction_cutoff
+    procedure :: set_min_face_fraction
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
     procedure :: set_pre_solidification_state
@@ -122,10 +124,13 @@ contains
     integer, optional, intent(in) :: nfluid
 
     logical :: use_boussinesq
+    real(r8) :: fluid_fraction_cutoff, min_face_fraction
 
     stat = 0
     use_boussinesq = .false.
     if (present(boussinesq)) use_boussinesq = boussinesq
+    fluid_fraction_cutoff = this%matl_props%cutoff
+    min_face_fraction = this%matl_props%min_face_fraction
     if (present(nfluid)) then
       call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, &
           stat, errmsg, nfluid)
@@ -133,6 +138,8 @@ contains
       call this%matl_props%init_material(this%mesh, matl_model, material_ids, this%inviscid, use_boussinesq, &
           stat, errmsg)
     end if
+    this%matl_props%cutoff = fluid_fraction_cutoff
+    this%matl_props%min_face_fraction = min_face_fraction
     if (stat == 0) call check_initial_properties(this, this%mesh, stat, errmsg)
   end subroutine
 
@@ -193,6 +200,44 @@ contains
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%matl_props%set_volume_fractions(vfrac)
+  end subroutine
+
+
+  !! Set the mobile-fluid fraction below which a cell receives a dummy flow
+  !! equation.  This affects only the flow solve; material transport retains
+  !! the corresponding volume fractions.
+  subroutine set_fluid_fraction_cutoff(this, cutoff, stat, errmsg)
+    class(t2d_flow_model), intent(inout) :: this
+    real(r8), intent(in) :: cutoff
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    stat = 0
+    if (cutoff <= 0.0_r8 .or. cutoff >= 1.0_r8) then
+      stat = 1
+      errmsg = '"fluid-fraction-cutoff" must be in (0,1)'
+      return
+    end if
+    this%matl_props%cutoff = cutoff
+  end subroutine
+
+
+  !! Set the minimum nonzero interior face density as a fraction of the
+  !! lightest real-fluid density.  This limits the projection coefficient at
+  !! fluid/VOID interfaces without altering the material distribution.
+  subroutine set_min_face_fraction(this, fraction, stat, errmsg)
+    class(t2d_flow_model), intent(inout) :: this
+    real(r8), intent(in) :: fraction
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    stat = 0
+    if (fraction <= 0.0_r8 .or. fraction > 1.0_r8) then
+      stat = 1
+      errmsg = '"min-face-fraction" must be in (0,1]'
+      return
+    end if
+    this%matl_props%min_face_fraction = fraction
   end subroutine
 
 

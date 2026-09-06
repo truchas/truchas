@@ -22,6 +22,7 @@ module t2d_flow_integrator_type
   use material_model_type
   use material_distribution_type
   use t2d_flow_model_type
+  use t2d_flow_bc_type
   use t2d_flow_solver_type
   use t2d_flow_material_mapping_type
   use t2d_flow_material_transport_type
@@ -83,7 +84,7 @@ contains
     integer, allocatable :: priority(:), phase_ids(:)
     character(:), allocatable :: algorithm
     type(parameter_list), pointer :: tracking_params => null(), momentum_params, projection_params
-    real(r8) :: courant_number
+    real(r8) :: courant_number, tracking_cutoff
     character(96) :: message
     logical :: simple_default
 
@@ -106,12 +107,23 @@ contains
     if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
       simple_default = matl_model%is_fluid(1)
     algorithm = 'geometric'
+    tracking_cutoff = 1.0e-6_r8
     if (simple_default) algorithm = 'simple'
     if (params%is_sublist('volume-tracking')) then
       tracking_params => params%sublist('volume-tracking')
       call tracking_params%get('algorithm', algorithm, default=algorithm, stat=stat, errmsg=errmsg)
       if (stat /= 0) then
         errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+        return
+      end if
+      call tracking_params%get('cutoff', tracking_cutoff, default=tracking_cutoff, stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+        return
+      end if
+      if (tracking_cutoff <= 0.0_r8 .or. tracking_cutoff >= 1.0_r8) then
+        stat = 1
+        errmsg = 'processing ' // tracking_params%path() // ': "cutoff" must be in (0,1)'
         return
       end if
       call this%matl_map%set_priority(tracking_params, stat, errmsg)
@@ -164,7 +176,44 @@ contains
     allocate(this%vfrac(nmat,model%mesh%ncell))
     this%vfrac = 0.0_r8
     this%vfrac(1,:) = 1.0_r8
-    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority)
+    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority, tracking_cutoff)
+    call configure_inflow_material(this, model%bc, stat, errmsg)
+
+  contains
+
+    subroutine configure_inflow_material(this, bc, stat, errmsg)
+      class(t2d_flow_integrator), intent(inout) :: this
+      type(t2d_flow_bc), intent(in) :: bc
+      integer, intent(out) :: stat
+      character(:), allocatable, intent(out) :: errmsg
+
+      integer :: i, slot
+      integer, allocatable :: assigned(:)
+
+      stat = 0
+      if (.not.allocated(bc%inflow_material)) then
+        errmsg = ''
+        return
+      end if
+      allocate(assigned(model%mesh%nface_onP), source=0)
+      do i = 1, size(bc%inflow_material)
+        slot = this%matl_map%slot_index(bc%inflow_material(i)%name)
+        if (slot == 0 .or. slot > this%matl_map%num_fluid()) then
+          stat = 1
+          errmsg = 'invalid flow inflow material: "' // bc%inflow_material(i)%name // '"'
+          return
+        end if
+        if (any(assigned(bc%inflow_material(i)%face) /= 0 .and. &
+            assigned(bc%inflow_material(i)%face) /= slot)) then
+          stat = 1
+          errmsg = 'conflicting flow inflow materials on a boundary face'
+          return
+        end if
+        assigned(bc%inflow_material(i)%face) = slot
+        call this%material_transport%set_inflow_material(slot, bc%inflow_material(i)%face)
+      end do
+      errmsg = ''
+    end subroutine
   end subroutine
 
 
@@ -332,7 +381,8 @@ contains
     call env%timer%stop('flow/material-transport')
     call this%flow%set_volume_fractions(vfrac_trial)
     if (this%inertial) then
-      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
+      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, &
+          this%material_transport%flux_volumes(:this%matl_map%num_real_fluid(),:))
     else
       call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg)
     end if

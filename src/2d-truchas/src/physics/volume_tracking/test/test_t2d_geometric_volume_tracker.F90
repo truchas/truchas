@@ -33,6 +33,7 @@ program test_t2d_geometric_volume_tracker
   if (stat /= 0) error stop 'initializing simulation log: ' // errmsg
 
   call test_stationary(env)
+  call test_void_cutoff(env)
   call test_planar_transport(env)
   call test_immobile_solid(env)
   call test_inflow_material(env)
@@ -69,6 +70,34 @@ contains
     deallocate(mesh)
 
   end subroutine test_stationary
+
+
+  !! The geometric-tracker cutoff removes a sub-cutoff real-fluid fragment
+  !! from the material state.  With VOID present, the corresponding cell
+  !! volume is assigned to VOID so the cell fractions remain normalized.
+  subroutine test_void_cutoff(env)
+
+    type(simulation_environment), intent(inout) :: env
+    type(t2d_unstr_mesh), pointer :: mesh
+    type(t2d_geometric_volume_tracker) :: tracker
+    real(r8), allocatable :: vel(:), vof_n(:,:), vof(:,:), flux_vol(:,:), int_normal(:,:,:)
+
+    mesh => new_unstr_2d_quad_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [1, 1])
+    call mesh%init_face_centroid
+    call tracker%init(env, mesh, 1, 2, 2, .false., [1,2], cutoff=1.0e-4_r8)
+    allocate(vel(size(mesh%cface)), vof_n(2,mesh%ncell), vof(2,mesh%ncell), &
+        flux_vol(2,size(mesh%cface)), int_normal(2,2,mesh%ncell))
+
+    vel = 0.0_r8
+    vof_n(:,1) = [1.0e-5_r8, 1.0_r8-1.0e-5_r8]
+    call tracker%flux_volumes(env, vel, vof_n, vof, flux_vol, int_normal, 1, 1, 0.1_r8)
+    call require(maxval(abs(vof(:,1) - [0.0_r8, 1.0_r8])) <= 1.0e-14_r8, 'VOID cutoff clipping')
+    call require_close_1d(sum(vof, dim=1), 1.0_r8, 'VOID cutoff fraction sum', 1.0e-14_r8)
+    call require(maxval(abs(flux_vol)) > 0.0_r8, 'VOID cutoff fluid-flux correction')
+
+    deallocate(mesh)
+
+  end subroutine test_void_cutoff
 
 
   subroutine test_planar_transport(env)

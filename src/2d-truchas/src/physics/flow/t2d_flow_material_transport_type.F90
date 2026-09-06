@@ -39,13 +39,14 @@ module t2d_flow_material_transport_type
     real(r8), allocatable, public :: flux_volumes(:,:)
   contains
     procedure :: init
+    procedure :: set_inflow_material
     procedure :: advance
     procedure :: get_trial_volume_fractions
   end type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority, cutoff)
 
     use t2d_simple_volume_tracker_type
     use t2d_geometric_volume_tracker_type
@@ -56,6 +57,7 @@ contains
     integer, intent(in) :: nrealfluid, nfluid, nmat
     character(*), intent(in), optional :: algorithm
     integer, intent(in), optional :: priority(:)
+    real(r8), intent(in), optional :: cutoff
 
     character(:), allocatable :: tracker_algorithm
     integer, allocatable :: tracker_priority(:)
@@ -85,7 +87,23 @@ contains
     this%nfluid = nfluid
     allocate(this%vfrac_out(nmat,mesh%ncell), this%flux_volumes(nfluid,size(mesh%cface)), &
         this%cface_velocity(size(mesh%cface)), this%interface_normal(2,nmat,mesh%ncell))
-    call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority)
+    if (present(cutoff)) then
+      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority, cutoff)
+    else
+      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority)
+    end if
+  end subroutine
+
+
+  !! Set a fixed reduced-material slot for inflow through the given local
+  !! boundary faces.  Slot zero retains the tracker's proportional-inflow
+  !! default.
+  subroutine set_inflow_material(this, material, faces)
+    class(t2d_flow_material_transport), intent(inout) :: this
+    integer, intent(in) :: material, faces(:)
+
+    ASSERT(material >= 0 .and. material <= this%nfluid)
+    call this%tracker%set_inflow_material(material, faces)
   end subroutine
 
 
