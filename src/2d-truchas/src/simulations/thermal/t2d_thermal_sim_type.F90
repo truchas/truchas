@@ -267,23 +267,7 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
-      type(parameter_list), pointer :: constants
-      real(r8) :: value
-
       stat = 0
-      if (params%is_sublist('physical-constants')) then
-        constants => params%sublist('physical-constants')
-        if (constants%is_parameter('stefan-boltzmann')) then
-          call constants%get('stefan-boltzmann', value, stat, errmsg)
-          if (stat /= 0) return
-          call model_params%set('stefan-boltzmann', value)
-        end if
-        if (constants%is_parameter('absolute-zero')) then
-          call constants%get('absolute-zero', value, stat, errmsg)
-          if (stat /= 0) return
-          call model_params%set('absolute-zero', value)
-        end if
-      end if
       allocate(this%model)
       call this%model%init(env, this%mesh, this%matl_model, this%matl_dist, model_params, stat, errmsg)
 

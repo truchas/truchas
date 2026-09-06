@@ -12,10 +12,8 @@
         "mesh-file": "annular-sector.gen",
         "coord-scale-factor": 0.01
     },
-    "physical-constants": {
-        "stefan-boltzmann": 1.134e-7
-    },
     "ht-model": {
+        "stefan-boltzmann": 1.134e-7,
         "bc": {
             "inner-radius":   {"type": "flux", "face-set-ids": [1], "flux": 0.0},
             "symmetry-sides": {"type": "flux", "face-set-ids": [3], "flux": 0.0},
