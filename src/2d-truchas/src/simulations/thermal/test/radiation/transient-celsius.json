@@ -1,7 +1,4 @@
 {
-    "physical-constants": {
-        "absolute-zero": -273.15
-    },
     "materials": {
         "default": {
             "properties": {
@@ -16,6 +13,7 @@
         "coord-scale-factor": 0.01
     },
     "ht-model": {
+        "absolute-zero": -273.15,
         "bc": {
             "inner-radius":   {"type": "flux", "face-set-ids": [1], "flux": 0.0},
             "symmetry-sides": {"type": "flux", "face-set-ids": [3], "flux": 0.0},

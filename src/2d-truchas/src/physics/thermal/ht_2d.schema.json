@@ -18,9 +18,8 @@
       "default": 6,
       "description": "Maximum recursive refinement level for geometric material initialization. The finest unresolved triangle has linear size approximately 2^(-level) times its initial triangle."
     },
-    "physical-constants": {
+    "ht-model": {
       "type": "object",
-      "description": "Optional physical constants used by the thermal model and its boundary conditions.",
       "properties": {
         "stefan-boltzmann": {
           "type": "number",
@@ -32,8 +31,7 @@
           "default": 0.0,
           "description": "Absolute-zero temperature offset."
         }
-      },
-      "additionalProperties": false
+      }
     }
   },
   "if": {
