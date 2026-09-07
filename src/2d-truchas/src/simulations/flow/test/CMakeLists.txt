@@ -60,12 +60,6 @@ add_flow_integrated_test(flow_inviscid_solid_wall_hydrostatic_sloped
 add_flow_integrated_test(flow_inviscid_solid_wall_hydrostatic_sloped_noisy
   ns/test_flow_solid_wall_hydrostatic_sloped.py ns/solid_wall_hydrostatic_sloped_noisy.json)
 
-# TODO: Enable after the solid/liquid no-slip discretization places the
-# effective wall at the material interface rather than at the solid-cell
-# center. The current result is not accurate enough for this analytic test.
-# add_flow_integrated_test(flow_poiseuille_solid_wall
-#   ns/test_flow_poiseuille_solid_wall.py ns/poiseuille_solid_wall.json)
-
 add_flow_integrated_test(flow_couette ns/test_flow_couette.py ns/couette_mixed.json)
 add_flow_integrated_test(flow_couette_rotated ns/test_flow_couette.py
   ns/couette_rotated.json 30.0)
