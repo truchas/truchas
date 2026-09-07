@@ -49,7 +49,7 @@ module t2d_geometric_volume_tracker_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority, cutoff)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority, cutoff, subcycles)
 
     use parameter_list_type
 
@@ -60,6 +60,7 @@ contains
     logical, intent(in) :: axisym
     integer, intent(in) :: priority(:)
     real(r8), optional, intent(in) :: cutoff
+    integer, optional, intent(in) :: subcycles
     integer :: i, j, k
 
     this%mesh => mesh
@@ -76,6 +77,10 @@ contains
       this%cutoff = cutoff
     end if
     this%subcycles = 4
+    if (present(subcycles)) then
+      ASSERT(subcycles >= 1)
+      this%subcycles = subcycles
+    end if
     this%nested_dissection = .false.
 
     ! Material priorities for interface reconstruction. The flow-facing

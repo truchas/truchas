@@ -21,6 +21,7 @@
         }
     },
     "material-regions": {
+      "refinement-level": 8,
         "light-bubble": {
             "material": "light-liquid",
             "type": "disk",
@@ -29,7 +30,6 @@
         },
         "heavy-background": {"material": "heavy-liquid", "type": "background"}
     },
-    "material-region-refinement-level": 8,
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [49]},
         "y-axis": {"coarse-grid": [0.0, 2.0], "intervals": [98]}

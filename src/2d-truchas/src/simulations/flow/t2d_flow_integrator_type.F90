@@ -85,6 +85,7 @@ contains
     character(:), allocatable :: algorithm
     type(parameter_list), pointer :: tracking_params => null(), momentum_params, projection_params
     real(r8) :: courant_number, tracking_cutoff
+    integer :: tracking_subcycles
     character(96) :: message
     logical :: simple_default
 
@@ -108,6 +109,7 @@ contains
       simple_default = matl_model%is_fluid(1)
     algorithm = 'geometric'
     tracking_cutoff = 1.0e-6_r8
+    tracking_subcycles = 4
     if (simple_default) algorithm = 'simple'
     if (params%is_sublist('volume-tracking')) then
       tracking_params => params%sublist('volume-tracking')
@@ -124,6 +126,16 @@ contains
       if (tracking_cutoff <= 0.0_r8 .or. tracking_cutoff >= 1.0_r8) then
         stat = 1
         errmsg = 'processing ' // tracking_params%path() // ': "cutoff" must be in (0,1)'
+        return
+      end if
+      call tracking_params%get('subcycles', tracking_subcycles, default=tracking_subcycles, stat=stat, errmsg=errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
+        return
+      end if
+      if (tracking_subcycles < 1) then
+        stat = 1
+        errmsg = 'processing ' // tracking_params%path() // ': "subcycles" must be at least one'
         return
       end if
       call this%matl_map%set_priority(tracking_params, stat, errmsg)
@@ -176,7 +188,8 @@ contains
     allocate(this%vfrac(nmat,model%mesh%ncell))
     this%vfrac = 0.0_r8
     this%vfrac(1,:) = 1.0_r8
-    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority, tracking_cutoff)
+    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority, tracking_cutoff, &
+        tracking_subcycles)
     call configure_inflow_material(this, model%bc, stat, errmsg)
 
   contains

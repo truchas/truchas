@@ -8,6 +8,7 @@
         "fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 0.005}}
     },
     "material-regions": {
+      "refinement-level": 6,
         "cylinder": {
             "material": "cylinder",
             "type": "disk",
@@ -23,9 +24,7 @@
             "ratio": [0.9548416039104165, 1.0, 1.023793338037844, 1.0]
         },
         "y-axis": {"coarse-grid": [0.0, 0.205], "intervals": [32]}
-    },
-    "material-region-refinement-level": 6,
-    "flow-model": {
+    },    "flow-model": {
         "bc": {
             "inlet": {
                 "type": "velocity",

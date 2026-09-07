@@ -5,6 +5,7 @@
     "water": {"properties": {"fluid": true, "density": 1.0}}
   },
   "material-regions": {
+    "refinement-level": 0,
     "water": {
       "material": "water",
       "type": "box",
@@ -13,7 +14,6 @@
     },
     "void-background": {"material": "VOID", "type": "background"}
   },
-  "material-region-refinement-level": 0,
   "mesh": {
     "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [5]},
     "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [1]}

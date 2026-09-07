@@ -1,6 +1,4 @@
-{
-    "material-region-refinement-level": 12,
-    "materials": {
+{    "materials": {
         "low-capacity": {
             "properties": {
                 "conductivity": 1.0e-12,
@@ -17,6 +15,7 @@
         }
     },
     "material-regions": {
+      "refinement-level": 12,
         "low-capacity-half": {
             "material": "low-capacity",
             "type": "half-plane",

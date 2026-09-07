@@ -83,8 +83,8 @@ contains
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    integer :: lookahead
-    real(r8) :: courant_number
+    integer :: lookahead, tracking_subcycles
+    real(r8) :: courant_number, tracking_cutoff
     type(parameter_list), pointer :: flow_params, momentum_params, projection_params, thermal_params
     type(parameter_list), pointer :: tracking_params => null()
     character(:), allocatable :: tracking_algorithm
@@ -116,11 +116,27 @@ contains
     if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
       simple_default = matl_model%is_fluid(1)
     tracking_algorithm = 'geometric'
+    tracking_cutoff = 1.0e-6_r8
+    tracking_subcycles = 4
     if (simple_default) tracking_algorithm = 'simple'
     if (flow_params%is_sublist('volume-tracking')) then
       tracking_params => flow_params%sublist('volume-tracking')
       call tracking_params%get('algorithm', tracking_algorithm, default=tracking_algorithm, stat=stat, errmsg=errmsg)
       if (stat /= 0) return
+      call tracking_params%get('cutoff', tracking_cutoff, default=tracking_cutoff, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (tracking_cutoff <= 0.0_r8 .or. tracking_cutoff >= 1.0_r8) then
+        stat = 1
+        errmsg = 'solver.flow.volume-tracking.cutoff must be in (0,1)'
+        return
+      end if
+      call tracking_params%get('subcycles', tracking_subcycles, default=tracking_subcycles, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (tracking_subcycles < 1) then
+        stat = 1
+        errmsg = 'solver.flow.volume-tracking.subcycles must be at least one'
+        return
+      end if
     end if
     if (tracking_algorithm /= 'simple' .and. tracking_algorithm /= 'geometric') then
       stat = 1
@@ -206,7 +222,7 @@ contains
     call this%matl_map%get_priority(priority)
     call this%material_transport%init(env, flow_model%mesh, this%matl_map%num_real_fluid(), &
         this%matl_map%num_fluid(), this%matl_map%num_material(), algorithm=tracking_algorithm, &
-        priority=priority)
+        priority=priority, cutoff=tracking_cutoff, subcycles=tracking_subcycles)
     if (allocated(ht_model%bc_inflow)) then
       call this%enthalpy_advector%init(flow_model%mesh, matl_model, flow_pids, stat, errmsg, &
           inflow_temperature=ht_model%bc_inflow)

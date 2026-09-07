@@ -8,6 +8,7 @@
         "upper-fluid": {"properties": {"fluid": true, "density": 1.0, "viscosity": 2.0}}
     },
     "material-regions": {
+      "refinement-level": 0,
         "lower-layer": {
             "material": "lower-fluid",
             "type": "half-plane",
@@ -16,7 +17,6 @@
         },
         "upper-layer": {"material": "upper-fluid", "type": "background"}
     },
-    "material-region-refinement-level": 0,
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
