@@ -24,6 +24,15 @@ two-dimensional analogue of mainline `free-surf-flow-2` and confirms the
 matching analytic interface motion during drainage. The fill and drain cases
 use the same 15×5 mesh, while the plug cases use 25×5.
 
+`gravity_fill.json` and `gravity_drain.json` use zero pressure at both open
+ends and an axial body acceleration instead of prescribed velocities. Their
+continuum inviscid solutions have `u=t` and `u=-t`, respectively, with zero
+pressure; the water/VOID interface follows `x=0.5+t²/2` for filling and
+`x=4.5-t²/2` for draining. The tests use a small fixed step and compare the
+interface with the corresponding exact trajectory of the implemented split
+scheme, in which material transport uses the velocity at the beginning of the
+step. They also check velocity, pressure, and water-volume conservation.
+
 `hydrostatic.json` is a stationary water layer beneath a horizontal free
 surface with downward body acceleration. It checks gravity-head balance,
 zero pressure at the water/VOID interface, and the absence of spurious
