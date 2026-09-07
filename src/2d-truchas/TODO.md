@@ -36,6 +36,29 @@ flow/thermal models.  More detailed subsystem items remain in
 
 - Improve the flow operators for triangle and mixed triangle/quad meshes.
   Quad meshes are currently the supported and tested flow topology.
+- Replace the current free-surface pressure-force split with a single
+  face-consistent, rotationally accurate formulation.  The projection matrix
+  and face-velocity correction use face densities and face pressure
+  derivatives, but the current cell-centered pressure-force path uses the
+  first-order `gradient_cf` reconstruction, followed by face-density scaling
+  and interpolation.  This bypasses the improved rotationally invariant
+  `gradient_cc` reconstruction whenever VOID is present.  See
+  `physics/flow/pressure-correction-comparison.md` for the current analysis.
+- Eliminate the global per-step switch between the ordinary cell-centered
+  gradient path and the free-surface face-based path.  The switch can change
+  when a small VOID fraction appears or disappears and therefore can cause a
+  discrete change in the cell velocity correction and time-step trajectory.
+  A unified operator should handle pure fluid, mixed fluid/VOID, and
+  fluid/VOID interfaces continuously.
+- Establish a geometric and resolution-aware basis for the minimum face
+  fraction regularization.  Its relationship to the material cutoff, mesh
+  resolution, and the admissible velocity error should be documented and
+  tested rather than treating the current value as a purely empirical
+  constant.
+- Add focused regressions for mixed fluid/VOID domains that contain no pure
+  VOID cells, including interface appearance/disappearance and perturbed
+  meshes.  These should check pressure, velocity, projection convergence, and
+  sensitivity to the face-fraction regularization.
 - Improve the no-slip discretization at solid/fluid interfaces.  The current
   treatment places the effective wall at the solid-cell center rather than at
   the material interface; [the dormant solid-wall Poiseuille test](simulations/flow/test/ns/poiseuille_solid_wall.json)

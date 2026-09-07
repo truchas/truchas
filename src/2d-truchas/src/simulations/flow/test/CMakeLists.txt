@@ -86,7 +86,15 @@ add_flow_integrated_test(flow_inviscid_channel_rotated
   0.8660254037844386 0.5)
 add_flow_integrated_test(flow_free_surface_plug
   free_surface/test_pipe.py free_surface/plug.json plug)
+add_flow_integrated_test(flow_free_surface_plug_noisy
+  free_surface/test_plug_noisy.py free_surface/plug_noisy.json)
 add_flow_integrated_test(flow_free_surface_fill
   free_surface/test_pipe.py free_surface/fill.json fill)
 add_flow_integrated_test(flow_free_surface_drain
   free_surface/test_pipe.py free_surface/drain.json drain)
+add_flow_integrated_test(flow_free_surface_hydrostatic
+  free_surface/test_hydrostatic.py free_surface/hydrostatic.json)
+add_flow_integrated_test(flow_free_surface_hydrostatic_viscous
+  free_surface/test_hydrostatic.py free_surface/hydrostatic_viscous.json)
+add_flow_integrated_test(flow_free_surface_hydrostatic_solid_wall
+  free_surface/test_hydrostatic_solid_wall.py free_surface/hydrostatic_solid_wall.json)

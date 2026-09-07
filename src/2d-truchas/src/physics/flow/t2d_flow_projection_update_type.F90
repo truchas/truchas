@@ -22,7 +22,7 @@ module t2d_flow_projection_update_type
   use t2d_flow_bc_type
   use t2d_flow_state_type
   use flow_domain_types
-  use parallel_communication, only: global_maxval
+  use parallel_communication, only: global_any, global_maxval
   implicit none
   private
 
@@ -33,11 +33,12 @@ module t2d_flow_projection_update_type
     type(t2d_flow_projection), pointer :: projection => null()  ! unowned reference
     type(t2d_flow_projection_solver), pointer :: solver => null()  ! unowned reference
     real(r8) :: body_acceleration(2) = 0.0_r8
-    real(r8), allocatable :: grad_p_old(:,:), grad_p_new(:,:), velocity_work(:,:)
+    real(r8), allocatable :: grad_p_old(:,:), grad_p_new(:,:), velocity_work(:,:), gradient_f(:,:)
     real(r8), allocatable :: gravity_head(:,:)
     real(r8), allocatable :: derivative_f(:), delta_p(:), rhs(:), flux(:)
   contains
     procedure :: init
+    procedure :: pressure_gradient
     procedure :: correct
     procedure :: project_velocity
   end type
@@ -61,8 +62,25 @@ contains
     end if
     allocate(this%grad_p_old(2,mesh%ncell), this%grad_p_new(2,mesh%ncell), &
         this%velocity_work(2,mesh%ncell), this%derivative_f(mesh%nface), &
+        this%gradient_f(2,mesh%nface), &
         this%gravity_head(2,mesh%nface), &
         this%delta_p(mesh%ncell), this%rhs(mesh%ncell_onP), this%flux(mesh%ncell_onP))
+  end subroutine
+
+
+  !! Compute the pressure-gradient contribution divided by face density and
+  !! interpolated to cell centers. This is the quantity used by the momentum
+  !! predictor and by the incremental projection correction.
+  subroutine pressure_gradient(this, pressure, inv_density_c, inv_density_f, density_delta_c, &
+      cell_t, face_t, bc, gradient)
+    class(t2d_flow_projection_update), intent(inout) :: this
+    real(r8), intent(in) :: pressure(:), inv_density_c(:), inv_density_f(:), density_delta_c(:)
+    integer, intent(in) :: cell_t(:), face_t(:)
+    type(t2d_flow_bc), intent(in) :: bc
+    real(r8), intent(out) :: gradient(:,:)
+
+    call gradient_pressure_scaled(this, pressure, cell_t, face_t, bc, inv_density_c, inv_density_f, &
+        gradient, density_delta_c=density_delta_c)
   end subroutine
 
 
@@ -124,12 +142,13 @@ contains
     call apply_velocity_boundary_conditions(this%mesh, bc, face_t, state%vel_fn)
     call this%mesh%face_imap%gather_offp(state%vel_fn)
 
-    call gradient_correction(this, this%delta_p, cell_t, face_t, this%grad_p_new, bc)
+    call gradient_pressure_scaled(this, this%delta_p, cell_t, face_t, bc, inv_density_c, inv_density_f, &
+        this%grad_p_new, correction=.true.)
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) then
         state%vel_cc(:,c) = 0.0_r8
       else
-        state%vel_cc(:,c) = state%vel_cc(:,c) - dt*inv_density_c(c)*this%grad_p_new(:,c)
+        state%vel_cc(:,c) = state%vel_cc(:,c) - dt*this%grad_p_new(:,c)
       end if
     end do
     call this%mesh%cell_imap%gather_offp(state%vel_cc)
@@ -171,14 +190,16 @@ contains
     if (initial_) then
       !! Refresh GRAVITY_HEAD, but do not use the resulting gradient as the
       !! previous committed pressure gradient for the initial predictor.
-      call gradient_pressure(this, state%p_cc, cell_t, face_t, this%grad_p_new, bc, inv_density_c, density_delta_c)
+      call gradient_pressure_scaled(this, state%p_cc, cell_t, face_t, bc, inv_density_c, inv_density_f, &
+          this%grad_p_new, density_delta_c=density_delta_c)
       this%grad_p_old = 0.0_r8
     else
-      call gradient_pressure(this, state%p_cc, cell_t, face_t, this%grad_p_old, bc, inv_density_c, density_delta_c)
+      call gradient_pressure_scaled(this, state%p_cc, cell_t, face_t, bc, inv_density_c, inv_density_f, &
+          this%grad_p_old, density_delta_c=density_delta_c)
     end if
     this%velocity_work = state%vel_cc
     do c = 1, this%mesh%ncell_onP
-      this%velocity_work(:,c) = this%velocity_work(:,c) + dt*inv_density_c(c)*this%grad_p_old(:,c)
+      this%velocity_work(:,c) = this%velocity_work(:,c) + dt*this%grad_p_old(:,c)
     end do
     call this%mesh%cell_imap%gather_offp(this%velocity_work)
     do c = 1, this%mesh%ncell_onP
@@ -228,23 +249,20 @@ contains
       end if
     end do
     call this%mesh%cell_imap%gather_offp(state%p_cc)
-    call gradient_pressure(this, state%p_cc, cell_t, face_t, this%grad_p_new, bc, inv_density_c, density_delta_c)
+    call gradient_pressure_scaled(this, state%p_cc, cell_t, face_t, bc, inv_density_c, inv_density_f, &
+        this%grad_p_new, density_delta_c=density_delta_c)
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) <= regular_t) then
-        state%vel_cc(:,c) = state%vel_cc(:,c) - dt*inv_density_c(c)* &
-            (this%grad_p_new(:,c) - this%grad_p_old(:,c))
+        state%vel_cc(:,c) = state%vel_cc(:,c) - dt*(this%grad_p_new(:,c) - this%grad_p_old(:,c))
       end if
     end do
     call this%mesh%cell_imap%gather_offp(state%vel_cc)
   end subroutine
 
 
-  subroutine gradient_pressure(this, pressure, cell_t, face_t, gradient, bc, inv_density_c, density_delta_c)
+  subroutine update_gravity_head(this, cell_t, face_t, inv_density_c, density_delta_c)
     class(t2d_flow_projection_update), intent(inout) :: this
-    real(r8), intent(in) :: pressure(:)
     integer, intent(in) :: cell_t(:), face_t(:)
-    real(r8), intent(out) :: gradient(:,:)
-    type(t2d_flow_bc), intent(in) :: bc
     real(r8), intent(in) :: inv_density_c(:), density_delta_c(:)
 
     integer :: f, c1, c2
@@ -270,6 +288,108 @@ contains
       end if
     end do
     call this%mesh%face_imap%gather_offp(this%gravity_head)
+  end subroutine
+
+
+  subroutine gradient_pressure_scaled(this, pressure, cell_t, face_t, bc, inv_density_c, inv_density_f, gradient, &
+      correction, density_delta_c)
+    class(t2d_flow_projection_update), intent(inout) :: this
+    real(r8), intent(in) :: pressure(:), inv_density_c(:), inv_density_f(:)
+    integer, intent(in) :: cell_t(:), face_t(:)
+    type(t2d_flow_bc), intent(in) :: bc
+    real(r8), intent(out) :: gradient(:,:)
+    logical, optional, intent(in) :: correction
+    real(r8), optional, intent(in) :: density_delta_c(:)
+
+    integer :: f, c
+    logical :: correction_
+
+    correction_ = .false.
+    if (present(correction)) correction_ = correction
+    ASSERT(size(inv_density_f) >= this%mesh%nface)
+    if (.not.global_any((cell_t == void_t) .or. (cell_t == regular_void_t))) then
+      if (correction_) then
+        call gradient_correction(this, pressure, cell_t, face_t, gradient, bc)
+      else
+        call gradient_pressure(this, pressure, cell_t, face_t, gradient, bc, inv_density_c, density_delta_c)
+      end if
+      do c = 1, this%mesh%ncell_onP
+        if (cell_t(c) <= regular_t) then
+          gradient(:,c) = inv_density_c(c)*gradient(:,c)
+        else
+          gradient(:,c) = 0.0_r8
+        end if
+      end do
+      call this%mesh%cell_imap%gather_offp(gradient)
+      return
+    end if
+    if (correction_) then
+      if (allocated(bc%pressure_neumann)) then
+        if (allocated(bc%pressure_correction_dirichlet)) then
+          call this%operators%gradient_cf(pressure, this%gradient_f, &
+              normal_flux_bc=bc%pressure_neumann, dirichlet_bc=bc%pressure_correction_dirichlet, &
+              face_t=face_t, non_regular_default=0.0_r8)
+        else
+          call this%operators%gradient_cf(pressure, this%gradient_f, &
+              normal_flux_bc=bc%pressure_neumann, face_t=face_t, non_regular_default=0.0_r8)
+        end if
+      else if (allocated(bc%pressure_correction_dirichlet)) then
+        call this%operators%gradient_cf(pressure, this%gradient_f, &
+            dirichlet_bc=bc%pressure_correction_dirichlet, face_t=face_t, non_regular_default=0.0_r8)
+      else
+        call this%operators%gradient_cf(pressure, this%gradient_f, &
+            face_t=face_t, non_regular_default=0.0_r8)
+      end if
+    else
+      ASSERT(present(density_delta_c))
+      ASSERT(size(inv_density_c) >= this%mesh%ncell)
+      call update_gravity_head(this, cell_t, face_t, inv_density_c, density_delta_c)
+      if (allocated(bc%pressure_neumann)) then
+        if (allocated(bc%pressure_dirichlet)) then
+          call this%operators%gradient_cf(pressure, this%gradient_f, &
+              normal_flux_bc=bc%pressure_neumann, dirichlet_bc=bc%pressure_dirichlet, &
+              gravity_head=this%gravity_head, face_t=face_t, non_regular_default=0.0_r8)
+        else
+          call this%operators%gradient_cf(pressure, this%gradient_f, &
+              normal_flux_bc=bc%pressure_neumann, gravity_head=this%gravity_head, &
+              face_t=face_t, non_regular_default=0.0_r8)
+        end if
+      else if (allocated(bc%pressure_dirichlet)) then
+        call this%operators%gradient_cf(pressure, this%gradient_f, &
+            dirichlet_bc=bc%pressure_dirichlet, gravity_head=this%gravity_head, &
+            face_t=face_t, non_regular_default=0.0_r8)
+      else
+        call this%operators%gradient_cf(pressure, this%gradient_f, &
+            gravity_head=this%gravity_head, face_t=face_t, non_regular_default=0.0_r8)
+      end if
+    end if
+
+    do f = 1, this%mesh%nface_onP
+      this%gradient_f(:,f) = inv_density_f(f)*this%gradient_f(:,f)
+    end do
+    call this%mesh%face_imap%gather_offp(this%gradient_f)
+    if (allocated(bc%pressure_neumann)) then
+      call this%operators%interpolate_fc(this%gradient_f, gradient, face_t, &
+          bc%pressure_neumann%index)
+    else
+      call this%operators%interpolate_fc(this%gradient_f, gradient, face_t)
+    end if
+    do c = 1, this%mesh%ncell_onP
+      if (cell_t(c) > regular_t) gradient(:,c) = 0.0_r8
+    end do
+    call this%mesh%cell_imap%gather_offp(gradient)
+  end subroutine
+
+
+  subroutine gradient_pressure(this, pressure, cell_t, face_t, gradient, bc, inv_density_c, density_delta_c)
+    class(t2d_flow_projection_update), intent(inout) :: this
+    real(r8), intent(in) :: pressure(:)
+    integer, intent(in) :: cell_t(:), face_t(:)
+    real(r8), intent(out) :: gradient(:,:)
+    type(t2d_flow_bc), intent(in) :: bc
+    real(r8), intent(in) :: inv_density_c(:), density_delta_c(:)
+
+    call update_gravity_head(this, cell_t, face_t, inv_density_c, density_delta_c)
     if (allocated(bc%pressure_neumann)) then
       if (allocated(bc%pressure_dirichlet)) then
         call this%operators%gradient_cc(pressure, gradient, bc%pressure_neumann, bc%pressure_dirichlet, &

@@ -24,9 +24,13 @@ def expected_water_volume_fraction(case, time):
     else:
         raise ValueError(f"unknown pipe case {case!r}")
 
-    return np.array(
-        [max(0.0, min(upper, cell + 1.0) - max(lower, cell)) for cell in range(5)]
-    )
+    nx, ny = (25, 5) if case == "plug" else (15, 5)
+    dx = 5.0 / nx
+    values = [
+        max(0.0, min(upper, (i + 1) * dx) - max(lower, i * dx)) / dx
+        for i in range(nx)
+    ]
+    return np.tile(values, ny)
 
 
 def run_case(executable, input_file, mpiexec):

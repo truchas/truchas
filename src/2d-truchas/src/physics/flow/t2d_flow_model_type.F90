@@ -56,7 +56,6 @@ module t2d_flow_model_type
     procedure :: accept_material_state
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
-    procedure :: pressure_gradient
     procedure :: assemble_momentum
   end type
 
@@ -304,48 +303,5 @@ contains
     call this%bc%check_velocity_flux(stat, errmsg)
   end subroutine
 
-
-  !! Compute the cell pressure gradient using the physical pressure boundary
-  !! conditions evaluated by COMPUTE_BC.
-  subroutine pressure_gradient(this, pressure, gradient)
-    class(t2d_flow_model), intent(in) :: this
-    real(r8), intent(in) :: pressure(:)
-    real(r8), intent(out) :: gradient(:,:)
-
-    integer :: f, c1, c2
-    real(r8) :: gravity_head(2,this%mesh%nface), rho
-
-    gravity_head = 0.0_r8
-    do f = 1, this%mesh%nface_onP
-      c1 = this%mesh%fcell(1,f)
-      c2 = this%mesh%fcell(2,f)
-      rho = this%matl_props%density_c(c1) + this%matl_props%density_delta_c(c1)
-      gravity_head(1,f) = -rho*dot_product(this%body_acceleration, &
-          this%mesh%cell_centroid(:,c1) - this%mesh%face_centroid(:,f))
-      if (c2 > 0) then
-        rho = this%matl_props%density_c(c2) + this%matl_props%density_delta_c(c2)
-        gravity_head(2,f) = -rho*dot_product(this%body_acceleration, &
-            this%mesh%cell_centroid(:,c2) - this%mesh%face_centroid(:,f))
-      end if
-    end do
-    call this%mesh%face_imap%gather_offp(gravity_head)
-    if (allocated(this%bc%pressure_neumann)) then
-      if (allocated(this%bc%pressure_dirichlet)) then
-        call this%operators%gradient_cc(pressure, gradient, this%bc%pressure_neumann, &
-            this%bc%pressure_dirichlet, gravity_head, this%matl_props%cell_t, this%matl_props%face_t)
-      else
-        call this%operators%gradient_cc(pressure, gradient, &
-            normal_flux_bc=this%bc%pressure_neumann, gravity_head=gravity_head, &
-            cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
-      end if
-    else if (allocated(this%bc%pressure_dirichlet)) then
-      call this%operators%gradient_cc(pressure, gradient, &
-          dirichlet_bc=this%bc%pressure_dirichlet, gravity_head=gravity_head, &
-          cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
-    else
-      call this%operators%gradient_cc(pressure, gradient, gravity_head=gravity_head, &
-          cell_t=this%matl_props%cell_t, face_t=this%matl_props%face_t)
-    end if
-  end subroutine
 
 end module t2d_flow_model_type
