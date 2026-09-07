@@ -37,7 +37,7 @@ module t2d_simple_volume_tracker_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority, cutoff)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, axisym, priority, cutoff, subcycles)
 
     class(t2d_simple_volume_tracker), intent(out) :: this
     type(simulation_environment), intent(in) :: env
@@ -46,6 +46,7 @@ contains
     logical, intent(in) :: axisym
     integer, intent(in) :: priority(:)
     real(r8), optional, intent(in) :: cutoff
+    integer, optional, intent(in) :: subcycles
 
     this%mesh => mesh
     this%is_axisym = axisym

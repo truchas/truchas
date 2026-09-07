@@ -12,12 +12,6 @@
     "material-regions": {
       "$ref": "../materials/material_regions.schema.json"
     },
-    "material-region-refinement-level": {
-      "type": "integer",
-      "minimum": 0,
-      "default": 6,
-      "description": "Maximum recursive refinement level for geometric material initialization. The finest unresolved triangle has linear size approximately 2^(-level) times its initial triangle."
-    },
     "ht-model": {
       "type": "object",
       "properties": {

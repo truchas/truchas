@@ -6,6 +6,7 @@
         "fluid": {"properties": {"fluid": true, "density": 2.0}}
     },
     "material-regions": {
+      "refinement-level": 6,
         "sloped-wall": {
             "material": "wall",
             "type": "half-plane",
@@ -24,9 +25,7 @@
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "noise-factor": 0.1
-    },
-    "material-region-refinement-level": 6,
-    "flow-model": {
+    },    "flow-model": {
         "inviscid": true,
         "body-acceleration": [0.0, -1.0],
         "bc": {

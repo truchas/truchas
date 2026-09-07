@@ -235,24 +235,26 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
+      type(parameter_list), pointer :: regions_params
       type(parameter_list_iterator) :: piter
       character(:), allocatable :: region_name(:), region_matl_name(:)
       integer :: i
 
       stat = 0
       if (params%is_sublist('material-regions')) then
-        call get_material_region_names(params%sublist('material-regions'), matl_name, stat, errmsg, &
+        regions_params => params%sublist('material-regions')
+        call get_material_region_names(regions_params, matl_name, stat, errmsg, &
             region_name, region_matl_name)
         if (stat /= 0) return
         do i = 1, size(region_name)
           call env%simlog%info('Region "' // trim(region_name(i)) // '": material="' // &
               trim(region_matl_name(i)) // '".')
         end do
-        call params%get('material-region-refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
+        call regions_params%get('refinement-level', rlev, default=6, stat=stat, errmsg=errmsg)
         if (stat /= 0) return
         if (rlev < 0) then
           stat = 1
-          errmsg = '"material-region-refinement-level" must be >= 0'
+          errmsg = '"material-regions.refinement-level" must be >= 0'
         end if
       else
         piter = parameter_list_iterator(materials_params, sublists_only=.true.)

@@ -18,6 +18,7 @@
         }
     },
     "material-regions": {
+      "refinement-level": 8,
         "lower-layer": {
             "material": "lower-liquid",
             "type": "half-plane",
@@ -26,7 +27,6 @@
         },
         "upper-layer": {"material": "upper-liquid", "type": "background"}
     },
-    "material-region-refinement-level": 8,
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}

@@ -18,6 +18,7 @@
         }
     },
     "material-regions": {
+      "refinement-level": 10,
         "inlet-side": {
             "material": "inlet-liquid",
             "type": "half-plane",
@@ -26,7 +27,6 @@
         },
         "outlet-side": {"material": "outlet-liquid", "type": "background"}
     },
-    "material-region-refinement-level": 10,
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}

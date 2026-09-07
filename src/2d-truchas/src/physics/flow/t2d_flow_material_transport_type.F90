@@ -46,7 +46,7 @@ module t2d_flow_material_transport_type
 
 contains
 
-  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority, cutoff)
+  subroutine init(this, env, mesh, nrealfluid, nfluid, nmat, algorithm, priority, cutoff, subcycles)
 
     use t2d_simple_volume_tracker_type
     use t2d_geometric_volume_tracker_type
@@ -58,6 +58,7 @@ contains
     character(*), intent(in), optional :: algorithm
     integer, intent(in), optional :: priority(:)
     real(r8), intent(in), optional :: cutoff
+    integer, intent(in), optional :: subcycles
 
     character(:), allocatable :: tracker_algorithm
     integer, allocatable :: tracker_priority(:)
@@ -87,8 +88,13 @@ contains
     this%nfluid = nfluid
     allocate(this%vfrac_out(nmat,mesh%ncell), this%flux_volumes(nfluid,size(mesh%cface)), &
         this%cface_velocity(size(mesh%cface)), this%interface_normal(2,nmat,mesh%ncell))
-    if (present(cutoff)) then
-      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority, cutoff)
+    if (present(cutoff) .and. present(subcycles)) then
+      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority, cutoff=cutoff, &
+          subcycles=subcycles)
+    else if (present(cutoff)) then
+      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority, cutoff=cutoff)
+    else if (present(subcycles)) then
+      call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority, subcycles=subcycles)
     else
       call this%tracker%init(env, mesh, nrealfluid, nfluid, nmat, .false., tracker_priority)
     end if

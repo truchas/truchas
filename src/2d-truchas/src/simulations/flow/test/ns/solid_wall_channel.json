@@ -8,6 +8,7 @@
         "fluid": {"properties": {"fluid": true, "density": 1.0}}
     },
     "material-regions": {
+      "refinement-level": 0,
         "lower-wall": {
             "material": "wall",
             "type": "box",
@@ -25,9 +26,7 @@
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
-    },
-    "material-region-refinement-level": 0,
-    "flow-model": {
+    },    "flow-model": {
         "inviscid": true,
         "bc": {
             "inlet": {"type": "pressure", "face-set-ids": [1], "pressure": 1.0},

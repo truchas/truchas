@@ -8,9 +8,9 @@ unless they are required to support 2D.
   return instead of silently ignoring the root solver result.
 - Validate that the material-priority list is a permutation of the material
   indices.
-- Decide whether the geometric tracker controls currently hard-coded in
-  `t2d_geometric_volume_tracker%init`—cutoff, subcycle count, and iteration
-  limit—should be exposed as input parameters.
+- Decide whether the remaining geometric tracker controls currently hard-coded
+  in `t2d_geometric_volume_tracker%init`—the interface-location iteration
+  limit and nested-dissection setting—should be exposed as input parameters.
 - Either implement material-specific inflow handling for
   `t2d_simple_volume_tracker` or explicitly document that the simple algorithm
   does not support it.

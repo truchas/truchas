@@ -6,6 +6,7 @@
         "fluid": {"properties": {"fluid": true, "density": 2.0}}
     },
     "material-regions": {
+      "refinement-level": 6,
         "left-wall": {
             "material": "wall", "type": "box",
             "lower-corner": [0.0, 0.0], "upper-corner": [0.28, 1.0]
@@ -19,9 +20,7 @@
     "mesh": {
         "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
-    },
-    "material-region-refinement-level": 6,
-    "flow-model": {
+    },    "flow-model": {
         "inviscid": true,
         "body-acceleration": [0.0, -1.0],
         "bc": {

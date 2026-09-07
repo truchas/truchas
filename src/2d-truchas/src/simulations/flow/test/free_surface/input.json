@@ -11,6 +11,7 @@
     }
   },
   "material-regions": {
+    "refinement-level": 0,
     "water-column": {
       "material": "water",
       "type": "half-plane",
@@ -22,7 +23,6 @@
       "type": "background"
     }
   },
-  "material-region-refinement-level": 0,
   "mesh": {
     "x-axis": {"coarse-grid": [-0.5, 0.5], "intervals": [20]},
     "y-axis": {"coarse-grid": [-0.5, 0.5], "intervals": [20]}

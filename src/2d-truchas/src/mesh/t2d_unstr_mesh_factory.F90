@@ -207,7 +207,7 @@ contains
         call env%simlog%info(trim(message))
       end if
       if (noise /= 0.0_r8) then
-        write(message,'("Perturbing interior nodes with noise factor ",g0,".")') noise
+        write(message,'("Perturbing mesh nodes with noise factor ",g0,".")') noise
         call env%simlog%info(trim(message))
       end if
       if (has_random_seed) call env%simlog%info('Using random seed ' // i_to_c(random_seed) // '.')
