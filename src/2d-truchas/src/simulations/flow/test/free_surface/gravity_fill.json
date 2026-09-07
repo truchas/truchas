@@ -1,0 +1,44 @@
+// Inviscid gravity-driven filling of a fluid/VOID pipe.  Pressure is zero at
+// both open ends and the axial body acceleration is +1, giving u=t and a
+// water/VOID interface at x=0.5+t^2/2.
+{
+  "materials": {
+    "water": {"properties": {"fluid": true, "density": 1.0}}
+  },
+  "material-regions": {
+    "refinement-level": 0,
+    "water": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [0.5, 1.0]
+    },
+    "void-background": {"material": "VOID", "type": "background"}
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [15]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [5]}
+  },
+  "flow-model": {
+    "inviscid": true,
+    "body-acceleration": [1.0, 0.0],
+    "bc": {
+      "left": {"type": "pressure", "face-set-ids": [1], "pressure": 0.0, "inflow-material": "water"},
+      "right": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
+      "walls": {"type": "free-slip", "face-set-ids": [3, 4]}
+    }
+  },
+  "flow-solver": {
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-8},
+    "projection-solver": {"rel-tol": 1.0e-12, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 2.5e-3,
+    "min-time-step": 1.0e-6,
+    "max-time-step": 2.5e-3,
+    "time-step-growth": 1.0,
+    "output-times": [0.25, 0.5, 0.75, 1.0]
+  },
+  "initial-velocity": [0.0, 0.0]
+}

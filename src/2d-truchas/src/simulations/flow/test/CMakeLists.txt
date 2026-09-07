@@ -86,6 +86,10 @@ add_flow_integrated_test(flow_free_surface_fill
   free_surface/test_pipe.py free_surface/fill.json fill)
 add_flow_integrated_test(flow_free_surface_drain
   free_surface/test_pipe.py free_surface/drain.json drain)
+add_flow_integrated_test(flow_free_surface_gravity_fill
+  free_surface/test_gravity_fill.py free_surface/gravity_fill.json)
+add_flow_integrated_test(flow_free_surface_gravity_drain
+  free_surface/test_gravity_drain.py free_surface/gravity_drain.json)
 add_flow_integrated_test(flow_free_surface_hydrostatic
   free_surface/test_hydrostatic.py free_surface/hydrostatic.json)
 add_flow_integrated_test(flow_free_surface_hydrostatic_viscous
