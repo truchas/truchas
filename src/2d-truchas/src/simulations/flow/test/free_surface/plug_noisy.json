@@ -1,0 +1,45 @@
+// Inviscid water plug translating through a fluid/VOID pipe on a perturbed mesh.
+// This exercises interface reconstruction on nonorthogonal quadrilateral cells.
+{
+  "materials": {
+    "water": {"properties": {"fluid": true, "density": 1.0}}
+  },
+  "material-regions": {
+    "refinement-level": 6,
+    "water-plug": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.5, 0.0],
+      "upper-corner": [1.5, 1.0]
+    },
+    "void-background": {"material": "VOID", "type": "background"}
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [25]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [5]},
+    "noise-factor": 0.1,
+    "random-seed": 1
+  },
+  "flow-model": {
+    "inviscid": true,
+    "bc": {
+      "left": {"type": "pressure", "face-set-ids": [1], "pressure": 0.0, "inflow-material": "VOID"},
+      "right": {"type": "pressure", "face-set-ids": [2], "pressure": 0.0},
+      "walls": {"type": "free-slip", "face-set-ids": [3, 4]}
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.0625,
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-8},
+    "projection-solver": {"rel-tol": 1.0e-12, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 1.0e-2,
+    "min-time-step": 1.0e-6,
+    "max-time-step": 0.1,
+    "time-step-growth": 1.1,
+    "output-times": [1.0, 3.0]
+  },
+  "initial-velocity": [1.0, 0.0]
+}
