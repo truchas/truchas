@@ -31,11 +31,12 @@ module t2d_flow_operators_type
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()  ! unowned reference
     real(r8), allocatable :: dx(:), dr(:,:,:), interpolation_factor(:)
+    logical, allocatable :: face_work(:)
   contains
     procedure :: init
     procedure :: derivative_cf_1r, derivative_cf_2r
     procedure :: interpolate_cf_1r, interpolate_cf_2r
-    procedure :: gradient_cc
+    procedure :: gradient_cc, gradient_cf, interpolate_fc
     procedure :: divergence
     procedure :: normal_distance
     generic :: derivative_cf => derivative_cf_1r, derivative_cf_2r
@@ -55,10 +56,11 @@ contains
     call mesh%init_face_centroid()
     this%mesh => mesh
     allocate(this%dx(mesh%nface), this%dr(2,2,mesh%nface_onP), &
-        this%interpolation_factor(mesh%nface))
+        this%interpolation_factor(mesh%nface), this%face_work(mesh%nface))
     this%dx = 0.0_r8
     this%interpolation_factor = 0.0_r8
     this%dr = 0.0_r8
+    this%face_work = .true.
 
     do f = 1, mesh%nface_onP
       c1 = mesh%fcell(1,f)
@@ -87,6 +89,129 @@ contains
     end do
     call mesh%face_imap%gather_offp(this%dx)
     call mesh%face_imap%gather_offp(this%interpolation_factor)
+  end subroutine
+
+
+  !! Compute a first-order vector gradient at face centers. Internal-face
+  !! gradients use the line joining the adjacent cell centroids. Boundary
+  !! gradients use the supplied pressure boundary condition.
+  subroutine gradient_cf(this, field_cc, gradient_f, normal_flux_bc, dirichlet_bc, &
+      dirichlet_value, gravity_head, face_t, non_regular_default)
+    class(t2d_flow_operators), intent(in) :: this
+    real(r8), intent(in) :: field_cc(:)
+    real(r8), intent(out) :: gradient_f(:,:)
+    class(bndry_func1), optional, intent(in) :: normal_flux_bc, dirichlet_bc
+    real(r8), optional, intent(in) :: dirichlet_value(:)
+    real(r8), optional, intent(in) :: gravity_head(:,:)
+    integer, optional, intent(in) :: face_t(:)
+    real(r8), optional, intent(in) :: non_regular_default
+
+    integer :: c1, c2, f, i
+    real(r8) :: d(2), difference, d2
+
+    ASSERT(size(field_cc) >= this%mesh%ncell)
+    ASSERT(size(gradient_f,1) == 2)
+    ASSERT(size(gradient_f,2) == this%mesh%nface)
+    gradient_f = 0.0_r8
+    do f = 1, this%mesh%nface_onP
+      if (present(face_t)) then
+        if (face_t(f) > regular_t) cycle
+      end if
+      c1 = this%mesh%fcell(1,f)
+      c2 = this%mesh%fcell(2,f)
+      if (c2 > 0) then
+        d = this%mesh%cell_centroid(:,c2) - this%mesh%cell_centroid(:,c1)
+        d2 = dot_product(d,d)
+        ASSERT(d2 > 0.0_r8)
+        difference = field_cc(c2) - field_cc(c1)
+        if (present(gravity_head)) difference = difference + &
+            gravity_head(2,f) - gravity_head(1,f)
+        gradient_f(:,f) = d*difference/d2
+      end if
+    end do
+
+    if (present(normal_flux_bc)) then
+      do i = 1, size(normal_flux_bc%index)
+        f = normal_flux_bc%index(i)
+        if (f > this%mesh%nface_onP) cycle
+        gradient_f(:,f) = normal_flux_bc%value(i)*this%mesh%unit_normal(:,f)
+      end do
+    end if
+
+    if (present(dirichlet_bc)) then
+      if (present(dirichlet_value)) then
+        ASSERT(size(dirichlet_value) == size(dirichlet_bc%value))
+      end if
+      do i = 1, size(dirichlet_bc%index)
+        f = dirichlet_bc%index(i)
+        if (f > this%mesh%nface_onP) cycle
+        c1 = this%mesh%fcell(1,f)
+        d = this%mesh%face_centroid(:,f) - this%mesh%cell_centroid(:,c1)
+        d2 = dot_product(d,d)
+        ASSERT(d2 > 0.0_r8)
+        if (present(dirichlet_value)) then
+          difference = dirichlet_value(i) - field_cc(c1)
+        else
+          difference = dirichlet_bc%value(i) - field_cc(c1)
+        end if
+        if (present(gravity_head)) difference = difference - gravity_head(1,f)
+        gradient_f(:,f) = d*difference/d2
+      end do
+    end if
+
+    if (present(face_t) .and. present(non_regular_default)) then
+      do f = 1, this%mesh%nface_onP
+        if (face_t(f) > regular_t) gradient_f(:,f) = non_regular_default
+      end do
+    end if
+    call this%mesh%face_imap%gather_offp(gradient_f)
+  end subroutine
+
+
+  !! Interpolate a face-centered vector to cell centers using the absolute
+  !! oriented face-area components as weights. Inactive and explicitly
+  !! ignored faces do not participate.
+  subroutine interpolate_fc(this, field_f, field_c, face_t, extra_ignore_faces)
+    class(t2d_flow_operators), intent(inout) :: this
+    real(r8), intent(in) :: field_f(:,:)
+    real(r8), intent(out) :: field_c(:,:)
+    integer, optional, intent(in) :: face_t(:), extra_ignore_faces(:)
+
+    integer :: c, dim, f, i, tmp_count
+    real(r8) :: weight_sum
+
+    ASSERT(size(field_f,1) == 2)
+    ASSERT(size(field_f,2) == this%mesh%nface)
+    ASSERT(size(field_c,1) == 2)
+    ASSERT(size(field_c,2) >= this%mesh%ncell)
+    this%face_work = .true.
+    if (present(face_t)) then
+      do f = 1, this%mesh%nface
+        if (face_t(f) > regular_t) this%face_work(f) = .false.
+      end do
+    end if
+    if (present(extra_ignore_faces)) then
+      do i = 1, size(extra_ignore_faces)
+        f = extra_ignore_faces(i)
+        if (f <= this%mesh%nface) this%face_work(f) = .false.
+      end do
+    end if
+
+    field_c = 0.0_r8
+    do c = 1, this%mesh%ncell_onP
+      associate (faces => this%mesh%cface(this%mesh%cstart(c):this%mesh%cstart(c+1)-1))
+        tmp_count = count(this%face_work(faces))
+        if (tmp_count == 0) cycle
+        do dim = 1, 2
+          weight_sum = sum(abs(this%mesh%normal(dim,faces)), mask=this%face_work(faces))
+          if (weight_sum > 0.0_r8) then
+            field_c(dim,c) = sum(abs(this%mesh%normal(dim,faces))*field_f(dim,faces), &
+                mask=this%face_work(faces))/weight_sum
+          end if
+        end do
+      end associate
+    end do
+    call this%mesh%cell_imap%gather_offp(field_c)
   end subroutine
 
 

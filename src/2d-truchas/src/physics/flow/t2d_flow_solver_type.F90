@@ -273,7 +273,10 @@ contains
       if (present(errmsg)) errmsg = bc_errmsg
       return
     end if
-    call this%model%pressure_gradient(this%state%p_cc, this%grad_p)
+    call this%projection_update%pressure_gradient(this%state%p_cc, &
+        this%model%matl_props%inv_density_c, this%model%matl_props%inv_density_f, &
+        this%model%matl_props%density_delta_c, this%model%matl_props%cell_t, &
+        this%model%matl_props%face_t, this%model%bc, this%grad_p)
     call this%model%assemble_momentum(dt, this%rhs)
     if (present(flux_volumes)) then
       ASSERT(size(flux_volumes,1) == size(this%model%matl_props%density))
@@ -287,7 +290,8 @@ contains
         cycle
       end if
       this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c_old(c)*this%model%mesh%volume(c)* &
-          this%state%vel_cc(:,c) - dt*this%model%mesh%volume(c)*this%grad_p(:,c)
+          this%state%vel_cc(:,c) - dt*this%model%mesh%volume(c)* &
+          this%model%matl_props%density_c(c)*this%model%matl_props%vof(c)*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, &

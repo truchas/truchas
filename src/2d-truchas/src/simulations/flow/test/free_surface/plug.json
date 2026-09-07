@@ -15,8 +15,8 @@
     "void-background": {"material": "VOID", "type": "background"}
   },
   "mesh": {
-    "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [5]},
-    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [1]}
+    "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [25]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [5]}
   },
   "flow-model": {
     "inviscid": true,
