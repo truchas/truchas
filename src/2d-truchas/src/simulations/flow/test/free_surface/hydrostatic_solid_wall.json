@@ -1,0 +1,46 @@
+// Static hydrostatic water layer beside a pure SOLID wall and beneath a
+// horizontal free surface.  All interfaces coincide with mesh faces.
+{
+  "materials": {
+    "wall": {"properties": {"density": 1.0}},
+    "water": {"properties": {"fluid": true, "density": 1.0}}
+  },
+  "material-regions": {
+    "refinement-level": 0,
+    "left-wall": {
+      "material": "wall",
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [0.25, 1.0]
+    },
+    "water": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.25, 0.0],
+      "upper-corner": [1.0, 0.5]
+    },
+    "void-background": {"material": "VOID", "type": "background"}
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+  },
+  "flow-model": {
+    "inviscid": true,
+    "body-acceleration": [0.0, -1.0],
+    "bc": {
+      "walls": {"type": "free-slip", "face-set-ids": [1, 2, 3, 4]}
+    }
+  },
+  "flow-solver": {
+    "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 0.1,
+    "min-time-step": 1.0e-6,
+    "max-time-step": 0.1,
+    "output-times": [1.0]
+  },
+  "initial-velocity": [0.0, 0.0]
+}
