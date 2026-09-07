@@ -27,3 +27,15 @@ non-orthogonality.
 The corresponding mainline 3D experiment shows qualitatively similar
 behavior. These cases should become useful regression tests after the
 free-surface projection, cutoff, and normalization treatment is improved.
+
+## Solid/fluid no-slip discretization
+
+`poiseuille_solid_wall.json` is a viscous pressure-driven channel whose
+physical walls are represented by pure SOLID cells.  The companion checker,
+`test_poiseuille_solid_wall.py`, compares the result with the analytic
+Poiseuille profile.  It is intentionally not a CTest regression: the current
+solid/fluid viscous discretization places the effective no-slip wall at an
+inaccurate location, even though the material interface is mesh-aligned and
+there are no mixed cells.  The checker is retained as a manual diagnostic and
+is expected to report the current velocity-profile error until the interface
+discretization is improved.
