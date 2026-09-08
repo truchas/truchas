@@ -22,6 +22,6 @@
   "initial-region-refinement-level": 6,
   "sim-control": {
     "time-step": 0.0025,
-    "output-times": [0.0, 0.25]
+    "output-times": {"times": [0.0, 0.25] }
   }
 }

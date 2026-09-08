@@ -50,7 +50,7 @@
     "min-time-step": 1.0e-5,
     "max-time-step": 1.0,
     "time-step-growth": 1.05,
-    "output-times": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5]
+    "output-times": {"times": [0.0, 3.5], "subintervals": [14]}
   },
   "initial-velocity": [0.0, 0.0]
 }

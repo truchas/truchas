@@ -54,7 +54,7 @@
         "max-time-step": 1.0e-3,
         "time-step-growth": 1.05
     },
-    "sim-control": {"initial-time": 0.0, "output-times": [0.01]},
+    "sim-control": {"initial-time": 0.0, "output-times": {"times": [0.0, 0.01] }},
     "initial-velocity": [0.8660254037844386, 0.5],
     "initial-temperature": {
         "type": "polynomial",

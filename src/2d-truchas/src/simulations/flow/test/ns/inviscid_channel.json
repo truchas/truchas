@@ -25,6 +25,6 @@
         "initial-time-step": 1.0e-3,
         "min-time-step": 1.0e-6,
         "max-time-step": 1.0e-3,
-        "output-times": [1.0e-2]
+        "output-times": {"times": [0.0, 1.0e-2] }
     }
 }

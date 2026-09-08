@@ -13,6 +13,6 @@
   },
   "sim-control": {
     "time-step": 0.001,
-    "output-times": [0.0, 0.01]
+    "output-times": {"times": [0.0, 0.01] }
   }
 }

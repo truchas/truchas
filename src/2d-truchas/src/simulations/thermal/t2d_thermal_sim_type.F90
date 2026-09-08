@@ -25,6 +25,7 @@ module t2d_thermal_sim_type
   use t2d_thermal_integrator_type
   use t2d_thermal_vtkhdf_writer_type
   use simulation_environment_type
+  use simulation_output_schedule, only: get_output_times
   use simulation_class
   implicit none
   private
@@ -296,21 +297,8 @@ contains
         errmsg = 'processing ' // params%path() // ': ' // errmsg
         return
       end if
-      call params%get('output-times', this%tout, stat, errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      if (size(this%tout) == 0) then
-        stat = 1
-        errmsg = 'processing ' // params%path() // ': require nonempty output-times'
-        return
-      end if
-      if (any(this%tout <= this%t_init) .or. any(this%tout(2:) <= this%tout(:size(this%tout)-1))) then
-        stat = 1
-        errmsg = 'processing ' // params%path() // ': require strictly increasing output-times after initial-time'
-        return
-      end if
+      call get_output_times(params, this%t_init, this%tout, stat, errmsg)
+      if (stat /= 0) return
       call this%solver%init_time_stepper(params, stat, errmsg)
       if (stat /= 0) then
         errmsg = 'processing ' // params%path() // ': ' // errmsg

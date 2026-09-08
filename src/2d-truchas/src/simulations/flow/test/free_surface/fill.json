@@ -42,7 +42,7 @@
     "min-time-step": 1.0e-6,
     "max-time-step": 0.1,
     "time-step-growth": 1.1,
-    "output-times": [1.0, 3.0]
+    "output-times": {"times": [1.0, 3.0] }
   },
   "initial-velocity": [1.0, 0.0]
 }

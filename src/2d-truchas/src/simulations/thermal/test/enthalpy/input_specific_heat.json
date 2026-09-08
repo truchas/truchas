@@ -37,7 +37,7 @@
         "initial-time": 0.0,
         "initial-time-step": 1.0e-5,
         "min-time-step": 1.0e-7,
-        "output-times": [0.5]
+        "output-times": {"times": [0.0, 0.5] }
     },
     "initial-temperature": {
         "type": "constant",

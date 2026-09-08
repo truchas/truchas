@@ -70,7 +70,7 @@
         "max-time-step": 1.0e-2,
         "time-step-growth": 1.05
     },
-    "sim-control": {"initial-time": 0.0, "output-times": [0.1]},
+    "sim-control": {"initial-time": 0.0, "output-times": {"times": [0.0, 0.1] }},
     "initial-temperature": {
         "type": "polynomial",
         "poly-coef": [1.0, -1.0],

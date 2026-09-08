@@ -115,7 +115,7 @@
 
   "sim-control": {
     "initial-time": 0.0,
-    "output-times": [0.5, 3.0]
+    "output-times": {"times": [0.5, 3.0] }
   },
 
   "initial-temperature": 15.0,

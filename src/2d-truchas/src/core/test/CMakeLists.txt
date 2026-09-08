@@ -6,6 +6,12 @@ target_link_libraries(test_simulation_log truchas-extra truchas ${Truchas_LINK_L
 add_executable(test_mpi_f08_compat test_mpi_f08_compat.F90)
 target_link_libraries(test_mpi_f08_compat truchas ${Truchas_LINK_LIBS})
 
+add_executable(test_simulation_output_schedule test_simulation_output_schedule.F90)
+target_link_libraries(test_simulation_output_schedule truchas-extra truchas ${Truchas_LINK_LIBS})
+
+add_test(NAME simulation_output_schedule COMMAND $<TARGET_FILE:test_simulation_output_schedule>)
+set_property(TEST simulation_output_schedule PROPERTY LABELS UNIT 2d-truchas)
+
 add_test(NAME simulation_log-1p COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
   $<TARGET_FILE:test_simulation_log> ${MPIEXEC_POSTFLAGS})
 set_tests_properties(simulation_log-1p PROPERTIES PROCESSORS 1)

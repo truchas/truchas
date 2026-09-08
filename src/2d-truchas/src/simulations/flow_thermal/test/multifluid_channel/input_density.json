@@ -64,7 +64,7 @@
         "time-step-growth": 1.05
     },
     "sim-control": {"initial-time": 0.0,
-                     "output-times": [0.0025, 0.005, 0.0075, 0.01]},
+                     "output-times": {"times": [0.0, 0.01], "subintervals": [4]}},
     "initial-velocity": [1.0, 0.0],
     "initial-temperature": 1.0
 }
