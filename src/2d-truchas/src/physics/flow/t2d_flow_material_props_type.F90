@@ -39,6 +39,7 @@ module t2d_flow_material_props_type
     real(r8), allocatable, public :: vfrac(:,:), density_c(:), density_c_old(:), &
         density_delta_c(:), inv_density_c(:), inv_density_f(:), viscosity_c(:), viscosity_f(:), &
         vof(:), vof_novoid(:), solidified_density(:)
+    real(r8), allocatable :: temperature_c(:)
     real(r8), allocatable :: pre_solidification_density(:)
     integer, allocatable, public :: cell_t(:), face_t(:)
     integer, public :: nfluid = 0
@@ -90,7 +91,7 @@ contains
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
         this%density_delta(size(density)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
         this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
-        this%cell_t(mesh%ncell), this%face_t(mesh%nface))
+        this%cell_t(mesh%ncell), this%face_t(mesh%nface), this%temperature_c(mesh%ncell_onP))
     if (.not.inviscid) then
       allocate(this%viscosity(size(density)))
       if (size(density) /= 1) then
@@ -160,7 +161,7 @@ contains
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
         this%density_delta(size(phase_ids)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
         this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
-        this%cell_t(mesh%ncell), this%face_t(mesh%nface))
+        this%cell_t(mesh%ncell), this%face_t(mesh%nface), this%temperature_c(mesh%ncell_onP))
     this%nfluid = size(phase_ids)
     if (present(nfluid)) this%nfluid = nfluid
     if (this%nfluid < size(phase_ids)) then
@@ -343,6 +344,7 @@ contains
       if (rho_f > 0.0_r8) this%inv_density_f(f) = 1.0_r8/rho_f
     end do
     call this%mesh%face_imap%gather_offp(this%inv_density_f)
+    if (allocated(this%viscosity_c)) call this%set_temperature(this%temperature_c)
   end subroutine set_volume_fractions
 
 
@@ -368,6 +370,7 @@ contains
     real(r8) :: state(1)
 
     ASSERT(size(temperature) == this%mesh%ncell_onP)
+    this%temperature_c = temperature
     do c = 1, this%mesh%ncell_onP
       state(1) = temperature(c)
       this%density_delta_c(c) = 0.0_r8

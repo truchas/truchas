@@ -86,6 +86,17 @@ program test_t2d_flow_material_props
   call require(abs(props%inv_density_f(interior_face) - 500.0_r8) < 1.0e-10_r8, &
       'fluid/VOID face density did not respect the minimum fraction')
 
+  call props%init(mesh, [2.0_r8], .false., stat, errmsg, viscosity=3.0_r8, nfluid=2)
+  call require(stat == 0, 'initializing viscous fluid/VOID properties: ' // errmsg)
+  vfrac_void = reshape([1.0_r8, 0.0_r8, 0.0_r8, 1.0_r8], shape(vfrac_void))
+  call props%set_initial_state(vfrac_void, [0.0_r8, 0.0_r8])
+  vfrac_void = reshape([1.0_r8, 0.0_r8, 1.0_r8, 0.0_r8], shape(vfrac_void))
+  call props%set_volume_fractions(vfrac_void)
+  call require(maxval(abs(props%viscosity_c - [3.0_r8, 3.0_r8])) < 1.0e-14_r8, &
+      'viscosity was not refreshed after fluid entered a void cell')
+  call require(abs(props%viscosity_f(interior_face) - 3.0_r8) < 1.0e-14_r8, &
+      'face viscosity was not refreshed after fluid entered a void cell')
+
   call env%simlog%close()
   call halt_parallel_communication
   stop status

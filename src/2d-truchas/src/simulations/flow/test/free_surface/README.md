@@ -52,3 +52,11 @@ closed square domain. Water initially occupies the left half of the box and
 evolves under downward gravity. It is the two-dimensional analogue of mainline
 `free-surf-flow-4` and exercises geometric fluid/VOID tracking, free-surface
 pressure treatment, and inactive-VOID flow cells.
+
+`pressure_poiseuille_void/input.json` is a viscous pressure-driven flow
+problem in the 2×1 channel. Water initially fills the first axial unit and
+VOID occupies the remainder; the channel walls are no-slip and body
+acceleration points in the negative axial direction. The inlet pressure goes
+high, low, and back to its initial value. Its reference regression checks the
+coupled fluid/VOID response; it is not a strict Poiseuille benchmark because
+the moving fluid/VOID interface changes the fluid domain.
