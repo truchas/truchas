@@ -25,6 +25,10 @@ flow/thermal models.  More detailed subsystem items remain in
 
 ## Volume tracking and interfaces
 
+- Implement the VOID-collapse model required for the full free-surface flow
+  capability.  The current 2D path supports VOID tracking and inactive-VOID
+  flow cells, but does not yet implement the collapse treatment used by the
+  mature 3D flow algorithm.
 - Implement nested-dissection reconstruction for cells containing three or
   more materials; the current geometric tracker uses onion-skin ordering.
 - Revisit conservation repair and small-volume threshold behavior as the
