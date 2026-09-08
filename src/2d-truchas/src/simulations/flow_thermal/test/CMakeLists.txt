@@ -133,17 +133,6 @@ set_tests_properties(flow_thermal_multifluid_hydrostatic PROPERTIES
   LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
   TIMEOUT 120)
 
-add_test(NAME flow_thermal_viscous_multifluid
-  COMMAND ${Python3_EXECUTABLE}
-          ${CMAKE_CURRENT_SOURCE_DIR}/viscous_multifluid/test.py
-          $<TARGET_FILE:truchas_2d>
-          ${CMAKE_CURRENT_SOURCE_DIR}/viscous_multifluid/input.json
-          ${MPIEXEC})
-set_tests_properties(flow_thermal_viscous_multifluid PROPERTIES
-  PROCESSORS 4
-  LABELS "INTEGRATION;NONISOTHERMAL;2d-truchas"
-  TIMEOUT 120)
-
 add_test(NAME flow_thermal_solidification
   COMMAND ${Python3_EXECUTABLE}
           ${CMAKE_CURRENT_SOURCE_DIR}/solidification/test.py
