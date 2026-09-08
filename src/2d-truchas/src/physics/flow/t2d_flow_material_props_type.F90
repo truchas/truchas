@@ -298,7 +298,7 @@ contains
       end do
     end do
     call this%mesh%cell_imap%gather_offp(this%cell_t)
-    this%any_void = global_any(this%cell_t == void_t)
+    this%any_void = global_any((this%cell_t == void_t) .or. (this%cell_t == regular_void_t))
     this%any_real_fluid_onP = any(this%vof_novoid(:this%mesh%ncell_onP) > this%cutoff)
     this%any_real_fluid = global_any(this%any_real_fluid_onP)
 
