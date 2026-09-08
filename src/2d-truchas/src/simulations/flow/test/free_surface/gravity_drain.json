@@ -38,7 +38,7 @@
     "min-time-step": 1.0e-6,
     "max-time-step": 2.5e-3,
     "time-step-growth": 1.0,
-    "output-times": [0.25, 0.5, 0.75, 1.0]
+    "output-times": {"times": [0.0, 1.0], "subintervals": [4]}
   },
   "initial-velocity": [0.0, 0.0]
 }

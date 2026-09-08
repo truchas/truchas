@@ -20,6 +20,7 @@ module t2d_vof_sim_type
   use t2d_vof_solver_type
   use t2d_vof_vtkhdf_writer_type
   use simulation_environment_type
+  use simulation_output_schedule, only: get_output_times
   use simulation_class
   implicit none
   private
@@ -31,6 +32,7 @@ module t2d_vof_sim_type
     type(t2d_vof_solver) :: solver
     type(t2d_vof_vtkhdf_writer) :: output
     real(r8), allocatable :: vfrac(:,:), output_times(:)
+    real(r8) :: t_init
     real(r8) :: time_step
   contains
     final :: delete
@@ -156,15 +158,16 @@ contains
       errmsg = context // errmsg
       return
     end if
-    call plist%get('output-times', this%output_times, stat, errmsg)
+    call plist%get('initial-time', this%t_init, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    if (this%time_step <= 0.0_r8 .or. size(this%output_times) == 0 .or. &
-        this%output_times(1) /= 0.0_r8 .or. any(this%output_times(2:) <= this%output_times(:size(this%output_times)-1))) then
+    call get_output_times(plist, this%t_init, this%output_times, stat, errmsg)
+    if (stat /= 0) return
+    if (this%time_step <= 0.0_r8) then
       stat = 1
-      errmsg = context // 'require time-step > 0 and strictly increasing output-times beginning at 0'
+      errmsg = context // 'require time-step > 0'
       return
     end if
     call this%output%open(env, this%mesh, nmat, stat, errmsg)
@@ -184,9 +187,9 @@ contains
 
     stat = 0
     nmat = size(this%vfrac,1)
-    time = this%output_times(1)
+    time = this%t_init
     call write_output(this, time, nmat)
-    do n = 2, size(this%output_times)
+    do n = 1, size(this%output_times)
       do while (time < this%output_times(n))
         dt = min(this%time_step, this%output_times(n)-time)
         call this%solver%step(env, time, dt, this%velocity, this%vfrac)

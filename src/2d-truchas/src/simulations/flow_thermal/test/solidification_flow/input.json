@@ -80,7 +80,7 @@
   },
   "sim-control": {
     "initial-time": 0.0,
-    "output-times": [1.0, 5.0, 20.0, 100.0, 200.0]
+    "output-times": {"times": [1.0, 5.0, 20.0, 100.0, 200.0] }
   },
   "initial-temperature": {"type": "constant", "value": 0.5},
   "initial-velocity": [0.0, 0.0]

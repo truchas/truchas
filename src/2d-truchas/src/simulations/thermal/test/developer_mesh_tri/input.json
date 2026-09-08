@@ -22,7 +22,7 @@
   },
   "sim-control": {
     "initial-time": 0.0, "initial-time-step": 1.0e-3,
-    "min-time-step": 1.0e-6, "output-times": [0.01]
+    "min-time-step": 1.0e-6, "output-times": {"times": [0.0, 0.01] }
   },
   "initial-temperature": {
     "type": "polynomial", "poly-coef": [2.0], "poly-powers": [[0, 0]]

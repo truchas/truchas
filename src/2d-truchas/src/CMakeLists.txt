@@ -20,6 +20,7 @@ add_library(truchas-extra
   core/simulation_environment_type.F90
   core/simulation_class.F90
   core/simulation_command_line_type.F90
+  core/simulation_output_schedule.F90
   core/simulation_provenance.F90)
 add_subdirectory(mesh)
 add_subdirectory(material_distribution)

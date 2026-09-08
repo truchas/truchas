@@ -56,6 +56,6 @@
         "min-time-step": 1.0e-6,
         "max-time-step": 0.05,
         "time-step-growth": 1.0,
-        "output-times": [0.1]
+        "output-times": {"times": [0.0, 0.1] }
     }
 }

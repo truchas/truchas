@@ -41,6 +41,6 @@
     "sim-control": {
         "initial-time": 0.0, "initial-time-step": 1.0e-2,
         "min-time-step": 1.0e-8, "max-time-step": 1.0e-2,
-        "output-times": [1.0]
+        "output-times": {"times": [0.0, 1.0]}
     }
 }

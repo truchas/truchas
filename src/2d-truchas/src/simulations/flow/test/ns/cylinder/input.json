@@ -51,6 +51,6 @@
         "initial-time-step": 0.005,
         "min-time-step": 1.0e-6,
         "max-time-step": 0.005,
-        "output-times": [0.25, 0.5, 1.0, 2.0]
+        "output-times": {"times": [0.25, 0.5, 1.0, 2.0]}
     }
 }
