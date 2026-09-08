@@ -96,3 +96,6 @@ add_flow_integrated_test(flow_free_surface_hydrostatic_viscous
   free_surface/test_hydrostatic.py free_surface/hydrostatic_viscous.json)
 add_flow_integrated_test(flow_free_surface_hydrostatic_solid_wall
   free_surface/test_hydrostatic_solid_wall.py free_surface/hydrostatic_solid_wall.json)
+add_flow_integrated_test(flow_free_surface_pressure_poiseuille_void
+  free_surface/pressure_poiseuille_void/test.py free_surface/pressure_poiseuille_void/input.json)
+set_tests_properties(flow_free_surface_pressure_poiseuille_void PROPERTIES TIMEOUT 300)

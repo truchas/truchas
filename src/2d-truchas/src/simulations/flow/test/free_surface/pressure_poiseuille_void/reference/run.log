@@ -1,0 +1,1353 @@
+program="truchas-2d" simulation="flow" version="2d-truchas-26.09-8-g3d326e33-dirty"
+build compiler="GNU" compiler_version="16.1.1" host="thelio2.indiana" flags="-O3 -DNDEBUG -ffpe-trap=zero,invalid,overflow"
+run timestamp="2026-09-07T22:32:03-0600" host="thelio2.indiana" cpu="AMD Ryzen Threadripper 7970X 32-Cores" mpi_processes=4
+input file="/home/nnc/Codes/truchas/worktrees/2d-truchas/src/2d-truchas/src/simulations/flow/test/free_surface/pressure_poiseuille_void/input.json" sha256="4db44597759ec11419ca1c93210e1f7aeeaed7114c77b74be5f2b54abaae81f8"
+
+Initializing simulation.
+  Constructing mesh.
+    Generating a 24 by 12 quadrilateral mesh.
+    Partitioning the mesh with the metis method.
+    Mesh has 325 nodes, 612 faces, and 288 cells.
+    Mesh defines 1 cell sets, 4 face sets, and 0 node sets.
+  Mesh construction complete.
+  Loading material database.
+  Reading material regions.
+    Region "water": material="water".
+    Region "void-background": material="VOID".
+  Material regions read.
+  Constructing material model.
+    Using material "water".
+    Using material "VOID".
+  Material model complete.
+  Constructing material distribution.
+    Processing region "water": type="box".
+    Processing region "void-background": type="background".
+  Material distribution complete.
+  Constructing flow model.
+    Using viscous flow.
+    Using inertial momentum.
+    Using body acceleration [-1.0000E+00,  0.0000E+00].
+    Constructing "no-slip" boundary condition "walls".
+    Constructing "free-slip" boundary condition "symmetry".
+    Constructing "pressure" boundary condition "inlet".
+    Constructing "pressure" boundary condition "outlet".
+  Flow model complete.
+  Constructing flow solver.
+    Using Courant number  2.5000E-01.
+    Using geometric volume tracking.
+  Flow solver complete.
+  Configuring integration.
+    Initial time:  0.0000E+00
+    Initial time step:  1.0000E-02
+    Output schedule: 3 times from  3.0000E+00 through  1.0000E+01
+  Integration configuration complete.
+  Initializing flow state.
+    Projecting user-supplied initial velocity.
+    flow.initial.velocity-projection method=none reason=zero-rhs status=skipped
+    flow.initial.momentum method=none reason=zero-rhs status=skipped
+    flow.initial.pressure-projection iter=43 dscg=43 amg=0 rel_res=4.28936E-011 status=ok
+  Flow-state initialization complete.
+  Opening VTKHDF output.
+Simulation initialization complete.
+
+integration-begin t0=0.00000E+000
+  output t=0.00000E+000
+  step=1 attempt=1 t0=0.00000E+000 dt=1.00000E-002 cause=init
+    flow.momentum iter=13 dscg=13 amg=0 rel_res=3.27957E-011 status=ok
+    flow.projection iter=43 dscg=43 amg=0 rel_res=7.37690E-011 status=ok
+  step-end status=accepted
+  step=2 attempt=1 t0=1.00000E-002 dt=1.10000E-002 cause=growth
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=8.39647E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=7.21631E-011 status=ok
+  step-end status=accepted
+  step=3 attempt=1 t0=2.10000E-002 dt=1.21000E-002 cause=growth
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=8.84098E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.76866E-011 status=ok
+  step-end status=accepted
+  step=4 attempt=1 t0=3.31000E-002 dt=1.33100E-002 cause=growth
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.54265E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=8.29115E-011 status=ok
+  step-end status=accepted
+  step=5 attempt=1 t0=4.64100E-002 dt=1.46410E-002 cause=growth
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=8.54605E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=8.19873E-011 status=ok
+  step-end status=accepted
+  step=6 attempt=1 t0=6.10510E-002 dt=1.61051E-002 cause=growth
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=5.03863E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=5.90481E-011 status=ok
+  step-end status=accepted
+  step=7 attempt=1 t0=7.71561E-002 dt=1.77156E-002 cause=growth
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=2.77400E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.34476E-011 status=ok
+  step-end status=accepted
+  step=8 attempt=1 t0=9.48717E-002 dt=1.94872E-002 cause=growth
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.75499E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.12126E-011 status=ok
+  step-end status=accepted
+  step=9 attempt=1 t0=1.14359E-001 dt=2.14359E-002 cause=growth
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=3.42749E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=9.99818E-011 status=ok
+  step-end status=accepted
+  step=10 attempt=1 t0=1.35795E-001 dt=2.35795E-002 cause=growth
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=8.39446E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=7.50156E-011 status=ok
+  step-end status=accepted
+  step=11 attempt=1 t0=1.59374E-001 dt=2.59374E-002 cause=growth
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=5.10067E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.74626E-011 status=ok
+  step-end status=accepted
+  step=12 attempt=1 t0=1.85312E-001 dt=2.85312E-002 cause=growth
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=5.08593E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=8.38273E-011 status=ok
+  step-end status=accepted
+  step=13 attempt=1 t0=2.13843E-001 dt=3.13843E-002 cause=growth
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.14413E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=8.18276E-011 status=ok
+  step-end status=accepted
+  step=14 attempt=1 t0=2.45227E-001 dt=3.45227E-002 cause=growth
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=2.52159E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=4.77749E-011 status=ok
+  step-end status=accepted
+  step=15 attempt=1 t0=2.79750E-001 dt=3.79750E-002 cause=growth
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=6.60349E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=5.63079E-011 status=ok
+  step-end status=accepted
+  step=16 attempt=1 t0=3.17725E-001 dt=4.17725E-002 cause=growth
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=5.67616E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.59524E-011 status=ok
+  step-end status=accepted
+  step=17 attempt=1 t0=3.59497E-001 dt=4.59497E-002 cause=growth
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.71360E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=7.66422E-011 status=ok
+  step-end status=accepted
+  step=18 attempt=1 t0=4.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.73501E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=8.57922E-011 status=ok
+  step-end status=accepted
+  step=19 attempt=1 t0=4.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=9.89308E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=4.58627E-011 status=ok
+  step-end status=accepted
+  step=20 attempt=1 t0=5.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=9.22087E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=5.30634E-011 status=ok
+  step-end status=accepted
+  step=21 attempt=1 t0=5.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.67765E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=5.85809E-011 status=ok
+  step-end status=accepted
+  step=22 attempt=1 t0=6.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.24475E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=7.56023E-011 status=ok
+  step-end status=accepted
+  step=23 attempt=1 t0=6.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.91134E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=9.83832E-011 status=ok
+  step-end status=accepted
+  step=24 attempt=1 t0=7.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.63952E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=6.58491E-011 status=ok
+  step-end status=accepted
+  step=25 attempt=1 t0=7.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.39558E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=7.53708E-011 status=ok
+  step-end status=accepted
+  step=26 attempt=1 t0=8.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.15665E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=6.72626E-011 status=ok
+  step-end status=accepted
+  step=27 attempt=1 t0=8.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.90936E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=8.60154E-011 status=ok
+  step-end status=accepted
+  step=28 attempt=1 t0=9.05447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.64741E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=9.31071E-011 status=ok
+  step-end status=accepted
+  step=29 attempt=1 t0=9.55447E-001 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.36939E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=6.41280E-011 status=ok
+  step-end status=accepted
+  step=30 attempt=1 t0=1.00545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.07706E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.19747E-011 status=ok
+  step-end status=accepted
+  step=31 attempt=1 t0=1.05545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=5.77400E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=4.60896E-011 status=ok
+  step-end status=accepted
+  step=32 attempt=1 t0=1.10545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=5.46456E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.17763E-011 status=ok
+  step-end status=accepted
+  step=33 attempt=1 t0=1.15545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=5.15321E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.78696E-011 status=ok
+  step-end status=accepted
+  step=34 attempt=1 t0=1.20545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.84409E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.76551E-011 status=ok
+  step-end status=accepted
+  step=35 attempt=1 t0=1.25545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=9.64587E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.18805E-011 status=ok
+  step-end status=accepted
+  step=36 attempt=1 t0=1.30545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=9.06659E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.81863E-011 status=ok
+  step-end status=accepted
+  step=37 attempt=1 t0=1.35545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.74945E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=5.59653E-011 status=ok
+  step-end status=accepted
+  step=38 attempt=1 t0=1.40545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.36916E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=9.77035E-011 status=ok
+  step-end status=accepted
+  step=39 attempt=1 t0=1.45545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.43541E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=5.08372E-011 status=ok
+  step-end status=accepted
+  step=40 attempt=1 t0=1.50545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.08355E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=7.28500E-011 status=ok
+  step-end status=accepted
+  step=41 attempt=1 t0=1.55545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=3.93291E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=5.55885E-011 status=ok
+  step-end status=accepted
+  step=42 attempt=1 t0=1.60545E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.46783E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=5.86366E-011 status=ok
+  step-end status=accepted
+  step=43 attempt=1 t0=1.65545E+000 dt=4.84748E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=7.58071E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=7.49261E-011 status=ok
+  step-end status=accepted
+  step=44 attempt=1 t0=1.70392E+000 dt=4.71377E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=9.93202E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=9.45143E-011 status=ok
+  step-end status=accepted
+  step=45 attempt=1 t0=1.75106E+000 dt=4.59756E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=7.25803E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=7.47759E-011 status=ok
+  step-end status=accepted
+  step=46 attempt=1 t0=1.79704E+000 dt=4.49621E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=7.99035E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=6.90921E-011 status=ok
+  step-end status=accepted
+  step=47 attempt=1 t0=1.84200E+000 dt=4.40497E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=4.01015E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=9.62181E-011 status=ok
+  step-end status=accepted
+  step=48 attempt=1 t0=1.88605E+000 dt=4.32754E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=4.40733E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=9.83780E-011 status=ok
+  step-end status=accepted
+  step=49 attempt=1 t0=1.92932E+000 dt=4.25966E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=3.33159E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=9.06416E-011 status=ok
+  step-end status=accepted
+  step=50 attempt=1 t0=1.97192E+000 dt=4.20088E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=5.00376E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=5.72386E-011 status=ok
+  step-end status=accepted
+  step=51 attempt=1 t0=2.01393E+000 dt=4.14978E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.64798E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.20420E-011 status=ok
+  step-end status=accepted
+  step=52 attempt=1 t0=2.05543E+000 dt=4.10626E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=8.75928E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=6.34489E-011 status=ok
+  step-end status=accepted
+  step=53 attempt=1 t0=2.09649E+000 dt=4.06916E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.81956E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=4.87348E-011 status=ok
+  step-end status=accepted
+  step=54 attempt=1 t0=2.13718E+000 dt=4.03862E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.38869E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=6.41289E-011 status=ok
+  step-end status=accepted
+  step=55 attempt=1 t0=2.17757E+000 dt=4.01401E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.32307E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=8.14941E-011 status=ok
+  step-end status=accepted
+  step=56 attempt=1 t0=2.21771E+000 dt=3.99475E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=9.05376E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=4.74383E-011 status=ok
+  step-end status=accepted
+  step=57 attempt=1 t0=2.25765E+000 dt=3.98148E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.67297E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=5.70589E-011 status=ok
+  step-end status=accepted
+  step=58 attempt=1 t0=2.29747E+000 dt=3.97416E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.17185E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=5.78808E-011 status=ok
+  step-end status=accepted
+  step=59 attempt=1 t0=2.33721E+000 dt=3.97236E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.36657E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=7.14899E-011 status=ok
+  step-end status=accepted
+  step=60 attempt=1 t0=2.37693E+000 dt=3.97633E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.71939E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=9.83050E-011 status=ok
+  step-end status=accepted
+  step=61 attempt=1 t0=2.41670E+000 dt=3.98582E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.15491E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=9.87163E-011 status=ok
+  step-end status=accepted
+  step=62 attempt=1 t0=2.45656E+000 dt=4.00034E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.08296E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=7.69091E-011 status=ok
+  step-end status=accepted
+  step=63 attempt=1 t0=2.49656E+000 dt=4.02134E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.92760E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=8.17246E-011 status=ok
+  step-end status=accepted
+  step=64 attempt=1 t0=2.53677E+000 dt=4.04852E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=6.69313E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=4.64010E-011 status=ok
+  step-end status=accepted
+  step=65 attempt=1 t0=2.57726E+000 dt=4.08233E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=5.50294E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=5.63250E-011 status=ok
+  step-end status=accepted
+  step=66 attempt=1 t0=2.61808E+000 dt=4.12367E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=6.59776E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=5.86325E-011 status=ok
+  step-end status=accepted
+  step=67 attempt=1 t0=2.65932E+000 dt=4.17210E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.08584E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=7.27947E-011 status=ok
+  step-end status=accepted
+  step=68 attempt=1 t0=2.70104E+000 dt=4.22976E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=9.56218E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.69214E-011 status=ok
+  step-end status=accepted
+  step=69 attempt=1 t0=2.74334E+000 dt=4.29722E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=4.62756E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.84452E-011 status=ok
+  step-end status=accepted
+  step=70 attempt=1 t0=2.78631E+000 dt=4.37583E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=5.04427E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=7.70002E-011 status=ok
+  step-end status=accepted
+  step=71 attempt=1 t0=2.83007E+000 dt=4.46872E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=9.82764E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=5.89567E-011 status=ok
+  step-end status=accepted
+  step=72 attempt=1 t0=2.87475E+000 dt=4.31847E-002 cause=output
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=6.06672E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.37818E-011 status=ok
+  step-end status=accepted
+  step=73 attempt=1 t0=2.91794E+000 dt=4.17326E-002 cause=output
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=5.71077E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=7.39128E-011 status=ok
+  step-end status=accepted
+  step=74 attempt=1 t0=2.95967E+000 dt=4.03294E-002 cause=output
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=9.41630E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=5.35591E-011 status=ok
+  step-end status=accepted
+  output t=3.00000E+000
+  step=75 attempt=1 t0=3.00000E+000 dt=4.43623E-002 cause=growth
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=4.48131E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=6.79759E-011 status=ok
+  step-end status=accepted
+  step=76 attempt=1 t0=3.04436E+000 dt=4.87986E-002 cause=growth
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.07012E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=6.83370E-011 status=ok
+  step-end status=accepted
+  step=77 attempt=1 t0=3.09316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.26677E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=7.28603E-011 status=ok
+  step-end status=accepted
+  step=78 attempt=1 t0=3.14316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.36997E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=7.81270E-011 status=ok
+  step-end status=accepted
+  step=79 attempt=1 t0=3.19316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=9.63012E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=8.35995E-011 status=ok
+  step-end status=accepted
+  step=80 attempt=1 t0=3.24316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.02423E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=7.81592E-011 status=ok
+  step-end status=accepted
+  step=81 attempt=1 t0=3.29316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.18441E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=6.65932E-011 status=ok
+  step-end status=accepted
+  step=82 attempt=1 t0=3.34316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.81579E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=8.57921E-011 status=ok
+  step-end status=accepted
+  step=83 attempt=1 t0=3.39316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=5.62741E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=8.29258E-011 status=ok
+  step-end status=accepted
+  step=84 attempt=1 t0=3.44316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=6.53724E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=9.58098E-011 status=ok
+  step-end status=accepted
+  step=85 attempt=1 t0=3.49316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=7.70805E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=5.87092E-011 status=ok
+  step-end status=accepted
+  step=86 attempt=1 t0=3.54316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=9.18781E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=6.30064E-011 status=ok
+  step-end status=accepted
+  step=87 attempt=1 t0=3.59316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=4.36358E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=5.78142E-011 status=ok
+  step-end status=accepted
+  step=88 attempt=1 t0=3.64316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=5.09610E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=6.13752E-011 status=ok
+  step-end status=accepted
+  step=89 attempt=1 t0=3.69316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=6.23939E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=5.98549E-011 status=ok
+  step-end status=accepted
+  step=90 attempt=1 t0=3.74316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=5.87242E-011 status=ok
+    flow.projection iter=72 dscg=72 amg=0 rel_res=5.80417E-011 status=ok
+  step-end status=accepted
+  step=91 attempt=1 t0=3.79316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=5.11884E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=9.63206E-011 status=ok
+  step-end status=accepted
+  step=92 attempt=1 t0=3.84316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=26 dscg=26 amg=0 rel_res=4.20680E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=7.91079E-011 status=ok
+  step-end status=accepted
+  step=93 attempt=1 t0=3.89316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=9.10889E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=5.42172E-011 status=ok
+  step-end status=accepted
+  step=94 attempt=1 t0=3.94316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=7.56718E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=5.57529E-011 status=ok
+  step-end status=accepted
+  step=95 attempt=1 t0=3.99316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=7.82302E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=4.87849E-011 status=ok
+  step-end status=accepted
+  step=96 attempt=1 t0=4.04316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=9.13770E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=7.98802E-011 status=ok
+  step-end status=accepted
+  step=97 attempt=1 t0=4.09316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=8.07780E-011 status=ok
+    flow.projection iter=71 dscg=71 amg=0 rel_res=9.67989E-011 status=ok
+  step-end status=accepted
+  step=98 attempt=1 t0=4.14316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=6.35169E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=6.41467E-011 status=ok
+  step-end status=accepted
+  step=99 attempt=1 t0=4.19316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.72844E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=5.49654E-011 status=ok
+  step-end status=accepted
+  step=100 attempt=1 t0=4.24316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=9.05333E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=8.60074E-011 status=ok
+  step-end status=accepted
+  step=101 attempt=1 t0=4.29316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.39196E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=5.25405E-011 status=ok
+  step-end status=accepted
+  step=102 attempt=1 t0=4.34316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.51996E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.58738E-011 status=ok
+  step-end status=accepted
+  step=103 attempt=1 t0=4.39316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.60132E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=7.39867E-011 status=ok
+  step-end status=accepted
+  step=104 attempt=1 t0=4.44316E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=5.55142E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=9.69921E-011 status=ok
+  step-end status=accepted
+  step=105 attempt=1 t0=4.49316E+000 dt=4.94094E-002 cause=cfl
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=5.20340E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.74307E-011 status=ok
+  step-end status=accepted
+  step=106 attempt=1 t0=4.54257E+000 dt=4.51238E-002 cause=cfl
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.93016E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=9.39328E-011 status=ok
+  step-end status=accepted
+  step=107 attempt=1 t0=4.58769E+000 dt=4.26072E-002 cause=cfl
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.73862E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.08426E-011 status=ok
+  step-end status=accepted
+  step=108 attempt=1 t0=4.63030E+000 dt=4.06391E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=3.48278E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=4.68243E-011 status=ok
+  step-end status=accepted
+  step=109 attempt=1 t0=4.67094E+000 dt=3.86653E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=8.19886E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=6.08861E-011 status=ok
+  step-end status=accepted
+  step=110 attempt=1 t0=4.70961E+000 dt=3.68846E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.60679E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=4.97889E-011 status=ok
+  step-end status=accepted
+  step=111 attempt=1 t0=4.74649E+000 dt=3.53359E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=4.99792E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=6.38773E-011 status=ok
+  step-end status=accepted
+  step=112 attempt=1 t0=4.78183E+000 dt=3.39667E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=3.50367E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=7.28398E-011 status=ok
+  step-end status=accepted
+  step=113 attempt=1 t0=4.81579E+000 dt=3.26218E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=6.48300E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=7.85670E-011 status=ok
+  step-end status=accepted
+  step=114 attempt=1 t0=4.84841E+000 dt=3.15821E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=7.67901E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=8.72581E-011 status=ok
+  step-end status=accepted
+  step=115 attempt=1 t0=4.88000E+000 dt=1.73919E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.12282E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=8.76931E-011 status=ok
+  step-end status=accepted
+  step=116 attempt=1 t0=4.89739E+000 dt=1.91311E-002 cause=growth
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=7.42182E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=5.90630E-011 status=ok
+  step-end status=accepted
+  step=117 attempt=1 t0=4.91652E+000 dt=2.10442E-002 cause=growth
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=7.86551E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=5.83676E-011 status=ok
+  step-end status=accepted
+  step=118 attempt=1 t0=4.93756E+000 dt=2.31486E-002 cause=growth
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.10918E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=7.69465E-011 status=ok
+  step-end status=accepted
+  step=119 attempt=1 t0=4.96071E+000 dt=2.54635E-002 cause=growth
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.67467E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=6.02661E-011 status=ok
+  step-end status=accepted
+  step=120 attempt=1 t0=4.98618E+000 dt=2.78655E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=9.08721E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=4.63023E-011 status=ok
+  step-end status=accepted
+  step=121 attempt=1 t0=5.01404E+000 dt=2.72202E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.87709E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.03497E-011 status=ok
+  step-end status=accepted
+  step=122 attempt=1 t0=5.04126E+000 dt=2.65821E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=3.57242E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=9.12816E-011 status=ok
+  step-end status=accepted
+  step=123 attempt=1 t0=5.06784E+000 dt=2.59663E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=4.17629E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=4.96568E-011 status=ok
+  step-end status=accepted
+  step=124 attempt=1 t0=5.09381E+000 dt=2.55424E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=9.09064E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=9.25859E-011 status=ok
+  step-end status=accepted
+  step=125 attempt=1 t0=5.11935E+000 dt=2.50299E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=7.55050E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=7.07306E-011 status=ok
+  step-end status=accepted
+  step=126 attempt=1 t0=5.14438E+000 dt=2.46315E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.83157E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=5.81713E-011 status=ok
+  step-end status=accepted
+  step=127 attempt=1 t0=5.16901E+000 dt=2.41945E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=5.61654E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=7.48449E-011 status=ok
+  step-end status=accepted
+  step=128 attempt=1 t0=5.19321E+000 dt=2.38374E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=3.82624E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=8.30593E-011 status=ok
+  step-end status=accepted
+  step=129 attempt=1 t0=5.21705E+000 dt=2.34564E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=8.80615E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=9.97314E-011 status=ok
+  step-end status=accepted
+  step=130 attempt=1 t0=5.24050E+000 dt=2.30336E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.14378E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=5.82691E-011 status=ok
+  step-end status=accepted
+  step=131 attempt=1 t0=5.26354E+000 dt=2.27039E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=3.82013E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.75118E-011 status=ok
+  step-end status=accepted
+  step=132 attempt=1 t0=5.28624E+000 dt=2.24736E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=8.66309E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=5.04528E-011 status=ok
+  step-end status=accepted
+  step=133 attempt=1 t0=5.30871E+000 dt=2.22169E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=5.74131E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=5.67741E-011 status=ok
+  step-end status=accepted
+  step=134 attempt=1 t0=5.33093E+000 dt=2.19445E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.06938E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=7.27861E-011 status=ok
+  step-end status=accepted
+  step=135 attempt=1 t0=5.35287E+000 dt=2.16901E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.36277E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=8.95372E-011 status=ok
+  step-end status=accepted
+  step=136 attempt=1 t0=5.37456E+000 dt=2.14511E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.10236E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=5.60956E-011 status=ok
+  step-end status=accepted
+  step=137 attempt=1 t0=5.39602E+000 dt=2.12197E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.14076E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=5.12520E-011 status=ok
+  step-end status=accepted
+  step=138 attempt=1 t0=5.41724E+000 dt=2.09215E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=6.68432E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=3.79855E-011 status=ok
+  step-end status=accepted
+  step=139 attempt=1 t0=5.43816E+000 dt=2.07594E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.02049E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=7.01465E-011 status=ok
+  step-end status=accepted
+  step=140 attempt=1 t0=5.45892E+000 dt=2.05817E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.35487E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=5.54316E-011 status=ok
+  step-end status=accepted
+  step=141 attempt=1 t0=5.47950E+000 dt=2.04296E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.57918E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=5.46208E-011 status=ok
+  step-end status=accepted
+  step=142 attempt=1 t0=5.49993E+000 dt=2.02685E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.53470E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=6.91164E-011 status=ok
+  step-end status=accepted
+  step=143 attempt=1 t0=5.52020E+000 dt=2.01204E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=2.96485E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=4.76588E-011 status=ok
+  step-end status=accepted
+  step=144 attempt=1 t0=5.54032E+000 dt=1.99733E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.68125E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=6.06829E-011 status=ok
+  step-end status=accepted
+  step=145 attempt=1 t0=5.56029E+000 dt=1.98402E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.09779E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.75791E-011 status=ok
+  step-end status=accepted
+  step=146 attempt=1 t0=5.58013E+000 dt=1.97075E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=5.78068E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.78662E-011 status=ok
+  step-end status=accepted
+  step=147 attempt=1 t0=5.59984E+000 dt=1.95835E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.22305E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.88492E-011 status=ok
+  step-end status=accepted
+  step=148 attempt=1 t0=5.61942E+000 dt=1.94676E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=7.97136E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.12787E-011 status=ok
+  step-end status=accepted
+  step=149 attempt=1 t0=5.63889E+000 dt=1.93532E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=5.32163E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.94645E-011 status=ok
+  step-end status=accepted
+  step=150 attempt=1 t0=5.65824E+000 dt=1.92471E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.51708E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.84175E-011 status=ok
+  step-end status=accepted
+  step=151 attempt=1 t0=5.67749E+000 dt=1.91478E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.05073E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.87593E-011 status=ok
+  step-end status=accepted
+  step=152 attempt=1 t0=5.69664E+000 dt=1.90575E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.59962E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=6.68278E-011 status=ok
+  step-end status=accepted
+  step=153 attempt=1 t0=5.71569E+000 dt=1.89708E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.57687E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.50004E-011 status=ok
+  step-end status=accepted
+  step=154 attempt=1 t0=5.73467E+000 dt=1.88885E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=5.21832E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=4.19652E-011 status=ok
+  step-end status=accepted
+  step=155 attempt=1 t0=5.75355E+000 dt=1.87512E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.50641E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=9.20530E-011 status=ok
+  step-end status=accepted
+  step=156 attempt=1 t0=5.77230E+000 dt=1.87327E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.91492E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=4.98564E-011 status=ok
+  step-end status=accepted
+  step=157 attempt=1 t0=5.79104E+000 dt=1.86557E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=2.70601E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=9.53990E-011 status=ok
+  step-end status=accepted
+  step=158 attempt=1 t0=5.80969E+000 dt=1.86298E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.30491E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=7.89014E-011 status=ok
+  step-end status=accepted
+  step=159 attempt=1 t0=5.82832E+000 dt=1.85940E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.51059E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=9.94805E-011 status=ok
+  step-end status=accepted
+  step=160 attempt=1 t0=5.84692E+000 dt=1.85553E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.16180E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=9.98932E-011 status=ok
+  step-end status=accepted
+  step=161 attempt=1 t0=5.86547E+000 dt=1.85154E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.10001E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=4.14567E-011 status=ok
+  step-end status=accepted
+  step=162 attempt=1 t0=5.88399E+000 dt=1.84941E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=3.89951E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=8.02441E-011 status=ok
+  step-end status=accepted
+  step=163 attempt=1 t0=5.90248E+000 dt=1.83453E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.32428E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=8.26477E-011 status=ok
+  step-end status=accepted
+  step=164 attempt=1 t0=5.92083E+000 dt=1.84485E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.29238E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=9.39701E-011 status=ok
+  step-end status=accepted
+  step=165 attempt=1 t0=5.93928E+000 dt=1.84520E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.98516E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=9.05237E-011 status=ok
+  step-end status=accepted
+  step=166 attempt=1 t0=5.95773E+000 dt=1.60736E-002 cause=output
+    flow.momentum iter=13 dscg=13 amg=0 rel_res=9.34465E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=9.22273E-011 status=ok
+  step-end status=accepted
+  step=167 attempt=1 t0=5.97380E+000 dt=1.40017E-002 cause=output
+    flow.momentum iter=12 dscg=12 amg=0 rel_res=9.63696E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=4.59177E-011 status=ok
+  step-end status=accepted
+  step=168 attempt=1 t0=5.98780E+000 dt=1.21969E-002 cause=output
+    flow.momentum iter=11 dscg=11 amg=0 rel_res=8.76668E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=5.81466E-011 status=ok
+  step-end status=accepted
+  output t=6.00000E+000
+  step=169 attempt=1 t0=6.00000E+000 dt=1.34166E-002 cause=growth
+    flow.momentum iter=12 dscg=12 amg=0 rel_res=3.48801E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=7.27339E-011 status=ok
+  step-end status=accepted
+  step=170 attempt=1 t0=6.01342E+000 dt=1.47583E-002 cause=growth
+    flow.momentum iter=12 dscg=12 amg=0 rel_res=7.99926E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=5.99803E-011 status=ok
+  step-end status=accepted
+  step=171 attempt=1 t0=6.02817E+000 dt=1.62341E-002 cause=growth
+    flow.momentum iter=13 dscg=13 amg=0 rel_res=5.72578E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=5.54929E-011 status=ok
+  step-end status=accepted
+  step=172 attempt=1 t0=6.04441E+000 dt=1.78575E-002 cause=growth
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=4.05034E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=4.09110E-011 status=ok
+  step-end status=accepted
+  step=173 attempt=1 t0=6.06227E+000 dt=1.84841E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.82467E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=3.73351E-011 status=ok
+  step-end status=accepted
+  step=174 attempt=1 t0=6.08075E+000 dt=1.86660E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.48604E-011 status=ok
+    flow.projection iter=51 dscg=51 amg=0 rel_res=4.17837E-011 status=ok
+  step-end status=accepted
+  step=175 attempt=1 t0=6.09942E+000 dt=1.87431E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.68224E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=8.32221E-011 status=ok
+  step-end status=accepted
+  step=176 attempt=1 t0=6.11816E+000 dt=1.87894E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=2.75391E-011 status=ok
+    flow.projection iter=51 dscg=51 amg=0 rel_res=3.98634E-011 status=ok
+  step-end status=accepted
+  step=177 attempt=1 t0=6.13695E+000 dt=1.89226E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=8.56474E-011 status=ok
+    flow.projection iter=49 dscg=49 amg=0 rel_res=9.28504E-011 status=ok
+  step-end status=accepted
+  step=178 attempt=1 t0=6.15587E+000 dt=1.90287E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.83579E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=5.93945E-011 status=ok
+  step-end status=accepted
+  step=179 attempt=1 t0=6.17490E+000 dt=1.91454E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.32177E-011 status=ok
+    flow.projection iter=49 dscg=49 amg=0 rel_res=8.66867E-011 status=ok
+  step-end status=accepted
+  step=180 attempt=1 t0=6.19405E+000 dt=1.92732E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=2.67623E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=8.02851E-011 status=ok
+  step-end status=accepted
+  step=181 attempt=1 t0=6.21332E+000 dt=1.93940E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.59645E-011 status=ok
+    flow.projection iter=49 dscg=49 amg=0 rel_res=6.96678E-011 status=ok
+  step-end status=accepted
+  step=182 attempt=1 t0=6.23271E+000 dt=1.94862E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.14538E-011 status=ok
+    flow.projection iter=49 dscg=49 amg=0 rel_res=8.58489E-011 status=ok
+  step-end status=accepted
+  step=183 attempt=1 t0=6.25220E+000 dt=1.97353E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.19058E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=6.44155E-011 status=ok
+  step-end status=accepted
+  step=184 attempt=1 t0=6.27193E+000 dt=1.99384E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.60675E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=4.31871E-011 status=ok
+  step-end status=accepted
+  step=185 attempt=1 t0=6.29187E+000 dt=2.01635E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.69615E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=4.84448E-011 status=ok
+  step-end status=accepted
+  step=186 attempt=1 t0=6.31204E+000 dt=2.03291E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=9.37069E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=5.61817E-011 status=ok
+  step-end status=accepted
+  step=187 attempt=1 t0=6.33237E+000 dt=2.06830E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.95120E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=6.67710E-011 status=ok
+  step-end status=accepted
+  step=188 attempt=1 t0=6.35305E+000 dt=2.09908E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.96417E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=5.46117E-011 status=ok
+  step-end status=accepted
+  step=189 attempt=1 t0=6.37404E+000 dt=2.13299E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=2.91380E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=6.95048E-011 status=ok
+  step-end status=accepted
+  step=190 attempt=1 t0=6.39537E+000 dt=2.16799E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.75368E-011 status=ok
+    flow.projection iter=46 dscg=46 amg=0 rel_res=9.59570E-011 status=ok
+  step-end status=accepted
+  step=191 attempt=1 t0=6.41705E+000 dt=2.19191E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=8.27330E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=3.63599E-011 status=ok
+  step-end status=accepted
+  step=192 attempt=1 t0=6.43897E+000 dt=2.25496E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=7.85445E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=8.47649E-011 status=ok
+  step-end status=accepted
+  step=193 attempt=1 t0=6.46152E+000 dt=2.30800E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=7.60147E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=5.96635E-011 status=ok
+  step-end status=accepted
+  step=194 attempt=1 t0=6.48460E+000 dt=2.34979E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.20237E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=7.69103E-011 status=ok
+  step-end status=accepted
+  step=195 attempt=1 t0=6.50810E+000 dt=2.44227E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.46271E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=5.19780E-011 status=ok
+  step-end status=accepted
+  step=196 attempt=1 t0=6.53252E+000 dt=2.51975E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.97358E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=7.67264E-011 status=ok
+  step-end status=accepted
+  step=197 attempt=1 t0=6.55772E+000 dt=2.61319E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=7.40499E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=5.87746E-011 status=ok
+  step-end status=accepted
+  step=198 attempt=1 t0=6.58385E+000 dt=2.72273E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=3.99595E-011 status=ok
+    flow.projection iter=43 dscg=43 amg=0 rel_res=7.66226E-011 status=ok
+  step-end status=accepted
+  step=199 attempt=1 t0=6.61108E+000 dt=2.85072E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=7.04697E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=6.99100E-011 status=ok
+  step-end status=accepted
+  step=200 attempt=1 t0=6.63958E+000 dt=2.98257E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=5.42537E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=9.70979E-011 status=ok
+  step-end status=accepted
+  step=201 attempt=1 t0=6.66941E+000 dt=3.17149E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=8.89802E-011 status=ok
+    flow.projection iter=43 dscg=43 amg=0 rel_res=5.16831E-011 status=ok
+  step-end status=accepted
+  step=202 attempt=1 t0=6.70112E+000 dt=3.42694E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=8.87883E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=5.31403E-011 status=ok
+  step-end status=accepted
+  step=203 attempt=1 t0=6.73539E+000 dt=3.74408E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=7.57550E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=5.42416E-011 status=ok
+  step-end status=accepted
+  step=204 attempt=1 t0=6.77283E+000 dt=3.97078E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=7.78806E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=4.05695E-011 status=ok
+  step-end status=accepted
+  step=205 attempt=1 t0=6.81254E+000 dt=4.36786E-002 cause=growth
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=4.68691E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=5.88908E-011 status=ok
+  step-end status=accepted
+  step=206 attempt=1 t0=6.85622E+000 dt=4.80464E-002 cause=growth
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.26289E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=3.83245E-011 status=ok
+  step-end status=accepted
+  step=207 attempt=1 t0=6.90427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=8.07929E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=4.38220E-011 status=ok
+  step-end status=accepted
+  step=208 attempt=1 t0=6.95427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=7.30314E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=4.85817E-011 status=ok
+  step-end status=accepted
+  step=209 attempt=1 t0=7.00427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=5.89684E-011 status=ok
+    flow.projection iter=40 dscg=40 amg=0 rel_res=7.42120E-011 status=ok
+  step-end status=accepted
+  step=210 attempt=1 t0=7.05427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=5.76161E-011 status=ok
+    flow.projection iter=40 dscg=40 amg=0 rel_res=6.02514E-011 status=ok
+  step-end status=accepted
+  step=211 attempt=1 t0=7.10427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=5.13578E-011 status=ok
+    flow.projection iter=40 dscg=40 amg=0 rel_res=8.41786E-011 status=ok
+  step-end status=accepted
+  step=212 attempt=1 t0=7.15427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=25 dscg=25 amg=0 rel_res=4.39756E-011 status=ok
+    flow.projection iter=40 dscg=40 amg=0 rel_res=8.64230E-011 status=ok
+  step-end status=accepted
+  step=213 attempt=1 t0=7.20427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=9.50941E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=4.88776E-011 status=ok
+  step-end status=accepted
+  step=214 attempt=1 t0=7.25427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=7.66163E-011 status=ok
+    flow.projection iter=41 dscg=41 amg=0 rel_res=7.27228E-011 status=ok
+  step-end status=accepted
+  step=215 attempt=1 t0=7.30427E+000 dt=5.00000E-002 cause=max
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=8.23806E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=5.08073E-011 status=ok
+  step-end status=accepted
+  step=216 attempt=1 t0=7.35427E+000 dt=4.92695E-002 cause=cfl
+    flow.momentum iter=24 dscg=24 amg=0 rel_res=6.22263E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=6.23713E-011 status=ok
+  step-end status=accepted
+  step=217 attempt=1 t0=7.40354E+000 dt=4.33416E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=5.53006E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=5.47180E-011 status=ok
+  step-end status=accepted
+  step=218 attempt=1 t0=7.44688E+000 dt=3.93985E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=9.73016E-011 status=ok
+    flow.projection iter=42 dscg=42 amg=0 rel_res=7.16772E-011 status=ok
+  step-end status=accepted
+  step=219 attempt=1 t0=7.48628E+000 dt=3.64558E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.88477E-011 status=ok
+    flow.projection iter=43 dscg=43 amg=0 rel_res=5.30828E-011 status=ok
+  step-end status=accepted
+  step=220 attempt=1 t0=7.52273E+000 dt=3.43466E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=4.80273E-011 status=ok
+    flow.projection iter=43 dscg=43 amg=0 rel_res=7.48299E-011 status=ok
+  step-end status=accepted
+  step=221 attempt=1 t0=7.55708E+000 dt=3.26178E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=6.84075E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=3.90325E-011 status=ok
+  step-end status=accepted
+  step=222 attempt=1 t0=7.58970E+000 dt=3.11782E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=3.85052E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=5.91032E-011 status=ok
+  step-end status=accepted
+  step=223 attempt=1 t0=7.62087E+000 dt=2.99583E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=4.03179E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=9.40943E-011 status=ok
+  step-end status=accepted
+  step=224 attempt=1 t0=7.65083E+000 dt=2.88985E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=8.42538E-011 status=ok
+    flow.projection iter=44 dscg=44 amg=0 rel_res=6.79959E-011 status=ok
+  step-end status=accepted
+  step=225 attempt=1 t0=7.67973E+000 dt=2.79718E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=5.18130E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=5.61158E-011 status=ok
+  step-end status=accepted
+  step=226 attempt=1 t0=7.70770E+000 dt=2.72020E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=8.09695E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=6.58405E-011 status=ok
+  step-end status=accepted
+  step=227 attempt=1 t0=7.73490E+000 dt=2.65089E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=5.55341E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=7.74718E-011 status=ok
+  step-end status=accepted
+  step=228 attempt=1 t0=7.76141E+000 dt=2.58848E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.04743E-011 status=ok
+    flow.projection iter=46 dscg=46 amg=0 rel_res=4.77502E-011 status=ok
+  step-end status=accepted
+  step=229 attempt=1 t0=7.78730E+000 dt=2.53199E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=5.74878E-011 status=ok
+    flow.projection iter=45 dscg=45 amg=0 rel_res=5.48929E-011 status=ok
+  step-end status=accepted
+  step=230 attempt=1 t0=7.81262E+000 dt=2.48022E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=4.84121E-011 status=ok
+    flow.projection iter=46 dscg=46 amg=0 rel_res=6.67661E-011 status=ok
+  step-end status=accepted
+  step=231 attempt=1 t0=7.83742E+000 dt=2.43276E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.69299E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=3.64913E-011 status=ok
+  step-end status=accepted
+  step=232 attempt=1 t0=7.86175E+000 dt=2.38999E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=7.21237E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=4.94075E-011 status=ok
+  step-end status=accepted
+  step=233 attempt=1 t0=7.88565E+000 dt=2.35068E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.03064E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=9.38565E-011 status=ok
+  step-end status=accepted
+  step=234 attempt=1 t0=7.90915E+000 dt=2.31427E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=6.67530E-011 status=ok
+    flow.projection iter=47 dscg=47 amg=0 rel_res=7.21412E-011 status=ok
+  step-end status=accepted
+  step=235 attempt=1 t0=7.93230E+000 dt=2.28065E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.19957E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=4.13009E-011 status=ok
+  step-end status=accepted
+  step=236 attempt=1 t0=7.95510E+000 dt=2.24939E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.41155E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=5.45453E-011 status=ok
+  step-end status=accepted
+  step=237 attempt=1 t0=7.97760E+000 dt=2.21973E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=3.67694E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=8.22621E-011 status=ok
+  step-end status=accepted
+  step=238 attempt=1 t0=7.99980E+000 dt=2.19230E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=7.12183E-011 status=ok
+    flow.projection iter=49 dscg=49 amg=0 rel_res=7.01201E-011 status=ok
+  step-end status=accepted
+  step=239 attempt=1 t0=8.02172E+000 dt=2.16735E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.63950E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=3.84302E-011 status=ok
+  step-end status=accepted
+  step=240 attempt=1 t0=8.04339E+000 dt=2.14375E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.31218E-011 status=ok
+    flow.projection iter=48 dscg=48 amg=0 rel_res=8.50857E-011 status=ok
+  step-end status=accepted
+  step=241 attempt=1 t0=8.06483E+000 dt=2.12245E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.20243E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=4.29909E-011 status=ok
+  step-end status=accepted
+  step=242 attempt=1 t0=8.08605E+000 dt=2.10282E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.97403E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=6.43960E-011 status=ok
+  step-end status=accepted
+  step=243 attempt=1 t0=8.10708E+000 dt=2.08512E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=6.07911E-011 status=ok
+    flow.projection iter=51 dscg=51 amg=0 rel_res=4.21884E-011 status=ok
+  step-end status=accepted
+  step=244 attempt=1 t0=8.12793E+000 dt=2.06861E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.17874E-011 status=ok
+    flow.projection iter=51 dscg=51 amg=0 rel_res=4.04106E-011 status=ok
+  step-end status=accepted
+  step=245 attempt=1 t0=8.14862E+000 dt=2.05388E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=9.11912E-011 status=ok
+    flow.projection iter=50 dscg=50 amg=0 rel_res=5.38480E-011 status=ok
+  step-end status=accepted
+  step=246 attempt=1 t0=8.16916E+000 dt=2.04025E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.02469E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=3.93688E-011 status=ok
+  step-end status=accepted
+  step=247 attempt=1 t0=8.18956E+000 dt=2.02822E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=8.93828E-011 status=ok
+    flow.projection iter=52 dscg=52 amg=0 rel_res=8.44214E-011 status=ok
+  step-end status=accepted
+  step=248 attempt=1 t0=8.20984E+000 dt=2.01729E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.24866E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=3.95830E-011 status=ok
+  step-end status=accepted
+  step=249 attempt=1 t0=8.23002E+000 dt=2.00756E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.78947E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=7.15157E-011 status=ok
+  step-end status=accepted
+  step=250 attempt=1 t0=8.25009E+000 dt=1.99872E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.68003E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=5.76030E-011 status=ok
+  step-end status=accepted
+  step=251 attempt=1 t0=8.27008E+000 dt=1.99095E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.63625E-011 status=ok
+    flow.projection iter=53 dscg=53 amg=0 rel_res=6.19646E-011 status=ok
+  step-end status=accepted
+  step=252 attempt=1 t0=8.28999E+000 dt=1.98387E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=7.48617E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.43959E-011 status=ok
+  step-end status=accepted
+  step=253 attempt=1 t0=8.30983E+000 dt=1.97760E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.23532E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=8.60712E-011 status=ok
+  step-end status=accepted
+  step=254 attempt=1 t0=8.32960E+000 dt=1.97201E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=6.45866E-011 status=ok
+    flow.projection iter=54 dscg=54 amg=0 rel_res=6.60647E-011 status=ok
+  step-end status=accepted
+  step=255 attempt=1 t0=8.34932E+000 dt=1.96678E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.92037E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=8.68600E-011 status=ok
+  step-end status=accepted
+  step=256 attempt=1 t0=8.36899E+000 dt=1.96248E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=5.67104E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=5.39796E-011 status=ok
+  step-end status=accepted
+  step=257 attempt=1 t0=8.38862E+000 dt=1.95866E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=5.83162E-011 status=ok
+    flow.projection iter=55 dscg=55 amg=0 rel_res=6.20043E-011 status=ok
+  step-end status=accepted
+  step=258 attempt=1 t0=8.40820E+000 dt=1.95532E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.74727E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=4.35346E-011 status=ok
+  step-end status=accepted
+  step=259 attempt=1 t0=8.42776E+000 dt=1.95248E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.01945E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=4.99798E-011 status=ok
+  step-end status=accepted
+  step=260 attempt=1 t0=8.44728E+000 dt=1.95126E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.00894E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=8.14587E-011 status=ok
+  step-end status=accepted
+  step=261 attempt=1 t0=8.46679E+000 dt=1.95048E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.56673E-011 status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=7.74384E-011 status=ok
+  step-end status=accepted
+  step=262 attempt=1 t0=8.48630E+000 dt=1.95060E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.25482E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.18870E-011 status=ok
+  step-end status=accepted
+  step=263 attempt=1 t0=8.50580E+000 dt=1.95138E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.29196E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=9.70538E-011 status=ok
+  step-end status=accepted
+  step=264 attempt=1 t0=8.52532E+000 dt=1.95291E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.29088E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.10952E-011 status=ok
+  step-end status=accepted
+  step=265 attempt=1 t0=8.54485E+000 dt=1.95496E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=9.84214E-011 status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=6.39867E-011 status=ok
+  step-end status=accepted
+  step=266 attempt=1 t0=8.56440E+000 dt=1.95765E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.90414E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=4.59724E-011 status=ok
+  step-end status=accepted
+  step=267 attempt=1 t0=8.58397E+000 dt=1.96105E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=6.69620E-011 status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.90090E-011 status=ok
+  step-end status=accepted
+  step=268 attempt=1 t0=8.60358E+000 dt=1.96504E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.05247E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.44369E-011 status=ok
+  step-end status=accepted
+  step=269 attempt=1 t0=8.62323E+000 dt=1.96958E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.30286E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.30619E-011 status=ok
+  step-end status=accepted
+  step=270 attempt=1 t0=8.64293E+000 dt=1.97456E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=3.28780E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.13320E-011 status=ok
+  step-end status=accepted
+  step=271 attempt=1 t0=8.66267E+000 dt=1.98047E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=8.40966E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=7.80965E-011 status=ok
+  step-end status=accepted
+  step=272 attempt=1 t0=8.68248E+000 dt=1.98692E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.00536E-011 status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=9.78997E-011 status=ok
+  step-end status=accepted
+  step=273 attempt=1 t0=8.70235E+000 dt=1.99391E-002 cause=cfl
+    flow.momentum iter=14 dscg=14 amg=0 rel_res=7.89699E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=4.53921E-011 status=ok
+  step-end status=accepted
+  step=274 attempt=1 t0=8.72229E+000 dt=2.00152E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.40360E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=5.83558E-011 status=ok
+  step-end status=accepted
+  step=275 attempt=1 t0=8.74230E+000 dt=2.00986E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.83229E-011 status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.82255E-011 status=ok
+  step-end status=accepted
+  step=276 attempt=1 t0=8.76240E+000 dt=2.01871E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=8.27831E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=7.34162E-011 status=ok
+  step-end status=accepted
+  step=277 attempt=1 t0=8.78259E+000 dt=2.02853E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=7.87042E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=6.37278E-011 status=ok
+  step-end status=accepted
+  step=278 attempt=1 t0=8.80287E+000 dt=2.03900E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.55704E-011 status=ok
+    flow.projection iter=61 dscg=61 amg=0 rel_res=7.51881E-011 status=ok
+  step-end status=accepted
+  step=279 attempt=1 t0=8.82326E+000 dt=2.05019E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=9.49138E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=5.94546E-011 status=ok
+  step-end status=accepted
+  step=280 attempt=1 t0=8.84377E+000 dt=2.06219E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.37722E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=5.45280E-011 status=ok
+  step-end status=accepted
+  step=281 attempt=1 t0=8.86439E+000 dt=2.07510E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.67591E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=5.98728E-011 status=ok
+  step-end status=accepted
+  step=282 attempt=1 t0=8.88514E+000 dt=2.08880E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=4.52068E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=6.58721E-011 status=ok
+  step-end status=accepted
+  step=283 attempt=1 t0=8.90603E+000 dt=2.10333E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.37391E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=6.54692E-011 status=ok
+  step-end status=accepted
+  step=284 attempt=1 t0=8.92706E+000 dt=2.11873E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=5.14837E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=8.81719E-011 status=ok
+  step-end status=accepted
+  step=285 attempt=1 t0=8.94825E+000 dt=2.13507E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=9.40855E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=5.40528E-011 status=ok
+  step-end status=accepted
+  step=286 attempt=1 t0=8.96960E+000 dt=2.15238E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.35932E-011 status=ok
+    flow.projection iter=62 dscg=62 amg=0 rel_res=8.17032E-011 status=ok
+  step-end status=accepted
+  step=287 attempt=1 t0=8.99112E+000 dt=2.17070E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.63249E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=7.74219E-011 status=ok
+  step-end status=accepted
+  step=288 attempt=1 t0=9.01283E+000 dt=2.19024E-002 cause=cfl
+    flow.momentum iter=15 dscg=15 amg=0 rel_res=9.62295E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=9.15448E-011 status=ok
+  step-end status=accepted
+  step=289 attempt=1 t0=9.03473E+000 dt=2.21109E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.69360E-011 status=ok
+    flow.projection iter=63 dscg=63 amg=0 rel_res=7.02760E-011 status=ok
+  step-end status=accepted
+  step=290 attempt=1 t0=9.05684E+000 dt=2.23302E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=3.11813E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=5.53401E-011 status=ok
+  step-end status=accepted
+  step=291 attempt=1 t0=9.07917E+000 dt=2.25631E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.07959E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=5.11266E-011 status=ok
+  step-end status=accepted
+  step=292 attempt=1 t0=9.10174E+000 dt=2.28101E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.03336E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.78204E-011 status=ok
+  step-end status=accepted
+  step=293 attempt=1 t0=9.12455E+000 dt=2.30714E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=5.41252E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.64127E-011 status=ok
+  step-end status=accepted
+  step=294 attempt=1 t0=9.14762E+000 dt=2.33486E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.43677E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=6.10240E-011 status=ok
+  step-end status=accepted
+  step=295 attempt=1 t0=9.17097E+000 dt=2.36435E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=4.85736E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=9.84694E-011 status=ok
+  step-end status=accepted
+  step=296 attempt=1 t0=9.19461E+000 dt=2.39563E-002 cause=cfl
+    flow.momentum iter=16 dscg=16 amg=0 rel_res=6.48505E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=9.23741E-011 status=ok
+  step-end status=accepted
+  step=297 attempt=1 t0=9.21857E+000 dt=2.42897E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=3.24211E-011 status=ok
+    flow.projection iter=64 dscg=64 amg=0 rel_res=9.14935E-011 status=ok
+  step-end status=accepted
+  step=298 attempt=1 t0=9.24285E+000 dt=2.46435E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=3.38112E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=5.39714E-011 status=ok
+  step-end status=accepted
+  step=299 attempt=1 t0=9.26750E+000 dt=2.50223E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.28822E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=8.08135E-011 status=ok
+  step-end status=accepted
+  step=300 attempt=1 t0=9.29252E+000 dt=2.54271E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.75091E-011 status=ok
+    flow.projection iter=65 dscg=65 amg=0 rel_res=9.10225E-011 status=ok
+  step-end status=accepted
+  step=301 attempt=1 t0=9.31795E+000 dt=2.58621E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.07804E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=5.02485E-011 status=ok
+  step-end status=accepted
+  step=302 attempt=1 t0=9.34381E+000 dt=2.63289E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=4.94183E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=6.23451E-011 status=ok
+  step-end status=accepted
+  step=303 attempt=1 t0=9.37014E+000 dt=2.68308E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=9.85928E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=8.79676E-011 status=ok
+  step-end status=accepted
+  step=304 attempt=1 t0=9.39697E+000 dt=2.73722E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=7.63364E-011 status=ok
+    flow.projection iter=66 dscg=66 amg=0 rel_res=8.48005E-011 status=ok
+  step-end status=accepted
+  step=305 attempt=1 t0=9.42434E+000 dt=2.79570E-002 cause=cfl
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=9.54851E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=4.99263E-011 status=ok
+  step-end status=accepted
+  step=306 attempt=1 t0=9.45230E+000 dt=2.85907E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=5.25054E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=7.09299E-011 status=ok
+  step-end status=accepted
+  step=307 attempt=1 t0=9.48089E+000 dt=2.92853E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=6.72564E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=7.27432E-011 status=ok
+  step-end status=accepted
+  step=308 attempt=1 t0=9.51017E+000 dt=3.00415E-002 cause=cfl
+    flow.momentum iter=18 dscg=18 amg=0 rel_res=8.47924E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=9.51315E-011 status=ok
+  step-end status=accepted
+  step=309 attempt=1 t0=9.54022E+000 dt=3.08615E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=3.73492E-011 status=ok
+    flow.projection iter=67 dscg=67 amg=0 rel_res=9.05495E-011 status=ok
+  step-end status=accepted
+  step=310 attempt=1 t0=9.57108E+000 dt=3.17692E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=6.27917E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=6.08498E-011 status=ok
+  step-end status=accepted
+  step=311 attempt=1 t0=9.60285E+000 dt=3.27774E-002 cause=cfl
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=7.72407E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=6.81722E-011 status=ok
+  step-end status=accepted
+  step=312 attempt=1 t0=9.63562E+000 dt=3.39023E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=4.86728E-011 status=ok
+    flow.projection iter=68 dscg=68 amg=0 rel_res=8.37186E-011 status=ok
+  step-end status=accepted
+  step=313 attempt=1 t0=9.66953E+000 dt=3.51682E-002 cause=cfl
+    flow.momentum iter=20 dscg=20 amg=0 rel_res=7.62059E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=4.99282E-011 status=ok
+  step-end status=accepted
+  step=314 attempt=1 t0=9.70469E+000 dt=3.66037E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=4.11759E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=8.77528E-011 status=ok
+  step-end status=accepted
+  step=315 attempt=1 t0=9.74130E+000 dt=3.82582E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=6.94405E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=7.53725E-011 status=ok
+  step-end status=accepted
+  step=316 attempt=1 t0=9.77956E+000 dt=4.01694E-002 cause=cfl
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=9.16468E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.68388E-011 status=ok
+  step-end status=accepted
+  step=317 attempt=1 t0=9.81973E+000 dt=4.24238E-002 cause=cfl
+    flow.momentum iter=22 dscg=22 amg=0 rel_res=7.33139E-011 status=ok
+    flow.projection iter=69 dscg=69 amg=0 rel_res=6.99847E-011 status=ok
+  step-end status=accepted
+  step=318 attempt=1 t0=9.86215E+000 dt=4.51305E-002 cause=cfl
+    flow.momentum iter=23 dscg=23 amg=0 rel_res=6.27466E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=8.78134E-011 status=ok
+  step-end status=accepted
+  step=319 attempt=1 t0=9.90728E+000 dt=3.71106E-002 cause=output
+    flow.momentum iter=21 dscg=21 amg=0 rel_res=6.28776E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=6.56878E-011 status=ok
+  step-end status=accepted
+  step=320 attempt=1 t0=9.94439E+000 dt=3.05160E-002 cause=output
+    flow.momentum iter=19 dscg=19 amg=0 rel_res=6.61411E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=7.13238E-011 status=ok
+  step-end status=accepted
+  step=321 attempt=1 t0=9.97491E+000 dt=2.50932E-002 cause=output
+    flow.momentum iter=17 dscg=17 amg=0 rel_res=7.73774E-011 status=ok
+    flow.projection iter=70 dscg=70 amg=0 rel_res=8.53403E-011 status=ok
+  step-end status=accepted
+  output t=1.00000E+001
+integration-end t=1.00000E+001 nstep=321 status=complete
+
+timing-summary-begin
+simulation: 5.33816E-01
+  integration: 5.25055E-01
+    output: 5.77002E-03
+    flow/material-transport: 3.40498E-01
+      normals: 1.84607E-02
+      reconstruct/advect: 1.32945E-01
+    flow/momentum: 5.37368E-02
+    flow/projection: 1.09483E-01
+timing-summary-end
