@@ -1,6 +1,7 @@
-// Inviscid fluid/VOID broken-dam problem in a closed two-dimensional box.
-// Initially, water occupies the left half of the box and is released under
-// downward gravity.  This is the 2D counterpart of mainline free-surf-flow-4.
+// Small inviscid fluid/VOID broken-dam problem in a closed unit square.
+// Initially, water occupies [0,0.5]x[0,0.75] and [0.5,1]x[0,0.25]; the rest
+// of the domain is VOID.  The configuration follows mainline free-surf-flow-4
+// and provides a quick two-dimensional free-surface reference regression.
 {
   "materials": {
     "water": {
@@ -12,11 +13,17 @@
   },
   "material-regions": {
     "refinement-level": 0,
-    "water-column": {
+    "lower-left-fluid": {
       "material": "water",
-      "type": "half-plane",
-      "point": [0.0, 0.0],
-      "normal": [1.0, 0.0]
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [0.5, 0.75]
+    },
+    "lower-right-fluid": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.5, 0.0],
+      "upper-corner": [1.0, 0.25]
     },
     "void-background": {
       "material": "VOID",
@@ -24,8 +31,8 @@
     }
   },
   "mesh": {
-    "x-axis": {"coarse-grid": [-0.5, 0.5], "intervals": [20]},
-    "y-axis": {"coarse-grid": [-0.5, 0.5], "intervals": [20]}
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
   },
   "flow-model": {
     "inviscid": true,

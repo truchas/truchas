@@ -1,0 +1,464 @@
+program="truchas-2d" simulation="flow" version="2d-truchas-26.09-8-g3d326e33-dirty"
+build compiler="GNU" compiler_version="16.1.1" host="thelio2.indiana" flags="-O3 -DNDEBUG -ffpe-trap=zero,invalid,overflow"
+run timestamp="2026-09-08T09:17:11-0600" host="thelio2.indiana" cpu="AMD Ryzen Threadripper 7970X 32-Cores" mpi_processes=4
+input file="/home/nnc/Codes/truchas/worktrees/2d-truchas/src/2d-truchas/src/simulations/flow/test/free_surface/dam_break/input.json" sha256="4d114b80072c017e546dc29865ee2f253bf9d7aa0d706a0aa10a54cb347b7a3e"
+
+Initializing simulation.
+  Constructing mesh.
+    Generating a 16 by 16 quadrilateral mesh.
+    Partitioning the mesh with the metis method.
+    Mesh has 289 nodes, 544 faces, and 256 cells.
+    Mesh defines 1 cell sets, 4 face sets, and 0 node sets.
+  Mesh construction complete.
+  Loading material database.
+  Reading material regions.
+    Region "lower-left-fluid": material="water".
+    Region "lower-right-fluid": material="water".
+    Region "void-background": material="VOID".
+  Material regions read.
+  Constructing material model.
+    Using material "water".
+    Using material "VOID".
+  Material model complete.
+  Constructing material distribution.
+    Processing region "lower-left-fluid": type="box".
+    Processing region "lower-right-fluid": type="box".
+    Processing region "void-background": type="background".
+  Material distribution complete.
+  Constructing flow model.
+    Using inviscid flow.
+    Using inertial momentum.
+    Using body acceleration [ 0.0000E+00, -1.0000E+00].
+    Constructing "free-slip" boundary condition "walls".
+  Flow model complete.
+  Constructing flow solver.
+    Using Courant number  2.5000E-01.
+    Using geometric volume tracking.
+  Flow solver complete.
+  Configuring integration.
+    Initial time:  0.0000E+00
+    Initial time step:  1.0000E-03
+    Output schedule: 3 times from  1.0000E-01 through  1.0000E+00
+  Integration configuration complete.
+  Initializing flow state.
+    Projecting user-supplied initial velocity.
+    flow.initial.velocity-projection method=none reason=zero-rhs status=skipped
+    flow.initial.momentum method=inviscid-direct status=ok
+    flow.initial.pressure-projection iter=12 dscg=2 amg=10 rel_res=1.67726E-011 status=ok
+  Flow-state initialization complete.
+  Opening VTKHDF output.
+Simulation initialization complete.
+
+integration-begin t0=0.00000E+000
+  output t=0.00000E+000
+  step=1 attempt=1 t0=0.00000E+000 dt=1.00000E-003 cause=init
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=4.79161E-011 status=ok
+  step-end status=accepted
+  step=2 attempt=1 t0=1.00000E-003 dt=1.05000E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.47367E-011 status=ok
+  step-end status=accepted
+  step=3 attempt=1 t0=2.05000E-003 dt=1.10250E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.20802E-011 status=ok
+  step-end status=accepted
+  step=4 attempt=1 t0=3.15250E-003 dt=1.15763E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.94575E-011 status=ok
+  step-end status=accepted
+  step=5 attempt=1 t0=4.31013E-003 dt=1.21551E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.66032E-011 status=ok
+  step-end status=accepted
+  step=6 attempt=1 t0=5.52563E-003 dt=1.27628E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.66959E-011 status=ok
+  step-end status=accepted
+  step=7 attempt=1 t0=6.80191E-003 dt=1.34010E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.52067E-011 status=ok
+  step-end status=accepted
+  step=8 attempt=1 t0=8.14201E-003 dt=1.40710E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.20670E-011 status=ok
+  step-end status=accepted
+  step=9 attempt=1 t0=9.54911E-003 dt=1.47746E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.26485E-011 status=ok
+  step-end status=accepted
+  step=10 attempt=1 t0=1.10266E-002 dt=1.55133E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=8.09957E-011 status=ok
+  step-end status=accepted
+  step=11 attempt=1 t0=1.25779E-002 dt=1.62889E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=6.86672E-011 status=ok
+  step-end status=accepted
+  step=12 attempt=1 t0=1.42068E-002 dt=1.71034E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=6.57877E-011 status=ok
+  step-end status=accepted
+  step=13 attempt=1 t0=1.59171E-002 dt=1.79586E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.84783E-011 status=ok
+  step-end status=accepted
+  step=14 attempt=1 t0=1.77130E-002 dt=1.88565E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=6.02489E-011 status=ok
+  step-end status=accepted
+  step=15 attempt=1 t0=1.95986E-002 dt=1.97993E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=56 dscg=56 amg=0 rel_res=6.43447E-011 status=ok
+  step-end status=accepted
+  step=16 attempt=1 t0=2.15786E-002 dt=2.07893E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.96530E-011 status=ok
+  step-end status=accepted
+  step=17 attempt=1 t0=2.36575E-002 dt=2.18287E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=9.31682E-011 status=ok
+  step-end status=accepted
+  step=18 attempt=1 t0=2.58404E-002 dt=2.29202E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.83436E-011 status=ok
+  step-end status=accepted
+  step=19 attempt=1 t0=2.81324E-002 dt=2.40662E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=8.09210E-011 status=ok
+  step-end status=accepted
+  step=20 attempt=1 t0=3.05390E-002 dt=2.52695E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.69093E-011 status=ok
+  step-end status=accepted
+  step=21 attempt=1 t0=3.30660E-002 dt=2.65330E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.74401E-011 status=ok
+  step-end status=accepted
+  step=22 attempt=1 t0=3.57193E-002 dt=2.78596E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=7.93507E-011 status=ok
+  step-end status=accepted
+  step=23 attempt=1 t0=3.85052E-002 dt=2.92526E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=8.43353E-011 status=ok
+  step-end status=accepted
+  step=24 attempt=1 t0=4.14305E-002 dt=3.07152E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=8.87366E-011 status=ok
+  step-end status=accepted
+  step=25 attempt=1 t0=4.45020E-002 dt=3.22510E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=4.82556E-011 status=ok
+  step-end status=accepted
+  step=26 attempt=1 t0=4.77271E-002 dt=3.38635E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.39125E-011 status=ok
+  step-end status=accepted
+  step=27 attempt=1 t0=5.11135E-002 dt=3.55567E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.31698E-011 status=ok
+  step-end status=accepted
+  step=28 attempt=1 t0=5.46691E-002 dt=3.73346E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.88294E-011 status=ok
+  step-end status=accepted
+  step=29 attempt=1 t0=5.84026E-002 dt=3.92013E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.81220E-011 status=ok
+  step-end status=accepted
+  step=30 attempt=1 t0=6.23227E-002 dt=4.11614E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=6.22299E-011 status=ok
+  step-end status=accepted
+  step=31 attempt=1 t0=6.64388E-002 dt=4.32194E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=6.63044E-011 status=ok
+  step-end status=accepted
+  step=32 attempt=1 t0=7.07608E-002 dt=4.53804E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.03962E-011 status=ok
+  step-end status=accepted
+  step=33 attempt=1 t0=7.52988E-002 dt=4.76494E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.40216E-011 status=ok
+  step-end status=accepted
+  step=34 attempt=1 t0=8.00638E-002 dt=5.00319E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.79347E-011 status=ok
+  step-end status=accepted
+  step=35 attempt=1 t0=8.50670E-002 dt=4.99041E-003 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=57 dscg=57 amg=0 rel_res=5.71971E-011 status=ok
+  step-end status=accepted
+  step=36 attempt=1 t0=9.00574E-002 dt=4.97767E-003 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.47163E-011 status=ok
+  step-end status=accepted
+  step=37 attempt=1 t0=9.50350E-002 dt=4.96496E-003 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.68057E-011 status=ok
+  step-end status=accepted
+  output t=1.00000E-001
+  step=38 attempt=1 t0=1.00000E-001 dt=5.21321E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.28687E-011 status=ok
+  step-end status=accepted
+  step=39 attempt=1 t0=1.05213E-001 dt=5.47387E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.04849E-011 status=ok
+  step-end status=accepted
+  step=40 attempt=1 t0=1.10687E-001 dt=5.74756E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.42540E-011 status=ok
+  step-end status=accepted
+  step=41 attempt=1 t0=1.16435E-001 dt=6.03494E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.54700E-011 status=ok
+  step-end status=accepted
+  step=42 attempt=1 t0=1.22470E-001 dt=6.33669E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.49227E-011 status=ok
+  step-end status=accepted
+  step=43 attempt=1 t0=1.28806E-001 dt=6.65352E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.14501E-011 status=ok
+  step-end status=accepted
+  step=44 attempt=1 t0=1.35460E-001 dt=6.98620E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.31281E-011 status=ok
+  step-end status=accepted
+  step=45 attempt=1 t0=1.42446E-001 dt=7.33551E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=6.83493E-011 status=ok
+  step-end status=accepted
+  step=46 attempt=1 t0=1.49781E-001 dt=7.70228E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.13451E-011 status=ok
+  step-end status=accepted
+  step=47 attempt=1 t0=1.57484E-001 dt=8.08739E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.21273E-011 status=ok
+  step-end status=accepted
+  step=48 attempt=1 t0=1.65571E-001 dt=8.49176E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.88954E-011 status=ok
+  step-end status=accepted
+  step=49 attempt=1 t0=1.74063E-001 dt=8.91635E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.51903E-011 status=ok
+  step-end status=accepted
+  step=50 attempt=1 t0=1.82979E-001 dt=9.36217E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.14157E-011 status=ok
+  step-end status=accepted
+  step=51 attempt=1 t0=1.92341E-001 dt=9.83028E-003 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.51423E-011 status=ok
+  step-end status=accepted
+  step=52 attempt=1 t0=2.02172E-001 dt=1.03218E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.09596E-011 status=ok
+  step-end status=accepted
+  step=53 attempt=1 t0=2.12494E-001 dt=1.08379E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.79269E-011 status=ok
+  step-end status=accepted
+  step=54 attempt=1 t0=2.23331E-001 dt=1.13798E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.04622E-011 status=ok
+  step-end status=accepted
+  step=55 attempt=1 t0=2.34711E-001 dt=1.19488E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.03997E-011 status=ok
+  step-end status=accepted
+  step=56 attempt=1 t0=2.46660E-001 dt=1.25462E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.80084E-011 status=ok
+  step-end status=accepted
+  step=57 attempt=1 t0=2.59206E-001 dt=1.31735E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.47637E-011 status=ok
+  step-end status=accepted
+  step=58 attempt=1 t0=2.72380E-001 dt=1.38322E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=3.44671E-011 status=ok
+  step-end status=accepted
+  step=59 attempt=1 t0=2.86212E-001 dt=1.45238E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=3.76143E-011 status=ok
+  step-end status=accepted
+  step=60 attempt=1 t0=3.00736E-001 dt=1.52500E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.32365E-011 status=ok
+  step-end status=accepted
+  step=61 attempt=1 t0=3.15986E-001 dt=1.60125E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.56801E-011 status=ok
+  step-end status=accepted
+  step=62 attempt=1 t0=3.31998E-001 dt=1.68131E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=6.04493E-011 status=ok
+  step-end status=accepted
+  step=63 attempt=1 t0=3.48811E-001 dt=1.76538E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.34717E-011 status=ok
+  step-end status=accepted
+  step=64 attempt=1 t0=3.66465E-001 dt=1.85365E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.97320E-011 status=ok
+  step-end status=accepted
+  step=65 attempt=1 t0=3.85001E-001 dt=1.94633E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.52222E-011 status=ok
+  step-end status=accepted
+  step=66 attempt=1 t0=4.04465E-001 dt=2.04364E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=5.29807E-011 status=ok
+  step-end status=accepted
+  step=67 attempt=1 t0=4.24901E-001 dt=2.14583E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.17455E-011 status=ok
+  step-end status=accepted
+  step=68 attempt=1 t0=4.46359E-001 dt=1.95597E-002 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.96262E-011 status=ok
+  step-end status=accepted
+  step=69 attempt=1 t0=4.65919E-001 dt=1.78292E-002 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=3.86242E-011 status=ok
+  step-end status=accepted
+  step=70 attempt=1 t0=4.83748E-001 dt=1.62517E-002 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.92222E-011 status=ok
+  step-end status=accepted
+  output t=5.00000E-001
+  step=71 attempt=1 t0=5.00000E-001 dt=1.70643E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.85717E-011 status=ok
+  step-end status=accepted
+  step=72 attempt=1 t0=5.17064E-001 dt=1.79175E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.40323E-011 status=ok
+  step-end status=accepted
+  step=73 attempt=1 t0=5.34982E-001 dt=1.88134E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=7.82115E-011 status=ok
+  step-end status=accepted
+  step=74 attempt=1 t0=5.53795E-001 dt=1.97540E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.03390E-011 status=ok
+  step-end status=accepted
+  step=75 attempt=1 t0=5.73549E-001 dt=2.07417E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.92648E-011 status=ok
+  step-end status=accepted
+  step=76 attempt=1 t0=5.94291E-001 dt=2.17788E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.68936E-011 status=ok
+  step-end status=accepted
+  step=77 attempt=1 t0=6.16070E-001 dt=2.28678E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.18821E-011 status=ok
+  step-end status=accepted
+  step=78 attempt=1 t0=6.38938E-001 dt=2.40112E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.66922E-011 status=ok
+  step-end status=accepted
+  step=79 attempt=1 t0=6.62949E-001 dt=2.52117E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=7.66040E-011 status=ok
+  step-end status=accepted
+  step=80 attempt=1 t0=6.88160E-001 dt=2.64723E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.53514E-011 status=ok
+  step-end status=accepted
+  step=81 attempt=1 t0=7.14633E-001 dt=2.35170E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=9.00351E-011 status=ok
+  step-end status=accepted
+  step=82 attempt=1 t0=7.38150E-001 dt=2.41623E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.76947E-011 status=ok
+  step-end status=accepted
+  step=83 attempt=1 t0=7.62312E-001 dt=2.34886E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.35036E-011 status=ok
+  step-end status=accepted
+  step=84 attempt=1 t0=7.85801E-001 dt=2.28255E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=8.90312E-011 status=ok
+  step-end status=accepted
+  step=85 attempt=1 t0=8.08626E-001 dt=1.31078E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.58145E-011 status=ok
+  step-end status=accepted
+  step=86 attempt=1 t0=8.21734E-001 dt=1.36527E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=8.32355E-011 status=ok
+  step-end status=accepted
+  step=87 attempt=1 t0=8.35386E-001 dt=1.43353E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=7.39397E-011 status=ok
+  step-end status=accepted
+  step=88 attempt=1 t0=8.49722E-001 dt=1.50521E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=5.63114E-011 status=ok
+  step-end status=accepted
+  step=89 attempt=1 t0=8.64774E-001 dt=1.58047E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=6.38578E-011 status=ok
+  step-end status=accepted
+  step=90 attempt=1 t0=8.80579E-001 dt=1.10712E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=59 dscg=59 amg=0 rel_res=6.48325E-011 status=ok
+  step-end status=accepted
+  step=91 attempt=1 t0=8.91650E-001 dt=1.16247E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=4.87025E-011 status=ok
+  step-end status=accepted
+  step=92 attempt=1 t0=9.03274E-001 dt=1.22060E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.61016E-011 status=ok
+  step-end status=accepted
+  step=93 attempt=1 t0=9.15480E-001 dt=1.28163E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=58 dscg=58 amg=0 rel_res=9.12966E-011 status=ok
+  step-end status=accepted
+  step=94 attempt=1 t0=9.28297E-001 dt=1.34571E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=6.29177E-011 status=ok
+  step-end status=accepted
+  step=95 attempt=1 t0=9.41754E-001 dt=1.41299E-002 cause=growth
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=5.69894E-011 status=ok
+  step-end status=accepted
+  step=96 attempt=1 t0=9.55884E-001 dt=1.29201E-002 cause=cfl
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=7.78459E-011 status=ok
+  step-end status=accepted
+  step=97 attempt=1 t0=9.68804E-001 dt=1.15675E-002 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=4.70818E-011 status=ok
+  step-end status=accepted
+  step=98 attempt=1 t0=9.80371E-001 dt=1.03564E-002 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=5.54680E-011 status=ok
+  step-end status=accepted
+  step=99 attempt=1 t0=9.90728E-001 dt=9.27219E-003 cause=output
+    flow.momentum method=inviscid-direct status=ok
+    flow.projection iter=60 dscg=60 amg=0 rel_res=7.71089E-011 status=ok
+  step-end status=accepted
+  output t=1.00000E+000
+integration-end t=1.00000E+000 nstep=99 status=complete
+
+timing-summary-begin
+simulation: 1.41761E-01
+  integration: 1.31767E-01
+    output: 5.73283E-03
+    flow/material-transport: 8.74368E-02
+      normals: 5.62131E-03
+      reconstruct/advect: 1.03700E-02
+    flow/momentum: 2.67434E-03
+    flow/projection: 3.24846E-02
+timing-summary-end

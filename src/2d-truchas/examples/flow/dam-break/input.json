@@ -1,0 +1,56 @@
+// Nondimensional dam-break flow benchmark of Martin and Moyce.  A 1 by 2
+// fluid column initially occupies the left side of a 5 by 3 domain; the
+// remainder is VOID.  Gravity acts downward, the walls are free-slip, and
+// the top boundary has zero pressure.  This is a long-running example for
+// visual and benchmark studies, rather than a routine CTest regression.
+{
+  "materials": {
+    "fluid": {
+      "properties": {
+        "fluid": true,
+        "density": 1.0,
+        "viscosity": 1.0e-3
+      }
+    }
+  },
+  "material-regions": {
+    "refinement-level": 0,
+    "fluid-column": {
+      "material": "fluid",
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [1.0, 2.0]
+    },
+    "void-background": {
+      "material": "VOID",
+      "type": "background"
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 5.0], "intervals": [250]},
+    "y-axis": {"coarse-grid": [0.0, 3.0], "intervals": [150]}
+  },
+  "flow-model": {
+    "inviscid": false,
+    "body-acceleration": [0.0, -1.0],
+    "bc": {
+      "top": {"type": "pressure", "pressure": 0.0, "face-set-ids": [4]},
+      "walls": {"type": "free-slip", "face-set-ids": [1, 2, 3]}
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.25,
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-6},
+    "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+    "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 1.0e-3,
+    "min-time-step": 1.0e-5,
+    "max-time-step": 1.0,
+    "time-step-growth": 1.05,
+    "output-times": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5]
+  },
+  "initial-velocity": [0.0, 0.0]
+}

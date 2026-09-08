@@ -1,0 +1,58 @@
+// Small inviscid fluid/VOID broken-dam problem in a closed unit square.
+// Initially, water occupies [0,0.5]x[0,0.75] and [0.5,1]x[0,0.25]; the rest
+// of the domain is VOID.  The configuration follows mainline free-surf-flow-4
+// and provides a quick two-dimensional free-surface reference regression.
+{
+  "materials": {
+    "water": {
+      "properties": {
+        "fluid": true,
+        "density": 1.0
+      }
+    }
+  },
+  "material-regions": {
+    "refinement-level": 0,
+    "lower-left-fluid": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [0.5, 0.75]
+    },
+    "lower-right-fluid": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.5, 0.0],
+      "upper-corner": [1.0, 0.25]
+    },
+    "void-background": {
+      "material": "VOID",
+      "type": "background"
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [16]}
+  },
+  "flow-model": {
+    "inviscid": true,
+    "body-acceleration": [0.0, -1.0],
+    "bc": {
+      "walls": {"type": "free-slip", "face-set-ids": [1, 2, 3, 4]}
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.25,
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-6},
+    "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "sim-control": {
+    "initial-time": 0.0,
+    "initial-time-step": 1.0e-3,
+    "min-time-step": 1.0e-5,
+    "max-time-step": 1.0,
+    "time-step-growth": 1.05,
+    "output-times": [0.1, 0.5, 1.0]
+  },
+  "initial-velocity": [0.0, 0.0]
+}

@@ -47,10 +47,11 @@ the hydrostatic water/VOID configuration. It checks the interaction of
 material-defined inactive cells, the free surface, and hydrostatic pressure
 balance.
 
-`input.json` is an exploratory inviscid fluid/VOID broken-dam problem in a
-closed square domain. Water initially occupies the left half of the box and
-evolves under downward gravity. It is the two-dimensional analogue of mainline
-`free-surf-flow-4` and exercises geometric fluid/VOID tracking, free-surface
+`dam_break/input.json` is a small inviscid fluid/VOID broken-dam problem in a
+closed unit square. Water initially occupies
+`[0,0.5]×[0,0.75] ∪ [0.5,1]×[0,0.25]`; the remainder is VOID. It follows
+mainline `free-surf-flow-4` and uses a 16×16 mesh. The reference regression
+exercises two-dimensional geometric fluid/VOID tracking, free-surface
 pressure treatment, and inactive-VOID flow cells.
 
 `pressure_poiseuille_void/input.json` is a viscous pressure-driven flow
