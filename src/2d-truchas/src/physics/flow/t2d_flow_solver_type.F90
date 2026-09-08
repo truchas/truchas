@@ -255,7 +255,7 @@ contains
     real(r8), intent(in), optional :: flux_volumes(:,:)
 
     integer :: c, num_itr, num_dscg_itr, num_pcg_itr
-    real(r8) :: dt
+    real(r8) :: dt, pressure_density
     real(r8) :: rel_res_norm
     character(:), allocatable :: bc_errmsg
     logical :: projection_solved
@@ -289,9 +289,10 @@ contains
         this%rhs(:,c) = 0.0_r8
         cycle
       end if
+      pressure_density = this%model%matl_props%density_c(c)
+      if (this%model%matl_props%any_void) pressure_density = pressure_density*this%model%matl_props%vof(c)
       this%rhs(:,c) = this%rhs(:,c) + this%model%matl_props%density_c_old(c)*this%model%mesh%volume(c)* &
-          this%state%vel_cc(:,c) - dt*this%model%mesh%volume(c)* &
-          this%model%matl_props%density_c(c)*this%model%matl_props%vof(c)*this%grad_p(:,c)
+          this%state%vel_cc(:,c) - dt*this%model%mesh%volume(c)*pressure_density*this%grad_p(:,c)
     end do
     if (this%model%inviscid) then
       call this%model%momentum%solve_inviscid(this%model%matl_props%density_c, &
