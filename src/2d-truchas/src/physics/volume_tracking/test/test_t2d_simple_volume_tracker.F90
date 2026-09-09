@@ -5,7 +5,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 program test_t2d_simple_volume_tracker
 

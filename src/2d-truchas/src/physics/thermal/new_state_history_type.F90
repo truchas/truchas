@@ -139,7 +139,7 @@
 !! an auxillary type (PTR_BOX) and declare an array of this type.
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module new_state_history_type
 

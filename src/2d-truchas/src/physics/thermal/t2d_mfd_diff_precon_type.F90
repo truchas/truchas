@@ -15,7 +15,7 @@
 !! off-process workspace needed by the local matrix operations internally.
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module t2d_mfd_diff_precon_type
 

@@ -10,7 +10,7 @@
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module t2d_cell_geom_vof_type
 
