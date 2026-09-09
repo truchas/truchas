@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/mesh_2d.schema.json",
+  "title": "Truchas 2D mesh",
+  "description": "A two-dimensional mesh read from an external file or generated from two axis grids.",
+  "oneOf": [
+    { "$ref": "#/$defs/external-mesh" },
+    { "$ref": "#/$defs/generated-mesh" }
+  ],
+  "$defs": {
+    "axis-grid": {
+      "type": "object",
+      "description": "A monotone axis grid defined by coarse-grid breakpoints and the number of intervals in each segment.",
+      "properties": {
+        "coarse-grid": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "number" },
+          "description": "Increasing coordinate breakpoints. The number of entries must be one greater than the number of intervals."
+        },
+        "intervals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 1 },
+          "description": "Number of generated intervals in each coarse-grid segment."
+        },
+        "ratio": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number", "exclusiveMinimum": 0 },
+          "description": "Optional geometric progression ratio for each coarse-grid segment. A value of 1 gives uniform spacing."
+        }
+      },
+      "required": ["coarse-grid", "intervals"],
+      "additionalProperties": false
+    },
+    "external-mesh": {
+      "type": "object",
+      "description": "A two-dimensional mesh read from an Exodus-compatible mesh file.",
+      "properties": {
+        "mesh-file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the external mesh file. Relative paths are resolved relative to the input file."
+        },
+        "coord-scale-factor": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0,
+          "description": "Factor applied to all mesh coordinates."
+        },
+        "rotation-angle": {
+          "type": "number",
+          "default": 0.0,
+          "description": "Counterclockwise rotation angle in degrees about the origin."
+        },
+        "exodus-block-modulus": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Optional positive modulus used to merge Exodus element-block IDs. Zero disables normalization."
+        }
+      },
+      "required": ["mesh-file"],
+      "additionalProperties": false
+    },
+    "generated-mesh": {
+      "type": "object",
+      "description": "A mesh generated from Cartesian x and y axis grids.",
+      "properties": {
+        "x-axis": { "$ref": "#/$defs/axis-grid" },
+        "y-axis": { "$ref": "#/$defs/axis-grid" },
+        "element-type": {
+          "enum": ["quad", "tri"],
+          "default": "quad",
+          "description": "Element topology. Use quad for quadrilaterals or tri for triangles."
+        },
+        "triangle-probability": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.0,
+          "description": "For a quadrilateral grid, probability that each cell is subdivided into two triangles."
+        },
+        "noise-factor": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 0.3,
+          "default": 0.0,
+          "description": "Maximum random perturbation of generated mesh nodes as a fraction of the local mesh size. For example, 0.1 permits perturbations up to 10% of the local size."
+        },
+        "random-seed": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Positive seed for reproducible triangle subdivision and node perturbation."
+        },
+        "coord-scale-factor": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1.0,
+          "description": "Factor applied to all generated mesh coordinates."
+        },
+        "rotation-angle": {
+          "type": "number",
+          "default": 0.0,
+          "description": "Counterclockwise rotation angle in degrees about the origin."
+        }
+      },
+      "required": ["x-axis", "y-axis"],
+      "additionalProperties": false
+    }
+  }
+}

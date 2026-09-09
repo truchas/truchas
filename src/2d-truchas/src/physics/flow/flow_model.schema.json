@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/flow_model_2d.schema.json",
+  "title": "Truchas 2D flow model",
+  "description": "The mesh-associated incompressible-flow model, including body acceleration, fluid-fraction controls, and flow boundary conditions.",
+  "type": "object",
+  "properties": {
+    "inviscid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Use an inviscid flow model. The viscosity material property is not required in this mode."
+    },
+    "inertial": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include transient and convective momentum terms. Set false for a non-inertial Stokes flow."
+    },
+    "body-acceleration": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number" },
+        { "type": "number" }
+      ],
+      "items": false,
+      "default": [0.0, 0.0],
+      "description": "Constant body acceleration vector [x, y]."
+    },
+    "fluid-fraction-cutoff": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 1.0,
+      "default": 0.01,
+      "description": "Minimum mobile-fluid volume fraction for a cell to receive a flow equation. Must be strictly between zero and one."
+    },
+    "min-face-fraction": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.001,
+      "description": "Minimum nonzero interior face density as a fraction of the lightest real-fluid density. Must be greater than zero and no greater than one."
+    },
+    "bc": {
+      "$ref": "flow_bc.schema.json",
+      "description": "Named flow boundary conditions. This sublist is required; if it is empty, the model supplies its default boundary treatment."
+    }
+  },
+  "required": ["bc"],
+  "additionalProperties": false,
+  "not": {
+    "properties": {
+      "inviscid": { "const": true },
+      "inertial": { "const": false }
+    },
+    "required": ["inviscid", "inertial"]
+  }
+}

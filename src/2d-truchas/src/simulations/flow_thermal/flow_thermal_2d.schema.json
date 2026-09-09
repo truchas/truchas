@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/flow_thermal_2d.schema.json",
+  "title": "Truchas 2D coupled flow-thermal simulation input",
+  "description": "Complete input for a two-dimensional non-isothermal flow simulation with thermal transport.",
+  "type": "object",
+  "properties": {
+    "materials": {
+      "$ref": "../../materials/materials.schema.json",
+      "description": "Named material definitions used by the simulation. Without material-regions, define exactly one material."
+    },
+    "material-regions": {
+      "$ref": "../../materials/material_regions.schema.json",
+      "description": "Optional geometric or cell-set assignment of materials to the mesh."
+    },
+    "mesh": {
+      "$ref": "../../mesh/mesh_2d.schema.json",
+      "description": "Two-dimensional mesh definition."
+    },
+    "flow-model": {
+      "$ref": "flow_thermal_flow_model.schema.json",
+      "description": "Flow model and boundary conditions. The inertial setting is under solver.flow."
+    },
+    "ht-model": {
+      "$ref": "../../physics/thermal/thermal_model.schema.json",
+      "description": "Thermal model, including the advection-capable thermal boundary conditions and optional sources."
+    },
+    "solver": {
+      "$ref": "flow_thermal_solver.schema.json",
+      "description": "Coupled flow, thermal, and time-step solver controls."
+    },
+    "sim-control": {
+      "$ref": "flow_thermal_sim_control.schema.json",
+      "description": "Initial time and output schedule."
+    },
+    "initial-velocity": {
+      "$ref": "../../core/vector_func.schema.json",
+      "description": "Optional initial velocity field. It may be a constant vector or inline vector function; it must evaluate to exactly two components. If omitted, the initial velocity is zero."
+    },
+    "initial-temperature": {
+      "$ref": "../../core/scalar_func.schema.json",
+      "description": "Initial temperature field. It may be a constant or inline scalar function projected to mesh cell centers."
+    }
+  },
+  "required": [
+    "materials",
+    "mesh",
+    "flow-model",
+    "ht-model",
+    "solver",
+    "sim-control",
+    "initial-temperature"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "not": { "required": ["material-regions"] }
+      },
+      "then": {
+        "properties": {
+          "materials": {
+            "maxProperties": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "flow-model": {
+            "properties": {
+              "inviscid": { "const": true }
+            },
+            "required": ["inviscid"]
+          }
+        },
+        "required": ["flow-model"]
+      },
+      "else": {
+        "properties": {
+          "solver": {
+            "properties": {
+              "flow": {
+                "required": ["momentum-solver"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "properties": {
+          "flow-model": {
+            "properties": { "inviscid": { "const": true } },
+            "required": ["inviscid"]
+          },
+          "solver": {
+            "properties": {
+              "flow": {
+                "properties": { "inertial": { "const": false } },
+                "required": ["inertial"]
+              }
+            },
+            "required": ["flow"]
+          }
+        },
+        "required": ["flow-model", "solver"]
+      }
+    }
+  ]
+}

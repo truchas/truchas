@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/flow_solver_2d.schema.json",
+  "title": "Truchas 2D flow solver",
+  "description": "Controls for the 2D flow solver. The projection-solver sublist is always required. The momentum-solver sublist is required for viscous flow and is omitted for inviscid flow; that dependency is determined by the separate flow-model object.",
+  "type": "object",
+  "properties": {
+    "courant-number": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.5,
+      "description": "Courant number used to limit the flow time step. It must be greater than zero and no greater than one; the default is 0.5."
+    },
+    "volume-tracking": {
+      "$ref": "volume_tracking.schema.json",
+      "description": "Optional controls for material volume-fraction transport."
+    },
+    "momentum-solver": {
+      "$ref": "../../core/hypre_hybrid.schema.json",
+      "description": "HYPRE hybrid controls for the implicit momentum solve. Required for viscous flow and unused for inviscid flow."
+    },
+    "projection-solver": {
+      "$ref": "../../core/hypre_hybrid.schema.json",
+      "description": "HYPRE hybrid controls for the pressure-projection solve. This sublist is required."
+    }
+  },
+  "required": ["projection-solver"],
+  "additionalProperties": false
+}

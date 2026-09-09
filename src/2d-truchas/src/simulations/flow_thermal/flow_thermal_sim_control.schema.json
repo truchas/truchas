@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/flow_thermal_sim_control_2d.schema.json",
+  "title": "Truchas 2D coupled simulation controls",
+  "description": "Initial time and output schedule for a coupled flow-thermal simulation. Time-step sizes and retry controls belong to the top-level solver object.",
+  "type": "object",
+  "properties": {
+    "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial flow and temperature states are established. The default is zero."
+    },
+    "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output schedule time; if omitted, it equals the last output schedule time."
+    },
+    "output-times": {
+      "$ref": "#/$defs/output-times",
+      "description": "Output schedule. At least one expanded output time must be later than initial-time."
+    }
+  },
+  "required": ["output-times"],
+  "additionalProperties": false,
+  "$defs": {
+    "output-times": {
+      "title": "Coupled output schedule",
+      "type": "object",
+      "properties": {
+        "times": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" },
+          "description": "Strictly increasing schedule times. At least one expanded time must be later than initial-time."
+        },
+        "subintervals": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "Optional number of equally spaced output subintervals between consecutive entries in times. Supply one fewer value than times; if omitted, each interval has one subinterval."
+        }
+      },
+      "required": ["times"],
+      "additionalProperties": false
+    }
+  }
+}

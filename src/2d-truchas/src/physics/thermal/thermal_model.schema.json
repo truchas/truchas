@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_model_2d.schema.json",
+  "title": "Truchas 2D thermal model",
+  "description": "The physical model and boundary/source data for 2D heat transfer. Material conductivity and enthalpy properties come from the selected materials; this object supplies the boundary conditions and optional source terms.",
+  "type": "object",
+  "properties": {
+    "stefan-boltzmann": {
+      "type": "number",
+      "default": 5.67e-8,
+      "description": "Stefan-Boltzmann constant used by radiation boundary conditions. The default is 5.67e-8 in the input unit system."
+    },
+    "absolute-zero": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Absolute-zero temperature offset used by radiation boundary conditions. The default is zero in the input temperature scale."
+    },
+    "temperature-from-enthalpy": {
+      "$ref": "#/$defs/temperature-from-enthalpy",
+      "description": "Controls the root-finding recovery used when converting enthalpy density back to temperature."
+    },
+    "bc": {
+      "$ref": "thermal_bc.schema.json",
+      "description": "Named thermal boundary conditions. The definitions must collectively cover every mesh boundary face exactly as required by the simulation."
+    },
+    "source": {
+      "$ref": "thermal_source.schema.json",
+      "description": "Optional named volumetric thermal sources."
+    }
+  },
+  "required": ["bc"],
+  "additionalProperties": false,
+  "$defs": {
+    "temperature-from-enthalpy": {
+      "title": "Temperature-from-enthalpy controls",
+      "type": "object",
+      "properties": {
+        "temperature-tolerance": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "description": "Absolute temperature tolerance for the enthalpy inversion. The default is zero."
+        },
+        "bracket-initial-step": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0e-3,
+          "description": "Initial temperature increment used to expand a failed root bracket. The default is 1e-3."
+        },
+        "bracket-max-tries": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 50,
+          "description": "Maximum number of bracket-expansion attempts. The default is 50; zero disables recovery attempts."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

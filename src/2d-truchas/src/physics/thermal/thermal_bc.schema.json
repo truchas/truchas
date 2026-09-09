@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_bc_2d.schema.json",
+  "title": "Truchas 2D thermal boundary conditions",
+  "description": "A named collection of thermal boundary-condition definitions. Each definition applies to one or more mesh face sets. The mesh must ultimately have a complete, non-overlapping boundary specification; that geometric check cannot be expressed here.",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "$ref": "#/$defs/boundary-condition"
+  },
+  "$defs": {
+    "face-set-ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "integer" },
+      "description": "One or more mesh face-set identifiers to which the condition applies."
+    },
+    "temperature": {
+      "title": "Temperature boundary condition",
+      "type": "object",
+      "properties": {
+        "type": { "const": "temperature", "description": "Prescribe temperature on the selected face sets." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "temp": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Temperature as a constant or inline scalar function of the function arguments, including time."
+        }
+      },
+      "required": ["type", "face-set-ids", "temp"],
+      "additionalProperties": false
+    },
+    "flux": {
+      "title": "Heat-flux boundary condition",
+      "type": "object",
+      "properties": {
+        "type": { "const": "flux", "description": "Prescribe normal heat flux on the selected face sets." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "flux": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Normal heat flux as a constant or inline scalar function."
+        }
+      },
+      "required": ["type", "face-set-ids", "flux"],
+      "additionalProperties": false
+    },
+    "htc": {
+      "title": "External heat-transfer boundary condition",
+      "type": "object",
+      "properties": {
+        "type": { "const": "htc", "description": "Apply convective heat transfer on the selected face sets." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "htc": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Heat-transfer coefficient as a constant or inline scalar function."
+        },
+        "ambient-temp": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Ambient temperature as a constant or inline scalar function."
+        }
+      },
+      "required": ["type", "face-set-ids", "htc", "ambient-temp"],
+      "additionalProperties": false
+    },
+    "radiation": {
+      "title": "Radiation boundary condition",
+      "type": "object",
+      "properties": {
+        "type": { "const": "radiation", "description": "Apply radiative heat transfer on the selected face sets." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "emissivity": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Surface emissivity as a constant or inline scalar function."
+        },
+        "ambient-temp": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Ambient radiative temperature as a constant or inline scalar function."
+        }
+      },
+      "required": ["type", "face-set-ids", "emissivity", "ambient-temp"],
+      "additionalProperties": false
+    },
+    "inflow": {
+      "title": "Thermal inflow boundary condition",
+      "description": "Prescribe the temperature of material entering through selected faces. This form is used by advection-enabled coupled simulations.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "inflow", "description": "Prescribe inflow temperature on the selected face sets." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "temp": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Inflow temperature as a constant or inline scalar function."
+        }
+      },
+      "required": ["type", "face-set-ids", "temp"],
+      "additionalProperties": false
+    },
+    "outflow": {
+      "title": "Thermal outflow boundary condition",
+      "description": "Mark selected faces as outflow boundaries in an advection-enabled coupled simulation. The diffusive thermal flux is currently zero.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "outflow", "description": "Mark the selected face sets as outflow boundaries." },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" }
+      },
+      "required": ["type", "face-set-ids"],
+      "additionalProperties": false
+    },
+    "boundary-condition": {
+      "oneOf": [
+        { "$ref": "#/$defs/temperature" },
+        { "$ref": "#/$defs/flux" },
+        { "$ref": "#/$defs/htc" },
+        { "$ref": "#/$defs/radiation" },
+        { "$ref": "#/$defs/inflow" },
+        { "$ref": "#/$defs/outflow" }
+      ]
+    }
+  }
+}

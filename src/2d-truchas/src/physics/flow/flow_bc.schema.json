@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/flow_bc_2d.schema.json",
+  "title": "Truchas 2D flow boundary conditions",
+  "description": "A collection of named flow boundary-condition definitions. Boundary names are user-defined and their input order is preserved by the simulation.",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/$defs/boundary-condition"
+  },
+  "$defs": {
+    "face-set-ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "integer" },
+      "description": "One or more mesh face-set identifiers to which the boundary condition applies."
+    },
+    "inflow-material": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Material name assigned to material entering through this boundary. This option is available for velocity and pressure boundaries."
+    },
+    "boundary-condition": {
+      "oneOf": [
+        { "$ref": "#/$defs/velocity" },
+        { "$ref": "#/$defs/no-slip" },
+        { "$ref": "#/$defs/free-slip" },
+        { "$ref": "#/$defs/pressure" }
+      ]
+    },
+    "velocity": {
+      "type": "object",
+      "title": "Prescribed velocity",
+      "description": "A Dirichlet velocity boundary condition. The vector-function value may be a numeric array or an inline vector-function object.",
+      "properties": {
+        "type": {
+          "const": "velocity",
+          "description": "Selects a prescribed velocity boundary."
+        },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "velocity": {
+          "$ref": "../../core/vector_func.schema.json",
+          "description": "Velocity vector as a direct numeric array or inline vector-function definition."
+        },
+        "inflow-material": { "$ref": "#/$defs/inflow-material" }
+      },
+      "required": ["type", "face-set-ids", "velocity"],
+      "additionalProperties": false
+    },
+    "no-slip": {
+      "type": "object",
+      "title": "No-slip boundary",
+      "description": "A no-slip wall boundary condition that sets the velocity to zero. The normal velocity is also zero.",
+      "properties": {
+        "type": {
+          "const": "no-slip",
+          "description": "Selects a no-slip boundary."
+        },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" }
+      },
+      "required": ["type", "face-set-ids"],
+      "additionalProperties": false
+    },
+    "free-slip": {
+      "type": "object",
+      "title": "Free-slip boundary",
+      "description": "A free-slip wall boundary condition that sets the normal velocity to zero without prescribing tangential velocity.",
+      "properties": {
+        "type": {
+          "const": "free-slip",
+          "description": "Selects a free-slip boundary."
+        },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" }
+      },
+      "required": ["type", "face-set-ids"],
+      "additionalProperties": false
+    },
+    "pressure": {
+      "type": "object",
+      "title": "Prescribed pressure",
+      "description": "A Dirichlet pressure boundary condition. The pressure value may be a real number or an inline scalar-function object.",
+      "properties": {
+        "type": {
+          "const": "pressure",
+          "description": "Selects a prescribed pressure boundary."
+        },
+        "face-set-ids": { "$ref": "#/$defs/face-set-ids" },
+        "pressure": {
+          "$ref": "../../core/scalar_func.schema.json",
+          "description": "Pressure as a real number or inline scalar-function definition."
+        },
+        "inflow-material": { "$ref": "#/$defs/inflow-material" }
+      },
+      "required": ["type", "face-set-ids", "pressure"],
+      "additionalProperties": false
+    }
+  }
+}

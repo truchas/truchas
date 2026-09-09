@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/sim_control_2d.schema.json",
+  "title": "Truchas 2D simulation controls",
+  "description": "Time-step controls and output schedule for a time-dependent 2D simulation.",
+  "type": "object",
+  "properties": {
+    "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial state is established. The default is zero."
+    },
+    "initial-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Initial time-step size. It must be strictly positive."
+    },
+    "min-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Smallest permitted time-step size. It must be strictly positive and no greater than initial-time-step."
+    },
+    "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output time; by default it equals the last entry in output-times.times."
+    },
+    "max-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Largest permitted time-step size. It must be at least initial-time-step; if omitted, the implementation uses an effectively unbounded maximum."
+    },
+    "time-step-growth": {
+      "type": "number",
+      "minimum": 1.0,
+      "default": 1.05,
+      "description": "Maximum factor by which a successful time step may grow the next time step. The value must be at least one; the default is 1.05."
+    },
+    "time-step-lookahead": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3,
+      "description": "Number of future time-step synchronization points considered by coupled time integration. The default is three."
+    },
+    "output-times": {
+      "type": "object",
+      "properties": {
+        "times": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" },
+          "description": "Strictly increasing target output times. At least one time must be supplied, and at least one must be later than initial-time."
+        },
+        "subintervals": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "description": "Optional number of equally spaced output subintervals between consecutive entries in times. Supply one fewer value than the number of times; the default is one for every interval."
+        }
+      },
+      "required": ["times"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["initial-time-step", "min-time-step", "output-times"],
+  "additionalProperties": false
+}

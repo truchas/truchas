@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_preconditioner_2d.schema.json",
+  "title": "Truchas 2D thermal preconditioner",
+  "description": "Preconditioner settings for the implicit thermal solve. The method selects either SSOR or BoomerAMG; the selected method reads its settings from the required params object.",
+  "type": "object",
+  "properties": {
+    "method": {
+      "type": "string",
+      "pattern": "^([sS][sS][oO][rR]|[bB][oO][oO][mM][eE][rR]([aA][mM][gG])?)$",
+      "default": "BOOMERAMG",
+      "description": "Preconditioning method. The value is case-insensitive; supported values are SSOR, BoomerAMG, and Boomer. The default is BoomerAMG."
+    },
+    "params": {
+      "type": "object",
+      "description": "Settings for the selected preconditioner. This object is required even when all of its optional settings use defaults."
+    }
+  },
+  "required": ["params"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": ["method"],
+        "properties": {
+          "method": { "pattern": "^[sS][sS][oO][rR]$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "params": { "$ref": "#/$defs/ssor-params" }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["method"],
+        "properties": {
+          "method": { "pattern": "^[bB][oO][oO][mM][eE][rR]([aA][mM][gG])?$" }
+        }
+      },
+      "then": {
+        "properties": {
+          "params": { "$ref": "#/$defs/boomeramg-params" }
+        }
+      }
+    },
+    {
+      "if": { "not": { "required": ["method"] } },
+      "then": {
+        "properties": {
+          "params": { "$ref": "#/$defs/boomeramg-params" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ssor-params": {
+      "title": "SSOR parameters",
+      "description": "Settings for block-Jacobi SSOR preconditioning.",
+      "type": "object",
+      "properties": {
+        "num-cycles": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 1,
+          "description": "Number of forward/backward SSOR sweeps applied by the preconditioner. The default is one."
+        },
+        "omega": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "description": "Over-relaxation factor for the SSOR sweeps. The default is 1.0."
+        }
+      },
+      "additionalProperties": false
+    },
+    "boomeramg-params": {
+      "title": "BoomerAMG parameters",
+      "description": "Settings passed to the BoomerAMG preconditioner. The defaults are the values used by the 2D implementation.",
+      "type": "object",
+      "properties": {
+        "num-cycles": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Number of AMG cycles applied by the preconditioner. This value is required."
+        },
+        "print-level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 0,
+          "description": "AMG diagnostic output level: 0 for no output, 1 for setup information, 2 for solve information, or 3 for both."
+        },
+        "debug-level": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "AMG debugging level. Zero disables debugging; the default is zero."
+        },
+        "logging-level": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "AMG residual logging level. Zero disables logging; the default is zero."
+        },
+        "coarsen-type": {
+          "type": "integer",
+          "default": 10,
+          "description": "BoomerAMG coarsening method selector. The default is 10."
+        },
+        "strong-threshold": {
+          "type": "number",
+          "default": 0.5,
+          "description": "Strength threshold used when forming the AMG hierarchy. The default is 0.5."
+        },
+        "interp-type": {
+          "type": "integer",
+          "default": 6,
+          "description": "BoomerAMG interpolation method selector. The default is 6."
+        },
+        "relax-down-type": {
+          "type": "integer",
+          "default": 13,
+          "description": "Relaxation method selector for AMG down cycles. The default is 13."
+        },
+        "relax-up-type": {
+          "type": "integer",
+          "default": 14,
+          "description": "Relaxation method selector for AMG up cycles. The default is 14."
+        }
+      },
+      "required": ["num-cycles"],
+      "additionalProperties": false
+    }
+  }
+}
