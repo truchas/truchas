@@ -162,13 +162,12 @@ contains
     call vec%init(this%mesh)
   end subroutine
 
-
   !! Set a cell-integrated external enthalpy rate. This is normally supplied
   !! by a coupled physics model, such as explicit enthalpy advection.
+
   subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
     class(t2d_thermal_model), intent(inout) :: this
     real(r8), intent(in) :: enthalpy_rate(:)
-
     ASSERT(size(enthalpy_rate) == this%mesh%ncell_onP)
     this%ext_rate = enthalpy_rate
   end subroutine
