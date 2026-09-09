@@ -19,14 +19,14 @@
 !! as MOLD, but sharing MOLD's face-matrix graph. MOLD must persist for the
 !! lifetime of the matrix.
 !!
-!! For each preconditioner assembly, call COMPUTE(COEF) first. It defines the
-!! raw diffusion matrix and discards all modifications made by the preceding
-!! assembly. Next, call INCR_CELL_DIAG as needed to add time derivative terms,
-  !! then call SET_DIR_FACES for each distinct Dirichlet face set. Finally, call
-  !! COMPUTE_FACE_SCHUR_MATRIX to form the face Schur complement after all
-  !! matrix modifications are complete.
-  !! INCR_FACE_DIAG may be used after COMPUTE to add diagonal contributions
-  !! from flux boundary conditions that depend on face temperature.
+!! For each preconditioner assembly, call COMPUTE(COEF) first. It constructs
+!! the raw diffusion matrix and discards modifications from the preceding
+!! assembly. Then call INCR_CELL_DIAG as needed to add time-derivative terms,
+!! and call SET_DIR_FACES for each distinct Dirichlet face set. Finally, call
+!! COMPUTE_FACE_SCHUR_MATRIX after all matrix modifications are complete to
+!! form the face Schur complement. INCR_FACE_DIAG may be called after COMPUTE
+!! to add diagonal contributions from flux boundary conditions that depend on
+!! face temperature.
 !!
 !! SET_DIR_FACES both projects the face block and records the specified faces.
 !! The record is used when forming the Schur complement and by the diffusion

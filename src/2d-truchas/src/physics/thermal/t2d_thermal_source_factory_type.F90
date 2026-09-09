@@ -89,7 +89,7 @@ contains
       call move_alloc(scf2, src%f2)
     end if
 
-  end subroutine
+  end subroutine alloc_source_funcs
 
 
   subroutine alloc_source_func1(this, env, src, stat, errmsg)
@@ -115,7 +115,6 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
       character(:), allocatable :: file
-
       call plist%get('data-file', file, stat, errmsg)
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'prefactor', f, stat, errmsg)
@@ -127,7 +126,7 @@ contains
       call src%add(file, f, stat, errmsg)
     end subroutine
 
-  end subroutine
+  end subroutine alloc_source_func1
 
 
   subroutine alloc_source_func2(this, env, src, stat, errmsg)
@@ -153,7 +152,6 @@ contains
       character(:), allocatable, intent(out) :: errmsg
       class(scalar_func), allocatable :: f
       integer, allocatable :: setids(:)
-
       call plist%get('cell-set-ids', setids, stat, errmsg)
       if (stat /= 0) return
       call alloc_scalar_func(plist, 'source', f, stat, errmsg)
@@ -165,7 +163,7 @@ contains
       call src%add(f, setids, stat, errmsg)
     end subroutine
 
-  end subroutine
+  end subroutine alloc_source_func2
 
 
   integer function sublist_type(plist)
@@ -205,6 +203,6 @@ contains
     end do
     if (stat /= 0) errmsg = 'thermal source [' // piter%name() // ']: ' // errmsg
 
-  end subroutine
+  end subroutine iterate_list
 
 end module t2d_thermal_source_factory_type

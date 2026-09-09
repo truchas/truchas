@@ -19,7 +19,7 @@
     },
     "initial-condition": {
       "$ref": "#/$defs/initial-condition",
-      "description": "Optional nonlinear-solve controls used to convert the initial temperature field to a consistent enthalpy state."
+      "description": "Optional controls for the linear face-temperature solve used to construct a consistent initial enthalpy state."
     }
   },
   "required": ["preconditioner", "error-norm", "integrator"],
@@ -140,13 +140,13 @@
           "type": "number",
           "exclusiveMinimum": 0.0,
           "default": 1.0e-6,
-          "description": "Relative tolerance for the nonlinear solve that establishes a consistent initial enthalpy state. The default is 1e-6."
+          "description": "Relative residual tolerance for the initial face-temperature solve. The default is 1e-6."
         },
         "max-iter": {
           "type": "integer",
           "exclusiveMinimum": 0,
           "default": 100,
-          "description": "Maximum nonlinear iterations used for initial-state consistency. The default is 100."
+          "description": "Maximum iterations allowed for the initial face-temperature solve. The default is 100."
         }
       },
       "additionalProperties": false
