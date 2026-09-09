@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_2d.schema.json",
+  "title": "Truchas 2D thermal simulation input",
+  "description": "Complete input for a standalone two-dimensional thermal simulation.",
+  "type": "object",
+  "properties": {
+    "materials": {
+      "$ref": "../../materials/materials.schema.json",
+      "description": "Named material definitions used by the simulation. Without material-regions, define exactly one material."
+    },
+    "material-regions": {
+      "$ref": "../../materials/material_regions.schema.json",
+      "description": "Optional geometric or cell-set assignment of materials to the mesh."
+    },
+    "mesh": {
+      "$ref": "../../mesh/mesh_2d.schema.json",
+      "description": "Two-dimensional mesh definition."
+    },
+    "ht-model": {
+      "$ref": "../../physics/thermal/thermal_model.schema.json",
+      "description": "Thermal material model, boundary conditions, and optional volumetric sources."
+    },
+    "ht-solver": {
+      "$ref": "../../physics/thermal/thermal_solver.schema.json",
+      "description": "Implicit thermal solver controls."
+    },
+    "sim-control": {
+      "$ref": "thermal_sim_control.schema.json",
+      "description": "Thermal time-step controls and output schedule."
+    },
+    "initial-temperature": {
+      "$ref": "../../core/scalar_func.schema.json",
+      "description": "Initial temperature field. It may be a constant or an inline scalar function projected to mesh cell centers."
+    }
+  },
+  "required": [
+    "materials",
+    "mesh",
+    "ht-model",
+    "ht-solver",
+    "sim-control",
+    "initial-temperature"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "not": { "required": ["material-regions"] }
+      },
+      "then": {
+        "properties": {
+          "materials": {
+            "maxProperties": 1
+          }
+        }
+      }
+    }
+  ]
+}

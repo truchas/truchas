@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_source_2d.schema.json",
+  "title": "Truchas 2D thermal sources",
+  "description": "A named collection of volumetric thermal sources. A source may be read from a cell data file and scaled by a scalar function, or defined by a scalar function on selected cell sets.",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "#/$defs/source"
+  },
+  "$defs": {
+    "cell-set-ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "integer" },
+      "description": "One or more mesh cell-set identifiers to which the source applies."
+    },
+    "data-file-source": {
+      "title": "Cell-data-file thermal source",
+      "type": "object",
+      "properties": {
+        "data-file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "File containing the cell-based source data."
+        },
+        "prefactor": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Scalar prefactor applied to the data-file source."
+        }
+      },
+      "required": ["data-file", "prefactor"],
+      "additionalProperties": false
+    },
+    "cell-set-source": {
+      "title": "Cell-set thermal source",
+      "type": "object",
+      "properties": {
+        "cell-set-ids": { "$ref": "#/$defs/cell-set-ids" },
+        "source": {
+          "$ref": "../core/scalar_func.schema.json",
+          "description": "Volumetric source rate as a constant or inline scalar function."
+        }
+      },
+      "required": ["cell-set-ids", "source"],
+      "additionalProperties": false
+    },
+    "source": {
+      "oneOf": [
+        { "$ref": "#/$defs/data-file-source" },
+        { "$ref": "#/$defs/cell-set-source" }
+      ]
+    }
+  }
+}

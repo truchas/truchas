@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/thermal_solver_2d.schema.json",
+  "title": "Truchas 2D thermal solver",
+  "description": "Controls for the implicit 2D thermal solver. All three subobjects are required: the linear preconditioner, the correction error norm, and the nonlinear time integrator.",
+  "type": "object",
+  "properties": {
+    "preconditioner": {
+      "$ref": "thermal_preconditioner.schema.json",
+      "description": "Preconditioner for the linearized thermal system."
+    },
+    "error-norm": {
+      "$ref": "#/$defs/error-norm",
+      "description": "Absolute and relative tolerances used to measure temperature and enthalpy corrections."
+    },
+    "integrator": {
+      "$ref": "#/$defs/integrator",
+      "description": "Nonlinear and BDF time-integration controls used within each thermal time step."
+    },
+    "initial-condition": {
+      "$ref": "#/$defs/initial-condition",
+      "description": "Optional nonlinear-solve controls used to convert the initial temperature field to a consistent enthalpy state."
+    }
+  },
+  "required": ["preconditioner", "error-norm", "integrator"],
+  "additionalProperties": false,
+  "$defs": {
+    "nonnegative-tolerance": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "error-norm": {
+      "title": "Thermal correction error norm",
+      "type": "object",
+      "properties": {
+        "abs-t-tol": {
+          "$ref": "#/$defs/nonnegative-tolerance",
+          "default": 0.0,
+          "description": "Absolute temperature correction tolerance. The default is zero. At least one of the absolute or relative temperature tolerances must be positive."
+        },
+        "rel-t-tol": {
+          "$ref": "#/$defs/nonnegative-tolerance",
+          "default": 0.0,
+          "description": "Relative temperature correction tolerance. The default is zero. At least one of the absolute or relative temperature tolerances must be positive."
+        },
+        "abs-h-tol": {
+          "$ref": "#/$defs/nonnegative-tolerance",
+          "default": 0.0,
+          "description": "Absolute enthalpy correction tolerance. The default is zero. At least one of the absolute or relative enthalpy tolerances must be positive."
+        },
+        "rel-h-tol": {
+          "$ref": "#/$defs/nonnegative-tolerance",
+          "description": "Relative enthalpy correction tolerance. If omitted, it defaults to rel-t-tol. At least one of the absolute or relative enthalpy tolerances must be positive."
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "required": ["abs-t-tol"],
+              "properties": { "abs-t-tol": { "exclusiveMinimum": 0.0 } }
+            },
+            {
+              "required": ["rel-t-tol"],
+              "properties": { "rel-t-tol": { "exclusiveMinimum": 0.0 } }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "required": ["abs-h-tol"],
+              "properties": { "abs-h-tol": { "exclusiveMinimum": 0.0 } }
+            },
+            {
+              "required": ["rel-h-tol"],
+              "properties": { "rel-h-tol": { "exclusiveMinimum": 0.0 } }
+            },
+            {
+              "required": ["rel-t-tol"],
+              "properties": { "rel-t-tol": { "exclusiveMinimum": 0.0 } },
+              "not": { "required": ["rel-h-tol"] }
+            }
+          ]
+        }
+      ]
+    },
+    "integrator": {
+      "title": "Thermal nonlinear time integrator",
+      "type": "object",
+      "properties": {
+        "nlk-max-iter": {
+          "type": "integer",
+          "minimum": 2,
+          "default": 5,
+          "description": "Maximum nonlinear Krylov iterations in one nonlinear solve. The default is 5."
+        },
+        "nlk-tol": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.1,
+          "description": "Nonlinear Krylov convergence tolerance, relative to the initial nonlinear residual. It must be greater than zero and no greater than one; the default is 0.1."
+        },
+        "nlk-max-vec": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of stored nonlinear Krylov vectors. If omitted, it defaults to nlk-max-iter minus one."
+        },
+        "nlk-vec-tol": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 0.01,
+          "description": "Tolerance for accepting a nonlinear Krylov acceleration vector. The default is 0.01."
+        },
+        "pc-freq": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of nonlinear iterations between preconditioner recomputations. If omitted, the preconditioner is not limited by an iteration frequency."
+        },
+        "use-backward-euler": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use backward Euler rather than BDF2 for all time steps. The default is false."
+        },
+        "bdf1-startup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use one backward-Euler startup step before beginning BDF2 integration. The default is false."
+        }
+      },
+      "additionalProperties": false
+    },
+    "initial-condition": {
+      "title": "Thermal initial-condition solver",
+      "type": "object",
+      "properties": {
+        "rel-tol": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0e-6,
+          "description": "Relative tolerance for the nonlinear solve that establishes a consistent initial enthalpy state. The default is 1e-6."
+        },
+        "max-iter": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "default": 100,
+          "description": "Maximum nonlinear iterations used for initial-state consistency. The default is 100."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

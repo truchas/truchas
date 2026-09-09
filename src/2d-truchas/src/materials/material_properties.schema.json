@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/material_properties.schema.json",
+  "title": "Truchas material properties",
+  "description": "A mapping of material property and attribute names to values. Property names are interpreted by the physics model using the material. Scalar functions must be defined inline; 2D input does not support function-table references.",
+  "type": "object",
+  "propertyNames": {
+    "type": "string",
+    "minLength": 1
+  },
+  "additionalProperties": {
+    "$ref": "../core/scalar_func.schema.json#/$defs/scalar-property-value"
+  }
+}

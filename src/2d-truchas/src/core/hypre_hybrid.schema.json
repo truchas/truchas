@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/hypre_hybrid_2d.schema.json",
+  "title": "Hypre hybrid solver parameters",
+  "description": "Public parameter-list controls for the shared HYPRE hybrid linear solver. The same object is used for the momentum-solver and projection-solver settings. The 2D flow solvers use CG; additional backend parameters are permitted so that less commonly used AMG controls can pass through even when they are not documented here.",
+  "type": "object",
+  "properties": {
+    "rel-tol": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Required relative convergence tolerance for the Krylov solve. The solve is considered converged when its relative residual meets this tolerance, subject to the other convergence controls."
+    },
+    "abs-tol": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.0,
+      "description": "Absolute convergence tolerance for the Krylov solve. The default is zero, so no nonzero absolute tolerance is supplied."
+    },
+    "conv-rate-tol": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 1.0,
+      "description": "Optional convergence-rate tolerance. It must be strictly between zero and one."
+    },
+    "max-ds-iter": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "Required maximum number of diagonally scaled Krylov iterations."
+    },
+    "max-amg-iter": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "Required maximum number of AMG-preconditioned Krylov iterations."
+    },
+    "cg-use-two-norm": {
+      "type": "boolean",
+      "description": "Whether CG convergence uses the two-norm criterion. This control is considered only when krylov-method is cg."
+    },
+    "logging-level": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1,
+      "description": "HYPRE logging level. Zero disables solver logging; larger values enable progressively more diagnostic output. The default is 1."
+    },
+    "print-level": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "HYPRE print level. Zero suppresses solver print output; larger values request more output. The default is 0."
+    },
+    "amg-strong-threshold": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 1.0,
+      "default": 0.5,
+      "description": "Strength threshold used by the AMG coarsening algorithm. It must be strictly between zero and one; the default is 0.5."
+    },
+    "amg-max-levels": {
+      "type": "integer",
+      "exclusiveMinimum": 1,
+      "description": "Optional maximum number of AMG levels. It must be greater than one."
+    },
+    "amg-smoothing-sweeps": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1,
+      "description": "Number of AMG smoothing sweeps. The default is one sweep."
+    },
+    "amg-smoothing-method": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "AMG relaxation or smoothing method selector passed to HYPRE."
+    },
+    "amg-interp-method": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "AMG interpolation method selector passed to HYPRE."
+    }
+  },
+  "required": ["rel-tol", "max-ds-iter", "max-amg-iter"],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "required": ["krylov-method"]
+      },
+      "then": {
+        "properties": {
+          "krylov-method": { "const": "cg" }
+        }
+      }
+    }
+  ]
+}

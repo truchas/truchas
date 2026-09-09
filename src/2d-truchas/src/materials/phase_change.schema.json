@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/phase_change.schema.json",
+  "title": "Truchas phase change",
+  "description": "A temperature-dependent transformation between two consecutive material phases.",
+  "oneOf": [
+    { "$ref": "#/$defs/smooth-phase-change" },
+    { "$ref": "#/$defs/tabular-phase-change" }
+  ],
+  "$defs": {
+    "smooth-phase-change": {
+      "type": "object",
+      "title": "Smooth phase change",
+      "description": "A smooth phase change defined by its solidus and liquidus temperatures.",
+      "properties": {
+        "solidus-temp": {
+          "type": "number",
+          "description": "Temperature at or below which the lower-temperature phase has fraction one."
+        },
+        "liquidus-temp": {
+          "type": "number",
+          "description": "Temperature at or above which the lower-temperature phase has fraction zero."
+        },
+        "latent-heat": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "Optional latent heat assigned to the transformation. It is needed when the high-temperature phase enthalpy is inferred from its specific heat."
+        }
+      },
+      "required": ["solidus-temp", "liquidus-temp"],
+      "additionalProperties": false
+    },
+    "tabular-phase-change": {
+      "type": "object",
+      "title": "Tabular phase change",
+      "description": "A phase change defined by temperature and lower-temperature-phase fraction pairs.",
+      "properties": {
+        "solid-frac-table": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "number" },
+              { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+            ],
+            "items": false
+          },
+          "description": "Two or more [temperature, fraction] pairs. Temperatures must be strictly monotone, and the endpoint fractions must be 0 and 1 in either order."
+        },
+        "latent-heat": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "Optional latent heat assigned to the transformation. It is needed when the high-temperature phase enthalpy is inferred from its specific heat."
+        }
+      },
+      "required": ["solid-frac-table"],
+      "additionalProperties": false
+    }
+  }
+}

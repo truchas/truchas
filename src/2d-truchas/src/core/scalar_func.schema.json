@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/scalar_func_2d.schema.json",
+  "title": "Truchas 2D scalar function value",
+  "description": "A scalar-function value accepted by 2D input parameters. A value may be a real number or an inline scalar-function definition; the 2D implementation does not use names referring to a function table.",
+  "$ref": "#/$defs/scalar-function-value",
+  "$defs": {
+    "number-array": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number" },
+      "description": "A non-empty array of real numbers."
+    },
+    "integer-array-or-matrix": {
+      "description": "A vector of integer exponents for a one-variable polynomial, or a JSON array of exponent vectors for a multivariable polynomial. In the notation f(x) = sum_j c_j product_i (x_i - x0_i)^(a_ij), i identifies an independent variable and j identifies a polynomial term.",
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer" },
+          "description": "One exponent per polynomial term."
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer" },
+            "description": "One exponent per independent variable for one polynomial term."
+          },
+          "description": "The outer array is indexed by term j and contains one inner array per term. The inner array is indexed by variable i, so poly-powers[j][i] is the exponent a_ij."
+        }
+      ]
+    },
+    "constant": {
+      "type": "object",
+      "title": "Constant function",
+      "description": "A scalar function with the same value for every input.",
+      "properties": {
+        "type": {
+          "const": "constant",
+          "description": "Selects the constant function form."
+        },
+        "value": {
+          "type": "number",
+          "description": "The constant function value."
+        }
+      },
+      "required": ["type", "value"],
+      "additionalProperties": false
+    },
+    "polynomial": {
+      "type": "object",
+      "title": "Polynomial function",
+      "description": "A one-variable or multivariable polynomial defined by coefficient and exponent arrays.",
+      "properties": {
+        "type": {
+          "const": "polynomial",
+          "description": "Selects the polynomial function form."
+        },
+        "poly-coef": {
+          "$ref": "#/$defs/number-array",
+          "description": "Coefficient c_j for each polynomial term j. The number of coefficients must match the number of entries in a one-variable exponent vector or the number of inner arrays in a multivariable poly-powers value."
+        },
+        "poly-powers": {
+          "$ref": "#/$defs/integer-array-or-matrix",
+          "description": "Integer exponents a_ij for the polynomial terms. For multiple variables, write one inner JSON array per term j, with one exponent for each variable i."
+        },
+        "poly-center": {
+          "oneOf": [
+            { "type": "number" },
+            { "$ref": "#/$defs/number-array" }
+          ],
+          "description": "Optional reference point x0_i at which polynomial coordinates are centered. Use a number for a one-variable polynomial or an array indexed by variable i for a multivariable polynomial; the default is zero."
+        }
+      },
+      "required": ["type", "poly-coef", "poly-powers"],
+      "additionalProperties": false
+    },
+    "tabular": {
+      "type": "object",
+      "title": "Tabular function",
+      "description": "A scalar function defined by paired tabular coordinates and values.",
+      "properties": {
+        "type": {
+          "const": "tabular",
+          "description": "Selects the tabular function form."
+        },
+        "tabular x": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "number" },
+          "description": "At least two tabular input coordinates. The number of entries must match tabular y."
+        },
+        "tabular y": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "number" },
+          "description": "Function values corresponding to tabular x. The number of entries must match tabular x."
+        },
+        "interp": {
+          "enum": ["linear", "akima"],
+          "default": "linear",
+          "description": "Interpolation method between tabular points."
+        }
+      },
+      "required": ["type", "tabular x", "tabular y"],
+      "additionalProperties": false
+    },
+    "smooth-ramp": {
+      "type": "object",
+      "title": "Smooth ramp function",
+      "description": "A smooth transition from a starting value to an ending value over a time interval.",
+      "properties": {
+        "type": {
+          "const": "smooth ramp",
+          "description": "Selects the smooth ramp function form."
+        },
+        "begin time": {
+          "type": "number",
+          "description": "Time at which the ramp has its beginning value."
+        },
+        "begin value": {
+          "type": "number",
+          "description": "Function value at or before begin time."
+        },
+        "end time": {
+          "type": "number",
+          "description": "Time at which the ramp has its ending value."
+        },
+        "end value": {
+          "type": "number",
+          "description": "Function value at or after end time."
+        }
+      },
+      "required": [
+        "type",
+        "begin time",
+        "begin value",
+        "end time",
+        "end value"
+      ],
+      "additionalProperties": false
+    },
+    "scalar-function-value": {
+      "title": "Scalar function value",
+      "description": "A scalar function input may be a real number, which creates a constant function, or an object defining an inline scalar function.",
+      "oneOf": [
+        { "type": "number" },
+        { "$ref": "#/$defs/constant" },
+        { "$ref": "#/$defs/polynomial" },
+        { "$ref": "#/$defs/tabular" },
+        { "$ref": "#/$defs/smooth-ramp" }
+      ]
+    },
+    "scalar-property-value": {
+      "title": "Material property value",
+      "description": "A material property value or attribute. Numbers and inline function objects define scalar property functions; booleans define material attributes.",
+      "oneOf": [
+        { "type": "boolean" },
+        { "$ref": "#/$defs/scalar-function-value" }
+      ]
+    }
+  }
+}

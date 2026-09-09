@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/material.schema.json",
+  "title": "Truchas material",
+  "description": "A single-phase or multiphase material definition.",
+  "oneOf": [
+    { "$ref": "#/$defs/single-phase-material" },
+    { "$ref": "#/$defs/multiphase-material" }
+  ],
+  "$defs": {
+    "phase-name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^:]+$",
+      "description": "A non-empty phase name. The colon is reserved for phase-change names."
+    },
+    "phase-list": {
+      "type": "object",
+      "title": "Material phases",
+      "description": "Named phases ordered by the material factory from low to high temperature using the phase-change sequence.",
+      "minProperties": 2,
+      "propertyNames": { "$ref": "#/$defs/phase-name" },
+      "additionalProperties": {
+        "$ref": "material_properties.schema.json"
+      }
+    },
+    "phase-change-list": {
+      "type": "object",
+      "title": "Material phase changes",
+      "description": "Phase changes keyed by an ordered low-temperature:high-temperature phase-name pair.",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[^:]+:[^:]+$",
+        "description": "The key has the form low-temperature-phase:high-temperature-phase."
+      },
+      "additionalProperties": {
+        "$ref": "phase_change.schema.json"
+      }
+    },
+    "single-phase-material": {
+      "type": "object",
+      "title": "Single-phase material",
+      "description": "A material with one phase and one property/attribute list.",
+      "properties": {
+        "properties": {
+          "$ref": "material_properties.schema.json"
+        }
+      },
+      "required": ["properties"],
+      "additionalProperties": false
+    },
+    "multiphase-material": {
+      "type": "object",
+      "title": "Multiphase material",
+      "description": "A material with properties shared across phases, named phase-specific properties, and a connected sequence of phase changes.",
+      "properties": {
+        "properties": {
+          "$ref": "material_properties.schema.json",
+          "description": "Optional properties and attributes inherited by every phase unless overridden by a phase-specific value."
+        },
+        "phases": {
+          "$ref": "#/$defs/phase-list"
+        },
+        "phase-changes": {
+          "$ref": "#/$defs/phase-change-list"
+        }
+      },
+      "required": ["phases", "phase-changes"],
+      "additionalProperties": false
+    }
+  }
+}

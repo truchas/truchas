@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/materials.schema.json",
+  "title": "Truchas materials",
+  "description": "A named collection of material definitions available to a simulation.",
+  "type": "object",
+  "minProperties": 1,
+  "propertyNames": {
+    "type": "string",
+    "minLength": 1,
+    "not": { "const": "VOID" },
+    "description": "A material name. VOID is reserved for the simulation pseudo-material and is not defined here."
+  },
+  "additionalProperties": {
+    "$ref": "material.schema.json"
+  }
+}
