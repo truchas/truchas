@@ -111,7 +111,7 @@ contains
     type(t2d_thermal_vector) :: u, udot, r
     real(r8), allocatable :: Tcell(:), Tface(:), rate(:), rcell0(:)
     character(:), allocatable :: errmsg, string
-    integer :: j, n, stat, max_itr
+    integer :: j, n, stat, max_iter
     real(r8) :: t, dt, rel_tol
 
     if (is_IOP) print '(/,"Testing linear problem with Dirichlet BCs")'
@@ -156,13 +156,13 @@ contains
 
     !! Compute a consistent vector state, including face temperatures.
     dt = 1.0e-3_r8
-    max_itr = 100
+    max_iter = 100
     rel_tol = tol
-    call ic_params%set('dt', dt)
     call ic_params%set('rel-tol', rel_tol)
-    call ic_params%set('max-iter', max_itr)
-    call ic%init(HT_model, ic_params)
-    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
+    call ic_params%set('max-iter', max_iter)
+    call ic%init(HT_model, ic_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic%compute(test_env, t, dt, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals
@@ -218,7 +218,7 @@ contains
     real(r8), allocatable :: Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
-    integer :: j, stat, max_itr
+    integer :: j, stat, max_iter
 
     if (is_IOP) print '(/,"Testing linear problem with Neumann BCs")'
 
@@ -282,13 +282,13 @@ contains
 
     !! Compute a consistent vector state, including face temperatures.
     dt = 1.0e-3_r8
-    max_itr = 100
+    max_iter = 100
     rel_tol = tol
-    call ic_params%set('dt', dt)
     call ic_params%set('rel-tol', rel_tol)
-    call ic_params%set('max-iter', max_itr)
-    call ic%init(HT_model, ic_params)
-    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
+    call ic_params%set('max-iter', max_iter)
+    call ic%init(HT_model, ic_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic%compute(test_env, t, dt, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! Compute heat transfer residuals

@@ -254,7 +254,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     real(r8) :: hlimit
 
-    call this%thermal%set_initial_state(env, time, temp, stat, errmsg, dt=this%dt_init)
+    call this%thermal%set_initial_state(env, time, this%dt_init, temp, stat, errmsg)
     if (stat /= 0) return
     call this%thermal%get_cell_temp_soln(this%temp)
     call this%matl_map%get_phase_volume_fractions(matl_model, this%matl_dist, this%temp, this%flow_vfrac)

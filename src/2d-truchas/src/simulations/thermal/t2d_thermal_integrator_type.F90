@@ -47,7 +47,6 @@ module t2d_thermal_integrator_type
     procedure :: set_temporal_output
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
-    procedure :: write_metrics
   end type
 
 contains
@@ -114,7 +113,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     ASSERT(this%time_stepper_initialized)
-    call this%solver%set_initial_state(env, t, temp, stat, errmsg, dt=this%dt_init)
+    call this%solver%set_initial_state(env, t, this%dt_init, temp, stat, errmsg)
     if (stat /= 0) return
     this%nstep = 0_int64
     this%tlast = t
@@ -242,11 +241,5 @@ contains
     call this%solver%get_cell_temp_soln(temp)
   end subroutine get_cell_temp_soln
 
-
-  subroutine write_metrics(this, string)
-    class(t2d_thermal_integrator), intent(in) :: this
-    character(*), intent(out) :: string(:)
-    call this%solver%write_metrics(string)
-  end subroutine write_metrics
 
 end module t2d_thermal_integrator_type
