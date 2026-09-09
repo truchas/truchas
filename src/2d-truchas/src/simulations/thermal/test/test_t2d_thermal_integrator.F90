@@ -124,7 +124,6 @@ contains
     class(scalar_func), allocatable :: f
     real(r8), allocatable :: Tface(:), Tcell0(:), Tcell1(:)
     character(:), allocatable :: errmsg, string
-    character(80) :: metrics(2)
     integer :: stat
     real(r8) :: t, h, max_error, l2_error
 
@@ -180,8 +179,6 @@ contains
     call HT_solver%integrate(test_env, 0.1_r8, stat, errmsg)
     if (is_IOP) then
       print '("stat=",i3)', stat
-      call HT_solver%write_metrics(metrics)
-      print '(a)', metrics
     end if
 
     if (stat /= 0) then

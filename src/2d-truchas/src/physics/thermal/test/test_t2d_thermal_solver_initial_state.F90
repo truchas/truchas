@@ -88,7 +88,7 @@ contains
     type(t2d_thermal_vector) :: u, udot
     real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
-    integer :: stat, max_itr
+    integer :: stat, max_iter
     real(r8) :: t, dt, rel_tol
 
     if (is_IOP) print '(/,"Testing linear problem with Dirichlet BCs")'
@@ -132,13 +132,13 @@ contains
     deallocate(state)
 
     !! Compute consistent u and udot
-    max_itr = 100
+    max_iter = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call ic_params%set('dt', dt)
     call ic_params%set('rel-tol', rel_tol)
-    call ic_params%set('max-iter', max_itr)
-    call ic%init(HT_model, ic_params)
-    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
+    call ic_params%set('max-iter', max_iter)
+    call ic%init(HT_model, ic_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic%compute(test_env, t, dt, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
@@ -191,7 +191,7 @@ contains
     real(r8), allocatable :: state(:), Hcell(:), Tcell(:), Tface(:)
     character(:), allocatable :: errmsg, string
     real(r8) :: t, dt, rel_tol
-    integer :: stat, max_itr
+    integer :: stat, max_iter
 
     if (is_IOP) print '(/,"Testing linear problem with Neumann BCs")'
 
@@ -247,13 +247,13 @@ contains
     deallocate(state)
 
     !! Compute consistent u and udot
-    max_itr = 100
+    max_iter = 100
     rel_tol = tol * 1E-5_r8 !TODO: good practice?
-    call ic_params%set('dt', dt)
     call ic_params%set('rel-tol', rel_tol)
-    call ic_params%set('max-iter', max_itr)
-    call ic%init(HT_model, ic_params)
-    call ic%compute(test_env, t, Tcell, u, udot, stat, errmsg)
+    call ic_params%set('max-iter', max_iter)
+    call ic%init(HT_model, ic_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic%compute(test_env, t, dt, Tcell, u, udot, stat, errmsg)
     if (stat/=0) call error_exit(errmsg)
 
     !! u must match expected values
@@ -306,7 +306,7 @@ contains
     real(r8), allocatable :: temp(:), state(:), conductivity(:), temp_face(:)
     real(r8) :: flux, cell_norm, face_norm, hdot_norm, t, dt, rel_tol, temp_err
     character(:), allocatable :: errmsg, string
-    integer :: j, max_itr, stat
+    integer :: j, max_iter, stat
 
     if (is_IOP) print '(/,"Testing two-material Dirichlet problem")'
 
@@ -353,14 +353,14 @@ contains
     t = 0.0_r8
     dt = 1.0e-3_r8
     rel_tol = tol*1.0e-5_r8
-    max_itr = 100
+    max_iter = 100
     call u%init(disc%mesh)
     call udot%init(u)
-    call ic_params%set('dt', dt)
     call ic_params%set('rel-tol', rel_tol)
-    call ic_params%set('max-iter', max_itr)
-    call ic%init(model, ic_params)
-    call ic%compute(test_env, t, temp, u, udot, stat, errmsg)
+    call ic_params%set('max-iter', max_iter)
+    call ic%init(model, ic_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic%compute(test_env, t, dt, temp, u, udot, stat, errmsg)
     if (stat /= 0) call error_exit(errmsg)
 
     !! The consistent face temperatures differ from simple adjacent-cell
@@ -413,19 +413,18 @@ contains
     !! must be reported rather than silently accepted.
     call u_fail%init(u)
     call udot_fail%init(u)
-    call ic_fail_params%set('dt', dt)
     call ic_fail_params%set('rel-tol', 1.0e-30_r8)
     call ic_fail_params%set('max-iter', 1)
-    call ic_fail%init(model, ic_fail_params)
-    call ic_fail%compute(test_env, t, temp, u_fail, udot_fail, stat, errmsg)
+    call ic_fail%init(model, ic_fail_params, stat, errmsg)
+    if (stat /= 0) call error_exit(errmsg)
+    call ic_fail%compute(test_env, t, dt, temp, u_fail, udot_fail, stat, errmsg)
     if (stat == 0) then
       if (is_IOP) print '("ERROR: under-resolved face solve was accepted")'
       status = 1
     end if
 
     call ic_fail_params%set('rel-tol', 0.0_r8)
-    call ic_fail%init(model, ic_fail_params)
-    call ic_fail%compute(test_env, t, temp, u_fail, udot_fail, stat, errmsg)
+    call ic_fail%init(model, ic_fail_params, stat, errmsg)
     if (stat == 0 .or. index(errmsg, '"rel-tol"') == 0) then
       if (is_IOP) print '("ERROR: invalid IC relative tolerance was accepted")'
       status = 1

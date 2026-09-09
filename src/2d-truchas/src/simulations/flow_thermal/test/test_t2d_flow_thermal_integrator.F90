@@ -126,7 +126,7 @@ contains
     velocity = 0.0_r8
     temp = 2.0_r8 + sin(acos(-1.0_r8)*mesh%cell_centroid(1,:mesh%ncell_onP)) * &
         sin(acos(-1.0_r8)*mesh%cell_centroid(2,:mesh%ncell_onP))
-    call thermal_solver%set_initial_state(env, 0.0_r8, temp, stat, errmsg, dt=1.0e-3_r8)
+    call thermal_solver%set_initial_state(env, 0.0_r8, 1.0e-3_r8, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing standalone thermal state: ' // errmsg)
     call solver%set_initial_state(env, matl_model, 0.0_r8, velocity, temp, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled state: ' // errmsg)

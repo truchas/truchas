@@ -30,16 +30,16 @@ module t2d_thermal_solver_type
 
   type, public :: t2d_thermal_solver
     private
-    type(t2d_thermal_model), pointer :: model => null()   ! reference only -- do not own
+    type(t2d_thermal_model), pointer :: model => null() ! unowned reference
     type(t2d_thermal_precon) :: precon
     type(t2d_thermal_norm) :: norm
     type(t2d_thermal_idaesol_model) :: integ_model
     type(idaesol) :: integ
+    type(t2d_thermal_ic_solver) :: ic_solver
     !! Pending/current state
     real(r8) :: t
     type(t2d_thermal_vector) :: u
     logical :: step_is_pending = .false.
-    type(parameter_list) :: ic_params
   contains
     procedure :: init
     procedure :: set_initial_state
@@ -49,7 +49,6 @@ module t2d_thermal_solver_type
     procedure :: last_time
     procedure :: get_cell_heat_soln
     procedure :: get_cell_temp_soln
-    procedure :: write_metrics
     procedure :: set_ext_enthalpy_rate
   end type
 
@@ -66,9 +65,6 @@ contains
 
     type(parameter_list), pointer :: plist
     character(:), allocatable :: context
-    real(r8) :: rel_tol
-    integer :: max_itr
-
     this%model => model
     call this%u%init(this%model%mesh)
 
@@ -109,56 +105,39 @@ contains
       return
     end if
 
-    call this%ic_params%set('rel-tol', 1.0e-6_r8)
-    call this%ic_params%set('max-iter', 100)
-    if (params%is_sublist('initial-condition')) then
-      plist => params%sublist('initial-condition')
-      call plist%get('rel-tol', rel_tol, default=1.0e-6_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = context // errmsg
-        return
-      else if (rel_tol <= 0.0_r8) then
-        stat = 1
-        errmsg = context // '"rel-tol" must be > 0.0'
-        return
-      end if
-      call this%ic_params%set('rel-tol', rel_tol)
-      call plist%get('max-iter', max_itr, default=100, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = context // errmsg
-        return
-      else if (max_itr <= 0) then
-        stat = 1
-        errmsg = context // '"max-iter" must be > 0'
-        return
-      end if
-      call this%ic_params%set('max-iter', max_itr)
+    !! Create the initial-condition solver.
+    plist => params%sublist('initial-condition')
+    call this%ic_solver%init(this%model, plist, stat, errmsg)
+    if (stat /= 0) then
+      errmsg = context // errmsg
+      return
     end if
+
     stat = 0
 
   end subroutine init
 
+  !! Sets the initial state of the thermal system given the initial cell
+  !! temperatures. This involves the computation of the consistent face
+  !! temperatures and a finite difference approximation to their time
+  !! derivatives.
 
-  subroutine set_initial_state(this, env, t, temp, stat, errmsg, dt)
+  subroutine set_initial_state(this, env, t, dt, temp, stat, errmsg)
+
     class(t2d_thermal_solver), intent(inout), target :: this
     type(simulation_environment), intent(in) :: env
-    real(r8), intent(in) :: t, temp(:)
+    real(r8), intent(in) :: t, dt, temp(:)
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    real(r8), intent(in) :: dt
-    type(t2d_thermal_ic_solver) :: ic
-    type(t2d_thermal_vector) :: udot
-    real(r8) :: dt_ic
 
-    dt_ic = dt
+    type(t2d_thermal_vector) :: udot
 
     this%t = t
     call udot%init(this%u)
-    call this%ic_params%set('dt', dt_ic)
-    call ic%init(this%model, this%ic_params)
-    call ic%compute(env, t, temp, this%u, udot, stat, errmsg)
+    call this%ic_solver%compute(env, t, dt, temp, this%u, udot, stat, errmsg)
     if (stat /= 0) return
     call this%integ%set_initial_state(t, this%u, udot)
+
   end subroutine set_initial_state
 
   !! Returns the current integration time.
@@ -186,22 +165,14 @@ contains
     temp = this%u%tc(:this%model%mesh%ncell_onP)
   end subroutine
 
-  subroutine write_metrics(this, string)
-    class(t2d_thermal_solver), intent(in) :: this
-    character(*), intent(out) :: string(:)
-    ASSERT(size(string) == 2)
-    call this%integ%write_metrics(string)
-  end subroutine
-
   !! Set the cell-integrated external enthalpy rate used in thermal residual
   !! evaluation.
+
   subroutine set_ext_enthalpy_rate(this, enthalpy_rate)
     class(t2d_thermal_solver), intent(inout) :: this
     real(r8), intent(in) :: enthalpy_rate(:)
-
     call this%model%set_ext_enthalpy_rate(enthalpy_rate)
   end subroutine
-
 
   !! Attempt a step from the current committed state to time T. On success,
   !! the tentative solution is stored in THIS%U and remains pending until
@@ -273,15 +244,14 @@ contains
 
   !! Reject the tentative solution produced by a successful STEP, restoring
   !! the last committed solution and time.
+
   subroutine reject_step(this)
     class(t2d_thermal_solver), intent(inout) :: this
-
     if (this%step_is_pending) then
       call this%integ%get_last_state_copy(this%u)
       this%t = this%integ%last_time()
       this%step_is_pending = .false.
     end if
   end subroutine
-
 
 end module t2d_thermal_solver_type

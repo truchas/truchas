@@ -35,7 +35,8 @@ module t2d_thermal_ic_solver_type
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(t2d_thermal_model), pointer :: model => null() ! unowned reference
-    type(parameter_list), pointer :: params => null() ! unowned reference
+    real(r8) :: rel_tol
+    integer :: max_iter
   contains
     procedure :: init
     procedure :: compute
@@ -44,21 +45,37 @@ module t2d_thermal_ic_solver_type
 
 contains
 
-  subroutine init(this, model, params)
+  subroutine init(this, model, params, stat, errmsg)
     class(t2d_thermal_ic_solver), intent(out) :: this
     type(t2d_thermal_model), intent(in), target :: model
-    type(parameter_list), intent(inout), target :: params
+    type(parameter_list), intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
     this%model => model
     this%mesh => model%mesh
-    this%params => params
+    call params%get('rel-tol', this%rel_tol, default=1.0e-6_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (this%rel_tol <= 0.0_r8) then
+      stat = 1
+      errmsg = '"rel-tol" must be > 0.0'
+      return
+    end if
+    call params%get('max-iter', this%max_iter, default=100, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (this%max_iter <= 0) then
+      stat = 1
+      errmsg = '"max-iter" must be > 0'
+      return
+    end if
+    stat = 0
   end subroutine
 
 
-  subroutine compute(this, env, t, temp, u, udot, stat, errmsg)
+  subroutine compute(this, env, t, dt, temp, u, udot, stat, errmsg)
 
     class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
-    real(r8), intent(in) :: t, temp(:)
+    real(r8), intent(in) :: t, dt, temp(:)
     type(t2d_thermal_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
@@ -86,35 +103,33 @@ contains
     call compute_face_temp(this, env, t, u, 'thermal.initial.state', stat, errmsg)
     if (stat /= 0) return
 
-    call this%compute_udot(env, t, u, udot, stat, errmsg)
+    if (dt <= 0.0_r8) then
+      stat = 1
+      errmsg = '"dt" must be > 0.0'
+      return
+    end if
+
+    call this%compute_udot(env, t, dt, u, udot, stat, errmsg)
 
   end subroutine compute
 
   !! Compute the initial time derivative by advancing enthalpy one small step,
   !! solving the algebraic variables at that advanced state, and differencing.
 
-  subroutine compute_udot(this, env, t, u, udot, stat, errmsg)
+  subroutine compute_udot(this, env, t, dt, u, udot, stat, errmsg)
 
     class(t2d_thermal_ic_solver), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
-    real(r8), intent(in) :: t
+    real(r8), intent(in) :: t, dt
     type(t2d_thermal_vector), intent(inout) :: u, udot
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
     type(t2d_thermal_vector) :: f, advanced
-    real(r8) :: dt, Tmin, Tmax
+    real(r8) :: Tmin, Tmax
     integer :: j
 
     stat = 0
-
-    call this%params%get('dt', dt, stat, errmsg)
-    if (stat /= 0) return
-    if (dt <= 0.0_r8) then
-      stat = 1
-      errmsg = '"dt" must be > 0.0'
-      return
-    end if
 
     call udot%setval(0.0_r8)
     call f%init(u)
@@ -172,24 +187,9 @@ contains
     type(hypre_hybrid) :: solver
     type(t2d_thermal_vector) :: udot, f
     real(r8), allocatable :: coef(:), z(:)
-    real(r8) :: init_res, rel_res, rel_tol
-    integer :: max_itr, num_itr, num_dscg_itr, num_pcg_itr
+    real(r8) :: init_res, rel_res
+    integer :: num_itr, num_dscg_itr, num_pcg_itr
     character(256) :: msg
-
-    call this%params%get('rel-tol', rel_tol, stat, errmsg)
-    if (stat /= 0) return
-    if (rel_tol <= 0.0_r8) then
-      stat = 1
-      errmsg = '"rel-tol" must be > 0.0'
-      return
-    end if
-    call this%params%get('max-iter', max_itr, stat, errmsg)
-    if (stat /= 0) return
-    if (max_itr <= 0) then
-      stat = 1
-      errmsg = '"max-iter" must be > 0'
-      return
-    end if
 
     call udot%init(u)
     call udot%setval(0.0_r8)
@@ -225,9 +225,9 @@ contains
     end if
 
     call solver_params%set('krylov-method', 'cg')
-    call solver_params%set('max-ds-iter', max_itr)
-    call solver_params%set('max-amg-iter', max_itr)
-    call solver_params%set('rel-tol', rel_tol)
+    call solver_params%set('max-ds-iter', this%max_iter)
+    call solver_params%set('max-amg-iter', this%max_iter)
+    call solver_params%set('rel-tol', this%rel_tol)
     if (env%simlog%is_enabled(LOG_DETAIL)) then
       call solver_params%set('print-level', 1)
       call solver_params%set('logging-level', 1)
