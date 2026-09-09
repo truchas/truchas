@@ -117,7 +117,7 @@
 !!        VOF calculations.
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module t2d_unstr_mesh_type
 

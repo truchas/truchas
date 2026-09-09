@@ -16,7 +16,7 @@
 !! an advanced state with similarly solved face temperatures.
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module t2d_thermal_ic_solver_type
 

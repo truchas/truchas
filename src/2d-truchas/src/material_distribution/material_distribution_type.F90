@@ -10,7 +10,7 @@
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
-#include "f90_assert.fpp"
+#include "t2d_assert.inc"
 
 module material_distribution_type
 

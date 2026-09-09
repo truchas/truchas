@@ -4,6 +4,7 @@ unset(CMAKE_Fortran_MODULE_DIRECTORY)
 include_directories(${Truchas_MODULE_DIR})
 include_directories(${PGSLib_MODULE_DIR})
 include_directories(${TruchasExe_SOURCE_DIR}/utilities)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/core)
 
 if(CMAKE_BUILD_TYPE)
   string(TOUPPER "${CMAKE_BUILD_TYPE}" TRUCHAS_2D_BUILD_TYPE_UPPER)
@@ -21,7 +22,8 @@ add_library(truchas-extra
   core/simulation_class.F90
   core/simulation_command_line_type.F90
   core/simulation_output_schedule.F90
-  core/simulation_provenance.F90)
+  core/simulation_provenance.F90
+  core/t2d_assert.F90)
 add_subdirectory(mesh)
 add_subdirectory(material_distribution)
 add_subdirectory(materials)
