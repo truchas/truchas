@@ -2,13 +2,12 @@
 !! T2D_FLOW_INTEGRATOR_TYPE
 !!
 !! This module defines T2D_FLOW_INTEGRATOR, the isothermal incompressible
-!! Navier--Stokes orchestration layer.  It owns material transport, the
-!! standalone time-step policy, and the count of successful steps.  It
-!! delegates flow mechanics and flow-state management to T2D_FLOW_SOLVER.
-!! Momentum transport is an explicit first-order donor-cell contribution
-!! supplied to that common solver.
+!! Navier--Stokes time-integration layer. It selects endpoint times and
+!! delegates each complete flow step to T2D_FLOW_SOLVER. The flow solver owns
+!! material transport and flow mechanics; this type owns only the standalone
+!! time-step policy and target-time progression.
 !!
-!! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
+!! Neil Carlson <neil.n.carlson@gmail.com>, September 2026
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
 
@@ -22,22 +21,14 @@ module t2d_flow_integrator_type
   use material_model_type
   use material_distribution_type
   use t2d_flow_model_type
-  use t2d_flow_bc_type
   use t2d_flow_solver_type
-  use t2d_flow_material_mapping_type
-  use t2d_flow_material_transport_type
   use time_step_sync_type
   implicit none
   private
 
   type, public :: t2d_flow_integrator
     private
-    type(t2d_flow_material_mapping) :: matl_map
-    type(t2d_flow_solver) :: flow
-    type(t2d_flow_material_transport) :: material_transport
-    real(r8), allocatable :: vfrac(:,:)
-    logical :: inertial = .true.
-    integer(int64) :: nstep = 0_int64
+    type(t2d_flow_solver) :: solver
     real(r8) :: tlast, hlast, hnext
     real(r8) :: dt_init, dt_min, dt_max, dt_grow
     logical :: time_stepper_initialized = .false.
@@ -54,18 +45,12 @@ module t2d_flow_integrator_type
     procedure :: get_cell_flow_soln
     procedure :: get_cell_flow_active
     procedure :: get_face_velocity
-    procedure :: step
     procedure :: integrate
     procedure :: last_time
     procedure :: num_steps
     procedure :: initial_time_step
     procedure :: init_temporal_output
     procedure :: set_temporal_output
-    procedure :: advance_momentum
-    procedure :: commit_step
-    procedure :: reject_step
-    procedure :: courant_time_step
-    final :: delete
   end type
 
 contains
@@ -80,153 +65,11 @@ contains
     character(:), allocatable, intent(out) :: errmsg
     logical, optional, intent(in) :: inertial
 
-    integer :: nrealfluid, nfluid, nmat
-    integer, allocatable :: priority(:), phase_ids(:)
-    character(:), allocatable :: algorithm
-    type(parameter_list), pointer :: tracking_params => null(), momentum_params, projection_params
-    real(r8) :: courant_number, tracking_cutoff
-    integer :: tracking_subcycles
-    character(96) :: message
-    logical :: simple_default
-
-    stat = 0
-    if (present(inertial)) this%inertial = inertial
-    if (model%inviscid .and. .not.this%inertial) then
-      stat = 1
-      errmsg = 'non-inertial flow is incompatible with inviscid flow'
-      return
-    end if
-    if (matl_model%nphase_real /= matl_model%nmatl_real) then
-      stat = 1
-      errmsg = 'isothermal flow requires single-phase materials'
-      return
-    end if
-    call this%matl_map%init(matl_model, stat, errmsg)
-    if (stat /= 0) return
-
-    simple_default = .false.
-    if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
-      simple_default = matl_model%is_fluid(1)
-    algorithm = 'geometric'
-    tracking_cutoff = 1.0e-6_r8
-    tracking_subcycles = 4
-    if (simple_default) algorithm = 'simple'
-    if (params%is_sublist('volume-tracking')) then
-      tracking_params => params%sublist('volume-tracking')
-      call tracking_params%get('algorithm', algorithm, default=algorithm, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-        return
-      end if
-      call tracking_params%get('cutoff', tracking_cutoff, default=tracking_cutoff, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-        return
-      end if
-      if (tracking_cutoff <= 0.0_r8 .or. tracking_cutoff >= 1.0_r8) then
-        stat = 1
-        errmsg = 'processing ' // tracking_params%path() // ': "cutoff" must be in (0,1)'
-        return
-      end if
-      call tracking_params%get('subcycles', tracking_subcycles, default=tracking_subcycles, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-        return
-      end if
-      if (tracking_subcycles < 1) then
-        stat = 1
-        errmsg = 'processing ' // tracking_params%path() // ': "subcycles" must be at least one'
-        return
-      end if
-      call this%matl_map%set_priority(tracking_params, stat, errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // tracking_params%path() // ': ' // errmsg
-        return
-      end if
-    end if
-    call params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
-    if (stat /= 0) then
-      errmsg = 'processing ' // params%path() // ': ' // errmsg
-      return
-    end if
-    if (courant_number <= 0.0_r8 .or. courant_number > 1.0_r8) then
-      stat = 1
-      errmsg = 'processing ' // params%path() // ': "courant-number" must be in (0,1]'
-      return
-    end if
-    write(message, '(a,es11.4,a)') 'Using Courant number ', courant_number, '.'
-    call env%simlog%info(trim(message))
-    if (.not.params%is_sublist('projection-solver')) then
-      stat = 1
-      errmsg = 'requires a "projection-solver" sublist'
-      return
-    end if
-    projection_params => params%sublist('projection-solver')
-    call env%simlog%info('Using ' // trim(algorithm) // ' volume tracking.')
-    nrealfluid = this%matl_map%num_real_fluid()
-    nfluid = this%matl_map%num_fluid()
-    nmat = this%matl_map%num_material()
-    allocate(priority(nmat))
-    call this%matl_map%get_priority(priority)
-    allocate(phase_ids(nrealfluid))
-    call this%matl_map%get_real_fluid_phase_ids(phase_ids)
-    call model%init_material(matl_model, phase_ids, stat, errmsg, nfluid=nfluid)
-    if (stat /= 0) return
-    if (model%inviscid) then
-      call this%flow%init(env, model, projection_params=projection_params, courant_number=courant_number, &
-          stat=stat, errmsg=errmsg)
+    if (present(inertial)) then
+      call this%solver%init(env, model, matl_model, params, stat, errmsg, inertial)
     else
-      if (.not.params%is_sublist('momentum-solver')) then
-        stat = 1
-        errmsg = 'viscous flow requires a "momentum-solver" sublist'
-        return
-      end if
-      momentum_params => params%sublist('momentum-solver')
-      call this%flow%init(env, model, momentum_params, projection_params, courant_number, stat, errmsg)
+      call this%solver%init(env, model, matl_model, params, stat, errmsg)
     end if
-    if (stat /= 0) return
-    allocate(this%vfrac(nmat,model%mesh%ncell))
-    this%vfrac = 0.0_r8
-    this%vfrac(1,:) = 1.0_r8
-    call this%material_transport%init(env, model%mesh, nrealfluid, nfluid, nmat, algorithm, priority, tracking_cutoff, &
-        tracking_subcycles)
-    call configure_inflow_material(this, model%bc, stat, errmsg)
-
-  contains
-
-    subroutine configure_inflow_material(this, bc, stat, errmsg)
-      class(t2d_flow_integrator), intent(inout) :: this
-      type(t2d_flow_bc), intent(in) :: bc
-      integer, intent(out) :: stat
-      character(:), allocatable, intent(out) :: errmsg
-
-      integer :: i, slot
-      integer, allocatable :: assigned(:)
-
-      stat = 0
-      if (.not.allocated(bc%inflow_material)) then
-        errmsg = ''
-        return
-      end if
-      allocate(assigned(model%mesh%nface_onP), source=0)
-      do i = 1, size(bc%inflow_material)
-        slot = this%matl_map%slot_index(bc%inflow_material(i)%name)
-        if (slot == 0 .or. slot > this%matl_map%num_fluid()) then
-          stat = 1
-          errmsg = 'invalid flow inflow material: "' // bc%inflow_material(i)%name // '"'
-          return
-        end if
-        if (any(assigned(bc%inflow_material(i)%face) /= 0 .and. &
-            assigned(bc%inflow_material(i)%face) /= slot)) then
-          stat = 1
-          errmsg = 'conflicting flow inflow materials on a boundary face'
-          return
-        end if
-        assigned(bc%inflow_material(i)%face) = slot
-        call this%material_transport%set_inflow_material(slot, bc%inflow_material(i)%face)
-      end do
-      errmsg = ''
-    end subroutine
   end subroutine
 
 
@@ -267,7 +110,7 @@ contains
     class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:)
 
-    call this%flow%set_volume_fractions(vfrac)
+    call this%solver%set_volume_fractions(vfrac)
   end subroutine
 
 
@@ -275,10 +118,7 @@ contains
     class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: vfrac(:,:), temperature(:)
 
-    call this%flow%set_initial_material_state(vfrac, temperature)
-    ASSERT(size(vfrac,1) == size(this%vfrac,1))
-    ASSERT(size(vfrac,2) == size(this%vfrac,2))
-    this%vfrac = vfrac
+    call this%solver%set_initial_material_state(vfrac, temperature)
   end subroutine
 
 
@@ -287,18 +127,15 @@ contains
     type(material_distribution), intent(in) :: matl_dist
     real(r8), allocatable, intent(out) :: vfrac(:,:)
 
-    allocate(vfrac(size(this%vfrac,1),size(this%vfrac,2)))
-    call this%matl_map%get_reduced_volume_fractions(matl_dist, vfrac)
+    call this%solver%get_reduced_volume_fractions(matl_dist, vfrac)
   end subroutine
 
 
-  !! Update the simulation-owned material distribution from the current flow
-  !! distribution before it is used for output or by another physics model.
   subroutine update_material_distribution(this, matl_dist)
     class(t2d_flow_integrator), intent(in) :: this
     type(material_distribution), intent(inout) :: matl_dist
 
-    call this%matl_map%put_reduced_volume_fractions(this%vfrac, matl_dist)
+    call this%solver%update_material_distribution(matl_dist)
   end subroutine
 
 
@@ -306,113 +143,49 @@ contains
     class(t2d_flow_integrator), intent(inout) :: this
     real(r8), intent(in) :: temperature(:)
 
-    call this%flow%set_buoyancy_temperature(temperature)
+    call this%solver%set_buoyancy_temperature(temperature)
   end subroutine
 
 
-  subroutine delete(this)
-    type(t2d_flow_integrator), intent(inout) :: this
-  end subroutine
-
-
-  !! Set STATE from an input velocity. The common initial-condition solver
-  !! projects the velocity and computes an initial pressure with its temporary
-  !! Stokes step, as mainline does when it omits initial momentum transport.
   subroutine set_initial_state(this, env, time, dt, velocity, stat)
     class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     real(r8), intent(in) :: time, dt, velocity(:,:)
     integer, intent(out) :: stat
 
-    call this%flow%set_initial_state(env, time, dt, velocity, stat)
+    ASSERT(this%time_stepper_initialized)
+    call this%solver%set_initial_state(env, time, dt, velocity, stat)
     if (stat /= 0) return
-    this%nstep = 0_int64
-    if (this%time_stepper_initialized) then
-      this%tlast = time
-      this%hnext = min(this%dt_init, this%courant_time_step())
-      this%hlast = this%hnext
-    end if
+    this%tlast = time
+    this%hnext = min(this%dt_init, this%solver%courant_time_step())
+    this%hlast = this%hnext
   end subroutine
 
 
-  !! Return no-copy views of the current cell-centered pressure and velocity.
-  !! The current state is pending after a successful ADVANCE_MOMENTUM call;
-  !! callers must reacquire these views after COMMIT_STEP or REJECT_STEP.
   subroutine get_cell_flow_soln(this, pressure, velocity)
     class(t2d_flow_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
 
-    call this%flow%get_cell_flow_soln(pressure, velocity)
+    call this%solver%get_cell_flow_soln(pressure, velocity)
   end subroutine
 
 
-  !! Return a no-copy view of the full-local flow-equation mask.
   subroutine get_cell_flow_active(this, active)
     class(t2d_flow_integrator), target, intent(in) :: this
     logical, pointer, intent(out) :: active(:)
 
-    call this%flow%get_cell_flow_active(active)
+    call this%solver%get_cell_flow_active(active)
   end subroutine
 
 
-  !! Return a no-copy view of the current face-normal velocity.  The current
-  !! state is pending after a successful ADVANCE_MOMENTUM call; callers must
-  !! reacquire this view after COMMIT_STEP or REJECT_STEP.
   subroutine get_face_velocity(this, velocity)
     class(t2d_flow_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: velocity(:)
 
-    call this%flow%get_face_velocity(velocity)
+    call this%solver%get_face_velocity(velocity)
   end subroutine
 
 
-  !! Advance STATE from T_N to T_NP1. The time step is derived from the two
-  !! endpoint times so callers retain exact target times. This is the
-  !! isothermal wrapper: it first obtains material transport from the old face
-  !! velocity and then advances momentum and pressure.
-  subroutine step(this, env, t_n, t_np1, stat, errmsg, step_cause)
-    class(t2d_flow_integrator), intent(inout) :: this
-    type(simulation_environment), intent(inout) :: env
-    real(r8), intent(in) :: t_n, t_np1
-    integer, intent(out) :: stat
-    character(:), allocatable, optional, intent(out) :: errmsg
-    character(*), optional, intent(in) :: step_cause
-
-    real(r8), pointer :: vfrac_trial(:,:), face_velocity(:)
-    character(256) :: line
-    character(8) :: cause
-
-    cause = 'explicit'
-    if (present(step_cause)) cause = step_cause
-    write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
-        ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
-    call env%simlog%begin_section(trim(line))
-    call env%timer%start('flow/material-transport')
-    call this%flow%get_face_velocity(face_velocity)
-    call this%material_transport%advance(env, t_n, t_np1, face_velocity, this%vfrac)
-    call this%material_transport%get_trial_volume_fractions(vfrac_trial)
-    call env%timer%stop('flow/material-transport')
-    call this%flow%set_volume_fractions(vfrac_trial)
-    if (this%inertial) then
-      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, &
-          this%material_transport%flux_volumes(:this%matl_map%num_real_fluid(),:))
-    else
-      call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg)
-    end if
-    if (stat /= 0) then
-      call this%flow%reject_step()
-      call this%flow%set_volume_fractions(this%vfrac)
-      call env%simlog%end_section('step-end status=failed')
-      return
-    end if
-    this%vfrac = vfrac_trial
-    call this%commit_step()
-    call env%simlog%end_section('step-end status=accepted')
-  end subroutine
-
-
-  !! Integrate the flow state from its current time to TOUT.  The endpoint
-  !! time is primary; each step derives its size from the two endpoint times.
   subroutine integrate(this, env, tout, stat, errmsg)
     use signal_handler, only: read_signal, SIGURG
 
@@ -424,6 +197,7 @@ contains
 
     real(r8) :: t_n, t_np1, hproposed
     logical :: sig_rcvd
+    character(256) :: line
     character(8) :: cause
 
     stat = 0
@@ -440,14 +214,18 @@ contains
         errmsg = 'next time step is too small'
         return
       end if
-      call this%step(env, t_n, t_np1, stat, errmsg, step_cause=cause)
+      write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%solver%num_steps() + 1_int64, &
+          ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
+      call env%simlog%begin_section(trim(line))
+      call this%solver%step(env, t_n, t_np1, stat, errmsg)
       if (stat /= 0) then
         if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
+        call env%simlog%end_section('step-end status=failed')
         return
       end if
+      call env%simlog%end_section('step-end status=accepted')
       this%hlast = t_np1 - t_n
-      this%hnext = min(this%dt_grow*this%hlast, this%dt_max, &
-          this%courant_time_step())
+      this%hnext = min(this%dt_grow*this%hlast, this%dt_max, this%solver%courant_time_step())
       t_n = t_np1
       this%tlast = t_n
       call read_signal(SIGURG, sig_rcvd)
@@ -466,10 +244,10 @@ contains
 
     real(r8) :: h, hlimit
 
-    if (this%nstep == 0_int64) then
+    if (this%solver%num_steps() == 0_int64) then
       h = this%dt_init
       cause = 'init'
-      hlimit = this%courant_time_step()
+      hlimit = this%solver%courant_time_step()
       if (hlimit < h) then
         h = hlimit
         cause = 'cfl'
@@ -481,7 +259,7 @@ contains
         h = this%dt_max
         cause = 'max'
       end if
-      hlimit = this%courant_time_step()
+      hlimit = this%solver%courant_time_step()
       if (hlimit < h) cause = 'cfl'
     end if
   end subroutine
@@ -498,7 +276,7 @@ contains
   integer(int64) function num_steps(this)
     class(t2d_flow_integrator), intent(in) :: this
 
-    num_steps = this%nstep
+    num_steps = this%solver%num_steps()
   end function
 
 
@@ -511,66 +289,19 @@ contains
   end function
 
 
-  !! Advance momentum and pressure from T_N to T_NP1 using material-resolved
-  !! flux volumes already constructed for the pending step. This separate
-  !! operation lets a coupled solver advect material and thermal enthalpy
-  !! before it updates the flow state.
-  subroutine advance_momentum(this, env, t_n, t_np1, flux_volumes, stat, errmsg)
-    class(t2d_flow_integrator), intent(inout) :: this
-    type(simulation_environment), intent(inout) :: env
-    real(r8), intent(in) :: t_n, t_np1
-    real(r8), intent(in) :: flux_volumes(:,:)
-    integer, intent(out) :: stat
-    character(:), allocatable, optional, intent(out) :: errmsg
-
-    call this%flow%advance_momentum(env, t_n, t_np1, stat, errmsg, flux_volumes)
-  end subroutine
-
-  !! Commit the pending flow state and its current material properties.
-  subroutine commit_step(this)
-    class(t2d_flow_integrator), intent(inout) :: this
-
-    call this%flow%commit_step()
-    this%nstep = this%nstep + 1_int64
-  end subroutine
-
-
-  !! Declare the temporal scalar fields published by this solver.
-  !! These fields are updated at each requested solution output and written
-  !! by the simulation's output writer.
   subroutine init_temporal_output(this, data)
     class(t2d_flow_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
-    call data%set('NStep', this%nstep)
+    call this%solver%init_temporal_output(data)
   end subroutine
 
 
-  !! Set the current values of the temporal scalar fields published by this
-  !! solver.
   subroutine set_temporal_output(this, data)
     class(t2d_flow_integrator), intent(in) :: this
     type(parameter_list), intent(inout) :: data
 
-    call data%set('NStep', this%nstep)
+    call this%solver%set_temporal_output(data)
   end subroutine
-
-
-  !! Reject the pending flow state, restoring the last accepted state.
-  !! Material volume fractions are restored by the owning caller.
-  subroutine reject_step(this)
-    class(t2d_flow_integrator), intent(inout) :: this
-
-    call this%flow%reject_step()
-  end subroutine
-
-  !! Return the maximum step size requested by the flow mechanics for the old
-  !! face-normal velocity.
-  function courant_time_step(this) result(dt)
-    class(t2d_flow_integrator), intent(in) :: this
-    real(r8) :: dt
-
-    dt = this%flow%courant_time_step()
-  end function
 
 end module t2d_flow_integrator_type

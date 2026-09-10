@@ -1,4 +1,5 @@
 add_library(flow_sim2d
+  t2d_flow_solver_type.F90
   t2d_flow_integrator_type.F90
   t2d_flow_sim_type.F90
   t2d_flow_vtkhdf_writer_type.F90)

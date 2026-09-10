@@ -1,4 +1,4 @@
-program test_t2d_flow_solver
+program test_t2d_flow_mechanics
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -11,7 +11,7 @@ program test_t2d_flow_solver
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
   use t2d_flow_model_type
-  use t2d_flow_solver_type
+  use t2d_flow_mechanics_type
   implicit none
 
   integer :: status, stat
@@ -27,7 +27,7 @@ program test_t2d_flow_solver
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_t2d_flow_solver.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_mechanics.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -43,7 +43,7 @@ contains
   subroutine test_step
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
-    type(t2d_flow_solver), target :: solver
+    type(t2d_flow_mechanics), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:)
@@ -68,9 +68,11 @@ contains
 
     call solver%get_cell_flow_soln(pressure, velocity_state)
     velocity_state = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell)
-    call solver%step(env, 0.0_r8, 1.0_r8, stat)
-    call require(stat == 0, 'flow solver step did not converge')
+    call solver%advance_momentum(env, 0.0_r8, 1.0_r8, stat)
+    call require(stat == 0, 'flow mechanics update did not converge')
     allocate(flux(mesh%ncell_onP))
+    if (stat /= 0) return
+    call solver%commit_step()
     call solver%get_face_velocity(velocity_face)
     call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'flow solver step did not make face velocity solenoidal')
@@ -80,7 +82,7 @@ contains
   subroutine test_incompatible_flux
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
-    type(t2d_flow_solver), target :: solver
+    type(t2d_flow_mechanics), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     character(:), allocatable :: errmsg
@@ -104,7 +106,7 @@ contains
     call projection_params%set('max-ds-iter', 100)
     call projection_params%set('max-amg-iter', 100)
     call solver%init(env, model, momentum_params, projection_params)
-    call solver%step(env, 0.0_r8, 1.0_r8, stat, errmsg)
+    call solver%advance_momentum(env, 0.0_r8, 1.0_r8, stat, errmsg)
     call require(stat /= 0, 'incompatible prescribed flux was not rejected')
   end subroutine
 
@@ -115,7 +117,7 @@ contains
   subroutine test_pressure_drive
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
-    type(t2d_flow_solver), target :: solver
+    type(t2d_flow_mechanics), target :: solver
     type(parameter_list), target :: bc_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:), expected_velocity(:)
@@ -149,9 +151,10 @@ contains
 
     time = 0.0_r8
     do n = 1, 50
-      call solver%step(env, time, real(n, r8), stat)
-      call require(stat == 0, 'pressure-driven flow step did not converge')
+      call solver%advance_momentum(env, time, real(n, r8), stat)
+      call require(stat == 0, 'pressure-driven flow mechanics update did not converge')
       if (stat /= 0) return
+      call solver%commit_step()
       time = real(n, r8)
     end do
     allocate(flux(mesh%ncell_onP))
@@ -181,4 +184,4 @@ contains
     end if
   end subroutine
 
-end program test_t2d_flow_solver
+end program test_t2d_flow_mechanics

@@ -1,4 +1,4 @@
-program test_t2d_flow_integrator
+program test_t2d_flow_solver
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -15,7 +15,7 @@ program test_t2d_flow_integrator
   use material_model_type
   use material_factory, only: load_material_database
   use t2d_flow_model_type
-  use t2d_flow_integrator_type
+  use t2d_flow_solver_type
   implicit none
 
   integer :: status, stat
@@ -31,7 +31,7 @@ program test_t2d_flow_integrator
   env%comm = MPI_COMM_WORLD
   call MPI_Comm_rank(env%comm, env%rank)
   call MPI_Comm_size(env%comm, env%nproc)
-  call env%simlog%init(env%comm, 'test_t2d_flow_integrator.log', stat, errmsg, terminal_output=.false.)
+  call env%simlog%init(env%comm, 'test_t2d_flow_solver.log', stat, errmsg, terminal_output=.false.)
   if (stat /= 0) call TLS_fatal('initializing simulation log: ' // errmsg)
 
   status = 0
@@ -45,13 +45,12 @@ contains
   subroutine test_step
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
-    type(t2d_flow_integrator), target :: solver
+    type(t2d_flow_solver), target :: solver
     type(material_database) :: database
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params, plist, momentum_params, projection_params, tracking_params
     type(parameter_list), target :: bc_params, solver_params
-    real(r8), allocatable :: velocity(:,:), flux(:), flux_volumes(:,:), pressure_save(:), velocity_save(:,:), &
-        face_velocity_save(:), pressure_trial(:), velocity_trial(:,:), face_velocity_trial(:)
+    real(r8), allocatable :: velocity(:,:), flux(:), vfrac(:,:), temperature(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
     character(:), allocatable :: errmsg
     integer :: stat
@@ -82,54 +81,14 @@ contains
     call solver%init(env, model, matl_model, solver_params, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes solver initialization failed')
     if (stat /= 0) return
-    allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP), flux_volumes(1,size(mesh%cface)))
-    flux_volumes = 0.0_r8
+    allocate(velocity(2,mesh%ncell_onP), flux(mesh%ncell_onP), vfrac(1,mesh%ncell), temperature(mesh%ncell_onP))
+    vfrac = 1.0_r8
+    temperature = 0.0_r8
     velocity = spread([1.0_r8, -0.5_r8], dim=2, ncopies=mesh%ncell_onP)
+    call solver%set_initial_material_state(vfrac, temperature)
     call solver%set_initial_state(env, 0.0_r8, 0.01_r8, velocity, stat)
     call require(stat == 0, 'Navier--Stokes initial-condition solve did not converge')
     if (stat /= 0) return
-    call solver%get_cell_flow_soln(pressure, velocity_state)
-    call solver%get_face_velocity(velocity_face)
-    allocate(pressure_save(size(pressure)), velocity_save(size(velocity_state,1),size(velocity_state,2)), &
-        face_velocity_save(size(velocity_face)), pressure_trial(size(pressure)), &
-        velocity_trial(size(velocity_state,1),size(velocity_state,2)), face_velocity_trial(size(velocity_face)))
-    pressure_save = pressure
-    velocity_save = velocity_state
-    face_velocity_save = velocity_face
-    call solver%advance_momentum(env, 0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
-    call require(stat == 0, 'Navier--Stokes momentum update did not converge')
-    if (stat /= 0) return
-    call solver%get_cell_flow_soln(pressure, velocity_state)
-    call solver%get_face_velocity(velocity_face)
-    pressure_trial = pressure
-    velocity_trial = velocity_state
-    face_velocity_trial = velocity_face
-    call solver%reject_step()
-    call solver%get_cell_flow_soln(pressure, velocity_state)
-    call solver%get_face_velocity(velocity_face)
-    call require(maxval(abs(pressure - pressure_save)) == 0.0_r8, &
-        'flow pressure was not restored by reject_step')
-    call require(maxval(abs(velocity_state - velocity_save)) == 0.0_r8, &
-        'cell velocity was not restored by reject_step')
-    call require(maxval(abs(velocity_face - face_velocity_save)) == 0.0_r8, &
-        'face velocity was not restored by reject_step')
-    call solver%advance_momentum(env, 0.0_r8, 0.01_r8, flux_volumes, stat, errmsg)
-    call require(stat == 0, 'Navier--Stokes second momentum update did not converge')
-    if (stat /= 0) return
-    call solver%get_cell_flow_soln(pressure, velocity_state)
-    call solver%get_face_velocity(velocity_face)
-    pressure_trial = pressure
-    velocity_trial = velocity_state
-    face_velocity_trial = velocity_face
-    call solver%commit_step()
-    call solver%get_cell_flow_soln(pressure, velocity_state)
-    call solver%get_face_velocity(velocity_face)
-    call require(maxval(abs(pressure - pressure_trial)) == 0.0_r8, &
-        'flow pressure changed when committing the pending state')
-    call require(maxval(abs(velocity_state - velocity_trial)) == 0.0_r8, &
-        'cell velocity changed when committing the pending state')
-    call require(maxval(abs(velocity_face - face_velocity_trial)) == 0.0_r8, &
-        'face velocity changed when committing the pending state')
     call solver%step(env, 0.0_r8, 0.01_r8, stat, errmsg)
     call require(stat == 0, 'Navier--Stokes solver step did not converge')
     if (stat /= 0) return
@@ -160,4 +119,4 @@ contains
     end if
   end subroutine
 
-end program test_t2d_flow_integrator
+end program test_t2d_flow_solver

@@ -13,7 +13,7 @@ set(FLOW2D_SOURCE_FILES
     t2d_flow_material_props_type.F90
     t2d_flow_model_type.F90
     t2d_flow_ic_solver_type.F90
-    t2d_flow_solver_type.F90)
+    t2d_flow_mechanics_type.F90)
 
 add_library(flow2d ${FLOW2D_SOURCE_FILES})
 set_target_properties(flow2d PROPERTIES

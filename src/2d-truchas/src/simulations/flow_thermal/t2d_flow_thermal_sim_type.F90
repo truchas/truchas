@@ -369,6 +369,11 @@ contains
       end if
       call get_output_times(params, this%t_init, this%tout, stat, errmsg)
       if (stat /= 0) return
+      call this%solver%init_time_stepper(solver_params, stat, errmsg)
+      if (stat /= 0) then
+        errmsg = 'processing ' // solver_params%path() // ': ' // errmsg
+        return
+      end if
       write(message,'(a,es11.4)') 'Initial time: ', this%t_init
       call env%simlog%info(trim(message))
       write(message,'(a,es11.4)') 'Initial time step: ', this%solver%initial_time_step()

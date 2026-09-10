@@ -119,6 +119,8 @@ contains
   call solver%init(env, flow_model, ht_model, matl_model, matl_dist, &
         solver_params, stat, errmsg)
     if (stat /= 0) call fail('initializing coupled solver: ' // errmsg)
+    call solver%init_time_stepper(solver_params, stat, errmsg)
+    if (stat /= 0) call fail('initializing coupled time stepper: ' // errmsg)
 
     call mesh%init_cell_centroid
     allocate(velocity(2,mesh%ncell_onP), temp(mesh%ncell_onP), temp_result(mesh%ncell_onP), &

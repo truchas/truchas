@@ -3,13 +3,13 @@ include(CTest)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_python_package(vtk 9.0)
 
-add_executable(test_t2d_flow_integrator test_t2d_flow_integrator.F90)
-target_link_libraries(test_t2d_flow_integrator flow_sim2d truchas ${Truchas_LINK_LIBS})
+add_executable(test_t2d_flow_solver test_t2d_flow_solver.F90)
+target_link_libraries(test_t2d_flow_solver flow_sim2d truchas ${Truchas_LINK_LIBS})
 add_executable(test_t2d_flow_vtkhdf_nan test_t2d_flow_vtkhdf_nan.F90)
 target_link_libraries(test_t2d_flow_vtkhdf_nan flow_sim2d truchas ${Truchas_LINK_LIBS})
 
 foreach(nproc IN ITEMS 1 4)
-  foreach(target IN ITEMS test_t2d_flow_integrator)
+  foreach(target IN ITEMS test_t2d_flow_solver)
     set(name "${target}-${nproc}p")
     add_test(NAME ${name}
       COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${nproc}
