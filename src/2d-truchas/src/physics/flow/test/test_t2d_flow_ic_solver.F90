@@ -7,9 +7,13 @@ program test_t2d_flow_ic_solver
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
+  use parameter_list_json
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
+  use material_database_type
+  use material_model_type
+  use material_factory, only: load_material_database
   use t2d_flow_model_type
   use t2d_flow_mechanics_type
   implicit none
@@ -43,7 +47,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_mechanics), target :: solver
-    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), target :: model_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
@@ -51,11 +55,12 @@ contains
     integer :: stat
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
-    plist => bc_params%sublist('flow')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('flow')
     call plist%set('type', 'velocity')
     call plist%set('face-set-ids', [1,2,3,4])
     call plist%set('velocity', [1.0_r8, 0.0_r8])
-    call model%init(env, mesh, bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call init_uniform_liquid_model(mesh, model, model_params, stat, errmsg)
     call require(stat == 0, 'flow model initialization failed')
     if (stat /= 0) return
     call set_solver_params(momentum_params)
@@ -79,7 +84,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_mechanics), target :: solver
-    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), target :: model_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: velocity(:,:), flux(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
@@ -88,10 +93,11 @@ contains
     integer :: stat, f
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
-    plist => bc_params%sublist('wall')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1,2,3,4])
-    call model%init(env, mesh, bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call init_uniform_liquid_model(mesh, model, model_params, stat, errmsg)
     call require(stat == 0, 'incompatible-velocity model initialization failed')
     if (stat /= 0) return
     call set_solver_params(momentum_params)
@@ -115,6 +121,38 @@ contains
         'repaired initial velocity does not satisfy no-slip boundaries')
     call require(maxval(abs(velocity_state(:,1:mesh%ncell_onP) - velocity(:,1:mesh%ncell_onP))) > 1.0e-6_r8, &
         'incompatible initial velocity was not repaired')
+  end subroutine
+
+
+  subroutine init_uniform_liquid_model(mesh, model, params, stat, errmsg)
+    type(t2d_unstr_mesh), pointer, intent(inout) :: mesh
+    type(t2d_flow_model), intent(out) :: model
+    type(parameter_list), target, intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(material_database) :: database
+    type(material_model) :: matl_model
+    type(parameter_list), pointer :: matl_params
+    real(r8) :: vfrac(1,mesh%ncell), temperature(mesh%ncell_onP)
+
+    call model%init(env, mesh, params, stat, errmsg)
+    if (stat /= 0) return
+    call parameter_list_from_json_string( &
+        '{"liquid":{"properties":{"fluid":true,"density":1.0,"viscosity":1.0}}}', matl_params, errmsg)
+    if (.not.associated(matl_params)) then
+      stat = 1
+      return
+    end if
+    call load_material_database(database, matl_params, stat, errmsg)
+    if (stat /= 0) return
+    call matl_model%init(['liquid'], database, stat, errmsg)
+    if (stat /= 0) return
+    call model%init_material(matl_model, [1], stat, errmsg)
+    if (stat /= 0) return
+    vfrac = 1.0_r8
+    temperature = 0.0_r8
+    call model%set_initial_material_state(vfrac, temperature)
   end subroutine
 
 

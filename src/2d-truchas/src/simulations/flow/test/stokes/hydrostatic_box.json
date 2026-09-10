@@ -7,7 +7,7 @@
         "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [8]}
     },
     "flow-model": {
-        "inertial": false,
+        "unsteady-stokes": true,
         "body-acceleration": [0.0, -1.0],
         "bc": {
             "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3, 4]}

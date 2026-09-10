@@ -4,7 +4,7 @@
 !! This module defines T2D_FLOW_SOLVER, the isothermal incompressible
 !! Navier--Stokes step solver. It advances material transport and flow
 !! mechanics as one transaction, retaining the material-resolved donor-cell
-!! fluxes needed by the inertial momentum update. Time-step selection and
+!! fluxes needed by the advective momentum update. Time-step selection and
 !! target-time integration are provided by T2D_FLOW_INTEGRATOR.
 !!
 !! Neil Carlson <neil.n.carlson@gmail.com>, August 2026
@@ -31,10 +31,10 @@ module t2d_flow_solver_type
   type, public :: t2d_flow_solver
     private
     type(t2d_flow_material_mapping) :: matl_map
+    type(t2d_flow_model), pointer :: model => null()  ! unowned reference
     type(t2d_flow_mechanics) :: mechanics
     type(t2d_flow_material_transport) :: material_transport
     real(r8), allocatable :: vfrac(:,:)
-    logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
   contains
     procedure :: init
@@ -56,7 +56,7 @@ module t2d_flow_solver_type
 
 contains
 
-  subroutine init(this, env, model, matl_model, params, stat, errmsg, inertial)
+  subroutine init(this, env, model, matl_model, params, stat, errmsg)
     class(t2d_flow_solver), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_flow_model), target, intent(inout) :: model
@@ -64,7 +64,6 @@ contains
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    logical, optional, intent(in) :: inertial
 
     integer :: nrealfluid, nfluid, nmat
     integer, allocatable :: priority(:), phase_ids(:)
@@ -76,12 +75,7 @@ contains
     logical :: simple_default
 
     stat = 0
-    if (present(inertial)) this%inertial = inertial
-    if (model%inviscid .and. .not.this%inertial) then
-      stat = 1
-      errmsg = 'non-inertial flow is incompatible with inviscid flow'
-      return
-    end if
+    this%model => model
     if (matl_model%nphase_real /= matl_model%nmatl_real) then
       stat = 1
       errmsg = 'isothermal flow requires single-phase materials'
@@ -326,7 +320,7 @@ contains
     call this%material_transport%get_trial_volume_fractions(vfrac_trial)
     call env%timer%stop('flow/material-transport')
     call this%mechanics%set_volume_fractions(vfrac_trial)
-    if (this%inertial) then
+    if (.not.this%model%unsteady_stokes) then
       call this%mechanics%advance_momentum(env, t_n, t_np1, stat, errmsg, &
           this%material_transport%flux_volumes(:this%matl_map%num_real_fluid(),:))
     else

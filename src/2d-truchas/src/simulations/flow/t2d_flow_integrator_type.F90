@@ -55,7 +55,7 @@ module t2d_flow_integrator_type
 
 contains
 
-  subroutine init(this, env, model, matl_model, params, stat, errmsg, inertial)
+  subroutine init(this, env, model, matl_model, params, stat, errmsg)
     class(t2d_flow_integrator), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_flow_model), target, intent(inout) :: model
@@ -63,13 +63,7 @@ contains
     type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    logical, optional, intent(in) :: inertial
-
-    if (present(inertial)) then
-      call this%solver%init(env, model, matl_model, params, stat, errmsg, inertial)
-    else
-      call this%solver%init(env, model, matl_model, params, stat, errmsg)
-    end if
+    call this%solver%init(env, model, matl_model, params, stat, errmsg)
   end subroutine
 
 

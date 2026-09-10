@@ -77,7 +77,6 @@ contains
     type(parameter_list), pointer :: time_stepping_params
     character(:), allocatable :: matl_name(:)
     integer :: i, rlev
-    logical :: inviscid, inertial
 
     stat = 0
 
@@ -170,7 +169,7 @@ contains
     solver_params => params%sublist('flow-solver')
     call env%simlog%begin_section('Constructing flow solver.')
     allocate(this%solver)
-    call this%solver%init(env, this%model, this%matl_model, solver_params, stat, errmsg, inertial=inertial)
+    call this%solver%init(env, this%model, this%matl_model, solver_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Flow solver construction failed.')
       return
@@ -257,74 +256,8 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
-      type(parameter_list), pointer :: bc_params
-      real(r8), allocatable :: body_acceleration(:)
-      real(r8) :: fluid_fraction_cutoff, min_face_fraction
-      character(96) :: message
-
-      stat = 0
-      call params%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      call params%get('inertial', inertial, default=.true., stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      if (inviscid .and. .not.inertial) then
-        stat = 1
-        errmsg = 'inviscid flow is incompatible with non-inertial flow'
-        return
-      end if
-      call params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, default=[0.0_r8, 0.0_r8])
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      call params%get('fluid-fraction-cutoff', fluid_fraction_cutoff, default=0.01_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      call params%get('min-face-fraction', min_face_fraction, default=0.001_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      if (.not.params%is_sublist('bc')) then
-        stat = 1
-        errmsg = 'missing "bc" sublist parameter in ' // params%path()
-        return
-      end if
-      bc_params => params%sublist('bc')
-
       allocate(this%model)
-      if (inviscid) then
-        call env%simlog%info('Using inviscid flow.')
-      else
-        call env%simlog%info('Using viscous flow.')
-      end if
-      if (inertial) then
-        call env%simlog%info('Using inertial momentum.')
-      else
-        call env%simlog%info('Using non-inertial momentum (Stokes).')
-      end if
-      if (any(body_acceleration /= 0.0_r8)) then
-        write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
-            body_acceleration(2), '].'
-        call env%simlog%info(trim(message))
-      end if
-
-      call this%model%init_core(env, this%mesh, bc_params, stat, errmsg, body_acceleration=body_acceleration, &
-          inviscid=inviscid)
-      if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
-      if (stat /= 0) return
-      call this%model%set_fluid_fraction_cutoff(fluid_fraction_cutoff, stat, errmsg)
-      if (stat /= 0) errmsg = 'processing ' // params%path() // ': ' // errmsg
-      if (stat /= 0) return
-      call this%model%set_min_face_fraction(min_face_fraction, stat, errmsg)
+      call this%model%init(env, this%mesh, params, stat, errmsg)
       if (stat /= 0) errmsg = 'processing ' // params%path() // ': ' // errmsg
 
     end subroutine construct_flow_model
