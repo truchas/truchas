@@ -83,7 +83,6 @@ contains
     character(:), allocatable :: matl_name(:)
     real(r8), allocatable :: temp(:), velocity(:,:)
     integer :: i, rlev
-    logical :: inviscid
 
     stat = 0
 
@@ -299,44 +298,9 @@ contains
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
-      type(parameter_list), pointer :: bc_params
-      real(r8), allocatable :: body_acceleration(:)
-      character(96) :: message
-
-      stat = 0
-      call params%get('inviscid', inviscid, default=.false., stat=stat, errmsg=errmsg)
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      call params%get('body-acceleration', body_acceleration, stat=stat, errmsg=errmsg, &
-          default=[0.0_r8, 0.0_r8])
-      if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
-        return
-      end if
-      if (.not.params%is_sublist('bc')) then
-        stat = 1
-        errmsg = 'missing "bc" sublist parameter in ' // params%path()
-        return
-      end if
-      bc_params => params%sublist('bc')
-
       allocate(this%flow_model)
-      if (inviscid) then
-        call env%simlog%info('Using inviscid flow.')
-      else
-        call env%simlog%info('Using viscous flow.')
-      end if
-      if (any(body_acceleration /= 0.0_r8)) then
-        write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', body_acceleration(1), ', ', &
-            body_acceleration(2), '].'
-        call env%simlog%info(trim(message))
-      end if
-
-      call this%flow_model%init_core(env, this%mesh, bc_params, stat, errmsg, &
-          body_acceleration=body_acceleration, inviscid=inviscid)
-      if (stat /= 0) errmsg = 'processing ' // bc_params%path() // ': ' // errmsg
+      call this%flow_model%init(env, this%mesh, params, stat, errmsg)
+      if (stat /= 0) errmsg = 'processing ' // params%path() // ': ' // errmsg
 
     end subroutine construct_flow_model
 

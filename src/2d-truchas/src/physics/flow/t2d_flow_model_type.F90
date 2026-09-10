@@ -21,7 +21,6 @@ module t2d_flow_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use parameter_list_type
-  use scalar_func_class
   use t2d_unstr_mesh_type
   use material_model_type
   use t2d_flow_operators_type
@@ -43,13 +42,12 @@ module t2d_flow_model_type
     type(t2d_flow_projection), pointer, public :: projection => null()
     type(t2d_flow_material_props), public :: matl_props
     logical, public :: inviscid = .false.
+    logical, public :: unsteady_stokes = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
   contains
     procedure :: init
     procedure :: init_core
     procedure :: init_material
-    procedure :: set_fluid_fraction_cutoff
-    procedure :: set_min_face_fraction
     procedure :: set_volume_fractions
     procedure :: set_initial_material_state
     procedure :: set_pre_solidification_state
@@ -61,52 +59,77 @@ module t2d_flow_model_type
 
 contains
 
-  subroutine init(this, env, mesh, bc_params, density, viscosity, stat, errmsg, body_acceleration, &
-      viscosity_func, density_delta_func, inviscid)
+  !! Initialize the mesh-associated model core from its user-facing parameter
+  !! list. Material properties are initialized separately by INIT_MATERIAL.
+  subroutine init(this, env, mesh, params, stat, errmsg)
     class(t2d_flow_model), intent(out) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
-    type(parameter_list), target, intent(inout) :: bc_params
-    real(r8), intent(in) :: density(:)
-    real(r8), optional, intent(in) :: viscosity
+    type(parameter_list), target, intent(inout) :: params
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
-    real(r8), optional, intent(in) :: body_acceleration(:)
-    class(scalar_func), allocatable, optional, intent(inout) :: viscosity_func, density_delta_func
-    logical, optional, intent(in) :: inviscid
+
+    type(parameter_list), pointer :: bc_params
+    real(r8), allocatable :: body_acceleration(:)
+    real(r8) :: fluid_fraction_cutoff, min_face_fraction
+    character(96) :: message
+
     stat = 0
-    if (present(inviscid)) this%inviscid = inviscid
-    if (present(body_acceleration)) then
-      if (size(body_acceleration) /= 2) then
-        stat = 1
-        errmsg = 'body acceleration must have two components'
-        return
-      end if
-      this%body_acceleration = body_acceleration
+    call params%get('inviscid', this%inviscid, default=.false., stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    call params%get('unsteady-stokes', this%unsteady_stokes, default=.false., stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (this%inviscid .and. this%unsteady_stokes) then
+      stat = 1
+      errmsg = 'unsteady Stokes flow is incompatible with inviscid flow'
+      return
     end if
-    if (present(viscosity_func)) then
-      if (present(density_delta_func)) then
-        call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg, viscosity_func=viscosity_func, &
-            density_delta_func=density_delta_func)
-      else
-        call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg, viscosity_func=viscosity_func)
-      end if
-    else if (present(viscosity)) then
-      if (present(density_delta_func)) then
-        call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg, viscosity=viscosity, &
-            density_delta_func=density_delta_func)
-      else
-        call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg, viscosity=viscosity)
-      end if
-    else if (present(density_delta_func)) then
-      call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg, &
-          density_delta_func=density_delta_func)
+    call params%get('body-acceleration', body_acceleration, default=[0.0_r8, 0.0_r8], stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (size(body_acceleration) /= 2) then
+      stat = 1
+      errmsg = 'body acceleration must have two components'
+      return
+    end if
+    call params%get('fluid-fraction-cutoff', fluid_fraction_cutoff, default=0.01_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (fluid_fraction_cutoff <= 0.0_r8 .or. fluid_fraction_cutoff >= 1.0_r8) then
+      stat = 1
+      errmsg = '"fluid-fraction-cutoff" must be in (0,1)'
+      return
+    end if
+    call params%get('min-face-fraction', min_face_fraction, default=0.001_r8, stat=stat, errmsg=errmsg)
+    if (stat /= 0) return
+    if (min_face_fraction <= 0.0_r8 .or. min_face_fraction > 1.0_r8) then
+      stat = 1
+      errmsg = '"min-face-fraction" must be in (0,1]'
+      return
+    end if
+    if (.not.params%is_sublist('bc')) then
+      stat = 1
+      errmsg = 'missing "bc" sublist parameter in ' // params%path()
+      return
+    end if
+    bc_params => params%sublist('bc')
+
+    this%body_acceleration = body_acceleration
+    this%matl_props%cutoff = fluid_fraction_cutoff
+    this%matl_props%min_face_fraction = min_face_fraction
+    if (this%inviscid) then
+      call env%simlog%info('Using inviscid flow.')
     else
-      call this%matl_props%init(mesh, density, this%inviscid, stat, errmsg)
+      call env%simlog%info('Using viscous flow.')
     end if
-    if (stat /= 0) return
-    call check_initial_properties(this, mesh, stat, errmsg)
-    if (stat /= 0) return
+    if (this%unsteady_stokes) then
+      call env%simlog%info('Using unsteady Stokes momentum.')
+    else
+      call env%simlog%info('Using Navier--Stokes momentum.')
+    end if
+    if (any(this%body_acceleration /= 0.0_r8)) then
+      write(message, '(a,es11.4,a,es11.4,a)') 'Using body acceleration [', this%body_acceleration(1), ', ', &
+          this%body_acceleration(2), '].'
+      call env%simlog%info(trim(message))
+    end if
     call this%init_core(env, mesh, bc_params, stat, errmsg)
   end subroutine
 
@@ -145,7 +168,7 @@ contains
 
   !! Initialize the mesh-associated operators and boundary conditions.  The
   !! material properties are initialized separately by INIT_MATERIAL.
-  subroutine init_core(this, env, mesh, bc_params, stat, errmsg, body_acceleration, inviscid)
+  subroutine init_core(this, env, mesh, bc_params, stat, errmsg, body_acceleration, inviscid, unsteady_stokes)
     class(t2d_flow_model), intent(inout) :: this
     type(simulation_environment), intent(in) :: env
     type(t2d_unstr_mesh), target, intent(inout) :: mesh
@@ -153,10 +176,16 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     real(r8), optional, intent(in) :: body_acceleration(:)
-    logical, optional, intent(in) :: inviscid
+    logical, optional, intent(in) :: inviscid, unsteady_stokes
 
     stat = 0
     if (present(inviscid)) this%inviscid = inviscid
+    if (present(unsteady_stokes)) this%unsteady_stokes = unsteady_stokes
+    if (this%inviscid .and. this%unsteady_stokes) then
+      stat = 1
+      errmsg = 'unsteady Stokes flow is incompatible with inviscid flow'
+      return
+    end if
     if (present(body_acceleration)) then
       if (size(body_acceleration) /= 2) then
         stat = 1
@@ -199,44 +228,6 @@ contains
     real(r8), intent(in) :: vfrac(:,:)
 
     call this%matl_props%set_volume_fractions(vfrac)
-  end subroutine
-
-
-  !! Set the mobile-fluid fraction below which a cell receives a dummy flow
-  !! equation.  This affects only the flow solve; material transport retains
-  !! the corresponding volume fractions.
-  subroutine set_fluid_fraction_cutoff(this, cutoff, stat, errmsg)
-    class(t2d_flow_model), intent(inout) :: this
-    real(r8), intent(in) :: cutoff
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    stat = 0
-    if (cutoff <= 0.0_r8 .or. cutoff >= 1.0_r8) then
-      stat = 1
-      errmsg = '"fluid-fraction-cutoff" must be in (0,1)'
-      return
-    end if
-    this%matl_props%cutoff = cutoff
-  end subroutine
-
-
-  !! Set the minimum nonzero interior face density as a fraction of the
-  !! lightest real-fluid density.  This limits the projection coefficient at
-  !! fluid/VOID interfaces without altering the material distribution.
-  subroutine set_min_face_fraction(this, fraction, stat, errmsg)
-    class(t2d_flow_model), intent(inout) :: this
-    real(r8), intent(in) :: fraction
-    integer, intent(out) :: stat
-    character(:), allocatable, intent(out) :: errmsg
-
-    stat = 0
-    if (fraction <= 0.0_r8 .or. fraction > 1.0_r8) then
-      stat = 1
-      errmsg = '"min-face-fraction" must be in (0,1]'
-      return
-    end if
-    this%matl_props%min_face_fraction = fraction
   end subroutine
 
 

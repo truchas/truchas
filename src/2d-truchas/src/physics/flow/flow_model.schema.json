@@ -10,10 +10,10 @@
       "default": false,
       "description": "Use an inviscid flow model. The viscosity material property is not required in this mode."
     },
-    "inertial": {
+    "unsteady-stokes": {
       "type": "boolean",
-      "default": true,
-      "description": "Include transient and convective momentum terms. Set false for a non-inertial Stokes flow."
+      "default": false,
+      "description": "Use the unsteady Stokes equations, omitting momentum advection while retaining the transient, viscous, pressure, and body-force terms."
     },
     "body-acceleration": {
       "type": "array",
@@ -49,8 +49,8 @@
   "not": {
     "properties": {
       "inviscid": { "const": true },
-      "inertial": { "const": false }
+      "unsteady-stokes": { "const": true }
     },
-    "required": ["inviscid", "inertial"]
+    "required": ["inviscid", "unsteady-stokes"]
   }
 }

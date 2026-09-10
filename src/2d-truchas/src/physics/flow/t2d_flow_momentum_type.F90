@@ -4,7 +4,7 @@
 !! This module defines T2D_FLOW_MOMENTUM, the block-structured finite-volume
 !! operator for the cell-centered velocity predictor in two-dimensional
 !! incompressible flow. The matrix has one 2-by-2 block per cell pair. It
-!! assembles unsteady inertial and first-order viscous terms, and accumulates
+!! assembles unsteady mass and first-order viscous terms, and accumulates
 !! a conservative donor-cell momentum-transport contribution to the RHS from
 !! material flux volumes.
 !!

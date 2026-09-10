@@ -37,6 +37,7 @@ module t2d_flow_thermal_solver_type
     private
     type(t2d_unstr_mesh), pointer :: mesh => null() ! unowned reference
     type(material_distribution), pointer :: matl_dist => null() ! unowned reference
+    type(t2d_flow_model), pointer :: flow_model => null() ! unowned reference
     type(t2d_flow_material_mapping) :: matl_map
     type(t2d_flow_mechanics) :: mechanics
     type(t2d_flow_material_transport) :: material_transport
@@ -45,7 +46,6 @@ module t2d_flow_thermal_solver_type
     real(r8), allocatable :: temp(:), enthalpy_increment(:), flow_vfrac(:,:), flow_vfrac_old(:,:), &
         matl_vfrac_old(:,:)
     integer :: ncell_onP
-    logical :: inertial = .true.
     integer(int64) :: nstep = 0_int64
   contains
     procedure :: init
@@ -86,6 +86,7 @@ contains
     logical :: simple_default
 
     stat = 0
+    this%flow_model => flow_model
     ASSERT(size(matl_dist%vfrac,1) == matl_model%nmatl)
     if (.not.params%is_sublist('flow') .or. .not.params%is_sublist('thermal')) then
       stat = 1
@@ -94,18 +95,6 @@ contains
     end if
     flow_params => params%sublist('flow')
     thermal_params => params%sublist('thermal')
-    call flow_params%get('inertial', this%inertial, default=.true., stat=stat, errmsg=errmsg)
-    if (stat /= 0) return
-    if (flow_model%inviscid .and. .not.this%inertial) then
-      stat = 1
-      errmsg = 'inviscid flow is incompatible with non-inertial flow'
-      return
-    end if
-    if (this%inertial) then
-      call env%simlog%info('Using inertial momentum.')
-    else
-      call env%simlog%info('Using non-inertial momentum (Stokes).')
-    end if
     simple_default = .false.
     if (matl_model%nmatl_real == 1 .and. matl_model%nphase_real == 1 .and. .not.matl_model%have_void) &
       simple_default = matl_model%is_fluid(1)
@@ -292,7 +281,7 @@ contains
     call this%mesh%cell_imap%gather_offp(this%flow_vfrac)
     call this%mechanics%set_volume_fractions(this%flow_vfrac)
     call this%mechanics%set_buoyancy_temperature(this%temp)
-    if (this%inertial) then
+    if (.not.this%flow_model%unsteady_stokes) then
       call this%mechanics%advance_momentum(env, t_n, t_np1, stat, errmsg, this%material_transport%flux_volumes)
     else
       call this%mechanics%advance_momentum(env, t_n, t_np1, stat, errmsg)

@@ -7,9 +7,13 @@ program test_t2d_flow_mechanics
   use truchas_env, only: prefix, overwrite_output
   use truchas_logging_services
   use parameter_list_type
+  use parameter_list_json
   use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_unstr_mesh_factory
+  use material_database_type
+  use material_model_type
+  use material_factory, only: load_material_database
   use t2d_flow_model_type
   use t2d_flow_mechanics_type
   implicit none
@@ -44,7 +48,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_mechanics), target :: solver
-    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), target :: model_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
@@ -52,10 +56,11 @@ contains
     integer :: stat
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
-    plist => bc_params%sublist('wall')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [1,2,3,4])
-    call model%init(env, mesh, bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call init_uniform_liquid_model(mesh, model, model_params, stat, errmsg)
     call require(stat == 0, 'flow model initialization failed')
     if (stat /= 0) return
     call momentum_params%set('rel-tol', 1.0e-10_r8)
@@ -83,20 +88,22 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_mechanics), target :: solver
-    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), target :: model_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     character(:), allocatable :: errmsg
     integer :: stat
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [8, 8], 0.0_r8, 0.0_r8)
-    plist => bc_params%sublist('inlet')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('inlet')
     call plist%set('type', 'velocity')
     call plist%set('face-set-ids', [1])
     call plist%set('velocity', [1.0_r8, 0.0_r8])
-    plist => bc_params%sublist('walls')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('walls')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [2,3,4])
-    call model%init(env, mesh, bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call init_uniform_liquid_model(mesh, model, model_params, stat, errmsg)
     call require(stat == 0, 'incompatible-flux model initialization failed')
     if (stat /= 0) return
     call momentum_params%set('rel-tol', 1.0e-10_r8)
@@ -118,7 +125,7 @@ contains
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_mechanics), target :: solver
-    type(parameter_list), target :: bc_params, momentum_params, projection_params
+    type(parameter_list), target :: model_params, momentum_params, projection_params
     type(parameter_list), pointer :: plist
     real(r8), allocatable :: flux(:), expected_velocity(:)
     real(r8), pointer :: pressure(:), velocity_state(:,:), velocity_face(:)
@@ -127,18 +134,21 @@ contains
     integer :: stat, n
 
     mesh => new_unstr_2d_mesh(env, [0.0_r8, 0.0_r8], [1.0_r8, 1.0_r8], [16, 8], 0.0_r8, 0.0_r8)
-    plist => bc_params%sublist('inlet')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('inlet')
     call plist%set('type', 'pressure')
     call plist%set('face-set-ids', [1])
     call plist%set('pressure', 1.0_r8)
-    plist => bc_params%sublist('outlet')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('outlet')
     call plist%set('type', 'pressure')
     call plist%set('face-set-ids', [2])
     call plist%set('pressure', 0.0_r8)
-    plist => bc_params%sublist('wall')
+    plist => model_params%sublist('bc')
+    plist => plist%sublist('wall')
     call plist%set('type', 'no-slip')
     call plist%set('face-set-ids', [3,4])
-    call model%init(env, mesh, bc_params, [1.0_r8], 1.0_r8, stat, errmsg)
+    call init_uniform_liquid_model(mesh, model, model_params, stat, errmsg)
     call require(stat == 0, 'pressure-driven flow model initialization failed')
     if (stat /= 0) return
     call momentum_params%set('rel-tol', 1.0e-10_r8)
@@ -171,6 +181,38 @@ contains
         (1.0_r8 - mesh%cell_centroid(2,1:mesh%ncell_onP))
     call require(maxval(abs(velocity_state(1,1:mesh%ncell_onP) - expected_velocity)) < 5.0e-3_r8, &
         'long-time pressure-driven flow does not match the Poiseuille profile')
+  end subroutine
+
+
+  subroutine init_uniform_liquid_model(mesh, model, params, stat, errmsg)
+    type(t2d_unstr_mesh), pointer, intent(inout) :: mesh
+    type(t2d_flow_model), intent(out) :: model
+    type(parameter_list), target, intent(inout) :: params
+    integer, intent(out) :: stat
+    character(:), allocatable, intent(out) :: errmsg
+
+    type(material_database) :: database
+    type(material_model) :: matl_model
+    type(parameter_list), pointer :: matl_params
+    real(r8) :: vfrac(1,mesh%ncell), temperature(mesh%ncell_onP)
+
+    call model%init(env, mesh, params, stat, errmsg)
+    if (stat /= 0) return
+    call parameter_list_from_json_string( &
+        '{"liquid":{"properties":{"fluid":true,"density":1.0,"viscosity":1.0}}}', matl_params, errmsg)
+    if (.not.associated(matl_params)) then
+      stat = 1
+      return
+    end if
+    call load_material_database(database, matl_params, stat, errmsg)
+    if (stat /= 0) return
+    call matl_model%init(['liquid'], database, stat, errmsg)
+    if (stat /= 0) return
+    call model%init_material(matl_model, [1], stat, errmsg)
+    if (stat /= 0) return
+    vfrac = 1.0_r8
+    temperature = 0.0_r8
+    call model%set_initial_material_state(vfrac, temperature)
   end subroutine
 
 

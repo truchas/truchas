@@ -18,8 +18,8 @@
       "description": "Two-dimensional mesh definition."
     },
     "flow-model": {
-      "$ref": "flow_thermal_flow_model.schema.json",
-      "description": "Flow model and boundary conditions. The inertial setting is under solver.flow."
+      "$ref": "../../physics/flow/flow_model.schema.json",
+      "description": "Flow model and boundary conditions."
     },
     "ht-model": {
       "$ref": "../../physics/thermal/thermal_model.schema.json",
@@ -101,26 +101,6 @@
             }
           }
         }
-      }
-    },
-    {
-      "not": {
-        "properties": {
-          "flow-model": {
-            "properties": { "inviscid": { "const": true } },
-            "required": ["inviscid"]
-          },
-          "solver": {
-            "properties": {
-              "flow": {
-                "properties": { "inertial": { "const": false } },
-                "required": ["inertial"]
-              }
-            },
-            "required": ["flow"]
-          }
-        },
-        "required": ["flow-model", "solver"]
       }
     }
   ]

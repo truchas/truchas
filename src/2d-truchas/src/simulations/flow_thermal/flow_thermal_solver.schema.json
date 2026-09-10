@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "flow": {
-      "$ref": "#/$defs/flow",
+      "$ref": "../../physics/flow/flow_solver.schema.json",
       "description": "Flow transport and linear-solver controls."
     },
     "thermal": {
@@ -15,39 +15,5 @@
     }
   },
   "required": ["flow", "thermal"],
-  "additionalProperties": false,
-  "$defs": {
-    "flow": {
-      "title": "Coupled flow controls",
-      "type": "object",
-      "properties": {
-        "inertial": {
-          "type": "boolean",
-          "default": true,
-          "description": "Include transient and convective momentum terms. Set false for non-inertial Stokes flow. Inviscid flow requires this setting to remain true."
-        },
-        "courant-number": {
-          "type": "number",
-          "exclusiveMinimum": 0.0,
-          "maximum": 1.0,
-          "default": 0.5,
-          "description": "Courant number used to limit the flow time step. It must be greater than zero and no greater than one; the default is 0.5."
-        },
-        "volume-tracking": {
-          "$ref": "../../physics/flow/volume_tracking.schema.json",
-          "description": "Optional controls for material volume-fraction transport."
-        },
-        "momentum-solver": {
-          "$ref": "../../core/hypre_hybrid.schema.json",
-          "description": "HYPRE hybrid controls for the implicit momentum solve. Required for viscous flow and omitted for inviscid flow."
-        },
-        "projection-solver": {
-          "$ref": "../../core/hypre_hybrid.schema.json",
-          "description": "HYPRE hybrid controls for the pressure-projection solve. This sublist is required."
-        }
-      },
-      "required": ["projection-solver"],
-      "additionalProperties": false
-    }
-  }
+  "additionalProperties": false
 }
