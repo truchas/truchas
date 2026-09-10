@@ -15,6 +15,7 @@
 module t2d_flow_projection_update_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use simulation_environment_type
   use t2d_unstr_mesh_type
   use t2d_flow_operators_type
   use t2d_flow_projection_type
@@ -157,7 +158,7 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env)
     class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -166,6 +167,7 @@ contains
     integer, intent(out) :: stat
     logical, optional, intent(in) :: initial
     logical, optional, intent(out) :: solved
+    type(simulation_environment), optional, intent(inout) :: env
 
     integer :: c, f, pin_face
     logical :: initial_
@@ -180,6 +182,7 @@ contains
     ASSERT(size(density_delta_c) >= this%mesh%ncell)
     ASSERT(size(cell_t) >= this%mesh%ncell)
     ASSERT(size(face_t) >= this%mesh%nface)
+    if (present(env)) call env%timer%start('flow/projection/predictor')
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) then
         state%vel_cc(:,c) = 0.0_r8
@@ -212,21 +215,31 @@ contains
     end do
     call apply_velocity_boundary_conditions(this%mesh, bc, face_t, state%vel_fn)
     call this%mesh%face_imap%gather_offp(state%vel_fn)
+    if (present(env)) call env%timer%stop('flow/projection/predictor')
 
+    if (present(env)) call env%timer%start('flow/projection/assemble')
     call this%projection%assemble(inv_density_f, cell_t, face_t, bc, this%rhs, &
         bc%pressure_correction_dirichlet%value)
+    if (present(env)) call env%timer%stop('flow/projection/assemble')
+    if (present(env)) call env%timer%start('flow/projection/setup')
     call this%solver%setup()
+    if (present(env)) call env%timer%stop('flow/projection/setup')
+    if (present(env)) call env%timer%start('flow/projection/rhs')
     call this%operators%divergence(state%vel_fn, this%flux)
     this%rhs = this%rhs - this%flux/dt
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) this%rhs(c) = 0.0_r8
     end do
+    if (present(env)) call env%timer%stop('flow/projection/rhs')
     this%delta_p = 0.0_r8
     if (global_maxval(abs(this%rhs)) > 0.0_r8) then
       if (present(solved)) solved = .true.
+      if (present(env)) call env%timer%start('flow/projection/solve')
       call this%solver%solve(this%rhs, this%delta_p(1:this%mesh%ncell_onP), stat)
+      if (present(env)) call env%timer%stop('flow/projection/solve')
       if (stat /= 0) return
     end if
+    if (present(env)) call env%timer%start('flow/projection/postsolve')
     call this%mesh%cell_imap%gather_offp(this%delta_p)
 
     call pressure_derivative(this, this%delta_p, cell_t, face_t, bc, this%derivative_f, correction=.true.)
@@ -257,6 +270,7 @@ contains
       end if
     end do
     call this%mesh%cell_imap%gather_offp(state%vel_cc)
+    if (present(env)) call env%timer%stop('flow/projection/postsolve')
   end subroutine
 
 

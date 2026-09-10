@@ -43,15 +43,19 @@ contains
     integer, intent(out), optional :: stat
     character(:), allocatable, intent(out), optional :: errmsg
 
-    call this%solver%validate_params(params, stat, errmsg)
+    this%projection => projection
+    this%params => params
+
+    ! The matrix graph and HYPRE vectors are fixed for the life of the
+    ! projection.  Only the matrix values and the solver setup are updated
+    ! for each assembled step.
+    call this%solver%init(this%projection%matrix(), this%params, stat, errmsg)
     if (present(stat)) then
       if (stat /= 0) then
         if (present(errmsg)) errmsg = 'processing ' // params%path() // ': ' // errmsg
         return
       end if
     end if
-    this%projection => projection
-    this%params => params
   end subroutine
 
 
@@ -61,7 +65,6 @@ contains
 
     ASSERT(associated(this%projection))
     ASSERT(associated(this%params))
-    call this%solver%init(this%projection%matrix(), this%params)
     call this%solver%setup()
   end subroutine
 
