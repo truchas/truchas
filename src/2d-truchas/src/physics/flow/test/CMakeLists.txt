@@ -12,7 +12,7 @@ set(flow_unit_tests
   test_t2d_flow_material_mapping
   test_t2d_flow_material_props
   test_t2d_flow_momentum_solver
-  test_t2d_flow_solver
+  test_t2d_flow_mechanics
   test_t2d_flow_ic_solver)
 
 foreach(target IN LISTS flow_unit_tests)
@@ -35,7 +35,7 @@ foreach(target IN ITEMS
     test_t2d_flow_momentum
     test_t2d_flow_material_transport
     test_t2d_flow_momentum_solver
-    test_t2d_flow_solver
+    test_t2d_flow_mechanics
     test_t2d_flow_ic_solver)
   add_test(NAME ${target}-4p
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
