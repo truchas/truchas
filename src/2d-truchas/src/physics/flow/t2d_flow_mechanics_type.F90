@@ -277,7 +277,7 @@ contains
     call this%projection_update%correct(dt, this%model%matl_props%inv_density_c, &
         this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, &
         this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, &
-        this%pending_state, stat, solved=projection_solved)
+        this%pending_state, stat, solved=projection_solved, env=env)
     call env%timer%stop('flow/projection')
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
