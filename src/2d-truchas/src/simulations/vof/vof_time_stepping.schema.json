@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/vof_time_stepping_2d.schema.json",
+  "title": "Truchas 2D VOF time-stepping controls",
+  "description": "Fixed time-step control for the two-dimensional volume-of-fluid simulation.",
+  "type": "object",
+  "properties": {
+    "time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Fixed VOF time-step size. It must be strictly positive."
+    }
+  },
+  "required": ["time-step"],
+  "additionalProperties": false
+}

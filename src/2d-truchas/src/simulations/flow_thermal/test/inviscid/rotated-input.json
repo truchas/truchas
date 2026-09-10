@@ -40,21 +40,24 @@
         "source": {}
     },
     "solver": {
-        "flow": {
+      "flow": {
             "courant-number": 0.5,
             "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
         },
-        "thermal": {
+      "thermal": {
             "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 1}},
             "error-norm": {"abs-t-tol": 1.0e-10, "rel-t-tol": 1.0e-6, "rel-h-tol": 1.0e-6},
             "integrator": {"use-backward-euler": true, "nlk-max-iter": 10, "nlk-tol": 0.01}
-        },
-        "initial-time-step": 1.0e-3,
-        "min-time-step": 1.0e-8,
-        "max-time-step": 1.0e-3,
-        "time-step-growth": 1.05
+        }
     },
-    "sim-control": {"initial-time": 0.0, "output-times": {"times": [0.0, 0.01] }},
+    "initial-time": 0.0,
+    "output-times": {"times": [0.0, 0.01] },
+    "time-stepping": {
+      "initial-time-step": 1.0e-3,
+      "min-time-step": 1.0e-8,
+      "max-time-step": 1.0e-3,
+      "time-step-growth": 1.05
+    },
     "initial-velocity": [0.8660254037844386, 0.5],
     "initial-temperature": {
         "type": "polynomial",

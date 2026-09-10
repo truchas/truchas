@@ -51,11 +51,11 @@
             "nlk-tol": 0.001
         }
     },
-    "sim-control": {
-        "initial-time": 0.0,
-        "initial-time-step": 1.0e-3,
-        "min-time-step": 1.0e-6,
-        "output-times": {"times": [0.0, 0.01] }
+    "initial-time": 0.0,
+    "output-times": {"times": [0.0, 0.01] },
+    "time-stepping": {
+      "initial-time-step": 1.0e-3,
+      "min-time-step": 1.0e-6
     },
     "initial-temperature": {
         "type": "polynomial",

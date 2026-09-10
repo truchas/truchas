@@ -27,11 +27,24 @@
     },
     "solver": {
       "$ref": "flow_thermal_solver.schema.json",
-      "description": "Coupled flow, thermal, and time-step solver controls."
+      "description": "Coupled flow and thermal solver controls."
     },
-    "sim-control": {
-      "$ref": "flow_thermal_sim_control.schema.json",
-      "description": "Initial time and output schedule."
+  "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial flow and temperature states are established. The default is zero."
+    },
+  "output-times": {
+      "$ref": "../../core/output_times.schema.json",
+      "description": "Output schedule. At least one expanded output time must be later than initial-time."
+    },
+  "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output time; if omitted, it equals the last output time."
+    },
+  "time-stepping": {
+      "$ref": "flow_thermal_time_stepping.schema.json",
+      "description": "Coupled-integrator time-step limits, synchronization, and retry controls."
     },
     "initial-velocity": {
       "$ref": "../../core/vector_func.schema.json",
@@ -48,7 +61,8 @@
     "flow-model",
     "ht-model",
     "solver",
-    "sim-control",
+    "output-times",
+    "time-stepping",
     "initial-temperature"
   ],
   "additionalProperties": false,

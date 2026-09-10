@@ -13,7 +13,7 @@ program test_simulation_output_schedule
   character(:), allocatable :: errmsg
   integer :: stat
 
-  call params%set_path('sim-control')
+  call params%set_path('input')
   schedule => params%sublist('output-times')
   call schedule%set('times', [0.0_r8, 1.0_r8, 2.0_r8])
   call schedule%set('subintervals', [2, 4])
@@ -30,7 +30,7 @@ program test_simulation_output_schedule
   call require(all(abs(output_times - [1.25_r8, 1.5_r8, 1.75_r8, 2.0_r8, 3.0_r8]) < 1.0e-14_r8), &
       'incorrect filtered output times')
 
-  call default_params%set_path('sim-control')
+  call default_params%set_path('input')
   default_schedule => default_params%sublist('output-times')
   call default_schedule%set('times', [0.0_r8, 1.0_r8, 2.0_r8])
   call get_output_times(default_params, 0.0_r8, output_times, stat, errmsg)

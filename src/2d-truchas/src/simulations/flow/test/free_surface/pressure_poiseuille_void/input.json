@@ -55,13 +55,13 @@
     "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
     "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
   },
-  "sim-control": {
-    "initial-time": 0.0,
+  "initial-time": 0.0,
+  "output-times": {"times": [3.0, 6.0, 10.0] },
+  "time-stepping": {
     "initial-time-step": 1.0e-2,
     "min-time-step": 1.0e-6,
     "max-time-step": 5.0e-2,
-    "time-step-growth": 1.1,
-    "output-times": {"times": [3.0, 6.0, 10.0] }
+    "time-step-growth": 1.1
   },
   "initial-velocity": [0.0, 0.0]
 }

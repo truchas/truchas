@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/output_times_2d.schema.json",
+  "title": "Truchas 2D output times",
+  "description": "Output schedule for a time-dependent 2D simulation.",
+  "type": "object",
+  "properties": {
+    "times": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number" },
+      "description": "Strictly increasing schedule times. At least one expanded time must be later than the initial time."
+    },
+    "subintervals": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "description": "Optional number of equally spaced output subintervals between consecutive times. Supply one fewer value than times; if omitted, every interval has one subinterval."
+    }
+  },
+  "required": ["times"],
+  "additionalProperties": false
+}

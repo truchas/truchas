@@ -74,7 +74,7 @@ contains
     character(:), allocatable, intent(out) :: errmsg
 
     type(parameter_list), pointer :: mesh_params, model_params, solver_params, materials_params
-    type(parameter_list), pointer :: control_params
+    type(parameter_list), pointer :: time_stepping_params
     character(:), allocatable :: matl_name(:)
     integer :: i, rlev
     logical :: inviscid, inertial
@@ -178,14 +178,14 @@ contains
     call env%simlog%end_section('Flow solver complete.')
 
     !! Configure integration
-    if (.not.params%is_sublist('sim-control')) then
+    if (.not.params%is_sublist('time-stepping')) then
       stat = 1
-      errmsg = 'missing "sim-control" sublist parameter'
+      errmsg = 'missing "time-stepping" sublist parameter'
       return
     end if
-    control_params => params%sublist('sim-control')
+    time_stepping_params => params%sublist('time-stepping')
     call env%simlog%begin_section('Configuring integration.')
-    call configure_integration(control_params, stat, errmsg)
+    call configure_integration(params, time_stepping_params, stat, errmsg)
     if (stat /= 0) then
       call env%simlog%end_section('Integration configuration failed.')
       return
@@ -330,25 +330,25 @@ contains
     end subroutine construct_flow_model
 
 
-    subroutine configure_integration(params, stat, errmsg)
+    subroutine configure_integration(schedule_params, time_stepping_params, stat, errmsg)
 
-      type(parameter_list), intent(inout) :: params
+      type(parameter_list), intent(inout) :: schedule_params, time_stepping_params
       integer, intent(out) :: stat
       character(:), allocatable, intent(out) :: errmsg
 
       character(96) :: message
 
       stat = 0
-      call params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
+      call schedule_params%get('initial-time', this%t_init, default=0.0_r8, stat=stat, errmsg=errmsg)
       if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        errmsg = 'processing ' // schedule_params%path() // ': ' // errmsg
         return
       end if
-      call get_output_times(params, this%t_init, this%tout, stat, errmsg)
+      call get_output_times(schedule_params, this%t_init, this%tout, stat, errmsg)
       if (stat /= 0) return
-      call this%solver%init_time_stepper(params, stat, errmsg)
+      call this%solver%init_time_stepper(time_stepping_params, stat, errmsg)
       if (stat /= 0) then
-        errmsg = 'processing ' // params%path() // ': ' // errmsg
+        errmsg = 'processing ' // time_stepping_params%path() // ': ' // errmsg
         return
       end if
       write(message,'(a,es11.4)') 'Initial time: ', this%t_init

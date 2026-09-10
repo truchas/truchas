@@ -30,12 +30,12 @@
     "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
     "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
   },
-  "sim-control": {
-    "initial-time": 0.0,
+  "initial-time": 0.0,
+  "output-times": {"times": [0.0, 1.0] },
+  "time-stepping": {
     "initial-time-step": 0.1,
     "min-time-step": 1.0e-6,
-    "max-time-step": 0.1,
-    "output-times": {"times": [0.0, 1.0] }
+    "max-time-step": 0.1
   },
   "initial-velocity": [0.0, 0.0]
 }

@@ -50,12 +50,12 @@
         "tabular-y": [[0.0, 0.0], [0.6666666666666666, 0.0], [1.0, 0.0]],
         "tabular-arg": 2
     },
-    "sim-control": {
-        "initial-time": 0.0,
-        "initial-time-step": 0.05,
-        "min-time-step": 1.0e-6,
-        "max-time-step": 0.05,
-        "time-step-growth": 1.0,
-        "output-times": {"times": [0.0, 0.1] }
+    "initial-time": 0.0,
+    "output-times": {"times": [0.0, 0.1] },
+    "time-stepping": {
+      "initial-time-step": 0.05,
+      "min-time-step": 1.0e-6,
+      "max-time-step": 0.05,
+      "time-step-growth": 1.0
     }
 }

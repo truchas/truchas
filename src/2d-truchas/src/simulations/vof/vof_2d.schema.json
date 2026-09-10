@@ -23,12 +23,25 @@
       "default": 6,
       "description": "Maximum recursive refinement level used to estimate initial region volume fractions. The default is 6."
     },
-    "sim-control": {
-      "$ref": "vof_sim_control.schema.json",
-      "description": "Fixed VOF time-step and output controls."
+  "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial volume fractions are established. The default is zero."
+    },
+  "output-times": {
+      "$ref": "../../core/output_times.schema.json",
+      "description": "Output schedule. At least one expanded output time must be later than initial-time."
+    },
+  "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output time; if omitted, it equals the last output time."
+    },
+  "time-stepping": {
+      "$ref": "vof_time_stepping.schema.json",
+      "description": "Fixed VOF time-step control."
     }
   },
-  "required": ["mesh", "vof-model", "initial-regions", "sim-control"],
+  "required": ["mesh", "vof-model", "initial-regions", "output-times", "time-stepping"],
   "additionalProperties": false,
   "$defs": {
     "vof-model": {

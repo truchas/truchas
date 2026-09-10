@@ -33,13 +33,13 @@
     "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-8},
     "projection-solver": {"rel-tol": 1.0e-12, "max-ds-iter": 100, "max-amg-iter": 100}
   },
-  "sim-control": {
-    "initial-time": 0.0,
+  "initial-time": 0.0,
+  "output-times": {"times": [1.0, 3.0] },
+  "time-stepping": {
     "initial-time-step": 1.0e-2,
     "min-time-step": 1.0e-6,
     "max-time-step": 0.1,
-    "time-step-growth": 1.1,
-    "output-times": {"times": [1.0, 3.0] }
+    "time-step-growth": 1.1
   },
   "initial-velocity": [1.0, 0.0]
 }
