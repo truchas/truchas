@@ -73,7 +73,7 @@ contains
   end subroutine
 
 
-  !! Initialize the standalone time-step policy from SIM-CONTROL parameters.
+  !! Initialize the standalone time-step policy from TIME-STEPPING parameters.
   !! The output schedule itself remains owned by the simulation driver.
   subroutine init_time_stepper(this, params, stat, errmsg)
     class(t2d_flow_integrator), intent(inout) :: this

@@ -31,8 +31,9 @@ file.  The run log and simulation output are written there.  MPI initialization
 and command-line diagnostics are handled by the common driver; the selected
 simulation owns interpretation of the JSON input and the simulation lifecycle.
 
-Simulation time control is specified in the `sim-control` sublist.  The
-`output-times` value is a sublist with a `times` array and an optional
+The root-level `initial-time`, `output-times`, and optional `final-time`
+define the simulation schedule.  `output-times` is a sublist with a `times`
+array and an optional
 `subintervals` integer array.  Each entry in `subintervals` divides the
 interval to the next entry in `times`; output is written at the resulting
 endpoints.  Its length is one less than the length of `times`.  If it is
@@ -42,12 +43,10 @@ with a final output and sets the integration endpoint; without it, the last
 scheduled time is the integration endpoint.  For example:
 
 ```json
-"sim-control": {
-  "initial-time": 0.0,
-  "output-times": {
-    "times": [0.0, 1.0, 2.0],
-    "subintervals": [2, 4]
-  },
-  "final-time": 3.0
-}
+"initial-time": 0.0,
+"output-times": {
+  "times": [0.0, 1.0, 2.0],
+  "subintervals": [2, 4]
+},
+"final-time": 3.0
 ```

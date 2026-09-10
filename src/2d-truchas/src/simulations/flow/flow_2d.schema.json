@@ -23,15 +23,28 @@
     },
     "flow-solver": {
       "$ref": "../../physics/flow/flow_solver.schema.json",
-      "description": "Flow time-stepping, volume-tracking, and linear-solver controls."
+      "description": "Flow mechanics, volume-tracking, and linear-solver controls."
     },
     "initial-velocity": {
       "$ref": "../../core/vector_func.schema.json",
       "description": "Optional initial velocity field. It may be a constant vector or an inline vector function, but it must evaluate to exactly two components; if omitted, the initial velocity is zero."
     },
-    "sim-control": {
-      "$ref": "../../core/sim_control.schema.json",
-      "description": "Time-step controls and output schedule."
+  "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial state is established. The default is zero."
+    },
+  "output-times": {
+      "$ref": "../../core/output_times.schema.json",
+      "description": "Output schedule. At least one expanded output time must be later than initial-time."
+    },
+  "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output time; if omitted, it equals the last output time."
+    },
+  "time-stepping": {
+      "$ref": "../../core/time_stepping.schema.json",
+      "description": "Integrator time-step limits and synchronization policy."
     }
   },
   "required": [
@@ -39,7 +52,8 @@
     "mesh",
     "flow-model",
     "flow-solver",
-    "sim-control"
+    "output-times",
+    "time-stepping"
   ],
   "additionalProperties": false,
   "allOf": [

@@ -42,11 +42,11 @@
     },
     "integrator": {"nlk-max-iter": 5, "nlk-tol": 1.0e-2}
   },
-  "sim-control": {
-    "initial-time": 0.0,
+  "initial-time": 0.0,
+  "output-times": {"times": [100.0, 1000.0] },
+  "time-stepping": {
     "initial-time-step": 1.0e-1,
-    "min-time-step": 1.0e-6,
-    "output-times": {"times": [100.0, 1000.0] }
+    "min-time-step": 1.0e-6
   },
   "initial-temperature": {"type": "constant", "value": 0.5}
 }

@@ -11,8 +11,8 @@
     "disk": {"type": "disk", "center": [0.3, 0.3], "radius": 0.125},
     "background": {"type": "background"}
   },
-  "sim-control": {
-    "time-step": 0.001,
-    "output-times": {"times": [0.0, 0.01] }
+  "output-times": {"times": [0.0, 0.01] },
+  "time-stepping": {
+    "time-step": 0.001
   }
 }

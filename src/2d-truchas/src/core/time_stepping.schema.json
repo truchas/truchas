@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truchas.org/schema/time_stepping_2d.schema.json",
+  "title": "Truchas 2D time-stepping controls",
+  "description": "Generic integrator controls for a time-dependent 2D simulation.",
+  "type": "object",
+  "properties": {
+    "initial-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Initial time-step size. It must be strictly positive."
+    },
+    "min-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Smallest permitted time-step size. It must be strictly positive and no greater than initial-time-step."
+    },
+    "max-time-step": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "description": "Largest permitted time-step size. It must be at least initial-time-step; if omitted, the implementation uses an effectively unbounded maximum."
+    },
+    "time-step-growth": {
+      "type": "number",
+      "minimum": 1.0,
+      "default": 1.05,
+      "description": "Maximum factor by which a successful time step may grow the next time step. The value must be at least one; the default is 1.05."
+    },
+    "time-step-lookahead": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 3,
+      "description": "Number of future output synchronization points considered when selecting a step. The default is three."
+    }
+  },
+  "required": ["initial-time-step", "min-time-step"],
+  "additionalProperties": false
+}

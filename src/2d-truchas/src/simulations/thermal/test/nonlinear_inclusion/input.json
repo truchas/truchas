@@ -51,11 +51,11 @@
         "error-norm": {"abs-t-tol": 1.0e-5, "rel-t-tol": 1.0e-3, "abs-h-tol": 1.0e-5, "rel-h-tol": 1.0e-3},
         "integrator": {"nlk-max-iter": 5, "nlk-tol": 0.01}
     },
-    "sim-control": {
-        "initial-time": 0.0,
-        "initial-time-step": 1.0e-5,
-        "min-time-step": 1.0e-6,
-        "output-times": {"times": [0.0, 0.1] }
+    "initial-time": 0.0,
+    "output-times": {"times": [0.0, 0.1] },
+    "time-stepping": {
+      "initial-time-step": 1.0e-5,
+      "min-time-step": 1.0e-6
     },
     "initial-temperature": 0.0
     }

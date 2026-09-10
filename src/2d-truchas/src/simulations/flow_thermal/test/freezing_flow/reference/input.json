@@ -107,15 +107,15 @@
         "nlk-max-iter": 5,
         "nlk-tol": 0.01
       }
-    },
+    }
+  },
+
+  "initial-time": 0.0,
+  "output-times": {"times": [0.5, 3.0] },
+  "time-stepping": {
     "initial-time-step": 1.0e-3,
     "time-step-growth": 1.2,
     "min-time-step": 1.0e-9
-  },
-
-  "sim-control": {
-    "initial-time": 0.0,
-    "output-times": {"times": [0.5, 3.0] }
   },
 
   "initial-temperature": 15.0,

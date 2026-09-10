@@ -60,7 +60,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: plist
+    type(parameter_list), pointer :: plist, time_stepping_params
     type(t2d_region_func) :: regions
     character(:), allocatable :: algorithm, context
     real(r8), allocatable :: owned_vfrac(:,:)
@@ -146,24 +146,25 @@ contains
       errmsg = context // errmsg
       return
     end if
-    if (.not.params%is_sublist('sim-control')) then
+    if (.not.params%is_sublist('time-stepping')) then
       stat = 1
-      errmsg = 'missing "sim-control" sublist parameter'
+      errmsg = 'missing "time-stepping" sublist parameter'
       return
     end if
-    plist => params%sublist('sim-control')
-    context = 'processing ' // plist%path() // ': '
-    call plist%get('time-step', this%time_step, stat, errmsg)
+    time_stepping_params => params%sublist('time-stepping')
+    context = 'processing ' // time_stepping_params%path() // ': '
+    call time_stepping_params%get('time-step', this%time_step, stat, errmsg)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call plist%get('initial-time', this%t_init, stat, errmsg, default=0.0_r8)
+    context = 'processing ' // params%path() // ': '
+    call params%get('initial-time', this%t_init, stat, errmsg, default=0.0_r8)
     if (stat /= 0) then
       errmsg = context // errmsg
       return
     end if
-    call get_output_times(plist, this%t_init, this%output_times, stat, errmsg)
+    call get_output_times(params, this%t_init, this%output_times, stat, errmsg)
     if (stat /= 0) return
     if (this%time_step <= 0.0_r8) then
       stat = 1

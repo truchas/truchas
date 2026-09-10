@@ -25,9 +25,22 @@
       "$ref": "../../physics/thermal/thermal_solver.schema.json",
       "description": "Implicit thermal solver controls."
     },
-    "sim-control": {
-      "$ref": "thermal_sim_control.schema.json",
-      "description": "Thermal time-step controls and output schedule."
+  "initial-time": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Simulation time at which the initial temperature is established. The default is zero."
+    },
+  "output-times": {
+      "$ref": "../../core/output_times.schema.json",
+      "description": "Output schedule. At least one expanded output time must be later than initial-time."
+    },
+  "final-time": {
+      "type": "number",
+      "description": "Optional final simulation time. It must be greater than initial-time and no earlier than the last output time; if omitted, it equals the last output time."
+    },
+  "time-stepping": {
+      "$ref": "thermal_time_stepping.schema.json",
+      "description": "Thermal-integrator time-step and retry controls."
     },
     "initial-temperature": {
       "$ref": "../../core/scalar_func.schema.json",
@@ -39,7 +52,8 @@
     "mesh",
     "ht-model",
     "ht-solver",
-    "sim-control",
+    "output-times",
+    "time-stepping",
     "initial-temperature"
   ],
   "additionalProperties": false,
