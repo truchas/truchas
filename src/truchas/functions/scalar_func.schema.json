@@ -7,7 +7,8 @@
     { "$ref": "#/$defs/constant" },
     { "$ref": "#/$defs/polynomial" },
     { "$ref": "#/$defs/tabular" },
-    { "$ref": "#/$defs/smooth-ramp" }
+    { "$ref": "#/$defs/smooth-ramp" },
+    { "$ref": "#/$defs/library" }
   ],
   "$defs": {
     "number-array": {
@@ -98,6 +99,19 @@
         "end value": { "type": "number" }
       }
     },
+    "library": {
+      "type": "object",
+      "title": "Dynamically loaded function",
+      "description": "A scalar function exported by a user-supplied shared library.",
+      "properties": {
+        "type": { "const": "library" },
+        "library-path": { "type": "string", "minLength": 1 },
+        "library-symbol": { "type": "string", "minLength": 1 },
+        "parameters": { "$ref": "#/$defs/number-array" }
+      },
+      "required": ["type", "library-path", "library-symbol"],
+      "additionalProperties": false
+    },
     "scalar-property-value": {
       "description": "Values accepted by get_scalar_func for a property.",
       "oneOf": [
@@ -107,7 +121,8 @@
         { "$ref": "#/$defs/constant" },
         { "$ref": "#/$defs/polynomial" },
         { "$ref": "#/$defs/tabular" },
-        { "$ref": "#/$defs/smooth-ramp" }
+        { "$ref": "#/$defs/smooth-ramp" },
+        { "$ref": "#/$defs/library" }
       ]
     }
   }
