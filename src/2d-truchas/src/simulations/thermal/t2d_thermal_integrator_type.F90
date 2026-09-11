@@ -151,6 +151,7 @@ contains
         errmsg = 'next time step is too small'
         return
       end if
+      call env%simlog%begin_terminal_throttle_group()
       do n = 1, this%max_try
         write(line,'(a,i0,a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%nstep + 1_int64, &
             ' attempt=', n, ' t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
@@ -165,16 +166,19 @@ contains
           stat = -1
           errmsg = 'next time step is too small'
           call env%simlog%end_section('step-end status=failed')
+          call env%simlog%end_terminal_throttle_group()
           return
         end if
         if (n == this%max_try) then
           stat = -2
           errmsg = 'unable to take a thermal time step'
           call env%simlog%end_section('step-end status=failed')
+          call env%simlog%end_terminal_throttle_group()
           return
         end if
         call env%simlog%end_section('step-end status=rejected')
       end do
+      call env%simlog%end_terminal_throttle_group()
       call this%solver%commit_step()
       t_n = t_np1
       this%nstep = this%nstep + 1_int64

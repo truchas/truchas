@@ -210,14 +210,17 @@ contains
       end if
       write(line,'(a,i0,a,es0.5,a,es0.5,a,a)') 'step=', this%solver%num_steps() + 1_int64, &
           ' attempt=1 t0=', t_n, ' dt=', t_np1 - t_n, ' cause=', trim(cause)
+      call env%simlog%begin_terminal_throttle_group()
       call env%simlog%begin_section(trim(line))
       call this%solver%step(env, t_n, t_np1, stat, errmsg)
       if (stat /= 0) then
         if (.not.allocated(errmsg)) errmsg = 'Navier--Stokes solver step failed'
         call env%simlog%end_section('step-end status=failed')
+        call env%simlog%end_terminal_throttle_group()
         return
       end if
       call env%simlog%end_section('step-end status=accepted')
+      call env%simlog%end_terminal_throttle_group()
       this%hlast = t_np1 - t_n
       this%hnext = min(this%dt_grow*this%hlast, this%dt_max, this%solver%courant_time_step())
       t_n = t_np1

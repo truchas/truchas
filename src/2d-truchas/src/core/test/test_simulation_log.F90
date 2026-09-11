@@ -23,6 +23,12 @@ program test_simulation_log
   call require(stat /= 0, 'invalid log verbosity was accepted')
   call require(errmsg == 'invalid log verbosity', 'invalid log verbosity message was not broadcast')
 
+  call env%simlog%init(env%comm, 'simulation_log_test.log', stat, errmsg, &
+      terminal_step_interval=-1.0d0)
+  call require(stat /= 0, 'negative terminal step interval was accepted')
+  call require(errmsg == 'terminal step interval must be nonnegative', &
+      'invalid terminal step interval message was not broadcast')
+
   call env%simlog%init(env%comm, 'simulation_log_test.log', stat, errmsg, LOG_NORMAL, .false.)
   call require(stat == 0, 'could not initialize normal log')
   valid = .true.
@@ -31,6 +37,14 @@ program test_simulation_log
   call env%simlog%info('normal message')
   call env%simlog%begin_section('outer section')
   call env%simlog%info('nested message')
+  call env%simlog%begin_terminal_throttle_group()
+  call env%simlog%begin_section('first attempt')
+  call env%simlog%info('first attempt detail')
+  call env%simlog%end_section('step-end status=rejected')
+  call env%simlog%begin_section('second attempt')
+  call env%simlog%info('second attempt detail')
+  call env%simlog%end_section('step-end status=accepted')
+  call env%simlog%end_terminal_throttle_group()
   call env%simlog%begin_section('detail section', LOG_DETAIL)
   call env%simlog%info('deeply nested message')
   call env%simlog%end_section('detail section complete', LOG_DETAIL)
@@ -44,6 +58,12 @@ program test_simulation_log
   call require(log_contains('simulation_log_test.log', 'normal message'), 'normal message missing')
   call require(log_contains('simulation_log_test.log', 'outer section'), 'section begin message missing')
   call require(log_contains('simulation_log_test.log', '  nested message'), 'nested message was not indented')
+  call require(log_contains('simulation_log_test.log', 'first attempt detail'), &
+      'first attempt in throttle group was not written to the log')
+  call require(log_contains('simulation_log_test.log', 'second attempt detail'), &
+      'retry in throttle group was not written to the log')
+  call require(log_contains('simulation_log_test.log', 'step-end status=accepted'), &
+      'final attempt status was not written to the log')
   call require(log_contains('simulation_log_test.log', '    deeply nested message'), 'deeply nested message was not indented')
   call require(.not.log_contains('simulation_log_test.log', 'detail section complete'), 'detail section end was not filtered')
   call require(log_contains('simulation_log_test.log', '  Warning: nested warning message'), 'nested warning was not indented')
