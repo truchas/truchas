@@ -1,0 +1,79 @@
+// De Vahl Davis (1982) natural-convection benchmark in a square cavity.
+//
+// This is the classic nondimensional problem at Pr=0.71 and Ra=10000:
+// the left wall is hot, the right wall is cold, the horizontal walls are
+// insulated, and all walls are no-slip. The fluid starts from rest with the
+// linear conductive temperature profile. The input runs the transient to
+// t=0.3, which is visually near steady state for this configuration.
+{
+  "materials": {
+    "air": {
+      "properties": {
+        "fluid": true,
+        "conductivity": 1.0,
+        "density": 1.0,
+        "specific-heat": 1.0,
+        "viscosity": 0.71,
+        "thermal-expan-coef": 1.0,
+        "expan-ref-temp": 0.0
+      }
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [129]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [129]}
+  },
+  "flow-model": {
+    "body-acceleration": [0.0, -0.71e4],
+    "bc": {
+      "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3, 4]}
+    }
+  },
+  "ht-model": {
+    "bc": {
+      "left": {"type": "temperature", "face-set-ids": [1], "temp": 1.0},
+      "right": {"type": "temperature", "face-set-ids": [2], "temp": 0.0},
+      "top-bottom": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
+    },
+    "source": {}
+  },
+  "solver": {
+    "flow": {
+      "courant-number": 0.5,
+      "momentum-solver": {
+        "rel-tol": 1.0e-8,
+        "abs-tol": 1.0e-10,
+        "max-ds-iter": 50,
+        "max-amg-iter": 25
+      },
+      "projection-solver": {
+        "rel-tol": 0.0,
+        "abs-tol": 1.0e-12,
+        "max-ds-iter": 50,
+        "max-amg-iter": 25
+      }
+    },
+    "thermal": {
+      "preconditioner": {
+        "method": "BoomerAMG",
+        "params": {"num-cycles": 2, "strong-threshold": 0.25}
+      },
+      "error-norm": {"abs-t-tol": 1.0e-4, "abs-h-tol": 1.0e-4},
+      "integrator": {"nlk-max-iter": 5, "nlk-tol": 0.05}
+    }
+  },
+  "initial-time": 0.0,
+  "output-times": {"times": [0.0, 0.1, 0.2, 0.3]},
+  "time-stepping": {
+    "initial-time-step": 1.0e-4,
+    "min-time-step": 1.0e-6,
+    "max-time-step": 1.0,
+    "time-step-growth": 1.2
+  },
+  "initial-temperature": {
+    "type": "tabular",
+    "tabular x": [0.0, 1.0],
+    "tabular y": [1.0, 0.0]
+  },
+  "initial-velocity": [0.0, 0.0]
+}
