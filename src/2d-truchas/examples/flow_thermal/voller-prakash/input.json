@@ -1,0 +1,96 @@
+// Voller--Prakash (1987) natural-convection-driven solidification benchmark.
+//
+// A unit square cavity is initially liquid and isothermal at T=0.5.  The
+// left wall is suddenly cooled to T=-0.5, the right wall is held at T=0.5,
+// and the horizontal walls are adiabatic.  No-slip flow walls and downward
+// body acceleration produce natural convection while the material freezes at
+// the cold wall.  The material has solidus/liquidus temperatures -0.1 and
+// 0.1 and latent heat 5.0.
+//
+// The reference nondimensional case has Ra=10^4, Pr=1000, Gr=10, and Ste=5
+// under the modern convention.  For a more vigorous-flow variant, reduce
+// viscosity by a factor of 10 and increase conductivity by a factor of 10;
+// this gives Pr=10 and Gr=1000 while leaving the other parameters unchanged.
+{
+  "materials": {
+    "material": {
+      "properties": {
+        "conductivity": 1.0e-3,
+        "density": 1.0,
+        "specific-heat": 1.0,
+        "viscosity": 1.0,
+        "thermal-expan-coef": 1.0e-2,
+        "expan-ref-temp": 0.5
+      },
+      "phases": {
+        "solid": {},
+        "liquid": {"fluid": true}
+      },
+      "phase-changes": {
+        "solid:liquid": {
+          "solidus-temp": -0.1,
+          "liquidus-temp": 0.1,
+          "latent-heat": 5.0
+        }
+      }
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [64]},
+    "y-axis": {"coarse-grid": [0.0, 1.0], "intervals": [64]}
+  },
+  "flow-model": {
+    "body-acceleration": [0.0, -1000.0],
+    "bc": {
+      "walls": {"type": "no-slip", "face-set-ids": [1, 2, 3, 4]}
+    }
+  },
+  "ht-model": {
+    "bc": {
+      "left": {"type": "temperature", "face-set-ids": [1], "temp": -0.5},
+      "right": {"type": "temperature", "face-set-ids": [2], "temp": 0.5},
+      "top-bottom": {"type": "flux", "face-set-ids": [3, 4], "flux": 0.0}
+    },
+    "source": {}
+  },
+  "solver": {
+    "flow": {
+      "courant-number": 0.25,
+      "momentum-solver": {
+        "rel-tol": 1.0e-10,
+        "abs-tol": 1.0e-12,
+        "max-ds-iter": 50,
+        "max-amg-iter": 25
+      },
+      "projection-solver": {
+        "rel-tol": 1.0e-10,
+        "abs-tol": 1.0e-12,
+        "max-ds-iter": 50,
+        "max-amg-iter": 25
+      }
+    },
+    "thermal": {
+      "preconditioner": {"method": "BoomerAMG", "params": {"num-cycles": 2, "strong-threshold": 0.25}},
+      "error-norm": {
+        "abs-t-tol": 1.0e-3,
+        "rel-t-tol": 0.0,
+        "abs-h-tol": 1.0e-3,
+        "rel-h-tol": 0.0
+      },
+      "integrator": {
+        "use-backward-euler": true,
+        "nlk-max-iter": 5,
+        "nlk-tol": 1.0e-2
+      }
+    }
+  },
+  "initial-time": 0.0,
+  "output-times": {"times": [1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0] },
+  "time-stepping": {
+    "initial-time-step": 1.0e-3,
+    "min-time-step": 1.0e-6,
+    "time-step-growth": 1.2
+  },
+  "initial-temperature": {"type": "constant", "value": 0.5},
+  "initial-velocity": [0.0, 0.0]
+}
