@@ -83,7 +83,7 @@ contains
     num_region = size(this%reg)
   end function
 
-  pure integer function region_index(this, x, bitmask) result(i)
+  integer function region_index(this, x, bitmask) result(i)
     class(t2d_region_func), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: bitmask

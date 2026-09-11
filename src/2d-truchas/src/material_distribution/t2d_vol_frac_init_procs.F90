@@ -208,7 +208,7 @@ contains
   end function
 
   !! Return the region id that contains the cell center.
-  pure integer function centroid_region_id(this) result(n)
+  integer function centroid_region_id(this) result(n)
     class(tri_cell), intent(in) :: this
     n = this%rfunc%region_index(sum(this%x,dim=2)/3.0_r8, this%bitmask)
   end function

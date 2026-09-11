@@ -149,6 +149,29 @@ contains
         end if
         call alloc_disk_region(reg, x, r, c)
       end block
+
+    case ('implicit')
+      block
+        use scalar_func_class
+        use scalar_func_factories, only: alloc_scalar_func
+        use t2d_implicit_region_type, only: alloc_implicit_region
+        class(scalar_func), allocatable :: f
+        type(parameter_list), pointer :: fparams
+        logical :: c
+        if (.not.params%is_sublist('function')) then
+          stat = 1
+          errmsg = context // 'required sublist "function" is missing'
+          return
+        end if
+        fparams => params%sublist('function')
+        call alloc_scalar_func(f, fparams)
+        call params%get('complement', c, stat, errmsg, default=.false.)
+        if (stat /= 0) then
+          errmsg = context // errmsg
+          return
+        end if
+        call alloc_implicit_region(reg, f, c)
+      end block
     
     case ('background')
       call alloc_background_region(reg)
