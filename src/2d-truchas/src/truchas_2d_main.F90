@@ -53,7 +53,7 @@ program truchas_2d_main
   if (stat /= 0) then
     if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
     call MPI_Finalize
-    if (is_IOP) error stop 2
+    if (is_IOP) error stop, quiet=.true.
     stop
   end if
 
@@ -61,7 +61,7 @@ program truchas_2d_main
   if (stat /= 0) then
     if (is_IOP) write(error_unit,'(2a)') trim(cli%program) // ': ', errmsg
     call MPI_Finalize
-    if (is_IOP) error stop 2
+    if (is_IOP) error stop, quiet=.true.
     stop
   end if
 
@@ -71,7 +71,7 @@ program truchas_2d_main
     call broadcast_alloc_char(errmsg)
     if (is_IOP) write(error_unit,'(a)') trim(cli%program) // ': ' // errmsg
     call MPI_Finalize
-    if (is_IOP) error stop 1
+    if (is_IOP) error stop, quiet=.true.
     stop
   end if
 
@@ -84,7 +84,7 @@ program truchas_2d_main
   if (stat /= 0) then
     if (env%rank == 0) write(error_unit,'(a)') 'error opening log file: ' // errmsg
     call MPI_Finalize
-    error stop 1
+    error stop, quiet=.true.
   end if
 
   call write_simulation_prologue(env, cli%program, cli%simulation, cli%input_file, stat, errmsg)
@@ -92,7 +92,7 @@ program truchas_2d_main
     call env%simlog%error('error staging input file: ' // errmsg)
     call env%simlog%close
     call MPI_Finalize
-    error stop 1
+    error stop, quiet=.true.
   end if
 
   open(newunit=inlun, file=cli%input_file, action='read', access='stream')
@@ -102,7 +102,7 @@ program truchas_2d_main
     call env%simlog%error('error reading input file: ' // errmsg)
     call env%simlog%close
     call MPI_Finalize
-    error stop 1
+    error stop, quiet=.true.
   end if
 
   call env%timer%start('simulation')
@@ -114,7 +114,7 @@ program truchas_2d_main
     call env%timer%stop('simulation')
     call env%simlog%close
     call MPI_Finalize
-    error stop 1
+    error stop, quiet=.true.
   else
     call env%simlog%end_section('Simulation initialization complete.')
   end if
@@ -133,7 +133,7 @@ program truchas_2d_main
 
   call env%simlog%close
   call MPI_Finalize
-  if (stat /= 0) error stop 1
+  if (stat /= 0) error stop, quiet=.true.
 
 contains
 

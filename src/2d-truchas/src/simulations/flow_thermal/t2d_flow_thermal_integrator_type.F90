@@ -135,7 +135,7 @@ contains
 
 
   subroutine integrate(this, env, matl_model, tout, stat, errmsg)
-    use signal_handler, only: read_signal, SIGURG
+    use signal_handler, only: read_signal, SIGUSR1
 
     class(t2d_flow_thermal_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
@@ -193,10 +193,10 @@ contains
       call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
       t_n = t_np1
       this%tlast = t_n
-      call read_signal(SIGURG, sig_rcvd)
+      call read_signal(SIGUSR1, sig_rcvd)
       if (sig_rcvd) then
         stat = 1
-        errmsg = 'received SIGURG signal'
+        errmsg = 'received SIGUSR1 signal'
         return
       end if
     end do
