@@ -276,6 +276,10 @@ contains
     logical :: smooth
     character(:), allocatable :: interp
     character(:), allocatable :: ftype
+#ifdef ENABLE_DYNAMIC_LOADING
+    character(:), allocatable :: library_path, library_symbol
+    real(r8), allocatable :: p(:)
+#endif
 
     call params%get('type', ftype)
     select case (ftype)
@@ -319,6 +323,17 @@ contains
       call params%get('end time', t1)
       call params%get('end value', v1)
       call alloc_fptr_scalar_func(f, smooth_ramp,[t0,v0,t1,v1])
+#ifdef ENABLE_DYNAMIC_LOADING
+    case ('library')
+      call params%get('library-path', library_path)
+      call params%get('library-symbol', library_symbol)
+      if (params%is_vector('parameters')) then
+        call params%get('parameters', p)
+        call alloc_dl_scalar_func(f, library_path, library_symbol, p)
+      else
+        call alloc_dl_scalar_func(f, library_path, library_symbol)
+      end if
+#endif
     case default
       INSIST(.false.)
     end select
