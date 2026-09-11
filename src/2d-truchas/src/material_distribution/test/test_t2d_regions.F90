@@ -44,6 +44,7 @@ program test_t2d_regions
   call test_disk_region
   call test_half_plane_region
   call test_cell_set_region
+  call test_implicit_region
 
   if (status /= 0) stop 1
 
@@ -194,6 +195,41 @@ contains
     if (.not.r%encloses(unused,bitmask)) call write_fail('test_cell_set_region: failed test 3')
     bitmask = mesh%cell_set_mask(mesh%ncell) ! last cell should be right of the y-axis
     if (r%encloses(unused,bitmask)) call write_fail('test_cell_set_region: failed test 4')
+
+  end subroutine
+
+  subroutine test_implicit_region
+
+    class(t2d_region), allocatable :: r
+    type(parameter_list) :: params
+    type(parameter_list), pointer :: fparams
+    integer, parameter :: powers(2,2) = reshape([1,0,0,1], [2,2])
+    character(:), allocatable :: errmsg
+    integer :: stat, unused
+
+    call params%set('type', 'implicit')
+    fparams => params%sublist('function')
+    call fparams%set('type', 'polynomial')
+    call fparams%set('poly-coef', [1.0_r8, -1.0_r8])
+    call fparams%set('poly-powers', powers)
+    call alloc_region(r, mesh, params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_implicit_region: '//errmsg)
+      return
+    end if
+
+    if (.not.r%encloses([0.0_r8,1.0_r8],unused)) call write_fail('test_implicit_region: failed test 1')
+    if (r%encloses([1.0_r8,0.0_r8],unused)) call write_fail('test_implicit_region: failed test 2')
+
+    call params%set('complement', .true.)
+    call alloc_region(r, mesh, params, stat, errmsg)
+    if (stat /= 0) then
+      call write_fail('test_implicit_region: '//errmsg)
+      return
+    end if
+
+    if (r%encloses([0.0_r8,1.0_r8],unused)) call write_fail('test_implicit_region: failed test 3')
+    if (.not.r%encloses([1.0_r8,0.0_r8],unused)) call write_fail('test_implicit_region: failed test 4')
 
   end subroutine
 

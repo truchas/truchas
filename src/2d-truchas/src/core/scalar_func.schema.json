@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://truchas.org/schema/scalar_func_2d.schema.json",
   "title": "Truchas 2D scalar function value",
-  "description": "A scalar-function value accepted by 2D input parameters. A value may be a real number or an inline scalar-function definition; the 2D implementation does not use names referring to a function table.",
+  "description": "A scalar-function value accepted by 2D input parameters. A value may be a real number or an inline scalar-function definition.",
   "$ref": "#/$defs/scalar-function-value",
   "$defs": {
     "number-array": {
@@ -143,6 +143,19 @@
       ],
       "additionalProperties": false
     },
+    "library": {
+      "type": "object",
+      "title": "Dynamically loaded function",
+      "description": "A scalar function exported by a user-supplied shared library.",
+      "properties": {
+        "type": { "const": "library" },
+        "library-path": { "type": "string", "minLength": 1 },
+        "library-symbol": { "type": "string", "minLength": 1 },
+        "parameters": { "$ref": "#/$defs/number-array" }
+      },
+      "required": ["type", "library-path", "library-symbol"],
+      "additionalProperties": false
+    },
     "scalar-function-value": {
       "title": "Scalar function value",
       "description": "A scalar function input may be a real number, which creates a constant function, or an object defining an inline scalar function.",
@@ -151,7 +164,8 @@
         { "$ref": "#/$defs/constant" },
         { "$ref": "#/$defs/polynomial" },
         { "$ref": "#/$defs/tabular" },
-        { "$ref": "#/$defs/smooth-ramp" }
+        { "$ref": "#/$defs/smooth-ramp" },
+        { "$ref": "#/$defs/library" }
       ]
     },
     "scalar-property-value": {

@@ -17,7 +17,7 @@ module t2d_region_class
   end type
 
   abstract interface
-    pure logical function encloses(this, x, bitmask)
+    logical function encloses(this, x, bitmask)
       import t2d_region, r8
       class(t2d_region), intent(in) :: this
       real(r8), intent(in) :: x(:)
@@ -42,21 +42,21 @@ module t2d_region_class
 
 contains
 
-  pure integer function ifunc(this, x, bitmask)
+  integer function ifunc(this, x, bitmask)
     class(t2d_region), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: bitmask
     ifunc = merge(1, 0, this%encloses(x, bitmask))
   end function
 
-  pure logical function region_box_encloses(this, x, bitmask)
+  logical function region_box_encloses(this, x, bitmask)
     class(t2d_region_box), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: bitmask
     region_box_encloses = this%reg%encloses(x, bitmask)
   end function
 
-  pure integer function region_box_ifunc(this, x, bitmask)
+  integer function region_box_ifunc(this, x, bitmask)
     class(t2d_region_box), intent(in) :: this
     real(r8), intent(in) :: x(:)
     integer, intent(in) :: bitmask

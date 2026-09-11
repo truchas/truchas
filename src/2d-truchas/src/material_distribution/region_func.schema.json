@@ -29,6 +29,7 @@
         { "$ref": "#/$defs/half-plane-region" },
         { "$ref": "#/$defs/box-region" },
         { "$ref": "#/$defs/disk-region" },
+        { "$ref": "#/$defs/implicit-region" },
         { "$ref": "#/$defs/background-region" }
       ]
     },
@@ -77,6 +78,16 @@
         "complement": { "$ref": "#/$defs/complement" }
       },
       "required": ["type", "center", "radius"],
+      "additionalProperties": false
+    },
+    "implicit-region": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "implicit" },
+        "function": { "$ref": "../core/scalar_func.schema.json" },
+        "complement": { "$ref": "#/$defs/complement" }
+      },
+      "required": ["type", "function"],
       "additionalProperties": false
     },
     "background-region": {
