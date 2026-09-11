@@ -159,6 +159,7 @@ contains
       cause = this%hnext_cause
       t_np1 = this%ts_sync%next_time(tout, t_n, this%hlast, this%hnext)
       if (t_np1 < t_n + hproposed) cause = 'output'
+      call env%simlog%begin_terminal_throttle_group()
       do n = 1, this%max_try
         attempt_cause = cause
         if (n > 1) attempt_cause = 'thermal'
@@ -175,20 +176,24 @@ contains
             stat = -1
             errmsg = 'next coupled time step is too small'
             call env%simlog%end_section('step-end status=failed')
+            call env%simlog%end_terminal_throttle_group()
             return
           end if
           if (n == this%max_try) then
             stat = -2
             errmsg = 'unable to take a coupled time step'
             call env%simlog%end_section('step-end status=failed')
+            call env%simlog%end_terminal_throttle_group()
             return
           end if
           call env%simlog%end_section('step-end status=rejected')
         else
           call env%simlog%end_section('step-end status=failed')
+          call env%simlog%end_terminal_throttle_group()
           return
         end if
       end do
+      call env%simlog%end_terminal_throttle_group()
       this%hlast = t_np1 - t_n
       call select_step_cause(this, thermal_hnext, this%hnext, this%hnext_cause)
       t_n = t_np1
