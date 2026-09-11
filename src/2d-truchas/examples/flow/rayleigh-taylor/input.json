@@ -1,0 +1,97 @@
+// Two-dimensional single-mode Rayleigh--Taylor instability benchmark.
+//
+// This is the nondimensional problem of He et al. (1999), with At=0.5 and
+// Re=256.  A light fluid initially occupies the region below a perturbed
+// interface, and a heavy fluid occupies the region above it.  Gravity acts
+// downward, so the unstable light-over-heavy arrangement develops into rising
+// bubbles and falling spikes.  The calculation uses a 1-by-4 domain and a
+// 128-by-512 quadrilateral mesh, with free-slip side and bottom walls and a
+// zero-pressure top boundary.
+//
+// The exact cosine interface function is available as rt-interface.f90 and
+// can be loaded from libregions.so.  The active polynomial function below is
+// a very close approximation to that cosine interface and is convenient when
+// the shared library is not available.  The two versions are nearly
+// indistinguishable in the final output at t=4.5.  To use the exact function,
+// uncomment the library function block and comment out the polynomial block.
+{
+  "materials": {
+    "light-fluid": {
+      "properties": {
+        "fluid": true,
+        "density": 1.0,
+        "viscosity": 0.00390625 // 1/256
+      }
+    },
+    "heavy-fluid": {
+      "properties": {
+        "fluid": true,
+        "density": 3.0,
+        "viscosity": 0.01171875 // 3/256
+      }
+    }
+  },
+  "material-regions": {
+    "refinement-level": 8,
+    "light-fluid": {
+      "material": "light-fluid",
+      "type": "implicit",
+      //"function": {
+      //  "type": "library",
+      //  "library-path": "libregions.so",
+      //  "library-symbol": "rt_interface",
+      //  "parameters": [0.1]
+      //}
+      "function": {
+        "type": "polynomial",
+        "poly-center": [0.5, 2.0],
+        "poly-coef": [
+          0.1,
+          1.0,
+          -1.9739208802178716,
+          6.191367041742973,
+          -5.982734083485947
+        ],
+        "poly-powers": [
+          [0, 0],
+          [0, 1],
+          [2, 0],
+          [4, 0],
+          [6, 0]
+        ]
+      }
+    },
+    "void-background": {
+      "material": "heavy-fluid",
+      "type": "background"
+    }
+  },
+  "mesh": {
+    "x-axis": {"coarse-grid": [0.0, 1.0], "intervals": [128]},
+    "y-axis": {"coarse-grid": [0.0, 4.0], "intervals": [512]},
+    "metis-options": {"ptype": 0, "ncuts": 5}
+  },
+  "flow-model": {
+    "inviscid": false,
+    "body-acceleration": [0.0, -1.0],
+    "bc": {
+      "top": {"type": "pressure", "pressure": 0.0, "face-set-ids": [4]},
+      "walls": {"type": "free-slip", "face-set-ids": [1, 2, 3]}
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.25,
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-6},
+    "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+    "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "initial-time": 0.0,
+  "output-times": {"times": [0.0, 4.5], "subintervals": [18]},
+  "time-stepping": {
+    "initial-time-step": 1.0e-3,
+    "min-time-step": 1.0e-5,
+    "max-time-step": 1.0,
+    "time-step-growth": 1.05
+  },
+  "initial-velocity": [0.0, 0.0]
+}
