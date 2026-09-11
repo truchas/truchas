@@ -59,6 +59,25 @@
           "minimum": 0,
           "default": 0,
           "description": "Optional positive modulus used to merge Exodus element-block IDs. Zero disables normalization."
+        },
+        "partitioner": {
+          "enum": ["metis", "block", "file"],
+          "default": "metis",
+          "description": "Cell partitioning method. METIS is the default; block ignores mesh connectivity, and file reads an explicit partition."
+        },
+        "partition-file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "File containing an explicit cell partition when partitioner is file. Relative paths are resolved relative to the input file."
+        },
+        "first-partition": {
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0,
+          "description": "Partition numbering in partition-file: 0- or 1-based."
+        },
+        "metis-options": {
+          "$ref": "#/$defs/metis-options"
         }
       },
       "required": ["mesh-file"],
@@ -104,9 +123,45 @@
           "type": "number",
           "default": 0.0,
           "description": "Counterclockwise rotation angle in degrees about the origin."
+        },
+        "partitioner": {
+          "enum": ["metis", "block", "file"],
+          "default": "metis",
+          "description": "Cell partitioning method. METIS is the default; block ignores mesh connectivity, and file reads an explicit partition."
+        },
+        "partition-file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "File containing an explicit cell partition when partitioner is file. Relative paths are resolved relative to the input file."
+        },
+        "first-partition": {
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0,
+          "description": "Partition numbering in partition-file: 0- or 1-based."
+        },
+        "metis-options": {
+          "$ref": "#/$defs/metis-options"
         }
       },
       "required": ["x-axis", "y-axis"],
+      "additionalProperties": false
+    },
+    "metis-options": {
+      "type": "object",
+      "description": "Optional METIS graph-partitioning options.",
+      "properties": {
+        "ptype": { "type": "integer", "description": "Partitioning method: recursive bisection or k-way partitioning." },
+        "iptype": { "type": "integer", "description": "Initial partitioning method." },
+        "ctype": { "type": "integer", "description": "Coarsening scheme." },
+        "ncuts": { "type": "integer", "minimum": 1, "description": "Number of partitioning trials." },
+        "niter": { "type": "integer", "minimum": 1, "description": "Number of refinement iterations." },
+        "ufactor": { "type": "integer", "minimum": 0, "description": "Allowed partition imbalance factor in METIS units." },
+        "minconn": { "type": "integer", "enum": [0, 1], "description": "Whether to minimize the maximum connectivity." },
+        "contig": { "type": "integer", "enum": [0, 1], "description": "Whether to enforce contiguous partitions." },
+        "seed": { "type": "integer", "description": "Random seed used by METIS." },
+        "dbglvl": { "type": "integer", "minimum": 0, "description": "METIS diagnostic output level." }
+      },
       "additionalProperties": false
     }
   }
