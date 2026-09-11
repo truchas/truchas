@@ -65,7 +65,7 @@ contains
   subroutine init(this, env, params, stat, errmsg)
 
     use t2d_unstr_mesh_factory
-    use signal_handler, only: init_signal_handler, SIGURG
+    use signal_handler, only: init_signal_handler, SIGUSR1
     use material_factory, only: load_material_database
 
     class(t2d_thermal_sim), intent(out) :: this
@@ -81,8 +81,8 @@ contains
     integer :: i, rlev
 
     stat = 0
-    !! Catch SIGURG signals.
-    call init_signal_handler(SIGURG)
+    !! Catch SIGUSR1 signals.
+    call init_signal_handler(SIGUSR1)
 
     !! Construct the mesh.
     if (.not.params%is_sublist('mesh')) then

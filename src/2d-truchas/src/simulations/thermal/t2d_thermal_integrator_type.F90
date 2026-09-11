@@ -17,7 +17,7 @@ module t2d_thermal_integrator_type
   use,intrinsic :: iso_fortran_env, only: int64, r8 => real64
   use parameter_list_type
   use simulation_environment_type
-  use signal_handler, only: read_signal, SIGURG
+  use signal_handler, only: read_signal, SIGUSR1
   use time_step_sync_type
   use t2d_thermal_model_type
   use t2d_thermal_solver_type
@@ -185,10 +185,10 @@ contains
       if (this%hnext == this%dt_grow*this%hlast) this%hnext_cause = 'growth'
       if (this%hnext == this%dt_max) this%hnext_cause = 'max'
 
-      call read_signal(SIGURG, sig_rcvd)
+      call read_signal(SIGUSR1, sig_rcvd)
       if (sig_rcvd) then
         stat = 1
-        errmsg = 'received SIGURG signal'
+        errmsg = 'received SIGUSR1 signal'
         return
       end if
     end do

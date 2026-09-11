@@ -70,7 +70,7 @@ contains
 
   subroutine init(this, env, params, stat, errmsg)
     use material_factory, only: load_material_database
-    use signal_handler, only: init_signal_handler, SIGURG
+    use signal_handler, only: init_signal_handler, SIGUSR1
 
     class(t2d_flow_thermal_sim), intent(out) :: this
     type(simulation_environment), intent(inout) :: env
@@ -86,7 +86,7 @@ contains
 
     stat = 0
 
-    call init_signal_handler(SIGURG)
+    call init_signal_handler(SIGUSR1)
 
     !! Construct the mesh.
     if (.not.params%is_sublist('mesh')) then

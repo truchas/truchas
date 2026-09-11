@@ -181,7 +181,7 @@ contains
 
 
   subroutine integrate(this, env, tout, stat, errmsg)
-    use signal_handler, only: read_signal, SIGURG
+    use signal_handler, only: read_signal, SIGUSR1
 
     class(t2d_flow_integrator), intent(inout) :: this
     type(simulation_environment), intent(inout) :: env
@@ -222,10 +222,10 @@ contains
       this%hnext = min(this%dt_grow*this%hlast, this%dt_max, this%solver%courant_time_step())
       t_n = t_np1
       this%tlast = t_n
-      call read_signal(SIGURG, sig_rcvd)
+      call read_signal(SIGUSR1, sig_rcvd)
       if (sig_rcvd) then
         stat = 1
-        errmsg = 'received SIGURG signal'
+        errmsg = 'received SIGUSR1 signal'
         return
       end if
     end do
