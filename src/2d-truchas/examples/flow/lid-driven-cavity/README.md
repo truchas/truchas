@@ -12,8 +12,8 @@ and the characteristic length and speed are one; viscosity is `1e-3`, giving
 nondimensional time 40, with output at five-unit intervals.
 
 The usual benchmark comparison is against the horizontal and vertical
-centerline velocity profiles tabulated by Ghia et al. This is a longer-running
-example for visual and quantitative benchmarking, not a CTest regression.
+centerline velocity profiles tabulated by Ghia et al. The `t=40` output is
+visually at steady state for this configuration.
 
 Run it with, for example:
 
