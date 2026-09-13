@@ -158,7 +158,7 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env)
     class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -170,6 +170,10 @@ contains
     type(simulation_environment), optional, intent(inout) :: env
 
     integer :: c, f, pin_face
+    type(simulation_environment), optional, intent(in) :: log_env
+    real(r8), optional, intent(in) :: compliance(:), reaction_cap
+    real(r8) :: reaction(this%mesh%ncell_onP), expansion, tolerance
+    character(160) :: warning
     logical :: initial_
 
     ASSERT(dt > 0.0_r8)
@@ -217,16 +221,21 @@ contains
     call this%mesh%face_imap%gather_offp(state%vel_fn)
     if (present(env)) call env%timer%stop('flow/projection/predictor')
 
+    reaction = 0.0_r8
+    if (present(compliance)) then
+      ASSERT(size(compliance) >= this%mesh%ncell_onP)
+      reaction = this%mesh%volume(:this%mesh%ncell_onP)*compliance(:this%mesh%ncell_onP)/dt
+    end if
     if (present(env)) call env%timer%start('flow/projection/assemble')
     call this%projection%assemble(inv_density_f, cell_t, face_t, bc, this%rhs, &
-        bc%pressure_correction_dirichlet%value)
+        bc%pressure_correction_dirichlet%value, reaction, reaction_cap, pin_face)
     if (present(env)) call env%timer%stop('flow/projection/assemble')
     if (present(env)) call env%timer%start('flow/projection/setup')
     call this%solver%setup()
     if (present(env)) call env%timer%stop('flow/projection/setup')
     if (present(env)) call env%timer%start('flow/projection/rhs')
     call this%operators%divergence(state%vel_fn, this%flux)
-    this%rhs = this%rhs - this%flux/dt
+    this%rhs = this%rhs - this%flux/dt - reaction*state%p_cc(:this%mesh%ncell_onP)
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) this%rhs(c) = 0.0_r8
     end do
@@ -243,7 +252,6 @@ contains
     call this%mesh%cell_imap%gather_offp(this%delta_p)
 
     call pressure_derivative(this, this%delta_p, cell_t, face_t, bc, this%derivative_f, correction=.true.)
-    pin_face = bc%pressure_pin_face(face_t)
     if (pin_face > 0) then
       c = this%mesh%fcell(1,pin_face)
       this%derivative_f(pin_face) = -this%delta_p(c)/this%operators%normal_distance(pin_face)
@@ -255,6 +263,26 @@ contains
     call this%mesh%face_imap%gather_offp(state%vel_fn)
 
     state%p_cc = state%p_cc + this%delta_p
+    if (present(env) .or. present(log_env)) then
+      call this%operators%divergence(state%vel_fn, this%flux)
+      expansion = 0.0_r8
+      do c = 1, this%mesh%ncell_onP
+        if (reaction(c) <= 0.0_r8 .or. state%p_cc(c) >= 0.0_r8) cycle
+        tolerance = 100.0_r8*epsilon(1.0_r8)*max(1.0_r8, abs(state%p_cc(c)))
+        if (state%p_cc(c) < -tolerance) &
+            expansion = max(expansion, this%flux(c)/this%mesh%volume(c))
+      end do
+      expansion = global_maxval(expansion)
+      if (expansion > 100.0_r8*epsilon(1.0_r8)/dt) then
+        write(warning, '(a,es12.5,a)') &
+            'Trapped-void compliance produced positive divergence; maximum=', expansion, ' (1/time).'
+        if (present(env)) then
+          call env%simlog%warn(trim(warning))
+        else if (present(log_env)) then
+          call log_env%simlog%warn(trim(warning))
+        end if
+      end if
+    end if
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) then
         state%p_cc(c) = 0.0_r8

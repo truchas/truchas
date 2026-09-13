@@ -20,6 +20,8 @@
 module t2d_flow_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use parallel_communication, only: global_any
   use parameter_list_type
   use t2d_unstr_mesh_type
   use material_model_type
@@ -41,6 +43,8 @@ module t2d_flow_model_type
     type(t2d_flow_momentum), pointer, public :: momentum => null()
     type(t2d_flow_projection), pointer, public :: projection => null()
     type(t2d_flow_material_props), public :: matl_props
+    real(r8), public :: void_collapse_impedance = 0.0_r8
+    real(r8), public :: void_collapse_reaction_cap = 100.0_r8
     logical, public :: inviscid = .false.
     logical, public :: unsteady_stokes = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
@@ -52,6 +56,7 @@ module t2d_flow_model_type
     procedure :: set_initial_material_state
     procedure :: set_pre_solidification_state
     procedure :: accept_material_state
+    procedure :: collapse_compliance
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
     procedure :: assemble_momentum
@@ -69,12 +74,27 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
 
-    type(parameter_list), pointer :: bc_params
+    type(parameter_list), pointer :: bc_params, collapse_params
     real(r8), allocatable :: body_acceleration(:)
     real(r8) :: fluid_fraction_cutoff, min_face_fraction
     character(96) :: message
 
     stat = 0
+    if (params%is_sublist('void-collapse')) then
+      collapse_params => params%sublist('void-collapse')
+      call collapse_params%get('pressure-time-scale', this%void_collapse_impedance, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      call collapse_params%get('reaction-cap', this%void_collapse_reaction_cap, &
+          default=100.0_r8, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (.not.ieee_is_finite(this%void_collapse_impedance) .or. this%void_collapse_impedance <= 0.0_r8 .or. &
+          .not.ieee_is_finite(this%void_collapse_reaction_cap) .or. this%void_collapse_reaction_cap <= 0.0_r8) then
+        stat = 1
+        errmsg = 'void-collapse pressure-time-scale and reaction-cap must be finite and positive'
+        return
+      end if
+      call env%simlog%info('Using two-sided trapped-void pressure compliance.')
+    end if
     call params%get('inviscid', this%inviscid, default=.false., stat=stat, errmsg=errmsg)
     if (stat /= 0) return
     call params%get('unsteady-stokes', this%unsteady_stokes, default=.false., stat=stat, errmsg=errmsg)
@@ -283,6 +303,26 @@ contains
   end subroutine
 
 
+  !! Local neighbor eligibility is already encoded by REGULAR_VOID_T.
+  !! The prototype applies only to cells containing fluid and void, no solid.
+  function collapse_compliance(this) result(compliance)
+    class(t2d_flow_model), intent(in) :: this
+    real(r8) :: compliance(this%mesh%ncell_onP)
+    real(r8) :: alpha, fluid
+    integer :: c
+
+    compliance = 0.0_r8
+    if (this%void_collapse_impedance <= 0.0_r8) return
+    do c = 1, this%mesh%ncell_onP
+      if (this%matl_props%cell_t(c) /= regular_void_t) cycle
+      if (abs(this%matl_props%vof(c)-1.0_r8) > 100.0_r8*epsilon(1.0_r8)) cycle
+      fluid = this%matl_props%vof_novoid(c)
+      alpha = max(0.0_r8, this%matl_props%vof(c)-fluid)
+      if (fluid > 0.0_r8) compliance(c) = (alpha/fluid)/this%void_collapse_impedance
+    end do
+  end function
+
+
   subroutine compute_bc(this, time, dt, stat, errmsg)
     class(t2d_flow_model), intent(inout) :: this
     real(r8), intent(in) :: time, dt
@@ -291,6 +331,9 @@ contains
 
     stat = 0
     call this%bc%compute(time, dt)
+    if (this%void_collapse_impedance > 0.0_r8) then
+      if (global_any(this%collapse_compliance() > 0.0_r8)) return
+    end if
     call this%bc%check_velocity_flux(stat, errmsg)
   end subroutine
 

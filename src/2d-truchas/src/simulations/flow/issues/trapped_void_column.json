@@ -1,0 +1,105 @@
+// Pressure-fed 1 x 10 column on a 1 x 10 mesh; initially water below y=2.
+// Unit pressure and density, no gravity. Ideal sharp-interface fill time ~6.948.
+// Continue to t=30 to observe trapped-void collapse at the closed top.
+{
+  "materials": {
+    "water": {
+      "properties": {
+        "fluid": true,
+        "density": 1.0
+      }
+    }
+  },
+  "material-regions": {
+    "refinement-level": 0,
+    "water": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [
+        0.0,
+        0.0
+      ],
+      "upper-corner": [
+        1.0,
+        2.0
+      ]
+    },
+    "void-background": {
+      "material": "VOID",
+      "type": "background"
+    }
+  },
+  "mesh": {
+    "x-axis": {
+      "coarse-grid": [
+        0.0,
+        1.0
+      ],
+      "intervals": [
+        1
+      ]
+    },
+    "y-axis": {
+      "coarse-grid": [
+        0.0,
+        3.0
+      ],
+      "intervals": [
+        3
+      ]
+    }
+  },
+  "flow-model": {
+    "inviscid": true,
+    "void-collapse": {
+      "pressure-time-scale": 1.0,
+      "reaction-cap": 100.0
+    },
+    "bc": {
+      "bottom": {
+        "type": "pressure",
+        "face-set-ids": [
+          3
+        ],
+        "pressure": 1.0,
+        "inflow-material": "water"
+      },
+      "walls": {
+        "type": "free-slip",
+        "face-set-ids": [
+          1,
+          2,
+          4
+        ]
+      }
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.25,
+    "volume-tracking": {
+      "algorithm": "geometric",
+      "cutoff": 1e-08,
+      "subcycles": 4
+    },
+    "projection-solver": {
+      "rel-tol": 1e-12,
+      "max-ds-iter": 100,
+      "max-amg-iter": 100
+    }
+  },
+  "initial-time": 0.0,
+  "output-times": {
+    "times": [0.0, 4.0, 6.0],
+    "subintervals": [4, 200]
+  },
+  "time-stepping": {
+    "initial-time-step": 0.01,
+    "min-time-step": 1e-08,
+    "max-time-step": 0.01,
+    "time-step-growth": 1.1
+  },
+  "initial-velocity": [
+    0.0,
+    0.0
+  ]
+}

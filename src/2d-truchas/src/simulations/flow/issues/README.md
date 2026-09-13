@@ -39,3 +39,31 @@ inaccurate location, even though the material interface is mesh-aligned and
 there are no mixed cells.  The checker is retained as a manual diagnostic and
 is expected to report the current velocity-profile error until the interface
 discretization is improved.
+
+## Pressure-fed closed column
+
+`trapped_void_column.json` is a 1-by-10 column on a 1-by-10 mesh. The bottom
+two cells initially contain inviscid, unit-density water; the remaining eight
+contain VOID. The bottom has unit pressure and water inflow composition;
+the sides and top are free-slip. Gravity and initial velocity are zero.
+Geometric tracking and two-sided trapped-void compliance are enabled, with
+pressure-time-scale 1 and reaction-cap 100.
+
+For the ideal sharp-interface column before impact, the liquid height obeys
+h''=1/h with h(0)=2 and h'(0)=0. Integrating to h=10 gives an estimated filling
+time of 6.948. The input runs to t=30, outputs every 0.25, and limits the
+timestep to 0.01. Timestep growth allows recovery after a step is shortened
+to land on an output time.
+
+A one-rank NAG run reached t=30 in 3072 accepted steps. The first saved fully
+filled state was t=7; all ten cells remained full thereafter. At t=30 the top
+pressure was 0.99999775 and the maximum cell vertical speed was 2.20e-7.
+No positive-divergence warning was emitted. This coarse column filled without
+a persistent residual void in that run; it is a diagnostic, not a demonstration
+that collapse is required for this configuration.
+
+Run with the flow simulation, for example:
+
+```sh
+mpiexec -n 1 /path/to/truchas-2d --simulation flow --output-dir column-output trapped_void_column.json
+```
