@@ -23,6 +23,7 @@ module t2d_flow_projection_type
   use t2d_flow_operators_type
   use t2d_flow_bc_type
   use flow_domain_types
+  use parallel_communication, only: global_any
   use pcsr_matrix_type
   implicit none
   private
@@ -68,7 +69,7 @@ contains
   !! RHS. Non-regular cells receive dummy equations. A regular/VOID face is
   !! treated as a zero-pressure boundary, while a solid face is zero flux.
   !! BC must already have been evaluated at the required time.
-  subroutine assemble(this, inv_density_f, cell_t, face_t, bc, rhs, dirichlet_value)
+  subroutine assemble(this, inv_density_f, cell_t, face_t, bc, rhs, dirichlet_value, reaction, reaction_cap, pressure_pin)
     class(t2d_flow_projection), intent(inout) :: this
     real(r8), intent(in) :: inv_density_f(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -76,6 +77,12 @@ contains
     real(r8), intent(out) :: rhs(:)
     real(r8), optional, intent(in) :: dirichlet_value(:)
 
+    !! REACTION contains volume-integrated C/dt; return the capped values so
+    !! the caller uses precisely the same coefficient in the pressure offset.
+    real(r8), optional, intent(inout) :: reaction(:)
+    real(r8), optional, intent(in) :: reaction_cap
+    integer, optional, intent(out) :: pressure_pin
+    real(r8) :: diagonal(this%mesh%ncell_onP), cap
     integer :: c, i, f, neighbor, pin_face, n
     real(r8) :: coefficient
 
@@ -84,6 +91,13 @@ contains
     ASSERT(size(face_t) >= this%mesh%nface)
     ASSERT(size(rhs) == this%mesh%ncell_onP)
     pin_face = bc%pressure_pin_face(face_t)
+    if (present(reaction)) then
+      ASSERT(size(reaction) == this%mesh%ncell_onP)
+      ASSERT(all(reaction >= 0.0_r8))
+      where (cell_t(:this%mesh%ncell_onP) > regular_t) reaction = 0.0_r8
+      if (global_any(reaction > 0.0_r8)) pin_face = 0
+    end if
+    if (present(pressure_pin)) pressure_pin = pin_face
     ASSERT(pin_face >= 0 .and. pin_face <= this%mesh%nface_onP)
     if (pin_face > 0) then
       ASSERT(this%mesh%fcell(2,pin_face) == 0)
@@ -126,6 +140,18 @@ contains
         else
           rhs(c) = rhs(c) + coefficient*bc%pressure_dirichlet%value(n)
         end if
+      end do
+    end if
+
+    if (present(reaction)) then
+      cap = 100.0_r8
+      if (present(reaction_cap)) cap = reaction_cap
+      ASSERT(cap > 0.0_r8)
+      call this%matrix_%get_diag_copy(diagonal)
+      do c = 1, this%mesh%ncell_onP
+        ! An isolated cell has no diffusion stencil; retain its reaction.
+        if (diagonal(c) > 0.0_r8) reaction(c) = min(reaction(c), cap*diagonal(c))
+        call this%matrix_%add_to(c, c, reaction(c))
       end do
     end if
 

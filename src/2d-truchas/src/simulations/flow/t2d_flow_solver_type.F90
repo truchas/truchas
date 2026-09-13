@@ -124,6 +124,11 @@ contains
         return
       end if
     end if
+    if (model%void_collapse_impedance > 0.0_r8 .and. algorithm /= 'geometric') then
+      stat = 1
+      errmsg = 'trapped-void collapse requires geometric volume tracking'
+      return
+    end if
     call params%get('courant-number', courant_number, default=0.5_r8, stat=stat, errmsg=errmsg)
     if (stat /= 0) then
       errmsg = 'processing ' // params%path() // ': ' // errmsg

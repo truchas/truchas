@@ -36,6 +36,7 @@ program test_t2d_flow_solver
 
   status = 0
   call test_step
+  call test_collapse
 
   call halt_parallel_communication
   stop status
@@ -97,6 +98,91 @@ contains
     call model%operators%divergence(velocity_face, flux)
     call require(maxval(abs(flux)) < 1.0e-8_r8, 'Navier--Stokes step did not make face velocity solenoidal')
     call require(solver%courant_time_step() > 0.0_r8, 'Navier--Stokes Courant time step is not positive')
+  end subroutine
+
+
+  subroutine test_collapse
+    type(t2d_unstr_mesh), pointer :: mesh
+    type(t2d_flow_model), target :: model
+    type(t2d_flow_solver), target :: solver
+    type(material_database) :: database
+    type(material_model) :: matl_model
+    type(parameter_list), pointer :: matl_params, plist, bc_params, tracking_params
+    type(parameter_list), target :: model_params, solver_params
+    real(r8), allocatable :: velocity(:,:), vfrac(:,:), temperature(:)
+    real(r8), pointer :: velocity_face(:)
+    real(r8) :: before, after, initial_volume, inflow, dt, time
+    character(:), allocatable :: errmsg
+    integer :: stat, c, f, step
+
+    mesh => new_unstr_2d_mesh(env, [0.0_r8,0.0_r8], [1.0_r8,1.0_r8], [8,8], 0.0_r8, 0.0_r8)
+    call model_params%set('inviscid', .true.)
+    plist => model_params%sublist('void-collapse')
+    call plist%set('pressure-time-scale', 1.0_r8)
+    bc_params => model_params%sublist('bc')
+    plist => bc_params%sublist('wall')
+    call plist%set('type', 'free-slip')
+    call plist%set('face-set-ids', [2,3,4])
+    plist => bc_params%sublist('feed')
+    call plist%set('type', 'pressure')
+    call plist%set('face-set-ids', [1])
+    call plist%set('pressure', 1.0_r8)
+    call model%init(env, mesh, model_params, stat, errmsg)
+    call require(stat == 0, 'collapse model initialization failed')
+    if (stat /= 0) return
+    call parameter_list_from_json_string( &
+        '{"liquid":{"properties":{"fluid":true,"density":1.0}}}', matl_params, errmsg)
+    call load_material_database(database, matl_params, stat, errmsg)
+    call require(stat == 0, 'collapse material database failed')
+    if (stat /= 0) return
+    call matl_model%init(['liquid','VOID  '], database, stat, errmsg)
+    call require(stat == 0, 'collapse material model failed')
+    if (stat /= 0) return
+    plist => solver_params%sublist('projection-solver')
+    call set_solver_params(plist)
+    tracking_params => solver_params%sublist('volume-tracking')
+    call tracking_params%set('algorithm', 'simple')
+    call solver%init(env, model, matl_model, solver_params, stat, errmsg)
+    call require(stat /= 0, 'collapse accepted simple tracking')
+    call tracking_params%set('algorithm', 'geometric')
+    call tracking_params%set('cutoff', 1.0e-10_r8)
+    call solver%init(env, model, matl_model, solver_params, stat, errmsg)
+    call require(stat == 0, 'collapse solver initialization failed')
+    if (stat /= 0) return
+    allocate(velocity(2,mesh%ncell_onP), vfrac(2,mesh%ncell), temperature(mesh%ncell_onP))
+    vfrac(1,:) = 1.0_r8
+    do c = 1, mesh%ncell
+      if (mesh%cell_centroid(1,c) > 0.875_r8) vfrac(1,c) = 0.5_r8
+    end do
+    vfrac(2,:) = 1.0_r8-vfrac(1,:)
+    temperature = 0.0_r8
+    velocity = 0.0_r8
+    dt = 0.005_r8
+    call solver%set_initial_material_state(vfrac, temperature)
+    initial_volume = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
+    call solver%set_initial_state(env, 0.0_r8, dt, velocity, stat)
+    call require(stat == 0, 'collapse initial solve failed')
+    if (stat /= 0) return
+    do step = 1, 20
+      before = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
+      call solver%get_face_velocity(velocity_face)
+      inflow = 0.0_r8
+      do f = 1, mesh%nface_onP
+        if (mesh%fcell(2,f) == 0) inflow = inflow-dt*mesh%area(f)*velocity_face(f)
+      end do
+      inflow = global_sum(inflow)
+      time = (step-1)*dt
+      call solver%step(env, time, time+dt, stat, errmsg)
+      call require(stat == 0, 'coupled collapse step failed')
+      if (stat /= 0) return
+      after = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
+      ! Initial velocity is zero; the first projection supplies the next transport velocity.
+      if (step > 1) call require(after > before, 'stationary pocket stopped collapsing under pressure loading')
+      call require(abs(after-before-inflow) < 1.0e-8_r8, 'collapse liquid gain differs from boundary inflow')
+      call require(all(model%matl_props%vof_novoid >= 0.0_r8 .and. &
+          model%matl_props%vof_novoid <= 1.0_r8), 'collapse produced unbounded liquid fractions')
+    end do
+    call require(after > initial_volume+1.0e-4_r8, 'collapse did not replace measurable void with liquid')
   end subroutine
 
 

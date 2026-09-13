@@ -49,6 +49,7 @@ contains
     type(t2d_flow_bc) :: bc
     real(r8), allocatable :: inv_density_f(:), p(:), one(:), result(:), rhs(:)
     integer, allocatable :: cell_t(:), face_t(:)
+    real(r8), allocatable :: reaction(:)
     real(r8), parameter :: gradient(2) = [1.0_r8, 2.0_r8]
     character(:), allocatable :: errmsg
     integer :: c, c1, c2, f, interior_face, stat
@@ -81,6 +82,17 @@ contains
     call require(global_any(pinned), 'all-Neumann pressure conditions did not remove the constant nullspace')
     call require(maxval(abs(rhs)) < 1.0e-12_r8, 'homogeneous Neumann condition changed projection RHS')
 
+    allocate(reaction(mesh%ncell_onP))
+    reaction = 0.25_r8
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs, reaction=reaction)
+    call matrix%matvec(one, result)
+    call require(maxval(abs(result-reaction)) < 1.0e-12_r8, 'reaction projection retained artificial pressure pin')
+    reaction = huge(1.0_r8)
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs, reaction=reaction, reaction_cap=2.0_r8)
+    call matrix%matvec(one, result)
+    call require(maxval(abs(result-reaction)) < 1.0e-10_r8, 'capped reaction does not match returned coefficient')
+    call require(all(reaction < 100.0_r8), 'reaction cap did not bound stencil strength')
+    call projection%assemble(inv_density_f, cell_t, face_t, bc, rhs)
     call matrix%matvec(p, result)
     linear_harmonic = .true.
     do c = 1, mesh%ncell_onP
