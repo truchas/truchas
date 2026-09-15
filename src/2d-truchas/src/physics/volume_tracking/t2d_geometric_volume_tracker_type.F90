@@ -399,6 +399,7 @@ contains
       is_mixed_donor_cell, is_axisym, vel, dt, vof, cutoff)
 
     use t2d_cell_geom_vof_type
+    use t2d_flux_volume_nodes_function, only: flux_volume_nodes
     use t2d_truncation_volume_type
     use t2d_plane_type
 
@@ -409,7 +410,7 @@ contains
     logical, intent(in) :: is_mixed_donor_cell, is_axisym
     real(r8), intent(in) :: vel(:), dt, vof, cutoff
 
-    integer :: f
+    integer :: f, nnode
     real(r8) :: vp, flux_vol, flux_vol_node(2,4)
     type(t2d_truncation_volume) :: trunc_vol
 
@@ -421,14 +422,19 @@ contains
 
       if (is_mixed_donor_cell) then
         ! calculate the vertices describing the volume being truncated through the face
-        call flux_vol_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node, is_axisym)
+        call flux_volume_nodes(f, cell, vel(f)*dt, flux_vol, cutoff, flux_vol_node, nnode, &
+          is_axisym)
 
         ! compute the volume truncated by interface planes in each flux volumes
         ! Vp is the volume of current material and the materials that came before it.
         ! flux_vol_sum is the volume of materials before the current material.
         ! this is why material_volume_flux = Vp-flux_vel_sum
-        call trunc_vol%init(flux_vol_node, P%normal, is_axisym)
-        Vp = trunc_vol%volume(P%rho)
+        if (nnode > 2) then
+          call trunc_vol%init(flux_vol_node(:,:nnode), P%normal, is_axisym)
+          Vp = trunc_vol%volume(P%rho)
+        else
+          Vp = 0.0_r8
+        end if
       else
         ! For clean donor cells, the entire Flux volume goes to the single donor material.
         Vp = merge(abs(flux_vol), 0.0_r8, vof >= 1-cutoff)
@@ -449,79 +455,6 @@ contains
     end do
 
   end subroutine compute_material_volume_flux
-
-  ! Given the value of Flux_Vol (the volume of material that moves
-  ! through the current advection cell face), find the vertices which
-  ! describe this volume.  Four of these vertices will be the ones that
-  ! describe the advection cell face. The other four vertices will lie
-  ! approximately "DIST" away from the advection cell face. These are
-  ! only approximately "DIST" away because the cell cross-sectional area
-  ! may increase or decrease as one moves away from the advection cell
-  ! face.  The value used is varied from "DIST" such that the vertices
-  ! describe a hexagonal volume that matches the value of Flux_Vol.
-
-  subroutine flux_vol_nodes(face, cell, dist, flux_vol, cutoff, flux_vol_node, is_axisym)
-
-    use t2d_cell_geom_vof_type
-    use t2d_plane_type
-    use t2d_locate_plane_os_function
-
-    integer, intent(in) :: face
-    type(t2d_cell_geom), intent(in) :: cell
-    real(r8), intent(in) :: dist, cutoff, flux_vol
-    real(r8), intent(out) :: flux_vol_node(:,:)
-    logical, intent(in) :: is_axisym
-
-    integer, parameter :: flux_vol_iter_max = 10
-
-    integer :: ifc, fc, icount, on_point(2)
-    real(r8) :: xfc(2), rho_fp, node_set(2,2), fv_nodes(2,2)
-    type(t2d_plane) :: fluxplane
-    logical :: is_guess
-
-    ! find the line-constant for the fluxing plane (fluxing line in 2D)
-    xfc = 0.5_r8*(cell%node(:,face)+cell%node(:,mod(face,cell%nfc)+1))
-    rho_fp = dot_product(dist*cell%face_normal(:,face) - xfc, cell%face_normal(:,face))
-
-    ! fluxing plane
-    ! this is the first guess for the plane-constant, which will be passed to Brent's
-    ! method to get the correct intersection plane to match flux_vol
-    is_guess = .true.
-    ! Negative of face normal is needed because 'locate_plane_os' looks for area 'behind'
-    ! the plane, but we need area 'in front of' fluxing plane
-    fluxplane%normal = -cell%face_normal(:,face)
-    fluxplane%rho = rho_fp
-
-    call locate_plane_os(fluxplane%normal, flux_vol/cell%volume, cell%volume, cell%node, &
-      cutoff, flux_vol_iter_max, is_axisym, fluxplane, is_guess)
-
-    ! find intersections of fluxing plane with other faces to find the flux nodes
-    icount = 0
-    do ifc = 1, cell%nfc-1
-
-      ! find id of the face ahead of 'face'. This approach of starting with the face after
-      ! 'face' (rather than starting with face-id 1) is used so that an incorrect ordering
-      ! leading to an 'hourglass' element is not obtained.
-      fc = face+ifc
-      if (fc > cell%nfc) fc = mod(face+ifc,cell%nfc)
-
-      ! check if this face is intersected by fluxing plane
-      node_set(:,1) = cell%node(:,fc)
-      node_set(:,2) = cell%node(:,mod(fc,cell%nfc)+1)
-      if (fluxplane%intersects(node_set)) then
-        icount = icount+1
-        INSIST(icount <= 2)
-        call fluxplane%intersection_point(fv_nodes(:,icount), on_point(icount), node_set)
-      end if
-    end do !ifc
-    INSIST(icount >= 2)
-
-    flux_vol_node(:,1) = cell%node(:,face)
-    flux_vol_node(:,2) = cell%node(:,mod(face,cell%nfc)+1)
-    flux_vol_node(:,3) = fv_nodes(:,1)
-    flux_vol_node(:,4) = fv_nodes(:,2)
-
-  end subroutine flux_vol_nodes
 
   !subroutine donor_fluxes_nd_cell(this, i, vel, vof, dt)
 

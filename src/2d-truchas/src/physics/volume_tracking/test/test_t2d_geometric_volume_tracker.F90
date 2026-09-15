@@ -10,6 +10,7 @@
 program test_t2d_geometric_volume_tracker
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use mpi_f08
   use parallel_communication
   use simulation_environment_type
@@ -131,6 +132,8 @@ contains
     call require_close_2d(vof, expected, 'planar transport', 1.0e-12_r8)
     call require_close_1d(sum(vof, dim=1), 1.0_r8, 'planar fraction sum', 1.0e-12_r8)
     call require(all(vof >= 0.0_r8 .and. vof <= 1.0_r8), 'planar boundedness')
+    call require_face_flux_conservation(mesh, vel, flux_vol, 0.1_r8, &
+        'planar face-flux conservation')
 
     deallocate(mesh)
 
@@ -271,6 +274,8 @@ contains
     call require_close_1d(sum(vof, dim=1), 1.0_r8, 'three-material fraction sum', 1.0e-12_r8)
     call require(all(vof >= 0.0_r8 .and. vof <= 1.0_r8), 'three-material boundedness')
     call require(vof(1,1) < vof(2,1) .and. vof(2,1) < vof(3,1), 'three-material ordering')
+    call require_face_flux_conservation(mesh, vel, flux_vol, 0.1_r8, &
+        'three-material face-flux conservation')
 
     deallocate(mesh)
 
@@ -416,6 +421,27 @@ contains
     end do
 
   end subroutine uniform_face_velocity
+
+
+  subroutine require_face_flux_conservation(mesh, vel, flux_vol, dt, message)
+
+    type(t2d_unstr_mesh), intent(in) :: mesh
+    real(r8), intent(in) :: vel(:), flux_vol(:,:), dt
+    character(*), intent(in) :: message
+
+    real(r8) :: expected
+    integer :: c, f, j
+
+    call require(all(ieee_is_finite(flux_vol)), message // ': finite fluxes')
+    do c = 1, mesh%ncell_onP
+      do j = mesh%cstart(c), mesh%cstart(c+1)-1
+        f = mesh%cface(j)
+        expected = dt*vel(j)*mesh%area(f)
+        call require(abs(sum(flux_vol(:,j))-expected) <= 1.0e-12_r8, message)
+      end do
+    end do
+
+  end subroutine require_face_flux_conservation
 
 
   subroutine require(condition, message)

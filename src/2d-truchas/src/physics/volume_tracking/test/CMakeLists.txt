@@ -1,6 +1,10 @@
 include(CTest)
 
-foreach(target IN ITEMS test_t2d_geometric_volume_tracker test_t2d_simple_volume_tracker)
+foreach(target IN ITEMS
+    test_t2d_geometric_volume_tracker
+    test_t2d_flux_volume_nodes
+    test_t2d_simple_volume_tracker
+    test_t2d_truncation_volume)
   add_executable(${target} ${target}.F90)
   target_link_libraries(${target} volume_tracking_2d truchas ${TRUCHAS_LINK_LIBS})
   add_test(NAME ${target}
