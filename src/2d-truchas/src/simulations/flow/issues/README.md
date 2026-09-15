@@ -5,6 +5,30 @@ weaknesses. They are diagnostic cases, not active CTest regressions. Each input
 file contains a short description of its physical setup; this file records the
 reason for preserving the case and the observed behavior.
 
+## Pressure filling of a closed-ended channel
+
+`closed_channel_fill.json` uses a 1x10 channel with ten square cells stacked
+in the y direction. Inviscid fluid (density 1) initially fills the bottom
+two cells. A bottom pressure of 1 drives filling; all other boundaries are
+free-slip, and gravity is absent. The initial velocity is zero.
+
+Before contact with the closed end, ideal plug flow satisfies
+`dh/dt = u`, `du/dt = 1/h`, and `u^2 = 2 log(h/2)`.
+Integrating from h=2 to h=10 gives a filling time of approximately
+6.947979. This continuous solution provides a comparison before contact,
+not an exact discrete solution or a description of the stopping impulse.
+
+The purpose is to inspect what happens when fluid enters the final cell:
+the remaining VOID then has no adjacent pure-VOID cell, and the top wall
+prevents through-flow. This is an exploratory input, not a demonstrated
+failure or a regression with prescribed results. It requests output every
+0.1 units of time through t=10, beyond the ideal filling time.
+Run serially given the ten-cell mesh:
+
+```sh
+truchas-2d -s flow closed_channel_fill.json
+```
+
 ## Noisy hydrostatic free surface
 
 These cases use a unit-square water/VOID configuration with downward gravity,

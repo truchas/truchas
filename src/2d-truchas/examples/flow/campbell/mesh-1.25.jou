@@ -1,0 +1,7 @@
+#{h1 = 1.25} xy plate/runner resolution; should divide 5
+#{h3 = 0.3125} x res sprue bottom; divides 5; expands by 4 to top
+
+playback "geom.jou"
+
+set exodus netcdf4 on
+export mesh "mesh-1.25.gen" dimension 2 overwrite

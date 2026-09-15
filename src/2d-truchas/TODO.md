@@ -78,6 +78,13 @@ flow/thermal models.  More detailed subsystem items remain in
 - Handle pressure null spaces for multiple disconnected active-fluid
   components (and, more generally, multiply connected active domains).  The
   current dynamic pin selection supplies one reference per projection solve.
+- Define the minimum size, connectivity, and geometric-stencil requirements
+  for an active-flow component.  Components that cannot support the discrete
+  momentum and projection operators should be excluded from the flow solve
+  without altering their material or thermal state.  This is especially
+  important when liquid regions first appear during melting, such as laser
+  welding, and when they disappear near the end of solidification, such as
+  casting.
 
 ## Architecture and remaining legacy paths
 

@@ -1,0 +1,68 @@
+# sprue (xy projection)
+create vertex 0 0 0
+create vertex 5 0 0
+create vertex 5 30 0
+create vertex 19.2 410 0
+create vertex 0 410 0
+create surface vertex 1 to 5
+
+# runner(xy projection)
+create vertex 0 10 0
+create vertex 195 10 0
+create vertex 245 30 0
+create vertex 0 30 0
+create surface vertex 6 to 9
+
+# plate
+create surface rectangle width 200 height 100 zplane
+move surface 3 x 125 y 95 include_merged
+
+# gate
+create surface rectangle width 60 height 15 zplane
+move surface 4 x 125 y 37.5 include_merged
+
+unite body all
+body 1 rename "casting"
+
+webcut body 1 with general plane vertex 3 8 direction 0 0 1
+webcut body 5 with general plane vertex 3 18 direction 0 0 1
+unite body 6 8
+
+webcut volume 1 with plane xplane offset {Vx(7)}
+webcut body 7 with general plane vertex 20 21 direction 0 0 1
+
+imprint body all
+merge body all
+compress all
+
+body 5 rename "plate"
+
+block 1 add surface 5
+block 1 name "plate"
+
+block 3 add surface 1 2 3 4
+block 3 name "gating"
+
+sideset 1 add curve 3
+sideset 1 name "inlet"
+
+sideset 2 add curve with not is_merged
+sideset 2 remove curve 3
+sideset 2 name "walls"
+
+# runner, gate, and mold
+surface 3 4 5 size {h1}
+mesh surface 3 4 5
+surface 2 size {h1}
+surface 2 scheme tripave
+mesh surface 2
+
+# sprue
+curve 1 size {h3}
+mesh curve 1
+surface 1 size {h1}
+mesh surface 1
+
+# default is shell type elements
+block 1 element type QUAD4
+block 3 element type TRI3

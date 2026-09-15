@@ -1,0 +1,1106 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+\definecolor{linkblue}{HTML}{245A8D}
+\definecolor{rulegray}{HTML}{8A9299}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkblue,
+  citecolor=linkblue,
+  urlcolor=linkblue,
+  pdftitle={Smooth Collapse of Trapped Void Fragments in an Incompressible VOF Method},
+  pdfsubject={Revision 3: capillary-biased signed compliance}
+}
+
+\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Trapped-void collapse in VOF}
+\fancyhead[R]{Working research note}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\dd}{\mathop{}\!\mathrm{d}}
+\newcommand{\Dt}{\Delta t}
+\newcommand{\pos}[1]{\left[#1\right]_+}
+\newcommand{\divg}{\nabla\!\cdot}
+\newcommand{\uv}{\boldsymbol{u}}
+\newcommand{\trapped}{\mathcal{T}}
+\newcommand{\doi}[1]{\href{https://doi.org/#1}{doi:#1}}
+
+\title{\vspace{-2.2em}\textbf{Smooth Collapse of Trapped Void Fragments\\
+in an Incompressible Volume-of-Fluid Method}\\[0.6em]
+\large A working research note motivated by Truchas}
+\author{}
+\date{15 September 2026}
+
+\begin{document}
+\maketitle
+\vspace{-2.4em}
+
+\begin{abstract}
+In a one-fluid incompressible volume-of-fluid (VOF) calculation, a resolved void region
+provides a prescribed void-pressure boundary to the liquid.  When a small void fragment
+becomes enclosed within one or a few mixed cells, that internal boundary is no longer
+represented.  The mixed cells are then treated as incompressible and a nonzero residual
+void fraction may persist indefinitely.  Truchas contains an experimental collapse model
+whose rate is tied to the magnitude of the recent local change in void fraction.  This
+adapts collapse to the local interface-evolution time scale, but it switches itself off
+when the VOF field becomes stationary.  Pressure-driven filling against a closed ceiling
+is a particularly clear failure case.
+
+This note organizes several possible remedies.  They include fixed-time relaxation,
+flow-time scaling, pressure-driven relaxation, Rayleigh-collapse-inspired laws, a
+compressible trapped-gas model, and a void-fraction-dependent pressure compliance.  The
+last of these gives a useful synthesis: an enclosed mixed cell is treated as a
+continuously disappearing internal pressure boundary.  It adds a nonnegative reaction
+term to the pressure projection, anchors a nearly void cell near the void pressure, and
+recovers ordinary incompressibility as the void fraction vanishes.  The note derives the
+common kinematic framework, gives both absolute-pressure and incremental
+pressure-correction forms, and develops a capillary-biased signed variant.  That variant
+allows a large unresolved pocket to expand or contract like open void, but increasingly
+biases a small remnant toward collapse through a subgrid Young--Laplace pressure shift.
+The note identifies unresolved choices and proposes a staged implementation and
+verification program.
+\end{abstract}
+
+\hrule height 0.6pt
+\vspace{0.4em}
+\textbf{Status.} Revision 3 adds capillary-biased signed compliance and its Truchas
+incremental pressure-correction form in Sec.~6.  A first signed-compliance prototype has
+performed well in limited testing; the capillary bias remains a candidate extension.
+This is a research note, not a specification.  Equations labeled as
+candidate models are hypotheses to be evaluated.  The reconstruction of the existing
+Truchas algorithm should be checked against the precise source revision used for any
+implementation work.
+\vspace{0.4em}
+\hrule height 0.6pt
+
+\clearpage
+\tableofcontents
+\clearpage
+
+\section{Problem and modeling scope}
+
+Let \(F\) denote the volume fraction of real incompressible fluid in a VOF
+description \cite{hirt-nichols1981}, and let
+\(\alpha\) denote void fraction.  For now assume that no solid fraction occupies the
+cell, so
+\begin{equation}
+  F+\alpha=1.
+\end{equation}
+A completely void cell adjacent to liquid acts as part of the free surface and supplies
+a prescribed pressure, denoted \(p_v\) (often zero gauge pressure), to the liquid pressure
+solve.  Once void is enclosed in mixed cells and no cell in the fragment is treated as
+pure void, the discrete internal \(p=p_v\) boundary disappears.  Ordinary projection
+then makes the mixed region incompressible.  The remaining void behaves numerically like
+an incompressible constituent and can persist even though the application intends void
+to be an absence of material rather than a conserved gas phase.
+
+The immediate objective is therefore not a complete physical model of gas bubbles.  It
+is a subgrid model that permits an unresolved, enclosed void volume to be replaced by
+liquid through actual liquid flux.  The model should not act on the exterior-connected
+free surface and should turn itself off continuously when the void has vanished.
+
+Two distinct goals must remain separate:
+\begin{enumerate}
+  \item A \emph{numerical void-annihilation model} intentionally permits enclosed void
+        volume to reach zero.
+  \item A \emph{compressible trapped-gas model} conserves gas mass.  Compression changes
+        its volume but, without dissolution, condensation, or venting, does not make it
+        disappear.
+\end{enumerate}
+The first goal is the one addressed primarily here.
+
+\section{Kinematic framework: collapse as permitted volumetric strain}
+
+Conservation of incompressible real fluid is
+\begin{equation}
+  \frac{\partial F}{\partial t}+\divg(F\uv)=0.
+  \label{eq:fluid-conservation}
+\end{equation}
+Expanding the divergence and using \(F=1-\alpha\) gives
+\begin{equation}
+  \frac{D\alpha}{Dt}=F\,\divg\uv=(1-\alpha)\divg\uv.
+  \label{eq:kinematic-identity}
+\end{equation}
+Suppose an eligible trapped fragment is assigned a nonnegative void-destruction rate
+\(R\):
+\begin{equation}
+  \frac{D\alpha}{Dt}=-R(\alpha,p,\uv,\ldots), \qquad R\geq 0.
+\end{equation}
+Consistency with Eq.~\eqref{eq:fluid-conservation} requires the modified divergence
+constraint
+\begin{equation}
+  \boxed{\divg\uv=-\frac{R}{1-\alpha}.}
+  \label{eq:general-divergence}
+\end{equation}
+Thus trapped-void collapse is naturally formulated as a localized negative volumetric
+strain.  Liquid replacing the lost void must enter through the velocity fluxes; the
+volume fraction is not simply edited after the flow solve.  Equation
+\eqref{eq:general-divergence} is the common framework for all rate laws considered below.
+
+The factor \((1-\alpha)^{-1}\) is kinematically required but becomes singular in the
+pure-void limit.  That endpoint is already governed by the pure-void pressure boundary,
+so Eq.~\eqref{eq:general-divergence} is intended for mixed cells.  A discrete method must
+join these regimes carefully.
+
+\section{The existing Truchas model}
+
+The Truchas manual describes an experimental model intended to eliminate persistent
+void fragments that VOF otherwise treats as incompressible.  It uses a dimensionless
+relaxation factor in \([0,1]\), with default \(0.1\), and describes the factor as roughly
+the inverse of the number of time steps over which inertial forces are allowed to
+collapse a cell's void \cite{truchas-manual}.  The model is implemented in the pressure
+projection, which is the appropriate algorithmic location for enforcing a nonzero
+divergence \cite{bell-colella-glaz1989}.
+
+\subsection{Source-level reconstruction}
+
+The source-level behavior discussed here can be summarized as follows.  Define the
+ordinary pre-collapse VOF change
+\begin{equation}
+  \Delta\alpha=\alpha^{n+1,*}-\alpha^n.
+\end{equation}
+For an enclosed mixed cell, the collapse amount made available to the projection is,
+schematically,
+\begin{equation}
+  \boxed{\delta\alpha_c=\min\!\left(|\Delta\alpha|,\,r\alpha\right),}
+  \label{eq:existing-rule}
+\end{equation}
+where \(r\) is \texttt{void\_collapse\_relaxation}.  Both signs of
+\(\Delta\alpha\) contribute the same collapse sign; consequently the method does not
+merely continue an already shrinking fragment.  It uses \(|\Delta\alpha|\) as a sensor
+for the rate at which the local VOF configuration is evolving.  The exact algebra and
+candidate-cell test should be cited to a recorded Truchas commit before this note is
+circulated as a code description \cite{truchas-source}.
+
+\subsection{Plausible motivation}
+
+When the cap in Eq.~\eqref{eq:existing-rule} is inactive,
+\begin{equation}
+  \frac{\delta\alpha_c}{\Dt}\simeq
+  \left|\frac{D\alpha}{Dt}\right|.
+\end{equation}
+The implied local VOF-evolution time is
+\begin{equation}
+  \tau_\alpha=\frac{\alpha}{|D\alpha/Dt|}.
+\end{equation}
+The collapse therefore proceeds on approximately the same intrinsic time scale as the
+resolved interface evolution.  For an interface sweeping across cells,
+\(|D\alpha/Dt|\sim U/h\), so the scale is related to a cell-crossing time.  This is a
+clever heuristic: it avoids prescribing an independent dimensional collapse time,
+responds rapidly in violent filling and splashing, and is approximately invariant to
+time-step refinement while the uncapped estimate is valid.  The parameter \(r\) then
+acts mainly as a per-step robustness limiter.
+
+\subsection{Failure when the VOF field becomes stationary}
+
+The same sensor creates the central defect:
+\begin{equation}
+  |\Delta\alpha|\longrightarrow0
+  \quad\Longrightarrow\quad
+  \delta\alpha_c\longrightarrow0,
+\end{equation}
+even when \(\alpha>0\) and the fragment remains enclosed.  The model is triggered by
+recent kinematic evolution, not by the present existence of trapped void or by the force
+driving its collapse.
+
+A pressure-fed mold filling against a closed horizontal ceiling is an almost diagnostic
+counterexample.  Once the advancing liquid reaches the ceiling, the interface stops
+moving through the grid and the local VOF field approaches a stationary state.  The
+remaining top-layer void can still be substantial, and the liquid pressure may remain
+positive, but Eq.~\eqref{eq:existing-rule} switches off.  Ordinary incompressibility then
+prevents further net inflow and freezes the residual void.
+
+There is a second conceptual weakness.  A translating or deforming fragment can produce
+positive \(\Delta\alpha\) in some cells and negative \(\Delta\alpha\) in others without
+changing its total void volume.  Local \(|\Delta\alpha|\) is therefore not, in general,
+a measure of component collapse.
+
+\section{Requirements for a successor model}
+
+A useful replacement should satisfy the following requirements.
+\begin{enumerate}
+  \item \textbf{Persistent activation:} an eligible cell with \(\alpha>0\) must not
+        become inactive merely because \(\Delta\alpha=0\).
+  \item \textbf{Flux consistency:} lost void is replaced by liquid through the velocity
+        field, using Eq.~\eqref{eq:general-divergence}.
+  \item \textbf{Free-surface protection:} exterior-connected void must remain an
+        ordinary free surface rather than being annihilated.
+  \item \textbf{Correct endpoints:} the pure-void limit behaves like \(p=p_v\), while
+        the zero-void limit recovers \(\divg\uv=0\).
+  \item \textbf{Pressure response:} positive pressure loading should continue to drive
+        collapse in a stagnating pocket.
+  \item \textbf{Time-step convergence:} parameters should define a continuous-time law;
+        per-step bounds may remain as numerical limiters.
+  \item \textbf{Controlled grid dependence:} any dependence on cell size or inferred
+        fragment size should be explicit and testable.
+  \item \textbf{Solver compatibility:} the pressure operator should preferably remain
+        coercive, or any nonlinearity should admit a robust active-set or fixed-point
+        treatment.
+\end{enumerate}
+
+\section{Candidate collapse-rate models}
+
+Table~\ref{tab:candidates} previews the alternatives.  None of the constitutive laws by
+itself settles the separate question of which void is eligible for collapse.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Candidate laws for \(D\alpha/Dt=-R\).}
+\label{tab:candidates}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}
+  >{\raggedright\arraybackslash}p{0.27\textwidth}X@{}}
+\toprule
+Model & Rate \(R\) & Principal consequence \\
+\midrule
+Existing Truchas &
+  \(\min(|\Delta\alpha|,r\alpha)/\Dt\) &
+  Flow-responsive and simple, but becomes identically inactive for stationary trapped
+  void. \\
+Fixed time &
+  \(\alpha/\tau_c\) &
+  Persistent exponential decay with a clear continuous-time parameter; no pressure or
+  local-dynamics response. \\
+Local flow time &
+  \(C_u\alpha |\uv|/h\) or \(C_D\alpha\|\boldsymbol D\|\) &
+  Uses resolved dynamics without a dimensional time, but either reacts to translation
+  or fails in pressure-loaded stagnation. \\
+Pressure relaxation &
+  \(\alpha\,g((p-p_v)/p_0)/\tau_0\) &
+  Continues under static pressure loading; linear or rate-saturated variants are easy to
+  construct. \\
+Rayleigh-inspired &
+  \(K\alpha^{2/3}\sqrt{\pos{p-p_v}/\rho}/h\) in 3-D &
+  Inertial, pressure- and size-responsive, and reaches zero in finite time; introduces
+  geometric and grid/component-size assumptions. \\
+Compressible gas &
+  EOS plus gas-mass conservation &
+  Physically interpretable pressure-volume response, but gas does not disappear without
+  additional mass-transfer physics. \\
+Capillary-biased compliance &
+  \(\divg\uv=-C(\alpha)[p-p_v+\Pi_\sigma(\alpha,h)]\) &
+  Retains reversible open-void behavior for large fragments while shifting small
+  remnants toward collapse; remains linear when the capillary shift is lagged. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Fixed-time relaxation}
+
+The simplest persistent law is
+\begin{equation}
+  R=\frac{\alpha}{\tau_c}, \qquad
+  \divg\uv=-\frac{\alpha}{(1-\alpha)\tau_c}.
+  \label{eq:fixed-time}
+\end{equation}
+It gives exponential decay along a trajectory and remains active until the void becomes
+negligible.  A per-step bound such as \(\delta\alpha_c\le r_{\max}\alpha\) can be retained
+for robustness, but should not define the constitutive law.  This model is an excellent
+baseline because its time-step convergence is easy to verify.  Its weakness is the new
+dimensional parameter and its indifference to pressure: it collapses eligible void at the
+same rate whether weakly or strongly loaded.
+
+Choosing \(\tau_c=N_c\Dt\) reproduces a fraction-per-step behavior but forfeits a
+continuous-time model.  It may be useful only as a temporary compatibility mode.
+
+\subsection{Resolved-flow time scales}
+
+The apparent intent of the existing method can be preserved by replacing the vanishing
+VOF-change sensor with a nonzero local flow scale, for example
+\begin{align}
+  R_u &= C_u\alpha\frac{|\uv|}{h}, \\
+  R_D &= C_D\alpha\|\boldsymbol D(\uv)\|,
+  \qquad
+  \boldsymbol D(\uv)=\tfrac12(\nabla\uv+\nabla\uv^T).
+\end{align}
+The velocity scale collapses a fragment that is merely translating, even if it is not
+being compressed, and it vanishes at the stagnating ceiling.  The strain-rate scale
+avoids sensitivity to rigid translation, but it too can vanish in a pressure-loaded
+stagnant pocket.  These scales may be useful modifiers or fallback estimates, but neither
+addresses the motivating failure by itself.
+
+\subsection{Pressure-driven relaxation}
+
+A simple pressure-responsive family is
+\begin{equation}
+  R=\frac{\alpha}{\tau_0}
+  g\!\left(\frac{p-p_v}{p_0}\right),
+  \label{eq:pressure-relaxation}
+\end{equation}
+where \(g(x)\ge0\) for \(x>0\).  Two useful choices are
+\begin{align}
+  g(x)&=\pos{x}, &&\text{linear pressure response},\\
+  g(x)&=\min(\pos{x},1), &&\text{saturated response}.
+\end{align}
+The linear choice is equivalently \(R=M\alpha\pos{p-p_v}\), with
+\(M=(\tau_0p_0)^{-1}\).  The saturated form defines \(\tau_0\) as the fastest relaxation
+time and prevents the rate from becoming arbitrarily large at high pressure.  Both remain
+active in a stationary, pressure-loaded ceiling pocket.  They introduce a pressure scale
+and a collapse time, but those parameters have clear units and meanings.
+
+The one-sided positive part suppresses void growth when \(p<p_v\).  Omitting it produces
+a reversible compliance model that can grow void under tension, which would amount to a
+rudimentary cavitation model and should be a separate decision.
+
+\subsection{Rayleigh-collapse-inspired inertial scaling}
+
+For an empty spherical cavity of initial radius \(R_0\) in an infinite inviscid liquid
+under constant pressure difference \(\Delta p>0\), Rayleigh's collapse time is
+\begin{equation}
+  t_R\simeq0.915R_0\sqrt{\frac{\rho}{\Delta p}}
+  \label{eq:rayleigh-time}
+\end{equation}
+\cite{rayleigh1917,brennen1995}.  This suggests the intrinsic scale
+\begin{equation}
+  \tau_p=C_R L\sqrt{\frac{\rho}{\pos{p-p_v}}}.
+  \label{eq:pressure-time}
+\end{equation}
+Taking \(L=h\) yields a deliberately cell-scale model.  Taking \(L\) as the radius of an
+entire connected component is more physically meaningful but requires component
+identification and distributed reductions.
+
+At the cell level in three dimensions, an effective spherical radius is
+\begin{equation}
+  R_{\mathrm{eff}}=
+  \left(\frac{3\alpha V_c}{4\pi}\right)^{1/3}.
+\end{equation}
+Combining \(R\sim\alpha/\tau_p\) with this radius gives the scaling
+\begin{equation}
+  R_{\mathrm{inertial}}=
+  K_3\frac{\sqrt{\pos{p-p_v}/\rho}}{V_c^{1/3}}\alpha^{2/3}.
+  \label{eq:inertial-rate}
+\end{equation}
+In two dimensions the analogous exponent is \(1/2\).  Because
+\(\dot\alpha\propto-\alpha^{2/3}\), the three-dimensional model reaches zero in finite
+time.  The coefficient must be calibrated carefully: using the instantaneous Rayleigh
+time as \(\alpha/R\) makes the total extinction time three times the initial local time,
+so matching Eq.~\eqref{eq:rayleigh-time} requires the corresponding factor of three.
+
+Equation~\eqref{eq:inertial-rate} is not the Rayleigh--Plesset equation.  It borrows its
+pressure, density, length, and finite-extinction scaling for a subgrid closure.  Cell
+geometry, walls, viscosity, surface tension, nonsphericity, and pressure variation are
+all omitted.  It is therefore a second-generation candidate, not the first model to
+implement.
+
+\subsection{Actual compressible trapped gas}
+
+If the void is physically entrapped air, a more faithful model conserves gas mass and
+uses an equation of state, for example
+\begin{equation}
+  p_g V_g^\gamma=\text{constant}.
+\end{equation}
+Li and Carrica tightly couple bubble density, void fraction, pressure, and velocity in a
+two-phase solver with incompressible liquid and compressible bubbles
+\cite{li-carrica2018}.  Shin uses a polytropic gas law and represents gas compressibility
+in the source term of a unified pressure Poisson equation \cite{shin2020}.  These works
+support the general numerical idea of coupling pressure and void-volume response
+implicitly.
+
+They do not, however, solve the present annihilation problem: conserved gas can become
+highly compressed but cannot vanish.  Dissolution, condensation, leakage, or venting
+would be required.  A compressible-gas model should therefore be treated as a distinct
+future physics capability, not as a more elaborate implementation of numerical cleanup.
+
+\section{Pressure compliance as a disappearing internal boundary}
+
+The most useful synthesis is to interpret an unresolved trapped fragment as an internal
+\(p=p_v\) boundary that should disappear continuously as \(\alpha\to0\).  Introduce a
+nonnegative pressure compliance \(C(\alpha,p)\) through
+\begin{equation}
+  \boxed{\divg\uv=-C(\alpha,p)\,(p-p_v).}
+  \label{eq:compliance}
+\end{equation}
+For a one-sided annihilation law, replace \(p-p_v\) by \(\pos{p-p_v}\).
+
+The desired limits are
+\begin{equation}
+  C\longrightarrow\infty \quad\text{as}\quad \alpha\to1^{-},
+  \qquad
+  C\longrightarrow0 \quad\text{as}\quad \alpha\to0^{+}.
+  \label{eq:compliance-limits}
+\end{equation}
+A large compliance strongly anchors the pressure near \(p_v\) while permitting rapid
+net inflow.  A vanishing compliance recovers ordinary incompressibility and lets the
+pressure approach that of the surrounding liquid.  More precisely, the model provides a
+large \emph{capacity} for negative divergence near the void limit; the actual divergence
+is determined by the coupled global pressure solve.
+
+The qualitative feedback loop is
+\begin{align*}
+  \text{enclosed void}
+  &\;\Rightarrow\;
+  \text{pressure compliance}
+  \;\Rightarrow\;
+  \text{negative divergence}\\
+  &\;\Rightarrow\;
+  \text{liquid inflow}
+  \;\Rightarrow\;
+  \text{less void and less compliance}.
+\end{align*}
+This loop does not require an antecedent \(\Delta\alpha\).
+
+\subsection{Connection to a void-fraction rate law}
+
+If
+\begin{equation}
+  \frac{D\alpha}{Dt}=-\lambda(\alpha)\pos{p-p_v},
+\end{equation}
+then Eq.~\eqref{eq:kinematic-identity} gives
+\begin{equation}
+  C(\alpha)=\frac{\lambda(\alpha)}{1-\alpha}.
+\end{equation}
+The linear pressure-relaxation model is obtained with
+\begin{equation}
+  \lambda(\alpha)=\frac{\alpha}{\tau_0p_0},
+  \qquad
+  \boxed{C(\alpha)=
+  \frac{\alpha}{(1-\alpha)\tau_0p_0}.}
+  \label{eq:simple-compliance}
+\end{equation}
+This choice simultaneously gives exponential void decay at fixed pressure, strong
+anchoring near the void endpoint, and exact recovery of incompressibility as
+\(\alpha\to0\).
+
+More generally,
+\begin{equation}
+  C(\alpha)=C_0\frac{\alpha^m}{(1-\alpha)^n},
+  \qquad m>0,\;n>0,
+\end{equation}
+allows the two endpoint transitions to be shaped independently.  There is little reason
+to introduce both exponents before the simplest choice \(m=n=1\) has been tested.
+
+\subsection{Signed, one-sided, and capillary-biased response}
+
+The symmetric form of Eq.~\eqref{eq:compliance},
+\begin{equation}
+  \divg\uv=-C(\alpha)(p-p_v),
+  \label{eq:signed-compliance}
+\end{equation}
+allows both signs of divergence.  It collapses an existing fragment when \(p>p_v\) and
+expands it when \(p<p_v\).  By contrast,
+\begin{equation}
+  \divg\uv=-C(\alpha)\pos{p-p_v}
+  \label{eq:one-sided-compliance}
+\end{equation}
+is an irreversible annihilation law.  The signed law is linear in pressure and a first
+prototype has worked well in limited tests.  Moreover, positive divergence in a cell
+that is mostly void need not be interpreted as nucleating a new cavity: it can represent
+motion of an already existing unresolved liquid--void interface.  If \(C(0)=0\), a
+completely liquid cell cannot nucleate void through this closure alone.
+
+A compromise is to retain signed compliance but shift its equilibrium pressure by a
+capillary term:
+\begin{equation}
+  \boxed{
+  \divg\uv=-C(\alpha)
+  \left[p-p_v+\Pi_\sigma(\alpha,h)\right]
+  =-C(\alpha)\left[p-p_{\mathrm{eq}}\right],}
+  \qquad
+  p_{\mathrm{eq}}=p_v-\Pi_\sigma.
+  \label{eq:capillary-signed}
+\end{equation}
+Thus the fragment collapses for \(p>p_v-\Pi_\sigma\), is in equilibrium at
+\(p=p_v-\Pi_\sigma\), and expands only when the liquid pressure falls below that
+threshold.  For a large, nearly open void, \(\Pi_\sigma\) should tend to zero so that
+both signs remain available around \(p_v\).  As the unresolved fragment becomes small,
+\(\Pi_\sigma\) increases and progressively suppresses expansion.
+
+The sign follows the Young--Laplace jump.  For a spherical void in three dimensions,
+\begin{equation}
+  p_v-p_{\ell}=\frac{2\sigma}{R_{\mathrm{eff}}},
+  \label{eq:young-laplace}
+\end{equation}
+so the liquid-side equilibrium pressure is below the void pressure.  More generally the
+curvature scale is \((d-1)/R_{\mathrm{eff}}\) in \(d\) spatial dimensions
+\cite{brackbill1992}.  A deliberately cell-scale closure is
+\begin{equation}
+  \boxed{
+  \Pi_\sigma(\alpha,h)
+  =c_\sigma\frac{\sigma}{h}B(\alpha),}
+  \qquad
+  h=\begin{cases}
+       V_c^{1/3}, & \text{three dimensions},\\
+       A_c^{1/2}, & \text{two dimensions},
+     \end{cases}
+  \label{eq:capillary-shift}
+\end{equation}
+where \(\sigma\) is the physical liquid--void surface tension, \(c_\sigma\) is a
+dimensionless subgrid curvature/geometry coefficient, and \(B(\alpha)\) controls when
+the bias turns on.  A fixed, documented \(B\) gives this part of the model two inputs,
+\(\sigma\) and \(c_\sigma\).  If \(\sigma\) is already a material property, only
+\(c_\sigma\) is a new calibration parameter.  If it is not independently known, the
+projection identifies only their product
+\(\Sigma_{\mathrm{eff}}=c_\sigma\sigma\).  Any adjustable transition point or exponent
+inside \(B\) would add parameters and should be avoided initially.
+
+A parameter-free baseline shape that satisfies the required open-void limit is
+\begin{equation}
+  \boxed{B(\alpha)=(1-\alpha)^2.}
+  \label{eq:baseline-bias-shape}
+\end{equation}
+It gives \(B(0)=1\), \(B(1)=0\), and, together with
+Eq.~\eqref{eq:simple-compliance}, \(C B\sim\alpha(1-\alpha)\).  A more literal
+effective-radius model could multiply this fade by \(\alpha^{-1/d}\), but that introduces
+a singular endpoint and a regularization choice.  The bounded quadratic shape is the
+cleaner first test.
+
+The limiting behavior of the \emph{product} \(C\Pi_\sigma\), not just
+\(\Pi_\sigma\), must be checked.  Since Eq.~\eqref{eq:simple-compliance} has
+\(C\sim(1-\alpha)^{-1}\) as \(\alpha\to1\), recovering an unbiased open-void limit
+requires \(B(\alpha)=o(1-\alpha)\) there, or an explicit cap/handoff must keep
+\(C\Pi_\sigma\) bounded and vanishing.  The closure should be applied only to isolated,
+underresolved fragments.  If resolved surface tension already supplies the relevant
+pressure jump, the subgrid term must be blended or disabled to avoid double counting.
+
+\subsection{Absolute-pressure and incremental pressure-correction forms}
+
+The compliance model is compatible with either a projection that solves for the new
+pressure or an incremental method that uses an existing pressure in the predictor and
+solves for a correction.  The distinction changes the algebraic right-hand side, not the
+underlying model.
+
+\subsubsection{Absolute-pressure form}
+
+Let \(\widetilde{\uv}\) be a provisional velocity that has not yet received the new
+pressure force, and write
+\begin{equation}
+  \uv^{n+1}=\widetilde{\uv}-\boldsymbol{K}\nabla p^{n+1},
+  \qquad
+  \boldsymbol{K}=\Dt\,\rho^{-1}\boldsymbol{I}
+  \label{eq:absolute-update}
+\end{equation}
+for the simplest scalar-density projection.  Here \(\boldsymbol K\) may instead denote
+the actual discrete face mobility used by the code.  With compliance lagged in
+\(\alpha\), substitution into Eq.~\eqref{eq:compliance} gives
+\begin{equation}
+  \boxed{
+  -\divg\!\left(\boldsymbol{K}\nabla p^{n+1}\right)
+  +C(\alpha^*)p^{n+1}
+  =-\divg\widetilde{\uv}+C(\alpha^*)p_v.}
+  \label{eq:reaction-poisson}
+\end{equation}
+Thus an eligible mixed cell receives a nonnegative diagonal reaction term.
+Equation~\eqref{eq:reaction-poisson} is a smooth penalty or Robin-like transition:
+large \(C\) approximates a void-pressure condition, intermediate \(C\) partially anchors
+pressure, and \(C=0\) gives the ordinary interior projection.  The added reaction term is
+coercive and should improve rather than damage the definiteness of the linear operator,
+although strong coefficient variation can still affect conditioning.
+
+For capillary-biased signed compliance, replace \(p_v\) by
+\(p_{\mathrm{eq}}=p_v-\Pi_\sigma\).  With \(\alpha\), \(h\), and \(\Pi_\sigma\) lagged,
+the absolute-pressure equation remains linear:
+\begin{equation}
+  -\divg(\boldsymbol K\nabla p^{n+1})+Cp^{n+1}
+  =-\divg\widetilde{\uv}+C(p_v-\Pi_\sigma).
+  \label{eq:capillary-absolute}
+\end{equation}
+
+\subsubsection{Incremental pressure-correction form}
+
+For Truchas, let \(p^n\) be the existing pressure used in the predictor.  The incremental
+method can be written
+\begin{align}
+  \uv^* &= \widetilde{\uv}-\boldsymbol{K}\nabla p^n,
+  \label{eq:incremental-predictor}\\
+  \uv^{n+1} &= \uv^*-\boldsymbol{K}\nabla\phi,
+  \label{eq:incremental-velocity}\\
+  p^{n+1} &= p^n+\phi,
+  \label{eq:incremental-pressure}
+\end{align}
+where \(\phi\) is the pressure correction.  Requiring the corrected velocity to satisfy
+\begin{equation}
+  \divg\uv^{n+1}=-C(\alpha^*)\bigl(p^{n+1}-p_v\bigr)
+\end{equation}
+gives the incremental analog of Eq.~\eqref{eq:reaction-poisson}:
+\begin{equation}
+  \boxed{
+  -\divg\!\left(\boldsymbol{K}\nabla\phi\right)
+  +C(\alpha^*)\phi
+  =-\divg\uv^*-C(\alpha^*)\bigl(p^n-p_v\bigr).}
+  \label{eq:reaction-poisson-incremental}
+\end{equation}
+This is the form directly applicable to Truchas.  The reaction coefficient multiplies
+the pressure \emph{correction}, but the right-hand side must also contain the offset of
+the predictor pressure from the void pressure.  Omitting that offset would impose
+\(\divg\uv^{n+1}=-C\phi\), anchoring the correction to zero rather than anchoring the
+updated physical pressure to \(p_v\).
+
+Equations~\eqref{eq:reaction-poisson} and
+\eqref{eq:reaction-poisson-incremental} are algebraically equivalent when the predictor
+and corrector use the same discrete gradient, divergence, mobility, and pressure boundary
+treatment.  Substituting \(\phi=p^{n+1}-p^n\) and
+Eq.~\eqref{eq:incremental-predictor} into
+Eq.~\eqref{eq:reaction-poisson-incremental} recovers
+Eq.~\eqref{eq:reaction-poisson}.  Incremental correction therefore does not obstruct the
+proposed compliance model; it simply splits the absolute-pressure equation around the
+pressure already used in the predictor.
+
+The corresponding capillary-biased incremental equation is
+\begin{equation}
+  \boxed{
+  -\divg(\boldsymbol K\nabla\phi)+C\phi
+  =-\divg\uv^*-C\left[p^n-p_v+\Pi_\sigma(\alpha^*,h)\right].}
+  \label{eq:capillary-incremental}
+\end{equation}
+Only the right-hand-side offset differs from
+Eq.~\eqref{eq:reaction-poisson-incremental}; the matrix and its nonnegative reaction
+term are unchanged.  Consequently the capillary-biased signed model preserves the
+linear pressure-correction solve when \(\Pi_\sigma\) is evaluated from lagged geometry.
+
+If the code uses a scaled pressure update, for example
+\(p^{n+1}=p^n+\omega_p\phi\), the reaction contribution multiplying \(\phi\) becomes
+\(\omega_p C\phi\).  Likewise, \(\boldsymbol K\) must be the actual coefficient relating
+the velocity correction to \(\nabla\phi\), including any BDF or variable-density factors.
+These details should be taken from the Truchas discrete update rather than inferred from
+the schematic equations above.
+
+Using \(\pos{p-p_v}\) makes the strict one-sided equation semilinear.  A simple active-set method can
+classify cells from the trial updated pressure \(p^n+\phi\), solve the resulting linear
+system, and repeat until the active set stops changing.  In incremental form, with
+\(A_i=1\) on the active set and zero otherwise, Eq.~\eqref{eq:reaction-poisson-incremental}
+becomes
+\begin{equation}
+  -\divg(\boldsymbol K\nabla\phi)+A C\phi
+  =-\divg\uv^*-A C(p^n-p_v).
+  \label{eq:active-incremental}
+\end{equation}
+A smooth approximation to the positive part is another option, but it introduces a
+regularization scale and permits some response for \(p<p_v\).
+
+\subsection{Endpoint treatment and discrete regularization}
+
+The singular compliance in Eq.~\eqref{eq:simple-compliance} is a meaningful limiting
+statement, not a number to evaluate at \(F=0\).  Practical options include:
+\begin{enumerate}
+  \item retain the existing pure-void Dirichlet treatment for \(F\le F_D\), and use
+        compliance only for \(F>F_D\);
+  \item cap \(C\) at a value that makes the reaction term dominate the local pressure
+        stencil by a prescribed factor;
+  \item replace \(1-\alpha\) by \(\max(1-\alpha,F_\epsilon)\), while verifying that
+        results are insensitive to \(F_\epsilon\);
+  \item integrate the local linear pressure-relaxation law exactly over a step, reducing
+        sensitivity to a large explicit collapse rate.
+\end{enumerate}
+The first two preserve the interpretation most transparently.  A smooth handoff can be
+constructed by choosing the cap to match the discrete Dirichlet penalty at \(F_D\).
+
+\section{Eligibility: which void is allowed to collapse?}
+
+The rate law and the eligibility test are logically independent.  The ideal criterion is
+topological:
+\begin{equation}
+  \trapped_i=
+  \begin{cases}
+    1, & \text{void in cell \(i\) is disconnected from exterior void},\\
+    0, & \text{otherwise}.
+  \end{cases}
+\end{equation}
+Only cells with \(\trapped_i=1\) receive the modified divergence constraint.
+
+The existing inexpensive criterion---a mixed cell with no neighboring completely void
+cell---captures many one-cell fragments but can misclassify a thin or underresolved
+free-surface filament.  It also cannot identify a trapped component spanning several
+mixed cells when no member crosses the pure-void threshold.
+
+A graph-based method would mark cells carrying appreciable void, connect face neighbors,
+seed components touching exterior void or a pressure outlet, and classify all unseeded
+components as trapped.  In parallel this becomes a distributed flood fill or
+connected-component problem.  It need not necessarily be run every step: connectivity
+could be updated only after material topology changes beyond a threshold.  Hysteresis in
+the graph thresholds is desirable to prevent classification chatter.
+
+Component identification also enables physically better length scales and diagnostics:
+\begin{equation}
+  V_{v,k}=\sum_{i\in k}\alpha_i V_i,
+  \qquad
+  R_{k}=\left(\frac{3V_{v,k}}{4\pi}\right)^{1/3}.
+\end{equation}
+However, global connectivity should not be a prerequisite for testing a new constitutive
+law.  A staged study can begin with the present local eligibility test and isolate the
+rate-law effect.
+
+\section{Discrete algorithms worth testing}
+
+\subsection{Algorithm A: lagged rate source}
+
+This is the lowest-cost experiment.
+\begin{enumerate}
+  \item Advect VOF to obtain \(\alpha^*\) and compute the current eligibility mask.
+  \item Evaluate a rate \(R(\alpha^*,p^n,\uv^*)\).
+  \item Impose \(\divg\uv^{n+1}=-R/(1-\alpha^*)\) as a known source in the existing
+        projection.
+  \item Limit the predicted removal to available void and, if needed,
+        \(\delta\alpha_c\le r_{\max}\alpha^*\).
+  \item Update VOF using the same corrected fluxes used by continuity.
+\end{enumerate}
+Algorithm A can compare fixed-time, saturated-pressure, and Rayleigh-inspired rates with
+minimal pressure-solver changes.  Lagged pressure may delay the onset by one step and can
+be unstable for a strong pressure response.
+
+\subsection{Algorithm B: implicit linear compliance}
+
+Insert Eq.~\eqref{eq:simple-compliance} directly into the projection to obtain
+Eq.~\eqref{eq:reaction-poisson}, or its incremental Truchas form
+Eq.~\eqref{eq:reaction-poisson-incremental}.  Lag \(\alpha\), but solve updated pressure
+and collapse simultaneously.  This is the cleanest first implementation of the
+disappearing-boundary idea.  It should be compared against Algorithm A at weak coupling
+and tested for conditioning as \(\alpha\to1\).
+
+The capillary-biased signed variant uses Eq.~\eqref{eq:capillary-incremental}.  It has
+the same matrix as the unbiased signed scheme and changes only the known pressure offset
+on the right-hand side.  This makes it the most direct extension of the tested linear
+prototype.
+
+After the pressure solve, compute the collapse volume from either the integrated corrected
+face fluxes or the cell divergence.  These two evaluations should agree to the pressure
+solver tolerance.  That comparison is an important implementation diagnostic.
+
+\subsection{Algorithm C: one-sided or nonlinear implicit response}
+
+Use either the active-set form
+\begin{equation}
+  \divg\uv=-C(\alpha)\pos{p-p_v}
+\end{equation}
+or an inertial response derived from Eq.~\eqref{eq:inertial-rate}.  The pressure operator
+is then nonlinear.  This algorithm is justified only after the linear-compliance version
+has demonstrated that pressure coupling cures the stationary-pocket failure.
+
+\section{Conservation, stability, and interpretation}
+
+\subsection{Liquid-volume conservation}
+
+The purpose of Eq.~\eqref{eq:general-divergence} is to make the increase in liquid volume
+equal the net liquid inflow.  In a finite-volume implementation, the same face fluxes must
+be used in the pressure correction and the VOF update.  A post hoc decrement of
+\(\alpha\) would manufacture liquid and should be avoided.
+
+Truchas documentation reports that larger relaxation values in the experimental model
+can increase mass loss and that additional VOF subcycling improves the result
+\cite{truchas-manual}.  This makes discrete flux consistency and subcycle coupling first-
+class acceptance criteria for any successor.
+
+\subsection{What is and is not physical}
+
+The pressure-compliance model is best described as a numerical closure for a missing
+subgrid pressure boundary.  Unless its parameters are derived and validated for a
+specific gas-removal mechanism, it should not be presented as a physical bubble model.
+Rayleigh scaling provides a defensible inertial time scale, but a cell-scale nonspherical
+fragment adjacent to walls is far outside Rayleigh's assumptions.
+
+The model is intentionally dissipative in the sense that it removes an unresolved degree
+of freedom.  A useful study should monitor pressure work associated with
+\(p\,\divg\uv\), because overly rapid annihilation may create spurious pressure transients
+or remove kinetic energy at a grid-dependent rate.
+
+\subsection{Pressure sign, interface motion, and cavitation}
+
+A symmetric linear compliance permits positive divergence when \(p<p_v\).  In an
+eligible mixed cell this can represent expansion of an existing unresolved interface,
+especially when the cell is mostly void; it is not automatically nucleation.  Because
+\(C(0)=0\), the closure cannot create void from an exactly full liquid cell.  It can,
+however, amplify a tiny numerical remnant under tension, so thresholds, topology, and
+pressure histories still require scrutiny.
+
+The strict positive-part law forbids expansion but may make a mostly void cell behave
+less like the open void that it is replacing.  Equation~\eqref{eq:capillary-signed}
+offers an intermediate interpretation: reversible response near the large-void limit,
+with an increasingly negative expansion threshold as the remnant shrinks.  It is not a
+complete cavitation model because it contains neither a nucleation criterion nor gas
+mass, thermodynamics, or bubble dynamics.
+
+\section{Verification and discriminating tests}
+
+The following hierarchy is designed to distinguish constitutive errors from topology and
+VOF-transport errors.
+
+\subsection{Local and one-dimensional tests}
+\begin{enumerate}
+  \item \textbf{Prescribed-pressure decay.}  Hold \(p-p_v\) fixed and verify the analytic
+        \(\alpha(t)\) for fixed-time and linear-pressure relaxation over a sequence of
+        time steps.
+  \item \textbf{Finite-extinction law.}  Verify that an \(\alpha^{2/3}\) rate gives a
+        linear decrease of \(\alpha^{1/3}\) in time and the predicted extinction time.
+  \item \textbf{Reaction-Poisson cell.}  In a one-dimensional column, verify the smooth
+        transition from a strong \(p_v\) anchor to an ordinary interior pressure as
+        \(\alpha\) decreases.
+  \item \textbf{Flux identity.}  Check that integrated net inflow equals the computed
+        loss of void to solver tolerance.
+  \item \textbf{Signed capillary threshold.}  Prescribe pressure on both sides of
+        \(p_v-\Pi_\sigma\) and verify the predicted sign of divergence, including zero
+        response at the equilibrium threshold.
+\end{enumerate}
+
+\subsection{Two- and three-dimensional tests}
+\begin{enumerate}
+  \item \textbf{Pressure-fed ceiling fill.}  This is the primary regression.  Record the
+        top-layer void volume, pressure, divergence, and inflow after macroscopic filling
+        stops.  The current model is expected to plateau; a successful pressure model
+        should continue toward zero with pressure rising smoothly toward neighboring
+        liquid pressure and divergence decreasing toward zero.
+  \item \textbf{Stationary enclosed fragment.}  Initialize a trapped fragment with
+        \(\Delta\alpha=0\) and positive surrounding pressure.  This directly tests
+        persistent activation.
+  \item \textbf{Translating fragment.}  Advect an enclosed fragment at nearly uniform
+        velocity with weak pressure loading.  This exposes the spurious translation
+        sensitivity of \(h/|\uv|\) scaling.
+  \item \textbf{Exterior free surface and thin filament.}  Confirm that eligibility
+        logic never collapses exterior-connected void, including underresolved
+        connections near the classification threshold.
+  \item \textbf{Multi-cell component.}  Compare local and graph-based eligibility and,
+        for inertial laws, cell-size versus component-size length scales.
+  \item \textbf{Capillary-bias sweep.}  Vary \(\alpha\), \(h\), \(\sigma\), and
+        \(c_\sigma\).  Verify that large-void behavior approaches unbiased signed
+        compliance, small remnants resist expansion, and the measured threshold scales
+        as \(c_\sigma\sigma/h\).
+\end{enumerate}
+
+\subsection{Convergence matrix and diagnostics}
+
+Each discriminating case should vary \(\Dt\), VOF subcycling, mesh spacing, collapse
+parameters, and pressure-solver tolerance.  At minimum record
+\begin{equation*}
+  V_v(t)=\sum_i\alpha_iV_i,\quad
+  \sum_i V_i\divg\uv_i,\quad
+  p_{\min},p_{\max},\quad
+  \text{liquid-volume error},\quad
+  \text{pressure iterations}.
+\end{equation*}
+For the ceiling-fill problem, cellwise histories of \((\alpha,p,\divg\uv,C)\) in the top
+layer are more informative than images alone.
+
+\section{Recommended research sequence}
+
+The models should be introduced in an order that makes failures interpretable.
+
+\begin{enumerate}
+  \item \textbf{Document the baseline.}  Record the exact Truchas commit, candidate-cell
+        test, source formula, sign convention, and mapping between projection divergence
+        and VOF correction.  Reproduce the ceiling-fill plateau quantitatively.
+  \item \textbf{Implement a fixed-time source.}  Use Eq.~\eqref{eq:fixed-time} with the
+        current eligibility test.  This establishes that persistent activation alone can
+        eliminate the plateau and provides a time-step-convergence baseline.
+  \item \textbf{Implement lagged saturated pressure relaxation.}  Use
+        Eq.~\eqref{eq:pressure-relaxation}.  Determine whether pressure response improves
+        the temporal and spatial pattern of collapse.
+  \item \textbf{Characterize the signed-compliance prototype.}  The reaction term in
+        Eq.~\eqref{eq:reaction-poisson-incremental} has been implemented and has performed
+        well in limited testing.  Quantify pressure smoothness, conservation,
+        conditioning, time-step dependence, and sensitivity to tiny residual voids.
+  \item \textbf{Add the capillary bias.}  Implement
+        Eq.~\eqref{eq:capillary-incremental} first with
+        \(B(\alpha)=(1-\alpha)^2\).  Compare it directly with unbiased signed compliance and the
+        strict one-sided active-set form.
+  \item \textbf{Improve eligibility only after the rate law is understood.}  Add graph
+        connectivity and hysteresis, using cases that distinguish multi-cell trapped void
+        from exterior-connected filaments.
+  \item \textbf{Evaluate inertial scaling.}  Test Eq.~\eqref{eq:inertial-rate} with both
+        cell and component length scales.  Retain it only if it reduces parameter and mesh
+        sensitivity relative to the simpler pressure law.
+\end{enumerate}
+
+The most promising next model is therefore
+\begin{equation}
+  \boxed{
+  \divg\uv=-
+  \trapped\,
+  \frac{\alpha}{(1-\alpha)\tau_0p_0}
+  \left[p-p_v+c_\sigma\frac{\sigma}{h}B(\alpha)\right],}
+  \label{eq:recommended}
+\end{equation}
+treated implicitly in pressure with \(\alpha\) lagged and with a controlled pure-void
+handoff.  The strict positive-part and unbiased signed laws are the essential
+comparisons.  Equation \eqref{eq:recommended} preserves the successful linear structure
+of the prototype, directly fixes the stationary-pocket failure, and embodies the desired
+transition from reversible open-void response to capillary-biased disappearance of a
+small remnant.
+
+\section{Open questions}
+
+The study should not hide the following unresolved choices.
+\begin{enumerate}
+  \item What fixed form of \(B(\alpha)\) provides the desired transition without adding
+        poorly identifiable shape parameters?
+  \item Should \(\sigma\) be the physical material property with only \(c_\sigma\)
+        calibrated, or should the model expose a single effective parameter
+        \(\Sigma_{\mathrm{eff}}\)?
+  \item At what void fraction and pressure should positive divergence be permitted, and
+        what safeguards prevent amplification of numerical remnants?
+  \item What pressure should be used for \(p_v\): zero gauge or an imposed exterior
+        pressure?
+  \item Can \(\tau_0p_0\) be related to a discrete inertial impedance, reducing the number
+        of user parameters?
+  \item Should the compliance be singular as \(F\to0\), or merely large relative to the
+        local pressure stencil?
+  \item Is a component-aware length scale necessary for mesh convergence, or is deliberate
+        cell-scale annihilation the more honest numerical model?
+  \item How often must connectivity be recomputed in a distributed calculation, and what
+        hysteresis thresholds prevent chatter without retaining false connections?
+  \item Does pressure-compliance work create unacceptable transients when a cell changes
+        from exterior-connected to trapped?
+  \item How should collapse couple to VOF subcycling so that liquid volume remains
+        conservative at both the flow-step and subcycle levels?
+\end{enumerate}
+
+\section{Conclusion}
+
+The trapped-void pathology is best understood as the loss of an internal void-pressure
+boundary when a fragment becomes underresolved.  The existing Truchas model addresses
+the problem in the right place---the pressure projection---and plausibly tries to match
+the intrinsic local interface-evolution time.  Its \(|\Delta\alpha|\) sensor, however,
+vanishes precisely in the important case of a stationary pressure-loaded pocket.
+
+All candidate models can be expressed as localized negative divergence consistent with
+real-fluid conservation.  Fixed-time relaxation is the essential baseline; flow-time
+laws preserve part of the old motivation but fail in stagnation; pressure and Rayleigh
+laws retain a nonzero physical driver; and a true gas model answers a different question.
+The pressure-compliance formulation unifies the most useful features.  It replaces an
+abrupt switch between \(p=p_v\) and ordinary interior pressure with a reaction term whose
+strength decreases with void fraction.  This is both a concrete algorithm and a clear
+interpretation: a continuously disappearing subgrid pressure boundary.
+
+Limited tests of the linear signed formulation support that interpretation.  A
+capillary-biased signed law is a natural refinement: it preserves reversible response
+for a mostly void cell, retains the same linear incremental pressure matrix, and shifts
+the expansion threshold downward as the fragment becomes small.  Its value will depend
+on choosing and validating the subgrid curvature function without duplicating resolved
+surface-tension physics.
+
+\appendix
+\section{Dimensions and notation}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{0.15\textwidth}p{0.26\textwidth}X@{}}
+\toprule
+Symbol & Dimensions & Meaning \\
+\midrule
+\(F\) & 1 & real-fluid volume fraction \\
+\(\alpha\) & 1 & void volume fraction \\
+\(R\) & \(T^{-1}\) & material void-destruction rate \\
+\(C\) & \(P^{-1}T^{-1}\) & pressure compliance in Eq.~\eqref{eq:compliance} \\
+\(\lambda\) & \(P^{-1}T^{-1}\) & pressure-to-void-rate coefficient \\
+\(p_v\) & \(P\) & nominal void pressure \\
+\(p_{\mathrm{eq}}\) & \(P\) & capillary-shifted liquid-side equilibrium pressure \\
+\(\Pi_\sigma\) & \(P\) & subgrid capillary pressure shift \\
+\(\sigma\) & \(PL\) & physical liquid--void surface tension \\
+\(c_\sigma\) & 1 & subgrid curvature/geometry coefficient \\
+\(B(\alpha)\) & 1 & prescribed void-fraction activation function for capillary bias \\
+\(p_0\) & \(P\) & pressure scale for relaxation \\
+\(\tau_0\) & \(T\) & collapse relaxation time \\
+\(h\) & \(L\) & representative cell length \\
+\(V_c\) & \(L^3\) & cell volume in three dimensions \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Minimal pseudocode for incremental implicit compliance}
+
+\begin{verbatim}
+alpha_star = advect_vof(...)
+trapped    = classify_trapped_void(alpha_star, ...)
+
+for each flow cell i:
+    if trapped(i) and F(i) > F_D:
+        C(i) = alpha_star(i) / (F(i) * tau0 * p0)
+        C(i) = min(C(i), C_max)
+        h(i) = cell_volume(i) ** (1/3)       ! 3-D definition
+        Pi_sigma(i) = c_sigma * sigma / h(i) * B(alpha_star(i))
+    else:
+        C(i) = 0
+        Pi_sigma(i) = 0
+
+! p_n is the existing pressure used in the velocity predictor
+u_star = velocity_predictor_using(p_n)
+
+! Capillary-biased signed compliance: one linear correction solve
+assemble [-div(K grad) + C] phi
+         = -div(u_star) - C*(p_n - p_v + Pi_sigma)
+solve for phi
+
+! For strict one-sided compliance instead, use an active-set iteration
+! with active(i) = trapped(i) and p_n(i) + phi_iter(i) > p_v.
+
+u_new = u_star - K * grad(phi)
+p_new = p_n + phi
+update VOF with pressure-corrected face fluxes
+verify net liquid inflow = loss of void
+\end{verbatim}
+
+\begin{thebibliography}{10}
+
+\bibitem{truchas-manual}
+Computational Physics and Methods Group,
+\emph{Truchas Reference Manual}, Version 21.01.1,
+Los Alamos National Laboratory, 2021.
+\url{https://www.truchas.org/ReferenceManual.pdf}.
+
+\bibitem{truchas-source}
+Truchas developers,
+\emph{Truchas source repository}, Los Alamos National Laboratory.
+\url{https://gitlab.com/truchas/truchas}.
+Exact commit used for the source-level reconstruction remains to be recorded.
+
+\bibitem{hirt-nichols1981}
+C.~W. Hirt and B.~D. Nichols,
+``Volume of Fluid (VOF) Method for the Dynamics of Free Boundaries,''
+\emph{Journal of Computational Physics}, 39(1), 201--225, 1981.
+\doi{10.1016/0021-9991(81)90145-5}.
+
+\bibitem{bell-colella-glaz1989}
+J.~B. Bell, P.~Colella, and H.~M. Glaz,
+``A Second-Order Projection Method for the Incompressible Navier--Stokes Equations,''
+\emph{Journal of Computational Physics}, 85(2), 257--283, 1989.
+\doi{10.1016/0021-9991(89)90151-4}.
+
+\bibitem{rayleigh1917}
+Lord Rayleigh,
+``On the Pressure Developed in a Liquid during the Collapse of a Spherical Cavity,''
+\emph{The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science},
+34(200), 94--98, 1917.
+\doi{10.1080/14786440808635681}.
+
+\bibitem{brennen1995}
+C.~E. Brennen,
+\emph{Cavitation and Bubble Dynamics}, Oxford University Press, 1995.
+
+\bibitem{li-carrica2018}
+J.~Li and P.~M. Carrica,
+``An Approach to Couple Velocity/Pressure/Void Fraction in Two-Phase Flows with
+Incompressible Liquid and Compressible Bubbles,''
+\emph{International Journal of Multiphase Flow}, 102, 77--94, 2018.
+\doi{10.1016/j.ijmultiphaseflow.2018.01.021}.
+
+\bibitem{shin2020}
+S.~Shin,
+``Simulation of Compressibility of Entrapped Air in an Incompressible Free Surface Flow
+Using a Pressure-Based Method for Unified Equations,''
+\emph{International Journal for Numerical Methods in Fluids}, 92(10), 1274--1289, 2020.
+\doi{10.1002/fld.4827}.
+
+\bibitem{brackbill1992}
+J.~U. Brackbill, D.~B. Kothe, and C.~Zemach,
+``A Continuum Method for Modeling Surface Tension,''
+\emph{Journal of Computational Physics}, 100(2), 335--354, 1992.
+\doi{10.1016/0021-9991(92)90240-Y}.
+
+\end{thebibliography}
+
+\end{document}
