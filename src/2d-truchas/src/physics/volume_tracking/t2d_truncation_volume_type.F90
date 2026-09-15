@@ -17,7 +17,10 @@ module t2d_truncation_volume_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use t2d_geom_axisymmetric
+  use t2d_plane_type, only: alpha
   implicit none
+
+  private :: triangle_area
 
   type, public :: t2d_truncation_volume
     private
@@ -122,24 +125,27 @@ contains
   ! truncated volume of the component triangle
   real(r8) function trunc_tri_volume(this, node_set, plane_rho)
 
-    use cell_geometry
-    use t2d_plane_type
+    use t2d_plane_type, only: t2d_plane
 
     class(t2d_truncation_volume), intent(in) :: this
     real(r8), intent(in) :: node_set(:,:), plane_rho
 
     integer :: f, icount, icut, on_point(3), fid(3)
-    real(r8) :: xf(2,2), xint(2,3), xt(2,3), vol_full_tri, vol_sub_tri
+    real(r8) :: xf(2,2), xint(2,3), xt(2,3), area, vol_full_tri, vol_sub_tri
     type(t2d_plane) :: int_plane
     logical :: entire_element, cut_plane(3), f_intersection(3)
 
     int_plane%rho = plane_rho
     int_plane%normal = this%plane_normal
 
-    if (this%is_axisymmetric) then
+    area = triangle_area(node_set)
+    if (area == 0.0_r8) then
+      trunc_tri_volume = 0.0_r8
+      return
+    else if (this%is_axisymmetric) then
       vol_full_tri = polygon_volume_axisym(node_set)
     else
-      vol_full_tri = tri_area(node_set)
+      vol_full_tri = area
     end if
 
     ! 1. check intersection of plane with each face of triangle.
@@ -224,10 +230,13 @@ contains
       end if
 
       ! truncated sub-triangle area based on above vertices
-      if (this%is_axisymmetric) then
+      area = triangle_area(xt)
+      if (area == 0.0_r8) then
+        vol_sub_tri = 0.0_r8
+      else if (this%is_axisymmetric) then
         vol_sub_tri = polygon_volume_axisym(xt)
       else
-        vol_sub_tri = tri_area(xt)
+        vol_sub_tri = area
       end if
 
     end if
@@ -243,6 +252,26 @@ contains
     end if
 
   end function trunc_tri_volume
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  ! The determinant uses the correlated vertex coordinates directly and remains defined
+  ! for the nearly degenerate triangles produced when a clipping line passes through a
+  ! polygon vertex. The tolerance is consistent with the local geometric precision used
+  ! by t2d_plane.
+  pure real(r8) function triangle_area(x)
+
+    real(r8), intent(in) :: x(2,3)
+
+    real(r8) :: dx1(2), dx2(2), scale
+
+    dx1 = x(:,2)-x(:,1)
+    dx2 = x(:,3)-x(:,1)
+    scale = max(maxval(abs(dx1)), maxval(abs(dx2)), maxval(abs(x(:,3)-x(:,2))))
+    triangle_area = 0.5_r8*abs(dx1(1)*dx2(2) - dx1(2)*dx2(1))
+    if (triangle_area <= alpha*scale) triangle_area = 0.0_r8
+
+  end function triangle_area
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

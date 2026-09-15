@@ -11,6 +11,7 @@ set(VOLUME_TRACKING_2D_SOURCE_FILES
   t2d_plane_type.F90
   t2d_locate_plane_os_function.F90
   t2d_truncation_volume_type.F90
+  t2d_flux_volume_nodes_function.F90
   t2d_geometric_volume_tracker_type.F90)
 
 add_library(volume_tracking_2d ${VOLUME_TRACKING_2D_SOURCE_FILES})
