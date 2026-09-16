@@ -39,6 +39,31 @@
       "default": 0.001,
       "description": "Minimum nonzero interior face density as a fraction of the lightest real-fluid density. Must be greater than zero and no greater than one."
     },
+    "void-collapse": {
+      "type": "object",
+      "description": "Two-sided pressure compliance for eligible trapped fluid/VOID cells. Omission disables collapse; geometric volume tracking is required.",
+      "properties": {
+        "pressure-time-scale": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "description": "Positive impedance tau0*p0, with units of pressure times time."
+        },
+        "reaction-cap": {
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 100.0,
+          "description": "Maximum reaction coefficient as a multiple of the local pressure-diffusion diagonal."
+        },
+        "capillary-coefficient": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "description": "Effective surface tension c_sigma*sigma (pressure times length). Adds the pressure bias coefficient*(1-void_fraction)^3/sqrt(cell_area); zero retains unbiased compliance."
+        }
+      },
+      "required": ["pressure-time-scale"],
+      "additionalProperties": false
+    },
     "bc": {
       "$ref": "flow_bc.schema.json",
       "description": "Named flow boundary conditions. This sublist is required; if it is empty, the model supplies its default boundary treatment."

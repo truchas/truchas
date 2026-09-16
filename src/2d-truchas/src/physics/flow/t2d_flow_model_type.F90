@@ -45,6 +45,7 @@ module t2d_flow_model_type
     type(t2d_flow_material_props), public :: matl_props
     real(r8), public :: void_collapse_impedance = 0.0_r8
     real(r8), public :: void_collapse_reaction_cap = 100.0_r8
+    real(r8), public :: collapse_sigma = 0.0_r8
     logical, public :: inviscid = .false.
     logical, public :: unsteady_stokes = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
@@ -57,6 +58,7 @@ module t2d_flow_model_type
     procedure :: set_pre_solidification_state
     procedure :: accept_material_state
     procedure :: collapse_compliance
+    procedure :: collapse_pressure_bias
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
     procedure :: assemble_momentum
@@ -94,6 +96,18 @@ contains
         return
       end if
       call env%simlog%info('Using two-sided trapped-void pressure compliance.')
+      call collapse_params%get('capillary-coefficient', this%collapse_sigma, &
+          default=0.0_r8, stat=stat, errmsg=errmsg)
+      if (stat /= 0) return
+      if (.not.ieee_is_finite(this%collapse_sigma) .or. this%collapse_sigma < 0.0_r8) then
+        stat = 1
+        errmsg = 'void-collapse capillary-coefficient must be finite and nonnegative'
+        return
+      end if
+      if (this%collapse_sigma > 0.0_r8) then
+        write(message, '(a,es12.5)') 'Using trapped-void capillary bias, coefficient=', this%collapse_sigma
+        call env%simlog%info(trim(message))
+      end if
     end if
     call params%get('inviscid', this%inviscid, default=.false., stat=stat, errmsg=errmsg)
     if (stat /= 0) return
@@ -319,6 +333,24 @@ contains
       fluid = this%matl_props%vof_novoid(c)
       alpha = max(0.0_r8, this%matl_props%vof(c)-fluid)
       if (fluid > 0.0_r8) compliance(c) = (alpha/fluid)/this%void_collapse_impedance
+    end do
+  end function
+
+
+  !! Positive shift of the compliance pressure: div(u) = -C*(p+bias).
+  !! Use the same current fractions and eligibility as COLLAPSE_COMPLIANCE.
+  !! Sigma is the effective surface tension c_sigma*sigma; h = sqrt(cell area).
+  function collapse_pressure_bias(this) result(bias)
+    class(t2d_flow_model), intent(in) :: this
+    real(r8) :: bias(this%mesh%ncell_onP)
+    integer :: c
+
+    bias = 0.0_r8
+    if (this%void_collapse_impedance <= 0.0_r8 .or. this%collapse_sigma == 0.0_r8) return
+    do c = 1, this%mesh%ncell_onP
+      if (this%matl_props%cell_t(c) /= regular_void_t) cycle
+      if (abs(this%matl_props%vof(c)-1.0_r8) > 100.0_r8*epsilon(1.0_r8)) cycle
+      bias(c) = this%collapse_sigma*this%matl_props%vof_novoid(c)**3/sqrt(this%mesh%volume(c))
     end do
   end function
 

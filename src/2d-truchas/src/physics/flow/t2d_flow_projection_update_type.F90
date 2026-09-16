@@ -158,7 +158,7 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env, pressure_bias)
     class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -169,10 +169,12 @@ contains
     logical, optional, intent(out) :: solved
     type(simulation_environment), optional, intent(inout) :: env
 
-    integer :: c, f, pin_face
     type(simulation_environment), optional, intent(in) :: log_env
     real(r8), optional, intent(in) :: compliance(:), reaction_cap
-    real(r8) :: reaction(this%mesh%ncell_onP), expansion, tolerance
+    real(r8), optional, intent(in) :: pressure_bias(:)
+
+    integer :: c, f, pin_face
+    real(r8) :: reaction(this%mesh%ncell_onP), expansion, tolerance, driving_pressure
     character(160) :: warning
     logical :: initial_
 
@@ -236,6 +238,11 @@ contains
     if (present(env)) call env%timer%start('flow/projection/rhs')
     call this%operators%divergence(state%vel_fn, this%flux)
     this%rhs = this%rhs - this%flux/dt - reaction*state%p_cc(:this%mesh%ncell_onP)
+    if (present(pressure_bias)) then
+      ASSERT(size(pressure_bias) == this%mesh%ncell_onP)
+      ! Use the capped reaction returned by ASSEMBLE in the pressure offset too.
+      this%rhs = this%rhs - reaction*pressure_bias
+    end if
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) this%rhs(c) = 0.0_r8
     end do
@@ -267,15 +274,21 @@ contains
       call this%operators%divergence(state%vel_fn, this%flux)
       expansion = 0.0_r8
       do c = 1, this%mesh%ncell_onP
-        if (reaction(c) <= 0.0_r8 .or. state%p_cc(c) >= 0.0_r8) cycle
-        tolerance = 100.0_r8*epsilon(1.0_r8)*max(1.0_r8, abs(state%p_cc(c)))
-        if (state%p_cc(c) < -tolerance) &
+        if (reaction(c) <= 0.0_r8) cycle
+        driving_pressure = state%p_cc(c)
+        tolerance = max(1.0_r8, abs(driving_pressure))
+        if (present(pressure_bias)) then
+          driving_pressure = driving_pressure + pressure_bias(c)
+          tolerance = max(tolerance, abs(pressure_bias(c)))
+        end if
+        tolerance = 100.0_r8*epsilon(1.0_r8)*tolerance
+        if (driving_pressure < -tolerance) &
             expansion = max(expansion, this%flux(c)/this%mesh%volume(c))
       end do
       expansion = global_maxval(expansion)
       if (expansion > 100.0_r8*epsilon(1.0_r8)/dt) then
         write(warning, '(a,es12.5,a)') &
-            'Trapped-void compliance produced positive divergence; maximum=', expansion, ' (1/time).'
+            'Trapped-void compliance: pressure below equilibrium, positive divergence; maximum=', expansion, ' (1/time).'
         if (present(env)) then
           call env%simlog%warn(trim(warning))
         else if (present(log_env)) then

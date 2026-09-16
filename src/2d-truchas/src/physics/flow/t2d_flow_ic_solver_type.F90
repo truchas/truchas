@@ -147,7 +147,8 @@ contains
         this%model%matl_props%inv_density_f, this%model%matl_props%density_delta_c, &
         this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, state, stat, &
         initial=.true., solved=projection_solved, compliance=this%model%collapse_compliance(), &
-        reaction_cap=this%model%void_collapse_reaction_cap, log_env=env)
+        reaction_cap=this%model%void_collapse_reaction_cap, log_env=env, &
+        pressure_bias=this%model%collapse_pressure_bias())
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
       call write_solver_metrics(env, 'flow.initial.pressure-projection', num_itr, num_dscg_itr, num_pcg_itr, &

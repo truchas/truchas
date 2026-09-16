@@ -29,6 +29,16 @@ flow/thermal models.  More detailed subsystem items remain in
   capability.  The current 2D path supports VOID tracking and inactive-VOID
   flow cells, but does not yet implement the collapse treatment used by the
   mature 3D flow algorithm.
+- Extend the pressure-compliance VOID-collapse prototype to mixed
+  solid/liquid/VOID cells, which are currently excluded.  For whole-cell
+  liquid and VOID fractions L and V, the proposed extension uses
+  F = L/(L+V), alpha = V/(L+V), and h = sqrt((L+V)*cell_area).
+  The compliance ratio alpha/F remains V/L; the capillary bias becomes
+  Sigma*F^3/h.  Before enabling this extension, rigorously test stationary
+  and evolving solid distributions, vanishing nonsolid regions and cutoff
+  transitions, changing flow connectivity, and real-fluid conservation.
+  Casting with solidification is a motivating application.  See the
+  [prototype documentation](src/physics/flow/trapped-void-collapse.md).
 - Implement nested-dissection reconstruction for cells containing three or
   more materials; the current geometric tracker uses onion-skin ordering.
 - Revisit conservation repair and small-volume threshold behavior as the

@@ -36,7 +36,8 @@ program test_t2d_flow_solver
 
   status = 0
   call test_step
-  call test_collapse
+  call test_collapse(0.0_r8)
+  call test_collapse(0.5_r8)
 
   call halt_parallel_communication
   stop status
@@ -101,7 +102,8 @@ contains
   end subroutine
 
 
-  subroutine test_collapse
+  subroutine test_collapse(sigma)
+    real(r8), intent(in) :: sigma
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_solver), target :: solver
@@ -109,7 +111,7 @@ contains
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params, plist, bc_params, tracking_params
     type(parameter_list), target :: model_params, solver_params
-    real(r8), allocatable :: velocity(:,:), vfrac(:,:), temperature(:)
+    real(r8), allocatable :: velocity(:,:), vfrac(:,:), temperature(:), bias(:)
     real(r8), pointer :: velocity_face(:)
     real(r8) :: before, after, initial_volume, inflow, dt, time
     character(:), allocatable :: errmsg
@@ -119,6 +121,7 @@ contains
     call model_params%set('inviscid', .true.)
     plist => model_params%sublist('void-collapse')
     call plist%set('pressure-time-scale', 1.0_r8)
+    if (sigma > 0.0_r8) call plist%set('capillary-coefficient', sigma)
     bc_params => model_params%sublist('bc')
     plist => bc_params%sublist('wall')
     call plist%set('type', 'free-slip')
@@ -159,6 +162,13 @@ contains
     velocity = 0.0_r8
     dt = 0.005_r8
     call solver%set_initial_material_state(vfrac, temperature)
+    bias = model%collapse_pressure_bias()
+    do c = 1, mesh%ncell_onP
+      if (mesh%cell_centroid(1,c) > 0.875_r8) then
+        bias(c) = bias(c)-sigma*0.125_r8/sqrt(mesh%volume(c))
+      end if
+    end do
+    call require(maxval(abs(bias)) < 1.0e-12_r8, 'wrong capillary pressure bias')
     initial_volume = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
     call solver%set_initial_state(env, 0.0_r8, dt, velocity, stat)
     call require(stat == 0, 'collapse initial solve failed')
