@@ -7,12 +7,12 @@ def run_test(tenv):
     stdout, output = tenv.truchas(4, "vfrad1-patch.inp")
     golden = tenv.output("vfrad1-patch_golden/vfrad1-patch.h5")
 
-    # cycle number
+    # Adaptive stepping can take one more or one fewer step across platforms.
     cycle = output.cycle(2)
     cycleg = golden.cycle(2)
-    status = "PASS" if cycle == cycleg else "FAIL"
-    print("{:s}: matching cycle numbers {:d}".format(status, cycle))
-    if cycle != cycleg: nfail += 1
+    status = "PASS" if abs(cycle - cycleg) <= 1 else "FAIL"
+    print("{:s}: cycle count {:d} (golden {:d})".format(status, cycle, cycleg))
+    if abs(cycle - cycleg) > 1: nfail += 1
 
     # temperature
     test = output.field(2, "Z_TEMP")
