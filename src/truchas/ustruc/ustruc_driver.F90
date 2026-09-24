@@ -295,7 +295,7 @@ contains
   subroutine ustruc_driver_init(t)
 
     use mesh_manager, only: unstr_mesh_ptr
-    use diffusion_solver_data, only: mesh_name
+    use thermal_species_driver, only: thermal_species_mesh_name
 
     real(r8), intent(in) :: t
 
@@ -318,7 +318,7 @@ contains
 
       !! We should be using the same mesh as the heat transfer physics;
       !! it should eventually be provided by the MPC.
-      this(n)%mesh => unstr_mesh_ptr(mesh_name)
+      this(n)%mesh => unstr_mesh_ptr(thermal_species_mesh_name())
       INSIST(associated(this(n)%mesh))
 
       if (plist%is_parameter('low-temp-phase')) then
@@ -656,7 +656,7 @@ contains
 
   subroutine ustruct_update_aux(this, tcell, tface, liq_vf, sol_vf)
 
-    use diffusion_solver, only: ds_get_cell_temp, ds_get_face_temp
+    use thermal_species_driver, only: thermal_species_get_temp, thermal_species_get_face_temp
     use legacy_matl_api, only: gather_vof
 
     type(ustruc_driver_data), intent(in) :: this
@@ -664,8 +664,8 @@ contains
     real(r8), allocatable, intent(out), optional :: liq_vf(:), sol_vf(:)
 
     allocate(tcell(this%mesh%ncell_onP), tface(this%mesh%nface_onP))
-    call ds_get_cell_temp(tcell)
-    call ds_get_face_temp(tface)
+    call thermal_species_get_temp(tcell)
+    call thermal_species_get_face_temp(tface)
 
     allocate(liq_vf(this%mesh%ncell_onP), sol_vf(this%mesh%ncell_onP))
     if (allocated(this%liq_matid)) then

@@ -22,7 +22,7 @@ module simulation_event_queue
   use parameter_list_type
   use toolpath_event_type
   use toolhead_event_type, only: toolhead_event
-  use diffusion_solver, only: vf_event
+  use thermal_species_driver, only: vf_event
   implicit none
   private
 
@@ -71,8 +71,7 @@ contains
 
     use toolhead_driver, only: add_toolhead_events
     use em_heat_driver, only: em_heat_enabled, get_em_heat_event_times
-    use diffusion_solver_data, only: ds_enabled
-    use diffusion_solver, only: add_moving_vf_events
+    use thermal_species_driver, only: thermal_species_add_moving_vf_events, thermal_species_enabled
     use edit_module, only: short_edit, short_output_dt_multiplier
     use output_control
 
@@ -89,7 +88,7 @@ contains
 
     !! Events involving toolpaths are added first to avoid their times
     !! being adjusted to avoid small spacings.
-    if (ds_enabled) call add_moving_vf_events(event_queue)
+    if (thermal_species_enabled()) call thermal_species_add_moving_vf_events(event_queue)
     call add_toolhead_events(event_queue)
     call add_output_events(event_queue) ! only for part_path right now
 

@@ -9,7 +9,7 @@ The purpose of the flow (and definition of an unused void material) is to
 allow/force use of the special flow/HT solver. This problem has an approximate
 analytic solution in the form of a 2-term asymptotic expansion in powers of
 1/k, where k=100 is the thermal conductivity.  This test exercises interface
-condition as implemented in the special 'FHT' solver; the associated gap-rad
+condition as implemented in the special 'fht' solver; the associated gap-rad
 test exercises the implementation in the normal 'HTSD' solver.
 
 &MESH

@@ -6,7 +6,7 @@ initial temperature is ~1.5 on the left and ~0.5 on the right.  This problem
 has an approximate analytic solution in the form of a 2-term asymptotic
 expansion in powers of 1/k, where k=100 is the thermal conductivity.  This
 test exercises interface condition implemented in the 'HTSD' solver; the
-associated gap-rad-flow test exercises the implementation in the 'FHT' solver.
+associated gap-rad-flow test exercises the implementation in the 'fht' solver.
 
 &MESH
   mesh_file = 'gap-rad.g'

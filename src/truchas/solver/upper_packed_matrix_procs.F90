@@ -28,7 +28,8 @@ module upper_packed_matrix_procs
   implicit none
   private
 
-  public :: upm_factor, upm_solve, upm_invert, sym_matmul, upm_col_sum, upm_quad_form, upm_cong_prod
+  public :: upm_factor, upm_solve, upm_invert, sym_matmul, upm_sym_matvec
+  public :: upm_col_sum, upm_quad_form, upm_cong_prod
 
   interface sym_matmul
     procedure sym_matmul_vec_f77, sym_matmul_vec_f90
@@ -222,6 +223,7 @@ contains
     integer :: i, j, l
     real(r8) :: bi, ci
 
+    c = 0.0_r8
     l = 1
     do i = 1, size(b)
       bi = b(i)
@@ -311,6 +313,33 @@ contains
     end do
 
   end function sym_matmul_mat_f77
+
+  !! Compute C = A*B where A is a symmetric matrix in upper packed storage.
+  !! This is the subroutine form of SYM_MATMUL for callers that want to reuse
+  !! caller-owned work arrays.
+
+  pure subroutine upm_sym_matvec(a, b, c)
+
+    real(r8), intent(in)  :: a(:), b(:)
+    real(r8), intent(out) :: c(:)
+
+    integer :: i, j, l
+    real(r8) :: bi, ci
+
+    l = 1
+    do i = 1, size(b)
+      bi = b(i)
+      ci = 0.0_r8
+      do j = 1, i-1
+        ci = ci + a(l)*b(j)
+        c(j) = c(j) + a(l) * bi
+        l = l + 1
+      end do
+      c(i) = ci + a(l)*bi
+      l = l + 1
+    end do
+
+  end subroutine upm_sym_matvec
 
   !! Compute the quadratic form x^T A x where A is a symmetric matrix
   !! in upper packed storage format.

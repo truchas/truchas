@@ -1,10 +1,11 @@
 LINEAR STEADY STATE CONDUCTION IN 100 DIRECTION WITH HEX MESH
 
 A basic heat conduction test in [0,1]^3 with a linear steady state solution
-between fixed temperatures on opposing faces of the cube, with no-flux BC on
-the other faces.  Here we are concerned with recovering the steady state
-solution T = 1 + a*x + b*y + c*z, H = 2*T for a given direction abc, and not
-not so much with the transient approach to steady state.
+between a fixed temperature and a nonlinear heat-transfer condition on
+opposing faces of the cube, with no-flux BC on the other faces. Here we are
+concerned with recovering the steady state solution T = 1 + x, H = 2*T, and
+not so much with the transient approach to steady state. The heat-transfer
+coefficient h(T) = T and ambient temperature 2.5 give the exact flux at x=1.
 
 &MESH
   x_axis%coarse_grid = 0.0, 1.0
@@ -50,10 +51,18 @@ not so much with the transient approach to steady state.
 /
 
 &THERMAL_BC
-  name = 'right dirichlet'
-  type = 'temperature'
+  name = 'right temperature-dependent htc'
+  type = 'htc'
   face_set_ids = 2
-  temp = 2.0
+  htc_func = 'temperature-dependent htc'
+  ambient_temp = 2.5
+/
+
+&FUNCTION
+  name = 'temperature-dependent htc'
+  type = 'polynomial'
+  poly_coefficients(1) = 1.0
+  poly_exponents(:,1) = 1
 /
 
 &THERMAL_BC

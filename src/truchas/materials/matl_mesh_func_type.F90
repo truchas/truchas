@@ -95,6 +95,12 @@
 !!  GET_VOID_VOL_FRAC(VOL_FRAC) returns the volume fraction of void (ID 0) for
 !!    all mesh cells in the rank-1 real array VOL_FRAC.
 !!
+!!  GET_VOID_MASKS(MESH, VOID_CELL, VOID_FACE) returns allocatable logical
+!!    masks that identify cells and faces whose volume fraction is entirely
+!!    void. If no void cells exist globally, both masks are returned
+!!    unallocated. MESH provides the cell-face topology and face index map
+!!    needed to derive the face mask from the cell mask.
+!!
 
 #include "f90_assert.fpp"
 
@@ -135,6 +141,7 @@ module matl_mesh_func_type
     procedure :: has_matl
     procedure :: get_matl_vol_frac
     procedure :: get_void_vol_frac
+    procedure :: get_void_masks
     final :: matl_mesh_func_delete
   end type
 
@@ -315,6 +322,46 @@ contains
     real(r8), intent(out) :: vol_frac(:)
     call get_matl_vol_frac(this, 0, vol_frac)
   end subroutine get_void_vol_frac
+
+  subroutine get_void_masks(this, mesh, void_cell, void_face)
+
+    use parallel_communication, only: global_count
+    use unstr_mesh_type
+
+    class(matl_mesh_func), intent(in) :: this
+    type(unstr_mesh), intent(in) :: mesh
+    logical, allocatable, intent(inout) :: void_cell(:), void_face(:)
+
+    integer :: j
+    real(r8), allocatable :: void_vol_frac(:)
+
+    if (allocated(void_cell)) deallocate(void_cell)
+    if (allocated(void_face)) deallocate(void_face)
+
+    ASSERT(mesh%ncell == this%mesh%ncell)
+
+    allocate(void_vol_frac(mesh%ncell), void_cell(mesh%ncell))
+    call this%get_void_vol_frac(void_vol_frac)
+    void_cell = (void_vol_frac > 1.0_r8 - 2*epsilon(1.0_r8))
+    deallocate(void_vol_frac)
+
+    if (global_count(void_cell) == 0) then
+      deallocate(void_cell)
+      return
+    end if
+
+    allocate(void_face(mesh%nface))
+    void_face = .true.
+    do j = 1, mesh%ncell
+      if (.not.void_cell(j)) then
+        associate (cface => mesh%cface(mesh%xcface(j):mesh%xcface(j+1)-1))
+          void_face(cface) = .false.
+        end associate
+      end if
+    end do
+    call mesh%face_imap%gather_offp(void_face)
+
+  end subroutine get_void_masks
 
   subroutine get_matl_vol_frac(this, matid, vol_frac)
 

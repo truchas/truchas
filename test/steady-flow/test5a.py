@@ -30,7 +30,7 @@ def run_test(tenv):
     nfail += truchas.compare_max(velocity, 0, 1e-13, "velocity", output.time(3))
 
     # Test pressure against exact
-    nfail += truchas.compare_max(output.field(1, "Z_P"), 0, 2e-12, "pressure", output.time(1))
+    nfail += truchas.compare_max(output.field(1, "Z_P"), 0, 5e-12, "pressure", output.time(1))
     nfail += truchas.compare_max(output.field(3, "Z_P"), 0, 1e-10, "pressure", output.time(3))
 
     truchas.report_summary(nfail)

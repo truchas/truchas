@@ -153,7 +153,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -215,7 +215,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -272,7 +272,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(2))
     mask = .true.
@@ -324,7 +324,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(1))
     mask = btest(mesh%cell_set_mask,pos=1)
@@ -376,7 +376,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(1))
     mask = btest(mesh%cell_set_mask,pos=1)
@@ -428,7 +428,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(1))
     mask = .true.
@@ -468,7 +468,7 @@ contains
     INSIST(associated(mesh))
 
     allocate(disc)
-    call disc%init (mesh, use_new_mfd=.true.)
+    call disc%init (mesh)
 
     allocate(mask(mesh%ncell), setids(0))
     mask = .true.

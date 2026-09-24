@@ -179,7 +179,7 @@ contains
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
     
-    integer  :: j, num_itr, num_dscg_itr, num_pcg_itr
+    integer  :: j, n, nface_max, num_itr, num_dscg_itr, num_pcg_itr
     !logical  :: bface(this%mesh%nface)
     real(r8) :: norm
     real(r8) :: uface(this%mesh%nface), rface(this%mesh%nface)
@@ -189,6 +189,13 @@ contains
     ASSERT(size(ucell) == this%mesh%ncell)
     ASSERT(size(gradu,dim=1) == size(this%mesh%x,dim=1))
     ASSERT(size(gradu,dim=2) <= this%mesh%ncell)
+
+    if (this%mesh%ncell == 0) then
+      nface_max = 0
+    else
+      nface_max = maxval(this%mesh%xcface(2:) - this%mesh%xcface(:this%mesh%ncell))
+    end if
+    allocate(w(nface_max))
     
     !! Compute the RHS for the system of face unknowns and an initial guess for
     !! their solution.  The initial guess is simply the average of neighboring
@@ -204,12 +211,11 @@ contains
       if (this%cell_mask(j)) then
         associate (cface => this%mesh%cface(this%mesh%xcface(j):this%mesh%xcface(j+1)-1), &
                    minv => this%disc%minv(this%disc%xminv(j):this%disc%xminv(j+1)-1))
-          allocate(w(size(cface)))
-          call upm_col_sum (minv, w)
-          rface(cface) = rface(cface) + ucell(j)*w
+          n = size(cface)
+          call upm_col_sum (minv, w(:n))
+          rface(cface) = rface(cface) + ucell(j)*w(:n)
           uface(cface) = uface(cface) + ucell(j)*0.5_r8
           !bface(cface) = .not.bface(cface)
-          deallocate(w)
         end associate
       end if
     end do

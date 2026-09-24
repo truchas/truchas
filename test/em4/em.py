@@ -3,6 +3,7 @@
 import time
 import os
 import multiprocessing
+import subprocess
 
 import numpy as np
 import numpy.linalg as npla
@@ -15,16 +16,35 @@ import matplotlib.pyplot as plt
 import truchas
 
 
-def run_truchas(input_parameters, fdme=False):
+HFIELD_BC = """&ELECTROMAGNETIC_BC
+  name = 'applied H field'
+  type = 'ih-hfield'
+  face_set_ids = 3
+/"""
+
+
+def hfield_bc(name, face_set_ids):
+    return f"""&ELECTROMAGNETIC_BC
+  name = '{name}'
+  type = 'ih-hfield'
+  face_set_ids = {face_set_ids}
+/"""
+
+
+def run_truchas(input_parameters, fdme=False, input_name=None, cleanup_input=False):
     input_parameters["fdme"] = "T" if fdme else "F"
-    input_file = "fdme.inp" if fdme else "tdme.inp"
+    input_file = input_name or ("fdme.inp" if fdme else "tdme.inp")
     tenv.generate_input_deck(input_parameters, "template-em.inp", input_file)
-    t_elapsed = -time.time()
-    stdout, tdata = tenv.truchas(1, input_file)
-    t_elapsed += time.time()
-    solver = "FDME" if fdme else "TDME"
-    print(f"{solver} elapsed {t_elapsed:.2f} seconds.")
-    return tdata
+    try:
+        t_elapsed = -time.time()
+        stdout, tdata = tenv.truchas(1, input_file)
+        t_elapsed += time.time()
+        solver = "FDME" if fdme else "TDME"
+        print(f"{solver} elapsed {t_elapsed:.2f} seconds.")
+        return tdata
+    finally:
+        if cleanup_input:
+            os.remove(os.path.join(os.path.dirname(__file__), input_file))
 
 
 def get_heat_source(tdata):
@@ -116,6 +136,8 @@ def test(tenv, H_bc, source_frequency, sigma, R,
                         "sigma": sigma,
                         "relative_permittivity": relative_permittivity,
                         "relative_permeability": relative_permeability,
+                        "mesh_file": "mesh_flat.gen",
+                        "hfield_bcs": HFIELD_BC,
                         }
     tdata = [run_truchas(input_parameters, fdme=True),
              run_truchas(input_parameters, fdme=False),
@@ -145,6 +167,72 @@ def test(tenv, H_bc, source_frequency, sigma, R,
     return nfail
 
 
+def test_nxh_grouping(tenv):
+    cases = {
+        "combined": hfield_bc("all H field", "2, 3"),
+        "split": "\n\n".join((hfield_bc("end H field", "2"),
+                                  hfield_bc("side H field", "3"))),
+        "reversed": "\n\n".join((hfield_bc("side H field", "3"),
+                                     hfield_bc("end H field", "2"))),
+    }
+    base_parameters = {
+        "H_bc": 1.0,
+        "source_frequency": 500.0,
+        "sigma": 1.0,
+        "relative_permittivity": 1.0,
+        "relative_permeability": 1.0,
+        "mesh_file": "mesh_flat.gen",
+    }
+
+    nfail = 0
+    for fdme in (True, False):
+        solver = "fdme" if fdme else "tdme"
+        results = {}
+        for name, bcs in cases.items():
+            params = dict(base_parameters, hfield_bcs=bcs)
+            input_name = f"nxh-groups-{solver}-{name}.inp"
+            output = run_truchas(params, fdme, input_name, cleanup_input=True)
+            efield = output.em_data("stuff").field("|E|") if fdme else None
+            results[name] = (get_heat_source(output)[1], efield)
+
+        qref, eref = results["combined"]
+        qtol = 1.0e-11 * max(1.0, np.max(np.abs(qref)))
+        if fdme:
+            etol = 1.0e-11 * max(1.0, np.max(np.abs(eref)))
+        for name in ("split", "reversed"):
+            q, e = results[name]
+            nfail += truchas.compare_max(q, qref, qtol, f"Q-{solver}-{name}", 0.0)
+            if fdme:
+                nfail += truchas.compare_max(e, eref, etol, f"E-{solver}-{name}", 0.0)
+
+    return nfail
+
+
+def test_nxh_face_overlap(tenv):
+    bcs = "\n\n".join((hfield_bc("first H field", "3"),
+                         hfield_bc("repeated H field", "3")))
+    params = {
+        "H_bc": 1.0,
+        "source_frequency": 500.0,
+        "sigma": 1.0,
+        "relative_permittivity": 1.0,
+        "relative_permeability": 1.0,
+        "mesh_file": "mesh_flat.gen",
+        "hfield_bcs": bcs,
+    }
+    try:
+        run_truchas(params, fdme=True, input_name="nxh-face-overlap.inp", cleanup_input=True)
+    except subprocess.CalledProcessError as error:
+        output = (error.stdout or "") + (error.stderr or "")
+        if "faces belong to an existing group" in output:
+            return 0
+        print("FAIL: overlapping nxH face specifications failed for an unexpected reason")
+        return 1
+
+    print("FAIL: overlapping nxH face specifications were accepted")
+    return 1
+
+
 def run_test(tenv):
     R = 2e-2 # currently hard-coded via cubit
     relative_permittivity = 1
@@ -158,6 +246,8 @@ def run_test(tenv):
     for f, tol in zip(frequencies, tols):
         nfail += test(tenv, H_bc, f, sigma, R,
                       relative_permittivity, relative_permeability, tol)
+    nfail += test_nxh_grouping(tenv)
+    nfail += test_nxh_face_overlap(tenv)
 
     return nfail
 
@@ -188,6 +278,8 @@ def plot_comparison(tenv):
                         "sigma": sigma,
                         "relative_permittivity": relative_permittivity,
                         "relative_permeability": relative_permeability,
+                        "mesh_file": "mesh_flat.gen",
+                        "hfield_bcs": HFIELD_BC,
                         }
     tdata = [run_truchas(input_parameters, fdme=True),
              run_truchas(input_parameters, fdme=False),

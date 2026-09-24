@@ -45,7 +45,9 @@ contains
     if (any(move%coord(t1) /= r0+dr)) call write_fail('test_sad: wrong coord right')
 
     if (any(move%coord(t0+2) /= r0+dr/7)) call write_fail('test_sad: wrong coord at speed')
-    if (any(move%coord(t0+6) /= r0+5*dr/7)) call write_fail('test_sad: wrong coord at decel')
+    ! Equivalent deceleration expressions can round one ULP apart.
+    if (any(abs(move%coord(t0+6) - (r0+5*dr/7)) > &
+        2*spacing(r0+5*dr/7))) call write_fail('test_sad: wrong coord at decel')
 
     times = move%partition(6.99_r8)
     if (size(times) == 3) then
@@ -79,7 +81,8 @@ contains
     if (any(move%coord(t1) /= r0+dr)) call write_fail('test_sa: wrong coord right')
 
     if (any(move%coord(t0+4) /= r0+2*dr/7)) call write_fail('test_sa: wrong coord at speed')
-    if (any(move%coord(t0+7) /= r0+5*dr/7)) call write_fail('test_sa: wrong coord at decel')
+    if (any(abs(move%coord(t0+7) - (r0+5*dr/7)) > &
+        2*spacing(r0+5*dr/7))) call write_fail('test_sa: wrong coord at decel')
 
     times = move%partition(6.99_r8)
     if (size(times) == 3) then
