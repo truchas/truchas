@@ -279,7 +279,7 @@ contains
         this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, &
         this%pending_state, stat, solved=projection_solved, env=env, &
         compliance=this%model%collapse_compliance(), reaction_cap=this%model%void_collapse_reaction_cap, &
-        pressure_bias=this%model%collapse_pressure_bias())
+        pressure_bias=this%model%collapse_pressure_bias(), collapse_fraction=this%model%collapse_fraction())
     call env%timer%stop('flow/projection')
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)

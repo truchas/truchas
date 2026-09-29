@@ -42,6 +42,8 @@ program test_t2d_flow_projection_update
   call test_capillary_compliance(.true., .false.)
   call test_capillary_compliance(.false., .true.)
   call test_capillary_compliance(.true., .true.)
+  call test_mainline_source(.false.)
+  call test_mainline_source(.true.)
 
   call halt_parallel_communication
   stop status
@@ -226,6 +228,73 @@ contains
       else
         call require(global_maxval(sign_p*flux) < 0.0_r8, 'wrong capillary divergence sign')
       end if
+    end do
+  end subroutine
+
+
+  ! The explicit collapse amount contributes -V*q/dt**2 to the RHS, with
+  ! no pressure-dependent reaction or cap. Test both dt factors and q=0.
+  subroutine test_mainline_source(initial)
+    logical, intent(in) :: initial
+    type(t2d_unstr_mesh), pointer :: mesh
+    type(t2d_flow_operators), target :: operators
+    type(t2d_flow_projection), target :: projection
+    type(t2d_flow_projection_solver), target :: solver
+    type(t2d_flow_projection_update) :: update
+    type(t2d_flow_state) :: state
+    type(t2d_flow_bc) :: bc
+    type(parameter_list), target :: bc_params, solver_params
+    type(parameter_list), pointer :: plist
+    real(r8), allocatable :: inv_c(:), inv_f(:), delta(:), flux(:), fraction(:)
+    real(r8), allocatable :: grad_p(:,:)
+    integer, allocatable :: cell_t(:), face_t(:)
+    integer :: k, stat
+    character(:), allocatable :: errmsg
+    real(r8) :: dt
+
+    mesh => new_unstr_2d_mesh(env, [0.0_r8,0.0_r8], [1.0_r8,1.0_r8], [8,8], 0.0_r8, 0.0_r8)
+    call operators%init(mesh)
+    call projection%init(mesh, operators)
+    call state%init(mesh)
+    allocate(inv_c(mesh%ncell), inv_f(mesh%nface), delta(mesh%ncell), flux(mesh%ncell_onP), &
+        fraction(mesh%ncell_onP), cell_t(mesh%ncell), face_t(mesh%nface), grad_p(2,mesh%ncell))
+    inv_c = 1.0_r8
+    inv_f = 1.0_r8
+    delta = 0.0_r8
+    cell_t = regular_void_t
+    face_t = regular_t
+    call solver_params%set('rel-tol', 1.0e-12_r8)
+    call solver_params%set('max-ds-iter', 100)
+    call solver_params%set('max-amg-iter', 100)
+    call solver%init(projection, solver_params)
+    call update%init(mesh, operators, projection, solver)
+    plist => bc_params%sublist('walls')
+    call plist%set('type', 'free-slip')
+    call plist%set('face-set-ids', [2,3,4])
+    plist => bc_params%sublist('feed')
+    call plist%set('type', 'pressure')
+    call plist%set('face-set-ids', [1])
+    call plist%set('pressure', 0.0_r8)
+    call bc%init(env, mesh, bc_params, stat, errmsg)
+    call require(stat == 0, 'mainline source boundary initialization failed')
+    do k = 1, 3
+      dt = 0.1_r8*k
+      fraction = 0.01_r8*(1.0_r8+mesh%cell_centroid(1,:mesh%ncell_onP))
+      if (k == 3) fraction = 0.0_r8
+      call bc%compute(0.0_r8, dt)
+      state%vel_cc = 0.0_r8
+      state%p_cc = 3.0_r8
+      if (.not.initial) then
+        call update%pressure_gradient(state%p_cc, inv_c, inv_f, delta, cell_t, face_t, bc, grad_p)
+        state%vel_cc = -dt*grad_p
+      end if
+      call update%correct(dt, inv_c, inv_f, delta, cell_t, face_t, bc, state, stat, &
+          initial=initial, env=env, collapse_fraction=fraction)
+      call require(stat == 0, 'mainline source projection failed')
+      call operators%divergence(state%vel_fn, flux)
+      call require(maxval(abs(flux/mesh%volume(:mesh%ncell_onP)+fraction/dt)) < 1.0e-8_r8, &
+          'mainline prescribed divergence identity failed')
+      if (k == 3) call require(maxval(abs(state%vel_fn)) < 1.0e-8_r8, 'zero mainline source caused flow')
     end do
   end subroutine
 

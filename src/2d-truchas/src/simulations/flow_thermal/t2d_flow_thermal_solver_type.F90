@@ -126,7 +126,7 @@ contains
       errmsg = 'solver.flow.volume-tracking.algorithm must be "simple" or "geometric"'
       return
     end if
-    if (flow_model%void_collapse_impedance > 0.0_r8 .and. tracking_algorithm /= 'geometric') then
+    if (flow_model%collapse_enabled() .and. tracking_algorithm /= 'geometric') then
       stat = 1
       errmsg = 'trapped-void collapse requires geometric volume tracking'
       return

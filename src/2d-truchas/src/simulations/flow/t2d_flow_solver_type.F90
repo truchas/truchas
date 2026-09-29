@@ -124,7 +124,7 @@ contains
         return
       end if
     end if
-    if (model%void_collapse_impedance > 0.0_r8 .and. algorithm /= 'geometric') then
+    if (model%collapse_enabled() .and. algorithm /= 'geometric') then
       stat = 1
       errmsg = 'trapped-void collapse requires geometric volume tracking'
       return

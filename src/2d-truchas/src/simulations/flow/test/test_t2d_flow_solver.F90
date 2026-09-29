@@ -38,6 +38,8 @@ program test_t2d_flow_solver
   call test_step
   call test_collapse(0.0_r8)
   call test_collapse(0.5_r8)
+  call test_collapse(0.0_r8, mainline=.true.)
+  call test_mainline_history
 
   call halt_parallel_communication
   stop status
@@ -102,8 +104,9 @@ contains
   end subroutine
 
 
-  subroutine test_collapse(sigma)
+  subroutine test_collapse(sigma, mainline)
     real(r8), intent(in) :: sigma
+    logical, optional, intent(in) :: mainline
     type(t2d_unstr_mesh), pointer :: mesh
     type(t2d_flow_model), target :: model
     type(t2d_flow_solver), target :: solver
@@ -116,11 +119,18 @@ contains
     real(r8) :: before, after, initial_volume, inflow, dt, time
     character(:), allocatable :: errmsg
     integer :: stat, c, f, step
+    logical :: mainline_
 
+    mainline_ = .false.
+    if (present(mainline)) mainline_ = mainline
     mesh => new_unstr_2d_mesh(env, [0.0_r8,0.0_r8], [1.0_r8,1.0_r8], [8,8], 0.0_r8, 0.0_r8)
     call model_params%set('inviscid', .true.)
     plist => model_params%sublist('void-collapse')
-    call plist%set('pressure-time-scale', 1.0_r8)
+    if (mainline_) then
+      call plist%set('model', 'mainline')
+    else
+      call plist%set('pressure-time-scale', 1.0_r8)
+    end if
     if (sigma > 0.0_r8) call plist%set('capillary-coefficient', sigma)
     bc_params => model_params%sublist('bc')
     plist => bc_params%sublist('wall')
@@ -187,12 +197,117 @@ contains
       if (stat /= 0) return
       after = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
       ! Initial velocity is zero; the first projection supplies the next transport velocity.
-      if (step > 1) call require(after > before, 'stationary pocket stopped collapsing under pressure loading')
+      if (step > 1 .and. .not.mainline_) &
+          call require(after > before, 'stationary pocket stopped collapsing under pressure loading')
       call require(abs(after-before-inflow) < 1.0e-8_r8, 'collapse liquid gain differs from boundary inflow')
       call require(all(model%matl_props%vof_novoid >= 0.0_r8 .and. &
           model%matl_props%vof_novoid <= 1.0_r8), 'collapse produced unbounded liquid fractions')
     end do
-    call require(after > initial_volume+1.0e-4_r8, 'collapse did not replace measurable void with liquid')
+    if (mainline_) then
+      ! A pressure-loaded but unchanged pocket supplies no history-based source.
+      call require(abs(after-initial_volume) < 1.0e-8_r8, 'mainline collapsed a stationary unchanged pocket')
+    else
+      call require(after > initial_volume+1.0e-4_r8, 'collapse did not replace measurable void with liquid')
+    end if
+  end subroutine
+
+
+  subroutine test_mainline_history
+    type(t2d_unstr_mesh), pointer :: mesh
+    type(t2d_flow_model) :: model
+    type(parameter_list), target :: params
+    type(parameter_list), pointer :: plist, bc_params
+    real(r8), allocatable :: vfrac(:,:), temperature(:), expected(:)
+    character(:), allocatable :: errmsg
+    integer :: stat, c
+
+    mesh => new_unstr_2d_mesh(env, [0.0_r8,0.0_r8], [1.0_r8,1.0_r8], [8,8], 0.0_r8, 0.0_r8)
+    call params%set('inviscid', .true.)
+    bc_params => params%sublist('bc')
+    plist => bc_params%sublist('walls')
+    call plist%set('type', 'free-slip')
+    call plist%set('face-set-ids', [1,2,3,4])
+    plist => params%sublist('void-collapse')
+    call plist%set('model', 'unknown')
+    call model%init(env, mesh, params, stat, errmsg)
+    call require(stat /= 0, 'unknown collapse model accepted')
+    call plist%set('model', 'mainline')
+    call model%init(env, mesh, params, stat, errmsg)
+    call require(stat == 0, 'mainline collapse without compliance parameters failed')
+    call require(model%collapse_enabled(), 'mainline collapse not enabled')
+    if (stat /= 0) return
+    call model%matl_props%init(mesh, [1.0_r8], .true., stat, errmsg, nfluid=2)
+    call require(stat == 0, 'mainline material properties initialization failed')
+    if (stat /= 0) return
+    allocate(vfrac(2,mesh%ncell), temperature(mesh%ncell_onP), expected(mesh%ncell_onP))
+    temperature = 0.0_r8
+    vfrac(1,:) = 0.6_r8
+    vfrac(2,:) = 0.4_r8
+    call model%matl_props%set_initial_state(vfrac, temperature)
+    call require(all(model%collapse_fraction() == 0.0_r8), 'nonzero initial collapse source')
+    vfrac(1,:) = 0.65_r8
+    vfrac(2,:) = 0.35_r8
+    call model%matl_props%set_volume_fractions(vfrac)
+    call require(maxval(abs(model%collapse_fraction()-0.035_r8)) < 1.0e-14_r8, &
+        'wrong mainline source for decreasing VOID; default relaxation cap not applied')
+    call require(maxval(abs(model%matl_props%void_old-0.4_r8)) < 1.0e-14_r8, &
+        'trial property update overwrote committed VOID')
+    vfrac(1,:) = 0.59_r8
+    vfrac(2,:) = 0.41_r8
+    call model%matl_props%set_volume_fractions(vfrac)
+    call require(maxval(abs(model%collapse_fraction()-0.01_r8)) < 1.0e-14_r8, &
+        'wrong mainline source for increasing VOID')
+    ! Rejection restores current fractions without advancing their history.
+    vfrac(1,:) = 0.6_r8
+    vfrac(2,:) = 0.4_r8
+    call model%matl_props%set_volume_fractions(vfrac)
+    call require(maxval(abs(model%collapse_fraction())) < 1.0e-14_r8, 'nonzero source after restoring fractions')
+    vfrac(1,:) = 0.59_r8
+    vfrac(2,:) = 0.41_r8
+    call model%matl_props%set_volume_fractions(vfrac)
+    call model%accept_material_state()
+    call require(all(model%collapse_fraction() == 0.0_r8), 'accept failed to advance VOID history')
+
+    ! Mainline includes solid/liquid/VOID cells, unlike the compliance prototype.
+    vfrac(1,:) = 0.3_r8
+    vfrac(2,:) = 0.2_r8
+    call model%matl_props%set_initial_state(vfrac, temperature)
+    vfrac(1,:) = 0.29_r8
+    vfrac(2,:) = 0.21_r8
+    call model%matl_props%set_volume_fractions(vfrac)
+    call require(maxval(abs(model%collapse_fraction()-0.01_r8)) < 1.0e-14_r8, &
+        'mainline excluded solid/liquid/VOID cells')
+    call require(all(model%collapse_compliance() == 0.0_r8), 'mainline enabled pressure compliance')
+    call require(all(model%collapse_pressure_bias() == 0.0_r8), 'mainline enabled pressure bias')
+    do c = 1, mesh%ncell
+      if (mesh%cell_centroid(1,c) < 0.125_r8) then
+        vfrac(:,c) = [1.0_r8, 0.0_r8]
+      else if (mesh%cell_centroid(1,c) < 0.25_r8) then
+        vfrac(:,c) = 0.0_r8
+      else if (mesh%cell_centroid(1,c) > 0.875_r8) then
+        vfrac(:,c) = [0.0_r8, 0.5_r8] ! solid/VOID is classified as VOID
+      end if
+    end do
+    call model%matl_props%set_volume_fractions(vfrac)
+    expected = 0.01_r8
+    do c = 1, mesh%ncell_onP
+      if (mesh%cell_centroid(1,c) < 0.25_r8 .or. mesh%cell_centroid(1,c) > 0.75_r8) expected(c) = 0.0_r8
+    end do
+    call require(maxval(abs(model%collapse_fraction()-expected)) < 1.0e-14_r8, &
+        'wrong mainline eligibility: pure fluid, solid, VOID, or VOID neighbor')
+
+    call plist%set('relaxation', -0.1_r8)
+    call model%init(env, mesh, params, stat, errmsg)
+    call require(stat /= 0, 'negative mainline relaxation accepted')
+    call plist%set('relaxation', 1.1_r8)
+    call model%init(env, mesh, params, stat, errmsg)
+    call require(stat /= 0, 'mainline relaxation above one accepted')
+    call plist%set('relaxation', 0.0_r8)
+    call model%init(env, mesh, params, stat, errmsg)
+    call require(stat == 0, 'zero mainline relaxation rejected')
+    call model%matl_props%init(mesh, [1.0_r8], .true., stat, errmsg, nfluid=2)
+    call model%matl_props%set_volume_fractions(vfrac)
+    call require(all(model%collapse_fraction() == 0.0_r8), 'zero relaxation produced a source')
   end subroutine
 
 

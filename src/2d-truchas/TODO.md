@@ -25,10 +25,11 @@ flow/thermal models.  More detailed subsystem items remain in
 
 ## Volume tracking and interfaces
 
-- Implement the VOID-collapse model required for the full free-surface flow
-  capability.  The current 2D path supports VOID tracking and inactive-VOID
-  flow cells, but does not yet implement the collapse treatment used by the
-  mature 3D flow algorithm.
+- Evaluate the pressure-compliance and mainline history-based VOID-collapse
+  options before selecting a supported free-surface collapse model. Compare
+  conservation, timestep sensitivity, pressure response, and trapped-pocket
+  behavior. Both remain experimental; see the
+  [model documentation](src/physics/flow/trapped-void-collapse.md).
 - Extend the pressure-compliance VOID-collapse prototype to mixed
   solid/liquid/VOID cells, which are currently excluded.  For whole-cell
   liquid and VOID fractions L and V, the proposed extension uses

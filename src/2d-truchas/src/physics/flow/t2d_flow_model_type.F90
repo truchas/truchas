@@ -46,6 +46,8 @@ module t2d_flow_model_type
     real(r8), public :: void_collapse_impedance = 0.0_r8
     real(r8), public :: void_collapse_reaction_cap = 100.0_r8
     real(r8), public :: collapse_sigma = 0.0_r8
+    logical :: mainline_collapse = .false.
+    real(r8) :: collapse_relax = 0.1_r8
     logical, public :: inviscid = .false.
     logical, public :: unsteady_stokes = .false.
     real(r8), public :: body_acceleration(2) = 0.0_r8
@@ -59,6 +61,8 @@ module t2d_flow_model_type
     procedure :: accept_material_state
     procedure :: collapse_compliance
     procedure :: collapse_pressure_bias
+    procedure :: collapse_fraction
+    procedure :: collapse_enabled
     procedure :: compute_bc
     procedure :: set_buoyancy_temperature
     procedure :: assemble_momentum
@@ -80,34 +84,55 @@ contains
     real(r8), allocatable :: body_acceleration(:)
     real(r8) :: fluid_fraction_cutoff, min_face_fraction
     character(96) :: message
+    character(:), allocatable :: collapse_model
 
     stat = 0
     if (params%is_sublist('void-collapse')) then
       collapse_params => params%sublist('void-collapse')
-      call collapse_params%get('pressure-time-scale', this%void_collapse_impedance, stat=stat, errmsg=errmsg)
+      call collapse_params%get('model', collapse_model, default='pressure-compliance', stat=stat, errmsg=errmsg)
       if (stat /= 0) return
-      call collapse_params%get('reaction-cap', this%void_collapse_reaction_cap, &
-          default=100.0_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      if (.not.ieee_is_finite(this%void_collapse_impedance) .or. this%void_collapse_impedance <= 0.0_r8 .or. &
-          .not.ieee_is_finite(this%void_collapse_reaction_cap) .or. this%void_collapse_reaction_cap <= 0.0_r8) then
+      select case (collapse_model)
+      case ('mainline')
+        this%mainline_collapse = .true.
+        call collapse_params%get('relaxation', this%collapse_relax, default=0.1_r8, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        if (.not.ieee_is_finite(this%collapse_relax) .or. &
+            this%collapse_relax < 0.0_r8 .or. this%collapse_relax > 1.0_r8) then
+          stat = 1
+          errmsg = 'void-collapse relaxation must be finite and in [0,1]'
+          return
+        end if
+        call env%simlog%info('Using mainline history-based trapped-void collapse.')
+      case ('pressure-compliance')
+        call collapse_params%get('pressure-time-scale', this%void_collapse_impedance, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        call collapse_params%get('reaction-cap', this%void_collapse_reaction_cap, &
+            default=100.0_r8, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        if (.not.ieee_is_finite(this%void_collapse_impedance) .or. this%void_collapse_impedance <= 0.0_r8 .or. &
+            .not.ieee_is_finite(this%void_collapse_reaction_cap) .or. this%void_collapse_reaction_cap <= 0.0_r8) then
+          stat = 1
+          errmsg = 'void-collapse pressure-time-scale and reaction-cap must be finite and positive'
+          return
+        end if
+        call env%simlog%info('Using two-sided trapped-void pressure compliance.')
+        call collapse_params%get('capillary-coefficient', this%collapse_sigma, &
+            default=0.0_r8, stat=stat, errmsg=errmsg)
+        if (stat /= 0) return
+        if (.not.ieee_is_finite(this%collapse_sigma) .or. this%collapse_sigma < 0.0_r8) then
+          stat = 1
+          errmsg = 'void-collapse capillary-coefficient must be finite and nonnegative'
+          return
+        end if
+        if (this%collapse_sigma > 0.0_r8) then
+          write(message, '(a,es12.5)') 'Using trapped-void capillary bias, coefficient=', this%collapse_sigma
+          call env%simlog%info(trim(message))
+        end if
+      case default
         stat = 1
-        errmsg = 'void-collapse pressure-time-scale and reaction-cap must be finite and positive'
+        errmsg = 'void-collapse model must be "pressure-compliance" or "mainline"'
         return
-      end if
-      call env%simlog%info('Using two-sided trapped-void pressure compliance.')
-      call collapse_params%get('capillary-coefficient', this%collapse_sigma, &
-          default=0.0_r8, stat=stat, errmsg=errmsg)
-      if (stat /= 0) return
-      if (.not.ieee_is_finite(this%collapse_sigma) .or. this%collapse_sigma < 0.0_r8) then
-        stat = 1
-        errmsg = 'void-collapse capillary-coefficient must be finite and nonnegative'
-        return
-      end if
-      if (this%collapse_sigma > 0.0_r8) then
-        write(message, '(a,es12.5)') 'Using trapped-void capillary bias, coefficient=', this%collapse_sigma
-        call env%simlog%info(trim(message))
-      end if
+      end select
     end if
     call params%get('inviscid', this%inviscid, default=.false., stat=stat, errmsg=errmsg)
     if (stat /= 0) return
@@ -352,6 +377,32 @@ contains
       if (abs(this%matl_props%vof(c)-1.0_r8) > 100.0_r8*epsilon(1.0_r8)) cycle
       bias(c) = this%collapse_sigma*this%matl_props%vof_novoid(c)**3/sqrt(this%mesh%volume(c))
     end do
+  end function
+
+
+  !! Fraction removed by the mainline divergence prescription. Either sign of
+  !! change activates collapse, limited by the current VOID fraction. Unlike
+  !! compliance, mixed solid/liquid/VOID cells are not excluded.
+  function collapse_fraction(this) result(fraction)
+    class(t2d_flow_model), intent(in) :: this
+    real(r8) :: fraction(this%mesh%ncell_onP)
+    real(r8) :: alpha
+    integer :: c
+
+    fraction = 0.0_r8
+    if (.not.this%mainline_collapse) return
+    do c = 1, this%mesh%ncell_onP
+      if (this%matl_props%cell_t(c) /= regular_void_t) cycle
+      alpha = this%matl_props%vof(c) - this%matl_props%vof_novoid(c)
+      fraction(c) = min(abs(alpha-this%matl_props%void_old(c)), this%collapse_relax*alpha)
+    end do
+  end function
+
+
+  logical function collapse_enabled(this)
+    class(t2d_flow_model), intent(in) :: this
+
+    collapse_enabled = this%mainline_collapse .or. this%void_collapse_impedance > 0.0_r8
   end function
 
 

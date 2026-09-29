@@ -10,6 +10,8 @@
 !! The current and committed cell densities are kept separately.  Updating
 !! the trial material distribution changes DENSITY_C but does not change
 !! DENSITY_C_OLD; ACCEPT marks the current material state as committed.
+!! VOID_OLD likewise retains the accepted VOID fraction for history-based
+!! collapse; trial property updates must not overwrite it.
 !!
 !! Neil Carlson <neil.carlson@gmail.com>, August 2026
 !! SPDX-License-Identifier: BSD-3-Clause
@@ -38,7 +40,7 @@ module t2d_flow_material_props_type
     type(scalar_func_box), allocatable :: viscosity(:), density_delta(:)
     real(r8), allocatable, public :: vfrac(:,:), density_c(:), density_c_old(:), &
         density_delta_c(:), inv_density_c(:), inv_density_f(:), viscosity_c(:), viscosity_f(:), &
-        vof(:), vof_novoid(:), solidified_density(:)
+        vof(:), vof_novoid(:), void_old(:), solidified_density(:)
     real(r8), allocatable :: temperature_c(:)
     real(r8), allocatable :: pre_solidification_density(:)
     integer, allocatable, public :: cell_t(:), face_t(:)
@@ -89,7 +91,7 @@ contains
     allocate(this%vfrac(size(density), mesh%ncell), this%density_c(mesh%ncell), &
         this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
-        this%density_delta(size(density)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%density_delta(size(density)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), this%void_old(mesh%ncell), &
         this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
         this%cell_t(mesh%ncell), this%face_t(mesh%nface), this%temperature_c(mesh%ncell_onP))
     if (.not.inviscid) then
@@ -159,7 +161,7 @@ contains
     allocate(this%density(size(phase_ids)), this%vfrac(size(phase_ids), mesh%ncell), &
         this%density_c(mesh%ncell), this%density_c_old(mesh%ncell), this%density_delta_c(mesh%ncell), &
         this%inv_density_c(mesh%ncell), this%inv_density_f(mesh%nface), &
-        this%density_delta(size(phase_ids)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), &
+        this%density_delta(size(phase_ids)), this%vof(mesh%ncell), this%vof_novoid(mesh%ncell), this%void_old(mesh%ncell), &
         this%solidified_density(mesh%ncell), this%pre_solidification_density(mesh%ncell), &
         this%cell_t(mesh%ncell), this%face_t(mesh%nface), this%temperature_c(mesh%ncell_onP))
     this%nfluid = size(phase_ids)
@@ -407,11 +409,12 @@ contains
   end subroutine set_temperature
 
 
-  !! Mark current cell density as the committed density for the next step.
+  !! Commit the current density and VOID fraction for the next step.
   subroutine accept(this)
     class(t2d_flow_material_props), intent(inout) :: this
 
     this%density_c_old = this%density_c
+    this%void_old = this%vof - this%vof_novoid
     this%solidified_density = 0.0_r8
     this%have_pre_solidification_state = .false.
   end subroutine accept
@@ -427,6 +430,7 @@ contains
     this%inv_density_f = 1.0_r8/this%density(1)
     this%vof = 1.0_r8
     this%vof_novoid = 1.0_r8
+    this%void_old = 0.0_r8
     this%solidified_density = 0.0_r8
     this%pre_solidification_density = 0.0_r8
     this%cell_t = regular_t

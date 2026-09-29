@@ -158,7 +158,7 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env, pressure_bias)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env, pressure_bias, collapse_fraction)
     class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -172,6 +172,7 @@ contains
     type(simulation_environment), optional, intent(in) :: log_env
     real(r8), optional, intent(in) :: compliance(:), reaction_cap
     real(r8), optional, intent(in) :: pressure_bias(:)
+    real(r8), optional, intent(in) :: collapse_fraction(:)
 
     integer :: c, f, pin_face
     real(r8) :: reaction(this%mesh%ncell_onP), expansion, tolerance, driving_pressure
@@ -242,6 +243,12 @@ contains
       ASSERT(size(pressure_bias) == this%mesh%ncell_onP)
       ! Use the capped reaction returned by ASSEMBLE in the pressure offset too.
       this%rhs = this%rhs - reaction*pressure_bias
+    end if
+    if (present(collapse_fraction)) then
+      ASSERT(size(collapse_fraction) == this%mesh%ncell_onP)
+      ASSERT(all(collapse_fraction >= 0.0_r8))
+      ! Mainline prescribes div(u_new) = -q/dt without changing the matrix.
+      this%rhs = this%rhs - this%mesh%volume(:this%mesh%ncell_onP)*collapse_fraction/dt**2
     end if
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) this%rhs(c) = 0.0_r8

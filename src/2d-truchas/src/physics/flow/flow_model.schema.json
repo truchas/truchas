@@ -41,27 +41,45 @@
     },
     "void-collapse": {
       "type": "object",
-      "description": "Two-sided pressure compliance for eligible trapped fluid/VOID cells. Omission disables collapse; geometric volume tracking is required.",
+      "description": "Trapped-VOID collapse model. Omission disables collapse; geometric volume tracking is required.",
       "properties": {
+        "model": {
+          "type": "string",
+          "enum": ["pressure-compliance", "mainline"],
+          "default": "pressure-compliance",
+          "description": "Pressure-dependent compliance or the history-based mainline divergence source. Each model reads only its own parameters."
+        },
+        "relaxation": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.1,
+          "description": "Mainline only: limits collapse per step to this fraction of the current VOID fraction."
+        },
         "pressure-time-scale": {
           "type": "number",
           "exclusiveMinimum": 0.0,
-          "description": "Positive impedance tau0*p0, with units of pressure times time."
+          "description": "Pressure compliance only: positive impedance tau0*p0, with units of pressure times time."
         },
         "reaction-cap": {
           "type": "number",
           "exclusiveMinimum": 0.0,
           "default": 100.0,
-          "description": "Maximum reaction coefficient as a multiple of the local pressure-diffusion diagonal."
+          "description": "Pressure compliance only: maximum reaction coefficient as a multiple of the local pressure-diffusion diagonal."
         },
         "capillary-coefficient": {
           "type": "number",
           "minimum": 0.0,
           "default": 0.0,
-          "description": "Effective surface tension c_sigma*sigma (pressure times length). Adds the pressure bias coefficient*(1-void_fraction)^3/sqrt(cell_area); zero retains unbiased compliance."
+          "description": "Pressure compliance only: effective surface tension c_sigma*sigma (pressure times length). Adds the pressure bias coefficient*(1-void_fraction)^3/sqrt(cell_area); zero retains unbiased compliance."
         }
       },
-      "required": ["pressure-time-scale"],
+      "if": {
+        "properties": {"model": {"const": "mainline"}},
+        "required": ["model"]
+      },
+      "then": {},
+      "else": {"required": ["pressure-time-scale"]},
       "additionalProperties": false
     },
     "bc": {
