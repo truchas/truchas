@@ -1,0 +1,447 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,tabularx,microtype}
+\usepackage{xcolor,listings}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!45!black,
+  citecolor=blue!45!black]{hyperref}
+\hypersetup{pdftitle={The VOID-collapse model in 3D Truchas flow},
+  pdfsubject={Source-based description of the projection and volume-tracking algorithm}}
+\lstset{basicstyle=\small\ttfamily,columns=fullflexible,keepspaces=true,
+  breaklines=true,frame=single,rulecolor=\color{black!25},
+  xleftmargin=0.4em,xrightmargin=0.4em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\rev}{344a7c3a98d5046533585e6fedc87ffee312388b}
+\newcommand{\srclink}[3]{\href{https://gitlab.com/truchas/truchas/-/blob/344a7c3a98d5046533585e6fedc87ffee312388b/#1\#L#2}{#3}}
+
+\title{The VOID-collapse model in 3D Truchas flow}
+\author{Implementation and mathematical interpretation}
+\date{September 12, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Truchas provides an experimental model for collapsing small regions of VOID
+entrained in liquid. It introduces a prescribed negative divergence into the
+pressure projection in selected mixed liquid/void cells. The corrected
+velocity subsequently drives volume tracking; when a cell becomes overfilled,
+the geometric tracker preferentially removes VOID. This note derives the
+implemented divergence source, explains cell selection and the time-level
+coupling, and distinguishes the algorithm from a prescribed decay law or a
+physical gas-compression model.
+\end{abstract}
+
+\textbf{Source basis.} This describes the refactored, mainline 3D flow code at
+commit \code{344a7c3a} (full revision \texttt{\rev}). The relevant sources are
+also identical in the 2D worktree at \code{ba178536}. It does not describe
+the older v3.0.1 flow implementation or an implementation of collapse in 2D.
+Equations below are algebraic consequences of the source unless explicitly
+identified as illustrative assumptions. No simulation was run for this note.
+
+\section{Purpose and physical interpretation}
+
+The reference manual explains the motivation: volume tracking can leave
+small fragments of VOID behaving effectively as incompressible bubbles,
+which persist in the liquid. Enabling \code{void_collapse} allows a
+compressive velocity field to develop around these fragments. The manual
+labels both the model and its relaxation parameter experimental~\cite{manual}.
+
+VOID represents empty space. This model contains no gas equation of state,
+gas mass, gas energy, bubble pressure law, or surface-tension force. In
+particular, it does not solve a physical bubble-radius evolution equation.
+The new term is an empirical modification of the divergence constraint,
+coupled to the tracker's special treatment of VOID.
+
+Pure void cells already provide a zero-pressure condition to the ordinary
+free-surface projection. Collapse adds a mechanism for mixed cells without
+an immediately adjacent pure void cell. Enabling collapse does not directly
+delete volume fractions in the projection routine~\cite{projection,tracker}.
+
+\section{Volume fractions and cell selection}
+
+Let cell $c$ have fixed geometric volume $V_c$. Define
+\begin{align}
+ F_c &= \sum_{\text{real fluid phases and VOID}} f_{m,c}, &
+ L_c &= \sum_{\text{real fluid phases}} f_{m,c},\\
+ \alpha_c &= F_c-L_c, & S_c &= 1-F_c.
+\end{align}
+Here $\alpha_c$ is the VOID fraction of the \emph{whole cell}; it is not
+normalized by the fluid-accessible fraction $F_c$. Non-fluid phases are
+represented by the lumped solid fraction $S_c$.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+Symbol & Source component & Meaning\\
+\midrule
+$F_c$ & \texttt{props\%vof(c)} & Fluid fraction including VOID\\
+$L_c$ & \texttt{props\%vof\_novoid(c)} & Real-fluid fraction excluding VOID\\
+$\alpha_c^n$ & \code{vof_n - vof_novoid_n} & VOID fraction at the last accepted state\\
+$\delta\alpha_c$ & \texttt{props\%void\_delta\_cc(c)} & Current fraction minus last accepted fraction\\
+$\lambda$ & \code{void_collapse_relaxation} & Dimensionless relaxation factor\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The executable classification in \texttt{flow\_props\%update\_cc} is as
+follows~\cite{props}. The order of these tests matters.
+\begin{enumerate}
+\item If $F_c<\varepsilon_f$, classify the cell as \code{solid_t}.
+\item Otherwise, if $L_c=0$, classify it as \code{void_t}.
+\item Otherwise, if $F_c>L_c$, provisionally classify it as
+  \code{regular_void_t}.
+\item Otherwise classify it as \code{regular_t}.
+\end{enumerate}
+The internal \code{cutvof} default is $\varepsilon_f=0.01$. These are the
+actual tests in \code{update_cc}; the introductory description in
+\code{flow_domain_types.F90} does not fully describe them.
+
+A second pass changes a provisional \code{regular_void_t} cell to
+\code{regular_t} if \emph{any face neighbor} is \code{void_t}.
+Boundary entries with no neighboring cell are skipped. Thus a cell is
+eligible for collapse precisely when it retains the mixed-cell label and
+the collapse option is enabled. Both regular cell labels are active in the
+pressure solve.
+
+This is a local adjacency test, not a connected-component or bubble-size
+test. A collection of mixed cells can be eligible even when its VOID forms
+a connected region. Conversely, mixed cells next to a pure void cell are
+excluded. Solid neighbors do not themselves exclude a mixed cell, and the
+presence of a physical boundary is not a separate exclusion criterion.
+
+\textbf{Cell and face labels have different meanings.} For a cell,
+\code{regular_void_t} identifies the selected mixed state just described.
+For a face, the same integer label identifies an active-fluid/\code{void_t}
+connection, where the pressure on the void side is zero. A collapse-eligible
+cell need not have any such face; indeed the neighbor test excludes that
+configuration~\cite{props,projection}.
+
+\section{The implemented projection source}
+
+\subsection{History-dependent collapse amount}
+
+The property update computes
+\begin{equation}
+ \delta\alpha_c = \alpha_c-\alpha_c^n.
+ \label{eq:delta}
+\end{equation}
+This is an Eulerian cellwise change. It can reflect transport and whatever
+other updates have changed the current material/phase distribution; it is
+not a material derivative or a quantity extracted from the predicted
+velocity divergence~\cite{props,cycle}.
+
+For an eligible cell define the nonnegative fraction
+\begin{equation}
+ q_c=\min\bigl(|\delta\alpha_c|,\lambda\alpha_c\bigr).
+ \label{eq:q}
+\end{equation}
+For other cells, or when collapse is disabled, set $q_c=0$. The mainline
+implementation expresses this with two sign branches. After the
+predicted-velocity flux sum has been accumulated, it performs the following
+operations; the last division acts on the \emph{entire} right-hand side:
+\begin{lstlisting}
+void = lambda * (props%vof(c) - props%vof_novoid(c))
+if (props%void_delta_cc(c) < 0) then
+  rhs(c) = rhs(c) + V(c)*max(props%void_delta_cc(c), -void)/dt
+end if
+if (props%void_delta_cc(c) > 0) then
+  rhs(c) = rhs(c) - V(c)*min(props%void_delta_cc(c),  void)/dt
+end if
+rhs(c) = rhs(c)/dt
+\end{lstlisting}
+This excerpt abbreviates component names but preserves the signs and
+scaling in \code{setup_solver}~\cite{projection}. Both nonzero branches
+\emph{subtract} $V_cq_c/\Delta t$ before the final division. Hence the
+additional pressure-system right-hand side is
+\begin{equation}
+ \boxed{\Delta b_c=-\frac{V_cq_c}{\Delta t^2}.}
+ \label{eq:rhs}
+\end{equation}
+The two factors of $\Delta t$ are intentional in this transcription: one
+converts a fraction change to a volume rate, and the ordinary projection
+scaling supplies the other.
+
+\subsection{Resulting divergence constraint}
+
+Let $u_f$ be velocity in the globally oriented face-normal direction, $A_f$
+the face area, and $s_{cf}=\pm1$ convert that direction to the outward normal
+of cell $c$. Define integrated divergence
+\begin{equation}
+ (D u)_c = Q_c = \sum_{f\in\partial c}s_{cf}A_fu_f.
+\end{equation}
+Positive $Q_c$ denotes net outflow. In the code, the initial flux sum for the
+projection right-hand side is $-Q_c^*$.
+
+Write the pressure-to-face-normal-gradient operator as $G$, and let
+$R=\operatorname{diag}(1/\rho_f)$. With known pressure boundary contributions
+accounted for, the pressure-correction matrix has the form
+\begin{equation}
+ A=-D R G,\qquad
+ A\,\delta p=-\frac{D u^*}{\Delta t}
+              -\frac{Vq}{\Delta t^2},
+ \label{eq:projection}
+\end{equation}
+where $Vq$ denotes the vector with entries $V_cq_c$. On an ordinary
+interior face the matrix coefficient is
+\begin{equation}
+ a_f=\frac{\boldsymbol d_f\cdot\boldsymbol N_f}{\rho_f},
+\end{equation}
+using \code{flow_gradient_coefficients()} for $\boldsymbol d_f$ and the
+area-weighted normal $\boldsymbol N_f$. The collapse option changes the
+right-hand side, not these coefficients, for a fixed property state.
+
+The ordinary velocity correction remains
+\begin{equation}
+ u^{\rm new}=u^*-\Delta t\,RG\delta p.
+\end{equation}
+Combining this with equation~\eqref{eq:projection} gives
+\begin{equation}
+ \boxed{\frac{Q_c^{\rm new}}{V_c}=-\frac{q_c}{\Delta t}.}
+ \label{eq:divergence}
+\end{equation}
+Thus eligible cells acquire a prescribed net inflow. Elsewhere the usual
+zero-divergence target remains. These identities assume consistent discrete
+operators and boundary treatment and an exact linear solve; linear-solver
+residuals introduce corresponding errors. Ordinary cell-centered velocity
+and pressure corrections also follow the projection~\cite{projection}.
+
+\section{How this changes the amount of VOID}
+
+\subsection{Position in the time-step sequence}
+
+The mainline cycle advances material transport before updating flow. With
+$n$ denoting the last accepted state, the relevant sequence is~\cite{cycle,flow}
+\begin{enumerate}
+\item Advect materials using the previously accepted face velocities.
+  Apply geometric-tracker boundedness and normalization corrections.
+\item If thermal transport is active, update temperature and phase change;
+  refresh the phase fractions supplied to flow.
+\item Update flow properties and cell classifications. Compare the current
+  VOID fraction to the stored accepted fraction to form
+  $\delta\alpha_c$ in equation~\eqref{eq:delta}.
+\item Advance momentum and project the face velocities with the extra
+  source in equation~\eqref{eq:rhs}.
+\item Accept the flow/property state. The resulting face velocities drive
+  the \emph{next} material-transport update.
+\end{enumerate}
+
+The response is therefore delayed through the split sequence. The projection
+does not revisit the material update that supplied its current VOID fractions.
+Initialization sets the stored fractions to the initial fractions and
+explicitly sets \code{void_delta_cc} to zero, so the collapse source is
+initially zero~\cite{props}.
+
+\subsection{Preferential removal of VOID by the geometric tracker}
+
+For outward signed material flux volumes $\Phi_{m,cf}$, the tracker first
+accumulates fractions according to
+\begin{equation}
+ \widetilde f_{m,c}=f_{m,c}^{\rm start}
+       -\frac{1}{V_c}\sum_f\Phi_{m,cf}.
+\end{equation}
+It then applies \code{enforce_bounded_vof} after each geometric subcycle.
+Following individual fraction cutoff/clipping operations, let
+\begin{equation}
+ E_c=\sum_m\widetilde f_{m,c}-1,\qquad
+ a_c=\sum_{\rm VOID}\widetilde f_{m,c}.
+\end{equation}
+If $E_c>0$ and $a_c\ge E_c$, it removes the excess solely from VOID:
+\begin{equation}
+ f_{{\rm VOID},c}^{\rm corrected}
+ =\widetilde f_{{\rm VOID},c}\left(1-\frac{E_c}{a_c}\right).
+ \label{eq:void-removal}
+\end{equation}
+With the single VOID slot this is simply $a_c\mapsto a_c-E_c$. In this
+branch it leaves real-fluid fractions and their accumulated flux volumes
+unchanged. If VOID is insufficient, it removes all available VOID and uses
+\code{adjust_flux_all} for the remaining excess. Underfill also reaches the
+general adjustment path~\cite{tracker}.
+
+Equation~\eqref{eq:divergence} promotes overfilling, and
+equation~\eqref{eq:void-removal} provides the associated VOID loss. For
+illustration, if material fluxes sum to the geometric swept volumes, an
+initially normalized cell transported for a subsequent interval
+$\Delta t_{\rm next}$ with these fixed face velocities has raw overfill
+\begin{equation}
+ E_c=-\frac{\Delta t_{\rm next}}{V_c}Q_c^{\rm new}
+     =q_c\frac{\Delta t_{\rm next}}{\Delta t}.
+ \label{eq:next-overfill}
+\end{equation}
+This is $q_c$ for equal step sizes. Geometry, flux corrections, material
+cutoffs, solid occupancy, and exhaustion of VOID can complicate the actual
+update. Equation~\eqref{eq:next-overfill} is an interpretation of the
+coupling, not a separate formula executed by the tracker.
+
+The preferential VOID correction is present in geometric volume tracking
+regardless of the projection's \code{void_collapse} flag. Wisp
+redistribution is another, separately controlled operation. The simple
+donor-cell tracker does not implement this geometric tracker's boundedness
+and preferential-VOID-removal routine; it should not be assumed to provide
+the same collapse behavior merely because the projection flag is enabled
+~\cite{tracker,simple}.
+
+\section{Consequences of the relaxation rule}
+
+\subsection{Both signs drive contraction; an unchanged fraction does not}
+
+For $\alpha_c=0.02$, $\lambda=0.1$, and $\Delta t=0.01$ seconds, the cap is
+$\lambda\alpha_c=0.002$:
+\begin{center}
+\begin{tabular}{@{}rrr@{}}
+\toprule
+$\delta\alpha_c$ & $q_c$ & $Q_c^{\rm new}/V_c$ ($\mathrm{s}^{-1}$)\\
+\midrule
+$0$ & $0$ & $0$\\
+$+0.001$ & $0.001$ & $-0.1$\\
+$-0.001$ & $0.001$ & $-0.1$\\
+$+0.01$ or $-0.01$ & $0.002$ & $-0.2$\\
+\bottomrule
+\end{tabular}
+\end{center}
+These are arithmetic examples, not run results. A stationary mixed pocket
+with unchanged fraction has no collapse source. Either an increase or a
+decrease in its fraction can activate the response. Even translation of a
+fragment through cells can produce the Eulerian fraction change used by the
+model. Pressure and inertia affect the preceding flow evolution, but the
+source contains no explicit pressure or inertial-force threshold.
+
+\subsection{The relaxation parameter is a cap, not a decay prescription}
+
+The model does not directly impose
+$\alpha^{n+1}=(1-\lambda)\alpha^n$. The manual's description of roughly
+$1/\lambda$ steps to collapse should be read as qualitative guidance.
+Only under additional assumptions---persistent saturation of the cap,
+equal step sizes, adequate VOID, and no other transport effects---would
+repeated removal resemble geometric decay. At $\lambda=0.1$, that idealized
+law would leave $0.9^{10}\simeq0.35$ of the original fraction after ten
+updates. It would not remove all VOID in ten steps. At $\lambda=1$, complete
+removal is permitted by the cap but is not automatically requested, because
+$|\delta\alpha_c|$ remains a second limit.
+
+The control is dimensionless and tied to time steps, rather than a fixed
+physical relaxation time. At fixed fractions, the added divergence scales
+as $1/\Delta t$. Because the resulting velocity is used in the next
+transport update, changing step sizes also changes the effective transported
+volume as in equation~\eqref{eq:next-overfill}. The relaxation cap is thus
+not an unconditional bound on the amount removed in that next update.
+
+\section{Input controls, conservation, and limitations}
+
+The model is selected in the mainline \code{FLOW} namelist:
+\begin{lstlisting}
+&FLOW
+  void_collapse = T
+  void_collapse_relaxation = 0.1
+/
+\end{lstlisting}
+The default is disabled. The relaxation factor defaults to $0.1$, and the
+namelist reader validates $0\le\lambda\le1$. The bridging parameter list
+uses \code{options/void-collapse} and
+\code{options/void-collapse-relaxation}. The projection applies the default
+relaxation value when it reads that list. Setting $\lambda=0$ gives a zero
+additional source~\cite{input,projection,manual}.
+
+\textbf{Conservation.} VOID volume is deliberately not conserved by its
+normalization correction. Removing VOID alone from an overfilled cell need
+not change real-fluid mass. However, geometric tracking also uses cutoffs
+and cell-local flux adjustments. The source explicitly notes that those
+adjustments can make material flux volumes inconsistent across a shared
+face. Hence exact global real-fluid conservation is not guaranteed by the
+complete algorithm. The manual reports increased mass loss with larger
+relaxation factors (of order $0.5\%$ in its experience) and improvement with
+more subcycling; those statements are empirical guidance, not error bounds
+or measurements made for this note~\cite{tracker,manual}.
+
+\textbf{Global compatibility.} The collapse source is local and has no
+global compensation mechanism. The discrete divergence theorem requires
+the sum of integrated divergences in a connected active region to equal
+its net boundary flux. Consequently, an entirely closed region with
+impermeable boundaries cannot satisfy a strictly negative total prescribed
+divergence. A free surface or open boundary can accommodate compensating
+motion. With only Neumann pressure conditions, pinning a pressure equation
+does not cure the compatibility condition of the original divergence
+equations; it permits a compensating defect in the modified equation. This
+is a mathematical limitation of applying a net source in that setting, not
+a failure reproduced in a run here.
+
+\textbf{Geometry and resolution.} Eligibility depends on face adjacency
+and the existence of pure void cells. Refinement or mesh perturbation can
+therefore alter eligibility, even for similar physical interfaces. The
+model does not measure cavity size, reconstruct a closed void surface, or
+determine connectivity across the domain. Its local criterion should not
+be equated with identifying every physically trapped bubble.
+
+\textbf{Current test evidence.} The repository's \code{test/void} example
+constructs a restart with an injected VOID fraction and enables collapse.
+Its Python check bounds the maximum absolute change of the VOID field from
+the initial output by $10^{-4}$. Although its comment speaks of preventing
+growth, the comparison bounds changes in either direction. It does not
+validate a collapse rate, the prescribed divergence, or liquid mass
+conservation~\cite{test}. Source inspection establishes the implemented
+rule; it does not establish accuracy or robustness for every geometry.
+
+\section{Source guide and document reproduction}
+
+The links below refer to the immutable mainline revision stated on the
+first page. Within a clone, for example, the core routine is available with
+\begin{lstlisting}
+git show 344a7c3a:src/truchas/flow/flow_projection_type.F90
+\end{lstlisting}
+To rebuild this document with pdfLaTeX, run twice:
+\begin{lstlisting}
+pdflatex -interaction=nonstopmode -halt-on-error void-collapse-model.tex
+\end{lstlisting}
+
+\begin{thebibliography}{10}
+\small
+\bibitem{projection}
+\srclink{src/truchas/flow/flow_projection_type.F90}{201}{\code{flow_projection_type.F90}}.
+\code{init}: defaults; \code{setup_solver}: collapse source, pressure matrix,
+and pinning; \code{velocity_fc_correct}: face-velocity correction.
+
+\bibitem{props}
+\srclink{src/truchas/flow/flow_props_type.F90}{176}{\code{flow_props_type.F90}}.
+\code{set_initial_state}, \code{update_cc}, \code{update_fc}, and
+\code{accept}: fraction history, cell/face classification, and state storage.
+
+\bibitem{cycle}
+\srclink{src/truchas/drivers/drivers.F90}{218}{\code{drivers.F90}}, main cycle;
+\srclink{src/truchas/physics/volume_tracking/vtrack_driver.F90}{235}{\code{vtrack_driver.F90}},
+\code{vtrack_update};
+\srclink{src/truchas/flow/flow_driver.F90}{336}{\code{flow_driver.F90}},
+\code{flow_step} and \code{flow_accept}.
+
+\bibitem{flow}
+\srclink{src/truchas/flow/flow_type.F90}{336}{\code{flow_type.F90}}.
+\code{step}: property update, prediction, projection; \code{accept}:
+velocity history.
+
+\bibitem{tracker}
+\srclink{src/truchas/physics/volume_tracking/geometric_volume_tracker_type.F90}{910}{\code{geometric_volume_tracker_type.F90}}.
+\code{flux_volumes}, \code{accumulate_volume}, \code{enforce_bounded_vof},
+\code{adjust_flux_matl}, and \code{adjust_flux_all}.
+
+\bibitem{simple}
+\srclink{src/truchas/physics/volume_tracking/simple_volume_tracker_type.F90}{49}{\code{simple_volume_tracker_type.F90}}.
+\code{flux_volumes}: donor-cell update.
+
+\bibitem{input}
+\srclink{src/truchas/flow/flow_namelist.F90}{203}{\code{flow_namelist.F90}}.
+Namelist defaults, relaxation bounds, and parameter-list translation.
+
+\bibitem{manual}
+\srclink{doc/reference-manual/FLOW_Namelist/index.rst}{220}{Truchas reference manual, \code{FLOW} namelist}.
+Entries \code{void_collapse} and \code{void_collapse_relaxation}.
+
+\bibitem{test}
+\srclink{test/void/README.md}{1}{\code{test/void/README.md}},
+\srclink{test/void/add-solid-void.py}{1}{\code{add-solid-void.py}},
+\srclink{test/void/test.inp}{52}{\code{test.inp}}, and
+\srclink{test/void/test.py}{1}{\code{test.py}}.
+Restart preparation, input configuration, and existing test criterion.
+\end{thebibliography}
+\end{document}

@@ -1,0 +1,53 @@
+{
+  "materials": {
+    "water": {
+      "properties": {
+        "fluid": true,
+        "density": 1.0,
+        "viscosity": 0.1
+      }
+    }
+  },
+  "material-regions": {
+    "inlet": {
+      "material": "water",
+      "type": "box",
+      "lower-corner": [0.0, 0.0],
+      "upper-corner": [1.0, 0.5]
+    },
+    "void-background": {
+      "material": "VOID",
+      "type": "background"
+    }
+  },
+  "mesh": {
+    "x-axis":{"coarse-grid":[0.0, 1.0], "intervals":[4]},
+    "y-axis":{"coarse-grid":[0.0, 1.0], "intervals":[4]}
+  },
+  "flow-model": {
+    "inviscid": true,
+    "body-acceleration": [0.0, -1.0],
+    //"void-collapse": {"model": "mainline", "relaxation": 0.1},
+    "void-collapse": {"pressure-time-scale": 1.0, "reaction-cap": 500.0},
+    "bc": {
+      "inlet": {"type": "pressure", "pressure": 1.1, "face-set-ids": [3]},
+      "symmetry": {"type": "free-slip", "face-set-ids": [1]},
+      "walls": {"type": "no-slip", "face-set-ids": [2,4]}
+    }
+  },
+  "flow-solver": {
+    "courant-number": 0.25,
+    "volume-tracking": {"algorithm": "geometric", "cutoff": 1.0e-6},
+    "projection-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100},
+    "momentum-solver": {"rel-tol": 1.0e-10, "max-ds-iter": 100, "max-amg-iter": 100}
+  },
+  "initial-time": 0.0,
+  "output-times": {"times": [0.0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0]},
+  "time-stepping": {
+    "initial-time-step": 1.0e-2,
+    "min-time-step": 1.0e-6,
+    "max-time-step": 100.0,
+    "time-step-growth": 1.2
+  },
+  "initial-velocity": [0.0, 0.0]
+}

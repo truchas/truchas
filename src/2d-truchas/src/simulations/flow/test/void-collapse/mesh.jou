@@ -1,0 +1,33 @@
+## /opt/cubit/16.18/bin/clarox
+## Cubit Version 16.18.0
+## Cubit Build 4ee5708
+## Revised Thu Jun 6 10:47:43 2024 -0600
+## Running 09/15/2026 01:08:58 PM
+## Command Options:
+create surface rectangle width 0.75 height 0.5 zplane
+create surface rectangle width 0.25 height 0.25 zplane
+move vertex 6 location vertex 3 except z include_merged
+imprint volume all
+merge volume all
+
+surface all size 0.015625
+mesh surface all
+
+block 1 add surface 1
+block 2 add surface 2
+
+block 1 2 element type QUAD4
+
+sideset 1 add curve 7
+sideset 1 name "inlet"
+
+sideset 2 add curve 2 6
+sideset 2 name "symmetry"
+
+sideset 3 add curve 10 4 1
+sideset 3 name "walls"
+
+sideset 4 add curve 8
+
+set exodus netcdf4 on
+export mesh "mesh.gen" dimension 2 overwrite
