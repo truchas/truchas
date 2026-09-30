@@ -34,11 +34,11 @@
 
 #include "t2d_assert.inc"
 
-module new_idaesol_type
+module t2d_idaesol_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use new_state_history_type
-  use new_nka_type
+  use t2d_state_history_type
+  use t2d_nka_type
   use safestep_type
   use vector_class
   implicit none
@@ -784,4 +784,4 @@ contains
     counters(6) = this%rejected_steps
   end subroutine
 
-end module new_idaesol_type
+end module t2d_idaesol_type

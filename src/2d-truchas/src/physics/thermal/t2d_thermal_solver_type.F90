@@ -22,7 +22,7 @@ module t2d_thermal_solver_type
   use t2d_thermal_ic_solver_type
   use t2d_thermal_vector_type
   use t2d_thermal_idaesol_model_type
-  use new_idaesol_type
+  use t2d_idaesol_type
   use parameter_list_type
   use simulation_environment_type
   implicit none

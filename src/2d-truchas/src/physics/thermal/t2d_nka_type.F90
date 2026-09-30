@@ -147,7 +147,7 @@
 
 #include "t2d_assert.inc"
 
-module new_nka_type
+module t2d_nka_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use vector_class
@@ -520,4 +520,4 @@ contains
 
   end function nka_defined
 
-end module new_nka_type
+end module t2d_nka_type

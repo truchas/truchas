@@ -141,7 +141,7 @@
 
 #include "t2d_assert.inc"
 
-module new_state_history_type
+module t2d_state_history_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use vector_class
@@ -473,4 +473,4 @@ contains
     end if
   end subroutine copy
 
-end module new_state_history_type
+end module t2d_state_history_type

@@ -15,7 +15,7 @@
 module t2d_thermal_idaesol_model_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
-  use new_idaesol_type, only: idaesol_model
+  use t2d_idaesol_type, only: idaesol_model
   use vector_class
   use t2d_thermal_vector_type
   use t2d_thermal_model_type

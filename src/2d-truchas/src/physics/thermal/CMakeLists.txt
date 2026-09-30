@@ -1,9 +1,8 @@
 set(HT2D_SOURCE_FILES
-    # Temporary bridge until refactor-diffusion-solver provides these through
-    # the truchas library.
-    new_nka_type.F90
-    new_state_history_type.F90
-    new_idaesol_type.F90
+    # Keep the 2D integrator and its support modules distinct from mainline.
+    t2d_nka_type.F90
+    t2d_state_history_type.F90
+    t2d_idaesol_type.F90
     t2d_mfd_disc_type.F90
     t2d_mfd_diff_matrix_type.F90
     t2d_mfd_diff_precon_type.F90
