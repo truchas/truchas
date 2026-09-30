@@ -26,6 +26,13 @@ add_test(NAME t2d_flow_vtkhdf_nan
 set_tests_properties(t2d_flow_vtkhdf_nan PROPERTIES
   PROCESSORS 1 TIMEOUT 30 LABELS "UNIT;FLOW;VTKHDF;2d-truchas")
 
+add_test(NAME t2d_flow_vtkhdf_nan-4p
+  COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vtkhdf_nan/test.py
+    $<TARGET_FILE:test_t2d_flow_vtkhdf_nan> ${MPIEXEC} 4)
+set_tests_properties(t2d_flow_vtkhdf_nan-4p PROPERTIES
+  PROCESSORS 4 TIMEOUT 30 LABELS "UNIT;FLOW;VTKHDF;2d-truchas")
+
 function(add_flow_integrated_test name script input)
   add_test(NAME ${name}
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/${script}

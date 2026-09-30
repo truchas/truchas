@@ -1,4 +1,5 @@
 program test_t2d_flow_solver
+  use,intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
@@ -15,6 +16,7 @@ program test_t2d_flow_solver
   use material_model_type
   use material_factory, only: load_material_database
   use t2d_flow_model_type
+  use flow_domain_types, only: regular_void_t
   use t2d_flow_solver_type
   implicit none
 
@@ -114,12 +116,12 @@ contains
     type(material_model) :: matl_model
     type(parameter_list), pointer :: matl_params, plist, bc_params, tracking_params
     type(parameter_list), target :: model_params, solver_params
-    real(r8), allocatable :: velocity(:,:), vfrac(:,:), temperature(:), bias(:)
-    real(r8), pointer :: velocity_face(:)
+    real(r8), allocatable :: velocity(:,:), vfrac(:,:), temperature(:), bias(:), flux(:), compliance(:)
+    real(r8), pointer :: velocity_face(:), pressure(:), velocity_state(:,:), target_divergence(:)
     real(r8) :: before, after, initial_volume, inflow, dt, time
     character(:), allocatable :: errmsg
     integer :: stat, c, f, step
-    logical :: mainline_
+    logical :: mainline_, diagnostic_ok
 
     mainline_ = .false.
     if (present(mainline)) mainline_ = mainline
@@ -183,6 +185,18 @@ contains
     call solver%set_initial_state(env, 0.0_r8, dt, velocity, stat)
     call require(stat == 0, 'collapse initial solve failed')
     if (stat /= 0) return
+    call solver%get_cell_flow_soln(pressure, velocity_state, target_divergence)
+    compliance = model%collapse_compliance()
+    diagnostic_ok = .true.
+    do c = 1, mesh%ncell_onP
+      if (compliance(c) > 0.0_r8 .or. (mainline_ .and. model%matl_props%cell_t(c) == regular_void_t)) then
+        diagnostic_ok = diagnostic_ok .and. ieee_is_finite(target_divergence(c))
+      else
+        diagnostic_ok = diagnostic_ok .and. ieee_is_nan(target_divergence(c))
+      end if
+    end do
+    call require(diagnostic_ok, 'incorrect initial compliance target mask')
+    allocate(flux(mesh%ncell_onP))
     do step = 1, 20
       before = global_sum(sum(mesh%volume(:mesh%ncell_onP)*model%matl_props%vof_novoid(:mesh%ncell_onP)))
       call solver%get_face_velocity(velocity_face)
@@ -202,6 +216,23 @@ contains
       call require(abs(after-before-inflow) < 1.0e-8_r8, 'collapse liquid gain differs from boundary inflow')
       call require(all(model%matl_props%vof_novoid >= 0.0_r8 .and. &
           model%matl_props%vof_novoid <= 1.0_r8), 'collapse produced unbounded liquid fractions')
+      call solver%get_cell_flow_soln(pressure, velocity_state, target_divergence)
+      call solver%get_face_velocity(velocity_face)
+      call model%operators%divergence(velocity_face, flux)
+      compliance = model%collapse_compliance()
+      diagnostic_ok = .true.
+      do c = 1, mesh%ncell_onP
+        if (compliance(c) > 0.0_r8 .or. (mainline_ .and. model%matl_props%cell_t(c) == regular_void_t)) then
+          if (ieee_is_finite(target_divergence(c))) then
+            diagnostic_ok = diagnostic_ok .and. abs(target_divergence(c)-flux(c)/mesh%volume(c)) < 1.0e-8_r8
+          else
+            diagnostic_ok = .false.
+          end if
+        else
+          diagnostic_ok = diagnostic_ok .and. ieee_is_nan(target_divergence(c))
+        end if
+      end do
+      call require(diagnostic_ok, 'incorrect accepted compliance target divergence or mask')
     end do
     if (mainline_) then
       ! A pressure-loaded but unchanged pocket supplies no history-based source.

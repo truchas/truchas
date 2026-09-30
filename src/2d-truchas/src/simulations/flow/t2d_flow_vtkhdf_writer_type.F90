@@ -38,10 +38,13 @@ module t2d_flow_vtkhdf_writer_type
     private
     type(t2d_unstr_mesh), pointer :: mesh => null()
     type(vtkhdf_ug_file) :: file
-    type(vtkhdf_cell_data_handle) :: pressure, velocity
+    type(vtkhdf_cell_data_handle) :: pressure, velocity, void_compliance
+    type(vtkhdf_cell_data_handle) :: void_target_divergence
     type(vtkhdf_cell_data_handle), allocatable :: vfrac(:)
     type(temporal_field), allocatable :: temporal_fields(:)
     logical :: is_open = .false.
+    logical :: compliance_output = .false.
+    logical :: target_divergence_output = .false.
   contains
     procedure :: open
     procedure :: write_solution
@@ -50,7 +53,7 @@ module t2d_flow_vtkhdf_writer_type
 
 contains
 
-  subroutine open(this, env, mesh, matl_model, temporal_output, stat, errmsg)
+  subroutine open(this, env, mesh, matl_model, temporal_output, stat, errmsg, compliance_output, collapse_output)
     use vtkhdf_vtk_cell_types, only: VTK_TRIANGLE, VTK_QUAD
 
     class(t2d_flow_vtkhdf_writer), intent(out) :: this
@@ -60,6 +63,7 @@ contains
     type(parameter_list), target, intent(in) :: temporal_output
     integer, intent(out) :: stat
     character(:), allocatable, intent(out) :: errmsg
+    logical, optional, intent(in) :: compliance_output, collapse_output
 
     real(r8), allocatable :: x(:,:)
     integer, allocatable :: xcnode(:), cnode(:), global_cell_ids(:), global_node_ids(:)
@@ -109,6 +113,15 @@ contains
 
     this%pressure = this%file%register_temporal_cell_data('pressure', scalar_mold)
     this%velocity = this%file%register_temporal_cell_data('velocity', vector_mold)
+    if (present(compliance_output)) this%compliance_output = compliance_output
+    if (this%compliance_output) then
+      this%void_compliance = this%file%register_temporal_cell_data('void_compliance', scalar_mold)
+    end if
+    this%target_divergence_output = this%compliance_output
+    if (present(collapse_output)) this%target_divergence_output = this%target_divergence_output .or. collapse_output
+    if (this%target_divergence_output) then
+      this%void_target_divergence = this%file%register_temporal_cell_data('void_target_divergence', scalar_mold)
+    end if
     if (matl_model%nmatl > 1) then
       allocate(this%vfrac(matl_model%nmatl))
       do m = 1, size(this%vfrac)
@@ -141,16 +154,23 @@ contains
   end function
 
 
-  subroutine write_solution(this, time, pressure, velocity, temporal_output, flow_active, vfrac)
+  subroutine write_solution(this, time, pressure, velocity, temporal_output, flow_active, vfrac, compliance, &
+      void_target_divergence)
     !! PRESSURE, VELOCITY, and FLOW_ACTIVE are full-local arrays with current
     !! ghost values.  FLOW_ACTIVE is true exactly where flow equations exist.
+    !! COMPLIANCE contains owned-cell model coefficients before the reaction cap,
+    !! in inverse pressure-time units. Inactive cells are written as quiet NaNs.
+    !! VOID_TARGET_DIVERGENCE contains owned-cell signed targets from the accepted
+    !! projection, in inverse time units, with NaNs in ineligible cells.
     class(t2d_flow_vtkhdf_writer), intent(inout) :: this
     real(r8), intent(in) :: time, pressure(:), velocity(:,:)
     type(parameter_list), intent(inout) :: temporal_output
     logical, intent(in) :: flow_active(:)
     real(r8), intent(in), optional :: vfrac(:,:)
+    real(r8), intent(in), optional :: compliance(:)
+    real(r8), intent(in), optional :: void_target_divergence(:)
 
-    real(r8), allocatable :: p(:), v(:,:), vf(:)
+    real(r8), allocatable :: p(:), v(:,:), vf(:), cv(:)
     real(r8) :: qnan
     integer :: m
 
@@ -167,6 +187,26 @@ contains
     call this%file%start_time_step(time)
     call this%file%write_cell_data(this%pressure, p)
     call this%file%write_cell_data(this%velocity, v)
+    if (this%compliance_output) then
+      allocate(cv(this%mesh%ncell), source=0.0_r8)
+      if (present(compliance)) then
+        ASSERT(size(compliance) == this%mesh%ncell_onP)
+        cv(:this%mesh%ncell_onP) = compliance
+      end if
+      call this%mesh%cell_imap%gather_offp(cv)
+      where (cv <= 0.0_r8) cv = qnan
+      call this%file%write_cell_data(this%void_compliance, cv)
+    end if
+    if (this%target_divergence_output) then
+      if (.not.allocated(cv)) allocate(cv(this%mesh%ncell))
+      cv = qnan
+      if (present(void_target_divergence)) then
+        ASSERT(size(void_target_divergence) == this%mesh%ncell_onP)
+        cv(:this%mesh%ncell_onP) = void_target_divergence
+      end if
+      call this%mesh%cell_imap%gather_offp(cv)
+      call this%file%write_cell_data(this%void_target_divergence, cv)
+    end if
     if (allocated(this%vfrac)) then
       ASSERT(present(vfrac))
       allocate(vf(this%mesh%ncell))

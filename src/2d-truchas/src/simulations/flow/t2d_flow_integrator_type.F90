@@ -156,11 +156,12 @@ contains
   end subroutine
 
 
-  subroutine get_cell_flow_soln(this, pressure, velocity)
+  subroutine get_cell_flow_soln(this, pressure, velocity, void_target_divergence)
     class(t2d_flow_integrator), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
+    real(r8), pointer, optional, intent(out) :: void_target_divergence(:)
 
-    call this%solver%get_cell_flow_soln(pressure, velocity)
+    call this%solver%get_cell_flow_soln(pressure, velocity, void_target_divergence)
   end subroutine
 
 

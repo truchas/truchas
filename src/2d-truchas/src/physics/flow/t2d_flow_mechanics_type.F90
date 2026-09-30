@@ -158,16 +158,19 @@ contains
 
 
   !! Return no-copy views of the cell-centered pressure and velocity.
-  subroutine get_cell_flow_soln(this, pressure, velocity)
+  subroutine get_cell_flow_soln(this, pressure, velocity, void_target_divergence)
     class(t2d_flow_mechanics), target, intent(in) :: this
     real(r8), pointer, intent(out) :: pressure(:), velocity(:,:)
+    real(r8), pointer, optional, intent(out) :: void_target_divergence(:)
 
     if (this%step_is_pending) then
       pressure => this%pending_state%p_cc
       velocity => this%pending_state%vel_cc
+      if (present(void_target_divergence)) void_target_divergence => this%pending_state%void_target_divergence
     else
       pressure => this%state%p_cc
       velocity => this%state%vel_cc
+      if (present(void_target_divergence)) void_target_divergence => this%state%void_target_divergence
     end if
   end subroutine
 
@@ -279,7 +282,8 @@ contains
         this%model%matl_props%cell_t, this%model%matl_props%face_t, this%model%bc, &
         this%pending_state, stat, solved=projection_solved, env=env, &
         compliance=this%model%collapse_compliance(), reaction_cap=this%model%void_collapse_reaction_cap, &
-        pressure_bias=this%model%collapse_pressure_bias(), collapse_fraction=this%model%collapse_fraction())
+        pressure_bias=this%model%collapse_pressure_bias(), collapse_fraction=this%model%collapse_fraction(), &
+        mainline_collapse=this%model%mainline_collapse)
     call env%timer%stop('flow/projection')
     if (projection_solved) then
       call this%projection_solver%get_metrics(num_itr, num_dscg_itr, num_pcg_itr, rel_res_norm)
@@ -320,6 +324,7 @@ contains
       this%state%vel_cc = this%pending_state%vel_cc
       this%state%vel_fn = this%pending_state%vel_fn
       this%state%p_cc = this%pending_state%p_cc
+      this%state%void_target_divergence = this%pending_state%void_target_divergence
       call this%model%accept_material_state()
       this%step_is_pending = .false.
     end if

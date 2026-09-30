@@ -1,6 +1,7 @@
 program test_t2d_flow_projection_update
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_is_nan
   use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Comm_size
   use parallel_communication
   use fhypre, only: fhypre_initialize
@@ -151,7 +152,13 @@ contains
       call require(maxval(abs(flux/mesh%volume(:mesh%ncell_onP) + &
           compliance*state%p_cc(:mesh%ncell_onP))) < 1.0e-8_r8, 'compliance divergence identity failed')
       call require(global_maxval(sign_p*flux) < 0.0_r8, 'two-sided compliance has incorrect divergence sign')
+      call require(maxval(abs(state%void_target_divergence(:mesh%ncell_onP) - &
+          flux/mesh%volume(:mesh%ncell_onP))) < 1.0e-8_r8, 'wrong compliance target diagnostic')
     end do
+    call update%correct(dt, inv_c, inv_f, delta, cell_t, face_t, bc, state, stat)
+    call require(stat == 0, 'non-compliance projection did not converge')
+    call require(all(ieee_is_nan(state%void_target_divergence(:mesh%ncell_onP))), &
+        'inactive compliance target diagnostic must be NaN')
   end subroutine
 
 
@@ -222,6 +229,8 @@ contains
       call operators%divergence(state%vel_fn, flux)
       call require(maxval(abs((flux+dt*reaction*(state%p_cc(:mesh%ncell_onP)+bias)) / &
           mesh%volume(:mesh%ncell_onP))) < 1.0e-8_r8, 'capillary divergence identity failed')
+      call require(maxval(abs(state%void_target_divergence(:mesh%ncell_onP) - &
+          flux/mesh%volume(:mesh%ncell_onP))) < 1.0e-8_r8, 'wrong capped capillary target diagnostic')
       if (sign_p == 0) then
         call require(maxval(abs(state%p_cc+shift)) < 1.0e-8_r8, 'wrong capillary equilibrium pressure')
         call require(maxval(abs(state%vel_fn)) < 1.0e-8_r8, 'flow at capillary equilibrium')
@@ -289,11 +298,13 @@ contains
         state%vel_cc = -dt*grad_p
       end if
       call update%correct(dt, inv_c, inv_f, delta, cell_t, face_t, bc, state, stat, &
-          initial=initial, env=env, collapse_fraction=fraction)
+          initial=initial, env=env, collapse_fraction=fraction, mainline_collapse=.true.)
       call require(stat == 0, 'mainline source projection failed')
       call operators%divergence(state%vel_fn, flux)
       call require(maxval(abs(flux/mesh%volume(:mesh%ncell_onP)+fraction/dt)) < 1.0e-8_r8, &
           'mainline prescribed divergence identity failed')
+      call require(maxval(abs(state%void_target_divergence(:mesh%ncell_onP)+fraction/dt)) < 1.0e-14_r8, &
+          'wrong mainline target divergence diagnostic')
       if (k == 3) call require(maxval(abs(state%vel_fn)) < 1.0e-8_r8, 'zero mainline source caused flow')
     end do
   end subroutine

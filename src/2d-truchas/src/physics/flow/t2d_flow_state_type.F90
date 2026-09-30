@@ -14,6 +14,7 @@
 module t2d_flow_state_type
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
+  use,intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
   use t2d_unstr_mesh_type
   implicit none
   private
@@ -24,6 +25,8 @@ module t2d_flow_state_type
     real(r8), allocatable, public :: vel_cc(:,:)  ! (2, local cell)
     real(r8), allocatable, public :: vel_fn(:)    ! local face-normal velocity
     real(r8), allocatable, public :: p_cc(:)      ! local dynamic pressure
+    ! Output-only diagnostic: NaN where the collapse model is inactive.
+    real(r8), allocatable, public :: void_target_divergence(:)
   contains
     procedure :: init
     procedure :: set_zero
@@ -38,6 +41,7 @@ contains
 
     this%mesh => mesh
     allocate(this%vel_cc(2, mesh%ncell), this%vel_fn(mesh%nface), this%p_cc(mesh%ncell))
+    allocate(this%void_target_divergence(mesh%ncell))
     call this%set_zero()
   end subroutine
 
@@ -48,6 +52,7 @@ contains
     this%vel_cc = 0.0_r8
     this%vel_fn = 0.0_r8
     this%p_cc = 0.0_r8
+    this%void_target_divergence = ieee_value(0.0_r8, ieee_quiet_nan)
   end subroutine
 
 
@@ -57,6 +62,7 @@ contains
     call this%mesh%cell_imap%gather_offp(this%vel_cc)
     call this%mesh%face_imap%gather_offp(this%vel_fn)
     call this%mesh%cell_imap%gather_offp(this%p_cc)
+    call this%mesh%cell_imap%gather_offp(this%void_target_divergence)
   end subroutine
 
 end module t2d_flow_state_type

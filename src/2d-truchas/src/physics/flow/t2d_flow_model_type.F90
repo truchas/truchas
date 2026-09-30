@@ -46,7 +46,7 @@ module t2d_flow_model_type
     real(r8), public :: void_collapse_impedance = 0.0_r8
     real(r8), public :: void_collapse_reaction_cap = 100.0_r8
     real(r8), public :: collapse_sigma = 0.0_r8
-    logical :: mainline_collapse = .false.
+    logical, public :: mainline_collapse = .false.
     real(r8) :: collapse_relax = 0.1_r8
     logical, public :: inviscid = .false.
     logical, public :: unsteady_stokes = .false.

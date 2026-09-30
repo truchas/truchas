@@ -13,6 +13,7 @@
 #include "t2d_assert.inc"
 
 module t2d_flow_projection_update_type
+  use,intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
 
   use,intrinsic :: iso_fortran_env, only: r8 => real64
   use simulation_environment_type
@@ -158,7 +159,7 @@ contains
 
   !! Apply one incremental pressure correction. STATE%VEL_CC is the momentum
   !! predictor velocity on entry and the corrected velocity on return.
-  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env, pressure_bias, collapse_fraction)
+  subroutine correct(this, dt, inv_density_c, inv_density_f, density_delta_c, cell_t, face_t, bc, state, stat, initial, solved, env, compliance, reaction_cap, log_env, pressure_bias, collapse_fraction, mainline_collapse)
     class(t2d_flow_projection_update), intent(inout) :: this
     real(r8), intent(in) :: dt, inv_density_c(:), inv_density_f(:), density_delta_c(:)
     integer, intent(in) :: cell_t(:), face_t(:)
@@ -173,10 +174,10 @@ contains
     real(r8), optional, intent(in) :: compliance(:), reaction_cap
     real(r8), optional, intent(in) :: pressure_bias(:)
     real(r8), optional, intent(in) :: collapse_fraction(:)
+    logical, optional, intent(in) :: mainline_collapse
 
     integer :: c, f, pin_face
-    real(r8) :: reaction(this%mesh%ncell_onP), expansion, tolerance, driving_pressure
-    character(160) :: warning
+    real(r8) :: reaction(this%mesh%ncell_onP)
     logical :: initial_
 
     ASSERT(dt > 0.0_r8)
@@ -277,32 +278,25 @@ contains
     call this%mesh%face_imap%gather_offp(state%vel_fn)
 
     state%p_cc = state%p_cc + this%delta_p
-    if (present(env) .or. present(log_env)) then
-      call this%operators%divergence(state%vel_fn, this%flux)
-      expansion = 0.0_r8
-      do c = 1, this%mesh%ncell_onP
-        if (reaction(c) <= 0.0_r8) cycle
-        driving_pressure = state%p_cc(c)
-        tolerance = max(1.0_r8, abs(driving_pressure))
-        if (present(pressure_bias)) then
-          driving_pressure = driving_pressure + pressure_bias(c)
-          tolerance = max(tolerance, abs(pressure_bias(c)))
-        end if
-        tolerance = 100.0_r8*epsilon(1.0_r8)*tolerance
-        if (driving_pressure < -tolerance) &
-            expansion = max(expansion, this%flux(c)/this%mesh%volume(c))
-      end do
-      expansion = global_maxval(expansion)
-      if (expansion > 100.0_r8*epsilon(1.0_r8)/dt) then
-        write(warning, '(a,es12.5,a)') &
-            'Trapped-void compliance: pressure below equilibrium, positive divergence; maximum=', expansion, ' (1/time).'
-        if (present(env)) then
-          call env%simlog%warn(trim(warning))
-        else if (present(log_env)) then
-          call log_env%simlog%warn(trim(warning))
-        end if
+    ! Retain the signed collapse target from this solve, including the
+    ! reaction cap. This is output-only; inactive cells remain NaN.
+    state%void_target_divergence = ieee_value(0.0_r8, ieee_quiet_nan)
+    if (present(mainline_collapse)) then
+      if (mainline_collapse) then
+        ASSERT(present(collapse_fraction))
+        do c = 1, this%mesh%ncell_onP
+          if (cell_t(c) == regular_void_t) state%void_target_divergence(c) = -collapse_fraction(c)/dt
+        end do
       end if
     end if
+    do c = 1, this%mesh%ncell_onP
+      if (reaction(c) <= 0.0_r8) cycle
+      state%void_target_divergence(c) = state%p_cc(c)
+      if (present(pressure_bias)) &
+          state%void_target_divergence(c) = state%void_target_divergence(c) + pressure_bias(c)
+      state%void_target_divergence(c) = &
+          -dt*reaction(c)/this%mesh%volume(c)*state%void_target_divergence(c)
+    end do
     do c = 1, this%mesh%ncell_onP
       if (cell_t(c) > regular_t) then
         state%p_cc(c) = 0.0_r8

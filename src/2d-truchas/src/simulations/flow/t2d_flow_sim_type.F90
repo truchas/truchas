@@ -203,7 +203,9 @@ contains
     !! Create the output file and write the mesh.
     call this%solver%init_temporal_output(this%temporal_output)
     call env%simlog%info('Opening VTKHDF output.')
-    call this%output%open(env, this%mesh, this%matl_model, this%temporal_output, stat, errmsg)
+    call this%output%open(env, this%mesh, this%matl_model, this%temporal_output, stat, errmsg, &
+        compliance_output=this%model%void_collapse_impedance > 0.0_r8, &
+        collapse_output=this%model%collapse_enabled())
     if (stat /= 0) then
       errmsg = 'opening VTKHDF output: ' // errmsg
       return
@@ -394,14 +396,15 @@ contains
   subroutine write_solution(this, time)
     class(t2d_flow_sim), intent(inout) :: this
     real(r8), intent(in) :: time
-    real(r8), pointer :: pressure(:), velocity(:,:)
+    real(r8), pointer :: pressure(:), velocity(:,:), void_target_divergence(:)
     logical, pointer :: flow_active(:)
-    call this%solver%get_cell_flow_soln(pressure, velocity)
+    call this%solver%get_cell_flow_soln(pressure, velocity, void_target_divergence)
     call this%solver%get_cell_flow_active(flow_active)
     call this%solver%set_temporal_output(this%temporal_output)
     call this%solver%update_material_distribution(this%matl_dist)
     call this%output%write_solution(time, pressure, velocity, this%temporal_output, flow_active, &
-        this%matl_dist%vfrac)
+        this%matl_dist%vfrac, compliance=this%model%collapse_compliance(), &
+        void_target_divergence=void_target_divergence(:this%mesh%ncell_onP))
   end subroutine
 
 
